@@ -52,12 +52,12 @@ def compute_central_rotation_matrix(gonio):
     y = gonio.rotate_vector(0.5, 0, 1, 0)
     z = gonio.rotate_vector(0.5, 0, 0, 1)
 
-    R = matrix.rec(x + y + z, (3, 3)).transpose()
+    R = matrix.sqr(x + y + z).transpose()
 
     return R
 
 def plot_image(size1, size2, image_values):
-    '''Plot an image (values).'''
+    '''Plot an image size size1 x size2 of values.'''
 
     from matplotlib import pyplot as plt
     import numpy
