@@ -1,1 +1,3 @@
 * text=auto !eol
+doc/developer/cctbx_introduction_1.py -text
+doc/developer/cctbx_introduction_1.tex -text
