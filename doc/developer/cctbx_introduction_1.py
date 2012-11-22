@@ -65,7 +65,7 @@ def plot_image(size1, size2, image_values):
     assert(len(image_values) == size1 * size2)
 
     image = numpy.reshape(numpy.array(image_values, dtype = float),
-                          (size1, size2))
+                          (size2, size1))
 
     plt.imshow(image)
     plt.savefig('cctbx_introduction_1.png')
