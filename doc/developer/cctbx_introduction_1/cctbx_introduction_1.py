@@ -54,7 +54,7 @@ def compute_central_rotation_matrix(gonio):
 
     return R
 
-def plot_image(size1, size2, image_values):
+def plot_image(size1, size2, image_values, plot_file_name):
     '''Plot an image size size1 x size2 of values.'''
 
     from matplotlib import pyplot as plt
@@ -66,7 +66,7 @@ def plot_image(size1, size2, image_values):
                           (size2, size1))
 
     plt.imshow(image)
-    plt.savefig('cctbx_introduction_1.png')
+    plt.savefig(plot_file_name)
 
     return
 
@@ -119,10 +119,11 @@ def compute_reciprocal_space_distance_map(cbf_image):
 
     square_distances = []
 
-    for i in range(size[0]):
-        for j in range(size[1]):
-            p = matrix.col(detector.get_pixel_coordinates(j, i)).normalize()
+    for i in range(size[1]):
+        for j in range(size[0]):
+            p = matrix.col(detector.get_pixel_coordinates_fs(j, i)).normalize()
             q = (1.0 / wavelength) * p - S0
+
             _hkl = (RUBI * q).elems
             hkl = map(nint, _hkl)
 
@@ -134,7 +135,8 @@ def compute_reciprocal_space_distance_map(cbf_image):
     # plot - this needs the full fat cctbx with extra bits
 
     try:
-        plot_image(size[0], size[1], square_distances)
+        plot_image(size[0], size[1], square_distances,
+                   'cctbx_introduction_1.png')
     except: # intentional
         print 'Plotting image failed'
 
