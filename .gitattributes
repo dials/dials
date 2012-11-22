@@ -1,6 +1,6 @@
 * text=auto !eol
-doc/developer/cctbx_introduction_1.pdf -text
-doc/developer/cctbx_introduction_1.png -text
-doc/developer/cctbx_introduction_1.py -text
-doc/developer/cctbx_introduction_1.tex -text
-doc/developer/ximg2701_00001.cbf -text
+doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
+doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text
+doc/developer/cctbx_introduction_1/cctbx_introduction_1.py -text
+doc/developer/cctbx_introduction_1/cctbx_introduction_1.tex -text
+doc/developer/cctbx_introduction_1/ximg2701_00001.cbf -text
