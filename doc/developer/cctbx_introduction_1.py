@@ -6,9 +6,7 @@
 # from a Pilatus 300K instrument collected during commissioning on I19 as
 # ximg2701_00001.cbf (included).
 
-import math
 import sys
-import os
 
 # tools to use from CBFlib
 import pycbf
@@ -137,11 +135,11 @@ def compute_reciprocal_space_distance_map(cbf_image):
 
     try:
         plot_image(size[0], size[1], square_distances)
-    except:
+    except: # intentional
         print 'Plotting image failed'
- 
+
     # clean up...
- 
+
     detector.__swig_destroy__(detector)
     del(detector)
 
@@ -150,4 +148,3 @@ def compute_reciprocal_space_distance_map(cbf_image):
 
 if __name__ == '__main__':
     compute_reciprocal_space_distance_map(sys.argv[1])
-    
