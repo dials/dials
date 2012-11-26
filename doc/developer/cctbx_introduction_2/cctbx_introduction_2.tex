@@ -1,0 +1,50 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{graphicx}
+\title{CCTBX for Diffraction Calculations 2}
+\author{Graeme Winter, Diamond Light Source}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Where the previous example showed ``toy'' diffraction calculations focussing on a diffraction image, here a more useful calculation will be performed: the assessment of the geometric completeness of a data set given the orientation matrix (from Mosflm, say) start and end spindle positions, the resolution limit and the sample symmetry. This shows some of the more useful capabilities of the CCTBX toolbox for unit cell and symmetry handling.
+
+This example will also include much more in the way of input checking to make it more robust and to demonstrate some calculations.
+
+\section{Getting Started}
+
+The pre-requisites here are: installed and working cctbx (presumed, if you survived number 1) and a Mosflm orientation matrix. One is included for your convenience. It will be assumed in here that the experimental geometry is consistent with the operation of Mosflm.
+
+\section{Reading the Matrix File}
+
+Much of the information needed is encoded in the Mosflm matrix file, viz:
+
+{\small
+\begin{verbatim}
+  0.00586721 -0.00470834  0.01151601
+ -0.00697003 -0.00098276  0.01727817
+ -0.00857521 -0.01155012 -0.00616458
+       0.000       0.000       0.000
+   0.4689419  -0.7052791   0.5316717
+  -0.5570862   0.2309343   0.7976994
+  -0.6853819  -0.6702617  -0.2846065
+     90.3943     90.3943     45.2195     90.0000     90.0000    120.0000
+       0.000       0.000       0.000
+SYMM P3       
+\end{verbatim}
+}
+
+The last record, describing the lattice symmetry, was only added more recently and will hence be ignored for this example. The file contains: $\frac{1}{\lambda} U B$, misorientation angles, $B$, unit cell constants and misorientation angles (again.) The orientation matrices are given in reciprocal space, such that 
+
+\begin{equation}
+x = R(\phi) (\frac{1}{\lambda} U B) h,
+\end{equation}
+
+\noindent
+where $h$ is the Miller index of a reflection and $x$ the reciprocal space position. 
+
+
+
+\end{document}
