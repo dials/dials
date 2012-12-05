@@ -8,3 +8,12 @@ doc/developer/cctbx_introduction_2/cctbx_introduction_2.mat -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.pdf -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.py -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.tex -text
+scratch/jmp/cctbx_exercises/.project -text
+scratch/jmp/cctbx_exercises/.pydevproject -text
+scratch/jmp/cctbx_exercises/data/GXPARM.XDS -text
+scratch/jmp/cctbx_exercises/data/INTEGRATE.HKL -text
+scratch/jmp/cctbx_exercises/data/ximg2701_00001.cbf -text svneol=unset#unset
+scratch/jmp/cctbx_exercises/data/ximg2701_0001_reflection_profiles.hdf5 -text
+scratch/jmp/cctbx_exercises/src/cbfinfo.py -text
+scratch/jmp/cctbx_exercises/src/exercise_1.py -text
+scratch/jmp/cctbx_exercises/src/exercise_2.py -text
