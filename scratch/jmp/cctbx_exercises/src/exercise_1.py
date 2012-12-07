@@ -272,9 +272,10 @@ def calculate_spot_detector_positions(ub_matrix, wavelength, beam_direction,
     # intersections the detector plane (defined by the detector normal and the
     # detector origin. 
     detector_positions = []
-    for h, k, l in miller_indices:
+    for h, k, l in miller_indices[0:10]:
         X = RUB * matrix.col((h, k, l))
         S = S0 + X
+        print S0.length(), S.length()
         SN = S.dot(N)
         if (SN != 0):
             D = DorigN / SN
@@ -533,9 +534,15 @@ if __name__ == '__main__':
     hdf_path = '../data/ximg2701_0001_reflection_profiles.hdf5'
     
     # A = UB
-    ub_matrix = matrix.sqr([ 0.0144873, -0.0128813, -0.0002988,
-                            -0.0128113, -0.0143530, -0.0024004,
-                             0.0013736,  0.0019910, -0.0192366])
+    #ub_matrix = matrix.sqr([ 0.0144873, -0.0128813, -0.0002988,
+    #                        -0.0128113, -0.0143530, -0.0024004,
+    #                         0.0013736,  0.0019910, -0.0192366])
+
+#    print ub_matrix.inverse()
+    
+    ub_matrix = matrix.sqr([ 0.0127485,  0.0146061, -0.0002041,
+                            -0.0136081,  0.0117765, -0.0072142,
+                            -0.0053110,  0.0048870,  0.0179949])
     
     # Set the size of the reflection profile box
     bbox = (5, 5)

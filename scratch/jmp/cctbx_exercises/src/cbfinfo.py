@@ -68,5 +68,6 @@ def print_info(cbf_path):
                     value = '...'
                 print "\t\tColumn", i, "Type:", type_of_value, value
   
-
+if __name__ == '__main__':
+    print_info('../data/ximg2701_00001.cbf')
                 
