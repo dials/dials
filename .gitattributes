@@ -16,8 +16,15 @@ scratch/jmp/cctbx_exercises/data/ximg2700_00001.cbf -text svneol=unset#unset
 scratch/jmp/cctbx_exercises/data/ximg2701_00001.cbf -text svneol=unset#unset
 scratch/jmp/cctbx_exercises/data/ximg2701_0001_reflection_profiles.hdf5 -text
 scratch/jmp/cctbx_exercises/src/cbfinfo.py -text
+scratch/jmp/cctbx_exercises/src/cbfinfo.pyc -text
 scratch/jmp/cctbx_exercises/src/exercise_1.py -text
 scratch/jmp/cctbx_exercises/src/exercise_1_2.py -text
 scratch/jmp/cctbx_exercises/src/exercise_2.py -text
 scratch/jmp/cctbx_exercises/src/exercise_2_2.py -text
+scratch/jmp/cctbx_exercises/src/exercise_3.py -text
+scratch/jmp/cctbx_exercises/src/pycbf_ext.py -text
+scratch/jmp/cctbx_exercises/src/pycbf_ext.pyc -text
+scratch/jmp/cctbx_exercises/src/reflection.py -text
+scratch/jmp/cctbx_exercises/src/test.py -text
 scratch/jmp/cctbx_exercises/src/xdsio.py -text
+scratch/jmp/cctbx_exercises/src/xdsio.pyc -text

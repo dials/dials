@@ -1,3 +1,6 @@
+"""A module to provide functions to read/write XDS files."""
+
+
 class GxParmFile:
     """A class to read the GXPARM.XDS file used in XDS"""
     
@@ -43,28 +46,7 @@ class IntegrateFile:
 
     def __init__(self):
         """Initialise the file contents."""
-    
         self._header = {}
-    
-        self.space_group = None
-        self.unit_cell = None
-        self.detector_size = None
-        self.pixel_size = None
-        self.starting_frame = None
-        self.starting_angle = None
-        self.oscillation_range = None
-        self.rotation_axis = None
-        self.wavelength = None
-        self.beam_vector = None
-        self.detector_x_axis = None
-        self.detector_y_axis = None
-        self.detector_origin = None
-        self.detector_origin = None
-        self.detector_distance = None
-        self.unit_cell_a_axis = None
-        self.unit_cell_b_axis = None
-        self.unit_cell_c_axis = None
-    
         self.hkl = []
         self.iobs = []
         self.sigma = []
@@ -110,8 +92,16 @@ class IntegrateFile:
                 else:
                     self._parse_data_line(l)
 
+        # Set the header parameters
+        self._set_header_parameters()
 
     def _parse_str(self, s):
+        """Parse a string to either an int, float or string
+        
+        :param s: The input string
+        :returns: The parsed value
+        
+        """
         try:
             return int(s)
         except ValueError:
@@ -120,7 +110,14 @@ class IntegrateFile:
             except ValueError:
                 return str(s)
 
+
     def _parse_value(self, value):
+        """Parse the value or array of values contained in the string
+        
+        :param value: The value to parse
+        :returns: The parsed value
+        
+        """
         values = value.split()
         if len(values) == 1:
             return self._parse_str(values[0])
@@ -128,8 +125,38 @@ class IntegrateFile:
             return tuple([self._parse_str(s) for s in values])
 
 
-    def _parse_header_line(self, line):
+    def _set_header_parameters(self, ):
+        """Get the parameters from the header dict
         
+        :param name_value: The name, value parameter dict
+        
+        """
+        self.space_group       = self._header['SPACE_GROUP_NUMBER']
+        self.unit_cell         = self._header['UNIT_CELL_CONSTANTS']
+        self.detector_size     = (self._header['NX'], self._header['NY'])
+        self.pixel_size        = (self._header['QX'], self._header['QY'])
+        self.starting_frame    = self._header['STARTING_FRAME']
+        self.starting_angle    = self._header['STARTING_ANGLE']
+        self.oscillation_range = self._header['OSCILLATION_RANGE']
+        self.rotation_axis     = self._header['ROTATION_AXIS']
+        self.wavelength        = self._header['X-RAY_WAVELENGTH']
+        self.beam_vector       = self._header['INCIDENT_BEAM_DIRECTION']
+        self.detector_x_axis   = self._header['DIRECTION_OF_DETECTOR_X-AXIS']
+        self.detector_x_axis   = self._header['DIRECTION_OF_DETECTOR_Y-AXIS']
+        self.detector_origin   = (self._header['ORGX'], self._header['ORGY'])
+        self.detector_distance = self._header['DETECTOR_DISTANCE']
+        self.unit_cell_a_axis  = self._header['UNIT_CELL_A-AXIS']
+        self.unit_cell_b_axis  = self._header['UNIT_CELL_B-AXIS']
+        self.unit_cell_c_axis  = self._header['UNIT_CELL_C-AXIS']
+        self._header = None
+
+
+    def _parse_header_line(self, line):
+        """Parse a line that has been identified as a header line
+        
+        :param line: The line to parse
+        
+        """
         name_value = line.split('=')
         if (len(name_value) < 2):
             return
@@ -170,11 +197,3 @@ class IntegrateFile:
         self.alfbet1.append(tuple(tokens[17:19]))
         self.psi    .append(tokens[19])
         
-if __name__ == '__main__':
-    
-    integrate_path = '../data/INTEGRATE.HKL' 
-    f = IntegrateFile()
-    f.read_file(integrate_path)
-    
-    for key in f._header:
-        print key, f._header[key]
