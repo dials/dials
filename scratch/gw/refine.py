@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 from scipy.optimize import minimize
 
@@ -26,25 +27,31 @@ def H(xy):
 
 def run_nelder_mead():
     xy0 = numpy.array([1.0, 1.0])
-    res = minimize(f, xy0, method = 'nelder-mead', options = {
-        'xtol':1.0e-8, 'disp':True})
+    res = minimize(f, xy0, method = 'nelder-mead')
     x, y = res.x
-    print x, y, f((x, y))
+    return x, y, f((x, y))
 
 def run_bfgs():
     xy0 = numpy.array([1.0, 1.0])
-    res = minimize(f, xy0, method = 'BFGS', jac = J, options = {
-        'disp':True})
+    res = minimize(f, xy0, method = 'BFGS', jac = J)
     x, y = res.x
-    print x, y, f((x, y))
+    return x, y, f((x, y))
 
 def run_newton_cg():
     xy0 = numpy.array([1.0, 1.0])
-    res = minimize(f, xy0, method = 'Newton-CG', jac = J, hess = H, options = {
-        'disp':True})
+    res = minimize(f, xy0, method = 'Newton-CG', jac = J, hess = H)
     x, y = res.x
-    print x, y, f((x, y))
-    
-run_nelder_mead()
-run_bfgs()
-run_newton_cg()
+    return x, y, f((x, y))
+
+import time
+t0 = time.time()
+for j in range(1000): run_nelder_mead()
+t1 = time.time()
+for j in range(1000): run_bfgs()
+t2 = time.time()
+for j in range(1000): run_newton_cg()
+t3 = time.time()
+
+print 'Nelder-Mead; %.2f' % (t1 - t0)
+print 'BFGS:        %.2f' % (t2 - t1)
+print 'Newton CG:   %.2f' % (t3 - t2)

@@ -1,3 +1,4 @@
+from __future__ import division
 import sympy
 x, y = sympy.symbols('x y')
 f = '(x*x + y*y + pi * sin(x) + pi * cos(y)) ** 2'
