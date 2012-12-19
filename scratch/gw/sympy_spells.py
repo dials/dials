@@ -1,9 +1,9 @@
 from __future__ import division
 import sympy
 
-symbols = 'x y'
-functions = 'sin cos pi'
-f = '(x*x + y*y + pi * sin(x) + pi * cos(y)) ** 2'
+symbols = 'x y z'
+functions = 'sin cos pi exp'
+f = '(z ** 2 + x ** 2 + y ** 2 + sin(x) + cos(y)) ** 2'
 
 _syms = sympy.symbols(symbols)
 
