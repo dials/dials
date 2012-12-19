@@ -8,6 +8,8 @@ doc/developer/cctbx_introduction_2/cctbx_introduction_2.mat -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.pdf -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.py -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.tex -text
+scratch/gw/refine.py -text
+scratch/gw/sage_spells.py -text
 scratch/jmp/cctbx_exercises/.project -text
 scratch/jmp/cctbx_exercises/.pydevproject -text
 scratch/jmp/cctbx_exercises/data/GXPARM.XDS -text
