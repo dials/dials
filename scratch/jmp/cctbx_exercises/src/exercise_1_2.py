@@ -353,7 +353,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 
     # Read the rotation axis and beam vector
     m2 = matrix.col(gxparm_handle.rotation_axis)
-    s0 = matrix.col(gxparm_handle.beam_vector)    
+    s0 = matrix.col(gxparm_handle.beam_vector).normalize() / wavelength 
 
     # Read the unit cell and detector axis vectors
     b1 = matrix.col(gxparm_handle.unit_cell_a_axis)

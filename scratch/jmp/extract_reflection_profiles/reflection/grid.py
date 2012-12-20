@@ -42,7 +42,7 @@ class Grid:
             
             # If the sigmas are not set, then raise an exception
             if sigma_divergence <= 0.0 or sigma_mosaicity <= 0.0:
-                raise ""
+                raise "Can't calculate step size"
 
             # Otherwise, calculate the step size of the grid.
             step_size = self._calculate_step_size(grid_size, sigma_divergence, 
@@ -218,9 +218,9 @@ class Grid:
             True/False
         
         """
-        return (0 <= index[0] <= self.grid_size[0] - 1 and 
-                0 <= index[1] <= self.grid_size[1] - 1 and 
-                0 <= index[2] <= self.grid_size[2] - 1)
+        return (0 <= index[0] < self.grid_size[0] - 1 and 
+                0 <= index[1] < self.grid_size[1] - 1 and 
+                0 <= index[2] < self.grid_size[2] - 1)
 
     def _calculate_point_weight(self, point, grid_point):
         """Calculate the weight the give to the grid point. Called by the 

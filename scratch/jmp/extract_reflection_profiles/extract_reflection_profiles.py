@@ -53,11 +53,11 @@ def extract_reflection_profiles():
     sigma_m = 0.082
 
     # Set some values of a test reflection
-    s1 = matrix.col((-0.0175198982424, -0.247752596714, 1.42844680608))
+    s1 = matrix.col((-0.0175199028171, -0.24775259748, 1.42844630118))
     phi_dash = 5.0
     phi = 5.83575672475
-    sx = 117.588670459
-    sy = 311.621434017
+    sx = 117.588714455
+    sy = 311.621428845
     sz = z0 + (phi - phi0) / dphi
 
     # Load the CBF image volume
@@ -81,6 +81,27 @@ def extract_reflection_profiles():
     mapper = GridMapper(gonio, detector, beam, grid)
     mapper.map_reflection(0, rcs, sx, sy, sz)
 
+    print 1/0
+
+    from matplotlib import cm
+
+
+    for i in range(0,9):
+        ax = pylab.subplot(3, 3, i+1)
+        pylab.imshow(detector.image[sz-4-1+i,sy-4:sy+4+1,sx-4:sx+4+1], vmin=0, vmax=2000, cmap=cm.Greys_r)
+#        pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0, 
+#            vmax=numpy.max(grid.get_grid(0)), cmap=cm.Greys_r)
+    pylab.show()
+
+    
+    for i in range(0,9):
+        ax = pylab.subplot(3, 3, i+1)
+#        pylab.imshow(detector.image[sz-4-1+i,sy-4:sy+4+1,sx-4:sx+4+1], vmin=0, vmax=2000, cmap=cm.Greys_r)
+        pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0, 
+            vmax=numpy.max(grid.get_grid(0)), cmap=cm.Greys_r)
+    pylab.show()
+
+
     # Display the grid
     fig = pylab.figure()
     for i in range(0, 9):
@@ -90,15 +111,20 @@ def extract_reflection_profiles():
                           grid.get_grid(0)[i,:,:])
     pylab.show()
 
+#    print grid.grid_data
+ 
+
+
+
     # Display the estimated fraction of reflection intensity
-    fig = pylab.figure()
-    for i in range(0, 9):
-        ax = fig.add_subplot(3, 3, i+1, projection='3d')
-        ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
-                          grid.get_grid_coordinates()[1][i,:,:],
-                          grid.estimated_reflection_intensity(
-                                sigma_d, sigma_m)[i,:,:])          
-    pylab.show()    
+    #fig = pylab.figure()
+    #for i in range(0, 9):
+    #    ax = fig.add_subplot(3, 3, i+1, projection='3d')
+    #    ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
+    #                      grid.get_grid_coordinates()[1][i,:,:],
+    #                      grid.estimated_reflection_intensity(
+    #                            sigma_d, sigma_m)[i,:,:])          
+    #pylab.show()    
 
 if __name__ == '__main__':
 
