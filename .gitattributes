@@ -52,9 +52,12 @@ scratch/jmp/extract_reflection_profiles/reflection/__init__.py -text
 scratch/jmp/extract_reflection_profiles/reflection/coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/reflection/grid.py -text
 scratch/jmp/extract_reflection_profiles/reflection/grid_mapper.py -text
+scratch/jmp/extract_reflection_profiles/reflection/mask.py -text
+scratch/jmp/extract_reflection_profiles/reflection/reflection.py -text
 scratch/jmp/extract_reflection_profiles/reflection/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/reflection/test/test_reflection_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/reflection/test/test_reflection_grid.py -text
+scratch/jmp/extract_reflection_profiles/save_image_volume_images.py -text
 scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text

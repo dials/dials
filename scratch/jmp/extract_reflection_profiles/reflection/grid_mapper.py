@@ -5,7 +5,7 @@ class GridMapper:
         
     """
     
-    def __init__(self, gonio, detector, beam, grid, dp=(4, 4, 4)):
+    def __init__(self, gonio, detector, beam, grid, dp=(4, 4, 1)):
         """Set all the parameters needed.
         
         Args:
@@ -22,6 +22,60 @@ class GridMapper:
         self.beam = beam
         self.grid = grid
         self.dp = dp
+    
+    def calculate_mask_array(self, rmask, rcs, x, y, z):
+        """Calculate the masked array from the reflection mask.
+        
+        Args:
+            rmask: The reflection mask
+            rcs: The reflection coordinate system
+            x: The x pixel coordinate
+            y: The y pixel coordinate
+            z: The z pixel coordinate
+            
+        Returns:
+            The masked array
+        
+        """
+        from numpy import zeros, int32
+    
+        # Get the detector coordinate system
+        dcs = self.detector.coordinate_system
+
+        # Calculate the range of detector indices and frames to look at
+        x0 = int(x) - self.dp[0]
+        x1 = int(x) + self.dp[0]
+        y0 = int(y) - self.dp[1]
+        y1 = int(y) + self.dp[1]
+        z0 = int(z) - self.dp[2]
+        z1 = int(z) + self.dp[2]
+
+        # Allocate the mask array    
+        mask = zeros(shape=(2 * self.dp[2] + 1,
+                            2 * self.dp[1] + 1,
+                            2 * self.dp[0] + 1), dtype=int32)
+    
+        # Loop through all the detector pixels
+        for k in range(z0, z1 + 1):
+            for j in range(y0, y1 + 1):
+                for i in range(x0, x1 + 1):
+                    
+                    # Calculate the beam vector corresponding to the
+                    # detector coordinate.
+                    s_dash = dcs.to_laboratory_coordinate(i, j)
+                    s_dash = (1.0 / self.beam.wavelength) * s_dash.normalize()
+                    phi_dash = self.gonio.get_angle_from_frame(k)
+                    
+                    # Calculate the reflection coordinate from the beam 
+                    # vector and angle
+                    c1, c2, c3 = rcs.from_diffracted_beam_vector(s_dash, 
+                                                                 phi_dash)
+
+                    # Set the mask value        
+                    mask[k-z0, j-y0, i-x0] = rmask.is_in_mask(c1, c2, c3)
+
+        # return the mask
+        return mask
     
     def is_data_normally_distributed(self, data, delta=0.1):
         """Check if the data is normally distributed.
@@ -86,11 +140,12 @@ class GridMapper:
             The background intensity value
         
         """        
+        from operator import mul
         import numpy
 
         # If no maximum is set, then set it to 0.1 N pixels
         if max_iter == None:
-            max_iter = int(0.1 * len(pixels.flat))
+            max_iter = int(0.1 * reduce(mul, pixels.shape))
 
         # Sort the pixels into ascending intensity order    
         sorted_pixels = pixels.flat[:]
@@ -107,9 +162,164 @@ class GridMapper:
             num_iter += 1
                      
         # Return the mean of the remaining pixels as the background intensity
-        return numpy.mean(sorted_pixels)      
+        return numpy.mean(sorted_pixels)
+        
+    def calculate_e3_fraction(self, rcs, z):
+        """Calculate the fraction of counts contributed by each data frame, j,
+        around the reflection to each grid point, v3 in the profile frame.
+        
+        First we find and integrate over the set of phi angles covered by each 
+        data frame around the reflection to get Ij. Then we find the set of phi
+        angles covered by each grid coordinate. We then integrate over the 
+        intersection of the phi angles covered by each data frame and each 
+        grid point to get Iv3j. The fraction of the counts is then calculated as 
+        Iv3j / Ij.
+        
+        Further details of the method can be found in Kabsch 2010.
+        
+        Args:
+            rcs: The reflection coordinate system
+            z: The z coordinate of the reflection
+            
+        Returns:
+            An array containing the count fractions. The fraction of counts
+            given by frame j to grid coordinate v3 can be found in the array
+            by fv3j[v3-v30, j-j0] 
+        
+        """
+        from numpy import zeros, float32
+        from scipy.special import erf
+        from math import sqrt
+
+        # Create an array to contain the intensity fractions
+        fv3j = zeros(shape=(9,3), dtype=float32)
+
+        # Get some parameters        
+        delta3 = self.grid.step_size[2]
+        phi0 = self.gonio.phi0
+        dphi = self.gonio.dphi
+        zeta = rcs.zeta
+        phi = rcs.phi
+
+        # The range of data frames and grid points to iterate over
+        j0 = int(z) - self.dp[2]
+        j1 = int(z) + self.dp[2]
+        v30 = self.grid.grid_origin[2] - (self.grid.grid_size[2] - 1)
+        v31 = (self.grid.grid_size[2] - 1)- self.grid.grid_origin[2]
+                
+        # A constant used in the solution to the integrals below.        
+        sigr2 = 1.0 / (sqrt(2) * (self.grid.sigma_mosaicity / abs(rcs.zeta)))
+
+        # Loop over all j data frames in the region around the reflection
+        for j in range(j0, j1 + 1):
+
+            # The data frame j covers the range of phi such that
+            # rj = {phi':phi0 + (j-1)dphi <= phi' >= phi0 + jdpi}
+            # Therefore the range of phi for j is given as follows.
+            aj = phi0 + (j - 1) * dphi
+            bj = phi0 + j * dphi
+
+            # Calculate the integral over rj (leaving out scaling factors):
+            # I[exp(-(phi' - phi)^2 / (2 sigma^2)]
+            Ij = (erf((bj - phi) * sigr2) - erf((aj - phi) * sigr2))
+
+            # Loop over all v3 in the profile grid
+            for v3 in range(v30, v31 + 1):
+
+                # The grid coordinate v3 cover the range phi such that
+                # rv3 = {phi':(v3 - 0.5)d3 <= (phi' - phi)zeta <= (v3 + 0.5)d3}
+                # Therefore the range of phi for v3 is given as follows.
+                bv3 = ((v3 - 0.5) * delta3) / zeta + phi
+                av3 = ((v3 + 0.5) * delta3) / zeta + phi
+                av3, bv3 = (min([av3, bv3]), max([av3, bv3]))
+                
+                # We need to integrate over the intersection of sets rv3 and rj
+                av3j = max([av3, aj])
+                bv3j = min([bv3, bj])
+
+                # If there is no intersection then set the fraction of the 
+                # counts contributed by fata frame j to grid coordinate v3 to 
+                # zero, otherwise calculate it as the ratio of the integral
+                # over the intersection or rv3 and rj to the integral over rj
+                if (av3j > bv3j):
+                    fv3j[v3 - v30, j - j0] = 0
+                else:
+                    Iv3j = erf((bv3j - phi) * sigr2) - erf((av3j - phi) * sigr2)
+                    fv3j[v3 - v30, j - j0] = Iv3j / Ij
+
+        # Return the intensity fractions
+        return fv3j
+        
+    def calculate_e1e2_fraction(self, rcs, x, y, z, x0, x1, y0, y1, n_div=5):
+        """Calculate the fraction of each x, y pixel value that contributes
+        to each i, j grid coordinate. 
+        
+        Loop through all the x, y coordinates and device them into 
+        n_div x n_div equal sub divisions. Calculate the grid coordinate of
+        each sub division and add set the fraction of counts contributed.
+        
+        Args:
+            rcs: The reflection coordinate system
+            x: The x coordinate of the reflection
+            y: The y coordinate of the reflection
+            z: The z coordinate of the reflection
+            x0: The detector x starting coordinate
+            x1: The detector x ending coordinate
+            y0: The detector y starting coordinate
+            y1: The detector y ending coordinate
+            n_div: The number of sub-divisions in either direction
+        
+        Returns:
+            The fraction of counts contributed by each pixel to each grid point.
+        
+        """
+        from numpy import zeros, arange, float32
     
-    def map_reflection(self, index, rcs, x, y, z):
+        # Create an array to contain the intensity fractions
+        fv12ij = zeros(shape=(self.grid.grid_size[0], 
+                              self.grid.grid_size[1],
+                              x1 - x0 + 1, 
+                              y1 - y0 + 1), dtype=float32)
+    
+        # Get the detector coordinate system
+        dcs = self.detector.coordinate_system
+        
+        # Divide counts equally amount subdivisions
+        div_fraction = float(n_div * n_div)
+        
+        # Loop through all the x, y coordinates
+        for y in range(y0, y1 + 1):
+            for x in range(x0, x1 + 1):
+                
+                # Create 5x5 equal sub divisions of the pixel
+                for yy in range(0, n_div):
+                    for xx in range(0, n_div):
+                        
+                        # Calculate sub-pixel coordinate
+                        xxx = x + xx / float(n_div)
+                        yyy = y + yy / float(n_div)
+                        
+                        # Calculate the beam vector corresponding to the
+                        # detector coordinate.
+                        s_dash = dcs.to_laboratory_coordinate(xxx, yyy)
+                        s_dash = (1.0 / self.beam.wavelength) * s_dash.normalize()
+                        phi_dash = self.gonio.get_angle_from_frame(z)
+                        
+                        # Calculate the reflection coordinate from the beam 
+                        # vector and angle
+                        c1, c2, c3 = rcs.from_diffracted_beam_vector(s_dash, 
+                                                                     phi_dash)
+                        
+                        # Find the grid coordinate containing the point
+                        gi = self.grid.grid_origin[0] + c1 / self.grid.step_size[0]
+                        gj = self.grid.grid_origin[1] + c2 / self.grid.step_size[1]
+                        if (0 <= gi < 9 and 0 <= gj < 9):
+                            fv12ij[gj,gi,y-y0,x-x0] += 1.0 / div_fraction
+    
+        # Return the fractions
+        return fv12ij
+    
+    def map_reflection(self, index, rcs, rmask, x, y, z):
         """Map the reflection from the detector to the profile grid.
         
         Loop through all the pixels around the reflection in the detector
@@ -120,17 +330,14 @@ class GridMapper:
         Args:
             index: The reflection number
             rcs: The reflection coordinate system
+            rmask: The reflection mask
             x: The reflection x detector coordinate
             y: The reflection y detector coordinate
             z: The reflection z detector coordinate (frame number)
         
         """
-        
-        # Calculate the background intensity
-        background = self.calculated_background_intensity(
-            self.detector.image[int(z)-1:int(z)+1+1, 
-                                int(y)-4:int(y)+4+1, 
-                                int(x)-4:int(x)+4+1])
+        from scitbx import matrix
+        from numpy import where, arange, logical_not
         
         # Get the detector coordinate system
         dcs = self.detector.coordinate_system
@@ -142,177 +349,45 @@ class GridMapper:
         y1 = int(y) + self.dp[1]
         z0 = int(z) - self.dp[2]
         z1 = int(z) + self.dp[2]
-        
-        import numpy
-        from scipy.special import erf
-        from math import sqrt
-        #all_phi_dash = map(self.gonio.get_angle_from_frame, 
-        #                   self.gonio.z0 + 
-        #                   numpy.arange(0, 
-        #                        20*self.detector.image.shape[0])/20)
-        
-        
-        
-        
-        delta3 = self.grid.step_size[2]
-        #print delta3
-        zeta = rcs.zeta
-        phi = rcs.phi
-        phi0 = self.gonio.phi0
-        dphi = self.gonio.dphi
-        
-        sigmar2 = sqrt(2) * (self.grid.sigma_mosaicity / abs(rcs.zeta)) 
-        
-        fv3j = numpy.zeros(shape=(9,3), dtype=numpy.float32)
-        for v3 in range(-4, 4+1):
-            for j in range(-1, 1+1):
 
-                av3 = ((v3 - 0.5) * delta3) / zeta + phi
-                bv3 = ((v3 + 0.5) * delta3) / zeta + phi
-                av3, bv3 = (min([av3, bv3]), max([av3, bv3]))
-                
-                aj = phi0 + (int(z) + j - 1) * dphi
-                bj = phi0 + (int(z) + j) * dphi
-                
-                av3j = max([av3, aj])
-                bv3j = min([bv3, bj])
-
-                if (v3 == -1):
-                    print av3, bv3, aj, bj, av3j, bv3j
-
-                num = (erf((bv3j - phi) / sigmar2) - erf((av3j - phi) / sigmar2))
-                den = (erf((bj - phi) / sigmar2) - erf((aj - phi) / sigmar2))
-
-                #print aj, bj, phi, erf((bj - phi) / sigmar2), erf((aj - phi) / sigmar2)
-                #print num, den                
-                if (av3j > bv3j):
-                    fv3j[v3+4,j+1] = 0
-                else:
-                    fv3j[v3+4,j+1] = num / den
+        # Get the reflection image
+        reflection_image = self.detector.image[z0-1:z1-1+1,y0:y1+1,x0:x1+1]
         
-        print fv3j
+        # Calculate the reflection mask
+        reflection_mask = self.calculate_mask_array(rmask, rcs, x, y, z)
+ 
+        # Calculate the background intensity and subtract from image. Ensure
+        # that counts are not less than zero
+        background = self.calculated_background_intensity(
+            reflection_image[where(reflection_mask != 0)])
+        reflection_image -= background
+        reflection_image[where(reflection_image < 0.0)] = 0.0
+        reflection_image[where(reflection_mask == 0)] = 0.0
+
+        # Calculate the fraction of counts constributed by each data frame
+        # around the reflection to each v3 grid point in the reflection grid        
+        fv3j = self.calculate_e3_fraction(rcs, z)
         
-        from scitbx import matrix
+        # Calculate the fraction of counts from each pixel coordinate that 
+        # goes to each grid coordinate
+        fv1v2xy = self.calculate_e1e2_fraction(rcs, x, y, z, x0, x1, y0, y1, n_div=5)
         
-        for z in range(4, 6 + 1):
+        # Loop through all the detector coordinates. 
+        # TODO this needs to be fixed (6 nested loops!)
+        for z in range(z0, z1 + 1):
             for y in range(y0, y1 + 1):
                 for x in range(x0, x1 + 1):
                     
-                    for yy in numpy.arange(0, 10) / 10.0:
-                        for xx in numpy.arange(0, 10) / 10.0:
-                            
-                            xxx = x + xx
-                            yyy = y + yy
-                    
-                            # Calculate the beam vector corresponding to the detector 
-                            # coordinate.
-                            s_dash = matrix.col(dcs.to_laboratory_coordinate(xxx, yyy))
-                            s_dash = (1.0 / self.beam.wavelength) * s_dash.normalize()
-                            phi_dash = self.gonio.get_angle_from_frame(z)
-                            
-                            
-                            # Calculate the reflection coordinate from the beam vector
-                            c1, c2, c3 = rcs.from_diffracted_beam_vector(s_dash, 
-                                                                         phi_dash)
-                                                                         
+                    # Get the image value
+                    value = reflection_image[z-z0, y-y0, x-x0]
 
-                            for gk in range(0,9):
-                                gi = self.grid.grid_origin[0] + c1 / self.grid.step_size[0]
-                                gj = self.grid.grid_origin[1] + c2 / self.grid.step_size[1]
-                                #gk = self.grid.grid_origin[2] + c3 / self.grid.step_size[2]
-                                c3 = (gk - self.grid.grid_origin[2]) * self.grid.step_size[2]
-                                if (0 <= gi < 9 and 0 <= gj < 9 and 0 <= gk < 9):
-                                    value = (self.detector.image[z-1, y, x] - background)
-                                    if (value < 0):
-                                        value = 0
-                                    value = (self.detector.image[z-1, y, x] - background) * fv3j[gk,z-4] / 100.0
-                                    self.grid.grid_data[0,gk,gj,gi] += value
-        
-        
-                                    # Add the count from the pixel to the reflection grid
-                                    #value = self.detector.image[z-z0, y, x]
-                                    #self.grid.add_point_count(index, (c1, c2, c3), value)
-                    
-#        print numpy.array(fv3j * 100000, dtype=numpy.int32)
-        
-        
-        #set_v3 = {}
-        #for phi_dash in all_phi_dash:
-        #    set_v3[phi_dash] = []
-        #    for v3 in range(-int(self.grid.grid_size[2]/2), int(self.grid.grid_size[2]/2)+1):
-        #         if (v3 - 0.5) * delta3 <= (phi_dash - phi) * zeta <= (v3 + 0.5) * delta3:
-        #            set_v3[phi_dash].append(v3)
-        
-        #ji = range(1, 181)
-        #set_j = {}
-        #for phi_dash in all_phi_dash:
-        #    set_j[phi_dash] = []
-        #    for j in ji:
-        #        if (1 + (j - 1) * 1.0 <= phi_dash <= 1 + j * 1.0):
-        #            set_j[phi_dash].append(j)
-        
-        #new_set = []
-        #for phi_dash in all_phi_dash:
-        #    if (set_j[phi_dash] and set_v3[phi_dash]):
-        #        new_set.append(phi_dash)
-        
-        #print set_j
-        #print set_v3
-        #new_set_j = []
-        #for phi_dash in all_phi_dash:
-        #    if (set_j[phi_dash]):
-        #        new_set_j.append(phi_dash)
-        
-        #new_set_v3 = []
-        #for phi_dash in all_phi_dash:
-        #    if (set_v3[phi_dash]):
-        #        new_set_v3.append(phi_dash)
-        
-        
-        #print "Set_v3", new_set_v3
-        #print "Intersection of set_j and set_v3", new_set
-        #for p in new_set:
-        #    print "Phi_dash {0}, set_j[phi_dash] {1}, set_v3[phi_dash] {2}".format(
-        #        p, set_j[p], set_v3[p])
-        
-        #print "e3[phi_dash = 5] {0}, e3[phi_dash = 6]{1}".format(
-        #    rcs.from_diffracted_beam_vector(rcs.s1, 5)[2], 
-        #    rcs.from_diffracted_beam_vector(rcs.s1, 6)[2])
-        
-        #print "e3[grid] = {0}".format(
-        #    map(lambda x: self.grid.calculate_grid_coordinate((0, 0, x))[2], 
-        #        range(0,9)))
-        
-        
-        
-        #for phi_dash in all_phi_dash:
-        #    c1, c2, c3 = rcs.from_diffracted_beam_vector(rcs.s1, phi_dash)
-        #    print c3
-        
-        #print 5.5*self.grid.sigma_mosaicity * (180 / (3.14159))
-       # 
-        #for v3 in range(-int(self.grid.grid_size[2]/2), int(self.grid.grid_size[2]/2)+1):
-        #    #v1, v2, v3 = self.grid.calculate_grid_coordinate((0, 0, k))
-        #    self.calculate_fraction_of_counts(0, v3, rcs, self.grid, all_phi_dash)
-    
-        
-        # Loop through all the detector pixels in the selected imaqes
-        #for z in range(z0, z1 + 1):
-        #    for y in range(y0, y1 + 1):
-        #        for x in range(x0, x1 + 1):
-        #            
-                    # Calculate the beam vector corresponding to the detector 
-                    # coordinate.
-        #            s_dash = dcs.to_laboratory_coordinate(x, y)
-        #            s_dash = (1.0 / self.beam.wavelength) * s_dash.normalize()
-        #            phi_dash = self.gonio.get_angle_from_frame(z)
-                    
-                    # Calculate the reflection coordinate from the beam vector
-        #            c1, c2, c3 = rcs.from_diffracted_beam_vector(s_dash, 
-        #                                                         phi_dash)
-        
-                    # Add the count from the pixel to the reflection grid
-        #            value = self.detector.image[z-z0, y, x]
-        #            self.grid.add_point_count(index, (c1, c2, c3), value)
-                    
+                    # Loop through all the grid coordinates                    
+                    for k in range(0, self.grid.grid_size[2]):
+                        for j in range(0, self.grid.grid_size[1]):
+                            for i in range(0, self.grid.grid_size[0]):
+                                
+                                # Calculate the pixel fraction and add the 
+                                # image counts
+                                fraction = fv3j[k,z-z0] * fv1v2xy[j,i,y-y0,x-x0]
+                                self.grid.grid_data[index,k,j,i] += value * fraction
 

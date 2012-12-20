@@ -424,30 +424,29 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 
     # Print points on first image
     from matplotlib import pylab, cm
-    image = volume[4,:,:]
-    filtered_xy = [(x, y) for x, y, z in coords if 4 <= z < 5]
-#    filtered_xy = []
-#    index1 = 0
-#    index2 = 0
-#    for x, y, z in coords:
-#        if (0 <= z < 1):
-#            filtered_xy.append((x, y))
-#            if (index1 == 348):
-#                print index2
-#                
-#            index1 += 1
-#        index2 += 1
-    xcoords = [x for x, y in filtered_xy]
-    ycoords = [y for x, y in filtered_xy]
-    intensities = [image[y, x] for x, y in filtered_xy]
-    index = numpy.where(intensities == numpy.max(intensities))[0][0]
-    mean_intensity = numpy.mean(intensities)
-    diff_mean = numpy.abs(numpy.array(intensities)-mean_intensity)
-    index = numpy.where(diff_mean == numpy.min(diff_mean))[0][0]
-    print index, xcoords[index], ycoords[index], intensities[index], numpy.mean(intensities)
-    pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r)
-    pylab.scatter(xcoords, ycoords)
-    pylab.show()
+
+    image_size = volume.shape
+    image_size_ratio = image_size[2] / float(image_size[1])
+    figure_size = (6, 6 / image_size_ratio)
+    for i in range(0, 1):
+        #fig = pylab.figure(figsize=figure_size, dpi=300)
+        image = volume[i,:,:]
+        filtered_xy = [(x, y) for x, y, z in coords if i <= z < i+1]
+        xcoords = [x for x, y in filtered_xy]
+        ycoords = [y for x, y in filtered_xy]
+        intensities = [image[y, x] for x, y in filtered_xy]
+        #index = numpy.where(intensities == numpy.max(intensities))[0][0]
+        #mean_intensity = numpy.mean(intensities)
+        #diff_mean = numpy.abs(numpy.array(intensities)-mean_intensity)
+        #index = numpy.where(diff_mean == numpy.min(diff_mean))[0][0]
+    #    print index, xcoords[index], ycoords[index], intensities[index], numpy.mean(intensities)
+        plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r)
+        pylab.scatter(xcoords, ycoords, marker='x')
+        plt.axes.get_xaxis().set_ticks([])
+        plt.axes.get_yaxis().set_ticks([])
+        #fig.savefig('/home/upc86896/Documents/image_volume_w_markers{0}.tiff'.format(i),
+        #    bbox_inches='tight', pad_inches=0)
+        pylab.show()
 
 if __name__ == '__main__':
     
