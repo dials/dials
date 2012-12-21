@@ -14,10 +14,6 @@ import numpy
 from beam import Beam
 from goniometer import Goniometer
 from detector import Detector
-from reflection.grid import Grid
-from reflection.grid_mapper import GridMapper
-from reflection.mask import ReflectionMask
-from reflection.coordinate_system import CoordinateSystem as ReflectionCoordinateSystem
 
 def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group, 
                                          dmin, wavelength):
@@ -146,8 +142,7 @@ def write_reflections_to_hdf5(hdf_path, volume, coords, profiles):
     h5_handle.close()
     
 
-def extract_and_save_reflections(cbf_path, gxparm_path, integrate_path, 
-    hdf_path, bbox, dmin):
+def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     """Extract the reflections from a CBF file and save to HDF5.
 
     Do the following:
@@ -165,17 +160,9 @@ def extract_and_save_reflections(cbf_path, gxparm_path, integrate_path,
     :param dmin: The resolution
     
     """
-    # Create the Integrate file and read the contents
-    integrate_handle = xdsio.IntegrateFile()
-    integrate_handle.read_file(integrate_path)
-    
     # Create the GXPARM file and read the contents
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(gxparm_path)
-    
-    # Read the standard deviation of the divergence and mosaicity
-    sigma_d = integrate_handle.sigma_divergence
-    sigma_m = integrate_handle.sigma_mosaicity
     
     # Read the wavelength, pixel size, detector origin and distance
     wavelength = gxparm_handle.wavelength
@@ -223,22 +210,19 @@ def extract_and_save_reflections(cbf_path, gxparm_path, integrate_path,
     # systemmatically absent. Finally, calculate the intersection angles of
     # each of the reflections. The returned variable contains a list of
     # (phi, hkl) elements
-    print "Generating reflections..."
     reflections = generate_observed_reflections(ub_matrix, unit_cell, 
         cell_space_group, dmin, wavelength)
 
     # Calculate the minimum and maximum angles and filter the reflections to
     # leave only those whose intersection angles lie between them
     phi_min = phi0
-    phi_max = phi0 + (20 - z0) * dphi
-#    phi_max = phi0 + (volume_size_z - z0) * dphi
+    phi_max = phi0 + (volume_size_z - z0) * dphi
     reflections = select_reflections(phi_min, phi_max, reflections)
 
     # Calculate the reflection detector coordinates. Calculate the 
     # diffracted beam vector for each reflection and find the pixel 
     # coordinate where the line defined by the vector intersects the 
     # detector plane. Returns a list of (x, y) detector coordinates.
-    print "Calculating detector coordinates..."
     for r in reflections:
         r.calculate_detector_coordinates2(gonio, detector, ub_matrix)
 
@@ -246,60 +230,42 @@ def extract_and_save_reflections(cbf_path, gxparm_path, integrate_path,
     reflections = [r for r in reflections if r.in_detector_volume([[0, volume_size_x],
                                                           [0, volume_size_y],
                                                           [z0, volume_size_z + z0]])]
-
-    # Create the grid to contain all the reflection profiles
-    grid = Grid(len(reflections), grid_size=(9, 9, 9), 
-        sigma_divergence=sigma_d, sigma_mosaicity=sigma_m)
-    grid_mapper = GridMapper(gonio, detector, beam, grid)
-
-        
-    # Create the reflection mask object    
-    rmask = ReflectionMask(sigma_d, sigma_m)
-    print "Mapping to reflection coordinate system..."                                                  
-    for i, r in enumerate(reflections):
-        
-        # Create the reflection coordinate system
-        rcs = ReflectionCoordinateSystem(s0, r.s1, m2, r.phi)
-        
-        # Map the reflection onto the reflection coordinate grid
-        grid_mapper.map_reflection(i, rcs, rmask, r.xyz[0], r.xyz[1], r.xyz[2])
-                                                            
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
-    #coords = []
-    #for r in reflections:
-    #    coords.append((r.xyz[0], r.xyz[1], r.xyz[2]-1))
+    coords = []
+    for r in reflections:
+        coords.append((r.xyz[0], r.xyz[1], r.xyz[2]-1))
 
-    #profiles = read_reflections_from_volume(volume, coords, bbox)
+    profiles = read_reflections_from_volume(volume, coords, bbox)
 
     # Write the reflection profiles to a HDF5 file    
     #write_reflections_to_hdf5(hdf_path, volume, coords, profiles)
 
     # Print points on first image
-    #from matplotlib import pylab, cm
+    from matplotlib import pylab, cm
 
-    #image_size = volume.shape
-    #image_size_ratio = image_size[2] / float(image_size[1])
-    #figure_size = (6, 6 / image_size_ratio)
-    #for i in range(0, 1):
+    image_size = volume.shape
+    image_size_ratio = image_size[2] / float(image_size[1])
+    figure_size = (6, 6 / image_size_ratio)
+    for i in range(0, 1):
         #fig = pylab.figure(figsize=figure_size, dpi=300)
-    #    image = volume[i,:,:]
-    #    filtered_xy = [(x, y) for x, y, z in coords if i <= z < i+1]
-    #    xcoords = [x for x, y in filtered_xy]
-    #    ycoords = [y for x, y in filtered_xy]
-    #    intensities = [image[y, x] for x, y in filtered_xy]
+        image = volume[i,:,:]
+        filtered_xy = [(x, y) for x, y, z in coords if i <= z < i+1]
+        xcoords = [x for x, y in filtered_xy]
+        ycoords = [y for x, y in filtered_xy]
+        intensities = [image[y, x] for x, y in filtered_xy]
        #index = numpy.where(intensities == numpy.max(intensities))[0][0]
         #mean_intensity = numpy.mean(intensities)
         #diff_mean = numpy.abs(numpy.array(intensities)-mean_intensity)
         #index = numpy.where(diff_mean == numpy.min(diff_mean))[0][0]
         #print index, xcoords[index], ycoords[index], intensities[index], numpy.mean(intensities)
-    #    plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r)
-    #    pylab.scatter(xcoords, ycoords, marker='x')
-    #    plt.axes.get_xaxis().set_ticks([])
-    #    plt.axes.get_yaxis().set_ticks([])
+        plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r)
+        pylab.scatter(xcoords, ycoords, marker='x')
+        plt.axes.get_xaxis().set_ticks([])
+        plt.axes.get_yaxis().set_ticks([])
        #fig.savefig('/home/upc86896/Documents/image_volume_w_markers{0}.tiff'.format(i),
         #    bbox_inches='tight', pad_inches=0)
-    #    pylab.show()
+        pylab.show()
 
 def test():
     
@@ -310,7 +276,6 @@ def test():
 
     # Set the GXPARM path
     gxparm_path = '../data/GXPARM.XDS'
-    integrate_path = '../data/INTEGRATE.HKL'
     
     # Set the HDF file path
     hdf_path = '../data/ximg2700_reflection_profiles.hdf5'
@@ -326,8 +291,7 @@ def test():
     #  - compute the positions on the reflections on the detector
     #  - select a 3D volume from the image around each reflection (in cbf file)
     #  - write these reflection profiles to a hdf5 file
-    extract_and_save_reflections(cbf_path, gxparm_path, integrate_path, 
-        hdf_path, bbox, dmin)
+    extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin)
 
 if __name__ == '__main__':
     test()

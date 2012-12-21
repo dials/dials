@@ -46,7 +46,11 @@ scratch/jmp/cctbx_exercises/src/xdsio.pyc -text
 scratch/jmp/extract_reflection_profiles/beam.py -text
 scratch/jmp/extract_reflection_profiles/detector.py -text
 scratch/jmp/extract_reflection_profiles/extract_reflection_profiles.py -text
+scratch/jmp/extract_reflection_profiles/generate_spot_positions.py -text
 scratch/jmp/extract_reflection_profiles/goniometer.py -text
+scratch/jmp/extract_reflection_profiles/index_generator.py -text
+scratch/jmp/extract_reflection_profiles/lattice_point.py -text
+scratch/jmp/extract_reflection_profiles/perform_xds_transform.py -text
 scratch/jmp/extract_reflection_profiles/pycbf_ext.py -text
 scratch/jmp/extract_reflection_profiles/reflection/__init__.py -text
 scratch/jmp/extract_reflection_profiles/reflection/coordinate_system.py -text

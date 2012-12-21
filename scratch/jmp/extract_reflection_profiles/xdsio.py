@@ -148,6 +148,8 @@ class IntegrateFile:
         self.unit_cell_a_axis  = self._header['UNIT_CELL_A-AXIS']
         self.unit_cell_b_axis  = self._header['UNIT_CELL_B-AXIS']
         self.unit_cell_c_axis  = self._header['UNIT_CELL_C-AXIS']
+        self.sigma_divergence  = self._header['BEAM_DIVERGENCE_E.S.D.']
+        self.sigma_mosaicity   = self._header['REFLECTING_RANGE_E.S.D.']
         self._header = None
 
 

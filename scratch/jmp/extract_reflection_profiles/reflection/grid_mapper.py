@@ -1,4 +1,5 @@
 
+
 class GridMapper:
     """A class to map reflections from the detector to their own specific 
     coordinate system grid.
@@ -188,11 +189,11 @@ class GridMapper:
         
         """
         from numpy import zeros, float32
-        from scipy.special import erf
-        from math import sqrt
+        from math import sqrt, erf
 
         # Create an array to contain the intensity fractions
-        fv3j = zeros(shape=(9,3), dtype=float32)
+        fv3j = zeros(shape=(self.grid.grid_size[2], 2 * self.dp[2] + 1), 
+            dtype=float32)
 
         # Get some parameters        
         delta3 = self.grid.step_size[2]
@@ -342,27 +343,35 @@ class GridMapper:
         # Get the detector coordinate system
         dcs = self.detector.coordinate_system
 
+        if (not (self.dp[0] <= x < self.detector.image.shape[2] - self.dp[0] - 1) or
+            not (self.dp[1] <= y < self.detector.image.shape[1] - self.dp[1] - 1) or
+            not (self.dp[2] <= z - self.gonio.z0 < self.detector.image.shape[0] - self.dp[2] - 1)):
+            return         
+                
         # Calculate the range of detector indices and frames to look at
         x0 = int(x) - self.dp[0]
         x1 = int(x) + self.dp[0]
         y0 = int(y) - self.dp[1]
         y1 = int(y) + self.dp[1]
-        z0 = int(z) - self.dp[2]
-        z1 = int(z) + self.dp[2]
+        z0 = int(z) - int(self.gonio.z0) - self.dp[2]
+        z1 = int(z) - int(self.gonio.z0) + self.dp[2]
 
         # Get the reflection image
-        reflection_image = self.detector.image[z0-1:z1-1+1,y0:y1+1,x0:x1+1]
+        reflection_image = self.detector.image[z0:z1+1,y0:y1+1,x0:x1+1]
         
         # Calculate the reflection mask
-        reflection_mask = self.calculate_mask_array(rmask, rcs, x, y, z)
+        #reflection_mask = self.calculate_mask_array(rmask, rcs, x, y, z)
  
         # Calculate the background intensity and subtract from image. Ensure
         # that counts are not less than zero
-        background = self.calculated_background_intensity(
-            reflection_image[where(reflection_mask != 0)])
+        background = self.calculated_background_intensity(reflection_image)
+
+        #background = self.calculated_background_intensity(
+        #    reflection_image[where(reflection_mask != 0)])
         reflection_image -= background
         reflection_image[where(reflection_image < 0.0)] = 0.0
-        reflection_image[where(reflection_mask == 0)] = 0.0
+        #reflection_image[where(reflection_mask == 0)] = 0.0
+
 
         # Calculate the fraction of counts constributed by each data frame
         # around the reflection to each v3 grid point in the reflection grid        

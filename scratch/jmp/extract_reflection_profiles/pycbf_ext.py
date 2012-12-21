@@ -15,8 +15,8 @@ def print_info(cbf_path):
     - The type of each element in each row/column element.
     
     :param cbf_path: The path to the cbf file
-    """
 
+    """
     # Read the CBF file    
     cbf_handle = pycbf.cbf_handle_struct()
     cbf_handle.read_file(cbf_path, pycbf.MSG_DIGEST)
@@ -148,7 +148,7 @@ def get_image(cbf_handle, category='array_data', column='data', row=0,
     return image
 
 
-def get_image_volume(cbf_paths, width, height):
+def get_image_volume(cbf_paths):
     """Load the image volume from the list of cbf_paths. The list of paths is 
     assumed to be is order from 1->n.
     
@@ -158,16 +158,40 @@ def get_image_volume(cbf_paths, width, height):
     :returns: The 3D volume array
     
     """
+    # Read the first image and get the size
+    cbf_handle = pycbf.cbf_handle_struct()
+    cbf_handle.read_file(cbf_paths[0], pycbf.MSG_DIGEST)
+    image = get_image(cbf_handle)
+    height, width = image.shape
+
     # Initialise the image volume
     num_slices = len(cbf_paths)
     volume = numpy.zeros(shape=(num_slices, height, width), dtype=numpy.int32)
+    volume[0,:,:] = image
 
     # For each CBF file, read the image and put into the image volume
-    for i, filename in enumerate(cbf_paths):
+    for i, filename in enumerate(cbf_paths[1:]):
         cbf_handle = pycbf.cbf_handle_struct()
         cbf_handle.read_file(filename, pycbf.MSG_DIGEST)
-        volume[i,:,:] = get_image(cbf_handle)
+        volume[i+1,:,:] = get_image(cbf_handle)
     
     # Return the image volume
     return volume
+
+def search_for_image_volume(search_path):
+    """Load the CBF image volume
+        
+    Args:
+        search_path: The CBF file search path
+    
+    Returns:
+        The image volume
+    
+    """
+    from glob import glob
+        
+    # Load the CBF image volume
+    cbf_path = glob(search_path)
+    cbf_path.sort()
+    return get_image_volume(cbf_path)
 
