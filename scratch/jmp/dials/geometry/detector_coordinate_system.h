@@ -7,73 +7,99 @@
 
 namespace dials { namespace geometry {
 
+/** Class representing the detector coordinate system */
 class detector_coordinate_system {
 
 public:
 
+    /** Default constructor */
     detector_coordinate_system() {}
 
-    detector_coordinate_system(scitbx::vec3 <double> axis_x,
-                               scitbx::vec3 <double> axis_y)
-        : _axis_x(axis_x),
-          _axis_y(axis_y),
-          _normal(axis_x.cross(axis_y)) {}
-    
-    detector_coordinate_system(scitbx::vec3 <double> axis_x,
-                               scitbx::vec3 <double> axis_y,
+    /**
+     * Initialise coordinate system by x and y axis
+     * @param x_axis The x axis
+     * @param y_axis The y axis
+     */
+    detector_coordinate_system(scitbx::vec3 <double> x_axis,
+                               scitbx::vec3 <double> y_axis)
+        : _x_axis(x_axis),
+          _y_axis(y_axis),
+          _normal(x_axis.cross(y_axis).normalize()) {}
+
+    /**
+     * Initialise coordinate system by x and y axis and normal
+     * @param x_axis The x axis
+     * @param y_axis The y axis
+     * @param normal The detector normal
+     */    
+    detector_coordinate_system(scitbx::vec3 <double> x_axis,
+                               scitbx::vec3 <double> y_axis,
                                scitbx::vec3 <double> normal)
-        : _axis_x(axis_x),
-          _axis_y(axis_y),
+        : _x_axis(x_axis),
+          _y_axis(y_axis),
           _normal(normal) {}
 
 public:
 
-    scitbx::vec3 <double> get_axis_x() {
-        return _axis_x;
+    /** Get the x axis vector */
+    scitbx::vec3 <double> get_x_axis() {
+        return _x_axis;
     }
     
-    scitbx::vec3 <double> get_axis_y() {
-        return _axis_y;
+    /** Get the y axis vector */
+    scitbx::vec3 <double> get_y_axis() {
+        return _y_axis;
     }
     
+    /** Get the normal vector */
     scitbx::vec3 <double> get_normal() {
         return _normal;
     }
     
-    void set_axis_x(scitbx::vec3 <double> axis_x) {
-        _axis_x = axis_x;
+    /** Set the x axis vector */
+    void set_x_axis(scitbx::vec3 <double> x_axis) {
+        _x_axis = x_axis;
     }
     
-    void set_axis_y(scitbx::vec3 <double> axis_y) {
-        _axis_y = axis_y;
+    /** Set the y axis vector */
+    void set_y_axis(scitbx::vec3 <double> y_axis) {
+        _y_axis = y_axis;
     }
     
+    /** Set the normal vector */
     void set_normal(scitbx::vec3 <double> normal) {
         _normal = normal;
     }
 
-public:
-
-    static detector_coordinate_system in_pixel_units(
-            detector_coordinate_system cs, scitbx::vec2 <double> pixel_size) {
+    /**
+     * Convert the detector coordinate system to pixel units
+     * @param pixel_size The size of each pixel in mm
+     * @returns The coordinate system with x, y axis scaled in pixel units
+     */
+    detector_coordinate_system in_pixel_units(scitbx::vec2 <double> pixel_size) 
+    {
         return detector_coordinate_system(
-            cs.get_axis_x().normalize() / pixel_size[0],
-            cs.get_axis_y().normalize() / pixel_size[1],
-            cs.get_normal());
+            this->get_x_axis().normalize() / pixel_size[0],
+            this->get_y_axis().normalize() / pixel_size[1],
+            this->get_normal());
     }
-    
-    static detector_coordinate_system in_si_units(
-            detector_coordinate_system cs, scitbx::vec2 <double> pixel_size) {
+
+    /**
+     * Convert the detector coordinate system to si units
+     * @param pixel_size The size of each pixel in mm
+     * @returns The coordinate system with x, y axis scaled in mm
+     */
+    detector_coordinate_system in_si_units(scitbx::vec2 <double> pixel_size) {
         return detector_coordinate_system(
-            cs.get_axis_x().normalize() * pixel_size[0],
-            cs.get_axis_y().normalize() * pixel_size[1],
-            cs.get_normal());
+            this->get_x_axis().normalize() * pixel_size[0],
+            this->get_y_axis().normalize() * pixel_size[1],
+            this->get_normal());
     }
 
 private:
 
-    scitbx::vec3 <double> _axis_x;
-    scitbx::vec3 <double> _axis_y;
+    scitbx::vec3 <double> _x_axis;
+    scitbx::vec3 <double> _y_axis;
     scitbx::vec3 <double> _normal;
 };
 

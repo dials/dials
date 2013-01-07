@@ -4,19 +4,23 @@
 #include "../reciprocal_lattice_coordinate_system.h"
 
 using namespace boost::python;
-using namespace dials::geometry;
 
-namespace dials { namespace geometry { namespace boost_python {
+namespace dials { namespace geometry { 
+
+namespace boost_python {
 
 void export_reciprocal_lattice_coordinate_system()
 {
-    class_<reciprocal_lattice_coordinate_system>("reciprocal_lattice_coordinate_system")
+    class_ <reciprocal_lattice_coordinate_system> (
+            "reciprocal_lattice_coordinate_system")
         .def(init <scitbx::vec3 <double>,
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double> > ((
-            arg("b1_star"), arg("b2_star"), arg("b3_star"))))
+                arg("b1_star"), 
+                arg("b2_star"), 
+                arg("b3_star"))))
         .def(init <scitbx::mat3 <double> > ((
-            arg("ub"))))
+                arg("ub"))))
         .add_property("b1_star",  
             &reciprocal_lattice_coordinate_system::get_b1_star,
             &reciprocal_lattice_coordinate_system::set_b1_star)

@@ -4,7 +4,9 @@
 
 using namespace boost::python;
 
-namespace dials { namespace geometry { namespace boost_python {
+namespace dials { namespace geometry { 
+
+namespace boost_python {
 
 void export_detector_coordinate_system();
 void export_reciprocal_lattice_coordinate_system();
@@ -15,4 +17,6 @@ BOOST_PYTHON_MODULE(geometry_ext)
     export_reciprocal_lattice_coordinate_system();
 }
 
-}}}
+}
+
+}}

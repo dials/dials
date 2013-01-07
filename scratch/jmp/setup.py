@@ -39,19 +39,32 @@ def setup_package():
                 'dials/equipment/boost_python/detector.cc',
                 'dials/equipment/boost_python/goniometer.cc',
                 'dials/equipment/boost_python/equipment_ext.cc'],
+                depends = [
+                    'dials/equipment/beam.h',
+                    'dials/equipment/detector.h',
+                    'dials/equipment/goniometer.h'],
                 include_dirs=CCTBX_INCLUDE_DIRS,
                 libraries=['boost_python']),
             Extension('geometry_ext', [
                 'dials/geometry/boost_python/detector_coordinate_system.cc',
                 'dials/geometry/boost_python/reciprocal_lattice_coordinate_system.cc',
                 'dials/geometry/boost_python/geometry_ext.cc'],
+                depends = [
+                    'dials/geometry/detector_coordinate_system.h',
+                    'dials/geometry/reciprocal_lattice_coordinate_system.h'],
                 include_dirs=CCTBX_INCLUDE_DIRS,
                 libraries=['boost_python']),
             Extension('transform_ext', [
+                'dials/geometry/transform/boost_python/from_detector_to_beam_vector.cc',
                 'dials/geometry/transform/boost_python/from_beam_vector_to_detector.cc',
                 'dials/geometry/transform/boost_python/from_hkl_to_beam_vector.cc',
                 'dials/geometry/transform/boost_python/from_hkl_to_detector.cc',
                 'dials/geometry/transform/boost_python/transform_ext.cc'],
+                depends = [
+                    'dials/geometry/transform/from_detector_to_beam_vector.h',
+                    'dials/geometry/transform/from_beam_vector_to_detector.h',
+                    'dials/geometry/transform/from_hkl_to_beam_vector.h',
+                    'dials/geometry/transform/from_hkl_to_detector.h'],
                 include_dirs=CCTBX_INCLUDE_DIRS,
                 libraries=['boost_python'])]
      )

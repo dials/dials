@@ -4,28 +4,41 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include "../reciprocal_lattice_coordinate_system.h"
 
 namespace dials { namespace geometry { namespace transform {
 
+/** Class to represent geometry transform from miller indices to beam vector */
 class from_hkl_to_beam_vector {
 
 public:
 
+    /** Default constructor */
     from_hkl_to_beam_vector() {}
 
-    from_hkl_to_beam_vector(scitbx::vec3 <double> b1_star,
-                            scitbx::vec3 <double> b2_star,
-                            scitbx::vec3 <double> b3_star,
+    /** 
+     * Initialise using the reciprocal lattice coordinate system 
+     * @param rlcs The reciprocal lattice coordinate system class
+     * @param s0 The incident beam vector
+     * @param m2 The rotation axis
+     */
+    from_hkl_to_beam_vector(reciprocal_lattice_coordinate_system rlcs,
                             scitbx::vec3 <double> s0,
                             scitbx::vec3 <double> m2) 
-        : _b1_star(b1_star),
-          _b2_star(b2_star),
-          _b3_star(b3_star),
+        : _b1_star(rlcs.get_b1_star()),
+          _b2_star(rlcs.get_b2_star()),
+          _b3_star(rlcs.get_b3_star()),
           _s0(s0),
           _m2(m2.normalize()) {}
 
 public:
 
+    /**
+     * Apply the transform to a (h k l) point with a rotation
+     * @param hkl The miller indices
+     * @param phi The rotation angle
+     * @returns The diffracted beam vector
+     */
     scitbx::vec3 <double> apply(scitbx::vec3 <int> hkl, double phi) {
         return _s0 + (double(hkl[0]) * _b1_star + 
                       double(hkl[1]) * _b2_star + 

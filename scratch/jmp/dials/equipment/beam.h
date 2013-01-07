@@ -5,32 +5,43 @@
 #include <exception>
 #include <scitbx/vec3.h>
 
-namespace dials {
-namespace equipment {
+namespace dials { namespace equipment {
 
+/** The beam */
 class beam {
 
 public:
 
+    /** Default constructor */
     beam() : _wavelength(0.0) {}
-
-    beam(scitbx::vec3 <double> direction) 
-        : _wavelength(direction.length()),
-          _direction(direction) {}
     
+    /** 
+     * Initialise beam
+     * @param direction The beam direction vector
+     * @param wavelength The wavelength of the beam
+     */    
     beam(scitbx::vec3 <double> direction, double wavelength)
         : _wavelength(wavelength),
-          _direction(direction) {  
-        _direction.normalize();
-        _direction *= _wavelength;
-    }
+          _direction(direction) {}
     
+    /** Get the beam direction */
     scitbx::vec3 <double> get_direction() {
         return _direction;
     }
     
+    /** Get the beam wavelength */
     double get_wavelength() {
         return _wavelength;
+    }
+    
+    /** Set the beam direction */
+    void set_direction(scitbx::vec3 <double> direction) {
+        _direction = direction;
+    }
+    
+    /** Set the beam wavelength */
+    void set_wavelength(double wavelength) {
+        _wavelength = wavelength;
     }
       
 private:
@@ -39,7 +50,6 @@ private:
     scitbx::vec3 <double> _direction;
 };
 
-}
-}
+}}
 
 #endif // DIALS_EQUIPMENT_BEAM_H

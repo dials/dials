@@ -4,7 +4,9 @@
 
 using namespace boost::python;
 
-namespace dials { namespace equipment { namespace boost_python {
+namespace dials { namespace equipment { 
+
+namespace boost_python {
 
 void export_beam();
 void export_detector();
@@ -17,4 +19,6 @@ BOOST_PYTHON_MODULE(equipment_ext)
     export_goniometer();
 }
 
-}}}
+}}
+
+}

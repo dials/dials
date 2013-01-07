@@ -7,12 +7,19 @@
 
 namespace dials { namespace geometry { namespace transform {
 
+/** A transform from miller indices to detector coordinates */
 class from_hkl_to_detector {
 
 public:
 
+    /** Default constructor */
     from_hkl_to_detector() {}
 
+    /**
+     * Initialise the transform using component transform objects.
+     * @param hkl_to_s1 The hkl to beam vector transform
+     * @param s1_to_xy The beam vector to detector transform
+     */
     from_hkl_to_detector(from_hkl_to_beam_vector hkl_to_s1,
                          from_beam_vector_to_detector s1_to_xy)
         : _hkl_to_s1(hkl_to_s1),
@@ -20,6 +27,12 @@ public:
 
 public:
 
+    /**
+     * Apply the transform to the miller indices and rotation angle.
+     * @param hkl The miller indices
+     * @param phi The rotation angle
+     * @returns The detector coordinates
+     */
     scitbx::vec2 <double> apply(scitbx::vec3 <int> hkl, double phi) {
         return _s1_to_xy.apply(_hkl_to_s1.apply(hkl, phi));
     }
