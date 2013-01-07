@@ -1,22 +1,25 @@
+#!/usr/bin/env python
+
 """This module is a test exercise using CCTBX to do the spot prediction in the
 XDS method and to save the resulting spot profiles to a HDF file."""
 
 from cctbx.sgtbx import space_group, space_group_symbols
 from scitbx import matrix
 from cctbx import uctbx
-from lattice_point import LatticePoint
-from reflection.reflection import Reflection
-from index_generator import IndexGenerator
-import pycbf_ext
+from dials.old.lattice_point import LatticePoint
+from dials.old.reflection.reflection import Reflection
+from dials.old.index_generator import IndexGenerator
+from dials.io import pycbf_extra
 import h5py
-import xdsio
+from dials.io import xdsio
 import numpy
-from beam import Beam
-from goniometer import Goniometer
-from detector import Detector
+from dials.equipment import beam, goniometer, detector
+from dials.geometry.transform import from_hkl_to_beam_vector
+from dials.geometry.transform import from_hkl_to_detector
+from dials.geometry.transform import from_beam_vector_to_detector
 
 def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group, 
-                                         dmin, wavelength):
+                                         dmin, wavelength, m2):
     """Predict the reflections.
     
     Calculate the indices of all predicted reflections based on the unit cell 
@@ -42,7 +45,7 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
    
     # Construct an object to calculate the rotation of a reflection about
     # the (0, 1, 0) axis.
-    ra = rotation_angles(dmin, ub_matrix, wavelength, matrix.col((1, 0, 0)))
+    ra = rotation_angles(dmin, ub_matrix, wavelength, matrix.col(m2))
     
     # Construct all the reflection objects
     indices = [LatticePoint(hkl) for hkl in index_generator.indices]
@@ -163,93 +166,75 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     # Create the GXPARM file and read the contents
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(gxparm_path)
+    beam = gxparm_handle.get_beam() 
+    gonio = gxparm_handle.get_goniometer()
+    detector = gxparm_handle.get_detector()
+    rlcs = gxparm_handle.get_reciprocal_lattice_coordinate_system()
+    dcs = gxparm_handle.get_detector_coordinate_system()
     
-    # Read the wavelength, pixel size, detector origin and distance
-    wavelength = gxparm_handle.wavelength
-    pixel_size = gxparm_handle.pixel_size
-    detector_size = gxparm_handle.detector_size
-    dx0, dy0 = gxparm_handle.detector_origin
-    f = gxparm_handle.detector_distance
-
     # Read the space group symmetry and unit cell parameters
     symmetry = gxparm_handle.space_group
     unit_cell = uctbx.unit_cell(parameters = gxparm_handle.unit_cell)
     cell_space_group = space_group(space_group_symbols(symmetry).hall())
-        
-    # Read the starting angle, angle delta and starting frame
-    phi0 = gxparm_handle.starting_angle
-    dphi = gxparm_handle.oscillation_range
-    z0   = gxparm_handle.starting_frame
-
-    # Read the rotation axis and beam vector
-    m2 = matrix.col(gxparm_handle.rotation_axis)
-    s0 = matrix.col(gxparm_handle.beam_vector).normalize() / wavelength 
-
-    # Read the unit cell and detector axis vectors
-    b1 = matrix.col(gxparm_handle.unit_cell_a_axis)
-    b2 = matrix.col(gxparm_handle.unit_cell_b_axis)
-    b3 = matrix.col(gxparm_handle.unit_cell_c_axis)
-    d1 = matrix.col(gxparm_handle.detector_x_axis) / pixel_size[0]
-    d2 = matrix.col(gxparm_handle.detector_y_axis) / pixel_size[1]
-    d3 = matrix.col(gxparm_handle.detector_normal)
-    
+   
     # Create the UB matrix
-    ub_matrix = matrix.sqr(b1.elems + b2.elems + b3.elems).inverse()
+    ub_matrix = rlcs.to_ub_matrix()
   
     # Load the image volume from the CBF files
-    volume = pycbf_ext.search_for_image_volume(cbf_path)
+    volume = pycbf_extra.search_for_image_volume(cbf_path)
     volume_size_z, volume_size_y, volume_size_x = volume.shape
-
-    # Create the beam, goniometer and detector objects
-    beam = Beam(s0, wavelength)
-    gonio = Goniometer(m2, s0, z0, phi0, dphi)
-    detector = Detector(volume, d1, d2, d3, f, (dx0, dy0), pixel_size)
    
     # Generate the reflections. Get all the indices at the given resolution.
     # Then using the space group symmetry, remove any indices that will be
     # systemmatically absent. Finally, calculate the intersection angles of
     # each of the reflections. The returned variable contains a list of
     # (phi, hkl) elements
-    print "Generate reflections"
+    print "Generate Reflections"
     reflections = generate_observed_reflections(ub_matrix, unit_cell, 
-        cell_space_group, dmin, wavelength)
+        cell_space_group, dmin, beam.wavelength, gonio.rotation_axis)
 
     # Calculate the minimum and maximum angles and filter the reflections to
     # leave only those whose intersection angles lie between them
-    phi_min = phi0
-    phi_max = phi0 + (volume_size_z - z0) * dphi
-        
+    phi_min = gonio.starting_angle
+    phi_max = gonio.get_angle_from_frame(volume_size_z)
+    
     reflections = select_reflections(phi_min, phi_max, reflections)
-
-    r = reflections[0]
-
+    
     # Calculate the reflection detector coordinates. Calculate the 
     # diffracted beam vector for each reflection and find the pixel 
     # coordinate where the line defined by the vector intersects the 
     # detector plane. Returns a list of (x, y) detector coordinates.
     print "Calculate detector coordinates"
-#    for r in reflections:
-#        r.calculate_detector_coordinates2(gonio, detector, ub_matrix)
+    
+    # Create the transform object
+    hkl_to_xy = from_hkl_to_detector(rlcs, beam.direction, gonio.rotation_axis,
+                                     dcs.in_pixel_units(detector.pixel_size), 
+                                     detector.origin, detector.distance)
 
-    r.calculate_detector_coordinates2(gonio, detector, ub_matrix)
-
-    print r.s1
-    print r.xyz
-
-    print 1/0
-
+    # Transform all the reflections from hkl to detector coordinates
+    from math import pi
+    for r in reflections:
+        try:
+            z = gonio.get_frame_from_angle(r.phi)
+            r.xyz = hkl_to_xy.apply(r.hkl, r.phi * pi / 180.0) + (z,)
+        except:
+            pass
+    
     # Filter the coordinates to those within the boundaries of the volume
-    print "Filter reflections"
-    reflections = [r for r in reflections if r.in_detector_volume([[0, volume_size_x],
-                                                          [0, volume_size_y],
-                                                          [z0, volume_size_z + z0]])]
+    print "Filter Reflections"
+    reflections = [r for r in reflections if r.in_detector_volume(
+                    [[0, volume_size_x], 
+                     [0, volume_size_y],
+                     [gonio.starting_angle, 
+                      volume_size_z + gonio.starting_angle]])]
+    
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
     coords = []
     for r in reflections:
         coords.append((r.xyz[0], r.xyz[1], r.xyz[2]-1))
-
-    print "Read reflections"
+    
+    #print "Read Reflections from volume"
     profiles = read_reflections_from_volume(volume, coords, bbox)
 
     # Write the reflection profiles to a HDF5 file    
@@ -262,7 +247,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     image_size_ratio = image_size[2] / float(image_size[1])
     figure_size = (6, 6 / image_size_ratio)
     for i in range(0, 1):
-        #fig = pylab.figure(figsize=figure_size, dpi=300)
+       #fig = pylab.figure(figsize=figure_size, dpi=300)
         image = volume[i,:,:]
         filtered_xy = [(x, y) for x, y, z in coords if i <= z < i+1]
         xcoords = [x for x, y in filtered_xy]

@@ -16,7 +16,19 @@ void export_from_hkl_to_detector()
         .def(init <from_hkl_to_beam_vector, 
                    from_beam_vector_to_detector > ((
                 arg("hkl_to_s1"), 
-                arg("s1_to_xy"))))          
+                arg("s1_to_xy"))))
+        .def(init <reciprocal_lattice_coordinate_system,
+                   scitbx::vec3 <double>,
+                   scitbx::vec3 <double>,
+                   detector_coordinate_system,
+                   scitbx::vec2 <double>,
+                   double> ((
+                arg("rlcs"),
+                arg("s0"),
+                arg("m2"),
+                arg("dcs"),
+                arg("origin"),
+                arg("distance"))))               
         .def("apply", 
             &from_hkl_to_detector::apply, (
                 arg("hkl"), 

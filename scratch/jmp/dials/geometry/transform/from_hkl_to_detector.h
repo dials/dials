@@ -24,6 +24,24 @@ public:
                          from_beam_vector_to_detector s1_to_xy)
         : _hkl_to_s1(hkl_to_s1),
           _s1_to_xy(s1_to_xy) {}
+     
+    /**
+     * Initialise the transform using component transform objects.
+     * @param rlcs The reciprocal lattice coordinate system class
+     * @param s0 The incident beam vector
+     * @param m2 The rotation axis
+     * @param dcs The detector coordinate system
+     * @param origin The origin of the detector coordinate system
+     * @param distance The distance from the detector to the crystal     
+     */        
+    from_hkl_to_detector(reciprocal_lattice_coordinate_system rlcs,
+                         scitbx::vec3 <double> s0,
+                         scitbx::vec3 <double> m2,
+                         detector_coordinate_system dcs,
+                         scitbx::vec2 <double> origin,
+                         double distance)
+        : _hkl_to_s1(rlcs, s0, m2),
+          _s1_to_xy(dcs, origin, distance) {}
 
 public:
 
@@ -45,4 +63,4 @@ private:
 
 }}}
 
-#endif // DIALS_GEOMETRY_TRANSFORM_FROM_HKL_TO_BEAM_VECTOR_H
+#endif // DIALS_GEOMETRY_TRANSFORM_FROM_HKL_TO_DETECTOR_H

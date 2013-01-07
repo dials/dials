@@ -29,7 +29,13 @@ void export_reciprocal_lattice_coordinate_system()
             &reciprocal_lattice_coordinate_system::set_b2_star)
         .add_property("b3_star", 
             &reciprocal_lattice_coordinate_system::get_b3_star,
-            &reciprocal_lattice_coordinate_system::set_b3_star);
-}
+            &reciprocal_lattice_coordinate_system::set_b3_star)
+        .def("from_ub_matrix",
+            &reciprocal_lattice_coordinate_system::from_ub_matrix, (
+                arg("ub")))
+        .def("to_ub_matrix",
+            &reciprocal_lattice_coordinate_system::to_ub_matrix);
+ 
+ }
 
 }}}

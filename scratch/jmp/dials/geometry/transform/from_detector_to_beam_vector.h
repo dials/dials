@@ -2,7 +2,6 @@
 #ifndef DIALS_GEOMETRY_TRANSFORM_FROM_DETECTOR_TO_BEAM_VECTOR_H
 #define DIALS_GEOMETRY_TRANSFORM_FROM_DETECTOR_TO_BEAM_VECTOR_H
 
-#include <exception>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include "../detector_coordinate_system.h"

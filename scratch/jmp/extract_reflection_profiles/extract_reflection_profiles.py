@@ -243,6 +243,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, integrate_path,
         r.calculate_detector_coordinates2(gonio, detector, ub_matrix)
 
     # Filter the coordinates to those within the boundaries of the volume
+    print "Filter reflections"
     reflections = [r for r in reflections if r.in_detector_volume([[0, volume_size_x],
                                                           [0, volume_size_y],
                                                           [z0, volume_size_z + z0]])]
@@ -309,11 +310,11 @@ def test():
     cbf_path = '/home/upc86896/Projects/data/300k/ximg2700*.cbf'
 
     # Set the GXPARM path
-    gxparm_path = '../data/GXPARM.XDS'
-    integrate_path = '../data/INTEGRATE.HKL'
+    gxparm_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/GXPARM.XDS'
+    integrate_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/INTEGRATE.HKL'
     
     # Set the HDF file path
-    hdf_path = '../data/ximg2700_reflection_profiles.hdf5'
+    hdf_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/ximg2700_reflection_profiles.hdf5'
     
     # Set the size of the reflection profile box
     bbox = (5, 5, 5)

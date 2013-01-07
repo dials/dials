@@ -33,9 +33,9 @@ public:
      * @param ub The UB matrix
      */
     reciprocal_lattice_coordinate_system(scitbx::mat3 <double> ub)
-        : _b1_star(ub[0], ub[1], ub[2]),
-          _b2_star(ub[3], ub[4], ub[5]),
-          _b3_star(ub[6], ub[7], ub[8]) {}
+        : _b1_star(ub[0], ub[3], ub[6]),
+          _b2_star(ub[1], ub[4], ub[7]),
+          _b3_star(ub[2], ub[5], ub[8]) {}
 
 public:
 
@@ -67,6 +67,28 @@ public:
     /** Set the b3* axis vector */
     void set_b3_star(scitbx::vec3 <double> b3_star) {
         _b3_star = b3_star;
+    }
+    
+    /**
+     * Read the coordinate system from the UB matrix
+     * @param ub The ub matrix
+     */
+    void from_ub_matrix(scitbx::mat3 <double> ub) {
+        _b1_star = scitbx::vec3 <double> (ub[0], ub[3], ub[6]);
+        _b2_star = scitbx::vec3 <double> (ub[1], ub[4], ub[7]);
+        _b3_star = scitbx::vec3 <double> (ub[2], ub[5], ub[8]);
+    }
+    
+    /**
+     * Convert the coordinate system to a UB matrix
+     * @returns The UB matrix
+     */
+    scitbx::mat3 <double> to_ub_matrix() {
+        return scitbx::mat3 <double> (
+            _b1_star[0], _b2_star[0], _b3_star[0],
+            _b1_star[1], _b2_star[1], _b3_star[1],
+            _b1_star[2], _b2_star[2], _b3_star[2]
+        );
     }
 
 private:

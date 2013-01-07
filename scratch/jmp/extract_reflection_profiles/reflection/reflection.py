@@ -39,10 +39,13 @@ class Reflection:
             True/False
         
         """
-        return (volume[0][0] <= self.xyz[0] < volume[0][1] and
-                volume[1][0] <= self.xyz[1] < volume[1][1] and
-                volume[2][0] <= self.xyz[2] < volume[2][1])
-
+        if (self.xyz):
+            return (volume[0][0] <= self.xyz[0] < volume[0][1] and
+                    volume[1][0] <= self.xyz[1] < volume[1][1] and
+                    volume[2][0] <= self.xyz[2] < volume[2][1])
+        else:
+            return False
+            
     def calculate_detector_coordinates(self, m2, s0, x0, y0, f, d1, d2, d3, 
                                        phi0, dphi, z0, ub):
         """Calculate the pixel coordinates of the reflection.
@@ -75,7 +78,7 @@ class Reflection:
         rub = m2.axis_and_angle_as_r3_rotation_matrix(self.phi, deg=True) * ub
         p_star = rub * matrix.col(self.hkl)
         self.s1 = s0 + p_star
-    
+
         # Calculate the point (in pixels) at which the diffracted beam vector 
         # intersects the detector plane. (only when s1.d3 > 0)
         s1_dot_d3 = self.s1.dot(d3)
