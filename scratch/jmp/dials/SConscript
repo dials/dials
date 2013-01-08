@@ -1,0 +1,6 @@
+
+Import('env')
+
+env.SConscript('util/SConscript', exports={ 'env' : env })
+env.SConscript('equipment/SConscript', exports={ 'env' : env })
+env.SConscript('geometry/SConscript', exports={ 'env' : env })

@@ -21,9 +21,9 @@ void export_xds_coordinate_system()
                 arg("s1"), 
                 arg("m2"),
                 arg("phi"))))
-        .add_property("e1",   &xds_coordinate_system::get_e1)
-        .add_property("e2",   &xds_coordinate_system::get_e2)
-        .add_property("e3",   &xds_coordinate_system::get_e3)
+        .add_property("e1",   &xds_coordinate_system::get_e1_axis)
+        .add_property("e2",   &xds_coordinate_system::get_e2_axis)
+        .add_property("e3",   &xds_coordinate_system::get_e3_axis)
         .add_property("zeta", &xds_coordinate_system::get_zeta);
 }
 

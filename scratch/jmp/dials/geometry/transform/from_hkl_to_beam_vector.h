@@ -25,9 +25,9 @@ public:
     from_hkl_to_beam_vector(reciprocal_lattice_coordinate_system rlcs,
                             scitbx::vec3 <double> s0,
                             scitbx::vec3 <double> m2) 
-        : _b1_star(rlcs.get_b1_star()),
-          _b2_star(rlcs.get_b2_star()),
-          _b3_star(rlcs.get_b3_star()),
+        : _b1_star(rlcs.get_b1_star_axis()),
+          _b2_star(rlcs.get_b2_star_axis()),
+          _b3_star(rlcs.get_b3_star_axis()),
           _s0(s0),
           _m2(m2.normalize()) {}
 

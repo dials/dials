@@ -1,3 +1,3 @@
 
 from scitbx.array_family import flex
-from equipment_ext import beam, detector, goniometer
+from equipment_ext import *

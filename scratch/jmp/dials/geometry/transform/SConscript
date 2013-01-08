@@ -1,0 +1,13 @@
+
+Import('env')
+
+sources = [
+    'boost_python/from_beam_vector_to_detector.cc',
+    'boost_python/from_beam_vector_to_xds.cc',
+    'boost_python/from_detector_to_beam_vector.cc',
+    'boost_python/from_detector_to_xds.cc',
+    'boost_python/from_hkl_to_beam_vector.cc',
+    'boost_python/from_hkl_to_detector.cc',
+    'boost_python/transform_ext.cc']
+
+env.SharedLibrary(target='transform_ext', source=sources)

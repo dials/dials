@@ -22,14 +22,14 @@ void export_reciprocal_lattice_coordinate_system()
         .def(init <scitbx::mat3 <double> > ((
                 arg("ub"))))
         .add_property("b1_star",  
-            &reciprocal_lattice_coordinate_system::get_b1_star,
-            &reciprocal_lattice_coordinate_system::set_b1_star)
+            &reciprocal_lattice_coordinate_system::get_b1_star_axis,
+            &reciprocal_lattice_coordinate_system::set_b1_star_axis)
         .add_property("b2_star", 
-            &reciprocal_lattice_coordinate_system::get_b2_star,
-            &reciprocal_lattice_coordinate_system::set_b2_star)
+            &reciprocal_lattice_coordinate_system::get_b2_star_axis,
+            &reciprocal_lattice_coordinate_system::set_b2_star_axis)
         .add_property("b3_star", 
-            &reciprocal_lattice_coordinate_system::get_b3_star,
-            &reciprocal_lattice_coordinate_system::set_b3_star)
+            &reciprocal_lattice_coordinate_system::get_b3_star_axis,
+            &reciprocal_lattice_coordinate_system::set_b3_star_axis)
         .def("from_ub_matrix",
             &reciprocal_lattice_coordinate_system::from_ub_matrix, (
                 arg("ub")))

@@ -29,18 +29,18 @@ public:
 
 public:
 
-    /** Get the b1* axis vector */
-    scitbx::vec3 <double> get_e1() {
+    /** Get the e1 axis vector */
+    scitbx::vec3 <double> get_e1_axis() {
         return _e1;
     }
     
-    /** Get the b2* axis vector */
-    scitbx::vec3 <double> get_e2() {
+    /** Get the e2 axis vector */
+    scitbx::vec3 <double> get_e2_axis() {
         return _e2;
     }
     
-    /** Get the b3* axis vector */
-    scitbx::vec3 <double> get_e3() {
+    /** Get the e3 axis vector */
+    scitbx::vec3 <double> get_e3_axis() {
         return _e3;
     }
     

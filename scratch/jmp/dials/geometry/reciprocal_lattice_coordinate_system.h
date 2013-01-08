@@ -40,32 +40,32 @@ public:
 public:
 
     /** Get the b1* axis vector */
-    scitbx::vec3 <double> get_b1_star() {
+    scitbx::vec3 <double> get_b1_star_axis() {
         return _b1_star;
     }
     
     /** Get the b2* axis vector */
-    scitbx::vec3 <double> get_b2_star() {
+    scitbx::vec3 <double> get_b2_star_axis() {
         return _b2_star;
     }
     
     /** Get the b3* axis vector */
-    scitbx::vec3 <double> get_b3_star() {
+    scitbx::vec3 <double> get_b3_star_axis() {
         return _b3_star;
     }
     
     /** Set the b1* axis vector */
-    void set_b1_star(scitbx::vec3 <double> b1_star) {
+    void set_b1_star_axis(scitbx::vec3 <double> b1_star) {
         _b1_star = b1_star;
     }
     
     /** Set the b2* axis vector */
-    void set_b2_star(scitbx::vec3 <double> b2_star) {
+    void set_b2_star_axis(scitbx::vec3 <double> b2_star) {
         _b2_star = b2_star;
     }
     
     /** Set the b3* axis vector */
-    void set_b3_star(scitbx::vec3 <double> b3_star) {
+    void set_b3_star_axis(scitbx::vec3 <double> b3_star) {
         _b3_star = b3_star;
     }
     

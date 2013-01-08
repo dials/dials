@@ -1,25 +1,65 @@
 #!/usr/bin/env python
 
-def find_cctbx_include_dirs():
-    import os
+import subprocess
+
+from distutils.errors import CompileError
+
+from distutils.command.build_ext import build_ext as BuildExtCommand
+from distutils.command.clean import clean as CleanCommand
+from distutils.cmd import Command
+from distutils.util import get_platform
+
+class SconsBuildExt(Command):
+    description = BuildExtCommand.description
+
+    user_options = [
+        ('build-lib=', 'b',
+         "directory for compiled extension modules"),
+        ('build-temp=', 't',
+         "directory for temporary files (build by-products)"),
+        ('plat-name=', 'p',
+         "platform name to cross-compile for, if supported "
+         "(default: %s)" % get_platform())]
+
+    def initialize_options(self):
+        self.build_lib = None
+        self.plat_name = None
+        self.build_temp = None        
     
-    try:
-        build = os.environ['LIBTBX_BUILD']
-        source = os.environ['LIBTBX_SOURCE']
-    except:
-        print ('Can\'t find CCTBX source and build directories\n'
-               'Try setting the following environment variables\n'
-               ' - LIBTBX_BUILD\n'
-               ' - LIBTBX_SOURCE\n')
-        raise
-        
-        
-    return [build + "/include", source + "/cctbx_project"]
+    def finalize_options(self):
+        from distutils import sysconfig
+        self.set_undefined_options('build',
+                                  ('build_lib', 'build_lib'),
+                                  ('build_temp', 'build_temp'),
+                                  ('plat_name', 'plat_name'))
+    
+    def get_source_files(self): 
+        return []
+
+    def run(self):
+        try:
+            subprocess.check_call(['libtbx.scons', 
+                                   '--build-base={0}'.format(self.build_lib)])
+            #subprocess.check_call(['libtbx.scons',
+            #                       '--install',
+            #                       '--prefix={0}'.format(self.build_lib)])
+        except subprocess.CalledProcessError:
+            raise CompileError("Error while building Python Extensions")
+        self.extensions=[]
+
+class SconsClean(CleanCommand):
+    def run(self):
+        CleanCommand.run(self)
+        try:
+             subprocess.check_call(['libtbx.scons', 
+                                    '--build-base={0}'.format(self.build_temp), 
+                                    '--remove'])
+        except subprocess.CalledProcessError:
+            raise CompileError("Error while cleaning Python Extensions")
+
 
 def setup_package():
     from distutils.core import setup, Extension
-
-    CCTBX_INCLUDE_DIRS = find_cctbx_include_dirs()
 
     setup(name='dials',
           version='0.1.0',
@@ -34,54 +74,9 @@ def setup_package():
                     'dials.geometry.transform'],
           
           scripts=['dials/bin/generate_spot_positions.py'],
-               
-          ext_modules=[
-            Extension('util_ext', [
-                'dials/util/boost_python/util_ext.cc'],
-                include_dirs=CCTBX_INCLUDE_DIRS,
-                libraries=['boost_python']),
-            
-            Extension('equipment_ext', [
-                'dials/equipment/boost_python/beam.cc',
-                'dials/equipment/boost_python/detector.cc',
-                'dials/equipment/boost_python/goniometer.cc',
-                'dials/equipment/boost_python/equipment_ext.cc'],
-                depends = [
-                    'dials/equipment/beam.h',
-                    'dials/equipment/detector.h',
-                    'dials/equipment/goniometer.h'],
-                include_dirs=CCTBX_INCLUDE_DIRS,
-                libraries=['boost_python']),
-            
-            Extension('geometry_ext', [
-                'dials/geometry/boost_python/detector_coordinate_system.cc',
-                'dials/geometry/boost_python/reciprocal_lattice_coordinate_system.cc',
-                'dials/geometry/boost_python/xds_coordinate_system.cc',
-                'dials/geometry/boost_python/geometry_ext.cc'],
-                depends = [
-                    'dials/geometry/detector_coordinate_system.h',
-                    'dials/geometry/reciprocal_lattice_coordinate_system.h'
-                    'dials/geometry/xds_coordinate_system.h'],
-                include_dirs=CCTBX_INCLUDE_DIRS,
-                libraries=['boost_python']),
-            
-            Extension('transform_ext', [
-                'dials/geometry/transform/boost_python/from_detector_to_beam_vector.cc',
-                'dials/geometry/transform/boost_python/from_beam_vector_to_detector.cc',
-                'dials/geometry/transform/boost_python/from_hkl_to_beam_vector.cc',
-                'dials/geometry/transform/boost_python/from_hkl_to_detector.cc',
-                'dials/geometry/transform/boost_python/from_beam_vector_to_xds.cc',
-                'dials/geometry/transform/boost_python/from_detector_to_xds.cc',
-                'dials/geometry/transform/boost_python/transform_ext.cc'],
-                depends = [
-                    'dials/geometry/transform/from_detector_to_beam_vector.h',
-                    'dials/geometry/transform/from_beam_vector_to_detector.h',
-                    'dials/geometry/transform/from_hkl_to_beam_vector.h',
-                    'dials/geometry/transform/from_hkl_to_detector.h',
-                    'dials/geometry/transform/from_beam_vector_to_xds.h',
-                    'dials/geometry/transform/from_detector_to_xds'],
-                include_dirs=CCTBX_INCLUDE_DIRS,
-                libraries=['boost_python'])]
+          
+          ext_modules=['dials'],
+          cmdclass = { 'build_ext' : SconsBuildExt, 'clean': SconsClean }
      )
 
 if __name__ == '__main__':

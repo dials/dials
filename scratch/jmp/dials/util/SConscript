@@ -1,0 +1,6 @@
+
+Import('env')
+
+sources = ['boost_python/util_ext.cc']
+
+env.SharedLibrary(target='util_ext', source=sources)

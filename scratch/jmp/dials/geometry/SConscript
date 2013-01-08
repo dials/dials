@@ -1,0 +1,12 @@
+
+Import('env')
+
+sources = [
+    'boost_python/detector_coordinate_system.cc',
+    'boost_python/reciprocal_lattice_coordinate_system.cc',
+    'boost_python/xds_coordinate_system.cc',
+    'boost_python/geometry_ext.cc']
+
+env.SharedLibrary(target='geometry_ext', source=sources)
+    
+env.SConscript('transform/SConscript', exports={ 'env' : env })

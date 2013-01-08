@@ -33,8 +33,8 @@ public:
     from_beam_vector_to_xds(xds_coordinate_system xcs,
                             scitbx::vec3 <double> s1,
                             double phi)
-        : _scaled_e1(xcs.get_e1() * r2d / s1.length()),
-          _scaled_e2(xcs.get_e2() * r2d / s1.length()),
+        : _scaled_e1(xcs.get_e1_axis() * r2d / s1.length()),
+          _scaled_e2(xcs.get_e2_axis() * r2d / s1.length()),
           _s1(s1),
           _phi(phi),
           _zeta(xcs.get_zeta()) {}

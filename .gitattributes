@@ -10,6 +10,7 @@ doc/developer/cctbx_introduction_2/cctbx_introduction_2.py -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.tex -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
+scratch/jmp/SConstruct -text
 scratch/jmp/cctbx_exercises/.project -text
 scratch/jmp/cctbx_exercises/.pydevproject -text
 scratch/jmp/cctbx_exercises/data/GXPARM.XDS -text
@@ -43,8 +44,10 @@ scratch/jmp/cctbx_exercises/src/reflection/test/test_reflection_grid.py -text
 scratch/jmp/cctbx_exercises/src/test.py -text
 scratch/jmp/cctbx_exercises/src/xdsio.py -text
 scratch/jmp/cctbx_exercises/src/xdsio.pyc -text
+scratch/jmp/dials/SConscript -text
 scratch/jmp/dials/__init__.py -text
 scratch/jmp/dials/bin/generate_spot_positions.py -text
+scratch/jmp/dials/equipment/SConscript -text
 scratch/jmp/dials/equipment/__init__.py -text
 scratch/jmp/dials/equipment/beam.h -text
 scratch/jmp/dials/equipment/boost_python/beam.cc -text
@@ -53,6 +56,7 @@ scratch/jmp/dials/equipment/boost_python/equipment_ext.cc -text
 scratch/jmp/dials/equipment/boost_python/goniometer.cc -text
 scratch/jmp/dials/equipment/detector.h -text
 scratch/jmp/dials/equipment/goniometer.h -text
+scratch/jmp/dials/geometry/SConscript -text
 scratch/jmp/dials/geometry/__init__.py -text
 scratch/jmp/dials/geometry/boost_python/detector_coordinate_system.cc -text
 scratch/jmp/dials/geometry/boost_python/geometry_ext.cc -text
@@ -60,6 +64,7 @@ scratch/jmp/dials/geometry/boost_python/reciprocal_lattice_coordinate_system.cc 
 scratch/jmp/dials/geometry/boost_python/xds_coordinate_system.cc -text
 scratch/jmp/dials/geometry/detector_coordinate_system.h -text
 scratch/jmp/dials/geometry/reciprocal_lattice_coordinate_system.h -text
+scratch/jmp/dials/geometry/transform/SConscript -text
 scratch/jmp/dials/geometry/transform/__init__.py -text
 scratch/jmp/dials/geometry/transform/boost_python/from_beam_vector_to_detector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_beam_vector_to_xds.cc -text
@@ -79,6 +84,7 @@ scratch/jmp/dials/io/__init__.py -text
 scratch/jmp/dials/io/pycbf_extra.py -text
 scratch/jmp/dials/io/xdsio.py -text
 scratch/jmp/dials/old -text
+scratch/jmp/dials/util/SConscript -text
 scratch/jmp/dials/util/__init__.py -text
 scratch/jmp/dials/util/boost_python/util_ext.cc -text
 scratch/jmp/extract_reflection_profiles/__init__.py -text
@@ -105,3 +111,4 @@ scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
 scratch/jmp/setup.py -text
+scratch/jmp/setup_old.py -text
