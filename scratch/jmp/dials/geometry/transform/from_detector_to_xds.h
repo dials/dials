@@ -21,9 +21,11 @@ public:
      * @param s1_to_xds The beam vector to XDS transform
      */
     from_detector_to_xds(from_detector_to_beam_vector xy_to_s1,
-                         from_beam_vector_to_xds s1_to_xds)
+                         from_beam_vector_to_xds s1_to_xds,
+                         double wavelength)
         : _xy_to_s1(xy_to_s1),
-          _s1_to_xds(s1_to_xds) {}
+          _s1_to_xds(s1_to_xds),
+          _wavelength_r(1.0 / wavelength) {}
     
     /**
      * Initialise the transform with all the stuff that's needed for the
@@ -40,9 +42,11 @@ public:
                          double distance,
                          xds_coordinate_system xcs,
                          scitbx::vec3 <double> s1,
-                         double phi)
+                         double phi,
+                         double wavelength)
         : _xy_to_s1(dcs, origin, distance),
-          _s1_to_xds(xcs, s1, phi) {}
+          _s1_to_xds(xcs, s1, phi),
+          _wavelength_r(1.0 / wavelength) {}
      
 public:
 
@@ -53,13 +57,15 @@ public:
      * @returns The XDS coordinate
      */
     scitbx::vec3 <double> apply(scitbx::vec2 <double> xy, double phi_dash) {
-        return _s1_to_xds.apply(_xy_to_s1.apply(xy), phi_dash);
+        return _s1_to_xds.apply(_xy_to_s1.apply(xy).normalize() * _wavelength_r, 
+                                phi_dash);
     }
 
 private:
 
     from_detector_to_beam_vector _xy_to_s1;
     from_beam_vector_to_xds _s1_to_xds;
+    double _wavelength_r;
 };
 
 }}}

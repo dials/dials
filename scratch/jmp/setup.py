@@ -71,9 +71,12 @@ def setup_package():
                     'dials.io',
                     'dials.equipment',
                     'dials.geometry',
-                    'dials.geometry.transform'],
+                    'dials.geometry.transform',
+                    'dials.geometry.algorithm'],
           
-          scripts=['dials/bin/generate_spot_positions.py'],
+          scripts=['dials/bin/generate_spot_positions.py',
+                   'dials/bin/extract_reflection_profiles.py',
+                   'dials/bin/perform_xds_transform.py'],
           
           ext_modules=['dials'],
           cmdclass = { 'build_ext' : SconsBuildExt, 'clean': SconsClean }

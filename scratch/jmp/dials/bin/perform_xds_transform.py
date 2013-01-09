@@ -9,14 +9,19 @@ def extract_reflection_profiles():
     from matplotlib import pylab, cm
     from mpl_toolkits.mplot3d import axes3d
 
-    from dials.old.beam import Beam
-    from dials.old.detector import Detector
-    from dials.old.goniometer import Goniometer
+    from dials.equipment import beam as Beam
+    from dials.equipment import detector as Detector
+    from dials.equipment import goniometer as Goniometer
+    from dials.geometry import detector_coordinate_system
+    from dials.geometry import xds_coordinate_system
+    from dials.geometry.transform import from_detector_to_beam_vector
+    from dials.geometry.transform import from_beam_vector_to_xds
+#    from dials.old.detector import CoordinateSystem as DetectorCoordinateSystem
     from dials.old.reflection.mask import ReflectionMask 
     from dials.old.reflection.grid import Grid
     from dials.old.reflection.grid_mapper import GridMapper
-    from dials.old.reflection.coordinate_system import CoordinateSystem as ReflectionCoordinateSystem
-    from dials.old.pycbf_ext import search_for_image_volume
+#    from dials.old.reflection.coordinate_system import CoordinateSystem as ReflectionCoordinateSystem
+    from dials.io.pycbf_extra import search_for_image_volume
     # Set a load of parameters from the GXPARM file
     z0 = 1
     phi0 = 1.0
@@ -24,6 +29,8 @@ def extract_reflection_profiles():
     s0 = matrix.col((0.013142, 0.002200, 1.450476))
     dx0 = 244.836136
     dy0 = 320.338531
+    dx = 487
+    dy = 619
     px = 0.172000
     py = 0.172000
     d1 = matrix.col((0.000000, -0.939693, -0.342020))
@@ -54,19 +61,26 @@ def extract_reflection_profiles():
 
     # Create the beam, goniometer and detector
     beam = Beam(s0, l)
-    gonio = Goniometer(m2, s0, z0, phi0, dphi)
-    detector = Detector(image_volume, d1, d2, d3, f, (dx0, dy0), (px, py))
+    gonio = Goniometer(m2, phi0, dphi, z0)
+    detector = Detector(d1, d2, d3, (dx0, dy0), (px, py), (dx, dy), f)
     
     # Create the reflection coordinate system
-    rcs = ReflectionCoordinateSystem(s0, s1, m2, phi)
+    #rcs = ReflectionCoordinateSystem(s0, s1, m2, phi)
+    
+    rcs = xds_coordinate_system(s0, s1, m2, phi)
+    dcs = detector_coordinate_system(d1, d2, d3)
+    lcs_to_rcs = from_beam_vector_to_xds(rcs, s1, phi)
+    dcs_to_lcs = from_detector_to_beam_vector(dcs.in_si_units((px, py)), (dx0, dy0), f)
+    
+    #dcs = DetectorCoordinateSystem(d1, d2, d3, f, (dx0, dy0), (px, py))
 
     rmask = ReflectionMask(sigma_d, sigma_m)
 
     # Create the grid and mapper to convert detector to reflection coords
     #grid = Grid(1, grid_size=(9, 9, 9), step_size=(0.08, 0.08, 1.0))
     grid = Grid(1, grid_size=(9, 9, 9), sigma_divergence=sigma_d, sigma_mosaicity=sigma_m)
-    mapper = GridMapper(gonio, detector, beam, grid)
-    mapper.map_reflection(0, rcs, rmask, sx, sy, sz)
+    mapper = GridMapper(gonio, detector, beam, grid, dcs, dcs_to_lcs, image_volume)
+    mapper.map_reflection(0, rcs, lcs_to_rcs, rmask, sx, sy, sz, s1, phi, l)
 
 #    print 1/0
 
