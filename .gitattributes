@@ -97,7 +97,9 @@ scratch/jmp/dials/geometry/algorithm/SConscript -text
 scratch/jmp/dials/geometry/algorithm/__init__.py -text
 scratch/jmp/dials/geometry/algorithm/boost_python/algorithm_ext.cc -text
 scratch/jmp/dials/geometry/algorithm/boost_python/xds_transform.cc -text
+scratch/jmp/dials/geometry/algorithm/boost_python/xds_transform_grid.cc -text
 scratch/jmp/dials/geometry/algorithm/xds_transform.h -text
+scratch/jmp/dials/geometry/algorithm/xds_transform_grid.h -text
 scratch/jmp/dials/geometry/boost_python/detector_coordinate_system.cc -text
 scratch/jmp/dials/geometry/boost_python/geometry_ext.cc -text
 scratch/jmp/dials/geometry/boost_python/reciprocal_lattice_coordinate_system.cc -text

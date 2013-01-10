@@ -9,10 +9,12 @@ namespace dials { namespace geometry { namespace algorithm {
 namespace boost_python {
 
 void export_xds_transform();
+void export_xds_transform_grid();
 
 BOOST_PYTHON_MODULE(algorithm_ext)
 {
     export_xds_transform();
+    export_xds_transform_grid();
 }
 
 }

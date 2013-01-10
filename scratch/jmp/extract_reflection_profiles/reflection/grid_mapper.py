@@ -326,6 +326,22 @@ class GridMapper:
         from numpy import zeros, arange, float32
         from scitbx import matrix
        
+        #c1old, c2old, c3old = (0, 0, 0)
+        #for x in range(x0, x1 + 1):
+        #    s_dash = matrix.col(self.dcs_to_lcs.apply((x, y0)))
+        #    s_dash = (1.0 / self.beam.wavelength) * s_dash.normalize()
+        #    phi_dash = self.gonio.get_angle_from_frame(z0)#
+
+            # Calculate the reflection coordinate from the beam 
+            # vector and angle
+        #    c1, c2, c3 = lcs_to_rcs.apply(s_dash, phi_dash)
+        #    
+        #    print (matrix.col((c1, c2, c3)) - matrix.col((c1old, c2old, c3old))).length()
+        #    c1old, c2old, c3old = (c1, c2, c3)
+            
+        #print 1/0       
+       
+       
         # Divide counts equally amount subdivisions
         div_fraction_r = 1.0 / float(n_div * n_div)
         
@@ -424,6 +440,7 @@ class GridMapper:
         #fv3j = self.calculate_e3_fraction(rcs, lcs_to_rcs, z)
         from dials.geometry.algorithm import xds_transform
         from dials.geometry.transform import from_detector_to_xds
+        from dials.geometry.algorithm import xds_transform_grid
         
         dcs_to_xcs = from_detector_to_xds(self.dcs.in_si_units(self.detector.pixel_size),
                                           self.detector.origin,
@@ -439,18 +456,35 @@ class GridMapper:
         #    map(lambda z: self.gonio.get_angle_from_frame(z), 
         #        arange(0, 180))))
         
-        xds_trans = xds_transform(flex.int(self.image), 
-                                  self.image.shape[::-1],
-                                  self.dp,
-                                  grid_n,
-                                  self.grid.step_size,
-                                  self.gonio.starting_frame,
-                                  self.gonio.starting_angle, 
-                                  self.gonio.oscillation_range,
-                                  self.grid.sigma_mosaicity)
-
-        grid = xds_trans.calculate3(dcs_to_xcs, (x, y, z), phi, rcs.zeta)
+        xds_grid = xds_transform_grid(1, (4, 4, 4), 
+                                      self.grid.sigma_divergence, 
+                                      self.grid.sigma_mosaicity)
         
+        print xds_grid.n_reflections
+        print xds_grid.size
+        print xds_grid.origin
+        print xds_grid.step_size
+        print xds_grid.sigma_mosaicity
+        print xds_grid.delta_mosaicity
+        
+        
+        xds_trans = xds_transform(xds_grid,
+                                  flex.int(self.image), 
+                                  self.image.shape[::-1],
+                                  self.detector,
+                                  self.beam,
+                                  self.gonio,
+                                  self.dp)
+
+        import time
+
+        st = time.time()
+#        grid = xds_trans.calculate3(lcs_to_rcs, (x, y, z), phi, rcs.zeta)
+        xds_trans.calculate((x, y, z), s1, phi)
+    
+        grid = xds_grid.data
+
+        print "Time Taken: ", time.time() - st
         
         
         grid = grid.as_numpy_array()

@@ -16,7 +16,11 @@ public:
     xds_coordinate_system() {}
 
     /** 
-     * Initialise coordinate system 
+     * Initialise coordinate system
+     * @param s0 The incident beam vector
+     * @param s1 The diffracted beam vector
+     * @param m2 The rotation axis
+     * @param phi The rotation angle
      */
     xds_coordinate_system(scitbx::vec3 <double> s0,
                           scitbx::vec3 <double> s1,
