@@ -8,6 +8,9 @@ doc/developer/cctbx_introduction_2/cctbx_introduction_2.mat -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.pdf -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.py -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.tex -text
+doc/developer/cctbx_introduction_3/toytbx/SConscript -text
+doc/developer/cctbx_introduction_3/toytbx/__init__.py -text
+doc/developer/cctbx_introduction_3/toytbx/ext.cpp -text
 doc/developer/jmp_notes/dials_integration/Figures/Images/image_volume_0.tiff -text
 doc/developer/jmp_notes/dials_integration/Figures/Images/image_volume_1.tiff -text
 doc/developer/jmp_notes/dials_integration/Figures/Images/image_volume_2.tiff -text

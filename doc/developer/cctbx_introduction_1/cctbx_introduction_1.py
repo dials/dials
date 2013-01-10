@@ -7,6 +7,7 @@
 # ximg2701_00001.cbf (included).
 
 import sys
+import exceptions
 
 # tools to use from CBFlib
 import pycbf
@@ -137,8 +138,8 @@ def compute_reciprocal_space_distance_map(cbf_image):
     try:
         plot_image(size[0], size[1], square_distances,
                    'cctbx_introduction_1.png')
-    except: # intentional
-        print 'Plotting image failed'
+    except exceptions.Exception, e:
+        print 'Plotting image failed: %s' % str(e)
 
     # clean up...
 
