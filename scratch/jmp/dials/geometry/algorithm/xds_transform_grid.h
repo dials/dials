@@ -24,12 +24,12 @@ public:
                      double sigma_divergence,
                      double sigma_mosaicity,
                      double n_sigma = 10.0)
-        : _n_ref(n_ref),
-          _origin(origin),
-          _sigma_divergence(sigma_divergence),
-          _sigma_mosaicity(sigma_mosaicity),
-          _delta_divergence(sigma_divergence * n_sigma), 
-          _delta_mosaicity(sigma_mosaicity  * n_sigma)
+        : n_ref_(n_ref),
+          origin_(origin),
+          sigma_divergence_(sigma_divergence),
+          sigma_mosaicity_(sigma_mosaicity),
+          delta_divergence_(sigma_divergence * n_sigma), 
+          delta_mosaicity_(sigma_mosaicity  * n_sigma)
     {
         // Check input to ensure grid is valid
         if (n_ref <= 0) {
@@ -46,69 +46,69 @@ public:
         } 
 
         // Calculate the size of the grid
-        _size[0] = 2 * _origin[0] + 1;
-        _size[1] = 2 * _origin[1] + 1;
-        _size[2] = 2 * _origin[2] + 1;
+        size_[0] = 2 * origin_[0] + 1;
+        size_[1] = 2 * origin_[1] + 1;
+        size_[2] = 2 * origin_[2] + 1;
     
         // Calculate the step size of the grid
-        _step_size[0] = _delta_divergence / _size[0];
-        _step_size[1] = _delta_divergence / _size[1];
-        _step_size[2] = _delta_mosaicity  / _size[2];
+        step_size_[0] = delta_divergence_ / size_[0];
+        step_size_[1] = delta_divergence_ / size_[1];
+        step_size_[2] = delta_mosaicity_  / size_[2];
         
         // Allocate memory for the grid array
-        _data = scitbx::af::flex_double(scitbx::af::flex_grid <> (
-            n_ref, _size[0], _size[1], _size[2]));
+        data_ = scitbx::af::flex_double(scitbx::af::flex_grid <> (
+            n_ref, size_[0], size_[1], size_[2]));
     }
 
 public:
 
     std::size_t get_n_reflections() {
-        return _n_ref;
+        return n_ref_;
     }
     
     scitbx::vec3 <std::size_t> get_size() {
-        return _size;
+        return size_;
     }
 
     scitbx::vec3 <std::size_t> get_origin() {
-        return _origin;
+        return origin_;
     }
 
     scitbx::vec3 <double> get_step_size() {
-        return _step_size;
+        return step_size_;
     }
     
     double get_sigma_divergence() {
-        return _sigma_divergence;
+        return sigma_divergence_;
     }
     
     double get_sigma_mosaicity() {
-        return _sigma_mosaicity;
+        return sigma_mosaicity_;
     }
     
     double get_delta_divergence() {
-        return _delta_divergence;
+        return delta_divergence_;
     }
     
     double get_delta_mosaicity() {
-        return _delta_mosaicity;
+        return delta_mosaicity_;
     }
 
     scitbx::af::flex_double get_data() {
-        return _data;
+        return data_;
     }
 
 private:
 
-    scitbx::af::flex_double _data;
-    std::size_t _n_ref;
-    scitbx::vec3 <std::size_t> _origin;
-    scitbx::vec3 <std::size_t> _size;
-    scitbx::vec3 <double> _step_size;
-    double _sigma_divergence;
-    double _sigma_mosaicity;
-    double _delta_divergence;
-    double _delta_mosaicity;
+    scitbx::af::flex_double data_;
+    std::size_t n_ref_;
+    scitbx::vec3 <std::size_t> origin_;
+    scitbx::vec3 <std::size_t> size_;
+    scitbx::vec3 <double> step_size_;
+    double sigma_divergence_;
+    double sigma_mosaicity_;
+    double delta_divergence_;
+    double delta_mosaicity_;
 };
 
 }}} // namespace = dials::geometry::algorithm

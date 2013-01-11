@@ -25,11 +25,11 @@ public:
     FromHklToBeamVector(ReciprocalLatticeCoordinateSystem rlcs,
                         scitbx::vec3 <double> s0,
                         scitbx::vec3 <double> m2) 
-        : _b1_star(rlcs.get_b1_star_axis()),
-          _b2_star(rlcs.get_b2_star_axis()),
-          _b3_star(rlcs.get_b3_star_axis()),
-          _s0(s0),
-          _m2(m2.normalize()) {}
+        : b1_star_(rlcs.get_b1_star_axis()),
+          b2_star_(rlcs.get_b2_star_axis()),
+          b3_star_(rlcs.get_b3_star_axis()),
+          s0_(s0),
+          m2_(m2.normalize()) {}
 
 public:
 
@@ -40,19 +40,19 @@ public:
      * @returns The diffracted beam vector
      */
     scitbx::vec3 <double> apply(scitbx::vec3 <int> hkl, double phi) {
-        return _s0 + (double(hkl[0]) * _b1_star + 
-                      double(hkl[1]) * _b2_star + 
-                      double(hkl[2]) * _b3_star)
-                        .unit_rotate_around_origin(_m2, phi);
+        return s0_ + (double(hkl[0]) * b1_star_ + 
+                      double(hkl[1]) * b2_star_ + 
+                      double(hkl[2]) * b3_star_)
+                        .unit_rotate_around_origin(m2_, phi);
     }
 
 private:
 
-    scitbx::vec3 <double> _b1_star;
-    scitbx::vec3 <double> _b2_star;
-    scitbx::vec3 <double> _b3_star;
-    scitbx::vec3 <double> _s0;
-    scitbx::vec3 <double> _m2;
+    scitbx::vec3 <double> b1_star_;
+    scitbx::vec3 <double> b2_star_;
+    scitbx::vec3 <double> b3_star_;
+    scitbx::vec3 <double> s0_;
+    scitbx::vec3 <double> m2_;
 };
 
 }}} // namespace = dials::geometry::transform

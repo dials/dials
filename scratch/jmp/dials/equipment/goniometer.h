@@ -13,9 +13,9 @@ public:
 
     /** The default constructor */
     Goniometer() 
-        : _starting_angle(0.0),
-          _oscillation_range(0.0), 
-          _starting_frame(0) {}
+        : starting_angle_(0.0),
+          oscillation_range_(0.0), 
+          starting_frame_(0) {}
 
 
     /** 
@@ -29,51 +29,51 @@ public:
                double starting_angle, 
                double oscillation_range,
                int starting_frame)
-        : _rotation_axis(rotation_axis),
-          _starting_angle(starting_angle),
-          _oscillation_range(oscillation_range),
-          _starting_frame(starting_frame) {}
+        : rotation_axis_(rotation_axis),
+          starting_angle_(starting_angle),
+          oscillation_range_(oscillation_range),
+          starting_frame_(starting_frame) {}
           
 public:
 
     /** Get the rotation axis */
     scitbx::vec3 <double> get_rotation_axis() {
-        return _rotation_axis;
+        return rotation_axis_;
     }
    
     /** Get the starting angle */
     double get_starting_angle() {
-        return _starting_angle;
+        return starting_angle_;
     }
     
     /** Get the oscillation range */
     double get_oscillation_range() {
-        return _oscillation_range;
+        return oscillation_range_;
     }
 
     /** Get the starting frame */
     int get_starting_frame() {
-        return _starting_frame;
+        return starting_frame_;
     }
     
     /** Set the rotation axis */
     void set_rotation_axis(scitbx::vec3 <double> rotation_axis) {
-        _rotation_axis = rotation_axis;
+        rotation_axis_ = rotation_axis;
     }
    
     /** Set the starting angle */
     void set_starting_angle(double starting_angle) {
-        _starting_angle = starting_angle;
+        starting_angle_ = starting_angle;
     }
     
     /** Set the oscillation range */
     void set_oscillation_range(double oscillation_range) {
-        _oscillation_range = oscillation_range;
+        oscillation_range_ = oscillation_range;
     }
 
    /** Set the starting frame */
     void set_starting_frame(int starting_frame) {
-        _starting_frame = starting_frame;
+        starting_frame_ = starting_frame;
     }
 
 public:
@@ -84,7 +84,7 @@ public:
      * @returns The angle corresponding to the frame number
      */
     double get_angle_from_frame(double frame) {
-        return _starting_angle + (frame - _starting_frame) * _oscillation_range;
+        return starting_angle_ + (frame - starting_frame_) * oscillation_range_;
     }
     
     /**
@@ -93,15 +93,15 @@ public:
      * @returns The frame number corresponding to the rotation angle
      */
     double get_frame_from_angle(double angle) {
-        return _starting_frame + (angle - _starting_angle) / _oscillation_range;
+        return starting_frame_ + (angle - starting_angle_) / oscillation_range_;
     }
 
 private:
 
-    scitbx::vec3 <double> _rotation_axis;
-    double _starting_angle;
-    double _oscillation_range;
-    int _starting_frame;
+    scitbx::vec3 <double> rotation_axis_;
+    double starting_angle_;
+    double oscillation_range_;
+    int starting_frame_;
 };
 
 }} // namespace = dials::equipment

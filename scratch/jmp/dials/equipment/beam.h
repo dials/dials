@@ -13,7 +13,7 @@ class Beam {
 public:
 
     /** Default constructor */
-    Beam() : _wavelength(0.0) {}
+    Beam() : wavelength_(0.0) {}
     
     /** 
      * Initialise beam
@@ -21,33 +21,33 @@ public:
      * @param wavelength The wavelength of the beam
      */    
     Beam(scitbx::vec3 <double> direction, double wavelength)
-        : _wavelength(wavelength),
-          _direction(direction) {}
+        : wavelength_(wavelength),
+          direction_(direction) {}
     
     /** Get the beam direction */
     scitbx::vec3 <double> get_direction() {
-        return _direction;
+        return direction_;
     }
     
     /** Get the beam wavelength */
     double get_wavelength() {
-        return _wavelength;
+        return wavelength_;
     }
     
     /** Set the beam direction */
     void set_direction(scitbx::vec3 <double> direction) {
-        _direction = direction;
+        direction_ = direction;
     }
     
     /** Set the beam wavelength */
     void set_wavelength(double wavelength) {
-        _wavelength = wavelength;
+        wavelength_ = wavelength;
     }
       
 private:
 
-    double _wavelength;
-    scitbx::vec3 <double> _direction;
+    double wavelength_;
+    scitbx::vec3 <double> direction_;
 };
 
 }} // namespace = dials::equipment

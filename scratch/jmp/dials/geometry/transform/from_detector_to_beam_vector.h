@@ -29,10 +29,10 @@ public:
     FromDetectorToBeamVector(DetectorCoordinateSystem dcs,
                              scitbx::vec2 <double> origin,
                              double distance) 
-        : _x_axis(dcs.get_x_axis()),
-          _y_axis(dcs.get_y_axis()),
-          _distance_scaled_normal(dcs.get_normal() * distance),
-          _origin(origin) {}
+        : x_axis_(dcs.get_x_axis()),
+          y_axis_(dcs.get_y_axis()),
+          distance_scaled_normal_(dcs.get_normal() * distance),
+          origin_(origin) {}
 
 public:
 
@@ -42,17 +42,17 @@ public:
      * @returns The beam vector
      */
     scitbx::vec3 <double> apply(scitbx::vec2 <double> xy) {
-        return (xy[0] - _origin[0]) * _x_axis + 
-               (xy[1] - _origin[1]) * _y_axis + 
-               _distance_scaled_normal;
+        return (xy[0] - origin_[0]) * x_axis_ + 
+               (xy[1] - origin_[1]) * y_axis_ + 
+               distance_scaled_normal_;
     }
 
 private:
 
-    scitbx::vec3 <double> _x_axis;
-    scitbx::vec3 <double> _y_axis;
-    scitbx::vec3 <double> _distance_scaled_normal;
-    scitbx::vec2 <double> _origin;
+    scitbx::vec3 <double> x_axis_;
+    scitbx::vec3 <double> y_axis_;
+    scitbx::vec3 <double> distance_scaled_normal_;
+    scitbx::vec2 <double> origin_;
 };
 
 }}} // namespace = dials::geometry::transform

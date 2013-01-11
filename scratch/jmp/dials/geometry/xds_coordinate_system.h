@@ -26,39 +26,39 @@ public:
                         scitbx::vec3 <double> s1,
                         scitbx::vec3 <double> m2,
                         double phi)
-        : _e1(s1.cross(s0).normalize()),
-          _e2(s1.cross(_e1).normalize()),
-          _e3((s1 + s0).normalize()),
-          _zeta(m2 * _e1) {}
+        : e1_(s1.cross(s0).normalize()),
+          e2_(s1.cross(e1_).normalize()),
+          e3_((s1 + s0).normalize()),
+          zeta_(m2 * e1_) {}
 
 public:
 
     /** Get the e1 axis vector */
     scitbx::vec3 <double> get_e1_axis() {
-        return _e1;
+        return e1_;
     }
     
     /** Get the e2 axis vector */
     scitbx::vec3 <double> get_e2_axis() {
-        return _e2;
+        return e2_;
     }
     
     /** Get the e3 axis vector */
     scitbx::vec3 <double> get_e3_axis() {
-        return _e3;
+        return e3_;
     }
     
     /** Get the lorentz correction factor (zeta) */
     double get_zeta() {
-        return _zeta;
+        return zeta_;
     }
 
 private:
 
-    scitbx::vec3 <double> _e1;
-    scitbx::vec3 <double> _e2;
-    scitbx::vec3 <double> _e3;
-    double _zeta;
+    scitbx::vec3 <double> e1_;
+    scitbx::vec3 <double> e2_;
+    scitbx::vec3 <double> e3_;
+    double zeta_;
 };
 
 }} // namespace = dials::geometry

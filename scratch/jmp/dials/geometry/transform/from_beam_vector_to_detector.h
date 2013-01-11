@@ -18,7 +18,7 @@ class FromBeamVectorToDetector {
 public:
 
     /** Default constructor */
-    FromBeamVectorToDetector() : _distance(0.0) {}
+    FromBeamVectorToDetector() : distance_(0.0) {}
 
     /** 
      * Initialise the transform from the detector coordinate system. The
@@ -30,11 +30,11 @@ public:
     FromBeamVectorToDetector(DetectorCoordinateSystem dcs,
                              scitbx::vec2 <double> origin,
                              double distance) 
-        : _x_axis(dcs.get_x_axis()),
-          _y_axis(dcs.get_y_axis()),
-          _normal(dcs.get_normal()),
-          _origin(origin),
-          _distance(distance) {}
+        : x_axis_(dcs.get_x_axis()),
+          y_axis_(dcs.get_y_axis()),
+          normal_(dcs.get_normal()),
+          origin_(origin),
+          distance_(distance) {}
 
 public:
 
@@ -46,22 +46,22 @@ public:
      *         detector plane
      */
     scitbx::vec2 <double> apply(scitbx::vec3 <double> s1) {
-        double s1_dot_n = s1 * _normal;
-        if (_distance * s1_dot_n <= 0) {
+        double s1_dot_n = s1 * normal_;
+        if (distance_ * s1_dot_n <= 0) {
             throw std::runtime_error("Can't map beam vector to detector");
         }
         return scitbx::vec2 <double> (
-            _origin[0] + _distance * (s1 * _x_axis) / s1_dot_n,
-            _origin[1] + _distance * (s1 * _y_axis) / s1_dot_n);
+            origin_[0] + distance_ * (s1 * x_axis_) / s1_dot_n,
+            origin_[1] + distance_ * (s1 * y_axis_) / s1_dot_n);
     }
 
 private:
 
-    scitbx::vec3 <double> _x_axis;
-    scitbx::vec3 <double> _y_axis;
-    scitbx::vec3 <double> _normal;
-    scitbx::vec2 <double> _origin;
-    double _distance;
+    scitbx::vec3 <double> x_axis_;
+    scitbx::vec3 <double> y_axis_;
+    scitbx::vec3 <double> normal_;
+    scitbx::vec2 <double> origin_;
+    double distance_;
 };
 
 }}} // namespace = dials::geometry::transform

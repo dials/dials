@@ -22,8 +22,8 @@ public:
      */
     FromHklToDetector(FromHklToBeamVector hkl_to_s1,
                       FromBeamVectorToDetector s1_to_xy)
-        : _hkl_to_s1(hkl_to_s1),
-          _s1_to_xy(s1_to_xy) {}
+        : hkl_to_s1_(hkl_to_s1),
+          s1_to_xy_(s1_to_xy) {}
      
     /**
      * Initialise the transform using component transform objects.
@@ -40,8 +40,8 @@ public:
                       DetectorCoordinateSystem dcs,
                       scitbx::vec2 <double> origin,
                       double distance)
-        : _hkl_to_s1(rlcs, s0, m2),
-          _s1_to_xy(dcs, origin, distance) {}
+        : hkl_to_s1_(rlcs, s0, m2),
+          s1_to_xy_(dcs, origin, distance) {}
 
 public:
 
@@ -52,13 +52,13 @@ public:
      * @returns The detector coordinates
      */
     scitbx::vec2 <double> apply(scitbx::vec3 <int> hkl, double phi) {
-        return _s1_to_xy.apply(_hkl_to_s1.apply(hkl, phi));
+        return s1_to_xy_.apply(hkl_to_s1_.apply(hkl, phi));
     }
 
 private:
 
-    FromHklToBeamVector _hkl_to_s1;
-    FromBeamVectorToDetector _s1_to_xy;
+    FromHklToBeamVector hkl_to_s1_;
+    FromBeamVectorToDetector s1_to_xy_;
 };
 
 }}} // namespace = dials::geometry::transform

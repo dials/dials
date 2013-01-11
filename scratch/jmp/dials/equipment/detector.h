@@ -13,7 +13,7 @@ class Detector {
 public:
 
     /** The default constructor */
-    Detector() : _distance(0.0) {}
+    Detector() : distance_(0.0) {}
     
     /** 
      * Initialise the detector.
@@ -32,95 +32,95 @@ public:
              scitbx::vec2 <double> pixel_size,
              scitbx::vec2 <int> size,
              double distance)
-        : _x_axis(x_axis),
-          _y_axis(y_axis),
-          _normal(normal),
-          _origin(origin),
-          _pixel_size(pixel_size),
-          _size(size),
-          _distance(distance) {}
+        : x_axis_(x_axis),
+          y_axis_(y_axis),
+          normal_(normal),
+          origin_(origin),
+          pixel_size_(pixel_size),
+          size_(size),
+          distance_(distance) {}
 
 public:
 
     /** Get the x axis */
     scitbx::vec3 <double> get_x_axis() {
-        return _x_axis;
+        return x_axis_;
     }
     
     /** Get the y axis */
     scitbx::vec3 <double> get_y_axis() {
-        return _y_axis;
+        return y_axis_;
     }
     
     /** Get the normal */
     scitbx::vec3 <double> get_normal() {
-        return _normal;
+        return normal_;
     }
 
     /** Get the detector origin */
     scitbx::vec2 <double> get_origin() {
-        return _origin;
+        return origin_;
     }
     
     /** Get the pixel size */
     scitbx::vec2 <double> get_pixel_size() {
-        return _pixel_size;
+        return pixel_size_;
     }
 
     /** Get the detector size */
     scitbx::vec2 <int> get_size() {
-        return _size;
+        return size_;
     }
     
     /** Get the distance from the crystal */
     double get_distance() {
-        return _distance;
+        return distance_;
     }
     
     /** Set the x axis */
     void set_x_axis(scitbx::vec3 <double> x_axis) {
-        _x_axis = x_axis;
+        x_axis_ = x_axis;
     }
     
     /** Set the y axis */
     void set_y_axis(scitbx::vec3 <double> y_axis) {
-        _y_axis = y_axis;
+        y_axis_ = y_axis;
     }
     
     /** Set the normal */
     void set_normal(scitbx::vec3 <double> normal) {
-        _normal = normal;
+        normal_ = normal;
     }
         
     /** Set the origin */
     void set_origin(scitbx::vec2 <double> origin) {
-        _origin = origin;
+        origin_ = origin;
     }
     
     /** Set the pixel size */
     void set_pixel_size(scitbx::vec2 <double> pixel_size) {
-        _pixel_size = pixel_size;
+        pixel_size_ = pixel_size;
     }
     
     /** Set the detector size */
     void set_size(scitbx::vec2 <int> size) {
-        _size = size;
+        size_ = size;
     }
     
     /* Set the distance from the crystal */
     void set_distance(double distance) {
-        _distance = distance;
+        distance_ = distance;
     }
         
 private:
 
-    scitbx::vec3 <double> _x_axis;
-    scitbx::vec3 <double> _y_axis;
-    scitbx::vec3 <double> _normal;
-    scitbx::vec2 <double> _origin;
-    scitbx::vec2 <double> _pixel_size;
-    scitbx::vec2 <int> _size;
-    double _distance;
+    scitbx::vec3 <double> x_axis_;
+    scitbx::vec3 <double> y_axis_;
+    scitbx::vec3 <double> normal_;
+    scitbx::vec2 <double> origin_;
+    scitbx::vec2 <double> pixel_size_;
+    scitbx::vec2 <int> size_;
+    double distance_;
 };
 
 }} // namespace = dials::equipment

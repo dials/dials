@@ -21,8 +21,8 @@ public:
 
     /** Default constructor */
     FromBeamVectorToXds()
-        : _phi(0.0),
-          _zeta(0.0) {}
+        : phi_(0.0),
+          zeta_(0.0) {}
     
     /**
      * Initialise the transform using the XDS coordinate system.
@@ -33,11 +33,11 @@ public:
     FromBeamVectorToXds(XdsCoordinateSystem xcs,
                         scitbx::vec3 <double> s1,
                         double phi)
-        : _scaled_e1(xcs.get_e1_axis() * r2d / s1.length()),
-          _scaled_e2(xcs.get_e2_axis() * r2d / s1.length()),
-          _s1(s1),
-          _phi(phi),
-          _zeta(xcs.get_zeta()) {}
+        : scaled_e1_(xcs.get_e1_axis() * r2d / s1.length()),
+          scaled_e2_(xcs.get_e2_axis() * r2d / s1.length()),
+          s1_(s1),
+          phi_(phi),
+          zeta_(xcs.get_zeta()) {}
 
 public:
 
@@ -49,18 +49,18 @@ public:
      */
     scitbx::vec3 <double> apply(scitbx::vec3 <double> s_dash, double phi_dash) {
         return scitbx::vec3 <double> (
-            _scaled_e1 * (s_dash - _s1), 
-            _scaled_e2 * (s_dash - _s1), 
-            _zeta * (phi_dash - _phi));
+            scaled_e1_ * (s_dash - s1_), 
+            scaled_e2_ * (s_dash - s1_), 
+            zeta_ * (phi_dash - phi_));
     }
 
 private:
 
-    scitbx::vec3 <double> _scaled_e1;
-    scitbx::vec3 <double> _scaled_e2;
-    scitbx::vec3 <double> _s1;
-    double _phi;
-    double _zeta;
+    scitbx::vec3 <double> scaled_e1_;
+    scitbx::vec3 <double> scaled_e2_;
+    scitbx::vec3 <double> s1_;
+    double phi_;
+    double zeta_;
 };
 
 }}} // namespace = dials::geometry::transform

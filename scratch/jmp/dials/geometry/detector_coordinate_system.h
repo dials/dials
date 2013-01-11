@@ -22,9 +22,9 @@ public:
      */
     DetectorCoordinateSystem(scitbx::vec3 <double> x_axis,
                              scitbx::vec3 <double> y_axis)
-        : _x_axis(x_axis),
-          _y_axis(y_axis),
-          _normal(x_axis.cross(y_axis).normalize()) {}
+        : x_axis_(x_axis),
+          y_axis_(y_axis),
+          normal_(x_axis.cross(y_axis).normalize()) {}
 
     /**
      * Initialise coordinate system by x and y axis and normal
@@ -35,40 +35,40 @@ public:
     DetectorCoordinateSystem(scitbx::vec3 <double> x_axis,
                              scitbx::vec3 <double> y_axis,
                              scitbx::vec3 <double> normal)
-        : _x_axis(x_axis),
-          _y_axis(y_axis),
-          _normal(normal) {}
+        : x_axis_(x_axis),
+          y_axis_(y_axis),
+          normal_(normal) {}
 
 public:
 
     /** Get the x axis vector */
     scitbx::vec3 <double> get_x_axis() {
-        return _x_axis;
+        return x_axis_;
     }
     
     /** Get the y axis vector */
     scitbx::vec3 <double> get_y_axis() {
-        return _y_axis;
+        return y_axis_;
     }
     
     /** Get the normal vector */
     scitbx::vec3 <double> get_normal() {
-        return _normal;
+        return normal_;
     }
     
     /** Set the x axis vector */
     void set_x_axis(scitbx::vec3 <double> x_axis) {
-        _x_axis = x_axis;
+        x_axis_ = x_axis;
     }
     
     /** Set the y axis vector */
     void set_y_axis(scitbx::vec3 <double> y_axis) {
-        _y_axis = y_axis;
+        y_axis_ = y_axis;
     }
     
     /** Set the normal vector */
     void set_normal(scitbx::vec3 <double> normal) {
-        _normal = normal;
+        normal_ = normal;
     }
 
     /**
@@ -97,9 +97,9 @@ public:
 
 private:
 
-    scitbx::vec3 <double> _x_axis;
-    scitbx::vec3 <double> _y_axis;
-    scitbx::vec3 <double> _normal;
+    scitbx::vec3 <double> x_axis_;
+    scitbx::vec3 <double> y_axis_;
+    scitbx::vec3 <double> normal_;
 };
 
 }} // namespace = dials::geometry
