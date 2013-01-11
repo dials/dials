@@ -19,6 +19,6 @@ BOOST_PYTHON_MODULE(equipment_ext)
     export_goniometer();
 }
 
-}}
+} // namespace = boost_python
 
-}
+}} // namespace = dials::equipment

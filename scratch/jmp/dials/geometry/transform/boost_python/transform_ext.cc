@@ -25,6 +25,6 @@ BOOST_PYTHON_MODULE(transform_ext)
     export_from_detector_to_xds();
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::transform

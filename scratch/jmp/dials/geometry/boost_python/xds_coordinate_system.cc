@@ -11,8 +11,7 @@ namespace boost_python {
 
 void export_xds_coordinate_system()
 {
-    class_ <xds_coordinate_system> (
-            "xds_coordinate_system")
+    class_ <XdsCoordinateSystem> ("XdsCoordinateSystem")
         .def(init <scitbx::vec3 <double>,
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double>,
@@ -21,10 +20,12 @@ void export_xds_coordinate_system()
                 arg("s1"), 
                 arg("m2"),
                 arg("phi"))))
-        .add_property("e1",   &xds_coordinate_system::get_e1_axis)
-        .add_property("e2",   &xds_coordinate_system::get_e2_axis)
-        .add_property("e3",   &xds_coordinate_system::get_e3_axis)
-        .add_property("zeta", &xds_coordinate_system::get_zeta);
+        .add_property("e1",   &XdsCoordinateSystem::get_e1_axis)
+        .add_property("e2",   &XdsCoordinateSystem::get_e2_axis)
+        .add_property("e3",   &XdsCoordinateSystem::get_e3_axis)
+        .add_property("zeta", &XdsCoordinateSystem::get_zeta);
 }
 
-}}}
+} // namespace = boost_python
+
+}} // namespace = dials::geometry

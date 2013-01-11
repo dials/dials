@@ -9,13 +9,13 @@ def extract_reflection_profiles():
     from matplotlib import pylab, cm
     from mpl_toolkits.mplot3d import axes3d
 
-    from dials.equipment import beam as Beam
-    from dials.equipment import detector as Detector
-    from dials.equipment import goniometer as Goniometer
-    from dials.geometry import detector_coordinate_system
-    from dials.geometry import xds_coordinate_system
-    from dials.geometry.transform import from_detector_to_beam_vector
-    from dials.geometry.transform import from_beam_vector_to_xds
+    from dials.equipment import Beam
+    from dials.equipment import Detector
+    from dials.equipment import Goniometer
+    from dials.geometry import DetectorCoordinateSystem
+    from dials.geometry import XdsCoordinateSystem
+    from dials.geometry.transform import FromDetectorToBeamVector
+    from dials.geometry.transform import FromBeamVectorToXds
 #    from dials.old.detector import CoordinateSystem as DetectorCoordinateSystem
     from dials.old.reflection.mask import ReflectionMask 
     from dials.old.reflection.grid import Grid
@@ -67,10 +67,10 @@ def extract_reflection_profiles():
     # Create the reflection coordinate system
     #rcs = ReflectionCoordinateSystem(s0, s1, m2, phi)
     
-    rcs = xds_coordinate_system(s0, s1, m2, phi)
-    dcs = detector_coordinate_system(d1, d2, d3)
-    lcs_to_rcs = from_beam_vector_to_xds(rcs, s1, phi)
-    dcs_to_lcs = from_detector_to_beam_vector(dcs.in_si_units((px, py)), (dx0, dy0), f)
+    rcs = XdsCoordinateSystem(s0, s1, m2, phi)
+    dcs = DetectorCoordinateSystem(d1, d2, d3)
+    lcs_to_rcs = FromBeamVectorToXds(rcs, s1, phi)
+    dcs_to_lcs = FromDetectorToBeamVector(dcs.in_si_units((px, py)), (dx0, dy0), f)
     
     #dcs = DetectorCoordinateSystem(d1, d2, d3, f, (dx0, dy0), (px, py))
 
@@ -113,12 +113,13 @@ def extract_reflection_profiles():
 
 
     # Display the grid
+    grid_index = 0
     minx = numpy.min(grid.get_grid_coordinates()[0])
     maxx = numpy.max(grid.get_grid_coordinates()[0])
     miny = numpy.min(grid.get_grid_coordinates()[1])
     maxy = numpy.max(grid.get_grid_coordinates()[1])
-    minz = numpy.min(grid.get_grid(0))
-    maxz = numpy.max(grid.get_grid(0))
+    minz = numpy.min(grid.get_grid(grid_index))
+    maxz = numpy.max(grid.get_grid(grid_index))
     fig = pylab.figure()
     for i in range(0, 9):
         ax = fig.add_subplot(3, 3, i+1, projection='3d')
@@ -130,7 +131,7 @@ def extract_reflection_profiles():
         ax.set_autoscalez_on(False)
         plt=ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
                           grid.get_grid_coordinates()[1][i,:,:],
-                          grid.get_grid(0)[i,:,:])
+                          grid.get_grid(grid_index)[i,:,:])
         ax.set_title("slice {0}".format(i))
 #        plt.axes.get_xaxis().set_ticks(map(lambda x: minx + x * (maxx - minx) / 2, range(0, 3)))
 #        plt.axes.get_yaxis().set_ticks(map(lambda y: miny + y * (maxy - miny) / 2, range(0, 3)))

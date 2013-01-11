@@ -8,12 +8,12 @@
 namespace dials { namespace geometry {
 
 /** Class representing reciprocal lattice coordinate system */
-class reciprocal_lattice_coordinate_system {
+class ReciprocalLatticeCoordinateSystem {
 
 public:
 
     /** Default constructor */
-    reciprocal_lattice_coordinate_system() {}
+    ReciprocalLatticeCoordinateSystem() {}
 
     /** 
      * Initialise coordinate system using axis vectors
@@ -21,9 +21,9 @@ public:
      * @param b2_star The k component vector
      * @param b3_star The l component vector
      */
-    reciprocal_lattice_coordinate_system(scitbx::vec3 <double> b1_star,
-                                         scitbx::vec3 <double> b2_star,
-                                         scitbx::vec3 <double> b3_star)
+    ReciprocalLatticeCoordinateSystem(scitbx::vec3 <double> b1_star,
+                                      scitbx::vec3 <double> b2_star,
+                                      scitbx::vec3 <double> b3_star)
         : _b1_star(b1_star),
           _b2_star(b2_star),
           _b3_star(b3_star) {}
@@ -32,7 +32,7 @@ public:
      * Initialise the coordinate system from a UB matrix
      * @param ub The UB matrix
      */
-    reciprocal_lattice_coordinate_system(scitbx::mat3 <double> ub)
+    ReciprocalLatticeCoordinateSystem(scitbx::mat3 <double> ub)
         : _b1_star(ub[0], ub[3], ub[6]),
           _b2_star(ub[1], ub[4], ub[7]),
           _b3_star(ub[2], ub[5], ub[8]) {}
@@ -98,6 +98,6 @@ private:
     scitbx::vec3 <double> _b3_star;
 };
 
-}}
+}} // namespace = dials::geometry
 
 #endif // DIALS_GEOMETRY_RECIPROCAL_LATTICE_COORDINATE_SYSTEM_H

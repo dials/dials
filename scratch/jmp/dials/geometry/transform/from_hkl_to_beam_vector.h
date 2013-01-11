@@ -9,12 +9,12 @@
 namespace dials { namespace geometry { namespace transform {
 
 /** Class to represent geometry transform from miller indices to beam vector */
-class from_hkl_to_beam_vector {
+class FromHklToBeamVector {
 
 public:
 
     /** Default constructor */
-    from_hkl_to_beam_vector() {}
+    FromHklToBeamVector() {}
 
     /** 
      * Initialise using the reciprocal lattice coordinate system 
@@ -22,9 +22,9 @@ public:
      * @param s0 The incident beam vector
      * @param m2 The rotation axis
      */
-    from_hkl_to_beam_vector(reciprocal_lattice_coordinate_system rlcs,
-                            scitbx::vec3 <double> s0,
-                            scitbx::vec3 <double> m2) 
+    FromHklToBeamVector(ReciprocalLatticeCoordinateSystem rlcs,
+                        scitbx::vec3 <double> s0,
+                        scitbx::vec3 <double> m2) 
         : _b1_star(rlcs.get_b1_star_axis()),
           _b2_star(rlcs.get_b2_star_axis()),
           _b3_star(rlcs.get_b3_star_axis()),
@@ -55,6 +55,6 @@ private:
     scitbx::vec3 <double> _m2;
 };
 
-}}}
+}}} // namespace = dials::geometry::transform
 
 #endif // DIALS_GEOMETRY_TRANSFORM_FROM_HKL_TO_BEAM_VECTOR_H

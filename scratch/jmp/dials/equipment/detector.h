@@ -8,12 +8,12 @@
 namespace dials { namespace equipment {
 
 /** The detector */
-class detector {
+class Detector {
 
 public:
 
     /** The default constructor */
-    detector() : _distance(0.0) {}
+    Detector() : _distance(0.0) {}
     
     /** 
      * Initialise the detector.
@@ -25,7 +25,7 @@ public:
      * @param size The size of the detector (in pixels)
      * @param distance The distance from the detector to the crystal origin
      */
-    detector(scitbx::vec3 <double> x_axis,
+    Detector(scitbx::vec3 <double> x_axis,
              scitbx::vec3 <double> y_axis,
              scitbx::vec3 <double> normal,
              scitbx::vec2 <double> origin,
@@ -123,6 +123,6 @@ private:
     double _distance;
 };
 
-}}
+}} // namespace = dials::equipment
 
 #endif // DIALS_EQUIPMENT_DETECTOR_H

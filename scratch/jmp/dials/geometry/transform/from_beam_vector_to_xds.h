@@ -15,12 +15,12 @@ static const double r2d = 1.0 / scitbx::constants::pi_180;
 /** 
  * Class to represent a geometry transform from beam vector to XDS coordinates
  */
-class from_beam_vector_to_xds {
+class FromBeamVectorToXds {
 
 public:
 
     /** Default constructor */
-    from_beam_vector_to_xds()
+    FromBeamVectorToXds()
         : _phi(0.0),
           _zeta(0.0) {}
     
@@ -30,9 +30,9 @@ public:
      * @param s1 The diffracted beam vector
      * @param phi The rotation angle
      */
-    from_beam_vector_to_xds(xds_coordinate_system xcs,
-                            scitbx::vec3 <double> s1,
-                            double phi)
+    FromBeamVectorToXds(XdsCoordinateSystem xcs,
+                        scitbx::vec3 <double> s1,
+                        double phi)
         : _scaled_e1(xcs.get_e1_axis() * r2d / s1.length()),
           _scaled_e2(xcs.get_e2_axis() * r2d / s1.length()),
           _s1(s1),
@@ -63,6 +63,6 @@ private:
     double _zeta;
 };
 
-}}}
+}}} // namespace = dials::geometry::transform
 
 #endif // DIALS_GEOMETRY_TRANSFORM_FROM_BEAM_VECTOR_TO_XDS_H

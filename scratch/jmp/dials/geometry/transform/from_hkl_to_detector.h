@@ -8,20 +8,20 @@
 namespace dials { namespace geometry { namespace transform {
 
 /** A transform from miller indices to detector coordinates */
-class from_hkl_to_detector {
+class FromHklToDetector {
 
 public:
 
     /** Default constructor */
-    from_hkl_to_detector() {}
+    FromHklToDetector() {}
 
     /**
      * Initialise the transform using component transform objects.
      * @param hkl_to_s1 The hkl to beam vector transform
      * @param s1_to_xy The beam vector to detector transform
      */
-    from_hkl_to_detector(from_hkl_to_beam_vector hkl_to_s1,
-                         from_beam_vector_to_detector s1_to_xy)
+    FromHklToDetector(FromHklToBeamVector hkl_to_s1,
+                      FromBeamVectorToDetector s1_to_xy)
         : _hkl_to_s1(hkl_to_s1),
           _s1_to_xy(s1_to_xy) {}
      
@@ -34,12 +34,12 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal     
      */        
-    from_hkl_to_detector(reciprocal_lattice_coordinate_system rlcs,
-                         scitbx::vec3 <double> s0,
-                         scitbx::vec3 <double> m2,
-                         detector_coordinate_system dcs,
-                         scitbx::vec2 <double> origin,
-                         double distance)
+    FromHklToDetector(ReciprocalLatticeCoordinateSystem rlcs,
+                      scitbx::vec3 <double> s0,
+                      scitbx::vec3 <double> m2,
+                      DetectorCoordinateSystem dcs,
+                      scitbx::vec2 <double> origin,
+                      double distance)
         : _hkl_to_s1(rlcs, s0, m2),
           _s1_to_xy(dcs, origin, distance) {}
 
@@ -57,10 +57,10 @@ public:
 
 private:
 
-    from_hkl_to_beam_vector _hkl_to_s1;
-    from_beam_vector_to_detector _s1_to_xy;
+    FromHklToBeamVector _hkl_to_s1;
+    FromBeamVectorToDetector _s1_to_xy;
 };
 
-}}}
+}}} // namespace = dials::geometry::transform
 
 #endif // DIALS_GEOMETRY_TRANSFORM_FROM_HKL_TO_DETECTOR_H

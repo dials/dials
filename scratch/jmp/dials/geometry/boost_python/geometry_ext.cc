@@ -19,6 +19,6 @@ BOOST_PYTHON_MODULE(geometry_ext)
     export_xds_coordinate_system();
 }
 
-}
+} // namespace = boost_python
 
-}}
+}} // namespace = dials::geometry

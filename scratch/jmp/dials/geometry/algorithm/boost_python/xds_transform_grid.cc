@@ -11,7 +11,7 @@ namespace boost_python {
 
 void export_xds_transform_grid() 
 {
-    class_ <xds_transform_grid> ("xds_transform_grid")
+    class_ <XdsTransformGrid> ("XdsTransformGrid")
         .def(init <std::size_t,
                    scitbx::vec3 <std::size_t>,
                    double,
@@ -23,25 +23,25 @@ void export_xds_transform_grid()
                 arg("sigma_mosaicity"),
                 arg("n_sigma") = 10)))
         .add_property("n_reflections", 
-            &xds_transform_grid::get_n_reflections)
+            &XdsTransformGrid::get_n_reflections)
         .add_property("size", 
-            &xds_transform_grid::get_size)
+            &XdsTransformGrid::get_size)
         .add_property("origin",
-            &xds_transform_grid::get_origin)
+            &XdsTransformGrid::get_origin)
         .add_property("step_size", 
-            &xds_transform_grid::get_step_size)
+            &XdsTransformGrid::get_step_size)
         .add_property("sigma_divergence", 
-            &xds_transform_grid::get_sigma_divergence)
+            &XdsTransformGrid::get_sigma_divergence)
         .add_property("sigma_mosaicity", 
-            &xds_transform_grid::get_sigma_mosaicity)
+            &XdsTransformGrid::get_sigma_mosaicity)
         .add_property("delta_divergence", 
-            &xds_transform_grid::get_delta_divergence)
+            &XdsTransformGrid::get_delta_divergence)
         .add_property("delta_mosaicity", 
-            &xds_transform_grid::get_delta_mosaicity)
+            &XdsTransformGrid::get_delta_mosaicity)
         .add_property("data",
-            &xds_transform_grid::get_data);       
+            &XdsTransformGrid::get_data);       
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::algorithm

@@ -12,7 +12,7 @@ namespace boost_python {
 
 void export_detector() 
 {
-    class_ <detector> ("detector")
+    class_ <Detector> ("Detector")
         .def(init <scitbx::vec3 <double>, 
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double>, 
@@ -28,28 +28,28 @@ void export_detector()
                 arg("size"),
                 arg("distance"))))
         .add_property("x_axis",  
-            &detector::get_x_axis,
-            &detector::set_x_axis)
+            &Detector::get_x_axis,
+            &Detector::set_x_axis)
         .add_property("y_axis",  
-            &detector::get_y_axis,
-            &detector::set_y_axis)
+            &Detector::get_y_axis,
+            &Detector::set_y_axis)
         .add_property("normal",  
-            &detector::get_normal,
-            &detector::set_normal)
+            &Detector::get_normal,
+            &Detector::set_normal)
         .add_property("origin",  
-            &detector::get_origin,
-            &detector::set_origin)
+            &Detector::get_origin,
+            &Detector::set_origin)
         .add_property("pixel_size",  
-            &detector::get_pixel_size,
-            &detector::set_pixel_size)
+            &Detector::get_pixel_size,
+            &Detector::set_pixel_size)
         .add_property("size",
-            &detector::get_size,
-            &detector::set_size)
+            &Detector::get_size,
+            &Detector::set_size)
         .add_property("distance",  
-            &detector::get_distance,
-            &detector::set_distance);
+            &Detector::get_distance,
+            &Detector::set_distance);
 }
 
-}
+} // namespace = boost_python
 
-}}
+}} // namespace = dials::equipment

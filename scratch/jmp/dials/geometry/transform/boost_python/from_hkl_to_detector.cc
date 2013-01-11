@@ -12,15 +12,15 @@ namespace boost_python {
 
 void export_from_hkl_to_detector() 
 {
-    class_ <from_hkl_to_detector> ("from_hkl_to_detector")
-        .def(init <from_hkl_to_beam_vector, 
-                   from_beam_vector_to_detector > ((
+    class_ <FromHklToDetector> ("FromHklToDetector")
+        .def(init <FromHklToBeamVector, 
+                   FromBeamVectorToDetector > ((
                 arg("hkl_to_s1"), 
                 arg("s1_to_xy"))))
-        .def(init <reciprocal_lattice_coordinate_system,
+        .def(init <ReciprocalLatticeCoordinateSystem,
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double>,
-                   detector_coordinate_system,
+                   DetectorCoordinateSystem,
                    scitbx::vec2 <double>,
                    double> ((
                 arg("rlcs"),
@@ -30,11 +30,11 @@ void export_from_hkl_to_detector()
                 arg("origin"),
                 arg("distance"))))               
         .def("apply", 
-            &from_hkl_to_detector::apply, (
+            &FromHklToDetector::apply, (
                 arg("hkl"), 
                 arg("phi")));
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::transform

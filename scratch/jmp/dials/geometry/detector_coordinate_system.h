@@ -8,20 +8,20 @@
 namespace dials { namespace geometry {
 
 /** Class representing the detector coordinate system */
-class detector_coordinate_system {
+class DetectorCoordinateSystem {
 
 public:
 
     /** Default constructor */
-    detector_coordinate_system() {}
+    DetectorCoordinateSystem() {}
 
     /**
      * Initialise coordinate system by x and y axis
      * @param x_axis The x axis
      * @param y_axis The y axis
      */
-    detector_coordinate_system(scitbx::vec3 <double> x_axis,
-                               scitbx::vec3 <double> y_axis)
+    DetectorCoordinateSystem(scitbx::vec3 <double> x_axis,
+                             scitbx::vec3 <double> y_axis)
         : _x_axis(x_axis),
           _y_axis(y_axis),
           _normal(x_axis.cross(y_axis).normalize()) {}
@@ -32,9 +32,9 @@ public:
      * @param y_axis The y axis
      * @param normal The detector normal
      */    
-    detector_coordinate_system(scitbx::vec3 <double> x_axis,
-                               scitbx::vec3 <double> y_axis,
-                               scitbx::vec3 <double> normal)
+    DetectorCoordinateSystem(scitbx::vec3 <double> x_axis,
+                             scitbx::vec3 <double> y_axis,
+                             scitbx::vec3 <double> normal)
         : _x_axis(x_axis),
           _y_axis(y_axis),
           _normal(normal) {}
@@ -76,9 +76,8 @@ public:
      * @param pixel_size The size of each pixel in mm
      * @returns The coordinate system with x, y axis scaled in pixel units
      */
-    detector_coordinate_system in_pixel_units(scitbx::vec2 <double> pixel_size) 
-    {
-        return detector_coordinate_system(
+    DetectorCoordinateSystem in_pixel_units(scitbx::vec2 <double> pixel_size) {
+        return DetectorCoordinateSystem(
             this->get_x_axis().normalize() / pixel_size[0],
             this->get_y_axis().normalize() / pixel_size[1],
             this->get_normal());
@@ -89,8 +88,8 @@ public:
      * @param pixel_size The size of each pixel in mm
      * @returns The coordinate system with x, y axis scaled in mm
      */
-    detector_coordinate_system in_si_units(scitbx::vec2 <double> pixel_size) {
-        return detector_coordinate_system(
+    DetectorCoordinateSystem in_si_units(scitbx::vec2 <double> pixel_size) {
+        return DetectorCoordinateSystem(
             this->get_x_axis().normalize() * pixel_size[0],
             this->get_y_axis().normalize() * pixel_size[1],
             this->get_normal());
@@ -103,6 +102,6 @@ private:
     scitbx::vec3 <double> _normal;
 };
 
-}}
+}} // namespace = dials::geometry
 
 #endif // DIALS_GEOMETRY_DETECTOR_COORDINATE_SYSTEM_H

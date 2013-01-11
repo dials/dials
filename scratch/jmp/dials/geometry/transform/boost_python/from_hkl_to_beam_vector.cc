@@ -11,18 +11,18 @@ namespace boost_python {
 
 void export_from_hkl_to_beam_vector() 
 {
-    class_ <from_hkl_to_beam_vector> ("from_hkl_to_beam_vector")
-        .def(init <reciprocal_lattice_coordinate_system, 
+    class_ <FromHklToBeamVector> ("FromHklToBeamVector")
+        .def(init <ReciprocalLatticeCoordinateSystem, 
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double> > ((
                 arg("rlcs"), 
                 arg("s0"), 
                 arg("m2"))))
-        .def("apply", &from_hkl_to_beam_vector::apply, (
+        .def("apply", &FromHklToBeamVector::apply, (
                 arg("hkl"), 
                 arg("phi")));
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::transform

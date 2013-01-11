@@ -7,12 +7,12 @@
 namespace dials { namespace equipment {
 
 /** The goniometer */
-class goniometer {
+class Goniometer {
 
 public:
 
     /** The default constructor */
-    goniometer() 
+    Goniometer() 
         : _starting_angle(0.0),
           _oscillation_range(0.0), 
           _starting_frame(0) {}
@@ -25,7 +25,7 @@ public:
      * @param oscillation_range The angular difference between successive frames
      * @param starting_frame The starting frame number
      */
-    goniometer(scitbx::vec3 <double> rotation_axis, 
+    Goniometer(scitbx::vec3 <double> rotation_axis, 
                double starting_angle, 
                double oscillation_range,
                int starting_frame)
@@ -104,7 +104,6 @@ private:
     int _starting_frame;
 };
 
-}
-}
+}} // namespace = dials::equipment
 
 #endif // DIALS_EQUIPMENT_GONIOMETER_H

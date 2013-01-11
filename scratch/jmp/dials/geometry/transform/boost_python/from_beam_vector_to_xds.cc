@@ -11,19 +11,19 @@ namespace boost_python {
 
 void export_from_beam_vector_to_xds() 
 {
-    class_ <from_beam_vector_to_xds> ("from_beam_vector_to_xds")
-        .def(init <xds_coordinate_system, 
+    class_ <FromBeamVectorToXds> ("FromBeamVectorToXds")
+        .def(init <XdsCoordinateSystem, 
                    scitbx::vec3 <double>,
                    double> ((
                 arg("xcs"), 
                 arg("s1"), 
                 arg("phi"))))
         .def("apply", 
-            &from_beam_vector_to_xds::apply, (
+            &FromBeamVectorToXds::apply, (
                 arg("s_dash"),
                 arg("phi_dash")));
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::transform

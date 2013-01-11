@@ -8,21 +8,21 @@
 namespace dials { namespace geometry { namespace transform {
 
 /** A transform from detector coordinates to XDS coordinates */
-class from_detector_to_xds {
+class FromDetectorToXds {
 
 public:
 
     /** Default constructor */
-    from_detector_to_xds() {}
+    FromDetectorToXds() {}
 
     /**
      * Initialise the transform using component transform objects.
      * @param xy_to_s1 The detector to beam vector transform
      * @param s1_to_xds The beam vector to XDS transform
      */
-    from_detector_to_xds(from_detector_to_beam_vector xy_to_s1,
-                         from_beam_vector_to_xds s1_to_xds,
-                         double wavelength)
+    FromDetectorToXds(FromDetectorToBeamVector xy_to_s1,
+                      FromBeamVectorToXds s1_to_xds,
+                      double wavelength)
         : _xy_to_s1(xy_to_s1),
           _s1_to_xds(s1_to_xds),
           _wavelength_r(1.0 / wavelength) {}
@@ -37,13 +37,13 @@ public:
      * @param s1 The diffracted beam vector
      * @param phi The rotation angle
      */
-    from_detector_to_xds(detector_coordinate_system dcs,
-                         scitbx::vec2 <double> origin,
-                         double distance,
-                         xds_coordinate_system xcs,
-                         scitbx::vec3 <double> s1,
-                         double phi,
-                         double wavelength)
+    FromDetectorToXds(DetectorCoordinateSystem dcs,
+                      scitbx::vec2 <double> origin,
+                      double distance,
+                      XdsCoordinateSystem xcs,
+                      scitbx::vec3 <double> s1,
+                      double phi,
+                      double wavelength)
         : _xy_to_s1(dcs, origin, distance),
           _s1_to_xds(xcs, s1, phi),
           _wavelength_r(1.0 / wavelength) {}
@@ -63,11 +63,11 @@ public:
 
 private:
 
-    from_detector_to_beam_vector _xy_to_s1;
-    from_beam_vector_to_xds _s1_to_xds;
+    FromDetectorToBeamVector _xy_to_s1;
+    FromBeamVectorToXds _s1_to_xds;
     double _wavelength_r;
 };
 
-}}}
+}}} // namespace = dials::geometry::transform
 
 #endif // DIALS_GEOMETRY_TRANSFORM_FROM_DETECTOR_TO_XDS_H

@@ -9,21 +9,21 @@
 namespace dials { namespace geometry { namespace algorithm {
 
 /** Class representing the XDS transform grid */
-class xds_transform_grid {
+class XdsTransformGrid {
 
 public:
 
     /** Default constructor */
-    xds_transform_grid() {}
+    XdsTransformGrid() {}
 
     /** 
      * Initialise grid 
      */
-    xds_transform_grid(std::size_t n_ref,
-                       scitbx::vec3 <std::size_t> origin,
-                       double sigma_divergence,
-                       double sigma_mosaicity,
-                       double n_sigma = 10.0)
+    XdsTransformGrid(std::size_t n_ref,
+                     scitbx::vec3 <std::size_t> origin,
+                     double sigma_divergence,
+                     double sigma_mosaicity,
+                     double n_sigma = 10.0)
         : _n_ref(n_ref),
           _origin(origin),
           _sigma_divergence(sigma_divergence),
@@ -111,6 +111,6 @@ private:
     double _delta_mosaicity;
 };
 
-}}}
+}}} // namespace = dials::geometry::algorithm
 
 #endif // DIALS_GEOMETRY_XDS_TRANSFORM_GRID_H

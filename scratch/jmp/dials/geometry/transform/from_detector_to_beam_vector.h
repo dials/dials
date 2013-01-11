@@ -12,12 +12,12 @@ namespace dials { namespace geometry { namespace transform {
  * Class to represent a geometry transform from detector coordinates to beam
  * vector
  */
-class from_detector_to_beam_vector {
+class FromDetectorToBeamVector {
 
 public:
 
     /** Default constructor */
-    from_detector_to_beam_vector() {}
+    FromDetectorToBeamVector() {}
 
     /** 
      * Initialise the transform from the detector coordinate system. The
@@ -26,9 +26,9 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
-    from_detector_to_beam_vector(detector_coordinate_system dcs,
-                                 scitbx::vec2 <double> origin,
-                                 double distance) 
+    FromDetectorToBeamVector(DetectorCoordinateSystem dcs,
+                             scitbx::vec2 <double> origin,
+                             double distance) 
         : _x_axis(dcs.get_x_axis()),
           _y_axis(dcs.get_y_axis()),
           _distance_scaled_normal(dcs.get_normal() * distance),
@@ -55,6 +55,6 @@ private:
     scitbx::vec2 <double> _origin;
 };
 
-}}}
+}}} // namespace = dials::geometry::transform
 
 #endif // DIALS_GEOMETRY_TRANSFORM_FROM_DETECTOR_TO_BEAM_VECTOR_H

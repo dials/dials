@@ -438,17 +438,17 @@ class GridMapper:
         # Calculate the fraction of counts constributed by each data frame
         # around the reflection to each v3 grid point in the reflection grid        
         #fv3j = self.calculate_e3_fraction(rcs, lcs_to_rcs, z)
-        from dials.geometry.algorithm import xds_transform
-        from dials.geometry.transform import from_detector_to_xds
-        from dials.geometry.algorithm import xds_transform_grid
+        from dials.geometry.algorithm import XdsTransform
+        from dials.geometry.transform import FromDetectorToXds
+        from dials.geometry.algorithm import XdsTransformGrid
         
-        dcs_to_xcs = from_detector_to_xds(self.dcs.in_si_units(self.detector.pixel_size),
-                                          self.detector.origin,
-                                          self.detector.distance,
-                                          rcs,
-                                          s1,
-                                          phi,
-                                          wavelength)
+        dcs_to_xcs = FromDetectorToXds(self.dcs.in_si_units(self.detector.pixel_size),
+                                       self.detector.origin,
+                                       self.detector.distance,
+                                       rcs,
+                                       s1,
+                                       phi,
+                                       wavelength)
         
         grid_n = (int(self.grid.grid_size[0]/2), int(self.grid.grid_size[1]/2),int(self.grid.grid_size[2]/2))
         
@@ -456,9 +456,9 @@ class GridMapper:
         #    map(lambda z: self.gonio.get_angle_from_frame(z), 
         #        arange(0, 180))))
         
-        xds_grid = xds_transform_grid(1, (4, 4, 4), 
-                                      self.grid.sigma_divergence, 
-                                      self.grid.sigma_mosaicity)
+        xds_grid = XdsTransformGrid(1, (4, 4, 4), 
+                                    self.grid.sigma_divergence, 
+                                    self.grid.sigma_mosaicity)
         
         print xds_grid.n_reflections
         print xds_grid.size
@@ -468,28 +468,30 @@ class GridMapper:
         print xds_grid.delta_mosaicity
         
         
-        xds_trans = xds_transform(xds_grid,
-                                  flex.int(self.image), 
-                                  self.image.shape[::-1],
-                                  self.detector,
-                                  self.beam,
-                                  self.gonio,
-                                  self.dp)
+        xds_trans = XdsTransform(xds_grid,
+                                 flex.int(self.image), 
+                                 self.image.shape[::-1],
+                                 self.detector,
+                                 self.beam,
+                                 self.gonio,
+                                 self.dp)
 
         import time
 
         st = time.time()
 #        grid = xds_trans.calculate3(lcs_to_rcs, (x, y, z), phi, rcs.zeta)
-        xds_trans.calculate((x, y, z), s1, phi)
-    
+        xds_trans.calculate(0, (x, y, z), s1, phi)
+            
         grid = xds_grid.data
 
         print "Time Taken: ", time.time() - st
         
         
         grid = grid.as_numpy_array()
-        grid.shape = (9, 9, 9)
-        self.grid.grid_data[index,:,:,:] = grid
+  
+        grid.shape = (1, 9, 9, 9)
+        self.grid.grid_data = grid
+#        self.grid.grid_data[index,:,:,:] = grid
         #print grid
         #print 1/0
         #fv3j = xds_trans.calculate(z, phi, rcs.zeta)        

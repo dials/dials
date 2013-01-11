@@ -11,18 +11,18 @@ namespace boost_python {
 
 void export_beam()
 {
-    class_ <beam> ("beam")
+    class_ <Beam> ("Beam")
         .def(init <scitbx::vec3 <double>, double> ((
             arg("direction"), 
             arg("wavelength"))))
         .add_property("direction",  
-            &beam::get_direction,
-            &beam::set_direction)
+            &Beam::get_direction,
+            &Beam::set_direction)
         .add_property("wavelength", 
-            &beam::get_wavelength,
-            &beam::set_wavelength);
+            &Beam::get_wavelength,
+            &Beam::set_wavelength);
 }
 
-}
+} // namespace = boost_python
 
-}}
+}} // namespace = dials::equipment

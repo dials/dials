@@ -12,18 +12,18 @@ namespace boost_python {
 
 void export_from_detector_to_beam_vector() 
 {
-    class_ <from_detector_to_beam_vector> ("from_detector_to_beam_vector")
-        .def(init <detector_coordinate_system, 
+    class_ <FromDetectorToBeamVector> ("FromDetectorToBeamVector")
+        .def(init <DetectorCoordinateSystem, 
                    scitbx::vec2 <double>,
                    double> ((
                 arg("dcs"), 
                 arg("origin"), 
                 arg("distance"))))
         .def("apply", 
-            &from_detector_to_beam_vector::apply, (
+            &FromDetectorToBeamVector::apply, (
                 arg("xy")));
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::transform

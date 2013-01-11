@@ -4,11 +4,11 @@
 
 #include <cmath>
 #include <algorithm>
+#include <exception>
+#include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
-#include "../transform/from_detector_to_xds.h"
-#include "../detector_coordinate_system.h"
 #include "../../equipment/detector.h"
 #include "../../equipment/beam.h"
 #include "../../equipment/goniometer.h"
@@ -24,12 +24,12 @@ typedef scitbx::af::flex<scitbx::vec3 <double> >::type flex_vec3_double;
  * data frame, j, around the reflection to each grid point, v3 in the profile 
  * frame.
  */
-class xds_transform_e3_fraction {
+class XdsTransformE3Fraction {
 
 public:
 
     /** Default constructor */
-    xds_transform_e3_fraction() {}
+    XdsTransformE3Fraction() {}
 
     /** 
      * Initialise the fraction calculation class 
@@ -40,12 +40,12 @@ public:
      * @param oscillation_range The rotation oscillation range
      * @param sigma_mosaicity The standard deviation of the mosaicity
      */
-    xds_transform_e3_fraction(int roi_size_z,
-                              int grid_origin_e3,
-                              double step_size_e3,
-                              double starting_angle,
-                              double oscillation_range,
-                              double sigma_mosaicity) 
+    XdsTransformE3Fraction(int roi_size_z,
+                           int grid_origin_e3,
+                           double step_size_e3,
+                           double starting_angle,
+                           double oscillation_range,
+                           double sigma_mosaicity) 
         : _roi_size_z(roi_size_z),
           _grid_origin_e3(grid_origin_e3),
           _step_size_e3(step_size_e3),
@@ -89,7 +89,7 @@ private:
  *
  * @throws std::runtime_error if the supplied values are bad  
  */
-scitbx::af::flex_double xds_transform_e3_fraction::calculate(
+scitbx::af::flex_double XdsTransformE3Fraction::calculate(
         double frame, double phi, double zeta)
 {
     // Check the value of zeta
@@ -175,12 +175,12 @@ scitbx::af::flex_double xds_transform_e3_fraction::calculate(
  * to calculate the beam vectors. The beam vectors are then used along with
  * reflection specific stuff to calculate the xds coordinate for each pixel.
  */
-class xds_transform_detector_beam_vectors {
+class XdsTransformDetectorBeamVectors {
 
 public:
 
     /** The default constructor */
-    xds_transform_detector_beam_vectors() {}    
+    XdsTransformDetectorBeamVectors() {}    
     
     /**
      * Initialise the class.
@@ -188,9 +188,9 @@ public:
      * @param wavelength The wavelength of the radiation
      * @param n_div The number of pixel sub-divisions
      */
-    xds_transform_detector_beam_vectors(equipment::detector detector,
-                                        double wavelength,
-                                        int n_div)
+    XdsTransformDetectorBeamVectors(equipment::Detector detector,
+                                    double wavelength,
+                                    int n_div)
         : _size(detector.get_size()),
           _origin(detector.get_origin()),
           _x_axis(detector.get_x_axis().normalize() * 
@@ -246,7 +246,7 @@ public:
 
 private:
     
-    equipment::detector detector;
+    equipment::Detector detector;
     scitbx::vec2 <int> _size;
     scitbx::vec2 <double> _origin;
     scitbx::vec3 <double> _x_axis;
@@ -258,14 +258,15 @@ private:
 };
 
 /**
- *
+ * Class representing the XDS transform of the reflection profile on the
+ * detector to the XDS reciprocal lattice coordinate frame.
  */
-class xds_transform {
+class XdsTransform {
 
 public:
 
     /** The default constructor */
-    xds_transform() {}
+    XdsTransform() {}
 
     /**
      * Initialise the transform.
@@ -275,17 +276,17 @@ public:
      * @param detector The detector struct
      * @param beam The beam struct
      * @param gonio The goniometer struct
-     * @param roi_size The region of interest to select (default (4, 4, 1)
+     * @param roi_size The region of interest to select
      * @param n_div The number of pixel sub divisions to use (default 5)
      */
-    xds_transform(xds_transform_grid grid,
-                  scitbx::af::flex_int image,
-                  scitbx::vec3 <int> image_size,
-                  equipment::detector detector,
-                  equipment::beam beam,
-                  equipment::goniometer gonio,
-                  scitbx::vec3 <int> roi_size = scitbx::vec3 <int> (4, 4, 1),
-                  int n_div = 5)
+    XdsTransform(XdsTransformGrid grid,
+                 scitbx::af::flex_int image,
+                 scitbx::vec3 <int> image_size,
+                 equipment::Detector detector,
+                 equipment::Beam beam,
+                 equipment::Goniometer gonio,
+                 scitbx::vec3 <int> roi_size,
+                 int n_div = 5)
         : 
           _grid(grid),
           _image(image),
@@ -299,27 +300,36 @@ public:
           _s0(beam.get_direction()),
           _n_div(n_div)
     {
+        // Check the input
+        if (n_div <= 0) {
+            throw std::runtime_error("n_div <= 0");
+        }
+        if (roi_size[0] <= 0 || roi_size[1] <= 0 || roi_size[2] <= 0) {
+            throw std::runtime_error("roi_size <= 0");
+        }
+    
         // Create an object to calculate the detector beam vectors. Then 
         // Calculate and save the detector beam vectors.
-        xds_transform_detector_beam_vectors beam_vectors(
+        XdsTransformDetectorBeamVectors beam_vectors(
                 detector, beam.get_wavelength(), n_div);
         _detector_s1 = beam_vectors.calculate();
         
         // Initialise an object to calculate the e3 fraction vector
-        _e3_fraction = xds_transform_e3_fraction(
+        _e3_fraction = XdsTransformE3Fraction(
                 roi_size[2], grid.get_origin()[2], grid.get_step_size()[2], 
                 gonio.get_starting_angle(), gonio.get_oscillation_range(), 
                 grid.get_sigma_mosaicity());
     }
 
-    void calculate(scitbx::vec3 <double> xyz, 
+    void calculate(int reflection_index,
+                   scitbx::vec3 <double> xyz, 
                    scitbx::vec3 <double> s1,
                    double phi);
 
 private:
 
-    xds_transform_e3_fraction _e3_fraction;
-    xds_transform_grid _grid;
+    XdsTransformE3Fraction _e3_fraction;
+    XdsTransformGrid _grid;
     flex_vec3_double _detector_s1;
     scitbx::af::flex_int _image;
     scitbx::vec3 <int> _image_size;
@@ -334,19 +344,43 @@ private:
 };
 
 /**
+ * Transform the profile of the reflection at detector point xyz, with beam
+ * vector s1 and rotation angle phi, to the XDS reciprocal lattice coordinate
+ * frame.
+ *
+ * We treat the image pixels as bins of a histogram. In effect we want to 
+ * redistribute the image pixel counts to the XDS grid elements. We do this
+ * by transforming the detector pixel coordinates around the reflection to the
+ * XDS reciprocal lattice coordinate frame and determining the fraction of the
+ * pixel value that is given to each element in the XDS grid.
+ *
+ * @param reflection_index The index of the reflection
  * @param xyz The coordinate of the reflection in the detector image volume
  * @param s1 The beam vector of the reflection
  * @param phi The rotation angle of the reflection
+ * @throws std::rumtime_error if input is invalid
  */
-void xds_transform::calculate(scitbx::vec3 <double> xyz, 
-                              scitbx::vec3 <double> s1, 
-                              double phi)
+void XdsTransform::calculate(int reflection_index,
+                             scitbx::vec3 <double> xyz, 
+                             scitbx::vec3 <double> s1, 
+                             double phi)
 {
+    // Check the reflection index
+    if (reflection_index < 0 || reflection_index >= _grid.get_n_reflections()) {
+        throw std::runtime_error("reflection_index, r, must be 0 <= r < n");
+    }
+    
     // Constant for scaling values
     static const double r2d = 1.0 / scitbx::constants::pi_180;
 
-    int x_stride = _image_size[0] * _n_div;
-    int y_stride = _image_size[1] * _n_div;
+    // Calculate the strides for indexing multidimensional arrays
+    int div_image_stride_x = _image_size[0] * _n_div;
+    int image_stride_x = _image_size[0];
+    int image_stride_y = _image_size[1] * image_stride_x;
+    int grid_stride_c1 = _grid_size[0];
+    int grid_stride_c2 = _grid_size[1] * grid_stride_c1;
+    int grid_stride_c3 = _grid_size[2] * grid_stride_c2;
+    int grid_offset = reflection_index * grid_stride_c3;
 
     // Get the grid data array
     scitbx::af::flex_double grid = _grid.get_data();
@@ -358,6 +392,13 @@ void xds_transform::calculate(scitbx::vec3 <double> xyz,
     int y1 = ((int)xyz[1] + _roi_size[1]) * _n_div;
     int z0 = ((int)xyz[2] - _roi_size[2] - _starting_frame);
     int z1 = ((int)xyz[2] + _roi_size[2] - _starting_frame); 
+    
+    // Check the data range
+    if (x0 < 0 || x1 >= _image_size[0] * _n_div ||
+        y0 < 0 || y1 >= _image_size[1] * _n_div ||
+        z0 < 0 || z1 >= _image_size[2]) {
+        throw std::runtime_error("xyz0 < 0 || xyz1 >= image_size");    
+    }
     
     // Calculate 1 / n_div and 1 / (n_div*n_div) for convenience
     double n_div_r = 1.0 / _n_div;
@@ -390,8 +431,8 @@ void xds_transform::calculate(scitbx::vec3 <double> xyz,
     // add the counts for that pixel to the grid. See Kabsch 2010
     for (int yy = y0; yy < y1; ++yy) {
         for (int xx = x0; xx < x1; ++xx) {
-            double c1 = e1 * _detector_s1[xx + yy * x_stride] - c11;
-            double c2 = e2 * _detector_s1[xx + yy * x_stride] - c21;
+            double c1 = e1 * _detector_s1[xx + yy * div_image_stride_x] - c11;
+            double c2 = e2 * _detector_s1[xx + yy * div_image_stride_x] - c21;
             int gi = _grid_origin[0] + c1 / _step_size[0];
             int gj = _grid_origin[1] + c2 / _step_size[1];
             if (gi < 0 || gi >= 9 || gj < 0 || gj >= 9) {
@@ -399,25 +440,22 @@ void xds_transform::calculate(scitbx::vec3 <double> xyz,
             }
             int x = xx * n_div_r;
             int y = yy * n_div_r;
+            int image_index = x + y * image_stride_x + z0 * image_stride_y;
+            int fraction_index = 0;
             for (int z = z0; z <= z1; ++z) {
-                
-                int image_index = z * _image_size[1] * _image_size[0] +
-                                  y * _image_size[0] +
-                                  x;
-                int value = _image[image_index];               
-                
+                int value = _image[image_index] * div_fraction;
+                int grid_index = grid_offset + gi + gj * grid_stride_c1;
                 for (int gk = 0; gk < _grid_size[2]; ++gk) {
-                    int grid_index = gk * _grid_size[1] * _grid_size[0] +
-                                     gj * _grid_size[0] +
-                                     gi;
-                    int fraction_index = (z - z0) * _grid_size[2] + gk;
-                    grid[grid_index] += value * fraction[fraction_index] * div_fraction;
+                    grid[grid_index] += value * fraction[fraction_index];
+                    grid_index += grid_stride_c2;
+                    fraction_index++;
                 }                        
+                image_index += image_stride_y;
             }
         }
     }
 }
 
-}}}
+}}} // namespace = dials::geometry::algorithm
 
 #endif // DIALS_GEOMETRY_ALGORITHM_XDS_TRANSFORM_H

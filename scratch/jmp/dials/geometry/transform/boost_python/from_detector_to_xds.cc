@@ -11,17 +11,17 @@ namespace boost_python {
 
 void export_from_detector_to_xds() 
 {
-    class_ <from_detector_to_xds> ("from_detector_to_xds")
-        .def(init <from_detector_to_beam_vector, 
-                   from_beam_vector_to_xds,
+    class_ <FromDetectorToXds> ("FromDetectorToXds")
+        .def(init <FromDetectorToBeamVector, 
+                   FromBeamVectorToXds,
                    double> ((
                 arg("xy_to_s1"), 
                 arg("s1_to_xds"),
                 arg("wavelength"))))
-        .def(init <detector_coordinate_system,
+        .def(init <DetectorCoordinateSystem,
                    scitbx::vec2 <double>,
                    double,
-                   xds_coordinate_system,
+                   XdsCoordinateSystem,
                    scitbx::vec3 <double>,
                    double,
                    double> ((
@@ -32,11 +32,11 @@ void export_from_detector_to_xds()
                 arg("phi"),
                 arg("wavelength"))))        
         .def("apply", 
-            &from_detector_to_xds::apply, (
+            &FromDetectorToXds::apply, (
                 arg("xy"),
                 arg("phi_dash")));
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::transform

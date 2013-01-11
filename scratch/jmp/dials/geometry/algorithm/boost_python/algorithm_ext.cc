@@ -17,6 +17,6 @@ BOOST_PYTHON_MODULE(algorithm_ext)
     export_xds_transform_grid();
 }
 
-}
+} // namespace = boost_python
 
-}}}
+}}} // namespace = dials::geometry::algorithm

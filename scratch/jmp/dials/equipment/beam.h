@@ -8,19 +8,19 @@
 namespace dials { namespace equipment {
 
 /** The beam */
-class beam {
+class Beam {
 
 public:
 
     /** Default constructor */
-    beam() : _wavelength(0.0) {}
+    Beam() : _wavelength(0.0) {}
     
     /** 
      * Initialise beam
      * @param direction The beam direction vector
      * @param wavelength The wavelength of the beam
      */    
-    beam(scitbx::vec3 <double> direction, double wavelength)
+    Beam(scitbx::vec3 <double> direction, double wavelength)
         : _wavelength(wavelength),
           _direction(direction) {}
     
@@ -50,6 +50,6 @@ private:
     scitbx::vec3 <double> _direction;
 };
 
-}}
+}} // namespace = dials::equipment
 
 #endif // DIALS_EQUIPMENT_BEAM_H

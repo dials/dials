@@ -11,8 +11,8 @@ namespace boost_python {
 
 void export_reciprocal_lattice_coordinate_system()
 {
-    class_ <reciprocal_lattice_coordinate_system> (
-            "reciprocal_lattice_coordinate_system")
+    class_ <ReciprocalLatticeCoordinateSystem> (
+            "ReciprocalLatticeCoordinateSystem")
         .def(init <scitbx::vec3 <double>,
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double> > ((
@@ -22,20 +22,22 @@ void export_reciprocal_lattice_coordinate_system()
         .def(init <scitbx::mat3 <double> > ((
                 arg("ub"))))
         .add_property("b1_star",  
-            &reciprocal_lattice_coordinate_system::get_b1_star_axis,
-            &reciprocal_lattice_coordinate_system::set_b1_star_axis)
+            &ReciprocalLatticeCoordinateSystem::get_b1_star_axis,
+            &ReciprocalLatticeCoordinateSystem::set_b1_star_axis)
         .add_property("b2_star", 
-            &reciprocal_lattice_coordinate_system::get_b2_star_axis,
-            &reciprocal_lattice_coordinate_system::set_b2_star_axis)
+            &ReciprocalLatticeCoordinateSystem::get_b2_star_axis,
+            &ReciprocalLatticeCoordinateSystem::set_b2_star_axis)
         .add_property("b3_star", 
-            &reciprocal_lattice_coordinate_system::get_b3_star_axis,
-            &reciprocal_lattice_coordinate_system::set_b3_star_axis)
+            &ReciprocalLatticeCoordinateSystem::get_b3_star_axis,
+            &ReciprocalLatticeCoordinateSystem::set_b3_star_axis)
         .def("from_ub_matrix",
-            &reciprocal_lattice_coordinate_system::from_ub_matrix, (
+            &ReciprocalLatticeCoordinateSystem::from_ub_matrix, (
                 arg("ub")))
         .def("to_ub_matrix",
-            &reciprocal_lattice_coordinate_system::to_ub_matrix);
+            &ReciprocalLatticeCoordinateSystem::to_ub_matrix);
  
- }
+}
 
-}}}
+} // namespace = boost_python
+
+}} // namespace = dials::geometry

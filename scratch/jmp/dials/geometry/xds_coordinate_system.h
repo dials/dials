@@ -8,12 +8,12 @@
 namespace dials { namespace geometry {
 
 /** Class representing XDS coordinate system */
-class xds_coordinate_system {
+class XdsCoordinateSystem {
 
 public:
 
     /** Default constructor */
-    xds_coordinate_system() {}
+    XdsCoordinateSystem() {}
 
     /** 
      * Initialise coordinate system
@@ -22,10 +22,10 @@ public:
      * @param m2 The rotation axis
      * @param phi The rotation angle
      */
-    xds_coordinate_system(scitbx::vec3 <double> s0,
-                          scitbx::vec3 <double> s1,
-                          scitbx::vec3 <double> m2,
-                          double phi)
+    XdsCoordinateSystem(scitbx::vec3 <double> s0,
+                        scitbx::vec3 <double> s1,
+                        scitbx::vec3 <double> m2,
+                        double phi)
         : _e1(s1.cross(s0).normalize()),
           _e2(s1.cross(_e1).normalize()),
           _e3((s1 + s0).normalize()),
@@ -61,6 +61,6 @@ private:
     double _zeta;
 };
 
-}}
+}} // namespace = dials::geometry
 
 #endif // DIALS_GEOMETRY_XDS_COORDINATE_SYSTEM_H
