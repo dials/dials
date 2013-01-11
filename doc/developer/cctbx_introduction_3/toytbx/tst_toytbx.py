@@ -1,7 +1,9 @@
-from toytbx import make_list
+import scitbx.array_family.flex
+import toytbx
 
 def tst_toytbx():
-    assert(make_list(4) == [j for j in range(4)])
+    assert(toytbx.make_list(4) == [j for j in range(4)])
+    assert(sum(toytbx.make_flex(10)) == toytbx.sum(toytbx.make_flex(10)))
     print 'OK'
 
 if __name__ == '__main__':

@@ -147,6 +147,81 @@ Graemes-MacBook-Pro:toytbx graeme$ toytbx.make_list 10
 \end{verbatim}
 }
 
+\section{Being a Little More ... Flexible}
+
+Passing around Python lists is all well and good, but these are an
+expensive representation of the data and not much use if you want to
+pass the result on to other C++ code for more calculations. For this
+reason flex arrays are used, which have both C++ and Python
+representations but most critically are stored in a memory efficient
+way. Adding the following code snippets demonstrates the generation of
+flex arrays in one routine and usage of them elsewhere:
+
+{\small
+\begin{verbatim}
+    // make a flex array (much more flexible)
+
+    static scitbx::af::shared<int> make_flex(size_t n)
+    {
+      scitbx::af::shared<int> result;
+      for(size_t i = 0; i < n; i++) {
+	result.push_back(i);
+      }
+      return result;
+    }
+
+    // using flex arrays
+
+    static int sum(scitbx::af::shared<int> array)
+    {
+      int result = 0;
+      for (size_t i = 0; i < array.size(); i++) {
+	result += array[i];
+      }
+      return result;
+    }
+
+    void init_module()
+    {
+      using namespace boost::python;
+      def("make_list", make_list, (arg("size")));
+      def("make_flex", make_flex, (arg("size")));
+      def("sum", sum, (arg("array")));
+    }
+\end{verbatim}
+}
+
+These behave very similarly to lists in Python, however in the Python
+code the following \emph{must} be added before these arrays are used:
+
+{\small
+\begin{verbatim}
+import scitbx.array_family.flex
+\end{verbatim}
+}
+
+\noindent
+otherwise nasty errors will result. Accordingly, the test should
+ideally be extended to:
+
+{\small
+\begin{verbatim}
+import scitbx.array_family.flex
+import toytbx
+
+def tst_toytbx():
+    assert(toytbx.make_list(4) == [j for j in range(4)])
+    assert(sum(toytbx.make_flex(10)) == toytbx.sum(toytbx.make_flex(10)))
+    print 'OK'
+
+if __name__ == '__main__':
+    tst_toytbx()
+\end{verbatim}
+} 
+
+\noindent
+to make sure everything is well behaved.
+
 \section{Acknowledgements}
 
 This was prepared based on the fable module, after a pointer from Nat Echols and remembering things from Nick Sauter and Ralf Grosse-Kunstleve.
