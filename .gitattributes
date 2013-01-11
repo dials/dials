@@ -128,7 +128,6 @@ scratch/jmp/dials/geometry/xds_coordinate_system.h -text
 scratch/jmp/dials/io/__init__.py -text
 scratch/jmp/dials/io/pycbf_extra.py -text
 scratch/jmp/dials/io/xdsio.py -text
-scratch/jmp/dials/old -text
 scratch/jmp/dials/util/SConscript -text
 scratch/jmp/dials/util/__init__.py -text
 scratch/jmp/dials/util/boost_python/util_ext.cc -text
