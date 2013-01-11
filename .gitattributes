@@ -8,6 +8,8 @@ doc/developer/cctbx_introduction_2/cctbx_introduction_2.mat -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.pdf -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.py -text
 doc/developer/cctbx_introduction_2/cctbx_introduction_2.tex -text
+doc/developer/cctbx_introduction_3/cctbx_introduction_3.pdf -text
+doc/developer/cctbx_introduction_3/cctbx_introduction_3.tex -text
 doc/developer/cctbx_introduction_3/toytbx/SConscript -text
 doc/developer/cctbx_introduction_3/toytbx/__init__.py -text
 doc/developer/cctbx_introduction_3/toytbx/command_line/make_list.py -text

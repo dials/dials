@@ -4,7 +4,7 @@
 namespace toytbx { 
   namespace ext {
 
-    static boost::python::list make_list(unsigned int n)
+    static boost::python::list make_list(size_t n)
     {
       boost::python::list result;
       for(size_t i = 0; i < n; i++) {
