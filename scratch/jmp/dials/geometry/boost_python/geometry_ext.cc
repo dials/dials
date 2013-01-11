@@ -12,7 +12,7 @@ void export_detector_coordinate_system();
 void export_reciprocal_lattice_coordinate_system();
 void export_xds_coordinate_system();
 
-BOOST_PYTHON_MODULE(geometry_ext)
+BOOST_PYTHON_MODULE(dials_geometry_ext)
 {
     export_detector_coordinate_system();
     export_reciprocal_lattice_coordinate_system();

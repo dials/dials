@@ -47,6 +47,7 @@ doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/jmp/SConstruct -text
+scratch/jmp/build.sh -text
 scratch/jmp/cctbx_exercises/.project -text
 scratch/jmp/cctbx_exercises/.pydevproject -text
 scratch/jmp/cctbx_exercises/data/GXPARM.XDS -text

@@ -15,7 +15,7 @@ void export_from_detector_to_beam_vector();
 void export_from_beam_vector_to_xds();
 void export_from_detector_to_xds();
 
-BOOST_PYTHON_MODULE(transform_ext)
+BOOST_PYTHON_MODULE(dials_geometry_transform_ext)
 {
     export_from_hkl_to_beam_vector();
     export_from_beam_vector_to_detector();

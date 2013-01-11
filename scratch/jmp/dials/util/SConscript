@@ -1,6 +1,8 @@
 
 Import('env')
 
+print "Building UTIL"
+
 sources = ['boost_python/util_ext.cc']
 
-env.SharedLibrary(target='util_ext', source=sources)
+env.SharedLibrary(target='#/lib/dials_util_ext', source=sources)

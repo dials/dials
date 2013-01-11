@@ -11,7 +11,7 @@ namespace boost_python {
 void export_xds_transform();
 void export_xds_transform_grid();
 
-BOOST_PYTHON_MODULE(algorithm_ext)
+BOOST_PYTHON_MODULE(dials_geometry_algorithm_ext)
 {
     export_xds_transform();
     export_xds_transform_grid();

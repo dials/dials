@@ -10,4 +10,4 @@ sources = [
     'boost_python/from_hkl_to_detector.cc',
     'boost_python/transform_ext.cc']
 
-env.SharedLibrary(target='transform_ext', source=sources)
+env.SharedLibrary(target='#/lib/dials_geometry_transform_ext', source=sources)

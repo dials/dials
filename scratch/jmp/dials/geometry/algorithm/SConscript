@@ -6,4 +6,4 @@ sources = [
     'boost_python/xds_transform_grid.cc',
     'boost_python/algorithm_ext.cc']
 
-env.SharedLibrary(target='algorithm_ext', source=sources)
+env.SharedLibrary(target='#/lib/dials_geometry_algorithm_ext', source=sources)

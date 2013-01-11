@@ -1,1 +1,1 @@
-from algorithm_ext import *
+from dials_geometry_algorithm_ext import *

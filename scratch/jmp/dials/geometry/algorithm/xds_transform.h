@@ -292,12 +292,12 @@ public:
           image_(image),
           image__size(image_size),
           roi_size_(roi_size),
+          grid_size_(grid.get_size()),
           grid_origin_(grid.get_origin()),
           step_size_(grid.get_step_size()),
-          grid_size_(grid.get_size()),
-          starting_frame_(gonio.get_starting_frame()),
-          m2_(gonio.get_rotation_axis()),
           s0_(beam.get_direction()),
+          m2_(gonio.get_rotation_axis()),
+          starting_frame_(gonio.get_starting_frame()),
           n_div_(n_div)
     {
         // Check the input

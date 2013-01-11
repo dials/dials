@@ -16,11 +16,9 @@ def extract_reflection_profiles():
     from dials.geometry import XdsCoordinateSystem
     from dials.geometry.transform import FromDetectorToBeamVector
     from dials.geometry.transform import FromBeamVectorToXds
-#    from dials.old.detector import CoordinateSystem as DetectorCoordinateSystem
     from dials.old.reflection.mask import ReflectionMask 
     from dials.old.reflection.grid import Grid
     from dials.old.reflection.grid_mapper import GridMapper
-#    from dials.old.reflection.coordinate_system import CoordinateSystem as ReflectionCoordinateSystem
     from dials.io.pycbf_extra import search_for_image_volume
     # Set a load of parameters from the GXPARM file
     z0 = 1
@@ -64,15 +62,10 @@ def extract_reflection_profiles():
     gonio = Goniometer(m2, phi0, dphi, z0)
     detector = Detector(d1, d2, d3, (dx0, dy0), (px, py), (dx, dy), f)
     
-    # Create the reflection coordinate system
-    #rcs = ReflectionCoordinateSystem(s0, s1, m2, phi)
-    
     rcs = XdsCoordinateSystem(s0, s1, m2, phi)
     dcs = DetectorCoordinateSystem(d1, d2, d3)
     lcs_to_rcs = FromBeamVectorToXds(rcs, s1, phi)
     dcs_to_lcs = FromDetectorToBeamVector(dcs.in_si_units((px, py)), (dx0, dy0), f)
-    
-    #dcs = DetectorCoordinateSystem(d1, d2, d3, f, (dx0, dy0), (px, py))
 
     rmask = ReflectionMask(sigma_d, sigma_m)
 
@@ -101,15 +94,15 @@ def extract_reflection_profiles():
 
     
     #fig = pylab.figure(figsize=(6,4), dpi=300)
-    #for i in range(0,9):
-    #    ax = pylab.subplot(3, 3, i+1)
-    #    plt=pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0, 
-    #        vmax=numpy.max(grid.get_grid(0)), cmap=cm.Greys_r)
-    #    plt.axes.get_xaxis().set_ticks([])
-    #    plt.axes.get_yaxis().set_ticks([])   
-    #    ax.set_title("slice: {0}".format(i))         
+    for i in range(0,9):
+        ax = pylab.subplot(3, 3, i+1)
+        plt=pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0, 
+            vmax=numpy.max(grid.get_grid(0)), cmap=cm.Greys_r)
+        plt.axes.get_xaxis().set_ticks([])
+        plt.axes.get_yaxis().set_ticks([])   
+        ax.set_title("slice: {0}".format(i))         
     #fig.savefig('/home/upc86896/Documents/Transformed.tiff')
-    #pylab.show()
+    pylab.show()
 
 
     # Display the grid
