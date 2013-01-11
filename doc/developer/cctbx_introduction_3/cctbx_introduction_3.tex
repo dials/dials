@@ -9,9 +9,9 @@
 
 \section{Introduction}
 
-Much of the benefit of the hybrid approach to CCTBX (http://cctbx.sourceforge.net/current/tour.html\#thinking-hybrid) is the ability to move computationally expensive steps from Python to C++ relatively straightforwardly. It is however helpful to have an example of how to create C++ extensions and compile these with the existing compilation tools. The aim of this document is to provide this example with a toy example, toytbx. Some introductory information is however useful.
+Much of the benefit of the hybrid approach to CCTBX\footnote{http://cctbx.sourceforge.net/current/tour.html\#thinking-hybrid} is the ability to move computationally expensive steps from Python to C++ relatively straightforwardly. It is however helpful to have an example of how to create C++ extensions and compile these with the existing compilation tools. The aim of this document is to provide this example with a toy example, toytbx. Some introductory information is however useful.
 
-Within CCTBX C++ code is made available to Python using the Boost Python framework (http://www.boost.org/libs/python/doc/) and compiled with SCons (http://www.scons.org/.) Two steps are therefore needed to expose C++ code: writing a wrapper using Boost Python and a SConscript for compilation. Using this libtbx does most of the work. In addition it is nice to expose functionality as ``pseudo-executable'' programs e.g. toytbx.task - this is also handled automatically by libtbx.
+Within CCTBX C++ code is made available to Python using the Boost Python framework\footnote{http://www.boost.org/libs/python/doc/} and compiled with SCons\footnote{http://www.scons.org/}. Two steps are therefore needed to expose C++ code: writing a wrapper using Boost Python and a SConscript for compilation. Using this libtbx does most of the work. In addition it is nice to expose functionality as ``pseudo-executable'' programs e.g. toytbx.task - this is also handled automatically by libtbx.
 
 \section{C++ Code}
 
