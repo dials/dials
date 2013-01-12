@@ -5,6 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include <exception>
+#include <boost/math/special_functions/erf.hpp>
 #include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
@@ -121,8 +122,8 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
         
         // Calculate the integral over rj (leaving out scaling factors):
         // I[exp(-(phi' - phi)^2 / (2 sigma^2)]
-        double integral_j = (erf((bj - phi) * sigr2) - 
-                             erf((aj - phi) * sigr2));
+        double integral_j = (boost::math::erf((bj - phi) * sigr2) - 
+                             boost::math::erf((aj - phi) * sigr2));
         
         // If integral is zero then set fractions to 0.0
         if (integral_j == 0.0) {
@@ -153,8 +154,9 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
                 if (av3j >= bv3j) {
                     fraction[i] = 0;
                 } else {
-                    fraction[i] = (erf((bv3j - phi) * sigr2) - 
-                                   erf((av3j - phi) * sigr2)) * integral_j_r;
+                    fraction[i] = (boost::math::erf((bv3j - phi) * sigr2) - 
+                                   boost::math::erf((av3j - phi) * sigr2)) * 
+								   integral_j_r;
                 }
                 
                 // Increment array index
