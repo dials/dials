@@ -28,14 +28,17 @@ public:
      *                 elements in the input data array
      */
     SubtractBackground(scitbx::af::flex_int image_volume,
-                       scitbx::vec3 <int> image_size,
                        scitbx::vec3 <int> roi_size,
                        double delta = 0.1, 
                        double max_iter_frac = 0.1) 
         : image_volume_(image_volume),
-          image_size_(image_size),
           roi_size_(roi_size),
-          background_intensity_(delta, max_iter_frac) {}
+          background_intensity_(delta, max_iter_frac) 
+    {
+        if (image_volume_.accessor().all().size() != 3) {
+            throw std::runtime_error("Image volume must be 3D");
+        }
+    }
 
     /**
      * Calculate the background intensity
@@ -43,19 +46,25 @@ public:
      */
     void subtract(flex_vec3_double xyz) 
     {
-        int data_size = (2 * roi_size_[0] + 1) *
-                        (2 * roi_size_[1] + 1) *
-                        (2 * roi_size_[2] + 1);
-        int stride_x = image_size_[0];
-        int stride_y = image_size_[1] * stride_x;
-        scitbx::af::flex_double data(data_size);
+        // Allocate memory for a temp array
+        scitbx::af::flex_double data((2 * roi_size_[0] + 1) * 
+                                     (2 * roi_size_[1] + 1) *
+                                     (2 * roi_size_[2] + 1));
+        
+        // Calculate the image stride
+        int stride_x = image_volume_.accessor().all()[2];
+        int stride_y = image_volume_.accessor().all()[1] * stride_x;
+
+        // Loop through all the given reflection detector points.
         for (int index = 0; index < xyz.size(); ++index) {
-            int x0 = (int)xyz[index][0] - roi_size_[0];
-            int x1 = (int)xyz[index][0] + roi_size_[0];
+            
+            // Copy the image pixels into a temp array
+            int x0 = (int)xyz[index][0] - roi_size_[2];
+            int x1 = (int)xyz[index][0] + roi_size_[2];
             int y0 = (int)xyz[index][1] - roi_size_[1];
             int y1 = (int)xyz[index][1] + roi_size_[1];
-            int z0 = (int)xyz[index][2] - roi_size_[2];
-            int z1 = (int)xyz[index][2] + roi_size_[2];
+            int z0 = (int)xyz[index][2] - roi_size_[0];
+            int z1 = (int)xyz[index][2] + roi_size_[0];
             int data_index = 0;
             for (int k = z0; k <= z1; ++k) {
                 for (int j = y0; j <= y1; ++j) {
@@ -92,7 +101,6 @@ public:
 private:
 
     scitbx::af::flex_int image_volume_;
-    scitbx::vec3 <int> image_size_;
     scitbx::vec3 <int> roi_size_;
     BackgroundIntensity background_intensity_;
 };

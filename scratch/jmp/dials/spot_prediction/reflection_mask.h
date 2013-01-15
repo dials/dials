@@ -25,7 +25,7 @@ public:
      */
     ReflectionMask(scitbx::vec3 <int> size, 
                    scitbx::vec3 <int> roi_size)
-        : mask_(scitbx::af::flex_grid <> (size[2], size[1], size[0])),
+        : mask_(scitbx::af::flex_grid <> (size[0], size[1], size[2])),
                 size_(size),
                 roi_size_(roi_size) {}
 
@@ -52,16 +52,16 @@ public:
         // compare it to the distance between the mask point and the new 
         // reflection xyz point. If the new distance is lower than the old,
         // then set the mask value to the new reflection index.
-        int mask_stride_x = size_[0];
+        int mask_stride_x = size_[2];
         int mask_stride_y = mask_stride_x * size_[1];	
         for (int index = 0; index < reflection_xyz.size(); ++index) {
             scitbx::vec3 <double> xyz = reflection_xyz[index];
-            int x0 = (int)xyz[0] - roi_size_[0];
-            int x1 = (int)xyz[0] + roi_size_[0];
+            int x0 = (int)xyz[0] - roi_size_[2];
+            int x1 = (int)xyz[0] + roi_size_[2];
             int y0 = (int)xyz[1] - roi_size_[1];
             int y1 = (int)xyz[1] + roi_size_[1];
-            int z0 = (int)xyz[2] - roi_size_[2];
-            int z1 = (int)xyz[2] + roi_size_[2];
+            int z0 = (int)xyz[2] - roi_size_[0];
+            int z1 = (int)xyz[2] + roi_size_[0];
             for (int k = z0; k <= z1; ++k) {
                 for (int j = y0; j <= y1; ++j) {
                     for (int i = x0; i <= x1; ++i) {

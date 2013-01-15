@@ -14,15 +14,14 @@ void export_subtract_background()
     class_ <SubtractBackground> ("SubtractBackground")
         .def(init <scitbx::af::flex_int,
                    scitbx::vec3 <int>,
-                   scitbx::vec3 <int>,
                    double,
                    double> ((
             arg("image_volume"),
-            arg("image_size"),
             arg("roi_size"),
             arg("delta"),
             arg("max_iter"))))
-        .def("subtract", &SubtractBackground::subtract);
+        .def("subtract", &SubtractBackground::subtract, (
+            arg("xyz")));
 }
 
 } // namespace = boost_python

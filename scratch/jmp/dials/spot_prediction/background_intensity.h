@@ -46,12 +46,6 @@ public:
     {
         // Calculate the background value
         double background = this->calculate_background_intensity(data);
-    
-        // Loop through elements, subtract background and ensure >= 0
-        //for (int i = 0; i < data.size(); ++i) {
-        //    data[i] -= background;
-        //    if (data[i] < 0) data[i] = 0.0;
-        //}
         
         // Return the background
         return background;       

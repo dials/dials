@@ -17,7 +17,12 @@ public:
     XdsTransformGrid() {}
 
     /** 
-     * Initialise grid 
+     * Initialise grid
+     * @param n_ref The number of reflections
+     * @param origin The origin of the grid (size = 2 * origin + 1)
+     * @param sigma_divergence The standard deviation of the beam divergence
+     * @param sigma_mosaicity The standard deviation of the mosaicity
+     * @param n_sigma The number of standard deviations to cover
      */
     XdsTransformGrid(std::size_t n_ref,
                      scitbx::vec3 <std::size_t> origin,
@@ -62,38 +67,47 @@ public:
 
 public:
 
+    /** Get the number of reflections */
     std::size_t get_n_reflections() {
         return n_ref_;
     }
     
+    /** Get the size of the individual grids */
     scitbx::vec3 <std::size_t> get_size() {
         return size_;
     }
 
+    /** Get the grid origin */
     scitbx::vec3 <std::size_t> get_origin() {
         return origin_;
     }
 
+    /** Get the grid step sizes */
     scitbx::vec3 <double> get_step_size() {
         return step_size_;
     }
     
+    /** Get the standard deviation of the beam divergence */
     double get_sigma_divergence() {
         return sigma_divergence_;
     }
     
+    /** Get the standard deviation of the mosaicity */
     double get_sigma_mosaicity() {
         return sigma_mosaicity_;
     }
     
+    /** Get the multiple of the standard deviation of the beam divergence */
     double get_delta_divergence() {
         return delta_divergence_;
     }
     
+    /** Get the multiple of the standard deviation of the mosaicity */
     double get_delta_mosaicity() {
         return delta_mosaicity_;
     }
 
+    /** Get the grid data */
     scitbx::af::flex_double get_data() {
         return data_;
     }

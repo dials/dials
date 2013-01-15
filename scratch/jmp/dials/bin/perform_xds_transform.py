@@ -55,9 +55,6 @@ def extract_reflection_profiles():
     image_volume = search_for_image_volume('/home/upc86896/Projects/data/300k/ximg2700*.cbf')
     image_volume = flex.int(image_volume)
     image_volume_copy = image_volume.deep_copy()
-    #image_volume = image_volume.astype(numpy.float64)
-#    image_volume_copy = numpy.copy(image_volume)
-
 
     # Make sure vectors are really of length 1/lambda
     s0 = s0.normalize() / l
@@ -70,21 +67,19 @@ def extract_reflection_profiles():
     
     rcs = XdsCoordinateSystem(s0, s1, m2, phi)
     dcs = DetectorCoordinateSystem(d1, d2, d3)
-    #lcs_to_rcs = FromBeamVectorToXds(rcs, s1, phi)
-    #dcs_to_lcs = FromDetectorToBeamVector(dcs.in_si_units((px, py)), (dx0, dy0), f)
 
-    #reflection_mask = ReflectionMask(image_volume.shape[::-1], roi_size=(4,4,1))
-    #reflection_mask.create(flex.vec3_double(1, (sx, sy, sz-z0)))
-      
-    roi_size = (4, 4, 1)
-    x0 = int(sx) - roi_size[0]
-    x1 = int(sx) + roi_size[0]
+    roi_size = (1, 4, 4)
+    x0 = int(sx) - roi_size[2]
+    x1 = int(sx) + roi_size[2]
     y0 = int(sy) - roi_size[1]
     y1 = int(sy) + roi_size[1]
-    z0 = int(sz) - int(gonio.starting_frame) - roi_size[2]
-    z1 = int(sz) - int(gonio.starting_frame) + roi_size[2]    
+    z0 = int(sz) - int(gonio.starting_frame) - roi_size[1]
+    z1 = int(sz) - int(gonio.starting_frame) + roi_size[1]    
+
+    #reflection_mask = ReflectionMask(image_volume.all(), roi_size=roi_size)
+    #reflection_mask.create(flex.vec3_double(1, (sx, sy, sz-z0)))
     
-    subtract_background = SubtractBackground(image_volume, image_volume.all()[::-1], roi_size, 0.1, 0.1)
+    subtract_background = SubtractBackground(image_volume, roi_size, 0.1, 0.1)
     subtract_background.subtract(flex.vec3_double(1, (sx, sy, sz-gonio.starting_frame)))
     
     xds_grid = XdsTransformGrid(1, (4, 4, 4), sigma_d, sigma_m)

@@ -47,8 +47,8 @@ class GxParmFile:
             An instance of the goniometer struct
         
         """
-        from dials.equipment import goniometer
-        return goniometer(self.rotation_axis,
+        from dials.equipment import Goniometer
+        return Goniometer(self.rotation_axis,
                           self.starting_angle,
                           self.oscillation_range,
                           int(self.starting_frame))
@@ -60,9 +60,9 @@ class GxParmFile:
             An instance of the beam struct
         
         """
-        from dials.equipment import beam
+        from dials.equipment import Beam
         from scitbx import matrix
-        return beam(matrix.col(self.beam_vector).normalize() / self.wavelength, 
+        return Beam(matrix.col(self.beam_vector).normalize() / self.wavelength, 
                     self.wavelength)
         
     def get_detector(self):
@@ -72,8 +72,8 @@ class GxParmFile:
             An instance of the detector struct
         
         """    
-        from dials.equipment import detector
-        return detector(self.detector_x_axis,
+        from dials.equipment import Detector
+        return Detector(self.detector_x_axis,
                         self.detector_y_axis,
                         self.detector_normal,
                         self.detector_origin,
@@ -88,10 +88,10 @@ class GxParmFile:
             An instance of the detector coordinate system
         
         """    
-        from dials.geometry import detector_coordinate_system
-        return detector_coordinate_system(self.detector_x_axis,
-                                          self.detector_y_axis,
-                                          self.detector_normal)
+        from dials.geometry import DetectorCoordinateSystem
+        return DetectorCoordinateSystem(self.detector_x_axis,
+                                        self.detector_y_axis,
+                                        self.detector_normal)
                                           
     def get_reciprocal_lattice_coordinate_system(self):
         """Get the reciprocal lattice coordinate system from the file
@@ -100,13 +100,13 @@ class GxParmFile:
             An instance of the reciprocal lattice coordinate system
         
         """      
-        from dials.geometry import reciprocal_lattice_coordinate_system
+        from dials.geometry import ReciprocalLatticeCoordinateSystem
         from scitbx import matrix
         ub_matrix = matrix.sqr(
                 self.unit_cell_a_axis + 
                 self.unit_cell_b_axis + 
                 self.unit_cell_c_axis).inverse()
-        return reciprocal_lattice_coordinate_system(ub_matrix)
+        return ReciprocalLatticeCoordinateSystem(ub_matrix)
         
 class IntegrateFile:
     """A class to read the INTEGRATE.HKL file used in XDS"""

@@ -13,10 +13,10 @@ from dials.io import pycbf_extra
 import h5py
 from dials.io import xdsio
 import numpy
-from dials.equipment import beam, goniometer, detector
-from dials.geometry.transform import from_hkl_to_beam_vector
-from dials.geometry.transform import from_hkl_to_detector
-from dials.geometry.transform import from_beam_vector_to_detector
+from dials.equipment import Beam, Goniometer, Detector
+from dials.geometry.transform import FromHklToBeamVector
+from dials.geometry.transform import FromHklToDetector
+from dials.geometry.transform import FromBeamVectorToDetector
 
 def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group, 
                                          dmin, wavelength, m2):
@@ -207,9 +207,9 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     print "Calculate detector coordinates"
     
     # Create the transform object
-    hkl_to_xy = from_hkl_to_detector(rlcs, beam.direction, gonio.rotation_axis,
-                                     dcs.in_pixel_units(detector.pixel_size), 
-                                     detector.origin, detector.distance)
+    hkl_to_xy = FromHklToDetector(rlcs, beam.direction, gonio.rotation_axis,
+                                  dcs.in_pixel_units(detector.pixel_size), 
+                                  detector.origin, detector.distance)
 
     # Transform all the reflections from hkl to detector coordinates
     from math import pi
