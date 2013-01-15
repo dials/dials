@@ -16,10 +16,13 @@ def extract_reflection_profiles():
     from dials.geometry import XdsCoordinateSystem
     from dials.geometry.transform import FromDetectorToBeamVector
     from dials.geometry.transform import FromBeamVectorToXds
-    from dials.old.reflection.mask import ReflectionMask 
-    from dials.old.reflection.grid import Grid
-    from dials.old.reflection.grid_mapper import GridMapper
+    from dials.spot_prediction import ReflectionMask
+    from dials.spot_prediction import SubtractBackground
+    from dials.geometry.algorithm import XdsTransform
+    from dials.geometry.algorithm import XdsTransformGrid
     from dials.io.pycbf_extra import search_for_image_volume
+    from scitbx.array_family import flex
+    
     # Set a load of parameters from the GXPARM file
     z0 = 1
     phi0 = 1.0
@@ -50,8 +53,11 @@ def extract_reflection_profiles():
 
     # Load the CBF image volume
     image_volume = search_for_image_volume('/home/upc86896/Projects/data/300k/ximg2700*.cbf')
+    image_volume = flex.int(image_volume)
+    image_volume_copy = image_volume.deep_copy()
+    #image_volume = image_volume.astype(numpy.float64)
+#    image_volume_copy = numpy.copy(image_volume)
 
-    image_volume_copy = numpy.copy(image_volume)
 
     # Make sure vectors are really of length 1/lambda
     s0 = s0.normalize() / l
@@ -64,28 +70,45 @@ def extract_reflection_profiles():
     
     rcs = XdsCoordinateSystem(s0, s1, m2, phi)
     dcs = DetectorCoordinateSystem(d1, d2, d3)
-    lcs_to_rcs = FromBeamVectorToXds(rcs, s1, phi)
-    dcs_to_lcs = FromDetectorToBeamVector(dcs.in_si_units((px, py)), (dx0, dy0), f)
+    #lcs_to_rcs = FromBeamVectorToXds(rcs, s1, phi)
+    #dcs_to_lcs = FromDetectorToBeamVector(dcs.in_si_units((px, py)), (dx0, dy0), f)
 
-    rmask = ReflectionMask(sigma_d, sigma_m)
+    #reflection_mask = ReflectionMask(image_volume.shape[::-1], roi_size=(4,4,1))
+    #reflection_mask.create(flex.vec3_double(1, (sx, sy, sz-z0)))
+      
+    roi_size = (4, 4, 1)
+    x0 = int(sx) - roi_size[0]
+    x1 = int(sx) + roi_size[0]
+    y0 = int(sy) - roi_size[1]
+    y1 = int(sy) + roi_size[1]
+    z0 = int(sz) - int(gonio.starting_frame) - roi_size[2]
+    z1 = int(sz) - int(gonio.starting_frame) + roi_size[2]    
+    
+    subtract_background = SubtractBackground(image_volume, image_volume.all()[::-1], roi_size, 0.1, 0.1)
+    subtract_background.subtract(flex.vec3_double(1, (sx, sy, sz-gonio.starting_frame)))
+    
+    xds_grid = XdsTransformGrid(1, (4, 4, 4), sigma_d, sigma_m)
+    xds_trans = XdsTransform(xds_grid,
+                             image_volume,
+                             image_volume.all()[::-1],
+                             detector,
+                             beam,
+                             gonio,
+                             roi_size)
 
-    # Create the grid and mapper to convert detector to reflection coords
-    #grid = Grid(1, grid_size=(9, 9, 9), step_size=(0.08, 0.08, 1.0))
-    grid = Grid(1, grid_size=(9, 9, 9), sigma_divergence=sigma_d, sigma_mosaicity=sigma_m)
-    mapper = GridMapper(gonio, detector, beam, grid, dcs, dcs_to_lcs, image_volume)
-    mapper.map_reflection(0, rcs, lcs_to_rcs, rmask, sx, sy, sz, s1, phi, l)
-
-#    print 1/0
+    xds_trans.calculate(0, (sx, sy, sz), s1, phi)
+    grid = xds_grid.data
 
     from matplotlib import cm, rcParams
-
+    
+#    mask = reflection_mask.mask.as_numpy_array()
     #rcParams.update({'font.size': 6})
 
 
     #fig = pylab.figure(figsize=(6,4), dpi=300)
     #for i in range(0,9):
     #    ax = pylab.subplot(3, 3, i+1)
-    #    plt = pylab.imshow(image_volume_copy[sz-4-1+i,sy-4:sy+4+1,sx-4:sx+4+1], vmin=0, vmax=2000, cmap=cm.Greys_r)
+    #    plt = pylab.imshow(image_volume[sz-4-1+i,sy-4:sy+4+1,sx-4:sx+4+1], vmin=0, vmax=2000, cmap=cm.Greys_r)
     #    plt.axes.get_xaxis().set_ticks([])
     #    plt.axes.get_yaxis().set_ticks([])   
     #    ax.set_title("slice: {0}".format(i))     
@@ -94,10 +117,18 @@ def extract_reflection_profiles():
 
     
     #fig = pylab.figure(figsize=(6,4), dpi=300)
+    sub_grid = grid[0:1,:,:,:]
+    sub_grid.reshape(flex.grid(sub_grid.all()[1:4]))
+
+    print (sub_grid.as_numpy_array() * 100).astype(numpy.int32)
+
     for i in range(0,9):
         ax = pylab.subplot(3, 3, i+1)
-        plt=pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0, 
-            vmax=numpy.max(grid.get_grid(0)), cmap=cm.Greys_r)
+        image = sub_grid[i:i+1,:,:]
+        image.reshape(flex.grid(image.all()[1:3]))
+        print image.all()
+        plt=pylab.imshow(image.as_numpy_array(), vmin=0, 
+            vmax=flex.max(sub_grid), cmap=cm.Greys_r)#, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
         plt.axes.get_yaxis().set_ticks([])   
         ax.set_title("slice: {0}".format(i))         
@@ -106,31 +137,31 @@ def extract_reflection_profiles():
 
 
     # Display the grid
-    grid_index = 0
-    minx = numpy.min(grid.get_grid_coordinates()[0])
-    maxx = numpy.max(grid.get_grid_coordinates()[0])
-    miny = numpy.min(grid.get_grid_coordinates()[1])
-    maxy = numpy.max(grid.get_grid_coordinates()[1])
-    minz = numpy.min(grid.get_grid(grid_index))
-    maxz = numpy.max(grid.get_grid(grid_index))
-    fig = pylab.figure()
-    for i in range(0, 9):
-        ax = fig.add_subplot(3, 3, i+1, projection='3d')
-        ax.set_xlim([minx, maxx])
-        ax.set_ylim([miny, maxy])
-        ax.set_zlim([minz, maxz])
-        ax.set_autoscalex_on(False)
-        ax.set_autoscaley_on(False)
-        ax.set_autoscalez_on(False)
-        plt=ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
-                          grid.get_grid_coordinates()[1][i,:,:],
-                          grid.get_grid(grid_index)[i,:,:])
-        ax.set_title("slice {0}".format(i))
+    #grid_index = 0
+    #minx = numpy.min(grid.get_grid_coordinates()[0])
+    #maxx = numpy.max(grid.get_grid_coordinates()[0])
+    #miny = numpy.min(grid.get_grid_coordinates()[1])
+    #maxy = numpy.max(grid.get_grid_coordinates()[1])
+    #minz = numpy.min(grid.get_grid(grid_index))
+    #maxz = numpy.max(grid.get_grid(grid_index))
+    #fig = pylab.figure()
+    #for i in range(0, 9):
+    #    ax = fig.add_subplot(3, 3, i+1, projection='3d')
+    #    ax.set_xlim([minx, maxx])
+    #    ax.set_ylim([miny, maxy])
+    #    ax.set_zlim([minz, maxz])
+    #    ax.set_autoscalex_on(False)
+    #    ax.set_autoscaley_on(False)
+    #    ax.set_autoscalez_on(False)
+    #    plt=ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
+    #                      grid.get_grid_coordinates()[1][i,:,:],
+    #                      grid.get_grid(grid_index)[i,:,:])
+    #    ax.set_title("slice {0}".format(i))
 #        plt.axes.get_xaxis().set_ticks(map(lambda x: minx + x * (maxx - minx) / 2, range(0, 3)))
 #        plt.axes.get_yaxis().set_ticks(map(lambda y: miny + y * (maxy - miny) / 2, range(0, 3)))
 #        plt.axes.get_zaxis().set_ticks([])
     #fig.savefig('/home/upc86896/Documents/Wireframe.tiff')
-    pylab.show()
+    #pylab.show()
 
 #    print grid.grid_data
  

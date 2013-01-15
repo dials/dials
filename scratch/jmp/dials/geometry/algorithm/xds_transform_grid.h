@@ -57,7 +57,7 @@ public:
         
         // Allocate memory for the grid array
         data_ = scitbx::af::flex_double(scitbx::af::flex_grid <> (
-            n_ref, size_[0], size_[1], size_[2]));
+            n_ref, size_[2], size_[1], size_[0]));
     }
 
 public:

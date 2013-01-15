@@ -151,6 +151,15 @@ scratch/jmp/dials/old/save_image_volume_images.py -text
 scratch/jmp/dials/old/test/__init__.py -text
 scratch/jmp/dials/old/test/test_detector_coordinate_system.py -text
 scratch/jmp/dials/old/xdsio.py -text
+scratch/jmp/dials/spot_prediction/SConscript -text
+scratch/jmp/dials/spot_prediction/__init__.py -text
+scratch/jmp/dials/spot_prediction/background_intensity.h -text
+scratch/jmp/dials/spot_prediction/boost_python/background_intensity.cc -text
+scratch/jmp/dials/spot_prediction/boost_python/reflection_mask.cc -text
+scratch/jmp/dials/spot_prediction/boost_python/spot_prediction_ext.cc -text
+scratch/jmp/dials/spot_prediction/boost_python/subtract_background.cc -text
+scratch/jmp/dials/spot_prediction/reflection_mask.h -text
+scratch/jmp/dials/spot_prediction/subtract_background.h -text
 scratch/jmp/dials/util/SConscript -text
 scratch/jmp/dials/util/__init__.py -text
 scratch/jmp/dials/util/boost_python/util_ext.cc -text
