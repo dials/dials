@@ -1,6 +1,6 @@
 
 
-def extract_reflection_profiles():
+def extract_reflection_profiles(paths):
     
     from scitbx import matrix
 
@@ -52,7 +52,7 @@ def extract_reflection_profiles():
     sz = z0 + (phi - phi0) / dphi
 
     # Load the CBF image volume
-    image_volume = search_for_image_volume('/home/upc86896/Projects/data/300k/ximg2700*.cbf')
+    image_volume = search_for_image_volume(paths)
     image_volume = flex.int(image_volume)
     image_volume_copy = image_volume.deep_copy()
 
@@ -175,8 +175,9 @@ def extract_reflection_profiles():
 
 if __name__ == '__main__':
 
+    import sys
     # Extract the reflection profiles
-    extract_reflection_profiles()    
+    extract_reflection_profiles(sys.argv[1])    
 
     
     
