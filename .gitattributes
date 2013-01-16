@@ -117,6 +117,7 @@ scratch/jmp/dials/geometry/transform/boost_python/from_detector_to_beam_vector.c
 scratch/jmp/dials/geometry/transform/boost_python/from_detector_to_xds.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_hkl_to_beam_vector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_hkl_to_detector.cc -text
+scratch/jmp/dials/geometry/transform/boost_python/from_xds_e3_to_phi.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_xds_to_beam_vector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_xds_to_detector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/transform_ext.cc -text
@@ -126,6 +127,7 @@ scratch/jmp/dials/geometry/transform/from_detector_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_detector_to_xds.h -text
 scratch/jmp/dials/geometry/transform/from_hkl_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_hkl_to_detector.h -text
+scratch/jmp/dials/geometry/transform/from_xds_e3_to_phi.h -text
 scratch/jmp/dials/geometry/transform/from_xds_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_xds_to_detector.h -text
 scratch/jmp/dials/geometry/xds_coordinate_system.h -text
@@ -190,3 +192,14 @@ scratch/jmp/extract_reflection_profiles/save_image_volume_images.py -text
 scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
+scratch/jmp/test/test_beam.py -text
+scratch/jmp/test/test_detector.py -text
+scratch/jmp/test/test_detector_coordinate_system.py -text
+scratch/jmp/test/test_from_beam_vector_to_detector.py -text
+scratch/jmp/test/test_from_beam_vector_to_xds.py -text
+scratch/jmp/test/test_from_detector_to_beam_vector.py -text
+scratch/jmp/test/test_from_detector_to_xds.py -text
+scratch/jmp/test/test_from_xds_to_beam_vector.py -text
+scratch/jmp/test/test_goniometer.py -text
+scratch/jmp/test/test_reciprocal_lattice_coordinate_system.py -text
+scratch/jmp/test/test_xds_coordinate_system.py -text

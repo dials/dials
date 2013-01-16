@@ -13,7 +13,8 @@ class FromDetectorToXds {
 public:
 
     /** Default constructor */
-    FromDetectorToXds() {}
+    FromDetectorToXds()
+        : wavelength_r_(0.0) {}
 
     /**
      * Initialise the transform using component transform objects.

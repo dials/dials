@@ -80,7 +80,7 @@ public:
         return DetectorCoordinateSystem(
             this->get_x_axis().normalize() / pixel_size[0],
             this->get_y_axis().normalize() / pixel_size[1],
-            this->get_normal());
+            this->get_normal().normalize());
     }
 
     /**
@@ -92,7 +92,7 @@ public:
         return DetectorCoordinateSystem(
             this->get_x_axis().normalize() * pixel_size[0],
             this->get_y_axis().normalize() * pixel_size[1],
-            this->get_normal());
+            this->get_normal().normalize());
     }
 
 private:

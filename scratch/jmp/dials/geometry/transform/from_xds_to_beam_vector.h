@@ -47,8 +47,7 @@ public:
      */   
     scitbx::vec3 <double> apply(scitbx::vec3 <double> c) {
         scitbx::vec3 <double> p = c[0] * scaled_e1_ + c[1] * scaled_e2_;
-        double b = (normalized_s1_ * p) * (normalized_s1_ * p) - 
-                   p.length_sq() + radius_ * radius_;
+        double b = radius_ * radius_ - p.length_sq();
         if (b < 0) {
             throw std::runtime_error("Could not convert XDS coordinate to S'");
         }
