@@ -20,10 +20,10 @@ void export_xds_coordinate_system()
                 arg("s1"), 
                 arg("m2"),
                 arg("phi"))))
-        .add_property("e1",   &XdsCoordinateSystem::get_e1_axis)
-        .add_property("e2",   &XdsCoordinateSystem::get_e2_axis)
-        .add_property("e3",   &XdsCoordinateSystem::get_e3_axis)
-        .add_property("zeta", &XdsCoordinateSystem::get_zeta);
+        .add_property("e1_axis", &XdsCoordinateSystem::get_e1_axis)
+        .add_property("e2_axis", &XdsCoordinateSystem::get_e2_axis)
+        .add_property("e3_axis", &XdsCoordinateSystem::get_e3_axis)
+        .add_property("zeta",    &XdsCoordinateSystem::get_zeta);
 }
 
 } // namespace = boost_python
