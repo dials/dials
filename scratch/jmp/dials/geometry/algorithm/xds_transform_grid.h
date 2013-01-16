@@ -5,6 +5,7 @@
 #include <exception>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
+#include "../../error.h"
 
 namespace dials { namespace geometry { namespace algorithm {
 
@@ -37,18 +38,10 @@ public:
           delta_mosaicity_(sigma_mosaicity  * n_sigma)
     {
         // Check input to ensure grid is valid
-        if (n_ref <= 0) {
-            throw std::runtime_error("n_reflections must be > 0");
-        }
-        if (origin[0] <= 0 || origin[1] <= 0 || origin[2] <= 0) {
-            throw std::runtime_error("origin must be > 0");
-        }
-        if (sigma_divergence <= 0.0 || sigma_mosaicity <= 0.0) {
-            throw std::runtime_error("sigma_d and sigma_m must be > 0");
-        }
-        if (n_sigma <= 0.0) {
-            throw std::runtime_error("n_sigma must be > 0");
-        } 
+        DIALS_ASSERT(n_ref > 0);
+        DIALS_ASSERT(origin[0] > 0 && origin[1] > 0 && origin[2] > 0);
+        DIALS_ASSERT(sigma_divergence > 0.0 && sigma_mosaicity > 0.0);
+        DIALS_ASSERT(n_sigma > 0.0);
 
         // Calculate the size of the grid
         size_[0] = 2 * origin_[0] + 1;

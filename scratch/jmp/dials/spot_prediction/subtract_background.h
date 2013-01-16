@@ -6,6 +6,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/math/mean_and_variance.h>
+#include "../error.h"
 #include "background_intensity.h"
 
 namespace dials { namespace spot_prediction {
@@ -35,9 +36,7 @@ public:
           roi_size_(roi_size),
           background_intensity_(delta, max_iter_frac) 
     {
-        if (image_volume_.accessor().all().size() != 3) {
-            throw std::runtime_error("Image volume must be 3D");
-        }
+        DIALS_ASSERT(image_volume_.accessor().all().size() == 3);
     }
 
     /**

@@ -6,6 +6,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/math/mean_and_variance.h>
+#include "../error.h"
 
 namespace dials { namespace spot_prediction {
 
@@ -30,12 +31,8 @@ public:
         : delta_(delta),
           max_iter_frac_(max_iter_frac) 
     {
-        if (delta_ <= 0.0 || delta_ >= 1.0) {
-            throw std::runtime_error("delta must be 0 < delta < 1");
-        }
-        if (max_iter_frac_ <= 0.0 || max_iter_frac_ >= 1.0) {
-            throw std::runtime_error("max_iter_frac, r must be 0 < f < 1"); 
-        }
+        DIALS_ASSERT(delta_ > 0.0 && delta_ < 1.0);
+        DIALS_ASSERT(max_iter_frac_ > 0.0 && max_iter_frac_ < 1.0);
     }
 
     /**

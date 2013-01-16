@@ -5,6 +5,7 @@
 #include <exception>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include "../../error.h"
 #include "../detector_coordinate_system.h"
 
 namespace dials { namespace geometry { namespace transform {
@@ -47,9 +48,7 @@ public:
      */
     scitbx::vec2 <double> apply(scitbx::vec3 <double> s1) {
         double s1_dot_n = s1 * normal_;
-        if (distance_ * s1_dot_n <= 0) {
-            throw std::runtime_error("Can't map beam vector to detector");
-        }
+        DIALS_ASSERT(distance_ * s1_dot_n > 0);
         return scitbx::vec2 <double> (
             origin_[0] + distance_ * (s1 * x_axis_) / s1_dot_n,
             origin_[1] + distance_ * (s1 * y_axis_) / s1_dot_n);

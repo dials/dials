@@ -94,6 +94,7 @@ scratch/jmp/dials/equipment/boost_python/equipment_ext.cc -text
 scratch/jmp/dials/equipment/boost_python/goniometer.cc -text
 scratch/jmp/dials/equipment/detector.h -text
 scratch/jmp/dials/equipment/goniometer.h -text
+scratch/jmp/dials/error.h -text
 scratch/jmp/dials/geometry/SConscript -text
 scratch/jmp/dials/geometry/__init__.py -text
 scratch/jmp/dials/geometry/algorithm/SConscript -text
@@ -192,6 +193,7 @@ scratch/jmp/extract_reflection_profiles/save_image_volume_images.py -text
 scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
+scratch/jmp/runtests.py -text
 scratch/jmp/test/test_beam.py -text
 scratch/jmp/test/test_detector.py -text
 scratch/jmp/test/test_detector_coordinate_system.py -text

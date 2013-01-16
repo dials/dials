@@ -10,6 +10,7 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
+#include "../../error.h"
 #include "../../equipment/detector.h"
 #include "../../equipment/beam.h"
 #include "../../equipment/goniometer.h"
@@ -94,8 +95,7 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
         double frame, double phi, double zeta)
 {
     // Check the value of zeta
-    if (zeta == 0.0) 
-        throw std::runtime_error("zeta == 0.0"); 
+    DIALS_ASSERT(zeta != 0.0);
         
     // Create an array to contain the intensity fractions
     int array_size = (2 * grid_origin_e3_ + 1) * (2 * roi_size__z + 1);
@@ -292,7 +292,7 @@ public:
         : 
           grid_(grid),
           image_(image),
-          image__size(image_size),
+          image_size_(image_size),
           roi_size_(roi_size),
           grid_size_(grid.get_size()),
           grid_origin_(grid.get_origin()),
@@ -303,12 +303,8 @@ public:
           n_div_(n_div)
     {
         // Check the input
-        if (n_div <= 0) {
-            throw std::runtime_error("n_div <= 0");
-        }
-        if (roi_size[0] <= 0 || roi_size[1] <= 0 || roi_size[2] <= 0) {
-            throw std::runtime_error("roi_size <= 0");
-        }
+        DIALS_ASSERT(n_div > 0);
+        DIALS_ASSERT(roi_size[0] > 0 && roi_size[1] > 0 && roi_size[2] > 0);
     
         // Create an object to calculate the detector beam vectors. Then 
         // Calculate and save the detector beam vectors.
@@ -334,7 +330,7 @@ private:
     XdsTransformGrid grid_;
     flex_vec3_double detector_s1_;
     scitbx::af::flex_int image_;
-    scitbx::vec3 <int> image__size;
+    scitbx::vec3 <int> image_size_;
     scitbx::vec3 <int> roi_size_;
     scitbx::vec3 <int> grid_size_;
     scitbx::vec3 <int> grid_origin_;
@@ -368,17 +364,16 @@ void XdsTransform::calculate(int reflection_index,
                              double phi)
 {
     // Check the reflection index
-    if (reflection_index < 0 || reflection_index >= grid_.get_n_reflections()) {
-        throw std::runtime_error("reflection_index, r, must be 0 <= r < n");
-    }
+    DIALS_ASSERT(reflection_index >= 0 && 
+                 reflection_index < grid_.get_n_reflections());
     
     // Constant for scaling values
     static const double r2d = 1.0 / scitbx::constants::pi_180;
 
     // Calculate the strides for indexing multidimensional arrays
-    int div_image_stride_x = image__size[0] * n_div_;
-    int image_stride_x = image__size[0];
-    int image_stride_y = image__size[1] * image_stride_x;
+    int div_image_stride_x = image_size_[0] * n_div_;
+    int image_stride_x = image_size_[0];
+    int image_stride_y = image_size_[1] * image_stride_x;
     int grid_stride_c1 = grid_size_[0];
     int grid_stride_c2 = grid_size_[1] * grid_stride_c1;
     int grid_stride_c3 = grid_size_[2] * grid_stride_c2;
@@ -396,11 +391,9 @@ void XdsTransform::calculate(int reflection_index,
     int z1 = ((int)xyz[2] + roi_size_[2] - starting_frame_); 
     
     // Check the data range
-    if (x0 < 0 || x1 >= image__size[0] * n_div_ ||
-        y0 < 0 || y1 >= image__size[1] * n_div_ ||
-        z0 < 0 || z1 >= image__size[2]) {
-        throw std::runtime_error("xyz0 < 0 || xyz1 >= image_size");    
-    }
+    DIALS_ASSERT(x0 >= 0 && x1 < image_size_[0] * n_div_ &&
+                 y0 >= 0 && y1 < image_size_[1] * n_div_ &&
+                 z0 >= 0 && z1 < image_size_[2]);
     
     // Calculate 1 / n_div and 1 / (n_div*n_div) for convenience
     double n_div_r = 1.0 / n_div_;
