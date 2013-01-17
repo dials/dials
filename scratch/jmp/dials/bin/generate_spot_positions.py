@@ -3,7 +3,7 @@
 """This module is a test exercise using CCTBX to do the spot prediction in the
 XDS method and to save the resulting spot profiles to a HDF file."""
 
-from cctbx.sgtbx import space_group, space_group_symbols
+from cctbx.sgtbx import space_group, space_group_symbols, space_group_type
 from scitbx import matrix
 from cctbx import uctbx
 from dials.old.lattice_point import LatticePoint
@@ -36,29 +36,42 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
     :returns: A list of reflection indices
     
     """
-    from rstbx.diffraction import rotation_angles
+    #from rstbx.diffraction import rotation_angles
     from scitbx import matrix
+    from dials import spot_prediction
+    import cctbx.sgtbx
 
     # Generate reflection indices from the unit cell parameters and resolution.
     # Then remove indices that are systemmatically absent because of symmetry.
-    index_generator = IndexGenerator(unit_cell, cell_space_group, dmin)
+    cell_space_group_type = space_group_type(cell_space_group)
+    gen2 = spot_prediction.IndexGenerator(unit_cell, cell_space_group_type, True, dmin)
+
+        #ind1 = index_generator.indices
+    print "Generating"
+    print gen2.next()
+    indices = gen2.to_array()
    
     # Construct an object to calculate the rotation of a reflection about
     # the (0, 1, 0) axis.
-    ra = rotation_angles(dmin, ub_matrix, wavelength, matrix.col(m2))
+    print "Calculating rotation angles"
+    from math import pi
+    rotation_angles = spot_prediction.RotationAngles(dmin, ub_matrix, wavelength, m2, (-pi, pi))
+    phi = rotation_angles.calculate(indices)
+  
+    print "UnZipping"
+    hkl = rotation_angles.miller_indices()
+#    index, phi = zip(*index_phi)
     
-    # Construct all the reflection objects
-    indices = [LatticePoint(hkl) for hkl in index_generator.indices]
- 
+    print len(hkl), len(phi)
+    print hkl[0], phi[0]
+  
     # Generate the intersection angles of the remaining reflections
+    print "Putting into an array"
     observable_reflections = []
-    #phi_hkl =[]
-    for h in indices:
-        if h.calculate_intersection_angles(ra):
-            observable_reflections.append(Reflection(h.hkl, h.phi[0]))
-            observable_reflections.append(Reflection(h.hkl, h.phi[1]))
-            #phi_hkl.append((hkl.phi[0], hkl.hkl))
-            #phi_hkl.append((hkl.phi[1], hkl.hkl))
+    for (hkl, phi) in zip(hkl, phi):
+        observable_reflections.append(Reflection(hkl,(phi * 180 / pi) % 360))
+            
+    print "Returning"            
             
     # Return the list of phi-angles
     return observable_reflections
@@ -198,7 +211,11 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     phi_min = gonio.starting_angle
     phi_max = gonio.get_angle_from_frame(volume_size_z)
     
+    print len(reflections)
+    
     reflections = select_reflections(phi_min, phi_max, reflections)
+    
+    print len(reflections)
     
     # Calculate the reflection detector coordinates. Calculate the 
     # diffracted beam vector for each reflection and find the pixel 
@@ -222,11 +239,24 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     
     # Filter the coordinates to those within the boundaries of the volume
     print "Filter Reflections"
+    #reflections = [r for r in reflections if r.xyz != None]
     reflections = [r for r in reflections if r.in_detector_volume(
                     [[0, volume_size_x], 
                      [0, volume_size_y],
                      [gonio.starting_angle, 
                       volume_size_z + gonio.starting_angle]])]
+    
+    print len(reflections)
+    
+    phi = [h.phi for h in reflections]
+    min_phi = min(phi)
+    max_phi = max(phi)
+    
+    print len(phi)
+    #print min_phi, max_phi
+    #from matplotlib import pylab
+    #pylab.hist(phi, bins=180)
+    #pylab.show()    
     
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
@@ -235,7 +265,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
         coords.append((r.xyz[0], r.xyz[1], r.xyz[2]-1))
     
     #print "Read Reflections from volume"
-    profiles = read_reflections_from_volume(volume, coords, bbox)
+    #profiles = read_reflections_from_volume(volume, coords, bbox)
 
     # Write the reflection profiles to a HDF5 file    
     #write_reflections_to_hdf5(hdf_path, volume, coords, profiles)
@@ -252,7 +282,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
         filtered_xy = [(x, y) for x, y, z in coords if i <= z < i+1]
         xcoords = [x for x, y in filtered_xy]
         ycoords = [y for x, y in filtered_xy]
-        intensities = [image[y, x] for x, y in filtered_xy]
+        #intensities = [image[y, x] for x, y in filtered_xy]
        #index = numpy.where(intensities == numpy.max(intensities))[0][0]
         #mean_intensity = numpy.mean(intensities)
         #diff_mean = numpy.abs(numpy.array(intensities)-mean_intensity)

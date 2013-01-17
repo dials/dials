@@ -162,10 +162,14 @@ scratch/jmp/dials/spot_prediction/SConscript -text
 scratch/jmp/dials/spot_prediction/__init__.py -text
 scratch/jmp/dials/spot_prediction/background_intensity.h -text
 scratch/jmp/dials/spot_prediction/boost_python/background_intensity.cc -text
+scratch/jmp/dials/spot_prediction/boost_python/index_generator.cc -text
 scratch/jmp/dials/spot_prediction/boost_python/reflection_mask.cc -text
+scratch/jmp/dials/spot_prediction/boost_python/rotation_angles.cc -text
 scratch/jmp/dials/spot_prediction/boost_python/spot_prediction_ext.cc -text
 scratch/jmp/dials/spot_prediction/boost_python/subtract_background.cc -text
+scratch/jmp/dials/spot_prediction/index_generator.h -text
 scratch/jmp/dials/spot_prediction/reflection_mask.h -text
+scratch/jmp/dials/spot_prediction/rotation_angles.h -text
 scratch/jmp/dials/spot_prediction/subtract_background.h -text
 scratch/jmp/dials/util/SConscript -text
 scratch/jmp/dials/util/__init__.py -text

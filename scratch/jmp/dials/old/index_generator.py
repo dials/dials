@@ -14,6 +14,7 @@ class IndexGenerator:
         
         """
         indices = self._generate_reflection_indices(uc, dmin)
+        #self.indices = indices
         self.indices = self._remove_absent_indices(indices, cell_space_group)
 
     def _generate_reflection_indices(self, uc, dmin):

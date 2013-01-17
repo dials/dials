@@ -34,6 +34,7 @@ class LatticePoint:
         # and append them to the list of phi-angles
         if ra(self.hkl):
             angles = ra.get_intersection_angles()
+#            self.phi = (angles[0], angles[1])
             self.phi = (angles[0] * r2d % 360, angles[1] * r2d % 360)
             return True
         

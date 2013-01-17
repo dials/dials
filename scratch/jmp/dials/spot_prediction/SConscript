@@ -5,7 +5,8 @@ sources = [
     'boost_python/reflection_mask.cc',
     'boost_python/background_intensity.cc',
     'boost_python/subtract_background.cc',
+    'boost_python/index_generator.cc',
+    'boost_python/rotation_angles.cc',
     'boost_python/spot_prediction_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_spot_prediction_ext', source=sources)
-
