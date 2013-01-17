@@ -30,13 +30,7 @@ void export_detector_coordinate_system()
             &DetectorCoordinateSystem::set_y_axis)
         .add_property("normal", 
             &DetectorCoordinateSystem::get_normal,
-            &DetectorCoordinateSystem::set_normal)
-        .def("in_pixel_units",
-            &DetectorCoordinateSystem::in_pixel_units, (
-                arg("pixel_size")))
-        .def("in_si_units",
-            &DetectorCoordinateSystem::in_si_units, (
-                arg("pixel_size")));     
+            &DetectorCoordinateSystem::set_normal);     
 }
 
 } // namespace = boost_python

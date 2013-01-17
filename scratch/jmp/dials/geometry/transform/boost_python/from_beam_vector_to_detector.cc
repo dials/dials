@@ -15,8 +15,10 @@ void export_from_beam_vector_to_detector()
     class_ <FromBeamVectorToDetector> ("FromBeamVectorToDetector")
         .def(init <DetectorCoordinateSystem, 
                    scitbx::vec2 <double>,
+                   scitbx::vec2 <double>,
                    double> ((
                 arg("dcs"), 
+                arg("pixel_size"),                
                 arg("origin"), 
                 arg("distance"))))
         .def("apply", 

@@ -22,11 +22,13 @@ void export_from_hkl_to_detector()
                    scitbx::vec3 <double>,
                    DetectorCoordinateSystem,
                    scitbx::vec2 <double>,
+                   scitbx::vec2 <double>,
                    double> ((
                 arg("rlcs"),
                 arg("s0"),
                 arg("m2"),
                 arg("dcs"),
+                arg("pixel_size"),
                 arg("origin"),
                 arg("distance"))))               
         .def("apply", 

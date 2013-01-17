@@ -225,7 +225,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     
     # Create the transform object
     hkl_to_xy = FromHklToDetector(rlcs, beam.direction, gonio.rotation_axis,
-                                  dcs.in_pixel_units(detector.pixel_size), 
+                                  dcs, detector.pixel_size, 
                                   detector.origin, detector.distance)
 
     # Transform all the reflections from hkl to detector coordinates

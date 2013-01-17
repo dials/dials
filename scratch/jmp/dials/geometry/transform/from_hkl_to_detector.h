@@ -31,6 +31,7 @@ public:
      * @param s0 The incident beam vector
      * @param m2 The rotation axis
      * @param dcs The detector coordinate system
+     * @param pixel_size The detector pixel size in mm     
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal     
      */        
@@ -38,10 +39,11 @@ public:
                       scitbx::vec3 <double> s0,
                       scitbx::vec3 <double> m2,
                       DetectorCoordinateSystem dcs,
+                      scitbx::vec2 <double> pixel_size,                     
                       scitbx::vec2 <double> origin,
                       double distance)
         : hkl_to_s1_(rlcs, s0, m2),
-          s1_to_xy_(dcs, origin, distance) {}
+          s1_to_xy_(dcs, pixel_size, origin, distance) {}
 
 public:
 

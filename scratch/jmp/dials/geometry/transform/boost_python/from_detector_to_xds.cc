@@ -20,12 +20,14 @@ void export_from_detector_to_xds()
                 arg("wavelength"))))
         .def(init <DetectorCoordinateSystem,
                    scitbx::vec2 <double>,
+                   scitbx::vec2 <double>,
                    double,
                    XdsCoordinateSystem,
                    scitbx::vec3 <double>,
                    double,
                    double> ((
                 arg("dcs"),
+                arg("pixel_size"),
                 arg("origin"),
                 arg("distance"),
                 arg("s1"),

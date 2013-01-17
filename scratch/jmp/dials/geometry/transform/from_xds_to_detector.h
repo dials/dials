@@ -32,16 +32,18 @@ public:
      * @param xcs The XDS coordinate system
      * @param s1 The diffracted beam vector
      * @param dcs The detector coordinate system
+     * @param pixel_size The detector pixel size in mm
      * @param origin The detector origin
      * @param distance The detector distance
      */
     FromXdsToDetector(XdsCoordinateSystem xcs,
                       scitbx::vec3 <double> s1,
                       DetectorCoordinateSystem dcs,
+                      scitbx::vec2 <double> pixel_size,                      
                       scitbx::vec2 <double> origin,
                       double distance)
         : from_xds_to_beam_vector_(xcs, s1),
-          from_beam_vector_to_detector_(dcs, origin, distance) {}
+          from_beam_vector_to_detector_(dcs, pixel_size, origin, distance) {}
 
     /**
      * Apply the transform

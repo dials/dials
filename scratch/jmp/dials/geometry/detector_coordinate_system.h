@@ -71,30 +71,6 @@ public:
         normal_ = normal;
     }
 
-    /**
-     * Convert the detector coordinate system to pixel units
-     * @param pixel_size The size of each pixel in mm
-     * @returns The coordinate system with x, y axis scaled in pixel units
-     */
-    DetectorCoordinateSystem in_pixel_units(scitbx::vec2 <double> pixel_size) {
-        return DetectorCoordinateSystem(
-            this->get_x_axis().normalize() / pixel_size[0],
-            this->get_y_axis().normalize() / pixel_size[1],
-            this->get_normal().normalize());
-    }
-
-    /**
-     * Convert the detector coordinate system to si units
-     * @param pixel_size The size of each pixel in mm
-     * @returns The coordinate system with x, y axis scaled in mm
-     */
-    DetectorCoordinateSystem in_si_units(scitbx::vec2 <double> pixel_size) {
-        return DetectorCoordinateSystem(
-            this->get_x_axis().normalize() * pixel_size[0],
-            this->get_y_axis().normalize() * pixel_size[1],
-            this->get_normal().normalize());
-    }
-
 private:
 
     scitbx::vec3 <double> x_axis_;

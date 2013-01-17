@@ -25,15 +25,17 @@ public:
      * Initialise the transform from the detector coordinate system. The
      * detector coordinate system needs to be scaled in pixel units.
      * @param dcs The detector coordinate system
+     * @param pixel_size The size of the pixels in mm
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
     FromBeamVectorToDetector(DetectorCoordinateSystem dcs,
+                             scitbx::vec2 <double> pixel_size,
                              scitbx::vec2 <double> origin,
                              double distance) 
-        : x_axis_(dcs.get_x_axis()),
-          y_axis_(dcs.get_y_axis()),
-          normal_(dcs.get_normal()),
+        : x_axis_(dcs.get_x_axis().normalize() / pixel_size[0]),
+          y_axis_(dcs.get_y_axis().normalize() / pixel_size[1]),
+          normal_(dcs.get_normal().normalize()),
           origin_(origin),
           distance_(distance) {}
 

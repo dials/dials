@@ -23,7 +23,8 @@ class TestFromBeamVectorToDetector(unittest.TestCase):
             DetectorCoordinateSystem(
                 self.x_axis, 
                 self.y_axis, 
-                self.normal).in_pixel_units(self.pixel_size), 
+                self.normal),
+            self.pixel_size, 
             self.origin, 
             self.distance)
     

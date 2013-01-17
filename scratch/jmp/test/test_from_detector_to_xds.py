@@ -35,9 +35,9 @@ class TestFromDetectorToXds(unittest.TestCase):
         dcs = DetectorCoordinateSystem(x_axis, y_axis, normal)
         xcs = XdsCoordinateSystem(s0, s1, m2, phi)
         from_beam_vector_to_detector = FromBeamVectorToDetector(
-            dcs.in_pixel_units(pixel_size), origin, distance)
+            dcs, pixel_size, origin, distance)
         from_detector_to_beam_vector = FromDetectorToBeamVector(
-            dcs.in_si_units(pixel_size), origin, distance)
+            dcs, pixel_size, origin, distance)
         from_beam_vector_to_xds = FromBeamVectorToXds(xcs, s1, phi)
         from_xds_to_beam_vector = FromXdsToBeamVector(xcs, s1)
 

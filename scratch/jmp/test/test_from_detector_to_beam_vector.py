@@ -23,14 +23,16 @@ class TestFromDetectorToBeamVector(unittest.TestCase):
             DetectorCoordinateSystem(
                 self.x_axis, 
                 self.y_axis, 
-                self.normal).in_si_units(self.pixel_size),
+                self.normal),
+            self.pixel_size,
             self.origin, self.distance)
             
         self.from_beam_vector_to_detector = FromBeamVectorToDetector(
             DetectorCoordinateSystem(
                 self.x_axis,
                 self.y_axis,
-                self.normal).in_pixel_units(self.pixel_size),
+                self.normal),
+            self.pixel_size,
             self.origin, self.distance) 
     
     def test_detector_origin(self):

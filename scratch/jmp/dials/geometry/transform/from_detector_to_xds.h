@@ -32,6 +32,7 @@ public:
      * Initialise the transform with all the stuff that's needed for the
      * component transforms
      * @param dcs The detector coordinate system
+     * @param pixel_size The detector pixel size in mm
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      * @param xcs The XDS coordinate system
@@ -39,13 +40,14 @@ public:
      * @param phi The rotation angle
      */
     FromDetectorToXds(DetectorCoordinateSystem dcs,
+                      scitbx::vec2 <double> pixel_size,
                       scitbx::vec2 <double> origin,
                       double distance,
                       XdsCoordinateSystem xcs,
                       scitbx::vec3 <double> s1,
                       double phi,
                       double wavelength)
-        : xy_to_s1_(dcs, origin, distance),
+        : xy_to_s1_(dcs, pixel_size, origin, distance),
           s1_to_xds_(xcs, s1, phi),
           wavelength_r_(1.0 / wavelength) {}
      
