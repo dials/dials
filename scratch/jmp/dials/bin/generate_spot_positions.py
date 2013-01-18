@@ -10,7 +10,7 @@ from dials.old.lattice_point import LatticePoint
 from dials.old.reflection.reflection import Reflection
 from dials.old.index_generator import IndexGenerator
 from dials.io import pycbf_extra
-import h5py
+#import h5py
 from dials.io import xdsio
 import numpy
 from dials.equipment import Beam, Goniometer, Detector
@@ -19,7 +19,7 @@ from dials.geometry.transform import FromHklToDetector
 from dials.geometry.transform import FromBeamVectorToDetector
 
 def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group, 
-                                         dmin, wavelength, m2):
+                                         dmin, wavelength, m2, phi_min, phi_max):
     """Predict the reflections.
     
     Calculate the indices of all predicted reflections based on the unit cell 
@@ -55,26 +55,31 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
     # the (0, 1, 0) axis.
     print "Calculating rotation angles"
     from math import pi
-    rotation_angles = spot_prediction.RotationAngles(dmin, ub_matrix, wavelength, m2, (-pi, pi))
+    print "Range: ", phi_min, phi_max
+    #phi_min = 0
+    #phi_max = 0
+    rotation_angles = spot_prediction.RotationAngles(dmin, ub_matrix, wavelength, m2, (phi_min, phi_max))
     phi = rotation_angles.calculate(indices)
   
     print "UnZipping"
     hkl = rotation_angles.miller_indices()
 #    index, phi = zip(*index_phi)
     
-    print len(hkl), len(phi)
-    print hkl[0], phi[0]
+    return (hkl, phi)
+
+    #print len(hkl), len(phi)
+    #print hkl[0], phi[0]
   
     # Generate the intersection angles of the remaining reflections
-    print "Putting into an array"
-    observable_reflections = []
-    for (hkl, phi) in zip(hkl, phi):
-        observable_reflections.append(Reflection(hkl,(phi * 180 / pi) % 360))
+    #print "Putting into an array"
+    #observable_reflections = []
+    #for (hkl, phi) in zip(hkl, phi):
+    #    observable_reflections.append(Reflection(hkl,(phi * 180 / pi) % 360))
             
-    print "Returning"            
+    #print "Returning"            
             
     # Return the list of phi-angles
-    return observable_reflections
+    #return observable_reflections
 
 
 
@@ -120,12 +125,6 @@ def read_reflections_from_volume(volume, coords, bbox = (5,5,5)):
        
     # Return profile images
     return profiles
-
-
-def select_reflections(phi0, phi1, reflections):
-    """Select reflections in range phi0 to phi1 inclusive."""
-    return [r for r in reflections if r.in_phi_range(phi0, phi1)]
-
 
 
 def write_reflections_to_hdf5(hdf_path, volume, coords, profiles):
@@ -203,19 +202,17 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     # each of the reflections. The returned variable contains a list of
     # (phi, hkl) elements
     print "Generate Reflections"
-    reflections = generate_observed_reflections(ub_matrix, unit_cell, 
-        cell_space_group, dmin, beam.wavelength, gonio.rotation_axis)
 
     # Calculate the minimum and maximum angles and filter the reflections to
     # leave only those whose intersection angles lie between them
     phi_min = gonio.starting_angle
     phi_max = gonio.get_angle_from_frame(volume_size_z)
-    
-    print len(reflections)
-    
-    reflections = select_reflections(phi_min, phi_max, reflections)
-    
-    print len(reflections)
+    from math import pi
+    #phi_min = -pi + phi_min * pi / 180.0
+    #phi_max = -pi + phi_max * pi / 180.0
+
+    hkl, phi = generate_observed_reflections(ub_matrix, unit_cell, 
+        cell_space_group, dmin, beam.wavelength, gonio.rotation_axis, phi_min * pi / 180.0, phi_max * pi / 180.0)
     
     # Calculate the reflection detector coordinates. Calculate the 
     # diffracted beam vector for each reflection and find the pixel 
@@ -230,29 +227,41 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 
     # Transform all the reflections from hkl to detector coordinates
     from math import pi
-    for r in reflections:
+    xyz = []
+    for h, p in zip(hkl, phi):
         try:
-            z = gonio.get_frame_from_angle(r.phi)
-            r.xyz = hkl_to_xy.apply(r.hkl, r.phi * pi / 180.0) + (z,)
+            z = gonio.get_frame_from_angle(p * 180 / pi)
+            xyz.append(hkl_to_xy.apply(h, p) + (z,))
         except:
-            pass
+            xyz.append(None)
     
     # Filter the coordinates to those within the boundaries of the volume
     print "Filter Reflections"
     #reflections = [r for r in reflections if r.xyz != None]
-    reflections = [r for r in reflections if r.in_detector_volume(
-                    [[0, volume_size_x], 
-                     [0, volume_size_y],
-                     [gonio.starting_angle, 
-                      volume_size_z + gonio.starting_angle]])]
+    index = []
+    test_volume = [[0, volume_size_x], 
+              [0, volume_size_y],
+              [gonio.starting_angle, volume_size_z + gonio.starting_angle]]
+    for i, x in enumerate(xyz):
+        if x:
+            if (test_volume[0][0] <= x[0] < test_volume[0][1] and
+                test_volume[1][0] <= x[1] < test_volume[1][1] and
+                test_volume[2][0] <= x[2] < test_volume[2][1]):
+                index.append(i)
+
+#    reflections = [r for r in reflections if r.in_detector_volume(
+#                    [[0, volume_size_x], 
+#                     [0, volume_size_y],
+#                     [gonio.starting_angle, 
+#                      volume_size_z + gonio.starting_angle]])]
     
-    print len(reflections)
+    print len(index)
     
-    phi = [h.phi for h in reflections]
-    min_phi = min(phi)
-    max_phi = max(phi)
+    #phi = [h.phi for h in reflections]
+    #min_phi = min(phi)
+    #max_phi = max(phi)
     
-    print len(phi)
+    #print len(phi)
     #print min_phi, max_phi
     #from matplotlib import pylab
     #pylab.hist(phi, bins=180)
@@ -261,8 +270,8 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
     coords = []
-    for r in reflections:
-        coords.append((r.xyz[0], r.xyz[1], r.xyz[2]-1))
+    for i in index:
+        coords.append((xyz[i][0], xyz[i][1], xyz[i][2]-1))
     
     #print "Read Reflections from volume"
     #profiles = read_reflections_from_volume(volume, coords, bbox)
@@ -301,10 +310,10 @@ def test():
     from glob import glob
     
     # The CBF image path, make sure paths are in order
-    cbf_path = '/home/upc86896/Projects/data/300k/ximg2700*.cbf'
+    cbf_path = r'C:\Users\upc86896\Documents\Projects\data\300k\ximg2700*.cbf'
 
     # Set the GXPARM path
-    gxparm_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/GXPARM.XDS'
+    gxparm_path = r'C:\Users\upc86896\Documents\Projects\dials\dials-svn\dials-code\scratch\jmp\cctbx_exercises\data\GXPARM.XDS'
     
     # Set the HDF file path
     hdf_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/ximg2700_reflection_profiles.hdf5'

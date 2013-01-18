@@ -3,12 +3,14 @@
 #ifndef DIALS_SPOT_PREDICTION_ROTATION_ANGLES_H
 #define DIALS_SPOT_PREDICTION_ROTATION_ANGLES_H
 
+#include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 #include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
 #include <rstbx/diffraction/ewald_sphere.h>
+#include "angle_filter.h"
 
 namespace dials { namespace spot_prediction {
 
@@ -32,6 +34,7 @@ public:
      * @param wavelength The incident beam wavelength
      * @param rotation_axis The crystal rotation axis
      * @param rotation_angle_range The range of valid rotation angles
+     * @param deg angles in degrees True/False
      */
     RotationAngles(double d_min, 
                    scitbx::mat3 <double> ub_matrix,
@@ -55,13 +58,15 @@ public:
         scitbx::af::shared <double> result;
         for (int i = 0; i < miller_indices.size(); ++i) {
             if (rotation_angles_(to_vec3_double(miller_indices[i]))) {
-                scitbx::vec2 <double> angles = 
-                    rotation_angles_.get_intersection_angles();
-                if (this->angle_in_range(angles[0])) {
+				scitbx::vec2 <double> angles = mod_2pi(
+					rotation_angles_.get_intersection_angles());
+				if (angle_filter(angles[0], rotation_angle_range_, false)) {
+//                if (this->angle_in_range(angles[0])) {
                     result.push_back(angles[0]);
                     array_indices_.push_back(i);
                 }
-                if (this->angle_in_range(angles[1])) {
+				if (angle_filter(angles[1], rotation_angle_range_, false)) {
+//                if (this->angle_in_range(angles[1])) {
                     result.push_back(angles[1]);
                     array_indices_.push_back(i);
                 }
@@ -89,16 +94,6 @@ private:
     /** Convert a miller::index struct to vec3 <double> */
     scitbx::vec3 <double> to_vec3_double(cctbx::miller::index <> i) {
         return scitbx::vec3 <double> ((double)i[0], (double)i[1], (double)i[2]);
-    }
-
-    /**
-     * Check the angle is within the given range
-     * @param angle The angle to check
-     * @returns True/False
-     */
-    bool angle_in_range(double angle) {
-        return angle >= rotation_angle_range_[0] 
-            && angle <= rotation_angle_range_[1];
     }
 
     rstbx::rotation_angles rotation_angles_;
