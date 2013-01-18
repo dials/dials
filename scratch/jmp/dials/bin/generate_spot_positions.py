@@ -208,11 +208,9 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     phi_min = gonio.starting_angle
     phi_max = gonio.get_angle_from_frame(volume_size_z)
     from math import pi
-    #phi_min = -pi + phi_min * pi / 180.0
-    #phi_max = -pi + phi_max * pi / 180.0
 
     hkl, phi = generate_observed_reflections(ub_matrix, unit_cell, 
-        cell_space_group, dmin, beam.wavelength, gonio.rotation_axis, phi_min * pi / 180.0, phi_max * pi / 180.0)
+        cell_space_group, dmin, beam.wavelength, gonio.rotation_axis, phi_min, phi_max)
     
     # Calculate the reflection detector coordinates. Calculate the 
     # diffracted beam vector for each reflection and find the pixel 
@@ -228,32 +226,37 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     s1 = hkl_to_s1.apply(hkl, phi)
 
     print "Get Detector coords"
-    s1_to_xy = FromBeamVectorToDetector(dcs, detector.pixel_size, detector.origin, detector.distance)
-    xy = s1_to_xy.apply(s1)
+    #s1_to_xy = FromBeamVectorToDetector(dcs, detector.pixel_size, detector.origin, detector.distance)
+    #xy = s1_to_xy.apply(s1)
 
     # Transform all the reflections from hkl to detector coordinates
-    print "Get Z's"
-    from math import pi
-    from scitbx.array_family import flex
-    xyz = flex.vec3_double(len(xy))
-    for i, (p, xxyy) in enumerate(zip(phi, xy)):
-        z = gonio.get_frame_from_angle(p * 180 / pi)
-        xyz[i] = (xxyy[0], xxyy[1], z)      
+    #print "Get Z's"
+    #from math import pi
+    #from scitbx.array_family import flex
+    #xyz = flex.vec3_double(len(xy))
+    #for i, (p, xxyy) in enumerate(zip(phi, xy)):
+    #    z = gonio.get_frame_from_angle(p)
+    #    xyz[i] = (xxyy[0], xxyy[1], z)      
     
+    from dials.geometry.transform import FromBeamVectorToImageVolume
+
+    s1_to_xyz = FromBeamVectorToImageVolume(detector, gonio)
+    xyz = s1_to_xyz.apply(s1, phi)
+
     # Filter the coordinates to those within the boundaries of the volume
     print "Filter Reflections"
     #reflections = [r for r in reflections if r.xyz != None]
     index = []
     test_volume = [[0, volume_size_x], 
               [0, volume_size_y],
-              [gonio.starting_angle, volume_size_z + gonio.starting_angle]]
+              [0, volume_size_z]]
 
     from dials.spot_prediction import in_volume, remove_if_not
 
     print "Checking Valid"
     is_valid = in_volume(xyz, (0, volume_size_x), 
                               (0, volume_size_y), 
-                              (gonio.starting_angle, volume_size_z + gonio.starting_angle))
+                              (0, volume_size_z))
 
     print "Num Valid:", len(is_valid)
     
@@ -265,22 +268,6 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 
     print "Num Valid: ", len(xyz)
 
-    #in_volume_x = lambda x: test_volume[0][0] <= x < test_volume[0][1]
-    #in_volume_y = lambda y: test_volume[1][0] <= y < test_volume[1][1]
-    #in_volume_z = lambda z: test_volume[2][0] <= z < test_volume[2][1]
-    #in_volume = lambda x, y, z: in_volume_x(x) and in_volume_y(y) and in_volume_z(z)
-    #valid_xyz = lambda xyz: xyz and in_volume(xyz[0], xyz[1], xyz[2])
-
-    #is_valid = map(valid_xyz, xyz)
-
-    #print 1/0
-
-    #for i, x in enumerate(xyz):
-    #    if x:
-    #        if (test_volume[0][0] <= x[0] < test_volume[0][1] and
-    #            test_volume[1][0] <= x[1] < test_volume[1][1] and
-    #            test_volume[2][0] <= x[2] < test_volume[2][1]):
-    #            index.append(i)
     
     print len(index)
     
@@ -289,7 +276,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 #    coords = xyz
     coords = []
     for x in xyz:
-        coords.append((x[0], x[1], x[2]-1))
+        coords.append((x[0], x[1], x[2]))
     #for i in index:
     #    coords.append((xyz[i][0], xyz[i][1], xyz[i][2]-1))
     

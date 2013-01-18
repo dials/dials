@@ -113,6 +113,7 @@ scratch/jmp/dials/geometry/reciprocal_lattice_coordinate_system.h -text
 scratch/jmp/dials/geometry/transform/SConscript -text
 scratch/jmp/dials/geometry/transform/__init__.py -text
 scratch/jmp/dials/geometry/transform/boost_python/from_beam_vector_to_detector.cc -text
+scratch/jmp/dials/geometry/transform/boost_python/from_beam_vector_to_image_volume.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_beam_vector_to_xds.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_detector_to_beam_vector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_detector_to_xds.cc -text
@@ -123,6 +124,7 @@ scratch/jmp/dials/geometry/transform/boost_python/from_xds_to_beam_vector.cc -te
 scratch/jmp/dials/geometry/transform/boost_python/from_xds_to_detector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/transform_ext.cc -text
 scratch/jmp/dials/geometry/transform/from_beam_vector_to_detector.h -text
+scratch/jmp/dials/geometry/transform/from_beam_vector_to_image_volume.h -text
 scratch/jmp/dials/geometry/transform/from_beam_vector_to_xds.h -text
 scratch/jmp/dials/geometry/transform/from_detector_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_detector_to_xds.h -text
@@ -174,6 +176,7 @@ scratch/jmp/dials/spot_prediction/coordinate_filter.h -text
 scratch/jmp/dials/spot_prediction/index_generator.h -text
 scratch/jmp/dials/spot_prediction/reflection_mask.h -text
 scratch/jmp/dials/spot_prediction/rotation_angles.h -text
+scratch/jmp/dials/spot_prediction/spot_predictor.py -text
 scratch/jmp/dials/spot_prediction/subtract_background.h -text
 scratch/jmp/dials/util/SConscript -text
 scratch/jmp/dials/util/__init__.py -text

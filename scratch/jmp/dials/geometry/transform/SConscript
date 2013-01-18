@@ -11,6 +11,7 @@ sources = [
     'boost_python/from_xds_to_beam_vector.cc',
     'boost_python/from_xds_to_detector.cc',
     'boost_python/from_xds_e3_to_phi.cc',
+	'boost_python/from_beam_vector_to_image_volume.cc',
     'boost_python/transform_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_geometry_transform_ext', source=sources)

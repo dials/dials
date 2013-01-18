@@ -48,9 +48,11 @@ class GxParmFile:
         
         """
         from dials.equipment import Goniometer
+        from math import pi
+        d2r = pi / 180.0
         return Goniometer(self.rotation_axis,
-                          self.starting_angle,
-                          self.oscillation_range,
+                          self.starting_angle * d2r,
+                          self.oscillation_range * d2r,
                           int(self.starting_frame))
         
     def get_beam(self):
