@@ -1,3 +1,11 @@
+scratch/jmp/*.sdf
+scratch/jmp/*.sln
+scratch/jmp/*.user
+scratch/jmp/*.vcxproj
+scratch/jmp/Debug
+scratch/jmp/build.py
 scratch/jmp/cctbx_exercises/.pydevproject
 scratch/jmp/data
+scratch/jmp/dials_py
 scratch/jmp/extract_reflection_profiles/profile.txt
+scratch/jmp/obj
