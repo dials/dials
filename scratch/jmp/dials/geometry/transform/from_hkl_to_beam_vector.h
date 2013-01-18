@@ -4,9 +4,16 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/array_family/flex_types.h>
+#include <cctbx/miller.h>
 #include "../reciprocal_lattice_coordinate_system.h"
+#include "../../error.h"
 
 namespace dials { namespace geometry { namespace transform {
+
+typedef cctbx::miller::index <> miller_index;
+typedef scitbx::af::flex <scitbx::vec3 <double> >::type flex_vec3_double;
+typedef scitbx::af::flex <miller_index>::type flex_miller_index;
 
 /** Class to represent geometry transform from miller indices to beam vector */
 class FromHklToBeamVector {
@@ -39,11 +46,27 @@ public:
      * @param phi The rotation angle
      * @returns The diffracted beam vector
      */
-    scitbx::vec3 <double> apply(scitbx::vec3 <int> hkl, double phi) {
+    scitbx::vec3 <double> apply(miller_index hkl, double phi) {
         return s0_ + (double(hkl[0]) * b1_star_ + 
                       double(hkl[1]) * b2_star_ + 
                       double(hkl[2]) * b3_star_)
                         .unit_rotate_around_origin(m2_, phi);
+    }
+
+    /**
+     * Apply the transform to an array of hkl and phis
+     * @param hkl An array of miller indices
+     * @param phi An array of rotation angles
+     * @returns An array of beam vectors
+     * @throws An exception if the sizes of hkl and phi are not equal
+     */
+    flex_vec3_double apply(flex_miller_index hkl, scitbx::af::flex_double phi) {
+        DIALS_ASSERT(hkl.size() == phi.size());
+        flex_vec3_double result(hkl.size());
+        for (int i = 0; i < hkl.size(); ++i) {
+            result[i] = apply(hkl[i], phi[i]);
+        }
+        return result;
     }
 
 private:

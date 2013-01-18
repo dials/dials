@@ -221,19 +221,23 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     print "Calculate detector coordinates"
     
     # Create the transform object
-    hkl_to_xy = FromHklToDetector(rlcs, beam.direction, gonio.rotation_axis,
-                                  dcs, detector.pixel_size, 
-                                  detector.origin, detector.distance)
+    from dials.geometry.transform import FromHklToBeamVector, FromBeamVectorToDetector
+    print "Get beam vectors"
+
+    hkl_to_s1 = FromHklToBeamVector(rlcs, beam.direction, gonio.rotation_axis)
+    s1 = hkl_to_s1.apply(hkl, phi)
+
+    print "Get Detector coords"
+    s1_to_xy = FromBeamVectorToDetector(dcs, detector.pixel_size, detector.origin, detector.distance)
+    xy = s1_to_xy.apply(s1)
 
     # Transform all the reflections from hkl to detector coordinates
+    print "Get Z's"
     from math import pi
     xyz = []
-    for h, p in zip(hkl, phi):
-        try:
-            z = gonio.get_frame_from_angle(p * 180 / pi)
-            xyz.append(hkl_to_xy.apply(h, p) + (z,))
-        except:
-            xyz.append(None)
+    for p, xxyy in zip(phi, xy):
+        z = gonio.get_frame_from_angle(p * 180 / pi)
+        xyz.append((xxyy[0], xxyy[1], z))       
     
     # Filter the coordinates to those within the boundaries of the volume
     print "Filter Reflections"
@@ -248,24 +252,8 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
                 test_volume[1][0] <= x[1] < test_volume[1][1] and
                 test_volume[2][0] <= x[2] < test_volume[2][1]):
                 index.append(i)
-
-#    reflections = [r for r in reflections if r.in_detector_volume(
-#                    [[0, volume_size_x], 
-#                     [0, volume_size_y],
-#                     [gonio.starting_angle, 
-#                      volume_size_z + gonio.starting_angle]])]
     
     print len(index)
-    
-    #phi = [h.phi for h in reflections]
-    #min_phi = min(phi)
-    #max_phi = max(phi)
-    
-    #print len(phi)
-    #print min_phi, max_phi
-    #from matplotlib import pylab
-    #pylab.hist(phi, bins=180)
-    #pylab.show()    
     
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)

@@ -5,10 +5,14 @@
 #include <exception>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/array_family/flex_types.h>
 #include "../../error.h"
 #include "../detector_coordinate_system.h"
 
 namespace dials { namespace geometry { namespace transform {
+
+typedef scitbx::af::flex <scitbx::vec3 <double> >::type flex_vec3_double;
+typedef scitbx::af::flex <scitbx::vec2 <double> >::type flex_vec2_double;
 
 /** 
  * Class to represent a geometry transform from beam vector to detector
@@ -54,6 +58,23 @@ public:
         return scitbx::vec2 <double> (
             origin_[0] + distance_ * (s1 * x_axis_) / s1_dot_n,
             origin_[1] + distance_ * (s1 * y_axis_) / s1_dot_n);
+    }
+
+    /**
+     * Apply the transform to an array of beam vectors
+     * @param s1 The array of beam vectors
+     * @returns An array of 2 element vectors containing the pixel coordinates
+     */
+    flex_vec2_double apply(flex_vec3_double s1) {
+        flex_vec2_double result(s1.size());
+        for (int i = 0; i < s1.size(); ++i) {
+            try {
+                result[i] = apply(s1[i]);
+            } catch (error) {
+                result[i] = scitbx::vec2 <double> (-1, -1);
+            }
+        }
+        return result;
     }
 
 private:

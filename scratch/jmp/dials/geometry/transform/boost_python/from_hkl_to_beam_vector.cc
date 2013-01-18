@@ -11,6 +11,14 @@ namespace boost_python {
 
 void export_from_hkl_to_beam_vector() 
 {
+    // Apply to a sinfle hkl, phi pair
+    scitbx::vec3 <double> (FromHklToBeamVector::*apply_single)(
+        miller_index, double) = &FromHklToBeamVector::apply;
+
+    // Apply to array of hkl, phi pairs
+    flex_vec3_double (FromHklToBeamVector::*apply_array)(
+        flex_miller_index, scitbx::af::flex_double) = &FromHklToBeamVector::apply;
+
     class_ <FromHklToBeamVector> ("FromHklToBeamVector")
         .def(init <ReciprocalLatticeCoordinateSystem, 
                    scitbx::vec3 <double>,
@@ -18,7 +26,10 @@ void export_from_hkl_to_beam_vector()
                 arg("rlcs"), 
                 arg("s0"), 
                 arg("m2"))))
-        .def("apply", &FromHklToBeamVector::apply, (
+        .def("apply", apply_single, (
+                arg("hkl"), 
+                arg("phi")))
+        .def("apply", apply_array, (
                 arg("hkl"), 
                 arg("phi")));
 }
