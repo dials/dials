@@ -234,10 +234,11 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     # Transform all the reflections from hkl to detector coordinates
     print "Get Z's"
     from math import pi
-    xyz = []
-    for p, xxyy in zip(phi, xy):
+    from scitbx.array_family import flex
+    xyz = flex.vec3_double(len(xy))
+    for i, (p, xxyy) in enumerate(zip(phi, xy)):
         z = gonio.get_frame_from_angle(p * 180 / pi)
-        xyz.append((xxyy[0], xxyy[1], z))       
+        xyz[i] = (xxyy[0], xxyy[1], z)      
     
     # Filter the coordinates to those within the boundaries of the volume
     print "Filter Reflections"
@@ -246,20 +247,51 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     test_volume = [[0, volume_size_x], 
               [0, volume_size_y],
               [gonio.starting_angle, volume_size_z + gonio.starting_angle]]
-    for i, x in enumerate(xyz):
-        if x:
-            if (test_volume[0][0] <= x[0] < test_volume[0][1] and
-                test_volume[1][0] <= x[1] < test_volume[1][1] and
-                test_volume[2][0] <= x[2] < test_volume[2][1]):
-                index.append(i)
+
+    from dials.spot_prediction import in_volume, remove_if_not
+
+    print "Checking Valid"
+    is_valid = in_volume(xyz, (0, volume_size_x), 
+                              (0, volume_size_y), 
+                              (gonio.starting_angle, volume_size_z + gonio.starting_angle))
+
+    print "Num Valid:", len(is_valid)
+    
+    print "Removing"
+    xyz = remove_if_not(xyz, is_valid)
+    s1  = remove_if_not(s1,  is_valid)
+    phi = remove_if_not(phi, is_valid)
+    hkl = remove_if_not(hkl, is_valid)
+
+    print "Num Valid: ", len(xyz)
+
+    #in_volume_x = lambda x: test_volume[0][0] <= x < test_volume[0][1]
+    #in_volume_y = lambda y: test_volume[1][0] <= y < test_volume[1][1]
+    #in_volume_z = lambda z: test_volume[2][0] <= z < test_volume[2][1]
+    #in_volume = lambda x, y, z: in_volume_x(x) and in_volume_y(y) and in_volume_z(z)
+    #valid_xyz = lambda xyz: xyz and in_volume(xyz[0], xyz[1], xyz[2])
+
+    #is_valid = map(valid_xyz, xyz)
+
+    #print 1/0
+
+    #for i, x in enumerate(xyz):
+    #    if x:
+    #        if (test_volume[0][0] <= x[0] < test_volume[0][1] and
+    #            test_volume[1][0] <= x[1] < test_volume[1][1] and
+    #            test_volume[2][0] <= x[2] < test_volume[2][1]):
+    #            index.append(i)
     
     print len(index)
     
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
+#    coords = xyz
     coords = []
-    for i in index:
-        coords.append((xyz[i][0], xyz[i][1], xyz[i][2]-1))
+    for x in xyz:
+        coords.append((x[0], x[1], x[2]-1))
+    #for i in index:
+    #    coords.append((xyz[i][0], xyz[i][1], xyz[i][2]-1))
     
     #print "Read Reflections from volume"
     #profiles = read_reflections_from_volume(volume, coords, bbox)
