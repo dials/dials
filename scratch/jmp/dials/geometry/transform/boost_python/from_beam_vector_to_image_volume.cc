@@ -18,7 +18,7 @@ void export_from_beam_vector_to_image_volume()
 
     // Apply to array of beam vectors
     flex_vec3_double (FromBeamVectorToImageVolume::*apply_array)(
-        flex_vec3_double, scitbx::af::flex_double) = &FromBeamVectorToImageVolume::apply;
+        flex_vec3_double, scitbx::af::flex_double, scitbx::af::flex_bool&) = &FromBeamVectorToImageVolume::apply;
 
     class_ <FromBeamVectorToImageVolume> ("FromBeamVectorToImageVolume")
         .def(init <equipment::Detector,
@@ -30,7 +30,8 @@ void export_from_beam_vector_to_image_volume()
                 arg("phi")))
         .def("apply", apply_array, (
                 arg("s1"),
-                arg("phi")));
+                arg("phi"),
+                arg("status")));
 }
 
 } // namespace = boost_python

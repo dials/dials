@@ -181,17 +181,31 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     beam = gxparm_handle.get_beam() 
     gonio = gxparm_handle.get_goniometer()
     detector = gxparm_handle.get_detector()
-    rlcs = gxparm_handle.get_reciprocal_lattice_coordinate_system()
-    dcs = gxparm_handle.get_detector_coordinate_system()
+    ub_matrix = gxparm_handle.get_ub_matrix()
     
     # Read the space group symmetry and unit cell parameters
     symmetry = gxparm_handle.space_group
-    unit_cell = uctbx.unit_cell(parameters = gxparm_handle.unit_cell)
+    unit_cell = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)#gxparm_handle.unit_cell)
+    #ub_matrix = ub_matrix.inverse()
+    for d in dir(unit_cell):
+        print d
+
+    print gxparm_handle.unit_cell
+    print tuple(ub_matrix)
+    print unit_cell.orthogonalization_matrix()
+    print unit_cell.fractionalization_matrix()
+    print unit_cell.metrical_matrix()
+    ub_matrix = ub_matrix.inverse()
+    print ub_matrix
     cell_space_group = space_group(space_group_symbols(symmetry).hall())
    
+
+
     # Create the UB matrix
-    ub_matrix = rlcs.to_ub_matrix()
+    #ub_matrix = rlcs.to_ub_matrix()
   
+    #print ub_matrix
+
     # Load the image volume from the CBF files
     volume = pycbf_extra.search_for_image_volume(cbf_path)
     volume_size_z, volume_size_y, volume_size_x = volume.shape
@@ -205,27 +219,27 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 
     # Calculate the minimum and maximum angles and filter the reflections to
     # leave only those whose intersection angles lie between them
-    phi_min = gonio.starting_angle
-    phi_max = gonio.get_angle_from_frame(volume_size_z)
-    from math import pi
+    #phi_min = gonio.starting_angle
+    #phi_max = gonio.get_angle_from_frame(volume_size_z)
+    #from math import pi
 
-    hkl, phi = generate_observed_reflections(ub_matrix, unit_cell, 
-        cell_space_group, dmin, beam.wavelength, gonio.rotation_axis, phi_min, phi_max)
+    #hkl, phi = generate_observed_reflections(ub_matrix, unit_cell, 
+    #    cell_space_group, dmin, beam.wavelength, gonio.rotation_axis, phi_min, phi_max)
     
     # Calculate the reflection detector coordinates. Calculate the 
     # diffracted beam vector for each reflection and find the pixel 
     # coordinate where the line defined by the vector intersects the 
     # detector plane. Returns a list of (x, y) detector coordinates.
-    print "Calculate detector coordinates"
+    #print "Calculate detector coordinates"
     
     # Create the transform object
-    from dials.geometry.transform import FromHklToBeamVector, FromBeamVectorToDetector
-    print "Get beam vectors"
+    #from dials.geometry.transform import FromHklToBeamVector, FromBeamVectorToDetector
+    #print "Get beam vectors"
 
-    hkl_to_s1 = FromHklToBeamVector(rlcs, beam.direction, gonio.rotation_axis)
-    s1 = hkl_to_s1.apply(hkl, phi)
+    #hkl_to_s1 = FromHklToBeamVector(rlcs, beam.direction, gonio.rotation_axis)
+    #s1 = hkl_to_s1.apply(hkl, phi)
 
-    print "Get Detector coords"
+    #print "Get Detector coords"
     #s1_to_xy = FromBeamVectorToDetector(dcs, detector.pixel_size, detector.origin, detector.distance)
     #xy = s1_to_xy.apply(s1)
 
@@ -238,38 +252,44 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     #    z = gonio.get_frame_from_angle(p)
     #    xyz[i] = (xxyy[0], xxyy[1], z)      
     
-    from dials.geometry.transform import FromBeamVectorToImageVolume
+    #from dials.geometry.transform import FromBeamVectorToImageVolume
 
-    s1_to_xyz = FromBeamVectorToImageVolume(detector, gonio)
-    xyz = s1_to_xyz.apply(s1, phi)
+    #s1_to_xyz = FromBeamVectorToImageVolume(detector, gonio)
+    #xyz = s1_to_xyz.apply(s1, phi)
 
     # Filter the coordinates to those within the boundaries of the volume
-    print "Filter Reflections"
+    #print "Filter Reflections"
     #reflections = [r for r in reflections if r.xyz != None]
-    index = []
-    test_volume = [[0, volume_size_x], 
-              [0, volume_size_y],
-              [0, volume_size_z]]
+    #index = []
+    #test_volume = [[0, volume_size_x], 
+    #          [0, volume_size_y],
+    #          [0, volume_size_z]]
 
-    from dials.spot_prediction import in_volume, remove_if_not
+    #from dials.spot_prediction import in_volume, remove_if_not
 
-    print "Checking Valid"
-    is_valid = in_volume(xyz, (0, volume_size_x), 
-                              (0, volume_size_y), 
-                              (0, volume_size_z))
+    #print "Checking Valid"
+    #is_valid = in_volume(xyz, (0, volume_size_x), 
+    #                          (0, volume_size_y), 
+    #                          (0, volume_size_z))
 
-    print "Num Valid:", len(is_valid)
+    #print "Num Valid:", len(is_valid)
     
-    print "Removing"
-    xyz = remove_if_not(xyz, is_valid)
-    s1  = remove_if_not(s1,  is_valid)
-    phi = remove_if_not(phi, is_valid)
-    hkl = remove_if_not(hkl, is_valid)
+    #print "Removing"
+    #xyz = remove_if_not(xyz, is_valid)
+    #s1  = remove_if_not(s1,  is_valid)
+    #phi = remove_if_not(phi, is_valid)
+    #hkl = remove_if_not(hkl, is_valid)
 
+    from dials.spot_prediction import SpotPredictor
+    n_image_frames = volume_size_z
+    cell_space_group_type = space_group_type(cell_space_group)
+    spot_predictor = SpotPredictor(beam, gonio, detector, n_image_frames, unit_cell, cell_space_group_type, dmin, ub_matrix)
+    spot_predictor.predict_spots()
+    xyz = spot_predictor.image_volume_coords
     print "Num Valid: ", len(xyz)
 
     
-    print len(index)
+    #print len(index)
     
     # Read the reflections from the volume. Return a 3D profile of each 
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
@@ -317,10 +337,13 @@ def test():
     from glob import glob
     
     # The CBF image path, make sure paths are in order
-    cbf_path = r'C:\Users\upc86896\Documents\Projects\data\300k\ximg2700*.cbf'
+    #cbf_path = r'C:\Users\upc86896\Documents\Projects\data\300k\ximg2700*.cbf'
+    cbf_path = r'/home/upc86896/Projects/data/300k/ximg2700*.cbf'
 
     # Set the GXPARM path
     gxparm_path = r'C:\Users\upc86896\Documents\Projects\dials\dials-svn\dials-code\scratch\jmp\cctbx_exercises\data\GXPARM.XDS'
+    gxparm_path = r'/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/GXPARM.XDS'
+    
     
     # Set the HDF file path
     hdf_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/ximg2700_reflection_profiles.hdf5'

@@ -18,18 +18,12 @@ void export_from_detector_to_xds()
                 arg("xy_to_s1"), 
                 arg("s1_to_xds"),
                 arg("wavelength"))))
-        .def(init <DetectorCoordinateSystem,
-                   scitbx::vec2 <double>,
-                   scitbx::vec2 <double>,
-                   double,
+        .def(init <equipment::Detector,
                    XdsCoordinateSystem,
                    scitbx::vec3 <double>,
                    double,
                    double> ((
-                arg("dcs"),
-                arg("pixel_size"),
-                arg("origin"),
-                arg("distance"),
+                arg("detector"),
                 arg("s1"),
                 arg("phi"),
                 arg("wavelength"))))        

@@ -4,7 +4,7 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include "../detector_coordinate_system.h"
+#include "../../equipment/detector.h"
 
 namespace dials { namespace geometry { namespace transform {
 
@@ -27,14 +27,14 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
-    FromDetectorToBeamVector(DetectorCoordinateSystem dcs,
-                             scitbx::vec2 <double> pixel_size,
-                             scitbx::vec2 <double> origin,
-                             double distance) 
-        : x_axis_(dcs.get_x_axis().normalize() * pixel_size[0]),
-          y_axis_(dcs.get_y_axis().normalize() * pixel_size[1]),
-          distance_scaled_normal_(dcs.get_normal().normalize() * distance),
-          origin_(origin) {}
+    FromDetectorToBeamVector(equipment::Detector detector) 
+        : x_axis_(detector.get_x_axis().normalize() * 
+                    detector.get_pixel_size()[0]),
+          y_axis_(detector.get_y_axis().normalize() * 
+                    detector.get_pixel_size()[1]),
+          distance_scaled_normal_(detector.get_normal().normalize() * 
+                    detector.get_distance()),
+          origin_(detector.get_origin()) {}
 
 public:
 

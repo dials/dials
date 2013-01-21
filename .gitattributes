@@ -119,6 +119,8 @@ scratch/jmp/dials/geometry/transform/boost_python/from_detector_to_beam_vector.c
 scratch/jmp/dials/geometry/transform/boost_python/from_detector_to_xds.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_hkl_to_beam_vector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_hkl_to_detector.cc -text
+scratch/jmp/dials/geometry/transform/boost_python/from_hkl_to_rsv.cc -text
+scratch/jmp/dials/geometry/transform/boost_python/from_rsv_to_beam_vector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_xds_e3_to_phi.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_xds_to_beam_vector.cc -text
 scratch/jmp/dials/geometry/transform/boost_python/from_xds_to_detector.cc -text
@@ -130,6 +132,8 @@ scratch/jmp/dials/geometry/transform/from_detector_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_detector_to_xds.h -text
 scratch/jmp/dials/geometry/transform/from_hkl_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_hkl_to_detector.h -text
+scratch/jmp/dials/geometry/transform/from_hkl_to_rsv.h -text
+scratch/jmp/dials/geometry/transform/from_rsv_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_xds_e3_to_phi.h -text
 scratch/jmp/dials/geometry/transform/from_xds_to_beam_vector.h -text
 scratch/jmp/dials/geometry/transform/from_xds_to_detector.h -text

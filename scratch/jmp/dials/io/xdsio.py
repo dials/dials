@@ -82,33 +82,12 @@ class GxParmFile:
                         self.pixel_size,
                         self.detector_size,
                         self.detector_distance)
-    
-    def get_detector_coordinate_system(self):
-        """Get the detector coordinate system from the file
-        
-        Returns:
-            An instance of the detector coordinate system
-        
-        """    
-        from dials.geometry import DetectorCoordinateSystem
-        return DetectorCoordinateSystem(self.detector_x_axis,
-                                        self.detector_y_axis,
-                                        self.detector_normal)
                                           
-    def get_reciprocal_lattice_coordinate_system(self):
-        """Get the reciprocal lattice coordinate system from the file
-        
-        Returns:
-            An instance of the reciprocal lattice coordinate system
-        
-        """      
-        from dials.geometry import ReciprocalLatticeCoordinateSystem
+    def get_ub_matrix(self):
         from scitbx import matrix
-        ub_matrix = matrix.sqr(
-                self.unit_cell_a_axis + 
-                self.unit_cell_b_axis + 
-                self.unit_cell_c_axis).inverse()
-        return ReciprocalLatticeCoordinateSystem(ub_matrix)
+        return matrix.sqr(self.unit_cell_a_axis + 
+                          self.unit_cell_b_axis + 
+                          self.unit_cell_c_axis)
         
 class IntegrateFile:
     """A class to read the INTEGRATE.HKL file used in XDS"""

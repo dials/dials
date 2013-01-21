@@ -13,14 +13,8 @@ namespace boost_python {
 void export_from_detector_to_beam_vector() 
 {
     class_ <FromDetectorToBeamVector> ("FromDetectorToBeamVector")
-        .def(init <DetectorCoordinateSystem, 
-                   scitbx::vec2 <double>,
-                   scitbx::vec2 <double>,                   
-                   double> ((
-                arg("dcs"),
-                arg("pixel_size"),
-                arg("origin"), 
-                arg("distance"))))
+        .def(init <equipment::Detector> ((
+                arg("detector"))))
         .def("apply", 
             &FromDetectorToBeamVector::apply, (
                 arg("xy")));

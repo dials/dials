@@ -17,20 +17,14 @@ void export_from_hkl_to_detector()
                    FromBeamVectorToDetector > ((
                 arg("hkl_to_s1"), 
                 arg("s1_to_xy"))))
-        .def(init <ReciprocalLatticeCoordinateSystem,
+        .def(init <scitbx::mat3 <double>,
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double>,
-                   DetectorCoordinateSystem,
-                   scitbx::vec2 <double>,
-                   scitbx::vec2 <double>,
-                   double> ((
-                arg("rlcs"),
+                   equipment::Detector> ((
+                arg("ub_matrix"),
                 arg("s0"),
                 arg("m2"),
-                arg("dcs"),
-                arg("pixel_size"),
-                arg("origin"),
-                arg("distance"))))               
+                arg("detector"))))               
         .def("apply", 
             &FromHklToDetector::apply, (
                 arg("hkl"), 

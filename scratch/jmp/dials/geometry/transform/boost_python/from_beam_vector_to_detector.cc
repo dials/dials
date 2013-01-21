@@ -18,21 +18,16 @@ void export_from_beam_vector_to_detector()
 
     // Apply to array of beam vectors
     flex_vec2_double (FromBeamVectorToDetector::*apply_array)(
-        flex_vec3_double) = &FromBeamVectorToDetector::apply;
+        flex_vec3_double, scitbx::af::flex_bool&) = &FromBeamVectorToDetector::apply;
 
     class_ <FromBeamVectorToDetector> ("FromBeamVectorToDetector")
-        .def(init <DetectorCoordinateSystem, 
-                   scitbx::vec2 <double>,
-                   scitbx::vec2 <double>,
-                   double> ((
-                arg("dcs"), 
-                arg("pixel_size"),                
-                arg("origin"), 
-                arg("distance"))))
+        .def(init <equipment::Detector> ((
+                arg("detector"))))
         .def("apply", apply_single, (
                 arg("s1")))
         .def("apply", apply_array, (
-                arg("s1")));
+                arg("s1"),
+                arg("status")));
 }
 
 } // namespace = boost_python

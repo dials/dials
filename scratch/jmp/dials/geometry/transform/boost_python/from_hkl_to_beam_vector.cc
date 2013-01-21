@@ -20,10 +20,10 @@ void export_from_hkl_to_beam_vector()
         flex_miller_index, scitbx::af::flex_double) = &FromHklToBeamVector::apply;
 
     class_ <FromHklToBeamVector> ("FromHklToBeamVector")
-        .def(init <ReciprocalLatticeCoordinateSystem, 
+        .def(init <scitbx::mat3 <double>, 
                    scitbx::vec3 <double>,
                    scitbx::vec3 <double> > ((
-                arg("rlcs"), 
+                arg("ub_matrix"), 
                 arg("s0"), 
                 arg("m2"))))
         .def("apply", apply_single, (

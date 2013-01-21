@@ -12,7 +12,6 @@ def extract_reflection_profiles(paths):
     from dials.equipment import Beam
     from dials.equipment import Detector
     from dials.equipment import Goniometer
-    from dials.geometry import DetectorCoordinateSystem
     from dials.geometry import XdsCoordinateSystem
     from dials.geometry.transform import FromDetectorToBeamVector
     from dials.geometry.transform import FromBeamVectorToXds
@@ -66,7 +65,7 @@ def extract_reflection_profiles(paths):
     detector = Detector(d1, d2, d3, (dx0, dy0), (px, py), (dx, dy), f)
     
     rcs = XdsCoordinateSystem(s0, s1, m2, phi)
-    dcs = DetectorCoordinateSystem(d1, d2, d3)
+    #dcs = DetectorCoordinateSystem(d1, d2, d3)
 
     roi_size = (1, 4, 4)
     x0 = int(sx) - roi_size[2]

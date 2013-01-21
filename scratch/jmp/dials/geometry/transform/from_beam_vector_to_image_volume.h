@@ -25,14 +25,7 @@ public:
      */
     FromBeamVectorToImageVolume(equipment::Detector detector,
                                 equipment::Goniometer goniometer)
-        : from_beam_vector_to_detector_(
-            DetectorCoordinateSystem(
-                detector.get_x_axis(),
-                detector.get_y_axis(), 
-                detector.get_normal()),
-                detector.get_pixel_size(),
-                detector.get_origin(),
-                detector.get_distance()),
+        : from_beam_vector_to_detector_(detector),
           goniometer_(goniometer) {}
 
     /**
@@ -42,12 +35,7 @@ public:
      * @returns The (x, y, z) image volume coordinate
      */
     scitbx::vec3 <double> apply(scitbx::vec3 <double> s1, double phi) {
-        scitbx::vec2 <double> xy;
-        try {
-            xy = from_beam_vector_to_detector_.apply(s1);
-        } catch(error) {
-            xy = scitbx::vec2 <double> (-1, -1);
-        }
+        scitbx::vec2 <double> xy = from_beam_vector_to_detector_.apply(s1);
         return scitbx::vec3 <double> (
             xy[0], xy[1],
             (goniometer_.get_frame_from_angle(phi) - 
@@ -58,13 +46,23 @@ public:
      * Apply the transform to an array of beam vectors and rotation angles.
      * @param s1 The array of beam vectors
      * @param phi The array of rotation angles
+     * @param status The status array
      * @returns The array of image volume coordinates.
      */
-    flex_vec3_double apply(flex_vec3_double s1, scitbx::af::flex_double phi) {
+    flex_vec3_double apply(flex_vec3_double s1, 
+                           scitbx::af::flex_double phi,
+                           scitbx::af::flex_bool &status) {
         DIALS_ASSERT(s1.size() == phi.size());
+        status.resize(s1.size());
         flex_vec3_double result(s1.size());
         for (int i = 0; i < s1.size(); ++i) {
-            result[i] = apply(s1[i], phi[i]);
+            try {
+                result[i] = apply(s1[i], phi[i]);
+                status[i] = true;
+            } catch (error) {
+                result[i] = scitbx::vec3 <double> (0, 0, 0);
+                status[i] = false;
+            }
         }
         return result;
     }

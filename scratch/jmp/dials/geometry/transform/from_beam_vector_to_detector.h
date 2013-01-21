@@ -7,7 +7,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
 #include "../../error.h"
-#include "../detector_coordinate_system.h"
+#include "../../equipment/detector.h"
 
 namespace dials { namespace geometry { namespace transform {
 
@@ -33,15 +33,14 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
-    FromBeamVectorToDetector(DetectorCoordinateSystem dcs,
-                             scitbx::vec2 <double> pixel_size,
-                             scitbx::vec2 <double> origin,
-                             double distance) 
-        : x_axis_(dcs.get_x_axis().normalize() / pixel_size[0]),
-          y_axis_(dcs.get_y_axis().normalize() / pixel_size[1]),
-          normal_(dcs.get_normal().normalize()),
-          origin_(origin),
-          distance_(distance) {}
+    FromBeamVectorToDetector(equipment::Detector detector) 
+        : x_axis_(detector.get_x_axis().normalize() / 
+                    detector.get_pixel_size()[0]),
+          y_axis_(detector.get_y_axis().normalize() / 
+                    detector.get_pixel_size()[1]),
+          normal_(detector.get_normal().normalize()),
+          origin_(detector.get_origin()),
+          distance_(detector.get_distance()) {}
 
 public:
 
@@ -63,15 +62,20 @@ public:
     /**
      * Apply the transform to an array of beam vectors
      * @param s1 The array of beam vectors
+     * @param status The status array
      * @returns An array of 2 element vectors containing the pixel coordinates
      */
-    flex_vec2_double apply(flex_vec3_double s1) {
+    flex_vec2_double apply(flex_vec3_double s1, 
+                           scitbx::af::flex_bool &status) {
         flex_vec2_double result(s1.size());
+        status.resize(s1.size());
         for (int i = 0; i < s1.size(); ++i) {
             try {
                 result[i] = apply(s1[i]);
+                status[i] = true;
             } catch (error) {
-                result[i] = scitbx::vec2 <double> (-1, -1);
+                result[i] = scitbx::vec2 <double> (0, 0);
+                status[i] = false;
             }
         }
         return result;

@@ -4,6 +4,7 @@
 
 #include <scitbx/constants.h>
 #include <scitbx/vec2.h>
+#include <scitbx/array_family/flex_types.h>
 
 namespace dials { namespace spot_prediction { 
 
@@ -42,11 +43,29 @@ scitbx::vec2 <double> mod_2pi_radians(scitbx::vec2 <double> angle, bool deg) {
     * @returns True/False the angle is in the filter range
     */
 inline 
-bool angle_filter(double angle, scitbx::vec2 <double> range, bool deg = false) {
-    return (mod_2pi_radians(angle - range[1], deg) >= 
-            mod_2pi_radians(angle - range[0], deg) || 
-            mod_2pi_radians(angle - range[1], deg) == 0 || 
-            mod_2pi_radians(range[0] - range[1], deg) == 0);
+bool is_angle_in_range(double angle, scitbx::vec2 <double> range, 
+                       bool deg = false) {
+    double angle_rad   = deg ? scitbx::deg_as_rad(angle)    : angle;
+    double range_a_rad = deg ? scitbx::deg_as_rad(range[0]) : range[0];
+    double range_b_rad = deg ? scitbx::deg_as_rad(range[1]) : range[1];
+    return mod_2pi(angle_rad - range_b_rad) >= mod_2pi(angle_rad - range_a_rad)
+        || mod_2pi(angle_rad - range_b_rad) == 0
+        || mod_2pi(range_a_rad - range_b_rad) == 0;
+//    return (mod_2pi_radians(angle - range[1], deg) >= 
+//            mod_2pi_radians(angle - range[0], deg) || 
+//            mod_2pi_radians(angle - range[1], deg) == 0 || 
+//            mod_2pi_radians(range[0] - range[1], deg) == 0);
+}
+
+inline
+scitbx::af::flex_bool is_angle_in_range(scitbx::af::flex_double angle,
+                                        scitbx::vec2 <double> range,
+                                        bool deg = false) {
+    scitbx::af::flex_bool result(angle.size());
+    for (int i = 0; i < angle.size(); ++i) {
+        result[i] = is_angle_in_range(angle[i], range, deg);
+    }
+    return result;
 }
 
 }} // namespace dials::spot_prediction

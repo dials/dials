@@ -18,16 +18,10 @@ void export_from_xds_to_detector()
                 arg("from_beam_vector_to_detector"))))
         .def(init <XdsCoordinateSystem,
                    scitbx::vec3 <double>,
-                   DetectorCoordinateSystem,
-                   scitbx::vec2 <double>,
-                   scitbx::vec2 <double>,
-                   double> ((
+                   equipment::Detector> ((
                 arg("xcs"), 
                 arg("s1"),
-                arg("dcs"),
-                arg("pixel_size"),
-                arg("origin"),
-                arg("distance"))))
+                arg("detector"))))
         .def("apply", 
             &FromXdsToDetector::apply, (
                 arg("c")));

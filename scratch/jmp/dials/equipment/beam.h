@@ -2,7 +2,6 @@
 #ifndef DIALS_EQUIPMENT_BEAM_H
 #define DIALS_EQUIPMENT_BEAM_H
 
-#include <exception>
 #include <scitbx/vec3.h>
 
 namespace dials { namespace equipment {

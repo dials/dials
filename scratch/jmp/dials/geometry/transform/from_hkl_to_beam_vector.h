@@ -4,9 +4,9 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/mat3.h>
 #include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
-#include "../reciprocal_lattice_coordinate_system.h"
 #include "../../error.h"
 
 namespace dials { namespace geometry { namespace transform {
@@ -29,12 +29,12 @@ public:
      * @param s0 The incident beam vector
      * @param m2 The rotation axis
      */
-    FromHklToBeamVector(ReciprocalLatticeCoordinateSystem rlcs,
+    FromHklToBeamVector(scitbx::mat3 <double> ub_matrix,
                         scitbx::vec3 <double> s0,
                         scitbx::vec3 <double> m2) 
-        : b1_star_(rlcs.get_b1_star_axis()),
-          b2_star_(rlcs.get_b2_star_axis()),
-          b3_star_(rlcs.get_b3_star_axis()),
+        : b1_star_(ub_matrix[0], ub_matrix[3], ub_matrix[6]),
+          b2_star_(ub_matrix[1], ub_matrix[4], ub_matrix[7]),
+          b3_star_(ub_matrix[2], ub_matrix[5], ub_matrix[8]),
           s0_(s0),
           m2_(m2.normalize()) {}
 

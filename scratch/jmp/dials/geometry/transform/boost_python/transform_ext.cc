@@ -18,6 +18,7 @@ void export_from_xds_to_beam_vector();
 void export_from_xds_to_detector();
 void export_from_xds_e3_to_phi();
 void export_from_beam_vector_to_image_volume();
+void export_from_hkl_to_rsv();
 
 BOOST_PYTHON_MODULE(dials_geometry_transform_ext)
 {
@@ -31,6 +32,7 @@ BOOST_PYTHON_MODULE(dials_geometry_transform_ext)
     export_from_xds_to_detector();
     export_from_xds_e3_to_phi();
     export_from_beam_vector_to_image_volume();
+    export_from_hkl_to_rsv();
 }
 
 } // namespace = boost_python

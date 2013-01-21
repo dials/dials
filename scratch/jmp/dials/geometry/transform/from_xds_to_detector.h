@@ -38,12 +38,9 @@ public:
      */
     FromXdsToDetector(XdsCoordinateSystem xcs,
                       scitbx::vec3 <double> s1,
-                      DetectorCoordinateSystem dcs,
-                      scitbx::vec2 <double> pixel_size,                      
-                      scitbx::vec2 <double> origin,
-                      double distance)
+                      equipment::Detector detector)
         : from_xds_to_beam_vector_(xcs, s1),
-          from_beam_vector_to_detector_(dcs, pixel_size, origin, distance) {}
+          from_beam_vector_to_detector_(detector) {}
 
     /**
      * Apply the transform

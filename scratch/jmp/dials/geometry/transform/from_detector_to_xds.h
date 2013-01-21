@@ -39,15 +39,12 @@ public:
      * @param s1 The diffracted beam vector
      * @param phi The rotation angle
      */
-    FromDetectorToXds(DetectorCoordinateSystem dcs,
-                      scitbx::vec2 <double> pixel_size,
-                      scitbx::vec2 <double> origin,
-                      double distance,
+    FromDetectorToXds(equipment::Detector detector,
                       XdsCoordinateSystem xcs,
                       scitbx::vec3 <double> s1,
                       double phi,
                       double wavelength)
-        : xy_to_s1_(dcs, pixel_size, origin, distance),
+        : xy_to_s1_(detector),
           s1_to_xds_(xcs, s1, phi),
           wavelength_r_(1.0 / wavelength) {}
      

@@ -33,16 +33,13 @@ public:
      * @param ub_matrix The UB matrix 
      * @param wavelength The incident beam wavelength
      * @param rotation_axis The crystal rotation axis
-     * @param rotation_angle_range The range of valid rotation angles
      * @param deg angles in degrees True/False
      */
     RotationAngles(double d_min, 
                    scitbx::mat3 <double> ub_matrix,
                    double wavelength, 
-                   scitbx::vec3 <double> rotation_axis,
-                   scitbx::vec2 <double> rotation_angle_range)
-        : rotation_angles_(d_min, ub_matrix, wavelength, rotation_axis),
-          rotation_angle_range_(rotation_angle_range) {}
+                   scitbx::vec3 <double> rotation_axis)
+        : rotation_angles_(d_min, ub_matrix, wavelength, rotation_axis){}
 
     /**
      * Calculate the valid rotation angles from the given list of miller
@@ -51,25 +48,26 @@ public:
      * @param miller_indices The array of miller indices
      * @returns The array of rotation angles.
      */
-    scitbx::af::shared <double> calculate(flex_miller_index miller_indices)
+    scitbx::af::flex_double calculate(flex_miller_index miller_indices,
+                                          scitbx::af::flex_bool &status)
     {
-        miller_indices_ = flex_miller_index_const_ref(miller_indices.begin(), miller_indices.size());
-        array_indices_.resize(0);
-        scitbx::af::shared <double> result;
+//        miller_indices_ = flex_miller_index_const_ref(miller_indices.begin(), miller_indices.size());
+//        array_indices_.resize(0);
+        scitbx::af::flex_double result(scitbx::af::flex_grid <> (2, miller_indices.size()));
+        status.resize(miller_indices.size());
         for (int i = 0; i < miller_indices.size(); ++i) {
             if (rotation_angles_(to_vec3_double(miller_indices[i]))) {
 				scitbx::vec2 <double> angles = mod_2pi(
 					rotation_angles_.get_intersection_angles());
-				if (angle_filter(angles[0], rotation_angle_range_, false)) {
-//                if (this->angle_in_range(angles[0])) {
-                    result.push_back(angles[0]);
-                    array_indices_.push_back(i);
-                }
-				if (angle_filter(angles[1], rotation_angle_range_, false)) {
-//                if (this->angle_in_range(angles[1])) {
-                    result.push_back(angles[1]);
-                    array_indices_.push_back(i);
-                }
+                result(0, i) = angles[0];
+                result(1, i) = angles[1];
+                status[i] = true;
+//                result.push_back(angles[0]);
+//                array_indices_.push_back(i);
+//                result.push_back(angles[1]);
+//                array_indices_.push_back(i);
+            } else {
+                status[i] = false;
             }
         }
         return result;
@@ -97,7 +95,6 @@ private:
     }
 
     rstbx::rotation_angles rotation_angles_;
-    scitbx::vec2 <double> rotation_angle_range_;
     scitbx::af::shared <int> array_indices_;
     flex_miller_index_const_ref miller_indices_;
 };
