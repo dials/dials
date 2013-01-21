@@ -13,11 +13,12 @@ namespace boost_python {
 void export_goniometer() 
 {
     class_ <Goniometer> ("Goniometer")
-        .def(init <scitbx::vec3 <double>, double, double, int> ((
+        .def(init <scitbx::vec3 <double>, double, double, int, int> ((
                 arg("rotation_axis"), 
                 arg("starting_angle"), 
                 arg("oscillation_range"),
-                arg("starting_frame"))))
+                arg("starting_frame"),
+                arg("num_frames") = 0)))
         .add_property("rotation_axis",  
             &Goniometer::get_rotation_axis,
             &Goniometer::set_rotation_axis)
@@ -30,6 +31,9 @@ void export_goniometer()
         .add_property("starting_frame",  
             &Goniometer::get_starting_frame,
             &Goniometer::set_starting_frame)
+        .add_property("num_frames",
+            &Goniometer::get_num_frames,
+            &Goniometer::set_num_frames)
         .def("get_angle_from_frame", 
             &Goniometer::get_angle_from_frame, (
                 arg("frame")))

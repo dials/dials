@@ -18,71 +18,6 @@ from dials.geometry.transform import FromHklToBeamVector
 from dials.geometry.transform import FromHklToDetector
 from dials.geometry.transform import FromBeamVectorToDetector
 
-def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group, 
-                                         dmin, wavelength, m2, phi_min, phi_max):
-    """Predict the reflections.
-    
-    Calculate the indices of all predicted reflections based on the unit cell 
-    parameters and the given resolution. Then remove the indices that are
-    absent due to the symmetry. Lastly, generate the intersection angles, phi,
-    and return these.
-    
-    :param cbf_handle: The CBF file handle
-    :param ub_matrix: The UB matrix
-    :param unit_cell: The unit cell parameters
-    :param cell_space_group: The unit cell space group symmetry
-    :param dmin: The resolution
-    :param wavelength: The beam wavelength
-    :returns: A list of reflection indices
-    
-    """
-    #from rstbx.diffraction import rotation_angles
-    from scitbx import matrix
-    from dials import spot_prediction
-    import cctbx.sgtbx
-
-    # Generate reflection indices from the unit cell parameters and resolution.
-    # Then remove indices that are systemmatically absent because of symmetry.
-    cell_space_group_type = space_group_type(cell_space_group)
-    gen2 = spot_prediction.IndexGenerator(unit_cell, cell_space_group_type, True, dmin)
-
-        #ind1 = index_generator.indices
-    print "Generating"
-    print gen2.next()
-    indices = gen2.to_array()
-   
-    # Construct an object to calculate the rotation of a reflection about
-    # the (0, 1, 0) axis.
-    print "Calculating rotation angles"
-    from math import pi
-    print "Range: ", phi_min, phi_max
-    #phi_min = 0
-    #phi_max = 0
-    rotation_angles = spot_prediction.RotationAngles(dmin, ub_matrix, wavelength, m2, (phi_min, phi_max))
-    phi = rotation_angles.calculate(indices)
-  
-    print "UnZipping"
-    hkl = rotation_angles.miller_indices()
-#    index, phi = zip(*index_phi)
-    
-    return (hkl, phi)
-
-    #print len(hkl), len(phi)
-    #print hkl[0], phi[0]
-  
-    # Generate the intersection angles of the remaining reflections
-    #print "Putting into an array"
-    #observable_reflections = []
-    #for (hkl, phi) in zip(hkl, phi):
-    #    observable_reflections.append(Reflection(hkl,(phi * 180 / pi) % 360))
-            
-    #print "Returning"            
-            
-    # Return the list of phi-angles
-    #return observable_reflections
-
-
-
 def read_reflections_from_volume(volume, coords, bbox = (5,5,5)):
     """Read the reflections from the CBF file.
     
@@ -185,126 +120,31 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     
     # Read the space group symmetry and unit cell parameters
     symmetry = gxparm_handle.space_group
-    unit_cell = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)#gxparm_handle.unit_cell)
-    #ub_matrix = ub_matrix.inverse()
-    for d in dir(unit_cell):
-        print d
 
-    print gxparm_handle.unit_cell
-    print tuple(ub_matrix)
-    print unit_cell.orthogonalization_matrix()
-    print unit_cell.fractionalization_matrix()
-    print unit_cell.metrical_matrix()
-    ub_matrix = ub_matrix.inverse()
-    print ub_matrix
-    cell_space_group = space_group(space_group_symbols(symmetry).hall())
-   
-
-
-    # Create the UB matrix
-    #ub_matrix = rlcs.to_ub_matrix()
-  
-    #print ub_matrix
+    #cell_space_group = space_group(space_group_symbols(symmetry).hall())
+    cell_space_group_type = space_group_type(space_group(space_group_symbols(symmetry).hall()))
 
     # Load the image volume from the CBF files
     volume = pycbf_extra.search_for_image_volume(cbf_path)
     volume_size_z, volume_size_y, volume_size_x = volume.shape
    
-    # Generate the reflections. Get all the indices at the given resolution.
-    # Then using the space group symmetry, remove any indices that will be
-    # systemmatically absent. Finally, calculate the intersection angles of
-    # each of the reflections. The returned variable contains a list of
-    # (phi, hkl) elements
     print "Generate Reflections"
-
-    # Calculate the minimum and maximum angles and filter the reflections to
-    # leave only those whose intersection angles lie between them
-    #phi_min = gonio.starting_angle
-    #phi_max = gonio.get_angle_from_frame(volume_size_z)
-    #from math import pi
-
-    #hkl, phi = generate_observed_reflections(ub_matrix, unit_cell, 
-    #    cell_space_group, dmin, beam.wavelength, gonio.rotation_axis, phi_min, phi_max)
-    
-    # Calculate the reflection detector coordinates. Calculate the 
-    # diffracted beam vector for each reflection and find the pixel 
-    # coordinate where the line defined by the vector intersects the 
-    # detector plane. Returns a list of (x, y) detector coordinates.
-    #print "Calculate detector coordinates"
-    
-    # Create the transform object
-    #from dials.geometry.transform import FromHklToBeamVector, FromBeamVectorToDetector
-    #print "Get beam vectors"
-
-    #hkl_to_s1 = FromHklToBeamVector(rlcs, beam.direction, gonio.rotation_axis)
-    #s1 = hkl_to_s1.apply(hkl, phi)
-
-    #print "Get Detector coords"
-    #s1_to_xy = FromBeamVectorToDetector(dcs, detector.pixel_size, detector.origin, detector.distance)
-    #xy = s1_to_xy.apply(s1)
-
-    # Transform all the reflections from hkl to detector coordinates
-    #print "Get Z's"
-    #from math import pi
-    #from scitbx.array_family import flex
-    #xyz = flex.vec3_double(len(xy))
-    #for i, (p, xxyy) in enumerate(zip(phi, xy)):
-    #    z = gonio.get_frame_from_angle(p)
-    #    xyz[i] = (xxyy[0], xxyy[1], z)      
-    
-    #from dials.geometry.transform import FromBeamVectorToImageVolume
-
-    #s1_to_xyz = FromBeamVectorToImageVolume(detector, gonio)
-    #xyz = s1_to_xyz.apply(s1, phi)
-
-    # Filter the coordinates to those within the boundaries of the volume
-    #print "Filter Reflections"
-    #reflections = [r for r in reflections if r.xyz != None]
-    #index = []
-    #test_volume = [[0, volume_size_x], 
-    #          [0, volume_size_y],
-    #          [0, volume_size_z]]
-
-    #from dials.spot_prediction import in_volume, remove_if_not
-
-    #print "Checking Valid"
-    #is_valid = in_volume(xyz, (0, volume_size_x), 
-    #                          (0, volume_size_y), 
-    #                          (0, volume_size_z))
-
-    #print "Num Valid:", len(is_valid)
-    
-    #print "Removing"
-    #xyz = remove_if_not(xyz, is_valid)
-    #s1  = remove_if_not(s1,  is_valid)
-    #phi = remove_if_not(phi, is_valid)
-    #hkl = remove_if_not(hkl, is_valid)
 
     from dials.spot_prediction import SpotPredictor
     n_image_frames = volume_size_z
-    cell_space_group_type = space_group_type(cell_space_group)
-    spot_predictor = SpotPredictor(beam, gonio, detector, n_image_frames, unit_cell, cell_space_group_type, dmin, ub_matrix)
+    gonio.num_frames = n_image_frames
+    
+    uc = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)
+
+    spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, dmin,
+                                   uc, cell_space_group_type)
+                                   
     spot_predictor.predict_spots()
-    xyz = spot_predictor.image_volume_coords
+    xyz = spot_predictor.image_volume_coordinates
     print "Num Valid: ", len(xyz)
 
     
-    #print len(index)
-    
-    # Read the reflections from the volume. Return a 3D profile of each 
-    # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
-#    coords = xyz
-    coords = []
-    for x in xyz:
-        coords.append((x[0], x[1], x[2]))
-    #for i in index:
-    #    coords.append((xyz[i][0], xyz[i][1], xyz[i][2]-1))
-    
-    #print "Read Reflections from volume"
-    #profiles = read_reflections_from_volume(volume, coords, bbox)
-
-    # Write the reflection profiles to a HDF5 file    
-    #write_reflections_to_hdf5(hdf_path, volume, coords, profiles)
+    coords = xyz
 
     # Print points on first image
     from matplotlib import pylab, cm

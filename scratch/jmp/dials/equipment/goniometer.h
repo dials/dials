@@ -15,7 +15,8 @@ public:
     Goniometer() 
         : starting_angle_(0.0),
           oscillation_range_(0.0), 
-          starting_frame_(0) {}
+          starting_frame_(0),
+          num_frames_(0) {}
 
 
     /** 
@@ -24,15 +25,18 @@ public:
      * @param starting_angle The starting rotation angle
      * @param oscillation_range The angular difference between successive frames
      * @param starting_frame The starting frame number
+     * @param num_frames The number of frames
      */
     Goniometer(scitbx::vec3 <double> rotation_axis, 
                double starting_angle, 
                double oscillation_range,
-               int starting_frame)
+               int starting_frame,
+               int num_frames)
         : rotation_axis_(rotation_axis),
           starting_angle_(starting_angle),
           oscillation_range_(oscillation_range),
-          starting_frame_(starting_frame) {}
+          starting_frame_(starting_frame),
+          num_frames_(num_frames) {}
           
 public:
 
@@ -56,6 +60,11 @@ public:
         return starting_frame_;
     }
     
+    /** Get the number of frames */
+    int get_num_frames() {
+        return num_frames_;
+    }
+    
     /** Set the rotation axis */
     void set_rotation_axis(scitbx::vec3 <double> rotation_axis) {
         rotation_axis_ = rotation_axis;
@@ -71,9 +80,14 @@ public:
         oscillation_range_ = oscillation_range;
     }
 
-   /** Set the starting frame */
+    /** Set the starting frame */
     void set_starting_frame(int starting_frame) {
         starting_frame_ = starting_frame;
+    }
+    
+    /** Set the number of frames */
+    void set_num_frames(int num_frames) {
+        num_frames_ = num_frames;
     }
 
 public:
@@ -102,6 +116,7 @@ private:
     double starting_angle_;
     double oscillation_range_;
     int starting_frame_;
+    int num_frames_;
 };
 
 }} // namespace = dials::equipment
