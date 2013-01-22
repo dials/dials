@@ -20,10 +20,7 @@ void export_rotation_angles()
             arg("ub_matrix"),
             arg("wavelength"),
             arg("rotation_axis"))))
-//            arg("rotation_angle_range"))))
-        .def("calculate", &RotationAngles::calculate)
-        .def("array_indices", &RotationAngles::get_array_indices)
-        .def("miller_indices", &RotationAngles::get_miller_indices);
+        .def("calculate", &RotationAngles::calculate);
 }
 
 } // namespace = boost_python

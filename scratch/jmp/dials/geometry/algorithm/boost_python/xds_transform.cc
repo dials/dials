@@ -15,9 +15,9 @@ void export_xds_transform()
         .def(init <XdsTransformGrid,
                    scitbx::af::flex_int,
                    scitbx::vec3 <int>,
-                   equipment::Detector,
-                   equipment::Beam,
-                   equipment::Goniometer,
+                   const equipment::Detector&,
+                   const equipment::Beam&,
+                   const equipment::Goniometer&,
                    scitbx::vec3 <int>,
                    int > ((
                 arg("xds_grid"),

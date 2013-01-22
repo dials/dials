@@ -20,8 +20,8 @@ public:
      * @param hkl_to_s1 The hkl to beam vector transform
      * @param s1_to_xy The beam vector to detector transform
      */
-    FromHklToDetector(FromHklToBeamVector hkl_to_s1,
-                      FromBeamVectorToDetector s1_to_xy)
+    FromHklToDetector(const FromHklToBeamVector &hkl_to_s1,
+                      const FromBeamVectorToDetector &s1_to_xy)
         : hkl_to_s1_(hkl_to_s1),
           s1_to_xy_(s1_to_xy) {}
      
@@ -38,7 +38,7 @@ public:
     FromHklToDetector(scitbx::mat3 <double> ub_matrix,
                       scitbx::vec3 <double> s0,
                       scitbx::vec3 <double> m2,
-                      equipment::Detector detector)
+                      const equipment::Detector &detector)
         : hkl_to_s1_(ub_matrix, s0, m2),
           s1_to_xy_(detector) {}
 

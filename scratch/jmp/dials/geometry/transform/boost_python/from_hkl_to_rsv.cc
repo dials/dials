@@ -18,7 +18,8 @@ void export_from_hkl_to_rsv()
 
     // Apply to array of beam vectors
     flex_vec3_double (FromHklToRsv::*apply_array)(
-        flex_miller_index, scitbx::af::flex_double) = &FromHklToRsv::apply;
+        const flex_miller_index&, const scitbx::af::flex_double&) = 
+            &FromHklToRsv::apply;
 
     class_ <FromHklToRsv> ("FromHklToRsv")
         .def(init <scitbx::mat3 <double>,

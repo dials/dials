@@ -33,7 +33,7 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
-    FromBeamVectorToDetector(equipment::Detector detector) 
+    FromBeamVectorToDetector(const equipment::Detector &detector) 
         : x_axis_(detector.get_x_axis().normalize() / 
                     detector.get_pixel_size()[0]),
           y_axis_(detector.get_y_axis().normalize() / 
@@ -65,7 +65,7 @@ public:
      * @param status The status array
      * @returns An array of 2 element vectors containing the pixel coordinates
      */
-    flex_vec2_double apply(flex_vec3_double s1, 
+    flex_vec2_double apply(const flex_vec3_double &s1, 
                            scitbx::af::flex_bool &status) {
         flex_vec2_double result(s1.size());
         status.resize(s1.size());

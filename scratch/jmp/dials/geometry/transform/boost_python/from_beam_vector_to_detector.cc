@@ -18,10 +18,11 @@ void export_from_beam_vector_to_detector()
 
     // Apply to array of beam vectors
     flex_vec2_double (FromBeamVectorToDetector::*apply_array)(
-        flex_vec3_double, scitbx::af::flex_bool&) = &FromBeamVectorToDetector::apply;
+        const flex_vec3_double&, scitbx::af::flex_bool&) = 
+            &FromBeamVectorToDetector::apply;
 
     class_ <FromBeamVectorToDetector> ("FromBeamVectorToDetector")
-        .def(init <equipment::Detector> ((
+        .def(init <const equipment::Detector&> ((
                 arg("detector"))))
         .def("apply", apply_single, (
                 arg("s1")))

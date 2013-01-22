@@ -60,7 +60,8 @@ public:
      * @returns An array of beam vectors
      * @throws An exception if the sizes of hkl and phi are not equal
      */
-    flex_vec3_double apply(flex_miller_index hkl, scitbx::af::flex_double phi) {
+    flex_vec3_double apply(const flex_miller_index &hkl, 
+                           const scitbx::af::flex_double &phi) {
         DIALS_ASSERT(hkl.size() == phi.size());
         flex_vec3_double result(hkl.size());
         for (int i = 0; i < hkl.size(); ++i) {

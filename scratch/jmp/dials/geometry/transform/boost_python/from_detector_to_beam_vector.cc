@@ -13,7 +13,7 @@ namespace boost_python {
 void export_from_detector_to_beam_vector() 
 {
     class_ <FromDetectorToBeamVector> ("FromDetectorToBeamVector")
-        .def(init <equipment::Detector> ((
+        .def(init <const equipment::Detector&> ((
                 arg("detector"))))
         .def("apply", 
             &FromDetectorToBeamVector::apply, (

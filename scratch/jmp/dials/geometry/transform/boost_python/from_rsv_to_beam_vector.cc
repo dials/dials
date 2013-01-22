@@ -18,11 +18,12 @@ void export_from_rsv_to_beam_vector()
 
     // Apply to array of beam vectors
     flex_vec3_double (FromRsvToBeamVector::*apply_array)(
-        flex_vec3_double, scitbx::af::flex_double) = &FromRsvToBeamVector::apply;
+        const flex_vec3_double&, const scitbx::af::flex_double&) = 
+            &FromRsvToBeamVector::apply;
 
     class_ <FromRsvToBeamVector> ("FromRsvToBeamVector")
-        .def(init <equipment::Beam,
-                   equipment::Goniometer> ((
+        .def(init <const equipment::Beam&,
+                   const equipment::Goniometer&> ((
                 arg("beam"),
                 arg("goniometer"))))
         .def("apply", apply_single, (

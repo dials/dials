@@ -28,7 +28,8 @@ public:
         return (ub_ * h).unit_rotate_around_origin(m2_, phi);
     }
 
-    flex_vec3_double apply(flex_miller_index h, scitbx::af::flex_double phi) {
+    flex_vec3_double apply(const flex_miller_index &h, 
+                           const scitbx::af::flex_double &phi) {
         DIALS_ASSERT(h.size() == phi.size());
         flex_vec3_double result(h.size());
         for (int i = 0; i < h.size(); ++i) {

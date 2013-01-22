@@ -36,7 +36,7 @@ public:
      * closer to a neighbouring reflection.
      * @param reflection_xyz
      */
-    void create(flex_vec3_double reflection_xyz) {
+    void create(const flex_vec3_double &reflection_xyz) {
 
         // Initialise mask to -1
         for (int i = 0; i < mask_.size(); ++i) {

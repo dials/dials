@@ -43,37 +43,37 @@ public:
 public:
 
     /** Get the x axis */
-    scitbx::vec3 <double> get_x_axis() {
+    scitbx::vec3 <double> get_x_axis() const {
         return x_axis_;
     }
     
     /** Get the y axis */
-    scitbx::vec3 <double> get_y_axis() {
+    scitbx::vec3 <double> get_y_axis() const {
         return y_axis_;
     }
     
     /** Get the normal */
-    scitbx::vec3 <double> get_normal() {
+    scitbx::vec3 <double> get_normal() const {
         return normal_;
     }
 
     /** Get the detector origin */
-    scitbx::vec2 <double> get_origin() {
+    scitbx::vec2 <double> get_origin() const {
         return origin_;
     }
     
     /** Get the pixel size */
-    scitbx::vec2 <double> get_pixel_size() {
+    scitbx::vec2 <double> get_pixel_size() const {
         return pixel_size_;
     }
 
     /** Get the detector size */
-    scitbx::vec2 <int> get_size() {
+    scitbx::vec2 <int> get_size() const {
         return size_;
     }
     
     /** Get the distance from the crystal */
-    double get_distance() {
+    double get_distance() const {
         return distance_;
     }
     

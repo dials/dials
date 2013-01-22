@@ -23,8 +23,8 @@ public:
      * @param detector The detector struct
      * @param goniometer The goniometer struct
      */
-    FromBeamVectorToImageVolume(equipment::Detector detector,
-                                equipment::Goniometer goniometer)
+    FromBeamVectorToImageVolume(const equipment::Detector &detector,
+                                const equipment::Goniometer &goniometer)
         : from_beam_vector_to_detector_(detector),
           goniometer_(goniometer) {}
 
@@ -49,8 +49,8 @@ public:
      * @param status The status array
      * @returns The array of image volume coordinates.
      */
-    flex_vec3_double apply(flex_vec3_double s1, 
-                           scitbx::af::flex_double phi,
+    flex_vec3_double apply(const flex_vec3_double &s1, 
+                           const scitbx::af::flex_double &phi,
                            scitbx::af::flex_bool &status) {
         DIALS_ASSERT(s1.size() == phi.size());
         status.resize(s1.size());

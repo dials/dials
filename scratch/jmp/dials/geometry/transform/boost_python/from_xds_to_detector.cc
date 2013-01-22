@@ -12,13 +12,13 @@ namespace boost_python {
 void export_from_xds_to_detector() 
 {
     class_ <FromXdsToDetector> ("FromXdsToDetector")
-        .def(init <FromXdsToBeamVector,
-                   FromBeamVectorToDetector> ((
+        .def(init <const FromXdsToBeamVector&,
+                   const FromBeamVectorToDetector&> ((
                 arg("from_xds_to_beam_vector"), 
                 arg("from_beam_vector_to_detector"))))
-        .def(init <XdsCoordinateSystem,
+        .def(init <const XdsCoordinateSystem&,
                    scitbx::vec3 <double>,
-                   equipment::Detector> ((
+                   const equipment::Detector&> ((
                 arg("xcs"), 
                 arg("s1"),
                 arg("detector"))))

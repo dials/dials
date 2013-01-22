@@ -11,7 +11,7 @@ namespace dials { namespace spot_prediction {
 typedef scitbx::af::flex <scitbx::vec2 <double> >::type flex_vec2_double;
 typedef scitbx::af::flex <scitbx::vec3 <double> >::type flex_vec3_double;
 
-scitbx::af::flex_bool in_range(scitbx::af::flex_double x, 
+scitbx::af::flex_bool in_range(const scitbx::af::flex_double &x, 
                                scitbx::vec2 <double> range) {
     scitbx::af::flex_bool result(x.size());
     for (int i = 0; i < x.size(); ++i) {
@@ -20,7 +20,7 @@ scitbx::af::flex_bool in_range(scitbx::af::flex_double x,
     return result;
 }
 
-scitbx::af::flex_bool in_rect(flex_vec2_double xy, 
+scitbx::af::flex_bool in_rect(const flex_vec2_double &xy, 
                               scitbx::vec2 <double> xrange, 
                               scitbx::vec2 <double> yrange) {
     scitbx::af::flex_bool result(xy.size());
@@ -31,7 +31,7 @@ scitbx::af::flex_bool in_rect(flex_vec2_double xy,
     return result;
 }
 
-scitbx::af::flex_bool in_volume(flex_vec3_double xyz, 
+scitbx::af::flex_bool in_volume(const flex_vec3_double &xyz, 
                                 scitbx::vec2 <double> xrange, 
                                 scitbx::vec2 <double> yrange,
                                 scitbx::vec2 <double> zrange) {
@@ -45,7 +45,7 @@ scitbx::af::flex_bool in_volume(flex_vec3_double xyz,
 }
 
 template <typename ArrayType>
-ArrayType remove_if(ArrayType in, scitbx::af::flex_bool yesno) {
+ArrayType remove_if(const ArrayType &in, const scitbx::af::flex_bool &yesno) {
     DIALS_ASSERT(in.size() == yesno.size());
     int size = 0;
     for (int i = 0; i < yesno.size(); ++i) {
@@ -61,7 +61,7 @@ ArrayType remove_if(ArrayType in, scitbx::af::flex_bool yesno) {
 }
 
 template <typename ArrayType>
-ArrayType remove_if_not(ArrayType in, scitbx::af::flex_bool yesno) {
+ArrayType remove_if_not(const ArrayType &in, const scitbx::af::flex_bool &yesno) {
     DIALS_ASSERT(in.size() == yesno.size());
     int size = 0;
     for (int i = 0; i < yesno.size(); ++i) {

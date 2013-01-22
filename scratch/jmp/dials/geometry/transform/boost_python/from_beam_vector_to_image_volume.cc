@@ -18,11 +18,12 @@ void export_from_beam_vector_to_image_volume()
 
     // Apply to array of beam vectors
     flex_vec3_double (FromBeamVectorToImageVolume::*apply_array)(
-        flex_vec3_double, scitbx::af::flex_double, scitbx::af::flex_bool&) = &FromBeamVectorToImageVolume::apply;
+        const flex_vec3_double&, const scitbx::af::flex_double&, 
+        scitbx::af::flex_bool&) = &FromBeamVectorToImageVolume::apply;
 
     class_ <FromBeamVectorToImageVolume> ("FromBeamVectorToImageVolume")
-        .def(init <equipment::Detector,
-                   equipment::Goniometer> ((
+        .def(init <const equipment::Detector&,
+                   const equipment::Goniometer&> ((
                 arg("detector"), 
                 arg("goniometer"))))
         .def("apply", apply_single, (

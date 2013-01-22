@@ -22,8 +22,8 @@ public:
      * @param from_xds_to_beam_vector The XDS -> Beam vector transform
      * @param from_beam_vector_to_detector The Beam vector to Detector transform
      */
-    FromXdsToDetector(FromXdsToBeamVector from_xds_to_beam_vector,
-                      FromBeamVectorToDetector from_beam_vector_to_detector)
+    FromXdsToDetector(const FromXdsToBeamVector &from_xds_to_beam_vector,
+                      const FromBeamVectorToDetector &from_beam_vector_to_detector)
         : from_xds_to_beam_vector_(from_xds_to_beam_vector),
           from_beam_vector_to_detector_(from_beam_vector_to_detector) {}
           
@@ -36,9 +36,9 @@ public:
      * @param origin The detector origin
      * @param distance The detector distance
      */
-    FromXdsToDetector(XdsCoordinateSystem xcs,
+    FromXdsToDetector(const XdsCoordinateSystem &xcs,
                       scitbx::vec3 <double> s1,
-                      equipment::Detector detector)
+                      const equipment::Detector &detector)
         : from_xds_to_beam_vector_(xcs, s1),
           from_beam_vector_to_detector_(detector) {}
 

@@ -25,8 +25,8 @@ public:
      * @param beam The beam parameters
      * @param goniometer The goniometer parameters
      */
-    FromRsvToBeamVector(equipment::Beam beam,
-                        equipment::Goniometer goniometer)
+    FromRsvToBeamVector(const equipment::Beam &beam,
+                        const equipment::Goniometer &goniometer)
         : incident_beam_vector_(beam.get_direction().normalize() * 
                                 beam.get_wavelength()),
           rotation_axis_(goniometer.get_rotation_axis().normalize()) {}
@@ -47,8 +47,8 @@ public:
      * @param reciprocal_space_vectors The reciprocal space vectors
      * @param rotation_angles The diffracting rotation angles
      */
-    flex_vec3_double apply(flex_vec3_double reciprocal_space_vectors,
-                           scitbx::af::flex_double rotation_angles) {
+    flex_vec3_double apply(const flex_vec3_double &reciprocal_space_vectors,
+                           const scitbx::af::flex_double &rotation_angles) {
         DIALS_ASSERT(reciprocal_space_vectors.size() == rotation_angles.size());
         flex_vec3_double result(reciprocal_space_vectors.size());
         for (int i = 0; i < reciprocal_space_vectors.size(); ++i) {

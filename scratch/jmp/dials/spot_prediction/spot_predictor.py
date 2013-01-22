@@ -116,43 +116,41 @@ class SpotPredictor(object):
         # Generate the miller indices
         miller_indices = self.__generate_miller_indices()
         
-        # Calculate the set of valid rotation angles and miller indices
-        status = flex.bool()
-        rotation_angles = self.__calculate_rotation_angles(miller_indices, status)
-        
-        # Remove the invalid miller indices and rotation angles
-        miller_indices = remove_if_not(miller_indices, status)
-        rotation_angles_a = remove_if_not(rotation_angles[0:1,:].as_1d(), status)
-        rotation_angles_b = remove_if_not(rotation_angles[1:2,:].as_1d(), status)
-
-        # Create an array of miller indices and rotation angles that correspond
+        # Calculate the set of valid rotation angles and miller indices and
+        # remove the invalid miller indices and rotation angles and create 
+        # an array of miller indices and rotation angles that correspond
+        is_valid_angle = flex.bool()
+        rotation_angles = self.__calculate_rotation_angles(miller_indices, 
+                                                           is_valid_angle)
+        miller_indices = remove_if_not(miller_indices, is_valid_angle)
+        rotation_angles_a = remove_if_not(rotation_angles[0:1,:].as_1d(), is_valid_angle)
+        rotation_angles_b = remove_if_not(rotation_angles[1:2,:].as_1d(), is_valid_angle)
         miller_indices = miller_indices.concatenate(miller_indices)
         rotation_angles = rotation_angles_a.concatenate(rotation_angles_b)        
         
+        # Filter the angles and miller indices with the rotation range
         in_rotation_range = self.__filter_angles_in_rotation_range(rotation_angles)
-        
-        # Filter the angles and miller indices accordingly
         rotation_angles = remove_if_not(rotation_angles, in_rotation_range)
         miller_indices  = remove_if_not(miller_indices, in_rotation_range)        
         
-        rsv = self.__calculate_reciprocal_space_vectors(miller_indices, rotation_angles)
+        # Calculate the beam vectors
+        beam_vectors = self.__calculate_reciprocal_space_vectors(
+                                miller_indices, 
+                                rotation_angles) + self._beam.direction
 
-        beam_vectors = rsv + self._beam.direction
+        # Calculate the image volume coordinates and keep only those array 
+        # elements that have a valid image coordinate
+        is_valid_coord = flex.bool()
+        image_volume_coords = self.__calculate_image_volume_coordinates(
+                                beam_vectors, rotation_angles, is_valid_coord)
+        miller_indices      = remove_if_not(miller_indices,      is_valid_coord)
+        rotation_angles     = remove_if_not(rotation_angles,     is_valid_coord)
+        beam_vectors        = remove_if_not(beam_vectors,        is_valid_coord)
+        image_volume_coords = remove_if_not(image_volume_coords, is_valid_coord)
 
-        # Calculate the image volume coordinates
-        status = flex.bool()
-        image_volume_coords = self.__calculate_image_volume_coordinates(beam_vectors, rotation_angles, status)
-
-        # Keep only those array elements that have a valid image coordinate
-        miller_indices      = remove_if_not(miller_indices,      status)
-        rotation_angles     = remove_if_not(rotation_angles,     status)
-        beam_vectors        = remove_if_not(beam_vectors,        status)
-        image_volume_coords = remove_if_not(image_volume_coords, status)
-
-        # Filter the image volume coordinates
+        # Filter the image volume coordinates and remove any invalid spots to 
+        # leave the valid ones remaining
         is_valid_coord = self.__filter_image_volume_coordinates(image_volume_coords)
-
-        # Remove any invalid spots to leave the valid ones remaining
         self._miller_indices      = remove_if_not(miller_indices,      is_valid_coord)
         self._rotation_angles     = remove_if_not(rotation_angles,     is_valid_coord)
         self._beam_vectors        = remove_if_not(beam_vectors,        is_valid_coord)

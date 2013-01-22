@@ -58,7 +58,7 @@ bool is_angle_in_range(double angle, scitbx::vec2 <double> range,
 }
 
 inline
-scitbx::af::flex_bool is_angle_in_range(scitbx::af::flex_double angle,
+scitbx::af::flex_bool is_angle_in_range(const scitbx::af::flex_double &angle,
                                         scitbx::vec2 <double> range,
                                         bool deg = false) {
     scitbx::af::flex_bool result(angle.size());

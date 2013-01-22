@@ -27,7 +27,7 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
-    FromDetectorToBeamVector(equipment::Detector detector) 
+    FromDetectorToBeamVector(const equipment::Detector &detector) 
         : x_axis_(detector.get_x_axis().normalize() * 
                     detector.get_pixel_size()[0]),
           y_axis_(detector.get_y_axis().normalize() * 

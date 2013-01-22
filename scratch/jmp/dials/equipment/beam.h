@@ -24,12 +24,12 @@ public:
           direction_(direction) {}
     
     /** Get the beam direction */
-    scitbx::vec3 <double> get_direction() {
+    scitbx::vec3 <double> get_direction() const {
         return direction_;
     }
     
     /** Get the beam wavelength */
-    double get_wavelength() {
+    double get_wavelength() const {
         return wavelength_;
     }
     

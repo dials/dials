@@ -15,7 +15,7 @@ void export_angle_filter()
         &is_angle_in_range;    
 
     scitbx::af::flex_bool (*is_angle_in_range_array)(
-        scitbx::af::flex_double, scitbx::vec2 <double>, bool) =
+        const scitbx::af::flex_double&, scitbx::vec2 <double>, bool) =
             &is_angle_in_range;
 
     def("is_angle_in_range", is_angle_in_range_single, (

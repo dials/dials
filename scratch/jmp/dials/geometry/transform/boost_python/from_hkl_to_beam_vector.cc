@@ -17,7 +17,8 @@ void export_from_hkl_to_beam_vector()
 
     // Apply to array of hkl, phi pairs
     flex_vec3_double (FromHklToBeamVector::*apply_array)(
-        flex_miller_index, scitbx::af::flex_double) = &FromHklToBeamVector::apply;
+        const flex_miller_index&, const scitbx::af::flex_double&) = 
+            &FromHklToBeamVector::apply;
 
     class_ <FromHklToBeamVector> ("FromHklToBeamVector")
         .def(init <scitbx::mat3 <double>, 

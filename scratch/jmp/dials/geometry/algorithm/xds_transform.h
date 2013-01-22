@@ -190,7 +190,7 @@ public:
      * @param wavelength The wavelength of the radiation
      * @param n_div The number of pixel sub-divisions
      */
-    XdsTransformDetectorBeamVectors(equipment::Detector detector,
+    XdsTransformDetectorBeamVectors(const equipment::Detector &detector,
                                     double wavelength,
                                     int n_div)
         : size_(detector.get_size()),
@@ -282,11 +282,11 @@ public:
      * @param n_div The number of pixel sub divisions to use (default 5)
      */
     XdsTransform(XdsTransformGrid grid,
-                 scitbx::af::flex_int image,
+                 const scitbx::af::flex_int &image,
                  scitbx::vec3 <int> image_size,
-                 equipment::Detector detector,
-                 equipment::Beam beam,
-                 equipment::Goniometer gonio,
+                 const equipment::Detector &detector,
+                 const equipment::Beam &beam,
+                 const equipment::Goniometer &gonio,
                  scitbx::vec3 <int> roi_size,
                  int n_div = 5)
         : 

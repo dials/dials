@@ -41,27 +41,27 @@ public:
 public:
 
     /** Get the rotation axis */
-    scitbx::vec3 <double> get_rotation_axis() {
+    scitbx::vec3 <double> get_rotation_axis() const {
         return rotation_axis_;
     }
    
     /** Get the starting angle */
-    double get_starting_angle() {
+    double get_starting_angle() const {
         return starting_angle_;
     }
     
     /** Get the oscillation range */
-    double get_oscillation_range() {
+    double get_oscillation_range() const {
         return oscillation_range_;
     }
 
     /** Get the starting frame */
-    int get_starting_frame() {
+    int get_starting_frame() const {
         return starting_frame_;
     }
     
     /** Get the number of frames */
-    int get_num_frames() {
+    int get_num_frames() const {
         return num_frames_;
     }
     

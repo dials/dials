@@ -48,11 +48,9 @@ public:
      * @param miller_indices The array of miller indices
      * @returns The array of rotation angles.
      */
-    scitbx::af::flex_double calculate(flex_miller_index miller_indices,
-                                          scitbx::af::flex_bool &status)
+    scitbx::af::flex_double calculate(const flex_miller_index &miller_indices,
+                                      scitbx::af::flex_bool &status)
     {
-//        miller_indices_ = flex_miller_index_const_ref(miller_indices.begin(), miller_indices.size());
-//        array_indices_.resize(0);
         scitbx::af::flex_double result(scitbx::af::flex_grid <> (2, miller_indices.size()));
         status.resize(miller_indices.size());
         for (int i = 0; i < miller_indices.size(); ++i) {
@@ -62,27 +60,9 @@ public:
                 result(0, i) = angles[0];
                 result(1, i) = angles[1];
                 status[i] = true;
-//                result.push_back(angles[0]);
-//                array_indices_.push_back(i);
-//                result.push_back(angles[1]);
-//                array_indices_.push_back(i);
             } else {
                 status[i] = false;
             }
-        }
-        return result;
-    }
-    
-    /** Get the list of array indices corresponding the rotation angles */
-    scitbx::af::shared <int> get_array_indices() {
-        return array_indices_;
-    }
-    
-    /** Get the miller indices corresponding to the rotation angles */
-    flex_miller_index get_miller_indices() {
-        flex_miller_index result(array_indices_.size());
-        for (int i = 0; i < array_indices_.size(); ++i) {
-            result[i] = miller_indices_[array_indices_[i]];
         }
         return result;
     }
@@ -95,8 +75,6 @@ private:
     }
 
     rstbx::rotation_angles rotation_angles_;
-    scitbx::af::shared <int> array_indices_;
-    flex_miller_index_const_ref miller_indices_;
 };
 
 }} // namespace dials::spot_prediction

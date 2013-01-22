@@ -21,8 +21,8 @@ public:
      * @param xy_to_s1 The detector to beam vector transform
      * @param s1_to_xds The beam vector to XDS transform
      */
-    FromDetectorToXds(FromDetectorToBeamVector xy_to_s1,
-                      FromBeamVectorToXds s1_to_xds,
+    FromDetectorToXds(const FromDetectorToBeamVector &xy_to_s1,
+                      const FromBeamVectorToXds &s1_to_xds,
                       double wavelength)
         : xy_to_s1_(xy_to_s1),
           s1_to_xds_(s1_to_xds),
@@ -39,8 +39,8 @@ public:
      * @param s1 The diffracted beam vector
      * @param phi The rotation angle
      */
-    FromDetectorToXds(equipment::Detector detector,
-                      XdsCoordinateSystem xcs,
+    FromDetectorToXds(const equipment::Detector &detector,
+                      const XdsCoordinateSystem &xcs,
                       scitbx::vec3 <double> s1,
                       double phi,
                       double wavelength)
