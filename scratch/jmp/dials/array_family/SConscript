@@ -1,0 +1,9 @@
+
+Import('env')
+
+sources = [
+    'boost_python/sorting.cc',
+    'boost_python/array_family_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_array_family_ext', source=sources)
+

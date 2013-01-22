@@ -5,7 +5,7 @@
 
 using namespace boost::python;
 
-namespace dials { namespace spot_prediction { 
+namespace dials { namespace integration { 
 
 namespace boost_python {
 
@@ -18,11 +18,11 @@ void export_reflection_mask()
             arg("roi_size"))))
         .def("create",
             &ReflectionMask::create, (
-                arg("reflection_xyz")))            
+                arg("reflection_xyz")))
         .add_property("mask", 
             &ReflectionMask::get_mask);
 }
 
 } // namespace = boost_python
 
-}} // namespace = dials::spot_prediction
+}} // namespace = dials::integration

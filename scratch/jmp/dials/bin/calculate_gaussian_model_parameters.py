@@ -16,8 +16,9 @@ def visualize_predicted_spots(image_volume, display_frame, spot_coords):
     display_image_with_predicted_spots(image_volume[display_frame,:,:], 
                                        xcoords, ycoords)
 
-def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
-    """Read the required data from the file, predict the spots and display."""
+def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
+    """Read the required data from the file, predict the spots and calculate
+       gaussian model parameters."""
     from dials.spot_prediction import SpotPredictor
     from dials.io import xdsio, pycbf_extra
     from cctbx import uctbx, sgtbx
@@ -56,41 +57,91 @@ def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 
-    # If display frame selected then visualize
-    if 0 <= display_frame < gonio.num_frames:
-        print "Displaying predicted spots for frame \"{0}\"".format(display_frame)
-        visualize_predicted_spots(image_volume, display_frame, 
-                                  image_volume_coords)
+    print "Finding strong pixels"
+    from scitbx.array_family import flex
+    from dials.array_family import partial_sort_indices
+    num_strong_pixels = 100
+    flat_image_volume = flex.int(image_volume)
+    strong_pixel_indices = partial_sort_indices(flat_image_volume, num_strong_pixels)
+    strong_pixel_indices = strong_pixel_indices[0:num_strong_pixels]
+    strong_pixel_values = [flat_image_volume[x] for x in strong_pixel_indices]
+    
+    print "Assigning indices of nearest reflection"
+    from scipy.spatial.kdtree import KDTree
+    kd_tree = KDTree(image_volume_coords)
+    strong_pixel_xyz = []
+    depth, height, width = image_volume.shape
+    for i in strong_pixel_indices:
+        z = int(i / (width * height))
+        zz = z * (width * height)
+        y = int((i-zz) / width)
+        x = (i-zz) % width
+        strong_pixel_xyz.append((x,y,z))
+    nearest_neighbours = [kd_tree.query(xyz) for xyz in strong_pixel_xyz]
+    
+    print "Sorting the strong pixels by reflection index"
+    nearest_neighbours = [int(nn[1]) for nn in nearest_neighbours]
+    nearest_neighbours = sorted(enumerate(nearest_neighbours), key=lambda x:x[1])
+    strong_pixels = []
+    for (i, r) in nearest_neighbours:
+        strong_pixels.append((r, strong_pixel_xyz[i], strong_pixel_values[i]))
+    
+    print "Find strong reflection ROIs"
+    temp = []
+    first = True
+    for rind, xyz, value in strong_pixels:
+        if first:
+            last_count = 0
+            first = False
+        else:
+            if (rind != last_rind):
+                last_count += 1
+            
+        temp.append((last_count, rind, xyz, value))
+        last_rind = rind
+
+    strong_pixels = temp
+    num_reflections = strong_pixels[-1][0] + 1
+    reflection_roi = [[0, 0, 0, 0, False] for i in range(num_reflections)]
+    
+    for rcount, rind, (x, y, z), value in strong_pixels:
+        roi = reflection_roi[rcount]
+        if roi[4] == False:
+            roi = [x, x, y, y, True]
+        else:
+            if x < roi[0]:
+                roi[0] = x
+            if x > roi[1]:
+                roi[1] = x
+            if y < roi[2]:
+                roi[2] = y
+            if y > roi[3]:
+                roi[3] = y
+        reflection_roi[rcount] = roi
+            
+    for r in reflection_roi:
+        print r
+            
 
 if __name__ == '__main__':
 
     from optparse import OptionParser
 
     # Specify the command line options
-    usage = "usage: %prog [options] /path/to/GXPARM.XDS"
+    usage = "usage: %prog [options] /path/to/GXPARM.XDS /cbf/search/path/*.cbf"
     parser = OptionParser(usage)
     parser.add_option('-r', '--dmin',
                       dest='dmin',
                       type="float",
                       default=0.7,
                       help='Specify the resolution')
-    parser.add_option('-c', '--cbf-search-path',
-                      dest='cbf_search_path', 
-                      default=None,
-                      help='Specify search path for CBF files')
-    parser.add_option('-d', '--display-frame',
-                      dest='display_frame',
-                      type="int",
-                      default=-1,
-                      help='Select a frame to display with predicted spots')
     (options, args) = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call spot prediction
-    if len(args) == 0:
+    if len(args) < 2:
         print parser.print_help()
     else:
-        predict_spots(args[0], 
-                      options.cbf_search_path, 
-                      options.dmin, 
-                      options.display_frame)
+        calculate_gaussian_model_parameters(args[0], 
+                                            args[1], 
+                                            options.dmin)
         

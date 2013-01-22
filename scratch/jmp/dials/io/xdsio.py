@@ -84,6 +84,12 @@ class GxParmFile:
                         self.detector_distance)
                                           
     def get_ub_matrix(self):
+        """Get the UB matrix
+        
+        Returns:
+            The UB matrix
+        
+        """
         from scitbx import matrix
         return matrix.sqr(self.unit_cell_a_axis + 
                           self.unit_cell_b_axis + 

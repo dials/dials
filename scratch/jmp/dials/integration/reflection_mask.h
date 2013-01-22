@@ -1,11 +1,11 @@
 
-#ifndef DIALS_SPOT_PREDICTION_REFLECTION_MASK_H
-#define DIALS_SPOT_PREDICTION_REFLECTION_MASK_H
+#ifndef DIALS_INTEGRATION_REFLECTION_MASK_H
+#define DIALS_INTEGRATION_REFLECTION_MASK_H
 
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
 
-namespace dials { namespace spot_prediction {
+namespace dials { namespace integration {
 
 /** flex array of vec3 doubles */
 typedef scitbx::af::flex <scitbx::vec3 <double> >::type flex_vec3_double;
@@ -16,7 +16,6 @@ public:
 
     /** Default constructor */
     ReflectionMask() {}
-
 
     /**
      * Initialise the reflection mask to the given size.
@@ -89,7 +88,6 @@ public:
         return mask_;
     }
 
-
 private:
 
     scitbx::af::flex_int mask_;
@@ -97,6 +95,6 @@ private:
     scitbx::vec3 <int> roi_size_;
 };
 
-}} // namespace dials::spot_prediction
+}} // namespace dials::integration
 
-#endif // DIALS_SPOT_PREDICTION_REFLECTION_MASK_H
+#endif // DIALS_INTEGRATION_REFLECTION_MASK_H
