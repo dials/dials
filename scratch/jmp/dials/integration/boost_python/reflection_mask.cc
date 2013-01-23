@@ -12,13 +12,12 @@ namespace boost_python {
 void export_reflection_mask()
 {
     class_ <ReflectionMask> ("ReflectionMask")
-        .def(init <scitbx::vec3 <int>,
-                   scitbx::vec3 <int> > ((
-            arg("size"), 
-            arg("roi_size"))))
+        .def(init <scitbx::vec3 <int> > ((
+            arg("mask_size"))))
         .def("create",
             &ReflectionMask::create, (
-                arg("reflection_xyz")))
+                arg("xyz"),
+                arg("roi")))
         .add_property("mask", 
             &ReflectionMask::get_mask);
 }

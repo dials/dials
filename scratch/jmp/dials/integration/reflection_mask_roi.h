@@ -1,6 +1,6 @@
 
-#ifndef DIALS_INTEGRATION_REFLECTION_MASK_ROI_H
-#define DIALS_INTEGRATION_REFLECTION_MASK_ROI_H
+#ifndef DIALS_INTEGRATION_REFLECTION_MASK_ROI_CALCULATOR_H
+#define DIALS_INTEGRATION_REFLECTION_MASK_ROI_CALCULATOR_H
 
 #include <cmath>
 #include <scitbx/vec3.h>
@@ -12,6 +12,7 @@
 #include "../geometry/xds_coordinate_system.h"
 #include "../geometry/transform/from_xds_to_detector.h"
 #include "../geometry/transform/from_xds_e3_to_phi.h"
+#include "../array_family/array_types.h"
 
 namespace dials { namespace integration {
 
@@ -65,7 +66,7 @@ public:
      * @param phi The rotation angle
      * @returns A 6 element array: (minx, maxx, miny, maxy, minz, maxz)
      */
-    scitbx::af::tiny <double, 6> calculate(scitbx::vec3 <double> s1, double phi) {
+    scitbx::af::tiny <int, 6> calculate(scitbx::vec3 <double> s1, double phi) {
         
         // Create the coordinate system for the reflection
         geometry::XdsCoordinateSystem xcs(beam_.get_direction(), 
@@ -109,13 +110,29 @@ public:
         scitbx::af::tiny <double, 4> x(xy1[0], xy2[0], xy3[0], xy4[0]);
         scitbx::af::tiny <double, 4> y(xy1[1], xy2[1], xy3[1], xy4[1]);
         scitbx::af::tiny <double, 2> z(z1, z2);
-        return scitbx::af::tiny <double, 6> (
+        return scitbx::af::tiny <int, 6> (
                 (int)std::floor(scitbx::af::min(x)),
                 (int)std::ceil (scitbx::af::max(x)),
                 (int)std::floor(scitbx::af::min(y)),
                 (int)std::ceil (scitbx::af::max(y)),
                 (int)std::floor(scitbx::af::min(z)),
                 (int)std::ceil (scitbx::af::max(z)));
+    }
+    
+    /** 
+     * Calculate the rois for an array of reflections given by the array of
+     * diffracted beam vectors and rotation angles.
+     * @param s1 The array of diffracted beam vectors
+     * @param phi The array of rotation angles.
+     */
+    af::flex_tiny6_int calculate(const af::flex_vec3_double &s1, 
+                                 const scitbx::af::flex_double &phi) {
+        DIALS_ASSERT(s1.size() == phi.size());
+        af::flex_tiny6_int result(s1.size());
+        for (int i = 0; i < s1.size(); ++i) {
+            result[i] = calculate(s1[i], phi[i]);
+        }
+        return result;
     }
     
 private:
@@ -129,4 +146,4 @@ private:
 
 }} // namespace dials::integration
 
-#endif // DIALS_INTEGRATION_REFLECTION_MASK_ROI_H
+#endif // DIALS_INTEGRATION_REFLECTION_MASK_ROI_CALCULATOR_H

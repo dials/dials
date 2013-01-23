@@ -1,3 +1,5 @@
+from scitbx.array_family import flex
+
 
 def calculate_reflection_mask_roi(beam, detector, goniometer,
                                   diffracted_beam_vector,
@@ -73,7 +75,7 @@ def extract_reflection_profiles(paths):
     from dials.geometry.transform import FromBeamVectorToXds
     from dials.integration import ReflectionMask
     from dials.io.pycbf_extra import search_for_image_volume
-    from scitbx.array_family import flex
+
     
     # Set a load of parameters from the GXPARM file
     z0 = 1
@@ -117,42 +119,48 @@ def extract_reflection_profiles(paths):
     gonio = Goniometer(m2, phi0, dphi, z0)
     detector = Detector(d1, d2, d3, (dx0, dy0), (px, py), (dx, dy), f)
 
-    roi = calculate_reflection_mask_roi(beam, detector, gonio, s1, phi,
-                                  10 * sigma_d,
-                                  10 * sigma_m)
+    #roi = calculate_reflection_mask_roi(beam, detector, gonio, s1, phi,
+    #                              10 * sigma_d,
+    #                              10 * sigma_m)
     
     
-    print roi
+    #print roi
     
     from dials.integration import ReflectionMaskRoi
     
     reflection_mask_roi = ReflectionMaskRoi(beam, detector, gonio, 10 * sigma_d, 10 * sigma_m)
     
-    roi = reflection_mask_roi.calculate(s1, phi)
+    roi = reflection_mask_roi.calculate(flex.vec3_double(1, s1), flex.double(1, phi))
     
-    print roi
+    print roi[0]
+    
+    #print roi
     
     
     #rcs = XdsCoordinateSystem(s0, s1, m2, phi)
 
-    roi_size = (1, 4, 4)
-    x0 = int(sx) - roi_size[2]
-    x1 = int(sx) + roi_size[2]
-    y0 = int(sy) - roi_size[1]
-    y1 = int(sy) + roi_size[1]
-    z0 = int(sz) - int(gonio.starting_frame) - roi_size[1]
-    z1 = int(sz) - int(gonio.starting_frame) + roi_size[1]    
+    #roi_size = (1, 4, 4)
+    #x0 = int(sx) - roi_size[2]
+    #x1 = int(sx) + roi_size[2]
+    #y0 = int(sy) - roi_size[1]
+    #y1 = int(sy) + roi_size[1]
+    #z0 = int(sz) - int(gonio.starting_frame) - roi_size[1]
+    #z1 = int(sz) - int(gonio.starting_frame) + roi_size[1]    
 
     
+    reflection_mask = ReflectionMask(image_volume.all())
+    #reflection_mask = ReflectionMask(image_volume.all(), roi_size=roi_size)
+    #reflection_mask.create(flex.vec3_double(1, (sx, sy, sz-z0)))
+    xyz = (sx, sy, sz - z0)
+    
+    reflection_mask.create(flex.vec3_double(1, xyz), roi)
 
-    reflection_mask = ReflectionMask(image_volume.all(), roi_size=roi_size)
-    reflection_mask.create(flex.vec3_double(1, (sx, sy, sz-z0)))
     mask = reflection_mask.mask
     
     from matplotlib import pylab, cm
     mask = mask.as_numpy_array()
 
-    for i in range(4, 6):
+    for i in range(0, 10):
         pylab.imshow(mask[i,:,:], cmap=cm.Greys_r)
         pylab.show()
     

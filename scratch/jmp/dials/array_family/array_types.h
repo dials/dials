@@ -16,12 +16,17 @@ namespace dials { namespace af {
     typedef scitbx::af::flex_const_ref<T >::type flex_ ## N ## _const_ref; \
     typedef scitbx::af::flex_ref<T >::type flex_ ## N ## _ref;
 
+    typedef scitbx::af::tiny <int, 6> tiny6_int;
+    typedef scitbx::af::tiny <double, 6> tiny6_double;
+    
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec2 <int>, vec2_int)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec2 <double>, vec2_double)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec3 <int>, vec3_int)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec3 <double>, vec3_double)
+    DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(tiny6_int, tiny6_int)
+    DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(tiny6_double, tiny6_double)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(cctbx::miller::index <>, miller_index)
-
+    
 #undef DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS
 
 }} // namespace dials::af
