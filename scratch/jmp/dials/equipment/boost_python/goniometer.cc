@@ -1,6 +1,8 @@
 
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost/format.hpp>
+#include <string>
 #include "../goniometer.h"
 
 using namespace boost::python;
@@ -9,6 +11,25 @@ using namespace dials::equipment;
 namespace dials { namespace equipment { 
 
 namespace boost_python {
+
+std::string goniometer_to_string(const Goniometer &goniometer) {
+    boost::format fmt(
+        "Goniometer:\n"
+        "    rotation axis:     (%1%, %2%, %3%)\n"
+        "    starting angle:    %4%\n"
+        "    oscillation range: %5%\n"
+        "    starting frame:    %6%\n"
+        "    num frames:        %7%");
+        
+    fmt % goniometer.get_rotation_axis()[0];
+    fmt % goniometer.get_rotation_axis()[1];
+    fmt % goniometer.get_rotation_axis()[2];
+    fmt % goniometer.get_starting_angle();
+    fmt % goniometer.get_oscillation_range();
+    fmt % goniometer.get_starting_frame();
+    fmt % goniometer.get_num_frames();
+    return fmt.str();
+}
 
 void export_goniometer() 
 {
@@ -39,7 +60,8 @@ void export_goniometer()
                 arg("frame")))
         .def("get_frame_from_angle",
             &Goniometer::get_frame_from_angle, (
-                arg("angle")));
+                arg("angle")))
+        .def("__str__", &goniometer_to_string);                
 }
 
 } // namespace = boost_python
