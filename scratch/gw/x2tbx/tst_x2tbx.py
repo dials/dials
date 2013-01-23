@@ -27,6 +27,9 @@ def tst_x2tbx(mtz_file):
     print x2tbx.isig(i_data, sigi_data)
     print x2tbx.isig_proper(mi, i_data, sigi_data)
     
+    r = x2tbx.resolutionizer()
+    r.setup(mi, i_data, sigi_data)
+    print r.isig()
     
     print 'OK'
 

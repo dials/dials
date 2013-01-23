@@ -15,9 +15,15 @@
  * 
  */
 
+#include <boost/python.hpp>
+#include <scitbx/array_family/shared.h>
+#include <scitbx/array_family/flex_types.h>
+#include <cctype>
 #include <miller.h>
 #include <map>
 #include <vector>
+
+namespace cmil = cctbx::miller;
 
 namespace x2tbx {
 
@@ -39,4 +45,12 @@ namespace x2tbx {
     unmerged_reflections;
   typedef std::map<cctbx::miller::index<int>, observation_list>::iterator \
     unmerged_reflections_iterator;
+
+  typedef struct {
+    unmerged_reflections ur;
+    void setup(scitbx::af::const_ref<cmil::index<int> > const & indices,
+	       scitbx::af::const_ref<float> const & i_data,
+	       scitbx::af::const_ref<float> const & sigi_data);
+    float isig(void);
+  } resolutionizer;
 }

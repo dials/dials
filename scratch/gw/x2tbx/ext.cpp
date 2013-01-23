@@ -1,11 +1,4 @@
-#include <boost/python.hpp>
-#include <scitbx/array_family/shared.h>
-#include <scitbx/array_family/flex_types.h>
-#include <cctype>
-
 #include <x2tbx.h>
-
-namespace cmil = cctbx::miller;
 
 namespace x2tbx { 
   namespace ext {
@@ -77,7 +70,6 @@ namespace x2tbx {
       return result / unique;
     }
 
-
     void init_module()
     {
       using namespace boost::python;
@@ -87,9 +79,49 @@ namespace x2tbx {
     }
 
   }
+
+  void
+  resolutionizer::setup(scitbx::af::const_ref<cmil::index<int> > const & indices,
+			scitbx::af::const_ref<float> const & i_data,
+			scitbx::af::const_ref<float> const & sigi_data)
+  {
+    CCTBX_ASSERT(indices.size() == i_data.size());
+    CCTBX_ASSERT(i_data.size() == sigi_data.size());
+
+    observation o;
+
+    for (size_t i = 0; i < i_data.size(); i++) {
+      o.I = i_data[i];
+      o.sigI = sigi_data[i];
+      o.property = 0.0;
+      o.flag = 0;
+
+      ur[indices[i]].push_back(o);
+    }
+  }
+    
+  float
+  resolutionizer::isig(void)
+  {
+    unmerged_reflections_iterator uri;
+    float result = 0.0;
+    int unique = 0;
+
+    for (uri = ur.begin(); uri != ur.end(); ++uri) {
+      merged_isig mi = ext::merge(uri->second);
+      result += mi.I / mi.sigI;
+      unique += 1;
+    }
+
+    return result / unique;
+  }
+
 } // namespace x2tbx::ext
 
 BOOST_PYTHON_MODULE(x2tbx_ext)
 {
   x2tbx::ext::init_module();
+  boost::python::class_<x2tbx::resolutionizer>("resolutionizer")
+    .def("setup", & x2tbx::resolutionizer::setup)
+    .def("isig", & x2tbx::resolutionizer::isig);
 }
