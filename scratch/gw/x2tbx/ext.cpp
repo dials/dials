@@ -3,48 +3,39 @@
 #include <scitbx/array_family/flex_types.h>
 #include <cctype>
 
+#include <x2tbx.h>
+
 namespace x2tbx { 
   namespace ext {
 
-    // make a python list
-
-    static boost::python::list make_list(size_t n)
+    static merged_isig merge(observation_list)
     {
-      boost::python::list result;
-      for(size_t i = 0; i < n; i++) {
-	result.append(i);
-      }
+      /* fixme implement */
+      merged_isig result;
+      result.I = 0.0;
+      result.sigI = 0.0;
       return result;
     }
 
-    // make a flex array (much more flexible)
-
-    static scitbx::af::shared<int> make_flex(size_t n)
+    static float 
+    isig(scitbx::af::const_ref<float> const & i_data,
+	 scitbx::af::const_ref<float> const & sigi_data)
     {
-      scitbx::af::shared<int> result;
-      for(size_t i = 0; i < n; i++) {
-	result.push_back(i);
-      }
-      return result;
-    }
+      float result = 0.0;
 
-    // using flex arrays
+      CCTBX_ASSERT(i_data.size() == sigi_data.size());
 
-    static int sum(scitbx::af::shared<int> array)
-    {
-      int result = 0;
-      for (size_t i = 0; i < array.size(); i++) {
-	result += array[i];
+      for (size_t i = 0; i < i_data.size(); i++) {
+	result += i_data[i] / sigi_data[i];
       }
-      return result;
+
+      return result / i_data.size();
     }
 
     void init_module()
     {
       using namespace boost::python;
-      def("make_list", make_list, (arg("size")));
-      def("make_flex", make_flex, (arg("size")));
-      def("sum", sum, (arg("array")));
+      def("isig", isig, (arg("i_data"), arg("sigi_data")));
     }
 
   }
