@@ -42,6 +42,7 @@ def tst_x2tbx(mtz_file):
     for si in sorted_indices[:10]:
         print si, unit_cell.d(si)
 
+    r.setup_shells(100)
 
     print 'OK'
 

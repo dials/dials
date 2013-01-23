@@ -125,6 +125,36 @@ namespace x2tbx {
 
       ur[indices[i]].push_back(o);
     }
+
+    s_indices = sorted_indices();
+  }
+
+  void
+  resolutionizer::setup_shells(size_t nshells)
+  {
+    shells.clear();
+
+    size_t n_per_shell = s_indices.size() / nshells;
+
+    scitbx::af::shared<cmil::index<int> > shell;
+
+    for (size_t j = 0; j < (nshells - 1); j ++) {
+      shell = scitbx::af::shared<cmil::index<int> >
+        (s_indices.begin() + j * n_per_shell,
+         s_indices.begin() + (j + 1) * n_per_shell);
+      shells.push_back(shell);
+    }
+
+    shell = scitbx::af::shared<cmil::index<int> >
+      (s_indices.begin() + nshells * n_per_shell,
+       s_indices.end());
+    shells.push_back(shell);
+
+    /* debug output
+    for(size_t i = 0; i < shells.size(); i++) {
+      std::cout << i << "\t" << shells[i].size() << std::endl;
+    }
+    */
   }
 
   float
@@ -153,5 +183,6 @@ BOOST_PYTHON_MODULE(x2tbx_ext)
     .def("compare_resolution", & x2tbx::resolutionizer::compare_resolution)
     .def("setup", & x2tbx::resolutionizer::setup)
     .def("isig", & x2tbx::resolutionizer::isig)
-    .def("sorted_indices", & x2tbx::resolutionizer::sorted_indices);
+    .def("sorted_indices", & x2tbx::resolutionizer::sorted_indices)
+    .def("setup_shells", & x2tbx::resolutionizer::setup_shells);
 }

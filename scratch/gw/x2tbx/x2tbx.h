@@ -62,8 +62,11 @@ namespace x2tbx {
 
   typedef struct {
     unmerged_reflections ur;
+    scitbx::af::shared<cmil::index<int> > s_indices;
+    std::vector<scitbx::af::shared<cmil::index<int> > > shells;
     cuc::unit_cell unit_cell;
 
+    void setup_shells(size_t nshells);
     bool compare_resolution(cmil::index<int> const & a,
                             cmil::index<int> const & b);
     void set_unit_cell(scitbx::af::tiny<double, 6> new_unit_cell);
