@@ -63,14 +63,10 @@ public:
         // compare it to the distance between the mask point and the new 
         // reflection xyz point. If the new distance is lower than the old,
         // then set the mask value to the new reflection index.
-        //int mask_stride_x = size_[2];
-        //int mask_stride_y = mask_stride_x * size_[1];	
         for (int index = 0; index < image_volume_coords.size(); ++index) {
             scitbx::vec3 <double> xyz = image_volume_coords[index];
             scitbx::af::tiny <double, 6> roi = region_of_interest[index];
-            if (roi[0] >= 0 && roi[1] < size_[2] &&
-                roi[2] >= 0 && roi[3] < size_[1] &&
-                roi[4] >= 0 && roi[5] < size_[0]) {
+            if (is_roi_valid(roi)) {
                 for (int k = roi[4]; k <= roi[5]; ++k) {
                     for (int j = roi[2]; j <= roi[3]; ++j) {
                         for (int i = roi[0]; i <= roi[1]; ++i) {
@@ -79,9 +75,10 @@ public:
                                 mask_(k, j, i) = index;
                             } else {
                                 scitbx::vec3 <double> point(i, j, k);
+                                scitbx::vec3 <double> curr_xyz = 
+                                    image_volume_coords[curr_index];
                                 int distance = (xyz - point).length();
-                                int distance_curr = (image_volume_coords[curr_index]
-                                                     - point).length();
+                                int distance_curr = (curr_xyz - point).length();
                                 if (distance < distance_curr) {
                                     mask_(k, j, i) = index;
                                 }
@@ -99,6 +96,13 @@ public:
     }
 
 private:
+
+    /** Check the roi is valid */
+    bool is_roi_valid(scitbx::af::tiny <double, 6> roi) {
+        return roi[0] >= 0 && roi[1] < size_[2] &&
+               roi[2] >= 0 && roi[3] < size_[1] &&
+               roi[4] >= 0 && roi[5] < size_[0];
+    }
 
     scitbx::af::flex_int mask_;
     scitbx::vec3 <int> size_;

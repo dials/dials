@@ -2,7 +2,6 @@
 Import('env')
 
 sources = [
-    'boost_python/test_tiny_int.cc',
     'boost_python/flex_tiny.cc',
     'boost_python/sorting.cc',
 	'boost_python/remove.cc',

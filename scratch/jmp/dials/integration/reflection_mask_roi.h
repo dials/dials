@@ -3,6 +3,7 @@
 #define DIALS_INTEGRATION_REFLECTION_MASK_ROI_CALCULATOR_H
 
 #include <cmath>
+#include <scitbx/constants.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny.h>
 #include <scitbx/array_family/ref_reductions.h>
@@ -72,13 +73,15 @@ public:
         geometry::XdsCoordinateSystem xcs(beam_.get_direction(), 
                                           s1, 
                                           goniometer_.get_rotation_axis(), 
-                                          phi);
+                                          scitbx::rad_as_deg(phi));
         
         // Create the transformer from the xds coordinate system to the detector
-        geometry::transform::FromXdsToDetector from_xds_to_detector(xcs, s1, detector_);
+        geometry::transform::FromXdsToDetector from_xds_to_detector(
+                                                xcs, s1, detector_);
         
         // Create the transformer from Xds E3 to rotation angle
-        geometry::transform::FromXdsE3ToPhi from_xds_e3_to_phi(xcs.get_zeta(), phi);
+        geometry::transform::FromXdsE3ToPhi from_xds_e3_to_phi(
+            xcs.get_zeta(), scitbx::rad_as_deg(phi));
        
         // Find the detector coordinates at the following xds coordinates:
         //   (-delta_d/2, -delta_d/2, 0) 
@@ -98,11 +101,13 @@ public:
         /// Get the image volume z coordinates (zero based) at the following XDS 
         // e3 coordinates: -delta_m/2, +delta_m/2
         double z1 = goniometer_.get_frame_from_angle(
-                        from_xds_e3_to_phi.apply(-delta_mosaicity_ / 2.0)) - 
-                        goniometer_.get_starting_frame();
+                        scitbx::deg_as_rad(from_xds_e3_to_phi.apply(
+                            -delta_mosaicity_ / 2.0)))
+                        - goniometer_.get_starting_frame();
         double z2 = goniometer_.get_frame_from_angle(
-                        from_xds_e3_to_phi.apply(+delta_mosaicity_ / 2.0)) - 
-                        goniometer_.get_starting_frame();
+                        scitbx::deg_as_rad(from_xds_e3_to_phi.apply(
+                            +delta_mosaicity_ / 2.0)))
+                        - goniometer_.get_starting_frame();
 
         // Return the roi in the following form:
         // (minx, maxx, miny, maxy, minz, maxz)

@@ -107,7 +107,7 @@ class SpotPredictor(object):
            removed from their respective arrays.
         
         """
-        from dials.spot_prediction import remove_if_not
+        from dials.array_family import remove_if_not
         from scitbx.array_family import flex
 
         # Ensure internal arrays are reset

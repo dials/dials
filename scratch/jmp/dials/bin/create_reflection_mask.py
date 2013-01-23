@@ -1,175 +1,188 @@
-from scitbx.array_family import flex
+#!/usr/bin/env python
 
+def parse_list_string(string):
+    """Parse a string in the following ways:
+    string: 1, 2, 3        -> [1, 2, 3]
+    string: 1 - 6          -> [1, 2, 3, 4, 5, 6]
+    string: 1 - 6, 7, 8, 9 -> [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    """
+    items = string.split(',')
+    for i in range(len(items)):
+        items[i] = items[i].split("-")
+        if len(items[i]) == 1:
+            items[i] = [int(items[i][0])]
+        elif len(items[i]) == 2:
+            items[i] = range(int(items[i][0]), int(items[i][1]) + 1)
+        else:
+            raise SyntaxError
+    items = [item for sublist in items for item in sublist]
+    return set(items)
 
-def calculate_reflection_mask_roi(beam, detector, goniometer,
-                                  diffracted_beam_vector,
-                                  rotation_angle,
-                                  delta_divergence,
-                                  delta_mosaicity):
+def display_frame_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, parse_list_string(value))
 
-    from dials.geometry import XdsCoordinateSystem
-    from dials.geometry.transform import FromXdsToDetector
-    from dials.geometry.transform import FromXdsE3ToPhi
-    from math import floor, ceil
- 
-    # Create the coordinate system for the reflection
-    xds_coordinate_system = XdsCoordinateSystem(beam.direction,
-                                                diffracted_beam_vector,
-                                                goniometer.rotation_axis,
-                                                rotation_angle)
-    
-    # Create the transformer from the xds coordinate system to the detector
-    from_xds_to_detector = FromXdsToDetector(xds_coordinate_system,
-                                             diffracted_beam_vector,
-                                             detector)
+def display_spot_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, parse_list_string(value))
 
-    # Create the transformer from Xds E3 to rotation angle                                             
-    from_xds_e3_to_phi = FromXdsE3ToPhi(xds_coordinate_system.zeta, 
-                                        rotation_angle)
-                                                                                     
-    # Find the detector coordinates at the following xds coordinates:
-    #   (-delta_d/2, -delta_d/2, 0) 
-    #   (+delta_d/2, -delta_d/2, 0)
-    #   (-delta_d/2, +delta_d/2, 0) 
-    #   (+delta_d/2, +delta_d/2, 0)
-    point = delta_divergence / 2.0
-    x1, y1 = from_xds_to_detector.apply((-point, -point, 0.0))
-    x2, y2 = from_xds_to_detector.apply((+point, -point, 0.0))
-    x3, y3 = from_xds_to_detector.apply((-point, +point, 0.0))
-    x4, y4 = from_xds_to_detector.apply((+point, +point, 0.0))
-
-    # Get the image volume z coordinates (zero based) at the following XDS e3 
-    # coordinates: -delta_m/2, +delta_m/2
-    z1 = goniometer.get_frame_from_angle(
-                from_xds_e3_to_phi.apply(
-                    -delta_mosaicity / 2.0)) - goniometer.starting_frame
-    z2 = goniometer.get_frame_from_angle(
-                from_xds_e3_to_phi.apply(
-                    +delta_mosaicity / 2.0)) - goniometer.starting_frame
-
-    # Return the roi in the following form:
-    # (minx, maxx, miny, maxy, minz, maxz)
-    # Min's are rounded down to the nearest integer, Max's are rounded up
-    minx = int(floor(min([x1, x2, x3, x4])))
-    maxx = int(ceil (max([x1, x2, x3, x4])))
-    miny = int(floor(min([y1, y2, y3, y4])))
-    maxy = int(ceil (max([y1, y2, y3, y4])))
-    minz = int(floor(min([z1, z2])))
-    maxz = int(ceil (max([z1, z2])))
-    return (minx, maxx, miny, maxy, minz, maxz)    
-    
-def extract_reflection_profiles(paths):
-    
-    from scitbx import matrix
-
-    import numpy
-
+def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
+    """Display the reflection mask for a given frame."""
     from matplotlib import pylab, cm
-    from mpl_toolkits.mplot3d import axes3d
+    spot_xy = [(x, y) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
+    xcoords, ycoords = zip(*spot_xy)    
+    plt = pylab.imshow(mask[display_frame,:,:], cmap=cm.Greys_r, interpolation="nearest")
+    pylab.scatter(xcoords, ycoords, marker='x')
+    plt.axes.get_xaxis().set_ticks([])
+    plt.axes.get_yaxis().set_ticks([])
+    pylab.show()
 
-    from dials.equipment import Beam
-    from dials.equipment import Detector
-    from dials.equipment import Goniometer
-    from dials.geometry import XdsCoordinateSystem
-    from dials.geometry.transform import FromDetectorToBeamVector
-    from dials.geometry.transform import FromBeamVectorToXds
-    from dials.integration import ReflectionMask
-    from dials.io.pycbf_extra import search_for_image_volume
-
+def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords, 
+                                   region_of_interest, padding):
+    """Display the reflection mask for a given spot."""
+    from matplotlib import pylab, cm
+    roi = region_of_interest[display_spot]
+    xyz = image_volume_coords[display_spot]
+    print "Image volume coordinate: ", xyz
+    print "Region of interest: ", roi
+    roi2 = [max(roi[0] - padding, 0), min(roi[1] + padding, mask.shape[2]-1),
+            max(roi[2] - padding, 0), min(roi[3] + padding, mask.shape[1]-1),
+            max(roi[4] - padding, 0), min(roi[5] + padding, mask.shape[0]-1)]
     
-    # Set a load of parameters from the GXPARM file
-    z0 = 1
-    phi0 = 1.0
-    dphi = 1.0
-    s0 = matrix.col((0.013142, 0.002200, 1.450476))
-    dx0 = 244.836136
-    dy0 = 320.338531
-    dx = 487
-    dy = 619
-    px = 0.172000
-    py = 0.172000
-    d1 = matrix.col((0.000000, -0.939693, -0.342020))
-    d2 = matrix.col((1.000000,  0.000000,  0.000000))
-    d3 = matrix.col((0.000000, -0.342020,  0.939693))
-    m2 = matrix.col((0.999975, -0.001289, -0.006968))
-    f  = 122.124901
-    l  = 0.689400
-    sigma_d = 0.034
-    sigma_m = 0.082
+    image = mask[xyz[2], roi2[2]:roi2[3]+1, roi2[0]:roi2[1]+1]
+    pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest", 
+        extent=[roi2[0], roi2[1], roi2[2], roi2[3]])
+    pylab.plot([roi[0], roi[1], roi[1], roi[0], roi[0]],
+               [roi[2], roi[2], roi[3], roi[3], roi[2]])
+    pylab.show()
 
-    # Set some values of a test reflection
-    s1 = matrix.col((-0.0175199028171, -0.24775259748, 1.42844630118))
-    phi_dash = 5.0
-    phi = 5.83575672475
-    sx = 117.588714455
-    sy = 311.621428845
-    sz = z0 + (phi - phi0) / dphi
-
-    # Load the CBF image volume
-    image_volume = search_for_image_volume(paths)
-    image_volume = flex.int(image_volume)
-    image_volume_copy = image_volume.deep_copy()
-
-    # Make sure vectors are really of length 1/lambda
-    s0 = s0.normalize() / l
-    s1 = s1.normalize() / l
-
-    # Create the beam, goniometer and detector
-    beam = Beam(s0, l)
-    gonio = Goniometer(m2, phi0, dphi, z0)
-    detector = Detector(d1, d2, d3, (dx0, dy0), (px, py), (dx, dy), f)
-
-    #roi = calculate_reflection_mask_roi(beam, detector, gonio, s1, phi,
-    #                              10 * sigma_d,
-    #                              10 * sigma_m)
-    
-    
-    #print roi
-    
+def create_reflection_mask(input_filename, cbf_search_path, d_min, 
+                           sigma_divergence, sigma_mosaicity, n_sigma,
+                           display_frame, display_spot):
+    """Read the required data from the file, predict the spots and calculate
+       gaussian model parameters."""
+    from dials.spot_prediction import SpotPredictor
     from dials.integration import ReflectionMaskRoi
-    
-    reflection_mask_roi = ReflectionMaskRoi(beam, detector, gonio, 10 * sigma_d, 10 * sigma_m)
-    
-    roi = reflection_mask_roi.calculate(flex.vec3_double(1, s1), flex.double(1, phi))
-    
-    print roi[0]
-    
-    #print roi
-    
-    
-    #rcs = XdsCoordinateSystem(s0, s1, m2, phi)
+    from dials.integration import ReflectionMask
+    from dials.io import xdsio, pycbf_extra
+    from cctbx import uctbx, sgtbx
+    from time import time
 
-    #roi_size = (1, 4, 4)
-    #x0 = int(sx) - roi_size[2]
-    #x1 = int(sx) + roi_size[2]
-    #y0 = int(sy) - roi_size[1]
-    #y1 = int(sy) + roi_size[1]
-    #z0 = int(sz) - int(gonio.starting_frame) - roi_size[1]
-    #z1 = int(sz) - int(gonio.starting_frame) + roi_size[1]    
+    # Create the GXPARM file and read the contents
+    print "Reading: \"{0}\"".format(input_filename)
+    gxparm_handle = xdsio.GxParmFile()
+    gxparm_handle.read_file(input_filename)
+    beam      = gxparm_handle.get_beam() 
+    gonio     = gxparm_handle.get_goniometer()
+    detector  = gxparm_handle.get_detector()
+    ub_matrix = gxparm_handle.get_ub_matrix()
+    symmetry  = gxparm_handle.space_group
 
-    
-    reflection_mask = ReflectionMask(image_volume.all())
-    #reflection_mask = ReflectionMask(image_volume.all(), roi_size=roi_size)
-    #reflection_mask.create(flex.vec3_double(1, (sx, sy, sz-z0)))
-    xyz = (sx, sy, sz - z0)
-    
-    reflection_mask.create(flex.vec3_double(1, xyz), roi)
+    # Create the unit cell and space group objects
+    unit_cell = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)
+    space_group_type = sgtbx.space_group_type(sgtbx.space_group(
+                            sgtbx.space_group_symbols(symmetry).hall()))
 
-    mask = reflection_mask.mask
-    
-    from matplotlib import pylab, cm
-    mask = mask.as_numpy_array()
+    # Load the image volume from the CBF files and set the number of frames
+    if cbf_search_path:
+        print "Searching \"{0}\" for CBF files".format(cbf_search_path)
+        image_volume = pycbf_extra.search_for_image_volume(cbf_search_path)
+        gonio.num_frames = image_volume.shape[0]
 
-    for i in range(0, 10):
-        pylab.imshow(mask[i,:,:], cmap=cm.Greys_r)
-        pylab.show()
+    # Create the spot predictor
+    spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, d_min,
+                                   unit_cell, space_group_type)
     
+    # Predict the spot image volume coordinates 
+    print "Predicting spots"
+    start_time = time()
+    spot_predictor.predict_spots()
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+
+    # Create the reflection mask regions of interest
+    print "Creating reflection mask Roi"
+    start_time = time()
+    reflection_mask_roi = ReflectionMaskRoi(
+                            beam, detector, gonio, 
+                            n_sigma * sigma_divergence, 
+                            n_sigma * sigma_mosaicity)
+    region_of_interest = reflection_mask_roi.calculate(
+                            spot_predictor.beam_vectors, 
+                            spot_predictor.rotation_angles)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+
+    # Create the reflection mask itself
+    print "Creating reflection mask"
+    start_time = time()
+    reflection_mask = ReflectionMask(image_volume.shape)
+    reflection_mask.create(spot_predictor.image_volume_coordinates, 
+                           region_of_interest)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+     
+    if display_frame:
+        for frame in display_frame:
+            print "Displaying reflection mask for frame \"{0}\"".format(frame)
+            visualize_frame_reflection_mask(reflection_mask.mask.as_numpy_array(), 
+                frame, spot_predictor.image_volume_coordinates)
+
+    if display_spot:
+        for spot in display_spot:
+            print "Displaying reflection mask for spot \"{0}\"".format(spot)
+            visualize_spot_reflection_mask(reflection_mask.mask.as_numpy_array(), 
+                spot, spot_predictor.image_volume_coordinates, region_of_interest, 20)
+
+                              
 if __name__ == '__main__':
 
-    import sys
-    # Extract the reflection profiles
-    extract_reflection_profiles(sys.argv[1])    
+    from optparse import OptionParser
 
-    
-    
-    
+    # Specify the command line options
+    usage = "usage: %prog [options] /path/to/GXPARM.XDS /cbf/search/path/*.cbf"
+    parser = OptionParser(usage)
+    parser.add_option('-r', '--dmin',
+                      dest='dmin',
+                      type="float",
+                      default=0.7,
+                      help='Specify the resolution')
+    parser.add_option('--sigma-d',
+                      dest='sigma_d',
+                      type="float",
+                      default=0.034,
+                      help='Specify the standard deviation of the beam divergence')
+    parser.add_option('--sigma-m',
+                      dest='sigma_m',
+                      type="float",
+                      default=0.082,
+                      help='Specify the standard deviation of the mosaicity')
+    parser.add_option('--num-sigma',
+                      dest='n_sigma',
+                      type="float",
+                      default=10,
+                      help='Specify the number of standard deviations to use')
+    parser.add_option('-d', '--display-frame',
+                      dest='display_frame',
+                      type="string",
+                      action="callback",
+                      callback=display_frame_callback,
+                      help='Select a frame to display the reflection mask')      
+    parser.add_option('--display-spot',
+                      dest='display_spot',
+                      type="string",
+                      action="callback",
+                      callback=display_frame_callback,
+                      help='Select a frame to display the reflection mask')                   
+    (options, args) = parser.parse_args()
+
+    # Print help if no arguments specified, otherwise call spot prediction
+    if len(args) < 2:
+        print parser.print_help()
+    else:
+        create_reflection_mask(args[0], 
+                               args[1], 
+                               options.dmin,
+                               options.sigma_d,
+                               options.sigma_m,
+                               options.n_sigma,
+                               options.display_frame,
+                               options.display_spot)
