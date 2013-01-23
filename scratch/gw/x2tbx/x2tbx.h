@@ -22,6 +22,7 @@
 #include <uctbx.h>
 #include <cctype>
 #include <map>
+#include <algorithm>
 #include <vector>
 
 namespace cmil = cctbx::miller;
@@ -48,14 +49,28 @@ namespace x2tbx {
   typedef std::map<cctbx::miller::index<int>, observation_list>::iterator \
     unmerged_reflections_iterator;
 
+  struct sorter_by_resolution {
+    cuc::unit_cell unit_cell;
+    sorter_by_resolution(cuc::unit_cell new_unit_cell):
+      unit_cell(new_unit_cell) { }
+    bool operator() (cmil::index<int> const & a,
+                     cmil::index<int> const & b)
+    {
+      return unit_cell.d(a) < unit_cell.d(b);
+    }
+  };
+
   typedef struct {
     unmerged_reflections ur;
     cuc::unit_cell unit_cell;
 
+    bool compare_resolution(cmil::index<int> const & a,
+                            cmil::index<int> const & b);
     void set_unit_cell(scitbx::af::tiny<double, 6> new_unit_cell);
     void setup(scitbx::af::const_ref<cmil::index<int> > const & indices,
                scitbx::af::const_ref<float> const & i_data,
                scitbx::af::const_ref<float> const & sigi_data);
     float isig(void);
+    scitbx::af::shared<cmil::index<int> > sorted_indices(void);
   } resolutionizer;
 }

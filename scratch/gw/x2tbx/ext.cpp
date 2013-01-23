@@ -77,11 +77,32 @@ namespace x2tbx {
       def("isig_proper", isig_proper,
           (arg("indices"), arg("i_data"), arg("sigi_data")));
     }
+  }
 
+  scitbx::af::shared<cmil::index<int> >
+  resolutionizer::sorted_indices(void)
+  {
+    scitbx::af::shared<cmil::index<int> > result;
+    unmerged_reflections_iterator uri;
+    for (uri = ur.begin(); uri != ur.end(); ++uri) {
+      result.push_back(uri->first);
+    }
+
+    std::sort(result.begin(), result.end(), sorter_by_resolution(unit_cell));
+
+    return result;
+  }
+
+  bool
+  resolutionizer::compare_resolution(cmil::index<int> const & a,
+                                     cmil::index<int> const & b)
+  {
+    return unit_cell.d(a) < unit_cell.d(b);
   }
 
   void
-  resolutionizer::set_unit_cell(scitbx::af::tiny<double, 6> unit_cell_parameters)
+  resolutionizer::set_unit_cell(scitbx::af::tiny<double, 6>
+                                unit_cell_parameters)
   {
     unit_cell = cuc::unit_cell(unit_cell_parameters);
   }
@@ -129,6 +150,8 @@ BOOST_PYTHON_MODULE(x2tbx_ext)
   x2tbx::ext::init_module();
   boost::python::class_<x2tbx::resolutionizer>("resolutionizer")
     .def("set_unit_cell", & x2tbx::resolutionizer::set_unit_cell)
+    .def("compare_resolution", & x2tbx::resolutionizer::compare_resolution)
     .def("setup", & x2tbx::resolutionizer::setup)
-    .def("isig", & x2tbx::resolutionizer::isig);
+    .def("isig", & x2tbx::resolutionizer::isig)
+    .def("sorted_indices", & x2tbx::resolutionizer::sorted_indices);
 }

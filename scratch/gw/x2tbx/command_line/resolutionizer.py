@@ -2,7 +2,7 @@ from __future__ import division
 import scitbx.array_family.flex # explicit import
 import cctbx.uctbx # explicit import
 
-def tst_x2tbx(mtz_file):
+def resolutionizer(mtz_file):
     import x2tbx
     from iotbx import mtz
 
@@ -29,22 +29,11 @@ def tst_x2tbx(mtz_file):
     assert(i_data)
     assert(sigi_data)
 
-    print x2tbx.isig(i_data, sigi_data)
-    print x2tbx.isig_proper(mi, i_data, sigi_data)
-
     r = x2tbx.resolutionizer()
     r.set_unit_cell(unit_cell.parameters())
     r.setup(mi, i_data, sigi_data)
     print r.isig()
 
-    sorted_indices = r.sorted_indices()
-
-    for si in sorted_indices[:10]:
-        print si, unit_cell.d(si)
-
-
-    print 'OK'
-
 if __name__ == '__main__':
     import sys
-    tst_x2tbx(sys.argv[1])
+    resolutionizer(sys.argv[1])
