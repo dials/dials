@@ -37,4 +37,6 @@ namespace x2tbx {
 
   typedef std::map<cctbx::miller::index<int>, observation_list> \
     unmerged_reflections;
+  typedef std::map<cctbx::miller::index<int>, observation_list>::iterator \
+    unmerged_reflections_iterator;
 }

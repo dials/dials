@@ -9,6 +9,8 @@ def tst_x2tbx(mtz_file):
     i_data = None
     sigi_data = None
 
+    mi = mtz_obj.extract_miller_indices()
+
     for crystal in mtz_obj.crystals():
         for dataset in crystal.datasets():
             for column in dataset.columns():
@@ -23,6 +25,7 @@ def tst_x2tbx(mtz_file):
     assert(sigi_data)
                     
     print x2tbx.isig(i_data, sigi_data)
+    print x2tbx.isig_proper(mi, i_data, sigi_data)
     
     
     print 'OK'
