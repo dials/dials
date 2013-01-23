@@ -2,6 +2,7 @@
 Import('env')
 
 sources = [
+    'boost_python/reflection_mask_roi.cc',
     'boost_python/reflection_mask.cc',
     'boost_python/integration_ext.cc']
 

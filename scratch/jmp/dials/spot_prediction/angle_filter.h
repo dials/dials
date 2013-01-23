@@ -51,12 +51,15 @@ bool is_angle_in_range(double angle, scitbx::vec2 <double> range,
     return mod_2pi(angle_rad - range_b_rad) >= mod_2pi(angle_rad - range_a_rad)
         || mod_2pi(angle_rad - range_b_rad) == 0
         || mod_2pi(range_a_rad - range_b_rad) == 0;
-//    return (mod_2pi_radians(angle - range[1], deg) >= 
-//            mod_2pi_radians(angle - range[0], deg) || 
-//            mod_2pi_radians(angle - range[1], deg) == 0 || 
-//            mod_2pi_radians(range[0] - range[1], deg) == 0);
 }
 
+/**
+ * Check if the array of angles are within the angular range.
+ * @param angle The array of angles
+ * @param range The angular range
+ * @param deg True/False are the angles in degrees
+ * @returns A boolean array that is true if the angle is in the range.
+ */
 inline
 scitbx::af::flex_bool is_angle_in_range(const scitbx::af::flex_double &angle,
                                         scitbx::vec2 <double> range,

@@ -11,12 +11,9 @@
 #include <cctbx/miller.h>
 #include <rstbx/diffraction/ewald_sphere.h>
 #include "angle_filter.h"
+#include "../array_family/array_types.h"
 
 namespace dials { namespace spot_prediction {
-
-typedef cctbx::miller::index <> miller_index;
-typedef scitbx::af::flex <miller_index>::type flex_miller_index;
-typedef scitbx::af::flex_const_ref <miller_index>::type flex_miller_index_const_ref;
 
 /**
  * A helper class that takes an array of miller indices and calculates the
@@ -48,7 +45,7 @@ public:
      * @param miller_indices The array of miller indices
      * @returns The array of rotation angles.
      */
-    scitbx::af::flex_double calculate(const flex_miller_index &miller_indices,
+    scitbx::af::flex_double calculate(const af::flex_miller_index &miller_indices,
                                       scitbx::af::flex_bool &status)
     {
         scitbx::af::flex_double result(scitbx::af::flex_grid <> (2, miller_indices.size()));

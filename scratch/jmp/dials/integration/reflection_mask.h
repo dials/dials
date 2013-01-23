@@ -3,6 +3,7 @@
 #define DIALS_INTEGRATION_REFLECTION_MASK_H
 
 #include <scitbx/vec3.h>
+#include <scitbx/array_family/tiny.h>
 #include <scitbx/array_family/flex_types.h>
 
 namespace dials { namespace integration {
@@ -24,9 +25,15 @@ public:
      */
     ReflectionMask(scitbx::vec3 <int> size, 
                    scitbx::vec3 <int> roi_size)
-        : mask_(scitbx::af::flex_grid <> (size[0], size[1], size[2])),
+        : mask_(scitbx::af::flex_grid <> (size[0], size[1], size[2]), -1),
                 size_(size),
                 roi_size_(roi_size) {}
+
+    void reset_mask() {
+        for (int i = 0; i < mask_.size(); ++i) {
+            mask_[i] = -1;
+        }
+    }
 
     /**
      * Create the reflection mask. Set the values of the reflection mask in the
@@ -38,10 +45,8 @@ public:
     void create(const flex_vec3_double &reflection_xyz) {
 
         // Initialise mask to -1
-        for (int i = 0; i < mask_.size(); ++i) {
-            mask_[i] = -1;
-        }
-
+        this->reset_mask();
+        
         // Loop through all the reflection detector coordinates given. For each
         // reflection, loop through the mask elements within the reflection's 
         // region of interest. If the mask element value is -1 (i.e. currently

@@ -4,7 +4,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include "../error.h"
 
-namespace dials { namespace array_family {
+namespace dials { namespace af {
 
 /**
  * A class to aid comparison based on an index array

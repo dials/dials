@@ -5,7 +5,7 @@
 
 using namespace boost::python;
 
-namespace dials { namespace array_family { 
+namespace dials { namespace af { 
 
 namespace boost_python {
 

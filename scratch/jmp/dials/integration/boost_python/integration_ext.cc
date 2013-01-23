@@ -8,10 +8,12 @@ namespace dials { namespace integration {
 
 namespace boost_python {
 
+void export_reflection_mask_roi();
 void export_reflection_mask();
 
 BOOST_PYTHON_MODULE(dials_integration_ext)
 {
+    export_reflection_mask_roi();
     export_reflection_mask();
 }
 

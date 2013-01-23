@@ -90,10 +90,14 @@ scratch/jmp/dials/SConscript -text
 scratch/jmp/dials/__init__.py -text
 scratch/jmp/dials/array_family/SConscript -text
 scratch/jmp/dials/array_family/__init__.py -text
+scratch/jmp/dials/array_family/array_types.h -text
 scratch/jmp/dials/array_family/boost_python/array_family_ext.cc -text
+scratch/jmp/dials/array_family/boost_python/remove.cc -text
 scratch/jmp/dials/array_family/boost_python/sorting.cc -text
+scratch/jmp/dials/array_family/remove.h -text
 scratch/jmp/dials/array_family/sorting.h -text
 scratch/jmp/dials/bin/calculate_gaussian_model_parameters.py -text
+scratch/jmp/dials/bin/create_reflection_mask.py -text
 scratch/jmp/dials/bin/extract_reflection_profiles.py -text
 scratch/jmp/dials/bin/generate_spot_positions.py -text
 scratch/jmp/dials/bin/perform_xds_transform.py -text
@@ -153,7 +157,9 @@ scratch/jmp/dials/integration/SConscript -text
 scratch/jmp/dials/integration/__init__.py -text
 scratch/jmp/dials/integration/boost_python/integration_ext.cc -text
 scratch/jmp/dials/integration/boost_python/reflection_mask.cc -text
+scratch/jmp/dials/integration/boost_python/reflection_mask_roi.cc -text
 scratch/jmp/dials/integration/reflection_mask.h -text
+scratch/jmp/dials/integration/reflection_mask_roi.h -text
 scratch/jmp/dials/io/__init__.py -text
 scratch/jmp/dials/io/pycbf_extra.py -text
 scratch/jmp/dials/io/xdsio.py -text
