@@ -3,7 +3,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <cctype>
 
-namespace toytbx { 
+namespace x2tbx { 
   namespace ext {
 
     // make a python list
@@ -48,9 +48,9 @@ namespace toytbx {
     }
 
   }
-} // namespace toytbx::ext
+} // namespace x2tbx::ext
 
-BOOST_PYTHON_MODULE(toytbx_ext)
+BOOST_PYTHON_MODULE(x2tbx_ext)
 {
-  toytbx::ext::init_module();
+  x2tbx::ext::init_module();
 }

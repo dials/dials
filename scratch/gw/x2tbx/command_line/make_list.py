@@ -1,4 +1,4 @@
-from toytbx import make_list
+from x2tbx import make_list
 
 def main(args):
     assert(args)

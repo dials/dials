@@ -1,7 +1,7 @@
 import libtbx.load_env
 Import("env_etc")
 
-env_etc.toytbx_include = libtbx.env.dist_path("toytbx")
+env_etc.x2tbx_include = libtbx.env.dist_path("x2tbx")
 
 if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
   Import("env_no_includes_boost_python_ext")
@@ -14,7 +14,7 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
       env_etc.boost_adaptbx_include,
       env_etc.boost_include,
       env_etc.python_include,
-      env_etc.toytbx_include])
+      env_etc.x2tbx_include])
   env.SharedLibrary(
-    target="#lib/toytbx_ext",
+    target="#lib/x2tbx_ext",
     source=["ext.cpp"])

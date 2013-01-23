@@ -4,8 +4,8 @@ try:
 except Exception:
   ext = None
 else:
-  ext = boost.python.import_ext("toytbx_ext", optional = False)
+  ext = boost.python.import_ext("x2tbx_ext", optional = False)
 
 if not ext is None:
-  from toytbx_ext import *
+  from x2tbx_ext import *
 
