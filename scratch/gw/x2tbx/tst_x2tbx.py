@@ -44,6 +44,10 @@ def tst_x2tbx(mtz_file):
 
     r.setup_shells(100)
 
+    isig = r.isig_shells()
+    for j, i in enumerate(isig):
+        print j, i
+
     print 'OK'
 
 if __name__ == '__main__':

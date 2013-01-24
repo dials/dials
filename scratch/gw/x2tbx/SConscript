@@ -19,4 +19,4 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
       env_etc.x2tbx_include])
   env.SharedLibrary(
     target="#lib/x2tbx_ext",
-    source=["ext.cpp"])
+    source=["x2tbx.cpp"])

@@ -74,6 +74,7 @@ namespace x2tbx {
                scitbx::af::const_ref<float> const & i_data,
                scitbx::af::const_ref<float> const & sigi_data);
     float isig(void);
+    scitbx::af::shared<float> isig_shells(void);
     scitbx::af::shared<cmil::index<int> > sorted_indices(void);
   } resolutionizer;
 }

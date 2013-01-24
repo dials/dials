@@ -146,15 +146,17 @@ namespace x2tbx {
     }
 
     shell = scitbx::af::shared<cmil::index<int> >
-      (s_indices.begin() + nshells * n_per_shell,
+      (s_indices.begin() + (nshells - 1) * n_per_shell,
        s_indices.end());
     shells.push_back(shell);
 
-    /* debug output
+    size_t n_tot = 0;
     for(size_t i = 0; i < shells.size(); i++) {
-      std::cout << i << "\t" << shells[i].size() << std::endl;
+      n_tot += shells[i].size();
     }
-    */
+
+    CCTBX_ASSERT(s_indices.size() == n_tot);
+
   }
 
   float
@@ -173,6 +175,29 @@ namespace x2tbx {
     return result / unique;
   }
 
+  scitbx::af::shared<float>
+  resolutionizer::isig_shells(void)
+  {
+    scitbx::af::shared<float> result;
+
+    CCTBX_ASSERT(shells.size() != 0);
+
+    for (size_t i = 0; i < shells.size(); i++) {
+      float total = 0.0;
+      int n = 0;
+      for (size_t j = 0; j < shells[i].size(); j ++) {
+        merged_isig mi = ext::merge(ur[shells[i][j]]);
+        total += mi.I / mi.sigI;
+        n += 1;
+      }
+      result.push_back(total / n);
+    }
+
+    return result;
+  }
+
+
+
 } // namespace x2tbx::ext
 
 BOOST_PYTHON_MODULE(x2tbx_ext)
@@ -184,5 +209,6 @@ BOOST_PYTHON_MODULE(x2tbx_ext)
     .def("setup", & x2tbx::resolutionizer::setup)
     .def("isig", & x2tbx::resolutionizer::isig)
     .def("sorted_indices", & x2tbx::resolutionizer::sorted_indices)
-    .def("setup_shells", & x2tbx::resolutionizer::setup_shells);
+    .def("setup_shells", & x2tbx::resolutionizer::setup_shells)
+    .def("isig_shells", & x2tbx::resolutionizer::isig_shells);
 }
