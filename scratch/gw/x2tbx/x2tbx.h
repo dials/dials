@@ -92,12 +92,6 @@ namespace x2tbx {
     miller_index_list_type unique_indices;
   };
 
-  typedef std::map<cmil::index<int>, observation_list> \
-    unmerged_reflections;
-  typedef std::map<cmil::index<int>, observation_list>::iterator \
-    unmerged_reflections_iterator;
-  typedef scitbx::af::shared<cmil::index<int> > shell;
-
   struct sorter_by_resolution {
     cuc::unit_cell unit_cell;
     sorter_by_resolution(cuc::unit_cell new_unit_cell):
@@ -107,22 +101,5 @@ namespace x2tbx {
     {
       return unit_cell.d(a) < unit_cell.d(b);
     }
-  };
-
-  struct resolutionizer {
-    unmerged_reflections ur;
-    scitbx::af::shared<cmil::index<int> > s_indices;
-    std::vector<shell> shells;
-    cuc::unit_cell unit_cell;
-
-    void setup_shells(size_t nshells);
-    bool compare_resolution(cmil::index<int> const & a,
-                            cmil::index<int> const & b);
-    void set_unit_cell(scitbx::af::tiny<double, 6> new_unit_cell);
-    void setup(scitbx::af::shared<cmil::index<int> > const & indices,
-               scitbx::af::shared<float> const & i_data,
-               scitbx::af::shared<float> const & sigi_data);
-    scitbx::af::shared<float> isig_shells(void);
-    scitbx::af::shared<cmil::index<int> > sorted_indices(void);
   };
 }

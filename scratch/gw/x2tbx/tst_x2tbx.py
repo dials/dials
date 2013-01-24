@@ -29,8 +29,6 @@ def tst_x2tbx(mtz_file):
     assert(i_data)
     assert(sigi_data)
 
-    print x2tbx.isig_proper(mi, i_data, sigi_data)
-
     r = x2tbx.ReflectionList()
     r.setup(mi, i_data, sigi_data)
     r.merge()
@@ -38,7 +36,7 @@ def tst_x2tbx(mtz_file):
     print r.rmerge()
 
     indices = r.get_indices()
-    print len(indices)
+    print len(indices), len(mi)
 
     r.setup_resolution_shells(100)
 

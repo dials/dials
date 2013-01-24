@@ -53,13 +53,14 @@ namespace x2tbx {
     miller_index_list_type s;
 
     for (size_t j = 0; j < (n_shells - 1); j ++) {
-      s = shell(unique_indices.begin() + j * n_per_shell,
-                unique_indices.begin() + (j + 1) * n_per_shell);
+      s = miller_index_list_type(unique_indices.begin() + j * n_per_shell,
+                                 unique_indices.begin() + (j + 1) * n_per_shell);
       shells.push_back(s);
     }
 
-    s = shell(unique_indices.begin() + (n_shells - 1) * n_per_shell,
-              unique_indices.end());
+    s = miller_index_list_type(unique_indices.begin() +
+                               (n_shells - 1) * n_per_shell,
+                               unique_indices.end());
     shells.push_back(s);
 
     size_t n_tot = 0;
