@@ -136,7 +136,6 @@ namespace x2tbx {
   {
     CCTBX_ASSERT(reflections.size() > 0);
 
-    i_sig_type i_s;
     float r_sum = 0.0, i_sum = 0;
     std::map<miller_index_type, ObservationList>::iterator r;
 
@@ -148,5 +147,51 @@ namespace x2tbx {
     }
 
     return r_sum / i_sum;
+  }
+
+  scitbx::af::shared<float>
+  ReflectionList::i_sigma_shells(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+    CCTBX_ASSERT(shells.size() > 0);
+
+    scitbx::af::shared<float> result;
+
+    for (size_t shell = 0; shell < shells.size(); shell ++) {
+      i_sig_type i_s;
+      float shell_result = 0.0;
+      miller_index_list_type indices = shells[shell];
+      for (size_t i = 0; i < indices.size(); i++) {
+        i_s = reflections[indices[i]].get_i_sigma();
+        shell_result += i_s[0] / i_s[1];
+      }
+
+      result.push_back(shell_result / indices.size());
+    }
+
+    return result;
+  }
+
+  scitbx::af::shared<float>
+  ReflectionList::rmerge_shells(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+    CCTBX_ASSERT(shells.size() > 0);
+
+    scitbx::af::shared<float> result;
+
+    for (size_t shell = 0; shell < shells.size(); shell ++) {
+      float r_sum = 0.0, i_sum = 0;
+      miller_index_list_type indices = shells[shell];
+      for (size_t i = 0; i < indices.size(); i++) {
+        ObservationList o = reflections[indices[i]];
+        r_sum += o.rmerge();
+        i_sum += o.get_i_sigma()[0] * o.multiplicity();
+      }
+
+      result.push_back(r_sum / i_sum);
+    }
+
+    return result;
   }
 }

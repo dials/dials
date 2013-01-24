@@ -84,6 +84,8 @@ namespace x2tbx {
     void merge(void);
     float i_sigma(void);
     float rmerge(void);
+    scitbx::af::shared<float> rmerge_shells(void);
+    scitbx::af::shared<float> i_sigma_shells(void);
     scitbx::af::shared<float> shell_high_limits(void);
     scitbx::af::shared<float> shell_low_limits(void);
     miller_index_list_type get_shell(size_t);

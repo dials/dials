@@ -14,5 +14,7 @@ BOOST_PYTHON_MODULE(x2tbx_ext)
     .def("shell_low_limits", & x2tbx::ReflectionList::shell_low_limits)
     .def("merge", & x2tbx::ReflectionList::merge)
     .def("i_sigma", & x2tbx::ReflectionList::i_sigma)
-    .def("rmerge", & x2tbx::ReflectionList::rmerge);
+    .def("rmerge", & x2tbx::ReflectionList::rmerge)
+    .def("i_sigma_shells", & x2tbx::ReflectionList::i_sigma_shells)
+    .def("rmerge_shells", & x2tbx::ReflectionList::rmerge_shells);
 }
