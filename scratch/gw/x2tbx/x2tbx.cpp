@@ -136,19 +136,16 @@ namespace x2tbx {
 
     size_t n_per_shell = s_indices.size() / nshells;
 
-    scitbx::af::shared<cmil::index<int> > shell;
+    shell s;
 
     for (size_t j = 0; j < (nshells - 1); j ++) {
-      shell = scitbx::af::shared<cmil::index<int> >
-        (s_indices.begin() + j * n_per_shell,
-         s_indices.begin() + (j + 1) * n_per_shell);
-      shells.push_back(shell);
+      s = shell(s_indices.begin() + j * n_per_shell,
+		s_indices.begin() + (j + 1) * n_per_shell);
+      shells.push_back(s);
     }
 
-    shell = scitbx::af::shared<cmil::index<int> >
-      (s_indices.begin() + (nshells - 1) * n_per_shell,
-       s_indices.end());
-    shells.push_back(shell);
+    s = shell(s_indices.begin() + (nshells - 1) * n_per_shell, s_indices.end());
+    shells.push_back(s);
 
     size_t n_tot = 0;
     for(size_t i = 0; i < shells.size(); i++) {

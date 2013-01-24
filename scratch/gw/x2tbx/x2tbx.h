@@ -30,17 +30,17 @@ namespace cuc = cctbx::uctbx;
 
 namespace x2tbx {
 
-  typedef struct {
+  struct observation {
     float I;
     float sigI;
     float property;
     int flag;
-  } observation;
+  };
 
-  typedef struct {
+  struct merged_isig {
     float I;
     float sigI;
-  } merged_isig;
+  };
 
   typedef std::vector<observation> observation_list;
 
@@ -48,6 +48,7 @@ namespace x2tbx {
     unmerged_reflections;
   typedef std::map<cctbx::miller::index<int>, observation_list>::iterator \
     unmerged_reflections_iterator;
+  typedef scitbx::af::shared<cmil::index<int> > shell;
 
   struct sorter_by_resolution {
     cuc::unit_cell unit_cell;
@@ -60,10 +61,10 @@ namespace x2tbx {
     }
   };
 
-  typedef struct {
+  struct resolutionizer {
     unmerged_reflections ur;
     scitbx::af::shared<cmil::index<int> > s_indices;
-    std::vector<scitbx::af::shared<cmil::index<int> > > shells;
+    std::vector<shell> shells;
     cuc::unit_cell unit_cell;
 
     void setup_shells(size_t nshells);
@@ -76,5 +77,5 @@ namespace x2tbx {
     float isig(void);
     scitbx::af::shared<float> isig_shells(void);
     scitbx::af::shared<cmil::index<int> > sorted_indices(void);
-  } resolutionizer;
+  };
 }
