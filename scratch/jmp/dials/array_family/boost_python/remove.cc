@@ -26,6 +26,8 @@ void export_remove()
     def("remove_if", &remove_if <dials::af::flex_vec2_double>);
     def("remove_if", &remove_if <dials::af::flex_vec3_int>);
     def("remove_if", &remove_if <dials::af::flex_vec3_double>);
+    def("remove_if", &remove_if <dials::af::flex_tiny6_int>);
+    def("remove_if", &remove_if <dials::af::flex_tiny6_double>);
     def("remove_if", &remove_if <dials::af::flex_miller_index>);
 
     def("remove_if_not", &remove_if_not <scitbx::af::flex_bool>);
@@ -39,6 +41,8 @@ void export_remove()
     def("remove_if_not", &remove_if_not <dials::af::flex_vec2_double>);
     def("remove_if_not", &remove_if_not <dials::af::flex_vec3_int>);
     def("remove_if_not", &remove_if_not <dials::af::flex_vec3_double>);
+    def("remove_if_not", &remove_if_not <dials::af::flex_tiny6_int>);
+    def("remove_if_not", &remove_if_not <dials::af::flex_tiny6_double>);
     def("remove_if_not", &remove_if_not <dials::af::flex_miller_index>);
 }
 

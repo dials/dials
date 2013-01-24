@@ -28,9 +28,10 @@ def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
     """Display the reflection mask for a given frame."""
     from matplotlib import pylab, cm
     spot_xy = [(x, y) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
-    xcoords, ycoords = zip(*spot_xy)    
+    xcoords, ycoords = zip(*spot_xy)
+    fig = pylab.figure(figsize=(8,8))
     plt = pylab.imshow(mask[display_frame,:,:], cmap=cm.Greys_r, interpolation="nearest")
-    pylab.scatter(xcoords, ycoords, marker='x')
+    #pylab.scatter(xcoords, ycoords, marker='x')
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
@@ -54,6 +55,45 @@ def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
                [roi[2], roi[2], roi[3], roi[3], roi[2]])
     pylab.show()
 
+def filter_reflections_by_roi_volume(region_of_interest, percent):
+    """Filter the reflections by roi volume.
+    
+    Calculate the volume of each reflection, filter out the 1.0-percent largest
+    reflection volumes and return an array containing True/False if the volume
+    if valid.
+    
+    Args:
+        region_of_interest The array of rois
+        percent The percent of volumes to keep (0.0 < percent <= 1.0)
+    
+    Returns:
+        A boolean array, True/False is the roi valid
+    
+    """
+    from scitbx.array_family import flex
+    from heapq import nlargest
+
+    # Check given percentage
+    if percent <= 0 or percent > 1.0:
+        raise ValueError
+        
+    # A Calculate the volume of each region of interest
+    calculate_roi_volume = lambda roi: ((roi[1] - roi[0]) * 
+                                        (roi[3] - roi[2]) * 
+                                        (roi[5] - roi[4]))
+    volume = map(calculate_roi_volume, region_of_interest)
+    
+    # Calculate the volume limit below which 99% of reflections are
+    n_reflections = len(volume)
+    volume_limit = nlargest(int((1.0 - percent) * n_reflections), volume)[-1]
+    
+    # Create an array which is true if reflection volume is below the limit
+    result = flex.bool(n_reflections)
+    for i, v in enumerate(volume):
+        result[i] = v < volume_limit
+    
+    return result    
+
 def create_reflection_mask(input_filename, cbf_search_path, d_min, 
                            sigma_divergence, sigma_mosaicity, n_sigma,
                            display_frame, display_spot):
@@ -65,6 +105,7 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     from dials.io import xdsio, pycbf_extra
     from cctbx import uctbx, sgtbx
     from time import time
+    from dials.array_family import remove_if_not
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)
@@ -98,6 +139,12 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 
+    # Get the data from the spot predictor
+    miller_indices = spot_predictor.miller_indices
+    rotation_angles = spot_predictor.rotation_angles
+    beam_vectors = spot_predictor.beam_vectors
+    image_volume_coords = spot_predictor.image_volume_coordinates
+
     # Create the reflection mask regions of interest
     print "Creating reflection mask Roi"
     start_time = time()
@@ -106,16 +153,36 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
                             n_sigma * sigma_divergence, 
                             n_sigma * sigma_mosaicity)
     region_of_interest = reflection_mask_roi.calculate(
-                            spot_predictor.beam_vectors, 
-                            spot_predictor.rotation_angles)
+                            beam_vectors, rotation_angles)
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 
+    # Filter the reflections by region of interest volume
+    print "Filtering reflections by ROI"
+    start_time = time()
+    valid_roi = filter_reflections_by_roi_volume(region_of_interest, 0.99)
+    miller_indices      = remove_if_not(miller_indices, valid_roi)
+    rotation_angles     = remove_if_not(rotation_angles, valid_roi)
+    beam_vectors        = remove_if_not(beam_vectors, valid_roi)
+    image_volume_coords = remove_if_not(image_volume_coords, valid_roi)
+    region_of_interest  = remove_if_not(region_of_interest, valid_roi)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+    
+    range_x = [roi[1] - roi[0] for roi in region_of_interest]
+    range_y = [roi[3] - roi[2] for roi in region_of_interest]
+    range_z = [roi[5] - roi[4] for roi in region_of_interest]
+    volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
+    print "Min/Max ROI X Range: ", min(range_x), max(range_x)
+    print "Min/Max ROI Y Range: ", min(range_y), max(range_y)
+    print "Min/Max ROI Z Range: ", min(range_z), max(range_z)
+    print "Min/Max Roi Volume:  ", min(volume), max(volume)
+        
     # Create the reflection mask itself
     print "Creating reflection mask"
     start_time = time()
     reflection_mask = ReflectionMask(image_volume.shape)
-    reflection_mask.create(spot_predictor.image_volume_coordinates, 
+    reflection_mask.create(image_volume_coords, 
                            region_of_interest)
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
@@ -124,13 +191,13 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
         for frame in display_frame:
             print "Displaying reflection mask for frame \"{0}\"".format(frame)
             visualize_frame_reflection_mask(reflection_mask.mask.as_numpy_array(), 
-                frame, spot_predictor.image_volume_coordinates)
+                frame, image_volume_coords)
 
     if display_spot:
         for spot in display_spot:
             print "Displaying reflection mask for spot \"{0}\"".format(spot)
             visualize_spot_reflection_mask(reflection_mask.mask.as_numpy_array(), 
-                spot, spot_predictor.image_volume_coordinates, region_of_interest, 20)
+                spot, image_volume_coords, region_of_interest, 20)
 
                               
 if __name__ == '__main__':
