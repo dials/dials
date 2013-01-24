@@ -12,6 +12,8 @@ void export_reflection_mask_roi();
 void export_reflection_mask();
 void export_background_intensity();
 void export_subtract_background();
+void export_xds_transform();
+void export_xds_transform_grid();
 
 BOOST_PYTHON_MODULE(dials_integration_ext)
 {
@@ -19,6 +21,8 @@ BOOST_PYTHON_MODULE(dials_integration_ext)
     export_reflection_mask();
     export_background_intensity();
     export_subtract_background();
+    export_xds_transform();
+    export_xds_transform_grid();    
 }
 
 } // namespace = boost_python

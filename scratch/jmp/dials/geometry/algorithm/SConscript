@@ -1,9 +1,0 @@
-
-Import('env')
-
-sources = [
-    'boost_python/xds_transform.cc',
-    'boost_python/xds_transform_grid.cc',
-    'boost_python/algorithm_ext.cc']
-
-env.SharedLibrary(target='#/lib/dials_geometry_algorithm_ext', source=sources)

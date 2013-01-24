@@ -8,4 +8,3 @@ sources = [
 env.SharedLibrary(target='#/lib/dials_geometry_ext', source=sources)
     
 env.SConscript('transform/SConscript', exports={ 'env' : env })
-env.SConscript('algorithm/SConscript', exports={ 'env' : env })

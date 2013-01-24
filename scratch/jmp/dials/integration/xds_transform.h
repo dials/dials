@@ -1,6 +1,6 @@
 
-#ifndef DIALS_GEOMETRY_ALGORITHM_XDS_TRANSFORM_H
-#define DIALS_GEOMETRY_ALGORITHM_XDS_TRANSFORM_H
+#ifndef DIALS_INTEGRATION_XDS_TRANSFORM_H
+#define DIALS_INTEGRATION_XDS_TRANSFORM_H
 
 #include <cmath>
 #include <algorithm>
@@ -10,13 +10,13 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
-#include "../../error.h"
-#include "../../equipment/detector.h"
-#include "../../equipment/beam.h"
-#include "../../equipment/goniometer.h"
+#include "../error.h"
+#include "../equipment/detector.h"
+#include "../equipment/beam.h"
+#include "../equipment/goniometer.h"
 #include "xds_transform_grid.h"
 
-namespace dials { namespace geometry { namespace algorithm {
+namespace dials { namespace integration {
 
 /** An array of vec3 <double> elements */
 typedef scitbx::af::flex<scitbx::vec3 <double> >::type flex_vec3_double;
@@ -451,6 +451,6 @@ void XdsTransform::calculate(int reflection_index,
     }
 }
 
-}}} // namespace = dials::geometry::algorithm
+}} // namespace = dials::integration
 
-#endif // DIALS_GEOMETRY_ALGORITHM_XDS_TRANSFORM_H
+#endif // DIALS_INTEGRATION_XDS_TRANSFORM_H

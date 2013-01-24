@@ -1,13 +1,13 @@
 
-#ifndef DIALS_GEOMETRY_XDS_TRANSFORM_GRID_H
-#define DIALS_GEOMETRY_XDS_TRANSFORM_GRID_H
+#ifndef DIALS_INTEGRATION_XDS_TRANSFORM_GRID_H
+#define DIALS_INTEGRATION_XDS_TRANSFORM_GRID_H
 
 #include <exception>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
-#include "../../error.h"
+#include "../error.h"
 
-namespace dials { namespace geometry { namespace algorithm {
+namespace dials { namespace integration {
 
 /** Class representing the XDS transform grid */
 class XdsTransformGrid {
@@ -118,6 +118,6 @@ private:
     double delta_mosaicity_;
 };
 
-}}} // namespace = dials::geometry::algorithm
+}} // namespace = dials::integration
 
-#endif // DIALS_GEOMETRY_XDS_TRANSFORM_GRID_H
+#endif // DIALS_INTEGRATION_XDS_TRANSFORM_GRID_H

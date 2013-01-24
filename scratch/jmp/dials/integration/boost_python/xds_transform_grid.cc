@@ -5,7 +5,7 @@
 
 using namespace boost::python;
 
-namespace dials { namespace geometry { namespace algorithm { 
+namespace dials { namespace integration { 
     
 namespace boost_python {
 
@@ -44,4 +44,4 @@ void export_xds_transform_grid()
 
 } // namespace = boost_python
 
-}}} // namespace = dials::geometry::algorithm
+}} // namespace = dials::integration
