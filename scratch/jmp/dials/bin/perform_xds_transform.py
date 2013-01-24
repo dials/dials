@@ -1,180 +1,227 @@
+#!/usr/bin/env python
 
+def parse_list_string(string):
+    """Parse a string in the following ways:
+    string: 1, 2, 3        -> [1, 2, 3]
+    string: 1 - 6          -> [1, 2, 3, 4, 5, 6]
+    string: 1 - 6, 7, 8, 9 -> [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    """
+    items = string.split(',')
+    for i in range(len(items)):
+        items[i] = items[i].split("-")
+        if len(items[i]) == 1:
+            items[i] = [int(items[i][0])]
+        elif len(items[i]) == 2:
+            items[i] = range(int(items[i][0]), int(items[i][1]) + 1)
+        else:
+            raise SyntaxError
+    items = [item for sublist in items for item in sublist]
+    return set(items)
 
-def extract_reflection_profiles(paths):
-    
-    from scitbx import matrix
+def display_frame_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, parse_list_string(value))
 
-    import numpy
+def display_spot_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, parse_list_string(value))
 
+def visualize_xds_transform(grid, display_spot):
+    """Display the XDS transform for a given spot."""
     from matplotlib import pylab, cm
-    from mpl_toolkits.mplot3d import axes3d
-
-    from dials.equipment import Beam
-    from dials.equipment import Detector
-    from dials.equipment import Goniometer
-    from dials.integration import ReflectionMaskRoi
-    from dials.integration import ReflectionMask
-    from dials.integration import SubtractBackground
-    from dials.integration import XdsTransform
-    from dials.integration import XdsTransformGrid
-    from dials.io.pycbf_extra import search_for_image_volume
-    from scitbx.array_family import flex
-    
-    # Set a load of parameters from the GXPARM file
-    z0 = 1
-    phi0 = 1.0
-    dphi = 1.0
-    s0 = matrix.col((0.013142, 0.002200, 1.450476))
-    dx0 = 244.836136
-    dy0 = 320.338531
-    dx = 487
-    dy = 619
-    px = 0.172000
-    py = 0.172000
-    d1 = matrix.col((0.000000, -0.939693, -0.342020))
-    d2 = matrix.col((1.000000,  0.000000,  0.000000))
-    d3 = matrix.col((0.000000, -0.342020,  0.939693))
-    m2 = matrix.col((0.999975, -0.001289, -0.006968))
-    f  = 122.124901
-    l  = 0.689400
-    sigma_d = 0.034
-    sigma_m = 0.082
-    n_sigma = 10
-
-    # Set some values of a test reflection
-    s1 = matrix.col((-0.0175199028171, -0.24775259748, 1.42844630118))
-    phi_dash = 5.0
-    phi = 5.83575672475
-    sx = 117.588714455
-    sy = 311.621428845
-    sz = z0 + (phi - phi0) / dphi
-
-    # Load the CBF image volume
-    image_volume = search_for_image_volume(paths)
-    image_volume = flex.int(image_volume)
-    image_volume_copy = image_volume.deep_copy()
-
-    # Make sure vectors are really of length 1/lambda
-    s0 = s0.normalize() / l
-    s1 = s1.normalize() / l
-
-    # Create the beam, goniometer and detector
-    beam = Beam(s0, l)
-    gonio = Goniometer(m2, phi0, dphi, z0)
-    detector = Detector(d1, d2, d3, (dx0, dy0), (px, py), (dx, dy), f)
-    
-    reflection_mask_roi = ReflectionMaskRoi(
-                            beam, detector, gonio, 
-                            n_sigma * sigma_d, 
-                            n_sigma * sigma_m)
-    region_of_interest = reflection_mask_roi.calculate(
-                            flex.vec3_double(1, s1), 
-                            flex.double(1, phi))
-        
-    xyz = (sx, sy, sz - gonio.starting_frame)
-    reflection_mask = ReflectionMask(image_volume.all())
-    reflection_mask.create(flex.vec3_double(1, xyz), region_of_interest)
-     
-    subtract_background = SubtractBackground(image_volume, reflection_mask.mask)
-    valid_background = flex.bool(len(region_of_interest))
-    subtract_background.subtract(region_of_interest, valid_background)
-    subtract_background.set_non_reflection_value(0)
-    
-    xds_grid = XdsTransformGrid(1, (4, 4, 4), sigma_d, sigma_m)
-    xds_trans = XdsTransform(xds_grid,
-                             image_volume,
-                             reflection_mask.mask,
-                             detector,
-                             beam,
-                             gonio)
-
-    xds_trans.calculate(0, region_of_interest[0], s1, phi)
-    grid = xds_grid.data
-
-    from matplotlib import cm, rcParams
-    
-#    mask = reflection_mask.mask.as_numpy_array()
-    #rcParams.update({'font.size': 6})
-
-
-    #fig = pylab.figure(figsize=(6,4), dpi=300)
-    #for i in range(0,9):
-    #    ax = pylab.subplot(3, 3, i+1)
-    #    plt = pylab.imshow(image_volume[sz-4-1+i,sy-4:sy+4+1,sx-4:sx+4+1], vmin=0, vmax=2000, cmap=cm.Greys_r)
-    #    plt.axes.get_xaxis().set_ticks([])
-    #    plt.axes.get_yaxis().set_ticks([])   
-    #    ax.set_title("slice: {0}".format(i))     
-    #fig.savefig('/home/upc86896/Documents/Reflection.tiff')
-    #pylab.show()
-
-    
-    #fig = pylab.figure(figsize=(6,4), dpi=300)
-    sub_grid = grid[0:1,:,:,:]
-    sub_grid.reshape(flex.grid(sub_grid.all()[1:4]))
-
-    print (sub_grid.as_numpy_array() * 100).astype(numpy.int32)
-
+    import numpy
+    spot_grid = grid[display_spot, :, :, :]
     for i in range(0,9):
         ax = pylab.subplot(3, 3, i+1)
-        image = sub_grid[i:i+1,:,:]
-        image.reshape(flex.grid(image.all()[1:3]))
-        plt=pylab.imshow(image.as_numpy_array(), vmin=0, 
-            vmax=flex.max(sub_grid), cmap=cm.Greys_r)#, interpolation='nearest')
+        image = spot_grid[i, :, :]
+        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid), 
+            cmap=cm.Greys_r)#, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
         plt.axes.get_yaxis().set_ticks([])   
         ax.set_title("slice: {0}".format(i))         
-    #fig.savefig('/home/upc86896/Documents/Transformed.tiff')
     pylab.show()
 
+def perform_xds_transform(input_filename, cbf_search_path, d_min, 
+                          sigma_divergence, sigma_mosaicity, n_sigma,
+                          display_spot):
+    """Read the required data from the file, predict the spots and calculate
+       gaussian model parameters."""
+    from dials.spot_prediction import SpotPredictor
+    from dials.integration import ReflectionMaskRoi
+    from dials.integration import ReflectionMask
+    from dials.integration import SubtractBackground
+    from dials.integration import filter_reflections_by_roi_volume
+    from dials.integration import XdsTransformGrid
+    from dials.integration import XdsTransform
+    from dials.io import xdsio, pycbf_extra
+    from cctbx import uctbx, sgtbx
+    from time import time
+    from dials.array_family import remove_if_not
+    from scitbx.array_family import flex
 
-    # Display the grid
-    #grid_index = 0
-    #minx = numpy.min(grid.get_grid_coordinates()[0])
-    #maxx = numpy.max(grid.get_grid_coordinates()[0])
-    #miny = numpy.min(grid.get_grid_coordinates()[1])
-    #maxy = numpy.max(grid.get_grid_coordinates()[1])
-    #minz = numpy.min(grid.get_grid(grid_index))
-    #maxz = numpy.max(grid.get_grid(grid_index))
-    #fig = pylab.figure()
-    #for i in range(0, 9):
-    #    ax = fig.add_subplot(3, 3, i+1, projection='3d')
-    #    ax.set_xlim([minx, maxx])
-    #    ax.set_ylim([miny, maxy])
-    #    ax.set_zlim([minz, maxz])
-    #    ax.set_autoscalex_on(False)
-    #    ax.set_autoscaley_on(False)
-    #    ax.set_autoscalez_on(False)
-    #    plt=ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
-    #                      grid.get_grid_coordinates()[1][i,:,:],
-    #                      grid.get_grid(grid_index)[i,:,:])
-    #    ax.set_title("slice {0}".format(i))
-#        plt.axes.get_xaxis().set_ticks(map(lambda x: minx + x * (maxx - minx) / 2, range(0, 3)))
-#        plt.axes.get_yaxis().set_ticks(map(lambda y: miny + y * (maxy - miny) / 2, range(0, 3)))
-#        plt.axes.get_zaxis().set_ticks([])
-    #fig.savefig('/home/upc86896/Documents/Wireframe.tiff')
-    #pylab.show()
+    # Create the GXPARM file and read the contents
+    print "Reading: \"{0}\"".format(input_filename)
+    gxparm_handle = xdsio.GxParmFile()
+    gxparm_handle.read_file(input_filename)
+    beam      = gxparm_handle.get_beam() 
+    gonio     = gxparm_handle.get_goniometer()
+    detector  = gxparm_handle.get_detector()
+    ub_matrix = gxparm_handle.get_ub_matrix()
+    symmetry  = gxparm_handle.space_group
 
-#    print grid.grid_data
- 
+    # Create the unit cell and space group objects
+    unit_cell = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)
+    space_group_type = sgtbx.space_group_type(sgtbx.space_group(
+                            sgtbx.space_group_symbols(symmetry).hall()))
 
+    # Load the image volume from the CBF files and set the number of frames
+    if cbf_search_path:
+        print "Searching \"{0}\" for CBF files".format(cbf_search_path)
+        image_volume = pycbf_extra.search_for_image_volume(cbf_search_path)
+        image_volume = flex.int(image_volume)
+        gonio.num_frames = image_volume.all()[0]
 
+    # Create the spot predictor
+    spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, d_min,
+                                   unit_cell, space_group_type)
+    
+    # Predict the spot image volume coordinates 
+    print "Predicting spots"
+    start_time = time()
+    spot_predictor.predict_spots()
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
 
-    # Display the estimated fraction of reflection intensity
-    #fig = pylab.figure()
-    #for i in range(0, 9):
-    #    ax = fig.add_subplot(3, 3, i+1, projection='3d')
-    #    ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
-    #                      grid.get_grid_coordinates()[1][i,:,:],
-    #                      grid.estimated_reflection_intensity(
-    #                            sigma_d, sigma_m)[i,:,:])          
-    #pylab.show()    
+    # Get the data from the spot predictor
+    miller_indices = spot_predictor.miller_indices
+    rotation_angles = spot_predictor.rotation_angles
+    beam_vectors = spot_predictor.beam_vectors
+    image_volume_coords = spot_predictor.image_volume_coordinates
 
+    # Create the reflection mask regions of interest
+    n_reflections = len(image_volume_coords)
+    print "Creating reflection mask Roi for {0} reflections".format(n_reflections)
+    start_time = time()
+    reflection_mask_roi = ReflectionMaskRoi(
+                            beam, detector, gonio, 
+                            n_sigma * sigma_divergence, 
+                            n_sigma * sigma_mosaicity)
+    region_of_interest = reflection_mask_roi.calculate(
+                            beam_vectors, rotation_angles)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+
+    # Filter the reflections by region of interest volume
+    n_reflections = len(region_of_interest)
+    print "Filtering {0} reflections by ROI".format(n_reflections)
+    start_time = time()
+    valid_roi = filter_reflections_by_roi_volume(region_of_interest, 0.99)
+    miller_indices      = remove_if_not(miller_indices, valid_roi)
+    rotation_angles     = remove_if_not(rotation_angles, valid_roi)
+    beam_vectors        = remove_if_not(beam_vectors, valid_roi)
+    image_volume_coords = remove_if_not(image_volume_coords, valid_roi)
+    region_of_interest  = remove_if_not(region_of_interest, valid_roi)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+    
+    range_x = [roi[1] - roi[0] for roi in region_of_interest]
+    range_y = [roi[3] - roi[2] for roi in region_of_interest]
+    range_z = [roi[5] - roi[4] for roi in region_of_interest]
+    volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
+    print "Min/Max ROI X Range: ", min(range_x), max(range_x)
+    print "Min/Max ROI Y Range: ", min(range_y), max(range_y)
+    print "Min/Max ROI Z Range: ", min(range_z), max(range_z)
+    print "Min/Max Roi Volume:  ", min(volume), max(volume)
+        
+    # Create the reflection mask itself
+    n_reflections = len(region_of_interest)
+    print "Creating reflection mask for {0} reflections".format(n_reflections)
+    start_time = time()
+    reflection_mask = ReflectionMask(image_volume.all())
+    reflection_mask.create(image_volume_coords, region_of_interest)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+     
+    # Subtract the background for each reflection
+    n_reflections = len(region_of_interest)
+    print "Subtracting background for {0} reflections".format(n_reflections)
+    start_time = time()
+    subtract_background = SubtractBackground(image_volume, reflection_mask.mask, min_pixels=100)
+    valid_background = flex.bool(len(region_of_interest))
+    subtract_background.subtract(region_of_interest, valid_background)
+    subtract_background.set_non_reflection_value(0)
+    miller_indices      = remove_if_not(miller_indices, valid_background)
+    rotation_angles     = remove_if_not(rotation_angles, valid_background)
+    beam_vectors        = remove_if_not(beam_vectors, valid_background)
+    image_volume_coords = remove_if_not(image_volume_coords, valid_background)
+    region_of_interest  = remove_if_not(region_of_interest, valid_background)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+     
+    print "Initialising XDS Transform"
+    start_time = time()
+    n_reflections = len(region_of_interest)
+    grid_origin = (4, 4, 4)
+    xds_grid = XdsTransformGrid(n_reflections, grid_origin, sigma_divergence, 
+                                sigma_mosaicity, n_sigma)
+    xds_trans = XdsTransform(xds_grid, image_volume, reflection_mask.mask,
+                             detector, beam, gonio)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+    
+    print "Performing XDS transform on {0} reflections".format(n_reflections)
+    start_time = time()
+    xds_trans.calculate(region_of_interest, beam_vectors, rotation_angles)
+    finish_time = time()
+    print "Time taken: {0} s".format(finish_time - start_time)
+     
+    if display_spot:
+        for spot in display_spot:
+            print "Displaying XDS Transform for spot \"{0}\"".format(spot)
+            visualize_xds_transform(xds_grid.data.as_numpy_array(), spot)
+
+                              
 if __name__ == '__main__':
 
-    import sys
-    # Extract the reflection profiles
-    extract_reflection_profiles("/home/upc86896/Projects/data/300k/ximg2700*.cbf")    
+    from optparse import OptionParser
 
-    
-    
-    
+    # Specify the command line options
+    usage = "usage: %prog [options] /path/to/GXPARM.XDS /cbf/search/path/*.cbf"
+    parser = OptionParser(usage)
+    parser.add_option('-r', '--dmin',
+                      dest='dmin',
+                      type="float",
+                      default=0.7,
+                      help='Specify the resolution')
+    parser.add_option('--sigma-d',
+                      dest='sigma_d',
+                      type="float",
+                      default=0.034,
+                      help='Specify the standard deviation of the beam divergence')
+    parser.add_option('--sigma-m',
+                      dest='sigma_m',
+                      type="float",
+                      default=0.082,
+                      help='Specify the standard deviation of the mosaicity')
+    parser.add_option('--num-sigma',
+                      dest='n_sigma',
+                      type="float",
+                      default=10,
+                      help='Specify the number of standard deviations to use')
+    parser.add_option('--display-spot',
+                      dest='display_spot',
+                      type="string",
+                      action="callback",
+                      callback=display_frame_callback,
+                      help='Select a frame to display the reflection mask')                   
+    (options, args) = parser.parse_args()
+
+    # Print help if no arguments specified, otherwise call spot prediction
+    if len(args) < 2:
+        print parser.print_help()
+    else:
+        perform_xds_transform(args[0], 
+                              args[1], 
+                              options.dmin,
+                              options.sigma_d,
+                              options.sigma_m,
+                              options.n_sigma,
+                              options.display_spot)

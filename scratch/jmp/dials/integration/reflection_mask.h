@@ -42,6 +42,10 @@ public:
      * region of interest around each of the given reflection points to the 
      * reflection index. Exclude pixels from the reflection's mask if they are
      * closer to a neighbouring reflection.
+     * 
+     * @todo The pixels comprising the mask of a reflection are not guarenteed
+     *       to be contingious, this should be fixed.
+     *
      * @param image_volume_coords The image volume coordinates
      * @param region_of_interest The regions of interest
      */
