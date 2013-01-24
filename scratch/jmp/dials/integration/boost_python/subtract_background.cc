@@ -11,17 +11,32 @@ namespace boost_python {
 
 void export_subtract_background()
 {
+    void (SubtractBackground::*subtract_single)(int, scitbx::af::tiny <int, 6>) =
+        &SubtractBackground::subtract;
+
+    void (SubtractBackground::*subtract_array)(const af::flex_tiny6_int &,
+                                               scitbx::af::flex_bool &) =
+        &SubtractBackground::subtract;
+
     class_ <SubtractBackground> ("SubtractBackground")
         .def(init <scitbx::af::flex_int,
-                   scitbx::vec3 <int>,
+                   scitbx::af::flex_int,
                    double,
-                   double> ((
+                   double,
+                   int> ((
             arg("image_volume"),
-            arg("roi_size"),
-            arg("delta"),
-            arg("max_iter"))))
-        .def("subtract", &SubtractBackground::subtract, (
-            arg("xyz")));
+            arg("reflection_mask"),
+            arg("delta") = 0.1,
+            arg("max_iter") = 0.1,
+            arg("min_pixels") = 10)))
+        .def("subtract", subtract_single, (
+            arg("index"),
+            arg("roi")))
+        .def("subtract", subtract_array, (
+            arg("roi"),
+            arg("status")))
+        .def("set_non_reflection_value", 
+            &SubtractBackground::set_non_reflection_value);
 }
 
 } // namespace = boost_python

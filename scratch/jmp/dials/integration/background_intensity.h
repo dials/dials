@@ -35,21 +35,6 @@ public:
         DIALS_ASSERT(max_iter_frac_ > 0.0 && max_iter_frac_ < 1.0);
     }
 
-    /**
-     * Calculate the background intensity
-     * @param data The pixel array data
-     */
-    double calculate(scitbx::af::flex_double_const_ref data) 
-    {
-        // Calculate the background value
-        double background = this->calculate_background_intensity(data);
-        
-        // Return the background
-        return background;       
-    }
-
-private:
-
     /*
      * Calculate the background intensity.
      *
@@ -58,12 +43,14 @@ private:
      * with the highest intensity from the list and check again. Keep going
      * untill the list of pixels is normally distributed, or the maximum 
      * number of iterations is reached. Return the mean of the values as the
-     * background intensity.
+     * background intensity. 
+     *
+     * This function modifies the input data
      * 
      * @param pixels The list of pixels
      * @returns The background intensity value
      */
-    double calculate_background_intensity(scitbx::af::flex_double_const_ref data) 
+    double calculate(scitbx::af::flex_double_ref data) 
     {
         // If no maximum is set, then set it to 0.1 N pixels if the max number
         // of iterations is greater than or equal the number of elements, then
@@ -71,9 +58,7 @@ private:
         int max_iter = (int)(max_iter_frac_ * data.size());
 
         // Sort the pixels into ascending intensity order
-        scitbx::af::flex_double sorted_data(data.size());
-        std::copy(data.begin(), data.end(), sorted_data.begin());
-        std::sort(sorted_data.begin(), sorted_data.end());
+        std::sort(data.begin(), data.end());
 
         // Check if the data is normally distributed. If it is not, then remove
         // a value of high intensity and keep looping until it is. If the number
@@ -81,18 +66,20 @@ private:
         int num_iter = 0;
         for (; num_iter < max_iter; ++num_iter) {
             if (this->is_data_normally_distributed(
-                    scitbx::af::const_ref <double> (
-                        sorted_data.begin(),
-                        sorted_data.size()-num_iter))) {
+                    scitbx::af::flex_double_const_ref(
+                        data.begin(), 
+                        data.size()-num_iter))) {
                 break;
             }
         }
         
         // Return the mean of the remaining pixels as the background intensity
         return scitbx::af::mean(scitbx::af::flex_double_const_ref(
-                                    sorted_data.begin(),
-                                    sorted_data.size()-num_iter));
+                                    data.begin(),
+                                    data.size()-num_iter));
     }
+    
+private:
     
     /**
      * Check if the data is normally distributed.
@@ -110,11 +97,12 @@ private:
      * @param data The array of pixel values
      * @returns True/False
      */
-    bool is_data_normally_distributed(scitbx::af::const_ref <double> data)
+    bool is_data_normally_distributed(const scitbx::af::flex_double_const_ref &data)
     {
         // Calculate the mean and standard deviation of the data
         int n_data = data.size();
-        scitbx::math::mean_and_variance <double> mean_and_variance(data);
+        scitbx::math::mean_and_variance <double> mean_and_variance(
+            scitbx::af::const_ref <double> (data.begin(), data.size()));
         double mean = mean_and_variance.mean();
         double sdev = mean_and_variance.unweighted_sample_standard_deviation();
                 
@@ -137,7 +125,7 @@ private:
         // Return whether the data is normally distributed
         return ((0.682 - delta_ <= perc1 && perc1 <= 0.682 + delta_) &&
                 (0.954 - delta_ <= perc2 && perc2 <= 0.954 + delta_) &&
-                (0.997 - delta_ <= perc3 && perc2 <= 0.997 + delta_));
+                (0.997 - delta_ <= perc3 && perc3 <= 0.997 + delta_));
     }
 
 private:

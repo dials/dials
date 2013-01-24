@@ -167,6 +167,7 @@ scratch/jmp/dials/integration/boost_python/integration_ext.cc -text
 scratch/jmp/dials/integration/boost_python/reflection_mask.cc -text
 scratch/jmp/dials/integration/boost_python/reflection_mask_roi.cc -text
 scratch/jmp/dials/integration/boost_python/subtract_background.cc -text
+scratch/jmp/dials/integration/filter_reflection_by_roi_volume.py -text
 scratch/jmp/dials/integration/reflection_mask.h -text
 scratch/jmp/dials/integration/reflection_mask_roi.h -text
 scratch/jmp/dials/integration/subtract_background.h -text
