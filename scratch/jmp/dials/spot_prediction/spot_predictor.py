@@ -107,8 +107,7 @@ class SpotPredictor(object):
            removed from their respective arrays.
         
         """
-        from dials.array_family import remove_if_not
-        from scitbx.array_family import flex
+        from dials.array_family import flex
 
         # Ensure internal arrays are reset
         self.reset()
@@ -120,41 +119,39 @@ class SpotPredictor(object):
         # remove the invalid miller indices and rotation angles and create 
         # an array of miller indices and rotation angles that correspond
         is_valid_angle = flex.bool()
-        rotation_angles = self.__calculate_rotation_angles(miller_indices, 
-                                                           is_valid_angle)
-        miller_indices = remove_if_not(miller_indices, is_valid_angle)
-        rotation_angles_a = remove_if_not(rotation_angles[0:1,:].as_1d(), is_valid_angle)
-        rotation_angles_b = remove_if_not(rotation_angles[1:2,:].as_1d(), is_valid_angle)
+        rotation_angles = self.__calculate_rotation_angles(miller_indices, is_valid_angle)
+        miller_indices = flex.remove_if_not(miller_indices, is_valid_angle)
+        rotation_angles_a = flex.remove_if_not(rotation_angles[0:1,:].as_1d(), is_valid_angle)
+        rotation_angles_b = flex.remove_if_not(rotation_angles[1:2,:].as_1d(), is_valid_angle)
         miller_indices = miller_indices.concatenate(miller_indices)
         rotation_angles = rotation_angles_a.concatenate(rotation_angles_b)        
         
         # Filter the angles and miller indices with the rotation range
         in_rotation_range = self.__filter_angles_in_rotation_range(rotation_angles)
-        rotation_angles = remove_if_not(rotation_angles, in_rotation_range)
-        miller_indices  = remove_if_not(miller_indices, in_rotation_range)        
+        rotation_angles = flex.remove_if_not(rotation_angles, in_rotation_range)
+        miller_indices  = flex.remove_if_not(miller_indices, in_rotation_range)        
         
         # Calculate the beam vectors
         beam_vectors = self.__calculate_reciprocal_space_vectors(
-                                miller_indices, 
-                                rotation_angles) + self._beam.direction
+                            miller_indices, rotation_angles) + self._beam.direction
 
         # Calculate the image volume coordinates and keep only those array 
         # elements that have a valid image coordinate
         is_valid_coord = flex.bool()
         image_volume_coords = self.__calculate_image_volume_coordinates(
                                 beam_vectors, rotation_angles, is_valid_coord)
-        miller_indices      = remove_if_not(miller_indices,      is_valid_coord)
-        rotation_angles     = remove_if_not(rotation_angles,     is_valid_coord)
-        beam_vectors        = remove_if_not(beam_vectors,        is_valid_coord)
-        image_volume_coords = remove_if_not(image_volume_coords, is_valid_coord)
+        miller_indices = flex.remove_if_not(miller_indices, is_valid_coord)
+        rotation_angles = flex.remove_if_not(rotation_angles, is_valid_coord)
+        beam_vectors = flex.remove_if_not(beam_vectors, is_valid_coord)
+        image_volume_coords = flex.remove_if_not(image_volume_coords, is_valid_coord)
 
         # Filter the image volume coordinates and remove any invalid spots to 
         # leave the valid ones remaining
         is_valid_coord = self.__filter_image_volume_coordinates(image_volume_coords)
-        self._miller_indices      = remove_if_not(miller_indices,      is_valid_coord)
-        self._rotation_angles     = remove_if_not(rotation_angles,     is_valid_coord)
-        self._beam_vectors        = remove_if_not(beam_vectors,        is_valid_coord)
-        self._image_volume_coords = remove_if_not(image_volume_coords, is_valid_coord)
+        self._miller_indices = flex.remove_if_not(miller_indices, is_valid_coord)
+        self._rotation_angles = flex.remove_if_not(rotation_angles, is_valid_coord)
+        self._beam_vectors = flex.remove_if_not(beam_vectors, is_valid_coord)
+        self._image_volume_coords = flex.remove_if_not(image_volume_coords, is_valid_coord)
  
     def __generate_miller_indices(self):
         """Generate a list of miller indices.

@@ -67,7 +67,8 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     from dials.io import xdsio, pycbf_extra
     from cctbx import uctbx, sgtbx
     from time import time
-    from dials.array_family import remove_if_not
+    from dials.array_family.flex import remove_if_not
+    from dials.array_family import flex
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)

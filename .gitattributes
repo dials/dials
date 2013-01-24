@@ -99,6 +99,7 @@ scratch/jmp/dials/array_family/boost_python/flex_tiny.cc -text
 scratch/jmp/dials/array_family/boost_python/remove.cc -text
 scratch/jmp/dials/array_family/boost_python/sorting.cc -text
 scratch/jmp/dials/array_family/boost_python/test_tiny_int.cc -text
+scratch/jmp/dials/array_family/flex.py -text
 scratch/jmp/dials/array_family/remove.h -text
 scratch/jmp/dials/array_family/sorting.h -text
 scratch/jmp/dials/bin/calculate_gaussian_model_parameters.py -text

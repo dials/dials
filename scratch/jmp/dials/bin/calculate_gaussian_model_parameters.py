@@ -58,8 +58,7 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
     print "Time taken: {0} s".format(finish_time - start_time)
 
     print "Finding strong pixels"
-    from scitbx.array_family import flex
-    from dials.array_family import partial_sort_indices
+    from dials.array_family.flex import partial_sort_indices
     num_strong_pixels = 100
     flat_image_volume = flex.int(image_volume)
     strong_pixel_indices = partial_sort_indices(flat_image_volume, num_strong_pixels)
