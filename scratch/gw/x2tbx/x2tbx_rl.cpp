@@ -42,7 +42,7 @@ namespace x2tbx {
     std::map<miller_index_type, ObservationList>::iterator r;
 
     for(r = reflections.begin(); r != reflections.end(); ++r) {
-      i_s = (r->second).i_sigma();
+      i_s = (r->second).get_i_sigma();
       result += i_s[0] / i_s[1];
     }
 
@@ -62,7 +62,7 @@ namespace x2tbx {
       ObservationList o = r->second;
 
       r_sum += o.rmerge();
-      i_sum += o.i_sigma()[0] * o.multiplicity();
+      i_sum += o.get_i_sigma()[0] * o.multiplicity();
     }
 
     return r_sum / i_sum;

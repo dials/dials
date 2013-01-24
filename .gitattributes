@@ -49,6 +49,7 @@ scratch/gw/sympy_spells.py -text
 scratch/gw/x2tbx/SConscript -text
 scratch/gw/x2tbx/__init__.py -text
 scratch/gw/x2tbx/command_line/resolutionizer.py -text
+scratch/gw/x2tbx/ext.cpp -text
 scratch/gw/x2tbx/tst_x2tbx.py -text
 scratch/gw/x2tbx/x2tbx.cpp -text
 scratch/gw/x2tbx/x2tbx.h -text

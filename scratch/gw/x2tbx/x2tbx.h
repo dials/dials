@@ -30,6 +30,8 @@ namespace cuc = cctbx::uctbx;
 
 namespace x2tbx {
 
+  void init_module(void);
+
   struct observation {
     float I;
     float sigI;
@@ -53,7 +55,7 @@ namespace x2tbx {
 
     void add(i_sig_type);
     void merge(void);
-    i_sig_type i_sigma(void);
+    i_sig_type get_i_sigma(void);
     size_t multiplicity(void);
     float rmerge(void);
 
@@ -82,9 +84,9 @@ namespace x2tbx {
     std::map<miller_index_type, ObservationList> reflections;
   };
 
-  typedef std::map<cctbx::miller::index<int>, observation_list> \
+  typedef std::map<cmil::index<int>, observation_list> \
     unmerged_reflections;
-  typedef std::map<cctbx::miller::index<int>, observation_list>::iterator \
+  typedef std::map<cmil::index<int>, observation_list>::iterator \
     unmerged_reflections_iterator;
   typedef scitbx::af::shared<cmil::index<int> > shell;
 
@@ -112,7 +114,6 @@ namespace x2tbx {
     void setup(scitbx::af::const_ref<cmil::index<int> > const & indices,
                scitbx::af::const_ref<float> const & i_data,
                scitbx::af::const_ref<float> const & sigi_data);
-    float isig(void);
     scitbx::af::shared<float> isig_shells(void);
     scitbx::af::shared<cmil::index<int> > sorted_indices(void);
   };

@@ -37,7 +37,7 @@ namespace x2tbx {
   }
 
   i_sig_type
-  ObservationList::i_sigma(void)
+  ObservationList::get_i_sigma(void)
   {
     return i_sig_type(imean, sigimean);
   }
