@@ -32,21 +32,11 @@ def tst_x2tbx(mtz_file):
     print x2tbx.isig(i_data, sigi_data)
     print x2tbx.isig_proper(mi, i_data, sigi_data)
 
-    r = x2tbx.resolutionizer()
-    r.set_unit_cell(unit_cell.parameters())
+    r = x2tbx.ReflectionList()
     r.setup(mi, i_data, sigi_data)
-    print r.isig()
-
-    sorted_indices = r.sorted_indices()
-
-    for si in sorted_indices[:10]:
-        print si, unit_cell.d(si)
-
-    r.setup_shells(100)
-
-    isig = r.isig_shells()
-    for j, i in enumerate(isig):
-        print j, i
+    r.merge()
+    print r.i_sigma()
+    print r.rmerge()
 
     print 'OK'
 

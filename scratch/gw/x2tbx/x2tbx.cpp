@@ -79,6 +79,133 @@ namespace x2tbx {
     }
   }
 
+  ObservationList::ObservationList(void)
+  {
+    imean = 0.0;
+    sigimean = 0.0;
+  }
+
+  ObservationList::~ObservationList(void) { }
+
+  void
+  ObservationList::add(i_sig_type o)
+  {
+    observations.push_back(o);
+    imean = 0.0;
+    sigimean = 0.0;
+  }
+
+  void
+  ObservationList::merge(void)
+  {
+    CCTBX_ASSERT(observations.size() > 0);
+    float sum_wi = 0.0;
+    float sum_w = 0.0;
+
+    for(size_t j = 0; j < observations.size(); j ++) {
+      float i = observations[j][0];
+      float w = 1.0 / (observations[j][1] * observations[j][1]);
+      sum_w += w;
+      sum_wi += w * i;
+    }
+
+    imean = sum_wi / sum_w;
+    sigimean = 1.0 / sqrt(sum_w);
+  }
+
+  i_sig_type
+  ObservationList::i_sigma(void)
+  {
+    return i_sig_type(imean, sigimean);
+  }
+
+  size_t
+  ObservationList::multiplicity(void)
+  {
+    return observations.size();
+  }
+
+  float
+  ObservationList::rmerge(void)
+  {
+    CCTBX_ASSERT(observations.size() > 0);
+    CCTBX_ASSERT(sigimean > 0.0);
+    float sum_di = 0.0;
+
+    for(size_t j = 0; j < observations.size(); j ++) {
+      sum_di += fabs(observations[j][0] - imean);
+    }
+
+    return sum_di;
+  }
+
+  ReflectionList::ReflectionList(void) { };
+  ReflectionList::~ReflectionList(void) { };
+
+  void
+  ReflectionList::setup(miller_index_list_type indices,
+                        float_value_list_type i_data,
+                        float_value_list_type sigi_data)
+  {
+    CCTBX_ASSERT(indices.size() == i_data.size());
+    CCTBX_ASSERT(i_data.size() == sigi_data.size());
+
+    i_sig_type o;
+
+    for (size_t i = 0; i < i_data.size(); i++) {
+      o = i_sig_type(i_data[i], sigi_data[i]);
+      reflections[indices[i]].add(o);
+    }
+  }
+
+  void
+  ReflectionList::merge(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+
+    std::map<miller_index_type, ObservationList>::iterator r;
+
+    for(r = reflections.begin(); r != reflections.end(); ++r) {
+      (r->second).merge();
+    }
+  }
+
+  float
+  ReflectionList::i_sigma(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+
+    i_sig_type i_s;
+    float result = 0.0;
+    std::map<miller_index_type, ObservationList>::iterator r;
+
+    for(r = reflections.begin(); r != reflections.end(); ++r) {
+      i_s = (r->second).i_sigma();
+      result += i_s[0] / i_s[1];
+    }
+
+    return result / reflections.size();
+  }
+
+  float
+  ReflectionList::rmerge(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+
+    i_sig_type i_s;
+    float r_sum = 0.0, i_sum = 0;
+    std::map<miller_index_type, ObservationList>::iterator r;
+
+    for(r = reflections.begin(); r != reflections.end(); ++r) {
+      ObservationList o = r->second;
+
+      r_sum += o.rmerge();
+      i_sum += o.i_sigma()[0] * o.multiplicity();
+    }
+
+    return r_sum / i_sum;
+  }
+
   scitbx::af::shared<cmil::index<int> >
   resolutionizer::sorted_indices(void)
   {
@@ -140,7 +267,7 @@ namespace x2tbx {
 
     for (size_t j = 0; j < (nshells - 1); j ++) {
       s = shell(s_indices.begin() + j * n_per_shell,
-		s_indices.begin() + (j + 1) * n_per_shell);
+                s_indices.begin() + (j + 1) * n_per_shell);
       shells.push_back(s);
     }
 
@@ -208,4 +335,9 @@ BOOST_PYTHON_MODULE(x2tbx_ext)
     .def("sorted_indices", & x2tbx::resolutionizer::sorted_indices)
     .def("setup_shells", & x2tbx::resolutionizer::setup_shells)
     .def("isig_shells", & x2tbx::resolutionizer::isig_shells);
+  boost::python::class_<x2tbx::ReflectionList>("ReflectionList")
+    .def("setup", & x2tbx::ReflectionList::setup)
+    .def("merge", & x2tbx::ReflectionList::merge)
+    .def("i_sigma", & x2tbx::ReflectionList::i_sigma)
+    .def("rmerge", & x2tbx::ReflectionList::rmerge);
 }

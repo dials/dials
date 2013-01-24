@@ -44,6 +44,44 @@ namespace x2tbx {
 
   typedef std::vector<observation> observation_list;
 
+  typedef scitbx::af::tiny<float, 2> i_sig_type;
+
+  class ObservationList {
+  public:
+    ObservationList(void);
+    ~ObservationList(void);
+
+    void add(i_sig_type);
+    void merge(void);
+    i_sig_type i_sigma(void);
+    size_t multiplicity(void);
+    float rmerge(void);
+
+  private:
+    scitbx::af::shared<i_sig_type> observations;
+    float imean, sigimean;
+  };
+
+  typedef cmil::index<int> miller_index_type;
+  typedef scitbx::af::const_ref<miller_index_type> miller_index_list_type;
+  typedef scitbx::af::const_ref<float> float_value_list_type;
+
+  class ReflectionList {
+  public:
+    ReflectionList();
+    ~ReflectionList();
+
+    void setup(miller_index_list_type,
+               float_value_list_type,
+               float_value_list_type);
+    void merge(void);
+    float i_sigma(void);
+    float rmerge(void);
+
+  private:
+    std::map<miller_index_type, ObservationList> reflections;
+  };
+
   typedef std::map<cctbx::miller::index<int>, observation_list> \
     unmerged_reflections;
   typedef std::map<cctbx::miller::index<int>, observation_list>::iterator \
