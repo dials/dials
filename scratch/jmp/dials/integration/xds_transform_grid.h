@@ -49,54 +49,54 @@ public:
         size_[2] = 2 * origin_[2] + 1;
     
         // Calculate the step size of the grid
-        step_size_[0] = delta_divergence_ / size_[0];
+        step_size_[0] = delta_mosaicity_  / size_[0];
         step_size_[1] = delta_divergence_ / size_[1];
-        step_size_[2] = delta_mosaicity_  / size_[2];
+        step_size_[2] = delta_divergence_ / size_[2];
         
         // Allocate memory for the grid array
         data_ = scitbx::af::flex_double(scitbx::af::flex_grid <> (
-            n_ref, size_[2], size_[1], size_[0]));
+            n_ref, size_[0], size_[1], size_[2]));
     }
 
 public:
 
     /** Get the number of reflections */
-    std::size_t get_n_reflections() {
+    std::size_t get_n_reflections() const {
         return n_ref_;
     }
     
     /** Get the size of the individual grids */
-    scitbx::vec3 <std::size_t> get_size() {
+    scitbx::vec3 <std::size_t> get_size() const {
         return size_;
     }
 
     /** Get the grid origin */
-    scitbx::vec3 <std::size_t> get_origin() {
+    scitbx::vec3 <std::size_t> get_origin() const {
         return origin_;
     }
 
     /** Get the grid step sizes */
-    scitbx::vec3 <double> get_step_size() {
+    scitbx::vec3 <double> get_step_size() const {
         return step_size_;
     }
     
     /** Get the standard deviation of the beam divergence */
-    double get_sigma_divergence() {
+    double get_sigma_divergence() const {
         return sigma_divergence_;
     }
     
     /** Get the standard deviation of the mosaicity */
-    double get_sigma_mosaicity() {
+    double get_sigma_mosaicity() const {
         return sigma_mosaicity_;
     }
     
     /** Get the multiple of the standard deviation of the beam divergence */
-    double get_delta_divergence() {
+    double get_delta_divergence() const {
         return delta_divergence_;
     }
     
     /** Get the multiple of the standard deviation of the mosaicity */
-    double get_delta_mosaicity() {
+    double get_delta_mosaicity() const {
         return delta_mosaicity_;
     }
 

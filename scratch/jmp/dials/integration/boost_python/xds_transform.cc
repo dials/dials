@@ -11,27 +11,33 @@ namespace boost_python {
 
 void export_xds_transform() 
 {
+    void (XdsTransform::*calculate_single)(int, scitbx::af::tiny <int, 6>,
+        scitbx::vec3 <double>, double) = &XdsTransform::calculate;
+
+    void (XdsTransform::*calculate_array)(const af::flex_tiny6_int &,
+        const af::flex_vec3_double &, const scitbx::af::flex_double &) = 
+            &XdsTransform::calculate;
+
     class_ <XdsTransform> ("XdsTransform")
-        .def(init <XdsTransformGrid,
-                   scitbx::af::flex_int,
-                   scitbx::vec3 <int>,
+        .def(init <XdsTransformGrid &,
+                   const scitbx::af::flex_int &,
                    const equipment::Detector&,
                    const equipment::Beam&,
                    const equipment::Goniometer&,
-                   scitbx::vec3 <int>,
                    int > ((
                 arg("xds_grid"),
                 arg("image"),
-                arg("image_size"),
                 arg("detector"),
                 arg("beam"),
                 arg("goniometer"),
-                arg("roi_size"), 
                 arg("n_div") = 5)))
-        .def("calculate",
-            &XdsTransform::calculate, (
+        .def("calculate", calculate_single, (
                 arg("reflection_index"),
-                arg("xyz"),
+                arg("roi"),
+                arg("s1"),
+                arg("phi")))
+        .def("calculate", calculate_array, (
+                arg("roi"),
                 arg("s1"),
                 arg("phi")));
 }
