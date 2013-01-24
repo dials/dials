@@ -9,7 +9,7 @@
 #include "../error.h"
 #include "background_intensity.h"
 
-namespace dials { namespace spot_prediction {
+namespace dials { namespace integration {
 
 /** flex array of vec3 doubles */
 typedef scitbx::af::flex <scitbx::vec3 <double> >::type flex_vec3_double;

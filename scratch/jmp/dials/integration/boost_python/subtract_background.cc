@@ -5,7 +5,7 @@
 
 using namespace boost::python;
 
-namespace dials { namespace spot_prediction { 
+namespace dials { namespace integration { 
 
 namespace boost_python {
 

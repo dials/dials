@@ -182,8 +182,7 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     print "Creating reflection mask"
     start_time = time()
     reflection_mask = ReflectionMask(image_volume.shape)
-    reflection_mask.create(image_volume_coords, 
-                           region_of_interest)
+    reflection_mask.create(image_volume_coords, region_of_interest)
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
      

@@ -8,7 +8,7 @@
 #include <scitbx/math/mean_and_variance.h>
 #include "../error.h"
 
-namespace dials { namespace spot_prediction {
+namespace dials { namespace integration {
 
 /** A class to calculate the background intensity of the reflection profile */
 class BackgroundIntensity {

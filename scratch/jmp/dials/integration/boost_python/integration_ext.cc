@@ -10,11 +10,15 @@ namespace boost_python {
 
 void export_reflection_mask_roi();
 void export_reflection_mask();
+void export_background_intensity();
+void export_subtract_background();
 
 BOOST_PYTHON_MODULE(dials_integration_ext)
 {
     export_reflection_mask_roi();
     export_reflection_mask();
+    export_background_intensity();
+    export_subtract_background();
 }
 
 } // namespace = boost_python
