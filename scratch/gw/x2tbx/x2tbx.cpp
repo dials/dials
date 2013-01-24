@@ -5,59 +5,59 @@ namespace x2tbx {
   {
     float sum_wi = 0.0;
     float sum_w = 0.0;
-    
+
     for (size_t j = 0; j < ol.size(); j ++) {
       float i = ol[j].I;
       float w = 1.0 / (ol[j].sigI * ol[j].sigI);
       sum_w += w;
       sum_wi += w * i;
     }
-    
+
     merged_isig result;
     result.I = sum_wi / sum_w;
     result.sigI = sqrt(1.0 / sum_w);
     return result;
   }
-  
+
   static float
-  isig_proper(scitbx::af::const_ref<cmil::index<int> > const & indices,
-	      scitbx::af::const_ref<float> const & i_data,
-	      scitbx::af::const_ref<float> const & sigi_data)
+  isig_proper(scitbx::af::shared<cmil::index<int> > const & indices,
+              scitbx::af::shared<float> const & i_data,
+              scitbx::af::shared<float> const & sigi_data)
   {
     float result = 0.0;
-    
+
     unmerged_reflections ur;
     unmerged_reflections_iterator uri;
     observation o;
-    
+
     CCTBX_ASSERT(indices.size() == i_data.size());
     CCTBX_ASSERT(i_data.size() == sigi_data.size());
-    
+
     for (size_t i = 0; i < i_data.size(); i++) {
       o.I = i_data[i];
       o.sigI = sigi_data[i];
       o.property = 0.0;
       o.flag = 0;
-      
+
       ur[indices[i]].push_back(o);
     }
-    
+
     int unique = 0;
-    
+
     for (uri = ur.begin(); uri != ur.end(); ++uri) {
       merged_isig mi = merge(uri->second);
       result += mi.I / mi.sigI;
       unique += 1;
     }
-    
+
     return result / unique;
   }
-  
+
   void init_module(void)
   {
     using namespace boost::python;
     def("isig_proper", isig_proper,
-	(arg("indices"), arg("i_data"), arg("sigi_data")));
+        (arg("indices"), arg("i_data"), arg("sigi_data")));
   }
 
   scitbx::af::shared<cmil::index<int> >
@@ -89,9 +89,9 @@ namespace x2tbx {
   }
 
   void
-  resolutionizer::setup(scitbx::af::const_ref<cmil::index<int> > const & indices,
-                        scitbx::af::const_ref<float> const & i_data,
-                        scitbx::af::const_ref<float> const & sigi_data)
+  resolutionizer::setup(scitbx::af::shared<cmil::index<int> > const & indices,
+                        scitbx::af::shared<float> const & i_data,
+                        scitbx::af::shared<float> const & sigi_data)
   {
     CCTBX_ASSERT(indices.size() == i_data.size());
     CCTBX_ASSERT(i_data.size() == sigi_data.size());
@@ -161,4 +161,3 @@ namespace x2tbx {
 
 
 } // namespace x2tbx::ext
-

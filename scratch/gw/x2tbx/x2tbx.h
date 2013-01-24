@@ -65,8 +65,8 @@ namespace x2tbx {
   };
 
   typedef cmil::index<int> miller_index_type;
-  typedef scitbx::af::const_ref<miller_index_type> miller_index_list_type;
-  typedef scitbx::af::const_ref<float> float_value_list_type;
+  typedef scitbx::af::shared<miller_index_type> miller_index_list_type;
+  typedef scitbx::af::shared<float> float_value_list_type;
 
   class ReflectionList {
   public:
@@ -76,12 +76,20 @@ namespace x2tbx {
     void setup(miller_index_list_type,
                float_value_list_type,
                float_value_list_type);
+    void set_unit_cell(scitbx::af::tiny<double, 6>);
+
+    miller_index_list_type get_indices(void);
+    void setup_resolution_shells(size_t);
+
     void merge(void);
     float i_sigma(void);
     float rmerge(void);
 
   private:
+    cuc::unit_cell unit_cell;
     std::map<miller_index_type, ObservationList> reflections;
+    std::vector<miller_index_list_type> shells;
+    miller_index_list_type unique_indices;
   };
 
   typedef std::map<cmil::index<int>, observation_list> \
@@ -111,9 +119,9 @@ namespace x2tbx {
     bool compare_resolution(cmil::index<int> const & a,
                             cmil::index<int> const & b);
     void set_unit_cell(scitbx::af::tiny<double, 6> new_unit_cell);
-    void setup(scitbx::af::const_ref<cmil::index<int> > const & indices,
-               scitbx::af::const_ref<float> const & i_data,
-               scitbx::af::const_ref<float> const & sigi_data);
+    void setup(scitbx::af::shared<cmil::index<int> > const & indices,
+               scitbx::af::shared<float> const & i_data,
+               scitbx::af::shared<float> const & sigi_data);
     scitbx::af::shared<float> isig_shells(void);
     scitbx::af::shared<cmil::index<int> > sorted_indices(void);
   };

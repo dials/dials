@@ -37,6 +37,11 @@ def tst_x2tbx(mtz_file):
     print r.i_sigma()
     print r.rmerge()
 
+    indices = r.get_indices()
+    print len(indices)
+
+    r.setup_resolution_shells(100)
+
     print 'OK'
 
 if __name__ == '__main__':
