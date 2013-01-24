@@ -267,14 +267,15 @@ public:
      * Initialise the transform.
      * @param grid The transform grid container
      * @param image The raw image volume
+     * @param mask THe reflection mask
      * @param detector The detector struct
      * @param beam The beam struct
      * @param gonio The goniometer struct
-     * @param roi_size The region of interest to select
      * @param n_div The number of pixel sub divisions to use (default 5)
      */
     XdsTransform(XdsTransformGrid &grid,
                  const scitbx::af::flex_int &image,
+                 const scitbx::af::flex_int &mask,
                  const equipment::Detector &detector,
                  const equipment::Beam &beam,
                  const equipment::Goniometer &gonio,
@@ -287,6 +288,7 @@ public:
                 n_div).calculate()),
           grid_(grid),
           image_(image),
+          mask_(mask),
           grid_size_(grid.get_size()),
           grid_origin_(grid.get_origin()),
           step_size_(grid.get_step_size()),
@@ -333,6 +335,7 @@ private:
     af::flex_vec3_double detector_s1_;
     XdsTransformGrid grid_;
     scitbx::af::flex_int image_;
+    scitbx::af::flex_int mask_;
     scitbx::vec3 <int> image_size_;
     scitbx::vec3 <int> roi_size_;
     scitbx::vec3 <int> grid_size_;
@@ -441,13 +444,17 @@ void XdsTransform::calculate(int reflection_index,
             int image_index = x + y * image_stride_x + z0 * image_stride_y;
             int fraction_index = 0;
             for (int z = z0; z <= z1; ++z) {
-                int value = image_[image_index] * div_fraction;
-                int grid_index = grid_offset + gi + gj * grid_stride_c1;
-                for (int gk = 0; gk < grid_size_[0]; ++gk) {
-                    grid[grid_index] += value * fraction[fraction_index];
-                    grid_index += grid_stride_c2;
-                    fraction_index++;
-                }                        
+                if (mask_[image_index] == reflection_index) {
+                    int value = image_[image_index] * div_fraction;
+                    int grid_index = grid_offset + gi + gj * grid_stride_c1;
+                    for (int gk = 0; gk < grid_size_[0]; ++gk) {
+                        grid[grid_index] += value * fraction[fraction_index];
+                        grid_index += grid_stride_c2;
+                        fraction_index++;
+                    }
+                } else {
+                    fraction_index += grid_size_[0];
+                }
                 image_index += image_stride_y;
             }
         }

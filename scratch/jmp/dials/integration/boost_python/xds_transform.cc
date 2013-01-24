@@ -21,12 +21,14 @@ void export_xds_transform()
     class_ <XdsTransform> ("XdsTransform")
         .def(init <XdsTransformGrid &,
                    const scitbx::af::flex_int &,
+                   const scitbx::af::flex_int &,
                    const equipment::Detector&,
                    const equipment::Beam&,
                    const equipment::Goniometer&,
                    int > ((
                 arg("xds_grid"),
                 arg("image"),
+                arg("mask"),
                 arg("detector"),
                 arg("beam"),
                 arg("goniometer"),

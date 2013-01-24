@@ -83,6 +83,7 @@ def extract_reflection_profiles(paths):
     xds_grid = XdsTransformGrid(1, (4, 4, 4), sigma_d, sigma_m)
     xds_trans = XdsTransform(xds_grid,
                              image_volume,
+                             reflection_mask.mask,
                              detector,
                              beam,
                              gonio)
