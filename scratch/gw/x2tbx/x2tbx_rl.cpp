@@ -45,23 +45,34 @@ namespace x2tbx {
   ReflectionList::setup_resolution_shells(size_t n_shells)
   {
     shells.clear();
+    high_limits.clear();
+    low_limits.clear();
+
     std::sort(unique_indices.begin(), unique_indices.end(),
               sorter_by_resolution(unit_cell));
 
     size_t n_per_shell = unique_indices.size() / n_shells;
 
     miller_index_list_type s;
+    miller_index_list_type::iterator shell_start, shell_end;
 
     for (size_t j = 0; j < (n_shells - 1); j ++) {
-      s = miller_index_list_type(unique_indices.begin() + j * n_per_shell,
-                                 unique_indices.begin() + (j + 1) * n_per_shell);
+      shell_start = unique_indices.begin() + j * n_per_shell;
+      shell_end = unique_indices.begin() + (j + 1) * n_per_shell;
+      s = miller_index_list_type(shell_start, shell_end);
       shells.push_back(s);
+
+      // and update the resolution shells
+      high_limits.push_back(unit_cell.d(s[0]));
+      low_limits.push_back(unit_cell.d(s[s.size() - 1]));
     }
 
     s = miller_index_list_type(unique_indices.begin() +
                                (n_shells - 1) * n_per_shell,
                                unique_indices.end());
     shells.push_back(s);
+    high_limits.push_back(unit_cell.d(s[0]));
+    low_limits.push_back(unit_cell.d(s[s.size() - 1]));
 
     size_t n_tot = 0;
     for(size_t i = 0; i < shells.size(); i++) {
@@ -70,6 +81,25 @@ namespace x2tbx {
 
     CCTBX_ASSERT(unique_indices.size() == n_tot);
 
+  }
+
+  miller_index_list_type
+  ReflectionList::get_shell(size_t shell)
+  {
+    CCTBX_ASSERT(shell < shells.size());
+    return shells[shell];
+  }
+
+  scitbx::af::shared<float>
+  ReflectionList::shell_high_limits(void)
+  {
+    return high_limits;
+  }
+
+  scitbx::af::shared<float>
+  ReflectionList::shell_low_limits(void)
+  {
+    return low_limits;
   }
 
   void

@@ -31,6 +31,7 @@ def tst_x2tbx(mtz_file):
 
     r = x2tbx.ReflectionList()
     r.setup(mi, i_data, sigi_data)
+    r.set_unit_cell(unit_cell.parameters())
     r.merge()
     print r.i_sigma()
     print r.rmerge()
@@ -38,7 +39,21 @@ def tst_x2tbx(mtz_file):
     indices = r.get_indices()
     print len(indices), len(mi)
 
-    r.setup_resolution_shells(100)
+    n_shells = 100
+
+    r.setup_resolution_shells(n_shells)
+
+    high = r.shell_high_limits()
+    low = r.shell_low_limits()
+
+    n_tot = 0
+
+    for j in range(n_shells):
+        shell = r.get_shell(j)
+        print '%.3f %.3f %4d' % (high[j], low[j], len(shell))
+        n_tot += len(shell)
+
+    assert(n_tot == len(indices))
 
     print 'OK'
 

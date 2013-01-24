@@ -84,12 +84,18 @@ namespace x2tbx {
     void merge(void);
     float i_sigma(void);
     float rmerge(void);
+    scitbx::af::shared<float> shell_high_limits(void);
+    scitbx::af::shared<float> shell_low_limits(void);
+    miller_index_list_type get_shell(size_t);
 
   private:
     cuc::unit_cell unit_cell;
     std::map<miller_index_type, ObservationList> reflections;
     std::vector<miller_index_list_type> shells;
     miller_index_list_type unique_indices;
+    scitbx::af::shared<float> high_limits;
+    scitbx::af::shared<float> low_limits;
+
   };
 
   struct sorter_by_resolution {
