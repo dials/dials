@@ -2,7 +2,7 @@ from __future__ import division
 import scitbx.array_family.flex # explicit import
 import cctbx.uctbx # explicit import
 
-def resolutionizer(mtz_file):
+def resolutionizer(mtz_file, n_shells = 30):
     import x2tbx
     from iotbx import mtz
 
@@ -29,11 +29,31 @@ def resolutionizer(mtz_file):
     assert(i_data)
     assert(sigi_data)
 
-    r = x2tbx.resolutionizer()
-    r.set_unit_cell(unit_cell.parameters())
+    r = x2tbx.ReflectionList()
     r.setup(mi, i_data, sigi_data)
-    print r.isig()
+    r.set_unit_cell(unit_cell.parameters())
+    r.merge()
+
+    r.setup_resolution_shells(n_shells)
+
+    high = r.shell_high_limits()
+    low = r.shell_low_limits()
+
+    rmerges = r.rmerge_shells()
+    isigmas = r.i_sigma_shells()
+    tisigmas = r.total_i_sigma_shells()
+
+    print 'High   Low    Nref  Rmerge Mn(I/s) I/s'
+    for j in range(n_shells):
+        shell = r.get_shell(j)
+        print '%.3f %6.3f %5d %.3f %6.2f %6.2f' % (
+            high[j], low[j], len(shell), rmerges[j], isigmas[j], tisigmas[j])
+
+    return
 
 if __name__ == '__main__':
     import sys
-    resolutionizer(sys.argv[1])
+    if len(sys.argv) < 3:
+        resolutionizer(sys.argv[1])
+    else:
+        resolutionizer(sys.argv[1], n_shells = int(sys.argv[2]))

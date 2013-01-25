@@ -39,7 +39,7 @@ def tst_x2tbx(mtz_file):
     indices = r.get_indices()
     print len(indices), len(mi)
 
-    n_shells = 20
+    n_shells = 30
 
     r.setup_resolution_shells(n_shells)
 
