@@ -1,6 +1,4 @@
 from __future__ import division
-import scitbx.array_family.flex # explicit import
-import cctbx.uctbx # explicit import
 
 def resolutionizer(mtz_file, n_shells = 30):
     import x2tbx

@@ -2,16 +2,7 @@
  *
  * a toolbox to gracefully handle unmerged reflections for (in the first
  * instance) calculations in PyChef and resolution limits. N.B. will have
- * fundamental data structures:
- *
- * observation - float I, float sigI (at the moment) as a tiny array
- *
- * unmerged_reflections - map(cctbx::miller::index, std::vector<observation>)
- *
- * though ideally want these nicely available from Python too (though that I
- * can live without.)
- *
- * first task try just implementing one calculation for e.g. resolution limits.
+ * fundamental data structures in ObservationList and ReflectionList classes.
  *
  */
 
@@ -27,9 +18,6 @@
 #include <map>
 #include <algorithm>
 #include <vector>
-
-namespace cmil = cctbx::miller;
-namespace cuc = cctbx::uctbx;
 
 namespace x2tbx {
 
@@ -63,7 +51,7 @@ namespace x2tbx {
     float imean_, sigimean_, total_i_sigi_;
   };
 
-  typedef cmil::index<int> miller_index_type;
+  typedef cctbx::miller::index<int> miller_index_type;
   typedef scitbx::af::shared<miller_index_type> miller_index_list_type;
   typedef scitbx::af::shared<float> float_value_list_type;
 
@@ -96,7 +84,7 @@ namespace x2tbx {
     miller_index_list_type get_shell(size_t);
 
   private:
-    cuc::unit_cell unit_cell_;
+    cctbx::uctbx::unit_cell unit_cell_;
     std::map<miller_index_type, ObservationList> reflections_;
     std::vector<miller_index_list_type> shells_;
     miller_index_list_type unique_indices_;
@@ -112,11 +100,11 @@ namespace x2tbx {
    */
 
   struct sorter_by_resolution {
-    cuc::unit_cell unit_cell;
-    sorter_by_resolution(cuc::unit_cell new_unit_cell):
+    cctbx::uctbx::unit_cell unit_cell;
+    sorter_by_resolution(cctbx::uctbx::unit_cell new_unit_cell):
       unit_cell(new_unit_cell) { }
-    bool operator() (cmil::index<int> const & a,
-                     cmil::index<int> const & b)
+    bool operator() (cctbx::miller::index<int> const & a,
+                     cctbx::miller::index<int> const & b)
     {
       return unit_cell.d(a) < unit_cell.d(b);
     }

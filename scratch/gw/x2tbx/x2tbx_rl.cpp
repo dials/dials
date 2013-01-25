@@ -56,7 +56,7 @@ namespace x2tbx {
   void
   ReflectionList::set_unit_cell(scitbx::af::tiny<double, 6> unit_cell_params)
   {
-    unit_cell_ = cuc::unit_cell(unit_cell_params);
+    unit_cell_ = cctbx::uctbx::unit_cell(unit_cell_params);
   }
 
   /**

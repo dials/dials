@@ -1,6 +1,4 @@
 from __future__ import division
-import scitbx.array_family.flex # explicit import
-import cctbx.uctbx # explicit import
 
 def tst_x2tbx(mtz_file):
     import x2tbx
