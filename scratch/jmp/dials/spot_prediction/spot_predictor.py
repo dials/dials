@@ -61,14 +61,14 @@ class SpotPredictor(object):
     @property
     def image_volume_coordinates(self):
         """Get the calculated image volume coordinates."""
-        return self._image_volume_coords
+        return self._image_coords
     
     def reset(self):
         """Reset the internal arrays to None."""
         self._miller_indices = None
         self._rotation_angles = None
         self._beam_vectors = None
-        self._image_volume_coords = None
+        self._image_coords = None
     
     def predict_spots(self):
         """Predict the spot locations on the image detector.
@@ -113,53 +113,46 @@ class SpotPredictor(object):
         self.reset()
 
         # Generate the miller indices
-        miller_indices = self.__generate_miller_indices()
+        self.__generate_miller_indices()
         
         # Calculate the set of valid rotation angles and miller indices and
         # remove the invalid miller indices and rotation angles and create 
         # an array of miller indices and rotation angles that correspond
-        is_valid_angle = flex.bool()
-        rotation_angles = self.__calculate_rotation_angles(miller_indices, is_valid_angle)
-        miller_indices = flex.remove_if_not(miller_indices, is_valid_angle)
-        rotation_angles_a = flex.remove_if_not(rotation_angles[0:1,:].as_1d(), is_valid_angle)
-        rotation_angles_b = flex.remove_if_not(rotation_angles[1:2,:].as_1d(), is_valid_angle)
-        miller_indices = miller_indices.concatenate(miller_indices)
-        rotation_angles = rotation_angles_a.concatenate(rotation_angles_b)        
-        
+        self.__rejig_miller_and_rotation_angle_arrays(
+                self.__calculate_rotation_angles())
+
         # Filter the angles and miller indices with the rotation range
-        in_rotation_range = self.__filter_angles_in_rotation_range(rotation_angles)
-        rotation_angles = flex.remove_if_not(rotation_angles, in_rotation_range)
-        miller_indices  = flex.remove_if_not(miller_indices, in_rotation_range)        
+        self.__filter_reflections(self.__filter_angles_in_rotation_range())       
         
         # Calculate the beam vectors
-        beam_vectors = self.__calculate_reciprocal_space_vectors(
-                            miller_indices, rotation_angles) + self._beam.direction
+        self._beam_vectors = self.__calculate_reciprocal_space_vectors() \
+                           + self._beam.direction
 
         # Calculate the image volume coordinates and keep only those array 
         # elements that have a valid image coordinate
-        is_valid_coord = flex.bool()
-        image_volume_coords = self.__calculate_image_volume_coordinates(
-                                beam_vectors, rotation_angles, is_valid_coord)
-        miller_indices = flex.remove_if_not(miller_indices, is_valid_coord)
-        rotation_angles = flex.remove_if_not(rotation_angles, is_valid_coord)
-        beam_vectors = flex.remove_if_not(beam_vectors, is_valid_coord)
-        image_volume_coords = flex.remove_if_not(image_volume_coords, is_valid_coord)
-
+        self.__filter_reflections(self.__calculate_image_volume_coordinates())
+ 
         # Filter the image volume coordinates and remove any invalid spots to 
         # leave the valid ones remaining
-        is_valid_coord = self.__filter_image_volume_coordinates(image_volume_coords)
-        self._miller_indices = flex.remove_if_not(miller_indices, is_valid_coord)
-        self._rotation_angles = flex.remove_if_not(rotation_angles, is_valid_coord)
-        self._beam_vectors = flex.remove_if_not(beam_vectors, is_valid_coord)
-        self._image_volume_coords = flex.remove_if_not(image_volume_coords, is_valid_coord)
+        self.__filter_reflections(self.__filter_image_volume_coordinates())
  
+    def __filter_array(self, array, keep):
+        """Check the array is not null then remove the selected elements."""
+        from dials.array_family import flex
+        if array:
+            return flex.remove_if_not(array, keep)
+        else:
+            return None
+
+    def __filter_reflections(self, keep):
+        """Remove elements from the reflecton arrays"""
+        self._miller_indices  = self.__filter_array(self._miller_indices,  keep)
+        self._rotation_angles = self.__filter_array(self._rotation_angles, keep)
+        self._beam_vectors    = self.__filter_array(self._beam_vectors,    keep)
+        self._image_coords    = self.__filter_array(self._image_coords,    keep)
+  
     def __generate_miller_indices(self):
-        """Generate a list of miller indices.
-        
-        Returns:
-            An array of miller indices
-        
-        """
+        """Generate a list of miller indices."""
         from dials.spot_prediction import IndexGenerator
 
         # Create the index generator
@@ -169,25 +162,22 @@ class SpotPredictor(object):
                                          self._d_min)
         
         # Generate and return the miller indices
-        return index_generator.to_array()
+        self._miller_indices = index_generator.to_array()
 
-    def __calculate_rotation_angles(self, miller_indices, status):
+    def __calculate_rotation_angles(self):
         """Calculate the rotation angles for the given miller indices at which
         the diffracting condition is met.
         
         The function returns the rotation angles in an array of the form
         angles = flex.int(flex.grid(2, n)). The angles for a given miller index
         can be found at angles[0,i] and angles[1,i]
-        
-        Args:
-            miller_indices The array of miller indices
-            status Boolean array, were rotation angles calculated
-            
+
         Returns:
             
-            A 2xn array of rotation angles .
+            Boolean array, True/False are angles valid
         
         """
+        from dials.array_family import flex
         from dials.spot_prediction import RotationAngles
 
         # Create the rotation angle calculator
@@ -197,14 +187,43 @@ class SpotPredictor(object):
                                                    self._goniometer.rotation_axis)
 
         # Calculate and return the rotation angles
-        return rotation_angle_calculator.calculate(miller_indices, status)
+        status = flex.bool()
+        self._rotation_angles = rotation_angle_calculator.calculate(
+            self.miller_indices, status)
 
-    def __filter_angles_in_rotation_range(self, rotation_angles):
-        """Check if each angle is within the rotation range.
+        # Return the status
+        return status
+
+    def __rejig_miller_and_rotation_angle_arrays(self, is_valid_angle):
+        """Rejig the miller indices and rotation angles arrays to remove
+        any elements corresponding to back rotation angles. Then rejig the
+        arrays to make sure that for each element the miller index corresponds
+        to the rotation angle.
         
         Args:
-            rotation_angles The list of rotation angles
+            is_valid_angle Is the angle valid (boolean array)
+               
+        """
+        from dials.array_family import flex
         
+        # Remove the invalid angles from the miller index array and add the 
+        # array onto the end of itself.
+        self._miller_indices = flex.remove_if_not(self.miller_indices, 
+                                                  is_valid_angle)
+        self._miller_indices = self.miller_indices.concatenate(self.miller_indices)
+
+        # Remove rotation angles which are invalid and concatenate the arrays
+        # so that we have a 1d array where for each element the angle matches
+        # the miller indices at the same element in miller_indices
+        rotation_angles_a = flex.remove_if_not(
+            self.rotation_angles[0:1,:].as_1d(), is_valid_angle)
+        rotation_angles_b = flex.remove_if_not(
+            self.rotation_angles[1:2,:].as_1d(), is_valid_angle)
+        self._rotation_angles = rotation_angles_a.concatenate(rotation_angles_b)
+
+    def __filter_angles_in_rotation_range(self):
+        """Check if each angle is within the rotation range.
+                
         Returns:
             A boolean array, are the angles in the rotation range
         
@@ -218,16 +237,11 @@ class SpotPredictor(object):
                             self._goniometer.num_frames))        
 
         # Check which angles are in the rotation range
-        return is_angle_in_range(rotation_angles, rotation_range)
+        return is_angle_in_range(self.rotation_angles, rotation_range)
 
-    def __calculate_reciprocal_space_vectors(self, miller_indices, 
-                                             rotation_angles):
+    def __calculate_reciprocal_space_vectors(self):
         """Calculate the reciprocal space vectors of the given miller indices.
-        
-        Args:
-            miller_indices The array of miller indices
-            rotation_angles The array of rotation angles
-            
+                    
         Returns:
             An array of reciprocal space vectors
         
@@ -239,23 +253,18 @@ class SpotPredictor(object):
                                        self._goniometer.rotation_axis)
         
         # Calculate and return the set of reciprocal space vectors
-        return from_hkl_to_rsv.apply(miller_indices, rotation_angles)
+        return from_hkl_to_rsv.apply(self.miller_indices, self.rotation_angles)
 
-    def __calculate_image_volume_coordinates(self, beam_vectors, 
-                                             rotation_angles, status):
+    def __calculate_image_volume_coordinates(self):
         """Calculate the image volume coordinates for the given beam vectors.
         
         The z coordinate is zero-based
-        
-        Args:
-            beam_vectors The array of beam vectors
-            rotation_angles The array of rotation angles
-            status Boolean array, was calculation successful
-            
+                    
         Returns:
-            An array of (x, y, z) image volume coordinates
+            An boolean array containing True/False status for each element
         
         """
+        from dials.array_family import flex
         from dials.geometry.transform import FromBeamVectorToImageVolume
 
         # Construct the s1 -> xyz transform
@@ -263,14 +272,15 @@ class SpotPredictor(object):
                                             self._detector, self._goniometer)
         
         # Calculate and return the image volume coordinates
-        return from_beam_vector_to_image_volume.apply(
-                beam_vectors, rotation_angles, status)
+        status = flex.bool()
+        self._image_coords = from_beam_vector_to_image_volume.apply(
+                self.beam_vectors, self.rotation_angles, status)
 
-    def __filter_image_volume_coordinates(self, image_volume_coords):
+        # Return the status
+        return status
+
+    def __filter_image_volume_coordinates(self):
         """Check if the image volume coordinates are within the image volume.
-                
-        Args:
-            image_volume_coords The image volume coordinates
         
         Returns:
             A boolean array, are the coordinates within the image volume.
@@ -284,5 +294,5 @@ class SpotPredictor(object):
         range_z = (0, self._goniometer.num_frames)
 
         # Return an array in volume True/False
-        return in_volume(image_volume_coords, range_x, range_y, range_z)
+        return in_volume(self._image_coords, range_x, range_y, range_z)
 

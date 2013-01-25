@@ -13,7 +13,7 @@ def filter_reflections_by_roi_volume(region_of_interest, percent):
         A boolean array, True/False is the roi valid
     
     """
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     from heapq import nlargest
 
     # Check given percentage
