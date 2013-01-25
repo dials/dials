@@ -48,11 +48,12 @@ class GxParmFile:
         
         """
         from dials.equipment import Goniometer
-        from math import pi
-        d2r = pi / 180.0
-        return Goniometer(self.rotation_axis,
-                          self.starting_angle * d2r,
-                          self.oscillation_range * d2r,
+        from scitbx import matrix
+        #from math import pi
+        #d2r = pi / 180.0
+        return Goniometer(matrix.col(self.rotation_axis).normalize().elems,
+                          self.starting_angle,# * d2r,
+                          self.oscillation_range,# * d2r,
                           int(self.starting_frame))
         
     def get_beam(self):
@@ -75,9 +76,10 @@ class GxParmFile:
         
         """    
         from dials.equipment import Detector
-        return Detector(self.detector_x_axis,
-                        self.detector_y_axis,
-                        self.detector_normal,
+        from scitbx import matrix
+        return Detector(matrix.col(self.detector_x_axis).normalize().elems,
+                        matrix.col(self.detector_y_axis).normalize().elems,
+                        matrix.col(self.detector_normal).normalize().elems,
                         self.detector_origin,
                         self.pixel_size,
                         self.detector_size,
@@ -185,6 +187,7 @@ class IntegrateFile:
         :param name_value: The name, value parameter dict
         
         """
+        from scitbx import matrix
         self.space_group       = self._header['SPACE_GROUP_NUMBER']
         self.unit_cell         = self._header['UNIT_CELL_CONSTANTS']
         self.detector_size     = (self._header['NX'], self._header['NY'])
@@ -196,7 +199,7 @@ class IntegrateFile:
         self.wavelength        = self._header['X-RAY_WAVELENGTH']
         self.beam_vector       = self._header['INCIDENT_BEAM_DIRECTION']
         self.detector_x_axis   = self._header['DIRECTION_OF_DETECTOR_X-AXIS']
-        self.detector_x_axis   = self._header['DIRECTION_OF_DETECTOR_Y-AXIS']
+        self.detector_y_axis   = self._header['DIRECTION_OF_DETECTOR_Y-AXIS']
         self.detector_origin   = (self._header['ORGX'], self._header['ORGY'])
         self.detector_distance = self._header['DETECTOR_DISTANCE']
         self.unit_cell_a_axis  = self._header['UNIT_CELL_A-AXIS']
@@ -204,7 +207,15 @@ class IntegrateFile:
         self.unit_cell_c_axis  = self._header['UNIT_CELL_C-AXIS']
         self.sigma_divergence  = self._header['BEAM_DIVERGENCE_E.S.D.']
         self.sigma_mosaicity   = self._header['REFLECTING_RANGE_E.S.D.']
-        self._header = None
+ 
+        # Normalize a few vectors
+        self.detector_x_axis   = tuple(matrix.col(self.detector_x_axis).normalize())
+        self.detector_y_axis   = tuple(matrix.col(self.detector_y_axis).normalize())
+        self.detector_normal   = tuple(matrix.col(self.detector_x_axis).cross(
+                                    matrix.col(self.detector_y_axis)))
+        self.rotation_axis     = tuple(matrix.col(self.rotation_axis).normalize())
+        self.beam_vector       = tuple(matrix.col(self.beam_vector).normalize() / self.wavelength)
+        del(self._header)
 
 
     def _parse_header_line(self, line):
@@ -253,3 +264,57 @@ class IntegrateFile:
         self.alfbet1.append(tuple(tokens[17:19]))
         self.psi    .append(tokens[19])
         
+    def get_goniometer(self):
+        """Get the goniometer parameters from the file
+        
+        Returns:
+            An instance of the goniometer struct
+        
+        """
+        from dials.equipment import Goniometer
+        #from math import pi
+        #d2r = pi / 180.0
+        return Goniometer(self.rotation_axis,
+                          self.starting_angle,
+                          self.oscillation_range,
+                          int(self.starting_frame))
+        
+    def get_beam(self):
+        """Get the beam parameters from the file
+        
+        Returns:
+            An instance of the beam struct
+        
+        """
+        from dials.equipment import Beam
+        from scitbx import matrix
+        return Beam(matrix.col(self.beam_vector).normalize() / self.wavelength, 
+                    self.wavelength)
+        
+    def get_detector(self):
+        """Get the detector parameters from the file
+        
+        Returns:
+            An instance of the detector struct
+        
+        """    
+        from dials.equipment import Detector
+        return Detector(self.detector_x_axis,
+                        self.detector_y_axis,
+                        self.detector_normal,
+                        self.detector_origin,
+                        self.pixel_size,
+                        self.detector_size,
+                        self.detector_distance)
+                                          
+    def get_ub_matrix(self):
+        """Get the UB matrix
+        
+        Returns:
+            The UB matrix
+        
+        """
+        from scitbx import matrix
+        return matrix.sqr(self.unit_cell_a_axis + 
+                          self.unit_cell_b_axis + 
+                          self.unit_cell_c_axis)

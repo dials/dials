@@ -128,6 +128,12 @@ class SpotPredictor(object):
         self._beam_vectors = self.__calculate_reciprocal_space_vectors() \
                            + self._beam.direction
 
+        print self._goniometer
+
+        from scitbx import matrix
+        print (matrix.col(self._beam.direction).length(), 1.0 / self._beam.wavelength, 
+            matrix.col(self._beam_vectors[0]).length())
+
         # Calculate the image volume coordinates and keep only those array 
         # elements that have a valid image coordinate
         self.__filter_reflections(self.__calculate_image_volume_coordinates())
@@ -135,7 +141,7 @@ class SpotPredictor(object):
         # Filter the image volume coordinates and remove any invalid spots to 
         # leave the valid ones remaining
         self.__filter_reflections(self.__filter_image_volume_coordinates())
- 
+         
     def __filter_array(self, array, keep):
         """Check the array is not null then remove the selected elements."""
         from dials.array_family import flex
@@ -179,6 +185,7 @@ class SpotPredictor(object):
         """
         from dials.array_family import flex
         from dials.spot_prediction import RotationAngles
+        from math import pi
 
         # Create the rotation angle calculator
         rotation_angle_calculator = RotationAngles(self._d_min, 
@@ -190,6 +197,11 @@ class SpotPredictor(object):
         status = flex.bool()
         self._rotation_angles = rotation_angle_calculator.calculate(
             self.miller_indices, status)
+
+        # Convert to degrees
+        r2d = 180.0 / pi
+        for i in range(len(self._rotation_angles)):
+            self._rotation_angles[i] = self._rotation_angles[i] * r2d % 360
 
         # Return the status
         return status
@@ -237,7 +249,7 @@ class SpotPredictor(object):
                             self._goniometer.num_frames))        
 
         # Check which angles are in the rotation range
-        return is_angle_in_range(self.rotation_angles, rotation_range)
+        return is_angle_in_range(self.rotation_angles, rotation_range, deg=True)
 
     def __calculate_reciprocal_space_vectors(self):
         """Calculate the reciprocal space vectors of the given miller indices.

@@ -6,6 +6,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/constants.h>
 #include <cctbx/miller.h>
 #include "../../error.h"
 
@@ -50,7 +51,8 @@ public:
         return s0_ + (double(hkl[0]) * b1_star_ + 
                       double(hkl[1]) * b2_star_ + 
                       double(hkl[2]) * b3_star_)
-                        .unit_rotate_around_origin(m2_, phi);
+                        .unit_rotate_around_origin(m2_, 
+                            scitbx::deg_as_rad(phi));
     }
 
     /**

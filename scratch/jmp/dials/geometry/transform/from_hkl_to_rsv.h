@@ -4,6 +4,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/constants.h>
 #include <cctbx/miller.h>
 #include "../../error.h"
 
@@ -22,10 +23,11 @@ public:
 
     FromHklToRsv(scitbx::mat3 <double> ub, scitbx::vec3 <double> m2) 
         : ub_(ub),
-          m2_(m2) {}
+          m2_(m2.normalize()) {}
 
     scitbx::vec3 <double> apply(miller_index h, double phi) {
-        return (ub_ * h).unit_rotate_around_origin(m2_, phi);
+        return (ub_ * h).unit_rotate_around_origin(
+            m2_, scitbx::deg_as_rad(phi));
     }
 
     flex_vec3_double apply(const flex_miller_index &h, 

@@ -74,7 +74,7 @@ def extract_reflection_profiles(paths):
     xyz = (sx, sy, sz - gonio.starting_frame)
     reflection_mask = ReflectionMask(image_volume.all())
     reflection_mask.create(flex.vec3_double(1, xyz), region_of_interest)
-     
+         
     subtract_background = SubtractBackground(image_volume, reflection_mask.mask)
     valid_background = flex.bool(len(region_of_interest))
     subtract_background.subtract(region_of_interest, valid_background)

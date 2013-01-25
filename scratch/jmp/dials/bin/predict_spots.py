@@ -1,17 +1,45 @@
 #!/usr/bin/env python
 
+def parse_list_string(string):
+    """Parse a string in the following ways:
+    string: 1, 2, 3        -> [1, 2, 3]
+    string: 1 - 6          -> [1, 2, 3, 4, 5, 6]
+    string: 1 - 6, 7, 8, 9 -> [1, 2, 3, 4, 5, 6, 7, 8, 9]
+    """
+    items = string.split(',')
+    for i in range(len(items)):
+        items[i] = items[i].split("-")
+        if len(items[i]) == 1:
+            items[i] = [int(items[i][0])]
+        elif len(items[i]) == 2:
+            items[i] = range(int(items[i][0]), int(items[i][1]) + 1)
+        else:
+            raise SyntaxError
+    items = [item for sublist in items for item in sublist]
+    return set(items)
+
+def display_frame_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, parse_list_string(value))
+
 def display_image_with_predicted_spots(image, xcoords, ycoords):
     """Display the image with coordinates overlayed."""
     from matplotlib import pylab, cm
-    plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r)
+    from matplotlib import transforms
+    trans = transforms.Affine2D()
+    
+    #trans.clear()
+    #trans.translate(0.5, 0.5)
+    plt = pylab.imshow(image, vmin=0, vmax=50, cmap=cm.Greys_r, 
+                       interpolation='nearest', origin='lower'),
+                       #transform=trans)
     pylab.scatter(xcoords, ycoords, marker='x')
-    plt.axes.get_xaxis().set_ticks([])
-    plt.axes.get_yaxis().set_ticks([])
+    #plt.axes.get_xaxis().set_ticks([])
+    #plt.axes.get_yaxis().set_ticks([])
     pylab.show()
 
 def visualize_predicted_spots(image_volume, display_frame, spot_coords):
     """Get just those spots on the selected image and display."""
-    spot_xy = [(x, y) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
+    spot_xy = [(x-0.5, y-0.5) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
     xcoords, ycoords = zip(*spot_xy)
     display_image_with_predicted_spots(image_volume[display_frame,:,:], 
                                        xcoords, ycoords)
@@ -57,9 +85,9 @@ def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
     print "Time taken: {0} s".format(finish_time - start_time)
 
     # If display frame selected then visualize
-    if 0 <= display_frame < gonio.num_frames:
-        print "Displaying predicted spots for frame \"{0}\"".format(display_frame)
-        visualize_predicted_spots(image_volume, display_frame, 
+    for frame in display_frame:
+        print "Displaying predicted spots for frame \"{0}\"".format(frame)
+        visualize_predicted_spots(image_volume, frame, 
                                   image_volume_coords)
 
 if __name__ == '__main__':
@@ -80,8 +108,9 @@ if __name__ == '__main__':
                       help='Specify search path for CBF files')
     parser.add_option('-d', '--display-frame',
                       dest='display_frame',
-                      type="int",
-                      default=-1,
+                      type="string",
+                      action="callback",
+                      callback=display_frame_callback,
                       help='Select a frame to display with predicted spots')
     (options, args) = parser.parse_args()
 

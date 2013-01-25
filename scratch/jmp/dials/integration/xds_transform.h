@@ -444,7 +444,7 @@ void XdsTransform::calculate(int reflection_index,
             int image_index = x + y * image_stride_x + z0 * image_stride_y;
             int fraction_index = 0;
             for (int z = z0; z <= z1; ++z) {
-                //if (mask_[image_index] == reflection_index) {
+                if (mask_[image_index] == reflection_index) {
                     int value = image_[image_index] * div_fraction;
                     int grid_index = grid_offset + gi + gj * grid_stride_c1;
                     for (int gk = 0; gk < grid_size_[0]; ++gk) {
@@ -452,9 +452,9 @@ void XdsTransform::calculate(int reflection_index,
                         grid_index += grid_stride_c2;
                         fraction_index++;
                     }
-                //} else {
-                //    fraction_index += grid_size_[0];
-                //}
+                } else {
+                    fraction_index += grid_size_[0];
+                }
                 image_index += image_stride_y;
             }
         }

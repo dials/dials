@@ -73,7 +73,7 @@ public:
         geometry::XdsCoordinateSystem xcs(beam_.get_direction(), 
                                           s1, 
                                           goniometer_.get_rotation_axis(), 
-                                          scitbx::rad_as_deg(phi));
+                                          phi);
         
         // Create the transformer from the xds coordinate system to the detector
         geometry::transform::FromXdsToDetector from_xds_to_detector(
@@ -81,7 +81,7 @@ public:
         
         // Create the transformer from Xds E3 to rotation angle
         geometry::transform::FromXdsE3ToPhi from_xds_e3_to_phi(
-            xcs.get_zeta(), scitbx::rad_as_deg(phi));
+            xcs.get_zeta(), phi);
        
         // Find the detector coordinates at the following xds coordinates:
         //   (-delta_d/2, -delta_d/2, 0) 
@@ -101,12 +101,10 @@ public:
         /// Get the image volume z coordinates (zero based) at the following XDS 
         // e3 coordinates: -delta_m/2, +delta_m/2
         double z1 = goniometer_.get_frame_from_angle(
-                        scitbx::deg_as_rad(from_xds_e3_to_phi.apply(
-                            -delta_mosaicity_ / 2.0)))
+                        from_xds_e3_to_phi.apply(-delta_mosaicity_ / 2.0))
                         - goniometer_.get_starting_frame();
         double z2 = goniometer_.get_frame_from_angle(
-                        scitbx::deg_as_rad(from_xds_e3_to_phi.apply(
-                            +delta_mosaicity_ / 2.0)))
+                        from_xds_e3_to_phi.apply(+delta_mosaicity_ / 2.0))
                         - goniometer_.get_starting_frame();
 
         // Return the roi in the following form:

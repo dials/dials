@@ -109,7 +109,7 @@ public:
     double get_frame_from_angle(double angle) {
         return starting_frame_ + (angle - starting_angle_) / oscillation_range_;
     }
-
+    
 private:
 
     scitbx::vec3 <double> rotation_axis_;

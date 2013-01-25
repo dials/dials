@@ -105,6 +105,7 @@ scratch/jmp/dials/array_family/remove.h -text
 scratch/jmp/dials/array_family/sorting.h -text
 scratch/jmp/dials/bin/calculate_gaussian_model_parameters.py -text
 scratch/jmp/dials/bin/create_reflection_mask.py -text
+scratch/jmp/dials/bin/display_cbf.py -text
 scratch/jmp/dials/bin/extract_reflection_profiles.py -text
 scratch/jmp/dials/bin/generate_spot_positions.py -text
 scratch/jmp/dials/bin/perform_xds_transform.py -text
@@ -237,6 +238,8 @@ scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
 scratch/jmp/runtests.py -text
+scratch/jmp/test/data/sim_mx/GXPARM.XDS -text
+scratch/jmp/test/data/sim_mx/INTEGRATE.HKL -text
 scratch/jmp/test/test_angle_filter.py -text
 scratch/jmp/test/test_beam.py -text
 scratch/jmp/test/test_detector.py -text
@@ -248,4 +251,5 @@ scratch/jmp/test/test_from_detector_to_xds.py -text
 scratch/jmp/test/test_from_xds_to_beam_vector.py -text
 scratch/jmp/test/test_goniometer.py -text
 scratch/jmp/test/test_reciprocal_lattice_coordinate_system.py -text
+scratch/jmp/test/test_spot_prediction.py -text
 scratch/jmp/test/test_xds_coordinate_system.py -text
