@@ -278,7 +278,7 @@ namespace x2tbx {
 
     for (size_t shell = 0; shell < shells_.size(); shell ++) {
       float shell_i_tot = 0.0;
-      size_t shell_n_tot = 0.0;
+      size_t shell_n_tot = 0;
       miller_index_list_type indices = shells_[shell];
       for (size_t i = 0; i < indices.size(); i++) {
         o = reflections_[indices[i]];
