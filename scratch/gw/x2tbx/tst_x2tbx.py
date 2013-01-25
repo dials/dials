@@ -48,13 +48,14 @@ def tst_x2tbx(mtz_file):
 
     rmerges = r.rmerge_shells()
     isigmas = r.i_sigma_shells()
+    tisigmas = r.total_i_sigma_shells()
 
     n_tot = 0
 
     for j in range(n_shells):
         shell = r.get_shell(j)
-        print '%.3f %6.3f %4d %.3f %6.2f' % (high[j], low[j], len(shell),
-                                           rmerges[j], isigmas[j])
+        print '%.3f %6.3f %4d %.3f %6.2f %6.2f' % (
+            high[j], low[j], len(shell), rmerges[j], isigmas[j], tisigmas[j])
         n_tot += len(shell)
 
     assert(n_tot == len(indices))

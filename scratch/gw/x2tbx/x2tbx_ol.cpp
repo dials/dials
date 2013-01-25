@@ -24,12 +24,15 @@ namespace x2tbx {
     CCTBX_ASSERT(observations.size() > 0);
     float sum_wi = 0.0;
     float sum_w = 0.0;
+    total_i_sigi = 0.0;
 
     for(size_t j = 0; j < observations.size(); j ++) {
       float i = observations[j][0];
       float w = 1.0 / (observations[j][1] * observations[j][1]);
       sum_w += w;
       sum_wi += w * i;
+
+      total_i_sigi += observations[j][0] / observations[j][1];
     }
 
     imean = sum_wi / sum_w;
@@ -37,9 +40,15 @@ namespace x2tbx {
   }
 
   i_sig_type
-  ObservationList::get_i_sigma(void)
+  ObservationList::i_sigma(void)
   {
     return i_sig_type(imean, sigimean);
+  }
+
+  float
+  ObservationList::total_i_sigma(void)
+  {
+    return total_i_sigi;
   }
 
   size_t

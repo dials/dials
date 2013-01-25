@@ -55,13 +55,14 @@ namespace x2tbx {
 
     void add(i_sig_type);
     void merge(void);
-    i_sig_type get_i_sigma(void);
+    i_sig_type i_sigma(void);
+    float total_i_sigma(void);
     size_t multiplicity(void);
     float rmerge(void);
 
   private:
     scitbx::af::shared<i_sig_type> observations;
-    float imean, sigimean;
+    float imean, sigimean, total_i_sigi;
   };
 
   typedef cmil::index<int> miller_index_type;
@@ -83,9 +84,11 @@ namespace x2tbx {
 
     void merge(void);
     float i_sigma(void);
+    float total_i_sigma(void);
     float rmerge(void);
     scitbx::af::shared<float> rmerge_shells(void);
     scitbx::af::shared<float> i_sigma_shells(void);
+    scitbx::af::shared<float> total_i_sigma_shells(void);
     scitbx::af::shared<float> shell_high_limits(void);
     scitbx::af::shared<float> shell_low_limits(void);
     miller_index_list_type get_shell(size_t);

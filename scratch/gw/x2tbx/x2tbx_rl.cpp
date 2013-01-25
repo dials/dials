@@ -124,11 +124,31 @@ namespace x2tbx {
     std::map<miller_index_type, ObservationList>::iterator r;
 
     for(r = reflections.begin(); r != reflections.end(); ++r) {
-      i_s = (r->second).get_i_sigma();
+      i_s = (r->second).i_sigma();
       result += i_s[0] / i_s[1];
     }
 
     return result / reflections.size();
+  }
+
+  float
+  ReflectionList::total_i_sigma(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+
+    i_sig_type i_s;
+    float i_tot = 0.0;
+    size_t n_tot = 0;
+    std::map<miller_index_type, ObservationList>::iterator r;
+    ObservationList o;
+
+    for(r = reflections.begin(); r != reflections.end(); ++r) {
+      o = (r->second);
+      i_tot += o.total_i_sigma();
+      n_tot += o.multiplicity();
+    }
+
+    return i_tot / n_tot;
   }
 
   float
@@ -143,7 +163,7 @@ namespace x2tbx {
       ObservationList o = r->second;
 
       r_sum += o.rmerge();
-      i_sum += o.get_i_sigma()[0] * o.multiplicity();
+      i_sum += o.i_sigma()[0] * o.multiplicity();
     }
 
     return r_sum / i_sum;
@@ -162,11 +182,36 @@ namespace x2tbx {
       float shell_result = 0.0;
       miller_index_list_type indices = shells[shell];
       for (size_t i = 0; i < indices.size(); i++) {
-        i_s = reflections[indices[i]].get_i_sigma();
+        i_s = reflections[indices[i]].i_sigma();
         shell_result += i_s[0] / i_s[1];
       }
 
       result.push_back(shell_result / indices.size());
+    }
+
+    return result;
+  }
+
+  scitbx::af::shared<float>
+  ReflectionList::total_i_sigma_shells(void)
+  {
+    CCTBX_ASSERT(reflections.size() > 0);
+    CCTBX_ASSERT(shells.size() > 0);
+
+    scitbx::af::shared<float> result;
+    ObservationList o;
+
+    for (size_t shell = 0; shell < shells.size(); shell ++) {
+      float shell_i_tot = 0.0;
+      size_t shell_n_tot = 0.0;
+      miller_index_list_type indices = shells[shell];
+      for (size_t i = 0; i < indices.size(); i++) {
+        o = reflections[indices[i]];
+        shell_i_tot += o.total_i_sigma();
+        shell_n_tot += o.multiplicity();
+      }
+
+      result.push_back(shell_i_tot / shell_n_tot);
     }
 
     return result;
@@ -186,7 +231,7 @@ namespace x2tbx {
       for (size_t i = 0; i < indices.size(); i++) {
         ObservationList o = reflections[indices[i]];
         r_sum += o.rmerge();
-        i_sum += o.get_i_sigma()[0] * o.multiplicity();
+        i_sum += o.i_sigma()[0] * o.multiplicity();
       }
 
       result.push_back(r_sum / i_sum);
