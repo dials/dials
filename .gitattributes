@@ -111,6 +111,7 @@ scratch/jmp/dials/bin/generate_spot_positions.py -text
 scratch/jmp/dials/bin/perform_xds_transform.py -text
 scratch/jmp/dials/bin/perform_xds_transform_single.py -text
 scratch/jmp/dials/bin/predict_spots.py -text
+scratch/jmp/dials/bin/spot_visualization.py -text
 scratch/jmp/dials/bin/subtract_background.py -text
 scratch/jmp/dials/equipment/SConscript -text
 scratch/jmp/dials/equipment/__init__.py -text
