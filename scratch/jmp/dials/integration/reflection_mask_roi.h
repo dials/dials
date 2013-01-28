@@ -100,12 +100,12 @@ public:
             
         /// Get the image volume z coordinates (zero based) at the following XDS 
         // e3 coordinates: -delta_m/2, +delta_m/2
-        double z1 = goniometer_.get_frame_from_angle(
-                        from_xds_e3_to_phi.apply(-delta_mosaicity_ / 2.0))
-                        - goniometer_.get_starting_frame();
-        double z2 = goniometer_.get_frame_from_angle(
-                        from_xds_e3_to_phi.apply(+delta_mosaicity_ / 2.0))
-                        - goniometer_.get_starting_frame();
+        double z1 = goniometer_.get_zero_based_frame_from_angle(
+                        from_xds_e3_to_phi.apply(-delta_mosaicity_ / 2.0),
+                        false);
+        double z2 = goniometer_.get_zero_based_frame_from_angle(
+                        from_xds_e3_to_phi.apply(+delta_mosaicity_ / 2.0),
+                        false);
 
         // Return the roi in the following form:
         // (minx, maxx, miny, maxy, minz, maxz)

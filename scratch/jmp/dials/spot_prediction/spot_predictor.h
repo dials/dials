@@ -102,8 +102,8 @@ public:
             for (std::size_t i = 0; i < phi.size(); ++i) {
 
                 // Check that the angles are within the rotation range
-                double phi_deg = scitbx::rad_as_deg(phi[i]);
-                if (!gonio_.is_angle_valid(phi_deg)) {
+                double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
+                if (!gonio_.is_angle_valid(phi_deg, true)) {
                     continue;
                 }
 
@@ -123,7 +123,7 @@ public:
                 }
                 
                 // Calculate the frame number
-                double z = gonio_.get_zero_based_frame_from_angle(phi_deg);
+                double z = gonio_.get_zero_based_frame_from_angle(phi_deg, true);
                 
                 // Check the detector coordinate is valid and add the 
                 // elements to the arrays. NB. up to now, we have used 
@@ -159,6 +159,13 @@ public:
     scitbx::af::shared <scitbx::vec3 <double> > get_image_coordinates() {
         return image_coords_;
     }
+
+private:
+   
+    /** Get the angle % 360 */
+    double mod_360(double angle) {
+        return angle - 360.0 * std::floor(angle / 360.0);
+    }       
    
 private:
 

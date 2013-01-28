@@ -122,6 +122,8 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     beam_vectors = spot_predictor.beam_vectors
     image_volume_coords = spot_predictor.image_coordinates
 
+    print min(rotation_angles), max(rotation_angles)
+
     # Create the reflection mask regions of interest
     print "Creating reflection mask Roi for {0} spots".format(len(miller_indices))
     start_time = time()
@@ -149,11 +151,16 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     range_x = [roi[1] - roi[0] for roi in region_of_interest]
     range_y = [roi[3] - roi[2] for roi in region_of_interest]
     range_z = [roi[5] - roi[4] for roi in region_of_interest]
+    range_phi = [gonio.get_angle_from_zero_based_frame(roi[5]) -
+                 gonio.get_angle_from_zero_based_frame(roi[4]) 
+                    for roi in region_of_interest]
+                 
     volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
-    print "Min/Max ROI X Range: ", min(range_x), max(range_x)
-    print "Min/Max ROI Y Range: ", min(range_y), max(range_y)
-    print "Min/Max ROI Z Range: ", min(range_z), max(range_z)
-    print "Min/Max Roi Volume:  ", min(volume), max(volume)
+    print "Min/Max ROI X Range:   ", min(range_x), max(range_x)
+    print "Min/Max ROI Y Range:   ", min(range_y), max(range_y)
+    print "Min/Max ROI Z Range:   ", min(range_z), max(range_z)
+    print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
+    print "Min/Max ROI Volume:    ", min(volume), max(volume)
         
     # Create the reflection mask itself
     print "Creating reflection mask for {0} reflections".format(len(region_of_interest))

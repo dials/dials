@@ -60,13 +60,15 @@ void export_goniometer()
                 arg("frame")))
         .def("get_frame_from_angle",
             &Goniometer::get_frame_from_angle, (
-                arg("angle")))
+                arg("angle"),
+                arg("wrap") = false))
         .def("get_angle_from_zero_based_frame", 
             &Goniometer::get_angle_from_zero_based_frame, (
                 arg("frame")))
         .def("get_zero_based_frame_from_angle",
             &Goniometer::get_zero_based_frame_from_angle, (
-                arg("angle")))
+                arg("angle"),
+                arg("wrap") = false))
         .def("is_zero_based_frame_valid",
             &Goniometer::is_zero_based_frame_valid, (
                 arg("frame")))
@@ -75,7 +77,8 @@ void export_goniometer()
                 arg("frame")))
         .def("is_angle_valid",
             &Goniometer::is_angle_valid, (
-                arg("angle")))
+                arg("angle"),
+                arg("wrap")))
         .def("__str__", &goniometer_to_string);                
 }
 

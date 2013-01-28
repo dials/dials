@@ -38,8 +38,7 @@ public:
         scitbx::vec2 <double> xy = from_beam_vector_to_detector_.apply(s1);
         return scitbx::vec3 <double> (
             xy[0], xy[1],
-            (goniometer_.get_frame_from_angle(phi) - 
-             goniometer_.get_starting_frame()));
+            (goniometer_.get_zero_based_frame_from_angle(phi, true)));
     }
 
     /**
