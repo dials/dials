@@ -3,7 +3,9 @@ import unittest
 
 class TestSpotPredictor(unittest.TestCase):
 
-    def setUp(self):
+    first = True
+
+    def init_test_stuff(self):
         from scitbx import matrix
         from dials.array_family import flex
         from dials.spot_prediction import SpotPredictor        
@@ -48,6 +50,11 @@ class TestSpotPredictor(unittest.TestCase):
      
         # Predict the spot locations
         self.spot_predictor.predict()
+        
+    def setUp(self):
+        if self.first:
+            self.init_test_stuff()
+            self.first = False
 
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""

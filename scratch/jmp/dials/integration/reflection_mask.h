@@ -48,8 +48,10 @@ public:
      *
      * @param image_volume_coords The image volume coordinates
      * @param region_of_interest The regions of interest
+     * @returns The status True/False for each reflection
      */
-    void create(const dials::af::flex_vec3_double &image_volume_coords,
+    scitbx::af::flex_bool create(
+                const dials::af::flex_vec3_double &image_volume_coords,
                 const dials::af::flex_tiny6_int &region_of_interest) 
     {
         // Ensure array sizes match
@@ -57,6 +59,9 @@ public:
 
         // Initialise mask to -1
         this->reset_mask();
+        
+        // Create an array for the status
+        scitbx::af::flex_bool status(region_of_interest.size());
         
         // Loop through all the reflection detector coordinates given. For each
         // reflection, loop through the mask elements within the reflection's 
@@ -71,6 +76,7 @@ public:
             scitbx::vec3 <double> xyz = image_volume_coords[index];
             scitbx::af::tiny <double, 6> roi = region_of_interest[index];
             if (is_roi_valid(roi)) {
+                status[index] = true;
                 for (int k = roi[4]; k < roi[5]; ++k) {
                     for (int j = roi[2]; j < roi[3]; ++j) {
                         for (int i = roi[0]; i < roi[1]; ++i) {
@@ -90,8 +96,13 @@ public:
                         }
                     }
                 } 
+            } else {
+                status[index] = false;
             }
         }
+        
+        // Return the status
+        return status;
     }
 
     /** Get the mask array */

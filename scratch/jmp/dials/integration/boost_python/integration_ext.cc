@@ -14,6 +14,7 @@ void export_background_intensity();
 void export_subtract_background();
 void export_xds_transform();
 void export_xds_transform_grid();
+void export_centroid();
 
 BOOST_PYTHON_MODULE(dials_integration_ext)
 {
@@ -23,6 +24,7 @@ BOOST_PYTHON_MODULE(dials_integration_ext)
     export_subtract_background();
     export_xds_transform();
     export_xds_transform_grid();    
+    export_centroid();
 }
 
 } // namespace = boost_python
