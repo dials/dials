@@ -2,7 +2,9 @@
 #ifndef DIALS_EQUIPMENT_GONIOMETER_H
 #define DIALS_EQUIPMENT_GONIOMETER_H
 
+#include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <cmath>
 
 namespace dials { namespace equipment {
 
@@ -20,7 +22,8 @@ public:
 
 
     /** 
-     * Initialise the goniometer 
+     * Initialise the goniometer. If num_frames <= 0 then it is interpreted as
+     * having indefinate range. The starting angle should be between 0->360 deg
      * @param rotation_axis The goniometer rotation axis
      * @param starting_angle The starting rotation angle
      * @param oscillation_range The angular difference between successive frames
@@ -32,8 +35,8 @@ public:
                double oscillation_range,
                int starting_frame,
                int num_frames)
-        : rotation_axis_(rotation_axis),
-          starting_angle_(starting_angle),
+        : rotation_axis_(rotation_axis.normalize()),
+          starting_angle_(mod_360(starting_angle)),
           oscillation_range_(oscillation_range),
           starting_frame_(starting_frame),
           num_frames_(num_frames) {}
@@ -67,12 +70,12 @@ public:
     
     /** Set the rotation axis */
     void set_rotation_axis(scitbx::vec3 <double> rotation_axis) {
-        rotation_axis_ = rotation_axis;
+        rotation_axis_ = rotation_axis.normalize();
     }
    
     /** Set the starting angle */
     void set_starting_angle(double starting_angle) {
-        starting_angle_ = starting_angle;
+        starting_angle_ = mod_360(starting_angle);
     }
     
     /** Set the oscillation range */
@@ -93,23 +96,66 @@ public:
 public:
 
     /** 
+     * Get the angle from the given zero based frame 
+     * @param frame The frame number
+     * @returns The angle corresponding to the frame number
+     */
+    double get_angle_from_zero_based_frame(double frame) {
+        return starting_angle_ + frame * oscillation_range_;
+    }
+    
+    /**
+     * Get the zero based frame from the given angle
+     * @param angle The angle of rotation
+     * @returns The frame number corresponding to the rotation angle
+     */
+    double get_zero_based_frame_from_angle(double angle) {
+        angle = mod_360(angle);
+        if (angle < starting_angle_) angle += 360;
+        return (angle - starting_angle_) / oscillation_range_;
+    }
+    
+    /** 
      * Get the angle from the given frame 
      * @param frame The frame number
      * @returns The angle corresponding to the frame number
      */
     double get_angle_from_frame(double frame) {
-        return starting_angle_ + (frame - starting_frame_) * oscillation_range_;
+        return get_angle_from_zero_based_frame(frame - starting_frame_);
     }
-    
+
     /**
      * Get the frame from the given angle
      * @param angle The angle of rotation
      * @returns The frame number corresponding to the rotation angle
      */
     double get_frame_from_angle(double angle) {
-        return starting_frame_ + (angle - starting_angle_) / oscillation_range_;
+        return get_zero_based_frame_from_angle(angle) + starting_frame_;
     }
     
+    /** Check if the zero based frame is within the range of frames */
+    bool is_zero_based_frame_valid(double frame) {
+        return num_frames_ <= 0 || (frame >= 0 && frame < num_frames_);
+    }
+
+    /** Check if the frame is within the range of frames */
+    bool is_frame_valid(double frame) {
+        return is_zero_based_frame_valid(frame - starting_frame_);
+    }
+    
+    /** Check if the angle is valid within the given range */
+    bool is_angle_valid(double angle) {
+        return num_frames_ <= 0 || is_frame_valid(get_frame_from_angle(angle));
+    }
+    
+
+private:
+
+    /** Get the angle % 360 */
+    double mod_360(double angle) {
+        return angle - 360.0 * std::floor(angle / 360.0);
+    }
+        
 private:
 
     scitbx::vec3 <double> rotation_axis_;

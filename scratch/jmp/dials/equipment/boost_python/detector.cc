@@ -80,6 +80,9 @@ void export_detector()
         .add_property("distance",  
             &Detector::get_distance,
             &Detector::set_distance)
+        .def("is_coordinate_valid",
+            &Detector::is_coordinate_valid, (
+                arg("xy")))
         .def("__str__", &detector_to_string);            
 }
 

@@ -10,15 +10,15 @@ namespace boost_python {
 
 void export_index_generator();
 void export_rotation_angles();
-void export_angle_filter();
-void export_coordinate_filter();
+void export_xds_rotation_angles();
+void export_spot_predictor();
 
 BOOST_PYTHON_MODULE(dials_spot_prediction_ext)
 {
     export_index_generator();
     export_rotation_angles();
-    export_angle_filter();
-    export_coordinate_filter();
+    export_xds_rotation_angles();
+    export_spot_predictor();
 }
 
 } // namespace = boost_python

@@ -96,6 +96,15 @@ class GxParmFile:
         return matrix.sqr(self.unit_cell_a_axis + 
                           self.unit_cell_b_axis + 
                           self.unit_cell_c_axis)
+                          
+    def get_unit_cell(self):
+        from cctbx import uctbx
+        return uctbx.unit_cell(orthogonalization_matrix = self.get_ub_matrix())
+
+    def get_space_group_type(self):
+        from cctbx import sgtbx
+        return sgtbx.space_group_type(sgtbx.space_group(
+                            sgtbx.space_group_symbols(self.space_group).hall()))
         
 class IntegrateFile:
     """A class to read the INTEGRATE.HKL file used in XDS"""
@@ -181,7 +190,7 @@ class IntegrateFile:
             return tuple([self._parse_str(s) for s in values])
 
 
-    def _set_header_parameters(self, ):
+    def _set_header_parameters(self):
         """Get the parameters from the header dict
         
         :param name_value: The name, value parameter dict

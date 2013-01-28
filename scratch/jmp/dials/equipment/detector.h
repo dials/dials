@@ -111,6 +111,16 @@ public:
     void set_distance(double distance) {
         distance_ = distance;
     }
+       
+    /**
+     * Is the given coordinate in the detector
+     * @param xy The coordinate
+     * @returns Is it a valid coordinate (True/False)
+     */
+    bool is_coordinate_valid(scitbx::vec2 <double> xy) {
+        return (0 <= xy[0] && xy[0] < size_[0]) &&
+               (0 <= xy[1] && xy[1] < size_[1]);
+    }
         
 private:
 
