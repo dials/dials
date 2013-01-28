@@ -11,6 +11,12 @@ namespace boost_python {
 
 void export_spot_predictor()
 {
+    void (SpotPredictor::*predict_single)(cctbx::miller::index <>) =
+        &SpotPredictor::predict;
+    void (SpotPredictor::*predict_array)(const af::flex_miller_index &) =
+        &SpotPredictor::predict;
+    void (SpotPredictor::*predict_generate)() = &SpotPredictor::predict;
+                
     class_ <SpotPredictor> ("SpotPredictor", no_init)
         .def(init <const equipment::Beam &,
                   const equipment::Detector &,
@@ -26,7 +32,11 @@ void export_spot_predictor()
             arg("space_group_type"),
             arg("ub_matrix"),
             arg("d_min"))))
-        .def("predict", &SpotPredictor::predict)
+        .def("predict", predict_single, (
+            arg("miller_index")))
+        .def("predict", predict_array, (
+            arg("miller_indices")))
+        .def("predict", predict_generate)        
         .add_property("miller_indices",
             &SpotPredictor::get_miller_indices)
         .add_property("rotation_angles",

@@ -8,6 +8,7 @@
 #include "../equipment/goniometer.h"
 #include "index_generator.h"
 #include "xds_rotation_angles.h"
+#include "../array_family/array_types.h"
 #include "../geometry/transform/from_beam_vector_to_detector.h"
 
 
@@ -42,16 +43,16 @@ public:
           beam_(beam),
           detector_(detector),
           gonio_(gonio),
-          ub_matrix_(ub_matrix) {}
+          ub_matrix_(ub_matrix),
+          s0_(beam.get_direction().normalize() / beam.get_wavelength()),
+          m2_(gonio.get_rotation_axis().normalize()) {}
 
     /**
      * Predict the spot locations on the image detector.
      *  
      * The algorithm performs the following procedure:
-     *   
-     *  - First the set of miller indices are generated.
      *    
-     *  - For each miller index, the rotation angle at which the diffraction
+     *  - For the miller index, the rotation angle at which the diffraction
      *    conditions are met is calculated.
      *      
      *  - The rotation angles are then checked to see if they are within the
@@ -64,19 +65,84 @@ public:
      *      
      *  - The image volume coordinates are then checked to see if they are
      *    within the image volume itself.
+     *
+     * @param h The miller index
+     */
+    void predict(cctbx::miller::index <> h) {
+
+        // Calculate the reciprocal space vector
+        scitbx::vec3 <double> pstar0 = ub_matrix_ * h;
+
+        // Try to calculate the diffracting rotation angles
+        scitbx::vec2 <double> phi;
+        try {
+            phi = rotation_angle_calculator_.calculate(pstar0);
+        } catch(error) {
+            return;
+        }
+
+        // Loop through the 2 rotation angles
+        for (std::size_t i = 0; i < phi.size(); ++i) {
+
+            // Check that the angles are within the rotation range
+            double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
+            if (!gonio_.is_angle_valid(phi_deg, true)) {
+                continue;
+            }
+
+            // Calculate the reciprocal space vector
+            scitbx::vec3 <double> pstar = pstar0.unit_rotate_around_origin(
+                                                m2_, phi[i]);
+            
+            // Calculate the diffracted beam vector
+            scitbx::vec3 <double> s1 = s0_ + pstar;
+             
+            // Try to calculate the detector coordinate              
+            scitbx::vec2 <double> xy;
+            try {
+                xy = from_beam_vector_to_detector_.apply(s1);
+            } catch(error) {
+                continue;
+            }
+            
+            // Calculate the frame number
+            double z = gonio_.get_zero_based_frame_from_angle(phi_deg, true);
+            
+            // Check the detector coordinate is valid and add the 
+            // elements to the arrays. NB. up to now, we have used 
+            // angles in radians, convert them to degrees before adding
+            // them to the rotation angle array.
+            if (!detector_.is_coordinate_valid(xy)) {
+                continue;
+            }
+            miller_indices_.push_back(h);
+            rotation_angles_.push_back(phi_deg);
+            beam_vectors_.push_back(s1);
+            image_coords_.push_back(scitbx::vec3 <double> (xy[0], xy[1], z));
+        }
+    }
+    
+    /**
+     * For a given set of miller indices, predict the detector coordinates.
+     * @param miller_indices The array of miller indices.
+     */
+    void predict(const af::flex_miller_index &miller_indices) {
+    
+        // Reset all the arrays
+        reset();
+    
+        for (std::size_t i = 0; i < miller_indices.size(); ++i) {
+            predict(miller_indices[i]);
+        }
+    }
+    
+    /** 
+     * Generate a set of miller indices and predict the detector coordinates.
      */
     void predict() {
 
         // Reset all the arrays
-        miller_indices_.clear();
-        rotation_angles_.clear();
-        beam_vectors_.clear();
-        image_coords_.clear();
-
-        // Get the beam direction and rotation axis
-        scitbx::vec3 <double> s0(beam_.get_direction().normalize() / 
-                                 beam_.get_wavelength());
-        scitbx::vec3 <double> m2(gonio_.get_rotation_axis().normalize());
+        reset();
 
         // Continue looping until we run out of miller indices        
         for (;;) {
@@ -87,57 +153,9 @@ public:
                 break;
             }
 
-            // Calculate the reciprocal space vector
-            scitbx::vec3 <double> pstar0 = ub_matrix_ * h;
-
-            // Try to calculate the diffracting rotation angles
-            scitbx::vec2 <double> phi;
-            try {
-                phi = rotation_angle_calculator_.calculate(pstar0);
-            } catch(error) {
-                continue;
-            }
-
-            // Loop through the 2 rotation angles
-            for (std::size_t i = 0; i < phi.size(); ++i) {
-
-                // Check that the angles are within the rotation range
-                double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
-                if (!gonio_.is_angle_valid(phi_deg, true)) {
-                    continue;
-                }
-
-                // Calculate the reciprocal space vector
-                scitbx::vec3 <double> pstar = pstar0.unit_rotate_around_origin(
-                                                    m2, phi[i]);
-                
-                // Calculate the diffracted beam vector
-                scitbx::vec3 <double> s1 = s0 + pstar;
-                 
-                // Try to calculate the detector coordinate              
-                scitbx::vec2 <double> xy;
-                try {
-                    xy = from_beam_vector_to_detector_.apply(s1);
-                } catch(error) {
-                    continue;
-                }
-                
-                // Calculate the frame number
-                double z = gonio_.get_zero_based_frame_from_angle(phi_deg, true);
-                
-                // Check the detector coordinate is valid and add the 
-                // elements to the arrays. NB. up to now, we have used 
-                // angles in radians, convert them to degrees before adding
-                // them to the rotation angle array.
-                if (!detector_.is_coordinate_valid(xy)) {
-                    continue;
-                }
-                miller_indices_.push_back(h);
-                rotation_angles_.push_back(phi_deg);
-                beam_vectors_.push_back(s1);
-                image_coords_.push_back(scitbx::vec3 <double> (xy[0], xy[1], z));
-            }
-        }        
+            // Predict the spot location for the miller index
+            predict(h);
+        }     
     }
     
     /** Get the array of miller indices */
@@ -162,6 +180,14 @@ public:
 
 private:
    
+    /** Reset all the arrays */
+    void reset() {
+        miller_indices_.clear();
+        rotation_angles_.clear();
+        beam_vectors_.clear();
+        image_coords_.clear();    
+    }
+   
     /** Get the angle % 360 */
     double mod_360(double angle) {
         return angle - 360.0 * std::floor(angle / 360.0);
@@ -176,6 +202,8 @@ private:
     equipment::Detector detector_;
     equipment::Goniometer gonio_;
     scitbx::mat3 <double> ub_matrix_;
+    scitbx::vec3 <double> s0_;
+    scitbx::vec3 <double> m2_;
     scitbx::af::shared <cctbx::miller::index <> > miller_indices_;
     scitbx::af::shared <double> rotation_angles_;
     scitbx::af::shared <scitbx::vec3 <double> > beam_vectors_;
