@@ -37,6 +37,10 @@ class TestRotationAngles(unittest.TestCase):
         self.gonio.num_frames = int(ceil(max(zcal)))
         
     def test_cctbx_angles(self):
+
+        # FIXME this test is broken as there are different coordinate
+        # frames in use - see coordinate_frame_converter in rstbx.cftbx
+        
         from rstbx.diffraction import rotation_angles   
         from scitbx import matrix 
         
