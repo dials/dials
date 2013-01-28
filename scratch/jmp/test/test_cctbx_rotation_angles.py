@@ -10,14 +10,14 @@ class TestRotationAngles(unittest.TestCase):
         from math import ceil, pi
 
         # The XDS files to read from    
-        integrate_filename = './test/data/sim_mx/INTEGRATE.HKL'
-        gxparm_filename = './test/data/sim_mx/GXPARM.XDS'
+        self.integrate_filename = './test/data/sim_mx/INTEGRATE.HKL'
+        self.gxparm_filename = './test/data/sim_mx/GXPARM.XDS'
         
         # Read the XDS files
         self.integrate_handle = xdsio.IntegrateFile()
-        self.integrate_handle.read_file(integrate_filename)
+        self.integrate_handle.read_file(self.integrate_filename)
         self.gxparm_handle = xdsio.GxParmFile()
-        self.gxparm_handle.read_file(gxparm_filename)
+        self.gxparm_handle.read_file(self.gxparm_filename)
 
         # Get the parameters we need from the GXPARM file
         self.beam = self.gxparm_handle.get_beam()
@@ -37,17 +37,20 @@ class TestRotationAngles(unittest.TestCase):
         self.gonio.num_frames = int(ceil(max(zcal)))
         
     def test_cctbx_angles(self):
-
-        # FIXME this test is broken as there are different coordinate
-        # frames in use - see coordinate_frame_converter in rstbx.cftbx
-        
-        from rstbx.diffraction import rotation_angles   
+        from rstbx.diffraction import rotation_angles
+        from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
         from scitbx import matrix 
         
+        cfc = coordinate_frame_converter(self.gxparm_filename)
+        u, b = cfc.get_u_b(convention = cfc.ROSSMANN)
+        axis = cfc.get('rotation_axis', convention = cfc.ROSSMANN)
+        ub = u * b
+        wavelength = cfc.get('wavelength')
+        
         ra = rotation_angles(self.d_min, 
-                             self.ub_matrix, 
-                             self.beam.wavelength, 
-                             self.gonio.rotation_axis)
+                             ub, 
+                             wavelength, 
+                             axis)
             
         ub = matrix.sqr(self.ub_matrix)
         s0 = matrix.col(self.beam.direction)
