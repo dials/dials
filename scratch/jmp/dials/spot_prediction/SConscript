@@ -3,7 +3,6 @@ Import('env')
 
 sources = [
     'boost_python/index_generator.cc',
-    'boost_python/rotation_angles.cc',
     'boost_python/xds_rotation_angles.cc',
 	'boost_python/spot_predictor.cc',
     'boost_python/spot_prediction_ext.cc']
