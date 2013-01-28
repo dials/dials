@@ -27,11 +27,11 @@ def display_spot_callback(option, opt, value, parser):
 def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
     """Display the reflection mask for a given frame."""
     from matplotlib import pylab, cm
-    spot_xy = [(x, y) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
+    spot_xy = [(x-0.5, y-0.5) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
     xcoords, ycoords = zip(*spot_xy)
     fig = pylab.figure(figsize=(8,8))
-    plt = pylab.imshow(mask[display_frame,:,:], cmap=cm.Greys_r, interpolation="nearest")
-    #pylab.scatter(xcoords, ycoords, marker='x')
+    plt = pylab.imshow(mask[display_frame,:,:], cmap=cm.Greys_r, interpolation="nearest", origin='lower')
+    pylab.scatter(xcoords, ycoords, marker='x')
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
@@ -50,9 +50,11 @@ def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
     
     image = mask[xyz[2], roi2[2]:roi2[3]+1, roi2[0]:roi2[1]+1]
     pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest", 
-        extent=[roi2[0], roi2[1], roi2[2], roi2[3]])
-    pylab.plot([roi[0], roi[1], roi[1], roi[0], roi[0]],
-               [roi[2], roi[2], roi[3], roi[3], roi[2]])
+        extent=[roi2[0], roi2[1], roi2[2], roi2[3]], origin='lower')
+    #pylab.plot([roi[0], roi[1], roi[1], roi[0], roi[0]],
+    #           [roi[2], roi[2], roi[3], roi[3], roi[2]])
+    pylab.plot([roi[0]-0.5, roi[1]-0.5, roi[1]-0.5, roi[0]-0.5, roi[0]-0.5],
+               [roi[2]-0.5, roi[2]-0.5, roi[3]-0.5, roi[3]-0.5, roi[2]-0.5])
     pylab.show()
 
 def create_reflection_mask(input_filename, cbf_search_path, d_min, 
@@ -69,6 +71,7 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     from time import time
     from dials.array_family.flex import remove_if_not
     from dials.array_family import flex
+    from scitbx import matrix
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)
@@ -79,6 +82,16 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     detector  = gxparm_handle.get_detector()
     ub_matrix = gxparm_handle.get_ub_matrix()
     symmetry  = gxparm_handle.space_group
+
+    print beam
+    print gonio
+    print detector
+    print "UB Matrix:"
+    print "    (({0}, {1}, {2}),".format(ub_matrix[0], ub_matrix[1], ub_matrix[2])
+    print "     ({0}, {1}, {2}),".format(ub_matrix[3], ub_matrix[4], ub_matrix[5])
+    print "     ({0}, {1}, {2}))".format(ub_matrix[6], ub_matrix[7], ub_matrix[8])
+    print "Symmetry: ", symmetry
+    print "D min: ", d_min
 
     # Create the unit cell and space group objects
     unit_cell = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)
@@ -92,13 +105,14 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
         gonio.num_frames = image_volume.shape[0]
 
     # Create the spot predictor
-    spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, d_min,
-                                   unit_cell, space_group_type)
+    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell, 
+                                   space_group_type, 
+                                   matrix.sqr(ub_matrix).inverse(), d_min)
     
     # Predict the spot image volume coordinates 
     print "Predicting spots"
     start_time = time()
-    spot_predictor.predict_spots()
+    spot_predictor.predict()
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 
@@ -106,10 +120,10 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     miller_indices = spot_predictor.miller_indices
     rotation_angles = spot_predictor.rotation_angles
     beam_vectors = spot_predictor.beam_vectors
-    image_volume_coords = spot_predictor.image_volume_coordinates
+    image_volume_coords = spot_predictor.image_coordinates
 
     # Create the reflection mask regions of interest
-    print "Creating reflection mask Roi"
+    print "Creating reflection mask Roi for {0} spots".format(len(miller_indices))
     start_time = time()
     reflection_mask_roi = ReflectionMaskRoi(
                             beam, detector, gonio, 
@@ -142,13 +156,13 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     print "Min/Max Roi Volume:  ", min(volume), max(volume)
         
     # Create the reflection mask itself
-    print "Creating reflection mask"
+    print "Creating reflection mask for {0} reflections".format(len(region_of_interest))
     start_time = time()
     reflection_mask = ReflectionMask(image_volume.shape)
     reflection_mask.create(image_volume_coords, region_of_interest)
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-     
+    
     if display_frame:
         for frame in display_frame:
             print "Displaying reflection mask for frame \"{0}\"".format(frame)
@@ -159,7 +173,7 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
         for spot in display_spot:
             print "Displaying reflection mask for spot \"{0}\"".format(spot)
             visualize_spot_reflection_mask(reflection_mask.mask.as_numpy_array(), 
-                spot, image_volume_coords, region_of_interest, 20)
+                spot, image_volume_coords, region_of_interest, 10)
 
                               
 if __name__ == '__main__':

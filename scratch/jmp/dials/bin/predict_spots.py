@@ -39,6 +39,9 @@ def display_image_with_predicted_spots(image, xcoords, ycoords):
 
 def visualize_predicted_spots(image_volume, display_frame, spot_coords):
     """Get just those spots on the selected image and display."""
+#    print spot_coords, len(spot_coords), spot_coords[0]
+#    spot_z = [z for x, y, z in spot_coords]
+#    print min(spot_z), max(spot_z)
     spot_xy = [(x-0.5, y-0.5) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
     xcoords, ycoords = zip(*spot_xy)
     display_image_with_predicted_spots(image_volume[display_frame,:,:], 
@@ -50,6 +53,7 @@ def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
     from dials.io import xdsio, pycbf_extra
     from cctbx import uctbx, sgtbx
     from time import time
+    from scitbx import matrix
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)
@@ -60,6 +64,16 @@ def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
     detector  = gxparm_handle.get_detector()
     ub_matrix = gxparm_handle.get_ub_matrix()
     symmetry  = gxparm_handle.space_group
+
+    print beam
+    print gonio
+    print detector
+    print "UB Matrix:"
+    print "    (({0}, {1}, {2}),".format(ub_matrix[0], ub_matrix[1], ub_matrix[2])
+    print "     ({0}, {1}, {2}),".format(ub_matrix[3], ub_matrix[4], ub_matrix[5])
+    print "     ({0}, {1}, {2}))".format(ub_matrix[6], ub_matrix[7], ub_matrix[8])
+    print "Symmetry: ", symmetry
+    print "D min: ", d_min
 
     # Create the unit cell and space group objects
     unit_cell = uctbx.unit_cell(orthogonalization_matrix = ub_matrix)
@@ -73,14 +87,15 @@ def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
         gonio.num_frames = image_volume.shape[0]
 
     # Create the spot predictor
-    spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, d_min,
-                                   unit_cell, space_group_type)
+    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell, 
+                                   space_group_type, 
+                                   matrix.sqr(ub_matrix).inverse(), d_min)
     
     # Predict the spot image volume coordinates 
     print "Predicting spots"
     start_time = time()
-    spot_predictor.predict_spots()
-    image_volume_coords = spot_predictor.image_volume_coordinates
+    spot_predictor.predict()
+    image_volume_coords = spot_predictor.image_coordinates
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 

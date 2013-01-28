@@ -71,9 +71,9 @@ public:
             scitbx::vec3 <double> xyz = image_volume_coords[index];
             scitbx::af::tiny <double, 6> roi = region_of_interest[index];
             if (is_roi_valid(roi)) {
-                for (int k = roi[4]; k <= roi[5]; ++k) {
-                    for (int j = roi[2]; j <= roi[3]; ++j) {
-                        for (int i = roi[0]; i <= roi[1]; ++i) {
+                for (int k = roi[4]; k < roi[5]; ++k) {
+                    for (int j = roi[2]; j < roi[3]; ++j) {
+                        for (int i = roi[0]; i < roi[1]; ++i) {
                             int curr_index = mask_(k, j, i);
                             if (curr_index == -1) {
                                 mask_(k, j, i) = index;
