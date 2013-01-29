@@ -39,18 +39,32 @@ class TestReflectionMask(unittest.TestCase):
                 
     def test_centroids(self):
         
+        from dials.spot_prediction import SpotPredictor
         from dials.integration import ReflectionMask, ReflectionMaskRoi
         
+        # Create the spot predictor
+        spot_predictor = SpotPredictor(self.beam,
+                                       self.detector,
+                                       self.gonio,
+                                       self.unit_cell,
+                                       self.space_group_type,
+                                       self.ub_matrix,
+                                       self.d_min)
+
+        # Predict the spot locations of the set of miller indices
+        spot_predictor.predict(flex.miller_index(self.integrate_handle.hkl)
+        
         # Create the reflection mask regions of interest
-        reflection_mask_roi = ReflectionMaskRoi(
-                                self.beam, self.detector, self.gonio, 
-                                n_sigma * sigma_divergence, 
-                                n_sigma * sigma_mosaicity)
-        region_of_interest = reflection_mask_roi.calculate(
-                                self.beam_vectors, self.rotation_angles)
-    
-        # Create the reflection mask itself
-        reflection_mask = ReflectionMask(image_volume.shape)
-        valid_roi = reflection_mask.create(image_volume_coords, region_of_interest)
-        
-        
+#        reflection_mask_roi = ReflectionMaskRoi(
+#                                self.beam, self.detector, self.gonio, 
+#                                n_sigma * sigma_divergence, 
+#                                n_sigma * sigma_mosaicity)
+#        region_of_interest = reflection_mask_roi.calculate(
+#                                self.beam_vectors, self.rotation_angles)
+#    
+#        # Create the reflection mask itself
+#        reflection_mask = ReflectionMask(image_volume.shape)
+#        valid_roi = reflection_mask.create(image_volume_coords, region_of_interest)
+#        
+if __name__ == '__main__':
+    unittest.main()
