@@ -12,10 +12,24 @@ namespace boost_python {
 
 void export_centroid()
 {
-    def("centroid2d", &centroid2d <scitbx::af::flex_int>);
-    def("centroid3d", &centroid3d <scitbx::af::flex_int>);
-    def("centroid2d", &centroid2d <scitbx::af::flex_int, scitbx::af::flex_int>);
-    def("centroid3d", &centroid3d <scitbx::af::flex_int, scitbx::af::flex_int>);
+    scitbx::vec2 <double> (*centroid2d_int)(const scitbx::af::flex_int&, 
+        scitbx::af::tiny <int, 4>) = &centroid2d <scitbx::af::flex_int>;
+
+    scitbx::vec2 <double> (*centroid2d_int_mask)(const scitbx::af::flex_int&, 
+        const scitbx::af::flex_int&, scitbx::af::tiny <int, 4>, int) = 
+            &centroid2d <scitbx::af::flex_int, scitbx::af::flex_int>;
+
+    scitbx::vec3 <double> (*centroid3d_int)(const scitbx::af::flex_int&, 
+        scitbx::af::tiny <int, 6>) = &centroid3d <scitbx::af::flex_int>;
+
+    scitbx::vec3 <double> (*centroid3d_int_mask)(const scitbx::af::flex_int&, 
+        const scitbx::af::flex_int&, scitbx::af::tiny <int, 6>, int) = 
+            &centroid3d <scitbx::af::flex_int, scitbx::af::flex_int>;
+
+    def("centroid2d", centroid2d_int);
+    def("centroid3d", centroid3d_int);
+    def("centroid2d", centroid2d_int_mask);
+    def("centroid3d", centroid3d_int_mask);
 }
 
 } // namespace = boost_python
