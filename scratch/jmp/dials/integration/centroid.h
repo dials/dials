@@ -91,7 +91,7 @@ void mask_adjacent_pixels(MaskType &mask, scitbx::vec3 <std::size_t> index) {
     typedef scitbx::vec3 <std::size_t> index_type;
     DIALS_ASSERT(mask.accessor().all().size() == 3);
     scitbx::af::small <long int, 10> size = mask.accessor().all();
-    std::size_t i = index[0], j = index[1], k = index[2];
+    int i = index[0], j = index[1], k = index[2];
     if (i >= 0 && i < size[2] && j >= 0 && j < size[1] && k >= 0 && k < size[0]) {
         if (mask(k, j, i) == 1) {
             mask(k, j, i) = 2;
