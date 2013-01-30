@@ -6,6 +6,7 @@
 #include <scitbx/array_family/tiny.h>
 #include <scitbx/array_family/flex_types.h>
 #include "../array_family/array_types.h"
+#include "../reflection/reflection.h"
 #include "../error.h"
 
 namespace dials { namespace integration {
@@ -91,6 +92,71 @@ public:
                                 int distance_curr = (curr_xyz - point).length();
                                 if (distance < distance_curr) {
                                     mask_(k, j, i) = index;
+                                }
+                            }
+                        }
+                    }
+                } 
+            } else {
+                status[index] = false;
+            }
+        }
+        
+        // Return the status
+        return status;
+    }
+
+    /**
+     * Create the reflection mask. Set the values of the reflection mask in the
+     * region of interest around each of the given reflection points to the 
+     * reflection index. Exclude pixels from the reflection's mask if they are
+     * closer to a neighbouring reflection.
+     * 
+     * @todo The pixels comprising the mask of a reflection are not guarenteed
+     *       to be contingious, this should be fixed.
+     *
+     * @param image_volume_coords The image volume coordinates
+     * @param region_of_interest The regions of interest
+     * @returns The status True/False for each reflection
+     */
+    scitbx::af::flex_bool create(ReflectionList &reflections) 
+    {
+        // Initialise mask to -1
+        this->reset_mask();
+        
+        // Create an array for the status
+        scitbx::af::flex_bool status(reflections.size());
+        
+        // Loop through all the reflection detector coordinates given. For each
+        // reflection, loop through the mask elements within the reflection's 
+        // region of interest. If the mask element value is -1 (i.e. currently
+        // unset) then set it to the reflection index. If the mask value is
+        // already set to another reflection index, then calculate the distance
+        // from the mask point to the currently set reflection xyz point and
+        // compare it to the distance between the mask point and the new 
+        // reflection xyz point. If the new distance is lower than the old,
+        // then set the mask value to the new reflection index.
+        for (int index = 0; index < reflections.size(); ++index) {
+            scitbx::vec3 <double> xyz = reflections[index].get_image_coord();
+            scitbx::af::tiny <double, 6> roi = reflections[index].get_region_of_interest();
+            if (is_roi_valid(roi)) {
+                status[index] = true;
+                for (int k = roi[4]; k < roi[5]; ++k) {
+                    for (int j = roi[2]; j < roi[3]; ++j) {
+                        for (int i = roi[0]; i < roi[1]; ++i) {
+                            int curr_index = mask_(k, j, i);
+                            if (curr_index == -1) {
+                                mask_(k, j, i) = index;
+                                reflections[index].set_mask_index(index);
+                            } else {
+                                scitbx::vec3 <double> point(i, j, k);
+                                scitbx::vec3 <double> curr_xyz = 
+                                    reflections[curr_index].get_image_coord();
+                                int distance = (xyz - point).length();
+                                int distance_curr = (curr_xyz - point).length();
+                                if (distance < distance_curr) {
+                                    mask_(k, j, i) = index;
+                                    reflections[index].set_mask_index(index);
                                 }
                             }
                         }

@@ -130,8 +130,9 @@ public:
      * For a given set of miller indices, predict the detector coordinates.
      * @param miller_indices The array of miller indices.
      */
-    ReflectionList predict(const af::flex_miller_index &miller_indices) const {
-        ReflectionList reflections;
+    scitbx::af::shared <Reflection>
+    predict(const af::flex_miller_index &miller_indices) const {
+        scitbx::af::shared <Reflection> reflections;
         for (std::size_t i = 0; i < miller_indices.size(); ++i) {
             scitbx::vec2 <Reflection> r = predict(miller_indices[i]);
             for (std::size_t j = 0; j < r.size(); ++j) {
@@ -146,8 +147,9 @@ public:
     /** 
      * Generate a set of miller indices and predict the detector coordinates.
      */
-    ReflectionList predict() {
-        ReflectionList reflections;
+    scitbx::af::shared <Reflection>     
+    predict() {
+        scitbx::af::shared <Reflection> reflections;
 
         // Continue looping until we run out of miller indices        
         for (;;) {

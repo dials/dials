@@ -14,6 +14,7 @@
 #include "../geometry/transform/from_xds_to_detector.h"
 #include "../geometry/transform/from_xds_e3_to_phi.h"
 #include "../array_family/array_types.h"
+#include "../reflection/reflection.h"
 
 namespace dials { namespace integration {
 
@@ -137,6 +138,27 @@ public:
         }
         return result;
     }
+    
+    /** 
+     * Calculate the rois for a reflection given by reflection struct
+     * @param reflection The reflection data
+     */    
+    void calculate(Reflection &reflection) {
+        reflection.set_region_of_interest( 
+            calculate(reflection.get_beam_vector(), 
+                      reflection.get_rotation_angle()));
+    }
+    
+    /** 
+     * Calculate the rois for an array of reflections given by the array of
+     * reflections
+     * @param reflections The list of reflections
+     */
+    void calculate(ReflectionList &reflections) {
+        for (int i = 0; i < reflections.size(); ++i) {
+            calculate(reflections[i]);
+        }
+    }    
     
 private:
 

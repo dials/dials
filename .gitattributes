@@ -165,6 +165,7 @@ scratch/jmp/dials/integration/boost_python/xds_transform_grid.cc -text
 scratch/jmp/dials/integration/centroid.h -text
 scratch/jmp/dials/integration/filter_reflection_by_roi_volume.py -text
 scratch/jmp/dials/integration/reflection_mask.h -text
+scratch/jmp/dials/integration/reflection_mask_creator.py -text
 scratch/jmp/dials/integration/reflection_mask_roi.h -text
 scratch/jmp/dials/integration/subtract_background.h -text
 scratch/jmp/dials/integration/xds_transform.h -text

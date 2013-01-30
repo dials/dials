@@ -5,6 +5,7 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
+#include <scitbx/array_family/shared.h>
 #include <cctbx/miller.h>
 
 namespace dials {
@@ -16,7 +17,9 @@ public:
         : miller_index_(0, 0, 0),
           rotation_angle_(0.0),
           beam_vector_(0.0, 0.0, 0.0),
-          image_coord_(0.0, 0.0, 0.0) {}
+          image_coord_(0.0, 0.0, 0.0),
+          region_of_interest_(0, 0, 0, 0, 0, 0),
+          mask_index_(-1) {}
           
     ReflectionData(cctbx::miller::index <> miller_index,
                    double rotation_angle,
@@ -25,7 +28,9 @@ public:
         : miller_index_(miller_index),
           rotation_angle_(rotation_angle),
           beam_vector_(beam_vector),
-          image_coord_(image_coord) {}
+          image_coord_(image_coord),
+          region_of_interest_(0, 0, 0, 0, 0, 0),
+          mask_index_(-1) {}
 
 public:
 
@@ -44,6 +49,14 @@ public:
     scitbx::vec3 <double> get_image_coord() const {
         return image_coord_;
     }
+    
+    scitbx::af::int6 get_region_of_interest() const {
+        return region_of_interest_;
+    }
+    
+    int get_mask_index() const {
+        return mask_index_;
+    }
 
     void set_miller_index(cctbx::miller::index <> miller_index) {
         miller_index_ = miller_index;
@@ -61,6 +74,14 @@ public:
         image_coord_ = image_coord;
     }
     
+    void set_region_of_interest(scitbx::af::int6 region_of_interest) {
+        region_of_interest_ = region_of_interest;
+    }
+    
+    void set_mask_index(int mask_index) {
+        mask_index_ = mask_index;
+    }
+    
     bool is_zero() {
         return miller_index_.is_zero();
     }
@@ -71,6 +92,8 @@ private:
     double                  rotation_angle_;
     scitbx::vec3 <double>   beam_vector_;
     scitbx::vec3 <double>   image_coord_;
+    scitbx::af::int6        region_of_interest_;
+    int                     mask_index_;
 };
 
 class Reflection : public ReflectionData {
@@ -88,7 +111,8 @@ public:
             image_coord) {}    
 };
 
-typedef scitbx::af::shared <Reflection> ReflectionList;
+//typedef scitbx::af::shared <Reflection> ReflectionList;
+typedef scitbx::af::flex <Reflection>::type ReflectionList;
 //typedef std::map <cctbx::miller::index <>, Reflection> ReflectionList;
     
 } // namespace dials

@@ -6,6 +6,7 @@
 #include <cctbx/miller.h>
 #include "../remove.h"
 #include "../array_types.h"
+#include "../../reflection/reflection.h"
 
 using namespace boost::python;
 
@@ -29,6 +30,7 @@ void export_remove()
     def("remove_if", &remove_if <dials::af::flex_tiny6_int>);
     def("remove_if", &remove_if <dials::af::flex_tiny6_double>);
     def("remove_if", &remove_if <dials::af::flex_miller_index>);
+    def("remove_if", &remove_if <ReflectionList>);
 
     def("remove_if_not", &remove_if_not <scitbx::af::flex_bool>);
     def("remove_if_not", &remove_if_not <scitbx::af::flex_int>);
@@ -44,6 +46,7 @@ void export_remove()
     def("remove_if_not", &remove_if_not <dials::af::flex_tiny6_int>);
     def("remove_if_not", &remove_if_not <dials::af::flex_tiny6_double>);
     def("remove_if_not", &remove_if_not <dials::af::flex_miller_index>);
+    def("remove_if_not", &remove_if_not <ReflectionList>);
 }
 
 } // namespace = boost_python

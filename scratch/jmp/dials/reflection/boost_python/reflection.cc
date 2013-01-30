@@ -17,10 +17,12 @@ namespace boost_python {
 std::string reflection_to_string(const Reflection &reflection) {
     boost::format fmt(
         "Reflection:\n"
-        "    miller index:      (%1%, %2%, %3%)\n"
-        "    rotation angle:    %4%\n"
-        "    beam vector:       (%5%, %6%, %7%)\n"
-        "    image coord:       (%8%, %9%, %10%)");
+        "    miller index:   (%1%, %2%, %3%)\n"
+        "    rotation angle: %4%\n"
+        "    beam vector:    (%5%, %6%, %7%)\n"
+        "    image coord:    (%8%, %9%, %10%)\n"
+        "    ROI:            (%11%, %12%, %13%, %14%, %15%, %16%)\n"
+        "    Mask index:     %17%");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -32,6 +34,13 @@ std::string reflection_to_string(const Reflection &reflection) {
     fmt % reflection.get_image_coord()[0];
     fmt % reflection.get_image_coord()[1];
     fmt % reflection.get_image_coord()[2];
+    fmt % reflection.get_region_of_interest()[0];
+    fmt % reflection.get_region_of_interest()[1];
+    fmt % reflection.get_region_of_interest()[2];
+    fmt % reflection.get_region_of_interest()[3];
+    fmt % reflection.get_region_of_interest()[4];
+    fmt % reflection.get_region_of_interest()[5];
+    fmt % reflection.get_mask_index();
     return fmt.str();
 }
 
@@ -58,6 +67,12 @@ void export_reflection()
         .add_property("image_coord",
             &Reflection::get_image_coord,
             &Reflection::set_image_coord)
+        .add_property("region_of_interest",
+            &Reflection::get_region_of_interest,
+            &Reflection::set_region_of_interest)
+        .add_property("mask_index",
+            &Reflection::get_mask_index,
+            &Reflection::set_mask_index)
         .def("is_zero", &Reflection::is_zero)
         .def("__str__", &reflection_to_string);          
         

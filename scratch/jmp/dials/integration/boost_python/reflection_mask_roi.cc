@@ -18,6 +18,12 @@ void export_reflection_mask_roi()
         const af::flex_vec3_double &, const scitbx::af::flex_double &) =
             &ReflectionMaskRoi::calculate;
 
+    void (ReflectionMaskRoi::*calculate_reflection) (Reflection &) = 
+        &ReflectionMaskRoi::calculate;
+
+    void (ReflectionMaskRoi::*calculate_reflection_list) (ReflectionList &) = 
+        &ReflectionMaskRoi::calculate;
+
     class_ <ReflectionMaskRoi> ("ReflectionMaskRoi")
         .def(init <const equipment::Beam &,
                    const equipment::Detector &,
@@ -34,7 +40,11 @@ void export_reflection_mask_roi()
                 arg("phi")))
         .def("calculate", calculate_array, (
                 arg("s1"),
-                arg("phi")));
+                arg("phi")))
+        .def("calculate", calculate_reflection, (
+                arg("reflection")))
+        .def("calculate", calculate_reflection_list, (
+                arg("reflections")));
 }
 
 } // namespace = boost_python

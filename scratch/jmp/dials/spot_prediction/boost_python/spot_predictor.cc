@@ -13,9 +13,9 @@ void export_spot_predictor()
 {
     scitbx::vec2 <Reflection> (SpotPredictor::*predict_single)(
         cctbx::miller::index <>) const = &SpotPredictor::predict;
-    ReflectionList (SpotPredictor::*predict_array)(
+    scitbx::af::shared <Reflection> (SpotPredictor::*predict_array)(
         const af::flex_miller_index &) const = &SpotPredictor::predict;
-    ReflectionList (SpotPredictor::*predict_generate)() = 
+    scitbx::af::shared <Reflection> (SpotPredictor::*predict_generate)() = 
         &SpotPredictor::predict;
                 
     class_ <SpotPredictor> ("SpotPredictor", no_init)
