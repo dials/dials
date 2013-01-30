@@ -158,6 +158,58 @@ centroid_reflection(const VolumeType &image, const MaskType &mask,
         scitbx::vec3 <double> (roi[0], roi[2], roi[4]);
 }
 
+template <typename VolumeType>
+scitbx::vec3 <double>
+centroid_reflection(const VolumeType &image, scitbx::af::tiny <int, 6> roi, 
+                    double threshold) {
+    typedef scitbx::vec3 <std::size_t> index_type;
+        
+    scitbx::af::flex_int centroid_mask(scitbx::af::flex_grid <> (
+                                            roi[5]-roi[4], 
+                                            roi[3]-roi[2], 
+                                            roi[1]-roi[0]), 0);
+    
+    scitbx::af::flex_int spot_image(scitbx::af::flex_grid <> (
+                                            roi[5]-roi[4], 
+                                            roi[3]-roi[2], 
+                                            roi[1]-roi[0]), 0);    
+    
+    // Threshold above given level and find the maximum value
+    index_type max_index(-1, -1, -1);
+    double max_image = 0;
+    for (std::size_t k = roi[4]; k < roi[5]; ++k) {
+        for (std::size_t j = roi[2]; j < roi[3]; ++j) {
+            for (std::size_t i = roi[0]; i < roi[1]; ++i) {
+                if (image(k, j, i) >= threshold) {
+                    std::size_t k1 = k - roi[4];
+                    std::size_t j1 = j - roi[2];
+                    std::size_t i1 = i - roi[0];
+                    centroid_mask(k1, j1, i1) = 1;
+                    spot_image(k1, j1, i1) = image(k, j, i);
+                    if (max_image < image(k, j, i)) {
+                        max_image = image(k, j, i);
+                        max_index = index_type(i1, j1, k1);
+                    }
+                }
+            }
+        }
+    }
+    
+    // Ensure we have an index    
+    DIALS_ASSERT(max_image > 0);
+
+    // Select the spot peak pixels
+    mask_adjacent_pixels(centroid_mask, max_index);
+    
+    // Create the roi
+    scitbx::af::tiny <int, 6> spot_roi(0, roi[1]-roi[0], 0, roi[3]-roi[2], 0, roi[5]-roi[4]);
+
+    // Centroid the spot image
+    return centroid3d(spot_image, centroid_mask, spot_roi, 2) + 
+        scitbx::vec3 <double> (roi[0], roi[2], roi[4]);
+}
+
+
 }} // namespace dials::integration
 
 #endif // DIALS_INTEGRATION_CENTROID_H

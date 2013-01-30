@@ -47,7 +47,7 @@ public:
      * @param c The xds coordinate
      * @returns The detector coordinate
      */
-    scitbx::vec2 <double> apply(scitbx::vec3 <double> c) {
+    scitbx::vec2 <double> apply(scitbx::vec3 <double> c) const {
         return from_beam_vector_to_detector_.apply(
                     from_xds_to_beam_vector_.apply(c));
     }

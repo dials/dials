@@ -56,7 +56,7 @@ public:
      * @param phi The rotation angle
      * @returns The XDS coordinate
      */
-    scitbx::vec3 <double> apply(scitbx::vec2 <double> xy, double phi_dash) {
+    scitbx::vec3 <double> apply(scitbx::vec2 <double> xy, double phi_dash) const {
         return s1_to_xds_.apply(xy_to_s1_.apply(xy).normalize() * wavelength_r_, 
                                 phi_dash);
     }

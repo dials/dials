@@ -45,7 +45,7 @@ public:
      * @returns The two rotation angles that satisfy the laue equations
      * @throws error if no angles exist.
      */
-    scitbx::vec2 <double> calculate(scitbx::vec3 <double> pstar0) {
+    scitbx::vec2 <double> calculate(scitbx::vec3 <double> pstar0) const {
 
         // Calculate sq length of pstar0 and ensure p*^2 <= 4s0^2
         double pstar0_len_sq = pstar0.length_sq();
@@ -88,19 +88,19 @@ public:
      * @returns The two rotation angles.
      */
     scitbx::vec2 <double> calculate(cctbx::miller::index <> miller_index, 
-                                    scitbx::mat3 <double> ub_matrix) {
+                                    scitbx::mat3 <double> ub_matrix) const {
         return calculate(ub_matrix * miller_index);
     }    
 
 private:
 
     /** Calculate the goniometer m1 axis (m1 = m2xs0 / |m2xs0|) */
-    scitbx::vec3 <double> calculate_goniometer_m1_axis() {
+    scitbx::vec3 <double> calculate_goniometer_m1_axis() const {
         return m2_.cross(s0_).normalize();
     }
 
     /** Calculate the goniometer m3 axis (m3 = m1xs2) */
-    scitbx::vec3 <double> calculate_goniometer_m3_axis() {
+    scitbx::vec3 <double> calculate_goniometer_m3_axis() const {
         return m1_.cross(m2_).normalize();
     }
 

@@ -12,10 +12,10 @@ namespace boost_python {
 void export_xds_rotation_angles()
 {
     scitbx::vec2 <double> (XdsRotationAngles::*calculate_pstar0) (
-        scitbx::vec3 <double>) = &XdsRotationAngles::calculate;
+        scitbx::vec3 <double>) const = &XdsRotationAngles::calculate;
 
     scitbx::vec2 <double> (XdsRotationAngles::*calculate_miller) (
-        cctbx::miller::index <>, scitbx::mat3 <double>) = 
+        cctbx::miller::index <>, scitbx::mat3 <double>) const = 
             &XdsRotationAngles::calculate;
 
     class_ <XdsRotationAngles> ("XdsRotationAngles", no_init)

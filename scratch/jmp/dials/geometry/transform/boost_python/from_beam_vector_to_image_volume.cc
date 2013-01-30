@@ -14,12 +14,12 @@ void export_from_beam_vector_to_image_volume()
 {
     // Apply to a single beam vector
     scitbx::vec3 <double> (FromBeamVectorToImageVolume::*apply_single)(
-        scitbx::vec3 <double>, double) = &FromBeamVectorToImageVolume::apply;
+        scitbx::vec3 <double>, double) const = &FromBeamVectorToImageVolume::apply;
 
     // Apply to array of beam vectors
     flex_vec3_double (FromBeamVectorToImageVolume::*apply_array)(
         const flex_vec3_double&, const scitbx::af::flex_double&, 
-        scitbx::af::flex_bool&) = &FromBeamVectorToImageVolume::apply;
+        scitbx::af::flex_bool&) const = &FromBeamVectorToImageVolume::apply;
 
     class_ <FromBeamVectorToImageVolume> ("FromBeamVectorToImageVolume")
         .def(init <const equipment::Detector&,

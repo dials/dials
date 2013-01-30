@@ -30,11 +30,16 @@ void export_centroid()
         const scitbx::af::flex_int&, scitbx::af::tiny <int, 6>, int, double) =
             &centroid_reflection <scitbx::af::flex_int, scitbx::af::flex_int>;
 
+    scitbx::vec3 <double> (*centroid_reflection_int_no_mask)(
+        const scitbx::af::flex_int &, scitbx::af::tiny <int, 6>, double) =
+            &centroid_reflection <scitbx::af::flex_int>;
+
     def("centroid2d", centroid2d_int);
     def("centroid3d", centroid3d_int);
     def("centroid2d", centroid2d_int_mask);
     def("centroid3d", centroid3d_int_mask);
     def("centroid_reflection", centroid_reflection_int);
+    def("centroid_reflection", centroid_reflection_int_no_mask);
 }
 
 } // namespace = boost_python

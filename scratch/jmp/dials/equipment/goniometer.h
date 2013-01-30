@@ -100,7 +100,7 @@ public:
      * @param frame The frame number
      * @returns The angle corresponding to the frame number
      */
-    double get_angle_from_zero_based_frame(double frame) {
+    double get_angle_from_zero_based_frame(double frame) const {
         return starting_angle_ + frame * oscillation_range_;
     }
     
@@ -113,7 +113,7 @@ public:
      * @param wrap Boolean, wrap the angle
      * @returns The frame number corresponding to the rotation angle
      */
-    double get_zero_based_frame_from_angle(double angle, bool wrap) {
+    double get_zero_based_frame_from_angle(double angle, bool wrap) const {
         if (wrap) angle = wrap_angle(angle);
         return (angle - starting_angle_) / oscillation_range_;
     }
@@ -123,7 +123,7 @@ public:
      * @param frame The frame number
      * @returns The angle corresponding to the frame number
      */
-    double get_angle_from_frame(double frame) {
+    double get_angle_from_frame(double frame) const {
         return get_angle_from_zero_based_frame(frame - starting_frame_);
     }
 
@@ -133,22 +133,22 @@ public:
      * @param wrap Boolean, wrap the angle
      * @returns The frame number corresponding to the rotation angle
      */
-    double get_frame_from_angle(double angle, bool wrap) {
+    double get_frame_from_angle(double angle, bool wrap) const {
         return get_zero_based_frame_from_angle(angle, wrap) + starting_frame_;
     }
     
     /** Check if the zero based frame is within the range of frames */
-    bool is_zero_based_frame_valid(double frame) {
+    bool is_zero_based_frame_valid(double frame) const {
         return num_frames_ <= 0 || (frame >= 0 && frame < num_frames_);
     }
 
     /** Check if the frame is within the range of frames */
-    bool is_frame_valid(double frame) {
+    bool is_frame_valid(double frame) const {
         return is_zero_based_frame_valid(frame - starting_frame_);
     }
     
     /** Check if the angle is valid within the given range */
-    bool is_angle_valid(double angle, bool wrap) {
+    bool is_angle_valid(double angle, bool wrap) const {
         return num_frames_ <= 0 || is_zero_based_frame_valid(
             get_zero_based_frame_from_angle(angle, wrap));
     }
@@ -156,12 +156,12 @@ public:
 private:
     
     /** Get the angle % 360 */
-    double mod_360(double angle) {
+    double mod_360(double angle) const {
         return angle - 360.0 * std::floor(angle / 360.0);
     }    
 
     /** Wrap angle to be the lowest value greater than the starting angle */    
-    double wrap_angle(double angle) {
+    double wrap_angle(double angle) const {
         angle = mod_360(angle);
         if (angle < starting_angle_) {
             angle += 360 * (floor(starting_angle_ / 360.0) + 1);

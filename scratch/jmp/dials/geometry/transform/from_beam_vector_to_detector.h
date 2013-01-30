@@ -51,7 +51,7 @@ public:
      * @throws std::runtime_error if beam vector does not intersect with the
      *         detector plane
      */
-    scitbx::vec2 <double> apply(scitbx::vec3 <double> s1) {
+    scitbx::vec2 <double> apply(scitbx::vec3 <double> s1) const {
         double s1_dot_n = s1 * normal_;
         DIALS_ASSERT(distance_ * s1_dot_n > 0);
         return scitbx::vec2 <double> (
@@ -66,7 +66,7 @@ public:
      * @returns An array of 2 element vectors containing the pixel coordinates
      */
     flex_vec2_double apply(const flex_vec3_double &s1, 
-                           scitbx::af::flex_bool &status) {
+                           scitbx::af::flex_bool &status) const {
         flex_vec2_double result(s1.size());
         status.resize(s1.size());
         for (int i = 0; i < s1.size(); ++i) {

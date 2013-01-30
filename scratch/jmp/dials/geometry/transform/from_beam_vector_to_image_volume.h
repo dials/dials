@@ -34,7 +34,7 @@ public:
      * @param phi The rotation angle
      * @returns The (x, y, z) image volume coordinate
      */
-    scitbx::vec3 <double> apply(scitbx::vec3 <double> s1, double phi) {
+    scitbx::vec3 <double> apply(scitbx::vec3 <double> s1, double phi) const {
         scitbx::vec2 <double> xy = from_beam_vector_to_detector_.apply(s1);
         return scitbx::vec3 <double> (
             xy[0], xy[1],
@@ -50,7 +50,7 @@ public:
      */
     flex_vec3_double apply(const flex_vec3_double &s1, 
                            const scitbx::af::flex_double &phi,
-                           scitbx::af::flex_bool &status) {
+                           scitbx::af::flex_bool &status) const {
         DIALS_ASSERT(s1.size() == phi.size());
         status.resize(s1.size());
         flex_vec3_double result(s1.size());

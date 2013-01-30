@@ -43,7 +43,7 @@ public:
      * @param xy The detector coordinates
      * @returns The beam vector
      */
-    scitbx::vec3 <double> apply(scitbx::vec2 <double> xy) {
+    scitbx::vec3 <double> apply(scitbx::vec2 <double> xy) const {
         return (xy[0] - origin_[0]) * x_axis_ + 
                (xy[1] - origin_[1]) * y_axis_ + 
                distance_scaled_normal_;

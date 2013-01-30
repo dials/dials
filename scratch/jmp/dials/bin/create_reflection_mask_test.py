@@ -73,8 +73,8 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     from dials.array_family import flex
     from scitbx import matrix
 
-    xcorr_filename = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/test/data/X-CORRECTIONS.cbf'
-    ycorr_filename = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/test/data/Y-CORRECTIONS.cbf'
+    xcorr_filename = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/test/data/sim_mx/X-CORRECTIONS.cbf'
+    ycorr_filename = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/test/data/sim_mx/Y-CORRECTIONS.cbf'
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)
@@ -118,17 +118,44 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
                                    space_group_type, 
                                    matrix.sqr(ub_matrix).inverse(), d_min)
 
-    miller_indices = integrate_handle.hkl
-    new_miller_indices = []
-    for i, hkl in enumerate(miller_indices):
-        if i > 0:
-            if hkl != last_hkl:
-                new_miller_indices.append(hkl)
-        else:
-            new_miller_indices.append(hkl)
-        last_hkl = hkl
+    import numpy
+    hkl = integrate_handle.hkl
+    xyz = integrate_handle.xyzcal
+    iobs = numpy.array(integrate_handle.iobs)
+    sigma = numpy.array(integrate_handle.sigma)
+    iobs_over_sigma = iobs / sigma
     
-    miller_indices = flex.miller_index(new_miller_indices)
+    reflection_list = zip(hkl, iobs_over_sigma, xyz)
+    
+    rl = []
+    for r in reflection_list:
+        if r[2][2] < 100:
+            rl.append(r)    
+    reflection_list = rl    
+    reflection_list = sorted(reflection_list, key=lambda a: a[1])[::-1]
+    reflection_list = reflection_list[0:20]    
+    reflection_list = sorted(reflection_list, key=lambda a: a[0][2])
+    reflection_list = sorted(reflection_list, key=lambda a: a[0][1])
+    reflection_list = sorted(reflection_list, key=lambda a: a[0][0])
+    
+    for i in reflection_list:
+        print i
+        
+    hkl, iobsos, xyz = zip(*reflection_list)
+    
+    miller_indices = flex.miller_index(hkl)
+
+    #miller_indices = integrate_handle.hkl
+    #new_miller_indices = []
+    #for i, hkl in enumerate(miller_indices):
+    #    if i > 0:
+    #        if hkl != last_hkl:
+    #            new_miller_indices.append(hkl)
+    #    else:
+    #        new_miller_indices.append(hkl)
+    #    last_hkl = hkl
+   # 
+    #miller_indices = flex.miller_index(new_miller_indices)
     
     # Predict the spot image volume coordinates 
     print "Predicting spots"
@@ -143,58 +170,64 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     beam_vectors = spot_predictor.beam_vectors
     image_volume_coords = spot_predictor.image_coordinates
 
-    # Create the reflection mask regions of interest
-    print "Creating reflection mask Roi for {0} spots".format(len(miller_indices))
-    start_time = time()
-    reflection_mask_roi = ReflectionMaskRoi(
-                            beam, detector, gonio, 
-                            n_sigma * sigma_divergence, 
-                            n_sigma * sigma_mosaicity)
-    region_of_interest = reflection_mask_roi.calculate(
-                            beam_vectors, rotation_angles)
+    region_of_interest = flex.tiny6_int(len(image_volume_coords))
+    for i, xyz in enumerate(image_volume_coords):
+        region_of_interest[i] = (int(xyz[0])-5, int(xyz[0])+5,
+                                 int(xyz[1])-5, int(xyz[1])+5,
+                                 int(xyz[2])-5, int(xyz[2])+5)
 
-    finish_time = time()
-    print "Time taken: {0} s".format(finish_time - start_time)
+    # Create the reflection mask regions of interest
+    #print "Creating reflection mask Roi for {0} spots".format(len(miller_indices))
+    #start_time = time()
+    #reflection_mask_roi = ReflectionMaskRoi(
+    #                        beam, detector, gonio, 
+    #                        n_sigma * sigma_divergence, 
+    #                        n_sigma * sigma_mosaicity)
+    #region_of_interest = reflection_mask_roi.calculate(
+    #                        beam_vectors, rotation_angles)
+
+    #finish_time = time()
+    #print "Time taken: {0} s".format(finish_time - start_time)
 
     # Filter the reflections by region of interest volume
-    print "Filtering reflections by ROI"
-    start_time = time()
-    valid_roi = filter_reflections_by_roi_volume(region_of_interest, 0.99)
+    #print "Filtering reflections by ROI"
+    #start_time = time()
+    #valid_roi = filter_reflections_by_roi_volume(region_of_interest, 0.99)
 #    miller_indices      = remove_if_not(miller_indices, valid_roi)
 #    rotation_angles     = remove_if_not(rotation_angles, valid_roi)
 #    beam_vectors        = remove_if_not(beam_vectors, valid_roi)
 #    image_volume_coords = remove_if_not(image_volume_coords, valid_roi)
 #    region_of_interest  = remove_if_not(region_of_interest, valid_roi)
-    finish_time = time()
-    print "Time taken: {0} s".format(finish_time - start_time)
+    #finish_time = time()
+    #print "Time taken: {0} s".format(finish_time - start_time)
     
-    range_x = [roi[1] - roi[0] for roi in region_of_interest]
-    range_y = [roi[3] - roi[2] for roi in region_of_interest]
-    range_z = [roi[5] - roi[4] for roi in region_of_interest]
-    range_phi = [gonio.get_angle_from_zero_based_frame(roi[5]) -
-                 gonio.get_angle_from_zero_based_frame(roi[4]) 
-                    for roi in region_of_interest]
+    #range_x = [roi[1] - roi[0] for roi in region_of_interest]
+    #range_y = [roi[3] - roi[2] for roi in region_of_interest]
+    #range_z = [roi[5] - roi[4] for roi in region_of_interest]
+    #range_phi = [gonio.get_angle_from_zero_based_frame(roi[5]) -
+    #             gonio.get_angle_from_zero_based_frame(roi[4]) 
+    #                for roi in region_of_interest]
                  
-    volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
-    print "Min/Max ROI X Range:   ", min(range_x), max(range_x)
-    print "Min/Max ROI Y Range:   ", min(range_y), max(range_y)
-    print "Min/Max ROI Z Range:   ", min(range_z), max(range_z)
-    print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
-    print "Min/Max ROI Volume:    ", min(volume), max(volume)
+    #volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
+    #print "Min/Max ROI X Range:   ", min(range_x), max(range_x)
+   # print "Min/Max ROI Y Range:   ", min(range_y), max(range_y)
+    #print "Min/Max ROI Z Range:   ", min(range_z), max(range_z)
+    #print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
+    #print "Min/Max ROI Volume:    ", min(volume), max(volume)
 
     # Create the reflection mask itself
-    print "Creating reflection mask for {0} reflections".format(len(region_of_interest))
-    start_time = time()
-    reflection_mask = ReflectionMask(image_volume.shape)
-    valid_roi = reflection_mask.create(image_volume_coords, region_of_interest)
-    finish_time = time()
-    print "Time taken: {0} s".format(finish_time - start_time)
-    print "Created reflection mask for {0} reflections".format(len(region_of_interest))
+    #print "Creating reflection mask for {0} reflections".format(len(region_of_interest))
+    #start_time = time()
+    #reflection_mask = ReflectionMask(image_volume.shape)
+    #valid_roi = reflection_mask.create(image_volume_coords, region_of_interest)
+    #finish_time = time()
+   # print "Time taken: {0} s".format(finish_time - start_time)
+    #print "Created reflection mask for {0} reflections".format(len(region_of_interest))
     
-    index = 120
-    hkl_gen = miller_indices[index]
-    roi_gen = region_of_interest[index]
-    xyz_gen = image_volume_coords[index]
+    #index = 120
+    #hkl_gen = miller_indices[index]
+    #roi_gen = region_of_interest[index]
+    #xyz_gen = image_volume_coords[index]
 
     import numpy
     xcorr = xcorr_handle.get_correction(detector.size[::-1])
@@ -233,41 +266,35 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
 #        xyz_obs = None
 
     threshold = 10
-    xyz_obs = centroid_reflection(flex.int(image_volume), reflection_mask.mask, 
-                                  roi_gen, index, threshold)
 
-    
-#    for z in range(roi_gen[4],roi_gen[5]):
-#        mask = flex.int(reflection_mask.mask.as_numpy_array()[z,:,:])
-#        xy = centroid2d(flex.int(image_volume[z,:,:]), mask, roi_gen[0:4], index)
-#        xy = (xy[0] + xcorr[xy[1], xy[0]], xy[1] + ycorr[xy[1], xy[0]]) 
-#        print z, xy
-        
-    #print xcorr[xyz_obs[1]-5:xyz_obs[1]+5, xyz_obs[0]-5:xyz_obs[0]+5]
+    for xyz, roi in zip(image_volume_coords, region_of_interest):
+        xyz_obs = centroid_reflection(flex.int(image_volume), roi, threshold)
+        xyz_obs_corr = (xyz_obs[0] + xcorr[xyz_obs[1], xyz_obs[0]], 
+                        xyz_obs[1] + ycorr[xyz_obs[1], xyz_obs[0]], 
+                        xyz_obs[2])
+        diff = (xyz_obs[0] - xyz[0], xyz_obs[1] - xyz[1], xyz_obs[2] - xyz[2])
+        print "---------------------------------------"
+        print "XYZ Cal:      {0:.1f}, {1:.1f}, {2:.1f}".format(*xyz)
+        print "XYZ Obs:      {0:.1f}, {1:.1f}, {2:.1f}".format(*xyz_obs)
+        print "XYZ Obs Corr: {0:.1f}, {1:.1f}, {2:.1f}".format(*xyz_obs_corr)
+        print "Diff:         {0:.1f}, {1:.1f}, {2:.1f}".format(*diff)
 
-    #xyz_obs_corr = centroid(flex.int(image_volume), reflection_mask.mask, roi_gen, index, xcorr, ycorr)
-
-
-    
-    xyz_obs_corr = (xyz_obs[0] + xcorr[xyz_obs[1], xyz_obs[0]], 
-                    xyz_obs[1] + ycorr[xyz_obs[1], xyz_obs[0]], 
-                    xyz_obs[2])
     #xy_obs = centroid2d(flex.int(image_volume[xyz[2],:,:]), (roi[0], roi[1], roi[2], roi[3]))
-    xds_hkl_xyz_cal = {}
-    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzcal): 
-        xds_hkl_xyz_cal[hkl] = xyz
+#    xds_hkl_xyz_cal = {}
+#    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzcal): 
+#        xds_hkl_xyz_cal[hkl] = xyz
 
-    xds_hkl_xyz_obs = {}
-    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzobs): 
-        xds_hkl_xyz_obs[hkl] = xyz
-    
-    print "HKL: ", hkl_gen
-    print "XYZ_CAL: ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_gen)
-    print "ROI: ", roi_gen
-    print "XYZ_OBS:  ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_obs)
-    print "XYZ_OBS_CORR:  ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_obs_corr)
-    print "XYZ_CAL_XDS: ", xds_hkl_xyz_cal[hkl_gen]
-    print "XYZ_OBS_XDS: ", xds_hkl_xyz_obs[hkl_gen]
+#    xds_hkl_xyz_obs = {}
+#    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzobs): 
+#        xds_hkl_xyz_obs[hkl] = xyz
+#    
+#    print "HKL: ", hkl_gen
+#    print "XYZ_CAL: ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_gen)
+#    print "ROI: ", roi_gen
+#    print "XYZ_OBS:  ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_obs)
+#    print "XYZ_OBS_CORR:  ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_obs_corr)
+#    print "XYZ_CAL_XDS: ", xds_hkl_xyz_cal[hkl_gen]
+#    print "XYZ_OBS_XDS: ", xds_hkl_xyz_obs[hkl_gen]
 
 def centroid(image, mask, roi, value, xcorr, ycorr):
     xc = 0.0

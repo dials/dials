@@ -28,7 +28,7 @@ public:
      * @param e3 The XDS e3 coordinate
      * @returns The rotation angle phi'
      */
-    double apply(double e3) {
+    double apply(double e3) const {
         return e3 / zeta_ + phi_;
     }
 

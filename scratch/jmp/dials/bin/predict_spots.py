@@ -94,10 +94,13 @@ def predict_spots(input_filename, cbf_search_path, d_min, display_frame):
     # Predict the spot image volume coordinates 
     print "Predicting spots"
     start_time = time()
-    spot_predictor.predict()
-    image_volume_coords = spot_predictor.image_coordinates
+    reflections = spot_predictor.predict()
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
+
+    image_volume_coords = []
+    for r in reflections:
+        image_volume_coords.append(r.image_coord)
 
     # If display frame selected then visualize
     for frame in display_frame:

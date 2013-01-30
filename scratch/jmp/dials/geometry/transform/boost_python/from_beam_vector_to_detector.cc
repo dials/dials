@@ -14,11 +14,11 @@ void export_from_beam_vector_to_detector()
 {
     // Apply to a single beam vector
     scitbx::vec2 <double> (FromBeamVectorToDetector::*apply_single)(
-        scitbx::vec3 <double>) = &FromBeamVectorToDetector::apply;
+        scitbx::vec3 <double>) const = &FromBeamVectorToDetector::apply;
 
     // Apply to array of beam vectors
     flex_vec2_double (FromBeamVectorToDetector::*apply_array)(
-        const flex_vec3_double&, scitbx::af::flex_bool&) = 
+        const flex_vec3_double&, scitbx::af::flex_bool&) const = 
             &FromBeamVectorToDetector::apply;
 
     class_ <FromBeamVectorToDetector> ("FromBeamVectorToDetector")

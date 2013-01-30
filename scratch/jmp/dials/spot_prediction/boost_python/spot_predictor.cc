@@ -11,20 +11,21 @@ namespace boost_python {
 
 void export_spot_predictor()
 {
-    void (SpotPredictor::*predict_single)(cctbx::miller::index <>) =
+    scitbx::vec2 <Reflection> (SpotPredictor::*predict_single)(
+        cctbx::miller::index <>) const = &SpotPredictor::predict;
+    ReflectionList (SpotPredictor::*predict_array)(
+        const af::flex_miller_index &) const = &SpotPredictor::predict;
+    ReflectionList (SpotPredictor::*predict_generate)() = 
         &SpotPredictor::predict;
-    void (SpotPredictor::*predict_array)(const af::flex_miller_index &) =
-        &SpotPredictor::predict;
-    void (SpotPredictor::*predict_generate)() = &SpotPredictor::predict;
                 
     class_ <SpotPredictor> ("SpotPredictor", no_init)
         .def(init <const equipment::Beam &,
-                  const equipment::Detector &,
-                  const equipment::Goniometer &,
-                  const cctbx::uctbx::unit_cell &,
-                  const cctbx::sgtbx::space_group_type &,
-                  scitbx::mat3 <double>,
-                  double> ((
+                   const equipment::Detector &,
+                   const equipment::Goniometer &,
+                   const cctbx::uctbx::unit_cell &,
+                   const cctbx::sgtbx::space_group_type &,
+                   scitbx::mat3 <double>,
+                   double> ((
             arg("beam"),
             arg("detector"),
             arg("goniometer"),
@@ -36,15 +37,7 @@ void export_spot_predictor()
             arg("miller_index")))
         .def("predict", predict_array, (
             arg("miller_indices")))
-        .def("predict", predict_generate)        
-        .add_property("miller_indices",
-            &SpotPredictor::get_miller_indices)
-        .add_property("rotation_angles",
-            &SpotPredictor::get_rotation_angles)
-        .add_property("beam_vectors",
-            &SpotPredictor::get_beam_vectors)            
-        .add_property("image_coordinates",
-            &SpotPredictor::get_image_coordinates);
+        .def("predict", predict_generate);
 }
 
 } // namespace = boost_python

@@ -47,7 +47,7 @@ public:
      * @param phi_dash The rotation angle for the beam vector.
      * @returns The point in XDS coordinates
      */
-    scitbx::vec3 <double> apply(scitbx::vec3 <double> s_dash, double phi_dash) {
+    scitbx::vec3 <double> apply(scitbx::vec3 <double> s_dash, double phi_dash) const {
         return scitbx::vec3 <double> (
             scaled_e1_ * (s_dash - s1_), 
             scaled_e2_ * (s_dash - s1_), 

@@ -82,7 +82,7 @@ private:
      * @returns The loop structure
      */
     scitbx::af::nested_loop <cctbx::miller::index <> > initialise_loop(
-            cctbx::miller::index <> const& reference_h_max) {
+            cctbx::miller::index <> const& reference_h_max) const {
         return scitbx::af::nested_loop <cctbx::miller::index <> >(
             -reference_h_max, reference_h_max + 1);
     }

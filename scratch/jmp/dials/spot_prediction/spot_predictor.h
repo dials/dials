@@ -10,6 +10,7 @@
 #include "xds_rotation_angles.h"
 #include "../array_family/array_types.h"
 #include "../geometry/transform/from_beam_vector_to_detector.h"
+#include "../reflection/reflection.h"
 
 
 namespace dials { namespace spot_prediction {
@@ -68,7 +69,9 @@ public:
      *
      * @param h The miller index
      */
-    void predict(cctbx::miller::index <> h) {
+    scitbx::vec2 <Reflection> predict(cctbx::miller::index <> h) const {
+
+        scitbx::vec2 <Reflection> reflections;
 
         // Calculate the reciprocal space vector
         scitbx::vec3 <double> pstar0 = ub_matrix_ * h;
@@ -78,7 +81,7 @@ public:
         try {
             phi = rotation_angle_calculator_.calculate(pstar0);
         } catch(error) {
-            return;
+            return reflections;
         }
 
         // Loop through the 2 rotation angles
@@ -115,34 +118,36 @@ public:
             if (!detector_.is_coordinate_valid(xy)) {
                 continue;
             }
-            miller_indices_.push_back(h);
-            rotation_angles_.push_back(phi_deg);
-            beam_vectors_.push_back(s1);
-            image_coords_.push_back(scitbx::vec3 <double> (xy[0], xy[1], z));
+            
+            // Add the reflection
+            reflections[i] = Reflection(
+                h, phi_deg, s1, scitbx::vec3 <double> (xy[0], xy[1], z));
         }
+        return reflections;
     }
     
     /**
      * For a given set of miller indices, predict the detector coordinates.
      * @param miller_indices The array of miller indices.
      */
-    void predict(const af::flex_miller_index &miller_indices) {
-    
-        // Reset all the arrays
-        reset();
-    
+    ReflectionList predict(const af::flex_miller_index &miller_indices) const {
+        ReflectionList reflections;
         for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-            predict(miller_indices[i]);
+            scitbx::vec2 <Reflection> r = predict(miller_indices[i]);
+            for (std::size_t j = 0; j < r.size(); ++j) {
+                if (!r[j].is_zero()) {
+                    reflections.push_back(r[j]);
+                }
+            }
         }
+        return reflections;
     }
     
     /** 
      * Generate a set of miller indices and predict the detector coordinates.
      */
-    void predict() {
-
-        // Reset all the arrays
-        reset();
+    ReflectionList predict() {
+        ReflectionList reflections;
 
         // Continue looping until we run out of miller indices        
         for (;;) {
@@ -154,42 +159,20 @@ public:
             }
 
             // Predict the spot location for the miller index
-            predict(h);
-        }     
-    }
-    
-    /** Get the array of miller indices */
-    scitbx::af::shared <cctbx::miller::index <> > get_miller_indices() {
-        return miller_indices_;
-    }
-    
-    /** Get the rotation angles */
-    scitbx::af::shared <double> get_rotation_angles() {
-        return rotation_angles_;
-    }
-    
-    /** Get the beam vectors */
-    scitbx::af::shared <scitbx::vec3 <double> > get_beam_vectors() {
-        return beam_vectors_;
-    }
-    
-    /** Get the image coordinates */
-    scitbx::af::shared <scitbx::vec3 <double> > get_image_coordinates() {
-        return image_coords_;
+            scitbx::vec2 <Reflection> r = predict(h);
+            for (std::size_t j = 0; j < r.size(); ++j) {
+                if (!r[j].is_zero()) {
+                    reflections.push_back(r[j]);
+                }
+            }            
+        }
+        return reflections; 
     }
 
 private:
    
-    /** Reset all the arrays */
-    void reset() {
-        miller_indices_.clear();
-        rotation_angles_.clear();
-        beam_vectors_.clear();
-        image_coords_.clear();    
-    }
-   
     /** Get the angle % 360 */
-    double mod_360(double angle) {
+    double mod_360(double angle) const {
         return angle - 360.0 * std::floor(angle / 360.0);
     }       
    
@@ -204,10 +187,6 @@ private:
     scitbx::mat3 <double> ub_matrix_;
     scitbx::vec3 <double> s0_;
     scitbx::vec3 <double> m2_;
-    scitbx::af::shared <cctbx::miller::index <> > miller_indices_;
-    scitbx::af::shared <double> rotation_angles_;
-    scitbx::af::shared <scitbx::vec3 <double> > beam_vectors_;
-    scitbx::af::shared <scitbx::vec3 <double> > image_coords_;    
 };
 
 }} // namespace dials::spot_prediction
