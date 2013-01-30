@@ -153,25 +153,29 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
     print "Min/Max ROI Volume:    ", min(volume), max(volume)
  
-    # Display frames   
-    if display_frame:
-        for frame in display_frame:
-            print "Displaying reflection mask for frame \"{0}\"".format(frame)
-            visualize_frame_reflection_mask(
-                reflection_mask_creator.mask.as_numpy_array(), 
-                frame, 
-                image_volume_coords)
+#    # Display frames   
+#    if display_frame:
+#        for frame in display_frame:
+#            print "Displaying reflection mask for frame \"{0}\"".format(frame)
+#            visualize_frame_reflection_mask(
+#                reflection_mask_creator.mask.as_numpy_array(), 
+#                frame, 
+#                image_volume_coords)
 
-    # Display spots
-    if display_spot:
-        for spot in display_spot:
-            print "Displaying reflection mask for spot \"{0}\"".format(spot)
-            visualize_spot_reflection_mask(
-                reflection_mask_creator.mask.as_numpy_array(), 
-                spot, 
-                image_volume_coords, 
-                region_of_interest, 10)
+#    # Display spots
+#    if display_spot:
+#        for spot in display_spot:
+#            print "Displaying reflection mask for spot \"{0}\"".format(spot)
+#            visualize_spot_reflection_mask(
+#                reflection_mask_creator.mask.as_numpy_array(), 
+#                spot, 
+#                image_volume_coords, 
+#                region_of_interest, 10)
 
+    # 3D volume rendering
+    from spot_visualization import SpotVisualization
+    vis = SpotVisualization()
+    vis.visualize_reflections(image_volume, region_of_interest)
                               
 if __name__ == '__main__':
 
