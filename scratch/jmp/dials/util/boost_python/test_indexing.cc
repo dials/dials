@@ -201,7 +201,7 @@ class MyMap : public MyMapBase <int, int> {
 public:
 
   typedef MyMapBase <int, int> map_type;
-  typedef typename map_type::const_iterator const_iterator;
+  typedef map_type::const_iterator const_iterator;
 
   void print() const {
     for (const_iterator it = begin(); it != end(); ++it) {
