@@ -91,23 +91,23 @@ namespace dftbx {
     class ReflectionList {
   public:
 
-    typedef ObservationList<T> observation_list_type;
+    typedef ObservationList<T> observation_list_t;
 
-    typedef std::map<miller_index_t, observation_list_type> map_type;
+    typedef std::map<miller_index_t, observation_list_t> map_type;
     typedef typename map_type::iterator map_iterator_type;
 
-    T & operator[](miller_index_t hkl) {
+    observation_list_t & operator[](miller_index_t hkl) {
       return reflections_[hkl];
     }
 
-    const T & operator[](miller_index_t hkl) const {
+    const observation_list_t & operator[](miller_index_t hkl) const {
       return reflections_[hkl];
     }
 
     void merge(ReflectionList<T> & other) {
-      map_iterator_type ri;
-      for (ri = reflections_.begin(); ri != reflections_.end(); ++ri) {
-	ri->second.merge(other[ri->first]);
+      map_iterator_type mi;
+      for (mi = reflections_.begin(); mi != reflections_.end(); ++mi) {
+	mi->second.merge(other[mi->first]);
       }
     }
     
