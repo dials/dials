@@ -46,6 +46,11 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_slices.png -t
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.png -text
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tiff -text
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
+framework/dftbx/SConscript -text
+framework/dftbx/__init__.py -text
+framework/dftbx/dftbx.cpp -text
+framework/dftbx/dftbx.h -text
+framework/dftbx/tst_dftbx.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/x2tbx/SConscript -text
