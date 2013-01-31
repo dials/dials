@@ -10,6 +10,7 @@
 #include "../error.h"
 #include "../array_family/array_types.h"
 #include "background_intensity.h"
+#include "../reflection/reflection.h"
 
 namespace dials { namespace integration {
 
@@ -54,24 +55,24 @@ public:
      *
      * @param roi The region of interest
      */
-    void subtract(int index, scitbx::af::tiny <int, 6> roi) 
+    double subtract(int index, scitbx::af::tiny <int, 6> roi) 
     {
         // Check the roi is valid
         DIALS_ASSERT(is_roi_valid(roi));
         
         // Number of pixels in the ROI
-        int num_roi = (roi[1] + 1 - roi[0]) * 
-                      (roi[3] + 1 - roi[2]) * 
-                      (roi[5] + 1 - roi[4]);
+        int num_roi = (roi[1] - roi[0]) * 
+                      (roi[3] - roi[2]) * 
+                      (roi[5] - roi[4]);
     
         // Allocate memory for a temp array
         scitbx::af::flex_double data(num_roi);
         
         // Copy the image pixels into a temp array
         int data_index = 0;
-        for (int k = roi[4]; k <= roi[5]; ++k) {
-            for (int j = roi[2]; j <= roi[3]; ++j) {
-                for (int i = roi[0]; i <= roi[1]; ++i) {
+        for (int k = roi[4]; k < roi[5]; ++k) {
+            for (int j = roi[2]; j < roi[3]; ++j) {
+                for (int i = roi[0]; i < roi[1]; ++i) {
                     if (reflection_mask_(k, j, i) == index) {
                         data[data_index++] = image_volume_(k, j, i);
                     }
@@ -89,9 +90,9 @@ public:
                                         data_index));
 
         // Loop through elements, subtract background and ensure >= 0
-        for (int k = roi[4]; k <= roi[5]; ++k) {
-            for (int j = roi[2]; j <= roi[3]; ++j) {
-                for (int i = roi[0]; i <= roi[1]; ++i) {
+        for (int k = roi[4]; k < roi[5]; ++k) {
+            for (int j = roi[2]; j < roi[3]; ++j) {
+                for (int i = roi[0]; i < roi[1]; ++i) {
                     if (reflection_mask_(k, j, i) == index) {
                         image_volume_(k, j, i) -= background_value;
                         if (image_volume_(k, j, i) < 0) {
@@ -101,22 +102,29 @@ public:
                 }
             }
         }
+        
+        return background_value;
     }
 
     /**
      * Subtract the background for all reflections
-     * @param roi The array of regions of interest in the reflection mask
+     * @param reflections The array of reflections
+     * @returns The a boolean array containing the status for each reflection.
+     *          True/False was the background successfully subtracted
      */
-    void subtract(const af::flex_tiny6_int &roi, scitbx::af::flex_bool &status) {
-        DIALS_ASSERT(roi.size() == status.size());
-        for (int i = 0; i < roi.size(); ++i) {
+    scitbx::af::flex_bool subtract(ReflectionList &reflections) {
+        scitbx::af::flex_bool result(reflections.size());
+        for (int i = 0; i < reflections.size(); ++i) {
             try {
-                subtract(i, roi[i]);
-                status[i] = true;
+                reflections[i].set_background_intensity(
+                    subtract(reflections[i].get_mask_index(), 
+                         reflections[i].get_region_of_interest()));
+                result[i] = true;
             } catch(error) {
-                status[i] = false;
+                result[i] = false;
             }
         }
+        return result;
     }
     
     /** 
@@ -135,7 +143,7 @@ public:
 private:
 
     /** Ensure the images are 3D and of the same size */
-    bool are_image_sizes_valid() {
+    bool are_image_sizes_valid() const {
         return image_volume_.accessor().all().size() == 3
             && reflection_mask_.accessor().all().size() == 3
             && (image_volume_.accessor().all() == 
@@ -143,10 +151,10 @@ private:
     }
     
     /** Check the roi is valid */
-    bool is_roi_valid(scitbx::af::tiny <double, 6> roi) {
-        return roi[0] >= 0 && roi[1] < image_volume_.accessor().all()[2] &&
-               roi[2] >= 0 && roi[3] < image_volume_.accessor().all()[1] &&
-               roi[4] >= 0 && roi[5] < image_volume_.accessor().all()[0];
+    bool is_roi_valid(scitbx::af::tiny <double, 6> roi) const {
+        return roi[0] >= 0 && roi[1] <= image_volume_.accessor().all()[2] &&
+               roi[2] >= 0 && roi[3] <= image_volume_.accessor().all()[1] &&
+               roi[4] >= 0 && roi[5] <= image_volume_.accessor().all()[0];
     }    
 
     scitbx::af::flex_int image_volume_;

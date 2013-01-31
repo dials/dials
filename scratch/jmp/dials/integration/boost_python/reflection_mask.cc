@@ -19,7 +19,9 @@ void export_reflection_mask()
                 ReflectionList &) = &ReflectionMask::create;
 
     class_ <ReflectionMask> ("ReflectionMask")
-        .def(init <scitbx::vec3 <int> > ((
+        .def(init <const scitbx::af::flex_int &,
+                   scitbx::vec3 <int> > ((
+            arg("detector_mask"),
             arg("mask_size"))))
         .def("create",
             create_arrays, (

@@ -4,6 +4,9 @@ class SpotVisualization (object):
     def __init__(self):
         self.vmin = 0
         self.vmax = 1000
+        self.background_colour = (1.0, 1.0, 1.0)
+        self.roi_colour = (0.19, 0.55, 0.91)
+        self.window_size = (500, 500)
 
     def numpy_array_as_vtk_volume(self, image):
         """Create a VTK volume from the 3D numpy array."""
@@ -40,7 +43,7 @@ class SpotVisualization (object):
         # Set the volume colour function
         colorFunc = vtk.vtkColorTransferFunction()
         colorFunc.AddRGBPoint(0, 1.0, 1.0, 1.0)
-        colorFunc.AddRGBPoint(127, 1.0, 0.0, 0.0)
+        colorFunc.AddRGBPoint(127, 1.0, 1.0, 1.0)
         colorFunc.AddRGBPoint(255, 1.0, 0.0, 0.0)
 
         # Set the volume properties
@@ -81,7 +84,7 @@ class SpotVisualization (object):
         actor = vtk.vtkActor()
         actor.SetMapper(mapper)
         actor.GetProperty().SetRepresentationToWireframe()
-        actor.GetProperty().SetColor((0.19, 0.55, 0.91))
+        actor.GetProperty().SetColor(self.roi_colour)
         
         # Return the actor
         return actor
@@ -92,11 +95,14 @@ class SpotVisualization (object):
 
         # Create the renderer
         renderer = vtk.vtkRenderer()
-        renderer.SetBackground(1.0, 1.0, 1.0)
-        renderer.AddVolume(volume)
+        renderer.SetBackground(self.background_colour)
+
+        # Add the volume
+        if volume != None:
+            renderer.AddVolume(volume)
         
         # Add the regions of interest
-        if roi:
+        if roi != None:
             if isinstance(roi, list):
                 for actor in roi:
                     renderer.AddActor(actor)
@@ -104,33 +110,37 @@ class SpotVisualization (object):
                 renderer.AddActor(roi)
         
         # Create the render window
-        renderWin = vtk.vtkRenderWindow()
-        renderWin.AddRenderer(renderer)
-        renderWin.SetSize(500, 500)
-        renderWin.SetWindowName("Reflections (q to quit)")
+        render_win = vtk.vtkRenderWindow()
+        render_win.AddRenderer(renderer)
+        render_win.SetSize(self.window_size)
+        render_win.SetWindowName("Reflections (q to quit)")
 
         # Create the render window interactor
-        renderInteractor = vtk.vtkRenderWindowInteractor()
-        renderInteractor.SetRenderWindow(renderWin)
-        renderInteractor.Initialize()
-        renderWin.Render()
-        renderInteractor.Start()
+        render_interactor = vtk.vtkRenderWindowInteractor()
+        render_interactor.SetRenderWindow(render_win)
+        render_interactor.SetInteractorStyle(vtk.vtkInteractorStyleTrackballCamera())
+        render_interactor.Initialize()
+        render_win.Render()
+        render_interactor.Start()
 
     def visualize_reflections(self, image, roi):
         """Visualise the reflections"""
         import numpy
         
-        # Cap image between vmin and vmax
-        min_ind = numpy.where(image < self.vmin)
-        max_ind = numpy.where(image > self.vmax)
-        image[min_ind] = self.vmin
-        image[max_ind] = self.vmax
-        
-        # Create the VTK volume image
-        volume = self.numpy_array_as_vtk_volume(image)
-
+        if image != None:
+            # Cap image between vmin and vmax
+            min_ind = numpy.where(image < self.vmin)
+            max_ind = numpy.where(image > self.vmax)
+            image[min_ind] = self.vmin
+            image[max_ind] = self.vmax
+    
+            # Create the VTK volume image
+            volume = self.numpy_array_as_vtk_volume(image)
+        else:
+            volume = None
+            
         # Create the roi actors
-        if roi:
+        if roi != None:
             if isinstance(roi, list):
                 roi_actor = []
                 for r in roi:

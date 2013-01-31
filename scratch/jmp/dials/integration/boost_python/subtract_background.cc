@@ -11,12 +11,11 @@ namespace boost_python {
 
 void export_subtract_background()
 {
-    void (SubtractBackground::*subtract_single)(int, scitbx::af::tiny <int, 6>) =
+    double (SubtractBackground::*subtract_single)(int, scitbx::af::tiny <int, 6>) =
         &SubtractBackground::subtract;
 
-    void (SubtractBackground::*subtract_array)(const af::flex_tiny6_int &,
-                                               scitbx::af::flex_bool &) =
-        &SubtractBackground::subtract;
+    scitbx::af::flex_bool (SubtractBackground::*subtract_array)(
+        ReflectionList&) = &SubtractBackground::subtract;
 
     class_ <SubtractBackground> ("SubtractBackground")
         .def(init <scitbx::af::flex_int,
@@ -33,8 +32,7 @@ void export_subtract_background()
             arg("index"),
             arg("roi")))
         .def("subtract", subtract_array, (
-            arg("roi"),
-            arg("status")))
+            arg("reflections")))
         .def("set_non_reflection_value", 
             &SubtractBackground::set_non_reflection_value);
 }

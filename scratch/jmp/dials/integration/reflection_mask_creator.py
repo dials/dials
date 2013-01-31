@@ -1,14 +1,16 @@
 class ReflectionMaskCreator(object):
     """Class to create the reflection mask."""
 
-    def __init__(self, beam, detector, gonio, volume_size, sigma_divergence, 
-                 sigma_mosaicity, n_sigma = 10, roi_volume_fraction = 0.99):
+    def __init__(self, beam, detector, gonio, detector_mask, volume_size, 
+                 sigma_divergence, sigma_mosaicity, n_sigma = 10, 
+                 roi_volume_fraction = 0.99):
         """Setup the reflection mask creator.
         
         Args:
             beam The beam parameters
             detector The detector parameters
             gonio The goniometer parameters
+            detector_mask The mask of bad pixels on the detector
             volume_size The size of the image volume
             sigma_divergence The standard deviation of the beam divergence
             sigma_mosaicity The standard deviation of the mosaicity
@@ -26,7 +28,7 @@ class ReflectionMaskCreator(object):
                                     n_sigma * sigma_mosaicity)
 
         # Create the reflection mask
-        self.reflection_mask = ReflectionMask(volume_size)
+        self.reflection_mask = ReflectionMask(detector_mask, volume_size)
         
         # Save the roi volume fraction
         self.roi_volume_fraction = roi_volume_fraction
@@ -63,7 +65,16 @@ class ReflectionMaskCreator(object):
                 
         # Return the reflections
         return reflections
-        
+    
+    def set_reflection_pixel_value(self, image_volume, reflection, value):
+        """Set the image volume value for the roi"""
+        roi = reflection.region_of_interest
+        for k in range(roi[4], roi[5]):
+            for j in range(roi[2], roi[3]):
+                for i in range(roi[0], roi[1]):
+                    if (self.mask[k, j, i] == reflection.mask_index):
+                        image_volume[k, j, i] = value
+    
     @property
     def mask(self):
         """Return the reflection mask array"""

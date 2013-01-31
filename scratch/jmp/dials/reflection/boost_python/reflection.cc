@@ -22,7 +22,8 @@ std::string reflection_to_string(const Reflection &reflection) {
         "    beam vector:    (%5%, %6%, %7%)\n"
         "    image coord:    (%8%, %9%, %10%)\n"
         "    ROI:            (%11%, %12%, %13%, %14%, %15%, %16%)\n"
-        "    Mask index:     %17%");
+        "    Mask index:     %17%\n"
+        "    Background:     %18%");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -41,6 +42,7 @@ std::string reflection_to_string(const Reflection &reflection) {
     fmt % reflection.get_region_of_interest()[4];
     fmt % reflection.get_region_of_interest()[5];
     fmt % reflection.get_mask_index();
+    fmt % reflection.get_background_intensity();
     return fmt.str();
 }
 
@@ -73,6 +75,9 @@ void export_reflection()
         .add_property("mask_index",
             &Reflection::get_mask_index,
             &Reflection::set_mask_index)
+        .add_property("background_intensity",
+            &Reflection::get_background_intensity,
+            &Reflection::set_background_intensity)
         .def("is_zero", &Reflection::is_zero)
         .def("__str__", &reflection_to_string);          
         

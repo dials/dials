@@ -19,7 +19,8 @@ public:
           beam_vector_(0.0, 0.0, 0.0),
           image_coord_(0.0, 0.0, 0.0),
           region_of_interest_(0, 0, 0, 0, 0, 0),
-          mask_index_(-1) {}
+          mask_index_(-1),
+          background_intensity_(0.0) {}
           
     ReflectionData(cctbx::miller::index <> miller_index,
                    double rotation_angle,
@@ -30,7 +31,8 @@ public:
           beam_vector_(beam_vector),
           image_coord_(image_coord),
           region_of_interest_(0, 0, 0, 0, 0, 0),
-          mask_index_(-1) {}
+          mask_index_(-1),
+          background_intensity_(0.0) {}
 
 public:
 
@@ -58,6 +60,10 @@ public:
         return mask_index_;
     }
 
+    double get_background_intensity() const {
+        return background_intensity_;
+    }
+
     void set_miller_index(cctbx::miller::index <> miller_index) {
         miller_index_ = miller_index;
     }
@@ -82,6 +88,10 @@ public:
         mask_index_ = mask_index;
     }
     
+    void set_background_intensity(double background_intensity) {
+        background_intensity_ = background_intensity;
+    }
+    
     bool is_zero() {
         return miller_index_.is_zero();
     }
@@ -94,6 +104,8 @@ private:
     scitbx::vec3 <double>   image_coord_;
     scitbx::af::int6        region_of_interest_;
     int                     mask_index_;
+    double                  background_intensity_;
+    
 };
 
 class Reflection : public ReflectionData {

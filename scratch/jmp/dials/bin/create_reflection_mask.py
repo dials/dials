@@ -29,12 +29,14 @@ def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
     from matplotlib import pylab, cm
     spot_xy = [(x-0.5, y-0.5) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
     xcoords, ycoords = zip(*spot_xy)
-    fig = pylab.figure(figsize=(8,8))
+    fig = pylab.figure()
     plt = pylab.imshow(mask[display_frame,:,:], cmap=cm.Greys_r, interpolation="nearest", origin='lower')
-    pylab.scatter(xcoords, ycoords, marker='x')
+    #pylab.scatter(xcoords, ycoords, marker='x')
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
+    #pylab.savefig('reflection_mask_frame_{0}.tiff'.format(display_frame), bbox_inches=0)
+    #pylab.clf()
 
 def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords, 
                                    region_of_interest, padding):
@@ -66,7 +68,6 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     from dials.integration import ReflectionMaskRoi
     from dials.integration import ReflectionMask
     from dials.integration import ReflectionMaskCreator
-    from dials.integration import filter_reflections_by_roi_volume
     from dials.io import xdsio, pycbf_extra
     from cctbx import uctbx, sgtbx
     from time import time
@@ -117,11 +118,20 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
     
+    # Create a mask of bad pixels
+    detector_mask = flex.int(flex.grid(image_volume.shape[1:]), 0)
+    detector_image = image_volume[0,:,:]
+    for j in range(detector_mask.all()[0]):
+        for i in range(detector_mask.all()[1]):
+            if (detector_image[j,i] < 0):
+                detector_mask[j,i] = -2    
+    
     # Create the reflection mask    
     print "Creating reflection mask Roi for {0} spots".format(len(reflections))
     start_time = time()
     reflection_mask_creator = ReflectionMaskCreator(
                             beam, detector, gonio, 
+                            detector_mask,                            
                             image_volume.shape,
                             sigma_divergence, 
                             sigma_mosaicity,
@@ -173,10 +183,63 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
 #                region_of_interest, 10)
 
     # 3D volume rendering
-    from spot_visualization import SpotVisualization
-    vis = SpotVisualization()
-    vis.visualize_reflections(image_volume, region_of_interest)
-                              
+#    nx = 1000
+#    ny = 1000
+#    nz = 0
+#    image_volume = image_volume[nz:,nx:,ny:]
+#    for i in range(len(region_of_interest)):
+#        roi = region_of_interest[i]
+#        roi = (roi[0] - nx, roi[1] - nx, 
+#               roi[2] - ny, roi[3] - ny, 
+#               roi[4] - nz, roi[5] - nz)
+#        region_of_interest[i] = roi
+#    new_roi = []
+#    for roi in region_of_interest:
+#        if not (roi[0] < 0 or roi[2] < 0 or roi[4] < 0):
+#            new_roi.append(roi)
+#    region_of_interest = new_roi   
+             
+##    from scipy.ndimage.interpolation import zoom
+#    import numpy
+##    miller_indices = flex.miller_index(len(reflections))
+##    for i, r in enumerate(reflections):
+##        miller_indices[i] = r.miller_index
+##    
+##    count = 0
+##    for i, hkl in enumerate(miller_indices):
+##        if hkl == (30, -14, 12):
+##            count = i
+##            break
+##            
+##    print count
+##    index = 28000
+#    index = 1000#sim
+##    factor = 1
+#    roi = region_of_interest[index]
+#    xyz = image_volume_coords[index]
+#    image_volume = image_volume[xyz[2]-4:xyz[2]+4+1, roi[2]:roi[3], roi[0]:roi[1]]
+
+#    from matplotlib import pylab, cm
+#    for z in range(9):
+#        fig = pylab.figure()
+#        plt = pylab.imshow(image_volume[z,:,:], interpolation='nearest', 
+#                     origin='lower', cmap=cm.Greys_r, 
+#                     vmin=0, vmax=numpy.max(image_volume))
+#        plt.axes.get_xaxis().set_ticks([])
+#        plt.axes.get_yaxis().set_ticks([])                     
+#        pylab.savefig("spot_intensity_sim_frame_no_axes_{0}.tiff".format(z))
+#        pylab.show()
+#    image_volume = zoom(image_volume.astype(numpy.float32), factor)
+#    region_of_interest = (0, image_volume.shape[2],
+#                          0, image_volume.shape[1],
+#                          0, image_volume.shape[0])
+                 
+    #from spot_visualization import SpotVisualization
+    #vis = SpotVisualization()
+    #vis.vmax = 2000#0.5 * numpy.max(image_volume)
+    #vis.visualize_reflections(None, region_of_interest)
+    #vis.visualize_reflections(image_volume, region_of_interest)
+
 if __name__ == '__main__':
 
     from optparse import OptionParser

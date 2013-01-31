@@ -20,21 +20,39 @@ public:
 
     /**
      * Initialise the reflection mask to the given size.
-     * @param size The size of the mask (same as detector size)
-     * @param roi_size The region of interest about the reflection point
+     * @param detector_mask The mask of bad detector pixels
+     * @param mask_size The size of the mask (same as detector size)
      */
-    ReflectionMask(scitbx::vec3 <int> mask_size)
+    ReflectionMask(const scitbx::af::flex_int &detector_mask,
+                   scitbx::vec3 <int> mask_size)
         : mask_(scitbx::af::flex_grid <> (
             mask_size[0], 
             mask_size[1], 
             mask_size[2]), 
             -1),
-          size_(mask_size) {}
+          size_(mask_size) {
+        DIALS_ASSERT(detector_mask.accessor().all().size() == 2);
+        DIALS_ASSERT(detector_mask.accessor().all()[0] == mask_size[1]);
+        DIALS_ASSERT(detector_mask.accessor().all()[1] == mask_size[2]);
+        for (std::size_t j = 0; j < mask_size[1]; ++j) {
+            for (std::size_t i = 0; i < mask_size[2]; ++i) {
+                for (std::size_t k = 0; k < mask_size[0]; ++k) {
+                    if (detector_mask(j, i) == -2) {
+                        mask_(k, j, i) = detector_mask(j, i);
+                    } else {
+                        mask_(k, j, i) = -1;
+                    }
+                }
+            }
+        }  
+    }
 
     /** Reset the mask values to -1 */
     void reset_mask() {
         for (int i = 0; i < mask_.size(); ++i) {
-            mask_[i] = -1;
+            if (mask_[i] != -2) {
+                mask_[i] = -1;
+            }
         }
     }
 
@@ -82,7 +100,9 @@ public:
                     for (int j = roi[2]; j < roi[3]; ++j) {
                         for (int i = roi[0]; i < roi[1]; ++i) {
                             int curr_index = mask_(k, j, i);
-                            if (curr_index == -1) {
+                            if (curr_index == -2) {
+                                continue;
+                            } else if (curr_index == -1) {
                                 mask_(k, j, i) = index;
                             } else {
                                 scitbx::vec3 <double> point(i, j, k);
@@ -145,7 +165,9 @@ public:
                     for (int j = roi[2]; j < roi[3]; ++j) {
                         for (int i = roi[0]; i < roi[1]; ++i) {
                             int curr_index = mask_(k, j, i);
-                            if (curr_index == -1) {
+                            if (curr_index == -2) {
+                                continue;
+                            } else if (curr_index == -1) {
                                 mask_(k, j, i) = index;
                                 reflections[index].set_mask_index(index);
                             } else {
