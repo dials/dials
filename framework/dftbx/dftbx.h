@@ -21,12 +21,18 @@
 #include <cctype>
 #include <map>
 #include <algorithm>
-#include <vector>
 
 namespace dftbx {
 
   void init_module() { };
+
+  /** miller_index_t 
+   *
+   * Typedef'd to be integer Miller indices: DIALS won't be using other types.
+   */
  
+  typedef cctbx::miller::index<int> miller_index_t;
+
   /** ObservationList<T>
    * 
    * If T is big the caller should be responsible for making T a shared pointer
@@ -39,6 +45,8 @@ namespace dftbx {
   template <class T> 
     class ObservationList {
   public:
+
+    typedef typename scitbx::af::shared<T> vector_type;
 
     size_t size() const {
       return observations_.size();
@@ -75,11 +83,41 @@ namespace dftbx {
 
   private:
 
-    scitbx::af::shared<T> observations_;
+    vector_type observations_;
 
   };
 
+  template <class T>
+    class ReflectionList {
+  public:
+
+    typedef ObservationList<T> observation_list_type;
+
+    typedef std::map<miller_index_t, observation_list_type> map_type;
+    typedef typename map_type::iterator map_iterator_type;
+
+    T & operator[](miller_index_t hkl) {
+      return reflections_[hkl];
+    }
+
+    const T & operator[](miller_index_t hkl) const {
+      return reflections_[hkl];
+    }
+
+    void merge(ReflectionList<T> & other) {
+      map_iterator_type ri;
+      for (ri = reflections_.begin(); ri != reflections_.end(); ++ri) {
+	ri->second.merge(other[ri->first]);
+      }
+    }
+    
+  private:
+    map_type reflections_;
+      
+  };
+  
   typedef ObservationList<int> int_ol;
+  typedef ReflectionList<int> int_rl;
 
 
 }
