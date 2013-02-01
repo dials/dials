@@ -29,12 +29,12 @@ def display_image_with_predicted_spots(image, xcoords, ycoords):
     
     #trans.clear()
     #trans.translate(0.5, 0.5)
-    plt = pylab.imshow(image, vmin=0, vmax=50, cmap=cm.Greys_r, 
-                       interpolation='nearest', origin='lower'),
+    plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r, 
+                       interpolation='nearest', origin='lower')
                        #transform=trans)
-    pylab.scatter(xcoords, ycoords, marker='x')
-    #plt.axes.get_xaxis().set_ticks([])
-    #plt.axes.get_yaxis().set_ticks([])
+    #pylab.scatter(xcoords, ycoords, marker='x')
+    plt.axes.get_xaxis().set_ticks([])
+    plt.axes.get_yaxis().set_ticks([])
     pylab.show()
 
 def visualize_predicted_spots(image_volume, display_frame, spot_coords):

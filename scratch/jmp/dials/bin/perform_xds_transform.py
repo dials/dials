@@ -29,15 +29,65 @@ def visualize_xds_transform(grid, display_spot):
     from matplotlib import pylab, cm
     import numpy
     spot_grid = grid[display_spot, :, :, :]
+#    fig = pylab.figure()
+#    for i in range(0,9):
+#        ax = pylab.subplot(3, 3, i+1)
+#        image = spot_grid[i, :, :]
+#        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid), 
+#            cmap=cm.Greys_r)#, interpolation='nearest')
+#        plt.axes.get_xaxis().set_ticks([])
+#        plt.axes.get_yaxis().set_ticks([])   
+#        ax.set_title("slice: {0}".format(i))         
+#    pylab.show()
+#    pylab.savefig("temp/xds_transformed_example.png")
     for i in range(0,9):
-        ax = pylab.subplot(3, 3, i+1)
+        #fig = pylab.figure()
         image = spot_grid[i, :, :]
         plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid), 
             cmap=cm.Greys_r)#, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
         plt.axes.get_yaxis().set_ticks([])   
-        ax.set_title("slice: {0}".format(i))         
-    pylab.show()
+        
+        pylab.show()
+        #pylab.savefig("temp/xds_transformed_spot_{0:03d}_frame_{1}.png".format(display_spot, i))
+        #pylab.clf()
+        
+def visualize_xds_transform_3d(grid, display_spot):
+    """Display the XDS transform for a given spot."""
+    from matplotlib import pylab, cm
+    from mpl_toolkits.mplot3d import axes3d
+    import numpy
+    spot_grid = grid[display_spot, :, :, :]
+    gridx = numpy.array([range(spot_grid.shape[2])] * spot_grid.shape[1])
+    gridy = numpy.array([range(spot_grid.shape[1])] * spot_grid.shape[2]).transpose()
+    minx = 0
+    maxx = spot_grid.shape[2]
+    miny = 0
+    maxy = spot_grid.shape[1]
+    minz = numpy.min(spot_grid)
+    maxz = numpy.max(spot_grid)
+    for i in range(0,9):
+        fig = pylab.figure()
+        image = spot_grid[i, :, :]
+        ax = fig.add_subplot(111, projection='3d')
+        ax.set_xlim([minx, maxx])
+        ax.set_ylim([miny, maxy])
+        ax.set_zlim([minz, maxz])
+        ax.set_autoscalex_on(False)
+        ax.set_autoscaley_on(False)
+        ax.set_autoscalez_on(False)
+        ax.plot_wireframe(gridx, gridy, image)          
+#        plt.axes.get_xaxis().set_ticks(map(lambda x: minx + x * (maxx - minx) / 2, range(0, 3)))
+#        plt.axes.get_yaxis().set_ticks(map(lambda y: miny + y * (maxy - miny) / 2, range(0, 3)))
+#        plt.axes.get_zaxis().set_ticks([])
+#        pylab.show()
+        pylab.savefig("temp/xds_transformed_spot_{0}_3d_frame_{1}.png".format(display_spot, i))
+        pylab.clf()        
+
+def save_transformed_spot_to_file(grid, display_spot):
+    import numpy
+    numpy.save('temp/transfomed_spot_{0:03d}'.format(display_spot), 
+               grid[display_spot, :, :, :])   
 
 def perform_xds_transform(input_filename, cbf_search_path, d_min, 
                           sigma_divergence, sigma_mosaicity, n_sigma,
@@ -196,18 +246,18 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
 #    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
 #    print spot_image
     
-    r = reflections[3]
-    roi = r.region_of_interest
-    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
-    print spot_image
-    print r
+#    r = reflections[3]
+#    roi = r.region_of_interest
+#    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
+#    print spot_image
+#    print r
     
     if display_spot:
         for spot in display_spot:
             print "Displaying XDS Transform for spot \"{0}\"".format(spot)
             visualize_xds_transform(xds_grid.data.as_numpy_array(), spot)
-
-                              
+#            visualize_xds_transform_3d(xds_grid.data.as_numpy_array(), spot)
+            #save_transformed_spot_to_file(xds_grid.data.as_numpy_array(), spot)                 
 if __name__ == '__main__':
 
     from optparse import OptionParser

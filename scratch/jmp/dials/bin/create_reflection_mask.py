@@ -37,6 +37,27 @@ def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
     pylab.show()
     #pylab.savefig('reflection_mask_frame_{0}.tiff'.format(display_frame), bbox_inches=0)
     #pylab.clf()
+    
+def visualize_frame_relfection_mask_roi(image_volume, display_frame, 
+                                        region_of_interest):
+    from matplotlib import pylab, cm
+    image = image_volume[display_frame,:,:]
+    roi_xy = [(roi[0], roi[1], roi[2], roi[3]) 
+                for roi in region_of_interest
+                    if (roi[4] <= display_frame and roi[5] >= display_frame)]
+    
+    plt = pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest", 
+                       origin='lower', vmin=0, vmax=1000)
+    for roi in roi_xy:
+        x0 = roi[0]
+        x1 = roi[1]
+        y0 = roi[2]
+        y1 = roi[3]        
+        pylab.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], color='blue')
+
+    plt.axes.get_xaxis().set_ticks([])
+    plt.axes.get_yaxis().set_ticks([])
+    pylab.show()
 
 def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords, 
                                    region_of_interest, padding):
@@ -162,11 +183,17 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     print "Min/Max ROI Z Range:   ", min(range_z), max(range_z)
     print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
     print "Min/Max ROI Volume:    ", min(volume), max(volume)
- 
+
+#    display_frame = [63]
+# 
 #    # Display frames   
 #    if display_frame:
 #        for frame in display_frame:
 #            print "Displaying reflection mask for frame \"{0}\"".format(frame)
+#            visualize_frame_relfection_mask_roi(
+#                image_volume, 
+#                frame, 
+#                region_of_interest)
 #            visualize_frame_reflection_mask(
 #                reflection_mask_creator.mask.as_numpy_array(), 
 #                frame, 
@@ -230,14 +257,22 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
 #        pylab.savefig("spot_intensity_sim_frame_no_axes_{0}.tiff".format(z))
 #        pylab.show()
 #    image_volume = zoom(image_volume.astype(numpy.float32), factor)
-#    region_of_interest = (0, image_volume.shape[2],
-#                          0, image_volume.shape[1],
-#                          0, image_volume.shape[0])
+    #region_of_interest = (0, image_volume.shape[2],
+    #                      0, image_volume.shape[1],
+    #                      0, image_volume.shape[0])
+ 
+   # z = 63
+#    new_roi = []
+#    for roi in region_of_interest:
+#        if roi[4] >= 0 and roi[5] < 10:
+#            new_roi.append(roi)
+#                 
+#    region_of_interest = new_roi
                  
-    #from spot_visualization import SpotVisualization
-    #vis = SpotVisualization()
+    from spot_visualization import SpotVisualization
+    vis = SpotVisualization()
     #vis.vmax = 2000#0.5 * numpy.max(image_volume)
-    #vis.visualize_reflections(None, region_of_interest)
+    vis.visualize_reflections(None, region_of_interest)
     #vis.visualize_reflections(image_volume, region_of_interest)
 
 if __name__ == '__main__':

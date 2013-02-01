@@ -161,32 +161,39 @@ def subtract_reflection_background(input_filename, cbf_search_path, d_min,
     print "Min/Max Roi Volume:  ", min(volume), max(volume)
      
     index = 28000
-#    from dials.integration import BackgroundIntensity
+    #from dials.integration import BackgroundIntensity
 #    import numpy
-#    bi = BackgroundIntensity()
+#    #bi = BackgroundIntensity()
 #    roi = region_of_interest[index]
 #    spot_data = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]].astype(numpy.float64).copy()  
-#    mask_data = reflection_mask_creator.mask[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]].as_numpy_array()
-#    spot_image = spot_data.copy()[0,:,:]
-#    #spot_data.shape = -1
+#    #mask_data = reflection_mask_creator.mask[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]].as_numpy_array()
+#    #spot_image = spot_data.copy()[0,:,:]
+#    spot_data.shape = -1
 #    from matplotlib import pylab, cm
-#   # spot_data = sorted(spot_data)[::-1]
+#    spot_data = sorted(spot_data)[::-1]
 
-#    max_image = numpy.max(spot_image)
+#    #max_image = numpy.max(spot_image)
 #    for i in range(7):
 #        fig = pylab.figure()
-#        plt = pylab.imshow(spot_image, interpolation='nearest', origin='lower', cmap=cm.Greys_r, vmin=0, vmax=max_image)
-#        plt.axes.get_xaxis().set_ticks([])
-#        plt.axes.get_yaxis().set_ticks([]) 
-##        pylab.hist(spot_data)
-##        pylab.show()
-#        pylab.savefig("temp/background_calculation_image_{0}.tiff".format(i))
+##        plt = pylab.imshow(spot_image, interpolation='nearest', origin='lower', cmap=cm.Greys_r, vmin=0, vmax=max_image)
+#        mean_value = float(numpy.mean(spot_data))
+#        #print mean_value
+#        #plt.axes.get_xaxis().set_ticks([])
+#        #plt.axes.get_yaxis().set_ticks([]) 
+#        print len(spot_data)
+#        print spot_data
+#        pylab.hist(spot_data)
+#        pylab.axvline(mean_value, color='black', linewidth=2,linestyle='--')
+#        #pylab.show()
+#        filename = "temp/background_calculation_histogram_mean_{0}.png".format(i)
+#        print filename
+#        pylab.savefig(filename)
 #        pylab.clf()
 #        #print numpy.mean(spot_data)
-##        spot_data = spot_data[1:] 
-#        ind = numpy.argmax(spot_image)
-#        ind = numpy.unravel_index(ind, spot_image.shape)
-#        spot_image[ind] = 0
+#        spot_data = spot_data[1:] 
+        #ind = numpy.argmax(spot_image)
+        #ind = numpy.unravel_index(ind, spot_image.shape)
+        #spot_image[ind] = 0
 #        
 #    #print reflections[28000].mask_index
 #    #print xyz[28000], xyz[29417]
@@ -194,7 +201,7 @@ def subtract_reflection_background(input_filename, cbf_search_path, d_min,
 #    print spot_data
 #    spot_data = flex.double(spot_data)
 #    print "Intensity Value: ", bi.calculate(spot_data)
-    #print 1/0
+    print 1/0
      
     # Subtract the background for each reflection
     print "Subtracting background"
