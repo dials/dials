@@ -47,8 +47,8 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
     from dials.spot_prediction import SpotPredictor
     from dials.integration import ReflectionMaskRoi
     from dials.integration import ReflectionMask
+    from dials.integration import ReflectionMaskCreator
     from dials.integration import SubtractBackground
-    from dials.integration import filter_reflections_by_roi_volume
     from dials.integration import XdsTransformGrid
     from dials.integration import XdsTransform
     from dials.io import xdsio, pycbf_extra
@@ -56,6 +56,7 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
     from time import time
     from dials.array_family import flex
     from dials.array_family.flex import remove_if_not
+    from scitbx import matrix
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)
@@ -76,51 +77,51 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
     if cbf_search_path:
         print "Searching \"{0}\" for CBF files".format(cbf_search_path)
         image_volume = pycbf_extra.search_for_image_volume(cbf_search_path)
-        image_volume = flex.int(image_volume)
-        gonio.num_frames = image_volume.all()[0]
+        gonio.num_frames = image_volume.shape[0]
 
-    # Create the spot predictor
-    spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, d_min,
-                                   unit_cell, space_group_type)
+        # Create the spot predictor
+    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell, 
+                                   space_group_type, 
+                                   matrix.sqr(ub_matrix).inverse(), d_min)
     
     # Predict the spot image volume coordinates 
     print "Predicting spots"
     start_time = time()
-    spot_predictor.predict_spots()
+    reflections = spot_predictor.predict()
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 
-    # Get the data from the spot predictor
-    miller_indices = spot_predictor.miller_indices
-    rotation_angles = spot_predictor.rotation_angles
-    beam_vectors = spot_predictor.beam_vectors
-    image_volume_coords = spot_predictor.image_volume_coordinates
-
-    # Create the reflection mask regions of interest
-    n_reflections = len(image_volume_coords)
-    print "Creating reflection mask Roi for {0} reflections".format(n_reflections)
+    # Create a mask of bad pixels
+    detector_mask = flex.int(flex.grid(image_volume.shape[1:]), 0)
+    detector_image = image_volume[0,:,:]
+    for j in range(detector_mask.all()[0]):
+        for i in range(detector_mask.all()[1]):
+            if (detector_image[j,i] < 0):
+                detector_mask[j,i] = -2
+    
+    # Create the reflection mask    
+    print "Creating reflection mask Roi for {0} spots".format(len(reflections))
     start_time = time()
-    reflection_mask_roi = ReflectionMaskRoi(
-                            beam, detector, gonio, 
-                            n_sigma * sigma_divergence, 
-                            n_sigma * sigma_mosaicity)
-    region_of_interest = reflection_mask_roi.calculate(
-                            beam_vectors, rotation_angles)
+    reflection_mask_creator = ReflectionMaskCreator(
+                            beam, detector, gonio,
+                            detector_mask,
+                            image_volume.shape,
+                            sigma_divergence, 
+                            sigma_mosaicity,
+                            n_sigma)
+    reflections = reflection_mask_creator.create(reflections)
+    mask = reflection_mask_creator.mask
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-
-    # Filter the reflections by region of interest volume
-    n_reflections = len(region_of_interest)
-    print "Filtering {0} reflections by ROI".format(n_reflections)
-    start_time = time()
-    valid_roi = filter_reflections_by_roi_volume(region_of_interest, 0.99)
-    miller_indices      = remove_if_not(miller_indices, valid_roi)
-    rotation_angles     = remove_if_not(rotation_angles, valid_roi)
-    beam_vectors        = remove_if_not(beam_vectors, valid_roi)
-    image_volume_coords = remove_if_not(image_volume_coords, valid_roi)
-    region_of_interest  = remove_if_not(region_of_interest, valid_roi)
-    finish_time = time()
-    print "Time taken: {0} s".format(finish_time - start_time)
+    
+    print image_volume[0,203,236]
+    
+    # Extract arrays from array of reflections
+    region_of_interest = flex.tiny6_int(len(reflections))
+    image_volume_coords = flex.vec3_double(len(reflections))
+    for i, r in enumerate(reflections):
+        region_of_interest[i] = r.region_of_interest
+        image_volume_coords[i] = r.image_coord
     
     range_x = [roi[1] - roi[0] for roi in region_of_interest]
     range_y = [roi[3] - roi[2] for roi in region_of_interest]
@@ -130,49 +131,77 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
     print "Min/Max ROI Y Range: ", min(range_y), max(range_y)
     print "Min/Max ROI Z Range: ", min(range_z), max(range_z)
     print "Min/Max Roi Volume:  ", min(volume), max(volume)
-        
-    # Create the reflection mask itself
-    n_reflections = len(region_of_interest)
-    print "Creating reflection mask for {0} reflections".format(n_reflections)
-    start_time = time()
-    reflection_mask = ReflectionMask(image_volume.all())
-    reflection_mask.create(image_volume_coords, region_of_interest)
-    finish_time = time()
-    print "Time taken: {0} s".format(finish_time - start_time)
      
     # Subtract the background for each reflection
     n_reflections = len(region_of_interest)
-    print "Subtracting background for {0} reflections".format(n_reflections)
+    print "Subtracting background"
     start_time = time()
-    subtract_background = SubtractBackground(image_volume, reflection_mask.mask, min_pixels=100)
+    image_volume = flex.int(image_volume)
+    subtract_background = SubtractBackground(image_volume, reflection_mask_creator.mask)
     valid_background = flex.bool(len(region_of_interest))
-    subtract_background.subtract(region_of_interest, valid_background)
+    valid_background = subtract_background.subtract(reflections)
     subtract_background.set_non_reflection_value(0)
-    miller_indices      = remove_if_not(miller_indices, valid_background)
-    rotation_angles     = remove_if_not(rotation_angles, valid_background)
-    beam_vectors        = remove_if_not(beam_vectors, valid_background)
-    image_volume_coords = remove_if_not(image_volume_coords, valid_background)
-    region_of_interest  = remove_if_not(region_of_interest, valid_background)
+    for r, s in zip(reflections, valid_background):
+        if (s == False):
+            reflection_mask_creator.set_reflection_pixel_value(image_volume, r, 0)
+    reflections = remove_if_not(reflections, valid_background)
+    image_volume = image_volume.as_numpy_array()
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-     
+
+    # Extract arrays from array of reflections
+    region_of_interest = flex.tiny6_int(len(reflections))
+    image_volume_coords = flex.vec3_double(len(reflections))
+    beam_vectors = flex.vec3_double(len(reflections))
+    rotation_angles = flex.double(len(reflections))
+    for i, r in enumerate(reflections):
+        region_of_interest[i] = r.region_of_interest
+        image_volume_coords[i] = r.image_coord
+        beam_vectors[i] = r.beam_vector
+        rotation_angles[i] = r.rotation_angle
+    
     print "Initialising XDS Transform"
     start_time = time()
     n_reflections = len(region_of_interest)
     grid_origin = (4, 4, 4)
     xds_grid = XdsTransformGrid(n_reflections, grid_origin, sigma_divergence, 
                                 sigma_mosaicity, n_sigma)
-    xds_trans = XdsTransform(xds_grid, image_volume, reflection_mask.mask,
+    xds_trans = XdsTransform(xds_grid, 
+                             flex.int(image_volume), 
+                             reflection_mask_creator.mask,
                              detector, beam, gonio)
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-    
+
     print "Performing XDS transform on {0} reflections".format(n_reflections)
     start_time = time()
-    xds_trans.calculate(region_of_interest, beam_vectors, rotation_angles)
+#    xds_trans.calculate(region_of_interest, beam_vectors, rotation_angles)
+    xds_trans.calculate(reflections)
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-     
+
+
+#    index2 = 0
+#    for i, r in enumerate(reflections):
+#        if (r.mask_index == 29417):
+#            index2 = i
+#            break
+#    r = reflections[index2]
+#    
+#    print r
+#    
+#    display_spot = [r.transform_index]
+#    
+#    roi = r.region_of_interest
+#    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
+#    print spot_image
+    
+    r = reflections[3]
+    roi = r.region_of_interest
+    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
+    print spot_image
+    print r
+    
     if display_spot:
         for spot in display_spot:
             print "Displaying XDS Transform for spot \"{0}\"".format(spot)

@@ -17,13 +17,14 @@ namespace boost_python {
 std::string reflection_to_string(const Reflection &reflection) {
     boost::format fmt(
         "Reflection:\n"
-        "    miller index:   (%1%, %2%, %3%)\n"
-        "    rotation angle: %4%\n"
-        "    beam vector:    (%5%, %6%, %7%)\n"
-        "    image coord:    (%8%, %9%, %10%)\n"
-        "    ROI:            (%11%, %12%, %13%, %14%, %15%, %16%)\n"
-        "    Mask index:     %17%\n"
-        "    Background:     %18%");
+        "    miller index:    (%1%, %2%, %3%)\n"
+        "    rotation angle:  %4%\n"
+        "    beam vector:     (%5%, %6%, %7%)\n"
+        "    image coord:     (%8%, %9%, %10%)\n"
+        "    ROI:             (%11%, %12%, %13%, %14%, %15%, %16%)\n"
+        "    Mask index:      %17%\n"
+        "    Background:      %18%\n"
+        "    Transform Index: %19%");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -43,6 +44,7 @@ std::string reflection_to_string(const Reflection &reflection) {
     fmt % reflection.get_region_of_interest()[5];
     fmt % reflection.get_mask_index();
     fmt % reflection.get_background_intensity();
+    fmt % reflection.get_transform_index();
     return fmt.str();
 }
 
@@ -78,6 +80,9 @@ void export_reflection()
         .add_property("background_intensity",
             &Reflection::get_background_intensity,
             &Reflection::set_background_intensity)
+        .add_property("transform_index",
+            &Reflection::get_transform_index,
+            &Reflection::set_transform_index)
         .def("is_zero", &Reflection::is_zero)
         .def("__str__", &reflection_to_string);          
         

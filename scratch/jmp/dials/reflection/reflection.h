@@ -20,7 +20,8 @@ public:
           image_coord_(0.0, 0.0, 0.0),
           region_of_interest_(0, 0, 0, 0, 0, 0),
           mask_index_(-1),
-          background_intensity_(0.0) {}
+          background_intensity_(0.0),
+          transform_index_(-1) {}
           
     ReflectionData(cctbx::miller::index <> miller_index,
                    double rotation_angle,
@@ -32,7 +33,8 @@ public:
           image_coord_(image_coord),
           region_of_interest_(0, 0, 0, 0, 0, 0),
           mask_index_(-1),
-          background_intensity_(0.0) {}
+          background_intensity_(0.0),
+          transform_index_(-1) {}
 
 public:
 
@@ -63,6 +65,10 @@ public:
     double get_background_intensity() const {
         return background_intensity_;
     }
+    
+    int get_transform_index() const {
+        return transform_index_;
+    }
 
     void set_miller_index(cctbx::miller::index <> miller_index) {
         miller_index_ = miller_index;
@@ -92,6 +98,10 @@ public:
         background_intensity_ = background_intensity;
     }
     
+    void set_transform_index(int transform_index) {
+        transform_index_ = transform_index;
+    }
+    
     bool is_zero() {
         return miller_index_.is_zero();
     }
@@ -105,6 +115,7 @@ private:
     scitbx::af::int6        region_of_interest_;
     int                     mask_index_;
     double                  background_intensity_;
+    int                     transform_index_;
     
 };
 

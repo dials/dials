@@ -16,6 +16,7 @@
 #include "../equipment/goniometer.h"
 #include "../array_family/array_types.h"
 #include "xds_transform_grid.h"
+#include "../reflection/reflection.h"
 
 namespace dials { namespace integration {
 
@@ -308,6 +309,7 @@ public:
     }
 
     void calculate(int reflection_index,
+                   int mask_index,
                    scitbx::af::tiny <int, 6> roi, 
                    scitbx::vec3 <double> s1,
                    double phi);
@@ -318,14 +320,31 @@ public:
      * @param s1 The diffracted beam vectors
      * @param phi The rotation angles
      */  
-    void calculate(const af::flex_tiny6_int &roi, 
-                   const af::flex_vec3_double &s1, 
-                   const scitbx::af::flex_double &phi) {
-        DIALS_ASSERT(roi.size() == s1.size());
-        DIALS_ASSERT(roi.size() == phi.size());
-        DIALS_ASSERT(roi.size() <= grid_.get_n_reflections());
-        for (int i = 0; i < roi.size(); ++i) {
-            calculate(i, roi[i], s1[i], phi[i]);
+//    void calculate(const af::flex_tiny6_int &roi, 
+//                   const af::flex_vec3_double &s1, 
+//                   const scitbx::af::flex_double &phi) {
+//        DIALS_ASSERT(roi.size() == s1.size());
+//        DIALS_ASSERT(roi.size() == phi.size());
+//        DIALS_ASSERT(roi.size() <= grid_.get_n_reflections());
+//        for (int i = 0; i < roi.size(); ++i) {
+//            calculate(i, roi[i], s1[i], phi[i]);
+//        }
+//    }
+
+    void calculate(int reflection_index, Reflection &reflection) {
+        reflection.set_transform_index(reflection_index);
+        calculate(
+            reflection_index,
+            reflection.get_mask_index(), 
+            reflection.get_region_of_interest(),
+            reflection.get_beam_vector(),
+            reflection.get_rotation_angle());
+    }
+
+    void calculate(ReflectionList &reflections) {
+        DIALS_ASSERT(reflections.size() <= grid_.get_n_reflections());
+        for (int i = 0; i < reflections.size(); ++i) {
+            calculate(i, reflections[i]);
         }
     }
 
@@ -363,7 +382,7 @@ private:
  * @param phi The rotation angle of the reflection
  * @throws std::rumtime_error if input is invalid
  */
-void XdsTransform::calculate(int reflection_index,
+void XdsTransform::calculate(int reflection_index, int mask_index,
                              scitbx::af::tiny <int, 6> roi,
                              scitbx::vec3 <double> s1,
                              double phi)
@@ -444,7 +463,7 @@ void XdsTransform::calculate(int reflection_index,
             int image_index = x + y * image_stride_x + z0 * image_stride_y;
             int fraction_index = 0;
             for (int z = z0; z <= z1; ++z) {
-                if (mask_[image_index] == reflection_index) {
+                if (mask_[image_index] == mask_index) {
                     int value = image_[image_index] * div_fraction;
                     int grid_index = grid_offset + gi + gj * grid_stride_c1;
                     for (int gk = 0; gk < grid_size_[0]; ++gk) {
