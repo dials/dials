@@ -268,4 +268,5 @@ scratch/jmp/test/test_reflection_mask.py -text
 scratch/jmp/test/test_spot_prediction.py -text
 scratch/jmp/test/test_spot_predictor.py -text
 scratch/jmp/test/test_xds_coordinate_system.py -text
+scratch/jmp/test_map.cc -text
 scratch/luiso_s/test01.py -text
