@@ -94,6 +94,7 @@ namespace dftbx {
     typedef ObservationList<T> observation_list_t;
 
     typedef std::map<miller_index_t, observation_list_t> map_type;
+    typedef typename map_type::iterator map_iterator_t;
 
     observation_list_t & operator[](miller_index_t hkl) {
       return reflections_[hkl];
@@ -104,7 +105,8 @@ namespace dftbx {
     }
 
     void merge(ReflectionList<T> & other) {
-      for (auto mi = reflections_.begin(); mi != reflections_.end(); ++mi) {
+      for (map_iterator_t mi = reflections_.begin(); 
+	   mi != reflections_.end(); ++mi) {
 	mi->second.merge(other[mi->first]);
       }
     }
