@@ -50,6 +50,7 @@ framework/dftbx/SConscript -text
 framework/dftbx/__init__.py -text
 framework/dftbx/dftbx.cpp -text
 framework/dftbx/dftbx.h -text
+framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
