@@ -183,7 +183,8 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     print "Min/Max ROI Z Range:   ", min(range_z), max(range_z)
     print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
     print "Min/Max ROI Volume:    ", min(volume), max(volume)
-
+    
+    
 #    display_frame = [63]
 # 
 #    # Display frames   
@@ -269,10 +270,10 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
 #                 
 #    region_of_interest = new_roi
                  
-    from spot_visualization import SpotVisualization
-    vis = SpotVisualization()
+    #from spot_visualization import SpotVisualization
+    #vis = SpotVisualization()
     #vis.vmax = 2000#0.5 * numpy.max(image_volume)
-    vis.visualize_reflections(None, region_of_interest)
+   # vis.visualize_reflections(None, region_of_interest)
     #vis.visualize_reflections(image_volume, region_of_interest)
 
 if __name__ == '__main__':

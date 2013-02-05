@@ -1,9 +1,16 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/map_indexing_suite.hpp>
+#include "multimap_indexing_suite.h"
 #include <scitbx/stl/map_wrapper.h>
+#include <boost/python/iterator.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/python/return_internal_reference.hpp>
+#include <boost/python/copy_non_const_reference.hpp>
+#include <boost/python/return_value_policy.hpp>
+#include <boost/python/iterator.hpp>
 #include <map>
 #include <iostream>
+#include <scitbx/boost_python/container_conversions.h>
 
 namespace dials { namespace util {
 
@@ -11,225 +18,131 @@ namespace boost_python {
 
 using namespace boost::python;
 
-template <class Key, class T, class Compare = std::less <Key> >
-class SharedMap {
-
-public:
-
-  typedef typename std::map <Key, T, Compare> map_type;
-  typedef typename map_type::key_type key_type;
-  typedef typename map_type::mapped_type mapped_type;
-  typedef typename map_type::value_type value_type;
-  typedef typename map_type::key_compare key_compare;
-  typedef typename map_type::value_compare value_compare;
-  typedef typename map_type::allocator_type allocator_type;
-  typedef typename map_type::reference reference;
-  typedef typename map_type::const_reference const_reference;
-  typedef typename map_type::pointer pointer;
-  typedef typename map_type::const_pointer const_pointer;
-  typedef typename map_type::iterator iterator;
-  typedef typename map_type::const_iterator const_iterator;
-  typedef typename map_type::reverse_iterator reverse_iterator;
-  typedef typename map_type::const_reverse_iterator const_reverse_iterator;
-  typedef typename map_type::difference_type difference_type;
-  typedef typename map_type::size_type size_type;
-
-  SharedMap() : map_(new map_type()) {}
-
-  iterator begin() {
-    return (*map_).begin();
-  }
-  
-  const_iterator begin() const {
-    return (*map_).begin();
-  }
-
-  iterator end() {
-    return (*map_).end();
-  }
-  
-  const_iterator end() const {
-    return (*map_).end();
-  }
-
-  reverse_iterator rbegin() {
-    return (*map_).rbegin();
-  }
-  
-  const_reverse_iterator rbegin() const {
-    return (*map_).rbegin();
-  }
-  
-  reverse_iterator rend() {
-    return (*map_).rend();
-  }
-  
-  const_reverse_iterator rend() const {
-    return (*map_).rend();
-  }
-
-  bool empty() const {
-    return (*map_).empty();
-  }
-
-  size_type size() const {
-    return (*map_).size();
-  }
-  
-  size_type max_size() const {
-    return (*map_).max_size();
-  }
-  
-  mapped_type& operator[] (const key_type& k) {
-    return (*map_)[k];
-  }
-
-  mapped_type& at(const key_type& k) {
-    return (*map_).at(k);
-  }
-
-  const mapped_type& at(const key_type& k) const {
-    return (*map_).at(k);
-  }
-  
-  std::pair <iterator, bool> insert(const value_type& val) {
-    return (*map_).insert(val);
-  }
-
-  iterator insert(iterator position, const value_type& val) {
-    return (*map_).insert(position, val);
-  }
-
-  template <class InputIterator>
-  void insert(InputIterator first, InputIterator last) {
-    return (*map_).insert(first, last);
-  }
-
-  void erase(iterator position) {
-    return (*map_).erase(position);
-  }
-
-  size_type erase(const key_type& k) {
-    return (*map_).erase(k);
-  }
-  
-  void erase(iterator first, iterator last) {
-    return (*map_).erase(first, last);
-  }
-
-  void swap(map_type& x) {
-    (*map_).swap(x);
-  }
-  
-  void clear() {
-    (*map_).clear();
-  }
-  
-  key_compare key_comp() const {
-    return (*map_).key_comp();
-  }
-  
-  value_compare value_comp() const {
-    return (*map_).value_comp();
-  }
-
-  iterator find(const key_type& k) {
-    return (*map_).find(k);
-  }
-
-  const_iterator find(const key_type& k) const {
-    return (*map_).find(k);
-  }
-  
-  size_type count (const key_type& k) const {
-    return (*map_).count(k);
-  }
-  
-  iterator lower_bound(const key_type& k) {
-    return (*map_).lower_bound(k);
-  }
-  
-  const_iterator lower_bound(const key_type& k) const {
-    return (*map_).lower_bound(k);
-  }
-  
-  iterator upper_bound(const key_type& k) {
-    return (*map_).upper_bound(k);
-  }
-  
-  const_iterator upper_bound(const key_type& k) const {
-    return (*map_).upper_bound(k);
-  }
-  
-  std::pair <const_iterator, const_iterator> 
-  equal_range(const key_type& k) const {
-    return (*map_).equal_range(k);
-  }
-  
-  std::pair <iterator, iterator> equal_range(const key_type& k) {
-    return (*map_).equal_range(k);
-  }
-  
-  allocator_type get_allocator() const {
-    return (*map_).get_allocator();
-  }
-    
-private:  
-
-  boost::shared_ptr <map_type> map_;
+struct MyData {
+  int value1;
+  int value2;
+  MyData() : value1(0), value2(0) {}
+  MyData(int v1, int v2) : value1(v1), value2(v2) {}
 };
 
-template <class Key, class Value>
-class MyMapBase : public SharedMap <Key, Value> {
-
-public:
-
-  typedef SharedMap <Key, Value> map_type;
-  typedef typename SharedMap <Key, Value>::mapped_type mapped_type;
-  typedef typename SharedMap <Key, Value>::key_type key_type;
-
-private:
-
-  mapped_type& at(const key_type& k) {
-    return map_type::at(k);
-  }
-
+struct MyData2 {
+  int value1;
+  int value2;
+  MyData2() : value1(0), value2(0) {}
+  MyData2(int v1, int v2) : value1(v1), value2(v2) {}
 };
 
-class MyMap : public MyMapBase <int, int> {
+typedef std::multimap <int,MyData> MyMap;
 
-public:
-
-  typedef MyMapBase <int, int> map_type;
-  typedef map_type::const_iterator const_iterator;
-
-  void print() const {
-    for (const_iterator it = begin(); it != end(); ++it) {
-      std::cout << it->first << " -> " << it->second << std::endl;
-    }
-  }
-};
-
-MyMap map_test(MyMap &map) {
- 
-  MyMap map2 = map;
-  for (std::size_t i = 0; i < 10; ++i) {
-    map2[i] = i;
-  }
- 
-  return map2;
+void insert(MyMap &map, const MyMap::key_type &key, const MyMap::mapped_type &value) {
+    map.insert(MyMap::value_type(key, value));
 }
 
-void map_print(const MyMap &map) {
-  map.print();
+template<typename PairType>
+struct PairToTupleConverter {
+  static PyObject* convert(const PairType& pair) {
+    return incref(make_tuple(pair.first, pair.second).ptr());
+  }
+};
+
+
+
+//typedef std::pair <MyMap::iterator, MyMap::iterator> iterator_range_base;
+
+//template <typename TIter>
+//struct my_iterator_range {
+//    typedef TIter iterator;
+//    typedef std::pair <TIter, TIter> iterator_pair;
+//    
+//    my_iterator_range();
+//    my_iterator_range(const iterator_pair &range_) {
+//        this->range.first = range_.first;
+//        this->range.second = range_.second;
+//    }
+//    MyMap::size_type size() const {
+//        return std::distance(this->range.first, this->range.second);
+//    }
+//    iterator_pair range;
+//    iterator& begin() { return this->range.first; }
+//    iterator& end() { return this->range.second; }
+//};
+
+
+//typedef my_iterator_range <MyMap::iterator> MyIteratorRange;
+typedef std::pair <MyMap::iterator, MyMap::iterator> MyIteratorRange;
+
+//template <typename T1, typename T2, typename T3>
+//class Triple {
+//    typedef T1 first_type;
+//    typedef T2 second_type;
+//    typedef T3 third_type;
+//    
+//    first_type first;
+//    second_type second;
+//    third_type third;
+//};
+
+unsigned int iterator_range_size(MyIteratorRange &range) {
+    return std::distance(range.first, range.second);
+}
+
+MyIteratorRange equal_range(MyMap &map, const MyMap::key_type &k) {
+    MyIteratorRange range = map.equal_range(k);
+    if (range.first == range.second) {
+        PyErr_SetString(PyExc_KeyError, "Invalid key");
+        throw_error_already_set();
+    }
+    return range;
 }
 
 void export_my_map() {
-  class_<MyMap>("MyMap")
-    .def(map_indexing_suite <MyMap> ());
 
-  def("map_test", &map_test);
-  def("map_print", &map_print);
+
+
+
+    MyMap::iterator (MyMap::*find)(const MyMap::key_type&) = &MyMap::find;
+    MyMap::size_type (MyMap::*erase_by_key)(const MyMap::key_type&) = &MyMap::erase;
+    
+    to_python_converter<MyMap::value_type, PairToTupleConverter<MyMap::value_type> >();
+
+    class_<MyMap::value_type>("MyMapValueType")
+        .def(init <MyMap::value_type::first_type,
+                   MyMap::value_type::second_type>())
+        .def_readonly("first", &MyMap::value_type::first)
+        .def_readwrite("second", &MyMap::value_type::second);
+        
+    class_<MyData> ("MyData")
+        .def(init <int, int>())
+        .def_readwrite("value1", &MyData::value1)
+        .def_readwrite("value2", &MyData::value2);
+        
+    class_<MyData2> ("MyData2")
+        .def(init <int, int>())
+        .def_readwrite("value1", &MyData2::value1)
+        .def_readwrite("value2", &MyData2::value2);
+        
+    class_<MyIteratorRange>("MyIteratorRange")
+        .def("__iter__",
+            range <return_internal_reference<> >(
+                &MyIteratorRange::first, &MyIteratorRange::second))
+        .def("__len__", &iterator_range_size);
+   
+         
+    class_ <MyMap> ("MyMap")
+        .def("__iter__", iterator<MyMap, return_internal_reference<> >())
+        .def("__len__", &MyMap::size)
+        .def("clear", &MyMap::clear)
+        .def("find", find)
+        .def("insert", &insert)
+        .def("erase", erase_by_key)
+        .def("count", &MyMap::count)
+        .def("__getitem__", equal_range);
+        //.def("__setitem__", set_item);
+        
+    typedef std::map <int, MyData2> TestMap;
+        
+    class_ <TestMap> ("TestMap")
+        .def(map_indexing_suite <TestMap, true >());
 }
 
 }
