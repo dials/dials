@@ -1,8 +1,7 @@
 import libtbx.load_env
 Import("env_etc")
 
-env_etc.dials_include = libtbx.env.dist_path("dials")
-
+env_etc.dials_jmp_include = libtbx.env.dist_path("dials_jmp")
 if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
     Import("env_no_includes_boost_python_ext")
     env = env_no_includes_boost_python_ext.Clone()
@@ -17,7 +16,8 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
             env_etc.boost_adaptbx_include,
             env_etc.boost_include,
             env_etc.python_include,
-            env_etc.dials_include])
+            env_etc.dials_include,
+            env_etc.dials_jmp_include])
     env.Append(
 		LIBS=env_etc.libm + [ 
 		"cctbx",

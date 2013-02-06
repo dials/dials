@@ -1,0 +1,7 @@
+
+Import('env')
+
+#sources = []
+
+#env.SharedLibrary(target='#/lib/dials_array_family_ext', source=sources)
+
