@@ -7,5 +7,5 @@ sources = [
 	'boost_python/remove.cc',
     'boost_python/array_family_ext.cc']
 
-env.SharedLibrary(target='#/lib/dials_array_family_ext', source=sources)
+env.SharedLibrary(target='#/lib/dials_jmp_array_family_ext', source=sources)
 
