@@ -9,17 +9,27 @@ class PythonDerived (Base):
     def do_something(self):
         print "hello PythonDerived"
 
-    def do_something_else(self):
-        print "hello PythonDerived"
+class PythonDerived2 (PythonDerived):
+  
+  def __init__(self):
+    PythonDerived.__init__(self)
+  
+  def do_something(self):
+    print "hello PythonDerived2"
+  
 
 a = Base()
 b = Derived()
-c = ExtraDerived()
 d = PythonDerived()
+e = PythonDerived2()
+
 
 callback_do_something(a)
 callback_do_something(b)
-callback_do_something(c)
 callback_do_something(d)
-callback_do_something_else(c)
 
+a.do_something()
+b.do_something()
+d.do_something()
+e.do_something()
+callback_do_something(e)
