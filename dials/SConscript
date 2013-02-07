@@ -1,4 +1,0 @@
-Import('env')
-
-env.SConscript('array_family/SConscript', exports={ 'env' : env })
-env.SConscript('model/SConscript', exports={ 'env' : env })

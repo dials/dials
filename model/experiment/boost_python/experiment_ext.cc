@@ -11,17 +11,17 @@
 
 using namespace boost::python;
 
-namespace dials { namespace model { namespace boost_python {
+namespace dials { namespace model { namespace experiment { namespace boost_python {
 
   void export_beam();
   void export_goniometer();
-  void export_detector();
+  //void export_detector();
 
-  BOOST_PYTHON_MODULE(dials_model_ext)
+  BOOST_PYTHON_MODULE(dials_model_experiment_ext)
   {
     export_beam();
     export_goniometer();
-    export_detector();
+    //export_detector();
   }
 
-}}} // namespace dials::model::boost_python
+}}}} // namespace dials::model::experiment::boost_python

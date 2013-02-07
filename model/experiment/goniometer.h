@@ -6,13 +6,13 @@
  *   This code is distributed under the BSD license, a copy of which is
  *   included in the root directory of this package.
  */
-#ifndef DIALS_MODEL_GONIOMETER_H
-#define DIALS_MODEL_GONIOMETER_H
+#ifndef DIALS_MODEL_EXPERIMENT_GONIOMETER_H
+#define DIALS_MODEL_EXPERIMENT_GONIOMETER_H
 
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 
-namespace dials { namespace model {
+namespace dials { namespace model { namespace experiment {
 
   using scitbx::vec3;
   using scitbx::mat3;
@@ -102,6 +102,6 @@ namespace dials { namespace model {
     mat3 <double> fixed_rotation_;
   };
 
-}} // namespace dials::model
+}}} // namespace dials::model::experiment
 
-#endif // DIALS_MODEL_GONIOMETER_H
+#endif // DIALS_MODEL_EXPERIMENT_GONIOMETER_H

@@ -10,11 +10,11 @@
 #include <boost/python/def.hpp>
 #include <boost/format.hpp>
 #include <string>
-#include <dials/model/beam.h>
+#include <dials/model/experiment/beam.h>
 
 using namespace boost::python;
 
-namespace dials { namespace model { namespace boost_python {
+namespace dials { namespace model { namespace experiment { namespace boost_python {
 
   std::string beam_to_string(const Beam &beam) {
     boost::format fmt(
@@ -80,4 +80,4 @@ namespace dials { namespace model { namespace boost_python {
       .def("__str__", &beam_to_string);
   }
 
-}}} // namespace = dials::model::boost_python
+}}}} // namespace = dials::model::experiment::boost_python

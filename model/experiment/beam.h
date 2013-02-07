@@ -6,12 +6,12 @@
  *   This code is distributed under the BSD license, a copy of which is
  *   included in the root directory of this package.
  */
-#ifndef DIALS_MODEL_BEAM_H
-#define DIALS_MODEL_BEAM_H
+#ifndef DIALS_MODEL_EXPERIMENT_BEAM_H
+#define DIALS_MODEL_EXPERIMENT_BEAM_H
 
 #include <scitbx/vec3.h>
 
-namespace dials { namespace model {
+namespace dials { namespace model { namespace experiment {
 
   using scitbx::vec3;
 
@@ -151,6 +151,6 @@ namespace dials { namespace model {
     double polarization_fraction_;
 };
 
-}} // namespace dials::model
+}}} // namespace dials::model::experiment
 
-#endif // DIALS_MODEL_BEAM_H
+#endif // DIALS_MODEL_EXPERIMENT_BEAM_H

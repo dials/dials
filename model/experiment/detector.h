@@ -6,15 +6,15 @@
  *   This code is distributed under the BSD license, a copy of which is
  *   included in the root directory of this package.
  */
-#ifndef DIALS_MODEL_DETECTOR_H
-#define DIALS_MODEL_DETECTOR_H
+#ifndef DIALS_MODEL_EXPERIMENT_DETECTOR_H
+#define DIALS_MODEL_EXPERIMENT_DETECTOR_H
 
 #include <string>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/shared.h>
 
-namespace dials { namespace equipment {
+namespace dials { namespace equipment { namespace experiment {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -244,6 +244,6 @@ namespace dials { namespace equipment {
     panel_list_type panel_list_;
   };
 
-}} // namespace dials::model
+}}} // namespace dials::model::experiment
 
-#endif // DIALS_MODEL_DETECTOR_H
+#endif // DIALS_MODEL_EXPERIMENT_DETECTOR_H

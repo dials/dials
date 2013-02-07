@@ -10,11 +10,11 @@
 #include <boost/python/def.hpp>
 #include <boost/format.hpp>
 #include <string>
-#include <dials/model/goniometer.h>
+#include <dials/model/experiment/goniometer.h>
 
 using namespace boost::python;
 
-namespace dials { namespace model { namespace boost_python {
+namespace dials { namespace model { namespace experiment { namespace boost_python {
 
   std::string goniometer_to_string(const Goniometer &goniometer) {
     boost::format fmt(
@@ -56,4 +56,4 @@ namespace dials { namespace model { namespace boost_python {
       .def("__str__", &goniometer_to_string);                
   }
 
-}}} // namespace dials::model
+}}}} // namespace dials::model::experiment::boost_python

@@ -9,6 +9,9 @@ class PythonDerived (Base):
     def do_something(self):
         print "hello PythonDerived"
 
+    def do_something_else(self):
+        print "hello PythonDerived"
+
 a = Base()
 b = Derived()
 c = ExtraDerived()
