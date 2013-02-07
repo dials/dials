@@ -238,7 +238,9 @@ scratch/jmp/dials/spot_prediction/xds_rotation_angles.h -text
 scratch/jmp/dials/util/SConscript -text
 scratch/jmp/dials/util/__init__.py -text
 scratch/jmp/dials/util/boost_python/test_indexing.cc -text
+scratch/jmp/dials/util/boost_python/test_inheritance.cc -text
 scratch/jmp/dials/util/boost_python/util_ext.cc -text
+scratch/jmp/dials/util/test_inheritance.py -text
 scratch/jmp/extract_reflection_profiles/__init__.py -text
 scratch/jmp/extract_reflection_profiles/beam.py -text
 scratch/jmp/extract_reflection_profiles/detector.py -text

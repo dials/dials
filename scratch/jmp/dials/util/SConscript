@@ -2,7 +2,7 @@
 Import('env')
 
 sources = [
-    'boost_python/test_indexing.cc',    
+    'boost_python/test_inheritance.cc',
     'boost_python/util_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_util_ext', source=sources)
