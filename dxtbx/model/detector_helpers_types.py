@@ -22,8 +22,10 @@ class detector_helpers_types:
 
     def __init__(self):
 
-        detector_lib = os.path.join(os.environ['XIA2_ROOT'], 'Data',
-                                    'detectors.lib')
+        import dxtbx
+
+        detector_lib = os.path.join(os.path.split(dxtbx.__file__)[0], 
+                                    'data', 'detectors.lib')
 
         if not os.path.exists(detector_lib):
             raise RuntimeError, 'detector library not found'
