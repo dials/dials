@@ -52,7 +52,7 @@ public:
         step_size_[0] = delta_mosaicity_  / size_[0];
         step_size_[1] = delta_divergence_ / size_[1];
         step_size_[2] = delta_divergence_ / size_[2];
-        
+
         // Allocate memory for the grid array
         data_ = scitbx::af::flex_double(scitbx::af::flex_grid <> (
             n_ref, size_[0], size_[1], size_[2]));
