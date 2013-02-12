@@ -173,7 +173,6 @@ scratch/jmp/dials/geometry/transform/from_xds_to_detector.h -text
 scratch/jmp/dials/geometry/xds_coordinate_system.h -text
 scratch/jmp/dials/integration/SConscript -text
 scratch/jmp/dials/integration/__init__.py -text
-scratch/jmp/dials/integration/__init__.pyc -text
 scratch/jmp/dials/integration/background_intensity.h -text
 scratch/jmp/dials/integration/boost_python/background_intensity.cc -text
 scratch/jmp/dials/integration/boost_python/centroid.cc -text
