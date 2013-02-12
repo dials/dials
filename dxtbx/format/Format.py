@@ -28,11 +28,6 @@ except: # intentional
 import exceptions
 import traceback
 
-assert('XIA2_ROOT' in os.environ)
-
-if not os.environ['XIA2_ROOT'] in sys.path:
-    sys.path.append(os.environ['XIA2_ROOT'])
-
 # first - import access to all of the factories that we will be needing
 
 from dxtbx.model.goniometer import goniometer, goniometer_factory

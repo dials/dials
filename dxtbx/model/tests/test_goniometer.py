@@ -11,8 +11,6 @@ import math
 import os
 import sys
 
-sys.path.append(os.path.join(os.environ['XIA2_ROOT']))
-
 from dxtbx.model.goniometer import goniometer
 from dxtbx.model.goniometer import goniometer_factory
 

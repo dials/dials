@@ -10,8 +10,6 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.environ['XIA2_ROOT']))
-
 from dxtbx.model.scan import scan
 from dxtbx.model.scan import scan_factory
 from dxtbx.model.scan_helpers import scan_helper_image_files

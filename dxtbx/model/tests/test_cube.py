@@ -35,8 +35,6 @@ def tst_cube():
     import os
     import sys
 
-    sys.path.append(os.path.join(os.environ['XIA2_ROOT']))
-
     from dxtbx.model.cube import cube
 
     import os

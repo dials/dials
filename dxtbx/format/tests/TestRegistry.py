@@ -10,9 +10,6 @@
 import os
 import sys
 
-if 'XIA2_ROOT' in os.environ and not os.environ['XIA2_ROOT'] in sys.path:
-    sys.path.append(os.environ['XIA2_ROOT'])
-
 from dxtbx.format.Registry import Registry
 
 import time

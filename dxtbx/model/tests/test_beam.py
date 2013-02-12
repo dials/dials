@@ -10,8 +10,6 @@
 import os
 import sys
 
-sys.path.append(os.path.join(os.environ['XIA2_ROOT']))
-
 from dxtbx.model.beam import beam
 from dxtbx.model.beam import beam_factory
 
