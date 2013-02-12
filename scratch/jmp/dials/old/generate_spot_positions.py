@@ -15,15 +15,15 @@ from beam import Beam
 from goniometer import Goniometer
 from detector import Detector
 
-def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group, 
+def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
                                          dmin, wavelength):
     """Predict the reflections.
-    
-    Calculate the indices of all predicted reflections based on the unit cell 
+
+    Calculate the indices of all predicted reflections based on the unit cell
     parameters and the given resolution. Then remove the indices that are
     absent due to the symmetry. Lastly, generate the intersection angles, phi,
     and return these.
-    
+
     :param cbf_handle: The CBF file handle
     :param ub_matrix: The UB matrix
     :param unit_cell: The unit cell parameters
@@ -31,7 +31,7 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
     :param dmin: The resolution
     :param wavelength: The beam wavelength
     :returns: A list of reflection indices
-    
+
     """
     from rstbx.diffraction import rotation_angles
     from scitbx import matrix
@@ -39,14 +39,14 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
     # Generate reflection indices from the unit cell parameters and resolution.
     # Then remove indices that are systemmatically absent because of symmetry.
     index_generator = IndexGenerator(unit_cell, cell_space_group, dmin)
-   
+
     # Construct an object to calculate the rotation of a reflection about
     # the (0, 1, 0) axis.
     ra = rotation_angles(dmin, ub_matrix, wavelength, matrix.col((1, 0, 0)))
-    
+
     # Construct all the reflection objects
     indices = [LatticePoint(hkl) for hkl in index_generator.indices]
- 
+
     # Generate the intersection angles of the remaining reflections
     observable_reflections = []
     #phi_hkl =[]
@@ -56,7 +56,7 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
             observable_reflections.append(Reflection(h.hkl, h.phi[1]))
             #phi_hkl.append((hkl.phi[0], hkl.hkl))
             #phi_hkl.append((hkl.phi[1], hkl.hkl))
-            
+
     # Return the list of phi-angles
     return observable_reflections
 
@@ -64,44 +64,44 @@ def generate_observed_reflections(ub_matrix, unit_cell, cell_space_group,
 
 def read_reflections_from_volume(volume, coords, bbox = (5,5,5)):
     """Read the reflections from the CBF file.
-    
+
     For each reflection specified in the positions array - which should be of
-    the form [(x0, y0, z0), (x1, y1, z1), ...] - extract an portion of the 
+    the form [(x0, y0, z0), (x1, y1, z1), ...] - extract an portion of the
     image volume like:
-        (x0-bbox[0]:x0+bbox[0], y0-bbox[1]:y0+bbox[1], z0-bbox[2]:z0+bbox[2]). 
+        (x0-bbox[0]:x0+bbox[0], y0-bbox[1]:y0+bbox[1], z0-bbox[2]:z0+bbox[2]).
     Return an array of arrays containing the extracted reflection images.
-    
+
     :param volume: The image volume
     :param coords: The array of reflection positions
     :param bbox: The box coordinates for the reflection sub-images
     :returns: An array of reflection images of the size specified by bbox
-    
+
     """
     # Get the width and height of the image
     sz, sy, sx = volume.shape
-   
+
     # bounding box distances.
     bx, by, bz = bbox
-    
+
     # For each reflection position, extract a region around the
     # reflection of the size given by bbox, append this sub-image
     # into the reflection profile array
     profiles = []
     for (i, j, k) in coords:
-        
+
         # The sub-image coordinates
         i0, i1 = i - bx, i + bx + 1
         j0, j1 = j - by, j + by + 1
         k0, k1 = k - bz, k + bz + 1
-        
-        # Ensure the position (including the bounding box) is within the image, 
+
+        # Ensure the position (including the bounding box) is within the image,
         # if not, continue to the next reflection position
         if (i0 < 0 or j0 < 0 or k0 < 0 or i1 >= sx or j1 >= sy or k1 >= sz):
             continue
 
         # Get the sub-image, numpy uses [col, row] format
         profiles.append(volume[k0:k1, j0:j1, i0:i1])
-       
+
     # Return profile images
     return profiles
 
@@ -114,12 +114,12 @@ def select_reflections(phi0, phi1, reflections):
 
 def write_reflections_to_hdf5(hdf_path, volume, coords, profiles):
     """Save all the reflection profiles in a HDF5 file
-    
+
     :param hdf_path: The path to the HDF5 file
     :param volume: The image volume
     :param coords: The reflection coordinates
     :param profiles: The reflection profiles
-    
+
     """
     # Open the HDF5 file
     h5_handle = h5py.File(hdf_path, 'w')
@@ -127,7 +127,7 @@ def write_reflections_to_hdf5(hdf_path, volume, coords, profiles):
     # Create a group to hold image volume
     group = h5_handle.create_group('image_volume')
     group.create_dataset('data', data=volume)
-    
+
     # Create a group with reflection positions
     group = h5_handle.create_group('reflections')
     group.create_dataset('detector_coordinates', data=coords)
@@ -140,7 +140,7 @@ def write_reflections_to_hdf5(hdf_path, volume, coords, profiles):
 
     # Close the hdf file
     h5_handle.close()
-    
+
 
 def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     """Extract the reflections from a CBF file and save to HDF5.
@@ -149,21 +149,21 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
      - Read all the data from the given input files
      - predict all the reflections that will occur
      - compute the positions on the reflections on the detector
-     - select a 3D volume, defined by the bbox parameter, from the image 
+     - select a 3D volume, defined by the bbox parameter, from the image
        around each reflection in the CBF file
-     - write these reflection profiles to a hdf5 file    
-    
+     - write these reflection profiles to a hdf5 file
+
     :param cbf_path: The path to the CBF file
     :param gxparm_path: The path to the GXPARM file
     :param hdf_path: The path to the HDF file
     :param bbox: The profile box parameters
     :param dmin: The resolution
-    
+
     """
     # Create the GXPARM file and read the contents
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(gxparm_path)
-    
+
     # Read the wavelength, pixel size, detector origin and distance
     wavelength = gxparm_handle.wavelength
     pixel_size = gxparm_handle.pixel_size
@@ -175,7 +175,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     symmetry = gxparm_handle.space_group
     unit_cell = uctbx.unit_cell(parameters = gxparm_handle.unit_cell)
     cell_space_group = space_group(space_group_symbols(symmetry).hall())
-        
+
     # Read the starting angle, angle delta and starting frame
     phi0 = gxparm_handle.starting_angle
     dphi = gxparm_handle.oscillation_range
@@ -183,7 +183,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
 
     # Read the rotation axis and beam vector
     m2 = matrix.col(gxparm_handle.rotation_axis)
-    s0 = matrix.col(gxparm_handle.beam_vector).normalize() / wavelength 
+    s0 = matrix.col(gxparm_handle.beam_vector).normalize() / wavelength
 
     # Read the unit cell and detector axis vectors
     b1 = matrix.col(gxparm_handle.unit_cell_a_axis)
@@ -192,10 +192,10 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     d1 = matrix.col(gxparm_handle.detector_x_axis) / pixel_size[0]
     d2 = matrix.col(gxparm_handle.detector_y_axis) / pixel_size[1]
     d3 = matrix.col(gxparm_handle.detector_normal)
-    
+
     # Create the UB matrix
     ub_matrix = matrix.sqr(b1.elems + b2.elems + b3.elems).inverse()
-  
+
     # Load the image volume from the CBF files
     volume = pycbf_ext.search_for_image_volume(cbf_path)
     volume_size_z, volume_size_y, volume_size_x = volume.shape
@@ -204,28 +204,28 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     beam = Beam(s0, wavelength)
     gonio = Goniometer(m2, s0, z0, phi0, dphi)
     detector = Detector(volume, d1, d2, d3, f, (dx0, dy0), pixel_size)
-   
+
     # Generate the reflections. Get all the indices at the given resolution.
     # Then using the space group symmetry, remove any indices that will be
     # systemmatically absent. Finally, calculate the intersection angles of
     # each of the reflections. The returned variable contains a list of
     # (phi, hkl) elements
     print "Generate reflections"
-    reflections = generate_observed_reflections(ub_matrix, unit_cell, 
+    reflections = generate_observed_reflections(ub_matrix, unit_cell,
         cell_space_group, dmin, wavelength)
 
     # Calculate the minimum and maximum angles and filter the reflections to
     # leave only those whose intersection angles lie between them
     phi_min = phi0
     phi_max = phi0 + (volume_size_z - z0) * dphi
-        
+
     reflections = select_reflections(phi_min, phi_max, reflections)
 
     r = reflections[0]
 
-    # Calculate the reflection detector coordinates. Calculate the 
-    # diffracted beam vector for each reflection and find the pixel 
-    # coordinate where the line defined by the vector intersects the 
+    # Calculate the reflection detector coordinates. Calculate the
+    # diffracted beam vector for each reflection and find the pixel
+    # coordinate where the line defined by the vector intersects the
     # detector plane. Returns a list of (x, y) detector coordinates.
     print "Calculate detector coordinates"
 #    for r in reflections:
@@ -243,7 +243,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     reflections = [r for r in reflections if r.in_detector_volume([[0, volume_size_x],
                                                           [0, volume_size_y],
                                                           [z0, volume_size_z + z0]])]
-    # Read the reflections from the volume. Return a 3D profile of each 
+    # Read the reflections from the volume. Return a 3D profile of each
     # reflection with a size of (2*bbox[0]+1, 2*bbox[1]+1, 2*bbox[2]+1)
     coords = []
     for r in reflections:
@@ -252,7 +252,7 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
     print "Read reflections"
     profiles = read_reflections_from_volume(volume, coords, bbox)
 
-    # Write the reflection profiles to a HDF5 file    
+    # Write the reflection profiles to a HDF5 file
     #write_reflections_to_hdf5(hdf_path, volume, coords, profiles)
 
     # Print points on first image
@@ -282,24 +282,24 @@ def extract_and_save_reflections(cbf_path, gxparm_path, hdf_path, bbox, dmin):
         pylab.show()
 
 def test():
-    
+
     from glob import glob
-    
+
     # The CBF image path, make sure paths are in order
     cbf_path = '/home/upc86896/Projects/data/300k/ximg2700*.cbf'
 
     # Set the GXPARM path
     gxparm_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/GXPARM.XDS'
-    
+
     # Set the HDF file path
     hdf_path = '/home/upc86896/Projects/dials/dials-svn/dials-code/scratch/jmp/data/ximg2700_reflection_profiles.hdf5'
-    
+
     # Set the size of the reflection profile box
     bbox = (5, 5, 5)
-    
+
     # Set the resolution
     dmin = 0.7
-  
+
     # From the supplied orientation matrix do the following:
     #  - predict all the reflections that will occur
     #  - compute the positions on the reflections on the detector
@@ -314,5 +314,3 @@ if __name__ == '__main__':
     #import pstats
     #p = pstats.Stats('profile.txt')
     #p.sort_stats('cumulative').print_stats(10)
-    
-

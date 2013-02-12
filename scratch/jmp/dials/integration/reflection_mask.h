@@ -26,9 +26,9 @@ public:
     ReflectionMask(const scitbx::af::flex_int &detector_mask,
                    scitbx::vec3 <int> mask_size)
         : mask_(scitbx::af::flex_grid <> (
-            mask_size[0], 
-            mask_size[1], 
-            mask_size[2]), 
+            mask_size[0],
+            mask_size[1],
+            mask_size[2]),
             -1),
           size_(mask_size) {
         DIALS_ASSERT(detector_mask.accessor().all().size() == 2);
@@ -44,7 +44,7 @@ public:
                     }
                 }
             }
-        }  
+        }
     }
 
     /** Reset the mask values to -1 */
@@ -58,10 +58,10 @@ public:
 
     /**
      * Create the reflection mask. Set the values of the reflection mask in the
-     * region of interest around each of the given reflection points to the 
+     * region of interest around each of the given reflection points to the
      * reflection index. Exclude pixels from the reflection's mask if they are
      * closer to a neighbouring reflection.
-     * 
+     *
      * @todo The pixels comprising the mask of a reflection are not guarenteed
      *       to be contingious, this should be fixed.
      *
@@ -71,24 +71,24 @@ public:
      */
     scitbx::af::flex_bool create(
                 const dials::af::flex_vec3_double &image_volume_coords,
-                const dials::af::flex_tiny6_int &region_of_interest) 
+                const dials::af::flex_tiny6_int &region_of_interest)
     {
         // Ensure array sizes match
         DIALS_ASSERT(image_volume_coords.size() == region_of_interest.size());
 
         // Initialise mask to -1
         this->reset_mask();
-        
+
         // Create an array for the status
         scitbx::af::flex_bool status(region_of_interest.size());
-        
+
         // Loop through all the reflection detector coordinates given. For each
-        // reflection, loop through the mask elements within the reflection's 
+        // reflection, loop through the mask elements within the reflection's
         // region of interest. If the mask element value is -1 (i.e. currently
         // unset) then set it to the reflection index. If the mask value is
         // already set to another reflection index, then calculate the distance
         // from the mask point to the currently set reflection xyz point and
-        // compare it to the distance between the mask point and the new 
+        // compare it to the distance between the mask point and the new
         // reflection xyz point. If the new distance is lower than the old,
         // then set the mask value to the new reflection index.
         for (int index = 0; index < image_volume_coords.size(); ++index) {
@@ -106,7 +106,7 @@ public:
                                 mask_(k, j, i) = index;
                             } else {
                                 scitbx::vec3 <double> point(i, j, k);
-                                scitbx::vec3 <double> curr_xyz = 
+                                scitbx::vec3 <double> curr_xyz =
                                     image_volume_coords[curr_index];
                                 int distance = (xyz - point).length();
                                 int distance_curr = (curr_xyz - point).length();
@@ -116,22 +116,22 @@ public:
                             }
                         }
                     }
-                } 
+                }
             } else {
                 status[index] = false;
             }
         }
-        
+
         // Return the status
         return status;
     }
 
     /**
      * Create the reflection mask. Set the values of the reflection mask in the
-     * region of interest around each of the given reflection points to the 
+     * region of interest around each of the given reflection points to the
      * reflection index. Exclude pixels from the reflection's mask if they are
      * closer to a neighbouring reflection.
-     * 
+     *
      * @todo The pixels comprising the mask of a reflection are not guarenteed
      *       to be contingious, this should be fixed.
      *
@@ -139,21 +139,21 @@ public:
      * @param region_of_interest The regions of interest
      * @returns The status True/False for each reflection
      */
-    scitbx::af::flex_bool create(ReflectionList &reflections) 
+    scitbx::af::flex_bool create(ReflectionList &reflections)
     {
         // Initialise mask to -1
         this->reset_mask();
-        
+
         // Create an array for the status
         scitbx::af::flex_bool status(reflections.size());
-        
+
         // Loop through all the reflection detector coordinates given. For each
-        // reflection, loop through the mask elements within the reflection's 
+        // reflection, loop through the mask elements within the reflection's
         // region of interest. If the mask element value is -1 (i.e. currently
         // unset) then set it to the reflection index. If the mask value is
         // already set to another reflection index, then calculate the distance
         // from the mask point to the currently set reflection xyz point and
-        // compare it to the distance between the mask point and the new 
+        // compare it to the distance between the mask point and the new
         // reflection xyz point. If the new distance is lower than the old,
         // then set the mask value to the new reflection index.
         for (int index = 0; index < reflections.size(); ++index) {
@@ -172,7 +172,7 @@ public:
                                 reflections[index].set_mask_index(index);
                             } else {
                                 scitbx::vec3 <double> point(i, j, k);
-                                scitbx::vec3 <double> curr_xyz = 
+                                scitbx::vec3 <double> curr_xyz =
                                     reflections[curr_index].get_image_coord();
                                 int distance = (xyz - point).length();
                                 int distance_curr = (curr_xyz - point).length();
@@ -183,12 +183,12 @@ public:
                             }
                         }
                     }
-                } 
+                }
             } else {
                 status[index] = false;
             }
         }
-        
+
         // Return the status
         return status;
     }

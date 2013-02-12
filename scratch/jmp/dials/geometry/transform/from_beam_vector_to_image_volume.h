@@ -48,7 +48,7 @@ public:
      * @param status The status array
      * @returns The array of image volume coordinates.
      */
-    flex_vec3_double apply(const flex_vec3_double &s1, 
+    flex_vec3_double apply(const flex_vec3_double &s1,
                            const scitbx::af::flex_double &phi,
                            scitbx::af::flex_bool &status) const {
         DIALS_ASSERT(s1.size() == phi.size());

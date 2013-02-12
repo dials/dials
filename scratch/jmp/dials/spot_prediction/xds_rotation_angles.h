@@ -19,7 +19,7 @@ T sqr(T &a) {
 }
 
 /**
- * Calculate the rotation angles at which the point is in the diffracting 
+ * Calculate the rotation angles at which the point is in the diffracting
  * condition.
  */
 class XdsRotationAngles {
@@ -38,7 +38,7 @@ public:
           m3_(calculate_goniometer_m3_axis()),
           s0_d_m2(s0_ * m2_),
           s0_d_m3(s0_ * m3_) {}
-                              
+
     /**
      * Calculate the rotation angles using the XDS method
      * @param pstar0 The unrotated reciprocal space vector
@@ -50,7 +50,7 @@ public:
         // Calculate sq length of pstar0 and ensure p*^2 <= 4s0^2
         double pstar0_len_sq = pstar0.length_sq();
         DIALS_ASSERT(pstar0_len_sq <= 4 * s0_.length_sq());
-        
+
         // Calculate dot product of p*0 with m1 and m3
         double pstar0_d_m1 = pstar0 * m1_;
         double pstar0_d_m2 = pstar0 * m2_;
@@ -76,21 +76,21 @@ public:
         sinphi2 = (-(pstar_d_m1 * pstar0_d_m3) - (pstar_d_m3 * pstar0_d_m1));
 
         // Return the two angles
-        return scitbx::vec2 <double> (std::atan2(sinphi1, cosphi1), 
+        return scitbx::vec2 <double> (std::atan2(sinphi1, cosphi1),
                                       std::atan2(sinphi2, cosphi2));
     }
-    
+
     /**
-     * Helper function to calculate angles directly from miller index and 
+     * Helper function to calculate angles directly from miller index and
      * UB matrix.
      * @param miller_index The miller indices
      * @param ub_matrix The ub matrix
      * @returns The two rotation angles.
      */
-    scitbx::vec2 <double> calculate(cctbx::miller::index <> miller_index, 
+    scitbx::vec2 <double> calculate(cctbx::miller::index <> miller_index,
                                     scitbx::mat3 <double> ub_matrix) const {
         return calculate(ub_matrix * miller_index);
-    }    
+    }
 
 private:
 
@@ -104,7 +104,7 @@ private:
         return m1_.cross(m2_).normalize();
     }
 
-    scitbx::vec3 <double> s0_;    
+    scitbx::vec3 <double> s0_;
     scitbx::vec3 <double> m2_;
     scitbx::vec3 <double> m1_;
     scitbx::vec3 <double> m3_;
@@ -113,16 +113,16 @@ private:
 };
 
 /** Convert the angle mod 2PI */
-inline 
+inline
 double mod_2pi(double angle) {
-    return angle - scitbx::constants::two_pi * 
-        std::floor(angle / scitbx::constants::two_pi); 
+    return angle - scitbx::constants::two_pi *
+        std::floor(angle / scitbx::constants::two_pi);
 }
 
 /** Convert a pair of angles to mod 2PI */
-inline 
+inline
 scitbx::vec2 <double> mod_2pi(scitbx::vec2 <double> angles) {
-	return scitbx::vec2 <double> (mod_2pi(angles[0]), mod_2pi(angles[1]));
+        return scitbx::vec2 <double> (mod_2pi(angles[0]), mod_2pi(angles[1]));
 }
 
 /**
@@ -131,7 +131,7 @@ scitbx::vec2 <double> mod_2pi(scitbx::vec2 <double> angles) {
     * @param range The angular range
     * @returns True/False the angle is in the filter range
     */
-inline 
+inline
 bool is_angle_in_range(double angle, scitbx::vec2 <double> range) {
     return mod_2pi(angle - range[1]) >= mod_2pi(angle - range[0])
         || mod_2pi(angle - range[1]) == 0

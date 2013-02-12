@@ -18,8 +18,8 @@ namespace dials { namespace spot_prediction {
 class SpotPredictor {
 
 public:
-    
-    /** 
+
+    /**
      * Initialise the spot predictor.
      * @param beam The beam parameters
      * @param detector The detector parameters
@@ -38,7 +38,7 @@ public:
                   double d_min)
         : index_generator_(unit_cell, space_group_type, false, d_min),
           rotation_angle_calculator_(
-            beam.get_direction().normalize() / beam.get_wavelength(), 
+            beam.get_direction().normalize() / beam.get_wavelength(),
             gonio.get_rotation_axis()),
           from_beam_vector_to_detector_(detector),
           beam_(beam),
@@ -50,20 +50,20 @@ public:
 
     /**
      * Predict the spot locations on the image detector.
-     *  
+     *
      * The algorithm performs the following procedure:
-     *    
+     *
      *  - For the miller index, the rotation angle at which the diffraction
      *    conditions are met is calculated.
-     *      
+     *
      *  - The rotation angles are then checked to see if they are within the
      *    rotation range.
-     *      
+     *
      *  - The reciprocal lattice vectors are then calculated, followed by the
      *    diffracted beam vector for each reflection.
-     *      
+     *
      *  - The image volume coordinates are then calculated for each reflection.
-     *      
+     *
      *  - The image volume coordinates are then checked to see if they are
      *    within the image volume itself.
      *
@@ -96,36 +96,36 @@ public:
             // Calculate the reciprocal space vector
             scitbx::vec3 <double> pstar = pstar0.unit_rotate_around_origin(
                                                 m2_, phi[i]);
-            
+
             // Calculate the diffracted beam vector
             scitbx::vec3 <double> s1 = s0_ + pstar;
-             
-            // Try to calculate the detector coordinate              
+
+            // Try to calculate the detector coordinate
             scitbx::vec2 <double> xy;
             try {
                 xy = from_beam_vector_to_detector_.apply(s1);
             } catch(error) {
                 continue;
             }
-            
+
             // Calculate the frame number
             double z = gonio_.get_zero_based_frame_from_angle(phi_deg, true);
-            
-            // Check the detector coordinate is valid and add the 
-            // elements to the arrays. NB. up to now, we have used 
+
+            // Check the detector coordinate is valid and add the
+            // elements to the arrays. NB. up to now, we have used
             // angles in radians, convert them to degrees before adding
             // them to the rotation angle array.
             if (!detector_.is_coordinate_valid(xy)) {
                 continue;
             }
-            
+
             // Add the reflection
             reflections[i] = Reflection(
                 h, phi_deg, s1, scitbx::vec3 <double> (xy[0], xy[1], z));
         }
         return reflections;
     }
-    
+
     /**
      * For a given set of miller indices, predict the detector coordinates.
      * @param miller_indices The array of miller indices.
@@ -143,17 +143,17 @@ public:
         }
         return reflections;
     }
-    
-    /** 
+
+    /**
      * Generate a set of miller indices and predict the detector coordinates.
      */
-    scitbx::af::shared <Reflection>     
+    scitbx::af::shared <Reflection>
     predict() {
         scitbx::af::shared <Reflection> reflections;
 
-        // Continue looping until we run out of miller indices        
+        // Continue looping until we run out of miller indices
         for (;;) {
-            
+
             // Get the next miller index
             cctbx::miller::index <> h = index_generator_.next();
             if (h.is_zero()) {
@@ -166,18 +166,18 @@ public:
                 if (!r[j].is_zero()) {
                     reflections.push_back(r[j]);
                 }
-            }            
+            }
         }
-        return reflections; 
+        return reflections;
     }
 
 private:
-   
+
     /** Get the angle % 360 */
     double mod_360(double angle) const {
         return angle - 360.0 * std::floor(angle / 360.0);
-    }       
-   
+    }
+
 private:
 
     IndexGenerator index_generator_;

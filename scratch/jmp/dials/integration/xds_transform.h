@@ -20,9 +20,9 @@
 
 namespace dials { namespace integration {
 
-/** 
- * A class to calculate calculate the fraction of counts contributed by each 
- * data frame, j, around the reflection to each grid point, v3 in the profile 
+/**
+ * A class to calculate calculate the fraction of counts contributed by each
+ * data frame, j, around the reflection to each grid point, v3 in the profile
  * frame.
  */
 class XdsTransformE3Fraction {
@@ -32,8 +32,8 @@ public:
     /** Default constructor */
     XdsTransformE3Fraction() {}
 
-    /** 
-     * Initialise the fraction calculation class 
+    /**
+     * Initialise the fraction calculation class
      * @param goniometer The goniometer parameters
      * @param grid_origin_e3 The XDS grid origin in the e3 direction
      * @param step_size_e3 The XDS grid step size in the e3 direction
@@ -64,33 +64,33 @@ private:
 /**
  * Calculate the fraction of counts contributed by each data frame, j,
  * around the reflection to each grid point, v3 in the profile frame.
- *       
- * First we find and integrate over the set of phi angles covered by each 
- * data frame around the reflection to get Ij. Then we find the set of phi
- * angles covered by each grid coordinate. We then integrate over the 
  *
- * intersection of the phi angles covered by each data frame and each 
- * grid point to get Iv3j. The fraction of the counts is then calculated as 
+ * First we find and integrate over the set of phi angles covered by each
+ * data frame around the reflection to get Ij. Then we find the set of phi
+ * angles covered by each grid coordinate. We then integrate over the
+ *
+ * intersection of the phi angles covered by each data frame and each
+ * grid point to get Iv3j. The fraction of the counts is then calculated as
  * Iv3j / Ij.
- *       
+ *
  * Further details of the method can be found in Kabsch 2010.
- *       
+ *
  * @param frame The z coordinate of the reflection (i.e. frame number)
  * @param phi The rotation angle of the reflection
  * @param zeta The lorentz correction factor
- *  
+ *
  * @returns An array containing the count fractions. The fraction of counts
  *          given by frame j to grid coordinate v3 can be found in the array
- *          by fv3j[v3-v30, j-j0]     
+ *          by fv3j[v3-v30, j-j0]
  *
- * @throws std::runtime_error if the supplied values are bad  
+ * @throws std::runtime_error if the supplied values are bad
  */
 scitbx::af::flex_double XdsTransformE3Fraction::calculate(
         scitbx::vec2 <int> roi_z, double phi, double zeta)
 {
     // Check the value of zeta
     DIALS_ASSERT(zeta != 0.0);
-        
+
     // Create an array to contain the intensity fractions
     int array_size = (2 * grid_origin_e3_ + 1) * (roi_z[1] + 1 - roi_z[0]);
     scitbx::af::flex_double fraction(array_size);
@@ -100,9 +100,9 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
     int j1 = roi_z[1];
     int v30 = - grid_origin_e3_;
     int v31 = + grid_origin_e3_;
-    
-    // A constant used in the solution to the integrals below. 
-    double sigr2 = 1.0 / (std::sqrt(2.0) * (sigma_mosaicity_ / 
+
+    // A constant used in the solution to the integrals below.
+    double sigr2 = 1.0 / (std::sqrt(2.0) * (sigma_mosaicity_ /
                                             std::abs(zeta)));
 
     // Loop over all j data frames in the region around the reflection
@@ -113,12 +113,12 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
         // Therefore the range of phi for j is given as follows.
         double bj = starting_angle_ + (j + starting_frame_) * oscillation_range_;
         double aj = bj - oscillation_range_;
-        
+
         // Calculate the integral over rj (leaving out scaling factors):
         // I[exp(-(phi' - phi)^2 / (2 sigma^2)]
-        double integral_j = (boost::math::erf((bj - phi) * sigr2) - 
+        double integral_j = (boost::math::erf((bj - phi) * sigr2) -
                              boost::math::erf((aj - phi) * sigr2));
-        
+
         // If integral is zero then set fractions to 0.0
         if (integral_j == 0.0) {
             for (int v3 = v30; v3 <= v31; ++v3, ++i) {
@@ -126,7 +126,7 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
             }
         } else {
             double integral_j_r = 1.0 / integral_j;
-            
+
             // Loop over all v3 in the profile grid
             for (int v3 = v30; v3 <= v31; ++v3) {
 
@@ -136,29 +136,29 @@ scitbx::af::flex_double XdsTransformE3Fraction::calculate(
                 double bv3 = ((v3 - 0.5) * step_size_e3_) / zeta + phi;
                 double av3 = ((v3 + 0.5) * step_size_e3_) / zeta + phi;
                 if (av3 > bv3) std::swap(av3, bv3);
-                
+
                 // We need to integrate over the intersection of sets rv3 and rj
                 double av3j = std::max(av3, aj);
                 double bv3j = std::min(bv3, bj);
 
-                // If there is no intersection then set the fraction of the 
-                // counts contributed by fata frame j to grid coordinate v3 to 
+                // If there is no intersection then set the fraction of the
+                // counts contributed by fata frame j to grid coordinate v3 to
                 // zero, otherwise calculate it as the ratio of the integral
                 // over the intersection or rv3 and rj to the integral over rj
                 if (av3j >= bv3j) {
                     fraction[i] = 0;
                 } else {
-                    fraction[i] = (boost::math::erf((bv3j - phi) * sigr2) - 
-                                   boost::math::erf((av3j - phi) * sigr2)) * 
-								   integral_j_r;
+                    fraction[i] = (boost::math::erf((bv3j - phi) * sigr2) -
+                                   boost::math::erf((av3j - phi) * sigr2)) *
+                                                                   integral_j_r;
                 }
-                
+
                 // Increment array index
                 i++;
             }
         }
     }
-    
+
     // Return the intensity fractions
     return fraction;
 }
@@ -176,8 +176,8 @@ class XdsTransformDetectorBeamVectors {
 public:
 
     /** The default constructor */
-    XdsTransformDetectorBeamVectors() {}    
-    
+    XdsTransformDetectorBeamVectors() {}
+
     /**
      * Initialise the class.
      * @param detector The detector struct
@@ -189,9 +189,9 @@ public:
                                     int n_div)
         : size_(detector.get_size()),
           origin_(detector.get_origin()),
-          x_axis_(detector.get_x_axis().normalize() * 
+          x_axis_(detector.get_x_axis().normalize() *
                 detector.get_pixel_size()[0]),
-          y_axis_(detector.get_y_axis().normalize() * 
+          y_axis_(detector.get_y_axis().normalize() *
                 detector.get_pixel_size()[1]),
           normal_(detector.get_normal()),
           distance_(detector.get_distance()),
@@ -203,21 +203,21 @@ public:
      * into (n_div * n_div) equal areas. This is done to remove a certain
      * amount of processing from being done per reflection and ensuring it
      * is only done before the reflections are procesed.
-     * @returns An array of beam vectors 
+     * @returns An array of beam vectors
      */
     af::flex_vec3_double calculate() {
-    
+
         // Calculate the image size
         int x_size = size_[0] * n_div_;
         int y_size = size_[1] * n_div_;
         int image_size = x_size * y_size;
         double n_div_r = 1.0 / (double)n_div_;
-        
+
         // Create the necessary arrays
         af::flex_vec3_double detector_s1x(x_size);
         af::flex_vec3_double detector_s1y(y_size);
         af::flex_vec3_double detector_s1(image_size);
-        
+
         // Calculate the x and y components of the detector s1 vectors
         for (std::size_t i = 0; i < x_size; ++i) {
             detector_s1x[i] = (i * n_div_r - origin_[0]) * x_axis_;
@@ -226,22 +226,22 @@ public:
             detector_s1y[j] = (j * n_div_r - origin_[1]) * y_axis_;
         }
 
-        // Calculate the s1 vector for each sub-division of the detector        
+        // Calculate the s1 vector for each sub-division of the detector
         for (std::size_t k = 0, j = 0; j < y_size; ++j) {
             for (std::size_t i = 0; i < x_size; ++i, ++k) {
                 detector_s1[k] = (
-                    detector_s1x[i] + 
-                    detector_s1y[j] + 
+                    detector_s1x[i] +
+                    detector_s1y[j] +
                     distance_ * normal_).normalize() * wavelength_r_;
             }
         }
-        
+
         // Return the s1 vector
         return detector_s1;
     }
 
 private:
-    
+
     equipment::Detector detector;
     scitbx::vec2 <int> size_;
     scitbx::vec2 <double> origin_;
@@ -284,8 +284,8 @@ public:
         : e3_fraction_(gonio, grid),
           detector_s1_(
             XdsTransformDetectorBeamVectors(
-                detector, 
-                beam.get_wavelength(), 
+                detector,
+                beam.get_wavelength(),
                 n_div).calculate()),
           grid_(grid),
           image_(image),
@@ -300,7 +300,7 @@ public:
         // Check the input
         DIALS_ASSERT(n_div > 0);
         DIALS_ASSERT(image.accessor().all().size() == 3);
-        
+
         // Set image size
         image_size_ = scitbx::vec3 <int> (
             image.accessor().all()[0],
@@ -310,18 +310,18 @@ public:
 
     void calculate(int reflection_index,
                    int mask_index,
-                   scitbx::af::tiny <int, 6> roi, 
+                   scitbx::af::tiny <int, 6> roi,
                    scitbx::vec3 <double> s1,
                    double phi);
-    
+
     /**
      * Calculate the XDS transform for all reflections
      * @param xyz The image volume coordinates
      * @param s1 The diffracted beam vectors
      * @param phi The rotation angles
-     */  
-//    void calculate(const af::flex_tiny6_int &roi, 
-//                   const af::flex_vec3_double &s1, 
+     */
+//    void calculate(const af::flex_tiny6_int &roi,
+//                   const af::flex_vec3_double &s1,
 //                   const scitbx::af::flex_double &phi) {
 //        DIALS_ASSERT(roi.size() == s1.size());
 //        DIALS_ASSERT(roi.size() == phi.size());
@@ -335,7 +335,7 @@ public:
         reflection.set_transform_index(reflection_index);
         calculate(
             reflection_index,
-            reflection.get_mask_index(), 
+            reflection.get_mask_index(),
             reflection.get_region_of_interest(),
             reflection.get_beam_vector(),
             reflection.get_rotation_angle());
@@ -370,7 +370,7 @@ private:
  * vector s1 and rotation angle phi, to the XDS reciprocal lattice coordinate
  * frame.
  *
- * We treat the image pixels as bins of a histogram. In effect we want to 
+ * We treat the image pixels as bins of a histogram. In effect we want to
  * redistribute the image pixel counts to the XDS grid elements. We do this
  * by transforming the detector pixel coordinates around the reflection to the
  * XDS reciprocal lattice coordinate frame and determining the fraction of the
@@ -388,9 +388,9 @@ void XdsTransform::calculate(int reflection_index, int mask_index,
                              double phi)
 {
     // Check the reflection index
-    DIALS_ASSERT(reflection_index >= 0 && 
+    DIALS_ASSERT(reflection_index >= 0 &&
                  reflection_index < grid_.get_n_reflections());
-    
+
     // Constant for scaling values
     static const double r2d = 1.0 / scitbx::constants::pi_180;
 
@@ -413,12 +413,12 @@ void XdsTransform::calculate(int reflection_index, int mask_index,
     int y1 = roi[3] * n_div_;
     int z0 = roi[4];
     int z1 = roi[5];
-    
+
     // Check the data range
     DIALS_ASSERT(x0 >= 0 && x1 < image_size_[2] * n_div_ &&
                  y0 >= 0 && y1 < image_size_[1] * n_div_ &&
                  z0 >= 0 && z1 < image_size_[0]);
-    
+
     // Calculate 1 / n_div and 1 / (n_div*n_div) for convenience
     double n_div_r = 1.0 / n_div_;
     double div_fraction = n_div_r * n_div_r;
@@ -439,12 +439,12 @@ void XdsTransform::calculate(int reflection_index, int mask_index,
     double c11 = e1 * s1;
     double c21 = e2 * s1;
 
-    // Calculate the fraction of counts contributed by each data frame, j, 
+    // Calculate the fraction of counts contributed by each data frame, j,
     // around the reflection to each grid point, v3 in the profile frame. Hold
     // these fractions in a 2d array.
-    scitbx::af::flex_double fraction = e3_fraction_.calculate( 
-        scitbx::vec2 <int> (z0, z1), phi, zeta); 
-    
+    scitbx::af::flex_double fraction = e3_fraction_.calculate(
+        scitbx::vec2 <int> (z0, z1), phi, zeta);
+
     // Loop through all the pixels (and their sub-divisions). Calculate the
     // coordinate of each pixel in the XDS coordinate frame e1 and e2 axes.
     // Find the grid point in which the calculate point is contained and then

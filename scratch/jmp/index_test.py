@@ -16,7 +16,7 @@ for kv in m:
     kv.second.value1 += 10
     kv.second.value2 = 100
     kv.second = MyData(-1, -1)
-    
+
 print "Access all elements"
 for kv in m:
     print kv.first, kv.second.value1, kv.second.value2
@@ -38,7 +38,3 @@ for kv in m:
 #print "Access all elements"
 #for k, v in m:
 #    print k, v.value1, v.value2
-
-
-    
-

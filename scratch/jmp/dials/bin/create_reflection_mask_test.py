@@ -36,7 +36,7 @@ def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
 
-def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords, 
+def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
                                    region_of_interest, padding):
     """Display the reflection mask for a given spot."""
     from matplotlib import pylab, cm
@@ -47,9 +47,9 @@ def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
     roi2 = [max(roi[0] - padding, 0), min(roi[1] + padding, mask.shape[2]-1),
             max(roi[2] - padding, 0), min(roi[3] + padding, mask.shape[1]-1),
             max(roi[4] - padding, 0), min(roi[5] + padding, mask.shape[0]-1)]
-    
+
     image = mask[xyz[2], roi2[2]:roi2[3]+1, roi2[0]:roi2[1]+1]
-    pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest", 
+    pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest",
         extent=[roi2[0], roi2[1], roi2[2], roi2[3]], origin='lower')
     #pylab.plot([roi[0], roi[1], roi[1], roi[0], roi[0]],
     #           [roi[2], roi[2], roi[3], roi[3], roi[2]])
@@ -57,7 +57,7 @@ def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
                [roi[2]-0.5, roi[2]-0.5, roi[3]-0.5, roi[3]-0.5, roi[2]-0.5])
     pylab.show()
 
-def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, d_min, 
+def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, d_min,
                            sigma_divergence, sigma_mosaicity, n_sigma,
                            display_frame, display_spot):
     """Read the required data from the file, predict the spots and calculate
@@ -80,7 +80,7 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     print "Reading: \"{0}\"".format(input_filename)
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(input_filename)
-    beam      = gxparm_handle.get_beam() 
+    beam      = gxparm_handle.get_beam()
     gonio     = gxparm_handle.get_goniometer()
     detector  = gxparm_handle.get_detector()
     ub_matrix = gxparm_handle.get_ub_matrix()
@@ -114,8 +114,8 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
         gonio.num_frames = image_volume.shape[0]
 
     # Create the spot predictor
-    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell, 
-                                   space_group_type, 
+    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell,
+                                   space_group_type,
                                    matrix.sqr(ub_matrix).inverse(), d_min)
 
     import numpy
@@ -124,25 +124,25 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     iobs = numpy.array(integrate_handle.iobs)
     sigma = numpy.array(integrate_handle.sigma)
     iobs_over_sigma = iobs / sigma
-    
+
     reflection_list = zip(hkl, iobs_over_sigma, xyz)
-    
+
     rl = []
     for r in reflection_list:
         if r[2][2] < 100:
-            rl.append(r)    
-    reflection_list = rl    
+            rl.append(r)
+    reflection_list = rl
     reflection_list = sorted(reflection_list, key=lambda a: a[1])[::-1]
-    reflection_list = reflection_list[0:20]    
+    reflection_list = reflection_list[0:20]
     reflection_list = sorted(reflection_list, key=lambda a: a[0][2])
     reflection_list = sorted(reflection_list, key=lambda a: a[0][1])
     reflection_list = sorted(reflection_list, key=lambda a: a[0][0])
-    
+
     for i in reflection_list:
         print i
-        
+
     hkl, iobsos, xyz = zip(*reflection_list)
-    
+
     miller_indices = flex.miller_index(hkl)
 
     #miller_indices = integrate_handle.hkl
@@ -154,10 +154,10 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     #    else:
     #        new_miller_indices.append(hkl)
     #    last_hkl = hkl
-   # 
+   #
     #miller_indices = flex.miller_index(new_miller_indices)
-    
-    # Predict the spot image volume coordinates 
+
+    # Predict the spot image volume coordinates
     print "Predicting spots"
     start_time = time()
     spot_predictor.predict(miller_indices)
@@ -180,8 +180,8 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     #print "Creating reflection mask Roi for {0} spots".format(len(miller_indices))
     #start_time = time()
     #reflection_mask_roi = ReflectionMaskRoi(
-    #                        beam, detector, gonio, 
-    #                        n_sigma * sigma_divergence, 
+    #                        beam, detector, gonio,
+    #                        n_sigma * sigma_divergence,
     #                        n_sigma * sigma_mosaicity)
     #region_of_interest = reflection_mask_roi.calculate(
     #                        beam_vectors, rotation_angles)
@@ -200,14 +200,14 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
 #    region_of_interest  = remove_if_not(region_of_interest, valid_roi)
     #finish_time = time()
     #print "Time taken: {0} s".format(finish_time - start_time)
-    
+
     #range_x = [roi[1] - roi[0] for roi in region_of_interest]
     #range_y = [roi[3] - roi[2] for roi in region_of_interest]
     #range_z = [roi[5] - roi[4] for roi in region_of_interest]
     #range_phi = [gonio.get_angle_from_zero_based_frame(roi[5]) -
-    #             gonio.get_angle_from_zero_based_frame(roi[4]) 
+    #             gonio.get_angle_from_zero_based_frame(roi[4])
     #                for roi in region_of_interest]
-                 
+
     #volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
     #print "Min/Max ROI X Range:   ", min(range_x), max(range_x)
    # print "Min/Max ROI Y Range:   ", min(range_y), max(range_y)
@@ -223,7 +223,7 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     #finish_time = time()
    # print "Time taken: {0} s".format(finish_time - start_time)
     #print "Created reflection mask for {0} reflections".format(len(region_of_interest))
-    
+
     #index = 120
     #hkl_gen = miller_indices[index]
     #roi_gen = region_of_interest[index]
@@ -238,18 +238,18 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
     #roi_gen = (roi_gen[0], roi_gen[1], roi_gen[2], roi_gen[3], 46, 54)
 
     #roi_gen = (roi_gen[0], roi_gen[1], roi_gen[2], roi_gen[3], int(xyz_gen[2])-2, int(xyz_gen[2])+2)
-#    import numpy 
+#    import numpy
 #    spot_image = image_volume[roi_gen[4]:roi_gen[5], roi_gen[2]:roi_gen[3], roi_gen[0]:roi_gen[1]]
 
 #    mask = (spot_image >= 10).astype(numpy.int32)
-#    
+#
 #    zyx = (26, 8, 7)
 ##    print zyx
 #    mask = markregion(mask, zyx)
-#        
+#
 #    numpy.set_printoptions(threshold=numpy.nan)
 ##    print mask
-#   
+#
 #    ind = numpy.where(mask != 2)
 #    spot_image[ind] = 0
 
@@ -257,7 +257,7 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
 
 #    image_volume[roi_gen[4]:roi_gen[5], roi_gen[2]:roi_gen[3], roi_gen[0]:roi_gen[1]] = spot_image
 
-#    
+#
 
 #    try:
 #        xyz_obs = centroid3d(flex.int(image_volume), reflection_mask.mask, roi_gen, index)
@@ -269,8 +269,8 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
 
     for xyz, roi in zip(image_volume_coords, region_of_interest):
         xyz_obs = centroid_reflection(flex.int(image_volume), roi, threshold)
-        xyz_obs_corr = (xyz_obs[0] + xcorr[xyz_obs[1], xyz_obs[0]], 
-                        xyz_obs[1] + ycorr[xyz_obs[1], xyz_obs[0]], 
+        xyz_obs_corr = (xyz_obs[0] + xcorr[xyz_obs[1], xyz_obs[0]],
+                        xyz_obs[1] + ycorr[xyz_obs[1], xyz_obs[0]],
                         xyz_obs[2])
         diff = (xyz_obs[0] - xyz[0], xyz_obs[1] - xyz[1], xyz_obs[2] - xyz[2])
         print "---------------------------------------"
@@ -281,13 +281,13 @@ def create_reflection_mask(input_filename, integrate_filename, cbf_search_path, 
 
     #xy_obs = centroid2d(flex.int(image_volume[xyz[2],:,:]), (roi[0], roi[1], roi[2], roi[3]))
 #    xds_hkl_xyz_cal = {}
-#    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzcal): 
+#    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzcal):
 #        xds_hkl_xyz_cal[hkl] = xyz
 
 #    xds_hkl_xyz_obs = {}
-#    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzobs): 
+#    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzobs):
 #        xds_hkl_xyz_obs[hkl] = xyz
-#    
+#
 #    print "HKL: ", hkl_gen
 #    print "XYZ_CAL: ({0:.1f}, {1:.1f}, {2:.1f})".format(*xyz_gen)
 #    print "ROI: ", roi_gen
@@ -309,7 +309,7 @@ def centroid(image, mask, roi, value, xcorr, ycorr):
                     yc += (j+0.5+ycorr[j,i]) * image[k, j, i]
                     zc += (k+0.5) * image[k, j, i]
                     count += image[k, j, i]
-    
+
     return (xc / count, yc / count, zc / count)
 
 def markregion(mask, seed):
@@ -320,11 +320,11 @@ def markregion(mask, seed):
         if (mask[z, y, x] == 1):
             mask[z, y, x] = 2
             mask = markregion(mask, (z, y, x+1))
-            mask = markregion(mask, (z, y, x-1))    
+            mask = markregion(mask, (z, y, x-1))
             mask = markregion(mask, (z, y+1, x))
-            mask = markregion(mask, (z, y-1, x))    
+            mask = markregion(mask, (z, y-1, x))
             mask = markregion(mask, (z+1, y, x))
-            mask = markregion(mask, (z-1, y, x)) 
+            mask = markregion(mask, (z-1, y, x))
     return mask
 
 #    from matplotlib import pylab, cm
@@ -345,8 +345,8 @@ def markregion(mask, seed):
 #    print xy[0] + roi[0], xy[1] + roi[2]
 #    pylab.imshow(total_image, interpolation='nearest', origin='lower', cmap=cm.Greys_r, vmin=0, vmax=10000)
 #    pylab.show()
-    
-        
+
+
 #    for z in range(roi[4], roi[5]+1):
 #        mask = reflection_mask.mask.as_numpy_array()[z,roi[2]:roi[3],roi[0]:roi[1]]
 #        ind = numpy.where(mask != index)
@@ -358,22 +358,22 @@ def markregion(mask, seed):
 
 #    image = image_volume[roi[4]:roi[5]+1, roi[2]:roi[3]+1, roi[0]:roi[1]+1]
 
-#    print image    
-    
-    
+#    print image
+
+
 #    if display_frame:
 #        for frame in display_frame:
 #            print "Displaying reflection mask for frame \"{0}\"".format(frame)
-#            visualize_frame_reflection_mask(reflection_mask.mask.as_numpy_array(), 
+#            visualize_frame_reflection_mask(reflection_mask.mask.as_numpy_array(),
 #                frame, image_volume_coords)
 
 #    if display_spot:
 #        for spot in display_spot:
 #            print "Displaying reflection mask for spot \"{0}\"".format(spot)
-#            visualize_spot_reflection_mask(reflection_mask.mask.as_numpy_array(), 
+#            visualize_spot_reflection_mask(reflection_mask.mask.as_numpy_array(),
 #                spot, image_volume_coords, region_of_interest, 10)
 
-                              
+
 if __name__ == '__main__':
 
     from optparse import OptionParser
@@ -406,22 +406,22 @@ if __name__ == '__main__':
                       type="string",
                       action="callback",
                       callback=display_frame_callback,
-                      help='Select a frame to display the reflection mask')      
+                      help='Select a frame to display the reflection mask')
     parser.add_option('--display-spot',
                       dest='display_spot',
                       type="string",
                       action="callback",
                       callback=display_frame_callback,
-                      help='Select a frame to display the reflection mask')                   
+                      help='Select a frame to display the reflection mask')
     (options, args) = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call spot prediction
     if len(args) < 3:
         print parser.print_help()
     else:
-        create_reflection_mask(args[0], 
+        create_reflection_mask(args[0],
                                args[1],
-                               args[2], 
+                               args[2],
                                options.dmin,
                                options.sigma_d,
                                options.sigma_m,

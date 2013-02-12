@@ -9,7 +9,7 @@
 
 namespace dials { namespace af {
 
-// Copied from scitbx/array_family/flex_types.h to give convenient access to 
+// Copied from scitbx/array_family/flex_types.h to give convenient access to
 // oft used flex array types
 #define DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(T, N) \
     typedef scitbx::af::flex<T >::type flex_ ## N; \
@@ -18,7 +18,7 @@ namespace dials { namespace af {
 
     typedef scitbx::af::tiny <int, 6> tiny6_int;
     typedef scitbx::af::tiny <double, 6> tiny6_double;
-    
+
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec2 <int>, vec2_int)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec2 <double>, vec2_double)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(scitbx::vec3 <int>, vec3_int)
@@ -26,7 +26,7 @@ namespace dials { namespace af {
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(tiny6_int, tiny6_int)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(tiny6_double, tiny6_double)
     DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS(cctbx::miller::index <>, miller_index)
-    
+
 #undef DIALS_ARRAY_FAMILY_FLEX_TYPEDEFS
 
 }} // namespace dials::af

@@ -10,7 +10,7 @@
 namespace dials { namespace spot_prediction {
 
 /**
- * Generate all the possible reflection indices from a unit cell object and 
+ * Generate all the possible reflection indices from a unit cell object and
  * calculate the symmetry reduced set of reflections.
  */
 class IndexGenerator {
@@ -19,7 +19,7 @@ public:
 
     /** Default constructor */
     IndexGenerator() {}
-    
+
     /**
      * Initialise the generator.
      * @param unit_cell The unit cell structure
@@ -30,18 +30,18 @@ public:
     IndexGenerator(cctbx::uctbx::unit_cell const& unit_cell,
                    cctbx::sgtbx::space_group_type const& space_group_type,
                    bool anomalous_flag,
-                   double d_min) 
+                   double d_min)
         : unit_cell_(unit_cell),
           space_group_type_(space_group_type),
           d_min_(d_min),
           loop_(initialise_loop(unit_cell.max_miller_indices(d_min))) {}
-    
+
     /**
      * Get the next miller index from the range of miller valid miller indices.
      * Loop over those miller indices specified by the loop structure, if the
      * current index is within the resolution and not systematically absent,
      * then return the miller index, otherwise iterate until a miller index
-     * matching those conditions is found. If none are found, then return 
+     * matching those conditions is found. If none are found, then return
      * the index (0, 0, 0).
      * @returns The next miller index
      */
@@ -57,7 +57,7 @@ public:
         }
         return cctbx::miller::index <> (0, 0, 0);
     }
-    
+
     /**
      * Create an array of miller indices by calling next until (000) is reached.
      * @returns The array of valid miller indices
@@ -86,7 +86,7 @@ private:
         return scitbx::af::nested_loop <cctbx::miller::index <> >(
             -reference_h_max, reference_h_max + 1);
     }
-      
+
 private:
 
     cctbx::uctbx::unit_cell unit_cell_;

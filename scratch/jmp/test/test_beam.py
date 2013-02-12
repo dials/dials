@@ -4,10 +4,10 @@ from dials.equipment import Beam
 
 class TestBeam(unittest.TestCase):
     """Test the dials.equipment.Beam class"""
-    
+
     def setUp(self):
         pass
-        
+
     def test_data(self):
         """Test the member data"""
         direction = (0.013142, 0.002200, 1.450476)
@@ -15,6 +15,6 @@ class TestBeam(unittest.TestCase):
         beam = Beam(direction, wavelength)
         self.assertEqual(beam.direction, direction)
         self.assertEqual(beam.wavelength, wavelength)
-                
+
 if __name__ == '__main__':
     unittest.main()

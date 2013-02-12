@@ -15,7 +15,7 @@ public:
     /** Default constructor */
     XdsCoordinateSystem() {}
 
-    /** 
+    /**
      * Initialise coordinate system
      * @param s0 The incident beam vector
      * @param s1 The diffracted beam vector
@@ -37,17 +37,17 @@ public:
     scitbx::vec3 <double> get_e1_axis() {
         return e1_;
     }
-    
+
     /** Get the e2 axis vector */
     scitbx::vec3 <double> get_e2_axis() {
         return e2_;
     }
-    
+
     /** Get the e3 axis vector */
     scitbx::vec3 <double> get_e3_axis() {
         return e3_;
     }
-    
+
     /** Get the lorentz correction factor (zeta) */
     double get_zeta() {
         return zeta_;

@@ -14,9 +14,9 @@ namespace dials { namespace geometry { namespace transform {
 typedef scitbx::af::flex <scitbx::vec3 <double> >::type flex_vec3_double;
 typedef scitbx::af::flex <scitbx::vec2 <double> >::type flex_vec2_double;
 
-/** 
+/**
  * Class to represent a geometry transform from beam vector to detector
- * coordinates 
+ * coordinates
  */
 class FromBeamVectorToDetector {
 
@@ -25,7 +25,7 @@ public:
     /** Default constructor */
     FromBeamVectorToDetector() : distance_(0.0) {}
 
-    /** 
+    /**
      * Initialise the transform from the detector coordinate system. The
      * detector coordinate system needs to be scaled in pixel units.
      * @param dcs The detector coordinate system
@@ -33,10 +33,10 @@ public:
      * @param origin The origin of the detector coordinate system
      * @param distance The distance from the detector to the crystal
      */
-    FromBeamVectorToDetector(const equipment::Detector &detector) 
-        : x_axis_(detector.get_x_axis().normalize() / 
+    FromBeamVectorToDetector(const equipment::Detector &detector)
+        : x_axis_(detector.get_x_axis().normalize() /
                     detector.get_pixel_size()[0]),
-          y_axis_(detector.get_y_axis().normalize() / 
+          y_axis_(detector.get_y_axis().normalize() /
                     detector.get_pixel_size()[1]),
           normal_(detector.get_normal().normalize()),
           origin_(detector.get_origin()),
@@ -65,7 +65,7 @@ public:
      * @param status The status array
      * @returns An array of 2 element vectors containing the pixel coordinates
      */
-    flex_vec2_double apply(const flex_vec3_double &s1, 
+    flex_vec2_double apply(const flex_vec3_double &s1,
                            scitbx::af::flex_bool &status) const {
         flex_vec2_double result(s1.size());
         status.resize(s1.size());

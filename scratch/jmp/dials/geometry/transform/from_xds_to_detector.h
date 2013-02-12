@@ -26,7 +26,7 @@ public:
                       const FromBeamVectorToDetector &from_beam_vector_to_detector)
         : from_xds_to_beam_vector_(from_xds_to_beam_vector),
           from_beam_vector_to_detector_(from_beam_vector_to_detector) {}
-          
+
     /**
      * Initialise the transform
      * @param xcs The XDS coordinate system

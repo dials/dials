@@ -12,7 +12,7 @@ namespace dials { namespace geometry { namespace transform {
 /** Constant for scaling values */
 static const double r2d = 1.0 / scitbx::constants::pi_180;
 
-/** 
+/**
  * Class to represent a geometry transform from beam vector to XDS coordinates
  */
 class FromBeamVectorToXds {
@@ -23,7 +23,7 @@ public:
     FromBeamVectorToXds()
         : phi_(0.0),
           zeta_(0.0) {}
-    
+
     /**
      * Initialise the transform using the XDS coordinate system.
      * @param xcs The XDS coordinate system
@@ -49,8 +49,8 @@ public:
      */
     scitbx::vec3 <double> apply(scitbx::vec3 <double> s_dash, double phi_dash) const {
         return scitbx::vec3 <double> (
-            scaled_e1_ * (s_dash - s1_), 
-            scaled_e2_ * (s_dash - s1_), 
+            scaled_e1_ * (s_dash - s1_),
+            scaled_e2_ * (s_dash - s1_),
             zeta_ * (phi_dash - phi_));
     }
 

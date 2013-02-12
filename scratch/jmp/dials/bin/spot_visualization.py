@@ -23,7 +23,7 @@ class SpotVisualization (object):
         # Get the shape of the array
         size = image.shape
 
-        # Convery the array to string to import into vtk    
+        # Convery the array to string to import into vtk
         image_string = image.tostring()
 
         # Create the data importer and import the numpy array
@@ -51,7 +51,7 @@ class SpotVisualization (object):
         volumeProperty.SetColor(colorFunc)
         volumeProperty.SetScalarOpacity(alphaChannelFunc)
         compositeFunction = vtk.vtkVolumeRayCastCompositeFunction()
-        
+
         # Create the volume mapper
         volumeMapper = vtk.vtkVolumeRayCastMapper()
         volumeMapper.SetVolumeRayCastFunction(compositeFunction)
@@ -61,17 +61,17 @@ class SpotVisualization (object):
         volume = vtk.vtkVolume()
         volume.SetMapper(volumeMapper)
         volume.SetProperty(volumeProperty)
-        
+
         # Return the volume
         return volume
 
     def create_cube_actor_from_roi(self, roi):
         """Create a cube actor from the reflection roi"""
         import vtk
-        
-        # Get the bounds from the 
+
+        # Get the bounds from the
         bounds = (roi[0], roi[1]-1, roi[2], roi[3]-1, roi[4], roi[5]-1)
-        
+
         # Create the cube
         cube = vtk.vtkCubeSource()
         cube.SetBounds(bounds)
@@ -85,7 +85,7 @@ class SpotVisualization (object):
         actor.SetMapper(mapper)
         actor.GetProperty().SetRepresentationToWireframe()
         actor.GetProperty().SetColor(self.roi_colour)
-        
+
         # Return the actor
         return actor
 
@@ -100,7 +100,7 @@ class SpotVisualization (object):
         # Add the volume
         if volume != None:
             renderer.AddVolume(volume)
-        
+
         # Add the regions of interest
         if roi != None:
             if isinstance(roi, list):
@@ -108,7 +108,7 @@ class SpotVisualization (object):
                     renderer.AddActor(actor)
             else:
                 renderer.AddActor(roi)
-        
+
         # Create the render window
         render_win = vtk.vtkRenderWindow()
         render_win.AddRenderer(renderer)
@@ -126,19 +126,19 @@ class SpotVisualization (object):
     def visualize_reflections(self, image, roi):
         """Visualise the reflections"""
         import numpy
-        
+
         if image != None:
             # Cap image between vmin and vmax
             min_ind = numpy.where(image < self.vmin)
             max_ind = numpy.where(image > self.vmax)
             image[min_ind] = self.vmin
             image[max_ind] = self.vmax
-    
+
             # Create the VTK volume image
             volume = self.numpy_array_as_vtk_volume(image)
         else:
             volume = None
-            
+
         # Create the roi actors
         if roi != None:
             if isinstance(roi, list):
@@ -170,7 +170,7 @@ def create_spot(dim, A = 1.0, sig = (1.0, 1.0, 1.0)):
                 g[z, y, x] = A * exp(-(((x - x0)**2) / (2.0 * sig_x**2) +
                                        ((y - y0)**2) / (2.0 * sig_y**2) +
                                        ((z - z0)**2) / (2.0 * sig_z**2)))
-    
+
     return g
 
 def test_visualization():
@@ -181,10 +181,9 @@ def test_visualization():
     image = create_spot((10, 10, 10), 255, (5.0, 5.0, 5.0))
     image = image.astype(numpy.uint8)
     roi = (0, 10, 0, 10, 0, 10)
-    
+
     v = SpotVisualization()
     v.visualize_reflections(image, roi)
 
 if __name__ == '__main__':
     test_visualization()
-

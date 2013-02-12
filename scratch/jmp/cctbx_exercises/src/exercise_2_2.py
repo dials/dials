@@ -1,8 +1,8 @@
 
 from scitbx import matrix
 
-h = -54 
-k = 9 
+h = -54
+k = 9
 l = 5
 s0 = matrix.col((0.013141, 0.002201, 1.450476))
 m2 = matrix.col((0.999975, -0.001289, -0.006966))
@@ -13,7 +13,7 @@ z0 = 1
 z = 177.1
 phi0 = 1.0000
 dphi = 1.0000
-psi = -144.87 
+psi = -144.87
 
 phi = phi0 + (z - z0) * dphi
 
@@ -51,6 +51,6 @@ if ra(hkl):
     zcal0 = (phical0 - phi0) / dphi + z0
     zcal1 = (phical1 - phi0) / dphi + z0
     print "Predicted Frames:", zcal0, zcal1
-    
+
     print phical0 - phi
     print phical1 - phi

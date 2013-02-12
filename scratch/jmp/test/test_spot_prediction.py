@@ -2,10 +2,10 @@ import unittest
 
 class TestSpotPrediction(unittest.TestCase):
     """Test spot prediction."""
-    
+
     def setUp(self):
         pass
-    
+
     def test_from_hkl(self):
         from scitbx import matrix
         from dials.array_family import flex
@@ -16,10 +16,10 @@ class TestSpotPrediction(unittest.TestCase):
         from dials.geometry.transform import FromBeamVectorToImageVolume
         from math import ceil, pi
 
-        # The XDS files to read from    
+        # The XDS files to read from
         integrate_filename = './test/data/sim_mx/INTEGRATE.HKL'
         gxparm_filename = './test/data/sim_mx/GXPARM.XDS'
-        
+
         # Read the XDS files
         integrate_handle = xdsio.IntegrateFile()
         integrate_handle.read_file(integrate_filename)
@@ -33,22 +33,22 @@ class TestSpotPrediction(unittest.TestCase):
         detector = gxparm_handle.get_detector()
         ub_matrix = gxparm_handle.get_ub_matrix()
         ub_matrix = tuple(matrix.sqr(ub_matrix).inverse())
-        
-        # Get the number of frames from the max z value 
+
+        # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*integrate_handle.xyzcal)
         gonio.num_frames = int(ceil(max(zcal)))
-     
+
         # Get the list of miller indices from the HKL file
         miller_indices = flex.miller_index(integrate_handle.hkl)
 
         # Calculate the rotation angles
         valid_angle = flex.bool()
-        rotation_angle_calculator = RotationAngles(d_min, ub_matrix, beam.wavelength, 
+        rotation_angle_calculator = RotationAngles(d_min, ub_matrix, beam.wavelength,
                                                    gonio.rotation_axis)
-        rotation_angles = rotation_angle_calculator.calculate(miller_indices, 
+        rotation_angles = rotation_angle_calculator.calculate(miller_indices,
                                                               valid_angle)
-        
-        # Ensure none is invalid    
+
+        # Ensure none is invalid
         for va in valid_angle:
             self.assertTrue(va)
 
@@ -72,13 +72,13 @@ class TestSpotPrediction(unittest.TestCase):
             if i > 0 and miller_indices[i] == miller_indices[i-1]:
                 self.assertTrue(in_range[i+len(miller_indices)])
                 new_rotation_angles[i] = rotation_angles[i+len(miller_indices)]
-            else:        
+            else:
                 self.assertTrue(in_range[0] or in_range[i+len(miller_indices)])
                 if in_range[i]:
                     new_rotation_angles[i] = rotation_angles[i]
                 elif in_range[i+len(miller_indices)]:
                     new_rotation_angles[i] = rotation_angles[i+len(miller_indices)]
-        
+
         rotation_angles = new_rotation_angles
 
         # Get the reciprocal space vectors and vbeam vectors
@@ -90,7 +90,7 @@ class TestSpotPrediction(unittest.TestCase):
         status = flex.bool()
         from_beam_vector_to_image_volume = FromBeamVectorToImageVolume(detector, gonio)
         coords = from_beam_vector_to_image_volume.apply(beam_vectors, rotation_angles, status)
-         
+
         # Get the XDS coords for comparison
         xds_coords = integrate_handle.xyzcal
 
@@ -107,9 +107,9 @@ class TestSpotPrediction(unittest.TestCase):
 
         # Check the phi difference
         for xyz1, xyz2 in zip(coords, xds_coords):
-            diff = abs(gonio.get_angle_from_frame(xyz1[2]+1) - 
+            diff = abs(gonio.get_angle_from_frame(xyz1[2]+1) -
                        gonio.get_angle_from_frame(xyz2[2]+1))
             self.assertLess(diff, 0.1)
-        
+
 if __name__ == '__main__':
     unittest.main()

@@ -14,8 +14,8 @@ public:
 
     /** The default constructor */
     Detector() : distance_(0.0) {}
-    
-    /** 
+
+    /**
      * Initialise the detector.
      * @param x_axis The x axis of the detector
      * @param y_axis The y axis of the detector
@@ -46,12 +46,12 @@ public:
     scitbx::vec3 <double> get_x_axis() const {
         return x_axis_;
     }
-    
+
     /** Get the y axis */
     scitbx::vec3 <double> get_y_axis() const {
         return y_axis_;
     }
-    
+
     /** Get the normal */
     scitbx::vec3 <double> get_normal() const {
         return normal_;
@@ -61,7 +61,7 @@ public:
     scitbx::vec2 <double> get_origin() const {
         return origin_;
     }
-    
+
     /** Get the pixel size */
     scitbx::vec2 <double> get_pixel_size() const {
         return pixel_size_;
@@ -71,47 +71,47 @@ public:
     scitbx::vec2 <int> get_size() const {
         return size_;
     }
-    
+
     /** Get the distance from the crystal */
     double get_distance() const {
         return distance_;
     }
-    
+
     /** Set the x axis */
     void set_x_axis(scitbx::vec3 <double> x_axis) {
         x_axis_ = x_axis;
     }
-    
+
     /** Set the y axis */
     void set_y_axis(scitbx::vec3 <double> y_axis) {
         y_axis_ = y_axis;
     }
-    
+
     /** Set the normal */
     void set_normal(scitbx::vec3 <double> normal) {
         normal_ = normal;
     }
-        
+
     /** Set the origin */
     void set_origin(scitbx::vec2 <double> origin) {
         origin_ = origin;
     }
-    
+
     /** Set the pixel size */
     void set_pixel_size(scitbx::vec2 <double> pixel_size) {
         pixel_size_ = pixel_size;
     }
-    
+
     /** Set the detector size */
     void set_size(scitbx::vec2 <int> size) {
         size_ = size;
     }
-    
+
     /* Set the distance from the crystal */
     void set_distance(double distance) {
         distance_ = distance;
     }
-       
+
     /**
      * Is the given coordinate in the detector
      * @param xy The coordinate
@@ -121,7 +121,7 @@ public:
         return (0 <= xy[0] && xy[0] < size_[0]) &&
                (0 <= xy[1] && xy[1] < size_[1]);
     }
-        
+
 private:
 
     scitbx::vec3 <double> x_axis_;

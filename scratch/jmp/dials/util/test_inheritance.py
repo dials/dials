@@ -10,13 +10,13 @@ class PythonDerived (DerivedInterface):
         print "hello PythonDerived"
 
 class PythonDerived2 (PythonDerived):
-  
+
     def __init__(self):
         PythonDerived.__init__(self)
-  
+
     def do_something(self):
         print "hello PythonDerived2"
-  
+
 
 a = Base()
 b = Derived()

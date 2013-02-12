@@ -8,7 +8,7 @@ class TestFromDetectorToXds(unittest.TestCase):
 
     def setUp(self):
         """Initialise the transform"""
-        
+
         from dials.geometry.transform import FromBeamVectorToDetector
         from dials.geometry.transform import FromBeamVectorToXds
         from dials.geometry.transform import FromDetectorToBeamVector
@@ -30,7 +30,7 @@ class TestFromDetectorToXds(unittest.TestCase):
         distance = 122.124901
         sxy = (117.588714455, 311.621428845)
         wavelength = 1.0 / matrix.col(s1).length()
-        
+
         # Create the component transforms
         dcs = DetectorCoordinateSystem(x_axis, y_axis, normal)
         xcs = XdsCoordinateSystem(s0, s1, m2, phi)
@@ -56,9 +56,9 @@ class TestFromDetectorToXds(unittest.TestCase):
 
     def test_forward_and_reverse_transform(self):
         """Test the forward and reverse Detector -> XDS transforms Create
-        a detector coordinare, transform it to XDS and then transform back. 
+        a detector coordinare, transform it to XDS and then transform back.
         The new value should be equal to the original value."""
-        
+
         from scitbx import matrix
         import random
 
@@ -72,11 +72,11 @@ class TestFromDetectorToXds(unittest.TestCase):
         # Loop a number of times
         num = 1000
         for i in range(num):
-                
+
             # Create a beam vector
             xy = matrix.col(self.sxy) + matrix.col((random_shift(),
                                                     random_shift()))
-        
+
             # Calculate the XDS coordinate of the vector
             c1, c2, c3 = self.from_detector_to_xds.apply(xy, phi_dash)
 
@@ -86,6 +86,6 @@ class TestFromDetectorToXds(unittest.TestCase):
             # Check the vectors are almost equal
             self.assertAlmostEqual(xy, matrix.col(xy_2))
 
-        
+
 if __name__ == '__main__':
     unittest.main()

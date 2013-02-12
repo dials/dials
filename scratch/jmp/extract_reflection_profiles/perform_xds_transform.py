@@ -1,7 +1,7 @@
 
 
 def extract_reflection_profiles():
-    
+
     from scitbx import matrix
 
     import numpy
@@ -12,7 +12,7 @@ def extract_reflection_profiles():
     from dials.old.beam import Beam
     from dials.old.detector import Detector
     from dials.old.goniometer import Goniometer
-    from dials.old.reflection.mask import ReflectionMask 
+    from dials.old.reflection.mask import ReflectionMask
     from dials.old.reflection.grid import Grid
     from dials.old.reflection.grid_mapper import GridMapper
     from dials.old.reflection.coordinate_system import CoordinateSystem as ReflectionCoordinateSystem
@@ -56,7 +56,7 @@ def extract_reflection_profiles():
     beam = Beam(s0, l)
     gonio = Goniometer(m2, s0, z0, phi0, dphi)
     detector = Detector(image_volume, d1, d2, d3, f, (dx0, dy0), (px, py))
-    
+
     # Create the reflection coordinate system
     rcs = ReflectionCoordinateSystem(s0, s1, m2, phi)
 
@@ -80,20 +80,20 @@ def extract_reflection_profiles():
     #    ax = pylab.subplot(3, 3, i+1)
     #    plt = pylab.imshow(image_volume_copy[sz-4-1+i,sy-4:sy+4+1,sx-4:sx+4+1], vmin=0, vmax=2000, cmap=cm.Greys_r)
     #    plt.axes.get_xaxis().set_ticks([])
-    #    plt.axes.get_yaxis().set_ticks([])   
-    #    ax.set_title("slice: {0}".format(i))     
+    #    plt.axes.get_yaxis().set_ticks([])
+    #    ax.set_title("slice: {0}".format(i))
     #fig.savefig('/home/upc86896/Documents/Reflection.tiff')
     #pylab.show()
 
-    
+
     #fig = pylab.figure(figsize=(6,4), dpi=300)
     #for i in range(0,9):
     #    ax = pylab.subplot(3, 3, i+1)
-    #    plt=pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0, 
+    #    plt=pylab.imshow(grid.get_grid(0)[i,:,:], vmin=0,
     #        vmax=numpy.max(grid.get_grid(0)), cmap=cm.Greys_r)
     #    plt.axes.get_xaxis().set_ticks([])
-    #    plt.axes.get_yaxis().set_ticks([])   
-    #    ax.set_title("slice: {0}".format(i))         
+    #    plt.axes.get_yaxis().set_ticks([])
+    #    ax.set_title("slice: {0}".format(i))
     #fig.savefig('/home/upc86896/Documents/Transformed.tiff')
     #pylab.show()
 
@@ -114,7 +114,7 @@ def extract_reflection_profiles():
         ax.set_autoscalex_on(False)
         ax.set_autoscaley_on(False)
         ax.set_autoscalez_on(False)
-        plt=ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
+        plt=ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:],
                           grid.get_grid_coordinates()[1][i,:,:],
                           grid.get_grid(0)[i,:,:])
         ax.set_title("slice {0}".format(i))
@@ -125,7 +125,7 @@ def extract_reflection_profiles():
     pylab.show()
 
 #    print grid.grid_data
- 
+
 
 
 
@@ -133,17 +133,13 @@ def extract_reflection_profiles():
     #fig = pylab.figure()
     #for i in range(0, 9):
     #    ax = fig.add_subplot(3, 3, i+1, projection='3d')
-    #    ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:], 
+    #    ax.plot_wireframe(grid.get_grid_coordinates()[0][i,:,:],
     #                      grid.get_grid_coordinates()[1][i,:,:],
     #                      grid.estimated_reflection_intensity(
-    #                            sigma_d, sigma_m)[i,:,:])          
-    #pylab.show()    
+    #                            sigma_d, sigma_m)[i,:,:])
+    #pylab.show()
 
 if __name__ == '__main__':
 
     # Extract the reflection profiles
-    extract_reflection_profiles()    
-
-    
-    
-    
+    extract_reflection_profiles()

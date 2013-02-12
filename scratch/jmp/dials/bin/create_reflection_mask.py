@@ -37,29 +37,29 @@ def visualize_frame_reflection_mask(mask, display_frame, spot_coords):
     pylab.show()
     #pylab.savefig('reflection_mask_frame_{0}.tiff'.format(display_frame), bbox_inches=0)
     #pylab.clf()
-    
-def visualize_frame_relfection_mask_roi(image_volume, display_frame, 
+
+def visualize_frame_relfection_mask_roi(image_volume, display_frame,
                                         region_of_interest):
     from matplotlib import pylab, cm
     image = image_volume[display_frame,:,:]
-    roi_xy = [(roi[0], roi[1], roi[2], roi[3]) 
+    roi_xy = [(roi[0], roi[1], roi[2], roi[3])
                 for roi in region_of_interest
                     if (roi[4] <= display_frame and roi[5] >= display_frame)]
-    
-    plt = pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest", 
+
+    plt = pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest",
                        origin='lower', vmin=0, vmax=1000)
     for roi in roi_xy:
         x0 = roi[0]
         x1 = roi[1]
         y0 = roi[2]
-        y1 = roi[3]        
+        y1 = roi[3]
         pylab.plot([x0, x1, x1, x0, x0], [y0, y0, y1, y1, y0], color='blue')
 
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
 
-def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords, 
+def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
                                    region_of_interest, padding):
     """Display the reflection mask for a given spot."""
     from matplotlib import pylab, cm
@@ -70,9 +70,9 @@ def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
     roi2 = [max(roi[0] - padding, 0), min(roi[1] + padding, mask.shape[2]-1),
             max(roi[2] - padding, 0), min(roi[3] + padding, mask.shape[1]-1),
             max(roi[4] - padding, 0), min(roi[5] + padding, mask.shape[0]-1)]
-    
+
     image = mask[xyz[2], roi2[2]:roi2[3]+1, roi2[0]:roi2[1]+1]
-    pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest", 
+    pylab.imshow(image, cmap=cm.Greys_r, interpolation="nearest",
         extent=[roi2[0], roi2[1], roi2[2], roi2[3]], origin='lower')
     #pylab.plot([roi[0], roi[1], roi[1], roi[0], roi[0]],
     #           [roi[2], roi[2], roi[3], roi[3], roi[2]])
@@ -80,7 +80,7 @@ def visualize_spot_reflection_mask(mask, display_spot, image_volume_coords,
                [roi[2]-0.5, roi[2]-0.5, roi[3]-0.5, roi[3]-0.5, roi[2]-0.5])
     pylab.show()
 
-def create_reflection_mask(input_filename, cbf_search_path, d_min, 
+def create_reflection_mask(input_filename, cbf_search_path, d_min,
                            sigma_divergence, sigma_mosaicity, n_sigma,
                            display_frame, display_spot):
     """Read the required data from the file, predict the spots and calculate
@@ -100,7 +100,7 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
     print "Reading: \"{0}\"".format(input_filename)
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(input_filename)
-    beam      = gxparm_handle.get_beam() 
+    beam      = gxparm_handle.get_beam()
     gonio     = gxparm_handle.get_goniometer()
     detector  = gxparm_handle.get_detector()
     ub_matrix = gxparm_handle.get_ub_matrix()
@@ -128,76 +128,76 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
         gonio.num_frames = image_volume.shape[0]
 
     # Create the spot predictor
-    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell, 
-                                   space_group_type, 
+    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell,
+                                   space_group_type,
                                    matrix.sqr(ub_matrix).inverse(), d_min)
-    
-    # Predict the spot image volume coordinates 
+
+    # Predict the spot image volume coordinates
     print "Predicting spots"
     start_time = time()
     reflections = spot_predictor.predict()
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-    
+
     # Create a mask of bad pixels
     detector_mask = flex.int(flex.grid(image_volume.shape[1:]), 0)
     detector_image = image_volume[0,:,:]
     for j in range(detector_mask.all()[0]):
         for i in range(detector_mask.all()[1]):
             if (detector_image[j,i] < 0):
-                detector_mask[j,i] = -2    
-    
-    # Create the reflection mask    
+                detector_mask[j,i] = -2
+
+    # Create the reflection mask
     print "Creating reflection mask Roi for {0} spots".format(len(reflections))
     start_time = time()
     reflection_mask_creator = ReflectionMaskCreator(
-                            beam, detector, gonio, 
-                            detector_mask,                            
+                            beam, detector, gonio,
+                            detector_mask,
                             image_volume.shape,
-                            sigma_divergence, 
+                            sigma_divergence,
                             sigma_mosaicity,
                             n_sigma)
     reflections = reflection_mask_creator.create(reflections)
     mask = reflection_mask_creator.mask
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-    
+
     # Extract arrays from array of reflections
     region_of_interest = []
     image_volume_coords = []
     for r in reflections:
         region_of_interest.append(r.region_of_interest)
         image_volume_coords.append(r.image_coord)
-    
+
     # Get ranges of reflection masks
     range_x = [roi[1] - roi[0] for roi in region_of_interest]
     range_y = [roi[3] - roi[2] for roi in region_of_interest]
     range_z = [roi[5] - roi[4] for roi in region_of_interest]
     range_phi = [gonio.get_angle_from_zero_based_frame(roi[5]) -
-                 gonio.get_angle_from_zero_based_frame(roi[4]) 
+                 gonio.get_angle_from_zero_based_frame(roi[4])
                     for roi in region_of_interest]
- 
+
     volume = [rx * ry * rz for rx, ry, rz in zip(range_x, range_y, range_z)]
     print "Min/Max ROI X Range:   ", min(range_x), max(range_x)
     print "Min/Max ROI Y Range:   ", min(range_y), max(range_y)
     print "Min/Max ROI Z Range:   ", min(range_z), max(range_z)
     print "Min/Max ROI Phi Range: ", min(range_phi), max(range_phi)
     print "Min/Max ROI Volume:    ", min(volume), max(volume)
-    
-    
+
+
 #    display_frame = [63]
-# 
-#    # Display frames   
+#
+#    # Display frames
 #    if display_frame:
 #        for frame in display_frame:
 #            print "Displaying reflection mask for frame \"{0}\"".format(frame)
 #            visualize_frame_relfection_mask_roi(
-#                image_volume, 
-#                frame, 
+#                image_volume,
+#                frame,
 #                region_of_interest)
 #            visualize_frame_reflection_mask(
-#                reflection_mask_creator.mask.as_numpy_array(), 
-#                frame, 
+#                reflection_mask_creator.mask.as_numpy_array(),
+#                frame,
 #                image_volume_coords)
 
 #    # Display spots
@@ -205,9 +205,9 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
 #        for spot in display_spot:
 #            print "Displaying reflection mask for spot \"{0}\"".format(spot)
 #            visualize_spot_reflection_mask(
-#                reflection_mask_creator.mask.as_numpy_array(), 
-#                spot, 
-#                image_volume_coords, 
+#                reflection_mask_creator.mask.as_numpy_array(),
+#                spot,
+#                image_volume_coords,
 #                region_of_interest, 10)
 
     # 3D volume rendering
@@ -217,28 +217,28 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
 #    image_volume = image_volume[nz:,nx:,ny:]
 #    for i in range(len(region_of_interest)):
 #        roi = region_of_interest[i]
-#        roi = (roi[0] - nx, roi[1] - nx, 
-#               roi[2] - ny, roi[3] - ny, 
+#        roi = (roi[0] - nx, roi[1] - nx,
+#               roi[2] - ny, roi[3] - ny,
 #               roi[4] - nz, roi[5] - nz)
 #        region_of_interest[i] = roi
 #    new_roi = []
 #    for roi in region_of_interest:
 #        if not (roi[0] < 0 or roi[2] < 0 or roi[4] < 0):
 #            new_roi.append(roi)
-#    region_of_interest = new_roi   
-             
+#    region_of_interest = new_roi
+
 ##    from scipy.ndimage.interpolation import zoom
 #    import numpy
 ##    miller_indices = flex.miller_index(len(reflections))
 ##    for i, r in enumerate(reflections):
 ##        miller_indices[i] = r.miller_index
-##    
+##
 ##    count = 0
 ##    for i, hkl in enumerate(miller_indices):
 ##        if hkl == (30, -14, 12):
 ##            count = i
 ##            break
-##            
+##
 ##    print count
 ##    index = 28000
 #    index = 1000#sim
@@ -250,26 +250,26 @@ def create_reflection_mask(input_filename, cbf_search_path, d_min,
 #    from matplotlib import pylab, cm
 #    for z in range(9):
 #        fig = pylab.figure()
-#        plt = pylab.imshow(image_volume[z,:,:], interpolation='nearest', 
-#                     origin='lower', cmap=cm.Greys_r, 
+#        plt = pylab.imshow(image_volume[z,:,:], interpolation='nearest',
+#                     origin='lower', cmap=cm.Greys_r,
 #                     vmin=0, vmax=numpy.max(image_volume))
 #        plt.axes.get_xaxis().set_ticks([])
-#        plt.axes.get_yaxis().set_ticks([])                     
+#        plt.axes.get_yaxis().set_ticks([])
 #        pylab.savefig("spot_intensity_sim_frame_no_axes_{0}.tiff".format(z))
 #        pylab.show()
 #    image_volume = zoom(image_volume.astype(numpy.float32), factor)
     #region_of_interest = (0, image_volume.shape[2],
     #                      0, image_volume.shape[1],
     #                      0, image_volume.shape[0])
- 
+
    # z = 63
 #    new_roi = []
 #    for roi in region_of_interest:
 #        if roi[4] >= 0 and roi[5] < 10:
 #            new_roi.append(roi)
-#                 
+#
 #    region_of_interest = new_roi
-                 
+
     #from spot_visualization import SpotVisualization
     #vis = SpotVisualization()
     #vis.vmax = 2000#0.5 * numpy.max(image_volume)
@@ -308,21 +308,21 @@ if __name__ == '__main__':
                       type="string",
                       action="callback",
                       callback=display_frame_callback,
-                      help='Select a frame to display the reflection mask')      
+                      help='Select a frame to display the reflection mask')
     parser.add_option('--display-spot',
                       dest='display_spot',
                       type="string",
                       action="callback",
                       callback=display_frame_callback,
-                      help='Select a frame to display the reflection mask')                   
+                      help='Select a frame to display the reflection mask')
     (options, args) = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call spot prediction
     if len(args) < 2:
         print parser.print_help()
     else:
-        create_reflection_mask(args[0], 
-                               args[1], 
+        create_reflection_mask(args[0],
+                               args[1],
                                options.dmin,
                                options.sigma_d,
                                options.sigma_m,

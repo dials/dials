@@ -3,23 +3,23 @@
 import pycbf
 
 def print_info(cbf_path):
-    """Print out a load of data held in the CBF file. 
-    
-    This is by no means a full list of the data contained in the file, it's 
-    mainly for debugging and development purposes. The data that will be 
+    """Print out a load of data held in the CBF file.
+
+    This is by no means a full list of the data contained in the file, it's
+    mainly for debugging and development purposes. The data that will be
     printed is the following:
     - The number of categories and the name of each category
     - The number of rows and columns and the name of each column
     - The type of each element in each row/column element.
-    
+
     :param cbf_path: The path to the cbf file
     """
 
-    # Read the CBF file    
+    # Read the CBF file
     cbf_handle = pycbf.cbf_handle_struct()
     cbf_handle.read_file(cbf_path, pycbf.MSG_DIGEST)
     cbf_handle.rewind_datablock()
-    
+
     # Select the first datablock and rewind all the categories
     cbf_handle.select_datablock(0)
     cbf_handle.rewind_category()
@@ -31,7 +31,7 @@ def print_info(cbf_path):
         # Select the ith category and print its name
         cbf_handle.select_category(i)
         category_name = cbf_handle.category_name()
-        print "Category:", i, category_name    
+        print "Category:", i, category_name
 
         # Count the number of rows and columns in the category
         # and print them
@@ -67,7 +67,6 @@ def print_info(cbf_path):
                 else:
                     value = '...'
                 print "\t\tColumn", i, "Type:", type_of_value, value
-  
+
 if __name__ == '__main__':
     print_info('../data/ximg2701_00001.cbf')
-                

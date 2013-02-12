@@ -34,7 +34,7 @@ def visualize_predicted_spots(image_volume, display_frame, spot_coords):
     """Get just those spots on the selected image and display."""
     spot_xy = [(x, y) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
     xcoords, ycoords = zip(*spot_xy)
-    display_image_with_predicted_spots(image_volume[display_frame,:,:], 
+    display_image_with_predicted_spots(image_volume[display_frame,:,:],
                                        xcoords, ycoords)
 
 def display_cbf(cbf_search_path, display_frame):
@@ -78,4 +78,3 @@ if __name__ == '__main__':
         print parser.print_help()
     else:display_cbf(args[0],
                      options.display_frame)
-        

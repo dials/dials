@@ -27,7 +27,7 @@ public:
         : xy_to_s1_(xy_to_s1),
           s1_to_xds_(s1_to_xds),
           wavelength_r_(1.0 / wavelength) {}
-    
+
     /**
      * Initialise the transform with all the stuff that's needed for the
      * component transforms
@@ -47,7 +47,7 @@ public:
         : xy_to_s1_(detector),
           s1_to_xds_(xcs, s1, phi),
           wavelength_r_(1.0 / wavelength) {}
-     
+
 public:
 
     /**
@@ -57,7 +57,7 @@ public:
      * @returns The XDS coordinate
      */
     scitbx::vec3 <double> apply(scitbx::vec2 <double> xy, double phi_dash) const {
-        return s1_to_xds_.apply(xy_to_s1_.apply(xy).normalize() * wavelength_r_, 
+        return s1_to_xds_.apply(xy_to_s1_.apply(xy).normalize() * wavelength_r_,
                                 phi_dash);
     }
 

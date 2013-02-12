@@ -20,9 +20,9 @@ class FromXdsToBeamVector {
 public:
 
     /** Default constructor */
-    FromXdsToBeamVector() 
+    FromXdsToBeamVector()
         : radius_(0.0) {}
-        
+
     /**
      * Initialise the transform
      * @param xcs The XDS coordinate system
@@ -34,18 +34,18 @@ public:
           scaled_e2_(xcs.get_e2_axis() / (r2d / s1.length())),
           normalized_s1_(s1.normalize()),
           radius_(s1.length()) {}
-       
+
     /**
-     * Apply the transform to the xds point. The transform is done by 
-     * calculating the coordinate of point in the sphere tangent plane at the 
+     * Apply the transform to the xds point. The transform is done by
+     * calculating the coordinate of point in the sphere tangent plane at the
      * location of the exit point of the beam vector, s1. The beam vector, s',
      * is then calculated by finding the intersection of line defined by the
      * plane normal (i.e. s1 vector) with origin at the calculated tangent plane
      * point point and the ewald sphere.
      *
      * @param c The XDS coordinate
-     * @returns The beam vector 
-     */   
+     * @returns The beam vector
+     */
     scitbx::vec3 <double> apply(scitbx::vec3 <double> c) const {
         scitbx::vec3 <double> p = c[0] * scaled_e1_ + c[1] * scaled_e2_;
         double b = radius_ * radius_ - p.length_sq();

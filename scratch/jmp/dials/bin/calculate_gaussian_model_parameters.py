@@ -13,7 +13,7 @@ def visualize_predicted_spots(image_volume, display_frame, spot_coords):
     """Get just those spots on the selected image and display."""
     spot_xy = [(x, y) for x, y, z in spot_coords if display_frame <= z < display_frame+1]
     xcoords, ycoords = zip(*spot_xy)
-    display_image_with_predicted_spots(image_volume[display_frame,:,:], 
+    display_image_with_predicted_spots(image_volume[display_frame,:,:],
                                        xcoords, ycoords)
 
 def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
@@ -28,7 +28,7 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
     print "Reading: \"{0}\"".format(input_filename)
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(input_filename)
-    beam      = gxparm_handle.get_beam() 
+    beam      = gxparm_handle.get_beam()
     gonio     = gxparm_handle.get_goniometer()
     detector  = gxparm_handle.get_detector()
     ub_matrix = gxparm_handle.get_ub_matrix()
@@ -48,8 +48,8 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
     # Create the spot predictor
     spot_predictor = SpotPredictor(beam, gonio, detector, ub_matrix, d_min,
                                    unit_cell, space_group_type)
-    
-    # Predict the spot image volume coordinates 
+
+    # Predict the spot image volume coordinates
     print "Predicting spots"
     start_time = time()
     spot_predictor.predict_spots()
@@ -64,7 +64,7 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
     strong_pixel_indices = partial_sort_indices(flat_image_volume, num_strong_pixels)
     strong_pixel_indices = strong_pixel_indices[0:num_strong_pixels]
     strong_pixel_values = [flat_image_volume[x] for x in strong_pixel_indices]
-    
+
     print "Assigning indices of nearest reflection"
     from scipy.spatial.kdtree import KDTree
     kd_tree = KDTree(image_volume_coords)
@@ -77,14 +77,14 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
         x = (i-zz) % width
         strong_pixel_xyz.append((x,y,z))
     nearest_neighbours = [kd_tree.query(xyz) for xyz in strong_pixel_xyz]
-    
+
     print "Sorting the strong pixels by reflection index"
     nearest_neighbours = [int(nn[1]) for nn in nearest_neighbours]
     nearest_neighbours = sorted(enumerate(nearest_neighbours), key=lambda x:x[1])
     strong_pixels = []
     for (i, r) in nearest_neighbours:
         strong_pixels.append((r, strong_pixel_xyz[i], strong_pixel_values[i]))
-    
+
     print "Find strong reflection ROIs"
     temp = []
     first = True
@@ -95,14 +95,14 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
         else:
             if (rind != last_rind):
                 last_count += 1
-            
+
         temp.append((last_count, rind, xyz, value))
         last_rind = rind
 
     strong_pixels = temp
     num_reflections = strong_pixels[-1][0] + 1
     reflection_roi = [[0, 0, 0, 0, False] for i in range(num_reflections)]
-    
+
     for rcount, rind, (x, y, z), value in strong_pixels:
         roi = reflection_roi[rcount]
         if roi[4] == False:
@@ -117,10 +117,10 @@ def calculate_gaussian_model_parameters(input_filename, cbf_search_path, d_min):
             if y > roi[3]:
                 roi[3] = y
         reflection_roi[rcount] = roi
-            
+
     for r in reflection_roi:
         print r
-            
+
 
 if __name__ == '__main__':
 
@@ -140,7 +140,6 @@ if __name__ == '__main__':
     if len(args) < 2:
         print parser.print_help()
     else:
-        calculate_gaussian_model_parameters(args[0], 
-                                            args[1], 
+        calculate_gaussian_model_parameters(args[0],
+                                            args[1],
                                             options.dmin)
-        

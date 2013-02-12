@@ -3,23 +3,23 @@
 
 class GxParmFile:
     """A class to read the GXPARM.XDS file used in XDS"""
-    
+
     def __init__(self):
         pass
-    
+
     def read_file(self, filename):
         """Read the GXPARAM.XDS file.
-        
+
         See http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_files.html for more
         information about the file format.
-        
+
         :param filename: The path to the file
 
         """
         # Read the text from the file and split into an array of tokens
         lines = open(filename, 'r').readlines()
         tokens = [map(float, l.split()) for l in lines]
-        
+
         # Read the parameters from the list of tokens
         self.starting_frame    = tokens[0][0]
         self.starting_angle    = tokens[0][1]
@@ -39,15 +39,15 @@ class GxParmFile:
         self.unit_cell_a_axis  = tuple(tokens[8])
         self.unit_cell_b_axis  = tuple(tokens[9])
         self.unit_cell_c_axis  = tuple(tokens[10])
-        
+
     def get_goniometer(self):
         """Get the goniometer parameters from the file
-        
+
         Returns:
             An instance of the goniometer struct
-        
+
         """
-        from dials.equipment import Goniometer
+        from dials_jmp.equipment import Goniometer
         from scitbx import matrix
         #from math import pi
         #d2r = pi / 180.0
@@ -55,27 +55,27 @@ class GxParmFile:
                           self.starting_angle,# * d2r,
                           self.oscillation_range,# * d2r,
                           int(self.starting_frame))
-        
+
     def get_beam(self):
         """Get the beam parameters from the file
-        
+
         Returns:
             An instance of the beam struct
-        
+
         """
-        from dials.equipment import Beam
+        from dials_jmp.equipment import Beam
         from scitbx import matrix
-        return Beam(matrix.col(self.beam_vector).normalize() / self.wavelength, 
+        return Beam(matrix.col(self.beam_vector).normalize() / self.wavelength,
                     self.wavelength)
-        
+
     def get_detector(self):
         """Get the detector parameters from the file
-        
+
         Returns:
             An instance of the detector struct
-        
-        """    
-        from dials.equipment import Detector
+
+        """
+        from dials_jmp.equipment import Detector
         from scitbx import matrix
         return Detector(matrix.col(self.detector_x_axis).normalize().elems,
                         matrix.col(self.detector_y_axis).normalize().elems,
@@ -84,19 +84,19 @@ class GxParmFile:
                         self.pixel_size,
                         self.detector_size,
                         self.detector_distance)
-                                          
+
     def get_ub_matrix(self):
         """Get the UB matrix
-        
+
         Returns:
             The UB matrix
-        
+
         """
         from scitbx import matrix
-        return matrix.sqr(self.unit_cell_a_axis + 
-                          self.unit_cell_b_axis + 
+        return matrix.sqr(self.unit_cell_a_axis +
+                          self.unit_cell_b_axis +
                           self.unit_cell_c_axis)
-                          
+
     def get_unit_cell(self):
         from cctbx import uctbx
         return uctbx.unit_cell(orthogonalization_matrix = self.get_ub_matrix())
@@ -105,7 +105,7 @@ class GxParmFile:
         from cctbx import sgtbx
         return sgtbx.space_group_type(sgtbx.space_group(
                             sgtbx.space_group_symbols(self.space_group).hall()))
-        
+
 class IntegrateFile:
     """A class to read the INTEGRATE.HKL file used in XDS"""
 
@@ -124,16 +124,16 @@ class IntegrateFile:
         self.alfbet0 = []
         self.alfbet1 = []
         self.psi = []
-    
-    
+
+
     def read_file(self, filename):
         """Read the INTEGRATE.HKL file.
-        
+
         See http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_files.html for more
         information about the file format.
-        
+
         :param filename: The path to the file
-        
+
         """
         # Read the lines from the file
         lines = open(filename, 'r').readlines()
@@ -162,10 +162,10 @@ class IntegrateFile:
 
     def _parse_str(self, s):
         """Parse a string to either an int, float or string
-        
+
         :param s: The input string
         :returns: The parsed value
-        
+
         """
         try:
             return int(s)
@@ -178,10 +178,10 @@ class IntegrateFile:
 
     def _parse_value(self, value):
         """Parse the value or array of values contained in the string
-        
+
         :param value: The value to parse
         :returns: The parsed value
-        
+
         """
         values = value.split()
         if len(values) == 1:
@@ -192,9 +192,9 @@ class IntegrateFile:
 
     def _set_header_parameters(self):
         """Get the parameters from the header dict
-        
+
         :param name_value: The name, value parameter dict
-        
+
         """
         from scitbx import matrix
         self.space_group       = self._header['SPACE_GROUP_NUMBER']
@@ -216,7 +216,7 @@ class IntegrateFile:
         self.unit_cell_c_axis  = self._header['UNIT_CELL_C-AXIS']
         self.sigma_divergence  = self._header['BEAM_DIVERGENCE_E.S.D.']
         self.sigma_mosaicity   = self._header['REFLECTING_RANGE_E.S.D.']
- 
+
         # Normalize a few vectors
         self.detector_x_axis   = tuple(matrix.col(self.detector_x_axis).normalize())
         self.detector_y_axis   = tuple(matrix.col(self.detector_y_axis).normalize())
@@ -229,14 +229,14 @@ class IntegrateFile:
 
     def _parse_header_line(self, line):
         """Parse a line that has been identified as a header line
-        
+
         :param line: The line to parse
-        
+
         """
         name_value = line.split('=')
         if (len(name_value) < 2):
             return
-        
+
         name = name_value[0]
         if (len(name_value) > 2):
             for i in range(1, len(name_value)-1):
@@ -247,13 +247,13 @@ class IntegrateFile:
 
         value = name_value[-1]
         self._header[name] = self._parse_value(value)
-    
-    
+
+
     def _parse_data_line(self, line):
         """Parse a data line from the Integrate.hkl file
-        
+
         :param line: The line to parse
-        
+
         """
         # Split the tokens
         tokens = line.split()
@@ -272,42 +272,42 @@ class IntegrateFile:
         self.alfbet0.append(tuple(tokens[15:17]))
         self.alfbet1.append(tuple(tokens[17:19]))
         self.psi    .append(tokens[19])
-        
+
     def get_goniometer(self):
         """Get the goniometer parameters from the file
-        
+
         Returns:
             An instance of the goniometer struct
-        
+
         """
-        from dials.equipment import Goniometer
+        from dials_jmp.equipment import Goniometer
         #from math import pi
         #d2r = pi / 180.0
         return Goniometer(self.rotation_axis,
                           self.starting_angle,
                           self.oscillation_range,
                           int(self.starting_frame))
-        
+
     def get_beam(self):
         """Get the beam parameters from the file
-        
+
         Returns:
             An instance of the beam struct
-        
+
         """
-        from dials.equipment import Beam
+        from dials_jmp.equipment import Beam
         from scitbx import matrix
-        return Beam(matrix.col(self.beam_vector).normalize() / self.wavelength, 
+        return Beam(matrix.col(self.beam_vector).normalize() / self.wavelength,
                     self.wavelength)
-        
+
     def get_detector(self):
         """Get the detector parameters from the file
-        
+
         Returns:
             An instance of the detector struct
-        
-        """    
-        from dials.equipment import Detector
+
+        """
+        from dials_jmp.equipment import Detector
         return Detector(self.detector_x_axis,
                         self.detector_y_axis,
                         self.detector_normal,
@@ -315,24 +315,24 @@ class IntegrateFile:
                         self.pixel_size,
                         self.detector_size,
                         self.detector_distance)
-                                          
+
     def get_ub_matrix(self):
         """Get the UB matrix
-        
+
         Returns:
             The UB matrix
-        
+
         """
         from scitbx import matrix
-        return matrix.sqr(self.unit_cell_a_axis + 
-                          self.unit_cell_b_axis + 
+        return matrix.sqr(self.unit_cell_a_axis +
+                          self.unit_cell_b_axis +
                           self.unit_cell_c_axis)
-  
+
 class XYCorrection:
-    
+
     def __init__(self):
         pass
-        
+
     def read_file(self, filename):
         """Read the CBF correction file"""
         import pycbf
@@ -343,13 +343,13 @@ class XYCorrection:
     def get_correction_array(self):
         """Get the correction array from the file"""
         import numpy
-        
+
         # Select the first datablock and rewind all the categories
         self.cbf_handle.select_datablock(0)
         self.cbf_handle.select_category(0)
         self.cbf_handle.select_column(2)
         self.cbf_handle.select_row(0)
-    
+
         # Check the type of the element to ensure it's a binary
         # otherwise raise an exception
         type = self.cbf_handle.get_typeofvalue()
@@ -358,7 +358,7 @@ class XYCorrection:
             # Read the image data into an array
             image_string = self.cbf_handle.get_integerarray_as_string()
             image = numpy.fromstring(image_string, numpy.int32)
-            
+
             # Get the array parameters
             parameters = self.cbf_handle.get_integerarrayparameters_wdims()
             image_size = (parameters[10], parameters[9])
@@ -367,7 +367,7 @@ class XYCorrection:
             image.shape = (image_size)
 
         else:
-            raise TypeError('Can\'t find image')        
+            raise TypeError('Can\'t find image')
 
         # Return the image
         return image
@@ -375,7 +375,7 @@ class XYCorrection:
     def get_correction(self, dim):
         """Get the correction at each pixel."""
         import numpy
-        
+
         # Get the raw array
         raw_array = self.get_correction_array()
 
@@ -392,7 +392,6 @@ class XYCorrection:
         i2 = numpy.divide(i1, 4)
         j2 = numpy.divide(j1, 4)
         correction[j1,i1] = raw_array[j2,i2] / 10.0
-                
+
         # Return the array of corrections
         return correction
-        

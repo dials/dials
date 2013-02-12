@@ -3,23 +3,23 @@
 
 class GxParmFile:
     """A class to read the GXPARM.XDS file used in XDS"""
-    
+
     def __init__(self):
         pass
-    
+
     def read_file(self, filename):
         """Read the GXPARAM.XDS file.
-        
+
         See http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_files.html for more
         information about the file format.
-        
+
         :param filename: The path to the file
 
         """
         # Read the text from the file and split into an array of tokens
         lines = open(filename, 'r').readlines()
         tokens = [map(float, l.split()) for l in lines]
-        
+
         # Read the parameters from the list of tokens
         self.starting_frame    = tokens[0][0]
         self.starting_angle    = tokens[0][1]
@@ -39,8 +39,8 @@ class GxParmFile:
         self.unit_cell_a_axis  = tuple(tokens[8])
         self.unit_cell_b_axis  = tuple(tokens[9])
         self.unit_cell_c_axis  = tuple(tokens[10])
-        
-        
+
+
 class IntegrateFile:
     """A class to read the INTEGRATE.HKL file used in XDS"""
 
@@ -59,16 +59,16 @@ class IntegrateFile:
         self.alfbet0 = []
         self.alfbet1 = []
         self.psi = []
-    
-    
+
+
     def read_file(self, filename):
         """Read the INTEGRATE.HKL file.
-        
+
         See http://xds.mpimf-heidelberg.mpg.de/html_doc/xds_files.html for more
         information about the file format.
-        
+
         :param filename: The path to the file
-        
+
         """
         # Read the lines from the file
         lines = open(filename, 'r').readlines()
@@ -97,10 +97,10 @@ class IntegrateFile:
 
     def _parse_str(self, s):
         """Parse a string to either an int, float or string
-        
+
         :param s: The input string
         :returns: The parsed value
-        
+
         """
         try:
             return int(s)
@@ -113,10 +113,10 @@ class IntegrateFile:
 
     def _parse_value(self, value):
         """Parse the value or array of values contained in the string
-        
+
         :param value: The value to parse
         :returns: The parsed value
-        
+
         """
         values = value.split()
         if len(values) == 1:
@@ -127,9 +127,9 @@ class IntegrateFile:
 
     def _set_header_parameters(self, ):
         """Get the parameters from the header dict
-        
+
         :param name_value: The name, value parameter dict
-        
+
         """
         self.space_group       = self._header['SPACE_GROUP_NUMBER']
         self.unit_cell         = self._header['UNIT_CELL_CONSTANTS']
@@ -155,14 +155,14 @@ class IntegrateFile:
 
     def _parse_header_line(self, line):
         """Parse a line that has been identified as a header line
-        
+
         :param line: The line to parse
-        
+
         """
         name_value = line.split('=')
         if (len(name_value) < 2):
             return
-        
+
         name = name_value[0]
         if (len(name_value) > 2):
             for i in range(1, len(name_value)-1):
@@ -173,13 +173,13 @@ class IntegrateFile:
 
         value = name_value[-1]
         self._header[name] = self._parse_value(value)
-    
-    
+
+
     def _parse_data_line(self, line):
         """Parse a data line from the Integrate.hkl file
-        
+
         :param line: The line to parse
-        
+
         """
         # Split the tokens
         tokens = line.split()
@@ -198,4 +198,3 @@ class IntegrateFile:
         self.alfbet0.append(tuple(tokens[15:17]))
         self.alfbet1.append(tuple(tokens[17:19]))
         self.psi    .append(tokens[19])
-        

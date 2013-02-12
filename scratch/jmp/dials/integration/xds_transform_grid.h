@@ -17,7 +17,7 @@ public:
     /** Default constructor */
     XdsTransformGrid() {}
 
-    /** 
+    /**
      * Initialise grid
      * @param n_ref The number of reflections
      * @param origin The origin of the grid (size = 2 * origin + 1)
@@ -34,7 +34,7 @@ public:
           origin_(origin),
           sigma_divergence_(sigma_divergence),
           sigma_mosaicity_(sigma_mosaicity),
-          delta_divergence_(sigma_divergence * n_sigma), 
+          delta_divergence_(sigma_divergence * n_sigma),
           delta_mosaicity_(sigma_mosaicity  * n_sigma)
     {
         // Check input to ensure grid is valid
@@ -47,7 +47,7 @@ public:
         size_[0] = 2 * origin_[0] + 1;
         size_[1] = 2 * origin_[1] + 1;
         size_[2] = 2 * origin_[2] + 1;
-    
+
         // Calculate the step size of the grid
         step_size_[0] = delta_mosaicity_  / size_[0];
         step_size_[1] = delta_divergence_ / size_[1];
@@ -64,7 +64,7 @@ public:
     std::size_t get_n_reflections() const {
         return n_ref_;
     }
-    
+
     /** Get the size of the individual grids */
     scitbx::vec3 <std::size_t> get_size() const {
         return size_;
@@ -79,22 +79,22 @@ public:
     scitbx::vec3 <double> get_step_size() const {
         return step_size_;
     }
-    
+
     /** Get the standard deviation of the beam divergence */
     double get_sigma_divergence() const {
         return sigma_divergence_;
     }
-    
+
     /** Get the standard deviation of the mosaicity */
     double get_sigma_mosaicity() const {
         return sigma_mosaicity_;
     }
-    
+
     /** Get the multiple of the standard deviation of the beam divergence */
     double get_delta_divergence() const {
         return delta_divergence_;
     }
-    
+
     /** Get the multiple of the standard deviation of the mosaicity */
     double get_delta_mosaicity() const {
         return delta_mosaicity_;

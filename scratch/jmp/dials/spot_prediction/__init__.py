@@ -1,3 +1,3 @@
 import rstbx.diffraction
-import dials.reflection
+import dials_jmp.reflection
 from dials_spot_prediction_ext import *

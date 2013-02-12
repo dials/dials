@@ -13,16 +13,16 @@ public:
     FromXdsE3ToPhi()
         : zeta_(0.0),
           phi_(0.0) {}
-          
-    /** 
-     * Initialise the class 
+
+    /**
+     * Initialise the class
      * @param zeta The xds zeta parameters
      * @param phi The rotation angle
      */
     FromXdsE3ToPhi(double zeta, double phi)
         : zeta_(zeta),
           phi_(phi) {}
-    
+
     /**
      * Apply the transform
      * @param e3 The XDS e3 coordinate

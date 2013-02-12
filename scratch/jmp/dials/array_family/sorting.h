@@ -23,11 +23,11 @@ public:
      * Initialise and keep hold of the data iterator and comparison function
      * @param data The data iterator
      * @param compare The comparison function
-     */      
-    CompareIndex(const DataIterator data, Compare compare) 
-        : data_(data), 
+     */
+    CompareIndex(const DataIterator data, Compare compare)
+        : data_(data),
           compare_(compare) {}
-    
+
     /**
      * Compare the two elements at the given indices a and b
      * @param a Index A
@@ -51,18 +51,18 @@ private:
  * @param index_middle The middle element of the index array to sort about
  * @param index_last The last element in the index array
  * @param data_first The first element in the data array
- */ 
+ */
 template <typename IndexIterator, typename DataIterator>
-void partial_sort_indices(IndexIterator index_first, 
+void partial_sort_indices(IndexIterator index_first,
                           IndexIterator index_middle,
                           IndexIterator index_last,
                           const DataIterator data_first)
 {
     typedef typename std::iterator_traits <IndexIterator>::value_type IndexType;
     typedef typename std::iterator_traits <DataIterator>::value_type DataType;
-    std::partial_sort(index_first, index_middle, index_last, 
-                      CompareIndex <IndexIterator, 
-                                    DataIterator, 
+    std::partial_sort(index_first, index_middle, index_last,
+                      CompareIndex <IndexIterator,
+                                    DataIterator,
                                     std::greater <DataType> > (
                                         data_first, std::greater <DataType>()));
 }
@@ -76,17 +76,17 @@ void partial_sort_indices(IndexIterator index_first,
  * @param index_last The last element in the index array
  * @param data_first The first element in the data array
  * @param compare The comparison function
- */ 
+ */
 template <typename IndexIterator, typename DataIterator, typename Compare>
-void partial_sort_indices(IndexIterator index_first, 
+void partial_sort_indices(IndexIterator index_first,
                           IndexIterator index_middle,
                           IndexIterator index_last,
                           const DataIterator data_first,
                           Compare compare)
 {
-    std::partial_sort(index_first, index_middle, index_last, 
-                      CompareIndex <IndexIterator, 
-                                    DataIterator, 
+    std::partial_sort(index_first, index_middle, index_last,
+                      CompareIndex <IndexIterator,
+                                    DataIterator,
                                     Compare> (data_first, compare));
 }
 
@@ -101,9 +101,9 @@ scitbx::af::flex_int partial_sort_indices_flex(const ArrayType &data, int n) {
     DIALS_ASSERT(0 < n && n <= data.size());
     scitbx::af::flex_int result(data.size());
     for (int i = 0; i < result.size(); ++i) result[i] = i;
-    partial_sort_indices(result.begin(), 
-                         result.begin() + n, 
-                         result.end(), 
+    partial_sort_indices(result.begin(),
+                         result.begin() + n,
+                         result.end(),
                          data.begin());
     return result;
 }

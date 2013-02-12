@@ -35,7 +35,7 @@ def visualize_xds_transform_extra(image_volume_original,
     spot_volume_orig = image_volume_original[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
     spot_volume_bsub = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
     spot_grid = xds_grid[reflections[spot].transform_index]
-    
+
     n_slice_vol_orig = spot_volume_orig.shape[0]
     n_slice_vol = spot_volume_bsub.shape[0]
     n_slice_grid = spot_grid.shape[0]
@@ -47,11 +47,11 @@ def visualize_xds_transform_extra(image_volume_original,
             image = spot_volume_orig[i]
         else:
             image = blank
-        plt=pylab.imshow(image, vmin=0, vmax=1000, 
+        plt=pylab.imshow(image, vmin=0, vmax=1000,
             cmap=cm.Greys_r, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
-        plt.axes.get_yaxis().set_ticks([])   
-        ax.set_title("slice: {0}".format(i))  
+        plt.axes.get_yaxis().set_ticks([])
+        ax.set_title("slice: {0}".format(i))
 
     blank = numpy.zeros(spot_volume_bsub.shape[1:])
     for i in range(0,9):
@@ -61,20 +61,20 @@ def visualize_xds_transform_extra(image_volume_original,
         else:
             image = blank
 
-        plt=pylab.imshow(image, vmin=0, vmax=1000, 
+        plt=pylab.imshow(image, vmin=0, vmax=1000,
             cmap=cm.Greys_r, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
-        plt.axes.get_yaxis().set_ticks([])   
-        ax.set_title("slice: {0}".format(i))  
+        plt.axes.get_yaxis().set_ticks([])
+        ax.set_title("slice: {0}".format(i))
 
     for i in range(0,9):
         ax = pylab.subplot(3, 9, 18+i+1)
         image = spot_grid[i]
-        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid), 
+        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid),
             cmap=cm.Greys_r, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
-        plt.axes.get_yaxis().set_ticks([])   
-        ax.set_title("slice: {0}".format(i))  
+        plt.axes.get_yaxis().set_ticks([])
+        ax.set_title("slice: {0}".format(i))
     pylab.show()
 
 
@@ -87,25 +87,25 @@ def visualize_xds_transform(grid, display_spot):
     for i in range(0,9):
         ax = pylab.subplot(3, 3, i+1)
         image = spot_grid[i, :, :]
-        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid), 
+        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid),
             cmap=cm.Greys_r, interpolation='nearest')
         plt.axes.get_xaxis().set_ticks([])
-        plt.axes.get_yaxis().set_ticks([])   
-        ax.set_title("slice: {0}".format(i))         
+        plt.axes.get_yaxis().set_ticks([])
+        ax.set_title("slice: {0}".format(i))
     pylab.show()
 #    pylab.savefig("temp/xds_transformed_example.png")
 #    for i in range(0,9):
 #        #fig = pylab.figure()
 #        image = spot_grid[i, :, :]
-#        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid), 
+#        plt=pylab.imshow(image, vmin=0, vmax=numpy.max(spot_grid),
 #            cmap=cm.Greys_r)#, interpolation='nearest')
 #        plt.axes.get_xaxis().set_ticks([])
-#        plt.axes.get_yaxis().set_ticks([])   
- #       
+#        plt.axes.get_yaxis().set_ticks([])
+ #
 #        pylab.show()
         #pylab.savefig("temp/xds_transformed_spot_{0:03d}_frame_{1}.png".format(display_spot, i))
         #pylab.clf()
-        
+
 def visualize_xds_transform_3d(grid, display_spot):
     """Display the XDS transform for a given spot."""
     from matplotlib import pylab, cm
@@ -130,43 +130,43 @@ def visualize_xds_transform_3d(grid, display_spot):
 #        ax.set_autoscalex_on(False)
 #        ax.set_autoscaley_on(False)
 #        ax.set_autoscalez_on(False)
-#        ax.plot_wireframe(gridx, gridy, image)          
+#        ax.plot_wireframe(gridx, gridy, image)
 #        plt.axes.get_xaxis().set_ticks(map(lambda x: minx + x * (maxx - minx) / 2, range(0, 3)))
 #        plt.axes.get_yaxis().set_ticks(map(lambda y: miny + y * (maxy - miny) / 2, range(0, 3)))
 #        plt.axes.get_zaxis().set_ticks([])
 #        pylab.show()
 #        pylab.savefig("temp/xds_transformed_spot_{0}_3d_frame_{1}.png".format(display_spot, i))
-#        pylab.clf()        
+#        pylab.clf()
 
 def save_transformed_spot_to_file(grid, display_spot):
     import numpy
-    numpy.save('temp/transfomed_spot_{0:03d}'.format(display_spot), 
-               grid[display_spot, :, :, :])   
+    numpy.save('temp/transfomed_spot_{0:03d}'.format(display_spot),
+               grid[display_spot, :, :, :])
 
-def perform_xds_transform(input_filename, cbf_search_path, d_min, 
+def perform_xds_transform(input_filename, cbf_search_path, d_min,
                           sigma_divergence, sigma_mosaicity, n_sigma,
                           display_spot):
     """Read the required data from the file, predict the spots and calculate
        gaussian model parameters."""
-    from dials.spot_prediction import SpotPredictor
-    from dials.integration import ReflectionMaskRoi
-    from dials.integration import ReflectionMask
-    from dials.integration import ReflectionMaskCreator
-    from dials.integration import SubtractBackground
-    from dials.integration import XdsTransformGrid
-    from dials.integration import XdsTransform
-    from dials.io import xdsio, pycbf_extra
+    from dials_jmp.spot_prediction import SpotPredictor
+    from dials_jmp.integration import ReflectionMaskRoi
+    from dials_jmp.integration import ReflectionMask
+    from dials_jmp.integration import ReflectionMaskCreator
+    from dials_jmp.integration import SubtractBackground
+    from dials_jmp.integration import XdsTransformGrid
+    from dials_jmp.integration import XdsTransform
+    from dials_jmp.io import xdsio, pycbf_extra
     from cctbx import uctbx, sgtbx
     from time import time
-    from dials.array_family import flex
-    from dials.array_family.flex import remove_if_not
+    from dials_jmp.array_family import flex
+    from dials_jmp.array_family.flex import remove_if_not
     from scitbx import matrix
 
     # Create the GXPARM file and read the contents
     print "Reading: \"{0}\"".format(input_filename)
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(input_filename)
-    beam      = gxparm_handle.get_beam() 
+    beam      = gxparm_handle.get_beam()
     gonio     = gxparm_handle.get_goniometer()
     detector  = gxparm_handle.get_detector()
     ub_matrix = gxparm_handle.get_ub_matrix()
@@ -185,11 +185,11 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
         gonio.num_frames = image_volume.shape[0]
 
         # Create the spot predictor
-    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell, 
-                                   space_group_type, 
+    spot_predictor = SpotPredictor(beam, detector, gonio, unit_cell,
+                                   space_group_type,
                                    matrix.sqr(ub_matrix).inverse(), d_min)
-    
-    # Predict the spot image volume coordinates 
+
+    # Predict the spot image volume coordinates
     print "Predicting spots"
     start_time = time()
     reflections = spot_predictor.predict()
@@ -203,31 +203,31 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
         for i in range(detector_mask.all()[1]):
             if (detector_image[j,i] < 0):
                 detector_mask[j,i] = -2
-    
-    # Create the reflection mask    
+
+    # Create the reflection mask
     print "Creating reflection mask Roi for {0} spots".format(len(reflections))
     start_time = time()
     reflection_mask_creator = ReflectionMaskCreator(
                             beam, detector, gonio,
                             detector_mask,
                             image_volume.shape,
-                            sigma_divergence, 
+                            sigma_divergence,
                             sigma_mosaicity,
                             n_sigma)
     reflections = reflection_mask_creator.create(reflections)
     mask = reflection_mask_creator.mask
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
-    
+
     print image_volume[0,203,236]
-    
+
     # Extract arrays from array of reflections
     region_of_interest = flex.tiny6_int(len(reflections))
     image_volume_coords = flex.vec3_double(len(reflections))
     for i, r in enumerate(reflections):
         region_of_interest[i] = r.region_of_interest
         image_volume_coords[i] = r.image_coord
-    
+
     range_x = [roi[1] - roi[0] for roi in region_of_interest]
     range_y = [roi[3] - roi[2] for roi in region_of_interest]
     range_z = [roi[5] - roi[4] for roi in region_of_interest]
@@ -236,7 +236,7 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
     print "Min/Max ROI Y Range: ", min(range_y), max(range_y)
     print "Min/Max ROI Z Range: ", min(range_z), max(range_z)
     print "Min/Max Roi Volume:  ", min(volume), max(volume)
-     
+
     # Subtract the background for each reflection
     n_reflections = len(region_of_interest)
     print "Subtracting background"
@@ -264,16 +264,16 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
         image_volume_coords[i] = r.image_coord
         beam_vectors[i] = r.beam_vector
         rotation_angles[i] = r.rotation_angle
-    
+
     print "Initialising XDS Transform"
     start_time = time()
     n_reflections = len(region_of_interest)
     grid_origin = (4, 4, 4)
-    xds_grid = XdsTransformGrid(n_reflections, grid_origin, sigma_divergence, 
+    xds_grid = XdsTransformGrid(n_reflections, grid_origin, sigma_divergence,
                                 sigma_mosaicity, n_sigma)
 
-    xds_trans = XdsTransform(xds_grid, 
-                             flex.int(image_volume), 
+    xds_trans = XdsTransform(xds_grid,
+                             flex.int(image_volume),
                              reflection_mask_creator.mask,
                              detector, beam, gonio)
     finish_time = time()
@@ -293,21 +293,21 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
 #            index2 = i
 #            break
 #    r = reflections[index2]
-#    
+#
 #    print r
-#    
+#
 #    display_spot = [r.transform_index]
-#    
+#
 #    roi = r.region_of_interest
 #    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
 #    print spot_image
-    
+
 #    r = reflections[3]
 #    roi = r.region_of_interest
 #    spot_image = image_volume[roi[4]:roi[5], roi[2]:roi[3], roi[0]:roi[1]]
 #    print spot_image
 #    print r
-    
+
     if display_spot:
         for spot in display_spot:
             print "Displaying XDS Transform for spot \"{0}\"".format(spot)
@@ -318,7 +318,7 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
                                           spot)
             #visualize_xds_transform(xds_grid.data.as_numpy_array(), spot)
 #            visualize_xds_transform_3d(xds_grid.data.as_numpy_array(), spot)
-            #save_transformed_spot_to_file(xds_grid.data.as_numpy_array(), spot)                 
+            #save_transformed_spot_to_file(xds_grid.data.as_numpy_array(), spot)
 if __name__ == '__main__':
 
     from optparse import OptionParser
@@ -351,15 +351,15 @@ if __name__ == '__main__':
                       type="string",
                       action="callback",
                       callback=display_frame_callback,
-                      help='Select a frame to display the reflection mask')                   
+                      help='Select a frame to display the reflection mask')
     (options, args) = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call spot prediction
     if len(args) < 2:
         print parser.print_help()
     else:
-        perform_xds_transform(args[0], 
-                              args[1], 
+        perform_xds_transform(args[0],
+                              args[1],
                               options.dmin,
                               options.sigma_d,
                               options.sigma_m,

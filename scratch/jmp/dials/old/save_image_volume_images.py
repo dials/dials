@@ -3,7 +3,7 @@ if __name__ == '__main__':
 
     from extract_reflection_profiles import load_cbf_image_volume
     from matplotlib import pylab
-    from matplotlib import cm 
+    from matplotlib import cm
 
     image_volume = load_cbf_image_volume('/home/upc86896/Projects/data/300k/ximg2700*.cbf')
 
@@ -18,7 +18,3 @@ if __name__ == '__main__':
         plt.axes.get_yaxis().set_ticks([])
         fig.savefig('/home/upc86896/Documents/image_volume_{0}.tiff'.format(i),
             bbox_inches='tight', pad_inches=0)
-        
-        
-        
-
