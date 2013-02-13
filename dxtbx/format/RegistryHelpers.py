@@ -35,7 +35,7 @@ def LookForFormatClasses():
     is no hope of importing them!)'''
 
     import dxtbx
-    
+
     format_classes = []
     file_names = []
 

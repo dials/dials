@@ -6,7 +6,7 @@
 #   included in the root directory of this package.
 #
 # Helpers for the scan class, which are things for handling e.g. filenames,
-# templates and so on. 
+# templates and so on.
 
 import os
 import re

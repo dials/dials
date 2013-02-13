@@ -78,6 +78,7 @@ class Format:
         self._beam_instance = None
         self._scan_instance = None
         self._cube_instance = None
+        self._raw_data = None
 
         self._goniometer_factory = goniometer_factory
         self._detector_factory = detector_factory
@@ -156,14 +157,21 @@ class Format:
 
         return self._cube_instance
 
-    def get_pixel_intensities(self):
+    def get_raw_data(self):
         '''Get the pixel intensities (i.e. read the image and return as a
         flex array of integers.'''
 
-        # FIXME in the interim could glue the iotbx.detectors ImageFactory
-        # in here...
+        if self._raw_data:
+            return self._raw_data
 
-        raise RuntimeError, 'overload me'
+        # FIXME this should be replaced with specialist code in subclasses
+
+        from iotbx.detectors import ImageFactory
+        image = ImageFactory(self._image_file)
+        image.read()
+        self._raw_data = image.get_raw_data()
+
+        return self._raw_data
 
     def get_image_file(self):
         '''Get the image file provided to the constructor.'''

@@ -24,7 +24,7 @@ class detector_helpers_types:
 
         import dxtbx
 
-        detector_lib = os.path.join(os.path.split(dxtbx.__file__)[0], 
+        detector_lib = os.path.join(os.path.split(dxtbx.__file__)[0],
                                     'data', 'detectors.lib')
 
         if not os.path.exists(detector_lib):
