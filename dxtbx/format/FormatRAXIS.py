@@ -85,7 +85,7 @@ class FormatRAXIS(Format):
         '''See if this looks like an RAXIS format image - clue is first
         5 letters of file should be RAXIS.'''
 
-        if open(image_file).read(5) == 'RAXIS':
+        if Format.open_file(image_file).read(5) == 'RAXIS':
             return 2
 
         return 0
@@ -98,7 +98,7 @@ class FormatRAXIS(Format):
         return
 
     def _start(self):
-        self._header_bytes = open(self._image_file).read(1024)
+        self._header_bytes = Format.open_file(self._image_file).read(1024)
 
         if self._header_bytes[812:822].strip() == 'SGI':
             self._f = '>f'
