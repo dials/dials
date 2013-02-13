@@ -244,8 +244,12 @@ class Format:
 
         from urlparse import urlparse
 
+        # Windows file paths can get caught up in this - check that the
+        # first letter is one character (which I think should be safe: all
+        # URL types are longer than this right?)
+
         scheme = urlparse(path).scheme
-        if scheme and scheme != "c":
+        if scheme and len(scheme) == 1:
             return True
 
         return False
