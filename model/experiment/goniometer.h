@@ -104,7 +104,7 @@ namespace dials { namespace model { namespace experiment {
       fixed_rotation_ = fixed_rotation;
     }
 
-  private:
+  protected:
 
     vec3 <double> rotation_axis_;
     mat3 <double> fixed_rotation_;
@@ -151,9 +151,8 @@ namespace dials { namespace model { namespace experiment {
         direction_(NoDirection),
         scan_axis_(NoAxis),
         omega_axis_(0.0, 0.0, 0.0),
-        kappa_axis_(0.0, 0.0, 0.0),
         phi_axis_(0.0, 0.0, 0.0),
-        Goniometer() {}
+        kappa_axis_(0.0, 0.0, 0.0) {}
 
     /**
      * Initialise the goniometer.
@@ -174,8 +173,11 @@ namespace dials { namespace model { namespace experiment {
         scan_axis_(scan_axis),
         omega_axis_(1.0, 0.0, 0.0),
         phi_axis_(1.0, 0.0, 0.0),
-        kappa_axis_(calculate_kappa()),
-        Goniometer(calculate_rotation_axis(), calculate_fixed_rotation()) {}
+        kappa_axis_(calculate_kappa()) 
+    {
+      rotation_axis_ = calculate_rotation_axis();
+      fixed_rotation_ = calculate_fixed_rotation();
+    }
 
     /** Get the alpha angle */
     double get_alpha_angle() const {
@@ -222,7 +224,7 @@ namespace dials { namespace model { namespace experiment {
       return kappa_axis_;
     }
 
-  private:
+  protected:
     
     /** Calculate the kappa axis */
     vec3 <double> calculate_kappa() {
