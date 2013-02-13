@@ -156,6 +156,15 @@ class Format:
 
         return self._cube_instance
 
+    def get_pixel_intensities(self):
+        '''Get the pixel intensities (i.e. read the image and return as a
+        flex array of integers.'''
+
+        # FIXME in the interim could glue the iotbx.detectors ImageFactory
+        # in here...
+
+        raise RuntimeError, 'overload me'
+
     def get_image_file(self):
         '''Get the image file provided to the constructor.'''
 

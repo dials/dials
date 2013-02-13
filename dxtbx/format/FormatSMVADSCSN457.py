@@ -39,7 +39,7 @@ class FormatSMVADSCSN457(FormatSMVADSC):
 
         assert(FormatSMVADSC.understand(image_file) > 0)
 
-        FormatSMV.__init__(self, image_file)
+        FormatSMVADSC.__init__(self, image_file)
 
         return
 
@@ -49,42 +49,13 @@ class FormatSMVADSCSN457(FormatSMVADSC):
 
         return self._goniometer_factory.known_axis((-1, 0, 0))
 
-    # FIXME surely I don't need the code which follows which just reproduces
-    # standard ADSC model?
-
-    # FIXME find a test case, remove this.
-
-    def _detector(self):
-        '''Return a model for a simple detector, presuming no one has
-        one of these on a two-theta stage. Assert that the beam centre is
-        provided in the Mosflm coordinate frame.'''
-
-        distance = float(self._header_dictionary['DISTANCE'])
-        beam_x = float(self._header_dictionary['BEAM_CENTER_X'])
-        beam_y = float(self._header_dictionary['BEAM_CENTER_Y'])
-        pixel_size = float(self._header_dictionary['PIXEL_SIZE'])
-        image_size = (float(self._header_dictionary['SIZE1']),
-                      float(self._header_dictionary['SIZE2']))
-        overload = 65535
-        underload = 0
-
-        return self._detector_factory.simple(
-            'CCD', distance, (beam_y, beam_x), '+x', '-y',
-            (pixel_size, pixel_size), image_size, (underload, overload), [])
-
-    def _beam(self):
-        '''Return a simple model for the beam.'''
-
-        wavelength = float(self._header_dictionary['WAVELENGTH'])
-
-        return self._beam_factory.simple(wavelength)
-
     def _scan(self):
-        '''Return the scan information for this image.'''
+        '''Return the scan information for this image. There may be
+        no timestamps in there...'''
 
         format = self._scan_factory.format('SMV')
         exposure_time = float(self._header_dictionary['TIME'])
-        epoch =  time.mktime(time.strptime(self._header_dictionary['DATE']))
+        epoch = 0
         osc_start = float(self._header_dictionary['OSC_START'])
         osc_range = float(self._header_dictionary['OSC_RANGE'])
 
