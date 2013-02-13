@@ -139,7 +139,7 @@ namespace dials { namespace model { namespace experiment {
       Phi,
       Omega
     };
-  
+
   public:
 
     /** Default constructor */
@@ -163,7 +163,7 @@ namespace dials { namespace model { namespace experiment {
      * @param direction The direction
      * @param scan_axis The scan axis
      */
-    KappaGoniometer(double alpha, double omega, double kappa, double phi, 
+    KappaGoniometer(double alpha, double omega, double kappa, double phi,
                     Direction direction, ScanAxis scan_axis)
       : alpha_(alpha),
         omega_(omega),
@@ -173,7 +173,7 @@ namespace dials { namespace model { namespace experiment {
         scan_axis_(scan_axis),
         omega_axis_(1.0, 0.0, 0.0),
         phi_axis_(1.0, 0.0, 0.0),
-        kappa_axis_(calculate_kappa()) 
+        kappa_axis_(calculate_kappa())
     {
       rotation_axis_ = calculate_rotation_axis();
       fixed_rotation_ = calculate_fixed_rotation();
@@ -225,14 +225,14 @@ namespace dials { namespace model { namespace experiment {
     }
 
   protected:
-    
+
     /** Calculate the kappa axis */
     vec3 <double> calculate_kappa() {
       double c = cos(alpha_ * pi / 180.0);
       double s = sin(alpha_ * pi / 180.0);
       if (direction_ == PlusY) {
         return vec3 <double> (c, s, 0.0);
-      } else if (direction_ == PlusZ) {  
+      } else if (direction_ == PlusZ) {
         return vec3 <double> (c, 0.0, s);
       } else if (direction_ == MinusY) {
         return vec3 <double> (c, -s, 0.0);

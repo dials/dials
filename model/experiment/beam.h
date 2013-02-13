@@ -25,7 +25,7 @@ namespace dials { namespace model { namespace experiment {
     Beam()
       : direction_(0.0, 0.0, 0.0),
         wavelength_(0.0) {}
- 
+
     /**
      * Initialise all the beam parameters.
      * @param direction The beam direction vector.
@@ -62,7 +62,7 @@ namespace dials { namespace model { namespace experiment {
 
   private:
     vec3 <double> direction_;
-    double wavelength_;  
+    double wavelength_;
   };
 
   /** A class to represent a polarized beam. */
