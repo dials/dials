@@ -117,6 +117,7 @@ dxtbx/model/tests/test_detector.py -text
 dxtbx/model/tests/test_goniometer.py -text
 dxtbx/model/tests/test_scan.py -text
 dxtbx/readme.txt -text
+/error.h -text
 framework/dftbx/SConscript -text
 framework/dftbx/__init__.py -text
 framework/dftbx/dftbx.cpp -text
