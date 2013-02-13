@@ -56,6 +56,13 @@ def LookForFormatClasses():
             file_names.append(f)
             format_classes.append(os.path.join(format_dir, f))
 
+    if os.path.exists(os.path.join(home, '.dxtbx')):
+        for f in os.listdir(os.path.join(home, '.dxtbx')):
+            if 'Format' in f[:6] and '.py' in f[-3:]:
+                assert(not f in file_names)
+                file_names.append(f)
+                format_classes.append(os.path.join(format_dir, f))
+
     return format_classes
 
 def LoadFormatClass(FormatClass):
