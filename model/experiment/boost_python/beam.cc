@@ -20,14 +20,22 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
     boost::format fmt(
       "Beam:\n"
       "    direction :            (%1%, %2%, %3%)\n"
-      "    wavelength:            %4%\n"
-      "    polarization:          (%5%, %6%, %7%)\n"
-      "    polarization fraction: %8%");
+      "    wavelength:            %4%");
         
     fmt % beam.get_direction()[0];
     fmt % beam.get_direction()[1];
     fmt % beam.get_direction()[2];
     fmt % beam.get_wavelength();
+    return fmt.str();
+  }
+
+  std::string polarized_beam_to_string(const PolarizedBeam &beam) {
+    boost::format fmt(
+      "%1%\n"
+      "    polarization:          (%2%, %3%, %4%)\n"
+      "    polarization fraction: %5%");
+        
+    fmt % beam_to_string(beam);
     fmt % beam.get_polarization()[0];
     fmt % beam.get_polarization()[1];
     fmt % beam.get_polarization()[2];
@@ -37,47 +45,48 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
 
   void export_beam()
   {
-    class_ <Beam> ("Beam")
-      .def(init <double> ((
+    // Export BeamBase
+    class_ <BeamBase> ("BeamBase");
+
+    // Export SimpleBeam : BeamBase
+    class_ <Beam, bases <BeamBase> > ("Beam")
+      .def(init <vec3 <double>,
+                 double> ((
+          arg("direction"), 
           arg("wavelength"))))
-      .def(init <double,
-                 vec3 <double> > ((
-          arg("wavelength"), 
-          arg("direction"))))
-      .def(init <double,
-                 vec3 <double>, 
-                 vec3 <double>, 
-                 double> ((
-          arg("wavelength"),
-          arg("direction"), 
-          arg("polarization"),
-          arg("polarization_fraction"))))
-      .def(init <vec3 <double>, 
-                 vec3 <double>, 
-                 double> ((
-          arg("direction"), 
-          arg("polarization"),
-          arg("polarization_fraction"))))
       .def(init <vec3 <double> > ((
-          arg("direction"))))
-      .def(init <vec3 <double>, 
-                 vec3 <double>, 
-                 double> ((
-          arg("direction"), 
-          arg("polarization"),
-          arg("polarization_fraction"))))
+          arg("direction"),
+          arg("wavelength"))))
       .add_property("direction",  
         &Beam::get_direction,
         &Beam::set_direction)
       .add_property("wavelength", 
         &Beam::get_wavelength)
-      .add_property("polarization",
-        &Beam::get_polarization,
-        &Beam::set_polarization)
-      .add_property("polarization_fraction",
-        &Beam::get_polarization_fraction,
-        &Beam::set_polarization_fraction)
       .def("__str__", &beam_to_string);
+
+    // Export PolarizedBeam : SimpleBeam
+    class_ <PolarizedBeam, bases <Beam> > ("PolarizedBeam")
+      .def(init <vec3 <double>, 
+                 double,
+                 vec3 <double>, 
+                 double> ((
+          arg("direction"),
+          arg("wavelength"), 
+          arg("polarization"),
+          arg("polarization_fraction"))))
+      .def(init <vec3 <double>, 
+                 vec3 <double>, 
+                 double> ((
+          arg("direction"), 
+          arg("polarization"),
+          arg("polarization_fraction"))))
+      .add_property("polarization",
+        &PolarizedBeam::get_polarization,
+        &PolarizedBeam::set_polarization)
+      .add_property("polarization_fraction",
+        &PolarizedBeam::get_polarization_fraction,
+        &PolarizedBeam::set_polarization_fraction)
+      .def("__str__", &polarized_beam_to_string);
   }
 
 }}}} // namespace = dials::model::experiment::boost_python

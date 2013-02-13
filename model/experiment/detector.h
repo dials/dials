@@ -19,6 +19,9 @@ namespace dials { namespace equipment { namespace experiment {
   using scitbx::vec2;
   using scitbx::vec3;
 
+  /** A base class for detectors */
+  class DetectorBase {};
+
   /**
    * A class representing a detector panel. A detector can have multiple
    * panels which are each represented by this class.
@@ -62,11 +65,11 @@ namespace dials { namespace equipment { namespace experiment {
    *    trusted_range -> *unspecified*
    *    distance -> *unspecified*
    */
-  class DetectorPanel {
+  class FlatPanelDetector : public DetectorBase {
   public:
 
     /** The default constructor */
-    DetectorPanel()
+    FlatPanelDetector()
       : type_("Unknown"),
         x_axis_(1.0, 0.0, 0.0),
         y_axis_(0.0, 1.0, 0.0),
@@ -89,15 +92,15 @@ namespace dials { namespace equipment { namespace experiment {
      * @param trusted_range The range of pixel counts considered reliable
      * @param distance The distance from the detector to the crystal origin
      */
-    DetectorPanel(std::string type,
-                  vec3 <double> x_axis,
-                  vec3 <double> y_axis,
-                  vec3 <double> normal,
-                  vec3 <double> origin,
-                  vec2 <double> pixel_size,
-                  vec2 <std::size_t> image_size,
-                  vec2 <int> trusted_range,
-                  double distance)
+    FlatPanelDetector(std::string type,
+                      vec3 <double> x_axis,
+                      vec3 <double> y_axis,
+                      vec3 <double> normal,
+                      vec3 <double> origin,
+                      vec2 <double> pixel_size,
+                      vec2 <std::size_t> image_size,
+                      vec2 <int> trusted_range,
+                      double distance)
       : type_(type),
         x_axis_(x_axis.normalize()),
         y_axis_(y_axis.normalize()),
@@ -221,11 +224,11 @@ namespace dials { namespace equipment { namespace experiment {
     double distance_;
   };
 
-  class Detector {
+  class MultiFlatPanelDetector {
 
   public:
 
-    typedef scitbx::af::shared <DetectorPanel> panel_list_type;
+    typedef scitbx::af::shared <FlatPanelDetector> panel_list_type;
 
     void add_panel(const DetectorPanel &panel) {
       panel_list.push_back(panel);
@@ -237,6 +240,10 @@ namespace dials { namespace equipment { namespace experiment {
 
     const panel_list_type& get_panel_list() const {
       return panel_list_;
+    }
+
+    bool panels_intersect() const {
+      return false
     }
 
   private:
