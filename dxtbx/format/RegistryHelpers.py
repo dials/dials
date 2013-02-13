@@ -42,7 +42,7 @@ def LookForFormatClasses():
     # FIXME in here - dxtbx should already be in os.path - look for it there,
     # also wouldn't it be tidy to refer to a Phil parameter?
 
-    format_dir = os.path.split(dxtbx.__file__)[0]
+    format_dir = os.path.join(os.path.split(dxtbx.__file__)[0], 'format')
 
     if os.name == 'nt':
         home = os.path.join(os.environ['HOMEDRIVE'],
