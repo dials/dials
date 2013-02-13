@@ -50,6 +50,7 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tif
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 dxtbx/__init__.py -text
 dxtbx/command_line/print_header.py -text
+dxtbx/command_line/to_xds.py -text
 dxtbx/data/detectors.lib -text
 dxtbx/example/to_xds.py -text
 dxtbx/format/Format.py -text
