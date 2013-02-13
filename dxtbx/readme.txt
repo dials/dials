@@ -1,7 +1,7 @@
 Diffraction Experiment Toolbox
 ------------------------------
 
-A CCTBX-style tookbox to describe single-crystal diffraction experiments, where
+A cctbx-style toolbox to describe single-crystal diffraction experiments, where
 a monochromatic beam is used to illuminate a sample which is rotated during
 the exposure and diffraction recorded on a flat area detector.
 
