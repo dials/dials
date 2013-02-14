@@ -75,6 +75,7 @@ dxtbx/format/FormatSMVRigakuSaturnSN07400090.py -text
 dxtbx/format/FormatTIFF.py -text
 dxtbx/format/FormatTIFFHelpers.py -text
 dxtbx/format/FormatTIFFRayonix.py -text
+dxtbx/format/FormatTIFFRayonixESRF.py -text
 dxtbx/format/Registry.py -text
 dxtbx/format/RegistryHelpers.py -text
 dxtbx/format/__init__.py -text
