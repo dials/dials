@@ -105,6 +105,23 @@ class FormatSMVADSC(FormatSMV):
             self._image_file, format, exposure_time,
             osc_start, osc_range, epoch)
 
+    def get_raw_data(self):
+        '''Get the pixel intensities (i.e. read the image and return as a
+        flex array of integers.'''
+
+        if self._raw_data:
+            return self._raw_data
+
+        from boost.python import streambuf
+        from dxtbx import read_uint16
+
+        size = self.get_detector().get_image_size()
+        f = open(self._image_file, 'rb')
+        f.read(self._header_size)
+        self._raw_data = read_uint16(streambuf(f), int(size[0] * size[1]))
+        
+        return self._raw_data
+
 if __name__ == '__main__':
 
     import sys
