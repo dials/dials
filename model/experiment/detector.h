@@ -1,10 +1,12 @@
 /*
  * detector.h
  *
- *   Copyright (C) 2013 Diamond Light Source, James Parkhurst
+ *  Copyright (C) 2013 Diamond Light Source
  *
- *   This code is distributed under the BSD license, a copy of which is
- *   included in the root directory of this package.
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
  */
 #ifndef DIALS_MODEL_EXPERIMENT_DETECTOR_H
 #define DIALS_MODEL_EXPERIMENT_DETECTOR_H
@@ -101,9 +103,9 @@ namespace dials { namespace model { namespace experiment {
                       vec2 <std::size_t> image_size,
                       double distance)
       : type_(type),
-        x_axis_(x_axis.normalize()),
-        y_axis_(y_axis.normalize()),
-        normal_(normal.normalize()),
+        x_axis_(x_axis),
+        y_axis_(y_axis),
+        normal_(normal),
         origin_(origin),
         pixel_size_(pixel_size),
         image_size_(image_size),
@@ -154,7 +156,7 @@ namespace dials { namespace model { namespace experiment {
       return mat3 <double> (
         x_axis_[0], y_axis_[0], origin_[0],
         x_axis_[1], y_axis_[1], origin_[1],
-        x_axis_[2], y_axis_[2], origin_[2]);     
+        x_axis_[2], y_axis_[2], origin_[2]);
     }
 
     /** Get the inverse d matrix */
@@ -228,7 +230,7 @@ namespace dials { namespace model { namespace experiment {
 
   class MultiFlatPanelDetector : public DetectorBase {
   public:
-    
+
     typedef FlatPanelDetector panel_type;
     typedef scitbx::af::shared <panel_type> panel_list_type;
     typedef panel_list_type::iterator iterator;

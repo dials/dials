@@ -139,9 +139,11 @@ model/experiment/boost_python/beam.cc -text
 model/experiment/boost_python/detector.cc -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/boost_python/goniometer.cc -text
+model/experiment/boost_python/scan.cc -text
 model/experiment/detector.h -text
 model/experiment/detector_helpers.h -text
 model/experiment/goniometer.h -text
+model/experiment/scan.h -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/x2tbx/SConscript -text
