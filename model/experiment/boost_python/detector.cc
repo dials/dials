@@ -124,6 +124,9 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
       .add_property("distance",
         &FlatPanelDetector::get_distance,
         &FlatPanelDetector::set_distance)
+      .add_property("d_matrix",
+        &FlatPanelDetector::get_d_matrix,
+        &FlatPanelDetector::set_d_matrix)
       .def("__str__", &flat_panel_detector_to_string);
 
     // Export a MultiFlatPanelDetector class

@@ -12,12 +12,14 @@
 #include <string>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/mat3.h>
 #include <scitbx/array_family/shared.h>
 
 namespace dials { namespace model { namespace experiment {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::mat3;
 
   /** A base class for detectors */
   class DetectorBase {};
@@ -147,6 +149,14 @@ namespace dials { namespace model { namespace experiment {
       return distance_;
     }
 
+    /** Get the matrix of the detector coordinate system */
+    mat3 <double> get_d_matrix() const {
+      return mat3 <double> (
+        x_axis_[0], y_axis_[0], origin_[0],
+        x_axis_[1], y_axis_[1], origin_[1],
+        x_axis_[2], y_axis_[2], origin_[2]);     
+    }
+
     /** Set the detector panel type */
     void set_type(std::string type) {
       type_ = type;
@@ -185,6 +195,13 @@ namespace dials { namespace model { namespace experiment {
     /* Set the distance from the crystal */
     void set_distance(double distance) {
       distance_ = distance;
+    }
+
+    /** Set the matrix of the detector coordinate system */
+    void set_d_matrix(mat3 <double> d) {
+      x_axis_[0] = d[0]; y_axis_[0] = d[1]; origin_[0] = d[2];
+      x_axis_[1] = d[3]; y_axis_[1] = d[4]; origin_[1] = d[5];
+      x_axis_[2] = d[6]; y_axis_[2] = d[7]; origin_[2] = d[8];
     }
 
   protected:
