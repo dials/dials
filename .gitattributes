@@ -48,11 +48,13 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_slices.png -t
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.png -text
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tiff -text
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
+dxtbx/SConscript -text
 dxtbx/__init__.py -text
 dxtbx/command_line/print_header.py -text
 dxtbx/command_line/to_xds.py -text
 dxtbx/data/detectors.lib -text
 dxtbx/example/to_xds.py -text
+dxtbx/ext.cpp -text
 dxtbx/format/Format.py -text
 dxtbx/format/FormatCBF.py -text
 dxtbx/format/FormatCBFFull.py -text
@@ -119,6 +121,7 @@ dxtbx/model/tests/test_detector.py -text
 dxtbx/model/tests/test_goniometer.py -text
 dxtbx/model/tests/test_scan.py -text
 dxtbx/readme.txt -text
+dxtbx/tst_dxtbx.py -text
 /error.h -text
 framework/dftbx/SConscript -text
 framework/dftbx/__init__.py -text
