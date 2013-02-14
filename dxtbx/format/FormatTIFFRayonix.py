@@ -66,6 +66,8 @@ class FormatTIFFRayonix(FormatTIFF):
 
         width, height, depth, order, bytes = FormatTIFF.get_tiff_header(
             image_file)
+      
+        self._header_size = 4096
 
         if order == FormatTIFF.LITTLE_ENDIAN:
             self._I = '<I'
@@ -263,6 +265,27 @@ class FormatTIFFRayonix(FormatTIFF):
         rot_degrees = [r * 0.001 for r in rot_angles]
 
         return rot_degrees
+
+    def get_raw_data(self):
+        '''Get the pixel intensities (i.e. read the image and return as a
+           flex array of integers.'''
+    
+        if self._raw_data:
+            return self._raw_data
+
+        # currently have no non-little-endian machines...
+
+        assert(self._tiff_byte_order == FormatTIFF.LITTLE_ENDIAN)
+
+        from boost.python import streambuf
+        from dxtbx import read_uint16
+    
+        size = self.get_detector().get_image_size()
+        f = open(self._image_file, 'rb')
+        f.read(self._header_size)
+        self._raw_data = read_uint16(streambuf(f), int(size[0] * size[1]))
+    
+        return self._raw_data
 
 if __name__ == '__main__':
 
