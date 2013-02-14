@@ -14,7 +14,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/shared.h>
 
-namespace dials { namespace equipment { namespace experiment {
+namespace dials { namespace model { namespace experiment {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -77,7 +77,6 @@ namespace dials { namespace equipment { namespace experiment {
         origin_(0.0, 0.0, 0.0),
         pixel_size_(0.0, 0.0),
         image_size_(0, 0),
-        trusted_range_(0, 0),
         distance_(0.0) {}
 
     /**
@@ -89,7 +88,6 @@ namespace dials { namespace equipment { namespace experiment {
      * @param origin The detector origin
      * @param pixel_size The size of the individual pixels
      * @param image_size The size of the detector panel (in pixels)
-     * @param trusted_range The range of pixel counts considered reliable
      * @param distance The distance from the detector to the crystal origin
      */
     FlatPanelDetector(std::string type,
@@ -99,7 +97,6 @@ namespace dials { namespace equipment { namespace experiment {
                       vec3 <double> origin,
                       vec2 <double> pixel_size,
                       vec2 <std::size_t> image_size,
-                      vec2 <int> trusted_range,
                       double distance)
       : type_(type),
         x_axis_(x_axis.normalize()),
@@ -108,7 +105,6 @@ namespace dials { namespace equipment { namespace experiment {
         origin_(origin),
         pixel_size_(pixel_size),
         image_size_(image_size),
-        trusted_range_(trusted_range),
         distance_(distance) {}
 
     /** Get the sensor type */
@@ -142,13 +138,8 @@ namespace dials { namespace equipment { namespace experiment {
     }
 
     /** Get the image size */
-    vec2 <int> get_image_size() const {
+    vec2 <std::size_t> get_image_size() const {
       return image_size_;
-    }
-
-    /** Get the trusted range */
-    vec2 <int> get_trusted_range() const {
-      return trusted_range_;
     }
 
     /** Get the distance from the crystal */
@@ -187,13 +178,8 @@ namespace dials { namespace equipment { namespace experiment {
     }
 
     /** Set the image size */
-    void set_image_size(vec2 <int> image_size) {
+    void set_image_size(vec2 <std::size_t> image_size) {
       image_size_ = image_size;
-    }
-
-    /** Set the trusted range */
-    void set_trusted_range(vec2 <int> trusted_range) {
-      trusted_range_ = trusted_range;
     }
 
     /* Set the distance from the crystal */
@@ -201,17 +187,7 @@ namespace dials { namespace equipment { namespace experiment {
       distance_ = distance;
     }
 
-    /**
-     * Is the given pixel coordinate in the detector panel
-     * @param xy The coordinate
-     * @returns Is it a valid coordinate (True/False)
-     */
-    bool is_coordinate_valid(vec2 <double> xy) const {
-      return (0 <= xy[0] && xy[0] < image_size_[0]) &&
-             (0 <= xy[1] && xy[1] < image_size_[1]);
-    }
-
-  private:
+  protected:
 
     std::string type_;
     vec3 <double> x_axis_;
@@ -220,34 +196,57 @@ namespace dials { namespace equipment { namespace experiment {
     vec3 <double> origin_;
     vec2 <double> pixel_size_;
     vec2 <std::size_t> image_size_;
-    vec2 <int> trusted_range_;
     double distance_;
   };
 
-  class MultiFlatPanelDetector {
-
+  class MultiFlatPanelDetector : public DetectorBase {
   public:
+    
+    typedef FlatPanelDetector panel_type;
+    typedef scitbx::af::shared <panel_type> panel_list_type;
+    typedef panel_list_type::iterator iterator;
 
-    typedef scitbx::af::shared <FlatPanelDetector> panel_list_type;
+    MultiFlatPanelDetector()
+      : type_("Unknown") {}
 
-    void add_panel(const DetectorPanel &panel) {
-      panel_list.push_back(panel);
+    MultiFlatPanelDetector(std::string type)
+      :type_(type) {}
+
+    iterator begin() {
+      return panel_list_.begin();
     }
 
-    panel_list_type& get_panel_list() {
-      return panel_list_;
+    iterator end() {
+      return panel_list_.end();
     }
 
-    const panel_list_type& get_panel_list() const {
-      return panel_list_;
+    void add_panel(const panel_type &panel) {
+      panel_list_.push_back(panel);
     }
 
-    bool panels_intersect() const {
-      return false
+    void remove_panels() {
+      panel_list_.erase(panel_list_.begin(), panel_list_.end());
     }
 
-  private:
+    void remove_panel(std::size_t i) {
+      panel_list_.erase(panel_list_.begin() + i);
+    }
 
+    std::size_t num_panels() const {
+      return panel_list_.size();
+    }
+
+    panel_type& operator[](std::size_t index) {
+      return panel_list_[index];
+    }
+
+    const panel_type& operator[](std::size_t index) const {
+      return panel_list_[index];
+    }
+
+  protected:
+
+    std::string type_;
     panel_list_type panel_list_;
   };
 

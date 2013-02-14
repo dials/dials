@@ -15,13 +15,13 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
 
   void export_beam();
   void export_goniometer();
-  //void export_detector();
+  void export_detector();
 
   BOOST_PYTHON_MODULE(dials_model_experiment_ext)
   {
     export_beam();
     export_goniometer();
-    //export_detector();
+    export_detector();
   }
 
 }}}} // namespace dials::model::experiment::boost_python
