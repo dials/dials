@@ -7,6 +7,7 @@ def print_header():
 
     for arg in sys.argv[1:]:
         format = Registry.find(arg)
+        print 'Using header reader: %s' % format.__name__
         i = format(arg)
         print 'Beam:'
         print i.get_beam()
