@@ -19,6 +19,7 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
   void export_goniometer();
   void export_detector();
   void export_scan();
+  void export_detector_helpers();
 
   BOOST_PYTHON_MODULE(dials_model_experiment_ext)
   {
@@ -26,6 +27,7 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
     export_goniometer();
     export_detector();
     export_scan();
+    export_detector_helpers();
   }
 
 }}}} // namespace dials::model::experiment::boost_python

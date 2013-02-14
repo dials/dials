@@ -75,8 +75,8 @@ namespace dials { namespace model { namespace experiment {
     /** The default constructor */
     FlatPanelDetector()
       : type_("Unknown"),
-        x_axis_(1.0, 0.0, 0.0),
-        y_axis_(0.0, 1.0, 0.0),
+        fast_axis_(1.0, 0.0, 0.0),
+        slow_axis_(0.0, 1.0, 0.0),
         normal_(0.0, 0.0, 1.0),
         origin_(0.0, 0.0, 0.0),
         pixel_size_(0.0, 0.0),
@@ -86,8 +86,8 @@ namespace dials { namespace model { namespace experiment {
     /**
      * Initialise the detector panel.
      * @param type The type of the detector panel
-     * @param x_axis The x axis of the detector. The given vector is normalized.
-     * @param y_axis The y axis of the detector. The given vector is normalized.
+     * @param fast_axis The fast axis of the detector. The given vector is normalized.
+     * @param slow_axis The slow axis of the detector. The given vector is normalized.
      * @param normal The detector normal. The given vector is normalized.
      * @param origin The detector origin
      * @param pixel_size The size of the individual pixels
@@ -95,16 +95,16 @@ namespace dials { namespace model { namespace experiment {
      * @param distance The distance from the detector to the crystal origin
      */
     FlatPanelDetector(std::string type,
-                      vec3 <double> x_axis,
-                      vec3 <double> y_axis,
+                      vec3 <double> fast_axis,
+                      vec3 <double> slow_axis,
                       vec3 <double> normal,
                       vec3 <double> origin,
                       vec2 <double> pixel_size,
                       vec2 <std::size_t> image_size,
                       double distance)
       : type_(type),
-        x_axis_(x_axis),
-        y_axis_(y_axis),
+        fast_axis_(fast_axis),
+        slow_axis_(slow_axis),
         normal_(normal),
         origin_(origin),
         pixel_size_(pixel_size),
@@ -116,14 +116,14 @@ namespace dials { namespace model { namespace experiment {
       return type_;
     }
 
-    /** Get the x axis */
-    vec3 <double> get_x_axis() const {
-      return x_axis_;
+    /** Get the fast axis */
+    vec3 <double> get_fast_axis() const {
+      return fast_axis_;
     }
 
-    /** Get the y axis */
-    vec3 <double> get_y_axis() const {
-      return y_axis_;
+    /** Get the slow axis */
+    vec3 <double> get_slow_axis() const {
+      return slow_axis_;
     }
 
     /** Get the normal */
@@ -154,9 +154,9 @@ namespace dials { namespace model { namespace experiment {
     /** Get the matrix of the detector coordinate system */
     mat3 <double> get_d_matrix() const {
       return mat3 <double> (
-        x_axis_[0], y_axis_[0], origin_[0],
-        x_axis_[1], y_axis_[1], origin_[1],
-        x_axis_[2], y_axis_[2], origin_[2]);
+        fast_axis_[0], slow_axis_[0], origin_[0],
+        fast_axis_[1], slow_axis_[1], origin_[1],
+        fast_axis_[2], slow_axis_[2], origin_[2]);     
     }
 
     /** Get the inverse d matrix */
@@ -169,14 +169,14 @@ namespace dials { namespace model { namespace experiment {
       type_ = type;
     }
 
-    /** Set the x axis */
-    void set_x_axis(vec3 <double> x_axis) {
-      x_axis_ = x_axis;
+    /** Set the fast axis */
+    void set_fast_axis(vec3 <double> fast_axis) {
+      fast_axis_ = fast_axis;
     }
 
-    /** Set the y axis */
-    void set_y_axis(vec3 <double> y_axis) {
-      y_axis_ = y_axis;
+    /** Set the slow axis */
+    void set_slow_axis(vec3 <double> slow_axis) {
+      slow_axis_ = slow_axis;
     }
 
     /** Set the normal */
@@ -206,8 +206,8 @@ namespace dials { namespace model { namespace experiment {
 
     /** Set the matrix of the detector coordinate system */
     void set_d_matrix(mat3 <double> d) {
-      x_axis_ = d.get_column(0);
-      y_axis_ = d.get_column(1);
+      fast_axis_ = d.get_column(0);
+      slow_axis_ = d.get_column(1);
       origin_ = d.get_column(2);
     }
 
@@ -219,8 +219,8 @@ namespace dials { namespace model { namespace experiment {
   protected:
 
     std::string type_;
-    vec3 <double> x_axis_;
-    vec3 <double> y_axis_;
+    vec3 <double> fast_axis_;
+    vec3 <double> slow_axis_;
     vec3 <double> normal_;
     vec3 <double> origin_;
     vec2 <double> pixel_size_;
@@ -230,7 +230,7 @@ namespace dials { namespace model { namespace experiment {
 
   class MultiFlatPanelDetector : public DetectorBase {
   public:
-
+    
     typedef FlatPanelDetector panel_type;
     typedef scitbx::af::shared <panel_type> panel_list_type;
     typedef panel_list_type::iterator iterator;

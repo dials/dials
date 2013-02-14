@@ -16,7 +16,7 @@
 
 using namespace boost::python;
 
-namespace dials { namespace model { namespace experiment { namespace detector { namespace boost_python {
+namespace dials { namespace model { namespace experiment { namespace boost_python {
 
   void export_detector_helpers()
   {
@@ -27,7 +27,7 @@ namespace dials { namespace model { namespace experiment { namespace detector { 
       const MultiFlatPanelDetector &, vec3 <double>) = &is_coordinate_valid;
 
     def("is_coordinate_valid", flat_panel_detector_is_coordinate_valid);
-    def("is_coordinate_valid", mulit_flat_panel_detector_is_coordinate_valid);
+    def("is_coordinate_valid", multi_flat_panel_detector_is_coordinate_valid);
   }
 
 }}}} // namespace = dials::model::experiment::boost_python

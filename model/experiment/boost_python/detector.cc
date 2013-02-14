@@ -24,8 +24,8 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
     boost::format fmt(
       "Detector:\n"
       "    type:       %1%\n"
-      "    x axis:     (%2%, %3%, %4%)\n"
-      "    y axis:     (%5%, %6%, %7%)\n"      
+      "    fast axis:  (%2%, %3%, %4%)\n"
+      "    slow axis:  (%5%, %6%, %7%)\n"      
       "    normal:     (%8%, %9%, %10%)\n"
       "    origin:     (%11%, %12%)\n"
       "    pixel_size: (%13%, %14%)\n"
@@ -33,12 +33,12 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
       "    distance:   %17%");
         
     fmt % detector.get_type();
-    fmt % detector.get_x_axis()[0];
-    fmt % detector.get_x_axis()[1];
-    fmt % detector.get_x_axis()[2];
-    fmt % detector.get_y_axis()[0];
-    fmt % detector.get_y_axis()[1];
-    fmt % detector.get_y_axis()[2];
+    fmt % detector.get_fast_axis()[0];
+    fmt % detector.get_fast_axis()[1];
+    fmt % detector.get_fast_axis()[2];
+    fmt % detector.get_slow_axis()[0];
+    fmt % detector.get_slow_axis()[1];
+    fmt % detector.get_slow_axis()[2];
     fmt % detector.get_normal()[0];
     fmt % detector.get_normal()[1];
     fmt % detector.get_normal()[2];
@@ -95,8 +95,8 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
                  vec2 <std::size_t>,
                  double> ((
           arg("type"),
-          arg("x_axis"),
-          arg("y_axis"),
+          arg("fast_axis"),
+          arg("slow_axis"),
           arg("normal"),
           arg("origin"),
           arg("pixel_size"),
@@ -105,12 +105,12 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
       .add_property("type",
         &FlatPanelDetector::get_type,
         &FlatPanelDetector::set_type)    
-      .add_property("x_axis",
-        &FlatPanelDetector::get_x_axis,
-        &FlatPanelDetector::set_x_axis)
-      .add_property("y_axis",
-        &FlatPanelDetector::get_y_axis,
-        &FlatPanelDetector::set_y_axis)
+      .add_property("fast_axis",
+        &FlatPanelDetector::get_fast_axis,
+        &FlatPanelDetector::set_fast_axis)
+      .add_property("slow_axis",
+        &FlatPanelDetector::get_slow_axis,
+        &FlatPanelDetector::set_slow_axis)
       .add_property("normal",
         &FlatPanelDetector::get_normal,
         &FlatPanelDetector::set_normal)
