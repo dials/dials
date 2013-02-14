@@ -7,9 +7,9 @@ def print_header():
 
     for arg in sys.argv[1:]:
         print '=== %s ===' % arg
-        format = Registry.find(arg)
-        print 'Using header reader: %s' % format.__name__
-        i = format(arg)
+        format_instance = Registry.find(arg)
+        print 'Using header reader: %s' % format_instance.__name__
+        i = format_instance(arg)
         print 'Beam:'
         print i.get_beam()
         print 'Goniometer:'
