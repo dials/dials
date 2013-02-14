@@ -90,14 +90,22 @@ class FormatSMVADSC(FormatSMV):
 
         format = self._scan_factory.format('SMV')
         exposure_time = float(self._header_dictionary['TIME'])
+        epoch = None
+
+        # PST timezone not recognised by default...
+
+        try:
+            date_str = self._header_dictionary['DATE'].replace('PST', '')
+        except KeyError, e:
+            date_str = ''
         for format_string in ['%a %b %d %H:%M:%S %Y', '%a %b %d %H:%M:%S %Z %Y']:
             try:
-                epoch = time.mktime(time.strptime(
-                    self._header_dictionary['DATE'], format_string))
+                epoch = time.mktime(time.strptime(date_str, format_string))
+                break
             except ValueError, e:
                 pass
 
-        assert(epoch)
+        # assert(epoch)
         osc_start = float(self._header_dictionary['OSC_START'])
         osc_range = float(self._header_dictionary['OSC_RANGE'])
 
@@ -107,7 +115,7 @@ class FormatSMVADSC(FormatSMV):
 
     def get_raw_data(self):
         '''Get the pixel intensities (i.e. read the image and return as a
-        flex array of integers.'''
+        flex array of integers.)'''
 
         if self._raw_data:
             return self._raw_data

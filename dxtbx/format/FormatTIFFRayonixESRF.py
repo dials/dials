@@ -86,6 +86,19 @@ class FormatTIFFRayonixESRF(FormatTIFFRayonix):
             'CCD', distance, beam, '+x', '-y', pixel_size,
             image_size, (underload, overload), [])
 
+    def _goniometer(self):
+        '''Return a model for goniometer corresponding to the values stored
+        in the image header. In the first instance assume this is a single
+        axis annd raise exception otherwise.'''
+
+        starts, ends, offset, width = self._get_rayonix_scan_angles()
+
+        # not testing as this the CLS images are not properly structured...
+        # and also don't have a serial number in (FAIL)
+        
+        return self._goniometer_factory.single_axis()
+
+
     ####################################################################
     #                                                                  #
     # Helper methods to get all of the values out of the TIFF header   #

@@ -34,6 +34,9 @@ class FormatCBFMiniPilatus(FormatCBFMini):
             if '_array_data.header_convention' in record and \
                    'SLS' in record:
                 return 3
+            if '_array_data.header_convention' in record and \
+                   '?' in record:
+                return 3
 
         return 0
 

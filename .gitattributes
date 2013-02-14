@@ -84,8 +84,6 @@ dxtbx/format/tests/TestFormat.py -text
 dxtbx/format/tests/TestRegistry.py -text
 dxtbx/model/__init__.py -text
 dxtbx/model/beam.py -text
-dxtbx/model/cube.py -text
-dxtbx/model/cube_helpers.py -text
 dxtbx/model/detector.py -text
 dxtbx/model/detector_helpers.py -text
 dxtbx/model/detector_helpers_types.py -text

@@ -268,7 +268,7 @@ class FormatTIFFRayonix(FormatTIFF):
 
     def get_raw_data(self):
         '''Get the pixel intensities (i.e. read the image and return as a
-           flex array of integers.'''
+           flex array of integers.)'''
     
         if self._raw_data:
             return self._raw_data

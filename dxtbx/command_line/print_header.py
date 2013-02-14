@@ -6,6 +6,7 @@ def print_header():
     # if all frames are from the same instrument
 
     for arg in sys.argv[1:]:
+        print '=== %s ===' % arg
         format = Registry.find(arg)
         print 'Using header reader: %s' % format.__name__
         i = format(arg)
