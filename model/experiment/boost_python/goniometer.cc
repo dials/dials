@@ -9,6 +9,8 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <boost/format.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/shared_ptr.hpp>
 #include <string>
 #include <dials/model/experiment/goniometer.h>
 
@@ -93,6 +95,34 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
     return fmt.str();
   }
 
+  static boost::shared_ptr<KappaGoniometer> make_kappa_goniometer(
+      double alpha, double omega, double kappa, double phi, 
+      std::string direction_str, std::string scan_axis_str)
+  {
+    KappaGoniometer::Direction direction = KappaGoniometer::NoDirection;
+    boost::algorithm::to_lower(direction_str);
+    if (direction_str == "+y") {
+      direction = KappaGoniometer::PlusY;
+    } else if (direction_str == "+z") {
+      direction = KappaGoniometer::PlusZ;
+    } else if (direction_str == "-y")  {
+      direction = KappaGoniometer::MinusY;
+    } else if (direction_str == "-z") {
+      direction = KappaGoniometer::MinusZ;
+    }
+
+    KappaGoniometer::ScanAxis scan_axis = KappaGoniometer::NoAxis;
+    boost::algorithm::to_lower(scan_axis_str);
+    if (scan_axis_str == "omega") {
+      scan_axis = KappaGoniometer::Omega;
+    } else if (scan_axis_str == "phi") {
+      scan_axis = KappaGoniometer::Phi;
+    }
+
+    return boost::shared_ptr<KappaGoniometer>(new KappaGoniometer(
+      alpha, omega, kappa, phi, direction, scan_axis));
+  }
+
   void export_goniometer() 
   {
     class_ <GoniometerBase> ("GoniometerBase");
@@ -135,6 +165,7 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
           arg("phi"),
           arg("direction"),
           arg("scan_axis"))))
+      .def("__init__", make_constructor(&make_kappa_goniometer))
       .add_property("alpha_angle",
         &KappaGoniometer::get_alpha_angle)
       .add_property("omega_angle",
