@@ -157,6 +157,11 @@ namespace dials { namespace model { namespace experiment {
         x_axis_[2], y_axis_[2], origin_[2]);     
     }
 
+    /** Get the inverse d matrix */
+    mat3 <double> get_inverse_d_matrix() const {
+      return get_d_matrix().inverse();
+    }
+
     /** Set the detector panel type */
     void set_type(std::string type) {
       type_ = type;
@@ -199,9 +204,14 @@ namespace dials { namespace model { namespace experiment {
 
     /** Set the matrix of the detector coordinate system */
     void set_d_matrix(mat3 <double> d) {
-      x_axis_[0] = d[0]; y_axis_[0] = d[1]; origin_[0] = d[2];
-      x_axis_[1] = d[3]; y_axis_[1] = d[4]; origin_[1] = d[5];
-      x_axis_[2] = d[6]; y_axis_[2] = d[7]; origin_[2] = d[8];
+      x_axis_ = d.get_column(0);
+      y_axis_ = d.get_column(1);
+      origin_ = d.get_column(2);
+    }
+
+    /** Set the inverse d matrix */
+    void set_inverse_d_matrix(mat3 <double> d) {
+      set_d_matrix(d.inverse());
     }
 
   protected:
