@@ -137,6 +137,7 @@ model/experiment/__init__.py -text
 model/experiment/beam.h -text
 model/experiment/boost_python/beam.cc -text
 model/experiment/boost_python/detector.cc -text
+model/experiment/boost_python/detector_helpers.cc -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/boost_python/goniometer.cc -text
 model/experiment/boost_python/scan.cc -text
