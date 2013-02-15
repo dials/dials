@@ -11,20 +11,97 @@
 #ifndef DIALS_MODEL_EXPERIMENT_DETECTOR_HELPERS_H
 #define DIALS_MODEL_EXPERIMENT_DETECTOR_HELPERS_H
 
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+#include <scitbx/array_family/tiny_types.h>
 #include "detector.h"
 
 namespace dials { namespace model {
 
-  bool is_coordinate_valid(const FlatPanelDetector &detector,
-      vec2 <double> coord) {
+  using scitbx::af::double6;
+
+  /**
+   * Check if the coordinate is valid
+   * @param detector The detector struct
+   * @returns True/False is the coordinate valid
+   */
+  template <typename T>
+  bool is_coordinate_valid(const FlatPanelDetector &detector, vec2 <T> coord) {
     return (coord[0] >= 0 && coord[0] < detector.get_image_size()[0])
         && (coord[1] >= 0 && coord[1] < detector.get_image_size()[1]);
   }
 
-//  vec3 <double>
-//  pixel_to_mm(const FlatPanelDetector &detector, vec2 <double> xy) {
-//    return detector.get_d_matrix() * vec3 <double> (xy[0], xy[1], 1);
-//  }
+  /**
+   * Get the image size in mm
+   * @param detector The detector struct
+   * @returns The detector image size in mm
+   */
+  vec2 <double> image_size_mm(const FlatPanelDetector &detector) {
+    return detector.get_image_size() * detector.get_pixel_size();
+  }
+
+  /**
+   * Get the pixel coordinate in mm in the laboratory frame
+   * @param detector The detector struct
+   * @param xy The xy pixel coordinate
+   * @returns The detector pixel coordinate in mm in the laboratory frame
+   */
+  template <typename T> vec3 <double>
+  pixel_to_mm(const FlatPanelDetector &detector, vec2 <T> xy) {
+    return detector.get_d_matrix() * vec3 <double> (
+      (double) xy[0], (double) xy[1], 1.0);
+  }
+
+  /**
+   * Get the detector plane rectangle as lbx, lby, lbz, trx, try, trz
+   * @param detector The detector struct
+   * @returns The detector plane rectangle
+   */
+  double6 plane_rectangle(const FlatPanelDetector &detector) {
+    vec3 <double> point1 = detector.get_origin();
+    vec3 <double> point2 = pixel_to_mm(detector, detector.get_image_size());
+    return double6(
+      point1[0], point1[1], point1[2],
+      point2[0], point2[1], point2[2]);
+  }
+
+  /**
+   * Check if the detector planes intersect.
+   * @param a The first detector
+   * @param b The second detector
+   * @returns True/False do the detector planes intersect?
+   */
+  bool panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b) {
+
+    using namespace boost::geometry;
+
+    typedef boost::geometry::model::point <double, 3, cs::cartesian> point;
+    typedef boost::geometry::model::polygon <point> polygon;
+
+    // Get the rectange of detector points
+    double6 rect_a = plane_rectangle(a);
+    double6 rect_b = plane_rectangle(b);
+
+    // Create a polygon for the panel a plane
+    polygon poly_a;
+    append(poly_a, point(rect_a[0], rect_a[1], rect_a[2]));
+    append(poly_a, point(rect_a[3], rect_a[1], rect_a[5]));
+    append(poly_a, point(rect_a[3], rect_a[4], rect_a[5]));
+    append(poly_a, point(rect_a[0], rect_a[4], rect_a[2]));
+    append(poly_a, point(rect_a[0], rect_a[1], rect_a[2]));
+
+    // Create a polygon for the panel b plane
+    polygon poly_b;
+    append(poly_b, point(rect_b[0], rect_b[1], rect_b[2]));
+    append(poly_b, point(rect_b[3], rect_b[1], rect_b[5]));
+    append(poly_b, point(rect_b[3], rect_b[4], rect_b[5]));
+    append(poly_b, point(rect_b[0], rect_b[4], rect_b[2]));
+    append(poly_b, point(rect_b[0], rect_b[1], rect_b[2]));
+
+    // Check if the polygons intersect
+    return intersects(poly_a, poly_b);
+  }
 
 //  vec2 <double>
 //  mm_to_pixel(const FlatPanelDetector &detector, vec3 <double> beam_vector) {
@@ -32,9 +109,14 @@ namespace dials { namespace model {
 //    return vec2 <double> (v[0] / v[2], v[1] / v[2]);
 //  }
 
-
+  /**
+   * Check if the detector coordinate is valid.
+   * @param detector The MultiFlatPanelDetector struct
+   * @returns True/False is the detector coordinate valid
+   */
+  template <typename T>
   bool is_coordinate_valid(const MultiFlatPanelDetector &detector,
-      vec3 <double> coord) {
+      vec3 <T> coord) {
     int panel = (int)coord[0];
     return (coord[0] >= 0 && coord[0] < detector.num_panels())
         && (coord[1] >= 0 && coord[1] < detector[panel].get_image_size()[0])

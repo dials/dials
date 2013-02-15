@@ -21,13 +21,17 @@ namespace dials { namespace model { namespace boost_python {
   void export_detector_helpers()
   {
     bool (*flat_panel_detector_is_coordinate_valid)(
-      const FlatPanelDetector &, vec2 <double>) = &is_coordinate_valid;
+      const FlatPanelDetector &, vec2 <double>) = &is_coordinate_valid <double>;
 
     bool (*multi_flat_panel_detector_is_coordinate_valid)(
-      const MultiFlatPanelDetector &, vec3 <double>) = &is_coordinate_valid;
+      const MultiFlatPanelDetector &, vec3 <double>) = &is_coordinate_valid <double>;
 
     def("is_coordinate_valid", flat_panel_detector_is_coordinate_valid);
     def("is_coordinate_valid", multi_flat_panel_detector_is_coordinate_valid);
+    def("image_size_mm", &image_size_mm);
+    def("pixel_to_mm", &pixel_to_mm <double>);
+    def("plane_rectangle", &plane_rectangle);
+    def("panels_intersect", &panels_intersect);
   }
 
 }}} // namespace = dials::model::boost_python

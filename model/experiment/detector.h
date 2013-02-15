@@ -18,6 +18,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/shared.h>
+#include <boost/polygon/polygon.hpp>
 
 namespace dials { namespace model {
 
@@ -307,6 +308,10 @@ namespace dials { namespace model {
     }
 
   protected:
+
+    bool panels_intersect(const panel_type &a, const panel_type &b) {
+
+    }
 
     std::string type_;
     panel_list_type panel_list_;
