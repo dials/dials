@@ -23,14 +23,15 @@ namespace dials { namespace model { namespace boost_python {
   {
     boost::format fmt(
       "Detector:\n"
-      "    type:       %1%\n"
-      "    fast axis:  (%2%, %3%, %4%)\n"
-      "    slow axis:  (%5%, %6%, %7%)\n"      
-      "    normal:     (%8%, %9%, %10%)\n"
-      "    origin:     (%11%, %12%)\n"
-      "    pixel_size: (%13%, %14%)\n"
-      "    image_size: (%15%, %16%)\n"
-      "    distance:   %17%");
+      "    type:          %1%\n"
+      "    fast axis:     (%2%, %3%, %4%)\n"
+      "    slow axis:     (%5%, %6%, %7%)\n"      
+      "    normal:        (%8%, %9%, %10%)\n"
+      "    origin:        (%11%, %12%)\n"
+      "    pixel_size:    (%13%, %14%)\n"
+      "    image_size:    (%15%, %16%)\n"
+      "    trusted_range: (%15, %16%)\n"
+      "    distance:      %17%");
         
     fmt % detector.get_type();
     fmt % detector.get_fast_axis()[0];
@@ -48,6 +49,8 @@ namespace dials { namespace model { namespace boost_python {
     fmt % detector.get_pixel_size()[1];
     fmt % detector.get_image_size()[0];
     fmt % detector.get_image_size()[1];
+    fmt % detector.get_trusted_range()[0];
+    fmt % detector.get_trusted_range()[1];
     fmt % detector.get_distance();
     return fmt.str();
   }
@@ -93,6 +96,7 @@ namespace dials { namespace model { namespace boost_python {
                  vec3 <double>,
                  vec2 <double>,
                  vec2 <std::size_t>,
+                 vec2 <int>,
                  double> ((
           arg("type"),
           arg("fast_axis"),
@@ -101,6 +105,7 @@ namespace dials { namespace model { namespace boost_python {
           arg("origin"),
           arg("pixel_size"),
           arg("image_size"),
+          arg("trusted_range"),
           arg("distance"))))
       .add_property("type",
         &FlatPanelDetector::get_type,
@@ -123,6 +128,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("image_size",
         &FlatPanelDetector::get_image_size,
         &FlatPanelDetector::set_image_size)
+      .add_property("trusted_range",
+        &FlatPanelDetector::get_trusted_range,
+        &FlatPanelDetector::set_trusted_range)
       .add_property("distance",
         &FlatPanelDetector::get_distance,
         &FlatPanelDetector::set_distance)

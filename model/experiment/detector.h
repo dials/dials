@@ -81,6 +81,7 @@ namespace dials { namespace model {
         origin_(0.0, 0.0, 0.0),
         pixel_size_(0.0, 0.0),
         image_size_(0, 0),
+        trusted_range_(0, 0),
         distance_(0.0) {}
 
     /**
@@ -92,6 +93,7 @@ namespace dials { namespace model {
      * @param origin The detector origin
      * @param pixel_size The size of the individual pixels
      * @param image_size The size of the detector panel (in pixels)
+     * @param trusted_range The trusted range of the detector pixel values.
      * @param distance The distance from the detector to the crystal origin
      */
     FlatPanelDetector(std::string type,
@@ -101,6 +103,7 @@ namespace dials { namespace model {
                       vec3 <double> origin,
                       vec2 <double> pixel_size,
                       vec2 <std::size_t> image_size,
+                      vec2 <int> trusted_range,
                       double distance)
       : type_(type),
         fast_axis_(fast_axis),
@@ -109,6 +112,7 @@ namespace dials { namespace model {
         origin_(origin),
         pixel_size_(pixel_size),
         image_size_(image_size),
+        trusted_range_(trusted_range),
         distance_(distance) {}
 
     /** Get the sensor type */
@@ -144,6 +148,11 @@ namespace dials { namespace model {
     /** Get the image size */
     vec2 <std::size_t> get_image_size() const {
       return image_size_;
+    }
+
+    /** Get the trusted range */
+    vec2 <int> get_trusted_range() const {
+      return trusted_range_;
     }
 
     /** Get the distance from the crystal */
@@ -199,6 +208,11 @@ namespace dials { namespace model {
       image_size_ = image_size;
     }
 
+    /** Set the trusted range */
+    void set_trusted_range(vec2 <int> trusted_range) {
+      trusted_range_ = trusted_range;
+    }
+
     /* Set the distance from the crystal */
     void set_distance(double distance) {
       distance_ = distance;
@@ -225,6 +239,7 @@ namespace dials { namespace model {
     vec3 <double> origin_;
     vec2 <double> pixel_size_;
     vec2 <std::size_t> image_size_;
+    vec2 <int> trusted_range_;
     double distance_;
   };
 
