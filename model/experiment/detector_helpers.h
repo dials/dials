@@ -13,7 +13,7 @@
 
 #include "detector.h"
 
-namespace dials { namespace model { namespace experiment {
+namespace dials { namespace model {
 
   bool is_coordinate_valid(const FlatPanelDetector &detector, 
       vec2 <double> coord) {
@@ -41,6 +41,6 @@ namespace dials { namespace model { namespace experiment {
         && (coord[2] >= 0 && coord[2] < detector[panel].get_image_size()[1]);
   }
 
-}}} // namespace dials::model::experiment::detector
+}} // namespace dials::model
 
 #endif // DIALS_MODEL_EXPERIMENT_DETECTOR_HELPERS_H

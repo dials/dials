@@ -13,7 +13,7 @@
 
 #include <scitbx/vec3.h>
 
-namespace dials { namespace model { namespace experiment {
+namespace dials { namespace model {
 
   using scitbx::vec3;
 
@@ -129,6 +129,6 @@ namespace dials { namespace model { namespace experiment {
     double polarization_fraction_;
 };
 
-}}} // namespace dials::model::experiment
+}} // namespace dials::model
 
 #endif // DIALS_MODEL_EXPERIMENT_BEAM_H

@@ -11,7 +11,7 @@
 #ifndef DIALS_MODEL_EXPERIMENT_SCAN_H
 #define DIALS_MODEL_EXPERIMENT_SCAN_H
 
-namespace dials { namespace model { namespace experiment {
+namespace dials { namespace model {
 
 /** A scan base class */
 class ScanBase {};
@@ -92,6 +92,6 @@ private:
   int num_frames_;
 };
 
-}}} // namespace dials::model::experiment
+}} // namespace dials::model
 
 #endif // DIALS_MODEL_EXPERIMENT_SCAN_H

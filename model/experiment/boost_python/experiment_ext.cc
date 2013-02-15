@@ -11,9 +11,9 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
-using namespace boost::python;
+namespace dials { namespace model { namespace boost_python {
 
-namespace dials { namespace model { namespace experiment { namespace boost_python {
+  using namespace boost::python;
 
   void export_beam();
   void export_goniometer();
@@ -30,4 +30,4 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
     export_detector_helpers();
   }
 
-}}}} // namespace dials::model::experiment::boost_python
+}}} // namespace dials::model::boost_python

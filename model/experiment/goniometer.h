@@ -17,7 +17,7 @@
 #include <scitbx/constants.h>
 #include <dials/error.h>
 
-namespace dials { namespace model { namespace experiment {
+namespace dials { namespace model {
 
   using scitbx::vec3;
   using scitbx::mat3;
@@ -288,6 +288,6 @@ namespace dials { namespace model { namespace experiment {
     vec3 <double> kappa_axis_;
   };
 
-}}} // namespace dials::model::experiment
+}} // namespace dials::model
 
 #endif // DIALS_MODEL_EXPERIMENT_GONIOMETER_H

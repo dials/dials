@@ -15,9 +15,9 @@
 #include <dials/model/experiment/detector.h>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
-using namespace boost::python;
+namespace dials { namespace model { namespace boost_python {
 
-namespace dials { namespace model { namespace experiment { namespace boost_python {
+  using namespace boost::python;
 
   std::string flat_panel_detector_to_string(const FlatPanelDetector &detector)
   {
@@ -161,4 +161,4 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
         &multi_flat_panel_detector_to_string);
   }
 
-}}}} // namespace dials::model::experiment::boost_python
+}}} // namespace dials::model::boost_python

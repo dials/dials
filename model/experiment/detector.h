@@ -17,7 +17,7 @@
 #include <scitbx/mat3.h>
 #include <scitbx/array_family/shared.h>
 
-namespace dials { namespace model { namespace experiment {
+namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -279,6 +279,6 @@ namespace dials { namespace model { namespace experiment {
     panel_list_type panel_list_;
   };
 
-}}} // namespace dials::model::experiment
+}} // namespace dials::model
 
 #endif // DIALS_MODEL_EXPERIMENT_DETECTOR_H

@@ -14,9 +14,9 @@
 #include <string>
 #include <dials/model/experiment/detector_helpers.h>
 
-using namespace boost::python;
+namespace dials { namespace model { namespace boost_python {
 
-namespace dials { namespace model { namespace experiment { namespace boost_python {
+  using namespace boost::python;
 
   void export_detector_helpers()
   {
@@ -30,4 +30,4 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
     def("is_coordinate_valid", multi_flat_panel_detector_is_coordinate_valid);
   }
 
-}}}} // namespace = dials::model::experiment::boost_python
+}}} // namespace = dials::model::boost_python

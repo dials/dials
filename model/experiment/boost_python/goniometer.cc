@@ -16,9 +16,9 @@
 #include <string>
 #include <dials/model/experiment/goniometer.h>
 
-using namespace boost::python;
+namespace dials { namespace model { namespace boost_python {
 
-namespace dials { namespace model { namespace experiment { namespace boost_python {
+  using namespace boost::python;
 
   std::string goniometer_to_string(const Goniometer &goniometer) {
     boost::format fmt(
@@ -189,4 +189,4 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
       .def("__str__", &kappa_goniometer_to_string);
   }
 
-}}}} // namespace dials::model::experiment::boost_python
+}}} // namespace dials::model::boost_python

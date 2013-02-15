@@ -14,9 +14,9 @@
 #include <string>
 #include <dials/model/experiment/scan.h>
 
-using namespace boost::python;
+namespace dials { namespace model { namespace boost_python {
 
-namespace dials { namespace model { namespace experiment { namespace boost_python {
+  using namespace boost::python;
 
   std::string scan_to_string(const Scan &scan) {
     boost::format fmt(
@@ -62,4 +62,4 @@ namespace dials { namespace model { namespace experiment { namespace boost_pytho
       .def("__str__", &scan_to_string);
   }
 
-}}}} // namespace = dials::model::experiment::boost_python
+}}} // namespace = dials::model::boost_python
