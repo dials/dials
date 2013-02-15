@@ -281,7 +281,7 @@ class FormatTIFFRayonix(FormatTIFF):
         from dxtbx import read_uint16
     
         size = self.get_detector().get_image_size()
-        f = open(self._image_file, 'rb')
+        f = FormatTIFF.open_file(self._image_file)
         f.read(self._header_size)
         self._raw_data = read_uint16(streambuf(f), int(size[0] * size[1]))
     

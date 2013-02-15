@@ -224,7 +224,7 @@ class Format:
         # URL types are longer than this right?)
 
         scheme = urlparse(path).scheme
-        if scheme and len(scheme) == 1:
+        if scheme and len(scheme) != 1:
             return True
 
         return False
@@ -248,20 +248,16 @@ class Format:
         '''Open file for reading, decompressing silently if necessary.'''
 
         if Format.is_url(filename):
-
             import urllib2
-
             return urllib2.urlopen(filename)
 
         if Format.is_bz2(filename):
-
             if bz2 is None:
                 raise RuntimeError, 'bz2 file provided without bz2 module'
 
             return bz2.BZ2File(filename, mode)
 
         if Format.is_gzip(filename):
-
             if gzip is None:
                 raise RuntimeError, 'gz file provided without gzip module'
 
