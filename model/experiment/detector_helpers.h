@@ -19,6 +19,8 @@
 
 namespace dials { namespace model {
 
+  using scitbx::vec2;
+  using scitbx::vec3;
   using scitbx::af::double6;
 
   /**
@@ -27,7 +29,8 @@ namespace dials { namespace model {
    * @returns True/False is the coordinate valid
    */
   template <typename T>
-  bool is_coordinate_valid(const FlatPanelDetector &detector, vec2 <T> coord) {
+  inline bool
+  is_coordinate_valid(const FlatPanelDetector &detector, vec2 <T> coord) {
     return (coord[0] >= 0 && coord[0] < detector.get_image_size()[0])
         && (coord[1] >= 0 && coord[1] < detector.get_image_size()[1]);
   }
@@ -37,7 +40,8 @@ namespace dials { namespace model {
    * @param detector The detector struct
    * @returns The detector image size in mm
    */
-  vec2 <double> image_size_mm(const FlatPanelDetector &detector) {
+  inline vec2 <double>
+  image_size_mm(const FlatPanelDetector &detector) {
     return detector.get_image_size() * detector.get_pixel_size();
   }
 
@@ -47,7 +51,8 @@ namespace dials { namespace model {
    * @param xy The xy pixel coordinate
    * @returns The detector pixel coordinate in mm in the laboratory frame
    */
-  template <typename T> vec3 <double>
+  template <typename T>
+  inline vec3 <double>
   pixel_to_mm(const FlatPanelDetector &detector, vec2 <T> xy) {
     return detector.get_d_matrix() * vec3 <double> (
       (double) xy[0], (double) xy[1], 1.0);
@@ -58,7 +63,8 @@ namespace dials { namespace model {
    * @param detector The detector struct
    * @returns The detector plane rectangle
    */
-  double6 plane_rectangle(const FlatPanelDetector &detector) {
+  inline double6
+  plane_rectangle(const FlatPanelDetector &detector) {
     vec3 <double> point1 = detector.get_origin();
     vec3 <double> point2 = pixel_to_mm(detector, detector.get_image_size());
     return double6(
@@ -72,7 +78,8 @@ namespace dials { namespace model {
    * @param b The second detector
    * @returns True/False do the detector planes intersect?
    */
-  bool panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b) {
+  inline bool
+  panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b) {
 
     using namespace boost::geometry;
 
@@ -115,8 +122,8 @@ namespace dials { namespace model {
    * @returns True/False is the detector coordinate valid
    */
   template <typename T>
-  bool is_coordinate_valid(const MultiFlatPanelDetector &detector,
-      vec3 <T> coord) {
+  inline bool
+  is_coordinate_valid(const MultiFlatPanelDetector &detector, vec3 <T> coord) {
     int panel = (int)coord[0];
     return (coord[0] >= 0 && coord[0] < detector.num_panels())
         && (coord[1] >= 0 && coord[1] < detector[panel].get_image_size()[0])

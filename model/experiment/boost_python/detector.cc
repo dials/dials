@@ -155,6 +155,8 @@ namespace dials { namespace model { namespace boost_python {
           arg("panel")))
       .def("num_panels",
         &MultiFlatPanelDetector::num_panels)
+      .def("update",
+        &MultiFlatPanelDetector::update)
       .def("__len__", 
         &MultiFlatPanelDetector::num_panels)
       .def("__setitem__", 

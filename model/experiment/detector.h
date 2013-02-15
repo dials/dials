@@ -18,7 +18,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/shared.h>
-#include <boost/polygon/polygon.hpp>
+#include <dials/error.h>
 
 namespace dials { namespace model {
 
@@ -247,6 +247,10 @@ namespace dials { namespace model {
     double distance_;
   };
 
+  // Forward declaration of function defined in detector_helpers.h
+  inline bool
+  panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b);
+
   /**
    * A class representing a detector made up of multiple flat panel detectors.
    * The detector elements can be accessed in the same way as an array:
@@ -282,6 +286,24 @@ namespace dials { namespace model {
       panel_list_.push_back(panel);
     }
 
+    /**
+     * Perform an update operation. Check that the panels do not intersect.
+     * This function checks each panel against every other panel, it could
+     * probably be done more efficiently. If a panel is found to intersect
+     * with another, an error is emitted.
+     */
+    void update() const {
+      for (std::size_t j = 0; j < panel_list_.size()-1; ++j) {
+        for (std::size_t i = j+1; i < panel_list_.size(); ++i) {
+          if (panels_intersect(panel_list_[j], panel_list_[i])) {
+            DIALS_ERROR(
+              "Panels intersect: "
+              "this is not a recommended configuration.");
+          }
+        }
+      }
+    }
+
     /** Remove all the panels */
     void remove_panels() {
       panel_list_.erase(panel_list_.begin(), panel_list_.end());
@@ -308,10 +330,6 @@ namespace dials { namespace model {
     }
 
   protected:
-
-    bool panels_intersect(const panel_type &a, const panel_type &b) {
-
-    }
 
     std::string type_;
     panel_list_type panel_list_;
