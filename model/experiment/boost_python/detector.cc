@@ -12,8 +12,8 @@
 #include <boost/python/def.hpp>
 #include <boost/format.hpp>
 #include <string>
+#include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <dials/model/experiment/detector.h>
-#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 
 namespace dials { namespace model { namespace boost_python {
 
@@ -84,6 +84,9 @@ namespace dials { namespace model { namespace boost_python {
 
   void export_detector() 
   {
+    // Export a flex array - should probably move somewhere else
+    scitbx::af::boost_python::flex_wrapper <int4>::plain("flex_int4");
+
     // Export the DetectorBase class
     class_ <DetectorBase> ("DetectorBase");
 

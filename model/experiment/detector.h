@@ -15,6 +15,8 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
+#include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/shared.h>
 
 namespace dials { namespace model {
@@ -22,6 +24,7 @@ namespace dials { namespace model {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
+  using scitbx::af::int4;
 
   /** A base class for detectors */
   class DetectorBase {};
