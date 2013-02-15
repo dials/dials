@@ -168,7 +168,7 @@ namespace dials { namespace model {
       return mat3 <double> (
         fast_axis_[0], slow_axis_[0], origin_[0],
         fast_axis_[1], slow_axis_[1], origin_[1],
-        fast_axis_[2], slow_axis_[2], origin_[2]);     
+        fast_axis_[2], slow_axis_[2], origin_[2]);
     }
 
     /** Get the inverse d matrix */
@@ -246,47 +246,62 @@ namespace dials { namespace model {
     double distance_;
   };
 
+  /**
+   * A class representing a detector made up of multiple flat panel detectors.
+   * The detector elements can be accessed in the same way as an array:
+   *  detector[0] -> 1st detector panel.
+   */
   class MultiFlatPanelDetector : public DetectorBase {
   public:
-    
+
     typedef FlatPanelDetector panel_type;
     typedef scitbx::af::shared <panel_type> panel_list_type;
     typedef panel_list_type::iterator iterator;
 
+    /** Default constructor */
     MultiFlatPanelDetector()
       : type_("Unknown") {}
 
+    /** Initialise the detector */
     MultiFlatPanelDetector(std::string type)
       :type_(type) {}
 
+    /** Get the begin iterator */
     iterator begin() {
       return panel_list_.begin();
     }
 
+    /** Get the end iterator */
     iterator end() {
       return panel_list_.end();
     }
 
+    /** Add a panel to the list of panels */
     void add_panel(const panel_type &panel) {
       panel_list_.push_back(panel);
     }
 
+    /** Remove all the panels */
     void remove_panels() {
       panel_list_.erase(panel_list_.begin(), panel_list_.end());
     }
 
+    /** Remove a single panel */
     void remove_panel(std::size_t i) {
       panel_list_.erase(panel_list_.begin() + i);
     }
 
+    /** Get the number of panels */
     std::size_t num_panels() const {
       return panel_list_.size();
     }
 
+    /** Return a reference to a panel */
     panel_type& operator[](std::size_t index) {
       return panel_list_[index];
     }
 
+    /** Return a const reference to a panel */
     const panel_type& operator[](std::size_t index) const {
       return panel_list_[index];
     }
