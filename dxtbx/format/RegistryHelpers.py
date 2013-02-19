@@ -7,6 +7,8 @@
 #
 # Things to help the ImageFormat registry to work.
 
+from __future__ import division
+
 import os
 import sys
 import imp
@@ -28,21 +30,18 @@ def InheritsFromFormat(PutativeFormatClass):
 
     return False
 
-def LookForFormatClasses():
-    '''Look for files named Format(something).py in the sensible places (i.e.
-    in the xia2 distribution and in the users home area) and return a list of
-    paths. N.B. the class names themselves must be unique (otherwise there
-    is no hope of importing them!)'''
+def LoadFormatClasses():
+    '''Look for files named Format(something).py in the sensible
+    places (i.e. in the xia2 distribution and in the users home area)
+    and import the corresponding modules using their fully qualified
+    names.'''
 
-    import dxtbx
-
-    format_classes = []
-    file_names = []
+    import dxtbx.format
 
     # FIXME in here - dxtbx should already be in os.path - look for it there,
     # also wouldn't it be tidy to refer to a Phil parameter?
 
-    format_dir = os.path.join(os.path.split(dxtbx.__file__)[0], 'format')
+    format_dir = os.path.split(dxtbx.format.__file__)[0]
 
     if os.name == 'nt':
         home = os.path.join(os.environ['HOMEDRIVE'],
@@ -52,33 +51,34 @@ def LookForFormatClasses():
 
     for f in os.listdir(format_dir):
         if 'Format' in f[:6] and '.py' in f[-3:]:
-            assert(not f in file_names)
-            file_names.append(f)
-            format_classes.append(os.path.join(format_dir, f))
+            name = f[:-3]
+            fqname = dxtbx.format.__name__ + '.' + name
+            _LoadFormatModule(name, fqname, format_dir)
 
-    if os.path.exists(os.path.join(home, '.dxtbx')):
-        for f in os.listdir(os.path.join(home, '.dxtbx')):
-            if 'Format' in f[:6] and '.py' in f[-3:]:
-                assert(not f in file_names)
-                file_names.append(f)
-                format_classes.append(os.path.join(format_dir, f))
+    format_dir = os.path.join(home, '.dxtbx')
+    if os.path.exists(format_dir):
+        for f in os.listdir(format_dir):
+            if 'Format' in f[:6] and '.py' in f[:-3]:
+                name = f[:-3]
+                _LoadFormatModule(name, name, format_dir)
 
-    return format_classes
-
-def LoadFormatClass(FormatClass):
+def _LoadFormatModule(name, fqname, path):
     '''Load a format class module, which will trigger the automated self
     registration. This module will not therefore need to publish anything
     as the module will self publish. The idea being that these format classes
     were found by the search procedure above.'''
 
-    format_class_name = os.path.split(FormatClass)[-1][:-3]
-    format_class_path = os.path.split(FormatClass)[0]
+    # Early return if module already imported.
+    try:
+        sys.modules[fqname]
+        return
+    except KeyError:
+        pass
 
-    module, path, description = imp.find_module(format_class_name,
-                                                [format_class_path])
+    module, pathname, description = imp.find_module(name, [path])
 
     try:
-        imp.load_module(format_class_name, module, path, description)
+        imp.load_module(fqname, module, pathname, description)
     except exceptions.Exception, e:
         traceback.print_exc(sys.stderr)
     finally:
@@ -88,5 +88,4 @@ def LoadFormatClass(FormatClass):
 
 if __name__ == '__main__':
 
-    for f in LookForFormatClasses():
-        LoadFormatClass(f)
+    LoadFormatClasses()
