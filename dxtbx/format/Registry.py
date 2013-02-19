@@ -65,14 +65,19 @@ class _Registry:
 
         self.setup()
 
-        scores = []
+        # Recursively check whether any of the children understand
+        # image_file, in which case they are preferred over the parent
+        # format.
+        def recurse(format, image_file):
+            for child in format._children:
+                if child.understand(image_file) != 0:
+                    return recurse(child, image_file)
+            return format
 
         for format in self._formats:
-            scores.append((format.understand(image_file), format))
-
-        scores.sort()
-
-        return scores[-1][1]
+            if format.understand(image_file) != 0:
+                return recurse(format, image_file)
+        return None
 
 class Registry:
     '''A class to turn the registry above into a singleton, so that we
