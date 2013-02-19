@@ -365,4 +365,5 @@ scratch/jmp/test/test_spot_predictor.py -text
 scratch/jmp/test/test_xds_coordinate_system.py -text
 scratch/jmp/test_map.cc -text
 scratch/luiso_s/cctbx_introduction_1.png -text
+scratch/luiso_s/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
