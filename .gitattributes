@@ -155,6 +155,7 @@ model/experiment/boost_python/detector_helpers.cc -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/boost_python/goniometer.cc -text
 model/experiment/boost_python/scan.cc -text
+model/experiment/boost_python/scan_helpers.cc -text
 model/experiment/detector.h -text
 model/experiment/detector_helpers.h -text
 model/experiment/goniometer.h -text
@@ -426,3 +427,8 @@ scratch/jmp/test_map.cc -text
 scratch/luiso_s/cctbx_introduction_1.png -text
 scratch/luiso_s/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
+test/algorithms/spot_prediction/tst_index_generator.py -text
+test/algorithms/spot_prediction/tst_rotation_angles.py -text
+test/algorithms/spot_prediction/tst_spot_prediction.py -text
+test/model/experiment/tst_detector_helpers.py -text
+test/model/experiment/tst_scan_helpers.py -text

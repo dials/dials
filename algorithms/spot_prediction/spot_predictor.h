@@ -21,7 +21,6 @@
 #include <dials/model/data/reflection.h>
 #include "index_generator.h"
 #include "rotation_angles.h"
-//#include "../geometry/transform/from_beam_vector_to_detector.h"
 
 namespace dials { namespace algorithms {
 
@@ -68,7 +67,6 @@ namespace dials { namespace algorithms {
         calculate_rotation_angles_(
           beam.get_direction(),
           gonio.get_rotation_axis()),
-//        from_beam_vector_to_detector_(detector),
         beam_(beam),
         detector_(detector),
         gonio_(gonio),
@@ -210,7 +208,6 @@ namespace dials { namespace algorithms {
 
       IndexGenerator index_generator_;
       RotationAngles calculate_rotation_angles_;
-      //geometry::transform::FromBeamVectorToDetector from_beam_vector_to_detector_;
       Beam beam_;
       FlatPanelDetector detector_;
       Goniometer gonio_;
