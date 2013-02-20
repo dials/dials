@@ -1,5 +1,5 @@
 /*
- * model_ext.cc
+ * experiment_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -20,6 +20,7 @@ namespace dials { namespace model { namespace boost_python {
   void export_detector();
   void export_scan();
   void export_detector_helpers();
+  void export_scan_helpers();
 
   BOOST_PYTHON_MODULE(dials_model_experiment_ext)
   {
@@ -28,6 +29,7 @@ namespace dials { namespace model { namespace boost_python {
     export_detector();
     export_scan();
     export_detector_helpers();
+    export_scan_helpers();
   }
 
 }}} // namespace dials::model::boost_python

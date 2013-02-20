@@ -1,5 +1,5 @@
 /*
- * goniometer.cc
+ * detector.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *

@@ -1,15 +1,27 @@
-
+/*
+ * spot_predictor.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_SPOT_PREDICTOR_H
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_SPOT_PREDICTOR_H
 
 #include <scitbx/constants.h>
 #include <dials/model/experiment/beam.h>
+#include <dials/model/experiment/scan.h>
 #include <dials/model/experiment/detector.h>
 #include <dials/model/experiment/goniometer.h>
+#include <dials/model/experiment/scan_helpers.h>
+#include <dials/model/experiment/detector_helpers.h>
+#include <dials/model/data/reflection.h>
 #include "index_generator.h"
 #include "rotation_angles.h"
 //#include "../geometry/transform/from_beam_vector_to_detector.h"
-#include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms {
 
@@ -17,10 +29,12 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::mat3;
   using model::Beam;
+  using model::Scan;
   using model::FlatPanelDetector;
   using model::Goniometer;
   using model::Reflection;
   using model::ReflectionList;
+  using model::is_scan_angle_valid;
 
   typedef cctbx::miller::index <> miller_index;
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
@@ -34,6 +48,7 @@ namespace dials { namespace algorithms {
      * @param beam The beam parameters
      * @param detector The detector parameters
      * @param gonio The goniometer parameters
+     * @param scan The scan parameters
      * @param unit_cell The unit cell parameters
      * @param space_group_type The space group struct
      * @param ub_matrix The ub matrix
@@ -42,6 +57,7 @@ namespace dials { namespace algorithms {
     SpotPredictor(const Beam &beam,
                   const FlatPanelDetector &detector,
                   const Goniometer &gonio,
+                  const Scan &scan,
                   const cctbx::uctbx::unit_cell &unit_cell,
                   const cctbx::sgtbx::space_group_type &space_group_type,
                   mat3 <double> ub_matrix,
@@ -54,9 +70,11 @@ namespace dials { namespace algorithms {
         beam_(beam),
         detector_(detector),
         gonio_(gonio),
+        scan_(scan),
         ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
         s0_(beam.get_direction()),
-        m2_(gonio.get_rotation_axis().normalize()) {}
+        m2_(gonio.get_rotation_axis().normalize()),
+        is_angle_valid_(scan) {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -98,10 +116,10 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
         // Check that the angles are within the rotation range
-        //double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
-        //if (!gonio_.is_angle_valid(phi_deg, true)) {
-        //  continue;
-        //}
+        if (!is_angle_valid_(phi[i])) {
+          continue;
+        }
+        double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
 
         // Calculate the reciprocal space vector
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
@@ -110,7 +128,7 @@ namespace dials { namespace algorithms {
         vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
-        //vec2 <double> xy;
+        vec2 <double> xy(0, 0);
         //try {
         //  xy = from_beam_vector_to_detector_.apply(s1);
         //} catch(error) {
@@ -121,13 +139,12 @@ namespace dials { namespace algorithms {
         // elements to the arrays. NB. up to now, we have used
         // angles in radians, convert them to degrees before adding
         // them to the rotation angle array.
-        //if (!detector_.is_coordinate_valid(xy)) {
-        //  continue;
-        //}
+        if (!is_coordinate_valid(detector_, xy)) {
+          continue;
+        }
 
         // Add the reflection
-        //reflections[i] = Reflection(
-        //  h, phi_deg, s1, vec3 <double> (xy[0], xy[1], z));
+        reflections[i] = Reflection(h, phi_deg, s1, xy);
       }
       return reflections;
     }
@@ -192,9 +209,11 @@ namespace dials { namespace algorithms {
       Beam beam_;
       FlatPanelDetector detector_;
       Goniometer gonio_;
+      Scan scan_;
       mat3 <double> ub_matrix_;
       vec3 <double> s0_;
       vec3 <double> m2_;
+      is_scan_angle_valid <Scan, false> is_angle_valid_;
   };
 
 }} // namespace dials::algorithms

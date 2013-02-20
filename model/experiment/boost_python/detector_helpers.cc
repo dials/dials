@@ -1,5 +1,5 @@
 /*
- * scan.cc
+ * detector_helpers.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -21,10 +21,12 @@ namespace dials { namespace model { namespace boost_python {
   void export_detector_helpers()
   {
     bool (*flat_panel_detector_is_coordinate_valid)(
-      const FlatPanelDetector &, vec2 <double>) = &is_coordinate_valid <double>;
+      const FlatPanelDetector &, vec2 <double>) = 
+        &is_coordinate_valid <double>;
 
     bool (*multi_flat_panel_detector_is_coordinate_valid)(
-      const MultiFlatPanelDetector &, vec3 <double>) = &is_coordinate_valid <double>;
+      const MultiFlatPanelDetector &, vec3 <double>) = 
+        &is_coordinate_valid <double>;
 
     def("is_coordinate_valid", flat_panel_detector_is_coordinate_valid);
     def("is_coordinate_valid", multi_flat_panel_detector_is_coordinate_valid);

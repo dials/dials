@@ -5,8 +5,9 @@ sources = [
     'boost_python/beam.cc',
     'boost_python/goniometer.cc',
     'boost_python/detector.cc',
-	'boost_python/scan.cc',
-	'boost_python/detector_helpers.cc',
+	  'boost_python/scan.cc',
+  	'boost_python/detector_helpers.cc',
+  	'boost_python/scan_helpers.cc',
     'boost_python/experiment_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_model_experiment_ext', source=sources)
