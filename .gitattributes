@@ -160,6 +160,7 @@ model/experiment/detector_helpers.h -text
 model/experiment/goniometer.h -text
 model/experiment/scan.h -text
 model/experiment/scan_helpers.h -text
+scratch/__init__.py -text
 scratch/dgw/__init__.py -text
 scratch/dgw/crystal_model/__init__.py -text
 scratch/dgw/crystal_model/crystal.py -text

@@ -2,7 +2,7 @@ from __future__ import division
 
 import math
 from scitbx import matrix
-from bpcx_regression.prediction import angle_predictor, angle_predictor_py
+from dials.scratch.dgw.prediction import angle_predictor, angle_predictor_py
 from cctbx.array_family import flex
 
 
@@ -91,9 +91,9 @@ if __name__ == "__main__":
     from libtbx.test_utils import approx_equal
 
     ### import models
-    from bpcx_regression.crystal_model import crystal
-    from bpcx_regression.source_model import source
-    from bpcx_regression.goniometer_model import goniometer
+    from dials.scratch.dgw.crystal_model import crystal
+    from dials.scratch.dgw.source_model import source
+    from dials.scratch.dgw.goniometer_model import goniometer
 
     ### local functions
     def random_direction_close_to(vector):
@@ -146,8 +146,6 @@ if __name__ == "__main__":
     # obs_indices is a scitbx_array_family_flex_ext.vec3_double and contains floating point indices.
     # obs_indices2 is a cctbx_array_family_flex_ext.miller_index containing integer indices
 
-    print type(obs_indices2), type(obs_indices)
-    print type(obs_angles2), type(obs_angles)
     for h1, h2, p1, p2 in zip(obs_indices, obs_indices2, obs_angles, obs_angles2):
         assert(h1 == h2)
         assert(p1 == p2)
@@ -158,7 +156,6 @@ if __name__ == "__main__":
     for hkl, phi in zip(obs_indices2, obs_angles2):
         ap_phi = ap.predict(hkl)
         if ap_phi is None: continue
-        print hkl, phi, ap_phi
         assert (approx_equal(ap_phi[0], phi, out = None)) or \
                (approx_equal(ap_phi[1], phi, out = None))
 
