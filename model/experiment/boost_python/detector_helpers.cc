@@ -12,28 +12,29 @@
 #include <boost/python/def.hpp>
 #include <boost/format.hpp>
 #include <string>
+#include <dials/model/experiment/detector.h>
 #include <dials/model/experiment/detector_helpers.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
+  template <typename DetectorType, typename CoordinateType>
+  bool is_coordinate_valid_wrapper(const DetectorType &detector, 
+      CoordinateType coord) {
+    return is_coordinate_valid <DetectorType>(detector)(coord);
+  }
+
   void export_detector_helpers()
   {
-    bool (*flat_panel_detector_is_coordinate_valid)(
-      const FlatPanelDetector &, vec2 <double>) = 
-        &is_coordinate_valid <double>;
-
-    bool (*multi_flat_panel_detector_is_coordinate_valid)(
-      const MultiFlatPanelDetector &, vec3 <double>) = 
-        &is_coordinate_valid <double>;
-
-    def("is_coordinate_valid", flat_panel_detector_is_coordinate_valid);
-    def("is_coordinate_valid", multi_flat_panel_detector_is_coordinate_valid);
-    def("image_size_mm", &image_size_mm);
-    def("pixel_to_mm", &pixel_to_mm <double>);
-    def("plane_rectangle", &plane_rectangle);
-    def("panels_intersect", &panels_intersect);
+    def("is_coordinate_valid", 
+      &is_coordinate_valid_wrapper <FlatPanelDetector, vec2 <double> >, (
+        arg("detector"), 
+        arg("coordinate")));
+    def("is_coordinate_valid", 
+      &is_coordinate_valid_wrapper <FlatPanelDetector, vec2 <int> >, (
+        arg("detector"),
+        arg("coordinate")));
   }
 
 }}} // namespace = dials::model::boost_python

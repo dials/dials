@@ -35,6 +35,8 @@ namespace dials { namespace algorithms {
   using model::Reflection;
   using model::ReflectionList;
   using model::is_scan_angle_valid;
+  using model::is_coordinate_valid;
+  using model::diffracted_beam_intersection_point;
 
   typedef cctbx::miller::index <> miller_index;
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
@@ -74,7 +76,9 @@ namespace dials { namespace algorithms {
         ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
         s0_(beam.get_direction()),
         m2_(gonio.get_rotation_axis().normalize()),
-        is_angle_valid_(scan) {}
+        is_angle_valid_(scan),
+        is_coord_valid_(detector),
+        calculate_detector_coordinate_(detector) {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -119,7 +123,6 @@ namespace dials { namespace algorithms {
         if (!is_angle_valid_(phi[i])) {
           continue;
         }
-        double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
 
         // Calculate the reciprocal space vector
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
@@ -128,20 +131,22 @@ namespace dials { namespace algorithms {
         vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
-        vec2 <double> xy(0, 0);
-        //try {
-        //  xy = from_beam_vector_to_detector_.apply(s1);
-        //} catch(error) {
-        //  continue;
-        //}
+        vec2 <double> xy;
+        try {
+          xy = calculate_detector_coordinate_(s1);
+        } catch(error) {
+          continue;
+        }
 
         // Check the detector coordinate is valid and add the
         // elements to the arrays. NB. up to now, we have used
         // angles in radians, convert them to degrees before adding
         // them to the rotation angle array.
-        if (!is_coordinate_valid(detector_, xy)) {
+        if (!is_coord_valid_(xy)) {
           continue;
         }
+
+        double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
 
         // Add the reflection
         reflections[i] = Reflection(h, phi_deg, s1, xy);
@@ -214,6 +219,8 @@ namespace dials { namespace algorithms {
       vec3 <double> s0_;
       vec3 <double> m2_;
       is_scan_angle_valid <Scan, false> is_angle_valid_;
+      is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+      diffracted_beam_intersection_point <FlatPanelDetector> calculate_detector_coordinate_;
   };
 
 }} // namespace dials::algorithms
