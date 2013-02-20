@@ -70,6 +70,8 @@
 # Then some more chunder follows - however I don't think it contains anything
 # useful. So need to read first 1K of the image header.
 
+from __future__ import division
+
 import time
 import datetime
 import struct
@@ -86,12 +88,12 @@ class FormatRAXIS(Format):
         5 letters of file should be RAXIS.'''
 
         if Format.open_file(image_file).read(5) == 'RAXIS':
-            return 2
+            return True
 
-        return 0
+        return False
 
     def __init__(self, image_file):
-        assert(FormatRAXIS.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         Format.__init__(self, image_file)
 

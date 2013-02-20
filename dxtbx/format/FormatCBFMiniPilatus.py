@@ -8,6 +8,8 @@
 # An implementation of the CBF image reader for Pilatus images. Inherits from
 # FormatCBFMini.
 
+from __future__ import division
+
 from dxtbx.format.FormatCBFMini import FormatCBFMini
 from dxtbx.format.FormatCBFMiniPilatusHelpers import \
      get_pilatus_timestamp
@@ -22,29 +24,26 @@ class FormatCBFMiniPilatus(FormatCBFMini):
         '''Check to see if this looks like an Pilatus mini CBF format image,
         i.e. we can make sense of it.'''
 
-        if FormatCBFMini.understand(image_file) == 0:
-            return 0
-
         header = FormatCBFMini.get_cbf_header(image_file)
 
         for record in header.split('\n'):
             if '_array_data.header_convention' in record and \
                    'PILATUS' in record:
-                return 3
+                return True
             if '_array_data.header_convention' in record and \
                    'SLS' in record:
-                return 3
+                return True
             if '_array_data.header_convention' in record and \
                    '?' in record:
-                return 3
+                return True
 
-        return 0
+        return False
 
     def __init__(self, image_file):
         '''Initialise the image structure from the given file, including a
         proper model of the experiment.'''
 
-        assert(FormatCBFMiniPilatus.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         FormatCBFMini.__init__(self, image_file)
 

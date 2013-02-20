@@ -11,6 +11,8 @@
 # which really will acquire the full image including header information
 # and generate the experimental model representations.
 
+from __future__ import division
+
 from dxtbx.format.Format import Format
 from dxtbx.format.FormatTIFFHelpers import read_basic_tiff_header
 from dxtbx.format.FormatTIFFHelpers import LITTLE_ENDIAN
@@ -33,12 +35,12 @@ class FormatTIFF(Format):
         try:
             width, height, depth, header, order = read_basic_tiff_header(
                 image_file)
-            return 1
+            return True
 
         except: # intentional
             pass
 
-        return 0
+        return False
 
     @staticmethod
     def get_tiff_header(image_file):
@@ -54,7 +56,7 @@ class FormatTIFF(Format):
     def __init__(self, image_file):
         '''Initialise the image structure from the given file.'''
 
-        assert(FormatTIFF.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         Format.__init__(self, image_file)
 

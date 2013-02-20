@@ -10,6 +10,8 @@
 # FormatSMVRigakuSaturn customizing only the difference (incorrect definition
 # of fast and slow directions.)
 
+from __future__ import division
+
 from scitbx import matrix
 
 from dxtbx.format.FormatSMVRigakuSaturn import FormatSMVRigakuSaturn
@@ -26,9 +28,6 @@ class FormatSMVRigakuSaturnSN07400090(FormatSMVRigakuSaturn):
         i.e. we can make sense of it. Essentially that will be if it contains
         all of the keys we are looking for. Also checks the serial number.'''
 
-        if FormatSMVRigakuSaturn.understand(image_file) == 0:
-            return 0
-
         size, header = FormatSMVRigakuSaturn.get_smv_header(image_file)
 
         # FIXME if they fix this "bug" in the header sometime then may need
@@ -39,9 +38,9 @@ class FormatSMVRigakuSaturnSN07400090(FormatSMVRigakuSaturn):
         serial_number = header['%sSERIAL_NUMBER' % detector_prefix]
 
         if serial_number != '07400090':
-            return 0
+            return False
 
-        return 3
+        return True
 
     def _detector(self):
         '''Return a model for the detector, allowing for two-theta offsets

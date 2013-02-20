@@ -8,6 +8,8 @@
 # An implementation of the TIFF image reader for Rayonix images. Inherits from
 # FormatTIFF.
 
+from __future__ import division
+
 import time
 import datetime
 import struct
@@ -24,9 +26,6 @@ class FormatTIFFRayonix(FormatTIFF):
         i.e. we can make sense of it. This simply checks that records which
         describe the size of the image match with the TIFF records which do
         the same.'''
-
-        if FormatTIFF.understand(image_file) == 0:
-            return 0
 
         width, height, depth, order, bytes = FormatTIFF.get_tiff_header(
             image_file)
@@ -46,7 +45,7 @@ class FormatTIFFRayonix(FormatTIFF):
         _depth = struct.unpack(_I, bytes[1024 + 88:1024 + 92])[0]
 
         if width != _width or height != _height or depth != _depth:
-            return 0
+            return False
 
         nimages = struct.unpack(_I, bytes[1024 + 112:1024 + 116])[0]
         origin = struct.unpack(_I, bytes[1024 + 116:1024 + 120])[0]
@@ -54,19 +53,19 @@ class FormatTIFFRayonix(FormatTIFF):
         view = struct.unpack(_I, bytes[1024 + 124:1024 + 128])[0]
 
         if nimages != 1 or origin != 0 or orientation != 0 or view != 0:
-            return 0
+            return False
 
-        return 2
+        return True
 
     def __init__(self, image_file):
         '''Initialise the image structure from the given file, including a
         proper model of the experiment.'''
 
-        assert(FormatTIFFRayonix.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         width, height, depth, order, bytes = FormatTIFF.get_tiff_header(
             image_file)
-      
+
         self._header_size = 4096
 
         if order == FormatTIFF.LITTLE_ENDIAN:
@@ -269,7 +268,7 @@ class FormatTIFFRayonix(FormatTIFF):
     def get_raw_data(self):
         '''Get the pixel intensities (i.e. read the image and return as a
            flex array of integers.)'''
-    
+
         if self._raw_data:
             return self._raw_data
 
@@ -279,12 +278,12 @@ class FormatTIFFRayonix(FormatTIFF):
 
         from boost.python import streambuf
         from dxtbx import read_uint16
-    
+
         size = self.get_detector().get_image_size()
         f = FormatTIFF.open_file(self._image_file)
         f.read(self._header_size)
         self._raw_data = read_uint16(streambuf(f), int(size[0] * size[1]))
-    
+
         return self._raw_data
 
 if __name__ == '__main__':

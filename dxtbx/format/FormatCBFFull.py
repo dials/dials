@@ -9,6 +9,8 @@
 # amongst others - this will read the header and construct the full model,
 # but will allow for extension for specific implementations of CBF.
 
+from __future__ import division
+
 import pycbf
 
 from dxtbx.format.FormatCBF import FormatCBF
@@ -20,24 +22,19 @@ class FormatCBFFull(FormatCBF):
     @staticmethod
     def understand(image_file):
         '''Check to see if this looks like an CBF format image, i.e. we can
-        make sense of it. N.B. in situations where there is both a full and
-        mini CBF header this will return a code such that this will be used
-        in preference.'''
-
-        if FormatCBF.understand(image_file) == 0:
-            return 0
+        make sense of it.'''
 
         header = FormatCBF.get_cbf_header(image_file)
 
         if not '_diffrn.id' in header and not '_diffrn_source' in header:
-            return 0
+            return False
 
-        return 2
+        return True
 
     def __init__(self, image_file):
         '''Initialise the image structure from the given file.'''
 
-        assert(FormatCBFFull.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         FormatCBF.__init__(self, image_file)
 

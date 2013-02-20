@@ -8,8 +8,8 @@
 # An implementation of the TIFF image reader for Rayonix images. Inherits from
 # FormatTIFF.
 
-import time
-import datetime
+from __future__ import division
+
 import struct
 
 from dxtbx.format.FormatTIFFRayonix import FormatTIFFRayonix
@@ -25,15 +25,12 @@ class FormatTIFFRayonixESRF(FormatTIFFRayonix):
         describe the size of the image match with the TIFF records which do
         the same.'''
 
-        if FormatTIFFRayonix.understand(image_file) != 2:
-            return 0
-
         width, height, depth, order, bytes = FormatTIFFRayonix.get_tiff_header(
             image_file)
 
         # ESRF instruments (with the beam centre in mm not in pixels) appear
         # to not have the detector serial number in the comments block.
-              
+
         serial_number = -1
 
         for record in bytes[2464:2464+512].strip().split('\n'):
@@ -41,15 +38,15 @@ class FormatTIFFRayonixESRF(FormatTIFFRayonix):
                 serial_number = int(record.split()[-1])
 
         if serial_number > 0:
-            return 0
-        
-        return 3
+            return False
+
+        return True
 
     def __init__(self, image_file):
         '''Initialise the image structure from the given file, including a
         proper model of the experiment.'''
 
-        assert(FormatTIFFRayonixESRF.understand(image_file) > 0)
+        assert(self.understand(image_file))
         FormatTIFFRayonix.__init__(self, image_file)
 
         return
@@ -95,7 +92,7 @@ class FormatTIFFRayonixESRF(FormatTIFFRayonix):
 
         # not testing as this the CLS images are not properly structured...
         # and also don't have a serial number in (FAIL)
-        
+
         return self._goniometer_factory.single_axis()
 
 

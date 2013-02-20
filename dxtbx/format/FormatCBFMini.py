@@ -9,6 +9,8 @@
 # this will read the header and populate a dictionary of the keyword / value
 # pairs.
 
+from __future__ import division
+
 from dxtbx.format.FormatCBF import FormatCBF
 
 class FormatCBFMini(FormatCBF):
@@ -18,35 +20,30 @@ class FormatCBFMini(FormatCBF):
     @staticmethod
     def understand(image_file):
         '''Check to see if this looks like an CBF format image, i.e. we can
-        make sense of it. N.B. in situations where there is both a full and
-        mini CBF header this will return 0 i.e. deprecating itself in favour
-        of the full CBF reader.'''
-
-        if FormatCBF.understand(image_file) == 0:
-            return 0
+        make sense of it.'''
 
         header = FormatCBF.get_cbf_header(image_file)
 
         if '_diffrn.id' in header and '_diffrn_source' in header:
-            return 0
+            return False
 
         for record in header.split('\n'):
             if '_array_data.header_convention' in record and \
                    'PILATUS' in record:
-                return 2
+                return True
             if '_array_data.header_convention' in record and \
                    'SLS' in record:
-                return 2
+                return True
             if '_array_data.header_convention' in record and \
                    '?' in record:
-                return 2
+                return True
 
-        return 0
+        return False
 
     def __init__(self, image_file):
         '''Initialise the image structure from the given file.'''
 
-        assert(FormatCBFMini.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         FormatCBF.__init__(self, image_file)
 

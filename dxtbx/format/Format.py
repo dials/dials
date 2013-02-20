@@ -67,14 +67,23 @@ class Format:
 
     @staticmethod
     def understand(image_file):
-        '''Overload this to publish whether this class instance understands
-        a given file. N.B. to say that we really understand it, return a
-        positive number. To say in a subclass that you understand it better
-        then return a larger number, for example checking the detector serial
-        number. Finally, if you are writing this subclass for a given
-        instrument and you are given a different example return 0.'''
+        '''Overload this to publish whether this class instance
+        understands a given file.  N.B. to say that we understand it,
+        return True.  If a subclass also understands the image
+        (because, for example, its detector serial number takes a
+        certain value), it will by definition understand it better
+        than its superclass.  Thus, the preferred class will be the
+        deepest subclass in the inheritance hierarchy.  Finally, if
+        you are writing this subclass for a given instrument and you
+        are given a different example return False.
 
-        return 0
+        Implementing understand() in a subclass, one can safely assume
+        that the superclass's understand() function returned True.
+        The understand() function of two different classes directly
+        derived from the same base should never both return True for
+        the same input image.'''
+
+        return False
 
     def __init__(self, image_file):
         '''Initialize a class instance from an image file.'''

@@ -7,6 +7,8 @@
 #
 # Pilatus implementation of fullCBF format, for use with Dectris detectors.
 
+from __future__ import division
+
 import pycbf
 
 from dxtbx.format.FormatCBFFull import FormatCBFFull
@@ -19,26 +21,21 @@ class FormatCBFFullPilatus(FormatCBFFull):
     @staticmethod
     def understand(image_file):
         '''Check to see if this looks like an CBF format image, i.e. we can
-        make sense of it. N.B. in situations where there is both a full and
-        mini CBF header this will return a code such that this will be used
-        in preference.'''
-
-        if FormatCBFFull.understand(image_file) == 0:
-            return 0
+        make sense of it.'''
 
         header = FormatCBFFull.get_cbf_header(image_file)
 
         for record in header.split('\n'):
             if '_array_data.header_convention' in record and \
                    'PILATUS' in record:
-                return 3
+                return True
 
-        return 0
+        return False
 
     def __init__(self, image_file):
         '''Initialise the image structure from the given file.'''
 
-        assert(FormatCBFFullPilatus.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         FormatCBFFull.__init__(self, image_file)
 

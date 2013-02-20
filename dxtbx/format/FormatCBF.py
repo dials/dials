@@ -8,6 +8,8 @@
 # Base implementation of CBF formats - which is just really a place holder
 # which will tell you whether something is a CBF file (or no.)
 
+from __future__ import division
+
 from dxtbx.format.Format import Format
 
 class FormatCBF(Format):
@@ -21,9 +23,9 @@ class FormatCBF(Format):
         make sense of it.'''
 
         if '###CBF' in FormatCBF.open_file(image_file, 'rb').read(6):
-            return 1
+            return True
 
-        return 0
+        return False
 
     @staticmethod
     def get_cbf_header(image_file):
@@ -43,7 +45,7 @@ class FormatCBF(Format):
     def __init__(self, image_file):
         '''Initialise the image structure from the given file.'''
 
-        assert(FormatCBF.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         Format.__init__(self, image_file)
 

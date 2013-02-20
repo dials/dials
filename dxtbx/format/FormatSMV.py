@@ -11,6 +11,8 @@
 # readers which really will acquire the full image including header information
 # and generate the experimental model representations.
 
+from __future__ import division
+
 from dxtbx.format.Format import Format
 
 class FormatSMV(Format):
@@ -32,9 +34,9 @@ class FormatSMV(Format):
 
         if FormatSMV.open_file(image_file, 'rb').read(15) == \
                '{\nHEADER_BYTES=':
-            return 1
+            return True
 
-        return 0
+        return False
 
     @staticmethod
     def get_smv_header(image_file):
@@ -61,7 +63,7 @@ class FormatSMV(Format):
     def __init__(self, image_file):
         '''Initialise the image structure from the given file.'''
 
-        assert(FormatSMV.understand(image_file) > 0)
+        assert(self.understand(image_file))
 
         Format.__init__(self, image_file)
 
