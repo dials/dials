@@ -7,21 +7,25 @@ that is needed is to implement a Python class which extends the Format class
 to add some specific details about this detector and the associated beamline /
 experimental environment.
 
-In particular there are two groups of things which need to be implemented -
-a static method named "understand" which will take a look at the image and
-return an integer describing how well it understands it, and a bunch of class
-methods which need to override the construction of the description.
+In particular there are two groups of things which need to be
+implemented - a static method named "understand" which will take a
+look at the image and return True if it understands it, and a bunch of
+class methods which need to override the construction of the
+description.
 
 "understand" Static Method
 --------------------------
 
 This method is the key to how the whole framework operates - you write code
 which looks at the image to decide whether it is right for this class. If it is
-not you must return 0 - i.e. if you are making a custom class for a given
+not you must return False - i.e. if you are making a custom class for a given
 detector serial number and it is given an image from a different detector.
 
-Ideally your implementation will inherit from a similar Format class and just
-apply further customizations.
+Ideally your implementation will inherit from a similar Format class
+and just apply further customizations.  Your implementation will be
+chosen to read the image if it is the most customized, i.e. it derives
+from the longest chain of ancestors, all of which claim to understand
+the image.
 
 Class Methods
 -------------
@@ -62,7 +66,7 @@ let's call the class something clear like FormatSMVRigakuSaturn.py:
         '''A class for reading SMV format Rigaku Saturn images, and correctly
         constructing a model for the experiment from this.'''
 
-(if you are coding this in your $HOME/.xia2 directory, you may need to add
+(if you are coding this in your $HOME/.dxtbx directory, you may need to add
 
     import os
     import sys
@@ -76,7 +80,7 @@ let's call the class something clear like FormatSMVRigakuSaturn.py:
 to the start of the class file. However I would personally just do all of the
 coding in the dxtbx directory as that will keep things simple. Anyway, we
 digress. The first thing which needs to be added is a static method named
-"understand" which will say how much sense we can make of this image and in
+"understand" which will say whether we can make sense of this image and in
 essence whether this is the tool for the job. This cannot make use of any
 of the class methods as it is static - however if you were to implement an
 image header parser as a static method, that can be used here. Here we're in
@@ -93,9 +97,6 @@ be quite this thorough.
             image, i.e. we can make sense of it. Essentially that will be if
             it contains all of the keys we are looking for.'''
 
-            if FormatSMV.understand(image_file) == 0:
-                return 0
-
             size, header = FormatSMV.get_smv_header(image_file)
 
             wanted_header_items = [
@@ -110,7 +111,7 @@ be quite this thorough.
 
             for header_item in wanted_header_items:
                 if not header_item in header:
-                    return 0
+                    return False
 
             detector_prefix = header['DETECTOR_NAMES'].split()[0].strip()
 
@@ -122,11 +123,11 @@ be quite this thorough.
 
             for header_item in more_wanted_header_items:
                 if not '%s%s' % (detector_prefix, header_item) in header:
-                    return 0
+                    return False
 
-            return 2
+            return True
 
-And - just to make sure out coding is going along the right lines, let's
+And - just to make sure our coding is going along the right lines, let's
 add a __main__ method to give it a tiny workout:
 
     if __name__ == '__main__':
@@ -137,8 +138,8 @@ add a __main__ method to give it a tiny workout:
             print FormatSMVRigakuSaturn.understand(arg)
 
 Clearly when you run this and give it an image from the right kind of detector
-you would expect this to return at least 2. If it does not, then you have some
-debugging to do. Let's assume it returns 2 - it does for me. It is then time
+you would expect this to return True. If it does not, then you have some
+debugging to do. Let's assume it returns True - it does for me. It is then time
 to implement the methods to do the rest of the work.
 
 Constructor
@@ -152,7 +153,7 @@ that is the only opportunity to pass information in to the system.
             proper model of the experiment. Easy from Rigaku Saturn images as
             they contain everything pretty much we need...'''
 
-            assert(FormatSMVRigakuSaturn.understand(image_file) > 0)
+            assert(self.understand(image_file))
 
             FormatSMV.__init__(self, image_file)
 
