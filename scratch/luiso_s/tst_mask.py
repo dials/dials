@@ -11,14 +11,8 @@ nslow = image.parameters['SIZE2']
 
 data = image.get_raw_data()
 print 'here 1'
-
-data2d = numpy.zeros( nfast * nslow, dtype = float ).reshape( nfast, nslow )
-for f in range( nfast ):
-    for s in range( nslow ):
-        data2d[f, s] = data[s * nfast + f]
-
-# data2d = numpy.reshape( numpy.array( data, dtype = float ), ( nfast, nslow ) )
-
+data2d = numpy.reshape( numpy.array( data, dtype = float ), ( nfast , nslow ) )
+print 'here 2'
 data2dsmoth = numpy.zeros( nfast * nslow, dtype = float ).reshape( nfast, nslow )
 diffdata2d = numpy.zeros( nfast * nslow, dtype = float ).reshape( nfast, nslow )
 
@@ -31,6 +25,7 @@ for f in range( 1, nfast - 1 ):
     for s in range( 1, nslow - 1 ):
         pscan = float( numpy.sum( data2d[f - 1:f + 1, s - 1:s + 1] ) / 9.0 )
         data2dsmoth[f, s] = pscan
+
 print "max(data2dsmoth) =", numpy.max( data2dsmoth )
 print "min(data2dsmoth) =", numpy.min( data2dsmoth )
 
