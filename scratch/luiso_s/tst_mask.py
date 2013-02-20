@@ -27,10 +27,8 @@ print "min(data2d) =", numpy.min( data2d )
 
 for f in range( 1, nfast - 1 ):
     for s in range( 1, nslow - 1 ):
-        prom = 0.0
-        for pscan in data2d[f - 1:f + 1, s - 1:s + 1]:
-            prom = prom + pscan
-        data2dsmoth[f, s] = prom / 9.0
+        pscan = sum( data2d[f - 1:f + 1, s - 1:s + 1] )
+        data2dsmoth[f, s] = pscan / 9.0
 
 print "max(data2dsmoth) =", numpy.max( data2dsmoth )
 print "min(data2dsmoth) =", numpy.min( data2dsmoth )
