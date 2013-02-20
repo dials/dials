@@ -86,6 +86,9 @@ namespace dials { namespace model {
       : rotation_axis_(rotation_axis.normalize()),
         fixed_rotation_(fixed_rotation) {}
 
+    /** Virtual destructor */
+    virtual ~Goniometer() {}
+
     /** Get the rotation axis */
     vec3 <double> get_rotation_axis() const {
       return rotation_axis_;
@@ -192,6 +195,9 @@ namespace dials { namespace model {
       rotation_axis_ = calculate_rotation_axis();
       fixed_rotation_ = calculate_fixed_rotation();
     }
+
+    /** Virtual destructor */
+    virtual ~KappaGoniometer() {}
 
     /** Get the alpha angle */
     double get_alpha_angle() const {

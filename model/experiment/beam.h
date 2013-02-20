@@ -47,6 +47,9 @@ namespace dials { namespace model {
       : direction_(direction.normalize() / wavelength),
         wavelength_(wavelength) {}
 
+    /** Virtual destructor */
+    virtual ~Beam() {}
+
     /** Get the direction */
     vec3 <double> get_direction() const {
       return direction_;
@@ -117,6 +120,9 @@ namespace dials { namespace model {
       : Beam(direction),
         polarization_(polarization),
         polarization_fraction_(polarization_fraction) {}
+
+    /** Virtual destructor */
+    virtual ~PolarizedBeam() {}
 
     /** Get the polarization */
     vec3 <double> get_polarization() const {

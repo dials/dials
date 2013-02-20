@@ -119,6 +119,9 @@ namespace dials { namespace model {
       trusted_range_(trusted_range),
       distance_(distance) {}
 
+    /** Virtual destructor */
+    virtual ~FlatPanelDetector() {}
+
     /** Get the sensor type */
     std::string get_type() const {
       return type_;
@@ -286,6 +289,9 @@ namespace dials { namespace model {
     /** Initialise the detector */
     MultiFlatPanelDetector(std::string type)
       :type_(type) {}
+
+    /** Virtual destructor */
+    virtual ~MultiFlatPanelDetector() {}
 
     /** Get the begin iterator */
     iterator begin() {
