@@ -7,7 +7,8 @@
 #
 # Code to give the registry a bit of a workout.
 
-import os
+from __future__ import division
+
 import sys
 
 from dxtbx.format.Registry import Registry
@@ -27,7 +28,7 @@ def TestRegistry(files):
 
         print format.__name__
 
-        if format.understand(f) >= 2:
+        if format.understand(f):
             i = format(f)
             print i.get_beam()
             print i.get_goniometer()

@@ -70,12 +70,12 @@ class _Registry:
         # format.
         def recurse(format, image_file):
             for child in format._children:
-                if child.understand(image_file) != 0:
+                if child.understand(image_file):
                     return recurse(child, image_file)
             return format
 
         for format in self._formats:
-            if format.understand(image_file) != 0:
+            if format.understand(image_file):
                 return recurse(format, image_file)
         return None
 
