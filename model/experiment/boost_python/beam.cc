@@ -64,7 +64,8 @@ namespace dials { namespace model { namespace boost_python {
         &Beam::set_direction)
       .add_property("wavelength", 
         &Beam::get_wavelength)
-      .def("__cmp__", &Beam::operator!=)
+      .def("__eq__", &Beam::operator==)
+      .def("__ne__", &Beam::operator!=)
       .def("__str__", &beam_to_string);
 
     // Export PolarizedBeam : Beam

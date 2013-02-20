@@ -143,7 +143,8 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("inverse_d_matrix",
         &FlatPanelDetector::get_inverse_d_matrix,
         &FlatPanelDetector::set_inverse_d_matrix)
-      .def("__cmp__", &FlatPanelDetector::operator!=)
+      .def("__eq__", &FlatPanelDetector::operator==)
+      .def("__ne__", &FlatPanelDetector::operator!=)
       .def("__str__", &flat_panel_detector_to_string);
 
     // Export a MultiFlatPanelDetector class
@@ -156,8 +157,6 @@ namespace dials { namespace model { namespace boost_python {
           arg("panel")))
       .def("num_panels",
         &MultiFlatPanelDetector::num_panels)
-      .def("update",
-        &MultiFlatPanelDetector::update)
       .def("__len__", 
         &MultiFlatPanelDetector::num_panels)
       .def("__setitem__", 
@@ -171,8 +170,9 @@ namespace dials { namespace model { namespace boost_python {
         iterator <
           MultiFlatPanelDetector, 
           return_internal_reference<> >())
-      .def("__str__", 
-        &multi_flat_panel_detector_to_string);
+      .def("__eq__", &MultiFlatPanelDetector::operator==)
+      .def("__ne__", &MultiFlatPanelDetector::operator!=)
+      .def("__str__", &multi_flat_panel_detector_to_string);
   }
 
 }}} // namespace dials::model::boost_python

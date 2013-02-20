@@ -241,12 +241,12 @@ namespace dials { namespace model {
       double d_slow = slow_axis_.angle(detector.slow_axis_);
       double d_origin = origin_.angle(detector.origin_);
       double d_dist = std::abs(distance_ - detector.distance_);
-      double d_size_slow = std::abs((int)image_size_[0] - 
-        (int)detector.image_size_[0]);
-      double d_size_fast = std::abs((int)image_size_[1] - 
-        (int)detector.image_size_[1]);
-      return d_fast && d_slow && d_origin 
-          && d_dist && d_size_slow && d_size_fast;
+      double d_size_slow = 
+        std::abs((int)image_size_[0] - (int)detector.image_size_[0]);
+      double d_size_fast = 
+        std::abs((int)image_size_[1] - (int)detector.image_size_[1]);
+      return d_fast <= eps && d_slow <= eps && d_origin <= eps && 
+             d_dist <= eps && d_size_slow <= eps && d_size_fast <= eps;
     }
 
     /** Check the detector axis basis vectors are not (almost) the same */
@@ -266,10 +266,6 @@ namespace dials { namespace model {
     vec2 <int> trusted_range_;
     double distance_;
   };
-
-  // Forward declaration of function defined in detector_helpers.h
-  inline bool
-    panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b);
 
   /**
   * A class representing a detector made up of multiple flat panel detectors.
@@ -306,24 +302,6 @@ namespace dials { namespace model {
       panel_list_.push_back(panel);
     }
 
-    /**
-    * Perform an update operation. Check that the panels do not intersect.
-    * This function checks each panel against every other panel, it could
-    * probably be done more efficiently. If a panel is found to intersect
-    * with another, an error is emitted.
-    */
-    void update() const {
-      for (std::size_t j = 0; j < panel_list_.size()-1; ++j) {
-        for (std::size_t i = j+1; i < panel_list_.size(); ++i) {
-          if (panels_intersect(panel_list_[j], panel_list_[i])) {
-            DIALS_ERROR(
-              "Panels intersect: "
-              "this is not a recommended configuration.");
-          }
-        }
-      }
-    }
-
     /** Remove all the panels */
     void remove_panels() {
       panel_list_.erase(panel_list_.begin(), panel_list_.end());
@@ -347,6 +325,22 @@ namespace dials { namespace model {
     /** Return a const reference to a panel */
     const panel_type& operator[](std::size_t index) const {
       return panel_list_[index];
+    }
+    
+    /** Check the detector panels are the same */
+    bool operator==(const MultiFlatPanelDetector &detector) {
+      bool same = panel_list_.size() == detector.panel_list_.size();
+      if (same) {
+        for (std::size_t i = 0; i < panel_list_.size(); ++i) {
+          same = same && (panel_list_[i] == detector.panel_list_[i]);
+        }
+      }
+      return same;
+    }
+
+    /** Check the detector panels are not the same */
+    bool operator!=(const MultiFlatPanelDetector &detector) {
+      return !(*this == detector);
     }
 
   protected:
