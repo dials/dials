@@ -63,28 +63,33 @@ def LoadFormatClasses():
                 _LoadFormatModule(name, name, format_dir)
 
 def _LoadFormatModule(name, fqname, path):
-    '''Load a format class module, which will trigger the automated self
-    registration. This module will not therefore need to publish anything
-    as the module will self publish. The idea being that these format classes
-    were found by the search procedure above.'''
+    '''Load a format class module, which will trigger the automated
+    self-registration.  This module will therefore not need to publish
+    anything as the module will self-publish.  The idea being that
+    these format classes were found by the search procedure above.  On
+    success, the function returns the loaded module, otherwise it
+    returns None.'''
 
     # Early return if module already imported.
     try:
-        sys.modules[fqname]
-        return
+        return sys.modules[fqname]
     except KeyError:
         pass
 
-    module, pathname, description = imp.find_module(name, [path])
+    try:
+        stream, pathname, description = imp.find_module(name, [path])
+    except ImportError:
+        return None
 
     try:
-        imp.load_module(fqname, module, pathname, description)
+        module = imp.load_module(fqname, stream, pathname, description)
     except exceptions.Exception, e:
         traceback.print_exc(sys.stderr)
     finally:
-        module.close()
+        if stream:
+            stream.close()
 
-    return
+    return module
 
 if __name__ == '__main__':
 
