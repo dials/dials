@@ -106,6 +106,18 @@ namespace dials { namespace model {
       fixed_rotation_ = fixed_rotation;
     }
 
+    /** Check rotation axes are (almost) the same */
+    bool operator==(const Goniometer &goniometer) {
+      double eps = 1.0e-6;
+      double d_axis = rotation_axis_.angle(goniometer.rotation_axis_);
+      return d_axis <= eps;
+    }
+
+    /** Check rotation axes are not (almost) the same */
+    bool operator!=(const Goniometer &goniometer) {
+      return !(*this == goniometer);
+    }
+
   protected:
 
     vec3 <double> rotation_axis_;

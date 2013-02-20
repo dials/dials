@@ -50,7 +50,7 @@ namespace dials { namespace model { namespace boost_python {
     // Export BeamBase
     class_ <BeamBase> ("BeamBase");
 
-    // Export SimpleBeam : BeamBase
+    // Export Beam : BeamBase
     class_ <Beam, bases <BeamBase> > ("Beam")
       .def(init <vec3 <double>,
                  double> ((
@@ -64,9 +64,10 @@ namespace dials { namespace model { namespace boost_python {
         &Beam::set_direction)
       .add_property("wavelength", 
         &Beam::get_wavelength)
+      .def("__cmp__", &Beam::operator!=)
       .def("__str__", &beam_to_string);
 
-    // Export PolarizedBeam : SimpleBeam
+    // Export PolarizedBeam : Beam
     class_ <PolarizedBeam, bases <Beam> > ("PolarizedBeam")
       .def(init <vec3 <double>, 
                  double,

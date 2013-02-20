@@ -143,6 +143,7 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("inverse_d_matrix",
         &FlatPanelDetector::get_inverse_d_matrix,
         &FlatPanelDetector::set_inverse_d_matrix)
+      .def("__cmp__", &FlatPanelDetector::operator!=)
       .def("__str__", &flat_panel_detector_to_string);
 
     // Export a MultiFlatPanelDetector class

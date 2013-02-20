@@ -1,13 +1,13 @@
 /*
- * detector.h
- *
- *  Copyright (C) 2013 Diamond Light Source
- *
- *  Author: James Parkhurst
- *
- *  This code is distributed under the BSD license, a copy of which is
- *  included in the root directory of this package.
- */
+* detector.h
+*
+*  Copyright (C) 2013 Diamond Light Source
+*
+*  Author: James Parkhurst
+*
+*  This code is distributed under the BSD license, a copy of which is
+*  included in the root directory of this package.
+*/
 #ifndef DIALS_MODEL_EXPERIMENT_DETECTOR_H
 #define DIALS_MODEL_EXPERIMENT_DETECTOR_H
 
@@ -31,93 +31,93 @@ namespace dials { namespace model {
   class DetectorBase {};
 
   /**
-   * A class representing a detector panel. A detector can have multiple
-   * panels which are each represented by this class.
-   *
-   * The class contains the following members accessible through getter and
-   * setter methods:
-   *   type A string representing the type of the detector panel (i.e the
-   *     manufactors name or some such identifier).
-   *
-   *   x_axis A unit vector pointing along the x (fast) axis of the panel. The
-   *     vector is given with respect to the laboratory coordinate frame.
-   *
-   *   y_axis A unit vector pointing along the y (slow) axis of the panel. The
-   *     vector is given with respect to the laboratory coordinate frame.
-   *
-   *   normal A unit vector giving the normal to the panel plane. The
-   *     vector is given with respect to the laboratory coordinate frame.
-   *
-   *   origin The origin of the detector plane. (i.e. the laboratory coordinate
-   *     of the edge of the zeroth pixel
-   *
-   *   pixel_size The size of the pixels in mm. The convention used is that
-   *     of (y, x) i.e. (slow, fast)
-   *
-   *   image_size The size of the panel in pixels. The convention used is that
-   *     of (y, x) i.e. (slow, fast)
-   *
-   *   trusted_range The range of counts that are considered reliable, given
-   *     in the range [min, max].
-   *
-   *   distance The signed distance from the source to the detector
-   *
-   * In the document detailing the conventions used:
-   *    type -> *unspecified*
-   *    x_axis -> d1
-   *    y_axis -> d2
-   *    normal -> d3
-   *    origin -> *unspecified*
-   *    pixel_size -> *unspecified*
-   *    image_size -> *unspecified*
-   *    trusted_range -> *unspecified*
-   *    distance -> *unspecified*
-   */
+  * A class representing a detector panel. A detector can have multiple
+  * panels which are each represented by this class.
+  *
+  * The class contains the following members accessible through getter and
+  * setter methods:
+  *   type A string representing the type of the detector panel (i.e the
+  *     manufactors name or some such identifier).
+  *
+  *   x_axis A unit vector pointing along the x (fast) axis of the panel. The
+  *     vector is given with respect to the laboratory coordinate frame.
+  *
+  *   y_axis A unit vector pointing along the y (slow) axis of the panel. The
+  *     vector is given with respect to the laboratory coordinate frame.
+  *
+  *   normal A unit vector giving the normal to the panel plane. The
+  *     vector is given with respect to the laboratory coordinate frame.
+  *
+  *   origin The origin of the detector plane. (i.e. the laboratory coordinate
+  *     of the edge of the zeroth pixel
+  *
+  *   pixel_size The size of the pixels in mm. The convention used is that
+  *     of (y, x) i.e. (slow, fast)
+  *
+  *   image_size The size of the panel in pixels. The convention used is that
+  *     of (y, x) i.e. (slow, fast)
+  *
+  *   trusted_range The range of counts that are considered reliable, given
+  *     in the range [min, max].
+  *
+  *   distance The signed distance from the source to the detector
+  *
+  * In the document detailing the conventions used:
+  *    type -> *unspecified*
+  *    x_axis -> d1
+  *    y_axis -> d2
+  *    normal -> d3
+  *    origin -> *unspecified*
+  *    pixel_size -> *unspecified*
+  *    image_size -> *unspecified*
+  *    trusted_range -> *unspecified*
+  *    distance -> *unspecified*
+  */
   class FlatPanelDetector : public DetectorBase {
   public:
 
     /** The default constructor */
     FlatPanelDetector()
       : type_("Unknown"),
-        fast_axis_(1.0, 0.0, 0.0),
-        slow_axis_(0.0, 1.0, 0.0),
-        normal_(0.0, 0.0, 1.0),
-        origin_(0.0, 0.0, 0.0),
-        pixel_size_(0.0, 0.0),
-        image_size_(0, 0),
-        trusted_range_(0, 0),
-        distance_(0.0) {}
+      fast_axis_(1.0, 0.0, 0.0),
+      slow_axis_(0.0, 1.0, 0.0),
+      normal_(0.0, 0.0, 1.0),
+      origin_(0.0, 0.0, 0.0),
+      pixel_size_(0.0, 0.0),
+      image_size_(0, 0),
+      trusted_range_(0, 0),
+      distance_(0.0) {}
 
     /**
-     * Initialise the detector panel.
-     * @param type The type of the detector panel
-     * @param fast_axis The fast axis of the detector. The given vector is normalized.
-     * @param slow_axis The slow axis of the detector. The given vector is normalized.
-     * @param normal The detector normal. The given vector is normalized.
-     * @param origin The detector origin
-     * @param pixel_size The size of the individual pixels
-     * @param image_size The size of the detector panel (in pixels)
-     * @param trusted_range The trusted range of the detector pixel values.
-     * @param distance The distance from the detector to the crystal origin
-     */
+    * Initialise the detector panel.
+    * @param type The type of the detector panel
+    * @param fast_axis The fast axis of the detector. The given vector is normalized.
+    * @param slow_axis The slow axis of the detector. The given vector is normalized.
+    * @param normal The detector normal. The given vector is normalized.
+    * @param origin The detector origin
+    * @param pixel_size The size of the individual pixels
+    * @param image_size The size of the detector panel (in pixels)
+    * @param trusted_range The trusted range of the detector pixel values.
+    * @param distance The distance from the detector to the crystal origin
+    */
     FlatPanelDetector(std::string type,
-                      vec3 <double> fast_axis,
-                      vec3 <double> slow_axis,
-                      vec3 <double> normal,
-                      vec3 <double> origin,
-                      vec2 <double> pixel_size,
-                      vec2 <std::size_t> image_size,
-                      vec2 <int> trusted_range,
-                      double distance)
+      vec3 <double> fast_axis,
+      vec3 <double> slow_axis,
+      vec3 <double> normal,
+      vec3 <double> origin,
+      vec2 <double> pixel_size,
+      vec2 <std::size_t> image_size,
+      vec2 <int> trusted_range,
+      double distance)
       : type_(type),
-        fast_axis_(fast_axis),
-        slow_axis_(slow_axis),
-        normal_(normal),
-        origin_(origin),
-        pixel_size_(pixel_size),
-        image_size_(image_size),
-        trusted_range_(trusted_range),
-        distance_(distance) {}
+      fast_axis_(fast_axis),
+      slow_axis_(slow_axis),
+      normal_(normal),
+      origin_(origin),
+      pixel_size_(pixel_size),
+      image_size_(image_size),
+      trusted_range_(trusted_range),
+      distance_(distance) {}
 
     /** Get the sensor type */
     std::string get_type() const {
@@ -234,6 +234,26 @@ namespace dials { namespace model {
       set_d_matrix(d.inverse());
     }
 
+    /** Check the detector axis basis vectors are (almost) the same */
+    bool operator==(const FlatPanelDetector &detector) {
+      double eps = 1.0e-6;
+      double d_fast = fast_axis_.angle(detector.fast_axis_);
+      double d_slow = slow_axis_.angle(detector.slow_axis_);
+      double d_origin = origin_.angle(detector.origin_);
+      double d_dist = std::abs(distance_ - detector.distance_);
+      double d_size_slow = std::abs((int)image_size_[0] - 
+        (int)detector.image_size_[0]);
+      double d_size_fast = std::abs((int)image_size_[1] - 
+        (int)detector.image_size_[1]);
+      return d_fast && d_slow && d_origin 
+          && d_dist && d_size_slow && d_size_fast;
+    }
+
+    /** Check the detector axis basis vectors are not (almost) the same */
+    bool operator!=(const FlatPanelDetector &detector) {
+      return !(*this == detector);
+    }
+
   protected:
 
     std::string type_;
@@ -249,13 +269,13 @@ namespace dials { namespace model {
 
   // Forward declaration of function defined in detector_helpers.h
   inline bool
-  panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b);
+    panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b);
 
   /**
-   * A class representing a detector made up of multiple flat panel detectors.
-   * The detector elements can be accessed in the same way as an array:
-   *  detector[0] -> 1st detector panel.
-   */
+  * A class representing a detector made up of multiple flat panel detectors.
+  * The detector elements can be accessed in the same way as an array:
+  *  detector[0] -> 1st detector panel.
+  */
   class MultiFlatPanelDetector : public DetectorBase {
   public:
 
@@ -287,11 +307,11 @@ namespace dials { namespace model {
     }
 
     /**
-     * Perform an update operation. Check that the panels do not intersect.
-     * This function checks each panel against every other panel, it could
-     * probably be done more efficiently. If a panel is found to intersect
-     * with another, an error is emitted.
-     */
+    * Perform an update operation. Check that the panels do not intersect.
+    * This function checks each panel against every other panel, it could
+    * probably be done more efficiently. If a panel is found to intersect
+    * with another, an error is emitted.
+    */
     void update() const {
       for (std::size_t j = 0; j < panel_list_.size()-1; ++j) {
         for (std::size_t i = j+1; i < panel_list_.size(); ++i) {

@@ -142,6 +142,7 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("fixed_rotation_matrix",  
         &Goniometer::get_fixed_rotation_matrix,
         &Goniometer::set_fixed_rotation_matrix)
+      .def("__cmp__", &Goniometer::operator!=)
       .def("__str__", &goniometer_to_string);
      
     enum_ <KappaGoniometer::Direction> ("KappaDirection")

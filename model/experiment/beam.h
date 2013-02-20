@@ -11,6 +11,7 @@
 #ifndef DIALS_MODEL_EXPERIMENT_BEAM_H
 #define DIALS_MODEL_EXPERIMENT_BEAM_H
 
+#include <cmath>
 #include <scitbx/vec3.h>
 
 namespace dials { namespace model {
@@ -60,6 +61,19 @@ namespace dials { namespace model {
     void set_direction(vec3 <double> direction) {
       direction_ = direction;
       wavelength_ = 1.0 / direction.length();
+    }
+
+    /** Check wavlength and direction are (almost) same */
+    bool operator==(const Beam &beam) {
+      double eps = 1.0e-6;
+      double d_direction =  std::abs(direction_.angle(beam.direction_));
+      double d_wavelength = std::abs(wavelength_ - beam.wavelength_);
+      return (d_direction <= eps && d_wavelength <= eps);
+    }
+
+    /** Check wavelength and direction are not (almost) equal. */
+    bool operator!=(const Beam &beam) {
+      return !(*this == beam);
     }
 
   private:
