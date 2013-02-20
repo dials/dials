@@ -47,7 +47,7 @@ namespace dials { namespace algorithms {
                   mat3 <double> ub_matrix,
                   double d_min)
       : index_generator_(unit_cell, space_group_type, false, d_min),
-        rotation_angle_calculator_(
+        calculate_rotation_angles_(
           beam.get_direction(),
           gonio.get_rotation_axis()),
 //        from_beam_vector_to_detector_(detector),
@@ -89,7 +89,7 @@ namespace dials { namespace algorithms {
       // Try to calculate the diffracting rotation angles
       vec2 <double> phi;
       try {
-        phi = rotation_angle_calculator_.calculate(pstar0);
+        phi = calculate_rotation_angles_(pstar0);
       } catch(error) {
         return reflections;
       }
@@ -104,11 +104,10 @@ namespace dials { namespace algorithms {
         //}
 
         // Calculate the reciprocal space vector
-        //vec3 <double> pstar = pstar0.unit_rotate_around_origin(
-        //  m2_, phi[i]);
+        vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
 
         // Calculate the diffracted beam vector
-        //vec3 <double> s1 = s0_ + pstar;
+        vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
         //vec2 <double> xy;
@@ -117,9 +116,6 @@ namespace dials { namespace algorithms {
         //} catch(error) {
         //  continue;
         //}
-
-        // Calculate the frame number
-        //double z = gonio_.get_zero_based_frame_from_angle(phi_deg, true);
 
         // Check the detector coordinate is valid and add the
         // elements to the arrays. NB. up to now, we have used
@@ -191,7 +187,7 @@ namespace dials { namespace algorithms {
   private:
 
       IndexGenerator index_generator_;
-      RotationAngles rotation_angle_calculator_;
+      RotationAngles calculate_rotation_angles_;
       //geometry::transform::FromBeamVectorToDetector from_beam_vector_to_detector_;
       Beam beam_;
       FlatPanelDetector detector_;

@@ -9,6 +9,7 @@
 
 namespace dials { namespace model {
 
+  using scitbx::vec2;
   using scitbx::vec3;
 
   class Reflection {
@@ -18,12 +19,12 @@ namespace dials { namespace model {
       : miller_index_(0, 0, 0),
         rotation_angle_(0.0),
         beam_vector_(0.0, 0.0, 0.0),
-        image_coord_(0.0, 0.0, 0.0) {}
+        image_coord_(0.0, 0.0) {}
 
     Reflection(cctbx::miller::index <> miller_index,
                double rotation_angle,
                vec3 <double> beam_vector,
-               vec3 <double> image_coord)
+               vec2 <double> image_coord)
       : miller_index_(miller_index),
         rotation_angle_(rotation_angle),
         beam_vector_(beam_vector),
@@ -43,7 +44,7 @@ namespace dials { namespace model {
       return beam_vector_;
     }
 
-    vec3 <double> get_image_coord() const {
+    vec2 <double> get_image_coord() const {
       return image_coord_;
     }
 
@@ -59,7 +60,7 @@ namespace dials { namespace model {
       beam_vector_ = beam_vector;
     }
 
-    void set_image_coord(vec3 <double>  image_coord) {
+    void set_image_coord(vec2 <double>  image_coord) {
       image_coord_ = image_coord;
     }
 
@@ -71,8 +72,8 @@ namespace dials { namespace model {
 
     cctbx::miller::index <> miller_index_;
     double                  rotation_angle_;
-    scitbx::vec3 <double>   beam_vector_;
-    scitbx::vec3 <double>   image_coord_;
+    vec3 <double>   beam_vector_;
+    vec2 <double>   image_coord_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;

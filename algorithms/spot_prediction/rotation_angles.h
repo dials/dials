@@ -12,6 +12,12 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::mat3;
+  using std::sqrt;
+  using std::atan2;  
+
   /** Calculate the square of the value */
   template <typename T>
   T sqr(T &a) {
@@ -31,7 +37,7 @@ namespace dials { namespace algorithms {
      * @param s0 The incident beam vector
      * @param m2 The rotation axis
      */
-    RotationAngles(scitbx::vec3 <double> s0, scitbx::vec3 <double> m2)
+    RotationAngles(vec3 <double> s0, vec3 <double> m2)
       : s0_(s0),
         m2_(m2.normalize()),
         m1_(calculate_goniometer_m1_axis()),
@@ -45,7 +51,7 @@ namespace dials { namespace algorithms {
      * @returns The two rotation angles that satisfy the laue equations
      * @throws error if no angles exist.
      */
-    scitbx::vec2 <double> calculate(scitbx::vec3 <double> pstar0) const {
+    vec2 <double> operator()(vec3 <double> pstar0) const {
 
       // Calculate sq length of pstar0 and ensure p*^2 <= 4s0^2
       double pstar0_len_sq = pstar0.length_sq();
@@ -66,7 +72,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(rho_sq >= sqr(pstar_d_m3));
 
       // Calculate dot product of p* with m1
-      double pstar_d_m1 = std::sqrt(rho_sq - sqr(pstar_d_m3));
+      double pstar_d_m1 = sqrt(rho_sq - sqr(pstar_d_m3));
 
       // Calculate sin/cos of the two angles with +- p*.m1
       double sinphi1, sinphi2, cosphi1, cosphi2;
@@ -76,8 +82,7 @@ namespace dials { namespace algorithms {
       sinphi2 = (-(pstar_d_m1 * pstar0_d_m3) - (pstar_d_m3 * pstar0_d_m1));
 
       // Return the two angles
-      return scitbx::vec2 <double> (std::atan2(sinphi1, cosphi1),
-                                    std::atan2(sinphi2, cosphi2));
+      return vec2 <double> (atan2(sinphi1, cosphi1), atan2(sinphi2, cosphi2));
     }
 
     /**
@@ -87,27 +92,27 @@ namespace dials { namespace algorithms {
      * @param ub_matrix The ub matrix
      * @returns The two rotation angles.
      */
-    scitbx::vec2 <double> calculate(cctbx::miller::index <> miller_index,
-                                    scitbx::mat3 <double> ub_matrix) const {
-      return calculate(ub_matrix * miller_index);
+    vec2 <double> operator()(cctbx::miller::index <> miller_index,
+                             mat3 <double> ub_matrix) const {
+      return operator()(ub_matrix * miller_index);
     }
 
   private:
 
     /** Calculate the goniometer m1 axis (m1 = m2xs0 / |m2xs0|) */
-    scitbx::vec3 <double> calculate_goniometer_m1_axis() const {
+    vec3 <double> calculate_goniometer_m1_axis() const {
       return m2_.cross(s0_).normalize();
     }
 
     /** Calculate the goniometer m3 axis (m3 = m1xs2) */
-    scitbx::vec3 <double> calculate_goniometer_m3_axis() const {
+    vec3 <double> calculate_goniometer_m3_axis() const {
       return m1_.cross(m2_).normalize();
     }
 
-    scitbx::vec3 <double> s0_;
-    scitbx::vec3 <double> m2_;
-    scitbx::vec3 <double> m1_;
-    scitbx::vec3 <double> m3_;
+    vec3 <double> s0_;
+    vec3 <double> m2_;
+    vec3 <double> m1_;
+    vec3 <double> m3_;
     double s0_d_m2;
     double s0_d_m3;
   };
@@ -121,8 +126,8 @@ namespace dials { namespace algorithms {
 
   /** Convert a pair of angles to mod 2PI */
   inline
-  scitbx::vec2 <double> mod_2pi(scitbx::vec2 <double> angles) {
-    return scitbx::vec2 <double> (mod_2pi(angles[0]), mod_2pi(angles[1]));
+  vec2 <double> mod_2pi(vec2 <double> angles) {
+    return vec2 <double> (mod_2pi(angles[0]), mod_2pi(angles[1]));
   }
 
   /**
@@ -132,7 +137,7 @@ namespace dials { namespace algorithms {
       * @returns True/False the angle is in the filter range
       */
   inline
-  bool is_angle_in_range(double angle, scitbx::vec2 <double> range) {
+  bool is_angle_in_range(double angle, vec2 <double> range) {
     return mod_2pi(angle - range[1]) >= mod_2pi(angle - range[0])
         || mod_2pi(angle - range[1]) == 0
         || mod_2pi(range[0] - range[1]) == 0;
@@ -146,7 +151,7 @@ namespace dials { namespace algorithms {
    */
   inline
   scitbx::af::flex_bool is_angle_in_range(const scitbx::af::flex_double &angle,
-                                          scitbx::vec2 <double> range) {
+                                          vec2 <double> range) {
     scitbx::af::flex_bool result(angle.size());
     for (int i = 0; i < angle.size(); ++i) {
       result[i] = is_angle_in_range(angle[i], range);

@@ -17,7 +17,7 @@ namespace dials { namespace model { namespace boost_python {
       "    miller index:    (%1%, %2%, %3%)\n"
       "    rotation angle:  %4%\n"
       "    beam vector:     (%5%, %6%, %7%)\n"
-      "    image coord:     (%8%, %9%, %10%)");
+      "    image coord:     (%8%, %9%)");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -28,7 +28,6 @@ namespace dials { namespace model { namespace boost_python {
     fmt % reflection.get_beam_vector()[2];
     fmt % reflection.get_image_coord()[0];
     fmt % reflection.get_image_coord()[1];
-    fmt % reflection.get_image_coord()[2];
     return fmt.str();
   }
 
@@ -38,7 +37,7 @@ namespace dials { namespace model { namespace boost_python {
       .def(init <cctbx::miller::index <>,
                  double,
                  scitbx::vec3 <double>,
-                 scitbx::vec3 <double> > ((
+                 scitbx::vec2 <double> > ((
           arg("miller_index"),
           arg("rotation_angle"),
           arg("beam_vector"),
