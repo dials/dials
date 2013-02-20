@@ -19,9 +19,6 @@ import time
 from scan_helpers import scan_helper_image_files
 from scan_helpers import scan_helper_image_formats
 
-# FIXME this and cube.py tread on each other's toes... to some extent they share
-# the same information...
-
 class scan:
     '''A class to represent the scan used to perform a rotation method X-ray
     diffraction experiment. In essence this is the information provided to the
