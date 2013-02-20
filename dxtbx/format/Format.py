@@ -42,21 +42,28 @@ class _MetaFormat(type):
 
     def __init__(self, name, bases, attributes):
         super(_MetaFormat, self).__init__(name, bases, attributes)
+
+        # Do-nothing until the Format module, defining the base class,
+        # has been loaded.
+        try:
+            sys.modules[Format.__module__]
+        except NameError:
+            return
+
+        # Add the class to the registry if it is directly derived from
+        # Format.
         self._children = []
+        if Format in bases:
+            from dxtbx.format.Registry import Registry
+            Registry.add(self)
+            return
 
-        # NOP if this is the Format base class.  Register the class if
-        # and only if it is directly derived from Format.  Otherwise,
-        # append it as a child of its superclass.
-        if len(bases) == 1:
-            if bases[0].__name__ == 'Format':
-                from dxtbx.format.Registry import Registry
-                Registry.add(self)
-            else:
-                bases[0]._children.append(self)
-
+        # Add the class to the list of children of its superclasses.
+        for base in bases:
+            base._children.append(self)
         return
 
-class Format:
+class Format(object):
     '''A base class for the representation and interrogation of diffraction
     image formats, from which all classes for reading the header should be
     inherited. This includes: autoregistration of implementation classes,

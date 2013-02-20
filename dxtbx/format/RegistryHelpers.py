@@ -15,21 +15,6 @@ import imp
 import exceptions
 import traceback
 
-def InheritsFromFormat(PutativeFormatClass):
-    '''Check that the PutativeFormatClass inherits on some level from a class
-    named Format. This is aimed at making sure it should play nice with the
-    ImageFormat registry etc.'''
-
-    if PutativeFormatClass.__bases__:
-        for base in PutativeFormatClass.__bases__:
-            if InheritsFromFormat(base):
-                return True
-
-    if PutativeFormatClass.__name__ == 'Format':
-        return True
-
-    return False
-
 def LoadFormatClasses():
     '''Look for files named Format(something).py in the sensible
     places (i.e. in the xia2 distribution and in the users home area)

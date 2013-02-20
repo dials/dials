@@ -11,7 +11,6 @@
 
 from __future__ import division
 
-from RegistryHelpers import InheritsFromFormat
 from RegistryHelpers import LoadFormatClasses
 
 class _Registry:
@@ -47,8 +46,9 @@ class _Registry:
         '''Register a new image format with the registry. N.B. to work
         this object must be inherited from the base Format class.'''
 
-        assert(InheritsFromFormat(format))
+        from dxtbx.format.Format import Format
 
+        assert(issubclass(format, Format))
         if not format in self._formats:
             self._formats.append(format)
 
