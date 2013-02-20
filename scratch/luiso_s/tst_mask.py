@@ -25,13 +25,11 @@ print "nslow, nfast =", nslow, nfast
 print "max(data2d) =", numpy.max( data2d )
 print "min(data2d) =", numpy.min( data2d )
 
-
 for f in range( 1, nfast - 1 ):
     for s in range( 1, nslow - 1 ):
         prom = 0.0
-        for fscan in range( f - 1, f + 1, 1 ):
-            for sscan in range( s - 1, s + 1, 1 ):
-                prom = prom + data2d[ fscan, sscan ]
+        for pscan in data2d[f - 1:f + 1, s - 1:s + 1]:
+            prom = prom + pscan
         data2dsmoth[f, s] = prom / 9.0
 
 print "max(data2dsmoth) =", numpy.max( data2dsmoth )
