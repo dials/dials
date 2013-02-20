@@ -30,15 +30,15 @@ namespace dials { namespace model { namespace boost_python {
     fmt % goniometer.get_rotation_axis()[0];
     fmt % goniometer.get_rotation_axis()[1];
     fmt % goniometer.get_rotation_axis()[2];
-    fmt % goniometer.get_fixed_rotation_matrix()[0];
-    fmt % goniometer.get_fixed_rotation_matrix()[1];
-    fmt % goniometer.get_fixed_rotation_matrix()[2];
-    fmt % goniometer.get_fixed_rotation_matrix()[3];
-    fmt % goniometer.get_fixed_rotation_matrix()[4];
-    fmt % goniometer.get_fixed_rotation_matrix()[5];
-    fmt % goniometer.get_fixed_rotation_matrix()[6];
-    fmt % goniometer.get_fixed_rotation_matrix()[7];
-    fmt % goniometer.get_fixed_rotation_matrix()[8];
+    fmt % goniometer.get_fixed_rotation()[0];
+    fmt % goniometer.get_fixed_rotation()[1];
+    fmt % goniometer.get_fixed_rotation()[2];
+    fmt % goniometer.get_fixed_rotation()[3];
+    fmt % goniometer.get_fixed_rotation()[4];
+    fmt % goniometer.get_fixed_rotation()[5];
+    fmt % goniometer.get_fixed_rotation()[6];
+    fmt % goniometer.get_fixed_rotation()[7];
+    fmt % goniometer.get_fixed_rotation()[8];
     return fmt.str();
   }
 
@@ -140,8 +140,8 @@ namespace dials { namespace model { namespace boost_python {
         &Goniometer::get_rotation_axis,
         &Goniometer::set_rotation_axis)
       .add_property("fixed_rotation_matrix",  
-        &Goniometer::get_fixed_rotation_matrix,
-        &Goniometer::set_fixed_rotation_matrix)
+        &Goniometer::get_fixed_rotation,
+        &Goniometer::set_fixed_rotation)
       .def("__eq__", &Goniometer::operator==)
       .def("__ne__", &Goniometer::operator!=)
       .def("__str__", &goniometer_to_string);

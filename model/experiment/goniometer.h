@@ -95,7 +95,7 @@ namespace dials { namespace model {
     }
 
     /** Get the fixed rotation matrix */
-    mat3 <double> get_fixed_rotation_matrix() const {
+    mat3 <double> get_fixed_rotation() const {
       return fixed_rotation_;
     }
 
@@ -105,7 +105,7 @@ namespace dials { namespace model {
     }
 
     /** Set the fixed rotation matrix */
-    void set_fixed_rotation_matrix(mat3 <double> fixed_rotation) {
+    void set_fixed_rotation(mat3 <double> fixed_rotation) {
       fixed_rotation_ = fixed_rotation;
     }
 

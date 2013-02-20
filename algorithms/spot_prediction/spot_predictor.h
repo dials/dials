@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
         beam_(beam),
         detector_(detector),
         gonio_(gonio),
-        ub_matrix_(ub_matrix),
+        ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
         s0_(beam.get_direction()),
         m2_(gonio.get_rotation_axis().normalize()) {}
 
