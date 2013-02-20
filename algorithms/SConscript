@@ -1,0 +1,4 @@
+
+Import('env')
+
+env.SConscript('spot_prediction/SConscript', exports={ 'env' : env })

@@ -1,6 +1,17 @@
 * text=auto !eol
 /SConscript -text
 /__init__.py -text
+algorithms/SConscript -text
+algorithms/__init__.py -text
+algorithms/spot_prediction/SConscript -text
+algorithms/spot_prediction/__init__.py -text
+algorithms/spot_prediction/boost_python/index_generator.cc -text
+algorithms/spot_prediction/boost_python/rotation_angles.cc -text
+algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
+algorithms/spot_prediction/boost_python/spot_predictor.cc -text
+algorithms/spot_prediction/index_generator.h -text
+algorithms/spot_prediction/rotation_angles.h -text
+algorithms/spot_prediction/spot_predictor.h -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.py -text
@@ -130,6 +141,11 @@ framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 model/SConscript -text
 model/__init__.py -text
+model/data/SConscript -text
+model/data/__init__.py -text
+model/data/boost_python/data_ext.cc -text
+model/data/boost_python/reflection.cc -text
+model/data/reflection.h -text
 model/experiment/SConscript -text
 model/experiment/__init__.py -text
 model/experiment/beam.h -text
