@@ -27,8 +27,14 @@ from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 from dials.scratch.dgw.refinement import random_param_shift
 
+# Symmetry constrained parameterisation for the unit cell
+from cctbx.uctbx import unit_cell
+from rstbx.symmetry.constraints.parameter_reduction import \
+    symmetrize_reduce_enlarge
+
 # Reflection prediction
-from dials.scratch.dgw.prediction import angle_predictor_py, angle_predictor, impact_predictor
+from dials.scratch.dgw.prediction import angle_predictor_py, angle_predictor, \
+    impact_predictor
 from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -68,7 +74,7 @@ xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 src_param.set_fixed([True, False])
 
 # Fix crystal parameters
-xluc_param.set_fixed([True, True, True, True, True, True])
+#xluc_param.set_fixed([True, True, True, True, True, True])
 
 ########################################################################
 # Link model parameterisations together into a parameterisation of the #
@@ -104,6 +110,22 @@ src_param.set_p(p_vals)
 xlo_p_vals = xlo_param.get_p()
 p_vals = [a + b for a, b in zip(xlo_p_vals, [2., 2., 2.])]
 xlo_param.set_p(p_vals)
+
+# change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of one angle)
+xluc_p_vals = xluc_param.get_p()
+cell_params = mycrystal.get_unit_cell().parameters()
+print "old cell", cell_params
+#cell_params = random_param_shift(cell_params, [0.1] * 6)
+cell_params = [a + b for a, b in zip(cell_params, [0.1, 0.1, 0.1, 0.0, 0.0, 0.1])]
+new_uc = unit_cell(cell_params)
+print "new cell", cell_params
+newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
+print newB
+S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
+S.set_orientation(orientation=newB)
+X = S.forward_independent_parameters()
+print xluc_param.num_free()
+xluc_param.set_p(X)
 
 #############################
 # Generate some reflections #
@@ -161,6 +183,7 @@ sigangles = [im_width / 2.] * len(hkls)
 src_param.set_p(src_p_vals)
 det_param.set_p(det_p_vals)
 xlo_param.set_p(xlo_p_vals)
+xluc_param.set_p(xluc_p_vals)
 
 print "Initial values of parameters are"
 msg = "Parameters: " + "%.5f " * len(pred_param)
@@ -215,6 +238,8 @@ print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
 print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
 print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
 print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
+uc = mycrystal.get_unit_cell()
+print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
 print "crystal orientation matrix U ="
 print mycrystal.get_U().round(4)
 ref_log.close()

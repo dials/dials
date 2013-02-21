@@ -211,30 +211,15 @@ if __name__ == '__main__':
         xl_op_fd_ds_dp = get_fd_gradients(xl_op, [1.e-5 * pi/180] * 3)
 
         # apply a random parameter shift to the unit cell
-        cell_params = xl.get_unit_cell().parameters()
-        print cell_params
-        cell_params = random_param_shift(cell_params, [1.] * 6)
-        new_uc = unit_cell(cell_params)
-        newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
-        S = symmetrize_reduce_enlarge(xl.get_space_group())
-        S.set_orientation(orientation=newB)
-        X = S.forward_independent_parameters()
-
-        print "old params"
-        print xl_uc.get_p()
-        print "new params"
-        print X
-
-        print new_uc
-        print cell_params
 
         print "\nCYCLE", i, "\n"
         print "apply random parameter shift"
         p_vals = xl_uc.get_p()
         cell_params = xl.get_unit_cell().parameters()
-        print cell_params
+        print "old unit cell",cell_params
         cell_params = random_param_shift(cell_params, [1.] * 6)
         new_uc = unit_cell(cell_params)
+        print "new unit cell",cell_params
         newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
         S = symmetrize_reduce_enlarge(xl.get_space_group())
         S.set_orientation(orientation=newB)
