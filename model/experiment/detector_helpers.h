@@ -16,13 +16,19 @@
 //#include <boost/geometry/geometries/polygon.hpp>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/mat3.h>
 #include <scitbx/array_family/tiny_types.h>
+#include <scitbx/array_family/flex_types.h>
+#include "detector.h"
 
 namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::mat3;
   using scitbx::af::double6;
+
+  typedef scitbx::af::flex <mat3 <double> > ::type flex_mat3_double;
 
   template <typename DetectorType>
   struct is_coordinate_valid {
@@ -40,16 +46,45 @@ namespace dials { namespace model {
     vec2 <std::size_t> image_size_;
   };
 
-//  template <typename DetectorType>
-//  struct mm_to_pixel {
-//
-//    mm_to_pixel(const DetectorType &detector) {}
-//
-//    vec2 <double> operator()(vec2 <double> mm) {
-//
-//    }
-//  };
 
+  template <>
+  struct is_coordinate_valid <MultiFlatPanelDetector> {
+
+    is_coordinate_valid(const MultiFlatPanelDetector &detector) 
+      : detector_(detector) {}
+
+    template <typename CoordinateType>
+    bool operator()(CoordinateType coord) const {
+      if (coord[0] < 0 || coord[0] >= detector_.num_panels()) {
+        return false;
+      }
+      const FlatPanelDetector &d = detector_[coord[0]];
+      vec2 <std::size_t> image_size = d.get_image_size();
+      return (coord[1] >= 0 && coord[1] < image_size[0])
+          && (coord[2] >= 0 && coord[2] < image_size[1]);
+    }
+
+  private:
+    MultiFlatPanelDetector detector_;
+  };
+
+//  template <>
+//  struct is_coordinate_valid <MultiFlatPanelDetector> {
+
+//    is_coordinate_valid(const MultiFlatPanelDetector &detector) 
+//      : is_coord_valid_ {}
+
+//    template <typename CoordinateType>
+//    bool operator()(CoordinateType coord) const {
+//      return 0 <= coord.first && coord.first < detector_.num_panels()
+//          && is_coord_valid_[panel](coord.second);
+//    }
+
+//  private:
+//  
+//  
+//    is_coord_valid_list is_coord_valid_;
+//  };
   
   template <typename DetectorType>
   struct diffracted_beam_detector_coord {
@@ -66,6 +101,58 @@ namespace dials { namespace model {
   private:
     mat3 <double> D_;
   };
+
+
+  template <>
+  struct diffracted_beam_detector_coord <MultiFlatPanelDetector> {
+
+    diffracted_beam_detector_coord(const MultiFlatPanelDetector &detector)
+      : D_(inverse_d_matrices(detector)) {}
+
+    vec2 <double> operator()(vec3 <double> s1) const {
+      vec2 <double> xy;
+      int panel = -1;
+      double w_max = 0;
+      for (std::size_t i = 0; i < D_.size(); ++i) {
+        vec3 <double> v = D_[i] * s1;
+        if (v[2] > w_max) {
+          vec2 <double> xy_temp(v[0] / v[2], v[1] / v[2]);
+          //if (is_valid_coord_[i](xy_temp)) {
+            w_max = v[2];
+            panel = i;
+          //}
+        }
+      }
+      DIALS_ASSERT(panel >= 0);
+      return xy;
+    }
+
+  private:
+    flex_mat3_double inverse_d_matrices(
+        const MultiFlatPanelDetector &detector) {
+      flex_mat3_double result(detector.num_panels());
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = detector[i].get_inverse_d_matrix();
+      }
+      return result;
+    }
+    
+    
+
+    flex_mat3_double D_;
+    //is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+  };
+
+
+//  template <typename DetectorType>
+//  struct mm_to_pixel {
+//
+//    mm_to_pixel(const DetectorType &detector) {}
+//
+//    vec2 <double> operator()(vec2 <double> mm) {
+//
+//    }
+//  };
 
   /**
    * Get the image size in mm
@@ -155,7 +242,7 @@ namespace dials { namespace model {
    */
 //  template <typename T>
 //  inline bool
-//  is_coordinate_valid(const MultiFlatPanelDetector &detector, vec3 <T> coord) {
+//  is_coordinate_valid(const MultiFlatPanelDetector &detector, vec2 <T> coord) {
 //    int panel = (int)coord[0];
 //    return (coord[0] >= 0 && coord[0] < detector.num_panels())
 //        && (coord[1] >= 0 && coord[1] < detector[panel].get_image_size()[0])
