@@ -19,11 +19,11 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_spot_predictor()
   {
     scitbx::af::shared <Reflection> (SpotPredictor::*predict_single)(
-      miller_index) const = &SpotPredictor::predict;
+      miller_index) const = &SpotPredictor::operator();
     scitbx::af::shared <Reflection> (SpotPredictor::*predict_array)(
-      const flex_miller_index &) const = &SpotPredictor::predict;
+      const flex_miller_index &) const = &SpotPredictor::operator();
     scitbx::af::shared <Reflection> (SpotPredictor::*predict_generate)() = 
-      &SpotPredictor::predict;
+      &SpotPredictor::operator();
                 
     class_ <SpotPredictor> ("SpotPredictor", no_init)
       .def(init <const Beam &,
@@ -42,11 +42,11 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("space_group_type"),
         arg("ub_matrix"),
         arg("d_min"))))
-      .def("predict", predict_single, (
+      .def("__call__", predict_single, (
         arg("miller_index")))
-      .def("predict", predict_array, (
+      .def("__call__", predict_array, (
         arg("miller_indices")))
-      .def("predict", predict_generate);
+      .def("__call__", predict_generate);
   }
 
 }}} // namespace = dials::spot_prediction::boost_python

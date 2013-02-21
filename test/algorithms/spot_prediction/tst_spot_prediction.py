@@ -60,17 +60,17 @@ class TestSpotPredictor:
                             (0, 0))
 
         # Create the spot predictor
-        self.spot_predictor = SpotPredictor(self.beam,
-                                            self.detector,
-                                            self.gonio,
-                                            self.scan,
-                                            self.unit_cell,
-                                            self.space_group_type,
-                                            self.ub_matrix,
-                                            self.d_min)
+        self.predict_spots = SpotPredictor(self.beam,
+                                           self.detector,
+                                           self.gonio,
+                                           self.scan,
+                                           self.unit_cell,
+                                           self.space_group_type,
+                                           self.ub_matrix,
+                                           self.d_min)
 
         # Predict the spot locations
-        self.reflections = self.spot_predictor.predict()
+        self.reflections = self.predict_spots()
 
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""

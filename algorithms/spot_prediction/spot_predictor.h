@@ -109,7 +109,8 @@ namespace dials { namespace algorithms {
      * @param h The miller index
      * @returns An array of predicted reflections
      */
-    scitbx::af::shared <Reflection> predict(miller_index h) const {
+    scitbx::af::shared <Reflection> 
+    operator()(miller_index h) const {
 
       scitbx::af::shared <Reflection> reflections;
 
@@ -170,10 +171,10 @@ namespace dials { namespace algorithms {
      * @param miller_indices The array of miller indices.
      */
     scitbx::af::shared <Reflection>
-    predict(const flex_miller_index &miller_indices) const {
+    operator()(const flex_miller_index &miller_indices) const {
       scitbx::af::shared <Reflection> reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-        scitbx::af::shared <Reflection> r = predict(miller_indices[i]);
+        scitbx::af::shared <Reflection> r = operator()(miller_indices[i]);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -185,7 +186,7 @@ namespace dials { namespace algorithms {
      * Generate a set of miller indices and predict the detector coordinates.
      */
     scitbx::af::shared <Reflection>
-    predict() {
+    operator()() {
       scitbx::af::shared <Reflection> reflections;
 
       // Continue looping until we run out of miller indices
@@ -198,7 +199,7 @@ namespace dials { namespace algorithms {
         }
 
         // Predict the spot location for the miller index
-        scitbx::af::shared <Reflection> r = predict(h);
+        scitbx::af::shared <Reflection> r = operator()(h);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -208,19 +209,19 @@ namespace dials { namespace algorithms {
 
   private:
 
-      IndexGenerator index_generator_;
-      RotationAngles calculate_rotation_angles_;
-      is_scan_angle_valid <Scan> is_angle_valid_;
-      is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
-      diffracted_beam_detector_coord <FlatPanelDetector> get_image_coord_;
-      get_all_frames_from_angle <Scan> get_frame_numbers_;
-      Beam beam_;
-      FlatPanelDetector detector_;
-      Goniometer gonio_;
-      Scan scan_;
-      mat3 <double> ub_matrix_;
-      vec3 <double> s0_;
-      vec3 <double> m2_;
+    IndexGenerator index_generator_;
+    RotationAngles calculate_rotation_angles_;
+    is_scan_angle_valid <Scan> is_angle_valid_;
+    is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+    diffracted_beam_detector_coord <FlatPanelDetector> get_image_coord_;
+    get_all_frames_from_angle <Scan> get_frame_numbers_;
+    Beam beam_;
+    FlatPanelDetector detector_;
+    Goniometer gonio_;
+    Scan scan_;
+    mat3 <double> ub_matrix_;
+    vec3 <double> s0_;
+    vec3 <double> m2_;
   };
 
 }} // namespace dials::algorithms
