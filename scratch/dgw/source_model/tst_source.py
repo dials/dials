@@ -1,5 +1,5 @@
 from __future__ import division
-from bpcx_regression.source_model import source
+from dials.scratch.dgw.source_model import source
 from scitbx import matrix
 
 if __name__ == '__main__':

@@ -2,7 +2,7 @@ from __future__ import division
 
 from math import sin, cos
 from scitbx import matrix
-from bpcx_regression_refinement_ext import *
+from dials_refinement_ext import *
 import random
 
 def dR_from_axis_and_angle(axis, angle, deg=False):

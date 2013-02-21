@@ -1,13 +1,13 @@
 
-#ifndef BPCX_REGRESSION_REFINEMENT_PREDICTION_PARAMETER_HELPERS_H
-#define BPCX_REGRESSION_REFINEMENT_PREDICTION_PARAMETER_HELPERS_H
+#ifndef DIALS_REFINEMENT_PREDICTION_PARAMETER_HELPERS_H
+#define DIALS_REFINEMENT_PREDICTION_PARAMETER_HELPERS_H
 
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
 #include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
 
-namespace bpcx_regression { namespace refinement {
+namespace dials { namespace refinement {
 
   using scitbx::vec3;
   using scitbx::mat3;
@@ -233,6 +233,6 @@ namespace bpcx_regression { namespace refinement {
     return dpv_dxluc_p;
   }
 
-}} // namespace bpcx_regression::refinement
+}} // namespace dials::refinement
 
-#endif // BPCX_REGRESSION_REFINEMENT_PREDICTION_PARAMETER_HELPERS_H
+#endif // DIALS_REFINEMENT_PREDICTION_PARAMETER_HELPERS_H

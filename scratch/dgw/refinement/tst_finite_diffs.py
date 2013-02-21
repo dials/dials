@@ -18,25 +18,25 @@ from scitbx import matrix
 from setup_geometry import extract
 
 # Model parameterisations
-from bpcx_regression.refinement.detector_parameters import \
+from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
-from bpcx_regression.refinement.source_parameters import \
+from dials.scratch.dgw.refinement.source_parameters import \
     source_parameterisation_orientation
-from bpcx_regression.refinement.crystal_parameters import \
+from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
-from bpcx_regression.refinement import random_param_shift
+from dials.scratch.dgw.refinement import random_param_shift
 
 # Reflection prediction
-from bpcx_regression.prediction import angle_predictor, impact_predictor
+from dials.scratch.dgw.prediction import angle_predictor, impact_predictor
 from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from bpcx_regression.refinement.prediction_parameters import \
+from dials.scratch.dgw.refinement.prediction_parameters import \
     detector_space_prediction_parameterisation
 
 # Imports for the target function
-from bpcx_regression.refinement.target import \
+from dials.scratch.dgw.refinement.target import \
     least_squares_positional_residual_with_rmsd_cutoff, reflection_manager
 
 # Local functions

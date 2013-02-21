@@ -5,5 +5,5 @@ sources = [
     'boost_python/prediction_parameter_helpers.cc',
     'boost_python/refinement_ext.cc']
 
-env.SharedLibrary(target='#/lib/bpcx_regression_refinement_ext', source=sources)
+env.SharedLibrary(target='#/lib/dials_refinement_ext', source=sources)
 

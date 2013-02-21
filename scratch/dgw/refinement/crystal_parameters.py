@@ -6,9 +6,9 @@
 
 from __future__ import division
 from model_parameters import parameter, model_parameterisation
-from bpcx_regression.crystal_model import crystal
+from dials.scratch.dgw.crystal_model import crystal
 from scitbx import matrix
-from bpcx_regression.refinement \
+from dials.scratch.dgw.refinement \
     import get_fd_gradients, dR_from_axis_and_angle, random_param_shift
 from math import pi
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge

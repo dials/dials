@@ -9,14 +9,14 @@ from scitbx import matrix
 
 #### Import model parameterisations
 
-from bpcx_regression.refinement.detector_parameters import \
+from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
-from bpcx_regression.refinement.source_parameters import \
+from dials.scratch.dgw.refinement.source_parameters import \
     source_parameterisation_orientation
-from bpcx_regression.refinement.crystal_parameters import \
+from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 from cctbx.array_family import flex
-from bpcx_regression_refinement_ext import *
+from dials_refinement_ext import *
 
 class prediction_parameterisation(object):
     '''

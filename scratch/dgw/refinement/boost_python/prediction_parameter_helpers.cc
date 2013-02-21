@@ -6,7 +6,7 @@
 
 using namespace boost::python;
 
-namespace bpcx_regression { namespace refinement { namespace boost_python {
+namespace dials { namespace refinement { namespace boost_python {
 
   void export_prediction_parameter_helpers()
   {
@@ -122,4 +122,4 @@ namespace bpcx_regression { namespace refinement { namespace boost_python {
       crystal_cell_pv_derivative_array);
   }
 
-}}} // namespace bpcx_regression::refinement::boost_python
+}}} // namespace dials::refinement::boost_python

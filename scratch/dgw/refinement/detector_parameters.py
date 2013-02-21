@@ -9,7 +9,7 @@ from model_parameters import parameter, model_parameterisation
 from scitbx import matrix
 from rstbx.bpcx import sensor
 from math import sin, cos, pi, sqrt
-from bpcx_regression.refinement \
+from dials.scratch.dgw.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift
 
 class detector_parameterisation_single_sensor(model_parameterisation):

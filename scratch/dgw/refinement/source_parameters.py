@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 from __future__ import division
-from bpcx_regression.source_model import source
+from dials.scratch.dgw.source_model import source
 from model_parameters import parameter, model_parameterisation
 from scitbx import matrix
 from math import pi
-from bpcx_regression.refinement \
+from dials.scratch.dgw.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift
 
 class source_parameterisation_orientation(model_parameterisation):

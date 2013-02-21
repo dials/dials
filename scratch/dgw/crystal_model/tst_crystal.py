@@ -1,6 +1,6 @@
 from __future__ import division
 from scitbx import matrix
-from bpcx_regression.crystal_model import crystal
+from dials.scratch.dgw.crystal_model import crystal
 
 if __name__ == '__main__':
 

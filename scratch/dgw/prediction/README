@@ -7,12 +7,12 @@ Reflection prediction
 
 Development of reflection prediction class(es) that use the current state of the 
 experimental models to predict X, Y, phi for a reflection hkl. The experimental
-models are, for example as of rev274 and cctbx rev16101:
+models are currently:
 
-* ``bpcx_regression.crystal_model.crystal``
-* ``bpcx_regression.source_model.source``
+* ``dials.scratch.dgw.crystal_model.crystal``
+* ``dials.scratch.dgw.source_model.source``
 * ``rstbx.bpcx.detector_model.instrument_specifics.pilatus``
-* ``bpcx_regression.goniometer_model.goniometer``
+* ``dials.scratch.dgw.goniometer_model.goniometer``
 
 The current use cases use C++ classes that are exposed to Python as
 ``rotation_angles`` and ``reflection_prediction``. Reasons for moving away

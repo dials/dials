@@ -16,9 +16,9 @@ from scitbx import matrix
 
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
-from bpcx_regression.source_model import source
-from bpcx_regression.crystal_model import crystal
-from bpcx_regression.goniometer_model import goniometer
+from dials.scratch.dgw.source_model import source
+from dials.scratch.dgw.crystal_model import crystal
+from dials.scratch.dgw.goniometer_model import goniometer
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):

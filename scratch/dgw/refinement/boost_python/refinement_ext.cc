@@ -3,13 +3,13 @@
 
 using namespace boost::python;
 
-namespace bpcx_regression { namespace refinement { namespace boost_python {
+namespace dials { namespace refinement { namespace boost_python {
 
   void export_prediction_parameter_helpers();
 
-  BOOST_PYTHON_MODULE(bpcx_regression_refinement_ext)
+  BOOST_PYTHON_MODULE(dials_refinement_ext)
   {
     export_prediction_parameter_helpers();
   }
 
-}}} // namespace bpcx_regression::refinement::boost_python
+}}} // namespace dials::refinement::boost_python

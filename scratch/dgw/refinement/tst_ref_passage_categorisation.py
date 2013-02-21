@@ -16,12 +16,12 @@ from math import pi
 from setup_geometry import extract
 
 # Reflection prediction
-from bpcx_regression.prediction import angle_predictor, impact_predictor
+from dials.scratch.dgw.prediction import angle_predictor, impact_predictor
 from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Imports for the target function
-from bpcx_regression.refinement.target import reflection_manager
+from dials.scratch.dgw.refinement.target import reflection_manager
 
 args = sys.argv[1:]
 overrides = """geometry.parameters.crystal.a.length.range = 10 50

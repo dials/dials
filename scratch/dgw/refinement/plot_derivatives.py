@@ -17,27 +17,27 @@ from scitbx import matrix
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
 from rstbx.bpcx import sensor
-from bpcx_regression.source_model import source
-from bpcx_regression.crystal_model import crystal
-from bpcx_regression.goniometer_model import goniometer
+from dials.scratch.dgw.source_model import source
+from dials.scratch.dgw.crystal_model import crystal
+from dials.scratch.dgw.goniometer_model import goniometer
 
 # Model parameterisations
-from bpcx_regression.refinement.prediction_parameters import \
+from dials.scratch.dgw.refinement.prediction_parameters import \
     detector_space_prediction_parameterisation
-from bpcx_regression.refinement.detector_parameters import \
+from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
-from bpcx_regression.refinement.source_parameters import \
+from dials.scratch.dgw.refinement.source_parameters import \
     source_parameterisation_orientation
-from bpcx_regression.refinement.crystal_parameters import \
+from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 
 # Reflection prediction
-from bpcx_regression.prediction import angle_predictor, impact_predictor
+from dials.scratch.dgw.prediction import angle_predictor, impact_predictor
 from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from bpcx_regression.refinement.prediction_parameters import \
+from dials.scratch.dgw.refinement.prediction_parameters import \
     detector_space_prediction_parameterisation
 
 # Local functions
