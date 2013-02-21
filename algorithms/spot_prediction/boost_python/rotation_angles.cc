@@ -30,8 +30,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                  scitbx::vec3 <double> > ((
         arg("beam_direction"),
         arg("rotation_axis"))))
-      .def("__getitem__", calculate_pstar0)
-      .def("__getitem__", calculate_miller);
+      .def("__call__", calculate_pstar0)
+      .def("__call__", calculate_miller);
   }
 
 }}} // namespace = dials::algorithms::boost_python

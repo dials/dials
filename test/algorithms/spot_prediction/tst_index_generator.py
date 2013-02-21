@@ -5,7 +5,6 @@ def run():
     from os.path import realpath, dirname, normpath, join
     import numpy
 
-
     # The XDS files to read from
     test_path = dirname(dirname(dirname(realpath(__file__))))
     integrate_filename = join(test_path, 'data/sim_mx/INTEGRATE.HKL')
