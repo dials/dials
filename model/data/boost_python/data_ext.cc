@@ -17,7 +17,7 @@ namespace dials { namespace model { namespace boost_python {
 
   void export_reflection();
 
-  BOOST_PYTHON_MODULE(dials_reflection_ext)
+  BOOST_PYTHON_MODULE(dials_model_data_ext)
   {
     export_reflection();
   }

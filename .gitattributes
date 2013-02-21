@@ -430,5 +430,7 @@ scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
 test/algorithms/spot_prediction/tst_index_generator.py -text
 test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
+test/data/sim_mx/GXPARM.XDS -text
+test/data/sim_mx/INTEGRATE.HKL -text
 test/model/experiment/tst_detector_helpers.py -text
 test/model/experiment/tst_scan_helpers.py -text
