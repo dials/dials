@@ -85,8 +85,8 @@ namespace dials { namespace model {
       origin_(0.0, 0.0, 0.0),
       pixel_size_(0.0, 0.0),
       image_size_(0, 0),
-      trusted_range_(0, 0),
-      distance_(0.0) {}
+      distance_(0.0),
+      trusted_range_(0, 0) {}
 
     /**
     * Initialise the detector panel.
@@ -103,21 +103,20 @@ namespace dials { namespace model {
     FlatPanelDetector(std::string type,
       vec3 <double> fast_axis,
       vec3 <double> slow_axis,
-      vec3 <double> normal,
       vec3 <double> origin,
       vec2 <double> pixel_size,
       vec2 <std::size_t> image_size,
-      vec2 <int> trusted_range,
-      double distance)
+      double distance,
+      vec2 <int> trusted_range)
       : type_(type),
-      fast_axis_(fast_axis),
-      slow_axis_(slow_axis),
-      normal_(normal),
+      fast_axis_(fast_axis.normalize() * pixel_size[0]),
+      slow_axis_(slow_axis.normalize() * pixel_size[1]),
+      normal_((fast_axis_.cross(slow_axis_)).normalize()),
       origin_(origin),
       pixel_size_(pixel_size),
       image_size_(image_size),
-      trusted_range_(trusted_range),
-      distance_(distance) {}
+      distance_(distance),
+      trusted_range_(trusted_range) {}
 
     /** Virtual destructor */
     virtual ~FlatPanelDetector() {}
@@ -157,14 +156,14 @@ namespace dials { namespace model {
       return image_size_;
     }
 
-    /** Get the trusted range */
-    vec2 <int> get_trusted_range() const {
-      return trusted_range_;
-    }
-
     /** Get the distance from the crystal */
     double get_distance() const {
       return distance_;
+    }
+
+    /** Get the trusted range */
+    vec2 <int> get_trusted_range() const {
+      return trusted_range_;
     }
 
     /** Get the matrix of the detector coordinate system */
@@ -215,14 +214,14 @@ namespace dials { namespace model {
       image_size_ = image_size;
     }
 
-    /** Set the trusted range */
-    void set_trusted_range(vec2 <int> trusted_range) {
-      trusted_range_ = trusted_range;
-    }
-
     /* Set the distance from the crystal */
     void set_distance(double distance) {
       distance_ = distance;
+    }
+
+    /** Set the trusted range */
+    void set_trusted_range(vec2 <int> trusted_range) {
+      trusted_range_ = trusted_range;
     }
 
     /** Set the matrix of the detector coordinate system */
@@ -266,8 +265,8 @@ namespace dials { namespace model {
     vec3 <double> origin_;
     vec2 <double> pixel_size_;
     vec2 <std::size_t> image_size_;
-    vec2 <int> trusted_range_;
     double distance_;
+    vec2 <int> trusted_range_;
   };
 
   /**
