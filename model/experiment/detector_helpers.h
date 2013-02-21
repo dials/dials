@@ -50,10 +50,11 @@ namespace dials { namespace model {
 //    }
 //  };
 
+  
   template <typename DetectorType>
-  struct diffracted_beam_intersection_point {
+  struct diffracted_beam_detector_coord {
 
-    diffracted_beam_intersection_point(const DetectorType &detector)
+    diffracted_beam_detector_coord(const DetectorType &detector)
       : D_(detector.get_inverse_d_matrix()) {}
 
     vec2 <double> operator()(vec3 <double> s1) const {

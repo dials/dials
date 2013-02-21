@@ -25,6 +25,7 @@
 
 namespace dials { namespace algorithms {
 
+  // Using lots of stuff from other namespaces
   using scitbx::rad_as_deg;
   using scitbx::vec2;
   using scitbx::vec3;
@@ -38,13 +39,15 @@ namespace dials { namespace algorithms {
   using model::ReflectionList;
   using model::is_scan_angle_valid;
   using model::is_coordinate_valid;
-  using model::diffracted_beam_intersection_point;
+  using model::diffracted_beam_detector_coord;
   using model::get_all_frames_from_angle;
   using model::mod_360;
 
+  // Typedef the miller_index and flex_miller_index types
   typedef cctbx::miller::index <> miller_index;
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
 
+  /** A class to perform spot prediction. */
   class SpotPredictor {
 
   public:
@@ -72,17 +75,17 @@ namespace dials { namespace algorithms {
         calculate_rotation_angles_(
           beam.get_direction(),
           gonio.get_rotation_axis()),
+        is_angle_valid_(scan),
+        is_coord_valid_(detector),
+        get_image_coord_(detector),
+        get_frame_numbers_(scan),
         beam_(beam),
         detector_(detector),
         gonio_(gonio),
         scan_(scan),
         ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
         s0_(beam.get_direction()),
-        m2_(gonio.get_rotation_axis().normalize()),
-        is_angle_valid_(scan),
-        is_coord_valid_(detector),
-        calculate_detector_coordinate_(detector),
-        get_frame_numbers_(scan) {}
+        m2_(gonio.get_rotation_axis().normalize()) {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -124,6 +127,7 @@ namespace dials { namespace algorithms {
       // Loop through the 2 rotation angles
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
+        // Convert angle to degrees
         double phi_deg = mod_360(rad_as_deg(phi[i]));
 
         // Check that the angles are within the rotation range
@@ -138,7 +142,7 @@ namespace dials { namespace algorithms {
         // Try to calculate the detector coordinate
         vec2 <double> xy;
         try {
-          xy = calculate_detector_coordinate_(s1);
+          xy = get_image_coord_(s1);
         } catch(error) {
           continue;
         }
@@ -206,6 +210,10 @@ namespace dials { namespace algorithms {
 
       IndexGenerator index_generator_;
       RotationAngles calculate_rotation_angles_;
+      is_scan_angle_valid <Scan> is_angle_valid_;
+      is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+      diffracted_beam_detector_coord <FlatPanelDetector> get_image_coord_;
+      get_all_frames_from_angle <Scan> get_frame_numbers_;
       Beam beam_;
       FlatPanelDetector detector_;
       Goniometer gonio_;
@@ -213,10 +221,6 @@ namespace dials { namespace algorithms {
       mat3 <double> ub_matrix_;
       vec3 <double> s0_;
       vec3 <double> m2_;
-      is_scan_angle_valid <Scan> is_angle_valid_;
-      is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
-      diffracted_beam_intersection_point <FlatPanelDetector> calculate_detector_coordinate_;
-      get_all_frames_from_angle <Scan> get_frame_numbers_;
   };
 
 }} // namespace dials::algorithms
