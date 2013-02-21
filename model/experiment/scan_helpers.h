@@ -30,11 +30,11 @@ namespace dials { namespace model {
   /** Check if the angle is within the given range */
   template <bool deg = true>
   struct is_angle_in_range {
-    
+
     /** Cache the range */
-    is_angle_in_range(vec2 <double> range) 
+    is_angle_in_range(vec2 <double> range)
       : range_(deg ? range[0] : rad_as_deg(range[0]),
-               deg ? range[1] : rad_as_deg(range[1])) {}    
+               deg ? range[1] : rad_as_deg(range[1])) {}
 
     /** Check the angle is within the range */
     bool operator()(double angle) const {
@@ -43,11 +43,11 @@ namespace dials { namespace model {
       }
       double diff_angle_range0 = mod_360(angle - range_[0]);
       double diff_angle_range1 = mod_360(angle - range_[1]);
-      return range_[1] - range_[0] >= 360.0 
+      return range_[1] - range_[0] >= 360.0
           || diff_angle_range1 >= diff_angle_range0
           || diff_angle_range1 == 0;
-    }  
-  
+    }
+
   private:
     vec2 <double> range_;
   };
@@ -56,7 +56,7 @@ namespace dials { namespace model {
   template <typename ScanType, bool deg = true>
   struct is_scan_angle_valid
     : is_angle_in_range <deg> {
-    
+
     /** Set the angular range from the starting angle and oscillation range */
     is_scan_angle_valid(const ScanType &scan)
       : is_angle_in_range <deg> (vec2 <double> (

@@ -61,7 +61,7 @@ namespace dials { namespace model {
     double get_oscillation_range() const {
       return oscillation_range_;
     }
-    
+
     /** Get the number of images */
     int get_num_images() const {
       return num_images_;
@@ -71,7 +71,7 @@ namespace dials { namespace model {
     double get_total_oscillation_range() const {
       return num_images_ * oscillation_range_;
     }
-    
+
     /** Set the image range */
     void set_image_range(vec2 <int> image_range) {
       image_range_ = image_range;
@@ -88,7 +88,7 @@ namespace dials { namespace model {
     void set_oscillation_range(double oscillation_range) {
       oscillation_range_ = oscillation_range;
     }
-    
+
     /** Check the scans are the same */
     bool operator==(const Scan &scan) {
       double eps = 1.0e-6;
@@ -97,12 +97,12 @@ namespace dials { namespace model {
       return image_range_ == scan.image_range_ &&
              d_angle <= eps && d_range <= eps;
     }
-    
+
     /** Check the scans are not the same */
     bool operator!=(const Scan &scan) {
       return !(*this == scan);
     }
-    
+
   private:
 
     vec2 <int> image_range_;

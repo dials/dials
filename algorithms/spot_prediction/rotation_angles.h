@@ -25,7 +25,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::mat3;
   using std::sqrt;
-  using std::atan2;  
+  using std::atan2;
 
   /** Calculate the square of the value */
   template <typename T>

@@ -26,44 +26,44 @@ namespace dials { namespace model {
 
   template <typename DetectorType>
   struct is_coordinate_valid {
-    
+
     is_coordinate_valid(const DetectorType &detector)
       : image_size_(detector.get_image_size()) {}
-  
+
     template <typename CoordinateType>
     bool operator()(CoordinateType coord) const {
       return (coord[0] >= 0 && coord[0] < image_size_[0])
           && (coord[1] >= 0 && coord[1] < image_size_[1]);
     }
-    
+
   private:
-    vec2 <std::size_t> image_size_;  
+    vec2 <std::size_t> image_size_;
   };
-  
+
 //  template <typename DetectorType>
 //  struct mm_to_pixel {
-//    
+//
 //    mm_to_pixel(const DetectorType &detector) {}
-//    
+//
 //    vec2 <double> operator()(vec2 <double> mm) {
-//      
+//
 //    }
 //  };
-  
+
   template <typename DetectorType>
   struct diffracted_beam_intersection_point {
-  
+
     diffracted_beam_intersection_point(const DetectorType &detector)
       : D_(detector.get_inverse_d_matrix()) {}
-  
+
     vec2 <double> operator()(vec3 <double> s1) const {
       vec3 <double> v = D_ * s1;
       DIALS_ASSERT(v[2] > 0);
       return vec2 <double> (v[0] / v[2], v[1] / v[2]);
     }
-  
+
   private:
-    mat3 <double> D_;  
+    mat3 <double> D_;
   };
 
   /**

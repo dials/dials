@@ -244,11 +244,11 @@ namespace dials { namespace model {
       double d_slow = slow_axis_.angle(detector.slow_axis_);
       double d_origin = origin_.angle(detector.origin_);
       double d_dist = std::abs(distance_ - detector.distance_);
-      double d_size_slow = 
+      double d_size_slow =
         std::abs((int)image_size_[0] - (int)detector.image_size_[0]);
-      double d_size_fast = 
+      double d_size_fast =
         std::abs((int)image_size_[1] - (int)detector.image_size_[1]);
-      return d_fast <= eps && d_slow <= eps && d_origin <= eps && 
+      return d_fast <= eps && d_slow <= eps && d_origin <= eps &&
              d_dist <= eps && d_size_slow <= eps && d_size_fast <= eps;
     }
 
@@ -332,7 +332,7 @@ namespace dials { namespace model {
     const panel_type& operator[](std::size_t index) const {
       return panel_list_[index];
     }
-    
+
     /** Check the detector panels are the same */
     bool operator==(const MultiFlatPanelDetector &detector) {
       bool same = panel_list_.size() == detector.panel_list_.size();
