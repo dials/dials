@@ -29,16 +29,19 @@ namespace dials { namespace model {
       : miller_index_(0, 0, 0),
         rotation_angle_(0.0),
         beam_vector_(0.0, 0.0, 0.0),
-        image_coord_(0.0, 0.0) {}
+        image_coord_(0.0, 0.0),
+        frame_(0.0) {}
 
     Reflection(cctbx::miller::index <> miller_index,
                double rotation_angle,
                vec3 <double> beam_vector,
-               vec2 <double> image_coord)
+               vec2 <double> image_coord,
+               double frame)
       : miller_index_(miller_index),
         rotation_angle_(rotation_angle),
         beam_vector_(beam_vector),
-        image_coord_(image_coord) {}
+        image_coord_(image_coord),
+        frame_(frame) {}
 
   public:
 
@@ -58,6 +61,10 @@ namespace dials { namespace model {
       return image_coord_;
     }
 
+    double get_frame_number() const {
+      return frame_;
+    }
+
     void set_miller_index(cctbx::miller::index <> miller_index) {
       miller_index_ = miller_index;
     }
@@ -74,6 +81,10 @@ namespace dials { namespace model {
       image_coord_ = image_coord;
     }
 
+    void set_frame_number(double frame) {
+      frame_ = frame;
+    }
+
     bool is_zero() {
       return miller_index_.is_zero();
     }
@@ -84,6 +95,7 @@ namespace dials { namespace model {
     double                  rotation_angle_;
     vec3 <double>   beam_vector_;
     vec2 <double>   image_coord_;
+    double frame_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;

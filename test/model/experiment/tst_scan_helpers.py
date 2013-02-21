@@ -27,11 +27,11 @@ def tst_is_angle_in_range():
           #   angle in range A -> B = True
           #   angle in range B -> 360 = False
           for angle in range(0, angular_range[0]):
-              assert(is_angle_in_range(angular_range, angle, True) == False)
+              assert(is_angle_in_range(angular_range, angle) == False)
           for angle in range(angular_range[0], angular_range[1]+1):
-              assert(is_angle_in_range(angular_range, angle, True) == True)
+              assert(is_angle_in_range(angular_range, angle) == True)
           for angle in range(angular_range[1]+1, 360):
-              assert(is_angle_in_range(angular_range, angle, True) == False)
+              assert(is_angle_in_range(angular_range, angle) == False)
       else:
 
           # Check that the following are true
@@ -39,16 +39,16 @@ def tst_is_angle_in_range():
           #   angle in range B -> A = False
           #   angle in range A -> 360 = True
           for angle in range(0, angular_range[1]+1):
-              assert(is_angle_in_range(angular_range, angle, True) == True)
+              assert(is_angle_in_range(angular_range, angle) == True)
           for angle in range(angular_range[1]+1, angular_range[0]):
-              assert(is_angle_in_range(angular_range, angle, True) == False)
+              assert(is_angle_in_range(angular_range, angle) == False)
           for angle in range(angular_range[0], 360):
-              assert(is_angle_in_range(angular_range, angle, True) == True)
+              assert(is_angle_in_range(angular_range, angle) == True)
 
     # Create a range over 360 and make sure all angles are valid
     angular_range = (-10, 370)
     for angle in range(0, 360):
-        assert(is_angle_in_range(angular_range, angle, True) == True)
+        assert(is_angle_in_range(angular_range, angle) == True)
 
     # Test passed
     print "OK"
@@ -59,7 +59,7 @@ def tst_is_scan_angle_valid():
     # Create a scan object with no range (all angles valid)
     scan = Scan((0, 0), 0, 0.1)
     for angle in range(0, 360):
-        assert(is_scan_angle_valid(scan, angle, True) == True)
+        assert(is_scan_angle_valid(scan, angle) == True)
 
     # Test passed
     print "OK"

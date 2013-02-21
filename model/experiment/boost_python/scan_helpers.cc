@@ -19,20 +19,12 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  bool is_angle_in_range_wrapper(vec2 <double> range, double angle, bool deg) {
-    if (deg) {
-      return is_angle_in_range <true>(range)(angle);
-    } else {
-      return is_angle_in_range <false>(range)(angle);
-    }
+  bool is_angle_in_range_wrapper(vec2 <double> range, double angle) {
+    return is_angle_in_range(range)(angle);
   }
 
-  bool is_scan_angle_valid_wrapper(const Scan &scan, double angle, bool deg) {
-    if (deg) {
-      return is_scan_angle_valid <Scan, true>(scan)(angle);
-    } else {
-      return is_scan_angle_valid <Scan, false>(scan)(angle);    
-    }
+  bool is_scan_angle_valid_wrapper(const Scan &scan, double angle) {
+    return is_scan_angle_valid<Scan>(scan)(angle);
   }
 
   void export_scan_helpers()
@@ -40,13 +32,11 @@ namespace dials { namespace model { namespace boost_python {
     def("is_angle_in_range", 
       &is_angle_in_range_wrapper, (
         arg("range"),
-        arg("angle"),
-        arg("deg") = true));
+        arg("angle")));
     def("is_scan_angle_valid", 
       &is_scan_angle_valid_wrapper, (
         arg("scan"),
-        arg("angle"),
-        arg("deg") = true));
+        arg("angle")));
   }
 
 }}} // namespace = dials::model::boost_python

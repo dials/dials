@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_spot_predictor()
   {
-    vec2 <Reflection> (SpotPredictor::*predict_single)(
+    scitbx::af::shared <Reflection> (SpotPredictor::*predict_single)(
       miller_index) const = &SpotPredictor::predict;
     scitbx::af::shared <Reflection> (SpotPredictor::*predict_array)(
       const flex_miller_index &) const = &SpotPredictor::predict;

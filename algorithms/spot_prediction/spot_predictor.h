@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_SPOT_PREDICTOR_H
 
 #include <scitbx/constants.h>
+#include <scitbx/array_family/flex_types.h>
 #include <dials/model/experiment/beam.h>
 #include <dials/model/experiment/scan.h>
 #include <dials/model/experiment/detector.h>
@@ -24,9 +25,11 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::rad_as_deg;
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
+  using scitbx::af::flex_double;
   using model::Beam;
   using model::Scan;
   using model::FlatPanelDetector;
@@ -36,6 +39,8 @@ namespace dials { namespace algorithms {
   using model::is_scan_angle_valid;
   using model::is_coordinate_valid;
   using model::diffracted_beam_intersection_point;
+  using model::get_all_frames_from_angle;
+  using model::mod_360;
 
   typedef cctbx::miller::index <> miller_index;
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
@@ -76,7 +81,8 @@ namespace dials { namespace algorithms {
         m2_(gonio.get_rotation_axis().normalize()),
         is_angle_valid_(scan),
         is_coord_valid_(detector),
-        calculate_detector_coordinate_(detector) {}
+        calculate_detector_coordinate_(detector),
+        get_frame_numbers_(scan) {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -98,10 +104,11 @@ namespace dials { namespace algorithms {
      *    within the image volume itself.
      *
      * @param h The miller index
+     * @returns An array of predicted reflections
      */
-    vec2 <Reflection> predict(miller_index h) const {
+    scitbx::af::shared <Reflection> predict(miller_index h) const {
 
-      vec2 <Reflection> reflections;
+      scitbx::af::shared <Reflection> reflections;
 
       // Calculate the reciprocal space vector
       vec3 <double> pstar0 = ub_matrix_ * h;
@@ -117,15 +124,15 @@ namespace dials { namespace algorithms {
       // Loop through the 2 rotation angles
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
+        double phi_deg = mod_360(rad_as_deg(phi[i]));
+
         // Check that the angles are within the rotation range
-        if (!is_angle_valid_(phi[i])) {
+        if (!is_angle_valid_(phi_deg)) {
           continue;
         }
 
-        // Calculate the reciprocal space vector
+        // Calculate the reciprocal space vector and diffracted beam vector
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
-
-        // Calculate the diffracted beam vector
         vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
@@ -144,10 +151,12 @@ namespace dials { namespace algorithms {
           continue;
         }
 
-        double phi_deg = mod_360(scitbx::rad_as_deg(phi[i]));
-
-        // Add the reflection
-        reflections[i] = Reflection(h, phi_deg, s1, xy);
+        // Get the list of frames at which the reflection will be observed
+        // and add the predicted observations to the list of reflections
+        flex_double frames = get_frame_numbers_(phi[i]);
+        for (std::size_t j = 0; j < frames.size(); ++j) {
+          reflections.push_back(Reflection(h, phi_deg, s1, xy, frames[j]));
+        }
       }
       return reflections;
     }
@@ -160,11 +169,9 @@ namespace dials { namespace algorithms {
     predict(const flex_miller_index &miller_indices) const {
       scitbx::af::shared <Reflection> reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-        vec2 <Reflection> r = predict(miller_indices[i]);
+        scitbx::af::shared <Reflection> r = predict(miller_indices[i]);
         for (std::size_t j = 0; j < r.size(); ++j) {
-          if (!r[j].is_zero()) {
-              reflections.push_back(r[j]);
-          }
+          reflections.push_back(r[j]);
         }
       }
       return reflections;
@@ -187,22 +194,13 @@ namespace dials { namespace algorithms {
         }
 
         // Predict the spot location for the miller index
-        vec2 <Reflection> r = predict(h);
+        scitbx::af::shared <Reflection> r = predict(h);
         for (std::size_t j = 0; j < r.size(); ++j) {
-          if (!r[j].is_zero()) {
-            reflections.push_back(r[j]);
-          }
+          reflections.push_back(r[j]);
         }
       }
       return reflections;
     }
-
-  private:
-
-      /** Get the angle % 360 */
-      double mod_360(double angle) const {
-        return angle - 360.0 * std::floor(angle / 360.0);
-      }
 
   private:
 
@@ -215,9 +213,10 @@ namespace dials { namespace algorithms {
       mat3 <double> ub_matrix_;
       vec3 <double> s0_;
       vec3 <double> m2_;
-      is_scan_angle_valid <Scan, false> is_angle_valid_;
+      is_scan_angle_valid <Scan> is_angle_valid_;
       is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
       diffracted_beam_intersection_point <FlatPanelDetector> calculate_detector_coordinate_;
+      get_all_frames_from_angle <Scan> get_frame_numbers_;
   };
 
 }} // namespace dials::algorithms
