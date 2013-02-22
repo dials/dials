@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/spot_prediction/spot_predictor.h>
+#include "spot_predictor_wrapper.h"
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -18,58 +19,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_spot_predictor()
   {
-    scitbx::af::shared <Reflection> (SpotPredictor::*predict_single)(
-      miller_index) const = &SpotPredictor::operator();
-    scitbx::af::shared <Reflection> (SpotPredictor::*predict_array)(
-      const flex_miller_index &) const = &SpotPredictor::operator();
-    scitbx::af::shared <Reflection> (SpotPredictor::*predict_generate)() = 
-      &SpotPredictor::operator();
-                
-    class_ <SpotPredictor> ("SpotPredictor", no_init)
-      .def(init <const Beam &,
-                 const FlatPanelDetector &,
-                 const Goniometer &,
-                 const Scan &,
-                 const cctbx::uctbx::unit_cell &,
-                 const cctbx::sgtbx::space_group_type &,
-                 mat3 <double>,
-                 double> ((
-        arg("beam"),
-        arg("detector"),
-        arg("goniometer"),
-        arg("scan"),
-        arg("unit_cell"),
-        arg("space_group_type"),
-        arg("ub_matrix"),
-        arg("d_min"))))
-      .def("__call__", predict_single, (
-        arg("miller_index")))
-      .def("__call__", predict_array, (
-        arg("miller_indices")))
-      .def("__call__", predict_generate);
-      
-    class_ <SpotPredictor2 <MultiFlatPanelDetector, MultiPanelDetectorReflection> > ("SpotPredictor2", no_init)
-      .def(init <const Beam &,
-                 const MultiFlatPanelDetector &,
-                 const Goniometer &,
-                 const Scan &,
-                 const cctbx::uctbx::unit_cell &,
-                 const cctbx::sgtbx::space_group_type &,
-                 mat3 <double>,
-                 double> ((
-        arg("beam"),
-        arg("detector"),
-        arg("goniometer"),
-        arg("scan"),
-        arg("unit_cell"),
-        arg("space_group_type"),
-        arg("ub_matrix"),
-        arg("d_min"))))
-      .def("__call__", predict_single, (
-        arg("miller_index")))
-      .def("__call__", predict_array, (
-        arg("miller_indices")))
-      .def("__call__", predict_generate);      
+    spot_predictor_wrapper <
+      SpotPredictor <
+        FlatPanelDetector, 
+        Reflection> >("SpotPredictor");
+            
+    spot_predictor_wrapper <
+      SpotPredictor <
+        MultiFlatPanelDetector, 
+        MultiPanelDetectorReflection> >("SpotPredictor2");  
   }
 
 }}} // namespace = dials::spot_prediction::boost_python

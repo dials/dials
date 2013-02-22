@@ -9,6 +9,7 @@ algorithms/spot_prediction/boost_python/index_generator.cc -text
 algorithms/spot_prediction/boost_python/rotation_angles.cc -text
 algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
 algorithms/spot_prediction/boost_python/spot_predictor.cc -text
+algorithms/spot_prediction/boost_python/spot_predictor_wrapper.h -text
 algorithms/spot_prediction/index_generator.h -text
 algorithms/spot_prediction/rotation_angles.h -text
 algorithms/spot_prediction/spot_predictor.h -text

@@ -49,9 +49,19 @@ namespace dials { namespace algorithms {
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
+  template <typename DetectorType,
+            typename ReflectionType>
   class SpotPredictor {
 
   public:
+
+    typedef Scan scan_type;
+    typedef Beam beam_type;
+    typedef DetectorType detector_type;
+    typedef Goniometer goniometer_type;
+    typedef ReflectionType reflection_type;
+    typedef scitbx::af::shared <reflection_type> reflection_list_type;
+    typedef typename detector_type::coordinate_type detector_coordinate_type;
 
     /**
      * Initialise the spot predictor.
@@ -65,181 +75,6 @@ namespace dials { namespace algorithms {
      * @param d_min The resolution
      */
     SpotPredictor(const Beam &beam,
-                  const FlatPanelDetector &detector,
-                  const Goniometer &gonio,
-                  const Scan &scan,
-                  const cctbx::uctbx::unit_cell &unit_cell,
-                  const cctbx::sgtbx::space_group_type &space_group_type,
-                  mat3 <double> ub_matrix,
-                  double d_min)
-      : index_generator_(unit_cell, space_group_type, false, d_min),
-        calculate_rotation_angles_(
-          beam.get_direction(),
-          gonio.get_rotation_axis()),
-        is_angle_valid_(scan),
-        get_detector_coord_(detector),
-        get_frame_numbers_(scan),
-        beam_(beam),
-        detector_(detector),
-        gonio_(gonio),
-        scan_(scan),
-        ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
-        s0_(beam.get_direction()),
-        m2_(gonio.get_rotation_axis().normalize()) {}
-
-    /**
-     * Predict the spot locations on the image detector.
-     *
-     * The algorithm performs the following procedure:
-     *
-     *  - For the miller index, the rotation angle at which the diffraction
-     *    conditions are met is calculated.
-     *
-     *  - The rotation angles are then checked to see if they are within the
-     *    rotation range.
-     *
-     *  - The reciprocal lattice vectors are then calculated, followed by the
-     *    diffracted beam vector for each reflection.
-     *
-     *  - The image volume coordinates are then calculated for each reflection.
-     *
-     *  - The image volume coordinates are then checked to see if they are
-     *    within the image volume itself.
-     *
-     * @param h The miller index
-     * @returns An array of predicted reflections
-     */
-    scitbx::af::shared <Reflection> 
-    operator()(miller_index h) const {
-
-      scitbx::af::shared <Reflection> reflections;
-
-      // Calculate the reciprocal space vector
-      vec3 <double> pstar0 = ub_matrix_ * h;
-
-      // Try to calculate the diffracting rotation angles
-      vec2 <double> phi;
-      try {
-        phi = calculate_rotation_angles_(pstar0);
-      } catch(error) {
-        return reflections;
-      }
-
-      // Loop through the 2 rotation angles
-      for (std::size_t i = 0; i < phi.size(); ++i) {
-
-        // Convert angle to degrees
-        double phi_deg = mod_360(rad_as_deg(phi[i]));
-
-        // Check that the angles are within the rotation range
-        if (!is_angle_valid_(phi_deg)) {
-          continue;
-        }
-
-        // Calculate the reciprocal space vector and diffracted beam vector
-        vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
-        vec3 <double> s1 = s0_ + pstar;
-
-        // Try to calculate the detector coordinate
-        vec2 <double> coord;
-        try {
-          coord = get_detector_coord_(s1);
-        } catch(error) {
-          continue;
-        }
-
-        // Get the list of frames at which the reflection will be observed
-        // and add the predicted observations to the list of reflections
-        flex_double frames = get_frame_numbers_(phi[i]);
-        for (std::size_t j = 0; j < frames.size(); ++j) {
-          Reflection r;
-          r.set_miller_index(h);
-          r.set_rotation_angle(phi_deg);
-          r.set_beam_vector(s1);
-          r.set_image_coord(coord);
-          r.set_frame_number(frames[j]);
-          reflections.push_back(r);
-        }
-      }
-      return reflections;
-    }
-
-    /**
-     * For a given set of miller indices, predict the detector coordinates.
-     * @param miller_indices The array of miller indices.
-     */
-    scitbx::af::shared <Reflection>
-    operator()(const flex_miller_index &miller_indices) const {
-      scitbx::af::shared <Reflection> reflections;
-      for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-        scitbx::af::shared <Reflection> r = operator()(miller_indices[i]);
-        for (std::size_t j = 0; j < r.size(); ++j) {
-          reflections.push_back(r[j]);
-        }
-      }
-      return reflections;
-    }
-
-    /**
-     * Generate a set of miller indices and predict the detector coordinates.
-     */
-    scitbx::af::shared <Reflection>
-    operator()() {
-      scitbx::af::shared <Reflection> reflections;
-
-      // Continue looping until we run out of miller indices
-      for (;;) {
-
-        // Get the next miller index
-        miller_index h = index_generator_.next();
-        if (h.is_zero()) {
-          break;
-        }
-
-        // Predict the spot location for the miller index
-        scitbx::af::shared <Reflection> r = operator()(h);
-        for (std::size_t j = 0; j < r.size(); ++j) {
-          reflections.push_back(r[j]);
-        }
-      }
-      return reflections;
-    }
-
-  private:
-
-    IndexGenerator index_generator_;
-    RotationAngles calculate_rotation_angles_;
-    is_scan_angle_valid <Scan> is_angle_valid_;
-    diffracted_beam_to_pixel <FlatPanelDetector> get_detector_coord_;
-    get_all_frames_from_angle <Scan> get_frame_numbers_;
-    Beam beam_;
-    FlatPanelDetector detector_;
-    Goniometer gonio_;
-    Scan scan_;
-    mat3 <double> ub_matrix_;
-    vec3 <double> s0_;
-    vec3 <double> m2_;
-  };
-
-  /** A class to perform spot prediction. */
-  template <typename DetectorType,
-            typename ReflectionType>
-  class SpotPredictor2 {
-
-  public:
-
-    /**
-     * Initialise the spot predictor.
-     * @param beam The beam parameters
-     * @param detector The detector parameters
-     * @param gonio The goniometer parameters
-     * @param scan The scan parameters
-     * @param unit_cell The unit cell parameters
-     * @param space_group_type The space group struct
-     * @param ub_matrix The ub matrix
-     * @param d_min The resolution
-     */
-    SpotPredictor2(const Beam &beam,
                   const DetectorType &detector,
                   const Goniometer &gonio,
                   const Scan &scan,
@@ -314,7 +149,7 @@ namespace dials { namespace algorithms {
         vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
-        vec3 <double> coord;
+        detector_coordinate_type coord;
         try {
           coord = get_detector_coord_(s1);
         } catch(error) {
