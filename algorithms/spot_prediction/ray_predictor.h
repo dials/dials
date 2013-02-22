@@ -12,10 +12,13 @@
 #define DIALS_ALGORITHMS_RAY_PREDICTION_RAY_PREDICTOR_H
 
 #include <scitbx/constants.h>
-#include <scitbx/array_family/small.h>
+#include <scitbx/vec2.h>
+#include <scitbx/vec3.h>
+#include <scitbx/mat3.h>
+#include <scitbx/array_family/shared.h>
 #include <scitbx/array_family/flex_types.h>
+#include <cctbx/miller.h>
 #include <dials/model/experiment/scan_helpers.h>
-#include "index_generator.h"
 #include "rotation_angles.h"
 
 namespace dials { namespace algorithms {
@@ -25,8 +28,6 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
-  using scitbx::af::small;
-  using scitbx::af::flex_double;
   using model::is_scan_angle_valid;
   using model::mod_360;
 
@@ -50,14 +51,11 @@ namespace dials { namespace algorithms {
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
 
     /**
-     * Initialise the spot predictor.
+     * Initialise the ray predictor.
      * @param beam The beam parameters
      * @param gonio The goniometer parameters
      * @param scan The scan parameters
-     * @param unit_cell The unit cell parameters
-     * @param space_group_type The space group struct
      * @param UB The ub matrix
-     * @param d_min The resolution
      */
     RayPredictor(const beam_type &beam,
                  const goniometer_type &gonio,
