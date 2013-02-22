@@ -13,13 +13,8 @@
 
 #include <scitbx/constants.h>
 #include <scitbx/array_family/flex_types.h>
-#include <dials/model/experiment/beam.h>
-#include <dials/model/experiment/scan.h>
-#include <dials/model/experiment/detector.h>
-#include <dials/model/experiment/goniometer.h>
 #include <dials/model/experiment/scan_helpers.h>
 #include <dials/model/experiment/detector_helpers.h>
-#include <dials/model/data/reflection.h>
 #include "index_generator.h"
 #include "rotation_angles.h"
 
@@ -31,14 +26,6 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::mat3;
   using scitbx::af::flex_double;
-  using model::Beam;
-  using model::Scan;
-  using model::FlatPanelDetector;
-  using model::MultiFlatPanelDetector;
-  using model::Goniometer;
-  using model::Reflection;
-  using model::MultiPanelDetectorReflection;
-  using model::ReflectionList;
   using model::is_scan_angle_valid;
   using model::diffracted_beam_to_pixel;
   using model::get_all_frames_from_angle;
@@ -49,16 +36,19 @@ namespace dials { namespace algorithms {
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
-  template <typename DetectorType,
+  template <typename ScanType,
+            typename BeamType,
+            typename DetectorType,
+            typename GoniometerType,
             typename ReflectionType>
   class SpotPredictor {
-
   public:
 
-    typedef Scan scan_type;
-    typedef Beam beam_type;
+    // A load of useful typedefs
+    typedef BeamType beam_type;
+    typedef GoniometerType goniometer_type;
+    typedef ScanType scan_type;
     typedef DetectorType detector_type;
-    typedef Goniometer goniometer_type;
     typedef ReflectionType reflection_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
     typedef typename detector_type::coordinate_type detector_coordinate_type;
@@ -74,10 +64,10 @@ namespace dials { namespace algorithms {
      * @param ub_matrix The ub matrix
      * @param d_min The resolution
      */
-    SpotPredictor(const Beam &beam,
+    SpotPredictor(const BeamType &beam,
                   const DetectorType &detector,
-                  const Goniometer &gonio,
-                  const Scan &scan,
+                  const GoniometerType &gonio,
+                  const ScanType &scan,
                   const cctbx::uctbx::unit_cell &unit_cell,
                   const cctbx::sgtbx::space_group_type &space_group_type,
                   mat3 <double> ub_matrix,
@@ -213,13 +203,13 @@ namespace dials { namespace algorithms {
 
     IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
-    is_scan_angle_valid <Scan> is_angle_valid_;
+    is_scan_angle_valid <ScanType> is_angle_valid_;
     diffracted_beam_to_pixel <DetectorType> get_detector_coord_;
-    get_all_frames_from_angle <Scan> get_frame_numbers_;
-    Beam beam_;
+    get_all_frames_from_angle <ScanType> get_frame_numbers_;
+    BeamType beam_;
     DetectorType detector_;
-    Goniometer gonio_;
-    Scan scan_;
+    GoniometerType gonio_;
+    ScanType scan_;
     mat3 <double> ub_matrix_;
     vec3 <double> s0_;
     vec3 <double> m2_;
