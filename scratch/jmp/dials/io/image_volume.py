@@ -4,14 +4,14 @@ def get_image_volume_size(list_of_images):
     import numpy
     from dxtbx.model.detector_helpers_types import detector_helpers_types
     from dxtbx.format.Registry import Registry
-    
+
     for image in list_of_images:
         assert(os.path.exists(image))
 
     list_of_images.sort()
 
     format = Registry.find(list_of_images[0])
-    
+
     # verify that these are all the same format i.e. that they are all
     # understood equally well by the format instance.
 
@@ -53,7 +53,7 @@ def get_image_volume(image_paths):
     from iotbx.detectors import ImageFactory
     import numpy
     num_slices, height, width = get_image_volume_size(image_paths)
-    
+
     # Initialise the image volume
     num_slices = len(image_paths)
     volume = numpy.zeros(shape=(num_slices, height, width), dtype=numpy.int32)

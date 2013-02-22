@@ -260,18 +260,18 @@ class IntegrateFile:
         tokens = map(int, tokens[0:3]) + map(float, tokens[3:])
 
         # Get the reflection information and append to the lists
-        self.hkl    .append(tuple(tokens[0:3]))
-        self.iobs   .append(tokens[3])
-        self.sigma  .append(tokens[4])
-        self.xyzcal .append(tuple(tokens[5:8]))
-        self.rlp    .append(tokens[8])
-        self.peak   .append(tokens[9])
-        self.corr   .append(tokens[10])
-        self.maxc   .append(tokens[11])
-        self.xyzobs .append(tuple(tokens[12:15]))
+        self.hkl.append(tuple(tokens[0:3]))
+        self.iobs.append(tokens[3])
+        self.sigma.append(tokens[4])
+        self.xyzcal.append(tuple(tokens[5:8]))
+        self.rlp.append(tokens[8])
+        self.peak.append(tokens[9])
+        self.corr.append(tokens[10])
+        self.maxc.append(tokens[11])
+        self.xyzobs.append(tuple(tokens[12:15]))
         self.alfbet0.append(tuple(tokens[15:17]))
         self.alfbet1.append(tuple(tokens[17:19]))
-        self.psi    .append(tokens[19])
+        self.psi.append(tokens[19])
 
     def get_goniometer(self):
         """Get the goniometer parameters from the file

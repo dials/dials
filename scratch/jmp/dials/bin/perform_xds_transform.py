@@ -221,7 +221,7 @@ def perform_xds_transform(input_filename, cbf_search_path, d_min,
     finish_time = time()
     print "Time taken: {0} s".format(finish_time - start_time)
 
-    
+
     # Extract arrays from array of reflections
     region_of_interest = flex.tiny6_int(len(reflections))
     image_volume_coords = flex.vec3_double(len(reflections))
