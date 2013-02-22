@@ -3,6 +3,7 @@
 /__init__.py -text
 algorithms/SConscript -text
 algorithms/__init__.py -text
+algorithms/ray_prediction/ray_prediction.h -text
 algorithms/spot_prediction/SConscript -text
 algorithms/spot_prediction/__init__.py -text
 algorithms/spot_prediction/boost_python/index_generator.cc -text
