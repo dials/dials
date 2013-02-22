@@ -76,6 +76,9 @@ namespace dials { namespace model {
   class FlatPanelDetector : public DetectorBase {
   public:
 
+    // The detector coordinate type
+    typedef vec2 <double> coordinate_type;
+
     /** The default constructor */
     FlatPanelDetector()
       : type_("Unknown"),
@@ -277,6 +280,10 @@ namespace dials { namespace model {
   class MultiFlatPanelDetector : public DetectorBase {
   public:
 
+    // The detector coordinate type
+    typedef vec3 <double> coordinate_type;
+
+    // Panel list typedefs
     typedef FlatPanelDetector panel_type;
     typedef scitbx::af::shared <panel_type> panel_list_type;
     typedef panel_list_type::iterator iterator;

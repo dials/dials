@@ -28,14 +28,41 @@ namespace dials { namespace model {
   using scitbx::mat3;
   using scitbx::af::double6;
 
-  typedef scitbx::af::flex <mat3 <double> > ::type flex_mat3_double;
+  // Create flex array typedefs
+  typedef scitbx::af::flex<vec2<std::size_t> >::type flex_vec2_size_t;
+  typedef scitbx::af::flex<mat3<double> >::type flex_mat3_double;
 
+  /**
+   * Declaration of a functor to check if a detector image coordinate is valid.
+   * This functor is intended to be specialized for each detector type. For
+   * instance a FlatPanelDetector object just needs to check an (x, y)
+   * coordinate, whereas a MultiFlatPanelDetector object needs to check a
+   * (panel, x, y) coordinate.
+   * @tparam DetectorType The detector object type
+   */
   template <typename DetectorType>
-  struct is_coordinate_valid {
+  struct is_coordinate_valid;
 
-    is_coordinate_valid(const DetectorType &detector)
+  /**
+   * A functor to check if a FlatPanelDetector coordinate is valid. Check
+   * that the (x, y) coordinate lies within the detector image size range.
+   */
+  template <>
+  struct is_coordinate_valid <FlatPanelDetector> {
+
+    /**
+     * Initialise the functor with the image size.
+     * @param detector The detector object
+     */
+    is_coordinate_valid(const FlatPanelDetector &detector)
       : image_size_(detector.get_image_size()) {}
 
+    /**
+     * Check the coordinate is valid.
+     * @tparam CoordinateType The type of coordinate
+     * @param coord The coordinate to check
+     * @returns True/False the coordinate is valid
+     */
     template <typename CoordinateType>
     bool operator()(CoordinateType coord) const {
       return (coord[0] >= 0 && coord[0] < image_size_[0])
@@ -46,89 +73,160 @@ namespace dials { namespace model {
     vec2 <std::size_t> image_size_;
   };
 
-
+  /**
+   * A functor to check if a MultiFlatPanelDetector coordinate is valid. Check
+   * that the (panel x, y) coordinate lies within the number of panels and
+   * the detector image size range.
+   */
   template <>
   struct is_coordinate_valid <MultiFlatPanelDetector> {
 
+    /**
+     * Initialise the functor with the image size for each detector panel
+     * @param detector The detector object
+     */
     is_coordinate_valid(const MultiFlatPanelDetector &detector) 
-      : detector_(detector) {}
+      : image_size_(get_image_sizes(detector)),
+        num_panels_(detector.num_panels()) {}
 
+    /**
+     * Check the coordinate is valid.
+     * @tparam CoordinateType The type of coordinate
+     * @param coord The coordinate to check
+     * @returns True/False the coordinate is valid
+     */
     template <typename CoordinateType>
     bool operator()(CoordinateType coord) const {
-      if (coord[0] < 0 || coord[0] >= detector_.num_panels()) {
-        return false;
-      }
-      const FlatPanelDetector &d = detector_[coord[0]];
-      vec2 <std::size_t> image_size = d.get_image_size();
-      return (coord[1] >= 0 && coord[1] < image_size[0])
-          && (coord[2] >= 0 && coord[2] < image_size[1]);
+      int panel = coord[0]; 
+      return (panel >= 0 && panel < num_panels_)
+          && (coord[1] >= 0 && coord[1] < image_size_[panel][0])
+          && (coord[2] >= 0 && coord[2] < image_size_[panel][1]);
     }
 
   private:
-    MultiFlatPanelDetector detector_;
+  
+    /**
+     * Put all the image sizes into a flex array
+     * @param detector The detector object
+     * @returns An array of image sizes.
+     */
+    flex_vec2_size_t get_image_sizes(
+        const MultiFlatPanelDetector &detector) {
+      flex_vec2_size_t result(detector.num_panels());
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = detector[i].get_image_size();
+      }
+      return result;
+    }
+  
+    flex_vec2_size_t image_size_;
+    std::size_t num_panels_;
   };
 
-//  template <>
-//  struct is_coordinate_valid <MultiFlatPanelDetector> {
-
-//    is_coordinate_valid(const MultiFlatPanelDetector &detector) 
-//      : is_coord_valid_ {}
-
-//    template <typename CoordinateType>
-//    bool operator()(CoordinateType coord) const {
-//      return 0 <= coord.first && coord.first < detector_.num_panels()
-//          && is_coord_valid_[panel](coord.second);
-//    }
-
-//  private:
-//  
-//  
-//    is_coord_valid_list is_coord_valid_;
-//  };
-  
+  /**
+   * Declaration of a functor to to calculate the detector image coordinate
+   * of a diffracted beam vector intersecting with the detector. This functor 
+   * is intended to be specialized for each detector type.
+   * @tparam DetectorType The type of the detector
+   */
   template <typename DetectorType>
-  struct diffracted_beam_detector_coord {
+  struct diffracted_beam_to_pixel;
+  
+  /**
+   * Specialization of the diffracted_beam_to_pixel functor for a generic
+   * FlatPanelDetector object. Using a D matrix calculate the pixel coordinates
+   */
+  template <>
+  struct diffracted_beam_to_pixel <FlatPanelDetector> {
 
-    diffracted_beam_detector_coord(const DetectorType &detector)
-      : D_(detector.get_inverse_d_matrix()) {}
+    /** 
+     * Initialise the transform from the detector object
+     * @param detector The detector object
+     */
+    diffracted_beam_to_pixel(const FlatPanelDetector &detector)
+      : D_(detector.get_inverse_d_matrix()),
+        is_coord_valid_(detector) {}
 
+    /**
+     * Calculate the intersection point on the detector plane.
+     * @param s1 The diffracted beam vector
+     * @returns The (x, y) detector coordinate
+     */
     vec2 <double> operator()(vec3 <double> s1) const {
       vec3 <double> v = D_ * s1;
       DIALS_ASSERT(v[2] > 0);
-      return vec2 <double> (v[0] / v[2], v[1] / v[2]);
-    }
-
-  private:
-    mat3 <double> D_;
-  };
-
-
-  template <>
-  struct diffracted_beam_detector_coord <MultiFlatPanelDetector> {
-
-    diffracted_beam_detector_coord(const MultiFlatPanelDetector &detector)
-      : D_(inverse_d_matrices(detector)) {}
-
-    vec2 <double> operator()(vec3 <double> s1) const {
-      vec2 <double> xy;
-      int panel = -1;
-      double w_max = 0;
-      for (std::size_t i = 0; i < D_.size(); ++i) {
-        vec3 <double> v = D_[i] * s1;
-        if (v[2] > w_max) {
-          vec2 <double> xy_temp(v[0] / v[2], v[1] / v[2]);
-          //if (is_valid_coord_[i](xy_temp)) {
-            w_max = v[2];
-            panel = i;
-          //}
-        }
-      }
-      DIALS_ASSERT(panel >= 0);
+      vec2 <double> xy(v[0] / v[2], v[1] / v[2]);
+      DIALS_ASSERT(is_coord_valid_(xy));
       return xy;
     }
 
   private:
-    flex_mat3_double inverse_d_matrices(
+    mat3 <double> D_;
+    is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+  };
+
+
+  /**
+   * Specialization of the diffracted_beam_to_pixel functor for a generic
+   * MultiFlatPanelDetector object. Using a D matrix for each detextor panel,
+   * calculate the pixel coordinates.
+   * 
+   * @todo This functor currently uses a brute force approach to finding the
+   * detector panel which contains the reflection. All panels are checked
+   * and where more than one panel could record the reflection, the closest
+   * is chosen. This is ok for a small number of panels but doesn't scale
+   * well for a large number.
+   */
+  template <>
+  struct diffracted_beam_to_pixel <MultiFlatPanelDetector> {
+
+    /** 
+     * Initialise the transform from the detector object
+     * @param detector The detector object
+     */
+    diffracted_beam_to_pixel(const MultiFlatPanelDetector &detector)
+      : D_(get_inverse_d_matrices(detector)),
+        is_coord_valid_(detector) {}
+
+    /**
+     * Calculate the intersection point on the detector planes.
+     * @param s1 The diffracted beam vector
+     * @returns The (panel, x, y) detector coordinate
+     */
+    vec3 <double> operator()(vec3 <double> s1) const {
+      vec3 <double> pxy(-1, 0, 0);
+      double w_max = 0;
+      
+      // Loop through all detectors. If the w component of the (u, v, w) 
+      // vector points in the correct direction, then calculate the coordinate.
+      // If the coordinate is valid and the w component is greater than that of
+      // the current closest valid coordinate, then set this coordinate as the
+      // current best bet. 
+      for (std::size_t i = 0; i < D_.size(); ++i) {
+        vec3 <double> v = D_[i] * s1;
+        if (v[2] > 0) {
+          vec3 <double> pxy_temp(i, v[0] / v[2], v[1] / v[2]);
+          if (is_coord_valid_(pxy_temp) && v[2] > w_max) {
+            pxy = pxy_temp;
+            w_max = v[2];
+          }
+        }
+      }
+      
+      // If no coordinate was found then raise an exception
+      // otherwise return the coordinate.
+      DIALS_ASSERT(w_max > 0);
+      return pxy;
+    }
+
+  private:
+
+    /**
+     * Calculate the D matrix for each detector panel and cache.
+     * @param detector The detector object
+     * @returns An array of D matrices
+     */
+    flex_mat3_double get_inverse_d_matrices(
         const MultiFlatPanelDetector &detector) {
       flex_mat3_double result(detector.num_panels());
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -136,23 +234,10 @@ namespace dials { namespace model {
       }
       return result;
     }
-    
-    
 
     flex_mat3_double D_;
-    //is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+    is_coordinate_valid <MultiFlatPanelDetector> is_coord_valid_;
   };
-
-
-//  template <typename DetectorType>
-//  struct mm_to_pixel {
-//
-//    mm_to_pixel(const DetectorType &detector) {}
-//
-//    vec2 <double> operator()(vec2 <double> mm) {
-//
-//    }
-//  };
 
   /**
    * Get the image size in mm
@@ -227,26 +312,6 @@ namespace dials { namespace model {
 
 //    // Check if the polygons intersect
 //    return intersects(poly_a, poly_b);
-//  }
-
-//  vec2 <double>
-//  mm_to_pixel(const FlatPanelDetector &detector, vec3 <double> beam_vector) {
-//    vec3 <double> v = detector.get_inverse_d_matrix() * beam_vector;
-//    return vec2 <double> (v[0] / v[2], v[1] / v[2]);
-//  }
-
-  /**
-   * Check if the detector coordinate is valid.
-   * @param detector The MultiFlatPanelDetector struct
-   * @returns True/False is the detector coordinate valid
-   */
-//  template <typename T>
-//  inline bool
-//  is_coordinate_valid(const MultiFlatPanelDetector &detector, vec2 <T> coord) {
-//    int panel = (int)coord[0];
-//    return (coord[0] >= 0 && coord[0] < detector.num_panels())
-//        && (coord[1] >= 0 && coord[1] < detector[panel].get_image_size()[0])
-//        && (coord[2] >= 0 && coord[2] < detector[panel].get_image_size()[1]);
 //  }
 
 }} // namespace dials::model

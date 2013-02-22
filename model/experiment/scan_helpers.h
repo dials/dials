@@ -135,22 +135,41 @@ namespace dials { namespace model {
 
   /**
    * A functor to check if the angle is the range of angles coverd by the scan.
+   * @tparam ScanType The type of scan object.
+   */
+  template <typename ScanType>
+  struct is_scan_angle_valid;
+
+  /**
+   * A functor to check if the angle is the range of angles coverd by the scan.
    * The angle is checked using the is_angle_in_range object. The angular
    * range of the scan is given as (starting_angle, starting_angle + total
    * oscillation_range).
    * @tparam ScanType The type of scan object.
    */
-  template <typename ScanType>
-  struct is_scan_angle_valid : public is_angle_in_range {
+  template <>
+  struct is_scan_angle_valid <Scan> {
 
     /**
      * Initialise the functor. Use the scan data to initialise the base class.
      * @param scan The scan object.
      */
-    is_scan_angle_valid(const ScanType &scan)
-      : is_angle_in_range(vec2 <double> (
+    is_scan_angle_valid(const Scan &scan)
+      : is_angle_in_range_(vec2 <double> (
           scan.get_starting_angle(),
           scan.get_starting_angle() + scan.get_total_oscillation_range())) {}
+  
+    /**
+     * Check the angle is within the range.
+     * @param angle The angle to check
+     * @returns True/False the angle is within the range
+     */
+    bool operator()(double angle) const {
+      return is_angle_in_range_(angle);
+    }
+  
+  private:
+    is_angle_in_range is_angle_in_range_;
   };
 
   /**
@@ -158,16 +177,22 @@ namespace dials { namespace model {
    * @tparam ScanType The type of the scan object
    */
   template <typename ScanType>
-  struct get_angle_from_frame {
+  struct get_angle_from_frame;
+
+  /**
+   * A functor to calculate the angle corresponding to a scan frame.
+   */
+  template <>
+  struct get_angle_from_frame <Scan> {
 
     /**
      * Initialise the functor with the scan object
      * @param scan The scan object.
      */
-    get_angle_from_frame(const ScanType &scan)
-      : image_range_(scan.image_range_),
-        starting_angle_(scan.starting_angle_),
-        oscillation_range_(scan.oscillation_range_) {}
+    get_angle_from_frame(const Scan &scan)
+      : image_range_(scan.get_image_range()),
+        starting_angle_(scan.get_starting_angle()),
+        oscillation_range_(scan.get_oscillation_range()) {}
 
     /**
      * Calculate the angle corresponding to the given frame
@@ -190,13 +215,20 @@ namespace dials { namespace model {
    * @tparam ScanType The type of the scan object
    */
   template <typename ScanType>
-  struct get_frame_from_angle {
+  struct get_frame_from_angle;  
+
+  /**
+   * A functor to calculate the frame corresponding to a scan angle. The raw
+   * angle is used (i.e. not wrapped mod 360).
+   */
+  template <>
+  struct get_frame_from_angle <Scan> {
 
     /**
      * Initialise the functor with the scan object
      * @param scan The scan object.
      */
-    get_frame_from_angle(const ScanType &scan)
+    get_frame_from_angle(const Scan &scan)
       : image_range_(scan.get_image_range()),
         starting_angle_(scan.get_starting_angle()),
         oscillation_range_(scan.get_oscillation_range()) {}
@@ -216,7 +248,6 @@ namespace dials { namespace model {
     double oscillation_range_;
   };
 
-
   /**
    * A functor to calculate all the frames in the scan at which an observation
    * with a given angle will be observed. I.e. for a given angle, find all the
@@ -225,13 +256,22 @@ namespace dials { namespace model {
    * @tparam ScanType The type of the scan object
    */
   template <typename ScanType>
-  struct get_all_frames_from_angle {
+  struct get_all_frames_from_angle;
+
+  /**
+   * A functor to calculate all the frames in the scan at which an observation
+   * with a given angle will be observed. I.e. for a given angle, find all the
+   * equivalent angles (i.e. mod 360) within the scan range and calculate the
+   * frame number for each angle.
+   */
+  template <>
+  struct get_all_frames_from_angle <Scan> {
 
     /**
      * Initialise the functor with the scan object.
      * @param scan The scan object
      */
-    get_all_frames_from_angle(const ScanType &scan)
+    get_all_frames_from_angle(const Scan &scan)
       : get_angles_(vec2 <double> (
           scan.get_starting_angle(),
           scan.get_starting_angle() + scan.get_total_oscillation_range())),
@@ -253,7 +293,7 @@ namespace dials { namespace model {
 
   private:
     get_mod360_angles_in_range get_angles_;
-    get_frame_from_angle <ScanType> get_frame_;
+    get_frame_from_angle <Scan> get_frame_;
   };
 
 }} // namespace dials::model

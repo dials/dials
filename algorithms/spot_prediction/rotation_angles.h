@@ -126,48 +126,6 @@ namespace dials { namespace algorithms {
     double s0_d_m3;
   };
 
-  /** Convert the angle mod 2PI */
-  inline
-  double mod_2pi(double angle) {
-    return angle - scitbx::constants::two_pi *
-      std::floor(angle / scitbx::constants::two_pi);
-  }
-
-  /** Convert a pair of angles to mod 2PI */
-  inline
-  vec2 <double> mod_2pi(vec2 <double> angles) {
-    return vec2 <double> (mod_2pi(angles[0]), mod_2pi(angles[1]));
-  }
-
-  /**
-      * Check if the angle is within the filter range
-      * @param angle The angle to check
-      * @param range The angular range
-      * @returns True/False the angle is in the filter range
-      */
-  inline
-  bool is_angle_in_range(double angle, vec2 <double> range) {
-    return mod_2pi(angle - range[1]) >= mod_2pi(angle - range[0])
-        || mod_2pi(angle - range[1]) == 0
-        || mod_2pi(range[0] - range[1]) == 0;
-  }
-
-  /**
-   * Check if the array of angles are within the angular range.
-   * @param angle The array of angles
-   * @param range The angular range
-   * @returns A boolean array that is true if the angle is in the range.
-   */
-  inline
-  scitbx::af::flex_bool is_angle_in_range(const scitbx::af::flex_double &angle,
-                                          vec2 <double> range) {
-    scitbx::af::flex_bool result(angle.size());
-    for (int i = 0; i < angle.size(); ++i) {
-      result[i] = is_angle_in_range(angle[i], range);
-    }
-    return result;
-  }
-
 }} // namespace dials::algorithms
 
 #endif // DIALS_ALGORITHMS_SPOT_PREDICTION_ROTATION_ANGLES_H

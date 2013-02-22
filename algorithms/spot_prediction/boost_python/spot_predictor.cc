@@ -48,7 +48,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("miller_indices")))
       .def("__call__", predict_generate);
       
-    class_ <SpotPredictor2> ("SpotPredictor2", no_init)
+    class_ <SpotPredictor2 <MultiFlatPanelDetector, MultiPanelDetectorReflection> > ("SpotPredictor2", no_init)
       .def(init <const Beam &,
                  const MultiFlatPanelDetector &,
                  const Goniometer &,

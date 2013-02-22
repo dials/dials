@@ -21,33 +21,55 @@ namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
+ 
+  typedef cctbx::miller::index <> miller_index_type;
+  
+  class ReflectionBase {
+  public:
+   
+    ReflectionBase() {}
+  
+    ReflectionBase(miller_index_type miller_index)
+      : miller_index_(miller_index) {}
+    
+    virtual ~ReflectionBase() {}
+    
+    miller_index_type get_miller_index() const {
+      return miller_index_;
+    }
+    
+    void set_miller_index(miller_index_type miller_index) {
+      miller_index_ = miller_index;
+    }
+      
+    bool is_zero() {
+      return miller_index_.is_zero();
+    }      
+      
+  protected:
+    miller_index_type miller_index_;
+  };
 
-  class Reflection {
+  class Reflection : public ReflectionBase {
   public:
 
-    Reflection()
-      : miller_index_(0, 0, 0),
-        rotation_angle_(0.0),
-        beam_vector_(0.0, 0.0, 0.0),
-        image_coord_(0.0, 0.0),
-        frame_(0.0) {}
+    Reflection() {}
 
-    Reflection(cctbx::miller::index <> miller_index,
+    Reflection(miller_index_type miller_index)
+      : ReflectionBase(miller_index) {}
+
+    Reflection(miller_index_type miller_index, 
                double rotation_angle,
                vec3 <double> beam_vector,
                vec2 <double> image_coord,
-               double frame)
-      : miller_index_(miller_index),
+               double frame_number)
+      : ReflectionBase(miller_index),
         rotation_angle_(rotation_angle),
         beam_vector_(beam_vector),
         image_coord_(image_coord),
-        frame_(frame) {}
+        frame_number_(frame_number) {}
 
-  public:
-
-    cctbx::miller::index <> get_miller_index() const {
-      return miller_index_;
-    }
+    virtual ~Reflection() {}
 
     double get_rotation_angle() const {
       return rotation_angle_;
@@ -62,11 +84,7 @@ namespace dials { namespace model {
     }
 
     double get_frame_number() const {
-      return frame_;
-    }
-
-    void set_miller_index(cctbx::miller::index <> miller_index) {
-      miller_index_ = miller_index;
+      return frame_number_;
     }
 
     void set_rotation_angle(double rotation_angle) {
@@ -81,21 +99,51 @@ namespace dials { namespace model {
       image_coord_ = image_coord;
     }
 
-    void set_frame_number(double frame) {
-      frame_ = frame;
+    void set_frame_number(double frame_number) {
+      frame_number_ = frame_number;
     }
 
-    bool is_zero() {
-      return miller_index_.is_zero();
+  protected:
+
+    double rotation_angle_;
+    vec3 <double> beam_vector_;
+    vec2 <double> image_coord_;
+    double frame_number_;
+  };
+
+
+  class MultiPanelDetectorReflection : public Reflection {
+  public:
+    MultiPanelDetectorReflection() {}
+    
+    MultiPanelDetectorReflection(miller_index_type miller_index)
+      : Reflection(miller_index) {}
+    
+    MultiPanelDetectorReflection(miller_index_type miller_index, 
+                                 double rotation_angle,
+                                 vec3 <double> beam_vector,
+                                 vec3 <double> detector_coord,
+                                 double frame_number)
+      : Reflection(
+          miller_index, 
+          rotation_angle, 
+          beam_vector, 
+          vec2<double>(detector_coord[1], detector_coord[2]),
+          frame_number),
+        panel_number_(detector_coord[0]) {}    
+    
+    virtual ~MultiPanelDetectorReflection() {}
+         
+    std::size_t get_panel_number() const {
+      return panel_number_;
+    }
+    
+    void set_panel_number(std::size_t panel_number) {
+      panel_number_ = panel_number;
     }
 
-  private:
-
-    cctbx::miller::index <> miller_index_;
-    double                  rotation_angle_;
-    vec3 <double>   beam_vector_;
-    vec2 <double>   image_coord_;
-    double frame_;
+  protected:
+    std::size_t panel_number_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;

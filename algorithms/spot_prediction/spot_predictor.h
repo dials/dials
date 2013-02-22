@@ -37,10 +37,10 @@ namespace dials { namespace algorithms {
   using model::MultiFlatPanelDetector;
   using model::Goniometer;
   using model::Reflection;
+  using model::MultiPanelDetectorReflection;
   using model::ReflectionList;
   using model::is_scan_angle_valid;
-  using model::is_coordinate_valid;
-  using model::diffracted_beam_detector_coord;
+  using model::diffracted_beam_to_pixel;
   using model::get_all_frames_from_angle;
   using model::mod_360;
 
@@ -77,8 +77,7 @@ namespace dials { namespace algorithms {
           beam.get_direction(),
           gonio.get_rotation_axis()),
         is_angle_valid_(scan),
-        is_coord_valid_(detector),
-        get_image_coord_(detector),
+        get_detector_coord_(detector),
         get_frame_numbers_(scan),
         beam_(beam),
         detector_(detector),
@@ -142,16 +141,10 @@ namespace dials { namespace algorithms {
         vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
-        vec2 <double> xy;
+        vec2 <double> coord;
         try {
-          xy = get_image_coord_(s1);
+          coord = get_detector_coord_(s1);
         } catch(error) {
-          continue;
-        }
-
-        // Check the detector coordinate is valid and add the
-        // elements to the arrays.
-        if (!is_coord_valid_(xy)) {
           continue;
         }
 
@@ -159,7 +152,13 @@ namespace dials { namespace algorithms {
         // and add the predicted observations to the list of reflections
         flex_double frames = get_frame_numbers_(phi[i]);
         for (std::size_t j = 0; j < frames.size(); ++j) {
-          reflections.push_back(Reflection(h, phi_deg, s1, xy, frames[j]));
+          Reflection r;
+          r.set_miller_index(h);
+          r.set_rotation_angle(phi_deg);
+          r.set_beam_vector(s1);
+          r.set_image_coord(coord);
+          r.set_frame_number(frames[j]);
+          reflections.push_back(r);
         }
       }
       return reflections;
@@ -211,8 +210,7 @@ namespace dials { namespace algorithms {
     IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
     is_scan_angle_valid <Scan> is_angle_valid_;
-    is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
-    diffracted_beam_detector_coord <FlatPanelDetector> get_image_coord_;
+    diffracted_beam_to_pixel <FlatPanelDetector> get_detector_coord_;
     get_all_frames_from_angle <Scan> get_frame_numbers_;
     Beam beam_;
     FlatPanelDetector detector_;
@@ -224,6 +222,8 @@ namespace dials { namespace algorithms {
   };
 
   /** A class to perform spot prediction. */
+  template <typename DetectorType,
+            typename ReflectionType>
   class SpotPredictor2 {
 
   public:
@@ -240,7 +240,7 @@ namespace dials { namespace algorithms {
      * @param d_min The resolution
      */
     SpotPredictor2(const Beam &beam,
-                  const MultiFlatPanelDetector &detector,
+                  const DetectorType &detector,
                   const Goniometer &gonio,
                   const Scan &scan,
                   const cctbx::uctbx::unit_cell &unit_cell,
@@ -252,8 +252,7 @@ namespace dials { namespace algorithms {
           beam.get_direction(),
           gonio.get_rotation_axis()),
         is_angle_valid_(scan),
-        is_coord_valid_(detector),
-        get_image_coord_(detector),
+        get_detector_coord_(detector),
         get_frame_numbers_(scan),
         beam_(beam),
         detector_(detector),
@@ -285,10 +284,10 @@ namespace dials { namespace algorithms {
      * @param h The miller index
      * @returns An array of predicted reflections
      */
-    scitbx::af::shared <Reflection> 
+    scitbx::af::shared <ReflectionType> 
     operator()(miller_index h) const {
 
-      scitbx::af::shared <Reflection> reflections;
+      scitbx::af::shared <ReflectionType> reflections;
 
       // Calculate the reciprocal space vector
       vec3 <double> pstar0 = ub_matrix_ * h;
@@ -315,24 +314,20 @@ namespace dials { namespace algorithms {
         vec3 <double> s1 = s0_ + pstar;
 
         // Try to calculate the detector coordinate
-        vec2 <double> xy;
+        vec3 <double> coord;
         try {
-          xy = get_image_coord_(s1);
+          coord = get_detector_coord_(s1);
         } catch(error) {
           continue;
         }
-
-        // Check the detector coordinate is valid and add the
-        // elements to the arrays.
-        //if (!is_coord_valid_(xy)) {
-        //  continue;
-        //}
 
         // Get the list of frames at which the reflection will be observed
         // and add the predicted observations to the list of reflections
         flex_double frames = get_frame_numbers_(phi[i]);
         for (std::size_t j = 0; j < frames.size(); ++j) {
-          reflections.push_back(Reflection(h, phi_deg, s1, xy, frames[j]));
+          ReflectionType r = ReflectionType(
+            h, phi_deg, s1, coord, frames[j]);
+          reflections.push_back(r);
         }
       }
       return reflections;
@@ -342,11 +337,11 @@ namespace dials { namespace algorithms {
      * For a given set of miller indices, predict the detector coordinates.
      * @param miller_indices The array of miller indices.
      */
-    scitbx::af::shared <Reflection>
+    scitbx::af::shared <ReflectionType>
     operator()(const flex_miller_index &miller_indices) const {
-      scitbx::af::shared <Reflection> reflections;
+      scitbx::af::shared <ReflectionType> reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-        scitbx::af::shared <Reflection> r = operator()(miller_indices[i]);
+        scitbx::af::shared <ReflectionType> r = operator()(miller_indices[i]);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -357,9 +352,9 @@ namespace dials { namespace algorithms {
     /**
      * Generate a set of miller indices and predict the detector coordinates.
      */
-    scitbx::af::shared <Reflection>
+    scitbx::af::shared <ReflectionType>
     operator()() {
-      scitbx::af::shared <Reflection> reflections;
+      scitbx::af::shared <ReflectionType> reflections;
 
       // Continue looping until we run out of miller indices
       for (;;) {
@@ -371,7 +366,7 @@ namespace dials { namespace algorithms {
         }
 
         // Predict the spot location for the miller index
-        scitbx::af::shared <Reflection> r = operator()(h);
+        scitbx::af::shared <ReflectionType> r = operator()(h);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -384,11 +379,10 @@ namespace dials { namespace algorithms {
     IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
     is_scan_angle_valid <Scan> is_angle_valid_;
-    is_coordinate_valid <MultiFlatPanelDetector> is_coord_valid_;
-    diffracted_beam_detector_coord <MultiFlatPanelDetector> get_image_coord_;
+    diffracted_beam_to_pixel <DetectorType> get_detector_coord_;
     get_all_frames_from_angle <Scan> get_frame_numbers_;
     Beam beam_;
-    MultiFlatPanelDetector detector_;
+    DetectorType detector_;
     Goniometer gonio_;
     Scan scan_;
     mat3 <double> ub_matrix_;
