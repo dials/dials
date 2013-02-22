@@ -1,7 +1,7 @@
 def print_header():
     import sys
     from dxtbx.format.Registry import Registry
-    
+
     # this will do the lookup for every frame - this is strictly not needed
     # if all frames are from the same instrument
 
@@ -23,4 +23,3 @@ def print_header():
 
 if __name__ == '__main__':
     print_header()
-

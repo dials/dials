@@ -35,13 +35,13 @@ namespace dxtbx {
       boost_adaptbx::python::streambuf::istream is(input);
       std::vector<unsigned int> data;
       data.resize(count);
-      
+
       is.read((char *) &data[0], count * sizeof(unsigned int));
-      
+
       for (size_t j = 0; j < count; j++) {
         result.push_back((int) data[j]);
       }
-      
+
       return result;
     }
 
@@ -53,16 +53,16 @@ namespace dxtbx {
       boost_adaptbx::python::streambuf::istream is(input);
       std::vector<short> data;
       data.resize(count);
-      
+
       is.read((char *) &data[0], count * sizeof(short));
-      
+
       for (size_t j = 0; j < count; j++) {
         result.push_back((int) data[j]);
       }
-      
+
       return result;
     }
-    
+
     scitbx::af::shared<int>
     read_int32(boost_adaptbx::python::streambuf & input,
                size_t count)
@@ -71,16 +71,16 @@ namespace dxtbx {
       boost_adaptbx::python::streambuf::istream is(input);
       std::vector<int> data;
       data.resize(count);
-      
+
       is.read((char *) &data[0], count * sizeof(int));
-      
+
       for (size_t j = 0; j < count; j++) {
         result.push_back((int) data[j]);
       }
-      
+
       return result;
     }
-    
+
     void init_module()
     {
       using namespace boost::python;
