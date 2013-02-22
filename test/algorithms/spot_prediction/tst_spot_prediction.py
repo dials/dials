@@ -48,7 +48,7 @@ class TestSpotPredictor:
         self.scan = Scan((gonio.starting_frame,
                           gonio.starting_frame + gonio.num_frames),
                          gonio.starting_angle,
-                         gonio.oscillation_range)
+                         gonio.oscillation_range, deg=True)
         self.gonio = Goniometer(gonio.rotation_axis)
         self.detector = FlatPanelDetector("",
                             detector.x_axis,
