@@ -424,8 +424,17 @@ scratch/jmp/test/test_spot_prediction.py -text
 scratch/jmp/test/test_spot_predictor.py -text
 scratch/jmp/test/test_xds_coordinate_system.py -text
 scratch/jmp/test_map.cc -text
+scratch/luiso_s/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
+scratch/luiso_s/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
 scratch/luiso_s/cctbx_introduction_1.png -text
+scratch/luiso_s/matix_test01.py -text svneol=unset#text/plain
+scratch/luiso_s/matrix_test_f.f90 -text
+scratch/luiso_s/tst05.py -text svneol=unset#text/plain
+scratch/luiso_s/tst_img_raw.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_mask.py -text svneol=unset#text/plain
+scratch/luiso_s/tst_math.py -text svneol=unset#text/plain
+scratch/luiso_s/tst_matrix_01.py -text svneol=unset#text/plain
+scratch/luiso_s/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
 test/algorithms/spot_prediction/tst_index_generator.py -text
 test/algorithms/spot_prediction/tst_rotation_angles.py -text
