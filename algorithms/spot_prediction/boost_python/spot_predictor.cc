@@ -32,21 +32,23 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_spot_predictor()
   {
+    // Export a spot predictor for flat panel detectors
     spot_predictor_wrapper <
       SpotPredictor <
         Beam,
         FlatPanelDetector,
         Goniometer,
         Scan,
-        Reflection> >("SpotPredictor");
-            
+        Reflection> >("FlatPanelDetector");
+    
+    // Export a spot predictor for multiple flat panel detectors
     spot_predictor_wrapper <
       SpotPredictor <
         Beam,
         MultiFlatPanelDetector,
         Goniometer,
         Scan,
-        MultiPanelDetectorReflection> >("SpotPredictor2");  
+        MultiPanelDetectorReflection> >("MultiFlatPanelDetector");
   }
 
 }}} // namespace = dials::spot_prediction::boost_python
