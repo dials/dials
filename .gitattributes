@@ -7,7 +7,6 @@ algorithms/spot_prediction/SConscript -text
 algorithms/spot_prediction/__init__.py -text
 algorithms/spot_prediction/boost_python/index_generator.cc -text
 algorithms/spot_prediction/boost_python/ray_predictor.cc -text
-algorithms/spot_prediction/boost_python/ray_predictor_wrapper.h -text
 algorithms/spot_prediction/boost_python/rotation_angles.cc -text
 algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
 algorithms/spot_prediction/boost_python/spot_predictor.cc -text
