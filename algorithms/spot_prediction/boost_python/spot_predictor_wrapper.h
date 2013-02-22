@@ -14,12 +14,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   class_<SpotPredictorType> spot_predictor_wrapper(const char *name) {
     
     // Useful typedefs
-    typedef SpotPredictorType::scan_type scan_type;
-    typedef SpotPredictorType::beam_type beam_type;
-    typedef SpotPredictorType::goniometer_type goniometer_type;
-    typedef SpotPredictorType::detector_type detector_type;
-    typedef SpotPredictorType::reflection_type reflection_type;
-    typedef SpotPredictorType::reflection_list_type reflection_list_type;
+    typedef typename SpotPredictorType::beam_type beam_type;
+    typedef typename SpotPredictorType::detector_type detector_type;
+    typedef typename SpotPredictorType::goniometer_type goniometer_type;
+    typedef typename SpotPredictorType::scan_type scan_type;
+    typedef typename SpotPredictorType::reflection_type reflection_type;
+    typedef typename SpotPredictorType::reflection_list_type reflection_list_type;
 
     // Typedef the different overloads for operator()
     reflection_list_type (SpotPredictorType::*predict_single)(
@@ -44,7 +44,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("goniometer"),
         arg("scan"),
         arg("unit_cell"),
-        arg("space_group_type"),
+        arg("space_group"),
         arg("ub_matrix"),
         arg("d_min"))))
       .def("__call__", predict_single, (

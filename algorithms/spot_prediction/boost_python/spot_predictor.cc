@@ -34,18 +34,18 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     spot_predictor_wrapper <
       SpotPredictor <
-        Scan,
         Beam,
         FlatPanelDetector,
         Goniometer,
+        Scan,
         Reflection> >("SpotPredictor");
             
     spot_predictor_wrapper <
       SpotPredictor <
-        Scan,
         Beam,
         MultiFlatPanelDetector,
         Goniometer,
+        Scan,
         MultiPanelDetectorReflection> >("SpotPredictor2");  
   }
 

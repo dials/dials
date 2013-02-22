@@ -36,19 +36,19 @@ namespace dials { namespace algorithms {
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
-  template <typename ScanType,
-            typename BeamType,
+  template <typename BeamType,
             typename DetectorType,
             typename GoniometerType,
+            typename ScanType,
             typename ReflectionType>
   class SpotPredictor {
   public:
 
     // A load of useful typedefs
     typedef BeamType beam_type;
+    typedef DetectorType detector_type;
     typedef GoniometerType goniometer_type;
     typedef ScanType scan_type;
-    typedef DetectorType detector_type;
     typedef ReflectionType reflection_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
     typedef typename detector_type::coordinate_type detector_coordinate_type;
@@ -64,15 +64,15 @@ namespace dials { namespace algorithms {
      * @param ub_matrix The ub matrix
      * @param d_min The resolution
      */
-    SpotPredictor(const BeamType &beam,
-                  const DetectorType &detector,
-                  const GoniometerType &gonio,
-                  const ScanType &scan,
+    SpotPredictor(const beam_type &beam,
+                  const detector_type &detector,
+                  const goniometer_type &gonio,
+                  const scan_type &scan,
                   const cctbx::uctbx::unit_cell &unit_cell,
-                  const cctbx::sgtbx::space_group_type &space_group_type,
+                  const cctbx::sgtbx::space_group_type &space_group,
                   mat3 <double> ub_matrix,
                   double d_min)
-      : index_generator_(unit_cell, space_group_type, false, d_min),
+      : index_generator_(unit_cell, space_group, false, d_min),
         calculate_rotation_angles_(
           beam.get_direction(),
           gonio.get_rotation_axis()),
@@ -85,7 +85,7 @@ namespace dials { namespace algorithms {
         scan_(scan),
         ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
         s0_(beam.get_direction()),
-        m2_(gonio.get_rotation_axis().normalize()) {}
+        m2_(gonio.get_rotation_axis()) {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -109,10 +109,10 @@ namespace dials { namespace algorithms {
      * @param h The miller index
      * @returns An array of predicted reflections
      */
-    scitbx::af::shared <ReflectionType> 
+    reflection_list_type 
     operator()(miller_index h) const {
 
-      scitbx::af::shared <ReflectionType> reflections;
+      reflection_list_type reflections;
 
       // Calculate the reciprocal space vector
       vec3 <double> pstar0 = ub_matrix_ * h;
@@ -150,7 +150,7 @@ namespace dials { namespace algorithms {
         // and add the predicted observations to the list of reflections
         flex_double frames = get_frame_numbers_(phi[i]);
         for (std::size_t j = 0; j < frames.size(); ++j) {
-          ReflectionType r = ReflectionType(
+          reflection_type r = reflection_type(
             h, phi_deg, s1, coord, frames[j]);
           reflections.push_back(r);
         }
@@ -162,11 +162,11 @@ namespace dials { namespace algorithms {
      * For a given set of miller indices, predict the detector coordinates.
      * @param miller_indices The array of miller indices.
      */
-    scitbx::af::shared <ReflectionType>
+    reflection_list_type
     operator()(const flex_miller_index &miller_indices) const {
-      scitbx::af::shared <ReflectionType> reflections;
+      reflection_list_type reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-        scitbx::af::shared <ReflectionType> r = operator()(miller_indices[i]);
+        reflection_list_type r = operator()(miller_indices[i]);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -177,9 +177,9 @@ namespace dials { namespace algorithms {
     /**
      * Generate a set of miller indices and predict the detector coordinates.
      */
-    scitbx::af::shared <ReflectionType>
+    reflection_list_type
     operator()() {
-      scitbx::af::shared <ReflectionType> reflections;
+      reflection_list_type reflections;
 
       // Continue looping until we run out of miller indices
       for (;;) {
@@ -191,7 +191,7 @@ namespace dials { namespace algorithms {
         }
 
         // Predict the spot location for the miller index
-        scitbx::af::shared <ReflectionType> r = operator()(h);
+        reflection_list_type r = operator()(h);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -203,13 +203,13 @@ namespace dials { namespace algorithms {
 
     IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
-    is_scan_angle_valid <ScanType> is_angle_valid_;
-    diffracted_beam_to_pixel <DetectorType> get_detector_coord_;
-    get_all_frames_from_angle <ScanType> get_frame_numbers_;
-    BeamType beam_;
-    DetectorType detector_;
-    GoniometerType gonio_;
-    ScanType scan_;
+    is_scan_angle_valid <scan_type> is_angle_valid_;
+    diffracted_beam_to_pixel <detector_type> get_detector_coord_;
+    get_all_frames_from_angle <scan_type> get_frame_numbers_;
+    beam_type beam_;
+    detector_type detector_;
+    goniometer_type gonio_;
+    scan_type scan_;
     mat3 <double> ub_matrix_;
     vec3 <double> s0_;
     vec3 <double> m2_;
