@@ -12,9 +12,9 @@
 #define DIALS_ALGORITHMS_RAY_PREDICTION_RAY_PREDICTOR_H
 
 #include <scitbx/constants.h>
+#include <scitbx/array_family/small.h>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/model/experiment/scan_helpers.h>
-#include <dials/model/experiment/detector_helpers.h>
 #include "index_generator.h"
 #include "rotation_angles.h"
 
@@ -25,10 +25,9 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
+  using scitbx::af::small;
   using scitbx::af::flex_double;
   using model::is_scan_angle_valid;
-  using model::diffracted_beam_to_pixel;
-  using model::get_all_frames_from_angle;
   using model::mod_360;
 
   // Typedef the miller_index and flex_miller_index types
@@ -37,7 +36,6 @@ namespace dials { namespace algorithms {
 
   /** A class to perform spot prediction. */
   template <typename BeamType,
-            typename DetectorType,
             typename GoniometerType,
             typename ScanType,
             typename ReflectionType>
@@ -46,44 +44,30 @@ namespace dials { namespace algorithms {
 
     // A load of useful typedefs
     typedef BeamType beam_type;
-    typedef DetectorType detector_type;
     typedef GoniometerType goniometer_type;
     typedef ScanType scan_type;
     typedef ReflectionType reflection_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
-    typedef typename detector_type::coordinate_type detector_coordinate_type;
 
     /**
      * Initialise the spot predictor.
      * @param beam The beam parameters
-     * @param detector The detector parameters
      * @param gonio The goniometer parameters
      * @param scan The scan parameters
      * @param unit_cell The unit cell parameters
      * @param space_group_type The space group struct
-     * @param ub_matrix The ub matrix
+     * @param UB The ub matrix
      * @param d_min The resolution
      */
     RayPredictor(const beam_type &beam,
-                  const detector_type &detector,
-                  const goniometer_type &gonio,
-                  const scan_type &scan,
-                  const cctbx::uctbx::unit_cell &unit_cell,
-                  const cctbx::sgtbx::space_group_type &space_group,
-                  mat3 <double> ub_matrix,
-                  double d_min)
-      : index_generator_(unit_cell, space_group, false, d_min),
-        calculate_rotation_angles_(
+                 const goniometer_type &gonio,
+                 const scan_type &scan,
+                 mat3 <double> UB)
+      : calculate_rotation_angles_(
           beam.get_direction(),
           gonio.get_rotation_axis()),
         is_angle_valid_(scan),
-        get_detector_coord_(detector),
-        get_frame_numbers_(scan),
-        beam_(beam),
-        detector_(detector),
-        gonio_(gonio),
-        scan_(scan),
-        ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
+        UB_(gonio.get_fixed_rotation() * UB),
         s0_(beam.get_direction()),
         m2_(gonio.get_rotation_axis()) {}
 
@@ -101,21 +85,16 @@ namespace dials { namespace algorithms {
      *  - The reciprocal lattice vectors are then calculated, followed by the
      *    diffracted beam vector for each reflection.
      *
-     *  - The image volume coordinates are then calculated for each reflection.
-     *
-     *  - The image volume coordinates are then checked to see if they are
-     *    within the image volume itself.
-     *
      * @param h The miller index
      * @returns An array of predicted reflections
      */
-    vec2 <reflection_type> 
+    reflection_list_type
     operator()(miller_index h) const {
 
-      vec2 <reflection_type> reflections;
+      reflection_list_type reflections;
 
       // Calculate the reciprocal space vector
-      vec3 <double> pstar0 = ub_matrix_ * h;
+      vec3 <double> pstar0 = UB_ * h;
 
       // Try to calculate the diffracting rotation angles
       vec2 <double> phi;
@@ -137,8 +116,9 @@ namespace dials { namespace algorithms {
         // Calculate the reciprocal space vector and diffracted beam vector
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
         vec3 <double> s1 = s0_ + pstar;
-
-
+      
+        // Add the reflection
+        reflections.push_back(reflection_type(h, phi_deg, s1));
       }
       return reflections;
     }
@@ -159,43 +139,11 @@ namespace dials { namespace algorithms {
       return reflections;
     }
 
-    /**
-     * Generate a set of miller indices and predict the detector coordinates.
-     */
-    reflection_list_type
-    operator()() {
-      reflection_list_type reflections;
-
-      // Continue looping until we run out of miller indices
-      for (;;) {
-
-        // Get the next miller index
-        miller_index h = index_generator_.next();
-        if (h.is_zero()) {
-          break;
-        }
-
-        // Predict the spot location for the miller index
-        reflection_list_type r = operator()(h);
-        for (std::size_t j = 0; j < r.size(); ++j) {
-          reflections.push_back(r[j]);
-        }
-      }
-      return reflections;
-    }
-
   private:
 
-    IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
     is_scan_angle_valid <scan_type> is_angle_valid_;
-    diffracted_beam_to_pixel <detector_type> get_detector_coord_;
-    get_all_frames_from_angle <scan_type> get_frame_numbers_;
-    beam_type beam_;
-    detector_type detector_;
-    goniometer_type gonio_;
-    scan_type scan_;
-    mat3 <double> ub_matrix_;
+    mat3 <double> UB_;
     vec3 <double> s0_;
     vec3 <double> m2_;
   };

@@ -60,6 +60,13 @@ namespace dials { namespace model {
 
     Reflection(miller_index_type miller_index, 
                double rotation_angle,
+               vec3 <double> beam_vector)
+      : ReflectionBase(miller_index),
+        rotation_angle_(rotation_angle),
+        beam_vector_(beam_vector){}
+
+    Reflection(miller_index_type miller_index, 
+               double rotation_angle,
                vec3 <double> beam_vector,
                vec2 <double> image_coord,
                double frame_number)
