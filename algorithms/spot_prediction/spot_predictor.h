@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
   using model::is_scan_angle_valid;
   using model::diffracted_beam_to_pixel;
   using model::get_all_frames_from_angle;
-  using model::mod_360;
+  using model::mod_2pi;
 
   // Typedef the miller_index and flex_miller_index types
   typedef cctbx::miller::index <> miller_index;
@@ -129,8 +129,8 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
         // Check that the angles are within the rotation range
-        double phi_deg = mod_360(rad_as_deg(phi[i]));
-        if (!is_angle_valid_(phi_deg)) {
+        phi[i] = mod_2pi(phi[i]);
+        if (!is_angle_valid_(phi[i])) {
           continue;
         }
 
@@ -151,7 +151,7 @@ namespace dials { namespace algorithms {
         flex_double frames = get_frame_numbers_(phi[i]);
         for (std::size_t j = 0; j < frames.size(); ++j) {
           reflection_type r = reflection_type(
-            h, phi_deg, s1, coord, frames[j]);
+            h, phi[i], s1, coord, frames[j]);
           reflections.push_back(r);
         }
       }

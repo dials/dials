@@ -1,5 +1,5 @@
 /*
- * scan_predictor.cc
+ * ray_predictor.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -16,7 +16,6 @@
 #include <dials/model/experiment/goniometer.h>
 #include <dials/model/experiment/detector.h>
 #include <dials/model/data/reflection.h>
-#include "ray_predictor_wrapper.h"
 
 namespace dials { namespace algorithms { namespace boost_python {
 
@@ -29,13 +28,30 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_ray_predictor()
   {
-    // Export a ray predictor
-    ray_predictor_wrapper <
-      RayPredictor <
-        Beam,
-        Goniometer,
-        Scan,
-        Reflection> >("RayPredictor");
+    // Useful typedefs
+    typedef RayPredictor::reflection_type reflection_type;
+    typedef RayPredictor::reflection_list_type reflection_list_type;
+
+    // Typedef the different overloads for operator()
+    reflection_list_type (RayPredictor::*predict_single)(
+      miller_index) const = &RayPredictor::operator();
+    reflection_list_type (RayPredictor::*predict_array)(
+      const flex_miller_index &) const = &RayPredictor::operator();
+
+    // Create and return the wrapper for the spot predictor object
+    class_ <RayPredictor> ("RayPredictor", no_init)
+      .def(init <vec3<double>,
+                 vec3<double>,
+                 mat3<double>,
+                 vec2<double> > ((
+        arg("s0"),
+        arg("m2"),
+        arg("UB"),
+        arg("dphi"))))
+      .def("__call__", predict_single, (
+        arg("miller_index")))
+      .def("__call__", predict_array, (
+        arg("miller_indices")));
   }
 
 }}} // namespace = dials::spot_prediction::boost_python

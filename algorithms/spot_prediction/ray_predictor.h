@@ -19,6 +19,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
 #include <dials/model/experiment/scan_helpers.h>
+#include <dials/model/data/reflection.h>
 #include "rotation_angles.h"
 
 namespace dials { namespace algorithms {
@@ -28,46 +29,39 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
-  using model::is_scan_angle_valid;
-  using model::mod_360;
+  using model::mod_2pi;
+  using model::is_angle_in_range;
+  using model::Reflection;
 
   // Typedef the miller_index and flex_miller_index types
   typedef cctbx::miller::index <> miller_index;
   typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
-  template <typename BeamType,
-            typename GoniometerType,
-            typename ScanType,
-            typename ReflectionType>
   class RayPredictor {
   public:
 
     // A load of useful typedefs
-    typedef BeamType beam_type;
-    typedef GoniometerType goniometer_type;
-    typedef ScanType scan_type;
-    typedef ReflectionType reflection_type;
+    typedef Reflection reflection_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
 
     /**
      * Initialise the ray predictor.
-     * @param beam The beam parameters
-     * @param gonio The goniometer parameters
-     * @param scan The scan parameters
+     * @param s0 The incident beam vector
+     * @param m2 The rotation axis
      * @param UB The ub matrix
+     * @param dphi The total oscillation range
      */
-    RayPredictor(const beam_type &beam,
-                 const goniometer_type &gonio,
-                 const scan_type &scan,
-                 mat3 <double> UB)
-      : calculate_rotation_angles_(
-          beam.get_direction(),
-          gonio.get_rotation_axis()),
-        is_angle_valid_(scan),
-        UB_(gonio.get_fixed_rotation() * UB),
-        s0_(beam.get_direction()),
-        m2_(gonio.get_rotation_axis()) {}
+    RayPredictor(vec3 <double> s0, vec3 <double> m2, mat3 <double> UB, 
+                 vec2 <double> dphi)
+      : calculate_rotation_angles_(s0, m2),
+        is_angle_valid_(dphi),
+        s0_(s0),
+        m2_(m2.normalize()),
+        UB_(UB) {}
+
+    /** Virtual destructor to allow inheritance */
+    virtual ~RayPredictor() {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -106,8 +100,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
         // Check that the angles are within the rotation range
-        double phi_deg = mod_360(rad_as_deg(phi[i]));
-        if (!is_angle_valid_(phi_deg)) {
+        if (!is_angle_valid_(phi[i])) {
           continue;
         }
 
@@ -116,7 +109,7 @@ namespace dials { namespace algorithms {
         vec3 <double> s1 = s0_ + pstar;
       
         // Add the reflection
-        reflections.push_back(reflection_type(h, phi_deg, s1));
+        reflections.push_back(reflection_type(h, mod_2pi(phi[i]), s1));
       }
       return reflections;
     }
@@ -140,10 +133,10 @@ namespace dials { namespace algorithms {
   private:
 
     RotationAngles calculate_rotation_angles_;
-    is_scan_angle_valid <scan_type> is_angle_valid_;
-    mat3 <double> UB_;
+    is_angle_in_range is_angle_valid_;
     vec3 <double> s0_;
     vec3 <double> m2_;
+    mat3 <double> UB_;
   };
 
 }} // namespace dials::algorithms

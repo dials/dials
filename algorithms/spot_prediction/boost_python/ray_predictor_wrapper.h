@@ -14,9 +14,6 @@ namespace dials { namespace algorithms { namespace boost_python {
   class_<RayPredictorType> ray_predictor_wrapper(const char *name) {
     
     // Useful typedefs
-    typedef typename RayPredictorType::beam_type beam_type;
-    typedef typename RayPredictorType::goniometer_type goniometer_type;
-    typedef typename RayPredictorType::scan_type scan_type;
     typedef typename RayPredictorType::reflection_type reflection_type;
     typedef typename RayPredictorType::reflection_list_type reflection_list_type;
 
@@ -28,14 +25,14 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     // Create and return the wrapper for the spot predictor object
     return class_ <RayPredictorType> (name, no_init)
-      .def(init <const beam_type&,
-                 const goniometer_type&,
-                 const scan_type&,
-                 mat3 <double> > ((
-        arg("beam"),
-        arg("goniometer"),
-        arg("scan"),
-        arg("ub_matrix"))))
+      .def(init <vec3<double>,
+                 vec3<double>,
+                 mat3<double>,
+                 vec2<double> > ((
+        arg("s0"),
+        arg("m2"),
+        arg("UB"),
+        arg("dphi"))))
       .def("__call__", predict_single, (
         arg("miller_index")))
       .def("__call__", predict_array, (

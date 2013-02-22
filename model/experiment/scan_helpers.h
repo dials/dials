@@ -22,19 +22,20 @@ namespace dials { namespace model {
   using std::floor;
   using scitbx::vec2;
   using scitbx::af::flex_double;
+  using scitbx::constants::two_pi;
 
-  /** Convert the angle mod 360 */
+  /** Convert the angle mod 2PI */
   inline
-  double mod_360(double angle) {
-    return angle - 360.0 * floor(angle / 360);
+  double mod_2pi(double angle) {
+    return angle - two_pi * floor(angle / two_pi);
   }
 
   /**
    * A functor to check if the angle is within the given range. The angular
    * range can be any two angles, plus or minus. The angle is to check can
    * also be any angle. The angle is considered within the range if the range
-   * spans more than 360 degrees and the angle is within the two range angles
-   * when mod 360.
+   * spans more than 2PI degrees and the angle is within the two range angles
+   * when mod 2PI.
    */
   struct is_angle_in_range {
 
@@ -51,9 +52,9 @@ namespace dials { namespace model {
      * @returns True/False the angle is within the range
      */
     bool operator()(double angle) const {
-      double diff_angle_range0 = mod_360(angle - range_[0]);
-      double diff_angle_range1 = mod_360(angle - range_[1]);
-      return range_[1] - range_[0] >= 360.0
+      double diff_angle_range0 = mod_2pi(angle - range_[0]);
+      double diff_angle_range1 = mod_2pi(angle - range_[1]);
+      return range_[1] - range_[0] >= two_pi
           || diff_angle_range1 >= diff_angle_range0
           || diff_angle_range1 == 0;
     }
@@ -63,19 +64,19 @@ namespace dials { namespace model {
   };
 
   /**
-   * A functor to get the range of equivalent angles mod 360 degrees that lie
-   * in the given angular range which can be more than 360 degrees. For example
+   * A functor to get the range of equivalent angles mod 2PI degrees that lie
+   * in the given angular range which can be more than 2PI degrees. For example
    * if the range is given as (A, B), the returned value will be (a, b) where
-   * A <= a < A + 360; B - 360 < b < B.
+   * A <= a < A + 2PI; B - 2PI < b < B.
    */
-  struct get_range_of_mod360_angles {
+  struct get_range_of_mod2pi_angles {
 
     /**
      * Initialise the functor with the given range. Range must be of the
      * form range[0] <= range[1].
      * @param range The angular range
      */
-    get_range_of_mod360_angles(vec2 <double> range)
+    get_range_of_mod2pi_angles(vec2 <double> range)
       : range_(range) {
       DIALS_ASSERT(range[0] <= range[1]);
     }
@@ -83,14 +84,14 @@ namespace dials { namespace model {
     /**
      * Calculate the range of angles.
      * @param angle The angle to check
-     * @returns A pair of angles (a, b) where a = angle + n360 and
-     * b = angle + m360 and both lie within the caches range values. If
+     * @returns A pair of angles (a, b) where a = angle + n2PI and
+     * b = angle + m2pi and both lie within the caches range values. If
      * b < a, the range is invalid.
      */
     vec2 <double> operator()(double angle) const {
       return vec2 <double> (
-        angle - 360.0 * floor((angle - range_[0]) / 360.0),
-        angle + 360.0 * floor((range_[1] - angle) / 360.0));
+        angle - two_pi * floor((angle - range_[0]) / two_pi),
+        angle + two_pi * floor((range_[1] - angle) / two_pi));
     }
 
   private:
@@ -98,39 +99,39 @@ namespace dials { namespace model {
   };
 
   /**
-   * A functor to get the all the angles mod 360 a given angle that lie
-   * in the given angular range which can be more than 360 degrees.
+   * A functor to get the all the angles mod 2pi a given angle that lie
+   * in the given angular range which can be more than 2pi degrees.
    */
-  struct get_mod360_angles_in_range {
+  struct get_mod2pi_angles_in_range {
 
     /**
      * Initialise the functor with an angular range.
      * @param range The angular range.
      */
-    get_mod360_angles_in_range(vec2 <double> range)
+    get_mod2pi_angles_in_range(vec2 <double> range)
       : get_angular_range_(range) {}
 
     /**
      * Calculate and return an array of angles. If no angles are in the range,
      * then the array is empty.
      * @param angle The angle to use.
-     * @returns An array of angles, a, where a = a + n360.
+     * @returns An array of angles, a, where a = a + n2pi.
      */
     flex_double operator()(double angle) const {
       flex_double result;
       vec2 <double> range = get_angular_range_(angle);
-      int n_angles = 1 + (int)floor((range[1] - range[0]) / 360.0);
+      int n_angles = 1 + (int)floor((range[1] - range[0]) / two_pi);
       if (n_angles > 0) {
         result.resize(n_angles);
         for (std::size_t i = 0; i < n_angles; ++i) {
-          result[i] = range[0] + i * 360.0;
+          result[i] = range[0] + i * two_pi;
         }
       }
       return result;
     }
 
   private:
-    get_range_of_mod360_angles get_angular_range_;
+    get_range_of_mod2pi_angles get_angular_range_;
   };
 
   /**
@@ -211,7 +212,7 @@ namespace dials { namespace model {
 
   /**
    * A functor to calculate the frame corresponding to a scan angle. The raw
-   * angle is used (i.e. not wrapped mod 360).
+   * angle is used (i.e. not wrapped mod 2pi).
    * @tparam ScanType The type of the scan object
    */
   template <typename ScanType>
@@ -219,7 +220,7 @@ namespace dials { namespace model {
 
   /**
    * A functor to calculate the frame corresponding to a scan angle. The raw
-   * angle is used (i.e. not wrapped mod 360).
+   * angle is used (i.e. not wrapped mod 2pi).
    */
   template <>
   struct get_frame_from_angle <Scan> {
@@ -251,7 +252,7 @@ namespace dials { namespace model {
   /**
    * A functor to calculate all the frames in the scan at which an observation
    * with a given angle will be observed. I.e. for a given angle, find all the
-   * equivalent angles (i.e. mod 360) within the scan range and calculate the
+   * equivalent angles (i.e. mod 2pi) within the scan range and calculate the
    * frame number for each angle.
    * @tparam ScanType The type of the scan object
    */
@@ -261,7 +262,7 @@ namespace dials { namespace model {
   /**
    * A functor to calculate all the frames in the scan at which an observation
    * with a given angle will be observed. I.e. for a given angle, find all the
-   * equivalent angles (i.e. mod 360) within the scan range and calculate the
+   * equivalent angles (i.e. mod 2pi) within the scan range and calculate the
    * frame number for each angle.
    */
   template <>
@@ -292,7 +293,7 @@ namespace dials { namespace model {
     }
 
   private:
-    get_mod360_angles_in_range get_angles_;
+    get_mod2pi_angles_in_range get_angles_;
     get_frame_from_angle <Scan> get_frame_;
   };
 
