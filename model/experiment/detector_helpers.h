@@ -11,9 +11,6 @@
 #ifndef DIALS_MODEL_EXPERIMENT_DETECTOR_HELPERS_H
 #define DIALS_MODEL_EXPERIMENT_DETECTOR_HELPERS_H
 
-//#include <boost/geometry.hpp>
-//#include <boost/geometry/geometries/point.hpp>
-//#include <boost/geometry/geometries/polygon.hpp>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
@@ -30,6 +27,7 @@ namespace dials { namespace model {
 
   // Create flex array typedefs
   typedef scitbx::af::flex<vec2<std::size_t> >::type flex_vec2_size_t;
+  typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
   typedef scitbx::af::flex<mat3<double> >::type flex_mat3_double;
 
   /**
@@ -85,7 +83,7 @@ namespace dials { namespace model {
      * Initialise the functor with the image size for each detector panel
      * @param detector The detector object
      */
-    is_coordinate_valid(const MultiFlatPanelDetector &detector) 
+    is_coordinate_valid(const MultiFlatPanelDetector &detector)
       : image_size_(get_image_sizes(detector)),
         num_panels_(detector.num_panels()) {}
 
@@ -97,14 +95,14 @@ namespace dials { namespace model {
      */
     template <typename CoordinateType>
     bool operator()(CoordinateType coord) const {
-      int panel = coord[0]; 
+      int panel = coord[0];
       return (panel >= 0 && panel < num_panels_)
           && (coord[1] >= 0 && coord[1] < image_size_[panel][0])
           && (coord[2] >= 0 && coord[2] < image_size_[panel][1]);
     }
 
   private:
-  
+
     /**
      * Put all the image sizes into a flex array
      * @param detector The detector object
@@ -118,32 +116,32 @@ namespace dials { namespace model {
       }
       return result;
     }
-  
+
     flex_vec2_size_t image_size_;
     std::size_t num_panels_;
   };
 
   /**
    * Declaration of a functor to to calculate the detector image coordinate
-   * of a diffracted beam vector intersecting with the detector. This functor 
+   * of a diffracted beam vector intersecting with the detector. This functor
    * is intended to be specialized for each detector type.
    * @tparam DetectorType The type of the detector
    */
   template <typename DetectorType>
-  struct diffracted_beam_to_pixel;
-  
+  struct diffracted_beam_intersection;
+
   /**
    * Specialization of the diffracted_beam_to_pixel functor for a generic
    * FlatPanelDetector object. Using a D matrix calculate the pixel coordinates
    */
   template <>
-  struct diffracted_beam_to_pixel <FlatPanelDetector> {
+  struct diffracted_beam_intersection <FlatPanelDetector> {
 
-    /** 
+    /**
      * Initialise the transform from the detector object
      * @param detector The detector object
      */
-    diffracted_beam_to_pixel(const FlatPanelDetector &detector)
+    diffracted_beam_intersection(const FlatPanelDetector &detector)
       : D_(detector.get_inverse_d_matrix()),
         is_coord_valid_(detector) {}
 
@@ -156,7 +154,6 @@ namespace dials { namespace model {
       vec3 <double> v = D_ * s1;
       DIALS_ASSERT(v[2] > 0);
       vec2 <double> xy(v[0] / v[2], v[1] / v[2]);
-      DIALS_ASSERT(is_coord_valid_(xy));
       return xy;
     }
 
@@ -170,7 +167,7 @@ namespace dials { namespace model {
    * Specialization of the diffracted_beam_to_pixel functor for a generic
    * MultiFlatPanelDetector object. Using a D matrix for each detextor panel,
    * calculate the pixel coordinates.
-   * 
+   *
    * @todo This functor currently uses a brute force approach to finding the
    * detector panel which contains the reflection. All panels are checked
    * and where more than one panel could record the reflection, the closest
@@ -178,13 +175,13 @@ namespace dials { namespace model {
    * well for a large number.
    */
   template <>
-  struct diffracted_beam_to_pixel <MultiFlatPanelDetector> {
+  struct diffracted_beam_intersection <MultiFlatPanelDetector> {
 
-    /** 
+    /**
      * Initialise the transform from the detector object
      * @param detector The detector object
      */
-    diffracted_beam_to_pixel(const MultiFlatPanelDetector &detector)
+    diffracted_beam_intersection(const MultiFlatPanelDetector &detector)
       : D_(get_inverse_d_matrices(detector)),
         is_coord_valid_(detector) {}
 
@@ -196,12 +193,12 @@ namespace dials { namespace model {
     vec3 <double> operator()(vec3 <double> s1) const {
       vec3 <double> pxy(-1, 0, 0);
       double w_max = 0;
-      
-      // Loop through all detectors. If the w component of the (u, v, w) 
+
+      // Loop through all detectors. If the w component of the (u, v, w)
       // vector points in the correct direction, then calculate the coordinate.
       // If the coordinate is valid and the w component is greater than that of
       // the current closest valid coordinate, then set this coordinate as the
-      // current best bet. 
+      // current best bet.
       for (std::size_t i = 0; i < D_.size(); ++i) {
         vec3 <double> v = D_[i] * s1;
         if (v[2] > 0) {
@@ -212,10 +209,23 @@ namespace dials { namespace model {
           }
         }
       }
-      
+
       // If no coordinate was found then raise an exception
       // otherwise return the coordinate.
       DIALS_ASSERT(w_max > 0);
+      return pxy;
+    }
+
+    /**
+     * Calculate the intersection point on a given detector plane.
+     * @param s1 The diffracted beam vector
+     * @param panel The panel
+     * @returns The (panel, x, y) detector coordinate
+     */
+    vec3 <double> operator()(vec3 <double> s1, std::size_t panel) const {
+      vec3 <double> v = D_[panel] * s1;
+      DIALS_ASSERT(v[2] > 0);
+      vec3 <double> pxy(panel, v[0] / v[2], v[1] / v[2]);
       return pxy;
     }
 
@@ -240,79 +250,156 @@ namespace dials { namespace model {
   };
 
   /**
-   * Get the image size in mm
-   * @param detector The detector struct
-   * @returns The detector image size in mm
+   * Template functor to map coordinates in the detector frame (in mm) to
+   * pixel coordinates. This functor is specialized for each detector.
+   * @tparam DetectorType The detector type.
    */
-//  inline vec2 <double>
-//  image_size_mm(const FlatPanelDetector &detector) {
-//    return detector.get_image_size() * detector.get_pixel_size();
-//  }
+  template <typename DetectorType>
+  struct millimeter_to_pixel;
 
   /**
-   * Get the pixel coordinate in mm in the laboratory frame
-   * @param detector The detector struct
-   * @param xy The xy pixel coordinate
-   * @returns The detector pixel coordinate in mm in the laboratory frame
+   * Specialization to calculate millimerter to pixel mapping for generic
+   * flat panel detector.
    */
-//  template <typename T>
-//  inline vec3 <double>
-//  pixel_to_mm(const FlatPanelDetector &detector, vec2 <T> xy) {
-//    return detector.get_d_matrix() * vec3 <double> (
-//      (double) xy[0], (double) xy[1], 1.0);
-//  }
+  template <>
+  struct millimeter_to_pixel <FlatPanelDetector> {
+
+    /**
+     * Initialise the functor with the image pixel size
+     * @param detector The detector object
+     */
+    millimeter_to_pixel(const FlatPanelDetector &detector)
+      : pixel_size_i_(1.0 / detector.get_pixel_size()) {}
+
+    /**
+     * Map the millimeter coordinate in the detector plane to pixels
+     * @param xy The x, y detector coordinate in millimeters
+     * @returns The x, y detector coordinate in pixels
+     */
+    vec2 <double> operator()(vec2 <double> xy) {
+      return xy * pixel_size_i_;
+    }
+
+  private:
+    vec2 <double> pixel_size_i_;
+  };
 
   /**
-   * Get the detector plane rectangle as lbx, lby, lbz, trx, try, trz
-   * @param detector The detector struct
-   * @returns The detector plane rectangle
+   * Specialization to calculate millimerter to pixel mapping for generic
+   * multi flat panel detector.
    */
-//  inline double6
-//  plane_rectangle(const FlatPanelDetector &detector) {
-//    vec3 <double> point1 = detector.get_origin();
-//    vec3 <double> point2 = pixel_to_mm(detector, detector.get_image_size());
-//    return double6(
-//      point1[0], point1[1], point1[2],
-//      point2[0], point2[1], point2[2]);
-//  }
+  template <>
+  struct millimeter_to_pixel <MultiFlatPanelDetector> {
+
+    /**
+     * Initialise the functor with the image pixel size
+     * @param detector The detector object
+     */
+    millimeter_to_pixel(const MultiFlatPanelDetector &detector)
+      : pixel_size_i_(init_pixel_size_i(detector)) {}
+
+    /**
+     * Map the millimeter coordinate in the detector plane to pixels
+     * @param pxy The panel, x, y detector coordinate in millimeters
+     * @returns The panel, x, y detector coordinate in pixels
+     */
+    vec3 <double> operator()(vec3 <double> pxy) {
+      int panel = pxy[0];
+      return vec3<double>(
+        panel,
+        pxy[1] * pixel_size_i_[panel][0],
+        pxy[2] * pixel_size_i_[panel][1]);
+    }
+
+  private:
+
+    /** Create an array of inverse pixel sizes */
+    flex_vec2_double init_pixel_size_i(const MultiFlatPanelDetector &detector) {
+      flex_vec2_double result(detector.num_panels());
+      for (std::size_t i = 0; i < detector.num_panels(); ++i) {
+        result[i] = 1.0 / detector[i].get_pixel_size();
+      }
+      return result;
+    }
+
+    flex_vec2_double pixel_size_i_;
+  };
 
   /**
-   * Check if the detector planes intersect.
-   * @param a The first detector
-   * @param b The second detector
-   * @returns True/False do the detector planes intersect?
+   * Template functor to map coordinates in the detector frame (in pixels) to
+   * millimeter coordinates. This functor is specialized for each detector.
+   * @tparam DetectorType The detector type.
    */
-//  inline bool
-//  panels_intersect(const FlatPanelDetector &a, const FlatPanelDetector &b) {
+  template <typename DetectorType>
+  struct pixel_to_millimeter;
 
-//    using namespace boost::geometry;
+  /**
+   * Specialization to calculate pixel to millimeter mapping for generic
+   * flat panel detector.
+   */
+  template <>
+  struct pixel_to_millimeter <FlatPanelDetector> {
 
-//    typedef boost::geometry::model::point <double, 3, cs::cartesian> point;
-//    typedef boost::geometry::model::polygon <point> polygon;
+    /**
+     * Initialise the functor with the image pixel size
+     * @param detector The detector object
+     */
+    pixel_to_millimeter(const FlatPanelDetector &detector)
+      : pixel_size_(1.0 * detector.get_pixel_size()) {}
 
-//    // Get the rectange of detector points
-//    double6 rect_a = plane_rectangle(a);
-//    double6 rect_b = plane_rectangle(b);
+    /**
+     * Map the pixel coordinate in the detector plane to millimeters
+     * @param xy The x, y detector coordinate in pixels
+     * @returns The x, y detector coordinate in millimeters
+     */
+    vec2 <double> operator()(vec2 <double> xy) {
+      return xy * pixel_size_;
+    }
 
-//    // Create a polygon for the panel a plane
-//    polygon poly_a;
-//    append(poly_a, point(rect_a[0], rect_a[1], rect_a[2]));
-//    append(poly_a, point(rect_a[3], rect_a[1], rect_a[5]));
-//    append(poly_a, point(rect_a[3], rect_a[4], rect_a[5]));
-//    append(poly_a, point(rect_a[0], rect_a[4], rect_a[2]));
-//    append(poly_a, point(rect_a[0], rect_a[1], rect_a[2]));
+  private:
+    vec2 <double> pixel_size_;
+  };
 
-//    // Create a polygon for the panel b plane
-//    polygon poly_b;
-//    append(poly_b, point(rect_b[0], rect_b[1], rect_b[2]));
-//    append(poly_b, point(rect_b[3], rect_b[1], rect_b[5]));
-//    append(poly_b, point(rect_b[3], rect_b[4], rect_b[5]));
-//    append(poly_b, point(rect_b[0], rect_b[4], rect_b[2]));
-//    append(poly_b, point(rect_b[0], rect_b[1], rect_b[2]));
+  /**
+   * Specialization to calculate pixel to millimeter mapping for generic
+   * multi flat panel detector.
+   */
+  template <>
+  struct pixel_to_millimeter <MultiFlatPanelDetector> {
 
-//    // Check if the polygons intersect
-//    return intersects(poly_a, poly_b);
-//  }
+    /**
+     * Initialise the functor with the image pixel size
+     * @param detector The detector object
+     */
+    pixel_to_millimeter(const MultiFlatPanelDetector &detector)
+      : pixel_size_(init_pixel_size(detector)){}
+
+    /**
+     * Map the pixel coordinate in the detector plane to millimeters
+     * @param pxy The panel, x, y detector coordinate in pixels
+     * @returns The panel, x, y detector coordinate in millimeters
+     */
+    vec3 <double> operator()(vec3 <double> pxy) {
+      int panel = pxy[0];
+      return vec3<double>(
+        panel,
+        pxy[1] * pixel_size_[panel][0],
+        pxy[2] * pixel_size_[panel][1]);
+    }
+
+  private:
+
+    /** Create an array of pixel sizes */
+    flex_vec2_double init_pixel_size(const MultiFlatPanelDetector &detector) {
+      flex_vec2_double result(detector.num_panels());
+      for (std::size_t i = 0; i < detector.num_panels(); ++i) {
+        result[i] = 1.0 * detector[i].get_pixel_size();
+      }
+      return result;
+    }
+
+    flex_vec2_double pixel_size_;
+  };
 
 }} // namespace dials::model
 

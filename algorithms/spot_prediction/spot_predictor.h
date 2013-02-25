@@ -27,7 +27,7 @@ namespace dials { namespace algorithms {
   using scitbx::mat3;
   using scitbx::af::flex_double;
   using model::is_scan_angle_valid;
-  using model::diffracted_beam_to_pixel;
+  using model::diffracted_beam_intersection;
   using model::get_all_frames_from_angle;
   using model::mod_2pi;
 
@@ -109,7 +109,7 @@ namespace dials { namespace algorithms {
      * @param h The miller index
      * @returns An array of predicted reflections
      */
-    reflection_list_type 
+    reflection_list_type
     operator()(miller_index h) const {
 
       reflection_list_type reflections;
@@ -204,7 +204,7 @@ namespace dials { namespace algorithms {
     IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
     is_scan_angle_valid <scan_type> is_angle_valid_;
-    diffracted_beam_to_pixel <detector_type> get_detector_coord_;
+    diffracted_beam_intersection <detector_type> get_detector_coord_;
     get_all_frames_from_angle <scan_type> get_frame_numbers_;
     beam_type beam_;
     detector_type detector_;

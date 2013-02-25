@@ -12,7 +12,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename SpotPredictorType>
   class_<SpotPredictorType> spot_predictor_wrapper(const char *name) {
-    
+
     // Useful typedefs
     typedef typename SpotPredictorType::beam_type beam_type;
     typedef typename SpotPredictorType::detector_type detector_type;
@@ -26,7 +26,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       miller_index) const = &SpotPredictorType::operator();
     reflection_list_type (SpotPredictorType::*predict_array)(
       const flex_miller_index &) const = &SpotPredictorType::operator();
-    reflection_list_type (SpotPredictorType::*predict_generate)() = 
+    reflection_list_type (SpotPredictorType::*predict_generate)() =
       &SpotPredictorType::operator();
 
     // Create and return the wrapper for the spot predictor object
@@ -51,7 +51,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("miller_index")))
       .def("__call__", predict_array, (
         arg("miller_indices")))
-      .def("__call__", predict_generate);  
+      .def("__call__", predict_generate);
   }
 
 }}} // namespace dials::algorithms::boost_python

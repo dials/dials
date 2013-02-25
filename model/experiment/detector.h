@@ -112,8 +112,8 @@ namespace dials { namespace model {
       double distance,
       vec2 <int> trusted_range)
       : type_(type),
-      fast_axis_(fast_axis.normalize() * pixel_size[0]),
-      slow_axis_(slow_axis.normalize() * pixel_size[1]),
+      fast_axis_(fast_axis.normalize()),
+      slow_axis_(slow_axis.normalize()),
       normal_((fast_axis_.cross(slow_axis_)).normalize()),
       origin_(origin),
       pixel_size_(pixel_size),

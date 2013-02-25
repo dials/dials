@@ -159,7 +159,7 @@ namespace dials { namespace model {
       : is_angle_in_range_(vec2 <double> (
           scan.get_starting_angle(),
           scan.get_starting_angle() + scan.get_total_oscillation_range())) {}
-  
+
     /**
      * Check the angle is within the range.
      * @param angle The angle to check
@@ -168,7 +168,7 @@ namespace dials { namespace model {
     bool operator()(double angle) const {
       return is_angle_in_range_(angle);
     }
-  
+
   private:
     is_angle_in_range is_angle_in_range_;
   };
@@ -216,7 +216,7 @@ namespace dials { namespace model {
    * @tparam ScanType The type of the scan object
    */
   template <typename ScanType>
-  struct get_frame_from_angle;  
+  struct get_frame_from_angle;
 
   /**
    * A functor to calculate the frame corresponding to a scan angle. The raw

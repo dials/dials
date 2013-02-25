@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_RAY_PREDICTION_RAY_PREDICTOR_H
-#define DIALS_ALGORITHMS_RAY_PREDICTION_RAY_PREDICTOR_H
+#ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_PREDICTOR_H
+#define DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_PREDICTOR_H
 
 #include <scitbx/constants.h>
 #include <scitbx/vec2.h>
@@ -52,7 +52,7 @@ namespace dials { namespace algorithms {
      * @param UB The ub matrix
      * @param dphi The total oscillation range
      */
-    RayPredictor(vec3 <double> s0, vec3 <double> m2, mat3 <double> UB, 
+    RayPredictor(vec3 <double> s0, vec3 <double> m2, mat3 <double> UB,
                  vec2 <double> dphi)
       : calculate_rotation_angles_(s0, m2),
         is_angle_valid_(dphi),
@@ -107,7 +107,7 @@ namespace dials { namespace algorithms {
         // Calculate the reciprocal space vector and diffracted beam vector
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
         vec3 <double> s1 = s0_ + pstar;
-      
+
         // Add the reflection
         reflections.push_back(reflection_type(h, mod_2pi(phi[i]), s1));
       }
@@ -141,4 +141,4 @@ namespace dials { namespace algorithms {
 
 }} // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_RAY_PREDICTION_RAY_PREDICTOR_H
+#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_PREDICTOR_H

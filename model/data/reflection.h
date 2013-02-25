@@ -21,31 +21,31 @@ namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
- 
+
   typedef cctbx::miller::index <> miller_index_type;
-  
+
   class ReflectionBase {
   public:
-   
+
     ReflectionBase() {}
-  
+
     ReflectionBase(miller_index_type miller_index)
       : miller_index_(miller_index) {}
-    
+
     virtual ~ReflectionBase() {}
-    
+
     miller_index_type get_miller_index() const {
       return miller_index_;
     }
-    
+
     void set_miller_index(miller_index_type miller_index) {
       miller_index_ = miller_index;
     }
-      
+
     bool is_zero() {
       return miller_index_.is_zero();
-    }      
-      
+    }
+
   protected:
     miller_index_type miller_index_;
   };
@@ -58,14 +58,14 @@ namespace dials { namespace model {
     Reflection(miller_index_type miller_index)
       : ReflectionBase(miller_index) {}
 
-    Reflection(miller_index_type miller_index, 
+    Reflection(miller_index_type miller_index,
                double rotation_angle,
                vec3 <double> beam_vector)
       : ReflectionBase(miller_index),
         rotation_angle_(rotation_angle),
         beam_vector_(beam_vector){}
 
-    Reflection(miller_index_type miller_index, 
+    Reflection(miller_index_type miller_index,
                double rotation_angle,
                vec3 <double> beam_vector,
                vec2 <double> image_coord,
@@ -122,29 +122,29 @@ namespace dials { namespace model {
   class MultiPanelDetectorReflection : public Reflection {
   public:
     MultiPanelDetectorReflection() {}
-    
+
     MultiPanelDetectorReflection(miller_index_type miller_index)
       : Reflection(miller_index) {}
-    
-    MultiPanelDetectorReflection(miller_index_type miller_index, 
+
+    MultiPanelDetectorReflection(miller_index_type miller_index,
                                  double rotation_angle,
                                  vec3 <double> beam_vector,
                                  vec3 <double> detector_coord,
                                  double frame_number)
       : Reflection(
-          miller_index, 
-          rotation_angle, 
-          beam_vector, 
+          miller_index,
+          rotation_angle,
+          beam_vector,
           vec2<double>(detector_coord[1], detector_coord[2]),
           frame_number),
-        panel_number_(detector_coord[0]) {}    
-    
+        panel_number_(detector_coord[0]) {}
+
     virtual ~MultiPanelDetectorReflection() {}
-         
+
     std::size_t get_panel_number() const {
       return panel_number_;
     }
-    
+
     void set_panel_number(std::size_t panel_number) {
       panel_number_ = panel_number;
     }
