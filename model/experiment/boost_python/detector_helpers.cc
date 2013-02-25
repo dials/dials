@@ -19,28 +19,65 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_flat_panel_detector_helpers()
-  {
-//    // Export the is_coordinate_valid functor
-//    class_<is_coordinate_valid <FlatPanelDetector> >("is_coord_valid", no_init)
-//      .def(init<const FlatPanelDetector&>())
-//      .def("__call__", &is_coordinate_valid <FlatPanelDetector>::operator()<vec2<int> >)
-//      .def("__call__", &is_coordinate_valid <FlatPanelDetector>::operator()<vec2<double> >);
+  template <typename DetectorType>
+  is_coordinate_valid <DetectorType> make_is_coordinate_valid(
+      const DetectorType& detector) {
+    return is_coordinate_valid<DetectorType>(detector);
   }
 
-  void export_multi_flat_panel_detector_helpers()
+  template <typename DetectorType>
+  diffracted_beam_intersection <DetectorType> make_diffracted_beam_intersection(
+      const DetectorType& detector) {
+    return diffracted_beam_intersection<DetectorType>(detector);   
+  }
+
+  void export_is_coordinate_valid()
   {
-    // Export the is_coordinate_valid functor  
-//    class_<is_coordinate_valid <MultiFlatPanelDetector> >("is_coord_valid.MultiFlatPanelDetector")
-//      .def(init<const MultiFlatPanelDetector&>())
-//      .def("__call__", &MultiFlatPanelDetector::operator()<vec3<int> >)
-//      .def("__call__", &MultiFlatPanelDetector::operator()<vec3<double> >);
+    class_<is_coordinate_valid<FlatPanelDetector> >(
+        "FlatPanelDetector_is_coordinate_valid", no_init)
+    .def("__call__", 
+      &is_coordinate_valid<FlatPanelDetector>::operator() <vec2 <double> >);
+    
+    class_<is_coordinate_valid<MultiFlatPanelDetector> >(
+        "MultiFlatPanelDetector_is_coordinate_valid", no_init)
+    .def("__call__", 
+      &is_coordinate_valid<MultiFlatPanelDetector>::operator() <vec3 <double> >);    
+    
+    def("is_coordinate_valid", 
+      &make_is_coordinate_valid<FlatPanelDetector>);
+    def("is_coordinate_valid", 
+      &make_is_coordinate_valid<MultiFlatPanelDetector>);
+  }
+
+  void export_diffracted_beam_intersection()
+  {
+    class_<diffracted_beam_intersection<FlatPanelDetector> >(
+        "FlatPanelDetector_diffracted_beam_intersection", no_init)
+    .def("__call__", 
+      &diffracted_beam_intersection<FlatPanelDetector>::operator());
+    
+    vec3<double> (diffracted_beam_intersection<MultiFlatPanelDetector>::*func)(vec3<double>) const =
+      &diffracted_beam_intersection<MultiFlatPanelDetector>::operator();
+    
+    vec3<double> (diffracted_beam_intersection<MultiFlatPanelDetector>::*func2)(vec3<double>, std::size_t) const =
+      &diffracted_beam_intersection<MultiFlatPanelDetector>::operator();    
+    
+    class_<diffracted_beam_intersection<MultiFlatPanelDetector> >(
+        "MultiFlatPanelDetector_diffracted_beam_intersection", no_init)
+    .def("__call__", func);    
+    .def("__call__", func2);
+    
+    def("diffracted_beam_intersection",
+      &make_diffracted_beam_intersection<FlatPanelDetector>);      
+    def("diffracted_beam_intersection",
+      &make_diffracted_beam_intersection<MultiFlatPanelDetector>);
   }
 
   void export_detector_helpers()
   {
-    export_flat_panel_detector_helpers();
-    export_multi_flat_panel_detector_helpers();
+    export_is_coordinate_valid();
+    export_diffracted_beam_intersection();
   }
+  
 
 }}} // namespace = dials::model::boost_python
