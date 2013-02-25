@@ -6,6 +6,9 @@ from __future__ import division
 from scitbx import lbfgs
 from cctbx.array_family import flex
 
+# use lstbx classes
+from scitbx.lstbx import normal_eqns
+
 class refinery(object):
     '''Abstract interface for refinery objects'''
 
@@ -130,3 +133,81 @@ class lbfgs_curvs(refinery):
         # This relies on compute_functional_and_gradients being called first
         # (in order to set the parameters and update predictions).
         return(flex.double(self._target.curvatures()))
+
+
+class adapt_lstbx(
+    refinery,
+    normal_eqns.non_linear_ls,
+    normal_eqns.non_linear_ls_mixin):
+    '''refinery using lstbx
+    testing the use of lstbx methods for solving the normal equations
+
+    Here following the example of lstbx.tests.test_problems.exponential_fit
+    to interface to lstbx code.
+
+    There is much duplication of code with other classes while I figure
+    out what the interface and inheritance hierarchy should be'''
+
+    def __init__(self, target, prediction_parameterisation, log=None,
+                 verbosity = 0):
+
+        refinery.__init__(self, ref_man, angle_predictor, impact_predictor,
+                        prediction_parameterisation)
+
+        # required for restart to work (do I need that method?)
+        self.x_0 = self.x.deepcopy()
+
+        normal_eqns.non_linear_ls.__init__(n_parameters = len(self._parameters))
+
+    def restart(self):
+        self.x = self.x_0.deep_copy()
+        self.old_x = None
+
+    def parameter_vector_norm(self):
+        return self.x.norm()
+
+    def build_up(self, objective_only=False):
+
+        # code here to calculate the residuals. Rely on the target class
+        # for this
+
+        # I need to use the weights. They are the variances of the
+        # observations... See http://en.wikipedia.org/wiki/Non-linear_least_squares
+        # at 'diagonal weight matrix'
+
+        # set current parameter values
+        self._parameters.set_p(self.x)
+
+        # do reflection prediction
+        self._target.predict()
+
+        if self._verbosity > 1:
+            print "Function evaluation"
+            msg = "  Params: " + "%.5f " * len(self._parameters)
+            print msg % tuple(self._parameters.get_p())
+            print "  L: %.5f" % self._f
+            msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
+            print msg % tuple(self._g)
+
+        residuals, jacobian, weights = \
+            self._target.compute_residuals_and_gradients()
+
+        #Reset the state to construction time, i.e. no equations accumulated
+        self.reset()
+
+        if objective_only:
+            self.add_residuals(residuals, weights)
+        else:
+            self.add_equations(residuals, jacobian, weights)
+
+    def step_forward(self):
+        self.old_x = self.x.deep_copy()
+        self.x += self.step()
+        if self.callback_after_step():
+            print "TARGET ACHIEVED. STOP ME!"
+
+    def step_backward(self):
+        assert self.old_x is not None
+        self.x, self.old_x = self.old_x, None
+        self._step -= 1
+

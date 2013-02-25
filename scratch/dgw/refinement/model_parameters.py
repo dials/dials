@@ -3,7 +3,6 @@
 # testing purposes only
 
 from __future__ import division
-from copy import deepcopy
 
 class parameter(object):
     '''A class to help formalise what a parameter is. A parameter must

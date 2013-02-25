@@ -234,6 +234,9 @@ class prediction_parameterisation(object):
         called once.
         '''
 
+        # This is effectively calculating the Jacobian and perhaps should be
+        # renamed as such (and returned as a matrix not a list of lists)
+
         self._prepare()
 
         return [self._get_gradients_core(m.H, m.Sc, m.Phic) for m in match_list]

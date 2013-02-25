@@ -91,6 +91,46 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
         self._pixelsize = pixelsize
         self._image_width = image_width
 
+    def compute_residuals_and_gradients(self):
+        '''return the vector of residuals plus their gradients
+        and weights for non-linear least squares methods'''
+
+        self._matches = self._H.get_matches()
+
+        self._gradients = self._prediction_parameterisation.get_multi_gradients(self._matches)
+
+        # return residuals and weights as 1d flex.double vectors
+        # that is, unroll X, Y and Phi residuals for each match.
+        nelem = len(self._matches) * 3
+        residuals = flex.double(nelem)
+        jacobian_t = flex.double(flex.grid(
+            len(self._prediction_parameterisation), nelem))
+        weights = flex.double(nelem)
+
+        for i, (m, g) in enumerate(zip(self._matches, self._gradients)):
+            residuals[3*i] = m.Xresid
+            residuals[3*i + 1] = m.Yresid
+            residuals[3*i + 2] = m.Phiresid
+
+            # are these the right weights? Or inverse, or sqrt?
+            weights[3*i] = m.weightXo
+            weights[3*i + 1] = m.weightYo
+            weights[3*i + 2] = m.weightPhio
+
+            # fill jacobian elements here.
+            # g is a 3 element list, each of which contains a list of
+            # length nparam. The elements of the sublists are gradients
+            # of one of the coordinates wrt each individual parameter
+            # i.e. the first element of g contains
+            # [dX/dp1, dX/dp2, ..., dX/dp_nparam]
+            jacobian_t.matrix_paste_column_in_place(g[0], 3*i)
+            jacobian_t.matrix_paste_column_in_place(g[1], 3*i + 1)
+            jacobian_t.matrix_paste_column_in_place(g[2], 3*i + 2)
+
+        jacobian_t.matrix_transpose_in_place()
+
+        return(residuals, jacobian_t, weights)
+
     def compute_functional_and_gradients(self):
         '''calculate the value of the target function and its gradients'''
 

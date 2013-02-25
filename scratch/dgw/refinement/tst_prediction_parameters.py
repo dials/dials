@@ -12,7 +12,7 @@ import sys
 import random
 from math import pi
 from scitbx import matrix
-from scitbx.array_family import flex
+#from scitbx.array_family import flex
 from libtbx.test_utils import approx_equal
 
 ##### Import model builder
