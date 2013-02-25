@@ -64,7 +64,7 @@ namespace dials { namespace model { namespace boost_python {
     
     class_<diffracted_beam_intersection<MultiFlatPanelDetector> >(
         "MultiFlatPanelDetector_diffracted_beam_intersection", no_init)
-    .def("__call__", func);    
+    .def("__call__", func)
     .def("__call__", func2);
     
     def("diffracted_beam_intersection",
