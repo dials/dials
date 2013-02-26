@@ -117,15 +117,22 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
             weights[3*i + 1] = m.weightYo
             weights[3*i + 2] = m.weightPhio
 
+            #print "X residual, weight = ", residuals[3*i], weights[3*i]
+            #print "Y residual, weight = ", residuals[3*i + 1], weights[3*i + 1]
+            #print "Phi residual, weight = ", residuals[3*i + 2], weights[3*i + 2]
+
+            dX_dp, dY_dp, dPhi_dp = zip(*g)
             # fill jacobian elements here.
-            # g is a 3 element list, each of which contains a list of
-            # length nparam. The elements of the sublists are gradients
-            # of one of the coordinates wrt each individual parameter
-            # i.e. the first element of g contains
-            # [dX/dp1, dX/dp2, ..., dX/dp_nparam]
-            jacobian_t.matrix_paste_column_in_place(g[0], 3*i)
-            jacobian_t.matrix_paste_column_in_place(g[1], 3*i + 1)
-            jacobian_t.matrix_paste_column_in_place(g[2], 3*i + 2)
+            # g is a nparam length list, each element of which is a triplet of
+            # values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
+
+            #print "dX/dp = ", dX_dp
+            #print "dY/dp = ", dY_dp
+            #print "dPhi/dp = ", dPhi_dp
+
+            jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
+            jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i + 1)
+            jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i + 2)
 
         jacobian_t.matrix_transpose_in_place()
 

@@ -5,9 +5,10 @@
 from __future__ import division
 from scitbx import lbfgs
 from cctbx.array_family import flex
+import math
 
 # use lstbx classes
-from scitbx.lstbx import normal_eqns
+from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 class refinery(object):
     '''Abstract interface for refinery objects'''
@@ -151,13 +152,19 @@ class adapt_lstbx(
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0):
 
-        refinery.__init__(self, ref_man, angle_predictor, impact_predictor,
-                        prediction_parameterisation)
+        refinery.__init__(self, target, prediction_parameterisation, log=None,
+                 verbosity = 0)
 
         # required for restart to work (do I need that method?)
-        self.x_0 = self.x.deepcopy()
+        self.x_0 = self.x.deep_copy()
 
-        normal_eqns.non_linear_ls.__init__(n_parameters = len(self._parameters))
+        normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
+
+        # determine overall scale factor so that the objective is approx in
+        # [0,1]
+        self._target.predict()
+        self._scale = 1./math.sqrt(self._target.compute_functional_and_gradients()[0])
+
 
     def restart(self):
         self.x = self.x_0.deep_copy()
@@ -192,6 +199,17 @@ class adapt_lstbx(
         residuals, jacobian, weights = \
             self._target.compute_residuals_and_gradients()
 
+        #print "sum of residuals", sum(residuals)
+        #print "objective", 0.5* sum(weights * residuals**2)
+        #print "unweighted objective", 0.5* sum(residuals**2)
+        #print "scaled objective", 0.5* sum(weights * self._scale**2 * residuals**2)
+        #print "scale factor", self._scale
+
+        # apply overall scale factor
+        residuals *= self._scale
+        jacobian *= self._scale
+        #weights *= (self._scale)**2.
+
         #Reset the state to construction time, i.e. no equations accumulated
         self.reset()
 
@@ -203,11 +221,38 @@ class adapt_lstbx(
     def step_forward(self):
         self.old_x = self.x.deep_copy()
         self.x += self.step()
-        if self.callback_after_step():
-            print "TARGET ACHIEVED. STOP ME!"
 
     def step_backward(self):
         assert self.old_x is not None
         self.x, self.old_x = self.old_x, None
         self._step -= 1
 
+class gn_iterations(normal_eqns_solving.iterations):
+
+    track_step = False
+    track_gradient = False
+    track_all = False
+    n_max_iterations = 100
+    gradient_threshold = 1.e-10
+    step_threshold = None
+    damping_value = 0.0007
+    max_shift_over_esd = 15
+    convergence_as_shift_over_esd = 1e-5
+
+    def do(self):
+        self.n_iterations = 0
+        while self.n_iterations < self.n_max_iterations:
+            self.non_linear_ls.build_up()
+            if self.has_gradient_converged_to_zero():
+                print "Gradient converged to zero"
+                break
+            if self.non_linear_ls.callback_after_step(None):
+                print "RMSD target achieved"
+                break
+            self.non_linear_ls.solve()
+            if self.had_too_small_a_step(): break
+            self.non_linear_ls.step_forward()
+            self.n_iterations += 1
+
+    def __str__(self):
+        return "pure Gauss-Newton"
