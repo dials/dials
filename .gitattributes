@@ -82,7 +82,11 @@ model/experiment/SConscript -text
 model/experiment/__init__.py -text
 model/experiment/boost_python/detector_helpers.cc -text
 model/experiment/boost_python/experiment_ext.cc -text
+model/experiment/boost_python/multi_plane_geometry.cc -text
+model/experiment/boost_python/plane_geometry.cc -text
 model/experiment/detector_helpers.h -text
+model/experiment/multi_plane_geometry.h -text
+model/experiment/plane_geometry.h -text
 scratch/__init__.py -text
 scratch/dgw/__init__.py -text
 scratch/dgw/crystal_model/__init__.py -text

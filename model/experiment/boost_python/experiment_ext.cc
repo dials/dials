@@ -15,11 +15,13 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_detector_helpers();
+  void export_plane_geometry();
+  void export_multi_plane_geometry();  
 
   BOOST_PYTHON_MODULE(dials_model_experiment_ext)
   {
-    export_detector_helpers();
+    export_plane_geometry();
+    export_multi_plane_geometry();
   }
 
 }}} // namespace dials::model::boost_python
