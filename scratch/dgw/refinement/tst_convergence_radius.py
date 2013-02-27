@@ -11,7 +11,6 @@ doing random sampling of parameter space."""
 from __future__ import division
 import sys
 from math import pi
-from scitbx import matrix
 
 # Get class to build experimental models
 from setup_geometry import extract
@@ -40,6 +39,9 @@ from dials.scratch.dgw.refinement.target import \
 
 # Import the refinement engine
 from dials.scratch.dgw.refinement.engine import simple_lbfgs, lbfgs_curvs
+
+# Import helper functions
+from dials.scratch.dgw.refinement import print_model_geometry
 
 def setup_models(seed):
 
@@ -81,14 +83,7 @@ def setup_models(seed):
     [xlo_param], [xluc_param])
 
     print "The initial experimental geometry is:"
-    print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
-    print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
-    print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
-    print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
-    uc = mycrystal.get_unit_cell()
-    print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
-    print "crystal orientation matrix U ="
-    print mycrystal.get_U().round(4)
+    print_model_geometry(mysource, mydetector, mycrystal)
     print "\nInitial values of parameters are"
     msg = "Parameters: " + "%.5f " * len(pred_param)
     print msg % tuple(pred_param.get_p())
@@ -180,10 +175,8 @@ def run(mydetector, mygonio, mycrystal, mysource,
     # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
     # 1/3 the image width in radians. For the simulated data, these are just made up
     mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-        rm, ap, ip, pred_param, mydetector.px_size_fast(), im_width)
-
-    #TODO need to accept px_size_slow separately and have a separate RMSD criterion
-    #for each direction
+        rm, ap, ip, pred_param, mydetector.px_size_fast(),
+        mydetector.px_size_slow(), im_width)
 
     ################################
     # Set up the refinement engine #

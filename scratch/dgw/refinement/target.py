@@ -82,13 +82,15 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
     rmsd (or on intrisic convergence of the chosen minimiser)'''
 
     def __init__(self, ref_man, angle_predictor, impact_predictor,
-                 prediction_parameterisation, pixelsize, image_width):
+                 prediction_parameterisation, pixelsize_fast,
+                 pixelsize_slow, image_width):
 
         target.__init__(self, ref_man, angle_predictor, impact_predictor,
                         prediction_parameterisation)
 
         # Scale units for the RMSD achieved criterion
-        self._pixelsize = pixelsize
+        self._pixelsize_fast = pixelsize_fast
+        self._pixelsize_slow = pixelsize_slow
         self._image_width = image_width
 
     def compute_residuals_and_gradients(self):
@@ -214,8 +216,8 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
     def achieved(self):
         '''RMSD criterion for target achieved '''
         r = self.rmsds()
-        if (r[0] < self._pixelsize * 0.33333 and
-            r[1] < self._pixelsize * 0.33333 and
+        if (r[0] < self._pixelsize_fast * 0.33333 and
+            r[1] < self._pixelsize_slow * 0.33333 and
             r[2] < self._image_width * 0.33333):
             return True
         return False

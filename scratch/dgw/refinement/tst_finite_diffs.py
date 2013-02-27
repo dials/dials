@@ -193,7 +193,8 @@ refman = reflection_manager(hkls, svecs,
 ##############################
 
 mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-    refman, ap, ip, pred_param, mydetector.px_size_fast(), im_width)
+    refman, ap, ip, pred_param, mydetector.px_size_fast(),
+    mydetector.px_size_slow(), im_width)
 
 # get the functional and gradients
 mytarget.predict()

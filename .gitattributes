@@ -110,7 +110,7 @@ scratch/dgw/refinement/model_parameters.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
 scratch/dgw/refinement/prediction_parameter_helpers.h -text
 scratch/dgw/refinement/prediction_parameters.py -text
-scratch/dgw/refinement/prediction_parameters.py_old -text
+scratch/dgw/refinement/refinement.py -text
 scratch/dgw/refinement/setup_geometry.py -text
 scratch/dgw/refinement/source_parameters.py -text
 scratch/dgw/refinement/target.py -text

@@ -137,6 +137,8 @@ print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
 print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
 print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
 print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
+uc = mycrystal.get_unit_cell()
+print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
 print "crystal orientation matrix U ="
 print mycrystal.get_U().round(4)
 print "Target values of parameters are"
@@ -208,10 +210,8 @@ rm = reflection_manager(hkls, svecs,
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
 mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-    rm, ap, ip, pred_param, mydetector.px_size_fast(), im_width)
-
-#TODO need to accept px_size_slow separately and have a separate RMSD criterion
-#for each direction
+    rm, ap, ip, pred_param, mydetector.px_size_fast(),
+    mydetector.px_size_slow(), im_width)
 
 ################################
 # Set up the refinement engine #

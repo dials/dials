@@ -49,6 +49,9 @@ from dials.scratch.dgw.refinement.target import \
 # Import the refinement engine
 from dials.scratch.dgw.refinement.engine import simple_lbfgs, lbfgs_curvs
 
+# Import helper functions
+from dials.scratch.dgw.refinement import print_model_geometry
+
 #############################
 # Setup experimental models #
 #############################
@@ -114,17 +117,13 @@ xlo_param.set_p(p_vals)
 # change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of one angle)
 xluc_p_vals = xluc_param.get_p()
 cell_params = mycrystal.get_unit_cell().parameters()
-print "old cell", cell_params
 #cell_params = random_param_shift(cell_params, [0.1] * 6)
 cell_params = [a + b for a, b in zip(cell_params, [0.1, 0.1, 0.1, 0.0, 0.0, 0.1])]
 new_uc = unit_cell(cell_params)
-print "new cell", cell_params
 newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
-print newB
 S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
 S.set_orientation(orientation=newB)
 X = S.forward_independent_parameters()
-print xluc_param.num_free()
 xluc_param.set_p(X)
 
 #############################
@@ -132,12 +131,7 @@ xluc_param.set_p(X)
 #############################
 
 print "Reflections will be generated with the following geometry:"
-print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
-print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
-print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
-print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
-print "crystal orientation matrix U ="
-print mycrystal.get_U().round(4)
+print_model_geometry(mysource, mydetector, mycrystal)
 print "Target values of parameters are"
 msg = "Parameters: " + "%.5f " * len(pred_param)
 print msg % tuple(pred_param.get_p())
@@ -162,10 +156,6 @@ print "Total number of reflections excited", len(obs_indices)
 
 # Project positions on camera
 ip = impact_predictor(mydetector, mygonio, mysource, mycrystal)
-#rp = reflection_prediction(mygonio.get_axis(), mysource.get_s0(), UB,
-#                           mydetector.sensors()[0])
-#hkls, d1s, d2s, angles, s_dirs = rp.predict(obs_indices.as_vec3_double(),
-#                                       obs_angles)
 hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
 print "Total number of observations made", len(hkls)
@@ -207,25 +197,15 @@ rm = reflection_manager(hkls, svecs,
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
 mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-    rm, ap, ip, pred_param, mydetector.px_size_fast(), im_width)
-
-#TODO need to accept px_size_slow separately and have a separate RMSD criterion
-#for each direction
+    rm, ap, ip, pred_param, mydetector.px_size_fast(),
+    mydetector.px_size_slow(), im_width)
 
 ################################
 # Set up the refinement engine #
 ################################
 
 print "Prior to refinement the experimental model is:"
-print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
-print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
-print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
-print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
-uc = mycrystal.get_unit_cell()
-print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
-print "crystal orientation matrix U ="
-print mycrystal.get_U().round(4)
-print
+print_model_geometry(mysource, mydetector, mycrystal)
 
 ref_log = open("tst_orientation_refinement.log", "w")
 #refiner = simple_lbfgs(mytarget, pred_param, verbosity = 2, log = ref_log)
@@ -234,12 +214,5 @@ refiner.run()
 
 print
 print "Refinement has completed with the following geometry:"
-print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
-print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
-print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
-print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
-uc = mycrystal.get_unit_cell()
-print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
-print "crystal orientation matrix U ="
-print mycrystal.get_U().round(4)
+print_model_geometry(mysource, mydetector, mycrystal)
 ref_log.close()
