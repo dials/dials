@@ -65,17 +65,6 @@ namespace dials { namespace model {
         rotation_angle_(rotation_angle),
         beam_vector_(beam_vector){}
 
-    Reflection(miller_index_type miller_index,
-               double rotation_angle,
-               vec3 <double> beam_vector,
-               vec2 <double> image_coord,
-               double frame_number)
-      : ReflectionBase(miller_index),
-        rotation_angle_(rotation_angle),
-        beam_vector_(beam_vector),
-        image_coord_(image_coord),
-        frame_number_(frame_number) {}
-
     virtual ~Reflection() {}
 
     double get_rotation_angle() const {
@@ -86,8 +75,12 @@ namespace dials { namespace model {
       return beam_vector_;
     }
 
-    vec2 <double> get_image_coord() const {
-      return image_coord_;
+    vec2 <double> get_image_coord_mm() const {
+      return image_coord_mm_;
+    }
+
+    vec2 <double> get_image_coord_px() const {
+      return image_coord_px_;
     }
 
     double get_frame_number() const {
@@ -102,8 +95,12 @@ namespace dials { namespace model {
       beam_vector_ = beam_vector;
     }
 
-    void set_image_coord(vec2 <double> image_coord) {
-      image_coord_ = image_coord;
+    void set_image_coord_mm(vec2 <double> image_coord_mm) {
+      image_coord_mm_ = image_coord_mm;
+    }
+
+    void set_image_coord_px(vec2 <double> image_coord_px) {
+      image_coord_px_ = image_coord_px;
     }
 
     void set_frame_number(double frame_number) {
@@ -114,7 +111,8 @@ namespace dials { namespace model {
 
     double rotation_angle_;
     vec3 <double> beam_vector_;
-    vec2 <double> image_coord_;
+    vec2 <double> image_coord_px_;
+    vec2 <double> image_coord_mm_;
     double frame_number_;
   };
 
@@ -125,19 +123,6 @@ namespace dials { namespace model {
 
     MultiPanelDetectorReflection(miller_index_type miller_index)
       : Reflection(miller_index) {}
-
-    MultiPanelDetectorReflection(miller_index_type miller_index,
-                                 double rotation_angle,
-                                 vec3 <double> beam_vector,
-                                 vec3 <double> detector_coord,
-                                 double frame_number)
-      : Reflection(
-          miller_index,
-          rotation_angle,
-          beam_vector,
-          vec2<double>(detector_coord[1], detector_coord[2]),
-          frame_number),
-        panel_number_(detector_coord[0]) {}
 
     virtual ~MultiPanelDetectorReflection() {}
 

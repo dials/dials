@@ -98,7 +98,7 @@ class TestSpotPredictor:
         for hkl, xyz in zip(self.integrate_handle.hkl,
                             self.integrate_handle.xyzcal):
 
-            xds_phi = self.scan.starting_angle + xyz[2] * self.scan.oscillation_range
+            xds_phi = self.scan.oscillation[0] + xyz[2]*self.scan.oscillation[1]
 
             # Select the nearest xy to use if there are 2
             my_phi = gen_phi[hkl]
@@ -133,7 +133,7 @@ class TestSpotPredictor:
         gen_xy = {}
         for r in self.reflections:
             hkl = r.miller_index
-            xy  = r.image_coord
+            xy  = r.image_coord_px
             try:
                 a = gen_xy[hkl]
                 a.append(xy)

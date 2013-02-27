@@ -14,38 +14,42 @@
 #include <scitbx/constants.h>
 #include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/scan_helpers.h>
+#include <dxtbx/model/scan.h>
+#include <dxtbx/model/beam.h>
+#include <dxtbx/model/goniometer.h>
+#include <dxtbx/model/detector.h>
+#include <dials/model/experiment/plane_geometry.h>
+#include <dials/model/data/reflection.h>
 #include "index_generator.h"
-#include "rotation_angles.h"
+#include "ray_predictor.h"
 
 namespace dials { namespace algorithms {
 
   // Using lots of stuff from other namespaces
-  using scitbx::rad_as_deg;
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
   using scitbx::af::flex_double;
-  using dxtbx::model::mod_2pi;
+  using dxtbx::model::Beam;
+  using dxtbx::model::Detector;
+  using dxtbx::model::Goniometer;
+  using dxtbx::model::ScanData;
+  using dials::model::BeamPlaneIntersection;
 
   // Typedef the miller_index and flex_miller_index types
-  typedef cctbx::miller::index <> miller_index;
-  typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
+  typedef cctbx::miller::index <> miller_index_type;
+  typedef scitbx::af::flex <miller_index_type> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
-  template <typename BeamType,
-            typename DetectorType,
-            typename GoniometerType,
-            typename ScanType,
-            typename ReflectionType>
   class SpotPredictor {
   public:
 
     // A load of useful typedefs
-    typedef BeamType beam_type;
-    typedef DetectorType detector_type;
-    typedef GoniometerType goniometer_type;
-    typedef ScanType scan_type;
-    typedef ReflectionType reflection_type;
+    typedef Beam beam_type;
+    typedef Detector detector_type;
+    typedef Goniometer goniometer_type;
+    typedef ScanData scan_type;
+    typedef Reflection reflection_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
 
     /**
@@ -56,7 +60,7 @@ namespace dials { namespace algorithms {
      * @param scan The scan parameters
      * @param unit_cell The unit cell parameters
      * @param space_group_type The space group struct
-     * @param ub_matrix The ub matrix
+     * @param UB The ub matrix
      * @param d_min The resolution
      */
     SpotPredictor(const beam_type &beam,
@@ -65,22 +69,17 @@ namespace dials { namespace algorithms {
                   const scan_type &scan,
                   const cctbx::uctbx::unit_cell &unit_cell,
                   const cctbx::sgtbx::space_group_type &space_group,
-                  mat3 <double> ub_matrix,
+                  mat3 <double> UB,
                   double d_min)
-      : index_generator_(unit_cell, space_group, false, d_min),
-        calculate_rotation_angles_(
+      : generator_indices_(unit_cell, space_group, false, d_min),
+        predict_rays_(
           beam.get_direction(),
-          gonio.get_rotation_axis()),
-//        is_angle_valid_(scan),
-//        get_detector_coord_(detector),
-//        get_frame_numbers_(scan),
-        beam_(beam),
+          gonio.get_rotation_axis(),
+          UB,
+          scan.get_oscillation_range()),
+        plane_intersection_(detector.get_D_matrix()),
         detector_(detector),
-        gonio_(gonio),
-        scan_(scan),
-        ub_matrix_(gonio.get_fixed_rotation() * ub_matrix),
-        s0_(beam.get_direction()),
-        m2_(gonio.get_rotation_axis()) {}
+        scan_(scan) {}
 
     /**
      * Predict the spot locations on the image detector.
@@ -105,50 +104,47 @@ namespace dials { namespace algorithms {
      * @returns An array of predicted reflections
      */
     reflection_list_type
-    operator()(miller_index h) const {
+    operator()(miller_index_type h) const {
 
       reflection_list_type reflections;
+      
+      // Predict the rays (phi, s1) for the miller index
+      reflection_list_type rays = predict_rays_(h);
 
-      // Calculate the reciprocal space vector
-      vec3 <double> pstar0 = ub_matrix_ * h;
+      // Loop through the reflections
+      for (std::size_t i = 0; i < rays.size(); ++i) {
 
-      // Try to calculate the diffracting rotation angles
-      vec2 <double> phi;
-      try {
-        phi = calculate_rotation_angles_(pstar0);
-      } catch(error) {
-        return reflections;
-      }
+        // Get the ray data
+        miller_index_type h = rays[i].get_miller_index();
+        vec3<double> s1 = rays[i].get_beam_vector();
+        double phi = rays[i].get_rotation_angle();
+        
+        // Try to calculate the detector coordinate in mm
+        vec2<double> xy_mm;
+        try {
+          xy_mm = plane_intersection_(s1);
+        } catch(error) {
+          continue;
+        }
 
-      // Loop through the 2 rotation angles
-      for (std::size_t i = 0; i < phi.size(); ++i) {
+        // Calculate the pixel coordinate of point
+        vec2<double> xy_px = detector_.millimeter_to_pixel(xy_mm);
 
-        // Check that the angles are within the rotation range
-//        phi[i] = mod_2pi(phi[i]);
-//        if (!is_angle_valid_(phi[i])) {
-//          continue;
-//        }
-
-//        // Calculate the reciprocal space vector and diffracted beam vector
-//        vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
-//        vec3 <double> s1 = s0_ + pstar;
-
-//        // Try to calculate the detector coordinate
-//        vec2<double> coord;
-//        try {
-//          coord = get_detector_coord_(s1);
-//        } catch(error) {
-//          continue;
-//        }
-
-//        // Get the list of frames at which the reflection will be observed
-//        // and add the predicted observations to the list of reflections
-//        flex_double frames = get_frame_numbers_(phi[i]);
-//        for (std::size_t j = 0; j < frames.size(); ++j) {
-//          reflection_type r = reflection_type(
-//            h, phi[i], s1, coord, frames[j]);
-//          reflections.push_back(r);
-//        }
+        // Get the list of frames at which the reflection will be observed
+        // and add the predicted observations to the list of reflections
+        if (detector_.is_coord_valid(xy_px)) {
+          flex_double frames = scan_.get_frames_with_angle(phi);
+          for (std::size_t j = 0; j < frames.size(); ++j) {
+            reflection_type r;
+            r.set_miller_index(h);
+            r.set_rotation_angle(phi);
+            r.set_beam_vector(s1);
+            r.set_image_coord_px(xy_px);
+            r.set_image_coord_mm(xy_mm);
+            r.set_frame_number(frames[j]);
+            reflections.push_back(r);
+          }
+        }
       }
       return reflections;
     }
@@ -180,7 +176,7 @@ namespace dials { namespace algorithms {
       for (;;) {
 
         // Get the next miller index
-        miller_index h = index_generator_.next();
+        miller_index_type h = generator_indices_.next();
         if (h.is_zero()) {
           break;
         }
@@ -196,18 +192,11 @@ namespace dials { namespace algorithms {
 
   private:
 
-    IndexGenerator index_generator_;
-    RotationAngles calculate_rotation_angles_;
-    //is_scan_angle_valid <scan_type> is_angle_valid_;
-    //diffracted_beam_intersection <detector_type> get_detector_coord_;
-    //get_all_frames_from_angle <scan_type> get_frame_numbers_;
-    beam_type beam_;
-    detector_type detector_;
-    goniometer_type gonio_;
-    scan_type scan_;
-    mat3 <double> ub_matrix_;
-    vec3 <double> s0_;
-    vec3 <double> m2_;
+    IndexGenerator generator_indices_;
+    RayPredictor predict_rays_;
+    BeamPlaneIntersection plane_intersection_;
+    const detector_type& detector_;
+    const scan_type& scan_;
   };
 
 }} // namespace dials::algorithms
