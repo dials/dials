@@ -8,7 +8,7 @@ class TestSpotPredictor:
         from dials_jmp.io import xdsio
         from math import ceil, pi
         from os.path import realpath, dirname, normpath, join
-        from dials.model.experiment import Beam, FlatPanelDetector, Goniometer, Scan
+        from dxtbx.model import Beam, Detector, Goniometer, ScanData
 
         # The XDS files to read from
         test_path = dirname(dirname(dirname(realpath(__file__))))
@@ -45,18 +45,17 @@ class TestSpotPredictor:
                        detector.distance * matrix.col(detector.normal).normalize())
 
         self.beam = Beam(beam.direction)
-        self.scan = Scan((gonio.starting_frame,
+        self.scan = ScanData((gonio.starting_frame,
                           gonio.starting_frame + gonio.num_frames),
-                         gonio.starting_angle,
-                         gonio.oscillation_range, deg=True)
+                         (gonio.starting_angle,
+                         gonio.oscillation_range), 0.0, deg=True)
         self.gonio = Goniometer(gonio.rotation_axis)
-        self.detector = FlatPanelDetector("",
+        self.detector = Detector("",
                             detector.x_axis,
                             detector.y_axis,
                             detector_d3,
                             detector.pixel_size,
                             detector.size,
-                            detector.distance,
                             (0, 0))
 
         # Create the spot predictor
