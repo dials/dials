@@ -20,7 +20,6 @@
 #include <dxtbx/model/multi_panel_detector.h>
 #include <dials/model/experiment/multi_plane_geometry.h>
 #include <dials/model/data/reflection.h>
-#include "index_generator.h"
 #include "ray_predictor.h"
 
 namespace dials { namespace algorithms {
@@ -71,12 +70,8 @@ namespace dials { namespace algorithms {
                             const detector_type &detector,
                             const goniometer_type &gonio,
                             const scan_type &scan,
-                            const cctbx::uctbx::unit_cell &unit_cell,
-                            const cctbx::sgtbx::space_group_type &space_group,
-                            mat3 <double> UB,
-                            double d_min)
-      : generator_indices_(unit_cell, space_group, false, d_min),
-        predict_rays_(
+                            mat3 <double> UB)
+      : predict_rays_(
           beam.get_direction(),
           gonio.get_rotation_axis(),
           UB,
@@ -140,19 +135,17 @@ namespace dials { namespace algorithms {
 
         // Get the list of frames at which the reflection will be observed
         // and add the predicted observations to the list of reflections
-        if (detector_.is_coord_valid(coordinate_type(panel, xy_px))) {
-          flex_double frames = scan_.get_frames_with_angle(phi);
-          for (std::size_t j = 0; j < frames.size(); ++j) {
-            reflection_type r;
-            r.set_miller_index(h);
-            r.set_rotation_angle(phi);
-            r.set_beam_vector(s1);
-            r.set_image_coord_px(xy_px);
-            r.set_image_coord_mm(xy_mm);
-            r.set_frame_number(frames[j]);
-            r.set_panel_number(panel);
-            reflections.push_back(r);
-          }
+        flex_double frames = scan_.get_frames_with_angle(phi);
+        for (std::size_t j = 0; j < frames.size(); ++j) {
+          reflection_type r;
+          r.set_miller_index(h);
+          r.set_rotation_angle(phi);
+          r.set_beam_vector(s1);
+          r.set_image_coord_px(xy_px);
+          r.set_image_coord_mm(xy_mm);
+          r.set_frame_number(frames[j]);
+          r.set_panel_number(panel);
+          reflections.push_back(r);
         }
       }
       return reflections;
@@ -174,31 +167,6 @@ namespace dials { namespace algorithms {
       return reflections;
     }
 
-    /**
-     * Generate a set of miller indices and predict the detector coordinates.
-     */
-    reflection_list_type
-    operator()() {
-      reflection_list_type reflections;
-
-      // Continue looping until we run out of miller indices
-      for (;;) {
-
-        // Get the next miller index
-        miller_index_type h = generator_indices_.next();
-        if (h.is_zero()) {
-          break;
-        }
-
-        // Predict the spot location for the miller index
-        reflection_list_type r = operator()(h);
-        for (std::size_t j = 0; j < r.size(); ++j) {
-          reflections.push_back(r[j]);
-        }
-      }
-      return reflections;
-    }
-
   private:
 
     flex_double4 get_image_extents(const detector_type &detector) {
@@ -210,7 +178,6 @@ namespace dials { namespace algorithms {
       return extents;
     }
 
-    IndexGenerator generator_indices_;
     RayPredictor predict_rays_;
     BeamMultiPlaneIntersection plane_intersection_;
     const detector_type& detector_;

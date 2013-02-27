@@ -4,6 +4,7 @@ class TestSpotPredictor:
 
     def __init__(self):
         from scitbx import matrix
+        from dials.algorithms.spot_prediction import IndexGenerator
         from dials.algorithms.spot_prediction import SpotPredictor
         from dials_jmp.io import xdsio
         from math import ceil
@@ -58,18 +59,20 @@ class TestSpotPredictor:
                             detector.size,
                             (0, 0))
 
+        # Create the index generator
+        generate_indices = IndexGenerator(self.unit_cell, self.space_group_type, 
+                                          True, self.d_min)
+
         # Create the spot predictor
         self.predict_spots = SpotPredictor(self.beam,
                                            self.detector,
                                            self.gonio,
                                            self.scan,
-                                           self.unit_cell,
-                                           self.space_group_type,
-                                           self.ub_matrix,
-                                           self.d_min)
+                                           self.ub_matrix)
 
         # Predict the spot locations
-        self.reflections = self.predict_spots()
+        h = generate_indices.to_array()
+        self.reflections = self.predict_spots(h)
 
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""

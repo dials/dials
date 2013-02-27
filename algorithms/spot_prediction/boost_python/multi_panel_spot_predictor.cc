@@ -32,8 +32,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       miller_index) const = &MultiPanelSpotPredictor::operator();
     reflection_list_type (MultiPanelSpotPredictor::*predict_array)(
       const flex_miller_index &) const = &MultiPanelSpotPredictor::operator();
-    reflection_list_type (MultiPanelSpotPredictor::*predict_generate)() =
-      &MultiPanelSpotPredictor::operator();
 
     // Create and return the wrapper for the spot predictor object
     class_ <MultiPanelSpotPredictor> ("MultiPanelSpotPredictor", no_init)
@@ -41,23 +39,16 @@ namespace dials { namespace algorithms { namespace boost_python {
                  const detector_type&,
                  const goniometer_type&,
                  const scan_type&,
-                 const cctbx::uctbx::unit_cell &,
-                 const cctbx::sgtbx::space_group_type &,
-                 mat3 <double>,
-                 double> ((
+                 mat3 <double> > ((
         arg("beam"),
         arg("detector"),
         arg("goniometer"),
         arg("scan"),
-        arg("unit_cell"),
-        arg("space_group"),
-        arg("UB"),
-        arg("d_min"))))
+        arg("UB"))))
       .def("__call__", predict_single, (
         arg("miller_index")))
       .def("__call__", predict_array, (
-        arg("miller_indices")))
-      .def("__call__", predict_generate);
+        arg("miller_indices")));
   }
 
 }}} // namespace = dials::spot_prediction::boost_python
