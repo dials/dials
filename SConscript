@@ -18,6 +18,7 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
             env_etc.boost_adaptbx_include,
             env_etc.boost_include,
             env_etc.python_include,
+            env_etc.dxtbx_include,
             env_etc.dials_include])
     env.Append(
 		LIBS=env_etc.libm + [ 

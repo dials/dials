@@ -18,7 +18,7 @@
 #include <scitbx/array_family/shared.h>
 #include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
-#include <dials/model/experiment/scan_helpers.h>
+#include <dxtbx/model/scan_helpers.h>
 #include <dials/model/data/reflection.h>
 #include "rotation_angles.h"
 
@@ -29,8 +29,8 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
-  using model::mod_2pi;
-  using model::is_angle_in_range;
+  using dxtbx::model::mod_2pi;
+  using dxtbx::model::is_angle_in_range;
   using model::Reflection;
 
   // Typedef the miller_index and flex_miller_index types
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
     RayPredictor(vec3 <double> s0, vec3 <double> m2, mat3 <double> UB,
                  vec2 <double> dphi)
       : calculate_rotation_angles_(s0, m2),
-        is_angle_valid_(dphi),
+        dphi_(dphi),
         s0_(s0),
         m2_(m2.normalize()),
         UB_(UB) {}
@@ -100,7 +100,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
         // Check that the angles are within the rotation range
-        if (!is_angle_valid_(phi[i])) {
+        if (!is_angle_in_range(dphi_, phi[i])) {
           continue;
         }
 
@@ -133,7 +133,7 @@ namespace dials { namespace algorithms {
   private:
 
     RotationAngles calculate_rotation_angles_;
-    is_angle_in_range is_angle_valid_;
+    vec2 <double> dphi_;
     vec3 <double> s0_;
     vec3 <double> m2_;
     mat3 <double> UB_;

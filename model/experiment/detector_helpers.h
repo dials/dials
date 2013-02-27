@@ -16,7 +16,9 @@
 #include <scitbx/mat3.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/flex_types.h>
-#include "detector.h"
+#include <dxtbx/model/detector.h>
+#include <dxtbx/model/multi_panel_detector.h>
+#include <dials/error.h>
 
 namespace dials { namespace model {
 
@@ -24,6 +26,8 @@ namespace dials { namespace model {
   using scitbx::vec3;
   using scitbx::mat3;
   using scitbx::af::double6;
+  using dxtbx::model::Detector;
+  using dxtbx::model::MultiPanelDetector;
 
   // Create flex array typedefs
   typedef scitbx::af::flex<vec2<std::size_t> >::type flex_vec2_size_t;
@@ -33,8 +37,8 @@ namespace dials { namespace model {
   /**
    * Declaration of a functor to check if a detector image coordinate is valid.
    * This functor is intended to be specialized for each detector type. For
-   * instance a FlatPanelDetector object just needs to check an (x, y)
-   * coordinate, whereas a MultiFlatPanelDetector object needs to check a
+   * instance a Detector object just needs to check an (x, y)
+   * coordinate, whereas a MultiPanelDetector object needs to check a
    * (panel, x, y) coordinate.
    * @tparam DetectorType The detector object type
    */
@@ -42,17 +46,17 @@ namespace dials { namespace model {
   struct is_coordinate_valid;
 
   /**
-   * A functor to check if a FlatPanelDetector coordinate is valid. Check
+   * A functor to check if a Detector coordinate is valid. Check
    * that the (x, y) coordinate lies within the detector image size range.
    */
   template <>
-  struct is_coordinate_valid <FlatPanelDetector> {
+  struct is_coordinate_valid <Detector> {
 
     /**
      * Initialise the functor with the image size.
      * @param detector The detector object
      */
-    is_coordinate_valid(const FlatPanelDetector &detector)
+    is_coordinate_valid(const Detector &detector)
       : image_size_(detector.get_image_size()) {}
 
     /**
@@ -72,18 +76,18 @@ namespace dials { namespace model {
   };
 
   /**
-   * A functor to check if a MultiFlatPanelDetector coordinate is valid. Check
+   * A functor to check if a MultiPanelDetector coordinate is valid. Check
    * that the (panel x, y) coordinate lies within the number of panels and
    * the detector image size range.
    */
   template <>
-  struct is_coordinate_valid <MultiFlatPanelDetector> {
+  struct is_coordinate_valid <MultiPanelDetector> {
 
     /**
      * Initialise the functor with the image size for each detector panel
      * @param detector The detector object
      */
-    is_coordinate_valid(const MultiFlatPanelDetector &detector)
+    is_coordinate_valid(const MultiPanelDetector &detector)
       : image_size_(get_image_sizes(detector)),
         num_panels_(detector.num_panels()) {}
 
@@ -109,7 +113,7 @@ namespace dials { namespace model {
      * @returns An array of image sizes.
      */
     flex_vec2_size_t get_image_sizes(
-        const MultiFlatPanelDetector &detector) {
+        const MultiPanelDetector &detector) {
       flex_vec2_size_t result(detector.num_panels());
       for (std::size_t i = 0; i < result.size(); ++i) {
         result[i] = detector[i].get_image_size();
@@ -132,17 +136,17 @@ namespace dials { namespace model {
 
   /**
    * Specialization of the diffracted_beam_to_pixel functor for a generic
-   * FlatPanelDetector object. Using a D matrix calculate the pixel coordinates
+   * Detector object. Using a D matrix calculate the pixel coordinates
    */
   template <>
-  struct diffracted_beam_intersection <FlatPanelDetector> {
+  struct diffracted_beam_intersection <Detector> {
 
     /**
      * Initialise the transform from the detector object
      * @param detector The detector object
      */
-    diffracted_beam_intersection(const FlatPanelDetector &detector)
-      : D_(detector.get_inverse_d_matrix()),
+    diffracted_beam_intersection(const Detector &detector)
+      : D_(detector.get_D_matrix()),
         is_coord_valid_(detector) {}
 
     /**
@@ -154,18 +158,19 @@ namespace dials { namespace model {
       vec3 <double> v = D_ * s1;
       DIALS_ASSERT(v[2] > 0);
       vec2 <double> xy(v[0] / v[2], v[1] / v[2]);
+      DIALS_ASSERT(is_coord_valid_(xy));
       return xy;
     }
 
   private:
     mat3 <double> D_;
-    is_coordinate_valid <FlatPanelDetector> is_coord_valid_;
+    is_coordinate_valid <Detector> is_coord_valid_;
   };
 
 
   /**
    * Specialization of the diffracted_beam_to_pixel functor for a generic
-   * MultiFlatPanelDetector object. Using a D matrix for each detextor panel,
+   * MultiPanelDetector object. Using a D matrix for each detextor panel,
    * calculate the pixel coordinates.
    *
    * @todo This functor currently uses a brute force approach to finding the
@@ -175,14 +180,14 @@ namespace dials { namespace model {
    * well for a large number.
    */
   template <>
-  struct diffracted_beam_intersection <MultiFlatPanelDetector> {
+  struct diffracted_beam_intersection <MultiPanelDetector> {
 
     /**
      * Initialise the transform from the detector object
      * @param detector The detector object
      */
-    diffracted_beam_intersection(const MultiFlatPanelDetector &detector)
-      : D_(get_inverse_d_matrices(detector)),
+    diffracted_beam_intersection(const MultiPanelDetector &detector)
+      : D_(get_D_matrices(detector)),
         is_coord_valid_(detector) {}
 
     /**
@@ -236,17 +241,17 @@ namespace dials { namespace model {
      * @param detector The detector object
      * @returns An array of D matrices
      */
-    flex_mat3_double get_inverse_d_matrices(
-        const MultiFlatPanelDetector &detector) {
+    flex_mat3_double get_D_matrices(
+        const MultiPanelDetector &detector) {
       flex_mat3_double result(detector.num_panels());
       for (std::size_t i = 0; i < result.size(); ++i) {
-        result[i] = detector[i].get_inverse_d_matrix();
+        result[i] = detector[i].get_D_matrix();
       }
       return result;
     }
 
     flex_mat3_double D_;
-    is_coordinate_valid <MultiFlatPanelDetector> is_coord_valid_;
+    is_coordinate_valid <MultiPanelDetector> is_coord_valid_;
   };
 
   /**
@@ -262,13 +267,13 @@ namespace dials { namespace model {
    * flat panel detector.
    */
   template <>
-  struct millimeter_to_pixel <FlatPanelDetector> {
+  struct millimeter_to_pixel <Detector> {
 
     /**
      * Initialise the functor with the image pixel size
      * @param detector The detector object
      */
-    millimeter_to_pixel(const FlatPanelDetector &detector)
+    millimeter_to_pixel(const Detector &detector)
       : pixel_size_i_(1.0 / detector.get_pixel_size()) {}
 
     /**
@@ -276,7 +281,7 @@ namespace dials { namespace model {
      * @param xy The x, y detector coordinate in millimeters
      * @returns The x, y detector coordinate in pixels
      */
-    vec2 <double> operator()(vec2 <double> xy) {
+    vec2 <double> operator()(vec2 <double> xy) const {
       return xy * pixel_size_i_;
     }
 
@@ -289,13 +294,13 @@ namespace dials { namespace model {
    * multi flat panel detector.
    */
   template <>
-  struct millimeter_to_pixel <MultiFlatPanelDetector> {
+  struct millimeter_to_pixel <MultiPanelDetector> {
 
     /**
      * Initialise the functor with the image pixel size
      * @param detector The detector object
      */
-    millimeter_to_pixel(const MultiFlatPanelDetector &detector)
+    millimeter_to_pixel(const MultiPanelDetector &detector)
       : pixel_size_i_(init_pixel_size_i(detector)) {}
 
     /**
@@ -303,7 +308,7 @@ namespace dials { namespace model {
      * @param pxy The panel, x, y detector coordinate in millimeters
      * @returns The panel, x, y detector coordinate in pixels
      */
-    vec3 <double> operator()(vec3 <double> pxy) {
+    vec3 <double> operator()(vec3 <double> pxy) const {
       int panel = pxy[0];
       return vec3<double>(
         panel,
@@ -314,7 +319,7 @@ namespace dials { namespace model {
   private:
 
     /** Create an array of inverse pixel sizes */
-    flex_vec2_double init_pixel_size_i(const MultiFlatPanelDetector &detector) {
+    flex_vec2_double init_pixel_size_i(const MultiPanelDetector &detector) {
       flex_vec2_double result(detector.num_panels());
       for (std::size_t i = 0; i < detector.num_panels(); ++i) {
         result[i] = 1.0 / detector[i].get_pixel_size();
@@ -338,13 +343,13 @@ namespace dials { namespace model {
    * flat panel detector.
    */
   template <>
-  struct pixel_to_millimeter <FlatPanelDetector> {
+  struct pixel_to_millimeter <Detector> {
 
     /**
      * Initialise the functor with the image pixel size
      * @param detector The detector object
      */
-    pixel_to_millimeter(const FlatPanelDetector &detector)
+    pixel_to_millimeter(const Detector &detector)
       : pixel_size_(1.0 * detector.get_pixel_size()) {}
 
     /**
@@ -352,7 +357,7 @@ namespace dials { namespace model {
      * @param xy The x, y detector coordinate in pixels
      * @returns The x, y detector coordinate in millimeters
      */
-    vec2 <double> operator()(vec2 <double> xy) {
+    vec2 <double> operator()(vec2 <double> xy) const {
       return xy * pixel_size_;
     }
 
@@ -365,13 +370,13 @@ namespace dials { namespace model {
    * multi flat panel detector.
    */
   template <>
-  struct pixel_to_millimeter <MultiFlatPanelDetector> {
+  struct pixel_to_millimeter <MultiPanelDetector> {
 
     /**
      * Initialise the functor with the image pixel size
      * @param detector The detector object
      */
-    pixel_to_millimeter(const MultiFlatPanelDetector &detector)
+    pixel_to_millimeter(const MultiPanelDetector &detector)
       : pixel_size_(init_pixel_size(detector)){}
 
     /**
@@ -379,7 +384,7 @@ namespace dials { namespace model {
      * @param pxy The panel, x, y detector coordinate in pixels
      * @returns The panel, x, y detector coordinate in millimeters
      */
-    vec3 <double> operator()(vec3 <double> pxy) {
+    vec3 <double> operator()(vec3 <double> pxy) const {
       int panel = pxy[0];
       return vec3<double>(
         panel,
@@ -390,7 +395,7 @@ namespace dials { namespace model {
   private:
 
     /** Create an array of pixel sizes */
-    flex_vec2_double init_pixel_size(const MultiFlatPanelDetector &detector) {
+    flex_vec2_double init_pixel_size(const MultiPanelDetector &detector) {
       flex_vec2_double result(detector.num_panels());
       for (std::size_t i = 0; i < detector.num_panels(); ++i) {
         result[i] = 1.0 * detector[i].get_pixel_size();

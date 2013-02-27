@@ -13,7 +13,7 @@
 
 #include <scitbx/constants.h>
 #include <scitbx/array_family/flex_types.h>
-#include <dials/model/experiment/scan_helpers.h>
+#include <dxtbx/model/scan_helpers.h>
 #include <dials/model/experiment/detector_helpers.h>
 #include "index_generator.h"
 #include "rotation_angles.h"
@@ -26,10 +26,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::mat3;
   using scitbx::af::flex_double;
-  using model::is_scan_angle_valid;
-  using model::diffracted_beam_intersection;
-  using model::get_all_frames_from_angle;
-  using model::mod_2pi;
+  using dxtbx::model::mod_2pi;
 
   // Typedef the miller_index and flex_miller_index types
   typedef cctbx::miller::index <> miller_index;
@@ -51,7 +48,6 @@ namespace dials { namespace algorithms {
     typedef ScanType scan_type;
     typedef ReflectionType reflection_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
-    typedef typename detector_type::coordinate_type detector_coordinate_type;
 
     /**
      * Initialise the spot predictor.
@@ -76,9 +72,9 @@ namespace dials { namespace algorithms {
         calculate_rotation_angles_(
           beam.get_direction(),
           gonio.get_rotation_axis()),
-        is_angle_valid_(scan),
-        get_detector_coord_(detector),
-        get_frame_numbers_(scan),
+//        is_angle_valid_(scan),
+//        get_detector_coord_(detector),
+//        get_frame_numbers_(scan),
         beam_(beam),
         detector_(detector),
         gonio_(gonio),
@@ -129,31 +125,31 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < phi.size(); ++i) {
 
         // Check that the angles are within the rotation range
-        phi[i] = mod_2pi(phi[i]);
-        if (!is_angle_valid_(phi[i])) {
-          continue;
-        }
+//        phi[i] = mod_2pi(phi[i]);
+//        if (!is_angle_valid_(phi[i])) {
+//          continue;
+//        }
 
-        // Calculate the reciprocal space vector and diffracted beam vector
-        vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
-        vec3 <double> s1 = s0_ + pstar;
+//        // Calculate the reciprocal space vector and diffracted beam vector
+//        vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
+//        vec3 <double> s1 = s0_ + pstar;
 
-        // Try to calculate the detector coordinate
-        detector_coordinate_type coord;
-        try {
-          coord = get_detector_coord_(s1);
-        } catch(error) {
-          continue;
-        }
+//        // Try to calculate the detector coordinate
+//        vec2<double> coord;
+//        try {
+//          coord = get_detector_coord_(s1);
+//        } catch(error) {
+//          continue;
+//        }
 
-        // Get the list of frames at which the reflection will be observed
-        // and add the predicted observations to the list of reflections
-        flex_double frames = get_frame_numbers_(phi[i]);
-        for (std::size_t j = 0; j < frames.size(); ++j) {
-          reflection_type r = reflection_type(
-            h, phi[i], s1, coord, frames[j]);
-          reflections.push_back(r);
-        }
+//        // Get the list of frames at which the reflection will be observed
+//        // and add the predicted observations to the list of reflections
+//        flex_double frames = get_frame_numbers_(phi[i]);
+//        for (std::size_t j = 0; j < frames.size(); ++j) {
+//          reflection_type r = reflection_type(
+//            h, phi[i], s1, coord, frames[j]);
+//          reflections.push_back(r);
+//        }
       }
       return reflections;
     }
@@ -203,9 +199,9 @@ namespace dials { namespace algorithms {
 
     IndexGenerator index_generator_;
     RotationAngles calculate_rotation_angles_;
-    is_scan_angle_valid <scan_type> is_angle_valid_;
-    diffracted_beam_intersection <detector_type> get_detector_coord_;
-    get_all_frames_from_angle <scan_type> get_frame_numbers_;
+    //is_scan_angle_valid <scan_type> is_angle_valid_;
+    //diffracted_beam_intersection <detector_type> get_detector_coord_;
+    //get_all_frames_from_angle <scan_type> get_frame_numbers_;
     beam_type beam_;
     detector_type detector_;
     goniometer_type gonio_;

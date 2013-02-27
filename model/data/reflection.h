@@ -102,7 +102,7 @@ namespace dials { namespace model {
       beam_vector_ = beam_vector;
     }
 
-    void set_image_coord(vec2 <double>  image_coord) {
+    void set_image_coord(vec2 <double> image_coord) {
       image_coord_ = image_coord;
     }
 

@@ -19,7 +19,6 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_rotation_angles();
   void export_spot_predictor();
   void export_ray_predictor();
-  void export_ray_intersector();
 
   BOOST_PYTHON_MODULE(dials_algorithms_spot_prediction_ext)
   {
@@ -27,7 +26,6 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_rotation_angles();
     export_spot_predictor();
     export_ray_predictor();
-    export_ray_intersector();
   }
 
 }}} // namespace = dials::algorithms::boost_python

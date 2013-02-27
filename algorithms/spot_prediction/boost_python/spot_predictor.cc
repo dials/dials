@@ -11,10 +11,10 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/spot_prediction/spot_predictor.h>
-#include <dials/model/experiment/scan.h>
-#include <dials/model/experiment/beam.h>
-#include <dials/model/experiment/goniometer.h>
-#include <dials/model/experiment/detector.h>
+#include <dxtbx/model/scan.h>
+#include <dxtbx/model/beam.h>
+#include <dxtbx/model/goniometer.h>
+#include <dxtbx/model/detector.h>
 #include <dials/model/data/reflection.h>
 #include "spot_predictor_wrapper.h"
 
@@ -22,13 +22,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  using model::Scan;
-  using model::Beam;
-  using model::Goniometer;
-  using model::FlatPanelDetector;
-  using model::MultiFlatPanelDetector;
+  using dxtbx::model::ScanData;
+  using dxtbx::model::Beam;
+  using dxtbx::model::Goniometer;
+  using dxtbx::model::Detector;
   using model::Reflection;
-  using model::MultiPanelDetectorReflection;
 
   void export_spot_predictor()
   {
@@ -36,19 +34,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     spot_predictor_wrapper <
       SpotPredictor <
         Beam,
-        FlatPanelDetector,
+        Detector,
         Goniometer,
-        Scan,
-        Reflection> >("FlatPanelDetector");
-    
-    // Export a spot predictor for multiple flat panel detectors
-    spot_predictor_wrapper <
-      SpotPredictor <
-        Beam,
-        MultiFlatPanelDetector,
-        Goniometer,
-        Scan,
-        MultiPanelDetectorReflection> >("MultiFlatPanelDetector");
+        ScanData,
+        Reflection> >("SpotPredictor");
   }
 
 }}} // namespace = dials::spot_prediction::boost_python
