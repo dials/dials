@@ -1,8 +1,9 @@
+from __future__ import division
 
 def run():
     from dials_jmp.io import xdsio
     from dials.algorithms.spot_prediction import IndexGenerator
-    from os.path import realpath, dirname, normpath, join
+    from os.path import realpath, dirname, join
     import numpy
 
     # The XDS files to read from

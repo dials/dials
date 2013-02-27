@@ -1,20 +1,21 @@
+from __future__ import division
 
 def read_models_from_file(filename):
     from dials_jmp.io import xdsio
-    from dxtbx.model import Beam, Goniometer, Detector, ScanData    
+    from dxtbx.model import Beam, Goniometer, Detector, ScanData
     from scitbx import matrix
     gxparm_handle = xdsio.GxParmFile()
     gxparm_handle.read_file(filename)
-    
+
     detector_d3 = ((matrix.col(gxparm_handle.detector_x_axis).normalize() *
-                    gxparm_handle.pixel_size[0]) * 
+                    gxparm_handle.pixel_size[0]) *
                     (0 - gxparm_handle.detector_origin[0]) +
                    (matrix.col(gxparm_handle.detector_y_axis).normalize() *
-                    gxparm_handle.pixel_size[1]) * 
+                    gxparm_handle.pixel_size[1]) *
                     (0 - gxparm_handle.detector_origin[1]) +
-                   gxparm_handle.detector_distance * 
-                   matrix.col(gxparm_handle.detector_normal).normalize())    
-    
+                   gxparm_handle.detector_distance *
+                   matrix.col(gxparm_handle.detector_normal).normalize())
+
     return {
         'beam' : Beam(
                     gxparm_handle.beam_vector,
@@ -41,12 +42,11 @@ class TestRayPredictor:
 
     def __init__(self):
         from scitbx import matrix
-        from scitbx.array_family import flex
         from dials.algorithms.spot_prediction import RayPredictor
         from dials.algorithms.spot_prediction import IndexGenerator
         from dials_jmp.io import xdsio
-        from math import ceil, pi
-        from os.path import realpath, dirname, normpath, join
+        from math import ceil
+        from os.path import realpath, dirname, join
 
         # The XDS files to read from
         test_path = dirname(dirname(dirname(realpath(__file__))))
@@ -73,7 +73,7 @@ class TestRayPredictor:
 
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
-        self.scan.image_range = (self.scan.image_range[0], 
+        self.scan.image_range = (self.scan.image_range[0],
                                 self.scan.image_range[0] + int(ceil(max(zcal))))
 
         # Print stuff
@@ -83,7 +83,7 @@ class TestRayPredictor:
 #        print self.scan
 
         # Create the index generator
-        self.generate_indices = IndexGenerator(self.unit_cell, 
+        self.generate_indices = IndexGenerator(self.unit_cell,
             self.space_group_type, True, self.d_min)
 
         s0 = self.beam.direction

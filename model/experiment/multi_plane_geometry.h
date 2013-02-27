@@ -31,9 +31,9 @@ namespace dials { namespace model {
 
   /**
    * A functor to calculate the intersection of a diffracted beam vector coming
-   * from the origin of the laboratory coordinate system with multiple planes. 
+   * from the origin of the laboratory coordinate system with multiple planes.
    * The planes are given by the D matrix which is the inverse of the matrix
-   * 
+   *
    * d = [[dx1, dy1, d01], [dx2, dy2, d02], [dx3, dy3, d03]]
    *
    * where the dx, dy, d0 are the basis vectors of the plane.
@@ -49,13 +49,13 @@ namespace dials { namespace model {
   class BeamMultiPlaneIntersection {
   public:
     typedef std::pair<int, vec2<double> > coord_type;
-  
+
     /**
      * Initialise the transform from the D matrices and plane extents
      * @param D The D matrix array
      * @param extents The extents of the planes
      */
-    BeamMultiPlaneIntersection(const flex_mat3_double &D, 
+    BeamMultiPlaneIntersection(const flex_mat3_double &D,
         const flex_double4 &extents)
       : D_(D),
         extents_(extents) {}
@@ -118,11 +118,11 @@ namespace dials { namespace model {
     flex_mat3_double D_;
     flex_double4 extents_;
   };
-  
+
   /**
    * A functor to calculate the laboratory coordinate of a point on the plane.
    * The plane is specified by the d matrix
-   * 
+   *
    * d = [[dx1, dy1, d01], [dx2, dy2, d02], [dx3, dy3, d03]]
    *
    * where the dx, dy, d0 are the basis vectors of the plane.
@@ -130,14 +130,14 @@ namespace dials { namespace model {
   class MultiPlaneToLabTransform {
   public:
     typedef std::pair<int, vec2<double> > coord_type;
-    
+
     /**
      * Initialise the transform with the d matrix array
      * @param d The d matrix
      */
     MultiPlaneToLabTransform(const flex_mat3_double &d)
       : d_(d) {}
-      
+
     /**
      * Calculate the lab coordinate of the point on the plane
      * @param plane The plane number
@@ -153,14 +153,14 @@ namespace dials { namespace model {
      * Calculate the lab coordinate of the point on the plane
      * @param pxy The plane number and plane coordinate
      * @returns The (x, y, z) laboratory coordinate
-     */    
+     */
     vec3<double> operator()(coord_type pxy) const {
       return operator()(pxy.first, pxy.second);
     }
-    
+
   private:
-    flex_mat3_double d_;  
-  };  
+    flex_mat3_double d_;
+  };
 }} // namespace dials::model
 
 #endif // DIALS_MODEL_EXPERIMENT_MULTI_PLANE_GEOMETRY_H

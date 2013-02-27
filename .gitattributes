@@ -80,11 +80,9 @@ model/data/boost_python/reflection.cc -text
 model/data/reflection.h -text
 model/experiment/SConscript -text
 model/experiment/__init__.py -text
-model/experiment/boost_python/detector_helpers.cc -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/boost_python/multi_plane_geometry.cc -text
 model/experiment/boost_python/plane_geometry.cc -text
-model/experiment/detector_helpers.h -text
 model/experiment/multi_plane_geometry.h -text
 model/experiment/plane_geometry.h -text
 scratch/__init__.py -text
@@ -372,4 +370,3 @@ test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
-test/model/experiment/tst_detector_helpers.py -text

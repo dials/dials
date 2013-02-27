@@ -1,13 +1,13 @@
+from __future__ import division
 
 class TestSpotPredictor:
 
     def __init__(self):
         from scitbx import matrix
-        from scitbx.array_family import flex
         from dials.algorithms.spot_prediction import SpotPredictor
         from dials_jmp.io import xdsio
-        from math import ceil, pi
-        from os.path import realpath, dirname, normpath, join
+        from math import ceil
+        from os.path import realpath, dirname, join
         from dxtbx.model import Beam, Detector, Goniometer, ScanData
 
         # The XDS files to read from
@@ -159,7 +159,7 @@ class TestSpotPredictor:
                     my_xy = my_xy1
             else:
                 my_xy = my_xy[0]
-            
+
             if (abs(xds_xy[0] - my_xy[0]) > 0.1 or
                 abs(xds_xy[1] - my_xy[1]) > 0.1):
                 print xds_xy, gen_xy[hkl]

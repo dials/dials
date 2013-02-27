@@ -26,7 +26,7 @@ namespace dials { namespace model {
    * A functor to calculate the intersection of a diffracted beam vector coming
    * from the origin of the laboratory coordinate system with a plane. The
    * plane is given by the D matrix which is the inverse of the matrix
-   * 
+   *
    * d = [[dx1, dy1, d01], [dx2, dy2, d02], [dx3, dy3, d03]]
    *
    * where the dx, dy, d0 are the basis vectors of the plane.
@@ -52,7 +52,7 @@ namespace dials { namespace model {
       DIALS_ASSERT(v[2] > 0);
       return vec2<double>(v[0] / v[2], v[1] / v[2]);
     }
-        
+
   private:
     mat3 <double> D_;
   };
@@ -60,7 +60,7 @@ namespace dials { namespace model {
   /**
    * A functor to calculate the laboratory coordinate of a point on the plane.
    * The plane is specified by the d matrix
-   * 
+   *
    * d = [[dx1, dy1, d01], [dx2, dy2, d02], [dx3, dy3, d03]]
    *
    * where the dx, dy, d0 are the basis vectors of the plane.
@@ -73,7 +73,7 @@ namespace dials { namespace model {
      */
     PlaneToLabTransform(mat3<double> d)
       : d_(d) {}
-      
+
     /**
      * Calculate the lab coordinate of the point on the plane
      * @param xy The plane coordinate
@@ -83,9 +83,9 @@ namespace dials { namespace model {
       vec3<double> v(xy[0], xy[1], 1.0);
       return d_ * v;
     }
-    
+
   private:
-    mat3 <double> d_;  
+    mat3 <double> d_;
   };
 
 }} // namespace dials::model

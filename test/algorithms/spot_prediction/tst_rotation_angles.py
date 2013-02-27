@@ -1,11 +1,11 @@
+from __future__ import division
 
 def run():
     from scitbx import matrix
-    from scitbx.array_family import flex
     from dials_jmp.io import xdsio
-    from math import ceil, pi
+    from math import ceil
     from dials.algorithms.spot_prediction import RotationAngles
-    from os.path import realpath, dirname, normpath, join
+    from os.path import realpath, dirname, join
 
     # The XDS files to read from
     test_path = dirname(dirname(dirname(realpath(__file__))))
