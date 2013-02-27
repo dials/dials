@@ -120,7 +120,6 @@ scratch/dgw/refinement/tst_convergence_radius.py -text
 scratch/dgw/refinement/tst_convergence_radius_one_parameter.py -text
 scratch/dgw/refinement/tst_finite_diffs.py -text
 scratch/dgw/refinement/tst_orientation_refinement.py -text
-scratch/dgw/refinement/tst_orientation_refinement_lmb_tests_mrad.py -text
 scratch/dgw/refinement/tst_orientation_refinement_lstbx.py -text
 scratch/dgw/refinement/tst_prediction_parameters.py -text
 scratch/dgw/refinement/tst_prediction_parameters_mrad.py -text

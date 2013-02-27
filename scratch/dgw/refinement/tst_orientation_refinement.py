@@ -47,7 +47,8 @@ from dials.scratch.dgw.refinement.target import \
     least_squares_positional_residual_with_rmsd_cutoff, reflection_manager
 
 # Import the refinement engine
-from dials.scratch.dgw.refinement.engine import simple_lbfgs, lbfgs_curvs
+from dials.scratch.dgw.refinement.engine import simple_lbfgs, \
+    lbfgs_curvs, adapt_lstbx, gn_iterations
 
 # Import helper functions
 from dials.scratch.dgw.refinement import print_model_geometry
