@@ -6,13 +6,14 @@ algorithms/__init__.py -text
 algorithms/spot_prediction/SConscript -text
 algorithms/spot_prediction/__init__.py -text
 algorithms/spot_prediction/boost_python/index_generator.cc -text
+algorithms/spot_prediction/boost_python/multi_panel_spot_predictor.cc -text
 algorithms/spot_prediction/boost_python/ray_intersector.cc -text
 algorithms/spot_prediction/boost_python/ray_predictor.cc -text
 algorithms/spot_prediction/boost_python/rotation_angles.cc -text
 algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
 algorithms/spot_prediction/boost_python/spot_predictor.cc -text
-algorithms/spot_prediction/boost_python/spot_predictor_wrapper.h -text
 algorithms/spot_prediction/index_generator.h -text
+algorithms/spot_prediction/multi_panel_spot_predictor.h -text
 algorithms/spot_prediction/ray_intersector.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/rotation_angles.h -text

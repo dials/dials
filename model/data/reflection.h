@@ -87,6 +87,10 @@ namespace dials { namespace model {
       return frame_number_;
     }
 
+    int get_panel_number() const {
+      return panel_number_;
+    }
+
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
     }
@@ -107,6 +111,10 @@ namespace dials { namespace model {
       frame_number_ = frame_number;
     }
 
+    void set_panel_number(int panel_number) {
+      panel_number_ = panel_number;
+    }
+
   protected:
 
     double rotation_angle_;
@@ -114,28 +122,7 @@ namespace dials { namespace model {
     vec2 <double> image_coord_px_;
     vec2 <double> image_coord_mm_;
     double frame_number_;
-  };
-
-
-  class MultiPanelDetectorReflection : public Reflection {
-  public:
-    MultiPanelDetectorReflection() {}
-
-    MultiPanelDetectorReflection(miller_index_type miller_index)
-      : Reflection(miller_index) {}
-
-    virtual ~MultiPanelDetectorReflection() {}
-
-    std::size_t get_panel_number() const {
-      return panel_number_;
-    }
-
-    void set_panel_number(std::size_t panel_number) {
-      panel_number_ = panel_number;
-    }
-
-  protected:
-    std::size_t panel_number_;
+    int panel_number_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;

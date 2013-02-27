@@ -1,5 +1,5 @@
 /*
- * spot_predictor.h
+ * multi_panel_spot_predictor.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_SPOT_PREDICTOR_H
-#define DIALS_ALGORITHMS_SPOT_PREDICTION_SPOT_PREDICTOR_H
+#ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_MULTI_PANEL_SPOT_PREDICTOR_H
+#define DIALS_ALGORITHMS_SPOT_PREDICTION_MULTI_PANEL_SPOT_PREDICTOR_H
 
 #include <scitbx/constants.h>
 #include <scitbx/array_family/flex_types.h>
@@ -17,8 +17,8 @@
 #include <dxtbx/model/scan.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/goniometer.h>
-#include <dxtbx/model/detector.h>
-#include <dials/model/experiment/plane_geometry.h>
+#include <dxtbx/model/multi_panel_detector.h>
+#include <dials/model/experiment/multi_plane_geometry.h>
 #include <dials/model/data/reflection.h>
 #include "index_generator.h"
 #include "ray_predictor.h"
@@ -29,28 +29,31 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
+  using scitbx::af::double4;
   using scitbx::af::flex_double;
   using dxtbx::model::Beam;
-  using dxtbx::model::Detector;
+  using dxtbx::model::MultiPanelDetector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::ScanData;
-  using dials::model::BeamPlaneIntersection;
+  using dials::model::BeamMultiPlaneIntersection;
   using dials::model::Reflection;
+  using dials::model::flex_double4;
 
   // Typedef the miller_index and flex_miller_index types
   typedef cctbx::miller::index <> miller_index_type;
   typedef scitbx::af::flex <miller_index_type> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
-  class SpotPredictor {
+  class MultiPanelSpotPredictor {
   public:
 
     // A load of useful typedefs
     typedef Beam beam_type;
-    typedef Detector detector_type;
+    typedef MultiPanelDetector detector_type;
     typedef Goniometer goniometer_type;
     typedef ScanData scan_type;
     typedef Reflection reflection_type;
+    typedef MultiPanelDetector::coordinate_type coordinate_type;
     typedef scitbx::af::shared <reflection_type> reflection_list_type;
 
     /**
@@ -64,21 +67,23 @@ namespace dials { namespace algorithms {
      * @param UB The ub matrix
      * @param d_min The resolution
      */
-    SpotPredictor(const beam_type &beam,
-                  const detector_type &detector,
-                  const goniometer_type &gonio,
-                  const scan_type &scan,
-                  const cctbx::uctbx::unit_cell &unit_cell,
-                  const cctbx::sgtbx::space_group_type &space_group,
-                  mat3 <double> UB,
-                  double d_min)
+    MultiPanelSpotPredictor(const beam_type &beam,
+                            const detector_type &detector,
+                            const goniometer_type &gonio,
+                            const scan_type &scan,
+                            const cctbx::uctbx::unit_cell &unit_cell,
+                            const cctbx::sgtbx::space_group_type &space_group,
+                            mat3 <double> UB,
+                            double d_min)
       : generator_indices_(unit_cell, space_group, false, d_min),
         predict_rays_(
           beam.get_direction(),
           gonio.get_rotation_axis(),
           UB,
           scan.get_oscillation_range()),
-        plane_intersection_(detector.get_D_matrix()),
+        plane_intersection_(
+          detector.get_D_matrices(),
+          get_image_extents(detector)),
         detector_(detector),
         scan_(scan) {}
 
@@ -121,19 +126,21 @@ namespace dials { namespace algorithms {
         double phi = rays[i].get_rotation_angle();
 
         // Try to calculate the detector coordinate in mm
-        vec2<double> xy_mm;
+        coordinate_type plane_xy_mm;
         try {
-          xy_mm = plane_intersection_(s1);
+          plane_xy_mm = plane_intersection_(s1);
         } catch(error) {
           continue;
         }
 
         // Calculate the pixel coordinate of point
-        vec2<double> xy_px = detector_.millimeter_to_pixel(xy_mm);
+        int panel = plane_xy_mm.first;
+        vec2<double> xy_mm = plane_xy_mm.second;
+        vec2<double> xy_px = detector_.millimeter_to_pixel(plane_xy_mm);
 
         // Get the list of frames at which the reflection will be observed
         // and add the predicted observations to the list of reflections
-        if (detector_.is_coord_valid(xy_px)) {
+        if (detector_.is_coord_valid(coordinate_type(panel, xy_px))) {
           flex_double frames = scan_.get_frames_with_angle(phi);
           for (std::size_t j = 0; j < frames.size(); ++j) {
             reflection_type r;
@@ -143,6 +150,7 @@ namespace dials { namespace algorithms {
             r.set_image_coord_px(xy_px);
             r.set_image_coord_mm(xy_mm);
             r.set_frame_number(frames[j]);
+            r.set_panel_number(panel);
             reflections.push_back(r);
           }
         }
@@ -193,13 +201,22 @@ namespace dials { namespace algorithms {
 
   private:
 
+    flex_double4 get_image_extents(const detector_type &detector) {
+      flex_double4 extents(detector.num_panels());
+      for (std::size_t i = 0; i < detector.num_panels(); ++i) {
+        vec2<double> image_size_mm = detector[i].get_image_size_mm();
+        extents[i] = double4(0.0, 0.0, image_size_mm[0], image_size_mm[1]);
+      }
+      return extents;
+    }
+
     IndexGenerator generator_indices_;
     RayPredictor predict_rays_;
-    BeamPlaneIntersection plane_intersection_;
+    BeamMultiPlaneIntersection plane_intersection_;
     const detector_type& detector_;
     const scan_type& scan_;
   };
 
 }} // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_SPOT_PREDICTOR_H
+#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_MULTI_PANEL_SPOT_PREDICTOR_H

@@ -10,43 +10,33 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/spot_prediction/spot_predictor.h>
-#include <dxtbx/model/scan.h>
-#include <dxtbx/model/beam.h>
-#include <dxtbx/model/goniometer.h>
-#include <dxtbx/model/detector.h>
+#include <dials/algorithms/spot_prediction/multi_panel_spot_predictor.h>
 #include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  using dxtbx::model::ScanData;
-  using dxtbx::model::Beam;
-  using dxtbx::model::Goniometer;
-  using dxtbx::model::Detector;
-  using model::Reflection;
-
-  void export_spot_predictor()
+  void export_multi_panel_spot_predictor()
   {
     // Useful typedefs
-    typedef SpotPredictor::beam_type beam_type;
-    typedef SpotPredictor::detector_type detector_type;
-    typedef SpotPredictor::goniometer_type goniometer_type;
-    typedef SpotPredictor::scan_type scan_type;
-    typedef SpotPredictor::reflection_type reflection_type;
-    typedef SpotPredictor::reflection_list_type reflection_list_type;
+    typedef MultiPanelSpotPredictor::beam_type beam_type;
+    typedef MultiPanelSpotPredictor::detector_type detector_type;
+    typedef MultiPanelSpotPredictor::goniometer_type goniometer_type;
+    typedef MultiPanelSpotPredictor::scan_type scan_type;
+    typedef MultiPanelSpotPredictor::reflection_type reflection_type;
+    typedef MultiPanelSpotPredictor::reflection_list_type reflection_list_type;
 
     // Typedef the different overloads for operator()
-    reflection_list_type (SpotPredictor::*predict_single)(
-      miller_index) const = &SpotPredictor::operator();
-    reflection_list_type (SpotPredictor::*predict_array)(
-      const flex_miller_index &) const = &SpotPredictor::operator();
-    reflection_list_type (SpotPredictor::*predict_generate)() =
-      &SpotPredictor::operator();
+    reflection_list_type (MultiPanelSpotPredictor::*predict_single)(
+      miller_index) const = &MultiPanelSpotPredictor::operator();
+    reflection_list_type (MultiPanelSpotPredictor::*predict_array)(
+      const flex_miller_index &) const = &MultiPanelSpotPredictor::operator();
+    reflection_list_type (MultiPanelSpotPredictor::*predict_generate)() =
+      &MultiPanelSpotPredictor::operator();
 
     // Create and return the wrapper for the spot predictor object
-    class_ <SpotPredictor> ("SpotPredictor", no_init)
+    class_ <MultiPanelSpotPredictor> ("MultiPanelSpotPredictor", no_init)
       .def(init <const beam_type&,
                  const detector_type&,
                  const goniometer_type&,

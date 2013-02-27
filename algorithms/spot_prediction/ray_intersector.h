@@ -118,41 +118,41 @@ namespace dials { namespace algorithms {
   };
 
   class RayIntersectorBase {};
-  
+
   class RayIntersectorFlatPanel : public RayIntersectorBase {
   public:
     RayIntersectorFlatPanel() {}
-    virtual ~RayIntersectorFlatPanel() {}    
+    virtual ~RayIntersectorFlatPanel() {}
 
-    virtual 
+    virtual
     Reflection operator(const Reflection &r) {
-    
+
     }
 
-    virtual 
+    virtual
     scitbx::af::shared <Reflection> operator(const scitbx::af::shared <Reflection> &r) {
-    
+
     }
 
   private:
   };
-  
+
   class RayIntersectorMultiFlatPanel : public RayIntersectorBase {
   public:
-    RayIntersectorMultiFlatPanel() {}    
-    virtual ~RayIntersectorMultiFlatPanel() {}    
+    RayIntersectorMultiFlatPanel() {}
+    virtual ~RayIntersectorMultiFlatPanel() {}
 
-    virtual 
+    virtual
     ReflectionMultiPanel operator(const ReflectionMultiPanel &r) {
-    
+
     }
 
-    virtual 
+    virtual
     scitbx::af::shared <ReflectionMultiPanel> operator(const scitbx::af::shared <ReflectionMultiPanel> &r) {
-    
+
     }
 
-  private:  
+  private:
   };
 
 }} // namespace dials::algorithms

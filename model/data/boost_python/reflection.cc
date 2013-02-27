@@ -31,33 +31,8 @@ namespace dials { namespace model { namespace boost_python {
     return fmt.str();
   }
 
-  std::string reflection_to_string(const Reflection &reflection) {
-    boost::format fmt(
-      "Reflection:\n"
-      "    miller index:    (%1%, %2%, %3%)\n"
-      "    rotation angle:  %4%\n"
-      "    beam vector:     (%5%, %6%, %7%)\n"
-      "    image coord (px): (%8%, %9%)\n"
-      "    image coord (mm): (%10%, %11%)\n"
-      "    frame number:     %12%");
-        
-    fmt % reflection.get_miller_index()[0];
-    fmt % reflection.get_miller_index()[1];
-    fmt % reflection.get_miller_index()[2];
-    fmt % reflection.get_rotation_angle();
-    fmt % reflection.get_beam_vector()[0];
-    fmt % reflection.get_beam_vector()[1];
-    fmt % reflection.get_beam_vector()[2];
-    fmt % reflection.get_image_coord_px()[0];
-    fmt % reflection.get_image_coord_px()[1];
-    fmt % reflection.get_image_coord_mm()[0];
-    fmt % reflection.get_image_coord_mm()[1];
-    fmt % reflection.get_frame_number();
-    return fmt.str();
-  }
-
-  std::string mulit_panel_detector_reflection_to_string(
-      const MultiPanelDetectorReflection &reflection) {
+  std::string reflection_to_string(
+      const Reflection &reflection) {
     boost::format fmt(
       "Reflection:\n"
       "    miller index:     (%1%, %2%, %3%)\n"
@@ -113,16 +88,10 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("frame_number",
         &Reflection::get_frame_number,
         &Reflection::set_frame_number)
-      .def("__str__", &reflection_to_string);          
-
-    class_<MultiPanelDetectorReflection, bases<Reflection> >(
-        "MultiPanelDetectorReflection")
-      .def(init <miller_index_type> ((
-          arg("miller_index"))))
       .add_property("panel_number",
-        &MultiPanelDetectorReflection::get_panel_number,
-        &MultiPanelDetectorReflection::set_panel_number)
-      .def("__str__", &mulit_panel_detector_reflection_to_string);      
+        &Reflection::get_panel_number,
+        &Reflection::set_panel_number)        
+      .def("__str__", &reflection_to_string);          
 
     scitbx::af::boost_python::flex_wrapper <Reflection>::plain("ReflectionList");        
   }
