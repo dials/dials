@@ -210,8 +210,13 @@ print_model_geometry(mysource, mydetector, mycrystal)
 
 ref_log = open("tst_orientation_refinement.log", "w")
 #refiner = simple_lbfgs(mytarget, pred_param, verbosity = 2, log = ref_log)
-refiner = lbfgs_curvs(mytarget, pred_param, verbosity = 2, log = ref_log)
-refiner.run()
+#refiner = lbfgs_curvs(mytarget, pred_param, verbosity = 2, log = ref_log)
+refiner = adapt_lstbx(mytarget, pred_param, verbosity = 2, log = ref_log)
+refiner.build_up()
+
+myiterations = gn_iterations(refiner)
+print "number of steps", myiterations.n_iterations
+#refiner.run()
 
 print
 print "Refinement has completed with the following geometry:"
