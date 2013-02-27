@@ -14,7 +14,6 @@
 #include <scitbx/constants.h>
 #include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/scan_helpers.h>
-#include <dials/model/experiment/detector_helpers.h>
 #include "index_generator.h"
 #include "rotation_angles.h"
 
