@@ -363,6 +363,7 @@ scratch/luiso_s/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_math.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_matrix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_plotting.py -text svneol=unset#text/plain
+scratch/luiso_s/tst_w_predict_spots.py -text svneol=unset#text/plain
 scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
 test/algorithms/spot_prediction/tst_index_generator.py -text
 test/algorithms/spot_prediction/tst_ray_predictor.py -text

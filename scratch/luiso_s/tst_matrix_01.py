@@ -31,9 +31,9 @@ b_2d = numpy.arange( 16, dtype = float ).reshape( 4, 4 )
 print "a_2d"
 print a_2d
 
-print "b_2d"
-print b_2d
+# print "b_2d"
+# print b_2d
 
-sum_2d = a_2d[1:3, 1:3] + a_2d[2:4, 2:4]
+sum_2d = numpy.sum( a_2d[1:4, 1:4] )
 print "sum_2d"
 print sum_2d
