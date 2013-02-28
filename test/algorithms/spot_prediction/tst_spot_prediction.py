@@ -40,7 +40,10 @@ class TestSpotPredictor:
         # Get the minimum resolution in the integrate file
         d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
         self.d_min = min(d)
-
+#        self.d_min = self.detector.get_max_resolution_at_corners(self.beam)
+#        print self.d_min
+#        print self.detector.get_max_resolution_at_corners(self.beam)
+#        
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
         self.scan.image_range = (self.scan.image_range[0],
@@ -48,7 +51,7 @@ class TestSpotPredictor:
 
         # Create the index generator
         generate_indices = IndexGenerator(self.unit_cell, self.space_group_type, 
-                                          True, self.d_min)
+                                          self.d_min)
 
         # Create the spot predictor
         self.predict_spots = SpotPredictor(self.beam,

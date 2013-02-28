@@ -30,7 +30,7 @@ def print_call_info(callback, info, result_type):
     print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
-def predict_spots(input_filename, numframes, d_min, verbose):
+def predict_spots(input_filename, num_frames, verbose):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -53,7 +53,7 @@ def predict_spots(input_filename, numframes, d_min, verbose):
     ub_matrix = io.get_ub_matrix_from_xparm(xparm_handle)
     unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
     space_group = io.get_space_group_type_from_xparm(xparm_handle)
-
+    d_min = detector.get_max_resolution_at_corners(beam)
     # Load the image volume from the CBF files and set the number of frames
 #    if cbf_path:
 #        print "Loading CBF files"
@@ -71,7 +71,7 @@ def predict_spots(input_filename, numframes, d_min, verbose):
     print_ub_matrix(ub_matrix)
 
     # Create the index generator
-    generate_indices = IndexGenerator(unit_cell, space_group, True, d_min)
+    generate_indices = IndexGenerator(unit_cell, space_group, d_min)
 
     # Create the spot predictor
     predict_spots = SpotPredictor(beam, detector, gonio, scan, ub_matrix)
@@ -103,4 +103,4 @@ if __name__ == '__main__':
     if len(args) == 0:
         print parser.print_help()
     else:
-        predict_spots(args[0], 4000, 0.7, options.verbose)
+        predict_spots(args[0], 4000, options.verbose)

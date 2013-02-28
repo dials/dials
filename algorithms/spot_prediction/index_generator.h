@@ -37,7 +37,6 @@ namespace dials { namespace algorithms {
      */
     IndexGenerator(cctbx::uctbx::unit_cell const& unit_cell,
                    cctbx::sgtbx::space_group_type const& space_group_type,
-                   bool anomalous_flag,
                    double d_min)
       : unit_cell_(unit_cell),
         space_group_type_(space_group_type),

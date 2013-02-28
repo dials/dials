@@ -24,7 +24,7 @@ def run():
     space_group_type = io.get_space_group_type_from_xparm(gxparm_handle)
 
     # Generate the indices
-    index_generator = IndexGenerator(unit_cell, space_group_type, True, d_min)
+    index_generator = IndexGenerator(unit_cell, space_group_type, d_min)
     miller_indices = index_generator.to_array()
 
     # Get individual generated hkl

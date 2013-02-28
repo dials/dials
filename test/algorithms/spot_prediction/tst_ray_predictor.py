@@ -51,7 +51,7 @@ class TestRayPredictor:
 
         # Create the index generator
         self.generate_indices = IndexGenerator(self.unit_cell,
-            self.space_group_type, True, self.d_min)
+            self.space_group_type, self.d_min)
 
         s0 = self.beam.direction
         m2 = self.gonio.rotation_axis
