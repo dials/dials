@@ -1,7 +1,8 @@
 from __future__ import division
 
 def run():
-    from dials_jmp.io import xdsio
+    from iotbx.xds import xparm, integrate_hkl
+    from dials.util import io
     from dials.algorithms.spot_prediction import IndexGenerator
     from os.path import realpath, dirname, join
     import numpy
@@ -12,15 +13,15 @@ def run():
     gxparm_filename = join(test_path, 'data/sim_mx/GXPARM.XDS')
 
     # Read the XDS files
-    integrate_handle = xdsio.IntegrateFile()
+    integrate_handle = integrate_hkl.reader()
     integrate_handle.read_file(integrate_filename)
-    gxparm_handle = xdsio.GxParmFile()
+    gxparm_handle = xparm.reader()
     gxparm_handle.read_file(gxparm_filename)
 
     # Get the parameters we need from the GXPARM file
     d_min = 1.6
-    unit_cell = gxparm_handle.get_unit_cell()
-    space_group_type = gxparm_handle.get_space_group_type()
+    unit_cell = io.get_unit_cell_from_xparm(gxparm_handle)
+    space_group_type = io.get_space_group_type_from_xparm(gxparm_handle)
 
     # Generate the indices
     index_generator = IndexGenerator(unit_cell, space_group_type, True, d_min)

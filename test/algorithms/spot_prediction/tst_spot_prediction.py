@@ -6,7 +6,8 @@ class TestSpotPredictor:
         from scitbx import matrix
         from dials.algorithms.spot_prediction import IndexGenerator
         from dials.algorithms.spot_prediction import SpotPredictor
-        from dials_jmp.io import xdsio
+        from iotbx.xds import xparm, integrate_hkl
+        from dials.util import io
         from math import ceil
         from os.path import realpath, dirname, join
         from dxtbx.model import Beam, Detector, Goniometer, ScanData
@@ -17,19 +18,24 @@ class TestSpotPredictor:
         gxparm_filename = join(test_path, 'data/sim_mx/GXPARM.XDS')
 
         # Read the XDS files
-        self.integrate_handle = xdsio.IntegrateFile()
+        self.integrate_handle = integrate_hkl.reader()
         self.integrate_handle.read_file(integrate_filename)
-        self.gxparm_handle = xdsio.GxParmFile()
-        self.gxparm_handle.read_file(gxparm_filename)
+        self.gxparm_handle = xparm.reader()
+        self.gxparm_handle.read_file(gxparm_filename)    
 
         # Get the parameters we need from the GXPARM file
-        beam = self.gxparm_handle.get_beam()
-        gonio = self.gxparm_handle.get_goniometer()
-        detector = self.gxparm_handle.get_detector()
-        self.ub_matrix = self.gxparm_handle.get_ub_matrix()
-        self.ub_matrix = tuple(matrix.sqr(self.ub_matrix).inverse())
-        self.unit_cell = self.gxparm_handle.get_unit_cell()
-        self.space_group_type = self.gxparm_handle.get_space_group_type()
+        models = io.read_models_from_file(gxparm_filename)
+        self.beam = models.get_beam()
+        self.gonio = models.get_goniometer()
+        self.detector = models.get_detector()
+        self.scan = models.get_scan()        
+
+        print self.detector
+
+        # Get crystal parameters
+        self.ub_matrix = io.get_ub_matrix_from_xparm(self.gxparm_handle)
+        self.unit_cell = io.get_unit_cell_from_xparm(self.gxparm_handle)
+        self.space_group_type = io.get_space_group_type_from_xparm(self.gxparm_handle)
 
         # Get the minimum resolution in the integrate file
         d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
@@ -37,27 +43,8 @@ class TestSpotPredictor:
 
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
-        gonio.num_frames = int(ceil(max(zcal)))
-
-        detector_d3 = ((matrix.col(detector.x_axis).normalize() *
-                        detector.pixel_size[0]) * (0 - detector.origin[0]) +
-                       (matrix.col(detector.y_axis).normalize() *
-                        detector.pixel_size[1]) * (0 - detector.origin[1]) +
-                       detector.distance * matrix.col(detector.normal).normalize())
-
-        self.beam = Beam(beam.direction)
-        self.scan = ScanData((gonio.starting_frame,
-                          gonio.starting_frame + gonio.num_frames),
-                         (gonio.starting_angle,
-                         gonio.oscillation_range), 0.0, deg=True)
-        self.gonio = Goniometer(gonio.rotation_axis)
-        self.detector = Detector("",
-                            detector.x_axis,
-                            detector.y_axis,
-                            detector_d3,
-                            detector.pixel_size,
-                            detector.size,
-                            (0, 0))
+        self.scan.image_range = (self.scan.image_range[0],
+                                self.scan.image_range[0] + int(ceil(max(zcal))))
 
         # Create the index generator
         generate_indices = IndexGenerator(self.unit_cell, self.space_group_type, 
@@ -77,10 +64,13 @@ class TestSpotPredictor:
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""
         gen_hkl = {}
+        print len(self.reflections)
         for r in self.reflections:
             gen_hkl[r.miller_index] = True
         for hkl in self.integrate_handle.hkl:
             assert(gen_hkl[hkl] == True)
+            
+        print "OK"
 
     def test_rotation_angles(self):
         """Ensure the rotation angles agree with XDS"""
@@ -118,6 +108,8 @@ class TestSpotPredictor:
                 my_phi = my_phi[0]
 
             assert(abs(xds_phi - my_phi) < 0.1)
+            
+        print "OK"
 
     def test_beam_vectors(self):
         """Ensure |s1| == |s0|"""
@@ -127,6 +119,8 @@ class TestSpotPredictor:
             s1 = r.beam_vector
             s1_length = matrix.col(s1).length()
             assert(abs(s0_length - s1_length) < 1e-7)
+            
+        print "OK"
 
     def test_image_coordinates(self):
         """Ensure the image coordinates agree with XDS"""
@@ -168,6 +162,8 @@ class TestSpotPredictor:
                 print xds_xy, gen_xy[hkl]
             assert(abs(xds_xy[0] - my_xy[0]) < 0.1)
             assert(abs(xds_xy[1] - my_xy[1]) < 0.1)
+            
+        print "OK"
 
     def run(self):
         self.test_miller_index_set()

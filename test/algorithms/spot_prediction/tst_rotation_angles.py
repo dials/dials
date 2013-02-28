@@ -2,7 +2,8 @@ from __future__ import division
 
 def run():
     from scitbx import matrix
-    from dials_jmp.io import xdsio
+    from iotbx.xds import xparm, integrate_hkl
+    from dials.util import io
     from math import ceil
     from dials.algorithms.spot_prediction import RotationAngles
     from os.path import realpath, dirname, join
@@ -13,19 +14,22 @@ def run():
     gxparm_filename = join(test_path, 'data/sim_mx/GXPARM.XDS')
 
     # Read the XDS files
-    integrate_handle = xdsio.IntegrateFile()
+    integrate_handle = integrate_hkl.reader()
     integrate_handle.read_file(integrate_filename)
-    gxparm_handle = xdsio.GxParmFile()
+    gxparm_handle = xparm.reader()
     gxparm_handle.read_file(gxparm_filename)
 
     # Get the parameters we need from the GXPARM file
-    beam = gxparm_handle.get_beam()
-    gonio = gxparm_handle.get_goniometer()
-    detector = gxparm_handle.get_detector()
-    ub_matrix = gxparm_handle.get_ub_matrix()
-    ub_matrix = tuple(matrix.sqr(ub_matrix).inverse())
-    unit_cell = gxparm_handle.get_unit_cell()
-    space_group_type = gxparm_handle.get_space_group_type()
+    models = io.read_models_from_file(gxparm_filename)
+    beam = models.get_beam()
+    gonio = models.get_goniometer()
+    detector = models.get_detector()
+    scan = models.get_scan()
+    
+    # Get the crystal parameters
+    ub_matrix = io.get_ub_matrix_from_xparm(gxparm_handle)
+    unit_cell = io.get_unit_cell_from_xparm(gxparm_handle)
+    space_group_type = io.get_space_group_type_from_xparm(gxparm_handle)
 
     # Get the minimum resolution in the integrate file
     d = [unit_cell.d(h) for h in integrate_handle.hkl]
@@ -33,8 +37,10 @@ def run():
 
     # Get the number of frames from the max z value
     xcal, ycal, zcal = zip(*integrate_handle.xyzcal)
-    gonio.num_frames = int(ceil(max(zcal)))
-
+    num_frames = int(ceil(max(zcal)))
+    scan.image_range = (scan.image_range[0], 
+                        scan.image_range[0] + num_frames - 1)
+    
     # Create the rotation angle object
     ra = RotationAngles(beam.direction, gonio.rotation_axis)
 
