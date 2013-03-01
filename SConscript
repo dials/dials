@@ -26,6 +26,6 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
 		"rstbx",
 		"scitbx_boost_python"])
 
-    env.SConscript('model/SConscript', exports={ 'env' : env })
-    env.SConscript('algorithms/SConscript', exports={ 'env' : env })
+#    env.SConscript('model/SConscript', exports={ 'env' : env })
+#    env.SConscript('algorithms/SConscript', exports={ 'env' : env })
     env.SConscript('scratch/dgw/refinement/SConscript', exports={ 'env' : env })
