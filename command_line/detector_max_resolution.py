@@ -13,11 +13,11 @@ from __future__ import division
 
 def print_detector_max_resolution(input_filename):
     """Read the given data file and print the resolution of the detector"""
-    from dials.util import io
+    import dxtbx
 
     # Read the models from the input file
     print "Reading: \"{0}\"".format(input_filename)
-    models = io.read_models_from_file(input_filename)
+    models = dxtbx.load(input_filename)
     beam = models.get_beam()
     detector = models.get_detector()
     gonio = models.get_goniometer()
