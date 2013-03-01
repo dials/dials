@@ -4,10 +4,17 @@
 # This code is developed as part of the DIALS project and is provided for
 # testing purposes only
 
-"""Test refinement of source, detector and crystal orientation parameters (i.e.
+"""
+Test refinement of source, detector and crystal orientation parameters (i.e.
 assume crystal unit cell is fixed for now) using generated reflection
-positions from ideal geometry. Test parameterisation in mrad versus radians,
-and curvatures on versus off"""
+positions from ideal geometry.
+
+Control of the experimental model and choice of minimiser is done via
+PHIL, which means we can do, for example:
+
+cctbx.python tst_orientation_refinement.py "random_seed=3; engine=lbfgs_curvs"
+
+"""
 
 # Python and cctbx imports
 from __future__ import division
@@ -15,8 +22,9 @@ import sys
 from math import pi
 from scitbx import matrix
 
-# Get class to build experimental models
-from setup_geometry import extract
+# Get class to build models and minimiser using PHIL
+import setup_geometry
+import setup_minimiser
 
 # Model parameterisations
 from dials.scratch.dgw.refinement.detector_parameters import \
@@ -46,10 +54,6 @@ from dials.scratch.dgw.refinement.prediction_parameters import \
 from dials.scratch.dgw.refinement.target import \
     least_squares_positional_residual_with_rmsd_cutoff, reflection_manager
 
-# Import the refinement engine
-from dials.scratch.dgw.refinement.engine import simple_lbfgs, \
-    lbfgs_curvs, adapt_lstbx, gn_iterations
-
 # Import helper functions
 from dials.scratch.dgw.refinement import print_model_geometry
 
@@ -58,7 +62,8 @@ from dials.scratch.dgw.refinement import print_model_geometry
 #############################
 
 args = sys.argv[1:]
-models = extract(cmdline_args = args)
+print "in main script, args=",args
+models = setup_geometry.extract(cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
@@ -205,20 +210,27 @@ mytarget = least_squares_positional_residual_with_rmsd_cutoff(
 # Set up the refinement engine #
 ################################
 
+print "in main script, args=",args
+refiner = setup_minimiser.extract(mytarget,
+                                  pred_param,
+                                  cmdline_args = args).refiner
+
 print "Prior to refinement the experimental model is:"
 print_model_geometry(mysource, mydetector, mycrystal)
 
-ref_log = open("tst_orientation_refinement.log", "w")
+
 #refiner = simple_lbfgs(mytarget, pred_param, verbosity = 2, log = ref_log)
 #refiner = lbfgs_curvs(mytarget, pred_param, verbosity = 2, log = ref_log)
-refiner = adapt_lstbx(mytarget, pred_param, verbosity = 2, log = ref_log)
-refiner.build_up()
+#refiner = adapt_lstbx(mytarget, pred_param, verbosity = 2, log = ref_log)
+#refiner.build_up()
 
-myiterations = gn_iterations(refiner)
-print "number of steps", myiterations.n_iterations
-#refiner.run()
+refiner.run()
+
+#myiterations = gn_iterations(refiner)
+print "number of steps", refiner.n_iterations
+#print "number of steps", refiner.get_num_steps()
+
 
 print
 print "Refinement has completed with the following geometry:"
 print_model_geometry(mysource, mydetector, mycrystal)
-ref_log.close()

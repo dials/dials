@@ -10,9 +10,9 @@
 from __future__ import division
 import os, sys
 import random
+from scitbx import matrix
 from libtbx.phil import parse
 import libtbx.phil.command_line
-from scitbx import matrix
 
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
@@ -36,7 +36,11 @@ class extract(object):
         self._verbose = verbose
 
         mydir = os.path.dirname(os.path.realpath(__file__))
-        master_phil = parse(file_name = os.path.join(mydir, "geometry.params"))
+        master_phil = parse("""
+            include file geometry.params
+            include file minimiser.params
+            """, process_includes=True)
+        #master_phil = parse(file_name = os.path.join(mydir, "geometry.params"))
         arg_interpreter = libtbx.phil.command_line.argument_interpreter(
             master_phil=master_phil)
 

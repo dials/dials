@@ -6,6 +6,7 @@ from __future__ import division
 from scitbx import lbfgs
 from cctbx.array_family import flex
 import math
+import libtbx
 
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
@@ -43,6 +44,9 @@ class refinery(object):
         self._target_achieved = False
         self.compute_functional_and_gradients()
         if self._verbosity > 0.: self.print_table_row()
+
+    def get_num_steps(self):
+        return self._step
 
     def compute_functional_and_gradients(self):
 
@@ -106,15 +110,19 @@ class simple_lbfgs(refinery):
 
     def run(self):
 
-        self.minimizer = lbfgs.run(target_evaluator=self, log=self._log)
+        ref_log = open(self._log, "w")
+        self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
+        ref_log.close()
 
 class lbfgs_curvs(refinery):
     '''LBFGS refinery using curvatures'''
 
     def run(self):
 
+        ref_log = open(self._log, "w")
         self.diag_mode = "always"
-        self.minimizer = lbfgs.run(target_evaluator=self, log=self._log)
+        self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
+        ref_log.close()
 
     def compute_functional_gradients_diag(self):
 
@@ -227,7 +235,7 @@ class adapt_lstbx(
         self.x, self.old_x = self.old_x, None
         self._step -= 1
 
-class gn_iterations(normal_eqns_solving.iterations):
+class gn_iterations(adapt_lstbx, normal_eqns_solving.iterations):
 
     track_step = False
     track_gradient = False
@@ -239,7 +247,23 @@ class gn_iterations(normal_eqns_solving.iterations):
     max_shift_over_esd = 15
     convergence_as_shift_over_esd = 1e-5
 
-    def do(self):
+    # override the base class __init__ as I don't want to start
+    # refinement on initialisation
+    def __init__(self, target, prediction_parameterisation, log=None,
+                 verbosity = 0, **kwds):
+        """
+        """
+
+        adapt_lstbx.__init__(self, target, prediction_parameterisation, log=None,
+                 verbosity = 0)
+
+        libtbx.adopt_optional_init_args(self, kwds)
+        if self.track_all: self.track_step = self.track_gradient = True
+        self.non_linear_ls = normal_eqns_solving.journaled_non_linear_ls(
+            non_linear_ls = self, journal = self, track_gradient = self.track_gradient,
+            track_step = self.track_step)
+
+    def run(self):
         self.n_iterations = 0
         while self.n_iterations < self.n_max_iterations:
             self.non_linear_ls.build_up()
