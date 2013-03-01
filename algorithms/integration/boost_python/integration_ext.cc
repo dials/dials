@@ -16,10 +16,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_shoebox();
+  void export_xds_coordinate_system();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
     export_shoebox();
+    export_xds_coordinate_system();
   }
 
 }}} // namespace = dials::algorithms::boost_python
