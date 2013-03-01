@@ -2,3 +2,4 @@
 Import('env')
 
 env.SConscript('spot_prediction/SConscript', exports={ 'env' : env })
+env.SConscript('integration/SConscript', exports={ 'env' : env })

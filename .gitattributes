@@ -3,6 +3,11 @@
 /__init__.py -text
 algorithms/SConscript -text
 algorithms/__init__.py -text
+algorithms/integration/SConscript -text
+algorithms/integration/__init__.py -text
+algorithms/integration/boost_python/integration_ext.cc -text
+algorithms/integration/boost_python/shoebox.cc -text
+algorithms/integration/shoebox.h -text
 algorithms/spot_prediction/SConscript -text
 algorithms/spot_prediction/__init__.py -text
 algorithms/spot_prediction/boost_python/index_generator.cc -text
