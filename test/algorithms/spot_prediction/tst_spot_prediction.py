@@ -41,8 +41,6 @@ class TestSpotPredictor:
         d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
         self.d_min = min(d)
 #        self.d_min = self.detector.get_max_resolution_at_corners(self.beam)
-#        print self.d_min
-#        print self.detector.get_max_resolution_at_corners(self.beam)
 #        
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)

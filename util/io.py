@@ -36,8 +36,7 @@ def get_unit_cell_from_xparm(handle):
 
     """
     from cctbx import uctbx
-    return uctbx.unit_cell(orthogonalization_matrix = 
-        get_inverse_ub_matrix_from_xparm(handle))
+    return uctbx.unit_cell(parameters=handle.unit_cell)
 
 def get_space_group_type_from_xparm(handle):
     """Get the space group tyoe object from an xparm file handle
