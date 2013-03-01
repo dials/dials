@@ -9,7 +9,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_xds_coordinate_system()
   {
-    class_ <XdsCoordinateSystem> ("XdsCoordinateSystem")
+    class_ <XdsCoordinateSystem> ("XdsCoordinateSystem", no_init)
       .def(init <vec3 <double>,
                  vec3 <double>,
                  vec3 <double>,

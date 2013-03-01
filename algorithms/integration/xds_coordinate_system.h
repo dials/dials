@@ -22,9 +22,6 @@ namespace dials { namespace algorithms {
 
   public:
 
-    /** Default constructor */
-    XdsCoordinateSystem() {}
-
     /**
      * Initialise coordinate system
      * @param s0 The incident beam vector
