@@ -51,17 +51,3 @@ def get_space_group_type_from_xparm(handle):
     from cctbx import sgtbx
     return sgtbx.space_group_type(sgtbx.space_group(
         sgtbx.space_group_symbols(handle.space_group).hall()))
-        
-def read_models_from_file(filenames):
-    """Use DXTBX to get the files from the input filenames.
-    
-    Params:
-        filenames The input filenames
-        
-    Returns:
-        The dxtbx format instance
-    
-    """
-    from dxtbx.format.Registry import Registry
-    format_instance = Registry.find(filenames)
-    return format_instance(filenames)

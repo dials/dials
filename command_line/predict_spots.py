@@ -37,10 +37,11 @@ def predict_spots(input_filename, num_frames, verbose):
     from dials.algorithms.spot_prediction import SpotPredictor
     from iotbx.xds import xparm
     from dials.util import io
+    import dxtbx
 
     # Read the models from the input file
     print "Reading: \"{0}\"".format(input_filename)
-    models = io.read_models_from_file(input_filename)
+    models = dxtbx.load(input_filename)
     beam = models.get_beam()
     detector = models.get_detector()
     gonio = models.get_goniometer()

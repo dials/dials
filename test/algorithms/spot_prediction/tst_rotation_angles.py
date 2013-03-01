@@ -7,6 +7,7 @@ def run():
     from math import ceil
     from dials.algorithms.spot_prediction import RotationAngles
     from os.path import realpath, dirname, join
+    import dxtbx
 
     # The XDS files to read from
     test_path = dirname(dirname(dirname(realpath(__file__))))
@@ -20,7 +21,7 @@ def run():
     gxparm_handle.read_file(gxparm_filename)
 
     # Get the parameters we need from the GXPARM file
-    models = io.read_models_from_file(gxparm_filename)
+    models = dxtbx.load(gxparm_filename)
     beam = models.get_beam()
     gonio = models.get_goniometer()
     detector = models.get_detector()

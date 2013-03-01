@@ -10,6 +10,7 @@ class TestRayPredictor:
         from dials.util import io
         from math import ceil
         from os.path import realpath, dirname, join
+        import dxtbx
 
         # The XDS files to read from
         test_path = dirname(dirname(dirname(realpath(__file__))))
@@ -23,7 +24,7 @@ class TestRayPredictor:
         self.gxparm_handle.read_file(gxparm_filename)        
 
         # Get the parameters we need from the GXPARM file
-        models = io.read_models_from_file(gxparm_filename)
+        models = dxtbx.load(gxparm_filename)
         self.beam = models.get_beam()
         self.gonio = models.get_goniometer()
         self.detector = models.get_detector()
