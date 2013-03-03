@@ -9,8 +9,7 @@
 # Python and cctbx imports
 from __future__ import division
 import os
-from libtbx.phil import parse
-import libtbx.phil.command_line
+from libtbx.phil import parse, command_line
 
 # Import the refinement engine
 from dials.scratch.dgw.refinement.engine import simple_lbfgs, \
@@ -19,21 +18,14 @@ from dials.scratch.dgw.refinement.engine import simple_lbfgs, \
 class extract(object):
     '''Parse and extract minimiser setup from PHIL'''
 
-    def __init__(self, target, prediction_parameterisation,
+    def __init__(self, master_phil, target, prediction_parameterisation,
         local_overrides = "", cmdline_args = None, verbose=True):
 
         self._target = target
         self._prediction_parameterisation = prediction_parameterisation
         self._verbose = verbose
 
-        mydir = os.path.dirname(os.path.realpath(__file__))
-        master_phil = parse("""
-            include file geometry.params
-            include file minimiser.params
-            """, process_includes=True)
-
-        #master_phil = parse(file_name = os.path.join(mydir, "minimiser.params"))
-        arg_interpreter = libtbx.phil.command_line.argument_interpreter(
+        arg_interpreter = command_line.argument_interpreter(
             master_phil=master_phil)
 
         user_phil = parse(local_overrides)

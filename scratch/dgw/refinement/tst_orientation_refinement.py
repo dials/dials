@@ -21,6 +21,7 @@ from __future__ import division
 import sys
 from math import pi
 from scitbx import matrix
+from libtbx.phil import parse
 
 # Get class to build models and minimiser using PHIL
 import setup_geometry
@@ -62,8 +63,12 @@ from dials.scratch.dgw.refinement import print_model_geometry
 #############################
 
 args = sys.argv[1:]
-print "in main script, args=",args
-models = setup_geometry.extract(cmdline_args = args)
+master_phil = parse("""
+    include file geometry.params
+    include file minimiser.params
+    """, process_includes=True)
+
+models = setup_geometry.extract(master_phil, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
@@ -210,8 +215,8 @@ mytarget = least_squares_positional_residual_with_rmsd_cutoff(
 # Set up the refinement engine #
 ################################
 
-print "in main script, args=",args
-refiner = setup_minimiser.extract(mytarget,
+refiner = setup_minimiser.extract(master_phil,
+                                  mytarget,
                                   pred_param,
                                   cmdline_args = args).refiner
 

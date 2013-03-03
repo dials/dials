@@ -11,8 +11,7 @@ from __future__ import division
 import os, sys
 import random
 from scitbx import matrix
-from libtbx.phil import parse
-import libtbx.phil.command_line
+from libtbx.phil import parse, command_line
 
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
@@ -31,17 +30,12 @@ def random_direction_close_to(vector, sd = 0.5):
 class extract(object):
     '''Parse and extract geometry model from PHIL'''
 
-    def __init__(self, local_overrides = "", cmdline_args = None, verbose=True):
+    def __init__(self, master_phil, local_overrides = "",
+                 cmdline_args = None, verbose=True):
 
         self._verbose = verbose
 
-        mydir = os.path.dirname(os.path.realpath(__file__))
-        master_phil = parse("""
-            include file geometry.params
-            include file minimiser.params
-            """, process_includes=True)
-        #master_phil = parse(file_name = os.path.join(mydir, "geometry.params"))
-        arg_interpreter = libtbx.phil.command_line.argument_interpreter(
+        arg_interpreter = command_line.argument_interpreter(
             master_phil=master_phil)
 
         user_phil = parse(local_overrides)
