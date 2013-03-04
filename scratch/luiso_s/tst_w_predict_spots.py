@@ -51,6 +51,10 @@ def my_tst_code( image2d, x_ls, y_ls ):
     print image2d[335:370, 525:545]
     print "max(diffdata2d) =", numpy.max( image2d )
     print "Plotting image2d"
+    
+    #integrate_2d(image2d, x_ls, y_ls)
+    
+    
     plt.imshow( image2d , interpolation = "nearest", origin = 'lower' )
     plt.show()
 def predict_spots( input_filename, cbf_search_path, d_min, display_frame ):
