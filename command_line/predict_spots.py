@@ -30,11 +30,27 @@ def print_call_info(callback, info, result_type):
     print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
+def get_intersection(detector, reflection):
+    reflection.image_coord_mm = detector[0].get_ray_intersection(
+        reflection.beam_vector)
+    return reflection
+
+def get_frame_numbers(scan, reflection):
+    from dials.model.data import Reflection
+    fn = scan.get_frames_with_angle(reflection.rotation_angle)
+    reflection_list = []
+    for f in fn:
+        r = Reflection(reflection)
+        r.frame_number = f
+        reflection_list.append(r)
+    return reflection_list
+
 def predict_spots(input_filename, num_frames, verbose):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
-    from dials.algorithms.spot_prediction import SpotPredictor
+    from dials.algorithms.spot_prediction import RayPredictor
+    from dials.algorithms.spot_prediction import RayIntersector
     from iotbx.xds import xparm
     from dials.util import io
     import dxtbx
@@ -46,15 +62,18 @@ def predict_spots(input_filename, num_frames, verbose):
     detector = models.get_detector()
     gonio = models.get_goniometer()
     scan = models.get_scan()
-    scan.image_range = (scan.image_range[0], scan.image_range[0] + num_frames)
+    first_image = scan.get_image_range()[0]
+    image_range = (first_image, first_image + num_frames)
+    scan.set_image_range(image_range)
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
     xparm_handle.read_file(input_filename)
-    ub_matrix = io.get_ub_matrix_from_xparm(xparm_handle)
+    UB = io.get_ub_matrix_from_xparm(xparm_handle)
     unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
     space_group = io.get_space_group_type_from_xparm(xparm_handle)
-    d_min = detector.get_max_resolution_at_corners(beam)
+    d_min = detector.get_max_resolution_at_corners(
+        beam.get_direction(), beam.get_wavelength())
     # Load the image volume from the CBF files and set the number of frames
 #    if cbf_path:
 #        print "Loading CBF files"
@@ -68,22 +87,57 @@ def predict_spots(input_filename, num_frames, verbose):
     print detector
     print gonio
     print scan
+    print "Resolution: ", d_min
     print ""
-    print_ub_matrix(ub_matrix)
+    print_ub_matrix(UB)
 
     # Create the index generator
     generate_indices = IndexGenerator(unit_cell, space_group, d_min)
 
     # Create the spot predictor
-    predict_spots = SpotPredictor(beam, detector, gonio, scan, ub_matrix)
+    predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(), UB,
+                                scan.get_oscillation_range())
 
     # Generate Indices
     miller_indices = print_call_info(generate_indices.to_array,
         "Generating miller indices", "miller indices")
 
     # Predict reflections
-    reflections = print_call_info(lambda: predict_spots(miller_indices),
-        "Predicting spots", "reflections")
+    reflections = print_call_info(lambda: predict_rays(miller_indices),
+        "Predicting rays", "reflections")
+
+    #intersection = lambda x: get_intersection(detector, x)
+    #all_intersections = lambda: map(intersection, reflections)
+    intersection = RayIntersector(detector)
+
+    # Get detector coordinates (mm)
+    reflections = print_call_info(lambda: intersection(reflections),
+        "Calculating detector coordinates", "coordinates")
+
+    frame_calculator = lambda x: get_frame_numbers(scan, x)
+    frame_calculator_all = lambda: map(frame_calculator, reflections)
+
+    reflections = print_call_info(frame_calculator_all,
+        "Calculating frame numbers", "frame")
+
+
+    # Get the reflection frame numbers
+
+
+#        // Get the list of frames at which the reflection will be observed
+#        // and add the predicted observations to the list of reflections
+#        flex_double frames = scan_.get_frames_with_angle(phi);
+#        for (std::size_t j = 0; j < frames.size(); ++j) {
+#          reflection_type r;
+#          r.set_miller_index(h);
+#          r.set_rotation_angle(phi);
+#          r.set_beam_vector(s1);
+#          r.set_image_coord_px(xy_px);
+#          r.set_image_coord_mm(xy_mm);
+#          r.set_frame_number(frames[j]);
+#          reflections.push_back(r);
+#        }
+#      }
 
 if __name__ == '__main__':
 

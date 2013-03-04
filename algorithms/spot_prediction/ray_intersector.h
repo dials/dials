@@ -8,153 +8,107 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_PREDICTOR_H
-#define DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_PREDICTOR_H
+#ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_INTERSECTOR_H
+#define DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_INTERSECTOR_H
 
-#include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/mat3.h>
-#include <scitbx/array_family/shared.h>
 #include <scitbx/array_family/flex_types.h>
-#include <cctbx/miller.h>
-#include <dials/model/experiment/scan_helpers.h>
+#include <dxtbx/model/detector.h>
 #include <dials/model/data/reflection.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   // Using lots of stuff from other namespaces
-  using scitbx::rad_as_deg;
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::mat3;
-  using model::mod_2pi;
-  using model::is_angle_in_range;
-  using model::Reflection;
-
-  // Typedef the miller_index and flex_miller_index types
-  typedef cctbx::miller::index <> miller_index;
-  typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
+  using dxtbx::model::Detector;
+  using dials::model::Reflection;
+  using dials::model::ReflectionList;
 
   /** A class to perform spot prediction. */
-  template <typename DetectorType>
   class RayIntersector {
   public:
 
-    // A load of useful typedefs
-    typedef Reflection reflection_type;
-    typedef scitbx::af::shared <reflection_type> reflection_list_type;
-
     /**
      * Initialise the ray predictor.
-     * @param s0 The incident beam vector
-     * @param m2 The rotation axis
-     * @param UB The ub matrix
-     * @param dphi The total oscillation range
+     * @param Detector The detector
      */
-    RayIntersector() {}
-
-    /** Virtual destructor to allow inheritance */
-    virtual ~RayIntersector() {}
+    RayIntersector(const Detector &detector)
+      : detector_(detector) {}
 
     /**
-     * Predict the spot locations on the image detector.
-     *
-     * The algorithm performs the following procedure:
-     *
-     *  - For the miller index, the rotation angle at which the diffraction
-     *    conditions are met is calculated.
-     *
-     *  - The rotation angles are then checked to see if they are within the
-     *    rotation range.
-     *
-     *  - The reciprocal lattice vectors are then calculated, followed by the
-     *    diffracted beam vector for each reflection.
-     *
+     * Calculate the spot locations on the detector image.
      * @param reflection The Reflection data
      * @returns The Reflection data with image volume coordinates
      */
-    reflection_type
-    operator()(const reflection_type &r) const {
+    Reflection operator()(const Reflection &r) const {
+
+      Reflection r_new(r);
 
       // Try to calculate the detector coordinate
-      detector_coordinate_type coord;
+      Detector::coord_type coord;
       try {
-        coord = get_detector_coord_(r.get_beam_vector());
-      } catch(error) {
-        continue;
+        coord = detector_.get_ray_intersection(r.get_beam_vector());
+      } catch(dxtbx::error) {
+        return r_new;
       }
 
-      // Get the list of frames at which the reflection will be observed
-      // and add the predicted observations to the list of reflections
-      flex_double frames = get_frame_numbers_(phi[i]);
-      for (std::size_t j = 0; j < frames.size(); ++j) {
-        reflection_type r = reflection_type(
-          h, phi[i], s1, coord, frames[j]);
-        reflections.push_back(r);
-      }
-      return r;
+      r_new.set_panel_number(coord.first);
+      r_new.set_image_coord_mm(coord.second);
+
+      return r_new;
     }
+
+    Reflection operator()(const Reflection &r, int panel) const {
+
+      Reflection r_new(r);
+
+      // Try to calculate the detector coordinate
+      vec2<double> coord;
+      try {
+        coord = detector_[panel].get_ray_intersection(r.get_beam_vector());
+      } catch(dxtbx::error) {
+        return r_new;
+      }
+
+      r_new.set_panel_number(panel);
+      r_new.set_image_coord_mm(coord);
+
+      return r_new;
+    }
+
 
     /**
      * For a given set of miller indices, predict the detector coordinates.
      * @param miller_indices The array of miller indices.
      */
-    reflection_list_type
-    operator()(const reflection_list_type &reflections) const {
-      reflection_list_type reflections_new;
+    ReflectionList
+    operator()(const ReflectionList &reflections) const {
+      ReflectionList reflections_new(reflections.size());
       for (std::size_t i = 0; i < reflections.size(); ++i) {
-        try {
-          reflection_type r = operator()(reflections[i]);
-          reflections_new.push_back(r);
-        } catch(error) {}
+        Reflection r = operator()(reflections[i]);
+        reflections_new[i] = r;
+      }
+      return reflections_new;
+    }
+
+    ReflectionList
+    operator()(const ReflectionList &reflections, int panel) const {
+      ReflectionList reflections_new(reflections.size());
+      for (std::size_t i = 0; i < reflections.size(); ++i) {
+        Reflection r = operator()(reflections[i], panel);
+        reflections_new[i] = r;
       }
       return reflections_new;
     }
 
   private:
 
-    diffracted_beam_intersection <DetectorType> beam_coord_;
-  };
-
-  class RayIntersectorBase {};
-
-  class RayIntersectorFlatPanel : public RayIntersectorBase {
-  public:
-    RayIntersectorFlatPanel() {}
-    virtual ~RayIntersectorFlatPanel() {}
-
-    virtual
-    Reflection operator(const Reflection &r) {
-
-    }
-
-    virtual
-    scitbx::af::shared <Reflection> operator(const scitbx::af::shared <Reflection> &r) {
-
-    }
-
-  private:
-  };
-
-  class RayIntersectorMultiFlatPanel : public RayIntersectorBase {
-  public:
-    RayIntersectorMultiFlatPanel() {}
-    virtual ~RayIntersectorMultiFlatPanel() {}
-
-    virtual
-    ReflectionMultiPanel operator(const ReflectionMultiPanel &r) {
-
-    }
-
-    virtual
-    scitbx::af::shared <ReflectionMultiPanel> operator(const scitbx::af::shared <ReflectionMultiPanel> &r) {
-
-    }
-
-  private:
+    Detector detector_;
   };
 
 }} // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_PREDICTOR_H
+#endif // DIALS_ALGORITHMS_SPOT_PREDICTION_RAY_INTERSECTOR_H

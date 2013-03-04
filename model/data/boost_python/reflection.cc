@@ -71,6 +71,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("__str__", &reflection_base_to_string);
 
     class_<Reflection, bases<ReflectionBase> > ("Reflection")
+      .def(init <const Reflection &>())
       .def(init <miller_index_type> ((
           arg("miller_index"))))
       .add_property("rotation_angle", 

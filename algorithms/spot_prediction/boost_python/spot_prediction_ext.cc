@@ -18,12 +18,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_index_generator();
   void export_rotation_angles();
   void export_ray_predictor();
+  void export_ray_intersector();
 
   BOOST_PYTHON_MODULE(dials_algorithms_spot_prediction_ext)
   {
     export_index_generator();
     export_rotation_angles();
     export_ray_predictor();
+    export_ray_intersector();
   }
 
 }}} // namespace = dials::algorithms::boost_python
