@@ -22,14 +22,14 @@ class TestSpotPredictor:
         self.integrate_handle = integrate_hkl.reader()
         self.integrate_handle.read_file(integrate_filename)
         self.gxparm_handle = xparm.reader()
-        self.gxparm_handle.read_file(gxparm_filename)    
+        self.gxparm_handle.read_file(gxparm_filename)
 
         # Get the parameters we need from the GXPARM file
         models = dxtbx.load(gxparm_filename)
         self.beam = models.get_beam()
         self.gonio = models.get_goniometer()
         self.detector = models.get_detector()
-        self.scan = models.get_scan()        
+        self.scan = models.get_scan()
 
         print self.detector
 
@@ -42,14 +42,14 @@ class TestSpotPredictor:
         d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
         self.d_min = min(d)
 #        self.d_min = self.detector.get_max_resolution_at_corners(self.beam)
-#        
+#
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
         self.scan.image_range = (self.scan.image_range[0],
                                 self.scan.image_range[0] + int(ceil(max(zcal))))
 
         # Create the index generator
-        generate_indices = IndexGenerator(self.unit_cell, self.space_group_type, 
+        generate_indices = IndexGenerator(self.unit_cell, self.space_group_type,
                                           self.d_min)
 
         # Create the spot predictor
@@ -71,7 +71,7 @@ class TestSpotPredictor:
             gen_hkl[r.miller_index] = True
         for hkl in self.integrate_handle.hkl:
             assert(gen_hkl[hkl] == True)
-            
+
         print "OK"
 
     def test_rotation_angles(self):
@@ -110,7 +110,7 @@ class TestSpotPredictor:
                 my_phi = my_phi[0]
 
             assert(abs(xds_phi - my_phi) < 0.1)
-            
+
         print "OK"
 
     def test_beam_vectors(self):
@@ -121,7 +121,7 @@ class TestSpotPredictor:
             s1 = r.beam_vector
             s1_length = matrix.col(s1).length()
             assert(abs(s0_length - s1_length) < 1e-7)
-            
+
         print "OK"
 
     def test_image_coordinates(self):
@@ -164,7 +164,7 @@ class TestSpotPredictor:
                 print xds_xy, gen_xy[hkl]
             assert(abs(xds_xy[0] - my_xy[0]) < 0.1)
             assert(abs(xds_xy[1] - my_xy[1]) < 0.1)
-            
+
         print "OK"
 
     def run(self):

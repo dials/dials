@@ -93,10 +93,6 @@ model/data/reflection.h -text
 model/experiment/SConscript -text
 model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text
-model/experiment/boost_python/multi_plane_geometry.cc -text
-model/experiment/boost_python/plane_geometry.cc -text
-model/experiment/multi_plane_geometry.h -text
-model/experiment/plane_geometry.h -text
 scratch/__init__.py -text
 scratch/dgw/__init__.py -text
 scratch/dgw/crystal_model/__init__.py -text
@@ -383,7 +379,6 @@ test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
-test/model/experiment/tst_plane_geometry.py -text
 util/__init__.py -text
 util/command_line.py -text
 util/io.py -text

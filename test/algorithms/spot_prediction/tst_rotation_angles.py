@@ -26,7 +26,7 @@ def run():
     gonio = models.get_goniometer()
     detector = models.get_detector()
     scan = models.get_scan()
-    
+
     # Get the crystal parameters
     ub_matrix = io.get_ub_matrix_from_xparm(gxparm_handle)
     unit_cell = io.get_unit_cell_from_xparm(gxparm_handle)
@@ -39,16 +39,16 @@ def run():
     # Get the number of frames from the max z value
     xcal, ycal, zcal = zip(*integrate_handle.xyzcal)
     num_frames = int(ceil(max(zcal)))
-    scan.image_range = (scan.image_range[0], 
-                        scan.image_range[0] + num_frames - 1)
-    
+    scan.set_image_range((scan.get_image_range()[0],
+                        scan.get_image_range()[0] + num_frames - 1))
+
     # Create the rotation angle object
-    ra = RotationAngles(beam.direction, gonio.rotation_axis)
+    ra = RotationAngles(beam.get_s0(), gonio.get_rotation_axis())
 
     # Setup the matrices
     ub = matrix.sqr(ub_matrix)
-    s0 = matrix.col(beam.direction)
-    m2 = matrix.col(gonio.rotation_axis)
+    s0 = matrix.col(beam.get_s0())
+    m2 = matrix.col(gonio.get_rotation_axis())
 
     # For all the miller indices
     for h in integrate_handle.hkl:

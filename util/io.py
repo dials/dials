@@ -3,7 +3,7 @@ def get_inverse_ub_matrix_from_xparm(handle):
 
     Params:
         handle The file handle
-        
+
     Returns:
         The inverse_ub_matrix
 
@@ -18,13 +18,13 @@ def get_ub_matrix_from_xparm(handle):
 
     Params:
         handle The file handle
-        
+
     Returns:
         The ub_matrix
 
     """
     return get_inverse_ub_matrix_from_xparm(handle).inverse()
-    
+
 def get_unit_cell_from_xparm(handle):
     """Get the unit_cell object from an xparm file handle
 

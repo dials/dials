@@ -20,18 +20,19 @@ def print_detector_max_resolution(input_filename):
     models = dxtbx.load(input_filename)
     beam = models.get_beam()
     detector = models.get_detector()
-    gonio = models.get_goniometer()
 
     # Print the resolution data
     print ''
     print detector
     print beam
     print ''
-    print 'Beam centre: {0}'.format(detector.get_beam_centre(beam))
+    print 'Beam centre: {0}'.format(detector.get_beam_centre(beam.get_s0()))
     print 'Max resolution at detector corners: {0}'.format(
-      detector.get_max_resolution_at_corners(beam))
+        detector.get_max_resolution_at_corners(
+            beam.get_direction(), beam.get_wavelength()))
     print 'Max resolution for fully recorded elipse: {0}'.format(
-      detector.get_max_resolution_elipse(beam))
+        detector.get_max_resolution_elipse(
+            beam.get_direction(), beam.get_wavelength()))
 
 if __name__ == '__main__':
     import sys

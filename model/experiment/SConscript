@@ -2,8 +2,6 @@
 Import('env')
 
 sources = [
-  	'boost_python/plane_geometry.cc',
-  	'boost_python/multi_plane_geometry.cc',
     'boost_python/experiment_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_model_experiment_ext', source=sources)

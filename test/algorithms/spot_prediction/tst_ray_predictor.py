@@ -21,19 +21,20 @@ class TestRayPredictor:
         self.integrate_handle = integrate_hkl.reader()
         self.integrate_handle.read_file(integrate_filename)
         self.gxparm_handle = xparm.reader()
-        self.gxparm_handle.read_file(gxparm_filename)        
+        self.gxparm_handle.read_file(gxparm_filename)
 
         # Get the parameters we need from the GXPARM file
         models = dxtbx.load(gxparm_filename)
         self.beam = models.get_beam()
         self.gonio = models.get_goniometer()
         self.detector = models.get_detector()
-        self.scan = models.get_scan()        
+        self.scan = models.get_scan()
 
         # Get crystal parameters
         self.ub_matrix = io.get_ub_matrix_from_xparm(self.gxparm_handle)
         self.unit_cell = io.get_unit_cell_from_xparm(self.gxparm_handle)
-        self.space_group_type = io.get_space_group_type_from_xparm(self.gxparm_handle)
+        self.space_group_type = io.get_space_group_type_from_xparm(
+            self.gxparm_handle)
 
         # Get the minimum resolution in the integrate file
         d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
@@ -41,8 +42,9 @@ class TestRayPredictor:
 
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
-        self.scan.image_range = (self.scan.image_range[0],
-                                self.scan.image_range[0] + int(ceil(max(zcal))))
+        self.scan.set_image_range((self.scan.get_image_range()[0],
+                                 self.scan.get_image_range()[0] +
+                                    int(ceil(max(zcal)))))
 
         # Print stuff
 #        print self.beam
@@ -54,8 +56,8 @@ class TestRayPredictor:
         self.generate_indices = IndexGenerator(self.unit_cell,
             self.space_group_type, self.d_min)
 
-        s0 = self.beam.direction
-        m2 = self.gonio.rotation_axis
+        s0 = self.beam.get_s0()
+        m2 = self.gonio.get_rotation_axis()
         UB = self.ub_matrix
         dphi = self.scan.get_oscillation_range()
 
@@ -95,7 +97,8 @@ class TestRayPredictor:
                             self.integrate_handle.xyzcal):
 
             # Calculate the XDS phi value
-            xds_phi = self.scan.oscillation[0] + xyz[2]*self.scan.oscillation[1]
+            xds_phi = self.scan.get_oscillation()[0] + \
+                      xyz[2]*self.scan.get_oscillation()[1]
 
             # Select the nearest xy to use if there are 2
             my_phi = gen_phi[hkl]
@@ -119,7 +122,7 @@ class TestRayPredictor:
     def test_beam_vectors(self):
         """Ensure |s1| == |s0|"""
         from scitbx import matrix
-        s0_length = matrix.col(self.beam.direction).length()
+        s0_length = matrix.col(self.beam.get_s0()).length()
         for r in self.reflections:
             s1 = r.beam_vector
             s1_length = matrix.col(s1).length()
