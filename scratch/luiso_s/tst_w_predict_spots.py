@@ -25,7 +25,6 @@ def display_image_with_predicted_spots( image, xcoords, ycoords ):
     """Display the image with coordinates overlayed."""
     from matplotlib import pylab, cm
     from matplotlib import transforms
-    trans = transforms.Affine2D()
 
     plt = pylab.imshow( image, vmin = 0, vmax = 1000, cmap = cm.Greys_r,
                        interpolation = 'nearest', origin = 'lower' )
@@ -45,18 +44,16 @@ def visualize_predicted_spots( image_volume, display_frame, spot_coords ):
                                        xcoords, ycoords )
 def my_tst_code( image2d, x_ls, y_ls ):
     import numpy
+    import integrate_2d
     from matplotlib import pyplot as plt
-    for ps in range( len( x_ls ) ):
-        print x_ls[ps], y_ls[ps]
-    print image2d[335:370, 525:545]
-    print "max(diffdata2d) =", numpy.max( image2d )
-    print "Plotting image2d"
-    
-    #integrate_2d(image2d, x_ls, y_ls)
-    
-    
-    plt.imshow( image2d , interpolation = "nearest", origin = 'lower' )
-    plt.show()
+    cntrd_xcoord = numpy.zeros( len( x_ls ) )
+    cntrd_ycoord = numpy.zeros( len( x_ls ) )
+    pos_sigma = numpy.zeros( len( x_ls ) )
+    integrate_2d.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, pos_sigma )
+    for i in range( len( x_ls ) ):
+        print 'x,y (centroid) =', cntrd_xcoord[i], cntrd_ycoord[i]
+        print 'sigma (pos) =', pos_sigma [i]
+
 def predict_spots( input_filename, cbf_search_path, d_min, display_frame ):
     """Read the required data from the file, predict the spots and display."""
     from dials_jmp.spot_prediction import SpotPredictor
