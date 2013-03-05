@@ -48,8 +48,6 @@ namespace dials { namespace algorithms {
         phi_(phi),
         zeta_(xcs.get_zeta()) {}
 
-  public:
-
     /**
      * Apply the transform to a beam vector
      * @param s_dash The diffracted beam vector to transform
@@ -58,18 +56,18 @@ namespace dials { namespace algorithms {
      */
     vec3 <double> operator()(vec3 <double> s_dash, double phi_dash) const {
       return vec3 <double> (
-          scaled_e1_ * (s_dash - s1_),
-          scaled_e2_ * (s_dash - s1_),
-          zeta_ * (phi_dash - phi_));
+        scaled_e1_ * (s_dash - s1_),
+        scaled_e2_ * (s_dash - s1_),
+        zeta_ * (phi_dash - phi_));
     }
 
   private:
 
-      vec3 <double> scaled_e1_;
-      vec3 <double> scaled_e2_;
-      vec3 <double> s1_;
-      double phi_;
-      double zeta_;
+    vec3 <double> scaled_e1_;
+    vec3 <double> scaled_e2_;
+    vec3 <double> s1_;
+    double phi_;
+    double zeta_;
   };
 
 }} // namespace = dials::algorithms
