@@ -22,35 +22,20 @@ def print_call_info(callback, info, result_type):
     function and the number of output elements.'''
     from time import time
     print ""
-    print info
+    print info + ":"
     start_time = time()
     result = callback()
-    finish_time = time()
-    time_taken = finish_time - start_time
+    time_taken = time() - start_time
     print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
-
-def get_intersection(detector, reflection):
-    reflection.image_coord_mm = detector[0].get_ray_intersection(
-        reflection.beam_vector)
-    return reflection
-
-def get_frame_numbers(scan, reflection):
-    from dials.model.data import Reflection
-    fn = scan.get_frames_with_angle(reflection.rotation_angle)
-    reflection_list = []
-    for f in fn:
-        r = Reflection(reflection)
-        r.frame_number = f
-        reflection_list.append(r)
-    return reflection_list
 
 def predict_spots(input_filename, num_frames, verbose):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
     from dials.algorithms.spot_prediction import RayPredictor
-    from dials.algorithms.spot_prediction import RayIntersector
+    from dials.algorithms.spot_prediction import ray_intersection
+    from dials.algorithms.spot_prediction import reflection_frames
     from iotbx.xds import xparm
     from dials.util import io
     import dxtbx
@@ -106,38 +91,16 @@ def predict_spots(input_filename, num_frames, verbose):
     reflections = print_call_info(lambda: predict_rays(miller_indices),
         "Predicting rays", "reflections")
 
-    #intersection = lambda x: get_intersection(detector, x)
-    #all_intersections = lambda: map(intersection, reflections)
-    intersection = RayIntersector(detector)
-
     # Get detector coordinates (mm)
-    reflections = print_call_info(lambda: intersection(reflections),
+    reflections = print_call_info(
+        lambda: ray_intersection(detector, reflections),
         "Calculating detector coordinates", "coordinates")
 
-    frame_calculator = lambda x: get_frame_numbers(scan, x)
-    frame_calculator_all = lambda: map(frame_calculator, reflections)
+    # Calculate the frame numbers of all the reflections
+    reflections = print_call_info(
+        lambda: reflection_frames(scan, reflections),
+        "Calculating frame numbers", "frames")
 
-    reflections = print_call_info(frame_calculator_all,
-        "Calculating frame numbers", "frame")
-
-
-    # Get the reflection frame numbers
-
-
-#        // Get the list of frames at which the reflection will be observed
-#        // and add the predicted observations to the list of reflections
-#        flex_double frames = scan_.get_frames_with_angle(phi);
-#        for (std::size_t j = 0; j < frames.size(); ++j) {
-#          reflection_type r;
-#          r.set_miller_index(h);
-#          r.set_rotation_angle(phi);
-#          r.set_beam_vector(s1);
-#          r.set_image_coord_px(xy_px);
-#          r.set_image_coord_mm(xy_mm);
-#          r.set_frame_number(frames[j]);
-#          reflections.push_back(r);
-#        }
-#      }
 
 if __name__ == '__main__':
 
