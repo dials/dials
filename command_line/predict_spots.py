@@ -36,6 +36,7 @@ def predict_spots(input_filename, num_frames, verbose):
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
+    from dials.algorithms.integration import ShoeboxCalculator
     from iotbx.xds import xparm
     from dials.util import io
     import dxtbx
@@ -101,7 +102,20 @@ def predict_spots(input_filename, num_frames, verbose):
         lambda: reflection_frames(scan, reflections),
         "Calculating frame numbers", "frames")
 
+    # Set the divergence and mosaicity
+    n_sigma = 5.0
+    sigma_divergence = n_sigma * 0.016
+    sigma_mosaicity = n_sigma * 0.008
+    
+    # Create the shoebox calculator
+    calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan, 
+        sigma_divergence, sigma_mosaicity)
 
+    # Calculate the frame numbers of all the reflections
+    reflections = print_call_info(
+        lambda: (calculate_shoebox(reflections), reflections)[1],
+        "Calculating shoeboxes", "shoeboxes")
+        
 if __name__ == '__main__':
 
     from optparse import OptionParser
