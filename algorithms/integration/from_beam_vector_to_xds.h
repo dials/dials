@@ -36,8 +36,8 @@ namespace dials { namespace algorithms {
     FromBeamVectorToXds(XdsCoordinateSystem xcs,
                         vec3 <double> s1,
                         double phi)
-      : scaled_e1_(xcs.get_e1_axis() * s1.length()),
-        scaled_e2_(xcs.get_e2_axis() * s1.length()),
+      : scaled_e1_(xcs.get_e1_axis() / s1.length()),
+        scaled_e2_(xcs.get_e2_axis() / s1.length()),
         s1_(s1),
         phi_(phi),
         zeta_(xcs.get_zeta()) {}

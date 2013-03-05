@@ -23,7 +23,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                  double> ((
           arg("zeta"), 
           arg("phi"))))
-      .def("apply", 
+      .def("__call__", 
         &FromXdsE3ToPhi::operator(), (
           arg("e3")));
   }

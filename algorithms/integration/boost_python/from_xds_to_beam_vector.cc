@@ -23,7 +23,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                  vec3 <double> > ((
           arg("xcs"), 
           arg("s1"))))
-      .def("apply", 
+      .def("__call__", 
         &FromXdsToBeamVector::operator(), (
           arg("c")));
   }

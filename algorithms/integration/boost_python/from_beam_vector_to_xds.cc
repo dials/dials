@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("xcs"), 
           arg("s1"), 
           arg("phi"))))
-      .def("apply", 
+      .def("__call__", 
           &FromBeamVectorToXds::operator(), (
           arg("s_dash"),
           arg("phi_dash")));
