@@ -11,19 +11,13 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_FROM_BEAM_VECTOR_TO_XDS_H
 #define DIALS_ALGORITHMS_INTEGRATION_FROM_BEAM_VECTOR_TO_XDS_H
 
-#include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include "xds_coordinate_system.h"
 
 namespace dials { namespace algorithms {
 
-  //using scitbx::constants::pi_180;
   using scitbx::vec3;
-
-  /** Constant for scaling values */
-  //static const double r2d = 1.0 / pi_180;
-  static const double r2d = 1.0;
 
   /**
    * Class to represent a geometry transform from beam vector to the XDS
@@ -42,8 +36,8 @@ namespace dials { namespace algorithms {
     FromBeamVectorToXds(XdsCoordinateSystem xcs,
                         vec3 <double> s1,
                         double phi)
-      : scaled_e1_(xcs.get_e1_axis() * r2d / s1.length()),
-        scaled_e2_(xcs.get_e2_axis() * r2d / s1.length()),
+      : scaled_e1_(xcs.get_e1_axis() * s1.length()),
+        scaled_e2_(xcs.get_e2_axis() * s1.length()),
         s1_(s1),
         phi_(phi),
         zeta_(xcs.get_zeta()) {}

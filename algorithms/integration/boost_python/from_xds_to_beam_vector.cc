@@ -1,5 +1,5 @@
 /*
- * integration_ext.cc
+ * from_xds_to_beam_vector.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,20 +10,22 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/integration/from_xds_to_beam_vector.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_xds_coordinate_system();
-  void export_from_beam_vector_to_xds();
-  void export_from_xds_to_beam_vector();
-
-  BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
+  void export_from_xds_to_beam_vector() 
   {
-    export_xds_coordinate_system();
-    export_from_beam_vector_to_xds();
-    export_from_xds_to_beam_vector();
+    class_ <FromXdsToBeamVector> ("FromXdsToBeamVector", no_init)
+      .def(init <XdsCoordinateSystem, 
+                 vec3 <double> > ((
+              arg("xcs"), 
+              arg("s1"))))
+      .def("apply", 
+          &FromXdsToBeamVector::operator(), (
+              arg("c")));
   }
 
 }}} // namespace = dials::algorithms::boost_python
