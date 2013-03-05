@@ -1,6 +1,6 @@
 import numpy
 from matplotlib import pyplot as plt
-def start( data2d, xcoord, ycoord ):
+def start( data2d, xcoord, ycoord , cntrd_xcoord, cntrd_ycoord, pos_sigma ):
     n_x = numpy.size( data2d[:, 0:1] )
     n_y = numpy.size( data2d[0:1, :] )
     print 'n_x =', n_x
@@ -49,10 +49,20 @@ def start( data2d, xcoord, ycoord ):
                     x_num_sum = x_num_sum + data2d[x_scan, y_scan] * x_scan
                     y_num_sum = y_num_sum + data2d[x_scan, y_scan] * y_scan
                     den_sum = den_sum + data2d[x_scan, y_scan]
-        xm = x_num_sum / den_sum
-        ym = y_num_sum / den_sum
-        print 'r_mas(x,y) =', xm, ym
-        paintmask[int( xm + .5 ), int( ym + .5 )] = 5
+        cntrd_xcoord[pos] = x_num_sum / den_sum
+        cntrd_ycoord[pos] = y_num_sum / den_sum
+        paintmask[int( cntrd_xcoord[pos] + .5 ), int( cntrd_ycoord[pos] + .5 )] = 5
+
+
+    for pos in range( len( xcoord ) ):
+        num_sum = 0.0
+        den_sum = 0.0
+        for x_scan in range( xcoord[pos] - 5, xcoord[pos] + 6, 1 ):
+            for y_scan in range( ycoord[pos] - 5, ycoord[pos] + 6, 1 ):
+                if diffdata2d[x_scan, y_scan] == 1:
+                    num_sum = num_sum + data2d[x_scan, y_scan] * ( x_scan - cntrd_xcoord[pos] ) ** 2.0
+                    den_sum = den_sum + data2d[x_scan, y_scan]
+        pos_sigma[pos] = numpy.sqrt( num_sum / den_sum )
 
 
     print "Plotting data2dsmoth"

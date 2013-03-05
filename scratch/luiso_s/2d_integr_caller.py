@@ -28,10 +28,19 @@ print 'new nfast, nslow =', nfast, nslow
 xcoord = [128, 139, 147, 157, 166]
 ycoord = [217, 227, 235, 245, 253]
 
+pos_sigma = [-1.0, -1.0, -1.0, -1.0, -1.0, -1.0]
+cntrd_xcoord = [-1.0, -1.0, -1.0, -1.0, -1.0]
+cntrd_ycoord = [-1.0, -1.0, -1.0, -1.0, -1.0]
+
 print "nslow, nfast =", nslow, nfast
 print "max(data2d) =", numpy.max( data2d )
 print "min(data2d) =", numpy.min( data2d )
 
-integrate_2d.start( data2d, xcoord, ycoord )
+integrate_2d.start( data2d, xcoord, ycoord , cntrd_xcoord, cntrd_ycoord, pos_sigma )
+
+for i in range( len( xcoord ) ):
+    print 'x,y (centroid) =', cntrd_xcoord[i], cntrd_ycoord[i]
+    print 'sigma (pos) =', pos_sigma [i]
+
 
 
