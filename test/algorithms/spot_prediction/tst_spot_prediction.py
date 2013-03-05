@@ -3,14 +3,14 @@ from __future__ import division
 class TestSpotPredictor:
 
     def __init__(self):
-        from scitbx import matrix
         from dials.algorithms.spot_prediction import IndexGenerator
-        from dials.algorithms.spot_prediction import SpotPredictor
+        from dials.algorithms.spot_prediction import RayPredictor
+        from dials.algorithms.spot_prediction import ray_intersection
+        from dials.algorithms.spot_prediction import reflection_frames
         from iotbx.xds import xparm, integrate_hkl
         from dials.util import io
         from math import ceil
         from os.path import realpath, dirname, join
-        from dxtbx.model import Beam, Detector, Goniometer, ScanData
         import dxtbx
 
         # The XDS files to read from
@@ -36,37 +36,48 @@ class TestSpotPredictor:
         # Get crystal parameters
         self.ub_matrix = io.get_ub_matrix_from_xparm(self.gxparm_handle)
         self.unit_cell = io.get_unit_cell_from_xparm(self.gxparm_handle)
-        self.space_group_type = io.get_space_group_type_from_xparm(self.gxparm_handle)
+        self.space_group_type = io.get_space_group_type_from_xparm(
+            self.gxparm_handle)
 
         # Get the minimum resolution in the integrate file
-        d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
-        self.d_min = min(d)
-#        self.d_min = self.detector.get_max_resolution_at_corners(self.beam)
-#
+        self.d_min = self.detector.get_max_resolution_at_corners(
+            self.beam.get_direction(), self.beam.get_wavelength())
+
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)
-        self.scan.image_range = (self.scan.image_range[0],
-                                self.scan.image_range[0] + int(ceil(max(zcal))))
+        self.scan.set_image_range((self.scan.get_image_range()[0],
+                                   self.scan.get_image_range()[0] +
+                                    int(ceil(max(zcal)))))
 
         # Create the index generator
         generate_indices = IndexGenerator(self.unit_cell, self.space_group_type,
                                           self.d_min)
 
-        # Create the spot predictor
-        self.predict_spots = SpotPredictor(self.beam,
-                                           self.detector,
-                                           self.gonio,
-                                           self.scan,
-                                           self.ub_matrix)
+        s0 = self.beam.get_s0()
+        m2 = self.gonio.get_rotation_axis()
+        UB = self.ub_matrix
+        dphi = self.scan.get_oscillation_range()
+
+        # Create the ray predictor
+        self.predict_rays = RayPredictor(s0, m2, UB, dphi)
 
         # Predict the spot locations
-        h = generate_indices.to_array()
-        self.reflections = self.predict_spots(h)
+        self.reflections = self.predict_rays(generate_indices.to_array())
+
+        # Calculate the intersection of the detector and reflection frames
+        self.reflections = ray_intersection(self.detector, self.reflections)
+        self.reflections = reflection_frames(self.scan, self.reflections)
+
+    def test_dmin(self):
+        """Ensure calculated d_min < d_min in integrate file"""
+        d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
+        d_min = min(d)
+        assert(self.d_min <= d_min)
+        print "OK"
 
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""
         gen_hkl = {}
-        print len(self.reflections)
         for r in self.reflections:
             gen_hkl[r.miller_index] = True
         for hkl in self.integrate_handle.hkl:
@@ -76,7 +87,6 @@ class TestSpotPredictor:
 
     def test_rotation_angles(self):
         """Ensure the rotation angles agree with XDS"""
-        from scitbx import matrix
 
         # Create a dict of lists of xy for each hkl
         gen_phi = {}
@@ -93,7 +103,8 @@ class TestSpotPredictor:
         for hkl, xyz in zip(self.integrate_handle.hkl,
                             self.integrate_handle.xyzcal):
 
-            xds_phi = self.scan.oscillation[0] + xyz[2]*self.scan.oscillation[1]
+            xds_phi = self.scan.get_oscillation()[0] + \
+                      xyz[2]*self.scan.get_oscillation()[1]
 
             # Select the nearest xy to use if there are 2
             my_phi = gen_phi[hkl]
@@ -116,7 +127,7 @@ class TestSpotPredictor:
     def test_beam_vectors(self):
         """Ensure |s1| == |s0|"""
         from scitbx import matrix
-        s0_length = matrix.col(self.beam.direction).length()
+        s0_length = matrix.col(self.beam.get_s0()).length()
         for r in self.reflections:
             s1 = r.beam_vector
             s1_length = matrix.col(s1).length()
@@ -168,6 +179,7 @@ class TestSpotPredictor:
         print "OK"
 
     def run(self):
+        self.test_dmin()
         self.test_miller_index_set()
         self.test_rotation_angles()
         self.test_beam_vectors()

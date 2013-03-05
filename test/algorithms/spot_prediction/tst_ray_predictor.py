@@ -3,7 +3,6 @@ from __future__ import division
 class TestRayPredictor:
 
     def __init__(self):
-        from scitbx import matrix
         from dials.algorithms.spot_prediction import RayPredictor
         from dials.algorithms.spot_prediction import IndexGenerator
         from iotbx.xds import xparm, integrate_hkl
@@ -78,7 +77,6 @@ class TestRayPredictor:
 
     def test_rotation_angles(self):
         """Ensure the rotation angles agree with XDS"""
-        from scitbx import matrix
 
         # Create a dict of lists of xy for each hkl
         gen_phi = {}
