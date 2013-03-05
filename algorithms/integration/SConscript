@@ -6,6 +6,7 @@ sources = [
     'boost_python/from_beam_vector_to_xds.cc',
     'boost_python/from_xds_to_beam_vector.cc',
     'boost_python/from_xds_e3_to_phi.cc',
+    'boost_python/shoebox_calculator.cc',
     'boost_python/integration_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_integration_ext', source=sources)
