@@ -2,7 +2,6 @@
 Import('env')
 
 sources = [
-    'boost_python/shoebox.cc',
     'boost_python/xds_coordinate_system.cc',
     'boost_python/from_beam_vector_to_xds.cc',
     'boost_python/integration_ext.cc']

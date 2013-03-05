@@ -1,4 +1,13 @@
-
+/*
+ * from_beam_vector_to_xds.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_INTEGRATION_FROM_BEAM_VECTOR_TO_XDS_H
 #define DIALS_ALGORITHMS_INTEGRATION_FROM_BEAM_VECTOR_TO_XDS_H
 
@@ -9,15 +18,16 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::constants::pi_180;
+  //using scitbx::constants::pi_180;
   using scitbx::vec3;
 
   /** Constant for scaling values */
-//  static const double r2d = 1.0 / pi_180;
+  //static const double r2d = 1.0 / pi_180;
   static const double r2d = 1.0;
 
   /**
-   * Class to represent a geometry transform from beam vector to XDS coordinates
+   * Class to represent a geometry transform from beam vector to the XDS
+   * coordinate system.
    */
   class FromBeamVectorToXds {
 
@@ -46,7 +56,7 @@ namespace dials { namespace algorithms {
      * @param phi_dash The rotation angle for the beam vector.
      * @returns The point in XDS coordinates
      */
-    vec3 <double> apply(vec3 <double> s_dash, double phi_dash) const {
+    vec3 <double> operator()(vec3 <double> s_dash, double phi_dash) const {
       return vec3 <double> (
           scaled_e1_ * (s_dash - s1_),
           scaled_e2_ * (s_dash - s1_),

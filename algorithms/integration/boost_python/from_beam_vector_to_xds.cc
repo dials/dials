@@ -1,4 +1,13 @@
-
+/*
+ * from_beam_vector_to_xds.cc
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/from_beam_vector_to_xds.h>
@@ -17,7 +26,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("s1"), 
           arg("phi"))))
       .def("apply", 
-          &FromBeamVectorToXds::apply, (
+          &FromBeamVectorToXds::operator(), (
           arg("s_dash"),
           arg("phi_dash")));
   }

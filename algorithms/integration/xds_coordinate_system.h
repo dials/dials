@@ -23,7 +23,10 @@ namespace dials { namespace algorithms {
   public:
 
     /**
-     * Initialise coordinate system
+     * Initialise coordinate system. s0 should be the same length as s1, m2
+     * should be a unit vector. These quantities are not checked because this
+     * class will be created for each reflection and we want to maximize
+     * performance.
      * @param s0 The incident beam vector
      * @param s1 The diffracted beam vector
      * @param m2 The rotation axis
