@@ -21,11 +21,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_ <FromXdsToBeamVector> ("FromXdsToBeamVector", no_init)
       .def(init <XdsCoordinateSystem, 
                  vec3 <double> > ((
-              arg("xcs"), 
-              arg("s1"))))
+          arg("xcs"), 
+          arg("s1"))))
       .def("apply", 
-          &FromXdsToBeamVector::operator(), (
-              arg("c")));
+        &FromXdsToBeamVector::operator(), (
+          arg("c")));
   }
 
 }}} // namespace = dials::algorithms::boost_python

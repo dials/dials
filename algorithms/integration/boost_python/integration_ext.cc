@@ -18,12 +18,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_xds_coordinate_system();
   void export_from_beam_vector_to_xds();
   void export_from_xds_to_beam_vector();
+  void export_from_xds_e3_to_phi();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
     export_xds_coordinate_system();
     export_from_beam_vector_to_xds();
     export_from_xds_to_beam_vector();
+    export_from_xds_e3_to_phi();
   }
 
 }}} // namespace = dials::algorithms::boost_python
