@@ -91,7 +91,10 @@ namespace dials { namespace model { namespace boost_python {
         &Reflection::set_frame_number)
       .add_property("panel_number",
         &Reflection::get_panel_number,
-        &Reflection::set_panel_number)        
+        &Reflection::set_panel_number)      
+      .add_property("shoebox",
+        &Reflection::get_shoebox,
+        &Reflection::set_shoebox)  
       .def("__str__", &reflection_to_string);          
 
     scitbx::af::boost_python::flex_wrapper <Reflection>::plain("ReflectionList");        

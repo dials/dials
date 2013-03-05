@@ -21,6 +21,7 @@ namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::af::int6;
 
   // Typedef the miller type
   typedef cctbx::miller::index <> miller_index_type;
@@ -76,7 +77,8 @@ namespace dials { namespace model {
         image_coord_px_(0.0, 0.0),
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
-        panel_number_(0) {}
+        panel_number_(0),
+        shoebox_(0, 0, 0, 0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -89,7 +91,8 @@ namespace dials { namespace model {
         image_coord_px_(0.0, 0.0),
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
-        panel_number_(0) {}
+        panel_number_(0),
+        shoebox_(0, 0, 0, 0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -107,7 +110,8 @@ namespace dials { namespace model {
         image_coord_px_(0.0, 0.0),
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
-        panel_number_(0) {}
+        panel_number_(0),
+        shoebox_(0, 0, 0, 0, 0, 0) {}
 
     /** Virtual destructor */
     virtual ~Reflection() {}
@@ -142,6 +146,11 @@ namespace dials { namespace model {
       return panel_number_;
     }
 
+    /** Get the shoebox */
+    int6 get_shoebox() const {
+      return shoebox_;
+    }
+
     /** Set the rotation angle */
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
@@ -167,9 +176,14 @@ namespace dials { namespace model {
       frame_number_ = frame_number;
     }
 
-    /** Get the frame number */
+    /** Set the panel number */
     void set_panel_number(int panel_number) {
       panel_number_ = panel_number;
+    }
+
+    /** Set the shoebox */
+    void set_shoebox(int6 shoebox) {
+      shoebox_ = shoebox;
     }
 
   protected:
@@ -180,6 +194,7 @@ namespace dials { namespace model {
     vec2 <double> image_coord_mm_;
     double frame_number_;
     int panel_number_;
+    int6 shoebox_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;
