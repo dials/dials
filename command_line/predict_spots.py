@@ -29,6 +29,53 @@ def print_call_info(callback, info, result_type):
     print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
+def print_reflection_stats(reflections):
+    '''Print some reflection statistics.'''
+    import numpy
+
+    # Get the stats
+    num_reflections = len(reflections)
+    shoeboxes = [r.shoebox for r in reflections]
+
+    # Calculate the min, max, mean pixels in shoebox
+    shoebox_count = [(s[1]-s[0])*(s[3]-s[2])*(s[5]-s[4]) for s in shoeboxes]
+    min_shoebox_size = numpy.min(shoebox_count)
+    max_shoebox_size = numpy.max(shoebox_count)
+    med_shoebox_size = int(numpy.median(shoebox_count))
+
+    # Calculate the mib, max, mean fast range of shoebox
+    shoebox_fast_range = [s[1] - s[0] for s in shoeboxes]
+    min_shoebox_fast_range = numpy.min(shoebox_fast_range)
+    max_shoebox_fast_range = numpy.max(shoebox_fast_range)
+    med_shoebox_fast_range = int(numpy.median(shoebox_fast_range))
+
+    # Calculate the mib, max, mean slow range of shoebox
+    shoebox_slow_range = [s[3] - s[2] for s in shoeboxes]
+    min_shoebox_slow_range = numpy.min(shoebox_slow_range)
+    max_shoebox_slow_range = numpy.max(shoebox_slow_range)
+    med_shoebox_slow_range = int(numpy.median(shoebox_slow_range))
+
+    # Calculate the mib, max, mean frame range of shoebox
+    shoebox_frame_range = [s[5] - s[4] for s in shoeboxes]
+    min_shoebox_frame_range = numpy.min(shoebox_frame_range)
+    max_shoebox_frame_range = numpy.max(shoebox_frame_range)
+    med_shoebox_frame_range = int(numpy.median(shoebox_frame_range))
+
+    # Print the stats
+    print "Num reflections:", num_reflections
+    print "Max shoebox element count: ", max_shoebox_size
+    print "Min shoebox element count: ", min_shoebox_size
+    print "Median shoebox element count: ", med_shoebox_size
+    print "Max shoebox fast range: ", max_shoebox_fast_range
+    print "Min shoebox fast range: ", min_shoebox_fast_range
+    print "Median shoebox fast range: ", med_shoebox_fast_range
+    print "Max shoebox slow range: ", max_shoebox_slow_range
+    print "Min shoebox slow range: ", min_shoebox_slow_range
+    print "Median shoebox slow range: ", med_shoebox_slow_range
+    print "Max shoebox frame range: ", max_shoebox_frame_range
+    print "Min shoebox frame range: ", min_shoebox_frame_range
+    print "Median shoebox frame range: ", med_shoebox_frame_range
+
 def predict_spots(input_filename, num_frames, verbose):
     """Read the required data from the file, predict the spots and display."""
 
@@ -39,6 +86,7 @@ def predict_spots(input_filename, num_frames, verbose):
     from dials.algorithms.integration import ShoeboxCalculator
     from iotbx.xds import xparm
     from dials.util import io
+    from math import pi
     import dxtbx
 
     # Read the models from the input file
@@ -104,18 +152,21 @@ def predict_spots(input_filename, num_frames, verbose):
 
     # Set the divergence and mosaicity
     n_sigma = 5.0
-    sigma_divergence = n_sigma * 0.016
-    sigma_mosaicity = n_sigma * 0.008
-    
+    delta_divergence = n_sigma * 0.016 * pi / 180.0
+    delta_mosaicity = n_sigma * 0.008 * pi / 180.0
+
     # Create the shoebox calculator
-    calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan, 
-        sigma_divergence, sigma_mosaicity)
+    calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan,
+        delta_divergence, delta_mosaicity)
 
     # Calculate the frame numbers of all the reflections
     reflections = print_call_info(
         lambda: (calculate_shoebox(reflections), reflections)[1],
         "Calculating shoeboxes", "shoeboxes")
-        
+
+    # Print some reflection statistics
+    print_reflection_stats(reflections)
+
 if __name__ == '__main__':
 
     from optparse import OptionParser

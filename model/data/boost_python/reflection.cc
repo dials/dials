@@ -41,7 +41,8 @@ namespace dials { namespace model { namespace boost_python {
       "    image coord (px): (%8%, %9%)\n"
       "    image coord (mm): (%10%, %11%)\n"
       "    frame number:     %12%\n"
-      "    panel number:     %13%");
+      "    panel number:     %13%\n"
+      "    shoebox:          (%14%, %15%, %16%, %17%, %18%, %19%)\n");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -56,6 +57,12 @@ namespace dials { namespace model { namespace boost_python {
     fmt % reflection.get_image_coord_mm()[1];
     fmt % reflection.get_frame_number();
     fmt % reflection.get_panel_number();
+    fmt % reflection.get_shoebox()[0];
+    fmt % reflection.get_shoebox()[1];
+    fmt % reflection.get_shoebox()[2];
+    fmt % reflection.get_shoebox()[3];
+    fmt % reflection.get_shoebox()[4];
+    fmt % reflection.get_shoebox()[5];
     return fmt.str();
   }
 
