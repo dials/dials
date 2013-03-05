@@ -21,14 +21,12 @@ algorithms/spot_prediction/boost_python/ray_predictor.cc -text
 algorithms/spot_prediction/boost_python/reflection_frames.cc -text
 algorithms/spot_prediction/boost_python/rotation_angles.cc -text
 algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
-algorithms/spot_prediction/boost_python/spot_predictor.cc -text
 algorithms/spot_prediction/index_generator.h -text
 algorithms/spot_prediction/multi_panel_spot_predictor.h -text
 algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/rotation_angles.h -text
-algorithms/spot_prediction/spot_predictor.h -text
 command_line/detector_max_resolution.py -text
 command_line/predict_spots.py -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
