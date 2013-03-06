@@ -130,9 +130,9 @@ namespace dials { namespace algorithms {
       double phi1 = calculate_rotation_angle(-delta_mosaicity_ / 2.0);
       double phi2 = calculate_rotation_angle(+delta_mosaicity_ / 2.0);
 
-      // Get the (zero based) frame numbers at the rotation angles
-      double z1 = scan_.get_zero_based_frame_from_angle(phi1);
-      double z2 = scan_.get_zero_based_frame_from_angle(phi2);
+      // Get the array indices at the rotation angles
+      double z1 = scan_.get_array_index_from_angle(phi1);
+      double z2 = scan_.get_array_index_from_angle(phi2);
 
       // Return the roi in the following form:
       // (minx, maxx, miny, maxy, minz, maxz)
