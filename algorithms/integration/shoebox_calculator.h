@@ -139,7 +139,7 @@ namespace dials { namespace algorithms {
       // Min's are rounded down to the nearest integer, Max's are rounded up
       double4 x(xy1[0], xy2[0], xy3[0], xy4[0]);
       double4 y(xy1[1], xy2[1], xy3[1], xy4[1]);
-      double4 z(z1, z2);
+      double2 z(z1, z2);
       return int6 (
         (int)floor(min(x)), (int)ceil(max(x)),
         (int)floor(min(y)), (int)ceil(max(y)),

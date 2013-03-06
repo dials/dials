@@ -35,6 +35,9 @@ def print_reflection_stats(reflections):
 
     # Get the stats
     num_reflections = len(reflections)
+    spot_x = [r.image_coord_px[0] for r in reflections]
+    spot_y = [r.image_coord_px[1] for r in reflections]
+    spot_z = [r.frame_number for r in reflections]
     shoeboxes = [r.shoebox for r in reflections]
 
     # Calculate the min, max, mean pixels in shoebox
@@ -61,22 +64,74 @@ def print_reflection_stats(reflections):
     max_shoebox_frame_range = numpy.max(shoebox_frame_range)
     med_shoebox_frame_range = int(numpy.median(shoebox_frame_range))
 
+    # Get min/max/med shoebox ranges
+    min_shoebox_range = (min_shoebox_fast_range,
+                         min_shoebox_slow_range,
+                         min_shoebox_frame_range)
+    max_shoebox_range = (max_shoebox_fast_range,
+                         max_shoebox_slow_range,
+                         max_shoebox_frame_range)
+    med_shoebox_range = (med_shoebox_fast_range,
+                         med_shoebox_slow_range,
+                         med_shoebox_frame_range)
+
+    shoebox_count = (min_shoebox_size, max_shoebox_size, med_shoebox_size)
+
     # Print the stats
     print "Num reflections:", num_reflections
-    print "Max shoebox element count: ", max_shoebox_size
-    print "Min shoebox element count: ", min_shoebox_size
-    print "Median shoebox element count: ", med_shoebox_size
-    print "Max shoebox fast range: ", max_shoebox_fast_range
-    print "Min shoebox fast range: ", min_shoebox_fast_range
-    print "Median shoebox fast range: ", med_shoebox_fast_range
-    print "Max shoebox slow range: ", max_shoebox_slow_range
-    print "Min shoebox slow range: ", min_shoebox_slow_range
-    print "Median shoebox slow range: ", med_shoebox_slow_range
-    print "Max shoebox frame range: ", max_shoebox_frame_range
-    print "Min shoebox frame range: ", min_shoebox_frame_range
-    print "Median shoebox frame range: ", med_shoebox_frame_range
+    print "Max spot x/y/z:", max(spot_x), max(spot_y), max(spot_z)
+    print "Min spot x/y/z:", min(spot_x), min(spot_y), min(spot_z)
+    print "Min/Max/Median shoebox element count: ", shoebox_count
+    print "Max shoebox range: ", max_shoebox_range
+    print "Min shoebox range: ", min_shoebox_range
+    print "Med shoebox range: ", med_shoebox_range
 
-def predict_spots(input_filename, num_frames, verbose):
+def display_predicted_spots_on_frame(reflections, image, frame):
+    """Show spots on this frame"""
+    from matplotlib import pylab, cm
+
+    # Get x, y, z for each reflection
+    xcoords = [r.image_coord_px[0] for r in reflections]
+    ycoords = [r.image_coord_px[1] for r in reflections]
+    zcoords = [r.frame_number for r in reflections]
+
+    # Filter coords
+    index = [i for (i, z) in enumerate(zcoords) if z >= frame and z < frame+1]
+    xcoords = [xcoords[i] for i in index]
+    ycoords = [ycoords[i] for i in index]
+
+    # Plot the image
+    plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r,
+                       interpolation='nearest', origin='lower')
+
+    # Plot the x, y coords
+    pylab.scatter(xcoords, ycoords, marker='x')
+
+    # Set axes and show
+    plt.axes.get_xaxis().set_ticks([])
+    plt.axes.get_yaxis().set_ticks([])
+    pylab.show()
+
+def display_predicted_spots(reflections, image_frames, display_frame):
+    """Show the predicted spots"""
+    import pycbf
+    from dials.util import pycbf_extra
+
+    # Loop through all the frames and make sure they are valid
+    if display_frame:
+      for frame in display_frame:
+          if frame >= 0 and frame < len(image_frames):
+
+              # Get the filename and open the file
+              filename = image_frames[frame]
+              cbf_handle = pycbf.cbf_handle_struct()
+              cbf_handle.read_file(filename, pycbf.MSG_DIGEST)
+              image = pycbf_extra.get_image(cbf_handle)
+
+              # Display the spots on the image
+              display_predicted_spots_on_frame(reflections, image, frame)
+
+def predict_spots(input_filename, image_frames, display_frame):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -88,6 +143,12 @@ def predict_spots(input_filename, num_frames, verbose):
     from dials.util import io
     from math import pi
     import dxtbx
+
+    # Set the number of frames
+    if image_frames:
+        num_frames = len(image_frames)
+    else:
+        num_frames = 1
 
     # Read the models from the input file
     print "Reading: \"{0}\"".format(input_filename)
@@ -108,12 +169,6 @@ def predict_spots(input_filename, num_frames, verbose):
     space_group = io.get_space_group_type_from_xparm(xparm_handle)
     d_min = detector.get_max_resolution_at_corners(
         beam.get_direction(), beam.get_wavelength())
-    # Load the image volume from the CBF files and set the number of frames
-#    if cbf_path:
-#        print "Loading CBF files"
-#        image_volume = pycbf_extra.search_for_image_volume(cbf_search_path)
-#        scan.image_range = (scan.image_range[0],
-#            scan.image_range[0] + image_volume.shape[0] - 1)
 
     # Print the model data
     print ""
@@ -167,17 +222,27 @@ def predict_spots(input_filename, num_frames, verbose):
     # Print some reflection statistics
     print_reflection_stats(reflections)
 
+    # Show the predicted spots
+    display_predicted_spots(reflections, image_frames, display_frame)
+
+def display_frame_callback(option, opt, value, parser):
+    """Parse display frame"""
+    from dials.util.command_line import parse_range_list_string
+    setattr(parser.values, option.dest, parse_range_list_string(value))
+
 if __name__ == '__main__':
 
     from optparse import OptionParser
 
     # Specify the command line options
-    usage = "usage: %prog [options] /path/to/GXPARM.XDS"
+    usage = "usage: %prog [options] /path/to/GXPARM.XDS /path/to/image.cbf"
     parser = OptionParser(usage)
 
     # Add a verbose option (False by default)
-    parser.add_option('-v', action="store_true", dest="verbose", default=False,
-                      help='Print out reflection details (default = False)')
+    parser.add_option('-d', '--display-frame',
+                      dest='display_frame', type="string",
+                      action="callback", callback=display_frame_callback,
+                      help='Select a frame to display with predicted spots')
 
     # Parse the arguments
     (options, args) = parser.parse_args()
@@ -185,5 +250,7 @@ if __name__ == '__main__':
     # Print help if no arguments specified, otherwise call spot prediction
     if len(args) == 0:
         print parser.print_help()
+    elif len(args) == 1:
+        predict_spots(args[0], None, None)
     else:
-        predict_spots(args[0], 4000, options.verbose)
+        predict_spots(args[0], args[1:], options.display_frame)

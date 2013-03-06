@@ -23,11 +23,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Pointers to function overloads
     Reflection (*ray_intersection_single)(const Detector&, const Reflection&)  
       = &ray_intersection;
-    ReflectionList (*ray_intersection_array)(const Detector&, 
+    shared<Reflection> (*ray_intersection_array)(const Detector&, 
       const ReflectionList&) = &ray_intersection;
     Reflection (*ray_intersection_single_w_panel)(const Detector&, 
       const Reflection&, std::size_t) = &ray_intersection;
-    ReflectionList (*ray_intersection_array_w_panel)(const Detector&, 
+    shared<Reflection> (*ray_intersection_array_w_panel)(const Detector&, 
       const ReflectionList&, std::size_t) = &ray_intersection;
 
     // Export all the ray intersection functions

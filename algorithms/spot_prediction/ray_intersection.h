@@ -13,6 +13,7 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/array_family/shared.h>
 #include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/detector.h>
 #include <dials/model/data/reflection.h>
@@ -23,6 +24,7 @@ namespace dials { namespace algorithms {
   // Using lots of stuff from other namespaces
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::af::shared;
   using dxtbx::model::Detector;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
@@ -39,12 +41,8 @@ namespace dials { namespace algorithms {
     Reflection r_new(r);
 
     // Try to calculate the detector coordinate
-    Detector::coord_type coord;
-    try {
-      coord = detector.get_ray_intersection(r.get_beam_vector());
-    } catch(dxtbx::error) {
-      return r_new;
-    }
+    Detector::coord_type coord = detector.get_ray_intersection(
+      r.get_beam_vector());
 
     // Set the panel and image coordinate number
     r_new.set_panel_number(coord.first);
@@ -70,12 +68,8 @@ namespace dials { namespace algorithms {
     Reflection r_new(r);
 
     // Try to calculate the detector coordinate
-    vec2<double> coord;
-    try {
-      coord = detector[panel].get_ray_intersection(r.get_beam_vector());
-    } catch(dxtbx::error) {
-      return r_new;
-    }
+    vec2<double> coord = detector[panel].get_ray_intersection(
+      r.get_beam_vector());
 
     // Set the panel and image coordinate number
     r_new.set_panel_number(panel);
@@ -94,12 +88,17 @@ namespace dials { namespace algorithms {
    * @returns The new reflecton object
    */
   inline
-  ReflectionList ray_intersection(const Detector &detector,
+  shared<Reflection> ray_intersection(const Detector &detector,
       const ReflectionList &reflections) {
-    ReflectionList reflections_new(reflections.size());
+    shared<Reflection> reflections_new;
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      Reflection r = ray_intersection(detector, reflections[i]);
-      reflections_new[i] = r;
+      try {
+        reflections_new.push_back(ray_intersection(detector, reflections[i]));
+      } catch(dxtbx::error) {
+        // Do nothing
+      } catch(dials::error) {
+        // Do nothing
+      }
     }
     return reflections_new;
   }
@@ -113,12 +112,16 @@ namespace dials { namespace algorithms {
    * @returns The new reflecton object
    */
   inline
-  ReflectionList ray_intersection(const Detector &detector,
+  shared<Reflection> ray_intersection(const Detector &detector,
       const ReflectionList &reflections, std::size_t panel) {
-    ReflectionList reflections_new(reflections.size());
+    shared<Reflection> reflections_new(reflections.size());
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      Reflection r = ray_intersection(detector, reflections[i], panel);
-      reflections_new[i] = r;
+      try {
+        reflections_new.push_back(ray_intersection(
+          detector, reflections[i], panel));
+      } catch(dxtbx::error) {
+        // Do nothing
+      }
     }
     return reflections_new;
   }

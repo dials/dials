@@ -39,7 +39,7 @@ namespace dials { namespace algorithms {
       const Reflection &reflection) {
 
     // Get the frames that a reflection with this angle will be observed at
-    flex_double frames = scan.get_frames_with_angle(
+    flex_double frames = scan.get_zero_based_frames_with_angle(
       reflection.get_rotation_angle());
 
     // Loop through all the frames and duplicate the reflection for each
