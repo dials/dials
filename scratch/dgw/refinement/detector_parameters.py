@@ -50,7 +50,7 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         # the sensor origin is a coordinate matrix with elements in the
         # basis d1, d2, dn
         offset = matrix.col((-1. * sum(sensor.lim1) / len(sensor.lim1),
-                             -1. * sum(sensor.lim1) / len(sensor.lim1),
+                             -1. * sum(sensor.lim2) / len(sensor.lim2),
                               0.))
 
         dorg = so - offset[0] * d1 - offset[1] * d2
