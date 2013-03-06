@@ -14,6 +14,7 @@ from math import pi
 from scitbx import matrix
 #from scitbx.array_family import flex
 from libtbx.test_utils import approx_equal
+from libtbx.phil import parse
 
 ##### Import model builder
 from setup_geometry import extract
@@ -108,7 +109,11 @@ overrides = """geometry.parameters.crystal.a.length.range = 10 50
 geometry.parameters.crystal.b.length.range = 10 50
 geometry.parameters.crystal.c.length.range = 10 50"""
 
-models = extract(overrides, cmdline_args = args)
+master_phil = parse("""
+    include file geometry.params
+    """, process_includes=True)
+
+models = extract(master_phil, overrides, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
@@ -227,6 +232,8 @@ for iref in selection:
                 print "Time Taken: ",finish_time - start_time
                 raise
 
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
 
 # if we got this far,
 print "OK"

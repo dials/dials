@@ -13,6 +13,7 @@ import sys
 from math import pi
 import random
 from scitbx import matrix
+from libtbx.phil import parse
 
 # Experimental model builder
 from setup_geometry import extract
@@ -57,7 +58,11 @@ overrides = """geometry.parameters.crystal.a.length.range = 10 15
 geometry.parameters.crystal.b.length.range = 10 15
 geometry.parameters.crystal.c.length.range = 10 15"""
 
-models = extract(overrides, cmdline_args = args)
+master_phil = parse("""
+    include file geometry.params
+    """, process_includes=True)
+
+models = extract(master_phil, overrides, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
