@@ -12,11 +12,13 @@ algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
 algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/shoebox_calculator.cc -text
+algorithms/integration/boost_python/subtract_background.cc -text
 algorithms/integration/boost_python/xds_coordinate_system.cc -text
 algorithms/integration/from_beam_vector_to_xds.h -text
 algorithms/integration/from_xds_e3_to_phi.h -text
 algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/shoebox_calculator.h -text
+algorithms/integration/subtract_background.h -text
 algorithms/integration/xds_coordinate_system.h -text
 algorithms/spot_prediction/SConscript -text
 algorithms/spot_prediction/__init__.py -text

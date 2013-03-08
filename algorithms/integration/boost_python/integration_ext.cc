@@ -21,6 +21,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_from_xds_e3_to_phi();
   void export_shoebox_calculator();
   void export_background_intensity();
+  void export_subtract_background();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -30,6 +31,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_from_xds_e3_to_phi();
     export_shoebox_calculator();
     export_background_intensity();
+    export_subtract_background();
   }
 
 }}} // namespace = dials::algorithms::boost_python

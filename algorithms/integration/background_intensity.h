@@ -154,6 +154,7 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations to consider normal
    * @returns The list of pixels contributing to the background
    */
+  inline
   shared<std::size_t> background_pixels(const const_ref<double> &data,
       int min_data, double n_sigma) {
 
@@ -227,6 +228,7 @@ namespace dials { namespace algorithms {
     // Return the mean of the remaining pixels as the background intensity
     return mean(const_ref<double>(sorted_data.begin(), num_data));
   }
-}}
+
+}} // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_BACKGROUND_INTENSITY_H */
