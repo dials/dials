@@ -196,7 +196,9 @@ namespace dials { namespace algorithms {
    * number of iterations is reached. Return the mean of the values as the
    * background intensity.
    *
-   * @param pixels The list of pixels
+   * @param data The list of pixels
+   * @param min_data The minimum number of pixels to use
+   * @param n_sigma The number of standard deviations to consider normal.
    * @returns The background intensity value
    */
   inline
