@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_INTEGRATION_BACKGROUND_INTENSITY_H
 
 #include <algorithm>
+#include <scitbx/array_family/shared.h>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <boost/math/special_functions/erf.hpp>
@@ -21,13 +22,51 @@
 namespace dials { namespace algorithms {
 
   using boost::math::erfc;
+  using scitbx::af::shared;
   using scitbx::af::const_ref;
   using scitbx::af::ref;
   using scitbx::af::min;
   using scitbx::af::max;
   using scitbx::af::mean;
   using scitbx::math::mean_and_variance;
-  
+
+  /**
+   * Get the expected number of standard deviations based on the number of
+   * observations. Given by erf(x / sqrt(2)) = 1 - 1 / N
+   * @param n_obs The number of observations
+   * @returns The expected number of standard deviations
+   */
+  inline
+  double expected_n_sigma(int n_obs) {
+    return sqrt(2.0) * erfc(1.0 - (1.0 / n_obs));
+  }
+
+  /**
+   * Get the maximum number of standard deviations in the range of data
+   * @param n_obs The number of observations
+   * @returns The expected number of standard deviations
+   */
+  inline
+  double maximum_n_sigma(const const_ref<double> &data) {
+
+    // Calculate the mean and standard deviation of the data
+    mean_and_variance <double> mean_and_variance(data);
+    double mean = mean_and_variance.mean();
+    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+    DIALS_ASSERT(sdev > 0);
+
+    // Calculate the min/max of the data
+    double mind = min(data);
+    double maxd = max(data);
+
+    // Calculate t-statistic of min/max
+    double min_n_sigma = (mean - mind) / sdev;
+    double max_n_sigma = (maxd - mean) / sdev;
+
+    // return the maximum number of sigma
+    return max_n_sigma > min_n_sigma ? max_n_sigma : min_n_sigma;
+  }
+
   /**
    * Check if the data is normally distributed.
    *
@@ -38,26 +77,15 @@ namespace dials { namespace algorithms {
    * @returns True/False
    */
   inline
-  bool is_normally_distributed(const const_ref<double> &data, int n_sigma) {
- 
-    // Calculate the mean and standard deviation of the data
-    mean_and_variance <double> mean_and_variance(data);
-    double mean = mean_and_variance.mean();
-    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
-    DIALS_ASSERT(sdev > 0);
+  bool is_normally_distributed(const const_ref<double> &data, double n_sigma) {
 
-    // Calculate the min/max of the data
-    double mind = min(data);
-    double maxd = max(data);
-    
-    // Calculate t-statistic of min/max
-    double min_n_sigma = (mean - mind) / sdev;
-    double max_n_sigma = (maxd - mean) / sdev;
-    
+    // Get the maximum n sigma
+    double max_n_sigma = maximum_n_sigma(data);
+
     // return whether within required sigma
-    return max_n_sigma < n_sigma && min_n_sigma < n_sigma;
+    return max_n_sigma < n_sigma;
   }
-  
+
   /**
    * Check if the data is normally distributed.
    *
@@ -69,10 +97,10 @@ namespace dials { namespace algorithms {
    */
   inline
   bool is_normally_distributed(const const_ref<double> &data) {
- 
+
     // Calculate expected sigma from number of points
-    double n_sigma = sqrt(2.0) * erfc(1.0 - (1.0 / data.size()));
- 
+    double n_sigma = expected_n_sigma(data.size());
+
     // Check if data is normally distributed using sigma value
     return is_normally_distributed(data, n_sigma);
   }
@@ -93,29 +121,31 @@ namespace dials { namespace algorithms {
    * @returns The background intensity value
    */
   inline
-  double background_intensity(ref<double> &data, int min_data, double n_sigma)
+  double background_intensity(const shared<double> &data, int min_data,
+      double n_sigma)
   {
     // Check we have enough data
     DIALS_ASSERT(data.size() >= min_data);
 
+    shared<double> sorted_data(data);
+
     // Sort the pixels into ascending intensity order
-    std::sort(data.begin(), data.end());
+    std::sort(sorted_data.begin(), sorted_data.end());
 
     // Check if the data is normally distributed. If it is not, then remove
     // a value of high intensity and keep looping until it is. If the number
     // of iterations exceeds the maximum then exit the loop.
     int num_data = data.size();
-    for (; num_data >= min_data; --num_data) {
+    for (; num_data > min_data; --num_data) {
       if (is_normally_distributed(const_ref<double>(
-          data.begin(), num_data), n_sigma)) {
+          sorted_data.begin(), num_data), n_sigma)) {
         break;
       }
     }
 
     // Return the mean of the remaining pixels as the background intensity
-    return mean(const_ref<double>(data.begin(), num_data));
+    return mean(const_ref<double>(sorted_data.begin(), num_data));
   }
 }}
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_BACKGROUND_INTENSITY_H */
-
