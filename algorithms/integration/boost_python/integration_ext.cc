@@ -20,6 +20,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_from_xds_to_beam_vector();
   void export_from_xds_e3_to_phi();
   void export_shoebox_calculator();
+  void export_background_intensity();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -28,6 +29,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_from_xds_to_beam_vector();
     export_from_xds_e3_to_phi();
     export_shoebox_calculator();
+    export_background_intensity();
   }
 
 }}} // namespace = dials::algorithms::boost_python
