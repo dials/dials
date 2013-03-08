@@ -36,6 +36,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("is_normally_distributed", &is_normally_distributed_wrapper, (
       arg("data"), arg("n_sigma") = -1));
       
+    // Export a function to get the pixels contributing to the background
+    def("background_pixels", background_pixels, (
+      arg("data"), arg("min_data") = 10, arg("n_sigma") = -1));      
+      
     // Export background intensity calculation
     def("background_intensity", &background_intensity, (
       arg("data"), arg("min_data") = 10, arg("n_sigma") = -1));

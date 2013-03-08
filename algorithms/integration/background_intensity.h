@@ -105,6 +105,87 @@ namespace dials { namespace algorithms {
     return is_normally_distributed(data, n_sigma);
   }
 
+  /**
+   * Functor to compare in sort_index.
+   */
+  template <class T>
+  struct index_less {
+    index_less(const T &v) : v_(v) {}
+
+    template <class IndexType>
+    bool operator() (const IndexType& x, const IndexType& y) const {
+      return v_[x] < v_[y];
+    }
+    const T &v_;
+  };
+
+  /**
+   * Given a vector return a sorted list of indices.
+   * @param v The list of values
+   * @returns A sorted list of indices
+   */
+  template <typename T>
+  shared<std::size_t> sort_index(const const_ref<T> &v) {
+
+    // initialize original index locations
+    shared<std::size_t> index(v.size());
+    for (size_t i = 0; i != index.size(); ++i) {
+      index[i] = i;
+    }
+
+    // sort indexes based on comparing values in v
+    std::sort(index.begin(), index.end(), index_less<const_ref<T> >(v));
+
+    // Return indices
+    return index;
+  }
+
+  /*
+   * Calculate the pixels contributing to the background intensity.
+   *
+   * Sort the pixels in order of ascending intensity. Then check if the
+   * intensities are normally distributed. If not then remove the pixel
+   * with the highest intensity from the list and check again. Keep going
+   * untill the list of pixels is normally distributed, or the maximum
+   * number of iterations is reached.
+   *
+   * @param data The list of pixels
+   * @param min_data The minimum number of pixels needed
+   * @param n_sigma The number of standard deviations to consider normal
+   * @returns The list of pixels contributing to the background
+   */
+  shared<std::size_t> background_pixels(const const_ref<double> &data,
+      int min_data, double n_sigma) {
+
+    // Check we have enough data
+    DIALS_ASSERT(min_data > 0);
+    DIALS_ASSERT(data.size() >= min_data);
+
+    // Sort the data and return sorted indices
+    shared<std::size_t> index = sort_index(data);
+    shared<double> sorted_data(data.size());
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      sorted_data[i] = data[index[i]];
+    }
+
+    // Check if the data is normally distributed. If it is not, then remove
+    // a value of high intensity and keep looping until it is. If the number
+    // of iterations exceeds the maximum then exit the loop.
+    std::size_t num_data = data.size();
+    for (; num_data > min_data; --num_data) {
+      if (is_normally_distributed(const_ref<double>(
+          sorted_data.begin(), num_data), n_sigma)) {
+        break;
+      }
+    }
+
+    // Resize index to first n elements
+    index.resize(num_data);
+
+    // Return the indices
+    return index;
+  }
+
   /*
    * Calculate the background intensity.
    *
@@ -114,8 +195,6 @@ namespace dials { namespace algorithms {
    * untill the list of pixels is normally distributed, or the maximum
    * number of iterations is reached. Return the mean of the values as the
    * background intensity.
-   *
-   * This function modifies the input data
    *
    * @param pixels The list of pixels
    * @returns The background intensity value
@@ -135,7 +214,7 @@ namespace dials { namespace algorithms {
     // Check if the data is normally distributed. If it is not, then remove
     // a value of high intensity and keep looping until it is. If the number
     // of iterations exceeds the maximum then exit the loop.
-    int num_data = data.size();
+    std::size_t num_data = data.size();
     for (; num_data > min_data; --num_data) {
       if (is_normally_distributed(const_ref<double>(
           sorted_data.begin(), num_data), n_sigma)) {
