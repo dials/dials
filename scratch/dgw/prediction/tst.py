@@ -92,7 +92,7 @@ if __name__ == "__main__":
 
     ### import models
     from dials.scratch.dgw.crystal_model import crystal
-    from dials.scratch.dgw.source_model import source
+    from dials.model.experiment import beam_factory
     from dials.scratch.dgw.goniometer_model import goniometer
 
     ### local functions
@@ -106,7 +106,9 @@ if __name__ == "__main__":
     ### Create models
 
     # make a beam vector close to the Z axis
-    mysource = source(random_direction_close_to(matrix.col((0, 0, 1))), 1.5)
+    bf = beam_factory()
+    direction = random_direction_close_to(matrix.col((0, 0, 1)))
+    mybeam = bf.make_beam(direction, 1.5)
 
     # make a random crystal
     a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
@@ -126,19 +128,19 @@ if __name__ == "__main__":
 
     # generate list of phi values
     R_to_rossmann = align_reference_frame(
-        mysource.get_s0().normalize(), (0.0, 0.0, 1.0),
+        mybeam.get_direction(), (0.0, 0.0, 1.0),
         mygonio.get_axis(), (0.0, 1.0, 0.0))
 
     ra = rotation_angles(resolution,
                          R_to_rossmann * mycrystal.get_U() * mycrystal.get_B(),
-                         mysource.get_wavelength(),
+                         mybeam.get_wavelength(),
                          R_to_rossmann * mygonio.get_axis())
 
     obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
 
     # test rotation_angles wrapper
-    ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
+    ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
     obs_indices2, obs_angles2 = ap.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
 
@@ -151,7 +153,7 @@ if __name__ == "__main__":
         assert(p1 == p2)
 
     # Now we're ready to test angle_predictor_py
-    ap = angle_predictor_py(mycrystal, mysource, mygonio, resolution)
+    ap = angle_predictor_py(mycrystal, mybeam, mygonio, resolution)
 
     for hkl, phi in zip(obs_indices2, obs_angles2):
         ap_phi = ap.predict(hkl)
@@ -167,8 +169,7 @@ if __name__ == "__main__":
     # NB I'm going to do something a bit horrible here. The values in obs_indices
     # are floats (it is an array of vec3), while obs_indices2 are ints (a Miller
     # index array). To compare the sets of indices I convert obs_indices back to
-    # integer Miller indices, first shifting a small amount to ensure rounding
-    # to the correct integer.
+    # integer Miller indices
     temp = flex.miller_index()
     for hkl in obs_indices:
         hkl = map(lambda x: int(round(x)), hkl)
@@ -180,6 +181,12 @@ if __name__ == "__main__":
     print len(obs_indices), len(obs_indices2), len(obs_indices3)
 
     # FIXME how do I compare these sets?
+    # There are some differences between the limits of reflections that are
+    # predicted by my Python reflection prediction code in angle_predictor_py
+    # and those by the rotation_angles wrapper, angle_predictor. That can be
+    # seen by running this script a few times and looking at the output lines
+    # in the above loop. Sometimes one method predicts an extra 'shell' of
+    # reflections compared to the other.
 
 #    obs_indices2, obs_angles2 = ap.observed_indices_and_angles_from_angle_range(
 #        phi_start_rad = 0.0, phi_end_rad = math.pi, indices = obs_indices1)

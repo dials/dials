@@ -16,11 +16,11 @@ class angle_predictor(object):
     for rstbx's C++ rotation_angles so is faster than the pure Python class
     angle_predictor_py'''
 
-    def __init__(self, crystal, source, gonio, dmin):
+    def __init__(self, crystal, beam, gonio, dmin):
         '''Construct by linking to instances of experimental model classes'''
 
         self._crystal = crystal
-        self._source = source
+        self._beam = beam
         self._gonio = gonio
 
         self._dmin = dmin
@@ -105,13 +105,13 @@ class angle_predictor(object):
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
-                    self._source.get_s0().normalize(), (0.0, 0.0, 1.0),
+                    self._beam.get_direction(), (0.0, 0.0, 1.0),
                     self._gonio.get_axis(), (0.0, 1.0, 0.0))
 
         # Create a rotation_angles object for the current geometry
         ra = rotation_angles(self._dmin,
                  R_to_rossmann * self._crystal.get_U() * self._crystal.get_B(),
-                 self._source.get_wavelength(),
+                 self._beam.get_wavelength(),
                  R_to_rossmann * self._gonio.get_axis())
 
         obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
@@ -129,13 +129,13 @@ class angle_predictor(object):
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
-                    self._source.get_s0().normalize(), (0.0, 0.0, 1.0),
+                    self._beam.get_direction(), (0.0, 0.0, 1.0),
                     self._gonio.get_axis(), (0.0, 1.0, 0.0))
 
         # Create a rotation_angles object for the current geometry
         ra = rotation_angles(self._dmin,
                  R_to_rossmann * self._crystal.get_U() * self._crystal.get_B(),
-                 self._source.get_wavelength(),
+                 self._beam.get_wavelength(),
                  R_to_rossmann * self._gonio.get_axis())
 
         if ra(hkl):
@@ -148,11 +148,11 @@ class angle_predictor_py(object):
     '''Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model.'''
 
-    def __init__(self, crystal, source, gonio, dmin):
+    def __init__(self, crystal, beam, gonio, dmin):
         '''Construct by linking to instances of experimental model classes'''
 
         self._crystal = crystal
-        self._source = source
+        self._beam = beam
         self._gonio = gonio
 
         self._dstarmax = 1. / dmin
@@ -168,7 +168,7 @@ class angle_predictor_py(object):
         self._UB = U * B
 
         # obtain current reciprocal space beam vector
-        self._s0 = self._source.get_s0()
+        self._s0 = matrix.col(self._beam.get_s0())
         self._s0mag_sq = self._s0.length_sq()
         self._s0mag = sqrt(self._s0mag_sq)
 
@@ -277,10 +277,10 @@ class impact_predictor(object):
     It is called impact_predictor, because reflection_predictor does not imply
     that the hkl is actually observed, whereas impact_predictor does'''
 
-    def __init__(self, detector, goniometer, source, crystal):
+    def __init__(self, detector, goniometer, beam, crystal):
         self._detector = detector
         self._gonio = goniometer
-        self._source = source
+        self._beam = beam
         self._crystal = crystal
 
     def predict(self, indices, angles):
@@ -288,7 +288,7 @@ class impact_predictor(object):
         # extract required information from the models
         sensor = self._detector.sensors()[0] # assume only one sensor for now
         axis = self._gonio.get_axis()
-        s0 = self._source.get_s0()
+        s0 = matrix.col(self._beam.get_s0())
         UB = self._crystal.get_U() * self._crystal.get_B()
 
         # instantiate predictor
@@ -314,7 +314,7 @@ class impact_predictor(object):
             temp.append(tuple(hkl))
 
         # Rescale normalised scattering vectors to the correct length
-        wavelength = self._source.get_wavelength()
+        wavelength = self._beam.get_wavelength()
         Sc = map(lambda s: matrix.col(s) / wavelength, Sc)
 
         return (temp, Xc, Yc, Phic, Sc)
