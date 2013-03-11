@@ -110,19 +110,23 @@ class simple_lbfgs(refinery):
 
     def run(self):
 
-        ref_log = open(self._log, "w")
+        #TODO convert file file handling lines to use of 'with'?
+        ref_log = None
+        if self._log: ref_log = open(self._log, "w")
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
-        ref_log.close()
+        if self._log: ref_log.close()
 
 class lbfgs_curvs(refinery):
     '''LBFGS refinery using curvatures'''
 
     def run(self):
 
-        ref_log = open(self._log, "w")
+        #TODO convert file file handling lines to use of 'with'?
+        ref_log = None
+        if self._log: ref_log = open(self._log, "w")
         self.diag_mode = "always"
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
-        ref_log.close()
+        if self._log: ref_log.close()
 
     def compute_functional_gradients_diag(self):
 

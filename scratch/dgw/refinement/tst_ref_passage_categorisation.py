@@ -11,6 +11,8 @@ entering the Ewald sphere is done the right way round"""
 from __future__ import division
 import sys
 from math import pi
+from libtbx.phil import parse
+from scitbx import matrix
 
 # Get class to build experimental models
 from setup_geometry import extract
@@ -24,16 +26,22 @@ from cctbx.sgtbx import space_group, space_group_symbols
 from dials.scratch.dgw.refinement.target import reflection_manager
 
 args = sys.argv[1:]
+
+master_phil = parse("""
+include file geometry.params
+include file minimiser.params
+""", process_includes=True)
+
 overrides = """geometry.parameters.crystal.a.length.range = 10 50
 geometry.parameters.crystal.b.length.range = 10 50
 geometry.parameters.crystal.c.length.range = 10 50"""
 
-models = extract(overrides, cmdline_args = args)
+models = extract(master_phil, local_overrides=overrides, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
 mycrystal = models.crystal
-mysource = models.source
+mybeam = models.beam
 
 #############################
 # Generate some reflections #
@@ -48,12 +56,12 @@ indices = full_sphere_indices(
 
 # Select those that are excited in a 30 degree sweep and get their angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
+ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
 obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = pi/6., indices = indices)
 
 # Project positions on camera
-ip = impact_predictor(mydetector, mygonio, mysource, mycrystal)
+ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
 hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
 
@@ -69,7 +77,7 @@ refman = reflection_manager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
-                        mysource, mygonio)
+                        mybeam, mygonio)
 
 # Also update the reflection manager with the observation data as perfect
 # predictions. We do this as the scattering vectors are only stored for
@@ -81,7 +89,7 @@ refman.update_predictions(hkls, svecs, d1s, d2s, angles)
 # whether this vector lies inside or outside the Ewald sphere. If outside then
 # the reflection is entering. If inside then the reflection is exiting.
 
-s0 = mysource.get_s0()
+s0 = matrix.col(mybeam.get_s0())
 for hkl, v in refman._H.items():
 
     for i, e in enumerate(v.exiting):

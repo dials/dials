@@ -41,47 +41,47 @@ namespace dials { namespace refinement {
   }
 
   /**
-   * Calc derivatives of phi wrt each parameter of each source
+   * Calc derivatives of phi wrt each parameter of each beam
    * parameterisation that is present.
    */
-  double source_phi_derivative(
+  double beam_phi_derivative(
       vec3 <double> r, vec3 <double> ds0_dsrc_p, double e_r_s0) {
     return -(r * ds0_dsrc_p) / e_r_s0;
   }
 
   /**
-   * Calc derivatives of phi wrt each parameter of each source
+   * Calc derivatives of phi wrt each parameter of each beam
    * parameterisation that is present.
    */
-  flex_double source_phi_derivative(
+  flex_double beam_phi_derivative(
       vec3 <double> r, const flex_vec3_double &ds0_dsrc_p, double e_r_s0) {
     flex_double dphi_dsrc_p(ds0_dsrc_p.size());
     for (std::size_t i = 0; i < ds0_dsrc_p.size(); ++i) {
-      dphi_dsrc_p[i] = source_phi_derivative(r, ds0_dsrc_p[i], e_r_s0);
+      dphi_dsrc_p[i] = beam_phi_derivative(r, ds0_dsrc_p[i], e_r_s0);
     }
     return dphi_dsrc_p;
   }
 
   /**
-   * Calc derivatives of pv wrt each parameter of each source
+   * Calc derivatives of pv wrt each parameter of each beam
    * parameterisation that is present.
    */
-  vec3 <double> source_pv_derivative(
+  vec3 <double> beam_pv_derivative(
       mat3 <double> D, vec3 <double> e_X_r, double dphi_dsrc_p, vec3 <double> ds0_dsrc_p) {
     return D * (e_X_r * dphi_dsrc_p + ds0_dsrc_p);
   }
 
   /**
-   * Calc derivatives of pv wrt each parameter of each source
+   * Calc derivatives of pv wrt each parameter of each beam
    * parameterisation that is present.
    */
-  flex_vec3_double source_pv_derivative(
+  flex_vec3_double beam_pv_derivative(
       mat3 <double> D, vec3 <double> e_X_r, const flex_double &dphi_dsrc_p,
       const flex_vec3_double &ds0_dsrc_p) {
     SCITBX_ASSERT(ds0_dsrc_p.size() == dphi_dsrc_p.size());
     flex_vec3_double dpv_dsrc_p(ds0_dsrc_p.size());
     for (std::size_t i = 0; i < ds0_dsrc_p.size(); ++i) {
-      dpv_dsrc_p[i] = source_pv_derivative(
+      dpv_dsrc_p[i] = beam_pv_derivative(
           D, e_X_r, dphi_dsrc_p[i], ds0_dsrc_p[i]);
     }
     return dpv_dsrc_p;

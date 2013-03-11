@@ -15,7 +15,7 @@ from libtbx.phil import parse, command_line
 
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
-from dials.scratch.dgw.source_model import source
+from dials.model.experiment import beam_factory
 from dials.scratch.dgw.crystal_model import crystal
 from dials.scratch.dgw.goniometer_model import goniometer
 
@@ -55,7 +55,7 @@ class extract(object):
 
         self.build_crystal()
 
-        self.build_source()
+        self.build_beam()
 
         self.build_detector()
 
@@ -76,7 +76,7 @@ class extract(object):
 
         self.goniometer = goniometer(matrix.col(self._params.goniometer.axis))
 
-    def build_source(self):
+    def build_beam(self):
 
         if self._params.beam.wavelength.random:
             wavelength = random.uniform(*self._params.beam.wavelength.range)
@@ -93,20 +93,20 @@ class extract(object):
                                   self._params.beam.direction.inclination.angle)
             else: inclination = self._params.beam.direction.inclination.angle
 
-            beam = matrix.col((0, 0, 1)).rotate(matrix.col((0, 1, 0)),
+            beam_dir = matrix.col((0, 0, 1)).rotate(matrix.col((0, 1, 0)),
                                                 inclination, deg=True)
 
         elif self._params.beam.direction.method == 'close_to':
 
-            beam = random_direction_close_to(
+            beam_dir = random_direction_close_to(
                 matrix.col(self._params.beam.direction.close_to.direction),
                 sd = self._params.beam.direction.close_to.sd)
 
         elif self._params.beam.direction.method == 'exactly':
 
-            beam = matrix.col(self._params.beam.direction.exactly)
+            beam_dir = matrix.col(self._params.beam.direction.exactly)
 
-        self.source = source(beam, wavelength)
+        self.beam = beam_factory.make_beam(beam_dir, wavelength)
 
     def build_detector(self):
 

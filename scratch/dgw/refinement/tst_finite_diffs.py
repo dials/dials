@@ -22,7 +22,7 @@ from setup_geometry import extract
 from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
 from dials.scratch.dgw.refinement.source_parameters import \
-    source_parameterisation_orientation
+    beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 from dials.scratch.dgw.refinement import random_param_shift
@@ -67,11 +67,11 @@ models = extract(master_phil, overrides, cmdline_args = args)
 mydetector = models.detector
 mygonio = models.goniometer
 mycrystal = models.crystal
-mysource = models.source
+mybeam = models.beam
 
 print "Initial experimental model"
 print "=========================="
-print "beam s0       = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
+print "beam s0       = (%.4f, %.4f, %.4f)" % mybeam.get_s0()
 print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
 print "sensor dir1   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
 print "sensor dir2   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
@@ -86,7 +86,7 @@ print
 ###########################
 
 det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-src_param = source_parameterisation_orientation(mysource)
+s0_param = beam_parameterisation_orientation(mybeam)
 xlo_param = crystal_orientation_parameterisation(mycrystal)
 xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 
@@ -97,7 +97,7 @@ xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 
 # Testing the new 'coupled' version here
 pred_param = detector_space_prediction_parameterisation(
-    mydetector, mysource, mycrystal, mygonio, [det_param], [src_param],
+    mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
 ################################
@@ -111,10 +111,10 @@ p_vals = [a + b for a, b in zip(det_p_vals,
 det_param.set_p(p_vals)
 
 # shift beam by 2 mrad in one axis
-src_p_vals = src_param.get_p()
-p_vals = list(src_p_vals)
+s0_p_vals = s0_param.get_p()
+p_vals = list(s0_p_vals)
 p_vals[1] += 2.0
-src_param.set_p(p_vals)
+s0_param.set_p(p_vals)
 
 # rotate crystal a bit (=4 mrad each rotation)
 #p_vals = xlo_param.get_p()
@@ -127,7 +127,7 @@ xlo_param.set_p(p_vals)
 
 print "Offsetting initial model"
 print "========================"
-print "beam s0       = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
+print "beam s0       = (%.4f, %.4f, %.4f)" % mybeam.get_s0()
 print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
 print "sensor dir1   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
 print "sensor dir2   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
@@ -150,7 +150,7 @@ indices = full_sphere_indices(
 
 # Select those that are excited in a 180 degree sweep and get their angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
+ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
 obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
 print "Generating reflections"
@@ -158,7 +158,7 @@ print "======================"
 print "Total number of reflections excited", len(obs_indices)
 
 # Project positions on camera
-ip = impact_predictor(mydetector, mygonio, mysource, mycrystal)
+ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
 hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
 print "Total number of observations made", len(hkls), "\n"
@@ -173,7 +173,7 @@ sigangles = [im_width / 2.] * len(hkls)
 # Undo known parameter shifts #
 ###############################
 
-src_param.set_p(src_p_vals)
+s0_param.set_p(s0_p_vals)
 det_param.set_p(det_p_vals)
 xlo_param.set_p(xlo_p_vals)
 
@@ -191,7 +191,7 @@ refman = reflection_manager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
-                        mysource, mygonio)
+                        mybeam, mygonio)
 
 ##############################
 # Set up the target function #

@@ -358,7 +358,7 @@ class reflection_manager(object):
                        Xo, sigXo,
                        Yo, sigYo,
                        Phio, sigPhio,
-                       source, gonio):
+                       beam, gonio):
 
         # check the observed values
         Ho = list(Ho)
@@ -381,9 +381,9 @@ class reflection_manager(object):
         # track whether this is the first update of predictions or not
         self._first_update = True
 
-        # keep references to the source and goniometer models (for reflection
+        # keep references to the beam and goniometer models (for reflection
         # exclusion test)
-        self._source = source
+        self._beam = beam
         self._gonio = gonio
 
         # find vector normal to the spindle-beam plane. In principle this could
@@ -420,7 +420,8 @@ class reflection_manager(object):
         in which reflections cross from inside to outside of the sphere'''
 
         # NB vector in +ve Y direction when using imgCIF coordinate frame
-        return self._source.get_s0().cross(self._gonio.get_axis()).normalize()
+        return matrix.col(self._beam.get_s0()).cross(
+                                self._gonio.get_axis()).normalize()
 
     def _remove_excluded_obs(self, obs_data):
         '''Filter observations that fail certain conditions.

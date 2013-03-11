@@ -2,6 +2,8 @@
 
 This script is an exploration of their interfaces in comparison with mine"""
 
+from __future__ import division
+
 # cctbx imports
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
@@ -96,6 +98,25 @@ random_vec = matrix.col.random(3, 0.5, 1.5)
 my_s0.set_s0(random_vec)
 dials_s0.set_direction(random_vec)
 assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
+
+# To change to DIALS models, I must modify these modules:
+## prediction/tst
+## prediction/predictors
+## source_parameters
+## prediction_parameters
+## tst_prediction_parameters
+## setup_geometry
+## refinement
+## target
+## plot_derivatives
+## tst_finite_diffs
+## tst_orientation_refinement
+## tst_convergence_radius
+## tst_convergence_radius_one_parameter
+
+# tst_ref_passage_categoristion
+
+# source_model is then retired, and probably should be removed
 
 ##############################
 # Compare goniometer methods #

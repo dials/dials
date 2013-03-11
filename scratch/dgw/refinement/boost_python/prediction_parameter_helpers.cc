@@ -20,21 +20,21 @@ namespace dials { namespace refinement { namespace boost_python {
       mat3 <double>, const flex_mat3_double&, vec3 <double>) =
         &detector_pv_derivative;
 
-    double (*source_phi_derivative_single)(
+    double (*beam_phi_derivative_single)(
       vec3 <double>, vec3 <double>, double) =
-        &source_phi_derivative;
+        &beam_phi_derivative;
 
-    flex_double (*source_phi_derivative_array)(
+    flex_double (*beam_phi_derivative_array)(
       vec3 <double>, const flex_vec3_double&, double) =
-        &source_phi_derivative;
+        &beam_phi_derivative;
 
-    vec3 <double> (*source_pv_derivative_single)(
+    vec3 <double> (*beam_pv_derivative_single)(
       mat3 <double>, vec3 <double>, double, vec3 <double>) =
-        &source_pv_derivative;
+        &beam_pv_derivative;
 
-    flex_vec3_double (*source_pv_derivative_array)(
+    flex_vec3_double (*beam_pv_derivative_array)(
       mat3 <double>, vec3 <double>, const flex_double&,
-      const flex_vec3_double&) =  &source_pv_derivative;
+      const flex_vec3_double&) =  &beam_pv_derivative;
 
     vec3 <double> (*crystal_orientation_r_derivative_single)(
       mat3 <double>, mat3 <double>, mat3 <double>, miller_index) =
@@ -88,14 +88,14 @@ namespace dials { namespace refinement { namespace boost_python {
       detector_pv_derivative_single);
     def("detector_pv_derivative",
       detector_pv_derivative_array);
-    def("source_phi_derivative",
-      source_phi_derivative_single);
-    def("source_phi_derivative",
-      source_phi_derivative_array);
-    def("source_pv_derivative",
-      source_pv_derivative_single);
-    def("source_pv_derivative",
-      source_pv_derivative_array);
+    def("beam_phi_derivative",
+      beam_phi_derivative_single);
+    def("beam_phi_derivative",
+      beam_phi_derivative_array);
+    def("beam_pv_derivative",
+      beam_pv_derivative_single);
+    def("beam_pv_derivative",
+      beam_pv_derivative_array);
     def("crystal_orientation_r_derivative",
       crystal_orientation_r_derivative_single);
     def("crystal_orientation_r_derivative",

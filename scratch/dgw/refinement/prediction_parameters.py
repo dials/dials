@@ -12,7 +12,7 @@ from scitbx import matrix
 from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
 from dials.scratch.dgw.refinement.source_parameters import \
-    source_parameterisation_orientation
+    beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 from cctbx.array_family import flex
@@ -35,7 +35,7 @@ class prediction_parameterisation(object):
     types:
 
     * Detector parameterisations
-    * Source parameterisations
+    * Beam parameterisations
     * Crystal orientation parameterisations
     * Crystal unit cell parameterisations
 
@@ -53,7 +53,7 @@ class prediction_parameterisation(object):
 
     * A detector model (single point of reference for every sensor in the
       experiment)
-    * A source model
+    * A beam model
     * A crystal model
     * A goniometer model (not yet parameterised, but required for the equations)
 
@@ -65,17 +65,17 @@ class prediction_parameterisation(object):
 
     def __init__(self,
                  detector_model,
-                 source_model,
+                 beam_model,
                  crystal_model,
                  goniometer_model,
                  detector_parameterisations = None,
-                 source_parameterisations = None,
+                 beam_parameterisations = None,
                  crystal_orientation_parameterisations = None,
                  crystal_unit_cell_parameterisations = None):
 
         # References to the underlying models
         self._detector = detector_model
-        self._source = source_model
+        self._beam = beam_model
         self._crystal = crystal_model
         self._gonio = goniometer_model
 
@@ -87,9 +87,9 @@ class prediction_parameterisation(object):
         #        assert isinstance(
         #            model, detector_parameterisation_single_sensor)
         #
-        #if source_parameterisations:
-        #    for model in source_parameterisations:
-        #        assert isinstance(model, source_parameterisation_orientation)
+        #if beam_parameterisations:
+        #    for model in beam_parameterisations:
+        #        assert isinstance(model, beam_parameterisation_orientation)
         #
         #if crystal_orientation_parameterisations:
         #    for model in crystal_orientation_parameterisations:
@@ -101,20 +101,22 @@ class prediction_parameterisation(object):
 
         # Keep references to all parameterised models
         self._detector_parameterisations = detector_parameterisations
-        self._source_parameterisations = source_parameterisations
+        self._beam_parameterisations = beam_parameterisations
         self._xl_orientation_parameterisations = \
             crystal_orientation_parameterisations
         self._xl_unit_cell_parameterisations = \
             crystal_unit_cell_parameterisations
 
-    def __len__(self):
+        self._length = self._len()
+
+    def _len(self):
         length = 0
         if self._detector_parameterisations:
             for model in self._detector_parameterisations:
                 length += model.num_free()
 
-        if self._source_parameterisations:
-            for model in self._source_parameterisations:
+        if self._beam_parameterisations:
+            for model in self._beam_parameterisations:
                 length += model.num_free()
 
         if self._xl_orientation_parameterisations:
@@ -127,6 +129,9 @@ class prediction_parameterisation(object):
 
         return length
 
+    def __len__(self):
+        return self._length
+
     def get_p(self):
         '''return a concatenated list of parameters from each of the components
         in the global model'''
@@ -137,8 +142,8 @@ class prediction_parameterisation(object):
             params = [x for l in det_plists for x in l]
             global_p_list.extend(params)
 
-        if self._source_parameterisations:
-            src_plists = [x.get_p() for x in self._source_parameterisations]
+        if self._beam_parameterisations:
+            src_plists = [x.get_p() for x in self._beam_parameterisations]
             params = [x for l in src_plists for x in l]
             global_p_list.extend(params)
 
@@ -170,8 +175,8 @@ class prediction_parameterisation(object):
                 tmp = [it.next() for i in range(model.num_free())]
                 model.set_p(tmp)
 
-        if self._source_parameterisations:
-            for model in self._source_parameterisations:
+        if self._beam_parameterisations:
+            for model in self._beam_parameterisations:
                 tmp = [it.next() for i in range(model.num_free())]
                 model.set_p(tmp)
 
@@ -205,7 +210,7 @@ class prediction_parameterisation(object):
         # Here we irrevocably choose the sensor that this reflection intersects,
         # currently hard-coding it to the first (only) sensor.
         self._D = matrix.sqr(self._detector.sensors()[0].D)
-        self._s0 = self._source.get_s0()
+        self._s0 = matrix.col(self._beam.get_s0())
         self._U = self._crystal.get_U()
         self._B = self._crystal.get_B()
         self._axis = self._gonio.get_axis()
@@ -318,10 +323,10 @@ class detector_space_prediction_parameterisation_py(prediction_parameterisation)
                 dpv_dp.extend(dpv_ddet_p)
                 dphi_dp.extend(dphi_ddet_p)
 
-        # Calc derivatives of pv and phi wrt each parameter of each source
+        # Calc derivatives of pv and phi wrt each parameter of each beam
         # parameterisation that is present.
-        if self._source_parameterisations:
-            for src in self._source_parameterisations:
+        if self._beam_parameterisations:
+            for src in self._beam_parameterisations:
                 ds0_dsrc_p = src.get_ds_dp()
                 dphi_dsrc_p = [- r.dot(ds0_dsrc_p[i]) / e_r_s0 for i
                                   in range(len(ds0_dsrc_p))]
@@ -476,21 +481,21 @@ class detector_space_prediction_parameterisation(prediction_parameterisation):
                 dpv_dp.extend(dpv_ddet_p)
                 dphi_dp.extend(dphi_ddet_p)
 
-        # Calc derivatives of pv and phi wrt each parameter of each source
+        # Calc derivatives of pv and phi wrt each parameter of each beam
         # parameterisation that is present.
-        if self._source_parameterisations:
-            for src in self._source_parameterisations:
+        if self._beam_parameterisations:
+            for src in self._beam_parameterisations:
                 ds0_dsrc_p = src.get_ds_dp()
                 #dphi_dsrc_p = [- r.dot(ds0_dsrc_p[i]) / e_r_s0 for i
                 #                  in range(len(ds0_dsrc_p))]
                 #dpv_dsrc_p = [self._D * (e_X_r * dphi_dsrc_p[i] + ds0_dsrc_p[i]) for i in range(len(ds0_dsrc_p))]
 
-                #print "source_phi_derivative"
-                dphi_dsrc_p = source_phi_derivative(
+                #print "beam_phi_derivative"
+                dphi_dsrc_p = beam_phi_derivative(
                                     r, flex.vec3_double(ds0_dsrc_p), e_r_s0)
 
-                #print "source_pv_derivative"
-                dpv_dsrc_p = source_pv_derivative(
+                #print "beam_pv_derivative"
+                dpv_dsrc_p = beam_pv_derivative(
                                     self._D, e_X_r, dphi_dsrc_p,
                                     flex.vec3_double(ds0_dsrc_p))
 

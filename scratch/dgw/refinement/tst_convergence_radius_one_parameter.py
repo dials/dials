@@ -11,6 +11,7 @@ changing one parameter at a time"""
 from __future__ import division
 import sys
 from math import pi
+from libtbx.phil import parse
 
 # Get class to build experimental models
 from setup_geometry import extract
@@ -19,7 +20,7 @@ from setup_geometry import extract
 from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
 from dials.scratch.dgw.refinement.source_parameters import \
-    source_parameterisation_orientation
+    beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 from dials.scratch.dgw.refinement import random_param_shift
@@ -51,24 +52,30 @@ def setup_models(seed):
 
     override = "geometry.parameters.random_seed=" + str(seed)
     print override
-    models = extract(local_overrides=override)
+
+    master_phil = parse("""
+    include file geometry.params
+    include file minimiser.params
+    """, process_includes=True)
+
+    models = extract(master_phil, local_overrides=override)
 
     mydetector = models.detector
     mygonio = models.goniometer
     mycrystal = models.crystal
-    mysource = models.source
+    mybeam = models.beam
 
     ###########################
     # Parameterise the models #
     ###########################
 
     det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-    src_param = source_parameterisation_orientation(mysource)
+    s0_param = beam_parameterisation_orientation(mybeam)
     xlo_param = crystal_orientation_parameterisation(mycrystal)
     xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 
-    # Fix source to the X-Z plane (imgCIF geometry)
-    src_param.set_fixed([True, False])
+    # Fix beam to the X-Z plane (imgCIF geometry)
+    s0_param.set_fixed([True, False])
 
     # Fix crystal parameters
     xluc_param.set_fixed([True, True, True, True, True, True])
@@ -79,21 +86,21 @@ def setup_models(seed):
     ########################################################################
 
     pred_param = detector_space_prediction_parameterisation(
-    mydetector, mysource, mycrystal, mygonio, [det_param], [src_param],
+    mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
     print "The initial experimental geometry is:"
-    print_model_geometry(mysource, mydetector, mycrystal)
+    print_model_geometry(mybeam, mydetector, mycrystal)
     print "\nInitial values of parameters are"
     msg = "Parameters: " + "%.5f " * len(pred_param)
     print msg % tuple(pred_param.get_p())
     print
 
-    return(mydetector, mygonio, mycrystal, mysource,
-           det_param, src_param, xlo_param, xluc_param, pred_param)
+    return(mydetector, mygonio, mycrystal, mybeam,
+           det_param, s0_param, xlo_param, xluc_param, pred_param)
 
-def run(mydetector, mygonio, mycrystal, mysource,
-     det_param, src_param, xlo_param, xluc_param,
+def run(mydetector, mygonio, mycrystal, mybeam,
+     det_param, s0_param, xlo_param, xluc_param,
      pred_param):
 
     #################################
@@ -106,9 +113,9 @@ def run(mydetector, mygonio, mycrystal, mysource,
     det_param.set_p(shift_det_p)
 
     # rotate beam by normal deviate with sd 4 mrad. There is only one free axis!
-    src_p = src_param.get_p()
-    #shift_src_p = random_param_shift(src_p, [4.0])
-    #src_param.set_p(shift_src_p)
+    s0_p = s0_param.get_p()
+    #shift_s0_p = random_param_shift(s0_p, [4.0])
+    #s0_param.set_p(shift_s0_p)
 
     # rotate crystal by normal deviates with sd 4 mrad for each rotation.
     xlo_p = xlo_param.get_p()
@@ -130,13 +137,13 @@ def run(mydetector, mygonio, mycrystal, mysource,
 
     # Select those that are excited in a 180 degree sweep and get their angles
     UB = mycrystal.get_U() * mycrystal.get_B()
-    ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
+    ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
     obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
 
     # Project positions on camera
-    ip = impact_predictor(mydetector, mygonio, mysource, mycrystal)
-    #rp = reflection_prediction(mygonio.get_axis(), mysource.get_s0(), UB,
+    ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
+    #rp = reflection_prediction(mygonio.get_axis(), mybeam.get_s0(), UB,
     #                           mydetector.sensors()[0])
     #hkls, d1s, d2s, angles, s_dirs = rp.predict(obs_indices.as_vec3_double(),
     #                                       obs_angles)
@@ -153,7 +160,7 @@ def run(mydetector, mygonio, mycrystal, mysource,
     # Undo known parameter shifts #
     ###############################
 
-    src_param.set_p(src_p)
+    s0_param.set_p(s0_p)
     det_param.set_p(det_p)
     xlo_param.set_p(xlo_p)
 
@@ -165,7 +172,7 @@ def run(mydetector, mygonio, mycrystal, mysource,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
-                            mysource, mygonio)
+                            mybeam, mygonio)
 
     ##############################
     # Set up the target function #
@@ -194,7 +201,7 @@ def run(mydetector, mygonio, mycrystal, mysource,
     # Reset parameter values #
     ##########################
 
-    src_param.set_p(src_p)
+    s0_param.set_p(s0_p)
     det_param.set_p(det_p)
     xlo_param.set_p(xlo_p)
 
@@ -208,8 +215,8 @@ if __name__ == "__main__":
         seed = 1
     if len(args) != 1: print "Usage:",sys.argv[0],"seed"
 
-    (mydetector, mygonio, mycrystal, mysource,
-        det_param, src_param, xlo_param, xluc_param,
+    (mydetector, mygonio, mycrystal, mybeam,
+        det_param, s0_param, xlo_param, xluc_param,
         pred_param) = setup_models(seed)
 
     header = "Nsteps Completed " + "Param_%02d " * len(pred_param)
@@ -217,6 +224,6 @@ if __name__ == "__main__":
 
     for i in xrange(100):
         sys.stdout.flush()
-        output = run(mydetector, mygonio, mycrystal, mysource,
-            det_param, src_param, xlo_param, xluc_param,
+        output = run(mydetector, mygonio, mycrystal, mybeam,
+            det_param, s0_param, xlo_param, xluc_param,
             pred_param)

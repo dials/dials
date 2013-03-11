@@ -80,10 +80,10 @@ def get_fd_gradients(mp, deltas):
 
     return fd_grad
 
-def print_model_geometry(source = None, detector = None, crystal = None):
+def print_model_geometry(beam = None, detector = None, crystal = None):
 
-    if source:
-        print "beam s0 = (%.4f, %.4f, %.4f)" % source.get_s0().elems
+    if beam:
+        print "beam s0 = (%.4f, %.4f, %.4f)" % beam.get_s0()
     if detector:
         print "sensor origin = (%.4f, %.4f, %.4f)" % detector.sensors()[0].origin
         print "sensor dir1 = (%.4f, %.4f, %.4f)" % detector.sensors()[0].dir1

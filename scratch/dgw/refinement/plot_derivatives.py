@@ -17,7 +17,7 @@ from scitbx import matrix
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
 from rstbx.bpcx import sensor
-from dials.scratch.dgw.source_model import source
+from dials.model.experiment import beam_factory
 from dials.scratch.dgw.crystal_model import crystal
 from dials.scratch.dgw.goniometer_model import goniometer
 
@@ -27,7 +27,7 @@ from dials.scratch.dgw.refinement.prediction_parameters import \
 from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
 from dials.scratch.dgw.refinement.source_parameters import \
-    source_parameterisation_orientation
+    beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 
@@ -73,7 +73,7 @@ mygonio = goniometer(matrix.col((1, 0, 0)))
 # Put the beam along the Z axis
 #wavelength = random.uniform(0.8, 1.5)
 wavelength = 1.0
-mysource = source(matrix.col((0., 0., 1.)), wavelength)
+mybeam = beam_factory.make_beam((0., 0., 1.), wavelength)
 
 # Make a detector modelled on PILATUS 2M, S/N 24-0107 Diamond, 200 mm from the
 # lab frame origin along the Z axis, with plane directions aligned with X and -Y axes
@@ -98,7 +98,7 @@ c = random.uniform(10,30) * random_direction_close_to(matrix.col((0, 0, 1)))
 mycrystal = crystal(a, b, c)
 
 print "Reflections will be generated with the following geometry:"
-print "beam s0 = (%.4f, %.4f, %.4f)" % mysource.get_s0().elems
+print "beam s0 = (%.4f, %.4f, %.4f)" % mybeam.get_s0()
 print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
 print "sensor dir1 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
 print "sensor dir2 = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
@@ -120,13 +120,13 @@ indices = full_sphere_indices(
 
 # Select those that are excited in a 90 degree sweep and get their angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
+ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
 obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
 print "Total number of reflections excited", len(obs_indices)
 
 # Project positions on camera
-ip = impact_predictor(mydetector, mygonio, mysource, mycrystal)
+ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
 
 hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
@@ -137,7 +137,7 @@ print "Total number of observations made", len(hkls)
 ###########################
 
 det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-src_param = source_parameterisation_orientation(mysource)
+s0_param = beam_parameterisation_orientation(mybeam)
 xlo_param = crystal_orientation_parameterisation(mycrystal)
 xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 
@@ -147,7 +147,7 @@ xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 ########################################################################
 
 pred_param = detector_space_prediction_parameterisation(
-    mydetector, mysource, mycrystal, mygonio, [det_param], [src_param],
+    mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
 ##########################################################################

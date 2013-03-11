@@ -5,7 +5,7 @@
 # testing purposes only
 
 """
-Test refinement of source, detector and crystal orientation parameters (i.e.
+Test refinement of beam, detector and crystal orientation parameters (i.e.
 assume crystal unit cell is fixed for now) using generated reflection
 positions from ideal geometry.
 
@@ -31,7 +31,7 @@ import setup_minimiser
 from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
 from dials.scratch.dgw.refinement.source_parameters import \
-    source_parameterisation_orientation
+    beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 from dials.scratch.dgw.refinement import random_param_shift
@@ -73,19 +73,19 @@ models = setup_geometry.extract(master_phil, cmdline_args = args)
 mydetector = models.detector
 mygonio = models.goniometer
 mycrystal = models.crystal
-mysource = models.source
+mybeam = models.beam
 
 ###########################
 # Parameterise the models #
 ###########################
 
 det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-src_param = source_parameterisation_orientation(mysource)
+s0_param = beam_parameterisation_orientation(mybeam)
 xlo_param = crystal_orientation_parameterisation(mycrystal)
 xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 
-# Fix source to the X-Z plane (imgCIF geometry)
-src_param.set_fixed([True, False])
+# Fix beam to the X-Z plane (imgCIF geometry)
+s0_param.set_fixed([True, False])
 
 # Fix crystal parameters
 #xluc_param.set_fixed([True, True, True, True, True, True])
@@ -96,7 +96,7 @@ src_param.set_fixed([True, False])
 ########################################################################
 
 pred_param = detector_space_prediction_parameterisation(
-mydetector, mysource, mycrystal, mygonio, [det_param], [src_param],
+mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
 [xlo_param], [xluc_param])
 
 ################################
@@ -113,12 +113,12 @@ p_vals = [a + b for a, b in zip(det_p_vals,
 det_param.set_p(p_vals)
 
 # shift beam by 2 mrad in free axis
-src_p_vals = src_param.get_p()
+s0_p_vals = s0_param.get_p()
 #p_vals2 = random_param_shift(p_vals, [0.002, 0.002])
-p_vals = list(src_p_vals)
+p_vals = list(s0_p_vals)
 
 p_vals[0] += 2.
-src_param.set_p(p_vals)
+s0_param.set_p(p_vals)
 
 # rotate crystal a bit (=2 mrad each rotation)
 xlo_p_vals = xlo_param.get_p()
@@ -142,7 +142,7 @@ xluc_param.set_p(X)
 #############################
 
 print "Reflections will be generated with the following geometry:"
-print_model_geometry(mysource, mydetector, mycrystal)
+print_model_geometry(mybeam, mydetector, mycrystal)
 print "Target values of parameters are"
 msg = "Parameters: " + "%.5f " * len(pred_param)
 print msg % tuple(pred_param.get_p())
@@ -158,15 +158,15 @@ indices = full_sphere_indices(
 # Select those that are excited in a 180 degree sweep and get their angles
 UB = mycrystal.get_U() * mycrystal.get_B()
 
-ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
-#ap = angle_predictor_py(mycrystal, mysource, mygonio, resolution)
+ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
+#ap = angle_predictor_py(mycrystal, mybeam, mygonio, resolution)
 
 obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
 print "Total number of reflections excited", len(obs_indices)
 
 # Project positions on camera
-ip = impact_predictor(mydetector, mygonio, mysource, mycrystal)
+ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
 hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
 print "Total number of observations made", len(hkls)
@@ -181,7 +181,7 @@ sigangles = [im_width / 2.] * len(hkls)
 # Undo known parameter shifts #
 ###############################
 
-src_param.set_p(src_p_vals)
+s0_param.set_p(s0_p_vals)
 det_param.set_p(det_p_vals)
 xlo_param.set_p(xlo_p_vals)
 xluc_param.set_p(xluc_p_vals)
@@ -199,7 +199,7 @@ rm = reflection_manager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
-                        mysource, mygonio)
+                        mybeam, mygonio)
 
 ##############################
 # Set up the target function #
@@ -221,7 +221,7 @@ refiner = setup_minimiser.extract(master_phil,
                                   cmdline_args = args).refiner
 
 print "Prior to refinement the experimental model is:"
-print_model_geometry(mysource, mydetector, mycrystal)
+print_model_geometry(mybeam, mydetector, mycrystal)
 
 
 #refiner = simple_lbfgs(mytarget, pred_param, verbosity = 2, log = ref_log)
@@ -238,4 +238,4 @@ print "number of steps", refiner.n_iterations
 
 print
 print "Refinement has completed with the following geometry:"
-print_model_geometry(mysource, mydetector, mycrystal)
+print_model_geometry(mybeam, mydetector, mycrystal)

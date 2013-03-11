@@ -26,7 +26,7 @@ from dials.scratch.dgw.refinement.prediction_parameters import \
 from dials.scratch.dgw.refinement.detector_parameters import \
     detector_parameterisation_single_sensor
 from dials.scratch.dgw.refinement.source_parameters import \
-    source_parameterisation_orientation
+    beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
 
@@ -69,7 +69,7 @@ def get_fd_gradients(pred_param, hkl, phi, angle_predictor, deltas):
     parameter.'''
 
     gon = pred_param._gonio
-    src = pred_param._source
+    src = pred_param._beam
     det = pred_param._detector
     xl = pred_param._crystal
     ap = angle_predictor
@@ -118,12 +118,12 @@ models = extract(master_phil, overrides, cmdline_args = args)
 mydetector = models.detector
 mygonio = models.goniometer
 mycrystal = models.crystal
-mysource = models.source
+mybeam = models.beam
 
 #### Create parameterisations of these models
 
 det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-src_param = source_parameterisation_orientation(mysource)
+s0_param = beam_parameterisation_orientation(mybeam)
 xlo_param = crystal_orientation_parameterisation(mycrystal)
 xluc_param = crystal_unit_cell_parameterisation(mycrystal)
 
@@ -131,7 +131,7 @@ xluc_param = crystal_unit_cell_parameterisation(mycrystal)
 
 # Build a prediction parameterisation with a single detector model
 pred_param = detector_space_prediction_parameterisation(mydetector,
-             mysource, mycrystal, mygonio, [det_param])
+             mybeam, mycrystal, mygonio, [det_param])
 
 # Check the accessors
 assert len(pred_param) == 6
@@ -142,10 +142,10 @@ pred_param.set_p([100., 1.0, 1.0, 0., 0., 0.])
 for (a, b) in zip(pred_param.get_p(), det_param.get_p()):
     assert a==b
 
-# Build a full global parameterisation with detector and source
+# Build a full global parameterisation with detector and beam
 # parameterised and not-fully-functional crystal parameterisations
 pred_param = detector_space_prediction_parameterisation(
-    mydetector,  mysource, mycrystal, mygonio, [det_param], [src_param],
+    mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
 # Generate some indices
@@ -161,18 +161,18 @@ indices = full_sphere_indices(
 
 # Generate list of phi values
 UB = mycrystal.get_U() * mycrystal.get_B()
-ap = angle_predictor(mycrystal, mysource, mygonio, resolution)
+ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
 obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = pi/5., indices = indices)
 
 # Project positions on camera
-rp = reflection_prediction(mygonio.get_axis(), mysource.get_s0(), UB,
+rp = reflection_prediction(mygonio.get_axis(), mybeam.get_s0(), UB,
                            mydetector.sensors()[0])
 hkls, d1s, d2s, angles, s_dirs = rp.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
 
 # Test get_state for the first reflection
-tmp = get_state(mygonio, mysource, mycrystal, mydetector, hkls[0],
+tmp = get_state(mygonio, mybeam, mycrystal, mydetector, hkls[0],
                 angles[0], ap)
 for (a, b) in zip(tmp, (d1s[0], d2s[0], angles[0])):
     assert a == b
@@ -195,7 +195,7 @@ for iref in selection:
     hkl, s_dir, angle = hkls[iref], s_dirs[iref], angles[iref]
 
     # Beware! s_dirs[0] has been normalised. I need the proper length vector s
-    s = matrix.col(s_dir) / mysource.get_wavelength()
+    s = matrix.col(s_dir) / mybeam.get_wavelength()
 
     # get analytical gradients
     an_grads = pred_param.get_gradients(hkl, s, angle)
@@ -203,7 +203,7 @@ for iref in selection:
     # Reflections close to being in the plane of the rotation axis and beam
     # give very large gradients of phi, and may fail the test versus finite
     # difference gradients. Detect and exclude very large gradients
-    s0 = mysource.get_s0()
+    s0 = matrix.col(mybeam.get_s0())
     r = s - s0
     e_s0_plane_norm = mygonio.get_axis().cross(s0).normalize()
     r_dist_from_plane = abs(r.dot(e_s0_plane_norm))
