@@ -45,14 +45,14 @@ def visualize_predicted_spots( image_volume, display_frame, spot_coords ):
 def my_tst_code( image2d, x_ls, y_ls ):
     import numpy
     import integrate_2d
-    from matplotlib import pyplot as plt
     cntrd_xcoord = numpy.zeros( len( x_ls ) )
     cntrd_ycoord = numpy.zeros( len( x_ls ) )
-    pos_sigma = numpy.zeros( len( x_ls ) )
-    integrate_2d.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, pos_sigma )
+    x_sigma = numpy.zeros( len( x_ls ) )
+    y_sigma = numpy.zeros( len( x_ls ) )
+    integrate_2d.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
     for i in range( len( x_ls ) ):
         print 'x,y (centroid) =', cntrd_xcoord[i], cntrd_ycoord[i]
-        print 'sigma (pos) =', pos_sigma [i]
+        print 'sigma ( x, y) =', x_sigma [i], y_sigma[i]
 
 def predict_spots( input_filename, cbf_search_path, d_min, display_frame ):
     """Read the required data from the file, predict the spots and display."""
