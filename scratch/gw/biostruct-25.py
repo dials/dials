@@ -1,6 +1,6 @@
 # copied from James's code...
 
-def open_file_return_array(self, filename):
+def open_file_return_array(filename):
     import pycbf
     import numpy
 
@@ -25,3 +25,13 @@ def open_file_return_array(self, filename):
     image.shape = (parameters[10], parameters[9])
 
     return image
+
+def plot_image(image):
+    from matplotlib import pyplot
+    pyplot.imshow(image)
+    pyplot.savefig('biostruct-25.png')
+
+if __name__ == '__main__':
+    import sys
+    image = open_file_return_array(sys.argv[1])
+    plot_image(image)
