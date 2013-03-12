@@ -87,7 +87,7 @@ def read_integrate_hkl_apply_corrections(
     ub = u * b
     s0 = - cfc.get_c('sample_to_source') / cfc.get('wavelength')
     axis = cfc.get_c('rotation_axis')
-  
+
     for record in open(int_hkl):
         if record.startswith('!'):
             continue
@@ -105,27 +105,19 @@ def read_integrate_hkl_apply_corrections(
         # as xc, yc, zc... Ah, smarter: use the zc from the file to provide the
         # rotation, not a full prediction: only then need to worry about
         # computing the intersection.
-        
+
         hkl = map(int, map(round, values[:3]))
 
         xc, yc, zc = values[5:8]
-
         angle = (zc - img_start + 1) * osc_range + osc_start
+        d2r = math.pi / 180.0
 
-        s = (ub * hkl).rotate(axis, angle, deg = True)
+        s = (ub * hkl).rotate(axis, angle * d2r) + s0
+        s = s.normalize()
+        r = s * distance / s.dot(normal) - origin
 
-        q = (s0 + s)
-        
-        print '%.5f %.5f' % (q.length(), s0.length())
-
-        q = q.normalize()
-
-        r = q * distance / q.dot(normal) - origin
-
-        _xc = r.dot(fast) / 0.172
-        _yc = r.dot(slow) / 0.172
-
-        #print '%6.1f %6.1f %6.1f %6.1f' % (xc, _xc, yc, _yc)
+        xc = r.dot(fast) / 0.172
+        yc = r.dot(slow) / 0.172
 
         xo, yo, zo = values[12:15]
 
