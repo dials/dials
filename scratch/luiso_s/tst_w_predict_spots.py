@@ -40,19 +40,31 @@ def visualize_predicted_spots( image_volume, display_frame, spot_coords ):
     xcoords, ycoords = zip( *spot_xy )
     my_tst_code( image_volume[display_frame, :, :], xcoords, ycoords )
 
-    display_image_with_predicted_spots( image_volume[display_frame, :, :],
-                                       xcoords, ycoords )
+    # display_image_with_predicted_spots( image_volume[display_frame, :, :], xcoords, ycoords )
 def my_tst_code( image2d, x_ls, y_ls ):
     import numpy
-    import integrate_2d
+    import time
+    import ind_2d_integrate
     cntrd_xcoord = numpy.zeros( len( x_ls ) )
     cntrd_ycoord = numpy.zeros( len( x_ls ) )
     x_sigma = numpy.zeros( len( x_ls ) )
     y_sigma = numpy.zeros( len( x_ls ) )
-    integrate_2d.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
+
+    # print time.time()
+    time1 = time.time()
+    # print "time1 =", time1
+
+    ind_2d_integrate.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
+
+    time2 = time.time()
+    # print "time2 =", time2
+    timedif = float( time2 - time1 )
+    print "timedif =", timedif
+
+
     for i in range( len( x_ls ) ):
-        print 'x,y (centroid) =', cntrd_xcoord[i], cntrd_ycoord[i]
-        print 'sigma ( x, y) =', x_sigma [i], y_sigma[i]
+        print 'x,y (centroid) =', cntrd_xcoord[i], ', ', cntrd_ycoord[i]
+        print 'sigma ( x, y) =', x_sigma [i], ', ', y_sigma[i]
 
 def predict_spots( input_filename, cbf_search_path, d_min, display_frame ):
     """Read the required data from the file, predict the spots and display."""

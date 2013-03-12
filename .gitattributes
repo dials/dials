@@ -373,6 +373,7 @@ scratch/luiso_s/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
 scratch/luiso_s/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
 scratch/luiso_s/borrowed_predict_spots.py -text svneol=unset#text/plain
 scratch/luiso_s/cctbx_introduction_1.png -text
+scratch/luiso_s/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/integrate_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/matix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/matrix_test_f.f90 -text

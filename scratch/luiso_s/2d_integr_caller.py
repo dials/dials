@@ -1,5 +1,5 @@
 import numpy
-import integrate_2d
+import ind_2d_integrate
 
 from iotbx.detectors import ImageFactory
 # from matplotlib import pyplot as plt
@@ -45,7 +45,7 @@ print "nslow, nfast =", nslow, nfast
 print "max(data2d) =", numpy.max( data2d )
 print "min(data2d) =", numpy.min( data2d )
 
-integrate_2d.start( numpy.transpose( data2d ), xcoord, ycoord , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
+ind_2d_integrate.start( numpy.transpose( data2d ), xcoord, ycoord , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
 
 for i in range( len( xcoord ) ):
     print 'x,y (centroid) =', cntrd_xcoord[i], cntrd_ycoord[i]
