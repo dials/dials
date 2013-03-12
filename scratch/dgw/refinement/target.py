@@ -421,7 +421,7 @@ class reflection_manager(object):
 
         # NB vector in +ve Y direction when using imgCIF coordinate frame
         return matrix.col(self._beam.get_s0()).cross(
-                                self._gonio.get_axis()).normalize()
+                        matrix.col(self._gonio.get_rotation_axis())).normalize()
 
     def _remove_excluded_obs(self, obs_data):
         '''Filter observations that fail certain conditions.

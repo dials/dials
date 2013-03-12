@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
+"""This model is deprecated. The code remains here only to show how ideas
+developed over time"""
+
 # fixme boilerplate
+from __future__ import division
 
 from scitbx import matrix
 

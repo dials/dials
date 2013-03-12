@@ -8,16 +8,15 @@
 
 # Python and cctbx imports
 from __future__ import division
-import os, sys
+import sys
 import random
 from scitbx import matrix
 from libtbx.phil import parse, command_line
 
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
-from dials.model.experiment import beam_factory
+from dials.model.experiment import beam_factory, goniometer_factory
 from dials.scratch.dgw.crystal_model import crystal
-from dials.scratch.dgw.goniometer_model import goniometer
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
@@ -74,7 +73,8 @@ class extract(object):
 
     def build_goniometer(self):
 
-        self.goniometer = goniometer(matrix.col(self._params.goniometer.axis))
+        self.goniometer = goniometer_factory.known_axis(
+                                self._params.goniometer.axis)
 
     def build_beam(self):
 

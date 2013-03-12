@@ -10,8 +10,9 @@ from libtbx.test_utils import approx_equal
 
 # import DIALS models
 from dials.model.experiment import Beam
-from dials.model.experiment import Panel, Detector
-from dials.model.experiment import Goniometer
+from dials.model.experiment import Panel
+#from dials.model.experiment import Detector
+#from dials.model.experiment import Goniometer
 
 # but use the factories instead for ease of use
 from dials.model.experiment import beam_factory, detector_factory, \
@@ -21,7 +22,7 @@ from dials.model.experiment import beam_factory, detector_factory, \
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
 from rstbx.bpcx import sensor
 from dials.scratch.dgw.source_model import source
-from dials.scratch.dgw.crystal_model import crystal
+#from dials.scratch.dgw.crystal_model import crystal
 from dials.scratch.dgw.goniometer_model import goniometer
 
 #############################
@@ -113,8 +114,7 @@ assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 ## tst_orientation_refinement
 ## tst_convergence_radius
 ## tst_convergence_radius_one_parameter
-
-# tst_ref_passage_categoristion
+## tst_ref_passage_categorisation
 
 # source_model is then retired, and probably should be removed
 
@@ -126,6 +126,17 @@ assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 # get_rotation_axis.
 
 assert my_gonio.get_axis() == matrix.col(dials_gonio.get_rotation_axis())
+
+# To change to DIALS models, I must modify these modules:
+## prediction/tst
+## prediction/predictors
+## prediction_parameters
+## tst_prediction_parameters
+## setup_geometry
+## target
+## plot_derivatives
+
+# tst_ref_passage_categorisation
 
 ############################
 # Compare detector methods #

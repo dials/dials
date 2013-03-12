@@ -106,13 +106,13 @@ class angle_predictor(object):
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
                     self._beam.get_direction(), (0.0, 0.0, 1.0),
-                    self._gonio.get_axis(), (0.0, 1.0, 0.0))
+                    self._gonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
         # Create a rotation_angles object for the current geometry
         ra = rotation_angles(self._dmin,
                  R_to_rossmann * self._crystal.get_U() * self._crystal.get_B(),
                  self._beam.get_wavelength(),
-                 R_to_rossmann * self._gonio.get_axis())
+                 R_to_rossmann * matrix.col(self._gonio.get_rotation_axis()))
 
         obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
             phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
@@ -130,13 +130,13 @@ class angle_predictor(object):
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
                     self._beam.get_direction(), (0.0, 0.0, 1.0),
-                    self._gonio.get_axis(), (0.0, 1.0, 0.0))
+                    self._gonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
         # Create a rotation_angles object for the current geometry
         ra = rotation_angles(self._dmin,
                  R_to_rossmann * self._crystal.get_U() * self._crystal.get_B(),
                  self._beam.get_wavelength(),
-                 R_to_rossmann * self._gonio.get_axis())
+                 R_to_rossmann * matrix.col(self._gonio.get_rotation_axis()))
 
         if ra(hkl):
 
@@ -173,7 +173,7 @@ class angle_predictor_py(object):
         self._s0mag = sqrt(self._s0mag_sq)
 
         # obtain rotation axis
-        self._axis = self._gonio.get_axis()
+        self._axis = matrix.col(self._gonio.get_rotation_axis())
 
         # calculate their dot product
         self._axis_dot_s0 = self._axis.dot(self._s0)
@@ -287,7 +287,7 @@ class impact_predictor(object):
 
         # extract required information from the models
         sensor = self._detector.sensors()[0] # assume only one sensor for now
-        axis = self._gonio.get_axis()
+        axis = matrix.col(self._gonio.get_rotation_axis())
         s0 = matrix.col(self._beam.get_s0())
         UB = self._crystal.get_U() * self._crystal.get_B()
 

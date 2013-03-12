@@ -49,7 +49,7 @@ def get_state(gon, src, xl, det, hkl, angle, angle_predictor):
     deltas = [abs(x - angle) for x in obs_ang]
     new_angle = obs_ang[deltas.index(min(deltas))]
 
-    rp = reflection_prediction(gon.get_axis(),
+    rp = reflection_prediction(gon.get_rotation_axis(),
                                src.get_s0(),
                                xl.get_U() * xl.get_B(),
                                det.sensors()[0])
@@ -166,7 +166,7 @@ obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = pi/5., indices = indices)
 
 # Project positions on camera
-rp = reflection_prediction(mygonio.get_axis(), mybeam.get_s0(), UB,
+rp = reflection_prediction(mygonio.get_rotation_axis(), mybeam.get_s0(), UB,
                            mydetector.sensors()[0])
 hkls, d1s, d2s, angles, s_dirs = rp.predict(obs_indices.as_vec3_double(),
                                        obs_angles)
@@ -205,7 +205,8 @@ for iref in selection:
     # difference gradients. Detect and exclude very large gradients
     s0 = matrix.col(mybeam.get_s0())
     r = s - s0
-    e_s0_plane_norm = mygonio.get_axis().cross(s0).normalize()
+    e_s0_plane_norm = matrix.col(
+                            mygonio.get_rotation_axis()).cross(s0).normalize()
     r_dist_from_plane = abs(r.dot(e_s0_plane_norm))
     if r_dist_from_plane <= exclusion_limit:
         continue

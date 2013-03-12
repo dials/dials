@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from __future__ import division
-from dials.scratch.dgw.source_model import source
 from dials.model.experiment import beam_factory
 from model_parameters import parameter, model_parameterisation
 from scitbx import matrix

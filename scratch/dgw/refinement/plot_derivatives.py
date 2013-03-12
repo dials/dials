@@ -17,9 +17,8 @@ from scitbx import matrix
 # Experimental models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
 from rstbx.bpcx import sensor
-from dials.model.experiment import beam_factory
+from dials.model.experiment import beam_factory, goniometer_factory
 from dials.scratch.dgw.crystal_model import crystal
-from dials.scratch.dgw.goniometer_model import goniometer
 
 # Model parameterisations
 from dials.scratch.dgw.refinement.prediction_parameters import \
@@ -68,7 +67,7 @@ print "Random seed for this run:", seed
 #############################
 
 # Make a spindle along the X axis (imgCIF frame)
-mygonio = goniometer(matrix.col((1, 0, 0)))
+mygonio = goniometer_factory.known_axis((1, 0, 0))
 
 # Put the beam along the Z axis
 #wavelength = random.uniform(0.8, 1.5)

@@ -90,12 +90,13 @@ refman.update_predictions(hkls, svecs, d1s, d2s, angles)
 # the reflection is entering. If inside then the reflection is exiting.
 
 s0 = matrix.col(mybeam.get_s0())
+spindle = matrix.col(mygonio.get_rotation_axis())
 for hkl, v in refman._H.items():
 
     for i, e in enumerate(v.exiting):
 
         r = v.Sc[i] - s0
-        r_orig = r.rotate(mygonio.get_axis(), -1., deg=True)
+        r_orig = r.rotate(spindle, -1., deg=True)
 
         # is it inside the Ewald sphere (i.e. exiting)?
         test = (s0 + r_orig).length() < s0.length()

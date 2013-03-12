@@ -213,7 +213,7 @@ class prediction_parameterisation(object):
         self._s0 = matrix.col(self._beam.get_s0())
         self._U = self._crystal.get_U()
         self._B = self._crystal.get_B()
-        self._axis = self._gonio.get_axis()
+        self._axis = matrix.col(self._gonio.get_rotation_axis())
 
     def get_gradients(self, h, s, phi):
         '''
@@ -286,7 +286,7 @@ class detector_space_prediction_parameterisation_py(prediction_parameterisation)
             print "for reflection", h
             print "with scattering vector", s
             print "where r =", r
-            print "e =",self._gonio.get_axis()
+            print "e =",matrix.col(self._gonio.get_rotation_axis())
             print "s0 =",self._s0
             print "U =",self._U
             print "this reflection forms angle with the equatorial plane normal:"
@@ -429,7 +429,7 @@ class detector_space_prediction_parameterisation(prediction_parameterisation):
             print "for reflection", h
             print "with scattering vector", s
             print "where r =", r
-            print "e =",self._gonio.get_axis()
+            print "e =",matrix.col(self._gonio.get_rotation_axis())
             print "s0 =",self._s0
             print "U =",self._U
             print "this reflection forms angle with the equatorial plane normal:"

@@ -92,8 +92,7 @@ if __name__ == "__main__":
 
     ### import models
     from dials.scratch.dgw.crystal_model import crystal
-    from dials.model.experiment import beam_factory
-    from dials.scratch.dgw.goniometer_model import goniometer
+    from dials.model.experiment import beam_factory, goniometer_factory
 
     ### local functions
     def random_direction_close_to(vector):
@@ -106,9 +105,8 @@ if __name__ == "__main__":
     ### Create models
 
     # make a beam vector close to the Z axis
-    bf = beam_factory()
     direction = random_direction_close_to(matrix.col((0, 0, 1)))
-    mybeam = bf.make_beam(direction, 1.5)
+    mybeam = beam_factory.make_beam(direction, 1.5)
 
     # make a random crystal
     a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
@@ -117,7 +115,7 @@ if __name__ == "__main__":
     mycrystal = crystal(a, b, c)
 
     # make a dumb goniometer that rotates around X
-    mygonio = goniometer(matrix.col((1, 0, 0)))
+    mygonio = goniometer_factory.known_axis((1, 0, 0))
 
     # generate some indices
     resolution = 1.0
@@ -129,12 +127,12 @@ if __name__ == "__main__":
     # generate list of phi values
     R_to_rossmann = align_reference_frame(
         mybeam.get_direction(), (0.0, 0.0, 1.0),
-        mygonio.get_axis(), (0.0, 1.0, 0.0))
+        mygonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
     ra = rotation_angles(resolution,
                          R_to_rossmann * mycrystal.get_U() * mycrystal.get_B(),
                          mybeam.get_wavelength(),
-                         R_to_rossmann * mygonio.get_axis())
+                         R_to_rossmann * matrix.col(mygonio.get_rotation_axis()))
 
     obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)

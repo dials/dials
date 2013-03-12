@@ -8,7 +8,6 @@
 
 # Python and cctbx imports
 from __future__ import division
-import os
 from libtbx.phil import parse, command_line
 
 # Import the refinement engine
