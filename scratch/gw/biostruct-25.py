@@ -76,8 +76,6 @@ def read_integrate_hkl_apply_corrections(
     origin = cfc.get_c('detector_origin')
     distance = origin.dot(normal)
 
-    print distance
-    
     A = cfc.get_c('real_space_a')
     B = cfc.get_c('real_space_b')
     C = cfc.get_c('real_space_c')
@@ -87,9 +85,9 @@ def read_integrate_hkl_apply_corrections(
 
     u, b = cfc.get_u_b()
     ub = u * b
-    s0 = - cfc.get_c('sample_to_source')
+    s0 = - cfc.get_c('sample_to_source') / cfc.get('wavelength')
     axis = cfc.get_c('rotation_axis')
-    
+  
     for record in open(int_hkl):
         if record.startswith('!'):
             continue
@@ -112,15 +110,22 @@ def read_integrate_hkl_apply_corrections(
 
         xc, yc, zc = values[5:8]
 
-        p = (zc - img_start) * osc_range + osc_start
+        angle = (zc - img_start + 1) * osc_range + osc_start
 
-        rubh = (ub * hkl).rotate(axis, - p, deg = True)
-        q = (s0 + rubh).normalize()
+        s = (ub * hkl).rotate(axis, angle, deg = True)
+
+        q = (s0 + s)
+        
+        print '%.5f %.5f' % (q.length(), s0.length())
+
+        q = q.normalize()
 
         r = q * distance / q.dot(normal) - origin
 
-        _xc = r.dot(fast)
-        _yc = r.dot(slow)
+        _xc = r.dot(fast) / 0.172
+        _yc = r.dot(slow) / 0.172
+
+        #print '%6.1f %6.1f %6.1f %6.1f' % (xc, _xc, yc, _yc)
 
         xo, yo, zo = values[12:15]
 
