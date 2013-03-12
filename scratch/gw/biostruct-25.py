@@ -31,7 +31,66 @@ def plot_image(image):
     pyplot.imshow(image)
     pyplot.savefig('biostruct-25.png')
 
+    return
+
+def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
+    '''Read X corrections and Y corrections to arrays; for record in
+    int_hkl read x, y positions and compute r.m.s. deviations between
+    observed and calculated centroids with and without the corrections.
+    N.B. will only compute offsets for reflections with I/sigma > 10.'''
+
+    from scitbx import matrix
+    import math
+
+    x_corrections = open_file_return_array(x_crns_file)
+    y_corrections = open_file_return_array(y_crns_file)
+
+    sumxx_orig = 0.0
+    n_obs = 0
+    sumxx_corr = 0.0
+
+    for record in open(int_hkl):
+        if record.startswith('!'):
+            continue
+        values = map(float, record.split())
+        i, sigi = values[3], values[4]
+
+        if sigi < 0:
+            continue
+        
+        if i / sigi < 10:
+            continue
+        
+        xc, yc, zc = values[5:8]
+        xo, yo, zo = values[12:15]
+
+        xc_orig = matrix.col((xc, yc, zc))
+        xo_orig = matrix.col((xo, yo, zo))
+
+        n_obs += 1
+        sumxx_orig += (xo_orig - xc_orig).dot()
+
+        # get the correcions for this pixel... N.B. 1 + ... lost due to C-style
+        # rather than Fortran-style arrays
+
+        ix4 = int(round((xc - 2) / 4))
+        iy4 = int(round((yc - 2) / 4))
+
+        # hmm.... Fortran multi-dimensional array ordering...
+
+        dx = 0.1 * x_corrections[iy4, ix4]
+        dy = 0.1 * y_corrections[iy4, ix4]
+
+        xc_corr = matrix.col((xc + dx, yc + dy, zc))
+
+        sumxx_corr += (xo_orig - xc_corr).dot()
+
+    return math.sqrt(sumxx_orig / n_obs), math.sqrt(sumxx_corr / n_obs)
+
 if __name__ == '__main__':
     import sys
-    image = open_file_return_array(sys.argv[1])
-    plot_image(image)
+    
+    orig, corr = read_integrate_hkl_apply_corrections(
+        sys.argv[1], sys.argv[2], sys.argv[3])
+
+    print orig, corr
