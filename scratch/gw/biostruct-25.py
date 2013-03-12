@@ -34,7 +34,17 @@ def plot_image(image):
 
     return
 
-def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
+def parse_xds_xparm_scan_info(xparm_file):
+    values = map(float, open(xparm_file).read().split())
+
+    assert(len(values) == 42)
+
+    img_start, osc_start, osc_range = values[:3]
+
+    return img_start, osc_start, osc_range
+
+def read_integrate_hkl_apply_corrections(
+        int_hkl, x_crns_file, y_crns_file, xparm_file):
     '''Read X corrections and Y corrections to arrays; for record in
     int_hkl read x, y positions and compute r.m.s. deviations between
     observed and calculated centroids with and without the corrections.
@@ -50,6 +60,36 @@ def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
     n_obs = 0
     sumxx_corr = 0.0
 
+    # FIXME find code to run prediction of reflection lists...
+
+    img_start, osc_start, osc_range = parse_xds_xparm_scan_info(xparm_file)
+
+    from rstbx.cftbx.coordinate_frame_converter import \
+        coordinate_frame_converter
+
+    cfc = coordinate_frame_converter(xparm_file)
+
+    fast = cfc.get_c('detector_fast')
+    slow = cfc.get_c('detector_slow')
+    normal = fast.cross(slow)
+
+    origin = cfc.get_c('detector_origin')
+    distance = origin.dot(normal)
+
+    print distance
+    
+    A = cfc.get_c('real_space_a')
+    B = cfc.get_c('real_space_b')
+    C = cfc.get_c('real_space_c')
+
+    cell = (A.length(), B.length(), C.length(), B.angle(C, deg = True),
+            C.angle(A, deg = True), A.angle(B, deg = True))
+
+    u, b = cfc.get_u_b()
+    ub = u * b
+    s0 = - cfc.get_c('sample_to_source')
+    axis = cfc.get_c('rotation_axis')
+    
     for record in open(int_hkl):
         if record.startswith('!'):
             continue
@@ -62,7 +102,26 @@ def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
         if i / sigi < 10:
             continue
 
+        # FIXME also read the GXPARM.XDS file and recompute the reflection
+        # position from the Miller indices and model of experimental geometry
+        # as xc, yc, zc... Ah, smarter: use the zc from the file to provide the
+        # rotation, not a full prediction: only then need to worry about
+        # computing the intersection.
+        
+        hkl = map(int, map(round, values[:3]))
+
         xc, yc, zc = values[5:8]
+
+        p = (zc - img_start) * osc_range + osc_start
+
+        rubh = (ub * hkl).rotate(axis, - p, deg = True)
+        q = (s0 + rubh).normalize()
+
+        r = q * distance / q.dot(normal) - origin
+
+        _xc = r.dot(fast)
+        _yc = r.dot(slow)
+
         xo, yo, zo = values[12:15]
 
         xc_orig = matrix.col((xc, yc))
@@ -93,6 +152,6 @@ if __name__ == '__main__':
     import sys
 
     orig, corr = read_integrate_hkl_apply_corrections(
-        sys.argv[1], sys.argv[2], sys.argv[3])
+        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
     print orig, corr
