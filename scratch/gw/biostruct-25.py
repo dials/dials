@@ -1,3 +1,4 @@
+from __future__ import division
 # copied from James's code...
 
 def open_file_return_array(filename):
@@ -57,15 +58,15 @@ def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
 
         if sigi < 0:
             continue
-        
+
         if i / sigi < 10:
             continue
-        
+
         xc, yc, zc = values[5:8]
         xo, yo, zo = values[12:15]
 
-        xc_orig = matrix.col((xc, yc, zc))
-        xo_orig = matrix.col((xo, yo, zo))
+        xc_orig = matrix.col((xc, yc))
+        xo_orig = matrix.col((xo, yo))
 
         n_obs += 1
         sumxx_orig += (xo_orig - xc_orig).dot()
@@ -76,12 +77,13 @@ def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
         ix4 = int(round((xc - 2) / 4))
         iy4 = int(round((yc - 2) / 4))
 
-        # hmm.... Fortran multi-dimensional array ordering...
+        # hmm.... Fortran multi-dimensional array ordering... identified by
+        # bounds error other way around...
 
         dx = 0.1 * x_corrections[iy4, ix4]
         dy = 0.1 * y_corrections[iy4, ix4]
 
-        xc_corr = matrix.col((xc + dx, yc + dy, zc))
+        xc_corr = matrix.col((xc + dx, yc + dy))
 
         sumxx_corr += (xo_orig - xc_corr).dot()
 
@@ -89,7 +91,7 @@ def read_integrate_hkl_apply_corrections(int_hkl, x_crns_file, y_crns_file):
 
 if __name__ == '__main__':
     import sys
-    
+
     orig, corr = read_integrate_hkl_apply_corrections(
         sys.argv[1], sys.argv[2], sys.argv[3])
 
