@@ -3,6 +3,8 @@
 #include <string>
 #include <dials/algorithms/spatial_indexing/quadtree.h>
 
+using namespace dials::algorithms;
+
 typedef Quadtree<Box> MyQuadtree;
 
 /** Print out a box */

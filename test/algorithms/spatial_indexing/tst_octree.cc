@@ -3,6 +3,8 @@
 #include <string>
 #include <dials/algorithms/spatial_indexing/octree.h>
 
+using namespace dials::algorithms;
+
 typedef Octree<Box3d> MyOctree;
 
 /** Print out a box */
