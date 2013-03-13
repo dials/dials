@@ -247,7 +247,7 @@ std::string pass_fail(bool pass) {
 int main (int argc, char const* argv[])
 {
   MyOctree tree(Box3d(0, 0, 0, 512, 512, 512));
-  clock_t st = clock();
+  //clock_t st = clock();
   std::size_t num = 10000;
   std::size_t num_valid_obj = 0;
   for (std::size_t i = 0; i < num; ++i) {
