@@ -1,6 +1,51 @@
 from __future__ import division
 # copied from James's code...
 
+def get_image(cbf_handle, category='array_data', column='data', row=0,
+              element=0):
+    """Read an image from a CBF file
+
+    This function is a bit of a hack - I'm not sure what the general structure
+    of a CBF file is like but for the data I have, it works. Reads an image
+    from the location specified in the CBF file, otherwise raises an exception.
+
+    :param cbf_handle: The handle to the CBF file
+    :param category: Category in which the image is contained
+    :param column: Column in which the image is contained
+    :param row: Row in which image is contained
+    :param element: Element in which image is contained
+    :returns: An array of image data
+
+    """
+    import numpy
+    
+    # Find the given category, column and row
+    cbf_handle.find_category(category)
+    cbf_handle.find_column(column)
+    cbf_handle.select_row(row)
+
+    # Check the type of the element to ensure it's a binary
+    # otherwise raise an exception
+    type = cbf_handle.get_typeofvalue()
+    if type.find('bnry') > -1:
+
+        # Read the image data into an array
+        image_string = cbf_handle.get_integerarray_as_string()
+        image = numpy.fromstring(image_string, numpy.int32)
+
+        # Get the size of the image data (either 2d or 3d)
+        image_size = cbf_handle.get_image_size(element)
+
+        # Resize the image
+        image.shape = (image_size)
+
+    else:
+        raise TypeError('{0}:{1}:{2}:{3} is not an image'.format(
+                            category, column, row, element))
+
+    # Return the image
+    return image
+
 def open_file_return_array(filename):
     import pycbf
     import numpy
@@ -44,7 +89,7 @@ def parse_xds_xparm_scan_info(xparm_file):
     return img_start, osc_start, osc_range
 
 def read_integrate_hkl_apply_corrections(
-        int_hkl, x_crns_file, y_crns_file, xparm_file):
+        int_hkl, x_crns_file, y_crns_file, xparm_file, image_file):
     '''Read X corrections and Y corrections to arrays; for record in
     int_hkl read x, y positions and compute r.m.s. deviations between
     observed and calculated centroids with and without the corrections.
@@ -88,6 +133,13 @@ def read_integrate_hkl_apply_corrections(
     s0 = - cfc.get_c('sample_to_source') / cfc.get('wavelength')
     axis = cfc.get_c('rotation_axis')
 
+    xcal = []
+    xobs = []
+    xcor = []
+    ycal = []
+    yobs = []
+    ycor = []
+    
     for record in open(int_hkl):
         if record.startswith('!'):
             continue
@@ -142,13 +194,66 @@ def read_integrate_hkl_apply_corrections(
         xc_corr = matrix.col((xc + dx, yc + dy))
 
         sumxx_corr += (xo_orig - xc_corr).dot()
+        
+        # Put coords in array if they're in frame zero
+        if (zo >= 0 and zo < 1):
+          xcal.append(xc)
+          xobs.append(xo)
+          xcor.append(xc + dx)
+
+          ycal.append(yc)
+          yobs.append(yo)
+          ycor.append(yc + dy)
+
+
+    if (image_file):
+      import pycbf
+      cbf_handle = pycbf.cbf_handle_struct()
+      cbf_handle.read_file(image_file, pycbf.MSG_DIGEST)
+      image_array = get_image(cbf_handle)
+      
+      # Correct coords for matplotlib convention
+      xcal = [x - 0.5 for x in xcal]
+      xobs = [x - 0.5 for x in xobs]
+      xcor = [x - 0.5 for x in xcor]
+
+      ycal = [y - 0.5 for y in ycal]
+      yobs = [y - 0.5 for y in yobs]
+      ycor = [y - 0.5 for y in ycor]
+
+      # Manually selected a spot
+#      xp = 533
+#      yp = 342
+#      ix4 = int(round((xp - 2) / 4))
+#      iy4 = int(round((yp - 2) / 4))
+#      dx = 0.1 * x_corrections[iy4, ix4]
+#      dy = 0.1 * y_corrections[iy4, ix4]
+#      xpcor = [xp + dx]
+#      ypcor = [yp + dy]
+      
+      
+      # Show the image with points plotted on it
+      from matplotlib import pylab, cm
+      pylab.imshow(image_array, cmap=cm.Greys_r, interpolation='nearest',
+                   origin='bottom')
+      pylab.scatter(xcal, ycal, c='r', marker='x')
+      pylab.scatter(xobs, yobs, c='b', marker='x')
+      pylab.scatter(xcor, ycor, c='y', marker='x')
+      #pylab.scatter(xpcor, ypcor, c='b', marker='8')
+      pylab.show()
 
     return math.sqrt(sumxx_orig / n_obs), math.sqrt(sumxx_corr / n_obs)
 
 if __name__ == '__main__':
     import sys
 
+    if (len(sys.argv) == 6):
+        image_file = sys.argv[5]
+    else:
+        image_file = None
+
     orig, corr = read_integrate_hkl_apply_corrections(
-        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], image_file)
 
     print orig, corr
+    
