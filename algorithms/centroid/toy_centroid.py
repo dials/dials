@@ -1,9 +1,8 @@
 # toy centroid implementation: this is deliberately bad to illustrate how the
 # interface works and how things could be improved
-
+from __future__ import division
 from dials.interfaces.centroid.centroid_interface_prototype import \
     centroid_interface_prototype as centroid_interface
-from __future__ import division
 
 class toy_centroid(centroid_interface):
     def __init__(self, bounding_boxes, dxtbx_sweep_object):
