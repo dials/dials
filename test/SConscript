@@ -9,3 +9,6 @@ env.Program(
 env.Program(
     target="algorithms/spatial_indexing/tst_octree", 
     source="algorithms/spatial_indexing/tst_octree.cc")
+env.Program(
+    target="algorithms/spatial_indexing/tst_collision_detection", 
+    source="algorithms/spatial_indexing/tst_collision_detection.cc")

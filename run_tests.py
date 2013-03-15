@@ -13,6 +13,7 @@ tst_list = (
     "$D/test/algorithms/integration/tst_from_xds_coordinate_system.py",
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
     "$B/test/algorithms/spatial_indexing/tst_octree",
+    "$B/test/algorithms/spatial_indexing/tst_collision_detection",
     )
 
 def run () :

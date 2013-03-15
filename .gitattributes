@@ -404,6 +404,7 @@ test/algorithms/integration/tst_from_beam_vector_to_xds.py -text
 test/algorithms/integration/tst_from_xds_e3_to_phi.py -text
 test/algorithms/integration/tst_from_xds_to_beam_vector.py -text
 test/algorithms/integration/tst_xds_coordinate_system.py -text
+test/algorithms/spatial_indexing/tst_collision_detection.cc -text
 test/algorithms/spatial_indexing/tst_octree.cc -text
 test/algorithms/spatial_indexing/tst_quadtree.cc -text
 test/algorithms/spot_prediction/tst_index_generator.py -text
