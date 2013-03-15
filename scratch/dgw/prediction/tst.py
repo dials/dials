@@ -80,8 +80,8 @@ def align_reference_frame(primary_axis, primary_target,
 
 if __name__ == "__main__":
 
-    ### Perform a unit test by comparing the results of angle_predictor_py to those
-    ### from rstbx's rotation_angles
+    ### Perform a unit test by comparing the results of angle_predictor_py to 
+    ### those from rstbx's rotation_angles
 
     ### python and cctbx imports
     import random
@@ -130,9 +130,9 @@ if __name__ == "__main__":
         mygonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
     ra = rotation_angles(resolution,
-                         R_to_rossmann * mycrystal.get_U() * mycrystal.get_B(),
-                         mybeam.get_wavelength(),
-                         R_to_rossmann * matrix.col(mygonio.get_rotation_axis()))
+                    R_to_rossmann * mycrystal.get_U() * mycrystal.get_B(),
+                    mybeam.get_wavelength(),
+                    R_to_rossmann * matrix.col(mygonio.get_rotation_axis()))
 
     obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
@@ -143,8 +143,10 @@ if __name__ == "__main__":
         phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
 
     # NB
-    # obs_indices is a scitbx_array_family_flex_ext.vec3_double and contains floating point indices.
-    # obs_indices2 is a cctbx_array_family_flex_ext.miller_index containing integer indices
+    # * obs_indices is a scitbx_array_family_flex_ext.vec3_double and contains
+    # floating point indices.
+    # * obs_indices2 is a cctbx_array_family_flex_ext.miller_index containing
+    # integer indices
 
     for h1, h2, p1, p2 in zip(obs_indices, obs_indices2, obs_angles, obs_angles2):
         assert(h1 == h2)
@@ -175,7 +177,8 @@ if __name__ == "__main__":
     obs_indices = temp
 
     for i in xrange(20):
-        print obs_indices[i], obs_angles[i], obs_indices2[i], obs_angles2[i], obs_indices3[i], obs_angles3[i]
+        print (obs_indices[i], obs_angles[i], obs_indices2[i], obs_angles2[i],
+              obs_indices3[i], obs_angles3[i])
     print len(obs_indices), len(obs_indices2), len(obs_indices3)
 
     # FIXME how do I compare these sets?
@@ -195,5 +198,46 @@ if __name__ == "__main__":
 #    for ang, ang2 in zip(obs_angles, obs_angles2):
 #        assert approx_equal(ang, ang2)
 #
+
+    # Now compare dials.algorithms.spot_prediction with the above methods. I
+    # want to switch over to using DIALS spot prediction, but should verify that
+    # it gives me the same results first.
+    from dials.algorithms.spot_prediction import IndexGenerator, RotationAngles
+
+    # Construct an IndexGenerator(unit_cell, space_group_type, d_min)
+    index_generator = IndexGenerator(mycrystal.get_unit_cell(), space_group(space_group_symbols(1).hall()).type(), 1.0)
+    dials_indices = index_generator.to_array()
+    
+    # Ensure generated indices are the same
+    for h1, h2 in zip(indices, dials_indices):
+        assert h1 == h2
+
+    # Construct a RotationAngles(beam_vector, spindle_axis)
+    rotation_angles = RotationAngles(mybeam.get_s0(),
+                                     mygonio.get_rotation_axis())
+
+
+    UB = mycrystal.get_U() * mycrystal.get_B()
+
+    # try a few indices
+    dials_angles = flex.double()
+    dials_obs_indices = flex.miller_index()
+    for h in indices:
+        try:
+            angles = rotation_angles(h, UB)
+        except RuntimeError as e:
+            continue
+        dials_obs_indices.append(h)
+        dials_angles.append(angles[0])
+        dials_obs_indices.append(h)
+        dials_angles.append(angles[1])
+
+    for i in xrange(20):
+        print (obs_indices2[i], obs_angles2[i], dials_obs_indices[i], dials_angles[i])
+    print len(obs_indices2), len(dials_obs_indices)
+    
+    # Note dials_indices is about twice as long as obs_indices2, because it
+    # hasn't been filtered by a rotation range of pi radians!
+
     # if we got this far,
     print "OK"

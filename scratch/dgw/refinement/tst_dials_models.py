@@ -142,6 +142,27 @@ assert my_gonio.get_axis() == matrix.col(dials_gonio.get_rotation_axis())
 # Compare detector methods #
 ############################
 
+# To change to DIALS models, I must modify these modules:
+
+# prediction/predictors: change impact_predictor to use the prediction method
+# built into the Panel object, that is get_ray_intersection(ray).
+# Okay, in fact the whole prediction module should be replaced with DIALS code.
+# There is already dials.algorithms.spot_prediction. I should look into this
+# before continuing
+
+# detector_parameters
+# prediction_parameters
+# tst_prediction_parameters
+# setup_geometry
+# refinement
+# target
+# plot_derivatives
+# tst_finite_diffs
+# tst_orientation_refinement
+# tst_convergence_radius
+# tst_convergence_radius_one_parameter
+# tst_ref_passage_categorisation
+
 # FIXME the current detector parameterisation is initialised with a
 # sensor, not a detector! This should be changed now, after I move to
 # the DIALS models.

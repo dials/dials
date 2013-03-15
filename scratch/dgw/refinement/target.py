@@ -46,8 +46,16 @@ class target(object):
 
         # get predictions from the current model and the list of observed hkls
 
-        # FIXME making no use of the sweep's angular range here. Perhaps this
-        # should come from a sweep class
+        # FIXME Reorganise this so that there is a loop over all observations
+        # that are flagged to be used in refinement. For each observation,
+        # predict its rotation angles (what to do for an observation that fails
+        # to produce predicted angles?) and the impact positions. Update these
+        # each loop cycle. This removes the need for reflection matching,
+        # because the observations are explicitly stepped through. Use the
+        # DIALS prediction code for this. If it is too slow doing this loop in
+        # Python, then move it to C++ (but that will require the observation
+        # data structure to be in C++ as well)
+
         hkls, angles = self._angle_predictor.observed_indices_and_angles_from_angle_range(
             phi_start_rad = 0.0, phi_end_rad = TWO_PI,
             indices = self._H.get_indices())
