@@ -357,6 +357,7 @@ scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py 
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
 scratch/jmp/index_test.py -text
 scratch/jmp/misc/normality_check.py -text
+scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/runtests.py -text
 scratch/jmp/test/data/sim_mx/DX-CORRECTIONS.cbf -text
 scratch/jmp/test/data/sim_mx/DY-CORRECTIONS.cbf -text
