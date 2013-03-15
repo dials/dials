@@ -405,6 +405,7 @@ scratch/luiso_s/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_w_predict_spots.py -text svneol=unset#text/plain
 scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
 test/SConscript -text
+test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/integration/tst_from_beam_vector_to_xds.py -text
 test/algorithms/integration/tst_from_xds_e3_to_phi.py -text
 test/algorithms/integration/tst_from_xds_to_beam_vector.py -text
