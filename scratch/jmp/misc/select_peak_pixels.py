@@ -64,9 +64,15 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
 
     """
     from dials.algorithms.integration import foreground_pixels
-
+    from scitbx.array_family import flex
+    
+    # Get the 1D array
+    data = flex.double(len(pixel_data))
+    for i in range(len(pixel_data)):
+        data[i] = pixel_data[i]
+    
     # Get a list of foreground pixel indices
-    index = foreground_pixels(pixel_data, min_pixels, n_sigma)
+    index = foreground_pixels(data, min_pixels, n_sigma)
 
     # Select and return only those pixels that are contigious
     return select_contigious(index, (5, 5), conn)
@@ -77,11 +83,11 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
 if __name__ == '__main__':
 
     from scitbx.array_family import flex
-    data = flex.double([1, 10,  0,  0, 0,
-                        0,  0,  0,  1, 1,
-                        2,  1, 10,  0, 0,
-                        0,  0, 10, 20, 0,
-                        0,  0,  1,  0, 1,])
+    data = flex.double([[1, 10,  0,  0, 0],
+                        [0,  0,  0,  1, 1],
+                        [2,  1, 10,  0, 0],
+                        [0,  0, 10, 20, 0],
+                        [0,  0,  1,  0, 1]])
 
     index = select_foreground_pixels(data, n_sigma=2)
 

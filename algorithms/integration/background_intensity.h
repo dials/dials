@@ -53,7 +53,11 @@ namespace dials { namespace algorithms {
     mean_and_variance <double> mean_and_variance(data);
     double mean = mean_and_variance.mean();
     double sdev = mean_and_variance.unweighted_sample_standard_deviation();
-    DIALS_ASSERT(sdev > 0);
+
+    // If sdev is zero then the extent of the data is 0 sigma
+    if (sdev == 0) {
+      return 0.0;
+    }
 
     // Calculate the min/max of the data
     double mind = min(data);
@@ -182,6 +186,48 @@ namespace dials { namespace algorithms {
 
     // Resize index to first n elements
     index.resize(num_data);
+
+    // Return the indices
+    return index;
+  }
+
+  /*
+   * Calculate the pixels contributing to the foreground intensity.
+   *
+   * @param data The list of pixels
+   * @param min_data The minimum number of pixels needed
+   * @param n_sigma The number of standard deviations to consider normal
+   * @returns The list of pixels contributing to the background
+   */
+  inline
+  shared<std::size_t> foreground_pixels(const const_ref<double> &data,
+      int min_data, double n_sigma) {
+
+    // Check we have enough data
+    DIALS_ASSERT(min_data > 0);
+    DIALS_ASSERT(data.size() >= min_data);
+
+    // Sort the data and return sorted indices
+    shared<std::size_t> index = sort_index(data);
+    shared<double> sorted_data(data.size());
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      sorted_data[i] = data[index[i]];
+    }
+
+    // Check if the data is normally distributed. If it is not, then remove
+    // a value of high intensity and keep looping until it is. If the number
+    // of iterations exceeds the maximum then exit the loop.
+    std::size_t num_data = data.size();
+    for (; num_data > min_data; --num_data) {
+      if (is_normally_distributed(const_ref<double>(
+          sorted_data.begin(), num_data), n_sigma)) {
+        break;
+      }
+    }
+
+    // Resize index to first n elements
+    std::reverse(index.begin(), index.end());
+    index.resize(data.size() - num_data);
 
     // Return the indices
     return index;

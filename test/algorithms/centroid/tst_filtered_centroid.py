@@ -1,7 +1,7 @@
 from __future__ import division
-from dials.algorithms.centroid.toy_centroid import toy_centroid
+from dials.algorithms.centroid.filtered_centroid import FilteredCentroid
 
-def tst_toy_centroid():
+def tst_filtered_centroid():
     import libtbx.load_env
     try:
         dials_regression = libtbx.env.dist_path('dials_regression')
@@ -22,7 +22,7 @@ def tst_toy_centroid():
         (0, 0, 0):[(0, 8, 1022, 1036, 1070, 1083)]
         }
 
-    tc = toy_centroid(bounding_boxes, sweep)
+    tc = FilteredCentroid(bounding_boxes, sweep)
 
     centroids = tc.get_centroids()
 
@@ -31,4 +31,4 @@ def tst_toy_centroid():
             print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
 
 if __name__ == '__main__':
-    tst_toy_centroid()
+    tst_filtered_centroid()
