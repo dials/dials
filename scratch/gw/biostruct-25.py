@@ -244,16 +244,109 @@ def read_integrate_hkl_apply_corrections(
 
     return math.sqrt(sumxx_orig / n_obs), math.sqrt(sumxx_corr / n_obs)
 
+def read_spot_xds_apply_corrections(
+        spot_xds, x_crns_file, y_crns_file, xparm_file):
+    '''Read X corrections and Y corrections to arrays; for record in
+    int_hkl read x, y positions and compute r.m.s. deviations between
+    observed and calculated centroids with and without the corrections.
+    N.B. will only compute offsets for reflections with I/sigma > 10.'''
+
+    from scitbx import matrix
+    import math
+
+    x_corrections = open_file_return_array(x_crns_file)
+    y_corrections = open_file_return_array(y_crns_file)
+
+    sumxx_orig = 0.0
+    n_obs = 0
+    sumxx_corr = 0.0
+
+    # FIXME find code to run prediction of reflection lists...
+
+    img_start, osc_start, osc_range = parse_xds_xparm_scan_info(xparm_file)
+
+    from rstbx.cftbx.coordinate_frame_converter import \
+        coordinate_frame_converter
+
+    cfc = coordinate_frame_converter(xparm_file)
+
+    fast = cfc.get_c('detector_fast')
+    slow = cfc.get_c('detector_slow')
+    normal = fast.cross(slow)
+
+    origin = cfc.get_c('detector_origin')
+    distance = origin.dot(normal)
+
+    A = cfc.get_c('real_space_a')
+    B = cfc.get_c('real_space_b')
+    C = cfc.get_c('real_space_c')
+
+    cell = (A.length(), B.length(), C.length(), B.angle(C, deg = True),
+            C.angle(A, deg = True), A.angle(B, deg = True))
+
+    u, b = cfc.get_u_b()
+    ub = u * b
+    s0 = - cfc.get_c('sample_to_source') / cfc.get('wavelength')
+    axis = cfc.get_c('rotation_axis')
+
+    xcal = []
+    xobs = []
+    xcor = []
+    ycal = []
+    yobs = []
+    ycor = []
+    
+    for record in open(spot_xds):
+        values = map(float, record.split())
+
+        hkl = map(int, map(round, values[-3:]))
+
+        if hkl[0] == 0 and hkl[1] == 0 and hkl[2] == 0:
+            continue
+
+        xc, yc, zc = values[:3]
+        angle = (zc - img_start + 1) * osc_range + osc_start
+        d2r = math.pi / 180.0
+
+        s = (ub * hkl).rotate(axis, angle * d2r) + s0
+        s = s.normalize()
+        r = s * distance / s.dot(normal) - origin
+
+        xc = r.dot(fast) / 0.172
+        yc = r.dot(slow) / 0.172
+
+        xo, yo, zo = values[:3]
+
+        xc_orig = matrix.col((xc, yc))
+        xo_orig = matrix.col((xo, yo))
+
+        n_obs += 1
+        sumxx_orig += (xo_orig - xc_orig).dot()
+
+        # get the correcions for this pixel... N.B. 1 + ... lost due to C-style
+        # rather than Fortran-style arrays
+
+        ix4 = int(round((xc - 2) / 4))
+        iy4 = int(round((yc - 2) / 4))
+
+        # hmm.... Fortran multi-dimensional array ordering... identified by
+        # bounds error other way around...
+
+        dx = 0.1 * x_corrections[iy4, ix4]
+        dy = 0.1 * y_corrections[iy4, ix4]
+
+        xc_corr = matrix.col((xc + dx, yc + dy))
+
+        sumxx_corr += (xo_orig - xc_corr).dot()
+
+    print n_obs
+    return math.sqrt(sumxx_orig / n_obs), math.sqrt(sumxx_corr / n_obs)
+
 if __name__ == '__main__':
     import sys
 
-    if (len(sys.argv) == 6):
-        image_file = sys.argv[5]
-    else:
-        image_file = None
-
-    orig, corr = read_integrate_hkl_apply_corrections(
-        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], image_file)
+    orig, corr = read_spot_xds_apply_corrections(
+        sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
     print orig, corr
     
