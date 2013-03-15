@@ -4,7 +4,7 @@ class centroid_interface_prototype(object):
     def __init__(self, bounding_boxes, dxtbx_sweep_object):
         self._bounding_boxes = bounding_boxes
         self._sweep = dxtbx_sweep_object
-        self._centroids = self._compute_centroids()
+        self._compute_centroids()
 
         return
 
@@ -27,6 +27,7 @@ class centroid_interface_prototype(object):
         self._centroids = { }
 
         for hkl in self._bounding_boxes:
+          
             self._centroids[hkl] = []
 
             for bbox in self._bounding_boxes[hkl]:

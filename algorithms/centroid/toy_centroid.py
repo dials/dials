@@ -6,9 +6,11 @@ from dials.interfaces.centroid.centroid_interface_prototype import \
 
 class toy_centroid(centroid_interface):
     def __init__(self, bounding_boxes, dxtbx_sweep_object):
-        centroid_interfaces.__init__(self, bounding_boxes, dxtbx_sweep_object)
 
-        self._image_size = self._sweep.get_detector().get_size()
+        self._image_size = dxtbx_sweep_object.get_detector().get_image_size()
+
+        centroid_interface.__init__(self, bounding_boxes, dxtbx_sweep_object)
+
 
         return
 
@@ -16,7 +18,7 @@ class toy_centroid(centroid_interface):
 
         import math
 
-        fmin, fmax, rmin, rmax, cmin, cmax = bbox
+        f_min, f_max, r_min, r_max, c_min, c_max = bbox
 
         # build the list of pixels - let's be dumb and just have a literal
         # list
