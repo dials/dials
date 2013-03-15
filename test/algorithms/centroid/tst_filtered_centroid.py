@@ -22,7 +22,7 @@ def tst_filtered_centroid():
         (0, 0, 0):[(0, 8, 1022, 1036, 1070, 1083)]
         }
 
-    tc = FilteredCentroid(bounding_boxes, sweep)
+    tc = FilteredCentroid(bounding_boxes, sweep, n_sigma=3)
 
     centroids = tc.get_centroids()
 

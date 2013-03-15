@@ -159,6 +159,7 @@ def predict_spots(input_filename, image_frames, display_frame):
     scan = models.get_scan()
     first_image = scan.get_image_range()[0]
     image_range = (first_image, first_image + num_frames)
+    image_range = (1, 4000)
     scan.set_image_range(image_range)
 
     # Read other data (need to assume an XPARM file
@@ -185,7 +186,7 @@ def predict_spots(input_filename, image_frames, display_frame):
 
     # Create the spot predictor
     predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(), UB,
-                                scan.get_oscillation_range())
+                                scan.get_oscillation_range(deg=False))
 
     # Generate Indices
     miller_indices = print_call_info(generate_indices.to_array,
