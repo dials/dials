@@ -38,13 +38,15 @@ def visualize_predicted_spots( image_volume, display_frame, spot_coords ):
     print '_________________________________________________________________'
     spot_xy = [( x - 0.5, y - 0.5 ) for x, y, z in spot_coords if display_frame <= z < display_frame + 1]
     xcoords, ycoords = zip( *spot_xy )
+    display_image_with_predicted_spots( image_volume[display_frame, :, :], xcoords, ycoords )
+
     my_tst_code( image_volume[display_frame, :, :], xcoords, ycoords )
 
-    # display_image_with_predicted_spots( image_volume[display_frame, :, :], xcoords, ycoords )
 def my_tst_code( image2d, x_ls, y_ls ):
     import numpy
     import time
-    import ind_2d_integrate_tst01
+    # import ind_2d_integrate_tst01
+    import ind_2d_integrate
     cntrd_xcoord = numpy.zeros( len( x_ls ) )
     cntrd_ycoord = numpy.zeros( len( x_ls ) )
     x_sigma = numpy.zeros( len( x_ls ) )
@@ -55,6 +57,7 @@ def my_tst_code( image2d, x_ls, y_ls ):
     # print "time1 =", time1
 
     ind_2d_integrate_tst01.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
+    # ind_2d_integrate.start( image2d, x_ls, y_ls , cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma )
 
     time2 = time.time()
     # print "time2 =", time2

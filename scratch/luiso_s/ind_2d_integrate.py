@@ -84,25 +84,25 @@ def single_spot_integrate( data2d, xcoord, ycoord , x_cm, y_cm, x_sigma, y_sigma
             x_sigma[pos] = -1
             y_sigma[pos] = -1
 
-#    from matplotlib import pyplot as plt
-#    paintmask = diffdata2d_ext
-#    paintmask = paintmask + diffdata2d
-#    for x in range( 0, n_x ):
-#        for y in range( 0, n_y ):
-#            if data2dsmoth[x, y] >= 15:
-#                paintmask[x, y] = paintmask[x, y] + 1
-#
-#    for pos in range( len( xcoord ) ):
-#        nint_xcoord = int( xcoord[pos] + .5 )
-#        nint_ycoord = int( ycoord[pos] + .5 )
-#        paintmask[nint_xcoord, nint_ycoord ] = paintmask[nint_xcoord, nint_ycoord] + 1
-#    for pos in range( len( xcoord ) ):
-#        paintmask[int( x_cm[pos] + 0.5 ), int( y_cm[pos] + 0.5 )] = 5
-#    print "Plotting paintmask"
-#    plt.imshow( numpy.transpose( paintmask ), interpolation = "nearest", origin = 'lower' )
-#    plt.show()
-#
-#    print "Plotting diffdata2d"
-#    plt.imshow( numpy.transpose( diffdata2d ), interpolation = "nearest", origin = 'lower' )
-#    plt.show()
+    from matplotlib import pyplot as plt
+    paintmask = diffdata2d_ext
+    paintmask = paintmask + diffdata2d
+    for x in range( 0, n_x ):
+        for y in range( 0, n_y ):
+            if data2dsmoth[x, y] >= 15:
+                paintmask[x, y] = paintmask[x, y] + 1
+
+    for pos in range( len( xcoord ) ):
+        nint_xcoord = int( xcoord[pos] + .5 )
+        nint_ycoord = int( ycoord[pos] + .5 )
+        paintmask[nint_xcoord, nint_ycoord ] = paintmask[nint_xcoord, nint_ycoord] + 1
+    for pos in range( len( xcoord ) ):
+        paintmask[int( x_cm[pos] + 0.5 ), int( y_cm[pos] + 0.5 )] = 5
+    print "Plotting paintmask"
+    plt.imshow( numpy.transpose( paintmask ), interpolation = "nearest", origin = 'lower' )
+    plt.show()
+
+    print "Plotting diffdata2d"
+    plt.imshow( numpy.transpose( diffdata2d ), interpolation = "nearest", origin = 'lower' )
+    plt.show()
 
