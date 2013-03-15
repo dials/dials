@@ -3,6 +3,7 @@
 /__init__.py -text
 algorithms/SConscript -text
 algorithms/__init__.py -text
+algorithms/centroid/toy_centroid.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/background_intensity.h -text
