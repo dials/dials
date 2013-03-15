@@ -100,6 +100,7 @@ framework/dftbx/dftbx.cpp -text
 framework/dftbx/dftbx.h -text
 framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
+interfaces/__init__.py -text
 interfaces/centroid/__init__.py -text
 interfaces/centroid/centroid_interface_prototype.py -text
 model/SConscript -text
