@@ -25,7 +25,8 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     beam = models.get_beam()
     detector = models.get_detector()
     gonio = models.get_goniometer()
-    scan = models.get_scan()
+    # scan = models.get_scan()
+    scan = sweep.get_scan()
     first_image = scan.get_image_range()[0]
     image_range = sweep.get_scan().get_image_range()
     scan.set_image_range(image_range)
