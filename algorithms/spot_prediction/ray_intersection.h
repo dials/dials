@@ -91,6 +91,7 @@ namespace dials { namespace algorithms {
   shared<Reflection> ray_intersection(const Detector &detector,
       const ReflectionList &reflections) {
     shared<Reflection> reflections_new;
+    reflections_new.reserve(reflections.size());
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       try {
         reflections_new.push_back(ray_intersection(detector, reflections[i]));
@@ -114,7 +115,8 @@ namespace dials { namespace algorithms {
   inline
   shared<Reflection> ray_intersection(const Detector &detector,
       const ReflectionList &reflections, std::size_t panel) {
-    shared<Reflection> reflections_new(reflections.size());
+    shared<Reflection> reflections_new;
+    reflections_new.reserve(reflections.size());
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       try {
         reflections_new.push_back(ray_intersection(
