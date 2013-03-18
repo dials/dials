@@ -15,6 +15,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/shared.h>
+#include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
 
 namespace dials { namespace model {

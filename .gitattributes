@@ -11,6 +11,7 @@ algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/background_intensity.h -text
 algorithms/integration/boost_python/background_intensity.cc -text
+algorithms/integration/boost_python/find_overlapping_reflections.cc -text
 algorithms/integration/boost_python/from_beam_vector_to_xds.cc -text
 algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
 algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
@@ -18,6 +19,7 @@ algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/shoebox_calculator.cc -text
 algorithms/integration/boost_python/subtract_background.cc -text
 algorithms/integration/boost_python/xds_coordinate_system.cc -text
+algorithms/integration/find_overlapping_reflections.h -text
 algorithms/integration/from_beam_vector_to_xds.h -text
 algorithms/integration/from_xds_e3_to_phi.h -text
 algorithms/integration/from_xds_to_beam_vector.h -text
@@ -361,6 +363,7 @@ scratch/jmp/extract_reflection_profiles/xdsio.py -text
 scratch/jmp/index_test.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
+scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/runtests.py -text
 scratch/jmp/test/data/sim_mx/DX-CORRECTIONS.cbf -text
 scratch/jmp/test/data/sim_mx/DY-CORRECTIONS.cbf -text
