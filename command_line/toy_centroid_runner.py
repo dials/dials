@@ -25,8 +25,8 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     beam = models.get_beam()
     detector = models.get_detector()
     gonio = models.get_goniometer()
-    # scan = models.get_scan()
-    scan = sweep.get_scan()
+    scan = models.get_scan()
+    #scan = sweep.get_scan()
     first_image = scan.get_image_range()[0]
     image_range = sweep.get_scan().get_image_range()
     scan.set_image_range(image_range)
@@ -87,6 +87,24 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     # Print some reflection statistics
     print_reflection_stats(reflections)
 
+    bounding_boxes = { }
+
+    for r in reflections[:10]:
+        miller = r.miller_index
+        cmin, cmax, rmin, rmax, fmin, fmax = r.shoebox
+        if not miller in bounding_boxes:
+            bounding_boxes[miller] = []
+        bounding_boxes[miller].append((fmin, fmax, rmin, rmax, cmin, cmax))
+
+    # FIXME in here need to sort list by frame number
+
+    tc = toy_centroid(bounding_boxes, sweep)
+    centroids = tc.get_centroids()
+
+    for hkl in centroids:
+        for centroid in centroids[hkl]:
+            print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
+        
 if __name__ == '__main__':
     import sys
 
