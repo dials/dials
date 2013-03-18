@@ -32,13 +32,13 @@ class target(object):
 
     def __init__(self,
                  ref_manager,
-                 angle_predictor,
-                 impact_predictor,
+                 reflection_predictor,
+                 detector,
                  prediction_parameterisation):
 
         self._H = ref_manager
-        self._angle_predictor = angle_predictor
-        self._impact_predictor = impact_predictor
+        self._reflection_predictor = reflection_predictor
+        self._detector = detector
         self._prediction_parameterisation = prediction_parameterisation
 
     def predict(self):
@@ -54,14 +54,23 @@ class target(object):
         # because the observations are explicitly stepped through. Use the
         # DIALS prediction code for this. If it is too slow doing this loop in
         # Python, then move it to C++ (but that will require the observation
-        # data structure to be in C++ as well)
+        # data structure to be in C++ as well). This needs reworking of the
+        # reflection_manager and other classes too.
 
-        hkls, angles = self._angle_predictor.observed_indices_and_angles_from_angle_range(
-            phi_start_rad = 0.0, phi_end_rad = TWO_PI,
-            indices = self._H.get_indices())
+        # update the reflection_predictor with current geometry
+        self._reflection_predictor.update()
 
-        # calculate which of these would be observed
-        Hc, Xc, Yc, Phic, Sc = self._impact_predictor.predict(hkls, angles)
+        # predict for all observations in the manager
+        predictions = self._reflection_predictor.predict(
+                                                self._H.get_indices())
+        temp = [(ref.miller_index, ref.rotation_angle,
+                 matrix.col(ref.beam_vector)) for ref in predictions]
+        Hc, Phic, Sc = zip(*temp)
+
+        # currently assume all reflections intersect panel 0
+        impacts = [self._detector[0].get_ray_intersection(
+                                ref.beam_vector) for ref in predictions]
+        Xc, Yc = zip(*impacts)
 
         # update the reflection_manager
         self._H.update_predictions(Hc, Sc, Xc, Yc, Phic)
@@ -89,17 +98,16 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
     in terms of detector impact position X, Y and phi, terminating on achieved
     rmsd (or on intrisic convergence of the chosen minimiser)'''
 
-    def __init__(self, ref_man, angle_predictor, impact_predictor,
-                 prediction_parameterisation, pixelsize_fast,
-                 pixelsize_slow, image_width):
+    def __init__(self, ref_man, reflection_predictor, detector,
+                 prediction_parameterisation, image_width):
 
-        target.__init__(self, ref_man, angle_predictor, impact_predictor,
+        target.__init__(self, ref_man, reflection_predictor, detector,
                         prediction_parameterisation)
 
         # Scale units for the RMSD achieved criterion
-        self._pixelsize_fast = pixelsize_fast
-        self._pixelsize_slow = pixelsize_slow
+        self._pixelsize = detector.get_pixel_size()
         self._image_width = image_width
+
 
     def compute_residuals_and_gradients(self):
         '''return the vector of residuals plus their gradients
@@ -224,8 +232,8 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
     def achieved(self):
         '''RMSD criterion for target achieved '''
         r = self.rmsds()
-        if (r[0] < self._pixelsize_fast * 0.33333 and
-            r[1] < self._pixelsize_slow * 0.33333 and
+        if (r[0] < self._pixelsize[0] * 0.33333 and
+            r[1] < self._pixelsize[1] * 0.33333 and
             r[2] < self._image_width * 0.33333):
             return True
         return False

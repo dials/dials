@@ -12,12 +12,18 @@ import sys
 import random
 from math import pi
 from scitbx import matrix
-#from scitbx.array_family import flex
+from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 from libtbx.phil import parse
 
 ##### Import model builder
+
 from setup_geometry import extract
+
+##### Imports for reflection prediction
+
+from dials.algorithms.spot_prediction import IndexGenerator
+from dials.scratch.dgw.prediction import ReflectionPredictor
 
 #### Import model parameterisations
 
@@ -28,7 +34,8 @@ from dials.scratch.dgw.refinement.detector_parameters import \
 from dials.scratch.dgw.refinement.source_parameters import \
     beam_parameterisation_orientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
-    crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
+    crystal_orientation_parameterisation, \
+    crystal_unit_cell_parameterisation
 
 #### Local functions
 
@@ -39,30 +46,29 @@ def print_grads(grad_list):
 
 # Functions required for finite difference calculations
 
-def get_state(gon, src, xl, det, hkl, angle, angle_predictor):
+def get_state(det, hkl, angle, reflection_predictor):
     '''reflection prediction for the current state of the models'''
 
-    # predict the rotation angles
-    obs_ang = angle_predictor.predict(hkl)
+    # update reflection_predictor with latest geometry
+    reflection_predictor.update()
+
+    # predict for this hkl
+    refs = reflection_predictor.predict(hkl)
 
     # select which is nearest the observed angle
-    deltas = [abs(x - angle) for x in obs_ang]
-    new_angle = obs_ang[deltas.index(min(deltas))]
+    deltas = [abs(ref.rotation_angle - angle) for ref in refs]
+    new_ref = refs[deltas.index(min(deltas))]
 
-    rp = reflection_prediction(gon.get_rotation_axis(),
-                               src.get_s0(),
-                               xl.get_U() * xl.get_B(),
-                               det.sensors()[0])
+    # predict impact position
+    impact = det[0].get_ray_intersection(new_ref.beam_vector)
 
-    # cache prediction for one hkl at angle
-    if rp(hkl, new_angle):
-        return matrix.col(rp.get_prediction() + (new_angle, ))
-    else: return None
+    return matrix.col((impact) + (new_ref.rotation_angle,))
 
-def get_fd_gradients(pred_param, hkl, phi, angle_predictor, deltas):
+def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
+                     deltas):
     '''Calculate centered finite difference gradients for each of the
-    parameters of the prediction parameterisation object, for reflection hkl
-    at angle phi.
+    parameters of the prediction parameterisation object, for reflection
+    hkl at angle phi.
 
     "deltas" must be a sequence of the same length as the parameter list,
     and contains the step size for the difference calculations for each
@@ -72,7 +78,7 @@ def get_fd_gradients(pred_param, hkl, phi, angle_predictor, deltas):
     src = pred_param._beam
     det = pred_param._detector
     xl = pred_param._crystal
-    ap = angle_predictor
+    rp = reflection_predictor
 
     p_vals = pred_param.get_p()
     assert len(deltas) == len(p_vals)
@@ -84,11 +90,11 @@ def get_fd_gradients(pred_param, hkl, phi, angle_predictor, deltas):
 
         p_vals[i] -= deltas[i] / 2.
         pred_param.set_p(p_vals)
-        rev_state = get_state(gon, src, xl, det, hkl, phi, ap)
+        rev_state = get_state(det, hkl, phi, rp)
 
         p_vals[i] += deltas[i]
         pred_param.set_p(p_vals)
-        fwd_state = get_state(gon, src, xl, det, hkl, phi, ap)
+        fwd_state = get_state(det, hkl, phi, rp)
 
         fd_grad.append((fwd_state - rev_state) / deltas[i])
         p_vals[i] = val
@@ -122,7 +128,7 @@ mybeam = models.beam
 
 #### Create parameterisations of these models
 
-det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
+det_param = detector_parameterisation_single_sensor(mydetector)
 s0_param = beam_parameterisation_orientation(mybeam)
 xlo_param = crystal_orientation_parameterisation(mycrystal)
 xluc_param = crystal_unit_cell_parameterisation(mycrystal)
@@ -142,76 +148,71 @@ pred_param.set_p([100., 1.0, 1.0, 0., 0., 0.])
 for (a, b) in zip(pred_param.get_p(), det_param.get_p()):
     assert a==b
 
-# Build a full global parameterisation with detector and beam
-# parameterised and not-fully-functional crystal parameterisations
+# Build a full global parameterisation
 pred_param = detector_space_prediction_parameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
 # Generate some indices
-from dials.scratch.dgw.prediction import angle_predictor
-from rstbx.diffraction import reflection_prediction
-from rstbx.diffraction import full_sphere_indices
-from cctbx.sgtbx import space_group, space_group_symbols
 resolution = 2.0
-indices = full_sphere_indices(
-    unit_cell = mycrystal.get_unit_cell(),
-    resolution_limit = resolution,
-    space_group = space_group(space_group_symbols(1).hall()))
+index_generator = IndexGenerator(mycrystal.get_unit_cell(),
+                      space_group(space_group_symbols(1).hall()).type(),
+                      resolution)
+indices = index_generator.to_array()
 
-# Generate list of phi values
+# Generate list of reflections
 UB = mycrystal.get_U() * mycrystal.get_B()
-ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
-obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
-    phi_start_rad = 0.0, phi_end_rad = pi/5., indices = indices)
+sweep_range = (0., pi/5.)
+ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio,
+                                    sweep_range)
+ref_list = ref_predictor.predict(indices)
 
-# Project positions on camera
-rp = reflection_prediction(mygonio.get_rotation_axis(), mybeam.get_s0(), UB,
-                           mydetector.sensors()[0])
-hkls, d1s, d2s, angles, s_dirs = rp.predict(obs_indices.as_vec3_double(),
-                                       obs_angles)
+# Pull out lists of required reflection data
+temp = [(ref.miller_index, ref.rotation_angle,
+         matrix.col(ref.beam_vector)) for ref in ref_list]
+hkls, angles, s_vecs = zip(*temp)
+
+# Project positions on camera. Currently assuming all reflections
+# intersect panel 0
+impacts = [mydetector[0].get_ray_intersection(
+                        ref.beam_vector) for ref in ref_list]
+d1s, d2s = zip(*impacts)
 
 # Test get_state for the first reflection
-tmp = get_state(mygonio, mybeam, mycrystal, mydetector, hkls[0],
-                angles[0], ap)
+tmp = get_state(mydetector, hkls[0], angles[0], ref_predictor)
 for (a, b) in zip(tmp, (d1s[0], d2s[0], angles[0])):
     assert a == b
 
-# Compare analytical and finite difference gradients for up to 50 randomly
-# selected reflections.
-# NB, reflections that just touch the Ewald sphere have large derivatives of phi
-# wrt some parameters (approching infinity). Such reflections are likely to fail
-# the comparison against FD gradients. Andrew Leslie points out that these
-# reflections are not even integrated, because of susceptibility to errors in
-# the Lorentz correction. To avoid failures of this test, we exclude reflections
-# that are closer than the largest reciprocal lattice vector length from the
-# plane of the rotation axis and beam direction.
+# Compare analytical and finite difference gradients for up to 50
+# randomly selected reflections.
 selection = random.sample(xrange(len(hkls)), min(len(hkls), 50))
 uc = mycrystal.get_unit_cell()
 exclusion_limit = max(uc.reciprocal_parameters()[0:3])
 
 verbose = False
 for iref in selection:
-    hkl, s_dir, angle = hkls[iref], s_dirs[iref], angles[iref]
-
-    # Beware! s_dirs[0] has been normalised. I need the proper length vector s
-    s = matrix.col(s_dir) / mybeam.get_wavelength()
+    hkl, s, angle = hkls[iref], s_vecs[iref], angles[iref]
 
     # get analytical gradients
     an_grads = pred_param.get_gradients(hkl, s, angle)
 
-    # Reflections close to being in the plane of the rotation axis and beam
-    # give very large gradients of phi, and may fail the test versus finite
-    # difference gradients. Detect and exclude very large gradients
+# NB, reflections that just touch the Ewald sphere have large
+# derivatives of phi wrt some parameters (asymptotically approching
+# infinity). Such reflections are likely to fail the comparison against
+# FD gradients. Andrew Leslie points out that these reflections are not
+# even integrated, because of susceptibility to errors in the Lorentz
+# correction. To avoid failures of this test, we exclude reflections
+# that are closer than the largest reciprocal lattice vector length from
+# the plane of the rotation axis and beam direction.
     s0 = matrix.col(mybeam.get_s0())
     r = s - s0
     e_s0_plane_norm = matrix.col(
-                            mygonio.get_rotation_axis()).cross(s0).normalize()
+                    mygonio.get_rotation_axis()).cross(s0).normalize()
     r_dist_from_plane = abs(r.dot(e_s0_plane_norm))
     if r_dist_from_plane <= exclusion_limit:
         continue
 
-    fd_grads = get_fd_gradients(pred_param, hkl, angle, ap,
+    fd_grads = get_fd_gradients(pred_param, hkl, angle, ref_predictor,
                                 [1.e-7] * len(pred_param))
 
     if verbose:

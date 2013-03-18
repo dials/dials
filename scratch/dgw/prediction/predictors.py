@@ -7,10 +7,41 @@ from __future__ import division
 from math import pi, sin, cos, sqrt, acos, atan2, fabs
 from scitbx import matrix
 from cctbx.array_family import flex
+from dials.algorithms.spot_prediction import RayPredictor
 from rstbx.diffraction import reflection_prediction
 from rstbx.diffraction import rotation_angles
 
-class angle_predictor(object):
+class ReflectionPredictor(object):
+    '''Predict for a relp based on the current states of models in the
+    experimental geometry model. This is a wrapper for DIALS' C++
+    RayPredictor class, which does the real work. This class keeps track
+    of the experimental geometry, and instantiates a RayPredictor when
+    required.
+    '''
+
+    def __init__(self, crystal, beam, gonio, sweep_range = (0, 2.*pi)):
+        '''Construct by linking to instances of experimental model classes'''
+
+        self._crystal = crystal
+        self._beam = beam
+        self._gonio = gonio
+        self._sweep_range = sweep_range
+        self.update()
+
+    def update(self):
+        '''Build a RayPredictor object for the current geometry'''
+
+        self._ray_predictor = RayPredictor(self._beam.get_s0(),
+                        self._gonio.get_rotation_axis(),
+                        self._crystal.get_U() * self._crystal.get_B(),
+                        self._sweep_range)
+
+    def predict(self, hkl):
+        '''Solve the prediction formula for the reflecting angle phi'''
+
+        return self._ray_predictor(hkl)
+
+class angle_predictor_rstbx(object):
     '''Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model. This version is a wrapper
     for rstbx's C++ rotation_angles so is faster than the pure Python class

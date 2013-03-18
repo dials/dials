@@ -85,9 +85,9 @@ def print_model_geometry(beam = None, detector = None, crystal = None):
     if beam:
         print "beam s0 = (%.4f, %.4f, %.4f)" % beam.get_s0()
     if detector:
-        print "sensor origin = (%.4f, %.4f, %.4f)" % detector.sensors()[0].origin
-        print "sensor dir1 = (%.4f, %.4f, %.4f)" % detector.sensors()[0].dir1
-        print "sensor dir2 = (%.4f, %.4f, %.4f)" % detector.sensors()[0].dir2
+        print "sensor origin = (%.4f, %.4f, %.4f)" % detector[0].get_origin()
+        print "sensor dir1 = (%.4f, %.4f, %.4f)" % detector[0].get_fast_axis()
+        print "sensor dir2 = (%.4f, %.4f, %.4f)" % detector[0].get_slow_axis()
     if crystal:
         uc = crystal.get_unit_cell()
         print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()

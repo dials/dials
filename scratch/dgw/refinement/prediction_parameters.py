@@ -207,9 +207,9 @@ class prediction_parameterisation(object):
 
         ### Obtain various quantities of interest from the experimental model
 
-        # Here we irrevocably choose the sensor that this reflection intersects,
-        # currently hard-coding it to the first (only) sensor.
-        self._D = matrix.sqr(self._detector.sensors()[0].D)
+        # Here we irrevocably choose the Panel that this reflection intersects,
+        # currently hard-coding it to the first (only) Panel.
+        self._D = matrix.sqr(self._detector[0].get_D_matrix())
         self._s0 = matrix.col(self._beam.get_s0())
         self._U = self._crystal.get_U()
         self._B = self._crystal.get_B()

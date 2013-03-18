@@ -7,7 +7,9 @@
 from __future__ import division
 from model_parameters import parameter, model_parameterisation
 from scitbx import matrix
-from rstbx.bpcx import sensor
+#from rstbx.bpcx import sensor
+from dials.model.experiment import Panel, Detector
+from dials.model.experiment import detector_factory
 from math import sin, cos, pi, sqrt
 from dials.scratch.dgw.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift
@@ -16,7 +18,7 @@ class detector_parameterisation_single_sensor(model_parameterisation):
     '''implementation of parameterisation for a single abstract sensor
     plane, with angles expressed in mrad'''
 
-    def __init__(self, sensor):
+    def __init__(self, detector):
 
         # the state of the detector model is comprised of:
         #
@@ -39,18 +41,20 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         # set up the initial state of the detector model from the
         # orientation of the single sensor it contains
 
-        # get some vectors we need from the sensor
-        so = matrix.col(sensor.origin)
-        d1 = matrix.col(sensor.dir1)
-        d2 = matrix.col(sensor.dir2)
-        dn = matrix.col(sensor.normal)
+        # get some vectors we need from the Panel
+        panel = detector[0]
+        so = matrix.col(panel.get_origin())
+        d1 = matrix.col(panel.get_fast_axis())
+        d2 = matrix.col(panel.get_slow_axis())
+        dn = matrix.col(panel.get_normal())
 
         # we choose the dorg vector to terminate in the centre of the
         # sensor, and the offset between the end of the dorg vector and
         # the sensor origin is a coordinate matrix with elements in the
         # basis d1, d2, dn
-        offset = matrix.col((-1. * sum(sensor.lim1) / len(sensor.lim1),
-                             -1. * sum(sensor.lim2) / len(sensor.lim2),
+        panel_lim = panel.get_image_size_mm()
+        offset = matrix.col((-1. * panel_lim[0] / 2.,
+                             -1. * panel_lim[1] / 2.,
                               0.))
 
         dorg = so - offset[0] * d1 - offset[1] * d2
@@ -66,11 +70,12 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         # set up the parameters.
         # distance from lab origin to detector model plane along its
         # normal, in initial orientation
-        dist = parameter(sensor.distance, dn, 'length')
+        distance = panel.get_distance()
+        dist = parameter(distance, dn, 'length')
 
         # shift in the detector model plane to locate dorg, in initial
         # orientation
-        shift = dorg - dn * sensor.distance
+        shift = dorg - dn * distance
         shift1 = parameter(shift.dot(d1), d1, 'length')
         shift2 = parameter(shift.dot(d2), d2, 'length')
 
@@ -86,8 +91,8 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         p_list = [dist, shift1, shift2, tau1, tau2, tau3]
 
         # set up the list of model objects being parameterised (here
-        # just a single sensor)
-        models = [sensor]
+        # just the detector containing a single panel)
+        models = [detector]
 
         # set up the base class
         model_parameterisation.__init__(self, models, istate, p_list)
@@ -155,8 +160,10 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         dir1 = d1
         dir2 = d2
 
-        # now update the sensor with its new position and orientation
-        self._models[0].set_frame(o, dir1, dir2)
+        # now update the panel with its new position and orientation.
+        # The detector is the first model in _models, the panel is the
+        # first in the detector
+        (self._models[0])[0].set_frame(dir1, dir2, o)
 
         # calculate derivatives of the state wrt parameters
         # =================================================
@@ -365,10 +372,12 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         return
 
     def get_state(self):
-        return matrix.sqr(self._models[0].d)
+        # only a single panel
+        panel = (self._models[0])[0]
+        return matrix.sqr(panel.get_d_matrix())
 
-def random_sensor(lim = (0, 50)):
-    '''For testing, return a square sensor with a randomised position
+def random_panel(lim = (0, 50)):
+    '''For testing, return a square panel with a randomised position
     and orientation'''
 
     import random
@@ -391,7 +400,8 @@ def random_sensor(lim = (0, 50)):
     u1 = u1.rotate_around_origin(u2, random.uniform(-pi/2., pi/2.))
     u2 = u2.rotate_around_origin(u1, random.uniform(-pi/2., pi/2.))
 
-    return sensor(o, u1, u2, lim, lim)
+    return Panel("PAD", u1, u2, o,
+            (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20))
 
 if __name__ == '__main__':
 
@@ -401,9 +411,15 @@ if __name__ == '__main__':
     # principal axes and sensor origin located on the z-axis at -110
     d1 = matrix.col((1, 0, 0))
     d2 = matrix.col((0, -1, 0))
-    lim = (0,50)
-    panel0 = sensor(matrix.col((0, 0, -110)), d1, d2, lim, lim)
-    dp = detector_parameterisation_single_sensor(panel0)
+    #lim = (0,50)
+    npx_fast = 1475
+    npx_slow = 1679
+    pix_size_f = pix_size_s = 0.172
+    detector = detector_factory.make_detector("PAD", d1, d2,
+        matrix.col((0, 0, -110)), (pix_size_f, pix_size_s),
+        (npx_fast, npx_slow), (0, 2e20))
+
+    dp = detector_parameterisation_single_sensor(detector)
 
     # Test change of parameters
     # =========================
@@ -416,8 +432,8 @@ if __name__ == '__main__':
     p_vals = dp.get_p()
     p_vals[0:3] = [100., 0., 0.]
     dp.set_p(p_vals)
-
-    v1 = matrix.col(dp._models[0].origin)
+    panel = dp._models[0]
+    v1 = matrix.col(panel.get_origin())
     v2 = matrix.col((0., 0., 1.))
     assert(approx_equal(v1.dot(v2), -100.))
 
@@ -430,9 +446,10 @@ if __name__ == '__main__':
     p_vals[3] = 1000. * pi/2 # set tau1 value
     dp.set_p(p_vals)
 
-    assert(approx_equal(matrix.col(dp._models[0].dir1).dot(dp._initial_state['d1']), 0.))
-    assert(approx_equal(matrix.col(dp._models[0].dir2).dot(dp._initial_state['d2']), 0.))
-    assert(approx_equal(matrix.col(dp._models[0].normal).dot(dp._initial_state['dn']), 1.))
+    panel = dp._models[0]
+    assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(dp._initial_state['d1']), 0.))
+    assert(approx_equal(matrix.col(panel.get_slow_axis()).dot(dp._initial_state['d2']), 0.))
+    assert(approx_equal(matrix.col(panel.get_normal()).dot(dp._initial_state['dn']), 1.))
 
     # 3. no rotation around initial normal, +10 degrees around initial
     # d1 direction and +10 degrees around initial d2. Check d1 and d2
@@ -459,8 +476,9 @@ if __name__ == '__main__':
                      -cos(pi/18),
                      sqrt((2*sin(pi/36)*sin(pi/18))**2 - sin(pi/18)**4) - sin(pi/18)))
 
-    assert(approx_equal(matrix.col(dp._models[0].dir1).dot(v1), 1.))
-    assert(approx_equal(matrix.col(dp._models[0].dir2).dot(v2), 1.))
+    panel = dp._models[0]
+    assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(v1), 1.))
+    assert(approx_equal(matrix.col(panel.get_slow_axis()).dot(v2), 1.))
 
     # 4. Test fixing and unfixing of parameters
     p_vals = [100., 0., 0., 1000.*pi/18, 1000.*pi/18, 1000.*pi/18]
@@ -492,7 +510,8 @@ if __name__ == '__main__':
     for i in range(attempts):
 
         # create random initial position
-        dp = detector_parameterisation_single_sensor(random_sensor())
+        dp = detector_parameterisation_single_sensor(Detector(
+            random_panel()))
 
         # apply a random parameter shift
         p_vals = random_param_shift(p_vals, [10, 10, 10, 1000.*pi/18,

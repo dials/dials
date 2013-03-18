@@ -13,9 +13,12 @@ import random
 from scitbx import matrix
 from libtbx.phil import parse, command_line
 
-# Experimental models
-from rstbx.bpcx.detector_model.instrument_specifics import pilatus
-from dials.model.experiment import beam_factory, goniometer_factory
+# dxtbx experimental models
+from dials.model.experiment import beam_factory
+from dials.model.experiment import goniometer_factory
+from dials.model.experiment import detector_factory
+
+# local crystal model
 from dials.scratch.dgw.crystal_model import crystal
 
 # Local functions
@@ -69,7 +72,8 @@ class extract(object):
             self._params.random_seed = random.randint(0, sys.maxint)
         random.seed(self._params.random_seed)
         if self._verbose:
-            print "Random seed set to %d while building models" % self._params.random_seed
+            msg = "Random seed set to %d while building models"
+            print msg % self._params.random_seed
 
     def build_goniometer(self):
 
@@ -79,7 +83,8 @@ class extract(object):
     def build_beam(self):
 
         if self._params.beam.wavelength.random:
-            wavelength = random.uniform(*self._params.beam.wavelength.range)
+            wavelength = random.uniform(
+                                    *self._params.beam.wavelength.range)
         else: wavelength = self._params.beam.wavelength.value
 
         assert self._params.beam.direction.method in ['inclination',
@@ -90,17 +95,19 @@ class extract(object):
 
             if self._params.beam.direction.inclination.random:
                 inclination = random.gauss(0.,
-                                  self._params.beam.direction.inclination.angle)
-            else: inclination = self._params.beam.direction.inclination.angle
+                        self._params.beam.direction.inclination.angle)
+            else: inclination = \
+                        self._params.beam.direction.inclination.angle
 
-            beam_dir = matrix.col((0, 0, 1)).rotate(matrix.col((0, 1, 0)),
-                                                inclination, deg=True)
+            beam_dir = matrix.col((0, 0, 1)).rotate(
+                        matrix.col((0, 1, 0)), inclination, deg=True)
 
         elif self._params.beam.direction.method == 'close_to':
 
+            temp = self._params.beam.direction.close_to.direction
             beam_dir = random_direction_close_to(
-                matrix.col(self._params.beam.direction.close_to.direction),
-                sd = self._params.beam.direction.close_to.sd)
+                        matrix.col(temp),
+                        sd = self._params.beam.direction.close_to.sd)
 
         elif self._params.beam.direction.method == 'exactly':
 
@@ -110,27 +117,33 @@ class extract(object):
 
     def build_detector(self):
 
-        assert self._params.detector.directions.method in ['close_to','exactly']
+        assert self._params.detector.directions.method in \
+                                            ['close_to', 'exactly']
 
         if self._params.detector.directions.method == 'close_to':
 
+            temp = self._params.detector.directions.close_to.dir1
             dir1 = random_direction_close_to(
-                matrix.col(self._params.detector.directions.close_to.dir1),
-                sd = self._params.detector.directions.close_to.sd)
+                    matrix.col(temp),
+                    sd = self._params.detector.directions.close_to.sd)
 
             n = random_direction_close_to(
-                matrix.col(self._params.detector.directions.close_to.norm),
+                matrix.col(
+                    self._params.detector.directions.close_to.norm),
                 sd = self._params.detector.directions.close_to.sd)
 
         elif self._params.detector.directions.method == 'exactly':
 
-            dir1 = matrix.col(self._params.detector.directions.exactly.dir1)
+            temp = self._params.detector.directions.exactly.dir1
+            dir1 = matrix.col(temp)
 
-            n = matrix.col(self._params.detector.directions.exactly.norm)
+            n = matrix.col(
+                    self._params.detector.directions.exactly.norm)
 
         dir2 = n.cross(dir1).normalize()
 
-        assert self._params.detector.centre.method in ['close_to','exactly']
+        assert self._params.detector.centre.method in \
+                                        ['close_to','exactly']
 
         if self._params.detector.centre.method == 'close_to':
 
@@ -140,17 +153,20 @@ class extract(object):
 
         elif self._params.detector.centre.method == 'exactly':
 
-            centre = matrix.col(self._params.detector.centre.exactly.value)
+            temp = self._params.detector.centre.exactly.value
+            centre = matrix.col(temp)
 
         origin = centre - (0.5 * self._params.detector.npx_fast *
                            self._params.detector.pix_size * dir1 +
                            0.5 * self._params.detector.npx_slow *
                            self._params.detector.pix_size * dir2)
-        self.detector = pilatus(origin, dir1, dir2,
-                                    self._params.detector.pix_size,
-                                    self._params.detector.pix_size,
-                                    self._params.detector.npx_fast,
-                                    self._params.detector.npx_slow)
+        self.detector = detector_factory.make_detector("PAD",
+                            dir1, dir2, origin,
+                            (self._params.detector.pix_size,
+                            self._params.detector.pix_size),
+                            (self._params.detector.npx_fast,
+                            self._params.detector.npx_slow),
+                            (0, 1.e6))
 
     def _build_cell_vec(self, vec):
 

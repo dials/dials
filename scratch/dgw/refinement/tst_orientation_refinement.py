@@ -5,14 +5,14 @@
 # testing purposes only
 
 """
-Test refinement of beam, detector and crystal orientation parameters (i.e.
-assume crystal unit cell is fixed for now) using generated reflection
-positions from ideal geometry.
+Test refinement of beam, detector and crystal orientation parameters
+using generated reflection positions from ideal geometry.
 
 Control of the experimental model and choice of minimiser is done via
 PHIL, which means we can do, for example:
 
-cctbx.python tst_orientation_refinement.py "random_seed=3; engine=lbfgs_curvs"
+cctbx.python tst_orientation_refinement.py \
+"random_seed=3; engine=lbfgs_curvs"
 
 """
 
@@ -42,8 +42,11 @@ from rstbx.symmetry.constraints.parameter_reduction import \
     symmetrize_reduce_enlarge
 
 # Reflection prediction
-from dials.scratch.dgw.prediction import angle_predictor_py, angle_predictor, \
-    impact_predictor
+from dials.algorithms.spot_prediction import IndexGenerator, \
+                                             RotationAngles
+from dials.scratch.dgw.prediction import ReflectionPredictor
+#from dials.scratch.dgw.prediction import angle_predictor_py, angle_predictor, \
+#    impact_predictor
 from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -79,7 +82,7 @@ mybeam = models.beam
 # Parameterise the models #
 ###########################
 
-det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
+det_param = detector_parameterisation_single_sensor(mydetector)
 s0_param = beam_parameterisation_orientation(mybeam)
 xlo_param = crystal_orientation_parameterisation(mycrystal)
 xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
@@ -150,31 +153,48 @@ print
 
 # All indices in a 2.0 Angstrom sphere
 resolution = 2.0
-indices = full_sphere_indices(
-    unit_cell = mycrystal.get_unit_cell(),
-    resolution_limit = resolution,
-    space_group = space_group(space_group_symbols(1).hall()))
+#indices = full_sphere_indices(
+#    unit_cell = mycrystal.get_unit_cell(),
+#    resolution_limit = resolution,
+#    space_group = space_group(space_group_symbols(1).hall()))
+index_generator = IndexGenerator(mycrystal.get_unit_cell(),
+                space_group(space_group_symbols(1).hall()).type(), resolution)
+indices = index_generator.to_array()
 
 # Select those that are excited in a 180 degree sweep and get their angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-
-ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
+sweep_range = (0., pi)
+ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 #ap = angle_predictor_py(mycrystal, mybeam, mygonio, resolution)
+#rotation_angles = RotationAngles(mybeam.get_s0(),
+#                                 mygonio.get_rotation_axis())
 
-obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
-    phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
-print "Total number of reflections excited", len(obs_indices)
+#obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
+#    phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
+# generate angles within a range, i.e. the analogue of
+# the observed_indices_and_angles_from_angle_range method
+obs_refs = ref_predictor.predict(indices)
+
+print "Total number of reflections excited", len(obs_refs)
+
+# Pull out reflection data as lists
+temp = [(ref.miller_index, ref.rotation_angle,
+         matrix.col(ref.beam_vector)) for ref in obs_refs]
+hkls, angles, svecs = zip(*temp)
 
 # Project positions on camera
-ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
-hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
-                                       obs_angles)
+# currently assume all reflections intersect panel 0
+impacts = [mydetector[0].get_ray_intersection(
+                        ref.beam_vector) for ref in obs_refs]
+d1s, d2s = zip(*impacts)
+
 print "Total number of observations made", len(hkls)
 
 # Invent some uncertainties
 im_width = 0.1 * pi / 180.
-sigd1s = [mydetector.px_size_fast() / 2.] * len(hkls)
-sigd2s = [mydetector.px_size_slow() / 2.] * len(hkls)
+px_size = mydetector.get_pixel_size()
+sigd1s = [px_size[0] / 2.] * len(hkls)
+sigd2s = [px_size[1] / 2.] * len(hkls)
 sigangles = [im_width / 2.] * len(hkls)
 
 ###############################
@@ -195,7 +215,7 @@ print
 # Select reflections for refinement #
 #####################################
 
-rm = reflection_manager(hkls, svecs,
+refman = reflection_manager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
@@ -208,8 +228,7 @@ rm = reflection_manager(hkls, svecs,
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
 mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-    rm, ap, ip, pred_param, mydetector.px_size_fast(),
-    mydetector.px_size_slow(), im_width)
+    refman, ref_predictor, mydetector, pred_param, im_width)
 
 ################################
 # Set up the refinement engine #
@@ -223,18 +242,11 @@ refiner = setup_minimiser.extract(master_phil,
 print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
-
-#refiner = simple_lbfgs(mytarget, pred_param, verbosity = 2, log = ref_log)
-#refiner = lbfgs_curvs(mytarget, pred_param, verbosity = 2, log = ref_log)
-#refiner = adapt_lstbx(mytarget, pred_param, verbosity = 2, log = ref_log)
-#refiner.build_up()
-
 refiner.run()
 
-#myiterations = gn_iterations(refiner)
-print "number of steps", refiner.n_iterations
+#FIXME why is the step count different?
+#print "number of steps", refiner.n_iterations
 #print "number of steps", refiner.get_num_steps()
-
 
 print
 print "Refinement has completed with the following geometry:"
