@@ -6,6 +6,7 @@ algorithms/__init__.py -text
 algorithms/centroid/__init__.py -text
 algorithms/centroid/filtered_centroid.py -text
 algorithms/centroid/toy_centroid.py -text
+algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/background_intensity.h -text
@@ -409,6 +410,7 @@ scratch/luiso_s/tst_w_predict_spots.py -text svneol=unset#text/plain
 scratch/luiso_s/ximg2701_00001.cbf -text svneol=unset#unset
 test/SConscript -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
+test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/integration/tst_from_beam_vector_to_xds.py -text
 test/algorithms/integration/tst_from_xds_e3_to_phi.py -text

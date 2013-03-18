@@ -21,7 +21,18 @@ def parse_list_string( string ):
 def display_frame_callback( option, opt, value, parser ):
     setattr( parser.values, option.dest, parse_list_string( value ) )
 
-def display_image_with_predicted_spots( image, xcoords, ycoords ):
+# def display_image_with_predicted_spots( image, xcoords, ycoords ):
+#    """Display the image with coordinates overlayed."""
+#    from matplotlib import pylab, cm
+#    from matplotlib import transforms
+#
+#    plt = pylab.imshow( image, vmin = 0, vmax = 1000, cmap = cm.Greys_r,
+#                       interpolation = 'nearest', origin = 'lower' )
+#    pylab.scatter( xcoords, ycoords, marker = 'x' )
+#    plt.axes.get_xaxis().set_ticks( [] )
+#    plt.axes.get_yaxis().set_ticks( [] )
+#    pylab.show()
+def display_image_with_predicted_spots_n_centoids( image, xcoords, ycoords, xc, yc ):
     """Display the image with coordinates overlayed."""
     from matplotlib import pylab, cm
     from matplotlib import transforms
@@ -29,29 +40,37 @@ def display_image_with_predicted_spots( image, xcoords, ycoords ):
     plt = pylab.imshow( image, vmin = 0, vmax = 1000, cmap = cm.Greys_r,
                        interpolation = 'nearest', origin = 'lower' )
     pylab.scatter( xcoords, ycoords, marker = 'x' )
+    pylab.scatter( xc, yc, marker = 'x' )
     plt.axes.get_xaxis().set_ticks( [] )
     plt.axes.get_yaxis().set_ticks( [] )
     pylab.show()
 
 def visualize_predicted_spots( image_volume, display_frame, spot_coords ):
+    import numpy
     """Get just those spots on the selected image and display."""
     print '_________________________________________________________________'
     spot_xy = [( x - 0.5, y - 0.5 ) for x, y, z in spot_coords if display_frame <= z < display_frame + 1]
     xcoords, ycoords = zip( *spot_xy )
-    display_image_with_predicted_spots( image_volume[display_frame, :, :], xcoords, ycoords )
+    # display_image_with_predicted_spots( image_volume[display_frame, :, :], xcoords, ycoords )
 
-    my_tst_code( image_volume[display_frame, :, :], xcoords, ycoords )
+    cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma = calling_centoid_calculation( image_volume[display_frame, :, :], xcoords, ycoords )
+    display_image_with_predicted_spots_n_centoids( image_volume[display_frame, :, :], cntrd_xcoord, cntrd_ycoord, xcoords, ycoords )
 
-def my_tst_code( image2d, x_ls, y_ls ):
+    for i in range( len( xcoords ) ):
+        print 'x,y (centroid) =', cntrd_xcoord[i], ', ', cntrd_ycoord[i]
+        print 'sigma ( x, y) =', x_sigma [i], ', ', y_sigma[i]
+
+def calling_centoid_calculation( image2d, x_ls, y_ls ):
     import numpy
     import time
-    # import ind_2d_integrate_tst01
-    import ind_2d_integrate
+    import ind_2d_integrate_tst01
+    # import ind_2d_integrate
+
+
     cntrd_xcoord = numpy.zeros( len( x_ls ) )
     cntrd_ycoord = numpy.zeros( len( x_ls ) )
     x_sigma = numpy.zeros( len( x_ls ) )
     y_sigma = numpy.zeros( len( x_ls ) )
-
     # print time.time()
     time1 = time.time()
     # print "time1 =", time1
@@ -64,10 +83,8 @@ def my_tst_code( image2d, x_ls, y_ls ):
     timedif = float( time2 - time1 )
     print "timedif =", timedif
 
+    return cntrd_xcoord, cntrd_ycoord, x_sigma, y_sigma
 
-    for i in range( len( x_ls ) ):
-        print 'x,y (centroid) =', cntrd_xcoord[i], ', ', cntrd_ycoord[i]
-        print 'sigma ( x, y) =', x_sigma [i], ', ', y_sigma[i]
 
 def predict_spots( input_filename, cbf_search_path, d_min, display_frame ):
     """Read the required data from the file, predict the spots and display."""

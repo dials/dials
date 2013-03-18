@@ -32,7 +32,7 @@ def display_image_with_predicted_spots(image, xcoords, ycoords):
     plt = pylab.imshow(image, vmin=0, vmax=1000, cmap=cm.Greys_r,
                        interpolation='nearest', origin='lower')
                        #transform=trans)
-    #pylab.scatter(xcoords, ycoords, marker='x')
+    pylab.scatter(xcoords, ycoords, marker='x')
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()

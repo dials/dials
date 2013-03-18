@@ -1,0 +1,135 @@
+# toy centroid implementation: this is deliberately bad to illustrate how the
+# interface works and how things could be improved
+# from __future__ import division
+from dials.interfaces.centroid.centroid_interface_prototype import \
+    centroid_interface_prototype as centroid_interface
+import numpy
+
+class toy_centroid_lui(centroid_interface):
+    def __init__(self, bounding_boxes, dxtbx_sweep_object):
+
+        self._image_size = dxtbx_sweep_object.get_detector().get_image_size()
+
+        centroid_interface.__init__(self, bounding_boxes, dxtbx_sweep_object)
+
+        return
+
+    def compute_centroid_from_bbox(self, bbox):
+
+        import math
+
+        f_min, f_max, r_min, r_max, c_min, c_max = bbox
+
+        # build a numpy array that represents a 3D block of pixels
+        f_size = f_max - f_min
+        r_size = r_max - r_min
+        c_size = c_max - c_min
+        data3d = numpy.zeros(f_size * r_size * c_size, dtype = int).reshape(f_size, r_size, c_size)
+        in_f = 0
+        in_r = 0
+        in_c = 0
+        for f in range(f_min, f_max):
+            data = self._sweep[f]
+            for r in range(r_min, r_max):
+                for c in range(c_min, c_max):
+                    data3d[in_f, in_r, in_c] = data[r * self._image_size[0] + c]
+                    in_c += 1
+                in_c = 0
+                in_r += 1
+            in_r = 0
+            in_f += 1
+
+        tot_itst = 0.0
+        tot_f = 0.0
+        tot_c = 0.0
+        tot_r = 0.0
+
+
+        for f in range(f_min, f_max):
+            data2d = data3d[f, :, :]
+            row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
+            locl_f = f * locl_itst
+            tot_f += locl_f
+            tot_r += (row_cm + r_min) * locl_itst
+            tot_c += (col_cm + c_min) * locl_itst
+            tot_itst += locl_itst
+
+        _f = tot_f / tot_itst
+        _r = tot_r / tot_itst
+        _c = tot_c / tot_itst
+
+
+        _sf = 0
+        _sr = locl_sr
+        _sc = locl_sc
+
+        print _f, _r, _c, _sf, _sr, _sc
+
+        return _f, _r, _c, _sf, _sr, _sc
+
+def single_spot_integrate_2d(data2d):
+    x_to = numpy.size(data2d[0:1, :])
+    y_to = numpy.size(data2d[:, 0:1])
+    data2dsmoth = numpy.zeros(y_to * x_to, dtype = float).reshape(y_to, x_to)
+
+    diffdata2d = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
+    diffdata2d_ext = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
+
+    data2dtmp = data2d
+
+    threshold_shift = 7.0
+    ext_area = 2
+
+    for times in range(5):
+        for y in range(0, y_to, 1):
+            for x in range(0, x_to, 1):
+                pscan = float(numpy.sum(data2dtmp[y - 1:y + 2, x - 1:x + 2]) / 9.0)
+                data2dsmoth[y, x] = pscan
+    data2dtmp = data2dsmoth
+
+    data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
+
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            if data2d[y, x] > data2dsmoth[y, x]:
+                diffdata2d[y, x] = 1
+
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            if diffdata2d[y, x] == 1:
+                diffdata2d_ext[y - ext_area:y + ext_area + 1, x - ext_area:x + ext_area + 1] = 1
+
+    x_num_sum = 0.0
+    y_num_sum = 0.0
+    den_sum = 0.0
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            if diffdata2d_ext[y, x] == 1:
+                x_num_sum = x_num_sum + float(data2d[y, x]) * float(x)
+                y_num_sum = y_num_sum + float(data2d[y, x]) * float(y)
+                den_sum = den_sum + float(data2d[y, x])
+    if den_sum > 0.0:
+        col_cm = x_num_sum / den_sum
+        row_cm = y_num_sum / den_sum
+    else:
+        print 'den_sum =', den_sum
+        col_cm = -1
+        row_cm = -1
+
+    x_num_sum = 0.0
+    y_num_sum = 0.0
+#    den_sum = 0.0
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            if diffdata2d_ext[y, x] == 1:
+                x_num_sum = x_num_sum + float(data2d[y, x]) * (float(x) - float(col_cm)) ** 2.0
+                y_num_sum = y_num_sum + float(data2d[y, x]) * (float(y) - float(row_cm)) ** 2.0
+#                den_sum = den_sum + float(data2d[y, x])
+    if den_sum > 0.0:
+        col_sig = numpy.sqrt(x_num_sum / den_sum)
+        row_sig = numpy.sqrt(y_num_sum / den_sum)
+    else:
+        print 'den_sum =', den_sum
+        col_sig = -1
+        row_sig = -1
+    return row_cm, col_cm, row_sig, col_sig, den_sum
