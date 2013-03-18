@@ -90,7 +90,7 @@ void tst_detect_2d() {
   std::deque<std::pair<int, int> > collisions1;
   std::deque<std::pair<int, int> > collisions2;
   
-  Box bounds(0, 0, 2000, 2000);
+  Box bounds(0, 0, 20000, 20000);
   
   // Create a number of random boxes
   for (std::size_t i = 0; i < num; ++i) {
@@ -98,8 +98,11 @@ void tst_detect_2d() {
   }
 
   // Do the collision check
+//  clock_t st = clock();
   detect_collisions2d(data.begin(), data.end(), collisions1);
-
+//  std::cout << ((float)(clock() - st)) / CLOCKS_PER_SEC << "\n";
+//  std::cout << collisions1.size() << "\n";
+// 
   // Do a brute force check to see if we get the correct results.
   for (std::size_t j = 0; j < num-1; ++j) {
     int jx0 = data[j].x0;
@@ -111,7 +114,7 @@ void tst_detect_2d() {
       int ix1 = data[i].x1;
       int iy0 = data[i].y0;
       int iy1 = data[i].y1;  
-      if (!(ix0 > jx1 || jx0 > ix1 || iy0 > jy1 || jy0 > iy1)) {
+      if (!(ix0 >= jx1 || jx0 >= ix1 || iy0 >= jy1 || jy0 >= iy1)) {
         collisions2.push_back(std::pair<int,int>(i, j));
       }
     }
@@ -157,9 +160,9 @@ void tst_detect_3d() {
       int iz0 = data[i].z0;
       int iz1 = data[i].z1;    
 
-      if (!(ix0 > jx1 || jx0 > ix1 || 
-            iy0 > jy1 || jy0 > iy1 || 
-            iz0 > jz1 || jz0 > iz1)) {
+      if (!(ix0 >= jx1 || jx0 >= ix1 || 
+            iy0 >= jy1 || jy0 >= iy1 || 
+            iz0 >= jz1 || jz0 >= iz1)) {
         collisions2.push_back(std::pair<int,int>(i, j));
       }
     }
