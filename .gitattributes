@@ -7,6 +7,7 @@ algorithms/centroid/__init__.py -text
 algorithms/centroid/filtered_centroid.py -text
 algorithms/centroid/toy_centroid.py -text
 algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain
+algorithms/centroid/toy_centroid_helpers.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/background_intensity.h -text
