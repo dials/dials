@@ -383,8 +383,9 @@ namespace dials { namespace algorithms {
           j = i;
         }
       }
-      max_depth_ = DIM * (log2(min_length / min_size.d[j]) - 1);
-      if (max_depth_ < 0) max_depth_ = 0;
+      max_depth_ = log2(min_length / min_size.d[j]) - 1;
+      if (max_depth_ < 1) max_depth_ = 1;
+      max_depth_ *= DIM;
 
       // Start the recursive partitioning of the data to find the collisions.
       partition_data<0>(index.begin(), index.end(), first, collisions, box, 0);
@@ -392,7 +393,7 @@ namespace dials { namespace algorithms {
 
   private:
 
-     std::size_t max_depth_;
+     int max_depth_;
 
     /**
      * The main body of the algorithm.
