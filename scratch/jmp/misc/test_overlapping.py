@@ -1,4 +1,5 @@
 
+from scitbx.array_family import flex
 from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import find_overlapping_reflections
 rl = ReflectionList()
@@ -12,6 +13,9 @@ rl.append(r1)
 rl.append(r2)
 rl.append(r3)
 overlapping = find_overlapping_reflections(rl)
+
+for e in overlapping.edges():
+  print "Edge: ", overlapping.edge_vertices(e)
 
 for v in overlapping.vertices():
   print "Vertex: ", v, " => ", [a for a in overlapping.adjacent_vertices(v)] 

@@ -26,10 +26,11 @@ def print_call_info(callback, info, result_type):
     start_time = time()
     result = callback()
     time_taken = time() - start_time
-    print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
+    if result_type:
+        print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
-def print_reflection_stats(reflections):
+def print_reflection_stats(reflections, adjacency_list):
     '''Print some reflection statistics.'''
     import numpy
 
@@ -78,6 +79,7 @@ def print_reflection_stats(reflections):
     shoebox_count = (min_shoebox_size, max_shoebox_size, med_shoebox_size)
 
     # Print the stats
+    print ""
     print "Num reflections:", num_reflections
     print "Max spot x/y/z:", max(spot_x), max(spot_y), max(spot_z)
     print "Min spot x/y/z:", min(spot_x), min(spot_y), min(spot_z)
@@ -85,6 +87,7 @@ def print_reflection_stats(reflections):
     print "Max shoebox range: ", max_shoebox_range
     print "Min shoebox range: ", min_shoebox_range
     print "Med shoebox range: ", med_shoebox_range
+    print "Num overlaps: ", adjacency_list.num_edges()
 
 def display_predicted_spots_on_frame(reflections, image, frame):
     """Show spots on this frame"""
@@ -139,6 +142,7 @@ def predict_spots(input_filename, image_frames, display_frame):
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
     from dials.algorithms.integration import ShoeboxCalculator
+    from dials.algorithms.integration import find_overlapping_reflections
     from iotbx.xds import xparm
     from dials.util import io
     from math import pi
@@ -220,8 +224,13 @@ def predict_spots(input_filename, image_frames, display_frame):
         lambda: (calculate_shoebox(reflections), reflections)[1],
         "Calculating shoeboxes", "shoeboxes")
 
+    # Find all the overlapping reflections
+    adjacency_list = print_call_info(
+        lambda: find_overlapping_reflections(reflections),
+        "Calculating overlapping reflections", "Edges")
+
     # Print some reflection statistics
-    print_reflection_stats(reflections)
+    print_reflection_stats(reflections, adjacency_list)
 
     # Show the predicted spots
     display_predicted_spots(reflections, image_frames, display_frame)

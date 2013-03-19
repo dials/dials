@@ -1,3 +1,5 @@
+from __future__ import division
+
 def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     '''From the geometry in the xparm file, the indices in integrate_hkl_file
     and the images corresponding to the sweep to be generated from the
@@ -15,7 +17,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     from math import pi
     import dxtbx
     from dxtbx.sweep import sweep_factory
-    
+
     from predict_spots import print_ub_matrix, print_reflection_stats, \
         display_predicted_spots
 
@@ -61,19 +63,19 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
             continue
 
         values = map(float, record.split())
-        
+
         i, sigi = values[3:5]
 
         if sigi < 0:
             continue
-        
+
         if i / sigi < 40:
             continue
 
         h, k, l = map(int, map(round, values[:3]))
 
         miller_indices.append((h, k, l))
-            
+
     # Create the spot predictor
     predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(), UB,
                                 scan.get_oscillation_range())
@@ -104,12 +106,12 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     for hkl in centroids:
         for centroid in centroids[hkl]:
             print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
-        
+
 if __name__ == '__main__':
     import sys
 
     xparm_file = sys.argv[1]
     integrate_hkl_file = sys.argv[2]
     image_file = sys.argv[3]
-    
+
     toy_centroid_runner(xparm_file, integrate_hkl_file, image_file)

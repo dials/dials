@@ -40,8 +40,8 @@ namespace dials { namespace algorithms {
   template <> int get_maximum_bound<2, int6>(const int6 &b) { return b[5]; }
 
   /**
-   * Given a set of reflections, find the shoeboxes that overlap. 
-   * This function uses a single shot collision detection algorithm to 
+   * Given a set of reflections, find the shoeboxes that overlap.
+   * This function uses a single shot collision detection algorithm to
    * find the colliding shoeboxes and then puts all the pairs of colliding
    * indices into an adjacency list. Vertices are referred to in the
    * adjacency list by index.
