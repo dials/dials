@@ -43,27 +43,43 @@ class toy_centroid_lui(centroid_interface):
         tot_f = 0.0
         tot_c = 0.0
         tot_r = 0.0
+        tot_sr = 0.0
+        tot_sc = 0.0
 
+        cont = 0
+        itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
 
         for f in range(f_min, f_max):
             data2d = data3d[f, :, :]
             row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
+            itst[cont] = locl_itst
+            cont += 1
             locl_f = f * locl_itst
             tot_f += locl_f
             tot_r += (row_cm + r_min) * locl_itst
             tot_c += (col_cm + c_min) * locl_itst
             tot_itst += locl_itst
+            #print f, locl_itst, locl_f
+            tot_sr += (locl_sr * locl_itst) ** 2.0
+            tot_sc += (locl_sc * locl_itst) ** 2.0
+
 
         _f = tot_f / tot_itst
         _r = tot_r / tot_itst
         _c = tot_c / tot_itst
+        cont = 0
+        tot_sf = 0.0
+        for f in range(f_min, f_max):
+            tot_sf += ((f - _f) * itst[cont]) ** 2.0
+            cont += 1
+        _sf = numpy.sqrt(tot_sf) / tot_itst
 
 
-        _sf = 0
-        _sr = locl_sr
-        _sc = locl_sc
 
-        print _f, _r, _c, _sf, _sr, _sc
+        _sr = numpy.sqrt(tot_sr) / tot_itst
+        _sc = numpy.sqrt(tot_sc) / tot_itst
+
+        print '_f, _r, _c, _sf, _sr, _sc =', _f, _r, _c, _sf, _sr, _sc
 
         return _f, _r, _c, _sf, _sr, _sc
 
@@ -78,7 +94,7 @@ def single_spot_integrate_2d(data2d):
     data2dtmp = data2d
 
     threshold_shift = 7.0
-    ext_area = 2
+    ext_area = 5
 
     for times in range(5):
         for y in range(0, y_to, 1):
