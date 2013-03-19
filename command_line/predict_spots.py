@@ -35,6 +35,8 @@ def print_reflection_stats(reflections, adjacency_list):
     import numpy
 
     # Get the stats
+    print ""
+    print "Calculating statistics"
     num_reflections = len(reflections)
     spot_x = [r.image_coord_px[0] for r in reflections]
     spot_y = [r.image_coord_px[1] for r in reflections]
@@ -87,7 +89,63 @@ def print_reflection_stats(reflections, adjacency_list):
     print "Max shoebox range: ", max_shoebox_range
     print "Min shoebox range: ", min_shoebox_range
     print "Med shoebox range: ", med_shoebox_range
-    print "Num overlaps: ", adjacency_list.num_edges()
+
+    # Get some overlapping stats
+    if adjacency_list:
+
+        # Loop through all the edges
+        min_overlap_x, min_overlap_y, min_overlap_z = 999999, 999999, 999999
+        max_overlap_x, max_overlap_y, max_overlap_z = 0, 0, 0
+        min_opixels = 999999
+        max_opixels = 0
+        for e in adjacency_list.edges():
+            v1, v2 = adjacency_list[e]
+            r1, r2 = reflections[v1], reflections[v2]
+            s1, s2 = r1.shoebox, r2.shoebox
+
+            # X overlap
+            if s1[0] < s2[0]:
+              overlap_x = s1[1] - s2[0]
+            else:
+              overlap_x = s2[1] - s1[0]
+
+            # Y overlap
+            if s1[2] < s2[2]:
+              overlap_y = s1[3] - s2[2]
+            else:
+              overlap_y = s2[3] - s1[2]
+
+            # Z overlap
+            if s1[4] < s2[4]:
+              overlap_z = s1[5] - s2[4]
+            else:
+              overlap_z = s2[5] - s1[4]
+
+            # calculate the common pixels
+            opixels = overlap_x * overlap_y * overlap_z
+
+            # Set min overlap
+            if overlap_x < min_overlap_x: min_overlap_x = overlap_x
+            if overlap_y < min_overlap_y: min_overlap_y = overlap_y
+            if overlap_z < min_overlap_z: min_overlap_z = overlap_z
+
+            # Set max overlap
+            if overlap_x > max_overlap_x: max_overlap_x = overlap_x
+            if overlap_y > max_overlap_y: max_overlap_y = overlap_y
+            if overlap_z > max_overlap_z: max_overlap_z = overlap_z
+
+            # Set min/max common pixels
+            if opixels < min_opixels: min_opixels = opixels
+            if opixels > max_opixels: max_opixels = opixels
+
+        min_overlap_xyz = (min_overlap_x, min_overlap_y, min_overlap_z)
+        max_overlap_xyz = (max_overlap_x, max_overlap_y, max_overlap_z)
+
+        print "Num overlaps: ", adjacency_list.num_edges()
+        print "Max overlap (x, y, z): ", max_overlap_xyz
+        print "Min overlap (x, y, z): ", min_overlap_xyz
+        print "Most common pixels: ", max_opixels
+        print "Least common pixels: ", min_opixels
 
 def display_predicted_spots_on_frame(reflections, image, frame):
     """Show spots on this frame"""
@@ -134,7 +192,7 @@ def display_predicted_spots(reflections, image_frames, display_frame):
               # Display the spots on the image
               display_predicted_spots_on_frame(reflections, image, frame)
 
-def predict_spots(input_filename, image_frames, display_frame):
+def predict_spots(xparm_path, integrate_path, image_frames, display_frame):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -155,8 +213,8 @@ def predict_spots(input_filename, image_frames, display_frame):
         num_frames = 1
 
     # Read the models from the input file
-    print "Reading: \"{0}\"".format(input_filename)
-    models = dxtbx.load(input_filename)
+    print "Reading: \"{0}\"".format(xparm_path)
+    models = dxtbx.load(xparm_path)
     beam = models.get_beam()
     detector = models.get_detector()
     gonio = models.get_goniometer()
@@ -168,12 +226,35 @@ def predict_spots(input_filename, image_frames, display_frame):
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
-    xparm_handle.read_file(input_filename)
+    xparm_handle.read_file(xparm_path)
     UB = io.get_ub_matrix_from_xparm(xparm_handle)
     unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
     space_group = io.get_space_group_type_from_xparm(xparm_handle)
     d_min = detector.get_max_resolution_at_corners(
         beam.get_direction(), beam.get_wavelength())
+
+    # If the integrate.hkl path has been set get the shoebox parameters
+    calculate_shoeboxes = False
+    sigma_divergence = None
+    sigma_mosaicity = None
+    if integrate_path:
+        from iotbx.xds import integrate_hkl
+
+        print "Reading: \"{0}\"".format(integrate_path)
+
+        # Read the integrate file
+        integrate_handle = integrate_hkl.reader()
+        integrate_handle.read_file(integrate_path)
+
+        # Get the sigma_divergance and mosaicity
+        sigma_divergence = integrate_handle.sigma_divergence
+        sigma_mosaicity = integrate_handle.sigma_mosaicity
+
+        # Set the divergence and mosaicity
+        n_sigma = 5.0
+        delta_divergence = n_sigma * sigma_divergence * pi / 180.0
+        delta_mosaicity = n_sigma * sigma_mosaicity * pi / 180.0
+        calculate_shoeboxes = True
 
     # Print the model data
     print ""
@@ -182,6 +263,8 @@ def predict_spots(input_filename, image_frames, display_frame):
     print gonio
     print scan
     print "Resolution: ", d_min
+    print "Sigma mosaicity: ", sigma_mosaicity
+    print "Sigma Divergence: ", sigma_divergence
     print ""
     print_ub_matrix(UB)
 
@@ -210,24 +293,25 @@ def predict_spots(input_filename, image_frames, display_frame):
         lambda: reflection_frames(scan, reflections),
         "Calculating frame numbers", "frames")
 
-    # Set the divergence and mosaicity
-    n_sigma = 5.0
-    delta_divergence = n_sigma * 0.016 * pi / 180.0
-    delta_mosaicity = n_sigma * 0.008 * pi / 180.0
+    # Check if we can calculate shoeboxes
+    if calculate_shoeboxes:
 
-    # Create the shoebox calculator
-    calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan,
-        delta_divergence, delta_mosaicity)
+        # Create the shoebox calculator
+        calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan,
+            delta_divergence, delta_mosaicity)
 
-    # Calculate the frame numbers of all the reflections
-    reflections = print_call_info(
-        lambda: (calculate_shoebox(reflections), reflections)[1],
-        "Calculating shoeboxes", "shoeboxes")
+        # Calculate the frame numbers of all the reflections
+        reflections = print_call_info(
+            lambda: (calculate_shoebox(reflections), reflections)[1],
+            "Calculating shoeboxes", "shoeboxes")
 
-    # Find all the overlapping reflections
-    adjacency_list = print_call_info(
-        lambda: find_overlapping_reflections(reflections),
-        "Calculating overlapping reflections", "Edges")
+        # Find all the overlapping reflections
+        adjacency_list = print_call_info(
+            lambda: find_overlapping_reflections(reflections),
+            "Calculating overlapping reflections", "Edges")
+
+    else:
+        adjacency_list = None
 
     # Print some reflection statistics
     print_reflection_stats(reflections, adjacency_list)
@@ -245,7 +329,8 @@ if __name__ == '__main__':
     from optparse import OptionParser
 
     # Specify the command line options
-    usage = "usage: %prog [options] /path/to/GXPARM.XDS /path/to/image.cbf"
+    usage  = "usage: %prog [options] /path/to/GXPARM.XDS "
+    usage += "[/path.to.INTEGRATE.HKL [/path/to/image.cbf]]"
     parser = OptionParser(usage)
 
     # Add a verbose option (False by default)
@@ -261,6 +346,8 @@ if __name__ == '__main__':
     if len(args) == 0:
         print parser.print_help()
     elif len(args) == 1:
-        predict_spots(args[0], None, None)
+        predict_spots(args[0], None, None, None)
+    elif len(args) == 2:
+        predict_spots(args[0], args[1], None, None)
     else:
-        predict_spots(args[0], args[1:], options.display_frame)
+        predict_spots(args[0], args[1], args[2:], options.display_frame)

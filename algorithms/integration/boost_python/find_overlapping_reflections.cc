@@ -112,7 +112,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("vertices", &adjacency_list_vertices)
       .def("edges", &adjacency_list_edges)
       .def("adjacent_vertices", &adjacency_list_adjacent_vertices)
-      .def("edge_vertices", &adjacency_list_edge_vertices)
+      .def("__getitem__", &adjacency_list_edge_vertices)
       .def("__len__", &adjacency_list_num_edges);
       
     def("find_overlapping_reflections", 

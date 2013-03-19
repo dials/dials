@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_CALCULATE_REFLECTION_FRAMES_H
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_CALCULATE_REFLECTION_FRAMES_H
 
+#include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/shared.h>
@@ -20,6 +21,7 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::constants::two_pi;
   using scitbx::af::flex_double;
   using scitbx::af::shared;
   using dxtbx::model::ScanData;
@@ -38,14 +40,16 @@ namespace dials { namespace algorithms {
   shared <Reflection> reflection_frames(const ScanData &scan,
       const Reflection &reflection) {
 
+    double phi = reflection.get_rotation_angle();
+
     // Get the frames that a reflection with this angle will be observed at
-    flex_double frames = scan.get_array_indices_with_angle(
-      reflection.get_rotation_angle());
+    flex_double frames = scan.get_array_indices_with_angle(phi);
 
     // Loop through all the frames and duplicate the reflection for each
     shared <Reflection> reflections_new;
     for (std::size_t j = 0; j < frames.size(); ++j) {
       Reflection r(reflection);
+      r.set_rotation_angle(phi + j * two_pi);
       r.set_frame_number(frames[j]);
       reflections_new.push_back(r);
     }
