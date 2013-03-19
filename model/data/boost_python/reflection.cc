@@ -102,6 +102,15 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("shoebox",
         &Reflection::get_shoebox,
         &Reflection::set_shoebox)  
+      .add_property("image",
+        &Reflection::get_image,
+        &Reflection::set_image)
+      .add_property("image_weights",
+        &Reflection::get_image_weights,
+        &Reflection::set_image_weights)
+      .add_property("transformed_image",
+        &Reflection::get_transformed_image,
+        &Reflection::set_transformed_image)
       .def("__str__", &reflection_to_string);          
 
     scitbx::af::boost_python::flex_wrapper <Reflection>::plain("ReflectionList");        

@@ -23,6 +23,8 @@ namespace dials { namespace model {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
+  using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
 
   // Typedef the miller type
   typedef cctbx::miller::index <> miller_index_type;
@@ -152,6 +154,21 @@ namespace dials { namespace model {
       return shoebox_;
     }
 
+    /** Get the reflection image pixels */
+    flex_int get_image() const {
+      return image_;
+    }
+
+    /** Get the reflection image weights */
+    flex_double get_image_weights() const {
+      return image_weights_;
+    }
+
+    /** Get the transformed profile */
+    flex_double get_transformed_image() const {
+      return transformed_image_;
+    }
+
     /** Set the rotation angle */
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
@@ -187,6 +204,21 @@ namespace dials { namespace model {
       shoebox_ = shoebox;
     }
 
+    /** Sey the reflection image pixels */
+    void set_image(const flex_int &image) {
+      image_ = image;
+    }
+
+    /** Set the reflection image weights */
+    void set_image_weights(const flex_double &image_weights) {
+      image_weights_ = image_weights;
+    }
+
+    /** Set the transformed profile */
+    void set_transformed_image(const flex_double &transformed_image) {
+      transformed_image_ = transformed_image;
+    }
+
   protected:
 
     double rotation_angle_;
@@ -196,6 +228,10 @@ namespace dials { namespace model {
     double frame_number_;
     int panel_number_;
     int6 shoebox_;
+
+    flex_int image_;
+    flex_double image_weights_;
+    flex_double transformed_image_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;
