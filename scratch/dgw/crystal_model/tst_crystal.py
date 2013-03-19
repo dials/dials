@@ -1,6 +1,6 @@
 from __future__ import division
 from scitbx import matrix
-from dials.scratch.dgw.crystal_model import crystal
+from dials.scratch.dgw.crystal_model import Crystal
 
 if __name__ == '__main__':
 
@@ -24,6 +24,6 @@ if __name__ == '__main__':
     b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
 
-    xl = crystal(a, b, c)
+    xl = Crystal(a, b, c)
 
     print "OK"

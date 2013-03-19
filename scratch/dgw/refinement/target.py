@@ -10,10 +10,10 @@ from cctbx.array_family import flex
 # constants
 TWO_PI = 2.0 * pi
 
-class target(object):
+class Target(object):
     '''Abstract interface for a target function class
 
-    A target function will be used by a refinery. It will refer to a Reflection
+    A Target object will be used by a Refinery. It will refer to a Reflection
     Manager to get a list of observations. It will perform reflection prediction
     on those observations and update the reflection manager with those
     predictions. It will then query the reflection manager to get a list of
@@ -55,7 +55,7 @@ class target(object):
         # DIALS prediction code for this. If it is too slow doing this loop in
         # Python, then move it to C++ (but that will require the observation
         # data structure to be in C++ as well). This needs reworking of the
-        # reflection_manager and other classes too.
+        # ReflectionManager and other classes too.
 
         # update the reflection_predictor with current geometry
         self._reflection_predictor.update()
@@ -72,7 +72,7 @@ class target(object):
                                 ref.beam_vector) for ref in predictions]
         Xc, Yc = zip(*impacts)
 
-        # update the reflection_manager
+        # update the ReflectionManager
         self._H.update_predictions(Hc, Sc, Xc, Yc, Phic)
 
     def get_num_reflections(self):
@@ -93,7 +93,7 @@ class target(object):
 
         return False
 
-class least_squares_positional_residual_with_rmsd_cutoff(target):
+class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     '''An implementation of the target class providing a least squares residual
     in terms of detector impact position X, Y and phi, terminating on achieved
     rmsd (or on intrisic convergence of the chosen minimiser)'''
@@ -101,7 +101,7 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
     def __init__(self, ref_man, reflection_predictor, detector,
                  prediction_parameterisation, image_width):
 
-        target.__init__(self, ref_man, reflection_predictor, detector,
+        Target.__init__(self, ref_man, reflection_predictor, detector,
                         prediction_parameterisation)
 
         # Scale units for the RMSD achieved criterion
@@ -238,7 +238,7 @@ class least_squares_positional_residual_with_rmsd_cutoff(target):
             return True
         return False
 
-class observation_prediction(object):
+class ObservationPrediction(object):
     '''A helper class for the reflection manager to contain information about
     the unique observations of particular hkl paired with the currently
     predicted values.
@@ -308,7 +308,7 @@ class observation_prediction(object):
 
         # Current behaviour is to update all observations in the same
         # hemisphere as this prediction. This implies that all reflections
-        # in the reflection_manager come from a model with the same parameter
+        # in the ReflectionManager come from a model with the same parameter
         # values. This is not the case in reality, as repeat observations of one
         # reflection may be at multiples of 2.*pi from each other, with
         # increasing dose delivered, therefore different cells, etc.
@@ -339,7 +339,7 @@ class observation_prediction(object):
                 if first_update:
                     self.use[i] = True
 
-class obs_pred_match:
+class ObsPredMatch:
     '''A bucket class containing data for a prediction that has been
     matched to an observation'''
 
@@ -366,7 +366,7 @@ class obs_pred_match:
         self.Phic = Phic
         self.Sc = Sc
 
-class reflection_manager(object):
+class ReflectionManager(object):
     '''A class to maintain information about observed and predicted
     reflections for refinement.'''
 
@@ -419,7 +419,7 @@ class reflection_manager(object):
         for i, h in enumerate(Ho):
             exiting = So[i].dot(self._vecn) > 0.
             if h not in self._H:
-                self._H[h] = observation_prediction(h,
+                self._H[h] = ObservationPrediction(h,
                                         Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2,
@@ -475,7 +475,7 @@ class reflection_manager(object):
 
             for i, u in enumerate(v.use):
 
-                if u: l.append(obs_pred_match(hkl, v.Xo[i], v.weightXo[i],
+                if u: l.append(ObsPredMatch(hkl, v.Xo[i], v.weightXo[i],
                                             v.Yo[i], v.weightYo[i],
                                             v.Phio[i], v.weightPhio[i],
                                             v.Xc[i], v.Yc[i], v.Phic[i],

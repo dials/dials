@@ -10,15 +10,15 @@ from scitbx import matrix
 #### Import model parameterisations
 
 from dials.scratch.dgw.refinement.detector_parameters import \
-    detector_parameterisation_single_sensor
+    DetectorParameterisationSinglePanel
 from dials.scratch.dgw.refinement.source_parameters import \
-    beam_parameterisation_orientation
+    BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
-    crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
+    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from cctbx.array_family import flex
 from dials_refinement_ext import *
 
-class prediction_parameterisation(object):
+class PredictionParameterisation(object):
     '''
     Abstract interface for a class that groups together model parameterisations
     relating to diffraction geometry and provides:
@@ -57,10 +57,10 @@ class prediction_parameterisation(object):
     * A crystal model
     * A goniometer model (not yet parameterised, but required for the equations)
 
-    A class implementing prediction_parameterisation is used by a refinery
+    A class implementing PredictionParameterisation is used by a Refinery
     object directly, which takes the list of parameters, and indirectly via a
-    target function object, which takes the list of derivatives and composes the
-    derivatives of a target function from them.
+    Target function object, which takes the list of derivatives and composes the
+    derivatives of a Target function from them.
     '''
 
     def __init__(self,
@@ -70,8 +70,8 @@ class prediction_parameterisation(object):
                  goniometer_model,
                  detector_parameterisations = None,
                  beam_parameterisations = None,
-                 crystal_orientation_parameterisations = None,
-                 crystal_unit_cell_parameterisations = None):
+                 xl_orientation_parameterisations = None,
+                 xl_unit_cell_parameterisations = None):
 
         # References to the underlying models
         self._detector = detector_model
@@ -82,30 +82,30 @@ class prediction_parameterisation(object):
         # Sanity checks
         #if detector_parameterisations:
         #    for model in detector_parameterisations:
-        #        # TODO replace detector_parameterisation_single_sensor with a
+        #        # TODO replace DetectorParameterisationSinglePanel with a
         #        # general multi sensor detector_parameterisation when available
         #        assert isinstance(
-        #            model, detector_parameterisation_single_sensor)
+        #            model, DetectorParameterisationSinglePanel)
         #
         #if beam_parameterisations:
         #    for model in beam_parameterisations:
-        #        assert isinstance(model, beam_parameterisation_orientation)
+        #        assert isinstance(model, BeamParameterisationOrientation)
         #
-        #if crystal_orientation_parameterisations:
-        #    for model in crystal_orientation_parameterisations:
-        #        assert isinstance(model, crystal_orientation_parameterisation)
+        #if xl_orientation_parameterisations:
+        #    for model in xl_orientation_parameterisations:
+        #        assert isinstance(model, CrystalOrientationParameterisation)
         #
-        #if crystal_unit_cell_parameterisations:
-        #    for model in crystal_unit_cell_parameterisations:
-        #        assert isinstance(model, crystal_unit_cell_parameterisation)
+        #if xl_unit_cell_parameterisations:
+        #    for model in xl_unit_cell_parameterisations:
+        #        assert isinstance(model, CrystalUnitCellParameterisation)
 
         # Keep references to all parameterised models
         self._detector_parameterisations = detector_parameterisations
         self._beam_parameterisations = beam_parameterisations
         self._xl_orientation_parameterisations = \
-            crystal_orientation_parameterisations
+            xl_orientation_parameterisations
         self._xl_unit_cell_parameterisations = \
-            crystal_unit_cell_parameterisations
+            xl_unit_cell_parameterisations
 
         self._length = self._len()
 
@@ -234,7 +234,7 @@ class prediction_parameterisation(object):
     def get_multi_gradients(self, match_list):
         '''
         perform the functionality of get_gradients but for a list of many
-        reflections in one call in the form of a list of obs_pred_match objects
+        reflections in one call in the form of a list of ObsPredMatch objects
         (see target.py). The advantage of this is that _prepare needs only be
         called once.
         '''
@@ -246,10 +246,10 @@ class prediction_parameterisation(object):
 
         return [self._get_gradients_core(m.H, m.Sc, m.Phic) for m in match_list]
 
-class detector_space_prediction_parameterisation_py(prediction_parameterisation):
+class DetectorSpacePredictionParameterisation_py(PredictionParameterisation):
     '''
     Concrete class that inherits functionaility of the
-    prediction_parameterisation parent class and provides a detector space
+    PredictionParameterisation parent class and provides a detector space
     implementation of the get_gradients function.
 
     Not yet safe for multiple sensor detectors.
@@ -389,10 +389,10 @@ class detector_space_prediction_parameterisation_py(prediction_parameterisation)
 
         return dX_dp, dY_dp
 
-class detector_space_prediction_parameterisation(prediction_parameterisation):
+class DetectorSpacePredictionParameterisation(PredictionParameterisation):
     '''
     Concrete class that inherits functionaility of the
-    prediction_parameterisation parent class and provides a detector space
+    PredictionParameterisation parent class and provides a detector space
     implementation of the get_gradients function.
 
     Not yet safe for multiple sensor detectors.

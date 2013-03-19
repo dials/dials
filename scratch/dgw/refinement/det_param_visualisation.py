@@ -43,7 +43,7 @@ if __name__ == '__main__':
     d2 = matrix.col((0, -1, 0))
     lim = (0,50)
     panel0 = sensor(matrix.col((-20, 20, -100)), d1, d2, lim, lim)
-    dp = detector_parameterisation_single_sensor(panel0)
+    dp = DetectorParameterisationSinglePanel(panel0)
 
     print "#initial position"
     vis(dp)

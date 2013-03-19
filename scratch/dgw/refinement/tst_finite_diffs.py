@@ -16,29 +16,31 @@ from scitbx import matrix
 from libtbx.phil import parse
 
 # Experimental model builder
-from setup_geometry import extract
+from setup_geometry import Extract
 
 # Model parameterisations
 from dials.scratch.dgw.refinement.detector_parameters import \
-    detector_parameterisation_single_sensor
+    DetectorParameterisationSinglePanel
 from dials.scratch.dgw.refinement.source_parameters import \
-    beam_parameterisation_orientation
+    BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
-    crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
-from dials.scratch.dgw.refinement import random_param_shift
+    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
 # Reflection prediction
-from dials.scratch.dgw.prediction import angle_predictor, impact_predictor
-from rstbx.diffraction import full_sphere_indices
+from dials.algorithms.spot_prediction import IndexGenerator
+from dials.scratch.dgw.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
 from dials.scratch.dgw.refinement.prediction_parameters import \
-    detector_space_prediction_parameterisation
+    DetectorSpacePredictionParameterisation
 
 # Imports for the target function
 from dials.scratch.dgw.refinement.target import \
-    least_squares_positional_residual_with_rmsd_cutoff, reflection_manager
+    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+
+# Import helper functions
+from dials.scratch.dgw.refinement import print_model_geometry
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
@@ -62,7 +64,7 @@ master_phil = parse("""
     include file geometry.params
     """, process_includes=True)
 
-models = extract(master_phil, overrides, cmdline_args = args)
+models = Extract(master_phil, overrides, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
@@ -71,24 +73,16 @@ mybeam = models.beam
 
 print "Initial experimental model"
 print "=========================="
-print "beam s0       = (%.4f, %.4f, %.4f)" % mybeam.get_s0()
-print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
-print "sensor dir1   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
-print "sensor dir2   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
-uc = mycrystal.get_unit_cell()
-print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
-print "crystal orientation matrix U ="
-print mycrystal.get_U().round(4)
-print
+print_model_geometry(mybeam, mydetector, mycrystal)
 
 ###########################
 # Parameterise the models #
 ###########################
 
-det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-s0_param = beam_parameterisation_orientation(mybeam)
-xlo_param = crystal_orientation_parameterisation(mycrystal)
-xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
+det_param = DetectorParameterisationSinglePanel(mydetector)
+s0_param = BeamParameterisationOrientation(mybeam)
+xlo_param = CrystalOrientationParameterisation(mycrystal)
+xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
 ########################################################################
 # Link model parameterisations together into a parameterisation of the #
@@ -96,7 +90,7 @@ xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
 ########################################################################
 
 # Testing the new 'coupled' version here
-pred_param = detector_space_prediction_parameterisation(
+pred_param = DetectorSpacePredictionParameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
@@ -116,25 +110,14 @@ p_vals = list(s0_p_vals)
 p_vals[1] += 2.0
 s0_param.set_p(p_vals)
 
-# rotate crystal a bit (=4 mrad each rotation)
-#p_vals = xlo_param.get_p()
-#p_vals2 = random_param_shift(p_vals, [0.004, 0.004, 0.004])
-#p_vals2 = [0.004, 0.004, 0.004]
-#xlo_param.set_p(p_vals2)
+# rotate crystal a bit (=2 mrad each rotation)
 xlo_p_vals = xlo_param.get_p()
 p_vals = [a + b for a, b in zip(xlo_p_vals, [2.0, 2.0, 2.0])]
 xlo_param.set_p(p_vals)
 
 print "Offsetting initial model"
 print "========================"
-print "beam s0       = (%.4f, %.4f, %.4f)" % mybeam.get_s0()
-print "sensor origin = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].origin
-print "sensor dir1   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir1
-print "sensor dir2   = (%.4f, %.4f, %.4f)" % mydetector.sensors()[0].dir2
-uc = mycrystal.get_unit_cell()
-print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
-print "crystal orientation matrix U ="
-print mycrystal.get_U().round(4)
+print_model_geometry(mybeam, mydetector, mycrystal)
 print
 
 #############################
@@ -143,30 +126,38 @@ print
 
 # All indices in a 2.0 Angstrom sphere
 resolution = 2.0
-indices = full_sphere_indices(
-    unit_cell = mycrystal.get_unit_cell(),
-    resolution_limit = resolution,
-    space_group = space_group(space_group_symbols(1).hall()))
+index_generator = IndexGenerator(mycrystal.get_unit_cell(),
+                space_group(space_group_symbols(1).hall()).type(), resolution)
+indices = index_generator.to_array()
 
 # Select those that are excited in a 180 degree sweep and get their angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
-obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
-    phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
+sweep_range = (0., pi)
+ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
+obs_refs = ref_predictor.predict(indices)
+
 print "Generating reflections"
 print "======================"
-print "Total number of reflections excited", len(obs_indices)
+print "Total number of reflections excited", len(obs_refs)
+
+# Pull out reflection data as lists
+temp = [(ref.miller_index, ref.rotation_angle,
+         matrix.col(ref.beam_vector)) for ref in obs_refs]
+hkls, angles, svecs = zip(*temp)
 
 # Project positions on camera
-ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
-hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
-                                       obs_angles)
+# currently assume all reflections intersect panel 0
+impacts = [mydetector[0].get_ray_intersection(
+                        ref.beam_vector) for ref in obs_refs]
+d1s, d2s = zip(*impacts)
+
 print "Total number of observations made", len(hkls), "\n"
 
 # Invent some uncertainties
 im_width = 0.1 * pi / 180.
-sigd1s = [mydetector.px_size_fast() / 2.] * len(hkls)
-sigd2s = [mydetector.px_size_slow() / 2.] * len(hkls)
+px_size = mydetector.get_pixel_size()
+sigd1s = [px_size[0] / 2.] * len(hkls)
+sigd2s = [px_size[1] / 2.] * len(hkls)
 sigangles = [im_width / 2.] * len(hkls)
 
 ###############################
@@ -187,7 +178,7 @@ print msg % tuple(pred_param.get_p()), "\n"
 # Select reflections for refinement #
 #####################################
 
-refman = reflection_manager(hkls, svecs,
+refman = ReflectionManager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
@@ -197,9 +188,8 @@ refman = reflection_manager(hkls, svecs,
 # Set up the target function #
 ##############################
 
-mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-    refman, ap, ip, pred_param, mydetector.px_size_fast(),
-    mydetector.px_size_slow(), im_width)
+mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
+    refman, ref_predictor, mydetector, pred_param, im_width)
 
 # get the functional and gradients
 mytarget.predict()

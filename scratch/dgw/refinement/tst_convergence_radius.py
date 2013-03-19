@@ -11,35 +11,36 @@ doing random sampling of parameter space."""
 from __future__ import division
 import sys
 from math import pi
+from scitbx import matrix
 from libtbx.phil import parse
 
-# Get class to build experimental models
-from setup_geometry import extract
+# Get module to build experimental models
+from setup_geometry import Extract
 
 # Model parameterisations
 from dials.scratch.dgw.refinement.detector_parameters import \
-    detector_parameterisation_single_sensor
+    DetectorParameterisationSinglePanel
 from dials.scratch.dgw.refinement.source_parameters import \
-    beam_parameterisation_orientation
+    BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
-    crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
+    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from dials.scratch.dgw.refinement import random_param_shift
 
 # Reflection prediction
-from dials.scratch.dgw.prediction import angle_predictor, impact_predictor
-from rstbx.diffraction import full_sphere_indices
+from dials.algorithms.spot_prediction import IndexGenerator
+from dials.scratch.dgw.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
 from dials.scratch.dgw.refinement.prediction_parameters import \
-    detector_space_prediction_parameterisation
+    DetectorSpacePredictionParameterisation
 
 # Imports for the target function
 from dials.scratch.dgw.refinement.target import \
-    least_squares_positional_residual_with_rmsd_cutoff, reflection_manager
+    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import the refinement engine
-from dials.scratch.dgw.refinement.engine import simple_lbfgs, lbfgs_curvs
+from dials.scratch.dgw.refinement.engine import SimpleLBFGS, LBFGScurvs
 
 # Import helper functions
 from dials.scratch.dgw.refinement import print_model_geometry
@@ -58,7 +59,7 @@ def setup_models(seed):
     include file minimiser.params
     """, process_includes=True)
 
-    models = extract(master_phil, local_overrides=override)
+    models = Extract(master_phil, local_overrides=override)
 
     mydetector = models.detector
     mygonio = models.goniometer
@@ -69,10 +70,10 @@ def setup_models(seed):
     # Parameterise the models #
     ###########################
 
-    det_param = detector_parameterisation_single_sensor(mydetector.sensors()[0])
-    s0_param = beam_parameterisation_orientation(mybeam)
-    xlo_param = crystal_orientation_parameterisation(mycrystal)
-    xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
+    det_param = DetectorParameterisationSinglePanel(mydetector)
+    s0_param = BeamParameterisationOrientation(mybeam)
+    xlo_param = CrystalOrientationParameterisation(mycrystal)
+    xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
     # Fix beam to the X-Z plane (imgCIF geometry)
     s0_param.set_fixed([True, False])
@@ -85,7 +86,7 @@ def setup_models(seed):
     # prediction equation                                                  #
     ########################################################################
 
-    pred_param = detector_space_prediction_parameterisation(
+    pred_param = DetectorSpacePredictionParameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
@@ -131,30 +132,32 @@ def run(mydetector, mygonio, mycrystal, mybeam,
 
     # All indices in a 2.0 Angstrom sphere
     resolution = 2.0
-    indices = full_sphere_indices(
-        unit_cell = mycrystal.get_unit_cell(),
-        resolution_limit = resolution,
-        space_group = space_group(space_group_symbols(1).hall()))
+    index_generator = IndexGenerator(mycrystal.get_unit_cell(),
+                    space_group(space_group_symbols(1).hall()).type(), resolution)
+    indices = index_generator.to_array()
 
     # Select those that are excited in a 180 degree sweep and get their angles
     UB = mycrystal.get_U() * mycrystal.get_B()
-    ap = angle_predictor(mycrystal, mybeam, mygonio, resolution)
-    obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
-        phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
+    sweep_range = (0., pi)
+    ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
+    obs_refs = ref_predictor.predict(indices)
+
+    # Pull out reflection data as lists
+    temp = [(ref.miller_index, ref.rotation_angle,
+             matrix.col(ref.beam_vector)) for ref in obs_refs]
+    hkls, angles, svecs = zip(*temp)
 
     # Project positions on camera
-    ip = impact_predictor(mydetector, mygonio, mybeam, mycrystal)
-    #rp = reflection_prediction(mygonio.get_axis(), mybeam.get_s0(), UB,
-    #                           mydetector.sensors()[0])
-    #hkls, d1s, d2s, angles, s_dirs = rp.predict(obs_indices.as_vec3_double(),
-    #                                       obs_angles)
-    hkls, d1s, d2s, angles, svecs = ip.predict(obs_indices.as_vec3_double(),
-                                           obs_angles)
+    # currently assume all reflections intersect panel 0
+    impacts = [mydetector[0].get_ray_intersection(
+                            ref.beam_vector) for ref in obs_refs]
+    d1s, d2s = zip(*impacts)
 
     # Invent some uncertainties
     im_width = 0.1 * pi / 180.
-    sigd1s = [mydetector.px_size_fast() / 2.] * len(hkls)
-    sigd2s = [mydetector.px_size_slow() / 2.] * len(hkls)
+    px_size = mydetector.get_pixel_size()
+    sigd1s = [px_size[0] / 2.] * len(hkls)
+    sigd2s = [px_size[1] / 2.] * len(hkls)
     sigangles = [im_width / 2.] * len(hkls)
 
     ###############################
@@ -169,7 +172,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Select reflections for refinement #
     #####################################
 
-    rm = reflection_manager(hkls, svecs,
+    refman = ReflectionManager(hkls, svecs,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
@@ -179,18 +182,15 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Set up the target function #
     ##############################
 
-    # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
-    # 1/3 the image width in radians. For the simulated data, these are just made up
-    mytarget = least_squares_positional_residual_with_rmsd_cutoff(
-        rm, ap, ip, pred_param, mydetector.px_size_fast(),
-        mydetector.px_size_slow(), im_width)
+    mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
+        refman, ref_predictor, mydetector, pred_param, im_width)
 
     ################################
     # Set up the refinement engine #
     ################################
 
-    #refiner = simple_lbfgs(mytarget, pred_param)
-    refiner = lbfgs_curvs(mytarget, pred_param)
+    #refiner = SimpleLBFGS(mytarget, pred_param)
+    refiner = LBFGScurvs(mytarget, pred_param)
     refiner.run()
 
     msg = "%d %s " + "%.5f " * len(pred_param)

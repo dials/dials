@@ -12,7 +12,7 @@ Control of the experimental model and choice of minimiser is done via
 PHIL, which means we can do, for example:
 
 cctbx.python tst_orientation_refinement.py \
-"random_seed=3; engine=lbfgs_curvs"
+"random_seed=3; engine=LBFGScurvs"
 
 """
 
@@ -23,18 +23,17 @@ from math import pi
 from scitbx import matrix
 from libtbx.phil import parse
 
-# Get class to build models and minimiser using PHIL
+# Get modules to build models and minimiser using PHIL
 import setup_geometry
 import setup_minimiser
 
 # Model parameterisations
 from dials.scratch.dgw.refinement.detector_parameters import \
-    detector_parameterisation_single_sensor
+    DetectorParameterisationSinglePanel
 from dials.scratch.dgw.refinement.source_parameters import \
-    beam_parameterisation_orientation
+    BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
-    crystal_orientation_parameterisation, crystal_unit_cell_parameterisation
-from dials.scratch.dgw.refinement import random_param_shift
+    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
 # Symmetry constrained parameterisation for the unit cell
 from cctbx.uctbx import unit_cell
@@ -42,21 +41,17 @@ from rstbx.symmetry.constraints.parameter_reduction import \
     symmetrize_reduce_enlarge
 
 # Reflection prediction
-from dials.algorithms.spot_prediction import IndexGenerator, \
-                                             RotationAngles
+from dials.algorithms.spot_prediction import IndexGenerator
 from dials.scratch.dgw.prediction import ReflectionPredictor
-#from dials.scratch.dgw.prediction import angle_predictor_py, angle_predictor, \
-#    impact_predictor
-from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
 from dials.scratch.dgw.refinement.prediction_parameters import \
-    detector_space_prediction_parameterisation
+    DetectorSpacePredictionParameterisation
 
 # Imports for the target function
 from dials.scratch.dgw.refinement.target import \
-    least_squares_positional_residual_with_rmsd_cutoff, reflection_manager
+    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import helper functions
 from dials.scratch.dgw.refinement import print_model_geometry
@@ -71,7 +66,7 @@ master_phil = parse("""
     include file minimiser.params
     """, process_includes=True)
 
-models = setup_geometry.extract(master_phil, cmdline_args = args)
+models = setup_geometry.Extract(master_phil, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
@@ -82,10 +77,10 @@ mybeam = models.beam
 # Parameterise the models #
 ###########################
 
-det_param = detector_parameterisation_single_sensor(mydetector)
-s0_param = beam_parameterisation_orientation(mybeam)
-xlo_param = crystal_orientation_parameterisation(mycrystal)
-xluc_param = crystal_unit_cell_parameterisation(mycrystal) # dummy, does nothing
+det_param = DetectorParameterisationSinglePanel(mydetector)
+s0_param = BeamParameterisationOrientation(mybeam)
+xlo_param = CrystalOrientationParameterisation(mycrystal)
+xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
 # Fix beam to the X-Z plane (imgCIF geometry)
 s0_param.set_fixed([True, False])
@@ -98,7 +93,7 @@ s0_param.set_fixed([True, False])
 # prediction equation                                                  #
 ########################################################################
 
-pred_param = detector_space_prediction_parameterisation(
+pred_param = DetectorSpacePredictionParameterisation(
 mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
 [xlo_param], [xluc_param])
 
@@ -108,16 +103,12 @@ mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
 
 # shift detector by 1.0 mm each translation and 2 mrad each rotation
 det_p_vals = det_param.get_p()
-#p_vals2 = random_param_shift(p_vals, [0.2, 0.2, 0.2,
-#                                    0.00873, 0.00873, 0.00873])
-
 p_vals = [a + b for a, b in zip(det_p_vals,
                                 [1.0, 1.0, 1.0, 2., 2., 2.])]
 det_param.set_p(p_vals)
 
 # shift beam by 2 mrad in free axis
 s0_p_vals = s0_param.get_p()
-#p_vals2 = random_param_shift(p_vals, [0.002, 0.002])
 p_vals = list(s0_p_vals)
 
 p_vals[0] += 2.
@@ -128,11 +119,12 @@ xlo_p_vals = xlo_param.get_p()
 p_vals = [a + b for a, b in zip(xlo_p_vals, [2., 2., 2.])]
 xlo_param.set_p(p_vals)
 
-# change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of one angle)
+# change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of
+# gamma angle)
 xluc_p_vals = xluc_param.get_p()
 cell_params = mycrystal.get_unit_cell().parameters()
-#cell_params = random_param_shift(cell_params, [0.1] * 6)
-cell_params = [a + b for a, b in zip(cell_params, [0.1, 0.1, 0.1, 0.0, 0.0, 0.1])]
+cell_params = [a + b for a, b in zip(cell_params, [0.1, 0.1, 0.1, 0.0,
+                                                   0.0, 0.1])]
 new_uc = unit_cell(cell_params)
 newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
 S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
@@ -153,26 +145,15 @@ print
 
 # All indices in a 2.0 Angstrom sphere
 resolution = 2.0
-#indices = full_sphere_indices(
-#    unit_cell = mycrystal.get_unit_cell(),
-#    resolution_limit = resolution,
-#    space_group = space_group(space_group_symbols(1).hall()))
 index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Select those that are excited in a 180 degree sweep and get their angles
+# Select those that are excited in a 180 degree sweep and get angles
 UB = mycrystal.get_U() * mycrystal.get_B()
 sweep_range = (0., pi)
 ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
-#ap = angle_predictor_py(mycrystal, mybeam, mygonio, resolution)
-#rotation_angles = RotationAngles(mybeam.get_s0(),
-#                                 mygonio.get_rotation_axis())
 
-#obs_indices, obs_angles = ap.observed_indices_and_angles_from_angle_range(
-#    phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
-# generate angles within a range, i.e. the analogue of
-# the observed_indices_and_angles_from_angle_range method
 obs_refs = ref_predictor.predict(indices)
 
 print "Total number of reflections excited", len(obs_refs)
@@ -215,7 +196,7 @@ print
 # Select reflections for refinement #
 #####################################
 
-refman = reflection_manager(hkls, svecs,
+refman = ReflectionManager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
@@ -227,14 +208,14 @@ refman = reflection_manager(hkls, svecs,
 
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
-mytarget = least_squares_positional_residual_with_rmsd_cutoff(
+mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
     refman, ref_predictor, mydetector, pred_param, im_width)
 
 ################################
 # Set up the refinement engine #
 ################################
 
-refiner = setup_minimiser.extract(master_phil,
+refiner = setup_minimiser.Extract(master_phil,
                                   mytarget,
                                   pred_param,
                                   cmdline_args = args).refiner

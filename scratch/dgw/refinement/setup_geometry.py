@@ -19,7 +19,7 @@ from dials.model.experiment import goniometer_factory
 from dials.model.experiment import detector_factory
 
 # local crystal model
-from dials.scratch.dgw.crystal_model import crystal
+from dials.scratch.dgw.crystal_model import Crystal
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
@@ -29,7 +29,7 @@ def random_direction_close_to(vector, sd = 0.5):
                  random.random())).normalize(),
                  random.gauss(0, sd),  deg = True)
 
-class extract(object):
+class Extract(object):
     '''Parse and extract geometry model from PHIL'''
 
     def __init__(self, master_phil, local_overrides = "",
@@ -197,4 +197,4 @@ class extract(object):
                     self._params.crystal.b,
                     self._params.crystal.c])
 
-        self.crystal = crystal(*vecs)
+        self.crystal = Crystal(*vecs)

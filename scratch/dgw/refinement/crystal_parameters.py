@@ -5,15 +5,15 @@
 # testing purposes only
 
 from __future__ import division
-from model_parameters import parameter, model_parameterisation
-from dials.scratch.dgw.crystal_model import crystal
+from model_parameters import Parameter, ModelParameterisation
+from dials.scratch.dgw.crystal_model import Crystal
 from scitbx import matrix
 from dials.scratch.dgw.refinement \
     import get_fd_gradients, dR_from_axis_and_angle, random_param_shift
 from math import pi
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 
-class crystal_orientation_parameterisation(model_parameterisation):
+class CrystalOrientationParameterisation(ModelParameterisation):
     '''A work-in-progress parameterisation for crystal orientation, with angles
     expressed in mrad'''
 
@@ -30,9 +30,9 @@ class crystal_orientation_parameterisation(model_parameterisation):
         istate = crystal.get_U()
 
         ### Set up the parameters
-        phi1 = parameter(.0, matrix.col((1, 0, 0)), 'angle')
-        phi2 = parameter(.0, matrix.col((0, 1, 0)), 'angle')
-        phi3 = parameter(.0, matrix.col((0, 0, 1)), 'angle')
+        phi1 = Parameter(.0, matrix.col((1, 0, 0)), 'angle')
+        phi2 = Parameter(.0, matrix.col((0, 1, 0)), 'angle')
+        phi3 = Parameter(.0, matrix.col((0, 0, 1)), 'angle')
 
         # build the parameter list in a specific,  maintained order
         p_list = [phi1, phi2, phi3]
@@ -42,7 +42,7 @@ class crystal_orientation_parameterisation(model_parameterisation):
         models = [crystal]
 
         # set up the base class
-        model_parameterisation.__init__(self, models, istate, p_list)
+        ModelParameterisation.__init__(self, models, istate, p_list)
 
         # call compose to calculate all the derivatives
         self.compose()
@@ -91,7 +91,7 @@ class crystal_orientation_parameterisation(model_parameterisation):
     def get_state(self):
         return matrix.sqr(self._models[0].get_U())
 
-class crystal_unit_cell_parameterisation(model_parameterisation):
+class CrystalUnitCellParameterisation(ModelParameterisation):
     '''A work-in-progress parameterisation for unit cell'''
 
     def __init__(self, crystal):
@@ -115,14 +115,14 @@ class crystal_unit_cell_parameterisation(model_parameterisation):
         B = self._S.backward_orientation(independent=X).reciprocal_matrix()
 
         ### Set up the independent parameters
-        p_list = [parameter(e) for e in X]
+        p_list = [Parameter(e) for e in X]
 
         # set up the list of model objects being parameterised (here
         # just a single crystal model)
         models = [crystal]
 
         # set up the base class
-        model_parameterisation.__init__(self, models, istate, p_list)
+        ModelParameterisation.__init__(self, models, istate, p_list)
 
         # call compose to calculate all the derivatives
         self.compose()
@@ -167,10 +167,10 @@ if __name__ == '__main__':
     a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
     b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-    xl = crystal(a, b, c)
+    xl = Crystal(a, b, c)
 
-    xl_op = crystal_orientation_parameterisation(xl)
-    xl_ucp = crystal_unit_cell_parameterisation(xl)
+    xl_op = CrystalOrientationParameterisation(xl)
+    xl_ucp = CrystalUnitCellParameterisation(xl)
 
     null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
 
@@ -196,9 +196,9 @@ if __name__ == '__main__':
         a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
         b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
         c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-        xl = crystal(a, b, c)
-        xl_op = crystal_orientation_parameterisation(xl)
-        xl_uc = crystal_unit_cell_parameterisation(xl)
+        xl = Crystal(a, b, c)
+        xl_op = CrystalOrientationParameterisation(xl)
+        xl_uc = CrystalUnitCellParameterisation(xl)
 
         # apply a random parameter shift to the orientation
         p_vals = xl_op.get_p()

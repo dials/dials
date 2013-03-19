@@ -5,17 +5,16 @@
 # testing purposes only
 
 from __future__ import division
-from model_parameters import parameter, model_parameterisation
+from model_parameters import Parameter, ModelParameterisation
 from scitbx import matrix
-#from rstbx.bpcx import sensor
 from dials.model.experiment import Panel, Detector
 from dials.model.experiment import detector_factory
 from math import sin, cos, pi, sqrt
 from dials.scratch.dgw.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift
 
-class detector_parameterisation_single_sensor(model_parameterisation):
-    '''implementation of parameterisation for a single abstract sensor
+class DetectorParameterisationSinglePanel(ModelParameterisation):
+    '''implementation of parameterisation for a single abstract panel
     plane, with angles expressed in mrad'''
 
     def __init__(self, detector):
@@ -71,21 +70,21 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         # distance from lab origin to detector model plane along its
         # normal, in initial orientation
         distance = panel.get_distance()
-        dist = parameter(distance, dn, 'length')
+        dist = Parameter(distance, dn, 'length')
 
         # shift in the detector model plane to locate dorg, in initial
         # orientation
         shift = dorg - dn * distance
-        shift1 = parameter(shift.dot(d1), d1, 'length')
-        shift2 = parameter(shift.dot(d2), d2, 'length')
+        shift1 = Parameter(shift.dot(d1), d1, 'length')
+        shift2 = Parameter(shift.dot(d2), d2, 'length')
 
         # rotations of the plane through its origin about:
         # 1) axis normal to initial orientation
         # 2) d1 axis of initial orientation
         # 3) d2 axis of initial orientation
-        tau1 = parameter(0, dn, 'angle')
-        tau2 = parameter(0, d1, 'angle')
-        tau3 = parameter(0, d2, 'angle')
+        tau1 = Parameter(0, dn, 'angle')
+        tau2 = Parameter(0, d1, 'angle')
+        tau3 = Parameter(0, d2, 'angle')
 
         # build the parameter list in a specific,  maintained order
         p_list = [dist, shift1, shift2, tau1, tau2, tau3]
@@ -95,7 +94,7 @@ class detector_parameterisation_single_sensor(model_parameterisation):
         models = [detector]
 
         # set up the base class
-        model_parameterisation.__init__(self, models, istate, p_list)
+        ModelParameterisation.__init__(self, models, istate, p_list)
 
         # call compose to calculate all the derivatives
         self.compose()
@@ -419,7 +418,7 @@ if __name__ == '__main__':
         matrix.col((0, 0, -110)), (pix_size_f, pix_size_s),
         (npx_fast, npx_slow), (0, 2e20))
 
-    dp = detector_parameterisation_single_sensor(detector)
+    dp = DetectorParameterisationSinglePanel(detector)
 
     # Test change of parameters
     # =========================
@@ -510,7 +509,7 @@ if __name__ == '__main__':
     for i in range(attempts):
 
         # create random initial position
-        dp = detector_parameterisation_single_sensor(Detector(
+        dp = DetectorParameterisationSinglePanel(Detector(
             random_panel()))
 
         # apply a random parameter shift

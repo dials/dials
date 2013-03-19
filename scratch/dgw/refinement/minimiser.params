@@ -1,7 +1,7 @@
 minimiser.parameters
     .help = "Set up an minimiser for refinement test case"
 {
-    engine = simple_lbfgs lbfgs_curvs *gn_iterations
+    engine = SimpleLBFGS LBFGScurvs *GaussNewtonIterations
         .type = choice
     logfile = tst_orientation_refinement.log
         .type = path

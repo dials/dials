@@ -2,8 +2,8 @@ from __future__ import division
 
 import math
 from scitbx import matrix
-from dials.scratch.dgw.prediction import angle_predictor_rstbx
-from dials.scratch.dgw.prediction import angle_predictor_py
+from dials.scratch.dgw.prediction import AnglePredictor_rstbx
+from dials.scratch.dgw.prediction import AnglePredictor_py
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.spot_prediction import RotationAngles
 from dials.algorithms.spot_prediction import RayPredictor
@@ -83,7 +83,7 @@ def align_reference_frame(primary_axis, primary_target,
     return Rsecondary * Rprimary
 
 
-### Perform a unit test by comparing the results of angle_predictor_py to
+### Perform a unit test by comparing the results of AnglePredictor_py to
 ### those from rstbx's rotation_angles
 
 ### python and cctbx imports
@@ -94,7 +94,7 @@ from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 
 ### import models
-from dials.scratch.dgw.crystal_model import crystal
+from dials.scratch.dgw.crystal_model import Crystal
 from dials.model.experiment import beam_factory, goniometer_factory
 
 ### local functions
@@ -115,7 +115,7 @@ mybeam = beam_factory.make_beam(direction, 1.5)
 a = random.uniform(10,20) * random_direction_close_to(matrix.col((1, 0, 0)))
 b = random.uniform(10,20) * random_direction_close_to(matrix.col((0, 1, 0)))
 c = random.uniform(10,20) * random_direction_close_to(matrix.col((0, 0, 1)))
-mycrystal = crystal(a, b, c)
+mycrystal = Crystal(a, b, c)
 
 # make a dumb goniometer that rotates around X
 mygonio = goniometer_factory.known_axis((1, 0, 0))
@@ -141,8 +141,8 @@ obs_indices_rstbx, obs_angles_rstbx = \
     ra.observed_indices_and_angles_from_angle_range(
       phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
 
-# test my rotation_angles wrapper, angle_predictor_rstbx
-ap = angle_predictor_rstbx(mycrystal, mybeam, mygonio, resolution)
+# test my rotation_angles wrapper, AnglePredictor_rstbx
+ap = AnglePredictor_rstbx(mycrystal, mybeam, mygonio, resolution)
 obs_indices_wrap, obs_angles_wrap = ap.observed_indices_and_angles_from_angle_range(
     phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
 
@@ -160,9 +160,9 @@ for h1, h2, p1, p2 in zip(obs_indices_rstbx, obs_indices_wrap,
     assert(h1 == h2)
     assert(p1 == p2)
 
-# Now we're ready to test angle_predictor_py. First check prediction
+# Now we're ready to test AnglePredictor_py. First check prediction
 # for individual indices. The angles should be approx. the same
-ap = angle_predictor_py(mycrystal, mybeam, mygonio, resolution)
+ap = AnglePredictor_py(mycrystal, mybeam, mygonio, resolution)
 
 for hkl, phi in zip(obs_indices_rstbx, obs_angles_rstbx):
     ap_phi = ap.predict(hkl)
@@ -170,7 +170,7 @@ for hkl, phi in zip(obs_indices_rstbx, obs_angles_rstbx):
     assert approx_equal(ap_phi[0], phi, out = None) or \
            approx_equal(ap_phi[1], phi, out = None)
 
-# Now test prediction of multiple indices from angle_predictor_py
+# Now test prediction of multiple indices from AnglePredictor_py
 obs_indices_dgw, obs_angles_dgw = \
     ap.observed_indices_and_angles_from_angle_range(
       phi_start_rad = 0.0, phi_end_rad = math.pi, indices = indices)
@@ -190,8 +190,8 @@ print len(obs_indices_rstbx), len(obs_indices_wrap), len(obs_indices_dgw)
 
 # FIXME how do I compare these sets?
 # There are some differences between the limits of reflections that are
-# predicted by my Python reflection prediction code in angle_predictor_py
-# and those by the rotation_angles wrapper, angle_predictor. That can be
+# predicted by my Python reflection prediction code in AnglePredictor_py
+# and those by the rotation_angles wrapper, AnglePredictor_rstbx. That can be
 # seen by running this script a few times and looking at the output lines
 # in the above loop. Sometimes one method predicts an extra 'shell' of
 # reflections compared to the other.
@@ -243,7 +243,7 @@ for h1, phi1, h2, phi2 in zip(obs_indices_wrap,
 print len(obs_indices_wrap), len(dials_obs_indices)
 
 # if we got this far, excellent, DIALS reflection prediction behaves
-# the same as my angle_predictor, so I can go ahead and use it.
+# the same as my AnglePredictor_rstbx, so I can go ahead and use it.
 print "OK"
 
 # Now continue by testing RayPredictor versus rstbx's

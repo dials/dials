@@ -41,11 +41,11 @@ class ReflectionPredictor(object):
 
         return self._ray_predictor(hkl)
 
-class angle_predictor_rstbx(object):
+class AnglePredictor_rstbx(object):
     '''Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model. This version is a wrapper
     for rstbx's C++ rotation_angles so is faster than the pure Python class
-    angle_predictor_py'''
+    AnglePredictor_py'''
 
     def __init__(self, crystal, beam, gonio, dmin):
         '''Construct by linking to instances of experimental model classes'''
@@ -175,7 +175,7 @@ class angle_predictor_rstbx(object):
 
         else: return None
 
-class angle_predictor_py(object):
+class AnglePredictor_py(object):
     '''Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model.'''
 
@@ -297,7 +297,7 @@ class angle_predictor_py(object):
 
         return (obs_ind, obs_ang)
 
-class impact_predictor(object):
+class ImpactPredictor(object):
     '''Predict observation position for supplied reflections and angles. This
     class is just a wrapper for RSTBX's reflection_prediction class (in future
     that class should be replaced). A wrapper is necessary because
@@ -305,8 +305,8 @@ class impact_predictor(object):
     keeps track of those models and instantiates a reflection_prediction object
     when required with the correct geometry.
 
-    It is called impact_predictor, because reflection_predictor does not imply
-    that the hkl is actually observed, whereas impact_predictor does'''
+    It is called ImpactPredictor, because ReflectionPredictor does not imply
+    that the hkl is actually observed, whereas ImpactPredictor does'''
 
     def __init__(self, detector, goniometer, beam, crystal):
         self._detector = detector

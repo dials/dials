@@ -4,8 +4,8 @@
 
 from __future__ import division
 
-class parameter(object):
-    '''A class to help formalise what a parameter is. A parameter must
+class Parameter(object):
+    '''A class to help formalise what a parameter is. A Parameter must
     have a numerical value (either a length or an angle). It may also
     have a vector axis which provides context for what that number
     means.
@@ -51,7 +51,7 @@ class parameter(object):
 
 
 
-class model_parameterisation(object):
+class ModelParameterisation(object):
     '''An abstract interface that model elements, such as the detector
     model, the source model, etc. should adhere to in order to compose
     their state from their parameters, access their parameters, and

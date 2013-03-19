@@ -18,7 +18,7 @@ from libtbx.phil import parse
 
 ##### Import model builder
 
-from setup_geometry import extract
+from setup_geometry import Extract
 
 ##### Imports for reflection prediction
 
@@ -28,14 +28,14 @@ from dials.scratch.dgw.prediction import ReflectionPredictor
 #### Import model parameterisations
 
 from dials.scratch.dgw.refinement.prediction_parameters import \
-    detector_space_prediction_parameterisation
+    DetectorSpacePredictionParameterisation
 from dials.scratch.dgw.refinement.detector_parameters import \
-    detector_parameterisation_single_sensor
+    DetectorParameterisationSinglePanel
 from dials.scratch.dgw.refinement.source_parameters import \
-    beam_parameterisation_orientation
+    BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
-    crystal_orientation_parameterisation, \
-    crystal_unit_cell_parameterisation
+    CrystalOrientationParameterisation, \
+    CrystalUnitCellParameterisation
 
 #### Local functions
 
@@ -119,7 +119,7 @@ master_phil = parse("""
     include file geometry.params
     """, process_includes=True)
 
-models = extract(master_phil, overrides, cmdline_args = args)
+models = Extract(master_phil, overrides, cmdline_args = args)
 
 mydetector = models.detector
 mygonio = models.goniometer
@@ -128,15 +128,15 @@ mybeam = models.beam
 
 #### Create parameterisations of these models
 
-det_param = detector_parameterisation_single_sensor(mydetector)
-s0_param = beam_parameterisation_orientation(mybeam)
-xlo_param = crystal_orientation_parameterisation(mycrystal)
-xluc_param = crystal_unit_cell_parameterisation(mycrystal)
+det_param = DetectorParameterisationSinglePanel(mydetector)
+s0_param = BeamParameterisationOrientation(mybeam)
+xlo_param = CrystalOrientationParameterisation(mycrystal)
+xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
 #### Unit tests
 
 # Build a prediction parameterisation with a single detector model
-pred_param = detector_space_prediction_parameterisation(mydetector,
+pred_param = DetectorSpacePredictionParameterisation(mydetector,
              mybeam, mycrystal, mygonio, [det_param])
 
 # Check the accessors
@@ -149,7 +149,7 @@ for (a, b) in zip(pred_param.get_p(), det_param.get_p()):
     assert a==b
 
 # Build a full global parameterisation
-pred_param = detector_space_prediction_parameterisation(
+pred_param = DetectorSpacePredictionParameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 

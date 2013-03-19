@@ -4,7 +4,7 @@ from cctbx.uctbx import unit_cell
 from cctbx.sgtbx import space_group, space_group_symbols
 from cctbx.crystal_orientation import crystal_orientation
 
-class crystal:
+class Crystal:
     '''Simple model for the crystal lattice geometry and symmetry'''
 
     def __init__(self, real_space_a, real_space_b, real_space_c, sg = 1):

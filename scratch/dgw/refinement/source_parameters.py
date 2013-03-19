@@ -2,13 +2,13 @@
 
 from __future__ import division
 from dials.model.experiment import beam_factory
-from model_parameters import parameter, model_parameterisation
+from model_parameters import Parameter, ModelParameterisation
 from scitbx import matrix
 from math import pi
 from dials.scratch.dgw.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift
 
-class beam_parameterisation_orientation(model_parameterisation):
+class BeamParameterisationOrientation(ModelParameterisation):
     '''implementation of parameterisation for the beam (direction only)
     with angles expressed in mrad'''
 
@@ -31,9 +31,9 @@ class beam_parameterisation_orientation(model_parameterisation):
         s0_plane_dir1 = s0.ortho().normalize()
         s0_plane_dir2 = s0.cross(s0_plane_dir1).normalize()
         # rotation around s0_plane_dir1
-        mu1 = parameter(.0, s0_plane_dir1, 'angle')
+        mu1 = Parameter(.0, s0_plane_dir1, 'angle')
         # rotation around s0_plane_dir2
-        mu2 = parameter(.0, s0_plane_dir2, 'angle')
+        mu2 = Parameter(.0, s0_plane_dir2, 'angle')
 
         # build the parameter list in a specific,  maintained order
         p_list = [mu1, mu2]
@@ -43,7 +43,7 @@ class beam_parameterisation_orientation(model_parameterisation):
         models = [beam]
 
         # set up the base class
-        model_parameterisation.__init__(self, models, istate, p_list)
+        ModelParameterisation.__init__(self, models, istate, p_list)
 
         # call compose to calculate all the derivatives
         self.compose()
@@ -104,8 +104,7 @@ if __name__ == '__main__':
     # make a random beam vector and parameterise it
     bf = beam_factory()
     s0 = bf.make_beam(matrix.col.random(3, 0.5, 1.5))
-    #s0p = beam_parameterisation_orientation(s0)
-    s0p = beam_parameterisation_orientation(s0)
+    s0p = BeamParameterisationOrientation(s0)
 
     # Let's do some basic tests. First, can we change parameter values and
     # update the modelled vector s0?
@@ -120,7 +119,7 @@ if __name__ == '__main__':
 
         # make a random beam vector and parameterise it
         s0 = bf.make_beam(matrix.col.random(3, 0.5, 1.5))
-        s0p = beam_parameterisation_orientation(s0)
+        s0p = BeamParameterisationOrientation(s0)
 
         # apply a random parameter shift
         p_vals = s0p.get_p()

@@ -11,26 +11,29 @@ import libtbx
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
-class refinery(object):
-    '''Abstract interface for refinery objects'''
+class Refinery(object):
+    '''Abstract interface for Refinery objects'''
 
-    # NOTES. A refinery is initialised with a target function. The target
+    # NOTES. A Refinery is initialised with a Target function. The target
     # function already contains a reflection manager (which holds the data) so
-    # there's no need to pass the data in here. In fact the target function
+    # there's no need to pass the data in here. In fact the Target
     # class does the bulk of the work, as it also does the reflection prediction
     # to get the updated predictions on each cycle. This makes some kind of sense
     # as the target function is inextricably linked to the space in which
     # predictions are made (e.g. detector space, phi), so it is not general
     # enough to sit abstractly above the prediction.
 
-    # This keeps the refinery simple and able to be focused only on generic
+    #FIXME: reflection prediction to move to ReflectionManager class, so
+    #above notes to changes
+
+    # This keeps the Refinery simple and able to be focused only on generic
     # features of managing a refinement run, like reporting results and checking
     # termination criteria
 
-    # The prediction values come from a prediction_parameterisation object.
-    # This is also referred to by the target function, but it makes sense for
-    # refinery to be able to refer to it directly. So refinery should keep a
-    # separate link to its prediction_parameterisation
+    # The prediction values come from a PredictionParameterisation object.
+    # This is also referred to by the Target function, but it makes sense for
+    # Refinery to be able to refer to it directly. So refinery should keep a
+    # separate link to its PredictionParameterisation
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0):
@@ -75,7 +78,7 @@ class refinery(object):
         self._step += 1
         if self._verbosity > 0.: self.print_table_row()
 
-        # delegate this to the target class
+        # delegate this to the Target class
         self._target_achieved = self._target.achieved()
         return self._target_achieved
 
@@ -105,7 +108,7 @@ class refinery(object):
         # Specify a minimizer and its parameters, and run
         raise RuntimeError, "implement me"
 
-class simple_lbfgs(refinery):
+class SimpleLBFGS(Refinery):
     '''Refinery implementation, using cctbx LBFGS with basic settings'''
 
     def run(self):
@@ -116,8 +119,8 @@ class simple_lbfgs(refinery):
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
         if self._log: ref_log.close()
 
-class lbfgs_curvs(refinery):
-    '''LBFGS refinery using curvatures'''
+class LBFGScurvs(Refinery):
+    '''LBFGS Refinery using curvatures'''
 
     def run(self):
 
@@ -148,11 +151,11 @@ class lbfgs_curvs(refinery):
         return(flex.double(self._target.curvatures()))
 
 
-class adapt_lstbx(
-    refinery,
+class AdaptLstbx(
+    Refinery,
     normal_eqns.non_linear_ls,
     normal_eqns.non_linear_ls_mixin):
-    '''refinery using lstbx
+    '''Refinery using lstbx
     testing the use of lstbx methods for solving the normal equations
 
     Here following the example of lstbx.tests.test_problems.exponential_fit
@@ -164,7 +167,7 @@ class adapt_lstbx(
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0):
 
-        refinery.__init__(self, target, prediction_parameterisation, log=None,
+        Refinery.__init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0)
 
         # required for restart to work (do I need that method?)
@@ -239,7 +242,7 @@ class adapt_lstbx(
         self.x, self.old_x = self.old_x, None
         self._step -= 1
 
-class gn_iterations(adapt_lstbx, normal_eqns_solving.iterations):
+class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
     track_step = False
     track_gradient = False
@@ -255,10 +258,8 @@ class gn_iterations(adapt_lstbx, normal_eqns_solving.iterations):
     # refinement on initialisation
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, **kwds):
-        """
-        """
 
-        adapt_lstbx.__init__(self, target, prediction_parameterisation, log=None,
+        AdaptLstbx.__init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0)
 
         libtbx.adopt_optional_init_args(self, kwds)

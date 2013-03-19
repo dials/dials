@@ -22,7 +22,7 @@ from dials.model.experiment import beam_factory, detector_factory, \
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
 from rstbx.bpcx import sensor
 from dials.scratch.dgw.source_model import source
-#from dials.scratch.dgw.crystal_model import crystal
+#from dials.scratch.dgw.crystal_model import Crystal
 from dials.scratch.dgw.goniometer_model import goniometer
 
 #############################
@@ -144,7 +144,7 @@ assert my_gonio.get_axis() == matrix.col(dials_gonio.get_rotation_axis())
 
 # To change to DIALS models, I must modify these modules:
 
-# prediction/predictors: change impact_predictor to use the prediction
+# prediction/predictors: change ImpactPredictor to use the prediction
 # method built into the Panel object, that is get_ray_intersection(ray).
 # Okay, in fact the whole prediction module should be replaced with
 # DIALS code. There is already dials.algorithms.spot_prediction. I
@@ -156,7 +156,7 @@ assert my_gonio.get_axis() == matrix.col(dials_gonio.get_rotation_axis())
 
 # Now in my predictors.py I made a ReflectionPredictor class. This wraps
 # DIALS RayPredictor, instantiating a new one when requested with
-# updated experimental geometry. Use this class in target to generate
+# updated experimental geometry. Use this class in Target to generate
 # new predictions, and in tst_orientation_refinement to generate the
 # 'observations'
 
@@ -167,24 +167,24 @@ assert my_gonio.get_axis() == matrix.col(dials_gonio.get_rotation_axis())
 # and conversion of the get_state function to use ReflectionPredictor
 # rather than rstbx's reflection_prediction.
 
-# target also now needs to take a Detector, not an impact_predictor. So
+# Target also now needs to take a Detector, not an ImpactPredictor. So
 # tst_orientation_refinement now will not work, until it also
 # understands Detectors. Things to do:
 
 # 1. fix setup_geometry to return a Detector
 # 2. fix tst_prediction_parameters so that get_state uses
 #   ReflectionPredictor from predictors and a Detector to calculate the
-#   impacts. Also remove angle_predictor and replace with
+#   impacts. Also remove AnglePredictor_rstbx and replace with
 #   ReflectionPredictor
 # 3. change tst_orientation_refinement to use ReflectionPredictor too
 
 # Orientation refinement now proceeds with DIALS classes.
 
 # Next tidy up. I expect the following to be broken and require change:
-# tst_finite_diffs
-# tst_convergence_radius
-# tst_convergence_radius_one_parameter
-# tst_ref_passage_categorisation
+# tst_finite_diffs FIXED
+# tst_convergence_radius FIXED
+# tst_convergence_radius_one_parameter FIXED
+# tst_ref_passage_categorisation FIXED
 # plot_derivatives
 
 # FIXME the current detector parameterisation is initialised with a

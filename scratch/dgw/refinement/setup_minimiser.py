@@ -11,10 +11,10 @@ from __future__ import division
 from libtbx.phil import parse, command_line
 
 # Import the refinement engine
-from dials.scratch.dgw.refinement.engine import simple_lbfgs, \
-    lbfgs_curvs, gn_iterations
+from dials.scratch.dgw.refinement.engine import SimpleLBFGS, \
+    LBFGScurvs, GaussNewtonIterations
 
-class extract(object):
+class Extract(object):
     '''Parse and extract minimiser setup from PHIL'''
 
     def __init__(self, master_phil, target, prediction_parameterisation,
@@ -42,28 +42,28 @@ class extract(object):
 
     def build_minimiser(self):
 
-        assert self._params.engine in ["simple_lbfgs", "lbfgs_curvs",
-            "gn_iterations"]
+        assert self._params.engine in ["SimpleLBFGS", "LBFGScurvs",
+            "GaussNewtonIterations"]
 
-        if self._params.engine == "simple_lbfgs":
-            refiner = simple_lbfgs(
+        if self._params.engine == "SimpleLBFGS":
+            refiner = SimpleLBFGS(
                 self._target,
                 self._prediction_parameterisation,
                 self._params.logfile,
                 self._params.verbosity)
             return refiner
 
-        if self._params.engine == "lbfgs_curvs":
-            refiner = lbfgs_curvs(
+        if self._params.engine == "LBFGScurvs":
+            refiner = LBFGScurvs(
                 self._target,
                 self._prediction_parameterisation,
                 self._params.logfile,
                 self._params.verbosity)
             return refiner
 
-        if self._params.engine == "gn_iterations":
+        if self._params.engine == "GaussNewtonIterations":
 
-            refiner = gn_iterations(
+            refiner = GaussNewtonIterations(
                 self._target,
                 self._prediction_parameterisation,
                 self._params.logfile,
