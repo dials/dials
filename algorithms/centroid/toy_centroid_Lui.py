@@ -69,13 +69,12 @@ class toy_centroid_lui(centroid_interface):
         _c = tot_c / tot_itst
         cont = 0
         tot_sf = 0.0
+
         for f in range(f_min, f_max):
             tot_sf += ((f - _f) * itst[cont]) ** 2.0
             cont += 1
+
         _sf = numpy.sqrt(tot_sf) / tot_itst
-
-
-
         _sr = numpy.sqrt(tot_sr) / tot_itst
         _sc = numpy.sqrt(tot_sc) / tot_itst
 
@@ -84,8 +83,11 @@ class toy_centroid_lui(centroid_interface):
         return _f, _r, _c, _sf, _sr, _sc
 
 def single_spot_integrate_2d(data2d):
+
     x_to = numpy.size(data2d[0:1, :])
     y_to = numpy.size(data2d[:, 0:1])
+    print 'x_to,y_to =', x_to, y_to
+
     data2dsmoth = numpy.zeros(y_to * x_to, dtype = float).reshape(y_to, x_to)
 
     diffdata2d = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
@@ -114,6 +116,21 @@ def single_spot_integrate_2d(data2d):
         for x in range(0, x_to, 1):
             if diffdata2d[y, x] == 1:
                 diffdata2d_ext[y - ext_area:y + ext_area + 1, x - ext_area:x + ext_area + 1] = 1
+    xbord = int(x_to / 5)
+    ybord = int(y_to / 5)
+    print 'xbord, ybord =', xbord, ybord
+
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            if diffdata2d_ext[y, x] == 1:
+                top_av = float(numpy.sum(data2d[:ybord, x - 1:x + 2]))
+                bot_av = float(numpy.sum(data2d[y_to - ybord:, x - 1:x + 2]))
+                lft_av = float(numpy.sum(data2d[y - 1:y + 2, xbord]))
+                rgt_av = float(numpy.sum(data2d[y - 1:y + 2, x_to - xbord:]))
+                bkgr = (top_av + bot_av + lft_av + rgt_av) / 4.0
+                if data2d[y, x] > bkgr:
+                    data2d[y, x] = data2d[y, x] - bkgr
+
 
     x_num_sum = 0.0
     y_num_sum = 0.0
@@ -148,4 +165,20 @@ def single_spot_integrate_2d(data2d):
         print 'den_sum =', den_sum
         col_sig = -1
         row_sig = -1
+    print '___________________________________________________________________'
+    display_image_with_predicted_spots_n_centoids(data2d, col_cm, row_cm, x_to / 2, y_to / 2)
+
     return row_cm, col_cm, row_sig, col_sig, den_sum
+
+def display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
+    """Display the image with coordinates overlayed."""
+    from matplotlib import pylab, cm
+    from matplotlib import transforms
+
+    plt = pylab.imshow(image, vmin = 0, vmax = 1000, cmap = cm.Greys_r,
+                       interpolation = 'nearest', origin = 'lower')
+    pylab.scatter(xcoords, ycoords, marker = 'x')
+    pylab.scatter(xc, yc, marker = 'x')
+    plt.axes.get_xaxis().set_ticks([])
+    plt.axes.get_yaxis().set_ticks([])
+    pylab.show()
