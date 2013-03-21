@@ -17,3 +17,11 @@ def parse_range_list_string(string):
             raise SyntaxError
     items = [item for sublist in items for item in sublist]
     return set(items)
+
+def interactive_console(namespace):
+    """ Enter an interactive console session. """
+    try:
+        from IPython import embed
+        embed(user_ns = namespace)
+    except ImportError:
+        print "IPython not available"

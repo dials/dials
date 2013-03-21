@@ -192,7 +192,8 @@ def display_predicted_spots(reflections, image_frames, display_frame):
               # Display the spots on the image
               display_predicted_spots_on_frame(reflections, image, frame)
 
-def predict_spots(xparm_path, integrate_path, image_frames, display_frame):
+def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
+                  interactive):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -221,7 +222,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame):
     scan = models.get_scan()
     first_image = scan.get_image_range()[0]
     image_range = (first_image, first_image + num_frames)
-    image_range = (1, 4000)
+    #image_range = (1, 4000)
     scan.set_image_range(image_range)
 
     # Read other data (need to assume an XPARM file
@@ -319,6 +320,11 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame):
     # Show the predicted spots
     display_predicted_spots(reflections, image_frames, display_frame)
 
+    # Enter an interactive python session
+    if interactive:
+        from dials.util.command_line import interactive_console
+        interactive_console(namespace=locals())
+
 def display_frame_callback(option, opt, value, parser):
     """Parse display frame"""
     from dials.util.command_line import parse_range_list_string
@@ -338,6 +344,9 @@ if __name__ == '__main__':
                       dest='display_frame', type="string",
                       action="callback", callback=display_frame_callback,
                       help='Select a frame to display with predicted spots')
+    parser.add_option('-i', '--interactive',
+                      dest='interactive', action="store_true", default=False,
+                      help='Enter an interactive python session')
 
     # Parse the arguments
     (options, args) = parser.parse_args()
@@ -346,8 +355,9 @@ if __name__ == '__main__':
     if len(args) == 0:
         print parser.print_help()
     elif len(args) == 1:
-        predict_spots(args[0], None, None, None)
+        predict_spots(args[0], None, None, None, options.interactive)
     elif len(args) == 2:
-        predict_spots(args[0], args[1], None, None)
+        predict_spots(args[0], args[1], None, None, options.interactive)
     else:
-        predict_spots(args[0], args[1], args[2:], options.display_frame)
+        predict_spots(args[0], args[1], args[2:], options.display_frame,
+            options.interactive)

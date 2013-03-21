@@ -89,7 +89,7 @@ def print_reflection_stats(reflections, adjacency_list):
     print "Med shoebox range: ", med_shoebox_range
     print "Num overlaps: ", adjacency_list.num_edges()
 
-def run(image_frames):
+def run(xparm_path, integrate_path, image_frames):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -104,12 +104,14 @@ def run(image_frames):
     from math import pi
     import dxtbx
     from dxtbx.sweep import sweep_factory
+    from iotbx.xds import integrate_hkl
+
 
     # Set the number of frames
     num_frames = len(image_frames)
 
     # Read the models from the input file
-    #print "Reading: \"{0}\"".format(input_filename)
+    print "Reading: \"{0}\"".format(input_filename)
     #models = dxtbx.load(input_filename)
     #beam = models.get_beam()
     #detector = models.get_detector()
@@ -137,6 +139,22 @@ def run(image_frames):
     d_min = detector.get_max_resolution_at_corners(
         beam.get_direction(), beam.get_wavelength())
 
+    # If the integrate.hkl path has been set get the shoebox parameters
+    print "Reading: \"{0}\"".format(integrate_path)
+
+    # Read the integrate file
+    integrate_handle = integrate_hkl.reader()
+    integrate_handle.read_file(integrate_path)
+
+    # Get the sigma_divergance and mosaicity
+    sigma_divergence = integrate_handle.sigma_divergence
+    sigma_mosaicity = integrate_handle.sigma_mosaicity
+
+    # Set the divergence and mosaicity
+    n_sigma = 5.0
+    delta_divergence = n_sigma * sigma_divergence * pi / 180.0
+    delta_mosaicity = n_sigma * sigma_mosaicity * pi / 180.0
+
     # Print the model data
     print ""
     print beam
@@ -144,6 +162,8 @@ def run(image_frames):
     print gonio
     print scan
     print "Resolution: ", d_min
+    print "Sigma mosaicity: ", sigma_mosaicity
+    print "Sigma Divergence: ", sigma_divergence
     print ""
     print_ub_matrix(UB)
 
@@ -172,11 +192,6 @@ def run(image_frames):
         lambda: reflection_frames(scan, reflections),
         "Calculating frame numbers", "frames")
 
-    # Set the divergence and mosaicity
-    n_sigma = 5.0
-    delta_divergence = n_sigma * 0.016 * pi / 180.0
-    delta_mosaicity = n_sigma * 0.008 * pi / 180.0
-
     # Create the shoebox calculator
     calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan,
         delta_divergence, delta_mosaicity)
@@ -189,7 +204,7 @@ def run(image_frames):
     # Find all the overlapping reflections
     adjacency_list = print_call_info(
         lambda: find_overlapping_reflections(reflections),
-        "Calculating overlapping reflections", "edges")
+        "Calculating overlapping reflections", "Edges")
 
     # Copy the reflection profiles from the sweep the reflection objects
     reflections = print_call_info(
@@ -212,7 +227,7 @@ if __name__ == '__main__':
     (options, args) = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call spot prediction
-    if len(args) < 1:
+    if len(args) < 3:
         print parser.print_help()
     else:
-        run(args[0:])
+        run(args[0], args[1], args[2:])
