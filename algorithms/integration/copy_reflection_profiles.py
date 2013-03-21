@@ -1,28 +1,34 @@
 from __future__ import division
 
-def get_sweep_image_size(sweep):
-    """Get the size of the image volume from the sweep."""
 
-    # Get the detector image size
-    detector_size = sweep.get_detector().get_image_size()
+def get_reflections_recorded_on_frames(sweep, reflections):
 
-    # Get the scan range
-    scan_range = sweep.get_scan().get_array_range()
-    scan_size = scan_range[1] - scan_range[0]
+    from collections import defaultdict
 
-    # return the image size
-    return (scan_size, detector_size[1], detector_size[0])
+    # Create a list of lists
+    frames_to_reflection = defaultdict(list)
+
+    # For each reflection, Find the frames which it spans and copy an
+    # index into the frame -> reflection list
+    for i, r in enumerate(reflections):
+        f0 = r.shoebox[4]
+        f1 = r.shoebox[5]
+        for f in range(f0, f1):
+            frames_to_reflection[f].append(i)
+
+    # Return the list of lists
+    return frames_to_reflection
+
 
 def is_shoebox_valid(sweep, shoebox):
     """ Check if the shoebox is containined in the sweep."""
 
-    # Get the image size
-    image_size = get_sweep_image_size(sweep)
+    size = (len(sweep), sweep.get_image_size()[1], sweep.get_image_size()[0])
 
     # Ensure the shoebox is valid
-    return (shoebox[0] >= 0 and shoebox[1] < image_size[0] and
-            shoebox[2] >= 0 and shoebox[3] < image_size[1] and
-            shoebox[2] >= 0 and shoebox[4] < image_size[2])
+    return (shoebox[0] >= 0 and shoebox[1] < size[2] and
+            shoebox[2] >= 0 and shoebox[3] < size[1] and
+            shoebox[4] >= 0 and shoebox[5] < size[0])
 
 def extract_shoebox_pixels(sweep, shoebox):
     """Extract the image data from the sweep."""
@@ -36,18 +42,8 @@ def extract_shoebox_pixels(sweep, shoebox):
       sj0, sj1 = shoebox[2], shoebox[3]
       sk0, sk1 = shoebox[4], shoebox[5]
 
-      # Create the image array
-      image = flex.int(flex.grid(sk1 - sk0, sj1 - sj0, si1 - si0))
-
-      # Get the image size from the sweep
-      image_size = get_sweep_image_size(sweep)
-
-      # Copy all the pixels from the sweep to the image
-      for k, sk in enumerate(range(sk0, sk1)):
-          pixels = sweep[sk]
-          for j, sj in enumerate(range(sj0, sj1)):
-              for i, si in enumerate(range(si0, si1)):
-                  image[k, j, i] = pixels[sj * image_size[0] + si]
+      # Get the image data from the sweep
+      image = sweep.to_array((sk0, sk1, sj0, sj1, si0, si1))
 
     else:
         image = flex.int()
@@ -57,7 +53,7 @@ def extract_shoebox_pixels(sweep, shoebox):
 
 def copy_reflection_profile(sweep, reflection):
     """Copy the reflection profile from the sweep to the reflection."""
-    from sctibx.array_family import flex
+    from scitbx.array_family import flex
 
     # Get the reflection image from the sweep
     reflection.image = extract_shoebox_pixels(sweep, reflection.shoebox)
@@ -67,10 +63,53 @@ def copy_reflection_profile(sweep, reflection):
 
 def copy_reflection_profiles(sweep, reflections):
     """Copy all the reflection profiles."""
+    import numpy
+    from scitbx.array_family import flex
 
-    # Copy the profile image pixels for each reflection
-    for r in reflections:
-        copy_reflection_profile(r, sweep)
+    # Get an index array for the reflection list
+    indices = range(len(reflections))
+
+    # Sort the images by z
+    print "Sorting"
+    indices = sorted(indices, key=lambda x: reflections[x].frame_number)
+
+    print "Getting frames"
+    frames_to_reflections = get_reflections_recorded_on_frames(
+        sweep, reflections)
+
+
+    # Allocate all images
+    print "Allocating"
+    for i in range(len(reflections)):
+        r = reflections[i]
+        size_x = r.shoebox[1] - r.shoebox[0]
+        size_y = r.shoebox[3] - r.shoebox[2]
+        size_z = r.shoebox[5] - r.shoebox[4]
+        r.image = flex.int(flex.grid(size_z, size_y, size_x))
+        reflections[i] = r
+
+
+    image_size = sweep.get_image_size()
+
+
+    for index, image in enumerate(sweep):
+        print index
+        rr = frames_to_reflections[index]
+        for ri in rr:
+
+            r = reflections[ri]
+
+            # Extract extents from shoebox
+            si0, si1 = r.shoebox[0], r.shoebox[1]
+            sj0, sj1 = r.shoebox[2], r.shoebox[3]
+            sk0, sk1 = r.shoebox[4], r.shoebox[5]
+            sk = index - sk0
+            if si0 >= 0 and sj0 >= 0 and si1 < image_size[0] and sj1 < image_size[1]:
+                npa = r.image.as_numpy_array()
+
+                npa[sk,:,:] = image[sj0:sj1,si0:si1].as_numpy_array()
+                r.image = flex.int(npa)
+                reflections[ri] = r
 
     # Return the reflections
     return reflections

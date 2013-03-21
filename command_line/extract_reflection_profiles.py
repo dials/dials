@@ -103,36 +103,29 @@ def run(xparm_path, integrate_path, image_frames):
     from dials.util import io
     from math import pi
     import dxtbx
-    from dxtbx.sweep import sweep_factory
     from iotbx.xds import integrate_hkl
-
 
     # Set the number of frames
     num_frames = len(image_frames)
 
     # Read the models from the input file
-    print "Reading: \"{0}\"".format(input_filename)
-    #models = dxtbx.load(input_filename)
-    #beam = models.get_beam()
-    #detector = models.get_detector()
-    #gonio = models.get_goniometer()
-    #scan = models.get_scan()
-    #first_image = scan.get_image_range()[0]
-    #image_range = (first_image, first_image + num_frames)
-    #image_range = (1, 4000)
-    #scan.set_image_range(image_range)
+    print "Reading: \"{0}\"".format(xparm_path)
+    models = dxtbx.load(xparm_path)
+    beam = models.get_beam()
+    detector = models.get_detector()
+    gonio = models.get_goniometer()
+    scan = models.get_scan()
+    first_image = scan.get_image_range()[0]
+    image_range = (first_image, first_image + num_frames)
+    scan.set_image_range(image_range)
 
     # Read the sweep
     print "Reading: \"{0}\"".format("sweep")
-    sweep = sweep_factory.sweep(image_frames)
-    beam = sweep.get_beam()
-    detector = sweep.get_detector()
-    gonio = sweep.get_goniometer()
-    scan = sweep.get_scan()
+    sweep = dxtbx.sweep(image_frames)
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
-    xparm_handle.read_file(input_filename)
+    xparm_handle.read_file(xparm_path)
     UB = io.get_ub_matrix_from_xparm(xparm_handle)
     unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
     space_group = io.get_space_group_type_from_xparm(xparm_handle)
