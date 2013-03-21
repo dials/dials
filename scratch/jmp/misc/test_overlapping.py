@@ -18,5 +18,4 @@ for e in overlapping.edges():
   print "Edge: ", overlapping.edge_vertices(e)
 
 for v in overlapping.vertices():
-  print "Vertex: ", v, " => ", [a for a in overlapping.adjacent_vertices(v)] 
-
+  print "Vertex: ", v, " => ", [a for a in overlapping.adjacent_vertices(v)]

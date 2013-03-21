@@ -65,12 +65,12 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
     """
     from dials.algorithms.integration import foreground_pixels
     from scitbx.array_family import flex
-    
+
     # Get the 1D array
     data = flex.double(len(pixel_data))
     for i in range(len(pixel_data)):
         data[i] = pixel_data[i]
-    
+
     # Get a list of foreground pixel indices
     index = foreground_pixels(data, min_pixels, n_sigma)
 

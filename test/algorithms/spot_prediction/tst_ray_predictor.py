@@ -58,7 +58,7 @@ class TestRayPredictor:
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
         UB = self.ub_matrix
-        dphi = self.scan.get_oscillation_range()
+        dphi = self.scan.get_oscillation_range(deg=False)
 
         # Create the ray predictor
         self.predict_rays = RayPredictor(s0, m2, UB, dphi)
@@ -95,8 +95,8 @@ class TestRayPredictor:
                             self.integrate_handle.xyzcal):
 
             # Calculate the XDS phi value
-            xds_phi = self.scan.get_oscillation()[0] + \
-                      xyz[2]*self.scan.get_oscillation()[1]
+            xds_phi = self.scan.get_oscillation(deg=False)[0] + \
+                      xyz[2]*self.scan.get_oscillation(deg=False)[1]
 
             # Select the nearest xy to use if there are 2
             my_phi = gen_phi[hkl]

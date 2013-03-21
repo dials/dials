@@ -14,9 +14,9 @@ def tst_toy_centroid():
     frames = [os.path.join(dials_regression, 'centroid_test_data',
                            'centroid_%04d.cbf' % j) for j in range(1, 10)]
 
-    from dxtbx.sweep import sweep_factory
+    import dxtbx
 
-    sweep = sweep_factory.sweep(frames)
+    sweep = dxtbx.sweep(frames)
 
     bounding_boxes = {
         (0, 0, 0):[(0, 8, 1022, 1036, 1070, 1083)]
