@@ -48,10 +48,13 @@ class toy_centroid_lui(centroid_interface):
 
         cont = 0
         itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
-
         for f in range(f_min, f_max):
             data2d = data3d[f, :, :]
+            print '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+            print data2d
             row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
+            print data2d
+            print '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
             itst[cont] = locl_itst
             cont += 1
             locl_f = f * locl_itst
@@ -62,7 +65,6 @@ class toy_centroid_lui(centroid_interface):
             #print f, locl_itst, locl_f
             tot_sr += (locl_sr * locl_itst) ** 2.0
             tot_sc += (locl_sc * locl_itst) ** 2.0
-
 
         _f = tot_f / tot_itst
         _r = tot_r / tot_itst
@@ -92,15 +94,13 @@ def single_spot_integrate_2d(data2d):
 
     diffdata2d = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
     diffdata2d_ext = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
-
     data2dtmp = data2d
-
 
     ext_area = 2                                                               # This used to be one of this "magical variables"
 
     for times in range(5):
-        for y in range(0, y_to, 1):
-            for x in range(0, x_to, 1):
+        for y in range(1, y_to - 1, 1):
+            for x in range(1, x_to - 1, 1):
                 pscan = float(numpy.sum(data2dtmp[y - 1:y + 2, x - 1:x + 2]) / 9.0)
                 data2dsmoth[y, x] = pscan
     data2dtmp = data2dsmoth
@@ -167,15 +167,14 @@ def single_spot_integrate_2d(data2d):
         print 'den_sum =', den_sum
         col_sig = -1
         row_sig = -1
-    print '___________________________________________________________________'
-    display_image_with_predicted_spots_n_centoids(data2d, col_cm, row_cm, x_to / 2, y_to / 2)
+
+#    display_image_with_predicted_spots_n_centoids(data2d, col_cm, row_cm, x_to / 2, y_to / 2)
 
     return row_cm, col_cm, row_sig, col_sig, den_sum
 
 def display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
     """Display the image with coordinates overlayed."""
     from matplotlib import pylab, cm
-    from matplotlib import transforms
 
     plt = pylab.imshow(image, vmin = 0, vmax = 1000, cmap = cm.Greys_r,
                        interpolation = 'nearest', origin = 'lower')
