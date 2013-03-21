@@ -95,8 +95,8 @@ def single_spot_integrate_2d(data2d):
 
     data2dtmp = data2d
 
-    threshold_shift = 7.0
-    ext_area = 5
+
+    ext_area = 2                                                               # This used to be one of this "magical variables"
 
     for times in range(5):
         for y in range(0, y_to, 1):
@@ -104,7 +104,8 @@ def single_spot_integrate_2d(data2d):
                 pscan = float(numpy.sum(data2dtmp[y - 1:y + 2, x - 1:x + 2]) / 9.0)
                 data2dsmoth[y, x] = pscan
     data2dtmp = data2dsmoth
-
+    threshold_shift = numpy.ptp(data2dsmoth)                                   # This used to be one of this "magical variables"
+    print 'threshold_shift =', threshold_shift
     data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
 
     for y in range(0, y_to, 1):
@@ -130,17 +131,19 @@ def single_spot_integrate_2d(data2d):
                 bkgr = (top_av + bot_av + lft_av + rgt_av) / 4.0
                 if data2d[y, x] > bkgr:
                     data2d[y, x] = data2d[y, x] - bkgr
-
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            if diffdata2d_ext[y, x] == 0:
+                data2d[y, x] = 0
 
     x_num_sum = 0.0
     y_num_sum = 0.0
     den_sum = 0.0
     for y in range(0, y_to, 1):
         for x in range(0, x_to, 1):
-            if diffdata2d_ext[y, x] == 1:
-                x_num_sum = x_num_sum + float(data2d[y, x]) * float(x)
-                y_num_sum = y_num_sum + float(data2d[y, x]) * float(y)
-                den_sum = den_sum + float(data2d[y, x])
+            x_num_sum = x_num_sum + float(data2d[y, x]) * float(x)
+            y_num_sum = y_num_sum + float(data2d[y, x]) * float(y)
+            den_sum = den_sum + float(data2d[y, x])
     if den_sum > 0.0:
         col_cm = x_num_sum / den_sum
         row_cm = y_num_sum / den_sum
@@ -154,10 +157,9 @@ def single_spot_integrate_2d(data2d):
 #    den_sum = 0.0
     for y in range(0, y_to, 1):
         for x in range(0, x_to, 1):
-            if diffdata2d_ext[y, x] == 1:
-                x_num_sum = x_num_sum + float(data2d[y, x]) * (float(x) - float(col_cm)) ** 2.0
-                y_num_sum = y_num_sum + float(data2d[y, x]) * (float(y) - float(row_cm)) ** 2.0
-#                den_sum = den_sum + float(data2d[y, x])
+            x_num_sum = x_num_sum + float(data2d[y, x]) * (float(x) - float(col_cm)) ** 2.0
+            y_num_sum = y_num_sum + float(data2d[y, x]) * (float(y) - float(row_cm)) ** 2.0
+    #        den_sum = den_sum + float(data2d[y, x])
     if den_sum > 0.0:
         col_sig = numpy.sqrt(x_num_sum / den_sum)
         row_sig = numpy.sqrt(y_num_sum / den_sum)
