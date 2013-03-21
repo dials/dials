@@ -21,7 +21,8 @@ class toy_centroid(centroid_interface):
         f_min, f_max, r_min, r_max, c_min, c_max = bbox
 
         # build the list of pixels - let's be dumb and just have a literal
-        # list
+        # list - and assign density of a pixel to the centre of the
+        # volume...
 
         pixel_list = []
 
@@ -31,7 +32,8 @@ class toy_centroid(centroid_interface):
                 for r in range(r_min, r_max):
                     for c in range(c_min, c_max):
                         pixel_list.append(
-                            (f, r, c, data[r * self._image_size[0] + c]))
+                            (f + 0.5, r + 0.5, c + 0.5,
+                             data[r * self._image_size[0] + c]))
 
         except IndexError, e:
             return -1., -1., -1., -1., -1., -1.
@@ -58,13 +60,11 @@ class toy_centroid(centroid_interface):
         f_tot = 0.0
         r_tot = 0.0
         c_tot = 0.0
-        d_tot = 0.0
 
         for f, r, c, d in pixel_list:
             f_tot += d * (f - _f) ** 2
             r_tot += d * (r - _r) ** 2
             c_tot += d * (c - _c) ** 2
-            d_tot += d
 
         _sf = math.sqrt(f_tot / d_tot)
         _sr = math.sqrt(r_tot / d_tot)
