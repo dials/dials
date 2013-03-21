@@ -166,31 +166,21 @@ def display_predicted_spots_on_frame(reflections, image, frame):
                        interpolation='nearest', origin='lower')
 
     # Plot the x, y coords
-    pylab.scatter(xcoords, ycoords, marker='x')
+    pylab.scatter(xcoords, ycoords, marker='x', color='y')
 
     # Set axes and show
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
 
-def display_predicted_spots(reflections, image_frames, display_frame):
+def display_predicted_spots(reflections, sweep, display_frame):
     """Show the predicted spots"""
-    import pycbf
-    from dials.util import pycbf_extra
-
     # Loop through all the frames and make sure they are valid
     if display_frame:
       for frame in display_frame:
-          if frame >= 0 and frame < len(image_frames):
-
-              # Get the filename and open the file
-              filename = image_frames[frame]
-              cbf_handle = pycbf.cbf_handle_struct()
-              cbf_handle.read_file(filename, pycbf.MSG_DIGEST)
-              image = pycbf_extra.get_image(cbf_handle)
-
-              # Display the spots on the image
-              display_predicted_spots_on_frame(reflections, image, frame)
+          if frame >= 0 and frame < len(sweep):
+              display_predicted_spots_on_frame(
+                  reflections, sweep[frame].as_numpy_array(), frame)
 
 def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
                   interactive):
@@ -224,6 +214,10 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     image_range = (first_image, first_image + num_frames)
     #image_range = (1, 4000)
     scan.set_image_range(image_range)
+
+    # Read image data from sweep
+    if image_frames:
+        sweep = dxtbx.sweep(image_frames)
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
@@ -318,7 +312,8 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     print_reflection_stats(reflections, adjacency_list)
 
     # Show the predicted spots
-    display_predicted_spots(reflections, image_frames, display_frame)
+    if image_frames:
+        display_predicted_spots(reflections, sweep, display_frame)
 
     # Enter an interactive python session
     if interactive:
