@@ -32,9 +32,9 @@ class centroid_interface_prototype( object ):
 
             # Add shoebox offset to centroid
             shoebox = ref.shoebox
-            f = ref.shoebox[4]
-            r = ref.shoebox[2]
-            c = ref.shoebox[0]
+            f += ref.shoebox[4]
+            r += ref.shoebox[2]
+            c += ref.shoebox[0]
 
             # Add centroid data to reflection
             ref.centroid_position = (c, r, f)
