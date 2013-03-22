@@ -121,8 +121,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
 
     for ref in reflections:
         centroid = ref.centroid_position + ref.centroid_variance
-        for centroid in centroids[hkl]:
-            print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
+        print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
 
 if __name__ == '__main__':
     import sys

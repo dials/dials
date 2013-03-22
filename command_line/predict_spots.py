@@ -30,7 +30,7 @@ def print_call_info(callback, info, result_type):
         print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
-def print_reflection_stats(reflections, adjacency_list):
+def print_reflection_stats(reflections, adjacency_list = None):
     '''Print some reflection statistics.'''
     import numpy
 
