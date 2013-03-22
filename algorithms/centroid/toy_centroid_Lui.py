@@ -49,12 +49,14 @@ class toy_centroid_lui(centroid_interface):
         cont = 0
         itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
         for f in range(f_min, f_max):
+            print '_____________________________________________________________________________________________________ next image'
             data2d = data3d[f, :, :]
-            print '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+            print '___________________________________________________data2d before'
             print data2d
             row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
+            print '___________________________________________________data2d after'
             print data2d
-            print '+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
+
             itst[cont] = locl_itst
             cont += 1
             locl_f = f * locl_itst
@@ -96,7 +98,7 @@ def single_spot_integrate_2d(data2d):
     diffdata2d_ext = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
     data2dtmp = data2d
 
-    ext_area = 2                                                               # This used to be one of this "magical variables"
+    ext_area = 1                                                               # This used to be one of this "magical variables"
 
     for times in range(5):
         for y in range(1, y_to - 1, 1):
@@ -104,7 +106,16 @@ def single_spot_integrate_2d(data2d):
                 pscan = float(numpy.sum(data2dtmp[y - 1:y + 2, x - 1:x + 2]) / 9.0)
                 data2dsmoth[y, x] = pscan
     data2dtmp = data2dsmoth
-    threshold_shift = numpy.ptp(data2dsmoth)                                   # This used to be one of this "magical variables"
+
+    cont = 0
+    dif_tot = 0
+    for y in range(0, y_to, 1):
+        for x in range(0, x_to, 1):
+            cont += 1
+            dif_tot += numpy.abs(data2d[y, x] - data2dsmoth[y, x])
+    dif_avg = dif_tot / cont
+    print 'dif_avg=', dif_avg
+    threshold_shift = dif_avg * 3.0
     print 'threshold_shift =', threshold_shift
     data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
 
@@ -117,6 +128,11 @@ def single_spot_integrate_2d(data2d):
         for x in range(0, x_to, 1):
             if diffdata2d[y, x] == 1:
                 diffdata2d_ext[y - ext_area:y + ext_area + 1, x - ext_area:x + ext_area + 1] = 1
+
+    print '_________________________________________diffdata2d'
+    print diffdata2d
+    print '_________________________________________diffdata2d_ext'
+    print diffdata2d_ext
     xbord = int(x_to / 5)
     ybord = int(y_to / 5)
     print 'xbord, ybord =', xbord, ybord
