@@ -77,6 +77,9 @@ class ProgressBar:
     def __init__(self, spinner=True, bar=True, estimate_time=True, length=50):
         """ Init the progress bar parameters. """
 
+        if spinner:
+            length -= 5
+
         # Set the parameters
         self._spinner = spinner
         self._estimate_time = estimate_time
@@ -133,3 +136,15 @@ class ProgressBar:
         """ The progress bar is finished. """
         self.update(100)
         print ""
+
+if __name__ == '__main__':
+    import time
+
+    p = ProgressBar()
+
+    for j in range(100):
+        p.update(j)
+        time.sleep(0.1)
+
+    p.finish()
+                   
