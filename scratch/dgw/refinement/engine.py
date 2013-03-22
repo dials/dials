@@ -275,7 +275,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self.has_gradient_converged_to_zero():
                 print "Gradient converged to zero"
                 break
-            if self.non_linear_ls.callback_after_step(None):
+            if self.callback_after_step(None):
                 print "RMSD target achieved"
                 break
             self.non_linear_ls.solve()
