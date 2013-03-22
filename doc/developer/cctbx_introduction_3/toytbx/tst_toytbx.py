@@ -8,5 +8,3 @@ def tst_toytbx():
 
 if __name__ == '__main__':
     tst_toytbx()
-
-

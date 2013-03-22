@@ -18,7 +18,7 @@ def get_image(cbf_handle, category='array_data', column='data', row=0,
 
     """
     import numpy
-    
+
     # Find the given category, column and row
     cbf_handle.find_category(category)
     cbf_handle.find_column(column)
@@ -139,7 +139,7 @@ def read_integrate_hkl_apply_corrections(
     ycal = []
     yobs = []
     ycor = []
-    
+
     for record in open(int_hkl):
         if record.startswith('!'):
             continue
@@ -194,7 +194,7 @@ def read_integrate_hkl_apply_corrections(
         xc_corr = matrix.col((xc + dx, yc + dy))
 
         sumxx_corr += (xo_orig - xc_corr).dot()
-        
+
         # Put coords in array if they're in frame zero
         if (zo >= 0 and zo < 1):
           xcal.append(xc)
@@ -211,7 +211,7 @@ def read_integrate_hkl_apply_corrections(
       cbf_handle = pycbf.cbf_handle_struct()
       cbf_handle.read_file(image_file, pycbf.MSG_DIGEST)
       image_array = get_image(cbf_handle)
-      
+
       # Correct coords for matplotlib convention
       xcal = [x - 0.5 for x in xcal]
       xobs = [x - 0.5 for x in xobs]
@@ -230,8 +230,8 @@ def read_integrate_hkl_apply_corrections(
 #      dy = 0.1 * y_corrections[iy4, ix4]
 #      xpcor = [xp + dx]
 #      ypcor = [yp + dy]
-      
-      
+
+
       # Show the image with points plotted on it
       from matplotlib import pylab, cm
       pylab.imshow(image_array, cmap=cm.Greys_r, interpolation='nearest',
@@ -295,7 +295,7 @@ def read_spot_xds_apply_corrections(
     ycal = []
     yobs = []
     ycor = []
-    
+
     for record in open(spot_xds):
         values = map(float, record.split())
 
@@ -349,4 +349,3 @@ if __name__ == '__main__':
         sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
 
     print orig, corr
-    

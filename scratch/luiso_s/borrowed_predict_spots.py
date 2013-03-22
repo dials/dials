@@ -77,7 +77,7 @@ def predict_spots( input_filename, cbf_search_path, d_min, display_frame ):
 
     # Create the unit cell and space group objects
     unit_cell = uctbx.unit_cell( orthogonalization_matrix = ub_matrix )
-    space_group_type = sgtbx.space_group_type( sgtbx.space_group( 
+    space_group_type = sgtbx.space_group_type( sgtbx.space_group(
                             sgtbx.space_group_symbols( symmetry ).hall() ) )
 
     # Load the image volume from the CBF files and set the number of frames

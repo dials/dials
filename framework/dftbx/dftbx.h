@@ -1,13 +1,13 @@
 /* dftbx
- * 
+ *
  * DIALS Framework Toolbox:
- * 
+ *
  * Framework code (i.e. not model, not algorithm, not interface) code for DIALS
  * which currently contains:
  *
  * ObservationList template class
  * ReflectionList template class
- * 
+ *
  */
 
 #ifndef DFTBX_DFTBX_H
@@ -26,23 +26,23 @@ namespace dftbx {
 
   void init_module() { };
 
-  /** miller_index_t 
+  /** miller_index_t
    *
    * Typedef'd to be integer Miller indices: DIALS won't be using other types.
    */
- 
+
   typedef cctbx::miller::index<int> miller_index_t;
 
   /** ObservationList<T>
-   * 
+   *
    * If T is big the caller should be responsible for making T a shared pointer
-   * and handling issues with duplicate pointers possibly modifying T's 
-   * elsewhere. If T is small no worries, but the merge() method below will 
+   * and handling issues with duplicate pointers possibly modifying T's
+   * elsewhere. If T is small no worries, but the merge() method below will
 
    *
    */
- 
-  template <class T> 
+
+  template <class T>
     class ObservationList {
   public:
 
@@ -70,13 +70,13 @@ namespace dftbx {
 
     void duplicate(const ObservationList<T> & other) {
       for (size_t j = 0; j < other.size(); j ++) {
-	observations_.push_back(other[j]);
+        observations_.push_back(other[j]);
       }
     }
 
     void merge(ObservationList<T> & other) {
       for (size_t j = 0; j < other.size(); j ++) {
-	observations_.push_back(other[j]);
+        observations_.push_back(other[j]);
       }
       other.clear();
     }
@@ -105,17 +105,17 @@ namespace dftbx {
     }
 
     void merge(ReflectionList<T> & other) {
-      for (map_iterator_t mi = reflections_.begin(); 
-	   mi != reflections_.end(); ++mi) {
-	mi->second.merge(other[mi->first]);
+      for (map_iterator_t mi = reflections_.begin();
+           mi != reflections_.end(); ++mi) {
+        mi->second.merge(other[mi->first]);
       }
     }
-    
+
   private:
     map_type reflections_;
-      
+
   };
-  
+
   typedef ObservationList<int> int_ol;
   typedef ReflectionList<int> int_rl;
 

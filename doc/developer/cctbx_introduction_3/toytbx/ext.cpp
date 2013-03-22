@@ -3,7 +3,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <cctype>
 
-namespace toytbx { 
+namespace toytbx {
   namespace ext {
 
     // make a python list
@@ -12,7 +12,7 @@ namespace toytbx {
     {
       boost::python::list result;
       for(size_t i = 0; i < n; i++) {
-	result.append(i);
+        result.append(i);
       }
       return result;
     }
@@ -23,7 +23,7 @@ namespace toytbx {
     {
       scitbx::af::shared<int> result;
       for(size_t i = 0; i < n; i++) {
-	result.push_back(i);
+        result.push_back(i);
       }
       return result;
     }
@@ -34,7 +34,7 @@ namespace toytbx {
     {
       int result = 0;
       for (size_t i = 0; i < array.size(); i++) {
-	result += array[i];
+        result += array[i];
       }
       return result;
     }

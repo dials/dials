@@ -21,16 +21,16 @@
 #                     /  \+ve phi             ! Yd  /
 #                    /   /                    ! 2  /
 #                   /                         ! * /
-#                  Z-axis                  Ys ^ _/ 
+#                  Z-axis                  Ys ^ _/
 #                Rotation                     ! /| Xs
 #                 axis                        !/
-#                                             O          
+#                                             O
 
 def mosflm_to_rossmann(a_matrix):
     '''Convert A* matrix in Mosflm convention to Rossmann convention.'''
 
     from scitbx import matrix
-    
+
     S = matrix.sqr((0, 0, 1, 1, 0, 0, 0, 1, 0))
 
     return S * a_matrix
@@ -48,7 +48,7 @@ def parse_mosflm_matrix(matrix_file):
 
     lUB = matrix.sqr(map(float, tokens[0:9]))
     U = matrix.sqr(map(float, tokens[12:21]))
-    
+
     uc = uctbx.unit_cell(map(float, tokens[21:27]))
 
     # derive the wavelength
@@ -95,7 +95,7 @@ def generate_reflection_indices(uc, dmin):
 
                 indices.append((h, k, l))
 
-    return indices    
+    return indices
 
 def remove_absent_indices(indices, space_group_number):
     '''From the given list of indices, remove those reflections which should
@@ -173,11 +173,10 @@ def strategy(a_matrix, dmin, symmetry):
         print '%6.2f %6.4f' % (phi0, float(n_unique_wedge) / float(n_unique))
 
     return
- 
+
 
 if __name__ == '__main__':
 
     import sys
 
     strategy(sys.argv[1], float(sys.argv[2]), int(sys.argv[3]))
-

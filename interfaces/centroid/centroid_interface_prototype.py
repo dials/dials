@@ -31,10 +31,7 @@ class centroid_interface_prototype( object ):
             self._centroids[hkl] = []
 
             for bbox in self._bounding_boxes[hkl]:
-                self._centroids[hkl].append( self.compute_centroid_from_bbox( 
+                self._centroids[hkl].append( self.compute_centroid_from_bbox(
                     bbox ) )
 
         return
-
-
-

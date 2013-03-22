@@ -50,6 +50,3 @@ ind_2d_integrate.start( numpy.transpose( data2d ), xcoord, ycoord , cntrd_xcoord
 for i in range( len( xcoord ) ):
     print 'x,y (centroid) =', cntrd_xcoord[i], cntrd_ycoord[i]
     print 'sigma (x,y) =', x_sigma [i], y_sigma[i]
-
-
-

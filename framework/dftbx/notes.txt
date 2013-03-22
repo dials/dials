@@ -1,12 +1,12 @@
 Index: dftbx.cpp
 ===================================================================
---- dftbx.cpp	(revision 136)
-+++ dftbx.cpp	(working copy)
+--- dftbx.cpp   (revision 136)
++++ dftbx.cpp   (working copy)
 @@ -1,5 +1,39 @@
  #include <dftbx.h>
 +#include <boost/random/mersenne_twister.hpp>
 +#include <boost/random/uniform_int_distribution.hpp>
- 
+
 +namespace dftbx {
 +  size_t work_rl(size_t n)
 +  {
@@ -14,7 +14,7 @@ Index: dftbx.cpp
 +
 +    boost::random::mt19937 gen;
 +    boost::random::uniform_int_distribution<> miller(-10, 10);
-+    
++
 +    for (size_t j = 0; j < n; ++j) {
 +      miller_index_t m(miller(gen), miller(gen), miller(gen));
 +      rl[m].push_back(miller(gen));
@@ -29,7 +29,7 @@ Index: dftbx.cpp
 +
 +    boost::random::mt19937 gen;
 +    boost::random::uniform_int_distribution<> miller(-10, 10);
-+    
++
 +    for (size_t j = 0; j < n; ++j) {
 +      miller_index_t m(miller(gen), miller(gen), miller(gen));
 +      rm.add(m, miller(gen));
@@ -49,27 +49,27 @@ Index: dftbx.cpp
 +  boost::python::class_<dftbx::int_rm>("int_rm")
 +    .def("merge", & dftbx::int_rl::merge);
  }
- 
+
 Index: dftbx.h
 ===================================================================
---- dftbx.h	(revision 136)
-+++ dftbx.h	(working copy)
+--- dftbx.h     (revision 136)
++++ dftbx.h     (working copy)
 @@ -20,6 +20,7 @@
  #include <uctbx.h>
  #include <cctype>
  #include <map>
 +#include <boost/tr1/unordered_map.hpp>
  #include <algorithm>
- 
+
  namespace dftbx {
 @@ -119,7 +120,61 @@
    typedef ObservationList<int> int_ol;
    typedef ReflectionList<int> int_rl;
- 
+
 +  template <class T>
 +    class ReflectionMap {
 +  public:
- 
+
 +    typedef ObservationList<T> observation_list_t;
 +
 +    typedef boost::unordered_multimap<miller_index_t, T> map_type;
@@ -80,7 +80,7 @@ Index: dftbx.h
 +      observation_list_t result;
 +      auto range = reflections_.equal_range(hkl);
 +      for (map_iterator_type mi = range.first; mi != range.second; ++mi) {
-+	result.push_back(mi->second);
++       result.push_back(mi->second);
 +      }
 +      return result;
 +    }
@@ -89,14 +89,14 @@ Index: dftbx.h
 +      observation_list_t result;
 +      auto range = reflections_.equal_range(hkl);
 +      for (map_iterator_type mi = range.first; mi != range.second; ++mi) {
-+	result.push_back(mi->second);
++       result.push_back(mi->second);
 +      }
 +      return result;
 +    }
 +
 +    void merge(ReflectionList<T> & other) {
 +      for (map_iterator_type mi = other.begin(); mi != other.end(); ++mi) {
-+	reflections_.insert(mi->second);
++       reflections_.insert(mi->second);
 +      }
 +    }
 +
@@ -111,16 +111,16 @@ Index: dftbx.h
 +    map_iterator_type end() {
 +      return reflections_.cend();
 +    }
-+    
++
 +  private:
 +    map_type reflections_;
-+      
++
 +  };
-+  
++
 +  typedef ReflectionMap<int> int_rm;
 +
 +  size_t work_rl(size_t n);
 +  size_t work_rm(size_t n);
  }
- 
+
  #endif

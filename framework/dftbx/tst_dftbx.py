@@ -8,6 +8,3 @@ def tst_dftbx():
 
 if __name__ == '__main__':
     tst_dftbx()
-
-
-
