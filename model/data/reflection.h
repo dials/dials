@@ -169,6 +169,16 @@ namespace dials { namespace model {
       return transformed_image_;
     }
 
+    /** Set the reflection centroid position */
+    vec3<double> get_centroid_position() {
+      return centroid_position_;
+    }
+    
+    /** Set the reflection centroid variance */
+    vec3<double> get_centroid_variance() {
+      return centroid_variance_;
+    }
+
     /** Set the rotation angle */
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
@@ -218,6 +228,16 @@ namespace dials { namespace model {
     void set_transformed_image(const flex_double &transformed_image) {
       transformed_image_ = transformed_image;
     }
+    
+    /** Set the reflection centroid position */
+    void set_centroid_position(vec3<double> centroid_position) {
+      centroid_position_ = centroid_position;
+    }
+    
+    /** Set the reflection centroid variance */
+    void set_centroid_variance(vec3<double> centroid_variance) {
+      centroid_variance_ = centroid_variance;
+    }
 
   protected:
 
@@ -232,6 +252,9 @@ namespace dials { namespace model {
     flex_int image_;
     flex_double image_weights_;
     flex_double transformed_image_;
+
+    vec3<double> centroid_position_;
+    vec3<double> centroid_variance_;
   };
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;

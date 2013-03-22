@@ -42,7 +42,9 @@ namespace dials { namespace model { namespace boost_python {
       "    image coord (mm): (%10%, %11%)\n"
       "    frame number:     %12%\n"
       "    panel number:     %13%\n"
-      "    shoebox:          (%14%, %15%, %16%, %17%, %18%, %19%)\n");
+      "    shoebox:          (%14%, %15%, %16%, %17%, %18%, %19%)\n"
+      "    centroid pos:     (%20%, %21%, %22%)\n"
+      "    centroid var:     (%23%, %24%, %24%)\n");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -111,6 +113,12 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("transformed_image",
         &Reflection::get_transformed_image,
         &Reflection::set_transformed_image)
+      .add_property("centroid_position",
+        &Reflection::get_centroid_position,
+        &Reflection::set_centroid_position)
+      .add_property("centroid_variance",
+        &Reflection::get_centroid_variance,
+        &Reflection::set_centroid_variance)
       .def("__str__", &reflection_to_string);          
 
     scitbx::af::boost_python::flex_wrapper <Reflection>::plain("ReflectionList");        
