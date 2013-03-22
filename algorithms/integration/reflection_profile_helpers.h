@@ -60,7 +60,7 @@ namespace dials { namespace algorithms {
       int k = array_index - k0;
 
       // Get the image size
-      flex_int::index_type image_size = index.accessor().all();
+      flex_int::index_type image_size = image.accessor().all();
 
       // Readjust the area to loop over to ensure we're within image bounds
       int jj0 = j0 >= 0 ? j0 : 0;

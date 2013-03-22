@@ -5,20 +5,18 @@ from dials.interfaces.centroid.centroid_interface_prototype import \
     centroid_interface_prototype as centroid_interface
 
 class toy_centroid(centroid_interface):
-    def __init__(self, bounding_boxes, dxtbx_sweep_object):
+    def __init__(self, reflections):
 
-        self._image_size = dxtbx_sweep_object.get_detector().get_image_size()
-
-        centroid_interface.__init__(self, bounding_boxes, dxtbx_sweep_object)
+        centroid_interface.__init__(self, reflections)
 
 
         return
 
-    def compute_centroid_from_bbox(self, bbox):
+    def compute_centroid_from_bbox(self, image):
 
         import math
 
-        f_min, f_max, r_min, r_max, c_min, c_max = bbox
+        f_size, r_size, c_size = image.all()
 
         # build the list of pixels - let's be dumb and just have a literal
         # list - and assign density of a pixel to the centre of the
@@ -27,13 +25,11 @@ class toy_centroid(centroid_interface):
         pixel_list = []
 
         try:
-            for f in range(f_min, f_max):
-                data = self._sweep[f]
-                for r in range(r_min, r_max):
-                    for c in range(c_min, c_max):
+            for f in range(f_size):
+                for r in range(r_size):
+                    for c in range(c_size):
                         pixel_list.append(
-                            (f + 0.5, r + 0.5, c + 0.5,
-                             data[r * self._image_size[0] + c]))
+                            (f + 0.5, r + 0.5, c + 0.5, image[f, r, c]))
 
         except IndexError, e:
             return -1., -1., -1., -1., -1., -1.
@@ -50,6 +46,8 @@ class toy_centroid(centroid_interface):
             r_tot += d * r
             c_tot += d * c
             d_tot += d
+
+        print image.as_numpy_array()
 
         assert(d_tot)
 

@@ -114,14 +114,15 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
 #            bounding_boxes[miller] = []
 #        bounding_boxes[miller].append((fmin, fmax, rmin, rmax, cmin, cmax))
 
-#    # FIXME in here need to sort list by frame number
+    # FIXME in here need to sort list by frame number
 
-#    tc = toy_centroid(bounding_boxes, sweep)
-#    centroids = tc.get_centroids()
+    tc = toy_centroid(reflections)
+    reflections = tc.get_reflections()
 
-#    for hkl in centroids:
-#        for centroid in centroids[hkl]:
-#            print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
+    for ref in reflections:
+        centroid = ref.centroid_position + ref.centroid_variance
+        for centroid in centroids[hkl]:
+            print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
 
 if __name__ == '__main__':
     import sys

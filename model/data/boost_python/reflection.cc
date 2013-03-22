@@ -42,9 +42,9 @@ namespace dials { namespace model { namespace boost_python {
       "    image coord (mm): (%10%, %11%)\n"
       "    frame number:     %12%\n"
       "    panel number:     %13%\n"
-      "    shoebox:          (%14%, %15%, %16%, %17%, %18%, %19%)\n"
-      "    centroid pos:     (%20%, %21%, %22%)\n"
-      "    centroid var:     (%23%, %24%, %24%)\n");
+      "    shoebox:          (%14%, %15%, %16%, %17%, %18%, %19%)\n");
+//      "    centroid pos:     (%20%, %21%, %22%)\n"
+//      "    centroid var:     (%23%, %24%, %24%)\n");
         
     fmt % reflection.get_miller_index()[0];
     fmt % reflection.get_miller_index()[1];
@@ -65,6 +65,12 @@ namespace dials { namespace model { namespace boost_python {
     fmt % reflection.get_shoebox()[3];
     fmt % reflection.get_shoebox()[4];
     fmt % reflection.get_shoebox()[5];
+//    fmt % reflection.get_centroid_position()[0];
+//    fmt % reflection.get_centroid_position()[1];
+//    fmt % reflection.get_centroid_position()[2];
+//    fmt % reflection.get_centroid_variance()[0];
+//    fmt % reflection.get_centroid_variance()[1];
+//    fmt % reflection.get_centroid_variance()[2];
     return fmt.str();
   }
 

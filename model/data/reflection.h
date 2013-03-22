@@ -170,12 +170,12 @@ namespace dials { namespace model {
     }
 
     /** Set the reflection centroid position */
-    vec3<double> get_centroid_position() {
+    vec3<double> get_centroid_position() const {
       return centroid_position_;
     }
-    
+
     /** Set the reflection centroid variance */
-    vec3<double> get_centroid_variance() {
+    vec3<double> get_centroid_variance() const {
       return centroid_variance_;
     }
 
@@ -228,12 +228,12 @@ namespace dials { namespace model {
     void set_transformed_image(const flex_double &transformed_image) {
       transformed_image_ = transformed_image;
     }
-    
+
     /** Set the reflection centroid position */
     void set_centroid_position(vec3<double> centroid_position) {
       centroid_position_ = centroid_position;
     }
-    
+
     /** Set the reflection centroid variance */
     void set_centroid_variance(vec3<double> centroid_variance) {
       centroid_variance_ = centroid_variance;

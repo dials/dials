@@ -1,17 +1,16 @@
 class centroid_interface_prototype( object ):
     '''Centroid calculation interface: all of the stuff in here is in pixels.'''
 
-    def __init__( self, bounding_boxes, dxtbx_sweep_object ):
-        self._bounding_boxes = bounding_boxes
-        self._sweep = dxtbx_sweep_object
+    def __init__(self, reflections):
+        self._reflections = reflections
         self._compute_centroids()
 
         return
 
-    def get_centroids( self ):
-        return self._centroids
+    def get_reflections( self ):
+        return self._reflections
 
-    def compute_centroid_from_bbox( self, bbox ):
+    def compute_centroid_from_bbox( self, image ):
         '''Overload me: bbox has form tuple:
 
         (fmin, fmax, rmin, rmax, cmin, cmax)
@@ -26,12 +25,22 @@ class centroid_interface_prototype( object ):
 
         self._centroids = { }
 
-        for hkl in self._bounding_boxes:
+        for i, ref in enumerate(self._reflections):
 
-            self._centroids[hkl] = []
+            # Calculate the centroid
+            f, r, c, sf, sr, sc = self.compute_centroid_from_bbox(ref.image)
 
-            for bbox in self._bounding_boxes[hkl]:
-                self._centroids[hkl].append( self.compute_centroid_from_bbox(
-                    bbox ) )
+            # Add shoebox offset to centroid
+            shoebox = ref.shoebox
+            f = ref.shoebox[4]
+            r = ref.shoebox[2]
+            c = ref.shoebox[0]
+
+            # Add centroid data to reflection
+            ref.centroid_position = (c, r, f)
+            ref.centroid_variance = (sc, sr, sf)
+
+            # Copy reflection back into array
+            self._reflections[i] = ref
 
         return
