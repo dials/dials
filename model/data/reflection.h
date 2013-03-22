@@ -81,7 +81,7 @@ namespace dials { namespace model {
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
         panel_number_(0),
-        shoebox_(0, 0, 0, 0, 0, 0) {}
+        bounding_box_(0, 0, 0, 0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -95,7 +95,7 @@ namespace dials { namespace model {
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
         panel_number_(0),
-        shoebox_(0, 0, 0, 0, 0, 0) {}
+        bounding_box_(0, 0, 0, 0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -114,7 +114,7 @@ namespace dials { namespace model {
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
         panel_number_(0),
-        shoebox_(0, 0, 0, 0, 0, 0) {}
+        bounding_box_(0, 0, 0, 0, 0, 0) {}
 
     /** Virtual destructor */
     virtual ~Reflection() {}
@@ -149,24 +149,24 @@ namespace dials { namespace model {
       return panel_number_;
     }
 
-    /** Get the shoebox */
-    int6 get_shoebox() const {
+    /** Get the bounding_box */
+    int6 get_bounding_box() const {
+      return bounding_box_;
+    }
+
+    /** Get the reflection shoebox pixels */
+    flex_int get_shoebox() const {
       return shoebox_;
     }
 
-    /** Get the reflection image pixels */
-    flex_int get_image() const {
-      return image_;
-    }
-
-    /** Get the reflection image weights */
-    flex_double get_image_weights() const {
-      return image_weights_;
+    /** Get the reflection shoebox weights */
+    flex_double get_shoebox_weights() const {
+      return shoebox_weights_;
     }
 
     /** Get the transformed profile */
-    flex_double get_transformed_image() const {
-      return transformed_image_;
+    flex_double get_transformed_shoebox() const {
+      return transformed_shoebox_;
     }
 
     /** Set the reflection centroid position */
@@ -209,24 +209,24 @@ namespace dials { namespace model {
       panel_number_ = panel_number;
     }
 
-    /** Set the shoebox */
-    void set_shoebox(int6 shoebox) {
+    /** Set the bounding_box */
+    void set_bounding_box(int6 bounding_box) {
+      bounding_box_ = bounding_box;
+    }
+
+    /** Set the reflection shoebox pixels */
+    void set_shoebox(const flex_int &shoebox) {
       shoebox_ = shoebox;
     }
 
-    /** Sey the reflection image pixels */
-    void set_image(const flex_int &image) {
-      image_ = image;
-    }
-
-    /** Set the reflection image weights */
-    void set_image_weights(const flex_double &image_weights) {
-      image_weights_ = image_weights;
+    /** Set the reflection shoebox weights */
+    void set_shoebox_weights(const flex_double &shoebox_weights) {
+      shoebox_weights_ = shoebox_weights;
     }
 
     /** Set the transformed profile */
-    void set_transformed_image(const flex_double &transformed_image) {
-      transformed_image_ = transformed_image;
+    void set_transformed_shoebox(const flex_double &transformed_shoebox) {
+      transformed_shoebox_ = transformed_shoebox;
     }
 
     /** Set the reflection centroid position */
@@ -247,11 +247,11 @@ namespace dials { namespace model {
     vec2 <double> image_coord_mm_;
     double frame_number_;
     int panel_number_;
-    int6 shoebox_;
+    int6 bounding_box_;
 
-    flex_int image_;
-    flex_double image_weights_;
-    flex_double transformed_image_;
+    flex_int shoebox_;
+    flex_double shoebox_weights_;
+    flex_double transformed_shoebox_;
 
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;

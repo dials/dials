@@ -40,9 +40,9 @@ namespace dials { namespace algorithms {
   template <> int get_maximum_bound<2, int6>(const int6 &b) { return b[5]; }
 
   /**
-   * Given a set of reflections, find the shoeboxes that overlap.
+   * Given a set of reflections, find the bounding_boxes that overlap.
    * This function uses a single shot collision detection algorithm to
-   * find the colliding shoeboxes and then puts all the pairs of colliding
+   * find the colliding bounding_boxes and then puts all the pairs of colliding
    * indices into an adjacency list. Vertices are referred to in the
    * adjacency list by index.
    * @param reflections The reflection list.
@@ -54,19 +54,20 @@ namespace dials { namespace algorithms {
     // Ensure we have a valid number of reflections
     DIALS_ASSERT(reflections.size() > 0);
 
-    // Copy all the reflection shoeboxes into their own array
-    std::vector<int6> shoeboxes(reflections.size());
+    // Copy all the reflection bounding_boxes into their own array
+    std::vector<int6> bounding_boxes(reflections.size());
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      shoeboxes[i] = reflections[i].get_shoebox();
+      bounding_boxes[i] = reflections[i].get_bounding_box();
     }
 
     // Create a list of all the pairs of collisions between bouding boxes.
     std::vector<std::pair<int, int> > collisions;
-    detect_collisions3d(shoeboxes.begin(), shoeboxes.end(), collisions);
+    detect_collisions3d(bounding_boxes.begin(), bounding_boxes.end(), 
+			collisions);
 
     // Put all the collisions into an adjacency list
     boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
-    for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+    for (std::size_t i = 0; i < bounding_boxes.size(); ++i) {
       add_vertex(*list);
     }
     for (std::size_t i = 0; i < collisions.size(); ++i) {

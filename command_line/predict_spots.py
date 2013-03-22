@@ -41,7 +41,7 @@ def print_reflection_stats(reflections, adjacency_list = None):
     spot_x = [r.image_coord_px[0] for r in reflections]
     spot_y = [r.image_coord_px[1] for r in reflections]
     spot_z = [r.frame_number for r in reflections]
-    shoeboxes = [r.shoebox for r in reflections]
+    shoeboxes = [r.bounding_box for r in reflections]
 
     # Calculate the min, max, mean pixels in shoebox
     shoebox_count = [(s[1]-s[0])*(s[3]-s[2])*(s[5]-s[4]) for s in shoeboxes]
@@ -101,7 +101,7 @@ def print_reflection_stats(reflections, adjacency_list = None):
         for e in adjacency_list.edges():
             v1, v2 = adjacency_list[e]
             r1, r2 = reflections[v1], reflections[v2]
-            s1, s2 = r1.shoebox, r2.shoebox
+            s1, s2 = r1.bounding_box, r2.bounding_box
 
             # X overlap
             if s1[0] < s2[0]:

@@ -24,7 +24,8 @@ class toy_centroid_lui(centroid_interface):
         f_size = f_max - f_min
         r_size = r_max - r_min
         c_size = c_max - c_min
-        data3d = numpy.zeros(f_size * r_size * c_size, dtype = int).reshape(f_size, r_size, c_size)
+        data3d = numpy.zeros(f_size * r_size * c_size, dtype = int).reshape(
+            f_size, r_size, c_size)
         in_f = 0
         in_r = 0
         in_c = 0
@@ -49,12 +50,12 @@ class toy_centroid_lui(centroid_interface):
         cont = 0
         itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
         for f in range(f_min, f_max):
-            print '_____________________________________________________________________________________________________ next image'
+            print '____ next image'
             data2d = data3d[f, :, :]
-            print '___________________________________________________data2d before'
+            print '____ data2d before'
             print data2d
             row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
-            print '___________________________________________________data2d after'
+            print '____ data2d after'
             print data2d
 
             itst[cont] = locl_itst
@@ -98,7 +99,7 @@ def single_spot_integrate_2d(data2d):
     diffdata2d_ext = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
     data2dtmp = data2d
 
-    ext_area = 1                                                               # This used to be one of this "magical variables"
+    ext_area = 1
 
     for times in range(5):
         for y in range(1, y_to - 1, 1):
@@ -113,6 +114,7 @@ def single_spot_integrate_2d(data2d):
         for x in range(0, x_to, 1):
             cont += 1
             dif_tot += numpy.abs(data2d[y, x] - data2dsmoth[y, x])
+            
     dif_avg = dif_tot / cont
     print 'dif_avg=', dif_avg
     threshold_shift = dif_avg * 3.0
@@ -129,9 +131,9 @@ def single_spot_integrate_2d(data2d):
             if diffdata2d[y, x] == 1:
                 diffdata2d_ext[y - ext_area:y + ext_area + 1, x - ext_area:x + ext_area + 1] = 1
 
-    print '_________________________________________diffdata2d'
+    print '___ diffdata2d'
     print diffdata2d
-    print '_________________________________________diffdata2d_ext'
+    print '___ diffdata2d_ext'
     print diffdata2d_ext
     xbord = int(x_to / 5)
     ybord = int(y_to / 5)
@@ -170,12 +172,11 @@ def single_spot_integrate_2d(data2d):
 
     x_num_sum = 0.0
     y_num_sum = 0.0
-#    den_sum = 0.0
     for y in range(0, y_to, 1):
         for x in range(0, x_to, 1):
             x_num_sum = x_num_sum + float(data2d[y, x]) * (float(x) - float(col_cm)) ** 2.0
             y_num_sum = y_num_sum + float(data2d[y, x]) * (float(y) - float(row_cm)) ** 2.0
-    #        den_sum = den_sum + float(data2d[y, x])
+
     if den_sum > 0.0:
         col_sig = numpy.sqrt(x_num_sum / den_sum)
         row_sig = numpy.sqrt(y_num_sum / den_sum)
@@ -184,11 +185,10 @@ def single_spot_integrate_2d(data2d):
         col_sig = -1
         row_sig = -1
 
-#    display_image_with_predicted_spots_n_centoids(data2d, col_cm, row_cm, x_to / 2, y_to / 2)
-
     return row_cm, col_cm, row_sig, col_sig, den_sum
 
-def display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
+def display_image_with_predicted_spots_n_centoids(
+        image, xcoords, ycoords, xc, yc):
     """Display the image with coordinates overlayed."""
     from matplotlib import pylab, cm
 

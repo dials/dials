@@ -3,20 +3,21 @@
 from __future__ import division
 from dials.interfaces.centroid.centroid_interface_prototype import \
     centroid_interface_prototype as centroid_interface
+from dials.interfaces.centroid.centroid_interface_prototype import \
+    CentroidException
 
 class toy_centroid(centroid_interface):
     def __init__(self, reflections):
 
         centroid_interface.__init__(self, reflections)
 
-
         return
 
-    def compute_centroid_from_bbox(self, image):
+    def compute_centroid_from_bbox(self, shoebox):
 
         import math
 
-        f_size, r_size, c_size = image.all()
+        f_size, r_size, c_size = shoebox.all()
 
         # build the list of pixels - let's be dumb and just have a literal
         # list - and assign density of a pixel to the centre of the
@@ -24,15 +25,19 @@ class toy_centroid(centroid_interface):
 
         pixel_list = []
 
+        for i in shoebox:
+            if i < 0:
+                raise CentroidException, 'negative pixels in cube'
+
         try:
             for f in range(f_size):
                 for r in range(r_size):
                     for c in range(c_size):
                         pixel_list.append(
-                            (f + 0.5, r + 0.5, c + 0.5, image[f, r, c]))
+                            (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
 
         except IndexError, e:
-            return -1., -1., -1., -1., -1., -1.
+            raise CentroidException, 'data outside range'
 
         # compute averages of positions
 
@@ -47,7 +52,7 @@ class toy_centroid(centroid_interface):
             c_tot += d * c
             d_tot += d
 
-        print image.as_numpy_array()
+        # print shoebox.as_numpy_array()
 
         assert(d_tot)
 
@@ -64,8 +69,8 @@ class toy_centroid(centroid_interface):
             r_tot += d * (r - _r) ** 2
             c_tot += d * (c - _c) ** 2
 
-        _sf = math.sqrt(f_tot / d_tot)
-        _sr = math.sqrt(r_tot / d_tot)
-        _sc = math.sqrt(c_tot / d_tot)
+        _sf = f_tot / d_tot
+        _sr = r_tot / d_tot
+        _sc = c_tot / d_tot
 
         return _f, _r, _c, _sf, _sr, _sc

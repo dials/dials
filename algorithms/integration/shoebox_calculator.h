@@ -167,7 +167,7 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection data
      */
     void operator()(Reflection &reflection) const {
-      reflection.set_shoebox(
+      reflection.set_bounding_box(
         operator()(reflection.get_beam_vector(),
                    reflection.get_rotation_angle(),
                    reflection.get_panel_number()));

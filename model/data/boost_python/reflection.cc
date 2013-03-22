@@ -42,7 +42,7 @@ namespace dials { namespace model { namespace boost_python {
       "    image coord (mm): (%10%, %11%)\n"
       "    frame number:     %12%\n"
       "    panel number:     %13%\n"
-      "    shoebox:          (%14%, %15%, %16%, %17%, %18%, %19%)\n");
+      "    bounding_box:     (%14%, %15%, %16%, %17%, %18%, %19%)\n");
 //      "    centroid pos:     (%20%, %21%, %22%)\n"
 //      "    centroid var:     (%23%, %24%, %24%)\n");
         
@@ -59,12 +59,12 @@ namespace dials { namespace model { namespace boost_python {
     fmt % reflection.get_image_coord_mm()[1];
     fmt % reflection.get_frame_number();
     fmt % reflection.get_panel_number();
-    fmt % reflection.get_shoebox()[0];
-    fmt % reflection.get_shoebox()[1];
-    fmt % reflection.get_shoebox()[2];
-    fmt % reflection.get_shoebox()[3];
-    fmt % reflection.get_shoebox()[4];
-    fmt % reflection.get_shoebox()[5];
+    fmt % reflection.get_bounding_box()[0];
+    fmt % reflection.get_bounding_box()[1];
+    fmt % reflection.get_bounding_box()[2];
+    fmt % reflection.get_bounding_box()[3];
+    fmt % reflection.get_bounding_box()[4];
+    fmt % reflection.get_bounding_box()[5];
 //    fmt % reflection.get_centroid_position()[0];
 //    fmt % reflection.get_centroid_position()[1];
 //    fmt % reflection.get_centroid_position()[2];
@@ -107,18 +107,18 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("panel_number",
         &Reflection::get_panel_number,
         &Reflection::set_panel_number)      
+      .add_property("bounding_box",
+        &Reflection::get_bounding_box,
+        &Reflection::set_bounding_box)  
       .add_property("shoebox",
         &Reflection::get_shoebox,
-        &Reflection::set_shoebox)  
-      .add_property("image",
-        &Reflection::get_image,
-        &Reflection::set_image)
-      .add_property("image_weights",
-        &Reflection::get_image_weights,
-        &Reflection::set_image_weights)
-      .add_property("transformed_image",
-        &Reflection::get_transformed_image,
-        &Reflection::set_transformed_image)
+        &Reflection::set_shoebox)
+      .add_property("shoebox_weights",
+        &Reflection::get_shoebox_weights,
+        &Reflection::set_shoebox_weights)
+      .add_property("transformed_shoebox",
+        &Reflection::get_transformed_shoebox,
+        &Reflection::set_transformed_shoebox)
       .add_property("centroid_position",
         &Reflection::get_centroid_position,
         &Reflection::set_centroid_position)
