@@ -89,7 +89,7 @@ def print_reflection_stats(reflections, adjacency_list):
     print "Med shoebox range: ", med_shoebox_range
     print "Num overlaps: ", adjacency_list.num_edges()
 
-def run(xparm_path, integrate_path, image_frames):
+def run(xparm_path, integrate_path, image_frames, interactive):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -98,11 +98,12 @@ def run(xparm_path, integrate_path, image_frames):
     from dials.algorithms.spot_prediction import reflection_frames
     from dials.algorithms.integration import ShoeboxCalculator
     from dials.algorithms.integration import find_overlapping_reflections
-    from dials.algorithms.integration import copy_reflection_profiles
+    from dials.algorithms.integration import extract_reflection_profiles
     from iotbx.xds import xparm
     from dials.util import io
     from math import pi
     import dxtbx
+    from dxtbx.sweep import SweepFactory
     from iotbx.xds import integrate_hkl
 
     # Set the number of frames
@@ -121,7 +122,7 @@ def run(xparm_path, integrate_path, image_frames):
 
     # Read the sweep
     print "Reading: \"{0}\"".format("sweep")
-    sweep = dxtbx.sweep(image_frames)
+    sweep = SweepFactory.sweep(image_frames)
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
@@ -197,16 +198,20 @@ def run(xparm_path, integrate_path, image_frames):
     # Find all the overlapping reflections
     adjacency_list = print_call_info(
         lambda: find_overlapping_reflections(reflections),
-        "Calculating overlapping reflections", "Edges")
+        "Calculating overlapping reflections", "edges")
 
     # Copy the reflection profiles from the sweep the reflection objects
     reflections = print_call_info(
-        lambda: copy_reflection_profiles(sweep, reflections),
+        lambda: extract_reflection_profiles(sweep, reflections),
         "Copying reflection profiles from sweep", "reflections")
 
     # Print some reflection statistics
     print_reflection_stats(reflections, adjacency_list)
 
+    # Enter an interactive python session
+    if interactive:
+        from dials.util.command_line import interactive_console
+        interactive_console(namespace=locals())
 
 if __name__ == '__main__':
 
@@ -216,6 +221,10 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] /path/to/GXPARM.XDS /path/to/image.cbf"
     parser = OptionParser(usage)
 
+    parser.add_option('-i', '--interactive',
+                      dest='interactive', action="store_true", default=False,
+                      help='Enter an interactive python session')
+
     # Parse the arguments
     (options, args) = parser.parse_args()
 
@@ -223,4 +232,4 @@ if __name__ == '__main__':
     if len(args) < 3:
         print parser.print_help()
     else:
-        run(args[0], args[1], args[2:])
+        run(args[0], args[1], args[2:], options.interactive)

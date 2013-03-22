@@ -23,6 +23,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_background_intensity();
   void export_subtract_background();
   void export_find_overlapping_reflections();
+  void export_reflection_profile_helpers();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -34,6 +35,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_background_intensity();
     export_subtract_background();
     export_find_overlapping_reflections();
+    export_reflection_profile_helpers();
   }
 
 }}} // namespace = dials::algorithms::boost_python

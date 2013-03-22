@@ -20,7 +20,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     from predict_spots import print_ub_matrix, print_reflection_stats, \
         display_predicted_spots
 
-    sweep = dxtbx.sweep(image_file)
+    sweep = dxtbx.make_sweep(image_file)
 
     models = dxtbx.load(xparm_file)
     beam = models.get_beam()

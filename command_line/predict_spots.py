@@ -195,7 +195,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     from iotbx.xds import xparm
     from dials.util import io
     from math import pi
-    import dxtbx
+    from dxtbx.sweep import SweepFactory
 
     # Set the number of frames
     if image_frames:
@@ -217,7 +217,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
 
     # Read image data from sweep
     if image_frames:
-        sweep = dxtbx.sweep(image_frames)
+        sweep = SweepFactory.sweep(image_frames)
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
