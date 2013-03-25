@@ -31,8 +31,8 @@ def get_reflection_frame_indices(sweep, reflections):
     # For each reflection, Find the frames which it spans and copy an
     # index into the frame -> reflection list
     for i, r in enumerate(reflections):
-        f0 = r.bounding_box[4]
-        f1 = r.bounding_box[5]
+        f0 = r.bounding_box[0]
+        f1 = r.bounding_box[1]
         for f in range(f0, f1):
             frames_to_reflection[f].append(i)
 

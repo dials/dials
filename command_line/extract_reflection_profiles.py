@@ -48,7 +48,7 @@ def print_reflection_stats(reflections, adjacency_list):
     med_bbox_size = int(numpy.median(bbox_count))
 
     # Calculate the mib, max, mean fast range of bbox
-    bbox_fast_range = [s[1] - s[0] for s in bounding_boxes]
+    bbox_fast_range = [s[5] - s[4] for s in bounding_boxes]
     min_bbox_fast_range = numpy.min(bbox_fast_range)
     max_bbox_fast_range = numpy.max(bbox_fast_range)
     med_bbox_fast_range = int(numpy.median(bbox_fast_range))
@@ -60,7 +60,7 @@ def print_reflection_stats(reflections, adjacency_list):
     med_bbox_slow_range = int(numpy.median(bbox_slow_range))
 
     # Calculate the mib, max, mean frame range of bbox
-    bbox_frame_range = [s[5] - s[4] for s in bounding_boxes]
+    bbox_frame_range = [s[1] - s[0] for s in bounding_boxes]
     min_bbox_frame_range = numpy.min(bbox_frame_range)
     max_bbox_frame_range = numpy.max(bbox_frame_range)
     med_bbox_frame_range = int(numpy.median(bbox_frame_range))

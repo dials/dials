@@ -141,9 +141,9 @@ namespace dials { namespace algorithms {
       double4 y(xy1[1], xy2[1], xy3[1], xy4[1]);
       double2 z(z1, z2);
       return int6 (
-        (int)floor(min(x)), (int)ceil(max(x)),
+        (int)floor(min(z)), (int)ceil(max(z)),
         (int)floor(min(y)), (int)ceil(max(y)),
-        (int)floor(min(z)), (int)ceil(max(z)));
+        (int)floor(min(x)), (int)ceil(max(x)));
     }
 
     /**
