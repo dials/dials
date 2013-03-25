@@ -1,5 +1,5 @@
 /*
- * shoebox_calculator.cc
+ * bbox_calculator.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,26 +10,26 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/integration/shoebox_calculator.h>
+#include <dials/algorithms/integration/bbox_calculator.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_shoebox_calculator()
+  void export_bbox_calculator()
   {
-    int6 (ShoeboxCalculator::*calculate_single)(
+    int6 (BBoxCalculator::*calculate_single)(
       vec3 <double>, double, std::size_t) const = 
-        &ShoeboxCalculator::operator();
-    flex_int6 (ShoeboxCalculator::*calculate_array) (
+        &BBoxCalculator::operator();
+    flex_int6 (BBoxCalculator::*calculate_array) (
       const flex_vec3_double&, const flex_double &, std::size_t) const = 
-        &ShoeboxCalculator::operator();
-    void (ShoeboxCalculator::*calculate_reflection)(Reflection &) const = 
-      &ShoeboxCalculator::operator();
-    void (ShoeboxCalculator::*calculate_reflection_list)(
-      ReflectionList &) const = &ShoeboxCalculator::operator();
+        &BBoxCalculator::operator();
+    void (BBoxCalculator::*calculate_reflection)(Reflection &) const = 
+      &BBoxCalculator::operator();
+    void (BBoxCalculator::*calculate_reflection_list)(
+      ReflectionList &) const = &BBoxCalculator::operator();
 
-    class_ <ShoeboxCalculator> ("ShoeboxCalculator", no_init)
+    class_ <BBoxCalculator> ("BBoxCalculator", no_init)
       .def(init <const Beam&,
                  const Detector&,
                  const Goniometer&,

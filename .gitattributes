@@ -11,14 +11,15 @@ algorithms/centroid/toy_centroid_helpers.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/background_intensity.h -text
+algorithms/integration/bbox_calculator.h -text
 algorithms/integration/boost_python/background_intensity.cc -text
+algorithms/integration/boost_python/bbox_calculator.cc -text
 algorithms/integration/boost_python/find_overlapping_reflections.cc -text
 algorithms/integration/boost_python/from_beam_vector_to_xds.cc -text
 algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
 algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
-algorithms/integration/boost_python/shoebox_calculator.cc -text
 algorithms/integration/boost_python/subtract_background.cc -text
 algorithms/integration/boost_python/xds_coordinate_system.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
@@ -27,7 +28,6 @@ algorithms/integration/from_beam_vector_to_xds.h -text
 algorithms/integration/from_xds_e3_to_phi.h -text
 algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/reflection_profile_helpers.h -text
-algorithms/integration/shoebox_calculator.h -text
 algorithms/integration/subtract_background.h -text
 algorithms/integration/xds_coordinate_system.h -text
 algorithms/spatial_indexing/SConscript -text

@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_from_beam_vector_to_xds();
   void export_from_xds_to_beam_vector();
   void export_from_xds_e3_to_phi();
-  void export_shoebox_calculator();
+  void export_bbox_calculator();
   void export_background_intensity();
   void export_subtract_background();
   void export_find_overlapping_reflections();
@@ -31,7 +31,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_from_beam_vector_to_xds();
     export_from_xds_to_beam_vector();
     export_from_xds_e3_to_phi();
-    export_shoebox_calculator();
+    export_bbox_calculator();
     export_background_intensity();
     export_subtract_background();
     export_find_overlapping_reflections();

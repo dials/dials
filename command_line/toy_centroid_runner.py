@@ -11,7 +11,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms.integration import ShoeboxCalculator
+    from dials.algorithms.integration import BBoxCalculator
     from dials.algorithms.integration import extract_reflection_profiles
     from iotbx.xds import xparm
     from dials.util import io
@@ -54,8 +54,8 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
     delta_divergence = n_sigma * sigma_divergence * pi / 180.0
     delta_mosaicity = n_sigma * sigma_mosaicity * pi / 180.0
 
-    # Create the shoebox calculator
-    calculate_shoebox = ShoeboxCalculator(beam, detector, gonio, scan,
+    # Create the bounding box calculator
+    calculate_bbox = BBoxCalculator(beam, detector, gonio, scan,
         delta_divergence, delta_mosaicity)
 
     from dials.model.data import Reflection, ReflectionList
@@ -97,7 +97,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
 
 
     # Calculate the frame numbers of all the reflections
-    calculate_shoebox(reflections)
+    calculate_bbox(reflections)
 
     # extract reflection profiles
     extract_reflection_profiles(sweep, reflections)

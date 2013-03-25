@@ -1,5 +1,5 @@
 /*
- * shoebox_calculator.h
+ * bbox_calculator.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_INTEGRATION_SHOEBOX_CALCULATOR_H
-#define DIALS_ALGORITHMS_INTEGRATION_SHOEBOX_CALCULATOR_H
+#ifndef DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H
+#define DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H
 
 #include <cmath>
 #include <scitbx/constants.h>
@@ -48,25 +48,25 @@ namespace dials { namespace algorithms {
   typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
   typedef scitbx::af::flex<int6>::type flex_int6;
 
-  /** Calculate the shoebox for each reflection */
-  class ShoeboxCalculator {
+  /** Calculate the bounding box for each reflection */
+  class BBoxCalculator {
 
   public:
 
     /**
-     * Initialise the shoebox calculation.
+     * Initialise the bounding box calculation.
      * @param beam The beam parameters
      * @param detector The detector parameters
      * @param goniometer The goniometer parameters
      * @param delta_divergence The xds delta_divergence parameter
      * @param delta_mosaicity The xds delta_mosaicity parameter
      */
-    ShoeboxCalculator(const Beam &beam,
-                      const Detector &detector,
-                      const Goniometer &gonio,
-                      const ScanData &scan,
-                      double delta_divergence,
-                      double delta_mosaicity)
+    BBoxCalculator(const Beam &beam,
+                   const Detector &detector,
+                   const Goniometer &gonio,
+                   const ScanData &scan,
+                   double delta_divergence,
+                   double delta_mosaicity)
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis()),
         detector_(detector),
@@ -75,7 +75,7 @@ namespace dials { namespace algorithms {
         delta_mosaicity_(delta_mosaicity) {}
 
     /**
-     * Calculate the shoebox on the detector image volume for the reflection.
+     * Calculate the bbox on the detector image volume for the reflection.
      *
      * The roi is calculated using the parameters delta_divergence and
      * delta_mosaicity. The reflection mask comprises all pixels where:
@@ -196,4 +196,4 @@ namespace dials { namespace algorithms {
 
 }} // namespace dials::algorithms
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_SHOEBOX_CALCULATOR_H
+#endif // DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H
