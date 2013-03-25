@@ -106,7 +106,19 @@ def single_spot_integrate_2d(data2d):
                 pscan = float(numpy.sum(data2dtmp[y - 1:y + 2, x - 1:x + 2]) / 9.0)
                 data2dsmoth[y, x] = pscan
     data2dtmp = data2dsmoth
-    threshold_shift = (numpy.max(data2dsmoth) - numpy.min(data2dsmoth)) / 2.0 # This used to be one of this "magical variables"
+    #threshold_shift = (numpy.max(data2dsmoth) - numpy.min(data2dsmoth)) / 2.0 # This used to be one of this "magical variables"
+
+#######################################################################################################
+    cont = 0                                                           # This way to calculate
+    dif_tot = 0                                                        # this magical variable
+    for y in range(0, y_to, 1):                                        # is more statistical
+        for x in range(0, x_to, 1):                                    # and seems to be giving
+            cont += 1                                                  # better results
+            dif_tot += numpy.abs(data2d[y, x] - data2dsmoth[y, x])     #
+    dif_avg = dif_tot / cont                                           #
+    print 'dif_avg=', dif_avg                                          #
+    threshold_shift = dif_avg * 3.0                                    #
+#######################################################################################################
     print 'threshold_shift =', threshold_shift
 
     data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
