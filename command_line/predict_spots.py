@@ -361,10 +361,10 @@ if __name__ == '__main__':
     if len(args) == 0:
         print parser.print_help()
     elif len(args) == 1:
-        predict_spots(args[0], None, None, None, options.interactive, 
+        predict_spots(args[0], None, None, None, options.interactive,
             options.output_file)
     elif len(args) == 2:
-        predict_spots(args[0], args[1], None, None, options.interactive, 
+        predict_spots(args[0], args[1], None, None, options.interactive,
             options.output_file)
     else:
         predict_spots(args[0], args[1], args[2:], options.display_frame,

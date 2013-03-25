@@ -1,12 +1,15 @@
 from __future__ import division
 
-def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file):
+def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
+                        algorithm):
     '''From the geometry in the xparm file, the indices in integrate_hkl_file
     and the images corresponding to the sweep to be generated from the
     image file, calculate the shoeboxes and from there the centroids using the
     toy centroid code.'''
 
+    from dials.algorithms.centroid.toy_centroid import toy_centroid
     from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
+    from dials.algorithms.centroid.filtered_centroid import FilteredCentroid
     from dials.algorithms.spot_prediction import IndexGenerator
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
@@ -116,7 +119,13 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file)
 
     # FIXME in here need to sort list by frame number
 
-    tc = toy_centroid_lui(reflections)
+    if algorithm == "toy":
+        tc = toy_centroid(reflections)
+    elif algorithm == "lui":
+        tc = toy_centroid_lui(reflections)
+    elif algorithm == "xds":
+        tc = FilteredCentroid(reflections)
+
     reflections = tc.get_reflections()
 
     for ref in reflections:
@@ -128,6 +137,12 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file)
         import pickle
         print "\nPickling the reflection list."
         pickle.dump(reflections, open(output_file, 'wb'))
+
+def algorithm_callback(option, opt, value, parser):
+    """Parse centroid algorithm"""
+    if value != "toy" and value != "lui" and value != "xds":
+        raise ValueError("Invalid centroid algorithm.")
+    setattr(parser.values, option.dest, value)
 
 if __name__ == '__main__':
 
@@ -143,6 +158,11 @@ if __name__ == '__main__':
                       dest = 'output_file', type = "string", default = "",
                       help = 'Enter a destination filename for reflections')
 
+    parser.add_option('-a', '--algorithm',
+                      dest = 'algorithm', type = "string", default = "toy",
+                      action="callback", callback=algorithm_callback,
+                      help = 'Enter the centroid algorithm to use (toy, lui, xds)')
+
     # Parse the arguments
     (options, args) = parser.parse_args()
 
@@ -150,6 +170,5 @@ if __name__ == '__main__':
     if len(args) < 3:
         print parser.print_help()
     else:
-        toy_centroid_runner(args[0], args[1], args[2:], options.output_file)
-
-
+        toy_centroid_runner(args[0], args[1], args[2:], options.output_file,
+            options.algorithm)

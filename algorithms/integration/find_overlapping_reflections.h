@@ -62,8 +62,8 @@ namespace dials { namespace algorithms {
 
     // Create a list of all the pairs of collisions between bouding boxes.
     std::vector<std::pair<int, int> > collisions;
-    detect_collisions3d(bounding_boxes.begin(), bounding_boxes.end(), 
-			collisions);
+    detect_collisions3d(bounding_boxes.begin(), bounding_boxes.end(),
+                        collisions);
 
     // Put all the collisions into an adjacency list
     boost::shared_ptr<AdjacencyList> list(new AdjacencyList);

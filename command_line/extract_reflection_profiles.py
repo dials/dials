@@ -218,7 +218,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
         import pickle
         print "\nPickling the reflection list."
         pickle.dump(reflections, open(output_file, 'wb'))
-      
+
 
 if __name__ == '__main__':
 
@@ -233,7 +233,7 @@ if __name__ == '__main__':
                       help='Enter an interactive python session')
     parser.add_option('-o', '--output-file',
                       dest='output_file', type="string", default="",
-                      help='Enter a destination filename for reflections')                      
+                      help='Enter a destination filename for reflections')
 
     # Parse the arguments
     (options, args) = parser.parse_args()
@@ -242,5 +242,5 @@ if __name__ == '__main__':
     if len(args) < 3:
         print parser.print_help()
     else:
-        run(args[0], args[1], args[2:], options.interactive, 
+        run(args[0], args[1], args[2:], options.interactive,
             options.output_file)

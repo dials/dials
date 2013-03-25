@@ -46,7 +46,7 @@ class centroid_interface_prototype(object):
 
                 # Copy reflection back into array
                 self._reflections[i] = ref
-                
+
             except CentroidException, e:
                 continue
 

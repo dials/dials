@@ -3,6 +3,9 @@ from __future__ import division
 from dials.interfaces.centroid.centroid_interface_prototype import \
     centroid_interface_prototype as centroid_interface
 
+from dials.interfaces.centroid.centroid_interface_prototype import \
+    CentroidException
+
 def select_contigious(index, shape, conn):
     """ Filter the indices to only contain contigious pixels
 
@@ -31,13 +34,15 @@ def select_contigious(index, shape, conn):
 
     # Set all the points at the indices to 1
     for i in index:
-      mask[i] = 1
+        mask[i] = 1
 
     # Reshape the mask
     mask.shape = shape
 
     # Label the indices in the mask
     regions, nregions = label(mask)#, structure)
+    if nregions < 2:
+        raise RuntimeError("Can't determine peak foreground/background")
 
     # Histogram the regions to get the largest
     histo = histogram(regions, 0, nregions+1, nregions+1)
@@ -84,8 +89,7 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
 
 class FilteredCentroid(centroid_interface):
     """ Calculate the centroid filtered by foreground indices """
-    def __init__(self, bounding_boxes, dxtbx_sweep_object,
-                min_pixels=10, n_sigma=3, conn=4):
+    def __init__(self, reflections, min_pixels=10, n_sigma=3, conn=4):
         """ Initialise the class """
 
         # Save some parameters needed for selection of pixels
@@ -93,71 +97,81 @@ class FilteredCentroid(centroid_interface):
         self.n_sigma = n_sigma
         self.conn = conn
 
-        self._image_size = dxtbx_sweep_object.get_detector().get_image_size()
+        # Init the interface base class
+        centroid_interface.__init__(self, reflections)
 
-        centroid_interface.__init__(self, bounding_boxes, dxtbx_sweep_object)
 
-
-    def compute_centroid_from_bbox(self, bbox):
+    def compute_centroid_from_bbox(self, shoebox):
         """ Compute the centroid """
         from scitbx.array_family import flex
         import math
 
 
+        f_size, r_size, c_size = shoebox.all()
+
         # build the list of pixels - let's be dumb and just have a literal
-        # list
+        # list - and assign density of a pixel to the centre of the
+        # volume...
 
         pixel_list = []
-        f_min, f_max, r_min, r_max, c_min, c_max = bbox
-        for f in range(f_min, f_max):
-            data = self._sweep[f]
-            for r in range(r_min, r_max):
-                for c in range(c_min, c_max):
-                    pixel_list.append(
-                        (f, r, c, data[r * self._image_size[0] + c]))
+
+        for i in shoebox:
+            if i < 0:
+                raise CentroidException, 'negative pixels in cube'
+
+        try:
+            for f in range(f_size):
+                for r in range(r_size):
+                    for c in range(c_size):
+                        pixel_list.append(
+                            (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
+
+        except IndexError, e:
+            raise CentroidException, 'data outside range'
 
         # Select the indices to use in centroid calculation
-        pixel_d = [d for (f, r, c, d) in pixel_list]
-        pixel_data = flex.double(pixel_d)
-        pixel_data.reshape(flex.grid(
-          c_max - c_min, r_max - r_min, f_max - f_min))
-        pixel_index = select_foreground_pixels(pixel_data, self.min_pixels,
-                                               self.n_sigma, self.conn)
+        try:
+            pixel_index = select_foreground_pixels(shoebox, self.min_pixels,
+                                                   self.n_sigma, self.conn)
 
-        # compute averages of positions
+            # compute averages of positions
 
-        f_tot = 0.0
-        r_tot = 0.0
-        c_tot = 0.0
-        d_tot = 0.0
+            f_tot = 0.0
+            r_tot = 0.0
+            c_tot = 0.0
+            d_tot = 0.0
 
-        for i in pixel_index:
-            f, r, c, d = pixel_list[i]
-            f_tot += d * f
-            r_tot += d * r
-            c_tot += d * c
-            d_tot += d
+            for i in pixel_index:
+                f, r, c, d = pixel_list[i]
+                f_tot += d * f
+                r_tot += d * r
+                c_tot += d * c
+                d_tot += d
 
-        assert(d_tot)
+            assert(d_tot)
 
-        _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
+            _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
 
-        # now compute the variance
+            # now compute the variance
 
-        f_tot = 0.0
-        r_tot = 0.0
-        c_tot = 0.0
-        d_tot = 0.0
+            f_tot = 0.0
+            r_tot = 0.0
+            c_tot = 0.0
+            d_tot = 0.0
 
-        for i in pixel_index:
-            f, r, c, d = pixel_list[i]
-            f_tot += d * (f - _f) ** 2
-            r_tot += d * (r - _r) ** 2
-            c_tot += d * (c - _c) ** 2
-            d_tot += d
+            for i in pixel_index:
+                f, r, c, d = pixel_list[i]
+                f_tot += d * (f - _f) ** 2
+                r_tot += d * (r - _r) ** 2
+                c_tot += d * (c - _c) ** 2
+                d_tot += d
 
-        _sf = math.sqrt(f_tot / d_tot)
-        _sr = math.sqrt(r_tot / d_tot)
-        _sc = math.sqrt(c_tot / d_tot)
+            _sf = math.sqrt(f_tot / d_tot)
+            _sr = math.sqrt(r_tot / d_tot)
+            _sc = math.sqrt(c_tot / d_tot)
+
+        except RuntimeError:
+            _f, _r, _c = 0, 0, 0
+            _sf, _sr, _sc = 0, 0, 0
 
         return _f, _r, _c, _sf, _sr, _sc
