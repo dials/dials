@@ -89,7 +89,7 @@ def print_reflection_stats(reflections, adjacency_list):
     print "Med bbox range: ", med_bbox_range
     print "Num overlaps: ", adjacency_list.num_edges()
 
-def run(xparm_path, integrate_path, image_frames, interactive):
+def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -213,6 +213,13 @@ def run(xparm_path, integrate_path, image_frames, interactive):
         from dials.util.command_line import interactive_console
         interactive_console(namespace=locals())
 
+    # Dump the reflections to file
+    if output_file:
+        import pickle
+        print "\nPickling the reflection list."
+        pickle.dump(reflections, open(output_file, 'wb'))
+      
+
 if __name__ == '__main__':
 
     from optparse import OptionParser
@@ -224,6 +231,9 @@ if __name__ == '__main__':
     parser.add_option('-i', '--interactive',
                       dest='interactive', action="store_true", default=False,
                       help='Enter an interactive python session')
+    parser.add_option('-o', '--output-file',
+                      dest='output_file', type="string", default="",
+                      help='Enter a destination filename for reflections')                      
 
     # Parse the arguments
     (options, args) = parser.parse_args()
@@ -232,4 +242,5 @@ if __name__ == '__main__':
     if len(args) < 3:
         print parser.print_help()
     else:
-        run(args[0], args[1], args[2:], options.interactive)
+        run(args[0], args[1], args[2:], options.interactive, 
+            options.output_file)

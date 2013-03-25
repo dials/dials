@@ -183,7 +183,7 @@ def display_predicted_spots(reflections, sweep, display_frame):
                   reflections, sweep[frame].as_numpy_array(), frame)
 
 def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
-                  interactive):
+                  interactive, output_file):
     """Read the required data from the file, predict the spots and display."""
 
     from dials.algorithms.spot_prediction import IndexGenerator
@@ -321,6 +321,13 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
         from dials.util.command_line import interactive_console
         interactive_console(namespace=locals())
 
+    # Dump the reflections to file
+    if output_file:
+        import pickle
+        print "\nPickling the reflection list."
+        pickle.dump(reflections, open(output_file, 'wb'))
+
+
 def display_frame_callback(option, opt, value, parser):
     """Parse display frame"""
     from dials.util.command_line import parse_range_list_string
@@ -343,6 +350,9 @@ if __name__ == '__main__':
     parser.add_option('-i', '--interactive',
                       dest='interactive', action="store_true", default=False,
                       help='Enter an interactive python session')
+    parser.add_option('-o', '--output-file',
+                      dest='output_file', type="string", default="",
+                      help='Enter a destination filename for reflections')
 
     # Parse the arguments
     (options, args) = parser.parse_args()
@@ -351,9 +361,11 @@ if __name__ == '__main__':
     if len(args) == 0:
         print parser.print_help()
     elif len(args) == 1:
-        predict_spots(args[0], None, None, None, options.interactive)
+        predict_spots(args[0], None, None, None, options.interactive, 
+            options.output_file)
     elif len(args) == 2:
-        predict_spots(args[0], args[1], None, None, options.interactive)
+        predict_spots(args[0], args[1], None, None, options.interactive, 
+            options.output_file)
     else:
         predict_spots(args[0], args[1], args[2:], options.display_frame,
-            options.interactive)
+            options.interactive, options.output_file)

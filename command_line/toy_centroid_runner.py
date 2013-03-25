@@ -1,6 +1,6 @@
 from __future__ import division
 
-def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
+def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file):
     '''From the geometry in the xparm file, the indices in integrate_hkl_file
     and the images corresponding to the sweep to be generated from the
     image file, calculate the shoeboxes and from there the centroids using the
@@ -123,11 +123,33 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file):
         centroid = ref.centroid_position + ref.centroid_variance
         print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
 
+    # Dump the reflections to file
+    if output_file:
+        import pickle
+        print "\nPickling the reflection list."
+        pickle.dump(reflections, open(output_file, 'wb'))
+
 if __name__ == '__main__':
-    import sys
+    
+    from optparse import OptionParser
 
-    xparm_file = sys.argv[1]
-    integrate_hkl_file = sys.argv[2]
-    image_file = sys.argv[3:]
+    # Specify the command line options
+    usage = "usage: %prog [options] /path/to/GXPARM.XDS"
+    usage += " /path/to/INTEGRATE.HKL /path/to/image.cbf"
 
-    toy_centroid_runner(xparm_file, integrate_hkl_file, image_file)
+    parser = OptionParser(usage)
+
+    parser.add_option('-o', '--output-file',
+                      dest='output_file', type="string", default="",
+                      help='Enter a destination filename for reflections')                      
+
+    # Parse the arguments
+    (options, args) = parser.parse_args()
+
+    # Print help if no arguments specified, otherwise call function
+    if len(args) < 3:
+        print parser.print_help()
+    else:
+        toy_centroid_runner(args[0], args[1], args[2:], options.output_file)
+    
+    
