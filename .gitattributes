@@ -116,6 +116,7 @@ framework/dftbx/tst_dftbx.py -text
 interfaces/__init__.py -text
 interfaces/centroid/__init__.py -text
 interfaces/centroid/centroid_interface_prototype.py -text
+/libtbx_config -text
 model/SConscript -text
 model/__init__.py -text
 model/data/SConscript -text
