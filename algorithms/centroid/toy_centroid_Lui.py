@@ -3,41 +3,67 @@
 # from __future__ import division
 from dials.interfaces.centroid.centroid_interface_prototype import \
     centroid_interface_prototype as centroid_interface
+
+from dials.interfaces.centroid.centroid_interface_prototype import \
+    CentroidException
+
 import numpy
 
 class toy_centroid_lui(centroid_interface):
-    def __init__(self, bounding_boxes, dxtbx_sweep_object):
+    def __init__(self, reflections):
 
-        self._image_size = dxtbx_sweep_object.get_detector().get_image_size()
 
-        centroid_interface.__init__(self, bounding_boxes, dxtbx_sweep_object)
+        centroid_interface.__init__(self, reflections)
 
         return
 
-    def compute_centroid_from_bbox(self, bbox):
+    def compute_centroid_from_bbox(self, shoebox):
 
         import math
 
-        f_min, f_max, r_min, r_max, c_min, c_max = bbox
+        f_size, r_size, c_size = shoebox.all()
+
+
+        # build the list of pixels - let's be dumb and just have a literal
+        # list - and assign density of a pixel to the centre of the
+        # volume...
+
+        pixel_list = []
+
+        for i in shoebox:
+            if i < 0:
+                raise CentroidException, 'negative pixels in cube'
+        data3d = shoebox.as_numpy_array()
+#       try:
+#           for f in range(f_size):
+#               for r in range(r_size):
+#                   for c in range(c_size):
+#                       pixel_list.append(
+#                           (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
+#
+#       except IndexError, e:
+#           raise CentroidException, 'data outside range'
+#
+
 
         # build a numpy array that represents a 3D block of pixels
-        f_size = f_max - f_min
-        r_size = r_max - r_min
-        c_size = c_max - c_min
-        data3d = numpy.zeros(f_size * r_size * c_size, dtype = int).reshape(f_size, r_size, c_size)
-        in_f = 0
-        in_r = 0
-        in_c = 0
-        for f in range(f_min, f_max):
-            data = self._sweep[f]
-            for r in range(r_min, r_max):
-                for c in range(c_min, c_max):
-                    data3d[in_f, in_r, in_c] = data[r * self._image_size[0] + c]
-                    in_c += 1
-                in_c = 0
-                in_r += 1
-            in_r = 0
-            in_f += 1
+#       f_size = f_max - f_min
+#       r_size = r_max - r_min
+#       c_size = c_max - c_min
+#       data3d = numpy.zeros(f_size * r_size * c_size, dtype = int).reshape(f_size, r_size, c_size)
+#       in_f = 0
+#       in_r = 0
+#       in_c = 0
+#       for f in range(f_min, f_max):
+#           data = self._sweep[f]
+#           for r in range(r_min, r_max):
+#               for c in range(c_min, c_max):
+#                   data3d[in_f, in_r, in_c] = data[r * self._image_size[0] + c]
+#                   in_c += 1
+#               in_c = 0
+#               in_r += 1
+#           in_r = 0
+#           in_f += 1
 
         tot_itst = 0.0
         tot_f = 0.0
@@ -48,7 +74,8 @@ class toy_centroid_lui(centroid_interface):
 
         cont = 0
         itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
-        for f in range(f_min, f_max):
+        #for f in range(f_min, f_max):
+        for f in range(f_size):
             print '_____________________________________________________________________________________________________ next image'
             data2d = data3d[f, :, :]
             print '___________________________________________________data2d before'
@@ -61,27 +88,35 @@ class toy_centroid_lui(centroid_interface):
             cont += 1
             locl_f = f * locl_itst
             tot_f += locl_f
-            tot_r += (row_cm + r_min) * locl_itst
-            tot_c += (col_cm + c_min) * locl_itst
+            tot_r += row_cm * locl_itst
+            tot_c += col_cm * locl_itst
             tot_itst += locl_itst
             #print f, locl_itst, locl_f
             tot_sr += (locl_sr * locl_itst) ** 2.0
             tot_sc += (locl_sc * locl_itst) ** 2.0
-
-        _f = tot_f / tot_itst
-        _r = tot_r / tot_itst
-        _c = tot_c / tot_itst
+        if tot_itst > 0.0:
+            _f = tot_f / tot_itst
+            _r = tot_r / tot_itst
+            _c = tot_c / tot_itst
+        else:
+            _f = -1
+            _r = -1
+            _c = -1
         cont = 0
         tot_sf = 0.0
 
-        for f in range(f_min, f_max):
+        #for f in range(f_min, f_max):
+        for f in range(f_size):
             tot_sf += ((f - _f) * itst[cont]) ** 2.0
             cont += 1
-
-        _sf = numpy.sqrt(tot_sf) / tot_itst
-        _sr = numpy.sqrt(tot_sr) / tot_itst
-        _sc = numpy.sqrt(tot_sc) / tot_itst
-
+        if tot_itst > 0.0:
+            _sf = numpy.sqrt(tot_sf) / tot_itst
+            _sr = numpy.sqrt(tot_sr) / tot_itst
+            _sc = numpy.sqrt(tot_sc) / tot_itst
+        else:
+            _sf = -1
+            _sr = -1
+            _sc = -1
         print '_f, _r, _c, _sf, _sr, _sc =', _f, _r, _c, _sf, _sr, _sc
 
         return _f, _r, _c, _sf, _sr, _sc

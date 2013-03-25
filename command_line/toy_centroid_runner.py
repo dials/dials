@@ -6,7 +6,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file)
     image file, calculate the shoeboxes and from there the centroids using the
     toy centroid code.'''
 
-    from dials.algorithms.centroid.toy_centroid import toy_centroid
+    from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
     from dials.algorithms.spot_prediction import IndexGenerator
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
@@ -90,7 +90,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file)
 
     # Create the spot predictor
     predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(), UB,
-                                scan.get_oscillation_range(deg=False))
+                                scan.get_oscillation_range(deg = False))
 
     reflections = reflection_frames(scan, ray_intersection(
         detector, predict_rays(miller_indices)))
@@ -116,13 +116,13 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file)
 
     # FIXME in here need to sort list by frame number
 
-    tc = toy_centroid(reflections)
+    tc = toy_centroid_lui(reflections)
     reflections = tc.get_reflections()
 
     for ref in reflections:
-        centroid = ref.centroid_position + ref.centroid_variance
-        print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
-
+        #centroid = ref.centroid_position + ref.centroid_variance
+        #print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
+        print ref
     # Dump the reflections to file
     if output_file:
         import pickle
@@ -130,7 +130,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file)
         pickle.dump(reflections, open(output_file, 'wb'))
 
 if __name__ == '__main__':
-    
+
     from optparse import OptionParser
 
     # Specify the command line options
@@ -140,8 +140,8 @@ if __name__ == '__main__':
     parser = OptionParser(usage)
 
     parser.add_option('-o', '--output-file',
-                      dest='output_file', type="string", default="",
-                      help='Enter a destination filename for reflections')                      
+                      dest = 'output_file', type = "string", default = "",
+                      help = 'Enter a destination filename for reflections')
 
     # Parse the arguments
     (options, args) = parser.parse_args()
@@ -151,5 +151,5 @@ if __name__ == '__main__':
         print parser.print_help()
     else:
         toy_centroid_runner(args[0], args[1], args[2:], options.output_file)
-    
-    
+
+
