@@ -23,8 +23,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
     from dxtbx.sweep import SweepFactory
     from iotbx.xds import integrate_hkl
 
-    from predict_spots import print_ub_matrix, print_reflection_stats, \
-        display_predicted_spots
+    from predict_spots import print_ub_matrix, display_predicted_spots
     sweep = SweepFactory.sweep(image_file)
     models = dxtbx.load(xparm_file)
     beam = models.get_beam()
@@ -106,7 +105,8 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
     extract_reflection_profiles(sweep, reflections)
 
     # Print some reflection statistics
-    print_reflection_stats(reflections, None)
+    from reflection_stats import ReflectionStats
+    print ReflectionStats(reflections)
 
 #    bounding_boxes = { }
 

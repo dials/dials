@@ -57,6 +57,7 @@ algorithms/spot_prediction/rotation_angles.h -text
 command_line/detector_max_resolution.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/predict_spots.py -text
+command_line/reflection_stats.py -text
 command_line/toy_centroid_runner.py -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text

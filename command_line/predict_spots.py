@@ -30,123 +30,6 @@ def print_call_info(callback, info, result_type):
         print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
-def print_reflection_stats(reflections, adjacency_list=None):
-    '''Print some reflection statistics.'''
-    import numpy
-
-    # Get the stats
-    num_reflections = len(reflections)
-    spot_x = [r.image_coord_px[0] for r in reflections]
-    spot_y = [r.image_coord_px[1] for r in reflections]
-    spot_z = [r.frame_number for r in reflections]
-    bounding_boxes = [r.bounding_box for r in reflections]
-
-    # Calculate the min, max, mean pixels in bounding box
-    bbox_count = [(s[1]-s[0])*(s[3]-s[2])*(s[5]-s[4]) for s in bounding_boxes]
-    min_bbox_size = numpy.min(bbox_count)
-    max_bbox_size = numpy.max(bbox_count)
-    med_bbox_size = int(numpy.median(bbox_count))
-
-    # Calculate the mib, max, mean fast range of bbox
-    bbox_fast_range = [s[5] - s[4] for s in bounding_boxes]
-    min_bbox_fast_range = numpy.min(bbox_fast_range)
-    max_bbox_fast_range = numpy.max(bbox_fast_range)
-    med_bbox_fast_range = int(numpy.median(bbox_fast_range))
-
-    # Calculate the mib, max, mean slow range of bbox
-    bbox_slow_range = [s[3] - s[2] for s in bounding_boxes]
-    min_bbox_slow_range = numpy.min(bbox_slow_range)
-    max_bbox_slow_range = numpy.max(bbox_slow_range)
-    med_bbox_slow_range = int(numpy.median(bbox_slow_range))
-
-    # Calculate the mib, max, mean frame range of bbox
-    bbox_frame_range = [s[1] - s[0] for s in bounding_boxes]
-    min_bbox_frame_range = numpy.min(bbox_frame_range)
-    max_bbox_frame_range = numpy.max(bbox_frame_range)
-    med_bbox_frame_range = int(numpy.median(bbox_frame_range))
-
-    # Get min/max/med bbox ranges
-    min_bbox_range = (min_bbox_fast_range,
-                      min_bbox_slow_range,
-                      min_bbox_frame_range)
-    max_bbox_range = (max_bbox_fast_range,
-                      max_bbox_slow_range,
-                      max_bbox_frame_range)
-    med_bbox_range = (med_bbox_fast_range,
-                      med_bbox_slow_range,
-                      med_bbox_frame_range)
-
-    bbox_count = (min_bbox_size, max_bbox_size, med_bbox_size)
-
-    # Print the stats
-    print ""
-    print "Num reflections:", num_reflections
-    print "Max spot x/y/z:", max(spot_x), max(spot_y), max(spot_z)
-    print "Min spot x/y/z:", min(spot_x), min(spot_y), min(spot_z)
-    print "Min/Max/Median bbox element count: ", bbox_count
-    print "Max bbox range (x, y, z): ", max_bbox_range
-    print "Min bbox range (x, y, z): ", min_bbox_range
-    print "Med bbox range (x, y, z): ", med_bbox_range
-    if adjacency_list:
-        print "Num overlaps: ", adjacency_list.num_edges()
-
-    # Get some overlapping stats
-    if adjacency_list:
-
-        # Loop through all the edges
-        min_overlap_x, min_overlap_y, min_overlap_z = 999999, 999999, 999999
-        max_overlap_x, max_overlap_y, max_overlap_z = 0, 0, 0
-        min_opixels = 999999
-        max_opixels = 0
-        for e in adjacency_list.edges():
-            v1, v2 = adjacency_list[e]
-            r1, r2 = reflections[v1], reflections[v2]
-            s1, s2 = r1.bounding_box, r2.bounding_box
-
-            # Z overlap
-            if s1[0] < s2[0]:
-              overlap_z = s1[1] - s2[0]
-            else:
-              overlap_z = s2[1] - s1[0]
-
-            # Y overlap
-            if s1[2] < s2[2]:
-              overlap_y = s1[3] - s2[2]
-            else:
-              overlap_y = s2[3] - s1[2]
-
-            # X overlap
-            if s1[4] < s2[4]:
-              overlap_x = s1[5] - s2[4]
-            else:
-              overlap_x = s2[5] - s1[4]
-
-            # calculate the common pixels
-            opixels = overlap_x * overlap_y * overlap_z
-
-            # Set min overlap
-            if overlap_x < min_overlap_x: min_overlap_x = overlap_x
-            if overlap_y < min_overlap_y: min_overlap_y = overlap_y
-            if overlap_z < min_overlap_z: min_overlap_z = overlap_z
-
-            # Set max overlap
-            if overlap_x > max_overlap_x: max_overlap_x = overlap_x
-            if overlap_y > max_overlap_y: max_overlap_y = overlap_y
-            if overlap_z > max_overlap_z: max_overlap_z = overlap_z
-
-            # Set min/max common pixels
-            if opixels < min_opixels: min_opixels = opixels
-            if opixels > max_opixels: max_opixels = opixels
-
-        min_overlap_xyz = (min_overlap_x, min_overlap_y, min_overlap_z)
-        max_overlap_xyz = (max_overlap_x, max_overlap_y, max_overlap_z)
-
-        print "Num overlaps: ", adjacency_list.num_edges()
-        print "Max overlap (x, y, z): ", max_overlap_xyz
-        print "Min overlap (x, y, z): ", min_overlap_xyz
-        print "Most common pixels: ", max_opixels
-        print "Least common pixels: ", min_opixels
-
 def display_predicted_spots_on_frame(reflections, image, frame):
     """Show spots on this frame"""
     from matplotlib import pylab, cm
@@ -310,7 +193,8 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
         adjacency_list = None
 
     # Print some reflection statistics
-    print_reflection_stats(reflections, adjacency_list)
+    from reflection_stats import ReflectionStats
+    print ReflectionStats(reflections, adjacency_list)
 
     # Show the predicted spots
     if image_frames:

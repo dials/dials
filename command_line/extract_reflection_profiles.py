@@ -30,65 +30,6 @@ def print_call_info(callback, info, result_type):
         print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
-def print_reflection_stats(reflections, adjacency_list):
-    '''Print some reflection statistics.'''
-    import numpy
-
-    # Get the stats
-    num_reflections = len(reflections)
-    spot_x = [r.image_coord_px[0] for r in reflections]
-    spot_y = [r.image_coord_px[1] for r in reflections]
-    spot_z = [r.frame_number for r in reflections]
-    bounding_boxes = [r.bounding_box for r in reflections]
-
-    # Calculate the min, max, mean pixels in bounding box
-    bbox_count = [(s[1]-s[0])*(s[3]-s[2])*(s[5]-s[4]) for s in bounding_boxes]
-    min_bbox_size = numpy.min(bbox_count)
-    max_bbox_size = numpy.max(bbox_count)
-    med_bbox_size = int(numpy.median(bbox_count))
-
-    # Calculate the mib, max, mean fast range of bbox
-    bbox_fast_range = [s[5] - s[4] for s in bounding_boxes]
-    min_bbox_fast_range = numpy.min(bbox_fast_range)
-    max_bbox_fast_range = numpy.max(bbox_fast_range)
-    med_bbox_fast_range = int(numpy.median(bbox_fast_range))
-
-    # Calculate the mib, max, mean slow range of bbox
-    bbox_slow_range = [s[3] - s[2] for s in bounding_boxes]
-    min_bbox_slow_range = numpy.min(bbox_slow_range)
-    max_bbox_slow_range = numpy.max(bbox_slow_range)
-    med_bbox_slow_range = int(numpy.median(bbox_slow_range))
-
-    # Calculate the mib, max, mean frame range of bbox
-    bbox_frame_range = [s[1] - s[0] for s in bounding_boxes]
-    min_bbox_frame_range = numpy.min(bbox_frame_range)
-    max_bbox_frame_range = numpy.max(bbox_frame_range)
-    med_bbox_frame_range = int(numpy.median(bbox_frame_range))
-
-    # Get min/max/med bbox ranges
-    min_bbox_range = (min_bbox_fast_range,
-                      min_bbox_slow_range,
-                      min_bbox_frame_range)
-    max_bbox_range = (max_bbox_fast_range,
-                      max_bbox_slow_range,
-                      max_bbox_frame_range)
-    med_bbox_range = (med_bbox_fast_range,
-                      med_bbox_slow_range,
-                      med_bbox_frame_range)
-
-    bbox_count = (min_bbox_size, max_bbox_size, med_bbox_size)
-
-    # Print the stats
-    print ""
-    print "Num reflections:", num_reflections
-    print "Max spot x/y/z:", max(spot_x), max(spot_y), max(spot_z)
-    print "Min spot x/y/z:", min(spot_x), min(spot_y), min(spot_z)
-    print "Min/Max/Median bbox element count: ", bbox_count
-    print "Max bbox range: ", max_bbox_range
-    print "Min bbox range: ", min_bbox_range
-    print "Med bbox range: ", med_bbox_range
-    print "Num overlaps: ", adjacency_list.num_edges()
-
 def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     """Read the required data from the file, predict the spots and display."""
 
@@ -206,7 +147,8 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
         "Copying reflection profiles from sweep", "reflections")
 
     # Print some reflection statistics
-    print_reflection_stats(reflections, adjacency_list)
+    from reflection_stats import ReflectionStats
+    print ReflectionStats(reflections, adjacency_list)
 
     # Enter an interactive python session
     if interactive:
