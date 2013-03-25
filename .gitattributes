@@ -167,6 +167,7 @@ scratch/dgw/refinement/tst_finite_diffs.py -text
 scratch/dgw/refinement/tst_orientation_refinement.py -text
 scratch/dgw/refinement/tst_prediction_parameters.py -text
 scratch/dgw/refinement/tst_ref_passage_categorisation.py -text
+scratch/dgw/refinement/tst_refine_fn.py -text
 scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
