@@ -11,11 +11,14 @@
 #ifndef DIALS_MODEL_DATA_REFLECTION_H
 #define DIALS_MODEL_DATA_REFLECTION_H
 
+#include <iostream>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/shared.h>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/simple_io.h>
+#include <scitbx/array_family/simple_tiny_io.h>
 #include <cctbx/miller.h>
 
 namespace dials { namespace model {
@@ -256,6 +259,23 @@ namespace dials { namespace model {
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;
   };
+
+  /** Print reflection to std::out */
+  inline
+  std::ostream& operator<<(std::ostream &os, const Reflection &r) {
+    os << "Reflection:\n";
+    os << "  miller index:      " << r.get_miller_index().as_tiny() << "\n";
+    os << "  rotation angle:    " << r.get_rotation_angle() << "\n";
+    os << "  beam vector:       " << r.get_beam_vector().as_tiny() << "\n";
+    os << "  image coord (mm):  " << r.get_image_coord_mm().as_tiny() << "\n";
+    os << "  image coord (px):  " << r.get_image_coord_px().as_tiny() << "\n";
+    os << "  frame number:      " << r.get_frame_number() << "\n";
+    os << "  panel number:      " << r.get_panel_number() << "\n";
+    os << "  bounding box:      " << r.get_bounding_box() << "\n";
+    os << "  centroid position: " << r.get_centroid_position().as_tiny() << "\n";
+    os << "  centroid variance: " << r.get_centroid_variance().as_tiny() << "\n";
+    return os;
+  }
 
   typedef scitbx::af::flex <Reflection>::type ReflectionList;
 

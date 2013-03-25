@@ -10,69 +10,83 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <boost/format.hpp>
+#include <sstream>
 #include <string>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
+#include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/reflection.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  std::string reflection_base_to_string(const ReflectionBase &reflection) {
-    boost::format fmt(
-      "Reflection:\n"
-      "    miller index:    (%1%, %2%, %3%)");
-        
-    fmt % reflection.get_miller_index()[0];
-    fmt % reflection.get_miller_index()[1];
-    fmt % reflection.get_miller_index()[2];
-    return fmt.str();
+  using scitbx::af::boost_python::flex_pickle_double_buffered;
+
+  std::string reflection_to_string(const Reflection &reflection) {
+    std::stringstream ss;
+    ss << reflection;
+    return ss.str();
   }
 
-  std::string reflection_to_string(
-      const Reflection &reflection) {
-    boost::format fmt(
-      "Reflection:\n"
-      "    miller index:     (%1%, %2%, %3%)\n"
-      "    rotation angle:   %4%\n"
-      "    beam vector:      (%5%, %6%, %7%)\n"
-      "    image coord (px): (%8%, %9%)\n"
-      "    image coord (mm): (%10%, %11%)\n"
-      "    frame number:     %12%\n"
-      "    panel number:     %13%\n"
-      "    bounding_box:     (%14%, %15%, %16%, %17%, %18%, %19%)\n");
-//      "    centroid pos:     (%20%, %21%, %22%)\n"
-//      "    centroid var:     (%23%, %24%, %24%)\n");
-        
-    fmt % reflection.get_miller_index()[0];
-    fmt % reflection.get_miller_index()[1];
-    fmt % reflection.get_miller_index()[2];
-    fmt % reflection.get_rotation_angle();
-    fmt % reflection.get_beam_vector()[0];
-    fmt % reflection.get_beam_vector()[1];
-    fmt % reflection.get_beam_vector()[2];
-    fmt % reflection.get_image_coord_px()[0];
-    fmt % reflection.get_image_coord_px()[1];
-    fmt % reflection.get_image_coord_mm()[0];
-    fmt % reflection.get_image_coord_mm()[1];
-    fmt % reflection.get_frame_number();
-    fmt % reflection.get_panel_number();
-    fmt % reflection.get_bounding_box()[0];
-    fmt % reflection.get_bounding_box()[1];
-    fmt % reflection.get_bounding_box()[2];
-    fmt % reflection.get_bounding_box()[3];
-    fmt % reflection.get_bounding_box()[4];
-    fmt % reflection.get_bounding_box()[5];
-//    fmt % reflection.get_centroid_position()[0];
-//    fmt % reflection.get_centroid_position()[1];
-//    fmt % reflection.get_centroid_position()[2];
-//    fmt % reflection.get_centroid_variance()[0];
-//    fmt % reflection.get_centroid_variance()[1];
-//    fmt % reflection.get_centroid_variance()[2];
-    return fmt.str();
-  }
+  struct ReflectionPickleSuite : boost::python::pickle_suite {
+//    static
+//    boost::python::tuple getinitargs(const Reflection &r) {
+//      // ...
+//    }
+
+    static
+    boost::python::tuple getstate(boost::python::object obj) {
+      const Reflection &r = extract<const Reflection&>(obj)();
+      return boost::python::make_tuple(
+        obj.attr("__dict__"),
+        r.get_miller_index(),
+        r.get_rotation_angle(),
+        r.get_beam_vector(),
+        r.get_image_coord_mm(),
+        r.get_image_coord_px(),
+        r.get_frame_number(),
+        r.get_panel_number(),
+        r.get_bounding_box(),
+        r.get_centroid_position(),
+        r.get_centroid_variance(),
+        r.get_shoebox(),
+        r.get_shoebox_weights(),
+        r.get_transformed_shoebox());
+    }
+
+    static
+    void setstate(boost::python::object obj, boost::python::tuple state) {
+      Reflection &r = extract<Reflection&>(obj)();
+      
+      // Check that the number of items is correct
+      if (len(state) != 14) {
+        PyErr_SetObject(PyExc_ValueError, (
+          "expected 14-item tuple in call to __setstate__; got %s" 
+          % state).ptr());
+        throw_error_already_set();
+      }
+
+      // restore the object's __dict__
+      dict d = extract<dict>(obj.attr("__dict__"))();
+      d.update(state[0]);
+      
+      // restore the internal state of the C++ reflection object
+      r.set_miller_index(extract<cctbx::miller::index<> >(state[1]));
+      r.set_rotation_angle(extract<double>(state[2]));
+      r.set_beam_vector(extract<vec3<double> >(state[3]));
+      r.set_image_coord_mm(extract<vec2<double> >(state[4]));
+      r.set_image_coord_px(extract<vec2<double> >(state[5]));
+      r.set_frame_number(extract<double>(state[6]));
+      r.set_panel_number(extract<int>(state[7]));
+      r.set_bounding_box(extract<int6>(state[8]));
+      r.set_centroid_position(extract<vec3<double> >(state[9]));
+      r.set_centroid_variance(extract<vec3<double> >(state[10]));
+      r.set_shoebox(extract<flex_int>(state[11]));
+      r.set_shoebox_weights(extract<flex_double>(state[12]));
+      r.set_transformed_shoebox(extract<flex_double>(state[13]));
+    }
+  };
 
   void export_reflection()
   {
@@ -82,8 +96,7 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("miller_index", 
         &Reflection::get_miller_index,
         &Reflection::set_miller_index)
-      .def("is_zero", &Reflection::is_zero)
-      .def("__str__", &reflection_base_to_string);
+      .def("is_zero", &Reflection::is_zero);
 
     class_<Reflection, bases<ReflectionBase> > ("Reflection")
       .def(init <const Reflection &>())
@@ -125,9 +138,12 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("centroid_variance",
         &Reflection::get_centroid_variance,
         &Reflection::set_centroid_variance)
-      .def("__str__", &reflection_to_string);          
+      .def("__str__", &reflection_to_string)
+      .def_pickle(ReflectionPickleSuite());          
 
-    scitbx::af::boost_python::flex_wrapper <Reflection>::plain("ReflectionList");        
+    scitbx::af::boost_python::flex_wrapper 
+      <Reflection>::plain("ReflectionList")
+        .enable_pickling();        
   }
 
 }}} // namespace dials::model::boost_python
