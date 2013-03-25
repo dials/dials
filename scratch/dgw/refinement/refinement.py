@@ -73,6 +73,7 @@ def get_fd_gradients(mp, deltas):
         fwd_state = mp.get_state()
 
         fd_grad.append((fwd_state - rev_state) / deltas[i])
+
         p_vals[i] = val
 
     # return to the initial state
@@ -93,3 +94,89 @@ def print_model_geometry(beam = None, detector = None, crystal = None):
         print "crystal unit cell = %.4f, %.4f, %.4f, %.4f, %.4f, %.4f" % uc.parameters()
         print "crystal orientation matrix U ="
         print crystal.get_U().round(4)
+
+def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
+           hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles):
+
+    """Simple refinement interface for the centroid refinement sprint"""
+
+    # Reflection prediction
+    from dials.scratch.dgw.prediction import ReflectionPredictor
+
+    # Model parameterisations
+    from dials.scratch.dgw.refinement.detector_parameters import \
+        DetectorParameterisationSinglePanel
+    from dials.scratch.dgw.refinement.source_parameters import \
+        BeamParameterisationOrientation
+    from dials.scratch.dgw.refinement.crystal_parameters import \
+        CrystalOrientationParameterisation, CrystalUnitCellParameterisation
+
+    # Symmetry constrained parameterisation for the unit cell
+    #from cctbx.uctbx import unit_cell
+    #from rstbx.symmetry.constraints.parameter_reduction import \
+    #    symmetrize_reduce_enlarge
+
+    # Parameterisation of the prediction equation
+    from dials.scratch.dgw.refinement.prediction_parameters import \
+        DetectorSpacePredictionParameterisation
+
+    # Imports for the target function
+    from dials.scratch.dgw.refinement.target import \
+        LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+
+    # Import the refinement engine
+    from dials.scratch.dgw.refinement.engine import GaussNewtonIterations
+
+    ref_predictor = ReflectionPredictor(crystal, beam, goniometer, sweep_range)
+
+    ###########################
+    # Parameterise the models #
+    ###########################
+
+    det_param = DetectorParameterisationSinglePanel(detector)
+    s0_param = BeamParameterisationOrientation(beam)
+    xlo_param = CrystalOrientationParameterisation(crystal)
+    xluc_param = CrystalUnitCellParameterisation(crystal)
+
+    # Fix beam to the X-Z plane (imgCIF geometry)
+    s0_param.set_fixed([True, False])
+
+    ########################################################################
+    # Link model parameterisations together into a parameterisation of the #
+    # prediction equation                                                  #
+    ########################################################################
+
+    pred_param = DetectorSpacePredictionParameterisation(
+    detector, beam, crystal, goniometer, [det_param], [s0_param],
+    [xlo_param], [xluc_param])
+
+    #####################################
+    # Select reflections for refinement #
+    #####################################
+
+    refman = ReflectionManager(hkls, svecs,
+                            d1s, sigd1s,
+                            d2s, sigd2s,
+                            angles, sigangles,
+                            beam, goniometer)
+
+    ##############################
+    # Set up the target function #
+    ##############################
+
+    mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
+        refman, ref_predictor, detector, pred_param, image_width)
+
+    ################################
+    # Set up the refinement engine #
+    ################################
+
+    refiner = GaussNewtonIterations(mytarget, pred_param, log=None, verbosity=0)
+
+    ###################################
+    # Do refinement and return models #
+    ###################################
+    refiner.run()
+
+    # These are set by side effect anyway, so don't strictly have to be returned
+    return(beam, goniometer, crystal, detector)
