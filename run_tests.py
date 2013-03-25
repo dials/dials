@@ -10,7 +10,7 @@ tst_list = (
     "$D/test/algorithms/integration/tst_from_beam_vector_to_xds.py",
     "$D/test/algorithms/integration/tst_from_xds_e3_to_phi.py",
     "$D/test/algorithms/integration/tst_from_xds_to_beam_vector.py",
-    "$D/test/algorithms/integration/tst_from_xds_coordinate_system.py",
+    "$D/test/algorithms/integration/tst_xds_coordinate_system.py",
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
     "$B/test/algorithms/spatial_indexing/tst_octree",
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
