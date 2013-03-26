@@ -101,7 +101,7 @@ class FilteredCentroid(centroid_interface):
         centroid_interface.__init__(self, reflections)
 
 
-    def compute_centroid_from_bbox(self, shoebox):
+    def compute_shoebox_centroid(self, shoebox):
         """ Compute the centroid """
         from scitbx.array_family import flex
         import math

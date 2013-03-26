@@ -18,7 +18,7 @@ class centroid_interface_prototype(object):
         '''Return the list of reflections'''
         return self._reflections
 
-    def compute_centroid_from_bbox(self, shoebox):
+    def compute_shoebox_centroid(self, shoebox):
         '''Overload me: shoebox has the form of the subset of data which
         should contain all pixels identified within the reflection bounding
         box.'''
@@ -36,7 +36,7 @@ class centroid_interface_prototype(object):
             try:
                 
                 # Compute the centroid
-                f, r, c, sf, sr, sc = self.compute_centroid_from_bbox(
+                f, r, c, sf, sr, sc = self.compute_shoebox_centroid(
                     ref.shoebox)
 
                 # FIXME observe that bounding_box here has the elements in

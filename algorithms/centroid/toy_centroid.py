@@ -13,7 +13,7 @@ class toy_centroid(centroid_interface):
 
         return
 
-    def compute_centroid_from_bbox(self, shoebox):
+    def compute_shoebox_centroid(self, shoebox):
 
         import math
 
