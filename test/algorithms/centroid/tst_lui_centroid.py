@@ -18,17 +18,24 @@ def tst_lui_centroid():
 
     sweep = SweepFactory.sweep(frames)
 
-    bounding_boxes = {
-        ( 0, 0, 0 ):[( 0, 8, 1022, 1036, 1070, 1083 )]
-        }
+    from dials.model.data import Reflection, ReflectionList
+    ref = Reflection()
+    ref.bounding_box = (1070, 1083, 1022, 1036, 0, 8)
 
-    tc = toy_centroid_lui( bounding_boxes, sweep )
+    ref.shoebox = sweep.to_array(
+        (ref.bounding_box[4], ref.bounding_box[5],
+         ref.bounding_box[2], ref.bounding_box[3],
+         ref.bounding_box[0], ref.bounding_box[1]))
 
-    centroids = tc.get_centroids()
+    reflections = ReflectionList()
+    reflections.append(ref)
 
-    for hkl in centroids:
-        for centroid in centroids[hkl]:
-            print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
+    tc = toy_centroid_lui(reflections)
+
+    centroids = tc.get_reflections()
+
+    for r in reflections:
+        print r
 
 if __name__ == '__main__':
     tst_lui_centroid()
