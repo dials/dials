@@ -11,7 +11,7 @@
 
 Much of the benefit of the hybrid approach to CCTBX\footnote{http://cctbx.sourceforge.net/current/tour.html\#thinking-hybrid} is the ability to move computationally expensive steps from Python to C++ relatively straightforwardly. It is however helpful to have an example of how to create C++ extensions and compile these with the existing compilation tools. The aim of this document is to provide this example with a toy example, toytbx. Some introductory information is however useful.
 
-Within CCTBX C++ code is made available to Python using the Boost Python framework\footnote{http://www.boost.org/libs/python/doc/} and compiled with SCons\footnote{http://www.scons.org/}. Two steps are therefore needed to expose C++ code: writing a wrapper using Boost Python and a SConscript for compilation. Using this libtbx does most of the work. In addition it is nice to expose functionality as ``pseudo-executable'' programs e.g. toytbx.task - this is also handled automatically by libtbx.
+Within CCTBX C++ code is made available to Python using the Boost Python framework\footnote{http://www.boost.org/libs/python/doc/} and compiled with SCons\footnote{http://www.scons.org/}. Two steps are therefore needed to expose C++ code: writing a wrapper using Boost Python and a SConscript for compilation. Additionally a libtbx_config file is needed to specify the project dependencies. Using this libtbx does most of the work. In addition it is nice to expose functionality as ``pseudo-executable'' programs e.g. toytbx.task - this is also handled automatically by libtbx.
 
 \section{C++ Code}
 
@@ -82,6 +82,18 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
 }
 
 This can refer to other compiled modules to ensure dependencies are correctly built. With this file and ext.cpp in the toytbx directory, accessible to libtbx.configure, libtbx.configure toytbx may be run, followed by make, which will correctly compile the extension module.
+
+If the project has dependencies, a libtbx_config file is needed for the libtbx to build projects in the correct order. The example for toytbx is shown below.
+
+{\small
+\begin{verbatim}
+{
+  "modules_required_for_build": ["boost", "scitbx"],
+  "modules_required_for_use": ["boost_adaptbx"],
+  "optional_modules": []
+}
+\end{verbatim}
+}
 
 \section{Tidying}
 

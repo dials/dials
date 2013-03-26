@@ -74,6 +74,7 @@ doc/developer/cctbx_introduction_3/toytbx/SConscript -text
 doc/developer/cctbx_introduction_3/toytbx/__init__.py -text
 doc/developer/cctbx_introduction_3/toytbx/command_line/make_list.py -text
 doc/developer/cctbx_introduction_3/toytbx/ext.cpp -text
+doc/developer/cctbx_introduction_3/toytbx/libtbx_config -text
 doc/developer/cctbx_introduction_3/toytbx/tst_toytbx.py -text
 doc/developer/conventions/conventions.tex -text
 doc/developer/dials.bib -text
