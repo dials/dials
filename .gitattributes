@@ -439,6 +439,7 @@ test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
+test/model/data/tst_reflection_pickle.py -text
 util/__init__.py -text
 util/command_line.py -text
 util/io.py -text

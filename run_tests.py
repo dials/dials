@@ -3,14 +3,15 @@ from libtbx import test_utils
 import libtbx.load_env
 
 tst_list = (
-#    "$D/test/algorithms/spot_prediction/tst_index_generator.py",
-#    "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",
-#    "$D/test/algorithms/spot_prediction/tst_rotation_angles.py",
-#    "$D/test/algorithms/spot_prediction/tst_spot_prediction.py",
-#    "$D/test/algorithms/integration/tst_from_beam_vector_to_xds.py",
-#    "$D/test/algorithms/integration/tst_from_xds_e3_to_phi.py",
-#    "$D/test/algorithms/integration/tst_from_xds_to_beam_vector.py",
-#    "$D/test/algorithms/integration/tst_xds_coordinate_system.py",
+    "$D/test/model/data/tst_reflection_pickle.py",
+    "$D/test/algorithms/spot_prediction/tst_index_generator.py",
+    "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",
+    "$D/test/algorithms/spot_prediction/tst_rotation_angles.py",
+    "$D/test/algorithms/spot_prediction/tst_spot_prediction.py",
+    "$D/test/algorithms/integration/tst_from_beam_vector_to_xds.py",
+    "$D/test/algorithms/integration/tst_from_xds_e3_to_phi.py",
+    "$D/test/algorithms/integration/tst_from_xds_to_beam_vector.py",
+    "$D/test/algorithms/integration/tst_xds_coordinate_system.py",
     "$D/test/algorithms/centroid/tst_filtered_centroid.py",
     "$D/test/algorithms/centroid/tst_lui_centroid.py",
     "$D/test/algorithms/centroid/tst_toy_centroid.py",
