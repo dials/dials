@@ -54,9 +54,9 @@ class centroid_interface_prototype(object):
                 f, r, c, sf, sr, sc = self.compute_shoebox_centroid(ref.shoebox)
 
                 # Add the bounding box offset to the centroid position
-                f += ref.bounding_box[0]
+                f += ref.bounding_box[4]
                 r += ref.bounding_box[2]
-                c += ref.bounding_box[4]
+                c += ref.bounding_box[0]
 
                 # Add centroid data to reflection
                 ref.centroid_position = (c, r, f)

@@ -30,9 +30,9 @@ namespace dials { namespace algorithms {
   void allocate_reflection_profiles(ReflectionList &reflections) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
-      int size_z = r.get_bounding_box()[1] - r.get_bounding_box()[0];
+      int size_z = r.get_bounding_box()[5] - r.get_bounding_box()[4];
       int size_y = r.get_bounding_box()[3] - r.get_bounding_box()[2];
-      int size_x = r.get_bounding_box()[5] - r.get_bounding_box()[4];
+      int size_x = r.get_bounding_box()[1] - r.get_bounding_box()[0];
       r.set_shoebox(flex_int(flex_grid<>(size_z, size_y, size_x)));
     }
   }
@@ -54,9 +54,10 @@ namespace dials { namespace algorithms {
       // Get a reference to a reflection
       Reflection &r = reflections[index[i]];
       int6 bounding_box = r.get_bounding_box();
-      int k0 = bounding_box[0];
+      int i0 = bounding_box[0], i1 = bounding_box[1];
       int j0 = bounding_box[2], j1 = bounding_box[3];
-      int i0 = bounding_box[4], i1 = bounding_box[5];
+      int k0 = bounding_box[4];
+
       int k = array_index - k0;
 
       // Get the image size

@@ -147,11 +147,11 @@ class ReflectionStats(object):
             r1, r2 = self.reflections[v1], self.reflections[v2]
             s1, s2 = r1.bounding_box, r2.bounding_box
 
-            # Z overlap
+            # X overlap
             if s1[0] < s2[0]:
-              overlap_z = s1[1] - s2[0]
+              overlap_x = s1[1] - s2[0]
             else:
-              overlap_z = s2[1] - s1[0]
+              overlap_x = s2[1] - s1[0]
 
             # Y overlap
             if s1[2] < s2[2]:
@@ -159,11 +159,11 @@ class ReflectionStats(object):
             else:
               overlap_y = s2[3] - s1[2]
 
-            # X overlap
+            # Z overlap
             if s1[4] < s2[4]:
-              overlap_x = s1[5] - s2[4]
+              overlap_z = s1[5] - s2[4]
             else:
-              overlap_x = s2[5] - s1[4]
+              overlap_z = s2[5] - s1[4]
 
             # calculate the common pixels
             opixels = overlap_x * overlap_y * overlap_z
