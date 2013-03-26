@@ -17,53 +17,17 @@ class toy_centroid_lui(centroid_interface):
 
         return
 
-    def compute_centroid_from_bbox(self, shoebox):
+    def compute_shoebox_centroid(self, shoebox):
 
-        import math
+#        import math
 
         f_size, r_size, c_size = shoebox.all()
 
-
-        # build the list of pixels - let's be dumb and just have a literal
-        # list - and assign density of a pixel to the centre of the
-        # volume...
-
-        pixel_list = []
 
         for i in shoebox:
             if i < 0:
                 raise CentroidException, 'negative pixels in cube'
         data3d = shoebox.as_numpy_array()
-#       try:
-#           for f in range(f_size):
-#               for r in range(r_size):
-#                   for c in range(c_size):
-#                       pixel_list.append(
-#                           (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
-#
-#       except IndexError, e:
-#           raise CentroidException, 'data outside range'
-#
-
-
-        # build a numpy array that represents a 3D block of pixels
-#       f_size = f_max - f_min
-#       r_size = r_max - r_min
-#       c_size = c_max - c_min
-#       data3d = numpy.zeros(f_size * r_size * c_size, dtype = int).reshape(f_size, r_size, c_size)
-#       in_f = 0
-#       in_r = 0
-#       in_c = 0
-#       for f in range(f_min, f_max):
-#           data = self._sweep[f]
-#           for r in range(r_min, r_max):
-#               for c in range(c_min, c_max):
-#                   data3d[in_f, in_r, in_c] = data[r * self._image_size[0] + c]
-#                   in_c += 1
-#               in_c = 0
-#               in_r += 1
-#           in_r = 0
-#           in_f += 1
 
         tot_itst = 0.0
         tot_f = 0.0
@@ -76,24 +40,25 @@ class toy_centroid_lui(centroid_interface):
         itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
         #for f in range(f_min, f_max):
         for f in range(f_size):
-            print '_____________________________________________________________________________________________________ next image'
+            print '__________________________________________________________________________________ new image'
             data2d = data3d[f, :, :]
-            print '___________________________________________________data2d before'
-            print data2d
-            row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
-            print '___________________________________________________data2d after'
-            print data2d
+            if numpy.sum(data2d) > 0:
+                print '______________________data2d before'
+                print data2d
+                row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
+                print '______________________data2d after'
+                print data2d
 
-            itst[cont] = locl_itst
-            cont += 1
-            locl_f = f * locl_itst
-            tot_f += locl_f
-            tot_r += row_cm * locl_itst
-            tot_c += col_cm * locl_itst
-            tot_itst += locl_itst
-            #print f, locl_itst, locl_f
-            tot_sr += (locl_sr * locl_itst) ** 2.0
-            tot_sc += (locl_sc * locl_itst) ** 2.0
+                itst[cont] = locl_itst
+                cont += 1
+                tot_f += f * locl_itst
+                tot_r += row_cm * locl_itst
+                tot_c += col_cm * locl_itst
+                tot_itst += locl_itst
+                #print f, locl_itst, locl_f
+                tot_sr += (locl_sr * locl_itst) ** 2.0
+                tot_sc += (locl_sc * locl_itst) ** 2.0
+
         if tot_itst > 0.0:
             _f = tot_f / tot_itst
             _r = tot_r / tot_itst
@@ -152,7 +117,7 @@ def single_spot_integrate_2d(data2d):
             dif_tot += numpy.abs(data2d[y, x] - data2dsmoth[y, x])     #
     dif_avg = dif_tot / cont                                           #
     print 'dif_avg=', dif_avg                                          #
-    threshold_shift = dif_avg * 3.0                                    #
+    threshold_shift = dif_avg * 2.0                                    #
 #######################################################################################################
     print 'threshold_shift =', threshold_shift
 
@@ -168,15 +133,14 @@ def single_spot_integrate_2d(data2d):
             if diffdata2d[y, x] == 1:
                 diffdata2d_ext[y - ext_area:y + ext_area + 1, x - ext_area:x + ext_area + 1] = 1
 
-    print '_________________________________________diffdata2d'
-    print diffdata2d
-    print '_________________________________________diffdata2d_ext'
-    print diffdata2d_ext
-    xbord = int(x_to / 5)
-    ybord = int(y_to / 5)
+    print '_____________diffdata2d'
+    #print diffdata2d
+    print '_____________diffdata2d_ext'
+    #print diffdata2d_ext
+
+
 ############################################################################### flat background
-                                                                              # version
-    tot_bkgr = 0.0                                                            #
+    tot_bkgr = 0.0                                                            # version
     cont = 0.0                                                                #
     for y in range(0, y_to, 1):                                               #
         for x in range(0, x_to, 1):                                           #
@@ -194,26 +158,24 @@ def single_spot_integrate_2d(data2d):
 ###############################################################################
 
 ############################################################################### curved background
-#                                                                            # version
-#                                                                            #
-#   for y in range(0, y_to, 1):                                              #
-#       for x in range(0, x_to, 1):                                          #
-#           if diffdata2d_ext[y, x] == 1:                                    #
-#               top_av = float(numpy.sum(data2d[:ybord, x - 1:x + 2]))       #
-#               bot_av = float(numpy.sum(data2d[y_to - ybord:, x - 1:x + 2]))#
-#               lft_av = float(numpy.sum(data2d[y - 1:y + 2, xbord]))        #
-#               rgt_av = float(numpy.sum(data2d[y - 1:y + 2, x_to - xbord:]))#
-#               bkgr = (top_av + bot_av + lft_av + rgt_av) / 4.0             #
-#               if data2d[y, x] > bkgr:                                      #
-#                   data2d[y, x] = data2d[y, x] - bkgr                       #
-#               else:                                                        #
-#                   data2d[y, x] = 0                                         #
-#   for y in range(0, y_to, 1):                                              #
-#       for x in range(0, x_to, 1):                                          #
-#           if diffdata2d_ext[y, x] == 0:                                    #
-#               data2d[y, x] = 0                                             #
-#                                                                            #
-#                                                                            #
+#   xbord = int(x_to / 5)                                                     # version
+#   ybord = int(y_to / 5)                                                     #
+#   for y in range(0, y_to, 1):                                               #
+#       for x in range(0, x_to, 1):                                           #
+#           if diffdata2d_ext[y, x] == 1:                                     #
+#               top_av = float(numpy.sum(data2d[:ybord, x - 1:x + 2]))        #
+#               bot_av = float(numpy.sum(data2d[y_to - ybord:, x - 1:x + 2])) #
+#               lft_av = float(numpy.sum(data2d[y - 1:y + 2, xbord]))         #
+#               rgt_av = float(numpy.sum(data2d[y - 1:y + 2, x_to - xbord:])) #
+#               bkgr = (top_av + bot_av + lft_av + rgt_av) / 4.0              #
+#               if data2d[y, x] > bkgr:                                       #
+#                   data2d[y, x] = data2d[y, x] - bkgr                        #
+#               else:                                                         #
+#                   data2d[y, x] = 0                                          #
+#   for y in range(0, y_to, 1):                                               #
+#       for x in range(0, x_to, 1):                                           #
+#           if diffdata2d_ext[y, x] == 0:                                     #
+#               data2d[y, x] = 0                                              #
 ###############################################################################
     x_num_sum = 0.0
     y_num_sum = 0.0
