@@ -24,7 +24,8 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
 		LIBS=env_etc.libm + [ 
 		"cctbx",
 		"rstbx",
-		"scitbx_boost_python"])
+		"scitbx_boost_python",
+		"boost_python"])
 
     env.SConscript('model/SConscript', exports={ 'env' : env })
     env.SConscript('algorithms/SConscript', exports={ 'env' : env })

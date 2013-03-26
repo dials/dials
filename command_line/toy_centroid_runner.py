@@ -136,7 +136,7 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
     # Dump the reflections to file
     if output_file:
         import pickle
-        print "\nPickling the reflection list."
+        print "\nPickling reflection list."
         pickle.dump(reflections, open(output_file, 'wb'))
 
 def algorithm_callback(option, opt, value, parser):
