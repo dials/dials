@@ -12,52 +12,45 @@ import numpy
 class toy_centroid_lui(centroid_interface):
     def __init__(self, reflections):
 
-
         centroid_interface.__init__(self, reflections)
 
         return
 
     def compute_shoebox_centroid(self, shoebox):
 
-#        import math
-
         f_size, r_size, c_size = shoebox.all()
-
 
         for i in shoebox:
             if i < 0:
                 raise CentroidException, 'negative pixels in cube'
         data3d = shoebox.as_numpy_array()
-
+        #print data3d
         tot_itst = 0.0
         tot_f = 0.0
-        tot_c = 0.0
         tot_r = 0.0
-        tot_sr = 0.0
-        tot_sc = 0.0
+        tot_c = 0.0
 
-        cont = 0
-        itst = numpy.zeros(f_size, dtype = float).reshape(f_size)
-        #for f in range(f_min, f_max):
         for f in range(f_size):
-            print '__________________________________________________________________________________ new image'
-            data2d = data3d[f, :, :]
-            if numpy.sum(data2d) > 0:
-                print '______________________data2d before'
-                print data2d
-                row_cm, col_cm, locl_sr, locl_sc, locl_itst = single_spot_integrate_2d(data2d)
-                print '______________________data2d after'
-                print data2d
+            #print '__________________________________________________________________________________ new image'
+            if numpy.sum(data3d[f, :, :]) > 0:
+                #print '______________________data2d before'
+                #print data3d[f, :, :]
 
-                itst[cont] = locl_itst
-                cont += 1
-                tot_f += f * locl_itst
-                tot_r += row_cm * locl_itst
-                tot_c += col_cm * locl_itst
+                locl_itst = single_spot_integrate_2d(data3d[f, :, :])
+                #print '______________________data2d after'
+                #print data3d[f, :, :]
+
                 tot_itst += locl_itst
-                #print f, locl_itst, locl_f
-                tot_sr += (locl_sr * locl_itst) ** 2.0
-                tot_sc += (locl_sc * locl_itst) ** 2.0
+
+        #print data3d
+
+
+        for f in range(f_size):
+            for r in range(r_size):
+                for c in range(c_size):
+                    tot_f += f * data3d[f, r, c]
+                    tot_r += r * data3d[f, r, c]
+                    tot_c += c * data3d[f, r, c]
 
         if tot_itst > 0.0:
             _f = tot_f / tot_itst
@@ -67,21 +60,35 @@ class toy_centroid_lui(centroid_interface):
             _f = -1
             _r = -1
             _c = -1
-        cont = 0
-        tot_sf = 0.0
+            raise CentroidException, 'negative or zero anything'
 
-        #for f in range(f_min, f_max):
+        #cont = 0
+        tot_sf = 0.0
+        tot_sr = 0.0
+        tot_sc = 0.0
+
         for f in range(f_size):
-            tot_sf += ((f - _f) * itst[cont]) ** 2.0
-            cont += 1
+            for r in range(r_size):
+                for c in range(c_size):
+                    tot_sf += ((f - _f) ** 2.0 * data3d[f, r, c])
+                    tot_sr += ((r - _r) ** 2.0 * data3d[f, r, c])
+                    tot_sc += ((c - _c) ** 2.0 * data3d[f, r, c])
+
         if tot_itst > 0.0:
             _sf = numpy.sqrt(tot_sf) / tot_itst
             _sr = numpy.sqrt(tot_sr) / tot_itst
             _sc = numpy.sqrt(tot_sc) / tot_itst
+
+            #_sf = tot_sf / tot_itst another formula
+            #_sr = tot_sr / tot_itst another formula
+            #_sc = tot_sc / tot_itst another formula
         else:
             _sf = -1
             _sr = -1
             _sc = -1
+        _f += 0.5
+        _r += 0.5
+        _c += 0.5
         print '_f, _r, _c, _sf, _sr, _sc =', _f, _r, _c, _sf, _sr, _sc
 
         return _f, _r, _c, _sf, _sr, _sc
@@ -90,7 +97,7 @@ def single_spot_integrate_2d(data2d):
 
     x_to = numpy.size(data2d[0:1, :])
     y_to = numpy.size(data2d[:, 0:1])
-    print 'x_to,y_to =', x_to, y_to
+    #print 'x_to,y_to =', x_to, y_to
 
     data2dsmoth = numpy.zeros(y_to * x_to, dtype = float).reshape(y_to, x_to)
 
@@ -116,10 +123,10 @@ def single_spot_integrate_2d(data2d):
             cont += 1                                                  # better results
             dif_tot += numpy.abs(data2d[y, x] - data2dsmoth[y, x])     #
     dif_avg = dif_tot / cont                                           #
-    print 'dif_avg=', dif_avg                                          #
+    #print 'dif_avg=', dif_avg                                          #
     threshold_shift = dif_avg * 2.0                                    #
 #######################################################################################################
-    print 'threshold_shift =', threshold_shift
+    #print 'threshold_shift =', threshold_shift
 
     data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
 
@@ -133,13 +140,13 @@ def single_spot_integrate_2d(data2d):
             if diffdata2d[y, x] == 1:
                 diffdata2d_ext[y - ext_area:y + ext_area + 1, x - ext_area:x + ext_area + 1] = 1
 
-    print '_____________diffdata2d'
+    #print '_____________diffdata2d'
     #print diffdata2d
-    print '_____________diffdata2d_ext'
+    #print '_____________diffdata2d_ext'
     #print diffdata2d_ext
 
 
-############################################################################### flat background
+ ############################################################################## flat background
     tot_bkgr = 0.0                                                            # version
     cont = 0.0                                                                #
     for y in range(0, y_to, 1):                                               #
@@ -148,14 +155,14 @@ def single_spot_integrate_2d(data2d):
                 cont += 1                                                     #
                 tot_bkgr += data2d[y, x]                                      #
     bkgr = tot_bkgr / cont                                                    #
-    print 'bkgr=', bkgr                                                       #
+    #print 'bkgr=', bkgr                                                       #
     for y in range(0, y_to, 1):                                               #
         for x in range(0, x_to, 1):                                           #
             if diffdata2d_ext[y, x] == 1 and data2d[y, x] > bkgr:             #
                 data2d[y, x] = data2d[y, x] - bkgr                            #
             else:                                                             #
                 data2d[y, x] = 0                                              #
-###############################################################################
+ ##############################################################################
 
 ############################################################################### curved background
 #   xbord = int(x_to / 5)                                                     # version
@@ -177,42 +184,21 @@ def single_spot_integrate_2d(data2d):
 #           if diffdata2d_ext[y, x] == 0:                                     #
 #               data2d[y, x] = 0                                              #
 ###############################################################################
-    x_num_sum = 0.0
-    y_num_sum = 0.0
-    den_sum = 0.0
+    #x_num_sum = 0.0
+    #y_num_sum = 0.0
+    itst_sum = 0.0
     for y in range(0, y_to, 1):
         for x in range(0, x_to, 1):
-            x_num_sum = x_num_sum + float(data2d[y, x]) * float(x)
-            y_num_sum = y_num_sum + float(data2d[y, x]) * float(y)
-            den_sum = den_sum + float(data2d[y, x])
-    if den_sum > 0.0:
-        col_cm = x_num_sum / den_sum
-        row_cm = y_num_sum / den_sum
+            itst_sum += float(data2d[y, x])
+    if itst_sum > 0.0:
+        tot = itst_sum
     else:
-        print 'den_sum =', den_sum
-        col_cm = -1
-        row_cm = -1
-
-    x_num_sum = 0.0
-    y_num_sum = 0.0
-#    den_sum = 0.0
-    for y in range(0, y_to, 1):
-        for x in range(0, x_to, 1):
-            x_num_sum = x_num_sum + float(data2d[y, x]) * (float(x) - float(col_cm)) ** 2.0
-            y_num_sum = y_num_sum + float(data2d[y, x]) * (float(y) - float(row_cm)) ** 2.0
-    #        den_sum = den_sum + float(data2d[y, x])
-    if den_sum > 0.0:
-        col_sig = numpy.sqrt(x_num_sum / den_sum)
-        row_sig = numpy.sqrt(y_num_sum / den_sum)
-    else:
-        print 'den_sum =', den_sum
-        col_sig = -1
-        row_sig = -1
+        print 'itst_sum =', itst_sum
+        tot = -1
 
 #    display_image_with_predicted_spots_n_centoids(data2d, col_cm, row_cm, x_to / 2, y_to / 2)
 
-    return row_cm, col_cm, row_sig, col_sig, den_sum
-
+    return tot
 def display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
     """Display the image with coordinates overlayed."""
     from matplotlib import pylab, cm
