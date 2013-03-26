@@ -49,7 +49,7 @@ class centroid_interface_prototype(object):
         for i, ref in enumerate(reflections):
 
             try:
-                
+
                 # Compute the centroid
                 f, r, c, sf, sr, sc = self.compute_shoebox_centroid(ref.shoebox)
 

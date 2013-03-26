@@ -87,11 +87,9 @@ def extract_reflection_profiles(sweep, reflections):
     from dials.algorithms.integration import allocate_reflection_profiles
 
     # Allocate memory for reflection profiles
-    print "Allocating"
     allocate_reflection_profiles(reflections)
 
     # Get the indices of the reflections recorded on each frame
-    print "Geting frames"
     frame_indices = get_reflection_frame_indices(sweep, reflections)
 
     # Return the reflections

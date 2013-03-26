@@ -13,12 +13,12 @@ def read_reflection_file(filename):
     from dials.model.data import ReflectionList
     import pickle
     return pickle.load(open(reflection_file, 'rb'))
-    
+
 def run(reflection_file):
     '''Do the refinement.'''
 
     # Load the reflections from the pickle file
-    reflections = read_reflection_file(reflection_file)    
+    reflections = read_reflection_file(reflection_file)
 
     # Print some reflections
     for r in reflections:
@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     # Specify the command line options
     usage = "usage: %prog [options] /path/to/data.p"
-    
+
     # Parse the command line options
     parser = OptionParser(usage)
     options, args = parser.parse_args()
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     if len(args) < 1:
         print parser.print_help()
     else:
- 
+
         # Get stuff from args
         reflection_file = args[0]
 

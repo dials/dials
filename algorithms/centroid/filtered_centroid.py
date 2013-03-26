@@ -60,7 +60,7 @@ def select_contigious(index, shape, conn):
 
     # Find largest region
     max_index = argmax(histo[1:]) + 1
-    
+
     # Return only those region indices that are equal to max_index
     regions.shape = (-1)
     return flex.size_t(where(regions == max_index)[0])
@@ -100,7 +100,7 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
 
 class FilteredCentroid(centroid_interface):
     """ Calculate the centroid filtered by foreground indices """
-    
+
     def __init__(self, reflections, min_pixels=10, n_sigma=3, conn=4):
         """ Initialise the class """
 

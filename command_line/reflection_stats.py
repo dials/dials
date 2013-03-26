@@ -10,49 +10,49 @@
 
 class ReflectionStats(object):
     '''A class to calculate and print reflection stats.'''
-    
+
     def __init__(self, reflections, adjacency_list=None):
         '''Init the class.
-        
+
         Params:
             reflections The list of reflections
             adjacency_list The adjacency list
-        
+
         '''
         # Save the reflections and adjacency list
         self.reflections = reflections
         self.adjacency_list = adjacency_list
-    
+
         # Compute the stats
         self.compute()
-            
+
     def compute(self):
         '''Compute the statistics'''
         self.stats = list()
-        
+
         # Append # reflections
         self.stats.append(("Num reflections", len(self.reflections)))
-        
+
         # Calculate coordinate stas
         self._compute_coord_stats()
-        
+
         # Calculate bounding box stats
         self._compute_bbox_stats()
 
         # If adjacency list is given, calculate overlap stats
         if self.adjacency_list:
-            self._compute_overlap_stats()    
-            
+            self._compute_overlap_stats()
+
         # Compute centroid statistics
         self._compute_centroid_stats()
-    
+
     def _value_to_string(self, value):
         '''Convert values to string. '''
-        
+
         # If is float then return with a certain precision
         if isinstance(value, float):
             return "{0:.2f}".format(value)
-            
+
         # If a tuple or list then convert each to certain precision
         if isinstance(value, tuple) or isinstance(value, list):
             value_str_tuple = map(self._value_to_string, value)
@@ -61,35 +61,35 @@ class ReflectionStats(object):
                 value_str += ", " + v
             value_str += ")"
             return value_str
-        
+
         # Default return as string
-        return str(value)        
-            
+        return str(value)
+
     def __str__(self):
-        '''Get the statistics as a string.''' 
+        '''Get the statistics as a string.'''
 
         # Calculate max name length for alignment
         max_len = 0
         for name, value in self.stats:
-            if len(name) > max_len: 
+            if len(name) > max_len:
                 max_len = len(name)
-        
+
         # Create the string from the name/value pairs
         stat_str  = '\n'
         stat_str += 'Reflection statistics\n'
         stat_str += '---------------------\n'
         for name, value in self.stats:
             stat_str += '{0:<{1}} : {2}\n'.format(
-              name, 
-              max_len, 
+              name,
+              max_len,
               self._value_to_string(value))
-        
+
         # Return the string
         return stat_str
-        
+
     def _compute_coord_stats(self):
         '''Compute stats about reflection coordinates.'''
-        
+
         # Extract x, y, z coords
         x = [r.image_coord_px[0] for r in self.reflections]
         y = [r.image_coord_px[1] for r in self.reflections]
@@ -98,7 +98,7 @@ class ReflectionStats(object):
         # Add min, max to stats
         self.stats.append(("Min (x, y, z)", (min(x), min(y), min(z))))
         self.stats.append(("Max (x, y, z)", (max(x), max(y), max(z))))
-        
+
     def _compute_bbox_stats(self):
         '''Compute bounding box statistics.'''
         import numpy
@@ -107,7 +107,7 @@ class ReflectionStats(object):
         bounding_boxes = [r.bounding_box for r in self.reflections]
 
         # Calculate the min, max, mean pixels in bounding box
-        bbox_count = [(s[1] - s[0]) * (s[3] - s[2]) * (s[5] - s[4]) 
+        bbox_count = [(s[1] - s[0]) * (s[3] - s[2]) * (s[5] - s[4])
             for s in bounding_boxes]
         min_count = numpy.min(bbox_count)
         max_count = numpy.max(bbox_count)
@@ -129,11 +129,11 @@ class ReflectionStats(object):
         # Add the stats to the list
         self.stats.append(("Min bounding box count", min_count))
         self.stats.append(("Max bounding box count", max_count))
-        self.stats.append(("Median bounding box count", med_count))        
+        self.stats.append(("Median bounding box count", med_count))
         self.stats.append(("Min bounding box range (x, y, z)", min_range))
         self.stats.append(("Max bounding box range (x, y, z)", max_range))
         self.stats.append(("Median bounding box range (x, y, z)", med_range))
-        
+
     def _compute_overlap_stats(self):
         '''Compute the overlap statistics.'''
 
@@ -191,7 +191,7 @@ class ReflectionStats(object):
             overlaps = [v2 for v2 in self.adjacency_list.adjacent_vertices(v1)]
             num_overlap = len(overlaps)
             if num_overlap > max_overlap:
-                max_overlap = num_overlap                 
+                max_overlap = num_overlap
 
         # Add some statistics to the list
         self.stats.append(("Num overlaps", self.adjacency_list.num_edges()))
@@ -205,29 +205,29 @@ class ReflectionStats(object):
         '''Compute some centroid stats.'''
         import numpy
         from math import sqrt
-        
+
         # Get the centroid variance and calculate min/max
         var = [r.centroid_variance for r in self.reflections]
         var_x = [vx for vx, vy, vz in var]
         var_y = [vy for vx, vy, vz in var]
-        var_z = [vz for vx, vy, vz in var]       
+        var_z = [vz for vx, vy, vz in var]
         min_var = (numpy.min(var_x), numpy.min(var_y), numpy.min(var_z))
         max_var = (numpy.max(var_x), numpy.max(var_y), numpy.max(var_z))
         mean_var = (numpy.mean(var_x), numpy.mean(var_y), numpy.mean(var_z))
-        
+
         # Calculate the difference between the centroid and image coord
         diff = []
         for r in self.reflections:
             diff.append((r.centroid_position[0] - r.image_coord_px[0],
                          r.centroid_position[1] - r.image_coord_px[1],
                          r.centroid_position[2] - r.frame_number))
-        
+
         # Calculate distance
         dist = [sqrt(d[0]**2 + d[1]**2 + d[2]**2) for d in diff]
         min_diff = numpy.min(dist)
         max_diff = numpy.max(dist)
         mean_diff = numpy.mean(dist)
-        
+
         # Add stats
         self.stats.append(("Min centroid variance (x, y, z)", min_var))
         self.stats.append(("Max centroid variance (x, y, z)", max_var))
