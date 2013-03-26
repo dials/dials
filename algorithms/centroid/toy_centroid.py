@@ -54,7 +54,8 @@ class toy_centroid(centroid_interface):
 
         # print shoebox.as_numpy_array()
 
-        assert(d_tot)
+        if not d_tot:
+            raise CentroidException("Invalid value for total intensity")
 
         _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
 

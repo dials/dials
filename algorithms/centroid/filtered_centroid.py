@@ -1,3 +1,12 @@
+#
+# filtered_centroid.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 from __future__ import division
 
 from dials.interfaces.centroid.centroid_interface_prototype import \
@@ -32,6 +41,10 @@ def select_contigious(index, shape, conn):
     # Create a mask of the roi size
     mask = zeros(reduce(mul, shape), dtype=int32)
 
+    # Check some foreground pixels are given
+    if len(index) == 0:
+        raise CentroidException("No foreground pixels specified")
+
     # Set all the points at the indices to 1
     for i in index:
         mask[i] = 1
@@ -41,15 +54,13 @@ def select_contigious(index, shape, conn):
 
     # Label the indices in the mask
     regions, nregions = label(mask)#, structure)
-    if nregions < 2:
-        raise RuntimeError("Can't determine peak foreground/background")
 
     # Histogram the regions to get the largest
     histo = histogram(regions, 0, nregions+1, nregions+1)
 
     # Find largest region
     max_index = argmax(histo[1:]) + 1
-
+    
     # Return only those region indices that are equal to max_index
     regions.shape = (-1)
     return flex.size_t(where(regions == max_index)[0])
@@ -89,6 +100,7 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
 
 class FilteredCentroid(centroid_interface):
     """ Calculate the centroid filtered by foreground indices """
+    
     def __init__(self, reflections, min_pixels=10, n_sigma=3, conn=4):
         """ Initialise the class """
 
@@ -100,78 +112,60 @@ class FilteredCentroid(centroid_interface):
         # Init the interface base class
         centroid_interface.__init__(self, reflections)
 
-
     def compute_shoebox_centroid(self, shoebox):
         """ Compute the centroid """
         from scitbx.array_family import flex
         import math
 
-
+        # Get the size of the shoebox
         f_size, r_size, c_size = shoebox.all()
 
-        # build the list of pixels - let's be dumb and just have a literal
-        # list - and assign density of a pixel to the centre of the
-        # volume...
-
-        pixel_list = []
-
+        # Check shoebox values are valid
         for i in shoebox:
             if i < 0:
                 raise CentroidException, 'negative pixels in cube'
 
-        try:
-            for f in range(f_size):
-                for r in range(r_size):
-                    for c in range(c_size):
-                        pixel_list.append(
-                            (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
-
-        except IndexError, e:
-            raise CentroidException, 'data outside range'
+        # Get a list of pixels
+        pixel_list = []
+        for f in range(f_size):
+            for r in range(r_size):
+                for c in range(c_size):
+                    pixel_list.append(
+                        (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
 
         # Select the indices to use in centroid calculation
-        try:
-            pixel_index = select_foreground_pixels(shoebox, self.min_pixels,
-                                                   self.n_sigma, self.conn)
+        pixel_index = select_foreground_pixels(shoebox, self.min_pixels,
+                                               self.n_sigma, self.conn)
 
-            # compute averages of positions
+        # compute averages of positions
+        f_tot, r_tot, c_tot, d_tot = 0.0, 0.0, 0.0, 0.0
+        for i in pixel_index:
+            f, r, c, d = pixel_list[i]
+            f_tot += d * f
+            r_tot += d * r
+            c_tot += d * c
+            d_tot += d
 
-            f_tot = 0.0
-            r_tot = 0.0
-            c_tot = 0.0
-            d_tot = 0.0
+        # Ensure d_tot is not zero
+        if not d_tot:
+            raise CentroidException("Invalid value for total intensity")
 
-            for i in pixel_index:
-                f, r, c, d = pixel_list[i]
-                f_tot += d * f
-                r_tot += d * r
-                c_tot += d * c
-                d_tot += d
+        # Calculate the centroid position
+        _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
 
-            assert(d_tot)
+        # now compute the variance
+        f_tot, r_tot, c_tot, d_tot = 0.0, 0.0, 0.0, 0.0
+        for i in pixel_index:
+            f, r, c, d = pixel_list[i]
+            f_tot += d * (f - _f) ** 2
+            r_tot += d * (r - _r) ** 2
+            c_tot += d * (c - _c) ** 2
+            d_tot += d
 
-            _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
+        # Compute standard deviation of the centroid position
+        _sf = math.sqrt(f_tot / d_tot)
+        _sr = math.sqrt(r_tot / d_tot)
+        _sc = math.sqrt(c_tot / d_tot)
 
-            # now compute the variance
-
-            f_tot = 0.0
-            r_tot = 0.0
-            c_tot = 0.0
-            d_tot = 0.0
-
-            for i in pixel_index:
-                f, r, c, d = pixel_list[i]
-                f_tot += d * (f - _f) ** 2
-                r_tot += d * (r - _r) ** 2
-                c_tot += d * (c - _c) ** 2
-                d_tot += d
-
-            _sf = math.sqrt(f_tot / d_tot)
-            _sr = math.sqrt(r_tot / d_tot)
-            _sc = math.sqrt(c_tot / d_tot)
-
-        except RuntimeError:
-            _f, _r, _c = 0, 0, 0
-            _sf, _sr, _sc = 0, 0, 0
-
+        # Return the position and standard deviation
         return _f, _r, _c, _sf, _sr, _sc

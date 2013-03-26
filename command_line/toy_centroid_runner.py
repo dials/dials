@@ -104,10 +104,6 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
     # extract reflection profiles
     extract_reflection_profiles(sweep, reflections)
 
-    # Print some reflection statistics
-    from reflection_stats import ReflectionStats
-    print ReflectionStats(reflections)
-
 #    bounding_boxes = { }
 
 #    for r in reflections[:10]:
@@ -132,6 +128,11 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
         #centroid = ref.centroid_position + ref.centroid_variance
         #print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
         print ref
+
+    # Print some reflection statistics
+    from reflection_stats import ReflectionStats
+    print ReflectionStats(reflections)        
+        
     # Dump the reflections to file
     if output_file:
         import pickle

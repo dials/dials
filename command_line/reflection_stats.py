@@ -30,6 +30,9 @@ class ReflectionStats(object):
         '''Compute the statistics'''
         self.stats = list()
         
+        # Append # reflections
+        self.stats.append(("Num reflections", len(self.reflections)))
+        
         # Calculate coordinate stas
         self._compute_coord_stats()
         
@@ -39,6 +42,9 @@ class ReflectionStats(object):
         # If adjacency list is given, calculate overlap stats
         if self.adjacency_list:
             self._compute_overlap_stats()    
+            
+        # Compute centroid statistics
+        self._compute_centroid_stats()
     
     def _value_to_string(self, value):
         '''Convert values to string. '''
@@ -195,3 +201,39 @@ class ReflectionStats(object):
         self.stats.append(("Min common pixels", min_common_pixels))
         self.stats.append(("Max number of overlaps", max_overlap))
 
+    def _compute_centroid_stats(self):
+        '''Compute some centroid stats.'''
+        import numpy
+        from math import sqrt
+        
+        # Get the centroid variance and calculate min/max
+        var = [r.centroid_variance for r in self.reflections]
+        var_x = [vx for vx, vy, vz in var]
+        var_y = [vy for vx, vy, vz in var]
+        var_z = [vz for vx, vy, vz in var]       
+        min_var = (numpy.min(var_x), numpy.min(var_y), numpy.min(var_z))
+        max_var = (numpy.max(var_x), numpy.max(var_y), numpy.max(var_z))
+        mean_var = (numpy.mean(var_x), numpy.mean(var_y), numpy.mean(var_z))
+        
+        # Calculate the difference between the centroid and image coord
+        diff = []
+        for r in self.reflections:
+            diff.append((r.centroid_position[0] - r.image_coord_px[0],
+                         r.centroid_position[1] - r.image_coord_px[1],
+                         r.centroid_position[2] - r.frame_number))
+        
+        print diff
+        
+        # Calculate distance
+        dist = [sqrt(d[0]**2 + d[1]**2 + d[2]**2) for d in diff]
+        min_diff = numpy.min(dist)
+        max_diff = numpy.max(dist)
+        mean_diff = numpy.mean(dist)
+        
+        # Add stats
+        self.stats.append(("Min centroid variance (x, y, z)", min_var))
+        self.stats.append(("Max centroid variance (x, y, z)", max_var))
+        self.stats.append(("Mean centroid variance (x, y, z)", mean_var))
+        self.stats.append(("Min centroid-predicted", min_diff))
+        self.stats.append(("Max centroid-predicted", max_diff))
+        self.stats.append(("Mean centroid-predicted", mean_diff))

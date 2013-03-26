@@ -1,6 +1,19 @@
+#
+# centroid_interface_prototype.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: Graeme Winter
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+from __future__ import division
 import exceptions
+
+
 class CentroidException(exceptions.Exception):
     pass
+
 
 class centroid_interface_prototype(object):
     '''Centroid calculation interface: all of the stuff in here is in pixels.'''
@@ -36,12 +49,7 @@ class centroid_interface_prototype(object):
             try:
                 
                 # Compute the centroid
-                f, r, c, sf, sr, sc = self.compute_shoebox_centroid(
-                    ref.shoebox)
-
-                # FIXME observe that bounding_box here has the elements in
-                # the reversed order to the one we are aiming for e.g.
-                # not frame, then row, then column instead the reverse
+                f, r, c, sf, sr, sc = self.compute_shoebox_centroid(ref.shoebox)
 
                 # Add the bounding box offset to the centroid position
                 f += ref.bounding_box[0]
