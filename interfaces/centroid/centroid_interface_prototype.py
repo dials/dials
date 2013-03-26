@@ -21,11 +21,13 @@ class centroid_interface_prototype(object):
     def __init__(self, reflections):
         '''Initialise the algorithm with the list of reflections.'''
 
+        from dials.model.data import ReflectionList
+
         # Save the reflection list
-        self._reflections = reflections
+        self._reflections = ReflectionList()
 
         # Calculate the centroids
-        self._compute_centroids()
+        self._compute_centroids(reflections)
 
     def get_reflections(self):
         '''Return the list of reflections'''
@@ -38,13 +40,13 @@ class centroid_interface_prototype(object):
 
         raise RuntimeError, 'overload me'
 
-    def _compute_centroids(self):
+    def _compute_centroids(self, reflections):
         ''' Compute the centroids. For each reflection, call the overloaded
         compute_centroid_from_bbox method.'''
 
         # Loop through all the refflections and try to calculate the
         # centroid. If a CentroidException is encountered, then pass.
-        for i, ref in enumerate(self._reflections):
+        for i, ref in enumerate(reflections):
 
             try:
                 
@@ -61,7 +63,7 @@ class centroid_interface_prototype(object):
                 ref.centroid_variance = (sc, sr, sf)
 
                 # Copy reflection back into array
-                self._reflections[i] = ref
+                self._reflections.append(ref)
 
             except CentroidException, e:
                 continue

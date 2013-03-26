@@ -222,8 +222,6 @@ class ReflectionStats(object):
                          r.centroid_position[1] - r.image_coord_px[1],
                          r.centroid_position[2] - r.frame_number))
         
-        print diff
-        
         # Calculate distance
         dist = [sqrt(d[0]**2 + d[1]**2 + d[2]**2) for d in diff]
         min_diff = numpy.min(dist)

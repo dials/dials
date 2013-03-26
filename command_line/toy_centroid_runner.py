@@ -1,7 +1,23 @@
 from __future__ import division
 
+def select_random_reflections(reflections, num):
+    '''Select a number of random reflections.'''
+    from dials.model.data import ReflectionList
+    from random import sample
+
+    # Get a random sample of num indices
+    indices = sample(range(len(reflections)), num)   
+
+    # Create a new reflection list and put selected reflections in
+    reflections_new = ReflectionList()
+    for i in indices:
+        reflections_new.append(reflections[i])
+        
+    # Return the new list of reflections
+    return reflections_new
+
 def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
-                        algorithm):
+                        algorithm, n_select):
     '''From the geometry in the xparm file, the indices in integrate_hkl_file
     and the images corresponding to the sweep to be generated from the
     image file, calculate the shoeboxes and from there the centroids using the
@@ -124,15 +140,17 @@ def toy_centroid_runner(xparm_file, integrate_hkl_file, image_file, output_file,
 
     reflections = tc.get_reflections()
 
+    # Select a certain number of random reflections
+    if n_select:
+        reflections = select_random_reflections(reflections, n_select)
+
     for ref in reflections:
-        #centroid = ref.centroid_position + ref.centroid_variance
-        #print '%.1f %.1f %.1f %.1f %.1f %.1f' % centroid
         print ref
 
     # Print some reflection statistics
     from reflection_stats import ReflectionStats
     print ReflectionStats(reflections)        
-        
+       
     # Dump the reflections to file
     if output_file:
         import pickle
@@ -164,6 +182,10 @@ if __name__ == '__main__':
                       action="callback", callback=algorithm_callback,
                       help = 'Enter the centroid algorithm to use (toy, lui, xds)')
 
+    parser.add_option('-n', '--num-reflections',
+                      dest = 'n_select', type = "int", default = 0,
+                      help = 'Enter a number of reflections')
+
     # Parse the arguments
     (options, args) = parser.parse_args()
 
@@ -172,4 +194,4 @@ if __name__ == '__main__':
         print parser.print_help()
     else:
         toy_centroid_runner(args[0], args[1], args[2:], options.output_file,
-            options.algorithm)
+            options.algorithm, options.n_select)
