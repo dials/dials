@@ -97,7 +97,7 @@ def print_model_geometry(beam = None, detector = None, crystal = None):
 
 def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
            hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-           verbosity = 0):
+           verbosity = 0, fix_cell = False):
 
     """Simple refinement interface for the centroid refinement sprint"""
 
@@ -141,6 +141,10 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
 
     # Fix beam to the X-Z plane (imgCIF geometry)
     s0_param.set_fixed([True, False])
+
+    # Fix cell if requested
+    if fix_cell:
+        xluc_param.set_fixed([True] * xluc_param.num_free())
 
     ########################################################################
     # Link model parameterisations together into a parameterisation of the #
