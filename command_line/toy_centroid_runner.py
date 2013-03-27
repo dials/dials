@@ -106,7 +106,7 @@ class ToyCentroidRunner(object):
                                 self.integrate_handle.sigma):
 
             # Select strong reflections
-            if sigI <= 0 or I / sigI < 40:
+            if sigI <= 0 or I / sigI < 5:
                 continue
 
             # append the miller indices
