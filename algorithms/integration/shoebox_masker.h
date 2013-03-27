@@ -139,7 +139,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(i0 - bbox_b[0] >= 0 && i1 - bbox_b[0] <= size_b[2]);
       DIALS_ASSERT(j0 - bbox_b[2] >= 0 && j1 - bbox_b[2] <= size_b[1]);
       DIALS_ASSERT(k0 - bbox_b[4] >= 0 && k1 - bbox_b[4] <= size_b[0]);
-      
+
       // Iterate over range of indices
       for (int k = k0; k < k1; ++k) {
         for (int j = j0; j < j1; ++j) {
