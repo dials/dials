@@ -22,7 +22,9 @@ class RefinementRunner(object):
 
     def __call__(self):
         '''The main body of the script.'''
-
+        from scitbx import matrix
+        from math import sqrt
+        
         # Begin by loading models from the input files
         self._load_models()
 
@@ -38,7 +40,7 @@ class RefinementRunner(object):
         var_d1s, var_d2s, var_angles = zip(*variances)
 
         px_size = self.detector.get_pixel_size()
-        im_width = self.scan.get_image_oscillation(deg=False)[1]
+        im_width = self.scan.get_oscillation(deg=False)[1]
 
         # change variances to sigmas and convert units
         sig_d1s = [px_size[0] * sqrt(e) for e in var_d1s]
@@ -100,7 +102,8 @@ def read_reflection_file(filename):
 
 def run(reflection_file):
     '''Do the refinement.'''
-
+    from scitbx import matrix
+    
     # Load the reflections from the pickle file
     reflections = read_reflection_file(reflection_file)
 
@@ -139,7 +142,7 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call spot prediction
-    if len(args) < 4:
+    if len(args) < 3:
         print parser.print_help()
     else:
 
