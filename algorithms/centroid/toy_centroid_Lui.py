@@ -29,8 +29,10 @@ class toy_centroid_lui(centroid_interface):
         tot_f = 0.0
         tot_r = 0.0
         tot_c = 0.0
-        time1 = time.time()
-        print "time1 =", time1
+
+        #time1 = time.time()
+        #print "time1 =", time1
+
         for f in range(f_size):
             #print '__________________________________________________________________________________ new image'
             if numpy.sum(data3d[f, :, :]) > 0:
@@ -77,13 +79,13 @@ class toy_centroid_lui(centroid_interface):
                     tot_sc += ((c - _c) ** 2.0 * data3d[f, r, c])
 
         if tot_itst > 0.0:
-            _sf = numpy.sqrt(tot_sf) / tot_itst
-            _sr = numpy.sqrt(tot_sr) / tot_itst
-            _sc = numpy.sqrt(tot_sc) / tot_itst
+            #_sf = numpy.sqrt(tot_sf) / tot_itst       # gaussian sigma formula
+            #_sr = numpy.sqrt(tot_sr) / tot_itst       # gaussian sigma formula
+            #_sc = numpy.sqrt(tot_sc) / tot_itst       # gaussian sigma formula
 
-            #_sf = tot_sf / tot_itst    # another formula
-            #_sr = tot_sr / tot_itst    # another formula
-            #_sc = tot_sc / tot_itst    # another formula
+            _sf = tot_sf / tot_itst    # variance formula
+            _sr = tot_sr / tot_itst    # variance formula
+            _sc = tot_sc / tot_itst    # variance formula
         else:
             _sf = -1
             _sr = -1
@@ -92,12 +94,10 @@ class toy_centroid_lui(centroid_interface):
         _r += 0.5
         _c += 0.5
 
-        time2 = time.time()
-        print "time2 =", time2
-        timedif = time2 - time1
-        print "timedif =", timedif
-
-        print '_f, _r, _c, _sf, _sr, _sc =', _f, _r, _c, _sf, _sr, _sc
+        #time2 = time.time()
+        #print "time2 =", time2
+        #timedif = time2 - time1
+        #print "timedif =", timedif
 
         return _f, _r, _c, _sf, _sr, _sc
 
@@ -155,19 +155,19 @@ def single_spot_integrate_2d(data2d):
 ############################################################################### flat background
     tot_bkgr = 0.0                                                            # version
     cont = 0.0                                                                #
-    for row in range(0, n_row, 1):                                               #
-        for col in range(0, n_col, 1):                                           #
-            if diffdata2d_ext[row, col] == 0:                                     #
+    for row in range(0, n_row, 1):                                            #
+        for col in range(0, n_col, 1):                                        #
+            if diffdata2d_ext[row, col] == 0:                                 #
                 cont += 1                                                     #
-                tot_bkgr += data2d[row, col]                                      #
+                tot_bkgr += data2d[row, col]                                  #
     bkgr = tot_bkgr / cont                                                    #
     #print 'bkgr=', bkgr                                                      #
-    for row in range(0, n_row, 1):                                               #
-        for col in range(0, n_col, 1):                                           #
-            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > bkgr:             #
-                data2d[row, col] = data2d[row, col] - bkgr                            #
+    for row in range(0, n_row, 1):                                            #
+        for col in range(0, n_col, 1):                                        #
+            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > bkgr:     #
+                data2d[row, col] = data2d[row, col] - bkgr                    #
             else:                                                             #
-                data2d[row, col] = 0                                              #
+                data2d[row, col] = 0                                          #
 ###############################################################################
 
 ############################################################################### curved background
