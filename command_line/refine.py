@@ -65,10 +65,10 @@ class RefinementRunner(object):
             coordinate_frame_converter
         cfc = coordinate_frame_converter(self.xparm_file)
 
-        a_vec = cfc.get('real_space_a')
-        b_vec = cfc.get('real_space_b')
-        c_vec = cfc.get('real_space_c')
-        
+        a_vec = cfc.get_c('real_space_a')
+        b_vec = cfc.get_c('real_space_b')
+        c_vec = cfc.get_c('real_space_c')
+
         mycrystal = Crystal(a_vec, b_vec_, c_vec)
 
         print "Prior to refinement the experimental model is:"
