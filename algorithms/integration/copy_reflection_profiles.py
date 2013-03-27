@@ -89,7 +89,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
     from dials.algorithms.integration import ShoeboxMasker
 
     # Allocate memory for reflection profiles
-    allocate_reflection_profiles(reflections)
+    reflections = allocate_reflection_profiles(reflections)
 
     # Get the indices of the reflections recorded on each frame
     frame_indices = get_reflection_frame_indices(sweep, reflections)

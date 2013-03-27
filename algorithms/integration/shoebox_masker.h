@@ -43,7 +43,7 @@ namespace dials { namespace algorithms {
      * @param adjacency_list The adjacency_list
      */
     void operator()(ReflectionList &reflections,
-        const AdjacencyList &adjacency_list) {
+        const boost::shared_ptr<AdjacencyList> &adjacency_list) {
 
       // Begin by setting all the mask values to 1
       initialise_mask(reflections, 1);
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
         Reflection &r = reflections[i];
 
         // Get the list of overlapping reflectionss
-        adjacency_iterator_range range = adjacent_vertices(i, adjacency_list);
+        adjacency_iterator_range range = adjacent_vertices(i, *adjacency_list);
         for (adjacency_iterator it = range.first; it != range.second; ++it) {
           if (i < *it) {
             assign_ownership(r, reflections[*it]);
@@ -111,6 +111,10 @@ namespace dials { namespace algorithms {
       flex_int &mask_a = a.get_shoebox_mask();
       flex_int &mask_b = b.get_shoebox_mask();
 
+      // Get the sizes of the masks
+      flex_int::index_type size_a = mask_a.accessor().all();
+      flex_int::index_type size_b = mask_b.accessor().all();
+
       // Get the bounding boxes
       int6 bbox_a = a.get_bounding_box();
       int6 bbox_b = b.get_bounding_box();
@@ -121,15 +125,21 @@ namespace dials { namespace algorithms {
 
       // Get range to iterate over
       int i0 = std::max(bbox_a[0], bbox_b[0]);
-      int i1 = std::min(bbox_b[1], bbox_b[1]);
+      int i1 = std::min(bbox_a[1], bbox_b[1]);
       int j0 = std::max(bbox_a[2], bbox_b[2]);
       int j1 = std::min(bbox_a[3], bbox_b[3]);
       int k0 = std::max(bbox_a[4], bbox_b[4]);
       int k1 = std::min(bbox_a[5], bbox_b[5]);
 
       // Ensure ranges are valid
-      DIALS_ASSERT(k1 > k0 && j1 < j0 && i1 > i0);
-
+      DIALS_ASSERT(k1 > k0 && j1 > j0 && i1 > i0);
+      DIALS_ASSERT(i0 - bbox_a[0] >= 0 && i1 - bbox_a[0] <= size_a[2]);
+      DIALS_ASSERT(j0 - bbox_a[2] >= 0 && j1 - bbox_a[2] <= size_a[1]);
+      DIALS_ASSERT(k0 - bbox_a[4] >= 0 && k1 - bbox_a[4] <= size_a[0]);
+      DIALS_ASSERT(i0 - bbox_b[0] >= 0 && i1 - bbox_b[0] <= size_b[2]);
+      DIALS_ASSERT(j0 - bbox_b[2] >= 0 && j1 - bbox_b[2] <= size_b[1]);
+      DIALS_ASSERT(k0 - bbox_b[4] >= 0 && k1 - bbox_b[4] <= size_b[0]);
+      
       // Iterate over range of indices
       for (int k = k0; k < k1; ++k) {
         for (int j = j0; j < j1; ++j) {

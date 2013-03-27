@@ -77,7 +77,7 @@ namespace dials { namespace model { namespace boost_python {
       source(edge, *list), target(edge, *list)); 
   }
 
-  void export_find_overlapping_reflections()
+  void export_adjacency_list()
   {
     boost_adaptbx::std_pair_conversions::
       to_and_from_tuple<vertex_descriptor, vertex_descriptor>();

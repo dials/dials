@@ -133,16 +133,16 @@ namespace dials { namespace model { namespace boost_python {
         &Reflection::get_bounding_box,
         &Reflection::set_bounding_box)  
       .add_property("shoebox",
-        make_function(reflection_get_shoebox,
-          return_value_policy<reference_existing_object>()),
+        make_function(reflection_get_shoebox, 
+          return_internal_reference<>()),
         &Reflection::set_shoebox)
       .add_property("shoebox_mask",
-        make_function(reflection_get_shoebox_mask,
-          return_value_policy<reference_existing_object>()),
+        make_function(reflection_get_shoebox_mask, 
+          return_internal_reference<>()),
         &Reflection::set_shoebox_mask)
       .add_property("transformed_shoebox",
-        make_function(reflection_get_transformed_shoebox,
-          return_value_policy<reference_existing_object>()),
+        make_function(reflection_get_transformed_shoebox, 
+          return_internal_reference<>()),
         &Reflection::set_transformed_shoebox)
       .add_property("centroid_position",
         &Reflection::get_centroid_position,
