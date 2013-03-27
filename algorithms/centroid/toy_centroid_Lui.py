@@ -17,9 +17,9 @@ class toy_centroid_lui(centroid_interface):
         return
 
     def compute_shoebox_centroid(self, shoebox):
+        import time
 
         f_size, r_size, c_size = shoebox.all()
-
         for i in shoebox:
             if i < 0:
                 raise CentroidException, 'negative pixels in cube'
@@ -29,7 +29,8 @@ class toy_centroid_lui(centroid_interface):
         tot_f = 0.0
         tot_r = 0.0
         tot_c = 0.0
-
+        time1 = time.time()
+        print "time1 =", time1
         for f in range(f_size):
             #print '__________________________________________________________________________________ new image'
             if numpy.sum(data3d[f, :, :]) > 0:
@@ -43,6 +44,7 @@ class toy_centroid_lui(centroid_interface):
                 tot_itst += locl_itst
 
         #print data3d
+
 
 
         for f in range(f_size):
@@ -79,9 +81,9 @@ class toy_centroid_lui(centroid_interface):
             _sr = numpy.sqrt(tot_sr) / tot_itst
             _sc = numpy.sqrt(tot_sc) / tot_itst
 
-            #_sf = tot_sf / tot_itst another formula
-            #_sr = tot_sr / tot_itst another formula
-            #_sc = tot_sc / tot_itst another formula
+            #_sf = tot_sf / tot_itst    # another formula
+            #_sr = tot_sr / tot_itst    # another formula
+            #_sc = tot_sc / tot_itst    # another formula
         else:
             _sf = -1
             _sr = -1
@@ -89,6 +91,12 @@ class toy_centroid_lui(centroid_interface):
         _f += 0.5
         _r += 0.5
         _c += 0.5
+
+        time2 = time.time()
+        print "time2 =", time2
+        timedif = time2 - time1
+        print "timedif =", timedif
+
         print '_f, _r, _c, _sf, _sr, _sc =', _f, _r, _c, _sf, _sr, _sc
 
         return _f, _r, _c, _sf, _sr, _sc
@@ -104,8 +112,6 @@ def single_spot_integrate_2d(data2d):
     diffdata2d = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
     diffdata2d_ext = numpy.zeros(y_to * x_to, dtype = int).reshape(y_to, x_to)
     data2dtmp = data2d
-
-    ext_area = 1                                                               # This used to be one of this "magical variables"
 
     for times in range(5):
         for y in range(1, y_to - 1, 1):
@@ -123,13 +129,13 @@ def single_spot_integrate_2d(data2d):
             cont += 1                                                  # better results
             dif_tot += numpy.abs(data2d[y, x] - data2dsmoth[y, x])     #
     dif_avg = dif_tot / cont                                           #
-    #print 'dif_avg=', dif_avg                                          #
+    #print 'dif_avg=', dif_avg                                         #
     threshold_shift = dif_avg * 2.0                                    #
 #######################################################################################################
     #print 'threshold_shift =', threshold_shift
 
     data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
-
+    ext_area = 1                                                               # This used to be one of this "magical variables"
     for y in range(0, y_to, 1):
         for x in range(0, x_to, 1):
             if data2d[y, x] > data2dsmoth[y, x]:
@@ -146,7 +152,7 @@ def single_spot_integrate_2d(data2d):
     #print diffdata2d_ext
 
 
- ############################################################################## flat background
+############################################################################### flat background
     tot_bkgr = 0.0                                                            # version
     cont = 0.0                                                                #
     for y in range(0, y_to, 1):                                               #
@@ -155,14 +161,14 @@ def single_spot_integrate_2d(data2d):
                 cont += 1                                                     #
                 tot_bkgr += data2d[y, x]                                      #
     bkgr = tot_bkgr / cont                                                    #
-    #print 'bkgr=', bkgr                                                       #
+    #print 'bkgr=', bkgr                                                      #
     for y in range(0, y_to, 1):                                               #
         for x in range(0, x_to, 1):                                           #
             if diffdata2d_ext[y, x] == 1 and data2d[y, x] > bkgr:             #
                 data2d[y, x] = data2d[y, x] - bkgr                            #
             else:                                                             #
                 data2d[y, x] = 0                                              #
- ##############################################################################
+###############################################################################
 
 ############################################################################### curved background
 #   xbord = int(x_to / 5)                                                     # version
