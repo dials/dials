@@ -69,14 +69,14 @@ class RefinementRunner(object):
         b_vec = cfc.get_c('real_space_b')
         c_vec = cfc.get_c('real_space_c')
 
-        mycrystal = Crystal(a_vec, b_vec_, c_vec)
+        mycrystal = Crystal(a_vec, b_vec, c_vec)
 
         print "Prior to refinement the experimental model is:"
         print_model_geometry(self.beam, self.detector, mycrystal)
 
-        refine(self.beam, self.gonio, mycrystal, self.detector, im_width, sweep_range,
-               hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-               verbosity = 1)
+        refine(self.beam, self.gonio, mycrystal, self.detector, im_width,
+               sweep_range, hkls, svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
+               sig_angles, verbosity = 1)
 
         print
         print "Refinement has completed with the following geometry:"
