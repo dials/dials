@@ -60,6 +60,15 @@ class RefinementRunner(object):
 
         # build a Crystal
         # need a_vec, b_vec, c_vec in the lab frame
+
+        from rstbx.cftbx.coordinate_frame_converter import \
+            coordinate_frame_converter
+        cfc = coordinate_frame_converter(self.xparm_file)
+
+        a_vec = cfc.get('real_space_a')
+        b_vec = cfc.get('real_space_b')
+        c_vec = cfc.get('real_space_c')
+        
         mycrystal = Crystal(a_vec, b_vec_, c_vec)
 
         print "Prior to refinement the experimental model is:"
