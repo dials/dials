@@ -96,7 +96,8 @@ def print_model_geometry(beam = None, detector = None, crystal = None):
         print crystal.get_U().round(4)
 
 def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
-           hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles):
+           hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+           verbosity = 0):
 
     """Simple refinement interface for the centroid refinement sprint"""
 
@@ -171,7 +172,8 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     # Set up the refinement engine #
     ################################
 
-    refiner = GaussNewtonIterations(mytarget, pred_param, log=None, verbosity=0)
+    refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
+                                    verbosity=verbosity)
 
     ###################################
     # Do refinement and return models #

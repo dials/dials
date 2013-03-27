@@ -168,7 +168,7 @@ class AdaptLstbx(
                  verbosity = 0):
 
         Refinery.__init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = 0)
+                 verbosity = verbosity)
 
         # required for restart to work (do I need that method?)
         self.x_0 = self.x.deep_copy()
@@ -260,7 +260,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                  verbosity = 0, **kwds):
 
         AdaptLstbx.__init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = 0)
+                 verbosity = verbosity)
 
         libtbx.adopt_optional_init_args(self, kwds)
         if self.track_all: self.track_step = self.track_gradient = True
