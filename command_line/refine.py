@@ -11,13 +11,14 @@ from __future__ import division
 class RefinementRunner(object):
     '''Class to run the refinement script.'''
 
-    def __init__(self, xparm_file, integrate_file, image_files):
+    def __init__(self, xparm_file, integrate_file,
+                 reflections):
         '''Initialise the script.'''
 
         # Set the required input arguments
         self.xparm_file = xparm_file
         self.integrate_file = integrate_file
-        self.image_files = image_files
+        self.reflections = reflections
 
     def __call__(self):
         '''The main body of the script.'''
@@ -25,16 +26,34 @@ class RefinementRunner(object):
         # Begin by loading models from the input files
         self._load_models()
 
+        # pull out data needed for refinement
+        temp = [(ref.miller_index, ref.rotation_angle,
+            matrix.col(ref.beam_vector), ref.image_coord_mm,
+            ref.centroid_variance) for ref in self.reflections]
+
+        hkls, angles, svecs, intersects, variances = zip(*temp)
+
+        # tease out tuples to separate lists
+        d1s, d2s = zip(*intersects)
+        var_d1s, var_d2s, var_angles = zip(*variances)
+
+        px_size = self.detector.get_pixel_size()
+        im_width = self.scan.get_image_oscillation(deg=False)[1]
+
+        # change variances to sigmas and convert units
+        sig_d1s = [px_size[0] * sqrt(e) for e in var_d1s]
+        sig_d2s = [px_size[1] * sqrt(e) for e in var_d2s]
+        sig_angles = [im_width * sqrt(e) for e in var_angles]
+
+        for i in range(10):
+            print hkls[i], svecs[i], d1s[i], sig_d1s[i], d2s[i], sig_d2s[i], angles[i], sig_angles[i]
+
     def _load_models(self):
         '''Load the models from file.'''
         from iotbx.xds import xparm, integrate_hkl
         from dxtbx.sweep import SweepFactory
         from dials.util import io
         import dxtbx
-
-        # Load the sweep from the image files
-        print "Reading image files for sweep."
-        self.sweep = SweepFactory.sweep(self.image_files)
 
         # Load the models from the xparm file
         print "Reading: \"{0}\"".format(self.xparm_file)
@@ -45,7 +64,7 @@ class RefinementRunner(object):
         self.scan = models.get_scan()
 
         # Set the scan model with the image range
-        image_range = self.sweep.get_scan().get_image_range()
+        image_range = (1,900)
         self.scan.set_image_range(image_range)
 
         # Read other data (need to assume an XPARM file)
@@ -86,8 +105,26 @@ def run(reflection_file):
     reflections = read_reflection_file(reflection_file)
 
     # Print some reflections
-    for r in reflections:
-        print r
+    for i in range(10):
+        print reflections[i]
+    #for r in reflections:
+    #    print r
+
+    # reconstitute models
+
+    # pull out data needed for refinement
+    temp = [(ref.miller_index, ref.rotation_angle,
+        matrix.col(ref.beam_vector), ref.image_coord_mm,
+        ref.centroid_variance) for ref in reflections]
+    hkls, angles, svecs, intersects, variances = zip(*temp)
+
+    d1s, d2s = zip(*intersects)
+    var_d1s, var_d2s, var_angles = zip(*variances)
+
+    sig_d1s = [sqrt(e) for e in var_d1s]
+    sig_d2s = [sqrt(e) for e in var_d2s]
+    sig_angles = [sqrt(e) for e in var_angles]
+
 
 if __name__ == '__main__':
     from optparse import OptionParser
@@ -96,7 +133,6 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] /path/to/data.p "
     usage += "/path/to/XPARM.XDS "
     usage += "/path/to/INTEGRATE.HKL "
-    usage += "/path/to/image*.cbf"
 
     # Parse the command line options
     parser = OptionParser(usage)
@@ -111,9 +147,11 @@ if __name__ == '__main__':
         reflection_file = args[0]
         xparm_file = args[1]
         integrate_file = args[2]
-        image_files = args[3:]
 
+        # reconstitute the reflections
+        reflections = read_reflection_file(reflection_file)
         # Run the refinement
 #        run(reflection_file)
-        runner = RefinementRunner(xparm_file, integrate_file, image_files)
+        runner = RefinementRunner(xparm_file, integrate_file,
+                                  reflections)
         runner()
