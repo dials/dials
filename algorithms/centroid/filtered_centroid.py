@@ -162,10 +162,10 @@ class FilteredCentroid(centroid_interface):
             c_tot += d * (c - _c) ** 2
             d_tot += d
 
-        # Compute standard deviation of the centroid position
-        _sf = math.sqrt(f_tot / d_tot)
-        _sr = math.sqrt(r_tot / d_tot)
-        _sc = math.sqrt(c_tot / d_tot)
+        # Compute variance of the centroid position
+        _vf = f_tot / d_tot
+        _vr = r_tot / d_tot
+        _vc = c_tot / d_tot
 
-        # Return the position and standard deviation
-        return _f, _r, _c, _sf, _sr, _sc
+        # Return the position and variance
+        return _f, _r, _c, _vf, _vr, _vc
