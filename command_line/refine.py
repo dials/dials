@@ -24,7 +24,7 @@ class RefinementRunner(object):
         '''The main body of the script.'''
         from scitbx import matrix
         from math import sqrt
-        
+
         # Begin by loading models from the input files
         self._load_models()
 
@@ -42,13 +42,36 @@ class RefinementRunner(object):
         px_size = self.detector.get_pixel_size()
         im_width = self.scan.get_oscillation(deg=False)[1]
 
+        # warning! hard coded nastiness!
+        sweep_range = (0, 900 * im_width)
+
         # change variances to sigmas and convert units
         sig_d1s = [px_size[0] * sqrt(e) for e in var_d1s]
         sig_d2s = [px_size[1] * sqrt(e) for e in var_d2s]
         sig_angles = [im_width * sqrt(e) for e in var_angles]
 
-        for i in range(10):
-            print hkls[i], svecs[i], d1s[i], sig_d1s[i], d2s[i], sig_d2s[i], angles[i], sig_angles[i]
+        #for i in range(10):
+        #    print hkls[i], svecs[i], d1s[i], sig_d1s[i], d2s[i], sig_d2s[i], angles[i], sig_angles[i]
+        assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
+               len(sig_d2s) == len(angles) == len(sig_angles)
+
+        from dials.scratch.dgw.refinement import print_model_geometry, refine
+        from dials.scratch.dgw.crystal_model import Crystal
+
+        # build a Crystal
+        # need a_vec, b_vec, c_vec in the lab frame
+        mycrystal = Crystal(a_vec, b_vec_, c_vec)
+
+        print "Prior to refinement the experimental model is:"
+        print_model_geometry(self.beam, self.detector, mycrystal)
+
+        refine(self.beam, self.gonio, mycrystal, self.detector, im_width, sweep_range,
+               hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+               verbosity = 1)
+
+        print
+        print "Refinement has completed with the following geometry:"
+        print_model_geometry(mybeam, mydetector, mycrystal)
 
     def _load_models(self):
         '''Load the models from file.'''
@@ -103,30 +126,10 @@ def read_reflection_file(filename):
 def run(reflection_file):
     '''Do the refinement.'''
     from scitbx import matrix
-    
+
     # Load the reflections from the pickle file
     reflections = read_reflection_file(reflection_file)
 
-    # Print some reflections
-    for i in range(10):
-        print reflections[i]
-    #for r in reflections:
-    #    print r
-
-    # reconstitute models
-
-    # pull out data needed for refinement
-    temp = [(ref.miller_index, ref.rotation_angle,
-        matrix.col(ref.beam_vector), ref.image_coord_mm,
-        ref.centroid_variance) for ref in reflections]
-    hkls, angles, svecs, intersects, variances = zip(*temp)
-
-    d1s, d2s = zip(*intersects)
-    var_d1s, var_d2s, var_angles = zip(*variances)
-
-    sig_d1s = [sqrt(e) for e in var_d1s]
-    sig_d2s = [sqrt(e) for e in var_d2s]
-    sig_angles = [sqrt(e) for e in var_angles]
 
 
 if __name__ == '__main__':
