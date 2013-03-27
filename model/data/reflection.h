@@ -158,17 +158,32 @@ namespace dials { namespace model {
     }
 
     /** Get the reflection shoebox pixels */
-    flex_int get_shoebox() const {
+    const flex_int& get_shoebox() const {
       return shoebox_;
     }
 
-    /** Get the reflection shoebox weights */
-    flex_double get_shoebox_weights() const {
-      return shoebox_weights_;
+    /** Get the reflection shoebox pixels */
+    flex_int& get_shoebox() {
+      return shoebox_;
+    }
+
+    /** Get the reflection shoebox mask */
+    const flex_int& get_shoebox_mask() const {
+      return shoebox_mask_;
+    }
+
+    /** Get the reflection shoebox mask */
+    flex_int& get_shoebox_mask() {
+      return shoebox_mask_;
     }
 
     /** Get the transformed profile */
-    flex_double get_transformed_shoebox() const {
+    const flex_double& get_transformed_shoebox() const {
+      return transformed_shoebox_;
+    }
+
+    /** Get the transformed profile */
+    flex_double& get_transformed_shoebox() {
       return transformed_shoebox_;
     }
 
@@ -222,9 +237,9 @@ namespace dials { namespace model {
       shoebox_ = shoebox;
     }
 
-    /** Set the reflection shoebox weights */
-    void set_shoebox_weights(const flex_double &shoebox_weights) {
-      shoebox_weights_ = shoebox_weights;
+    /** Set the reflection shoebox mask */
+    void set_shoebox_mask(const flex_int &shoebox_mask) {
+      shoebox_mask_ = shoebox_mask;
     }
 
     /** Set the transformed profile */
@@ -253,7 +268,7 @@ namespace dials { namespace model {
     int6 bounding_box_;
 
     flex_int shoebox_;
-    flex_double shoebox_weights_;
+    flex_int shoebox_mask_;
     flex_double transformed_shoebox_;
 
     vec3<double> centroid_position_;

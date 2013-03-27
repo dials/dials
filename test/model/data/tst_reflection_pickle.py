@@ -21,7 +21,7 @@ def tst_reflection():
     obj1 = Reflection()
     obj2 = pickle_then_unpickle(obj1)
     print "OK"
-    
+
 def tst_reflection_list():
     '''Test pickling the beam object.'''
     obj1 = ReflectionList()

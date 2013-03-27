@@ -13,8 +13,8 @@
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
-#include <boost/graph/adjacency_list.hpp>
 #include <dials/model/data/reflection.h>
+#include <dials/model/data/adjacency_list.h>
 #include <dials/algorithms/spatial_indexing/detect_collisions.h>
 #include <dials/error.h>
 
@@ -23,12 +23,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::int6;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
-
-  // Create the adjacency list type
-  typedef boost::adjacency_list<
-    boost::listS,
-    boost::vecS,
-    boost::undirectedS> AdjacencyList;
+  using dials::model::AdjacencyList;
 
   // Helper functions needed for 3D collision detection
   template <> struct bound_coord_type<int6> { typedef int type; };
@@ -48,6 +43,7 @@ namespace dials { namespace algorithms {
    * @param reflections The reflection list.
    * @returns An adjacency list
    */
+  inline
   boost::shared_ptr<AdjacencyList> find_overlapping_reflections(
       const ReflectionList &reflections) {
 

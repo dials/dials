@@ -23,7 +23,8 @@ namespace dials { namespace algorithms {
   using dials::model::ReflectionList;
 
   /**
-   * Allocate the memory for reflection profiles (on the detector side).
+   * Allocate the memory for reflection profiles (on the detector side)
+   * and the reflection mask.
    * @param reflections The reflection list.
    */
   inline
@@ -33,7 +34,8 @@ namespace dials { namespace algorithms {
       int size_z = r.get_bounding_box()[5] - r.get_bounding_box()[4];
       int size_y = r.get_bounding_box()[3] - r.get_bounding_box()[2];
       int size_x = r.get_bounding_box()[1] - r.get_bounding_box()[0];
-      r.set_shoebox(flex_int(flex_grid<>(size_z, size_y, size_x)));
+      r.set_shoebox(flex_int(flex_grid<>(size_z, size_y, size_x), 0));
+      r.set_shoebox_mask(flex_int(flex_grid<>(size_z, size_y, size_x), 1));
     }
   }
 

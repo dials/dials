@@ -20,6 +20,7 @@ algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
 algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
+algorithms/integration/boost_python/shoebox_masker.cc -text
 algorithms/integration/boost_python/subtract_background.cc -text
 algorithms/integration/boost_python/xds_coordinate_system.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
@@ -28,6 +29,7 @@ algorithms/integration/from_beam_vector_to_xds.h -text
 algorithms/integration/from_xds_e3_to_phi.h -text
 algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/reflection_profile_helpers.h -text
+algorithms/integration/shoebox_masker.h -text
 algorithms/integration/subtract_background.h -text
 algorithms/integration/xds_coordinate_system.h -text
 algorithms/spatial_indexing/SConscript -text
@@ -123,6 +125,8 @@ model/SConscript -text
 model/__init__.py -text
 model/data/SConscript -text
 model/data/__init__.py -text
+model/data/adjacency_list.h -text
+model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
 model/data/boost_python/reflection.cc -text
 model/data/reflection.h -text

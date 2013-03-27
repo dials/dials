@@ -3,6 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/reflection.cc',
+    'boost_python/adjacency_list.cc',
     'boost_python/data_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_model_data_ext', source=sources)

@@ -143,7 +143,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
 
     # Copy the reflection profiles from the sweep the reflection objects
     reflections = print_call_info(
-        lambda: extract_reflection_profiles(sweep, reflections),
+        lambda: extract_reflection_profiles(sweep, reflections, adjacency_list),
         "Copying reflection profiles from sweep", "reflections")
 
     # Print some reflection statistics

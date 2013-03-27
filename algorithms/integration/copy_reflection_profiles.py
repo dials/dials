@@ -73,18 +73,20 @@ def copy_image_pixels(sweep, reflections, frame_indices):
     # Return the reflections
     return reflections
 
-def extract_reflection_profiles(sweep, reflections):
+def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
     """ Copy all the pixels from the sweep to the reflection profiles.
 
     Params:
         sweep The sweep object
         reflections The reflection list
+        adjacency_list The adjacency list (optional)
 
     Returns:
         The updated reflection list.
 
     """
     from dials.algorithms.integration import allocate_reflection_profiles
+    from dials.algorithms.integration import ShoeboxMasker
 
     # Allocate memory for reflection profiles
     allocate_reflection_profiles(reflections)
@@ -92,5 +94,13 @@ def extract_reflection_profiles(sweep, reflections):
     # Get the indices of the reflections recorded on each frame
     frame_indices = get_reflection_frame_indices(sweep, reflections)
 
+    # Copy the pixels from the sweep to the reflection shoeboxes
+    reflections = copy_image_pixels(sweep, reflections, frame_indices)
+
+    # If the adjacency list is given, then create the reflection mask
+    if adjacency_list:
+        shoebox_masker = ShoeboxMasker()
+        shoebox_masker(reflections, adjacency_list)
+
     # Return the reflections
-    return copy_image_pixels(sweep, reflections, frame_indices)
+    return reflections

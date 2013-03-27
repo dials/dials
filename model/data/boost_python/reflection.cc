@@ -51,7 +51,7 @@ namespace dials { namespace model { namespace boost_python {
         r.get_centroid_position(),
         r.get_centroid_variance(),
         r.get_shoebox(),
-        r.get_shoebox_weights(),
+        r.get_shoebox_mask(),
         r.get_transformed_shoebox());
     }
 
@@ -82,9 +82,9 @@ namespace dials { namespace model { namespace boost_python {
       r.set_bounding_box(extract<int6>(state[8]));
       r.set_centroid_position(extract<vec3<double> >(state[9]));
       r.set_centroid_variance(extract<vec3<double> >(state[10]));
-      r.set_shoebox(extract<flex_int>(state[11]));
-      r.set_shoebox_weights(extract<flex_double>(state[12]));
-      r.set_transformed_shoebox(extract<flex_double>(state[13]));
+      r.set_shoebox(extract<const flex_int&>(state[11]));
+      r.set_shoebox_mask(extract<const flex_int&>(state[12]));
+      r.set_transformed_shoebox(extract<const flex_double&>(state[13]));
     }
   };
 
@@ -97,6 +97,15 @@ namespace dials { namespace model { namespace boost_python {
         &Reflection::get_miller_index,
         &Reflection::set_miller_index)
       .def("is_zero", &Reflection::is_zero);
+
+    flex_int& (Reflection::*reflection_get_shoebox)() = 
+      &Reflection::get_shoebox;
+
+    flex_int& (Reflection::*reflection_get_shoebox_mask)() = 
+      &Reflection::get_shoebox_mask;
+
+    flex_double& (Reflection::*reflection_get_transformed_shoebox)() = 
+      &Reflection::get_transformed_shoebox;
 
     class_<Reflection, bases<ReflectionBase> > ("Reflection")
       .def(init <const Reflection &>())
@@ -124,13 +133,16 @@ namespace dials { namespace model { namespace boost_python {
         &Reflection::get_bounding_box,
         &Reflection::set_bounding_box)  
       .add_property("shoebox",
-        &Reflection::get_shoebox,
+        make_function(reflection_get_shoebox,
+          return_value_policy<reference_existing_object>()),
         &Reflection::set_shoebox)
-      .add_property("shoebox_weights",
-        &Reflection::get_shoebox_weights,
-        &Reflection::set_shoebox_weights)
+      .add_property("shoebox_mask",
+        make_function(reflection_get_shoebox_mask,
+          return_value_policy<reference_existing_object>()),
+        &Reflection::set_shoebox_mask)
       .add_property("transformed_shoebox",
-        &Reflection::get_transformed_shoebox,
+        make_function(reflection_get_transformed_shoebox,
+          return_value_policy<reference_existing_object>()),
         &Reflection::set_transformed_shoebox)
       .add_property("centroid_position",
         &Reflection::get_centroid_position,
