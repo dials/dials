@@ -1,0 +1,18 @@
+INFO        Default Laue Diffractometer as VIVALDI
+NAME        LAUE_DIFF
+DET_TYPE    Cyl
+DIST_DET      159.155
+DIM_XZP      4871.000 6191.000   487   619
+DISP_CENTRE     0.000    0.000    0.000
+GN_CENTRE       0.000    0.000
+XZ_ORIGIN       150.0    320.0 raster units (pixels) => In mm units:    -937.1    105.2
+ROT_ORDER   xzy
+TILT_ANGLES     0.000    0.000    0.000
+RESOL           0.800
+WAV_LIMITS      0.900    4.100
+GAM+_LIMITS     0.000  876.780
+GAM-_LIMITS  -876.780    0.000
+NU_LIMITS     -87.057   87.057
+X_LIMITS    -1498.384 3372.616
+Z_LIMITS    -3095.500 3095.500
+END

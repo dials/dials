@@ -409,6 +409,14 @@ scratch/luiso_s/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
 scratch/luiso_s/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
 scratch/luiso_s/borrowed_predict_spots.py -text svneol=unset#text/plain
 scratch/luiso_s/cctbx_introduction_1.png -text
+scratch/luiso_s/contrib/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
+scratch/luiso_s/contrib/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
+scratch/luiso_s/contrib/borrowed_predict_spots.py -text svneol=unset#text/plain
+scratch/luiso_s/contrib/cctbx_introduction_1.png -text
+scratch/luiso_s/contrib/my_to_xds.py -text svneol=unset#text/plain
+scratch/luiso_s/contrib/thaumatin_die_M1S5_1_0001.img -text
+scratch/luiso_s/contrib/tst_w_predict_spots.py -text svneol=unset#text/plain
+scratch/luiso_s/contrib/ximg2701_00001.cbf -text svneol=unset#unset
 scratch/luiso_s/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
 scratch/luiso_s/integrate_2d.py -text svneol=unset#text/plain
@@ -417,6 +425,29 @@ scratch/luiso_s/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/matrix_test02_sub.py -text svneol=unset#text/plain
 scratch/luiso_s/matrix_test_f.f90 -text
 scratch/luiso_s/my_to_xds.py -text svneol=unset#text/plain
+scratch/luiso_s/old_style_code/My_new_test_Inst.inf -text
+scratch/luiso_s/old_style_code/My_new_test_Inst_stable.inf -text
+scratch/luiso_s/old_style_code/img_raw.tst -text
+scratch/luiso_s/old_style_code/img_raw01.tst -text
+scratch/luiso_s/old_style_code/img_tst.raw -text
+scratch/luiso_s/old_style_code/install_intructions.txt -text svneol=unset#text/plain
+scratch/luiso_s/old_style_code/tst02.cfl -text
+scratch/luiso_s/old_style_code/tst_img_raw.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/2d_integr.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/2d_integr_caller.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/matrix_test_f.f90 -text
+scratch/luiso_s/test_code/tst05.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_loops.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_mask.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_math.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/tst05.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_img_raw.py -text svneol=unset#text/plain
 scratch/luiso_s/tst_mask.py -text svneol=unset#text/plain

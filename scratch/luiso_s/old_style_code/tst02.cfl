@@ -1,0 +1,7 @@
+Title  fel_22
+!        a        b        c     alpha    beta   gamma
+Cell   17.2596  11.989  10.077   90.0   116.140   90.0
+!     Space Group
+Spgr  C 2/m
+
+INSTR  My_new_test_Inst.inf
