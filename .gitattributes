@@ -403,6 +403,7 @@ scratch/jmp/test/test_spot_prediction.py -text
 scratch/jmp/test/test_spot_predictor.py -text
 scratch/jmp/test/test_xds_coordinate_system.py -text
 scratch/jmp/test_map.cc -text
+scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/contrib/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
 scratch/luiso_s/contrib/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
 scratch/luiso_s/contrib/borrowed_predict_spots.py -text svneol=unset#text/plain
@@ -434,6 +435,9 @@ scratch/luiso_s/test_code/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_math.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
+scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
+scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/caller_tst.py -text svneol=unset#text/plain
+scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/function01.py -text svneol=unset#text/plain
 test/SConscript -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
