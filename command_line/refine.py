@@ -28,6 +28,8 @@ class RefinementRunner(object):
         # Begin by loading models from the input files
         self._load_models()
 
+        self._saved_reflections = self.reflections.deep_copy()
+
         # pull out data needed for refinement
         temp = [(ref.miller_index, ref.rotation_angle,
             matrix.col(ref.beam_vector), ref.image_coord_mm,
@@ -76,18 +78,26 @@ class RefinementRunner(object):
 
         refine(self.beam, self.gonio, mycrystal, self.detector, im_width,
                sweep_range, hkls, svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
-               sig_angles, verbosity = 1, fix_cell=True)
+               sig_angles, verbosity = 1, fix_cell=False)
 
         print
         print "Refinement has completed with the following geometry:"
         print_model_geometry(self.beam, self.detector, mycrystal)
 
+        self.crystal = mycrystal
+
+        # Do a test of new reflection pos
+        self._update_reflections_test()
+   
     def _load_models(self):
         '''Load the models from file.'''
         from iotbx.xds import xparm, integrate_hkl
         from dxtbx.sweep import SweepFactory
         from dials.util import io
         import dxtbx
+        from rstbx.cftbx.coordinate_frame_converter import \
+            coordinate_frame_converter
+        from scitbx import matrix        
 
         # Load the models from the xparm file
         print "Reading: \"{0}\"".format(self.xparm_file)
@@ -104,10 +114,16 @@ class RefinementRunner(object):
         # Read other data (need to assume an XPARM file)
         xparm_handle = xparm.reader()
         xparm_handle.read_file(self.xparm_file)
-        self.UB = io.get_ub_matrix_from_xparm(xparm_handle)
-        self.unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
         self.space_group = io.get_space_group_type_from_xparm(xparm_handle)
-        self.d_min = self.detector.get_max_resolution_at_corners(
+        cfc = coordinate_frame_converter(self.xparm_file)
+        a_vec = cfc.get('real_space_a')
+        b_vec = cfc.get('real_space_b')
+        c_vec = cfc.get('real_space_c')
+        self.unit_cell = cfc.get_unit_cell()
+        self.UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
+
+        # Calculate resolution
+        d_min = self.detector.get_max_resolution_at_corners(
             self.beam.get_direction(), self.beam.get_wavelength())
 
         # Read the integrate file to get the sigma_d and sigma_m
@@ -125,6 +141,66 @@ class RefinementRunner(object):
         print self.gonio
         print self.scan
         print self.UB
+
+    def _update_reflections_test(self):
+        from cctbx.array_family import flex
+        from collections import defaultdict
+        
+        # Get miller indices from saved reflectons
+        miller_indices = [r.miller_index for r in self._saved_reflections]
+        self.miller_indices = flex.miller_index(miller_indices)
+        
+        print "Predicting new reflections"
+        self._predict_reflections()
+
+        # Put coords from same hkl in dict for saved reflections
+        coord1 = defaultdict(list)
+        for r1 in self._saved_reflections:
+            coord1[r1.miller_index].append(r1.image_coord_px)
+
+        # Put coords from same hkl in dict for new reflections
+        coord2 = defaultdict(list)
+        for r2 in self._new_reflections:
+            coord2[r2.miller_index].append(r2.image_coord_px)
+                        
+        # Print out coords for each hkl
+        for h in coord1.keys():
+            c1 = coord1[h]
+            c2 = coord2[h]
+            #print c1, c2                        
+        
+    def _predict_reflections(self):
+        '''Predict the reflection positions and bounding boxes.'''
+        from dials.algorithms.spot_prediction import IndexGenerator
+        from dials.algorithms.spot_prediction import RayPredictor
+        from dials.algorithms.spot_prediction import ray_intersection
+        from dials.algorithms.spot_prediction import reflection_frames
+        from dials.algorithms.integration import BBoxCalculator
+        from math import pi
+
+        # Create the spot predictor
+        s0 = self.beam.get_s0()
+        m2 = self.gonio.get_rotation_axis()
+        UB = self.UB
+        dphi = self.scan.get_oscillation_range(deg=False)
+        predict_rays = RayPredictor(s0, m2, UB, dphi)
+
+        # Predict the reflections
+        self._new_reflections = reflection_frames(self.scan, ray_intersection(
+            self.detector, predict_rays(self.miller_indices)))
+
+        # Set the divergence and mosaicity
+        n_sigma = 5.0
+        delta_divergence = n_sigma * self.sigma_divergence * pi / 180.0
+        delta_mosaicity = n_sigma * self.sigma_mosaicity * pi / 180.0
+
+        # Create the bounding box calculator
+        calculate_bbox = BBoxCalculator(self.beam, self.detector, self.gonio,
+            self.scan, delta_divergence, delta_mosaicity)
+
+        # Calculate the frame numbers of all the reflections
+        calculate_bbox(self._new_reflections)        
+        
 
 def read_reflection_file(filename):
     '''Read reflections from pickle file.'''
