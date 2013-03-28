@@ -422,6 +422,7 @@ scratch/luiso_s/old_style_code/tst02.cfl -text
 scratch/luiso_s/old_style_code/tst_img_raw.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/2d_integr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/2d_integr_caller.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
@@ -436,6 +437,7 @@ scratch/luiso_s/test_code/tst_math.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
+scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/caller_tst.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/function01.py -text svneol=unset#text/plain
