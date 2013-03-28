@@ -53,6 +53,9 @@ class ToyCentroidRunner(object):
         from dxtbx.sweep import SweepFactory
         from dials.util import io
         import dxtbx
+        from rstbx.cftbx.coordinate_frame_converter import \
+            coordinate_frame_converter
+        from scitbx import matrix
 
         # Load the sweep from the image files
         print "Reading image files for sweep."
@@ -70,13 +73,19 @@ class ToyCentroidRunner(object):
         image_range = self.sweep.get_scan().get_image_range()
         self.scan.set_image_range(image_range)
 
-        # Read other data (need to assume an XPARM file)
+        # Read other data (need to assume an XPARM file
         xparm_handle = xparm.reader()
         xparm_handle.read_file(self.xparm_file)
-        self.UB = io.get_ub_matrix_from_xparm(xparm_handle)
-        self.unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
         self.space_group = io.get_space_group_type_from_xparm(xparm_handle)
-        self.d_min = self.detector.get_max_resolution_at_corners(
+        cfc = coordinate_frame_converter(self.xparm_file)
+        a_vec = cfc.get('real_space_a')
+        b_vec = cfc.get('real_space_b')
+        c_vec = cfc.get('real_space_c')
+        self.unit_cell = cfc.get_unit_cell()
+        self.UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
+
+        # Calculate resolution
+        d_min = self.detector.get_max_resolution_at_corners(
             self.beam.get_direction(), self.beam.get_wavelength())
 
         # Read the integrate file to get the sigma_d and sigma_m

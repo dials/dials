@@ -80,6 +80,9 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     from math import pi
     from dxtbx.sweep import SweepFactory
     import dxtbx
+    from rstbx.cftbx.coordinate_frame_converter import \
+        coordinate_frame_converter
+    from scitbx import matrix
 
     # Set the number of frames
     if image_frames:
@@ -106,9 +109,15 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
     xparm_handle.read_file(xparm_path)
-    UB = io.get_ub_matrix_from_xparm(xparm_handle)
-    unit_cell = io.get_unit_cell_from_xparm(xparm_handle)
     space_group = io.get_space_group_type_from_xparm(xparm_handle)
+    cfc = coordinate_frame_converter(xparm_path)
+    a_vec = cfc.get('real_space_a')
+    b_vec = cfc.get('real_space_b')
+    c_vec = cfc.get('real_space_c')
+    unit_cell = cfc.get_unit_cell()
+    UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
+
+    # Calculate resolution
     d_min = detector.get_max_resolution_at_corners(
         beam.get_direction(), beam.get_wavelength())
 

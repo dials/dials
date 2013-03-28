@@ -10,6 +10,9 @@ class TestRayPredictor:
         from math import ceil
         from os.path import realpath, dirname, join
         import dxtbx
+        from rstbx.cftbx.coordinate_frame_converter import \
+            coordinate_frame_converter
+        from scitbx import matrix
 
         # The XDS files to read from
         test_path = dirname(dirname(dirname(realpath(__file__))))
@@ -30,10 +33,14 @@ class TestRayPredictor:
         self.scan = models.get_scan()
 
         # Get crystal parameters
-        self.ub_matrix = io.get_ub_matrix_from_xparm(self.gxparm_handle)
-        self.unit_cell = io.get_unit_cell_from_xparm(self.gxparm_handle)
         self.space_group_type = io.get_space_group_type_from_xparm(
             self.gxparm_handle)
+        cfc = coordinate_frame_converter(gxparm_filename)
+        a_vec = cfc.get('real_space_a')
+        b_vec = cfc.get('real_space_b')
+        c_vec = cfc.get('real_space_c')
+        self.unit_cell = cfc.get_unit_cell()
+        self.ub_matrix = matrix.sqr(a_vec + b_vec + c_vec).inverse()
 
         # Get the minimum resolution in the integrate file
         d = [self.unit_cell.d(h) for h in self.integrate_handle.hkl]
