@@ -80,7 +80,7 @@ class RefinementRunner(object):
 
         print
         print "Refinement has completed with the following geometry:"
-        print_model_geometry(mybeam, mydetector, mycrystal)
+        print_model_geometry(self.beam, self.detector, mycrystal)
 
     def _load_models(self):
         '''Load the models from file.'''
