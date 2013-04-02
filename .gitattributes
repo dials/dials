@@ -440,9 +440,6 @@ scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
-scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/__init__.py -text svneol=unset#text/plain
-scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/caller_tst.py -text svneol=unset#text/plain
-scratch/luiso_s/tree_folder_call_test/treeeee01/treeeee02/function01.py -text svneol=unset#text/plain
 test/SConscript -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
