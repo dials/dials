@@ -1,7 +1,8 @@
 from __future__ import division
 
-from dials.scratch.luiso_s.tree_folder_call_test.function01 import funt
-funt()
+from dials.scratch.luiso_s.tree_folder_call_test.function01 import *
+#from dials.scratch.luiso_s.tree_folder_call_test.function01 import find_mask_2d
+import numpy
 
 import os
 from dxtbx.sweep import SweepFactory
@@ -14,99 +15,57 @@ except KeyError, e:
     print 'FAIL: dials_regression not configured'
     quit()
 
-# Get the filenames
-#filenames = [os.path.join(dials_regression, 'centroid_test_data',
-#                       'centroid_%04d.cbf' % j) for j in range(1, 10)]
+
 
 filenames = ["/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0001.cbf", \
              "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0002.cbf", \
              "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0003.cbf", \
              "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0004.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0005.cbf"]
+             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0005.cbf", \
+             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0006.cbf", \
+             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0007.cbf", \
+             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0008.cbf", \
+             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0009.cbf"]
 
-# Create the sweep
 sweep = SweepFactory.sweep(filenames)
-assert(len(sweep) == 5)
-print "OK"
-'''
-from __future__ import division
+print "OK 01"
 
-def tst_sweep():
-    import os
-    from dxtbx.sweep import SweepFactory
-    import libtbx.load_env
+array_01 = sweep.to_array()
+data3d = array_01.as_numpy_array()
 
-    # Try to find the dials regression directory
-    try:
-        dials_regression = libtbx.env.dist_path('dials_regression')
-    except KeyError, e:
-        print 'FAIL: dials_regression not configured'
-        return
+n_frm = numpy.size(data3d[:, 0:1, 0:1])
+n_row = numpy.size(data3d[0:1, :, 0:1])
+n_col = numpy.size(data3d[0:1, 0:1, :])
+#print 'n_frm, n_col,n_row =', n_frm, n_col, n_row
+#print data3d[:, 0:10, 0:10]
+#print "OK 02"
 
-    # Get the filenames
-    filenames = [os.path.join(dials_regression, 'centroid_test_data',
-                           'centroid_%04d.cbf' % j) for j in range(1, 10)]
+data2d = data3d[1, 1000:1500, 1000:1500]
 
-    # Create the sweep
-    sweep = SweepFactory.sweep(filenames)
-    assert(len(sweep) == 9)
-    print "OK"
+#display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
+#"""Display the image with coordinates overlayed."""
+#from matplotlib import pylab, cm
+#plt = pylab.imshow(data2d, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+#pylab.show()
 
-    # Get the models from the sweep
-    sweep.get_beam()
-    sweep.get_detector()
-    sweep.get_goniometer()
-    sweep.get_scan()
+sumdat = numpy.sum(data2d)
+print 'sum =', sumdat
 
-    # Get the image size
-    image_size = sweep.get_detector().get_image_size()
+print data2d[206:213, 335:343]
 
-    # Get a couple of sub-sweeps
-    sub_sweep_1 = sweep[0:7]
-    sub_sweep_2 = sweep[3:9]
+dif = find_mask_2d(data2d)
 
-    # Check sweep length
-    assert(len(sub_sweep_1) == 7)
-    assert(len(sub_sweep_2) == 6)
-    print "OK"
+print data2d[206:213, 335:343]
+print dif[206:213, 335:343]
+sumdat = numpy.sum(data2d)
+print 'sum =', sumdat
 
-    # Get arrays from sub sweeps
-    array_0 = sweep.to_array()
-    array_1 = sub_sweep_1.to_array()
-    array_2 = sub_sweep_2.to_array()
+#plt = pylab.imshow(data2d, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+#pylab.show()
 
-    # Check 3d array sizes
-    assert(array_0.all() == (9, image_size[1], image_size[0]))
-    assert(array_1.all() == (7, image_size[1], image_size[0]))
-    assert(array_2.all() == (6, image_size[1], image_size[0]))
-    print "OK"
 
-    # Check sweep is valid
-    assert(sweep.is_valid() == True)
-    print "OK"
+#pylab.scatter(xcoords, ycoords, marker = 'x')
+#pylab.scatter(xc, yc, marker = 'x')
+#plt.axes.get_xaxis().set_ticks([])
+#plt.axes.get_yaxis().set_ticks([])
 
-    # Get sub-sections of sweep
-    array_1 = sweep.to_array((2, 5))
-    array_2 = sweep.to_array((2, 5, 100, 105, 200, 240))
-
-    assert(array_1.all() == (3, image_size[1], image_size[0]))
-    assert(array_2.all() == (3, 5, 40))
-    print "OK"
-
-    # Loop through all the images in a sweep
-    count = 0
-    for image in sweep:
-        count += 1
-    assert(count == 9)
-    print "OK"
-
-    # Loop through all the images in a sub sweep
-    count = 0
-    for image in sweep[3:7]:
-        count += 1
-    assert(count == 4)
-    print "OK"
-
-if __name__ == '__main__':
-    tst_sweep()
-'''
