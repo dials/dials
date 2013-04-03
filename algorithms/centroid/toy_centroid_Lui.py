@@ -17,7 +17,7 @@ class toy_centroid_lui(centroid_interface):
         return
 
     def compute_shoebox_centroid(self, shoebox):
-        import time
+        #import time
 
         f_size, r_size, c_size = shoebox.all()
         for i in shoebox:

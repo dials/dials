@@ -26,16 +26,17 @@ def find_mask_2d(data2d):
     #threshold_shift = (numpy.max(data2dsmoth) - numpy.min(data2dsmoth)) / 2.0 # This used to be one of this "magical variables"
 
 #######################################################################################################
-    cont = 0                                                                  # This way to calculate
-    dif_tot = 0                                                               # this magical variable
-    for row in range(0, n_row, 1):                                            # is more statistical
-        for col in range(0, n_col, 1):                                        # and seems to be giving
-            cont += 1                                                         # better results
-            dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
-    dif_avg = dif_tot / cont                                                  #
-    #print 'dif_avg=', dif_avg                                                #
-    threshold_shift = dif_avg * 3.0                                           #
+    #cont = 0                                                                  # This way to calculate
+    #dif_tot = 0                                                               # this magical variable
+    #for row in range(0, n_row, 1):                                            # is more statistical
+    #    for col in range(0, n_col, 1):                                        # and seems to be giving
+    #        cont += 1                                                         # better results
+    #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
+    #dif_avg = dif_tot / cont                                                  #
+    ##print 'dif_avg=', dif_avg                                                #
 #######################################################################################################
+    threshold_shift = 7.39432533334
+
     print 'threshold_shift =', threshold_shift
 
     data2dsmoth[0:n_row, 0:n_col] = data2dsmoth[0:n_row, 0:n_col] + threshold_shift
@@ -54,6 +55,7 @@ def find_mask_2d(data2d):
     #print diffdata2d
     #print '_____________diffdata2d_ext'
     #print diffdata2d_ext
+#    return diffdata2d
     return diffdata2d_ext
 '''
 ############################################################################### flat background
@@ -110,3 +112,66 @@ def find_mask_2d(data2d):
 ##   display_image_with_predicted_spots_n_centoids(data2d, col_cm, row_cm, n_col / 2, n_row / 2)
 #
 #   return tot
+
+def find_bound_2d(mask):
+    n_col = numpy.size(mask[0:1, :])
+    n_row = numpy.size(mask[:, 0:1])
+    tmp_mask = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
+    tmp_mask[:, :] = mask[:, :]
+    lst_coord = []
+    for row in range(0, n_row, 1):
+        for col in range(0, n_col, 1):
+            if mask[row, col] == 1 and tmp_mask[row, col] == 1:
+                lft_bound = col - 1
+                rgt_bound = col + 1
+                bot_bound = row - 1
+                top_bound = row + 1
+
+                bot_in = "True"
+                top_in = "True"
+                lft_in = "True"
+                rgt_in = "True"
+
+                while bot_in == "True" or top_in == "True" or lft_in == "True" or rgt_in == "True" :
+                    bot_in = "False"
+                    top_in = "False"
+                    lft_in = "False"
+                    rgt_in = "False"
+
+                    # left and right walls
+                    if lft_bound > 0 and rgt_bound < n_col:
+                        for scan_row in range(bot_bound, top_bound, 1):
+                            if mask[scan_row, lft_bound] == 1:
+                                lft_in = "True"
+                                break
+                        if lft_in == "True":
+                            lft_bound -= 1
+
+                        for scan_row in range(bot_bound, top_bound, 1):
+                            if mask[scan_row, rgt_bound] == 1:
+                                rgt_in = "True"
+                                break
+                        if rgt_in == "True":
+                            rgt_bound += 1
+
+                    # top and bottom walls
+                    if bot_bound > 0 and top_bound < n_row:
+                        for scan_col in range(lft_bound, rgt_bound, 1):
+                            if mask[bot_bound, scan_col] == 1:
+                                bot_in = "True"
+                                break
+                        if bot_in == "True":
+                            bot_bound -= 1
+
+                        for scan_col in range(lft_bound, rgt_bound, 1):
+                            if mask[top_bound, scan_col] == 1:
+                                top_in = "True"
+                                break
+                        if top_in == "True":
+                            top_bound += 1
+
+                lst_coord.append([bot_bound, lft_bound, top_bound, rgt_bound])
+                tmp_mask[bot_bound:top_bound, lft_bound:rgt_bound] = 0
+
+
+    return lst_coord

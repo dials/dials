@@ -3,8 +3,8 @@ from __future__ import division
 from dials.scratch.luiso_s.tree_folder_call_test.function01 import *
 #from dials.scratch.luiso_s.tree_folder_call_test.function01 import find_mask_2d
 import numpy
-
-import os
+import time
+#import os
 from dxtbx.sweep import SweepFactory
 import libtbx.load_env
 
@@ -41,10 +41,11 @@ n_col = numpy.size(data3d[0:1, 0:1, :])
 #print "OK 02"
 
 data2d = data3d[1, 1000:1500, 1000:1500]
+#data2d = data3d[1, :, :]
 
 #display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
 #"""Display the image with coordinates overlayed."""
-#from matplotlib import pylab, cm
+from matplotlib import pylab, cm
 #plt = pylab.imshow(data2d, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
 #pylab.show()
 
@@ -53,15 +54,28 @@ print 'sum =', sumdat
 
 print data2d[206:213, 335:343]
 
+
+
+time1 = time.time()
+print "time1 =", time1
+
 dif = find_mask_2d(data2d)
+lst_box_pos = find_bound_2d(dif)
+
+time2 = time.time()
+print "time2 =", time2
+timedif = time2 - time1
+print "timedif =", timedif
+
+print lst_box_pos
 
 print data2d[206:213, 335:343]
 print dif[206:213, 335:343]
 sumdat = numpy.sum(data2d)
 print 'sum =', sumdat
 
-#plt = pylab.imshow(data2d, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-#pylab.show()
+plt = pylab.imshow(dif, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+pylab.show()
 
 
 #pylab.scatter(xcoords, ycoords, marker = 'x')
