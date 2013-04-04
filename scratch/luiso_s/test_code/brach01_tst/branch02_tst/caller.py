@@ -50,36 +50,33 @@ from matplotlib import pylab, cm
 #pylab.show()
 
 sumdat = numpy.sum(data2d)
-print 'sum =', sumdat
-
-print data2d[206:213, 335:343]
-
-
+#print 'sum =', sumdat
+#
+#print data2d[206:213, 335:343]
+#
+#
 
 time1 = time.time()
 print "time1 =", time1
 
 dif = find_mask_2d(data2d)
-lst_box_pos = find_bound_2d(dif)
+x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif)
 
 time2 = time.time()
 print "time2 =", time2
 timedif = time2 - time1
 print "timedif =", timedif
 
-print lst_box_pos
-
-print data2d[206:213, 335:343]
-print dif[206:213, 335:343]
-sumdat = numpy.sum(data2d)
-print 'sum =', sumdat
+#print lst_box_pos
+#
+#print data2d[206:213, 335:343]
+#print dif[206:213, 335:343]
+#sumdat = numpy.sum(data2d)
+#print 'sum =', sumdat
 
 plt = pylab.imshow(dif, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
+pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
+plt.axes.get_xaxis().set_ticks([])
+plt.axes.get_yaxis().set_ticks([])
 pylab.show()
-
-
-#pylab.scatter(xcoords, ycoords, marker = 'x')
-#pylab.scatter(xc, yc, marker = 'x')
-#plt.axes.get_xaxis().set_ticks([])
-#plt.axes.get_yaxis().set_ticks([])
-

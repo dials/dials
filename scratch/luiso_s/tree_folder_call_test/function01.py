@@ -34,8 +34,9 @@ def find_mask_2d(data2d):
     #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
     #dif_avg = dif_tot / cont                                                  #
     ##print 'dif_avg=', dif_avg                                                #
+    ##threshold_shift = 7.39432533334
 #######################################################################################################
-    threshold_shift = 7.39432533334
+    threshold_shift = 7
 
     print 'threshold_shift =', threshold_shift
 
@@ -118,7 +119,11 @@ def find_bound_2d(mask):
     n_row = numpy.size(mask[:, 0:1])
     tmp_mask = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
     tmp_mask[:, :] = mask[:, :]
-    lst_coord = []
+    x_from_lst = []
+    x_to_lst = []
+    y_from_lst = []
+    y_to_lst = []
+
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
             if mask[row, col] == 1 and tmp_mask[row, col] == 1:
@@ -127,51 +132,64 @@ def find_bound_2d(mask):
                 bot_bound = row - 1
                 top_bound = row + 1
 
-                bot_in = "True"
-                top_in = "True"
-                lft_in = "True"
-                rgt_in = "True"
+                bot_old = 0
+                top_old = 0
+                lft_old = 0
+                rgt_old = 0
+                in_img = "True"
+                while in_img == "True":
 
-                while bot_in == "True" or top_in == "True" or lft_in == "True" or rgt_in == "True" :
-                    bot_in = "False"
-                    top_in = "False"
-                    lft_in = "False"
-                    rgt_in = "False"
-
-                    # left and right walls
-                    if lft_bound > 0 and rgt_bound < n_col:
-                        for scan_row in range(bot_bound, top_bound, 1):
+                    # left wall
+                    if lft_bound > 0 and top_bound + 1 < n_row and bot_bound > 0:
+                        for scan_row in range(bot_bound, top_bound + 1, 1):
                             if mask[scan_row, lft_bound] == 1:
-                                lft_in = "True"
+                                lft_bound -= 1
                                 break
-                        if lft_in == "True":
-                            lft_bound -= 1
+                    else:
+                        in_img = "false"
+                        break
 
-                        for scan_row in range(bot_bound, top_bound, 1):
+                    # right wall
+                    if rgt_bound < n_col and top_bound + 1 < n_row and bot_bound > 0:
+                        for scan_row in range(bot_bound, top_bound + 1, 1):
                             if mask[scan_row, rgt_bound] == 1:
-                                rgt_in = "True"
+                                rgt_bound += 1
                                 break
-                        if rgt_in == "True":
-                            rgt_bound += 1
-
-                    # top and bottom walls
-                    if bot_bound > 0 and top_bound < n_row:
-                        for scan_col in range(lft_bound, rgt_bound, 1):
+                    else:
+                        in_img = "false"
+                        break
+                    # bottom wall
+                    if bot_bound > 0 and lft_bound > 0 and rgt_bound + 1 < n_col:
+                        for scan_col in range(lft_bound, rgt_bound + 1 , 1):
                             if mask[bot_bound, scan_col] == 1:
-                                bot_in = "True"
+                                bot_bound -= 1
                                 break
-                        if bot_in == "True":
-                            bot_bound -= 1
-
-                        for scan_col in range(lft_bound, rgt_bound, 1):
+                    else:
+                        in_img = "false"
+                        break
+                    # top wall
+                    if top_bound < n_row and lft_bound > 0 and rgt_bound + 1 < n_col:
+                        for scan_col in range(lft_bound, rgt_bound + 1 , 1):
                             if mask[top_bound, scan_col] == 1:
-                                top_in = "True"
+                                top_bound += 1
                                 break
-                        if top_in == "True":
-                            top_bound += 1
+                    else:
+                        in_img = "false"
+                        break
+                    if bot_bound == bot_old and top_bound == top_old and lft_bound == lft_old and rgt_bound == rgt_old:
+                        break
+                    bot_old = bot_bound
+                    top_old = top_bound
+                    lft_old = lft_bound
+                    rgt_old = rgt_bound
 
-                lst_coord.append([bot_bound, lft_bound, top_bound, rgt_bound])
+                #lst_coord.append([bot_bound, lft_bound, top_bound, rgt_bound])
                 tmp_mask[bot_bound:top_bound, lft_bound:rgt_bound] = 0
+                if  in_img == "True":
+                    x_from_lst.append(lft_bound)
+                    x_to_lst.append(rgt_bound)
+                    y_from_lst.append(bot_bound)
+                    y_to_lst.append(top_bound)
 
-
-    return lst_coord
+    return x_from_lst, x_to_lst, y_from_lst, y_to_lst
+#    return lst_coord
