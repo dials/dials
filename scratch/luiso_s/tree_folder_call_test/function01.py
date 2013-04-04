@@ -12,9 +12,7 @@ def find_mask_2d(data2d):
     #print 'n_col,n_row =', n_col, n_row
 
     data2dsmoth = numpy.zeros(n_row * n_col, dtype = float).reshape(n_row, n_col)
-
     diffdata2d = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
-    diffdata2d_ext = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
     data2dtmp = data2d
 
     for times in range(5):
@@ -38,26 +36,35 @@ def find_mask_2d(data2d):
 #######################################################################################################
     threshold_shift = 7
 
-    print 'threshold_shift =', threshold_shift
+    #print 'threshold_shift =', threshold_shift
 
     data2dsmoth[0:n_row, 0:n_col] = data2dsmoth[0:n_row, 0:n_col] + threshold_shift
-    ext_area = 1                                                               # This used to be one of this "magical variables"
+                                                             # This used to be one of this "magical variables"
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
             if data2d[row, col] > data2dsmoth[row, col]:
                 diffdata2d[row, col] = 1
 
-    for row in range(ext_area, n_row - ext_area + 1, 1):
-        for col in range(ext_area, n_col - ext_area + 1, 1):
-            if diffdata2d[row, col] == 1:
-                diffdata2d_ext[row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
+
 
     #print '_____________diffdata2d'
     #print diffdata2d
     #print '_____________diffdata2d_ext'
     #print diffdata2d_ext
-#    return diffdata2d
-    return diffdata2d_ext
+    return diffdata2d
+def find_ext_mask_3d(diffdata3d):
+    n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])
+    n_row = numpy.size(diffdata3d[0:1, :, 0:1])
+    n_col = numpy.size(diffdata3d[0:1, 0:1, :])
+    ext_area = 1
+    diffdata3d_ext = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+    for frm in range(ext_area, n_frm - ext_area + 1, 1):
+        for row in range(ext_area, n_row - ext_area + 1, 1):
+            for col in range(ext_area, n_col - ext_area + 1, 1):
+                if diffdata3d[frm, row, col] == 1:
+                    diffdata3d_ext[frm - ext_area:frm + ext_area + 1, row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
+    return diffdata3d_ext
+
 '''
 ############################################################################### flat background
     tot_bkgr = 0.0                                                            # version

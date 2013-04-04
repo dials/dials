@@ -28,7 +28,6 @@ filenames = ["/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013_
              "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0009.cbf"]
 
 sweep = SweepFactory.sweep(filenames)
-print "OK 01"
 
 array_01 = sweep.to_array()
 data3d = array_01.as_numpy_array()
@@ -40,7 +39,7 @@ n_col = numpy.size(data3d[0:1, 0:1, :])
 #print data3d[:, 0:10, 0:10]
 #print "OK 02"
 
-data2d = data3d[1, 1000:1500, 1000:1500]
+
 #data2d = data3d[1, :, :]
 
 #display_image_with_predicted_spots_n_centoids(image, xcoords, ycoords, xc, yc):
@@ -49,34 +48,42 @@ from matplotlib import pylab, cm
 #plt = pylab.imshow(data2d, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
 #pylab.show()
 
-sumdat = numpy.sum(data2d)
-#print 'sum =', sumdat
-#
-#print data2d[206:213, 335:343]
-#
-#
-
-time1 = time.time()
-print "time1 =", time1
-
-dif = find_mask_2d(data2d)
-x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif)
-
-time2 = time.time()
-print "time2 =", time2
-timedif = time2 - time1
-print "timedif =", timedif
-
-#print lst_box_pos
-#
-#print data2d[206:213, 335:343]
-#print dif[206:213, 335:343]
 #sumdat = numpy.sum(data2d)
 #print 'sum =', sumdat
+#
+#print data2d[206:213, 335:343]
+#
+#
 
-plt = pylab.imshow(dif, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
-pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
-plt.axes.get_xaxis().set_ticks([])
-plt.axes.get_yaxis().set_ticks([])
-pylab.show()
+dif3d = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+
+for frm_tmp in range(n_frm):
+    dif3d[frm_tmp, 1100:1200, 1300:1500] = find_mask_2d(data3d[frm_tmp, 1100:1200, 1300:1500])
+
+dif_3d_ext = find_ext_mask_3d(dif3d)
+
+for frm_tmp in range(n_frm):
+    data2d = data3d[frm_tmp, 1100:1200, 1300:1500]
+    time1 = time.time()
+    print "time1 =", time1
+
+    x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif_3d_ext[frm_tmp, 1100:1200, 1300:1500])
+
+    time2 = time.time()
+    print "time2 =", time2
+    timedif = time2 - time1
+    print "timedif =", timedif
+
+    #print lst_box_pos
+    #
+    #print data2d[206:213, 335:343]
+    #print dif[206:213, 335:343]
+    #sumdat = numpy.sum(data2d)
+    #print 'sum =', sumdat
+
+    plt = pylab.imshow(dif_3d_ext[frm_tmp, 1100:1200, 1300:1500], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+    pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
+    pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
+    plt.axes.get_xaxis().set_ticks([])
+    plt.axes.get_yaxis().set_ticks([])
+    pylab.show()
