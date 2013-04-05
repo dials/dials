@@ -199,4 +199,159 @@ def find_bound_2d(mask):
                     y_to_lst.append(top_bound)
 
     return x_from_lst, x_to_lst, y_from_lst, y_to_lst
-#    return lst_coord
+
+def find_bound_3d(diffdata3d):
+    '''    
+    
+    n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])
+    n_row = numpy.size(diffdata3d[0:1, :, 0:1])
+    n_col = numpy.size(diffdata3d[0:1, 0:1, :])
+    ext_area = 1
+    diffdata3d_ext = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+    for frm in range(ext_area, n_frm - ext_area + 1, 1):
+        for row in range(ext_area, n_row - ext_area + 1, 1):
+            for col in range(ext_area, n_col - ext_area + 1, 1):
+                if diffdata3d[frm, row, col] == 1:    
+    
+    '''
+    n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])
+    n_row = numpy.size(diffdata3d[0:1, :, 0:1])
+    n_col = numpy.size(diffdata3d[0:1, 0:1, :])
+
+    tmp_3d_mask = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+
+    tmp_3d_mask[:, :, :] = diffdata3d[:, :, :]
+    x_from_lst = []
+    x_to_lst = []
+    y_from_lst = []
+    y_to_lst = []
+    z_from_lst = []
+    z_to_lst = []
+    for frm in range(0, n_frm, 1):
+        for row in range(0, n_row, 1):
+            for col in range(0, n_col, 1):
+                if diffdata3d[frm, row, col] == 1 and tmp_3d_mask[frm, row, col] == 1:
+                    bck_bound = frm - 1
+                    frn_bound = frm + 1
+                    lft_bound = col - 1
+                    rgt_bound = col + 1
+                    bot_bound = row - 1
+                    top_bound = row + 1
+
+                    bck_old = 0
+                    frn_old = 0
+                    bot_old = 0
+                    top_old = 0
+                    lft_old = 0
+                    rgt_old = 0
+                    in_img = "True"
+                    while in_img == "True":
+
+                        # left wall
+                        if lft_bound > 0 and top_bound + 1 < n_row and bot_bound > 0 and frn_bound + 1 < n_frm and bck_bound > 0:
+                            stay_in = "True"
+                            for scan_row in range(bot_bound, top_bound + 1, 1):
+                                for scan_frm in range(bck_bound, frn_bound + 1, 1):
+                                    if diffdata3d[scan_frm, scan_row, lft_bound] == 1:
+                                        lft_bound -= 1
+                                        stay_in = "False"
+                                        break
+                                if stay_in == "False":
+                                    break
+                        else:
+                            in_img = "false"
+                            break
+
+                        # right wall
+                        if rgt_bound < n_col and top_bound + 1 < n_row and bot_bound > 0 and frn_bound + 1 < n_frm and bck_bound > 0:
+                            stay_in = "True"
+                            for scan_row in range(bot_bound, top_bound + 1, 1):
+                                for scan_frm in range(bck_bound, frn_bound + 1, 1):
+                                    if diffdata3d[scan_frm, scan_row, rgt_bound] == 1:
+                                        rgt_bound += 1
+                                        stay_in = "False"
+                                        break
+                                if stay_in == "False":
+                                    break
+                        else:
+                            in_img = "false"
+                            break
+
+                        # bottom wall
+                        if bot_bound > 0 and lft_bound > 0 and rgt_bound + 1 < n_col and frn_bound + 1 < n_frm and bck_bound > 0:
+                            stay_in = "True"
+                            for scan_col in range(lft_bound, rgt_bound + 1 , 1):
+                                for scan_frm in range(bck_bound, frn_bound + 1, 1):
+                                    if diffdata3d[scan_frm, bot_bound, scan_col] == 1:
+                                        bot_bound -= 1
+                                        stay_in = "False"
+                                        break
+                                if stay_in == "False":
+                                    break
+                        else:
+                            in_img = "false"
+                            break
+                        # top wall
+                        if top_bound < n_row and lft_bound > 0 and rgt_bound + 1 < n_col and frn_bound + 1 < n_frm and bck_bound > 0:
+                            stay_in = "True"
+                            for scan_col in range(lft_bound, rgt_bound + 1 , 1):
+                                for scan_frm in range(bck_bound, frn_bound + 1, 1):
+                                    if diffdata3d[scan_frm, top_bound, scan_col] == 1:
+                                        top_bound += 1
+                                        stay_in = "False"
+                                        break
+                                if stay_in == "False":
+                                    break
+                        else:
+                            in_img = "false"
+                            break
+
+                        # front wall
+                        if frn_bound < n_frm and lft_bound > 0 and rgt_bound + 1 < n_col and top_bound + 1 < n_row and bot_bound > 0:
+                            stay_in = "True"
+                            for scan_col in range(lft_bound, rgt_bound + 1 , 1):
+                                for scan_row in range(bot_bound, top_bound + 1, 1):
+                                    if diffdata3d[frn_bound, scan_row, scan_col] == 1:
+                                        frn_bound += 1
+                                        stay_in = "False"
+                                        break
+                                if stay_in == "False":
+                                    break
+                        else:
+                            in_img = "false"
+                            break
+
+                        # back wall
+                        if bck_bound > 0 and lft_bound > 0 and rgt_bound + 1 < n_col and top_bound + 1 < n_row and bot_bound > 0:
+                            stay_in = "True"
+                            for scan_col in range(lft_bound, rgt_bound + 1 , 1):
+                                for scan_row in range(bot_bound, top_bound + 1, 1):
+                                    if diffdata3d[bck_bound, scan_row, scan_col] == 1:
+                                        bck_bound -= 1
+                                        stay_in = "False"
+                                        break
+                                if stay_in == "False":
+                                    break
+                        else:
+                            in_img = "false"
+                            break
+
+                        if bot_bound == bot_old and top_bound == top_old and lft_bound == lft_old and rgt_bound == rgt_old and bck_bound == bck_old and frn_bound == frn_old:
+                            break
+                        bot_old = bot_bound
+                        top_old = top_bound
+                        lft_old = lft_bound
+                        rgt_old = rgt_bound
+                        bck_old = bck_bound
+                        frn_old = frn_bound
+                    #lst_coord.append([bot_bound, lft_bound, top_bound, rgt_bound])
+                    tmp_3d_mask[bot_bound:top_bound, lft_bound:rgt_bound] = 0
+                    if  in_img == "True":
+                        x_from_lst.append(lft_bound)
+                        x_to_lst.append(rgt_bound)
+                        y_from_lst.append(bot_bound)
+                        y_to_lst.append(top_bound)
+                        z_from_lst.append(bck_bound)
+                        z_to_lst.append(frn_bound)
+
+    return x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst
