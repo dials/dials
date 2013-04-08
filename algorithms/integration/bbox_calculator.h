@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
-  using dxtbx::model::ScanData;
+  using dxtbx::model::Scan;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
@@ -64,7 +64,7 @@ namespace dials { namespace algorithms {
     BBoxCalculator(const Beam &beam,
                    const Detector &detector,
                    const Goniometer &gonio,
-                   const ScanData &scan,
+                   const Scan &scan,
                    double delta_divergence,
                    double delta_mosaicity)
       : s0_(beam.get_s0()),
@@ -189,7 +189,7 @@ namespace dials { namespace algorithms {
     vec3<double> s0_;
     vec3<double> m2_;
     Detector detector_;
-    ScanData scan_;
+    Scan scan_;
     double delta_divergence_;
     double delta_mosaicity_;
   };

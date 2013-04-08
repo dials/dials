@@ -88,7 +88,7 @@ class RefinementRunner(object):
 
         # Do a test of new reflection pos
         self._update_reflections_test()
-   
+
     def _load_models(self):
         '''Load the models from file.'''
         from iotbx.xds import xparm, integrate_hkl
@@ -97,7 +97,7 @@ class RefinementRunner(object):
         import dxtbx
         from rstbx.cftbx.coordinate_frame_converter import \
             coordinate_frame_converter
-        from scitbx import matrix        
+        from scitbx import matrix
 
         # Load the models from the xparm file
         print "Reading: \"{0}\"".format(self.xparm_file)
@@ -145,11 +145,11 @@ class RefinementRunner(object):
     def _update_reflections_test(self):
         from cctbx.array_family import flex
         from collections import defaultdict
-        
+
         # Get miller indices from saved reflectons
         miller_indices = [r.miller_index for r in self._saved_reflections]
         self.miller_indices = flex.miller_index(miller_indices)
-        
+
         print "Predicting new reflections"
         self._predict_reflections()
 
@@ -162,13 +162,13 @@ class RefinementRunner(object):
         coord2 = defaultdict(list)
         for r2 in self._new_reflections:
             coord2[r2.miller_index].append(r2.image_coord_px)
-                        
+
         # Print out coords for each hkl
         for h in coord1.keys():
             c1 = coord1[h]
             c2 = coord2[h]
-            #print c1, c2                        
-        
+            #print c1, c2
+
     def _predict_reflections(self):
         '''Predict the reflection positions and bounding boxes.'''
         from dials.algorithms.spot_prediction import IndexGenerator
@@ -199,8 +199,8 @@ class RefinementRunner(object):
             self.scan, delta_divergence, delta_mosaicity)
 
         # Calculate the frame numbers of all the reflections
-        calculate_bbox(self._new_reflections)        
-        
+        calculate_bbox(self._new_reflections)
+
 
 def read_reflection_file(filename):
     '''Read reflections from pickle file.'''

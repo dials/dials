@@ -33,7 +33,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init <const Beam&,
                  const Detector&,
                  const Goniometer&,
-                 const ScanData&,
+                 const Scan&,
                  double,
                  double > ((
         arg("beam"), 

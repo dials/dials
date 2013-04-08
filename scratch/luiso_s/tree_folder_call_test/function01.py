@@ -201,8 +201,8 @@ def find_bound_2d(mask):
     return x_from_lst, x_to_lst, y_from_lst, y_to_lst
 
 def find_bound_3d(diffdata3d):
-    '''    
-    
+    '''
+
     n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])
     n_row = numpy.size(diffdata3d[0:1, :, 0:1])
     n_col = numpy.size(diffdata3d[0:1, 0:1, :])
@@ -211,8 +211,8 @@ def find_bound_3d(diffdata3d):
     for frm in range(ext_area, n_frm - ext_area + 1, 1):
         for row in range(ext_area, n_row - ext_area + 1, 1):
             for col in range(ext_area, n_col - ext_area + 1, 1):
-                if diffdata3d[frm, row, col] == 1:    
-    
+                if diffdata3d[frm, row, col] == 1:
+
     '''
     n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])
     n_row = numpy.size(diffdata3d[0:1, :, 0:1])

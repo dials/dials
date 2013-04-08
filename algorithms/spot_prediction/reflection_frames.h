@@ -24,7 +24,7 @@ namespace dials { namespace algorithms {
   using scitbx::constants::two_pi;
   using scitbx::af::flex_double;
   using scitbx::af::shared;
-  using dxtbx::model::ScanData;
+  using dxtbx::model::Scan;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
@@ -37,7 +37,7 @@ namespace dials { namespace algorithms {
    * @returns A list of reflections
    */
   inline
-  shared <Reflection> reflection_frames(const ScanData &scan,
+  shared <Reflection> reflection_frames(const Scan &scan,
       const Reflection &reflection) {
 
     double phi = reflection.get_rotation_angle();
@@ -67,7 +67,7 @@ namespace dials { namespace algorithms {
    * @returns A list of reflections
    */
   inline
-  shared <Reflection> reflection_frames(const ScanData &scan,
+  shared <Reflection> reflection_frames(const Scan &scan,
       const ReflectionList &reflections) {
 
     // Loop through all the given reflections
