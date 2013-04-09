@@ -30,9 +30,22 @@ data3d_ini = array_01.as_numpy_array()
 n_frm = numpy.size(data3d_ini[:, 0:1, 0:1])
 n_row = numpy.size(data3d_ini[0:1, :, 0:1])
 n_col = numpy.size(data3d_ini[0:1, 0:1, :])
-#data3d = numpy.zeros((1200 - 1100) * (1500 - 1300) * n_frm , dtype = int).reshape(n_frm, 100, 200)
-data3d = data3d_ini[:, 1100:1200, 1300:1500]
 
+print "n_frm,n_row,n_col", n_frm, n_row, n_col
+
+
+exampl_row_from = 1150
+exampl_row_to = 1300
+row_dif = exampl_row_to - exampl_row_from
+
+
+exampl_col_from = 1150
+exampl_col_to = 1600
+col_dif = exampl_col_to - exampl_col_from
+
+data3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm, row_dif, col_dif)
+
+data3d = data3d_ini[:, exampl_row_from:exampl_row_to, exampl_col_from:exampl_col_to]
 
 #print 'n_frm, n_col,n_row =', n_frm, n_col, n_row
 #print data3d[:, 0:10, 0:10]
@@ -44,7 +57,7 @@ data3d = data3d_ini[:, 1100:1200, 1300:1500]
 #
 #
 
-dif3d = numpy.zeros((1200 - 1100) * (1500 - 1300) * n_frm , dtype = int).reshape(n_frm, 100, 200)
+dif3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm, row_dif, col_dif)
 
 time1 = time.time()
 
@@ -52,7 +65,8 @@ for frm_tmp in range(n_frm):
     dif3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
 
 dif_3d_ext = find_ext_mask_3d(dif3d)
-
+dif_3d_ext[0:1, :, :] = 0
+dif_3d_ext[(n_frm - 1):, :, :] = 0
 time2 = time.time()
 timedif = time2 - time1
 print "timedif 1 =", timedif
@@ -60,17 +74,20 @@ print "timedif 1 =", timedif
 
 
 
-for frm_tmp in range(n_frm):
-    data2d = data3d[frm_tmp, :, :]
+#for frm_tmp in range(n_frm):
+#    data2d = data3d[frm_tmp, :, :
+#    x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif_3d_ext[frm_tmp, :, :])
 
-
-    x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif_3d_ext[frm_tmp, :, :])
-
-#x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext[:,:,:])
+x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
 
 time3 = time.time()
 timedif = time3 - time2
 print "timedif 2 =", timedif
+
+for pos in range(len(x_from_lst)):
+    print "x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst =" \
+    , x_from_lst[pos], x_to_lst[pos], y_from_lst[pos], y_to_lst[pos], z_from_lst[pos], z_to_lst[pos]
+
 
     #print lst_box_pos
     #
