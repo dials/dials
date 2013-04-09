@@ -4,6 +4,8 @@
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
+#  Author: James Parkhurst
+#
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 #
@@ -44,7 +46,7 @@ class BeamEncoder(H5PYEncoder):
 
     def encode(self, obj, handle):
         '''Encode the beam model.'''
-        group = handle.create_group('experiment/beam')
+        group = handle.create_group('NXentry/NXinstrument/beam')
         group.attrs['direction']  = obj.get_direction()
         group.attrs['wavelength'] = obj.get_wavelength()
 
@@ -55,7 +57,7 @@ class BeamDecoder(H5PYDecoder):
     def decode(self, handle):
         '''Decode the beam model.'''
         from dials.model.experiment import Beam
-        group = handle['experiment/beam']
+        group = handle['NXentry/NXinstrument/beam']
         direction  = group.attrs['direction']
         wavelength = group.attrs['wavelength']
         return Beam(direction, wavelength)
@@ -66,7 +68,7 @@ class GoniometerEncoder(H5PYEncoder):
 
     def encode(self, obj, handle):
         '''Encode the goniometer model.'''
-        group = handle.create_group('experiment/goniometer')
+        group = handle.create_group('NXentry/NXinstrument/goniometer')
         group.attrs['rotation_axis']  = obj.get_rotation_axis()
         group.attrs['fixed_rotation'] = obj.get_fixed_rotation()
 
@@ -77,7 +79,7 @@ class GoniometerDecoder(H5PYDecoder):
     def decode(self, handle):
         '''Decode the goniometer model.'''
         from dials.model.experiment import Goniometer
-        group = handle['experiment/goniometer']
+        group = handle['NXentry/NXinstrument/goniometer']
         rotation_axis  = group.attrs['rotation_axis']
         fixed_rotation = group.attrs['fixed_rotation']
         return Goniometer(rotation_axis, fixed_rotation)
@@ -88,7 +90,7 @@ class DetectorEncoder(H5PYEncoder):
 
     def encode(self, obj, handle):
         '''Encode the detector model.'''
-        group = handle.create_group('experiment/detector')
+        group = handle.create_group('NXentry/NXinstrument/detector')
         group.attrs['num_panels'] = len(obj)
         for i, p in enumerate(obj):
             self.encode_panel(p, i, group)
@@ -112,7 +114,7 @@ class DetectorDecoder(H5PYDecoder):
         '''Decode the detector model.'''
         from dials.model.experiment import Detector
         import numpy
-        group = handle['experiment/detector']
+        group = handle['NXentry/NXinstrument/detector']
         panel_list = []
         for i in range(group.attrs['num_panels']):
             panel_list.append(self.decode_panel(i, group))
@@ -138,7 +140,7 @@ class ScanEncoder(H5PYEncoder):
 
     def encode(self, obj, handle):
         '''Encode the scan model.'''
-        group = handle.create_group('experiment/scan')
+        group = handle.create_group('NXentry/NXinstrument/scan')
         group.attrs['image_range']   = obj.get_image_range()
         group.attrs['oscillation']   = obj.get_oscillation()
         group.attrs['exposure_time'] = obj.get_exposure_time()
@@ -149,12 +151,12 @@ class ScanDecoder(H5PYDecoder):
 
     def decode(self, handle):
         '''Decode the scan model.'''
-        from dials.model.experiment import ScanData
-        group = handle['experiment/scan']
+        from dials.model.experiment import Scan
+        group = handle['NXentry/NXinstrument/scan']
         image_range   = map(int, group.attrs['image_range'])
         oscillation   = group.attrs['oscillation']
         exposure_time = group.attrs['exposure_time']
-        return ScanData(image_range, oscillation, exposure_time)
+        return Scan(image_range, oscillation, exposure_time)
 
 
 class ReflectionListEncoder(H5PYEncoder):
@@ -163,13 +165,13 @@ class ReflectionListEncoder(H5PYEncoder):
     def encode(self, obj, handle):
         '''Encode the reflection data.'''
 
-        group = handle.create_group('data/reflections')
+        group = handle.create_group('NXentry/NXdata/reflections')
         group.attrs['num_reflections'] = len(obj)
         for i, r in enumerate(obj):
             self.encode_reflection(r, i, group)
 
     def encode_reflection(self, r, i, handle):
-        '''Encode the single reflectio's data.'''
+        '''Encode the single reflection's data.'''
         group = handle.create_group('r_{0}'.format(i))
         group.attrs['miller_index']      = r.miller_index
         group.attrs['rotation_angle']    = r.rotation_angle
@@ -197,7 +199,7 @@ class ReflectionListDecoder(H5PYDecoder):
     def decode(self, handle):
         '''Decode the reflection data.'''
         from dials.model.data import ReflectionList
-        group = handle['data/reflections']
+        group = handle['NXentry/NXdata/reflections']
         num_reflections = group.attrs['num_reflections']
         reflections = ReflectionList(int(num_reflections))
         for i in range(num_reflections):
@@ -294,7 +296,7 @@ if __name__ == '__main__':
     from dials.model.experiment import Beam
     from dials.model.experiment import Goniometer
     from dials.model.experiment import Panel, Detector
-    from dials.model.experiment import ScanData
+    from dials.model.experiment import Scan
     from dials.model.data import Reflection, ReflectionList
     from scitbx.array_family import flex
 
@@ -303,7 +305,7 @@ if __name__ == '__main__':
     p = Panel()
     p.set_frame((1, 0, 0), (0, 1, 0), (0, 0, 1))
     detector = Detector(p)
-    scan = ScanData()
+    scan = Scan()
 
     reflections = ReflectionList()
     r = Reflection()

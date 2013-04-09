@@ -379,6 +379,7 @@ scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/nexus/test_h5py.py -text
+scratch/jmp/nexus/test_h5py2.py -text
 scratch/jmp/nexus/test_nexus.py -text
 scratch/jmp/runtests.py -text
 scratch/jmp/test/data/sim_mx/DX-CORRECTIONS.cbf -text
