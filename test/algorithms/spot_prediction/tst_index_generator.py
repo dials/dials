@@ -23,7 +23,7 @@ def run():
 
     # Get the parameters we need from the GXPARM file
     d_min = 1.6
-    space_group_type = io.get_space_group_type_from_xparm(gxparm_handle)
+    space_group_type = ioutil.get_space_group_type_from_xparm(gxparm_handle)
     cfc = coordinate_frame_converter(gxparm_filename)
     a_vec = cfc.get('real_space_a')
     b_vec = cfc.get('real_space_b')

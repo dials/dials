@@ -109,7 +109,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
     xparm_handle.read_file(xparm_path)
-    space_group = io.get_space_group_type_from_xparm(xparm_handle)
+    space_group = ioutil.get_space_group_type_from_xparm(xparm_handle)
     cfc = coordinate_frame_converter(xparm_path)
     a_vec = cfc.get('real_space_a')
     b_vec = cfc.get('real_space_b')

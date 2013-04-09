@@ -33,7 +33,7 @@ class TestRayPredictor:
         self.scan = models.get_scan()
 
         # Get crystal parameters
-        self.space_group_type = io.get_space_group_type_from_xparm(
+        self.space_group_type = ioutil.get_space_group_type_from_xparm(
             self.gxparm_handle)
         cfc = coordinate_frame_converter(gxparm_filename)
         a_vec = cfc.get('real_space_a')
