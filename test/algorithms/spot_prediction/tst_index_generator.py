@@ -2,7 +2,7 @@ from __future__ import division
 
 def run():
     from iotbx.xds import xparm, integrate_hkl
-    from dials.util import io
+    from dials.util import ioutil
     from dials.algorithms.spot_prediction import IndexGenerator
     from os.path import realpath, dirname, join
     import numpy

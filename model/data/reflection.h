@@ -292,7 +292,7 @@ namespace dials { namespace model {
     return os;
   }
 
-  typedef scitbx::af::flex <Reflection>::type ReflectionList;
+  typedef scitbx::af::shared <Reflection> ReflectionList;
 
 }} // namespace dials::model
 

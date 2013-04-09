@@ -463,5 +463,6 @@ test/data/sim_mx/INTEGRATE.HKL -text
 test/model/data/tst_reflection_pickle.py -text
 util/__init__.py -text
 util/command_line.py -text
-util/io.py -text
+util/ioutil.py -text
+util/nexus.py -text
 util/pycbf_extra.py -text

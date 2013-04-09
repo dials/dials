@@ -41,7 +41,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     from dials.algorithms.integration import find_overlapping_reflections
     from dials.algorithms.integration import extract_reflection_profiles
     from iotbx.xds import xparm
-    from dials.util import io
+    from dials.util import ioutil
     from math import pi
     import dxtbx
     from dxtbx.sweep import SweepFactory

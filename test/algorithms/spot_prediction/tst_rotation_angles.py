@@ -3,7 +3,7 @@ from __future__ import division
 def run():
     from scitbx import matrix
     from iotbx.xds import xparm, integrate_hkl
-    from dials.util import io
+    from dials.util import ioutil
     from math import ceil
     from dials.algorithms.spot_prediction import RotationAngles
     from os.path import realpath, dirname, join

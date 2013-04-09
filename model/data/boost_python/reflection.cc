@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <sstream>
 #include <string>
 #include <scitbx/array_family/flex_types.h>
@@ -153,8 +154,11 @@ namespace dials { namespace model { namespace boost_python {
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 
+//      class_<ReflectionList>("ReflectionList")
+//        .def(vector_indexing_suite<ReflectionList>())
+//        .enable_pickling();
     scitbx::af::boost_python::flex_wrapper 
-      <Reflection>::plain("ReflectionList")
+      <Reflection, return_internal_reference<> >::plain("ReflectionList")
         .enable_pickling();        
   }
 

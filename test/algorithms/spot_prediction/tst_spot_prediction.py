@@ -8,7 +8,7 @@ class TestSpotPredictor:
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
         from iotbx.xds import xparm, integrate_hkl
-        from dials.util import io
+        from dials.util import ioutil
         from math import ceil
         from os.path import realpath, dirname, join
         import dxtbx

@@ -51,7 +51,7 @@ class ToyCentroidRunner(object):
         '''Load the models from file.'''
         from iotbx.xds import xparm, integrate_hkl
         from dxtbx.sweep import SweepFactory
-        from dials.util import io
+        from dials.util import ioutil
         import dxtbx
         from rstbx.cftbx.coordinate_frame_converter import \
             coordinate_frame_converter

@@ -6,7 +6,7 @@ class TestRayPredictor:
         from dials.algorithms.spot_prediction import RayPredictor
         from dials.algorithms.spot_prediction import IndexGenerator
         from iotbx.xds import xparm, integrate_hkl
-        from dials.util import io
+        from dials.util import ioutil
         from math import ceil
         from os.path import realpath, dirname, join
         import dxtbx
