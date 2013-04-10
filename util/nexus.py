@@ -148,11 +148,13 @@ class ReflectionListDecoder(H5PYDecoder):
             setter A function for casting the dataset value
 
         '''
+        import numpy
+
         # Check the length of the dataset is valid
         assert(len(g[name]) == len(rl))
 
         # Extract the dataset values
-        for i, x in enumerate(g[name]):
+        for i, x in enumerate(numpy.array(g[name])):
             setattr(rl[i], name, setter(x));
 
     def extract_profiles(self, g, rl, name, flex_type):
@@ -165,16 +167,25 @@ class ReflectionListDecoder(H5PYDecoder):
             flex_type The type of the flex array
 
         '''
-        # Get the array of offsets and data
-        sub_group = g[name]
-        data = sub_group['data']
-        offset = sub_group['offset']
-        shape = sub_group['shape']
+        import numpy
 
-        # Loop through the array of reflections and extract a profile
-        for i in range(len(rl)):
-            setattr(rl[i], name, self.extract_single(
-                data, offset, shape, i, flex_type))
+        # Get the group
+        sub_group = g[name]
+
+        # Ensure datasets are longer than zero
+        if (len(sub_group['data'])   > 0 and
+            len(sub_group['offset']) > 0 and
+            len(sub_group['shape'])  > 0):
+
+            # Extract the datasets as numpy arrays
+            data   = numpy.array(sub_group['data'])
+            offset = numpy.array(sub_group['offset'])
+            shape  = numpy.array(sub_group['shape'])
+
+            # Loop through the array of reflections and extract a profile
+            for i in range(len(rl)):
+                setattr(rl[i], name, self.extract_single(
+                    data, offset, shape, i, flex_type))
 
     def extract_single(self, data, offset, shape, index, flex_type):
         '''The profiles are stored in the form of a 1D array containing
@@ -200,7 +211,7 @@ class ReflectionListDecoder(H5PYDecoder):
 
         # Check the offset and return the array
         if last > first:
-            array = numpy.array(data[first:last])
+            array = data[first:last]
             array.shape = shape[index]
             return flex_type(array)
         else:
