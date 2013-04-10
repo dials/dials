@@ -30,7 +30,7 @@ def calculate_threshold(sweep, trusted_range):
 
 
 def select_strong_pixels(sweep, trusted_range):
-    
+
     import numpy
 
     # Calculate the threshold
@@ -100,6 +100,7 @@ def centroid(image, mask, detector):
     from numpy import zeros, int32, argmax, where, average
     from scitbx.array_family import flex
     from scitbx import matrix
+    import numpy
 
     var = []
     cent = []
@@ -134,7 +135,7 @@ def centroid(image, mask, detector):
         cent.append((avrx, avry, avrz))
 
     # Return a list of centroids and variances
-    return cent, var
+    return numpy.array(cent), numpy.array(var)
 
 
 def calculate_sigma_beam_divergence(var):
@@ -147,61 +148,114 @@ def calculate_sigma_beam_divergence(var):
 
     # Return the beam divergence as the sum / num reflections
     return sqrt(sum_variance / len(var))
-    
+
+
+def find_nearest_neighbour(obs_xyz, reflections):
+    from annlib_ext import AnnAdaptor
+    from scitbx.array_family import flex
+    from math import sqrt
+
+    # Get the predicted coords
+    pred_xyz = []
+    for r in reflections:
+        x = r.image_coord_px[0]
+        y = r.image_coord_px[1]
+        z = r.frame_number
+        pred_xyz.append((x, y, z))
+
+    # Create the KD Tree
+    ann = AnnAdaptor(flex.double(pred_xyz).as_1d(), 3)
+
+    ann.query(flex.double(obs_xyz).as_1d())
+
+#    for i in xrange(len(ann.nn)):
+#        print "Neighbor of {0}, index {1} distance {2}".format(
+#        obs_xyz[i], ann.nn[i], sqrt(ann.distances[i]))
+
+    return ann.nn, ann.distances
+
+
+def filter_objects_by_distance(ref_index, distance2, max_distance):
+
+    import numpy
+    from math import sqrt
+
+    # Only accept objects closer than max distance
+    indices = []
+    for i in range(len(ref_index)):
+        if sqrt(distance2[i]) > max_distance:
+            continue
+        else:
+            indices.append(i)
+
+    return numpy.array(indices)
 
 if __name__ == '__main__':
 
     import os
     import libtbx.load_env
-    from dials.util.nexus import NexusFile 
-    from glob import glob 
-    from dxtbx.sweep import SweepFactory 
+    from dials.util.nexus import NexusFile
+    from glob import glob
+    from dxtbx.sweep import SweepFactory
     from math import pi
-    
+
     try:
         dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
         print 'FAIL: dials_regression not configured'
         raise
 
+    # The XDS values
+    xds_sigma_d = 0.060
+    xds_sigma_m = 0.154
+
     # Read the reflections file
-    filename = os.path.join(dials_regression, 
+    filename = os.path.join(dials_regression,
         'centroid_test_data', 'reflections.h5')
     handle = NexusFile(filename, 'r')
-    
+
     # Get the reflection list
     print 'Reading reflections.'
     reflections = handle.get_reflections()
     print 'Read {0} reflections.'.format(len(reflections))
-    
+
     # Read images
-    template = os.path.join(dials_regression, 
-        'centroid_test_data', 'centroid_*.cbf')    
-    filenames = glob(template)    
-    
+    template = os.path.join(dials_regression,
+        'centroid_test_data', 'centroid_*.cbf')
+    filenames = glob(template)
+
     # Load the sweep
     print 'Loading sweep'
     sweep = SweepFactory.sweep(filenames)
     print 'Loaded sweep of {0} images.'.format(len(sweep))
-    
+
     # Select the strong pixels to use in the divergence calculation
     print 'Select the strong pixels from the images.'
     trusted_range = (0, 20000)
     image, mask = select_strong_pixels(sweep, trusted_range)
-    
+
     # Putting pixels into groups
     print 'Putting pixels into groups'
     objects = group_pixels(mask)
     print 'Found {0} objects'.format(len(objects))
-    
+
     print 'Filtering objects'
     min_pixels = 6
     objects = filter_objects(mask, objects, min_pixels)
     print '{0} remaining objects'.format(len(objects))
-    
+
     print 'Calculating centroid and variance.'
     cent, var = centroid(image, mask, sweep.get_detector())
-    
-    print 'Calculate the beam divergence'
-    sigma_d = calculate_sigma_beam_divergence(var)
+
+    print 'Find object nearest predicted reflection'
+    ref_index, distance2 = find_nearest_neighbour(cent, reflections)
+
+    print 'Filter objects by distance from nearest reflection.'
+    max_distance = 2
+    indices = filter_objects_by_distance(ref_index, distance2, max_distance)
+    print '{0} remaining objects'.format(len(indices))
+
+    print 'Calculate the e.s.d of the beam divergence'
+    sigma_d = calculate_sigma_beam_divergence(var[indices])
     print 'Sigma_d = {0} deg'.format(sigma_d * 180.0 / pi)
+    print 'XDS Sigma_d = {0} deg'.format(xds_sigma_d)
