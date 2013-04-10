@@ -198,6 +198,7 @@ if __name__ == '__main__':
     from glob import glob
     from dxtbx.sweep import SweepFactory
     from math import pi
+    from scitbx import matrix
 
     try:
         dials_regression = libtbx.env.dist_path('dials_regression')
@@ -259,3 +260,18 @@ if __name__ == '__main__':
     sigma_d = calculate_sigma_beam_divergence(var[indices])
     print 'Sigma_d = {0} deg'.format(sigma_d * 180.0 / pi)
     print 'XDS Sigma_d = {0} deg'.format(xds_sigma_d)
+
+    # Calculate rotation angles
+    phi = []
+    for x, y, z in cent:
+        phi.append(sweep.get_scan().get_angle_from_array_index(z))
+
+    # Calculate the zetas
+    s0 = matrix.col(sweep.get_beam().get_s0())
+    m2 = matrix.col(sweep.get_goniometer().get_rotation_axis())
+    zeta = []
+    for x, y, z in cent:
+        s1 = sweep.get_detector().get_pixel_lab_coord((x, y))
+        s1 = matrix.col(s1).normalize() * s0.length()
+        e1 = s1.cross(s0).normalize()
+        zeta.append(m2.dot(e1))
