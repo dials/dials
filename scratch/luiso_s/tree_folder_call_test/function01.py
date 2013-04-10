@@ -40,16 +40,12 @@ def find_mask_2d(data2d):
     #print 'threshold_shift =', threshold_shift
 
     data2dsmoth[0:n_row, 0:n_col] = data2dsmoth[0:n_row, 0:n_col] + threshold_shift
-                                                             # This used to be one of this "magical variables"
+
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
             if data2d[row, col] > data2dsmoth[row, col]:
                 diffdata2d[row, col] = 1
 
-    #print '_____________diffdata2d'
-    #print diffdata2d
-    #print '_____________diffdata2d_ext'
-    #print diffdata2d_ext
     return diffdata2d
 def find_ext_mask_3d(diffdata3d):
     n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])

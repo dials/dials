@@ -35,12 +35,12 @@ print "n_frm,n_row,n_col", n_frm, n_row, n_col
 
 
 exampl_row_from = 1150
-exampl_row_to = 1300
+exampl_row_to = 1900
 row_dif = exampl_row_to - exampl_row_from
 
 
 exampl_col_from = 1150
-exampl_col_to = 1600
+exampl_col_to = 1800
 col_dif = exampl_col_to - exampl_col_from
 
 data3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm, row_dif, col_dif)
@@ -63,31 +63,33 @@ time1 = time.time()
 
 for frm_tmp in range(n_frm):
     dif3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
+time2 = time.time()
 
 dif_3d_ext = find_ext_mask_3d(dif3d)
 dif_3d_ext[0:1, :, :] = 0
 dif_3d_ext[(n_frm - 1):, :, :] = 0
-time2 = time.time()
-timedif = time2 - time1
-print "timedif 1 =", timedif
 
-
-
+time3 = time.time()
 
 #for frm_tmp in range(n_frm):
 #    data2d = data3d[frm_tmp, :, :
 #    x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif_3d_ext[frm_tmp, :, :])
 
 x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
+time4 = time.time()
 
-time3 = time.time()
-timedif = time3 - time2
-print "timedif 2 =", timedif
+
+
 
 for pos in range(len(x_from_lst)):
     print "x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst =" \
     , x_from_lst[pos], x_to_lst[pos], y_from_lst[pos], y_to_lst[pos], z_from_lst[pos], z_to_lst[pos]
+time5 = time.time()
 
+print "time dif =", time2 - time1
+print "time dif =", time3 - time2
+print "time dif =", time4 - time3
+print "time dif =", time5 - time4
 
     #print lst_box_pos
     #
