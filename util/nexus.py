@@ -34,7 +34,7 @@ class ReflectionListEncoder(H5PYEncoder):
         import numpy
 
         # Create the reflection data group
-        group = handle.create_group('reflection_data')
+        group = handle.create_group('entry/data_processing')
         group.attrs['num_reflections'] = len(reflections)
 
         # Create datasets for each reflection property
@@ -113,7 +113,7 @@ class ReflectionListDecoder(H5PYDecoder):
         import numpy
 
         # Get the group containing the reflection data
-        g = handle['reflection_data']
+        g = handle['entry/data_processing']
 
         # Create the list of reflections
         rl = ReflectionList(int(g.attrs['num_reflections']))
@@ -136,7 +136,7 @@ class ReflectionListDecoder(H5PYDecoder):
         self.extract_profiles(g, rl, 'transformed_shoebox', flex.double)
 
         # Return the list of reflections
-        return reflections
+        return rl
 
     def extract_values(self, rl, g, name, setter=lambda x: x):
         '''Extract a series of values from a dataset.
