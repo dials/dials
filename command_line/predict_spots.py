@@ -216,9 +216,14 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
 
     # Dump the reflections to file
     if output_file:
-        import pickle
-        print "\nPickling the reflection list."
-        pickle.dump(reflections, open(output_file, 'wb'))
+#        import pickle
+#        print "\nPickling the reflection list."
+#        pickle.dump(reflections, open(output_file, 'wb'))
+        from dials.util.nexus import NexusFile
+        print "\nSaving the reflection list to {0}".format(output_file)
+        handle = NexusFile(output_file, 'w')
+        handle.set_reflections(reflections)
+        handle.close()
 
 
 def display_frame_callback(option, opt, value, parser):

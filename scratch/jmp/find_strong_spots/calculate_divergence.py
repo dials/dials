@@ -119,11 +119,11 @@ def centroid(image, mask, detector):
             for s in range(bbox[2], bbox[3]):
                 for f in range(bbox[0], bbox[1]):
                     if mask[i, s, f]:
-                        s1 = matrix.col(detector.get_pixel_lab_coord((f, s)))
+                        s1 = matrix.col(detector.get_pixel_lab_coord((f+0.5, s+0.5)))
                         s1 = s1.normalize()
-                        xs.append(f)
-                        ys.append(s)
-                        zs.append(i)
+                        xs.append(f + 0.5)
+                        ys.append(s + 0.5)
+                        zs.append(i + 0.5)
                         s1s.append(s1)
                         weights.append(image[i, s ,f])
 
@@ -189,6 +189,81 @@ def filter_objects_by_distance(ref_index, distance2, max_distance):
             indices.append(i)
 
     return numpy.array(indices)
+
+
+class FractionOfObservedIntensity:
+
+    def __init__(self, z, zeta, scan):
+        import numpy
+        self.dphi = scan.get_oscillation()[1]
+        self.tau = numpy.array([self.calc_tau(zz, scan) for zz in z])
+        self.zeta = numpy.abs(numpy.array(zeta))
+
+    def calc_tau(self, z, scan):
+        phi = scan.get_angle_from_array_index(z)
+        p0 = scan.get_angle_from_array_index(int(z))
+        p1 = scan.get_angle_from_array_index(int(z)+1)
+        t = phi - (p1 + p0) / 2.0
+        return t
+
+    def __call__(self, sigma_m):
+        import numpy
+        from math import sqrt, erf, log
+
+        #for m in sigma_m: print m
+
+        dphi2 = self.dphi / 2
+        den = sqrt(2) * sigma_m / self.zeta
+
+        a = (self.tau + dphi2) / den
+        b = (self.tau - dphi2) / den
+
+        a = numpy.array([erf(a[i]) for i in range(len(a))])
+        b = numpy.array([erf(b[i]) for i in range(len(b))])
+        r = (a - b) / (2 * self.dphi)
+        return numpy.log(r)
+
+class Likelihood:
+
+    def __init__(self, R):
+        self.R = R
+
+    def __call__(self, sigma_m):
+        import numpy
+        r = self.R(sigma_m)
+        p = numpy.sum(r)
+        return -p
+
+class Minimize:
+
+    def __init__(self, z, zeta, sweep):
+        from scitbx import simplex
+        from scitbx.array_family import flex
+        self.L = Likelihood(FractionOfObservedIntensity(z, zeta, sweep.get_scan()))
+
+        starting_simplex=[]
+        for ii in range(2):
+            starting_simplex.append(flex.double([0.154*3.14159 / 180]))#flex.random_double(1))
+
+        self.optimizer = simplex.simplex_opt(
+            1, matrix=starting_simplex, evaluator=self, tolerance=1e-7)
+
+    def target(self, sigma_m):
+        return self.L(sigma_m)
+
+    def __call__(self):
+        return self.optimizer.get_solution()[0]
+
+def calculate_sigma_mosaicity(z, zeta, sweep):
+
+    #from scipy.optimize import minimize
+
+    #L = Likelihood(FractionOfObservedIntensity(z, zeta, sweep.get_scan()))
+
+    #return minimize(L, 1.0, method=Nelder-Mead)
+
+    minimizer = Minimize(z, zeta, sweep)
+    return minimizer()
 
 if __name__ == '__main__':
 
@@ -266,6 +341,9 @@ if __name__ == '__main__':
     for x, y, z in cent:
         phi.append(sweep.get_scan().get_angle_from_array_index(z))
 
+    import numpy
+    z_coord = numpy.array([zz for xx, yy, zz in cent])
+
     # Calculate the zetas
     s0 = matrix.col(sweep.get_beam().get_s0())
     m2 = matrix.col(sweep.get_goniometer().get_rotation_axis())
@@ -275,3 +353,8 @@ if __name__ == '__main__':
         s1 = matrix.col(s1).normalize() * s0.length()
         e1 = s1.cross(s0).normalize()
         zeta.append(m2.dot(e1))
+
+    print 'Calculate the e.s.d of the mosaicity.'
+    sigma_m = calculate_sigma_mosaicity(z_coord, zeta, sweep)
+    print 'Sigma_m = {0} deg'.format(sigma_m * 180 / pi)
+    print 'XDS Sigma_m = {0} deg'.format(xds_sigma_m)
