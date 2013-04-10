@@ -27,8 +27,8 @@ def fnd_pk():
             dif3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
 
         dif_3d_ext = find_ext_mask_3d(dif3d)
-        #dif_3d_ext[0:1, :, :] = 0
-        #dif_3d_ext[(n_frm - 1):, :, :] = 0
+        dif_3d_ext[0:1, :, :] = 0
+        dif_3d_ext[(n_frm - 1):, :, :] = 0
 
         x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
 

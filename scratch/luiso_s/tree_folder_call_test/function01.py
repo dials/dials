@@ -21,7 +21,7 @@ def find_mask_2d(data2d):
             for col in range(1, n_col - 1, 1):
                 pscan = float(numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0)
                 data2dsmoth[row, col] = int(pscan)
-    data2dtmp[:, :] = data2dsmoth[:, :]
+        data2dtmp[:, :] = data2dsmoth[:, :]
 
 
 #######################################################################################################

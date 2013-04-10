@@ -40,7 +40,7 @@ def single_spot_integrate_2d(data2d):
             for x in range(0, x_to, 1):
                 pscan = float(numpy.sum(data2dtmp[y - 1:y + 2, x - 1:x + 2]) / 9.0)
                 data2dsmoth[y, x] = pscan
-    data2dtmp = data2dsmoth
+        data2dtmp = data2dsmoth
 
     data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
 
@@ -109,7 +109,7 @@ def single_spot_integrate_2d(data2d):
 #            for x in range( 0, x_to, 1 ):
 #                pscan = float( numpy.sum( data2dtmp[y - 1:y + 2, x - 1:x + 2] ) / 9.0 )
 #                data2dsmoth[y, x] = pscan
-#    data2dtmp = data2dsmoth
+#        data2dtmp = data2dsmoth
 #
 #    data2dsmoth[0:y_to, 0:x_to] = data2dsmoth[0:y_to, 0:x_to] + threshold_shift
 #

@@ -14,14 +14,17 @@ def find_mask_2d(data2d):
     data2dsmoth = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
     diffdata2d = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
     data2dtmp = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
+    
+    
+     np.ndarray((2,), buffer=np.array([1,2,3]),
     data2dtmp[:, :] = data2d[:, :]
 
     for times in range(5):
         for row in range(1, n_row - 1, 1):
             for col in range(1, n_col - 1, 1):
-                pscan = float(numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0)
+                pscan = numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0
                 data2dsmoth[row, col] = int(pscan)
-    data2dtmp[:, :] = data2dsmoth[:, :]
+        data2dtmp[:, :] = data2dsmoth[:, :]
 
 
 #######################################################################################################
@@ -39,7 +42,7 @@ def find_mask_2d(data2d):
 
     #print 'threshold_shift =', threshold_shift
 
-    data2dsmoth[0:n_row, 0:n_col] = data2dsmoth[0:n_row, 0:n_col] + threshold_shift
+    data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
 
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
