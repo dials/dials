@@ -6,26 +6,32 @@ import time
 from dxtbx.sweep import SweepFactory
 import libtbx.load_env
 
-# Try to find the dials regression directory
-try:
-    dials_regression = libtbx.env.dist_path('dials_regression')
-except KeyError, e:
-    print 'FAIL: dials_regression not configured'
-    quit()
-
+#### Try to find the dials regression directory
+#try:
+#    dials_regression = libtbx.env.dist_path('dials_regression')
+#except KeyError, e:
+#    print 'FAIL: dials_regression not configured'
+#    quit()
 filenames = ["/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0001.cbf", \
              "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0002.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0003.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0004.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0005.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0006.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0007.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0008.cbf", \
-             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0009.cbf"]
+             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0003.cbf"]
+
+
+#
+#filenames = ["/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0001.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0002.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0003.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0004.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0005.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0006.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0007.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0008.cbf", \
+#             "/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0009.cbf"]
+#
 
 sweep = SweepFactory.sweep(filenames)
-
 array_01 = sweep.to_array()
+
 data3d_ini = array_01.as_numpy_array()
 n_frm = numpy.size(data3d_ini[:, 0:1, 0:1])
 n_row = numpy.size(data3d_ini[0:1, :, 0:1])
@@ -33,14 +39,12 @@ n_col = numpy.size(data3d_ini[0:1, 0:1, :])
 
 print "n_frm,n_row,n_col", n_frm, n_row, n_col
 
-
-exampl_row_from = 1150
-exampl_row_to = 1900
+exampl_row_from = 1400
+exampl_row_to = 1500
 row_dif = exampl_row_to - exampl_row_from
 
-
-exampl_col_from = 1150
-exampl_col_to = 1800
+exampl_col_from = 1300
+exampl_col_to = 1500
 col_dif = exampl_col_to - exampl_col_from
 
 data3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm, row_dif, col_dif)
@@ -58,16 +62,18 @@ data3d = data3d_ini[:, exampl_row_from:exampl_row_to, exampl_col_from:exampl_col
 #
 
 dif3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm, row_dif, col_dif)
-
+smoth3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm, row_dif, col_dif)
 time1 = time.time()
 
 for frm_tmp in range(n_frm):
-    dif3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
+    dif3d[frm_tmp, :, :], smoth3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
+
+
 time2 = time.time()
 
 dif_3d_ext = find_ext_mask_3d(dif3d)
-dif_3d_ext[0:1, :, :] = 0
-dif_3d_ext[(n_frm - 1):, :, :] = 0
+#dif_3d_ext[0:1, :, :] = 0
+#dif_3d_ext[(n_frm - 1):, :, :] = 0
 
 time3 = time.time()
 
@@ -100,10 +106,13 @@ print "time dif =", time5 - time4
 
 from matplotlib import pylab, cm
 for frm_tmp in range(n_frm):
-    plt = pylab.imshow(dif_3d_ext[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+    plt = pylab.imshow(dif3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
     pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
     pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
     plt.axes.get_xaxis().set_ticks([])
     plt.axes.get_yaxis().set_ticks([])
     pylab.show()
-
+    plt = pylab.imshow(data3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+    pylab.show()
+    plt = pylab.imshow(smoth3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+    pylab.show()

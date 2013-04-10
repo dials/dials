@@ -4,7 +4,55 @@ def funt():
     print 'hola por aqui tst 01'
 
 
+def find_mask_2d(data2d):
 
+    n_col = numpy.size(data2d[0:1, :])
+    n_row = numpy.size(data2d[:, 0:1])
+    #print 'n_col,n_row =', n_col, n_row
+    #
+    #data2dsmoth = numpy.zeros_like(data2d)
+    #diffdata2d = numpy.zeros_like(data2d)
+    #data2dtmp = numpy.empty_like(data2d)
+    #data2dtmp[:, :] = data2d[:, :]
+
+    data2dsmoth = numpy.zeros_like(data2d)
+    diffdata2d = numpy.zeros_like(data2d)
+    data2dtmp = numpy.copy(data2d)
+
+    for times in range(5):
+        for row in range(1, n_row - 1, 1):
+            for col in range(1, n_col - 1, 1):
+                pscan = numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0
+                data2dsmoth[row, col] = int(pscan)
+        data2dtmp[:, :] = data2dsmoth[:, :]
+
+
+#######################################################################################################
+    #cont = 0                                                                  # This way to calculate
+    #dif_tot = 0                                                               # this magical variable
+    #for row in range(0, n_row, 1):                                            # is more statistical
+    #    for col in range(0, n_col, 1):                                        # and seems to be giving
+    #        cont += 1                                                         # better results
+    #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
+    #dif_avg = dif_tot / cont                                                  #
+    ##print 'dif_avg=', dif_avg                                                #
+    ##threshold_shift = 7.39432533334
+#######################################################################################################
+    threshold_shift = 7
+
+    #print 'threshold_shift =', threshold_shift
+
+    data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
+
+    for row in range(0, n_row, 1):
+        for col in range(0, n_col, 1):
+            if data2d[row, col] > data2dsmoth[row, col]:
+                diffdata2d[row, col] = 1
+
+    return diffdata2d, data2dsmoth
+
+
+'''
 def find_mask_2d(data2d):
 
     n_col = numpy.size(data2d[0:1, :])
@@ -47,6 +95,7 @@ def find_mask_2d(data2d):
                 diffdata2d[row, col] = 1
 
     return diffdata2d
+'''
 def find_ext_mask_3d(diffdata3d):
     n_frm = numpy.size(diffdata3d[:, 0:1, 0:1])
     n_row = numpy.size(diffdata3d[0:1, :, 0:1])

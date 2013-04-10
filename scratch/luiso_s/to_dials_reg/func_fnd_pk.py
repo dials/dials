@@ -10,14 +10,15 @@ def find_mask_2d(data2d):
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
     #print 'n_col,n_row =', n_col, n_row
+    #
+    #data2dsmoth = numpy.zeros_like(data2d)
+    #diffdata2d = numpy.zeros_like(data2d)
+    #data2dtmp = numpy.empty_like(data2d)
+    #data2dtmp[:, :] = data2d[:, :]
 
-    data2dsmoth = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
-    diffdata2d = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
-    data2dtmp = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
-    
-    
-     np.ndarray((2,), buffer=np.array([1,2,3]),
-    data2dtmp[:, :] = data2d[:, :]
+    data2dsmoth = numpy.zeros_like(data2d)
+    diffdata2d = numpy.zeros_like(data2d)
+    data2dtmp = numpy.copy(data2d)
 
     for times in range(5):
         for row in range(1, n_row - 1, 1):
