@@ -376,6 +376,7 @@ scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
 scratch/jmp/find_strong_spots/calculate_divergence.py -text
+scratch/jmp/find_strong_spots/calculate_divergence2.py -text
 scratch/jmp/find_strong_spots/histogram_pixels.py -text
 scratch/jmp/find_strong_spots/thresholding.py -text
 scratch/jmp/index_test.py -text

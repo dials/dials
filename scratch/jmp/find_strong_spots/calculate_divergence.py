@@ -235,13 +235,16 @@ class FractionOfObservedIntensity:
 
         a = numpy.array([erf(a[i]) for i in range(len(a))])
         b = numpy.array([erf(b[i]) for i in range(len(b))])
+
         r = (a - b) / 2.0#(2 * self.dphi)
 
-        #ind = numpy.where(r > 0)[0]
+#        ind = numpy.where(r > 0)[0]
 #        ret = r
 #        ret[ind] = numpy.log(r[ind])
-        #ind = numpy.where(r > 0)[0]
-#        ret[ind] = 0
+        ind = numpy.where(r <= 0)
+        if len(ind[0]) > 0:
+            r[ind] = 1e-7
+        #ret[ind] = 0
         #print ind, r[ind], self.zeta[ind], self.tau[ind]
 
         return numpy.log(r)
@@ -258,7 +261,7 @@ class Likelihood:
         r = self.R(sigma_m)
         p = numpy.sum(r)
         #print sigma_m[0], -p
-        return p
+        return -p
 
 class Minimize:
 
@@ -274,10 +277,10 @@ class Minimize:
         pylab.plot(x, l)
         pylab.show()
 
-        print 1/0
+       # print 1/0
 
-        startA = 1.1
-        startB = 1.2
+        startA = 0.3
+        startB = 0.4
 #        startA = 0.2*3.14159 / 180
 #        startB = 0.3*3.14159 / 180
 
@@ -306,6 +309,56 @@ def calculate_sigma_mosaicity(frames, z, zeta, sweep):
     minimizer = Minimize(frames, z, zeta, sweep)
     return minimizer()
 
+
+
+
+def find_pixel_nearest_neighbour(image, mask, reflections):
+    from annlib_ext import AnnAdaptor
+    from scitbx.array_family import flex
+    from math import sqrt
+    import numpy
+
+    # Get the predicted coords
+    pred_xyz = []
+    for r in reflections:
+        x = r.image_coord_px[0]
+        y = r.image_coord_px[1]
+        z = r.frame_number
+        pred_xyz.append((x, y, z))
+
+    # Create the KD Tree
+    ann = AnnAdaptor(flex.double(pred_xyz).as_1d(), 3)
+
+    pixel_xyz = []
+    ind = numpy.where(mask != 0)
+    z = ind[0]
+    y = ind[1]
+    x = ind[2]
+
+    ann.query(flex.double(zip(x, y, z)).as_1d())
+
+#    for i in xrange(len(ann.nn)):
+#        print "Neighbor of {0}, index {1} distance {2}".format(
+#        obs_xyz[i], ann.nn[i], sqrt(ann.distances[i]))
+
+    owner = numpy.zeros(shape=mask.shape, dtype=numpy.int32)
+    owner[ind] = ann.nn.as_numpy_array()
+
+    return owner
+
+
+def check_pixel_neighbours(image, mask, reflections, ref_index, objects):
+    import numpy
+
+    owner = find_pixel_nearest_neighbour(image, mask, reflections)
+
+    for ind, bbox in zip(ref_index, objects):
+        rown = owner[bbox]
+        ind = numpy.where(numpy.logical_and(rown != 0, rown != ind))
+        if len(ind[0]) > 0:
+            print len(ind[0])
+
+
 if __name__ == '__main__':
 
     import os
@@ -329,6 +382,7 @@ if __name__ == '__main__':
     # Read the reflections file
     filename = os.path.join(dials_regression,
         'centroid_test_data', 'reflections.h5')
+    filename = os.path.join('/home/upc86896/Data/X1_strong_M1S1_1_', 'reflections.h5')
     handle = NexusFile(filename, 'r')
 
     # Get the reflection list
@@ -339,11 +393,12 @@ if __name__ == '__main__':
     # Read images
     template = os.path.join(dials_regression,
         'centroid_test_data', 'centroid_*.cbf')
+    template = os.path.join('/home/upc86896/Data/X1_strong_M1S1_1_', 'X1_strong_M1S1_1_*.cbf')
     filenames = glob(template)
 
     # Load the sweep
     print 'Loading sweep'
-    sweep = SweepFactory.sweep(filenames)
+    sweep = SweepFactory.sweep(filenames)[0:10]
     print 'Loaded sweep of {0} images.'.format(len(sweep))
 
     # Select the strong pixels to use in the divergence calculation
@@ -381,11 +436,16 @@ if __name__ == '__main__':
     import numpy
     z_coord = numpy.array([zz for xx, yy, zz in cent[indices]])
     remobj = [objects[i] for i in indices]
+    ref_index = ref_index.as_numpy_array()
+    remindex = [ref_index[i] for i in indices]
     frames = [[o for o in range(obj[0].start, obj[0].stop)] for obj in remobj]
 
-    for i, f in enumerate(frames):
-        if len(f) > 4:
-            frames[i] = [f[int(len(f)/2)]]
+    check_pixel_neighbours(image, mask, reflections, remindex, remobj)
+
+#    for i, f in enumerate(frames):
+#        print f
+#        if len(f) > 4:
+#            frames[i] = [f[int(len(f)/2)]]
 
     # Calculate the zetas
     s0 = matrix.col(sweep.get_beam().get_s0())
@@ -399,5 +459,5 @@ if __name__ == '__main__':
 
     print 'Calculate the e.s.d of the mosaicity.'
     sigma_m = calculate_sigma_mosaicity(frames, z_coord, zeta, sweep)
-    print 'Sigma_m = {0} deg'.format(sigma_m * 180 / pi)
+    print 'Sigma_m = {0} deg'.format(sigma_m)
     print 'XDS Sigma_m = {0} deg'.format(xds_sigma_m)
