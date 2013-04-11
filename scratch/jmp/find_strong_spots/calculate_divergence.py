@@ -36,6 +36,7 @@ def select_strong_pixels(sweep, trusted_range):
     # Calculate the threshold
     print "Calculating a threshold."
     threshold = calculate_threshold(sweep, trusted_range)
+    print "Threshold Value: {0}".format(threshold)
 
     # Select only those pixels with counts > threshold
     print "Selecting pixels"
@@ -193,35 +194,58 @@ def filter_objects_by_distance(ref_index, distance2, max_distance):
 
 class FractionOfObservedIntensity:
 
-    def __init__(self, z, zeta, scan):
+    def __init__(self, frames, zc, zeta, scan):
         import numpy
-        self.dphi = scan.get_oscillation()[1]
-        self.tau = numpy.array([self.calc_tau(zz, scan) for zz in z])
-        self.zeta = numpy.abs(numpy.array(zeta))
+        self.dphi = scan.get_oscillation(deg=True)[1]
 
-    def calc_tau(self, z, scan):
-        phi = scan.get_angle_from_array_index(z)
-        p0 = scan.get_angle_from_array_index(int(z))
-        p1 = scan.get_angle_from_array_index(int(z)+1)
-        t = phi - (p1 + p0) / 2.0
+        assert(len(frames) == len(zc))
+        assert(len(frames) == len(zeta))
+
+        self.zeta = []
+        self.tau = []
+        for rframes, rzc, rzeta in zip(frames, zc, zeta):
+            for f in rframes:
+                self.zeta.append(rzeta)
+                self.tau.append(self.calc_tau(f, rzc, scan))
+
+        self.tau = numpy.array(self.tau)
+        self.zeta = numpy.array(self.zeta)
+
+
+    def calc_tau(self, f, z, scan):
+        phi = scan.get_angle_from_array_index(z, deg=True)
+        phi0 = scan.get_angle_from_array_index(int(f), deg=True)
+        phi1 = scan.get_angle_from_array_index(int(f)+1, deg=True)
+        t = (phi1 + phi0) / 2.0 - phi
         return t
 
-    def __call__(self, sigma_m):
-        import numpy
-        from math import sqrt, erf, log
 
-        #for m in sigma_m: print m
+
+    def __call__(self, val):
+        import numpy
+        from math import sqrt, log, pi, erf
+        sigma_m = val
+        #sigma_m = abs(val[0])
 
         dphi2 = self.dphi / 2
-        den = sqrt(2) * sigma_m / self.zeta
+        den = sqrt(2) * sigma_m / abs(self.zeta)
 
         a = (self.tau + dphi2) / den
         b = (self.tau - dphi2) / den
 
         a = numpy.array([erf(a[i]) for i in range(len(a))])
         b = numpy.array([erf(b[i]) for i in range(len(b))])
-        r = (a - b) / (2 * self.dphi)
+        r = (a - b) / 2.0#(2 * self.dphi)
+
+        #ind = numpy.where(r > 0)[0]
+#        ret = r
+#        ret[ind] = numpy.log(r[ind])
+        #ind = numpy.where(r > 0)[0]
+#        ret[ind] = 0
+        #print ind, r[ind], self.zeta[ind], self.tau[ind]
+
         return numpy.log(r)
+#        return ret
 
 class Likelihood:
 
@@ -230,20 +254,37 @@ class Likelihood:
 
     def __call__(self, sigma_m):
         import numpy
+        #print sigma_m[0]
         r = self.R(sigma_m)
         p = numpy.sum(r)
-        return -p
+        #print sigma_m[0], -p
+        return p
 
 class Minimize:
 
-    def __init__(self, z, zeta, sweep):
+    def __init__(self, frames, z, zeta, sweep):
         from scitbx import simplex
         from scitbx.array_family import flex
-        self.L = Likelihood(FractionOfObservedIntensity(z, zeta, sweep.get_scan()))
+        import numpy
+        self.L = Likelihood(FractionOfObservedIntensity(frames, z, zeta, sweep.get_scan()))
 
-        starting_simplex=[]
-        for ii in range(2):
-            starting_simplex.append(flex.double([0.154*3.14159 / 180]))#flex.random_double(1))
+        x = 0.1 + numpy.arange(1000) / 2000.0
+        l = [self.L(xx) for xx in x]
+        from matplotlib import pylab
+        pylab.plot(x, l)
+        pylab.show()
+
+        print 1/0
+
+        startA = 1.1
+        startB = 1.2
+#        startA = 0.2*3.14159 / 180
+#        startB = 0.3*3.14159 / 180
+
+        print "Start: ", startA, startB
+        starting_simplex=[flex.double([startA]), flex.double([startB])]
+#        for ii in range(2):
+#            starting_simplex.append(flex.double([start]))#flex.random_double(1))
 
         self.optimizer = simplex.simplex_opt(
             1, matrix=starting_simplex, evaluator=self, tolerance=1e-7)
@@ -254,7 +295,7 @@ class Minimize:
     def __call__(self):
         return self.optimizer.get_solution()[0]
 
-def calculate_sigma_mosaicity(z, zeta, sweep):
+def calculate_sigma_mosaicity(frames, z, zeta, sweep):
 
     #from scipy.optimize import minimize
 
@@ -262,7 +303,7 @@ def calculate_sigma_mosaicity(z, zeta, sweep):
 
     #return minimize(L, 1.0, method=Nelder-Mead)
 
-    minimizer = Minimize(z, zeta, sweep)
+    minimizer = Minimize(frames, z, zeta, sweep)
     return minimizer()
 
 if __name__ == '__main__':
@@ -336,25 +377,27 @@ if __name__ == '__main__':
     print 'Sigma_d = {0} deg'.format(sigma_d * 180.0 / pi)
     print 'XDS Sigma_d = {0} deg'.format(xds_sigma_d)
 
-    # Calculate rotation angles
-    phi = []
-    for x, y, z in cent:
-        phi.append(sweep.get_scan().get_angle_from_array_index(z))
 
     import numpy
-    z_coord = numpy.array([zz for xx, yy, zz in cent])
+    z_coord = numpy.array([zz for xx, yy, zz in cent[indices]])
+    remobj = [objects[i] for i in indices]
+    frames = [[o for o in range(obj[0].start, obj[0].stop)] for obj in remobj]
+
+    for i, f in enumerate(frames):
+        if len(f) > 4:
+            frames[i] = [f[int(len(f)/2)]]
 
     # Calculate the zetas
     s0 = matrix.col(sweep.get_beam().get_s0())
     m2 = matrix.col(sweep.get_goniometer().get_rotation_axis())
     zeta = []
-    for x, y, z in cent:
+    for x, y, z in cent[indices]:
         s1 = sweep.get_detector().get_pixel_lab_coord((x, y))
         s1 = matrix.col(s1).normalize() * s0.length()
         e1 = s1.cross(s0).normalize()
         zeta.append(m2.dot(e1))
 
     print 'Calculate the e.s.d of the mosaicity.'
-    sigma_m = calculate_sigma_mosaicity(z_coord, zeta, sweep)
+    sigma_m = calculate_sigma_mosaicity(frames, z_coord, zeta, sweep)
     print 'Sigma_m = {0} deg'.format(sigma_m * 180 / pi)
     print 'XDS Sigma_m = {0} deg'.format(xds_sigma_m)
