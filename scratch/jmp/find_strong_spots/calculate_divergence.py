@@ -42,6 +42,13 @@ def select_strong_pixels(sweep, trusted_range):
     print "Selecting pixels"
     image = sweep.to_array().as_numpy_array()
     mask = image >= threshold
+    
+    
+#    from matplotlib import pylab, cm
+#    for f in range(9):
+#        pylab.imshow(image[f,:,:], cmap=cm.Greys_r, vmax=9)
+#        pylab.show()
+    
     return image, mask
 
 def group_pixels(mask):
@@ -49,6 +56,11 @@ def group_pixels(mask):
 
     # Label the indices in the mask
     regions, nregions = label(mask)#, structure)
+
+#    from matplotlib import pylab, cm
+#    for f in range(9):
+#        pylab.imshow(regions[f,:,:], cmap=cm.Greys_r)
+#        pylab.show()
 
     # Get the bounding box of each object
     objects = find_objects(regions)
@@ -122,9 +134,9 @@ def centroid(image, mask, detector):
                     if mask[i, s, f]:
                         s1 = matrix.col(detector.get_pixel_lab_coord((f+0.5, s+0.5)))
                         s1 = s1.normalize()
-                        xs.append(f + 0.5)
-                        ys.append(s + 0.5)
-                        zs.append(i + 0.5)
+                        xs.append(f+0.5)
+                        ys.append(s+0.5)
+                        zs.append(i+0.5)
                         s1s.append(s1)
                         weights.append(image[i, s ,f])
 
@@ -159,13 +171,20 @@ def find_nearest_neighbour(obs_xyz, reflections):
     # Get the predicted coords
     pred_xyz = []
     for r in reflections:
-        x = r.image_coord_px[0]
-        y = r.image_coord_px[1]
-        z = r.frame_number
+        x = r.image_coord_px[0]# * 0.172
+        y = r.image_coord_px[1]# * 0.172
+        z = r.frame_number# * 0.2
         pred_xyz.append((x, y, z))
 
     # Create the KD Tree
     ann = AnnAdaptor(flex.double(pred_xyz).as_1d(), 3)
+
+#    obs_xyz2 = []
+#    for x, y, z in obs_xyz:
+#        x = x * 0.172
+#        y = y * 0.172
+#        z = z * 0.2
+#        obs_xyz2.append((x, y, z))
 
     ann.query(flex.double(obs_xyz).as_1d())
 
@@ -228,7 +247,7 @@ class FractionOfObservedIntensity:
         #sigma_m = abs(val[0])
 
         dphi2 = self.dphi / 2
-        den = sqrt(2) * sigma_m / abs(self.zeta)
+        den =  sqrt(2) * sigma_m / abs(self.zeta)# / 0.670
 
         a = (self.tau + dphi2) / den
         b = (self.tau - dphi2) / den
@@ -246,7 +265,6 @@ class FractionOfObservedIntensity:
             r[ind] = 1e-7
         #ret[ind] = 0
         #print ind, r[ind], self.zeta[ind], self.tau[ind]
-
         return numpy.log(r)
 #        return ret
 
@@ -321,9 +339,9 @@ def find_pixel_nearest_neighbour(image, mask, reflections):
     # Get the predicted coords
     pred_xyz = []
     for r in reflections:
-        x = r.image_coord_px[0]
-        y = r.image_coord_px[1]
-        z = r.frame_number
+        x = r.image_coord_px[0] * 0.172
+        y = r.image_coord_px[1] * 0.172
+        z = r.frame_number * 0.2
         pred_xyz.append((x, y, z))
 
     # Create the KD Tree
@@ -331,9 +349,9 @@ def find_pixel_nearest_neighbour(image, mask, reflections):
 
     pixel_xyz = []
     ind = numpy.where(mask != 0)
-    z = ind[0]
-    y = ind[1]
-    x = ind[2]
+    z = ind[0] * 0.2
+    y = ind[1] * 0.172
+    x = ind[2] * 0.172
 
     ann.query(flex.double(zip(x, y, z)).as_1d())
 
@@ -382,7 +400,7 @@ if __name__ == '__main__':
     # Read the reflections file
     filename = os.path.join(dials_regression,
         'centroid_test_data', 'reflections.h5')
-    filename = os.path.join('/home/upc86896/Data/X1_strong_M1S1_1_', 'reflections.h5')
+    #filename = os.path.join('/home/upc86896/Data/X1_strong_M1S1_1_', 'reflections.h5')
     handle = NexusFile(filename, 'r')
 
     # Get the reflection list
@@ -393,7 +411,7 @@ if __name__ == '__main__':
     # Read images
     template = os.path.join(dials_regression,
         'centroid_test_data', 'centroid_*.cbf')
-    template = os.path.join('/home/upc86896/Data/X1_strong_M1S1_1_', 'X1_strong_M1S1_1_*.cbf')
+    #template = os.path.join('/home/upc86896/Data/X1_strong_M1S1_1_', 'X1_strong_M1S1_1_*.cbf')
     filenames = glob(template)
 
     # Load the sweep
@@ -433,29 +451,50 @@ if __name__ == '__main__':
     print 'XDS Sigma_d = {0} deg'.format(xds_sigma_d)
 
 
+    
+
     import numpy
     z_coord = numpy.array([zz for xx, yy, zz in cent[indices]])
     remobj = [objects[i] for i in indices]
     ref_index = ref_index.as_numpy_array()
     remindex = [ref_index[i] for i in indices]
+#    z_coord = [reflections[int(i)].frame_number for i in remindex]
     frames = [[o for o in range(obj[0].start, obj[0].stop)] for obj in remobj]
 
     check_pixel_neighbours(image, mask, reflections, remindex, remobj)
 
 #    for i, f in enumerate(frames):
 #        print f
-#        if len(f) > 4:
+#        if len(f) > 3:
 #            frames[i] = [f[int(len(f)/2)]]
 
     # Calculate the zetas
     s0 = matrix.col(sweep.get_beam().get_s0())
     m2 = matrix.col(sweep.get_goniometer().get_rotation_axis())
     zeta = []
-    for x, y, z in cent[indices]:
+#    for x, y, z in cent[indices]:
+#        s1 = sweep.get_detector().get_pixel_lab_coord((x, y))
+#        s1 = matrix.col(s1).normalize() * s0.length()
+#        e1 = s1.cross(s0).normalize()
+#        zeta.append(m2.dot(e1))
+    from math import sqrt
+    diffxy = []
+    diffz = []
+    for i, (xc, yc, zc), in zip(remindex, cent[indices]):
+        x, y = reflections[int(i)].image_coord_px;
+        z = reflections[int(i)].frame_number
+        diffxy.append(sqrt((x - xc)**2 + (y - yc)**2))
+        diffz.append(abs(z - zc))
+
+
         s1 = sweep.get_detector().get_pixel_lab_coord((x, y))
         s1 = matrix.col(s1).normalize() * s0.length()
         e1 = s1.cross(s0).normalize()
         zeta.append(m2.dot(e1))
+
+    print "Mean X/Y centroid diff: {0}".format(numpy.mean(diffxy))
+    print "Mean Z centroid diff: {0}".format(numpy.mean(diffz))
+
 
     print 'Calculate the e.s.d of the mosaicity.'
     sigma_m = calculate_sigma_mosaicity(frames, z_coord, zeta, sweep)
