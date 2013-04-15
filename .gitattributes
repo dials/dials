@@ -32,6 +32,8 @@ algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/shoebox_masker.h -text
 algorithms/integration/subtract_background.h -text
 algorithms/integration/xds_coordinate_system.h -text
+algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
+algorithms/peak_finding/lui_find_peak.py -text svneol=unset#text/plain
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
 algorithms/spatial_indexing/boost_python/octree.cc -text

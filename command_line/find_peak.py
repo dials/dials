@@ -1,6 +1,10 @@
 from __future__ import division
 from dxtbx.sweep import SweepFactory
-from dials.scratch.luiso_s.to_dials_reg.func_fnd_pk import *
+#from dials.scratch.luiso_s.to_dials_reg.func_fnd_pk import *
+
+from dials.algorithms.peak_finding.lui_find_peak import *
+import time
+
 import numpy
 def fnd_pk():
     import sys
@@ -22,9 +26,30 @@ def fnd_pk():
         print "n_frm,n_row,n_col", n_frm, n_row, n_col
 
         dif3d = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+        n_blocks_x = 10
+        n_blocks_y = 24
+        col_block_size = n_col / n_blocks_x
+        row_block_size = n_row / n_blocks_y
 
+        print 'col_block_size, row_block_size =', col_block_size, row_block_size
+
+        time1 = time.time()
         for frm_tmp in range(n_frm):
-            dif3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
+            for tmp_block_x_pos in range(n_blocks_x):
+                for tmp_block_y_pos in range(n_blocks_y):
+
+                    col_from = int(tmp_block_x_pos * col_block_size)
+                    col_to = int((tmp_block_x_pos + 1) * col_block_size)
+                    row_from = int(tmp_block_y_pos * row_block_size)
+                    row_to = int((tmp_block_y_pos + 1) * row_block_size)
+                    #print 'col_from, col_to, row_from, row_to =', col_from, col_to, row_from, row_to
+                    dif3d[frm_tmp, row_from:row_to, col_from:col_to] = find_mask_2d(data3d[frm_tmp, row_from:row_to, col_from:col_to])
+            #print 'time.time() =', time.time()
+            time2 = time.time()
+            time_dif = time2 - time1
+            #print time2, ' - ', time1, '=', time_dif
+            time1 = time2
+
 
         dif_3d_ext = find_ext_mask_3d(dif3d)
         dif_3d_ext[0:1, :, :] = 0
