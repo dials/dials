@@ -17,6 +17,18 @@ namespace dials { namespace algorithms {
 
   using scitbx::vec3;
 
+  /**
+   * Helper function to calculate path length correction factor.
+   * @param s0 The incident beam vector
+   * @param s1 The diffracted beam vector
+   * @param m2 The rotation axis
+   * @returns Zeta the path length correction factor.
+   */
+  inline
+  double zeta_factor(vec3 <double> s0, vec3 <double> s1, vec3 <double> m2) {
+    return m2 * (s1.cross(s0).normalize());
+  }
+
   /** Class representing XDS coordinate system */
   class XdsCoordinateSystem {
 

@@ -51,5 +51,5 @@ if __name__ == '__main__':
 
     from divergence_and_mosaicity import BeamDivergenceAndMosaicity
 
-    calculate_params = BeamDivergenceAndMosaicity(sweep.get_detector())
+    calculate_params = BeamDivergenceAndMosaicity(sweep)
     calculate_params(observed, predicted)

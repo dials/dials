@@ -9,6 +9,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_xds_coordinate_system()
   {
+    def("zeta_factor", &zeta_factor, (arg("s0"), arg("s1"), arg("m2")));
+  
     class_ <XdsCoordinateSystem> ("XdsCoordinateSystem", no_init)
       .def(init <vec3 <double>,
                  vec3 <double>,

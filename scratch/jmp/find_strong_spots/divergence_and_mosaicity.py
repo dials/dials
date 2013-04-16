@@ -111,32 +111,216 @@ class ComputeEsdBeamDivergence(object):
         '''
         from math import sqrt
 
-        # Calculate the sum of s^2
-        sum_variance = reduce(lambda x, y: x + y, variance)
-
         # Return the beam divergence as the sum / num reflections
-        return sqrt(sum_variance / len(variance))
+        return sqrt(sum(variance) / len(variance))
+
+
+class FractionOfObservedIntensity(object):
+    '''Calculate the fraction of observed intensity for different sigma_m.'''
+
+    def __init__(self, reflections, sweep):
+        '''Initialise the algorithm. Calculate the list of tau and zetas.
+
+        Params:
+            reflections The list of reflections
+            sweep The sweep object
+
+        '''
+        self.dphi = sweep.get_scan().get_oscillation(deg=False)[1]
+        self.tau, self.zeta = self._calculate_tau_and_zeta(reflections, sweep)
+
+    def _calculate_tau_and_zeta(self, reflections, sweep):
+        '''Calculate the list of tau and zeta needed for the calculation.
+
+        Params:
+            reflections The list of reflections
+            sweep The sweep object.
+
+        Returns:
+            (list of tau, list of zeta)
+
+        '''
+        from scitbx.array_family import flex
+        from dials.algorithms.integration import zeta_factor
+
+        # Calculate the list of frames and z coords
+        bbox = [r.bounding_box for r in reflections]
+        frames = [range(b[4], b[5]) for b in bbox]
+        phi = [r.rotation_angle for r in reflections]
+
+        # Calculate the zeta list
+        s0 = sweep.get_beam().get_s0()
+        m2 = sweep.get_goniometer().get_rotation_axis()
+        zeta = [zeta_factor(s0, r.beam_vector, m2) for r in reflections]
+
+        # Calculate the list of tau values
+        tau = []
+        zeta2 = []
+        scan = sweep.get_scan()
+        for rf, p, z in zip(frames, phi, zeta):
+            for f in rf:
+                phi0 = scan.get_angle_from_array_index(int(f), deg=False)
+                phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
+                tau.append((phi1 + phi0) / 2.0 - p)
+                zeta2.append(z)
+
+        # Return the list of tau and zeta
+        assert(len(zeta2) == len(tau))
+        return flex.double(tau), flex.double(zeta2)
+
+    def __call__(self, sigma_m):
+        '''Calculate the fraction of observed intensity for each observation.
+
+        Params:
+            sigma_m The mosaicity
+
+        Returns:
+            A list of fractions of length n
+
+        '''
+        from math import sqrt, erf
+        from scitbx.array_family import flex
+        import numpy
+
+        # Tiny value
+        TINY = 1e-5
+
+        print sigma_m
+
+        # Ensure value for sigma_m is valid
+        if sigma_m < TINY:
+            raise ValueError('sigma_m must be > 0')
+
+        # Oscillation range / 2
+        dphi2 = self.dphi / 2
+
+        # Calculate the denominator to the fraction
+        den =  sqrt(2) * sigma_m / flex.abs(self.zeta)
+
+        print den
+
+        # Calculate the two components to the fraction
+        a = flex.double([erf(x) for x in (self.tau + dphi2) / den])
+        b = flex.double([erf(x) for x in (self.tau - dphi2) / den])
+
+        # Calculate the fraction of observed reflection intensity
+        R = (a - b) / 2.0
+
+        # Set any points <= 0 to 1e-10 (otherwise will get a floating
+        # point error in log calculation below).
+        bad_index = flex.int(numpy.where(R.as_numpy_array() < TINY)[0])
+        for i in bad_index: print i
+        for i in bad_index:
+            R[i] = TINY
+
+        # Return the logarithm of r
+       # for r in R: print r
+#        SR = flex.log(R)
+        print 1/0
+
+
+class MaximumLikelihoodEstimator(object):
+    '''Estimate E.s.d reflecting range by maximum likelihood estimation.'''
+
+    def __init__(self, reflections, sweep):
+        '''Initialise the optmization.'''
+        from scitbx import simplex
+        from scitbx.array_family import flex
+        from math import pi
+        import random
+
+        # Initialise the function used in likelihood estimation.
+        self._R = FractionOfObservedIntensity(reflections, sweep)
+
+        # Set the starting values to try
+        start = random.random() * 0.1 * pi / 180
+        stop = random.random() * 0.1 * pi / 180
+        start = 0.00114272027152
+        stop = 0.000314804513814
+        print start, stop
+        starting_simplex = [flex.double([0.3*pi/180]), flex.double([0.4*pi/180])]
+        starting_simplex = [flex.double([start]), flex.double([stop])]
+
+
+        # Initialise the optimizer
+        self._optimizer = simplex.simplex_opt(1, matrix=starting_simplex,
+            evaluator=self, tolerance=1e-7)
+
+    def target(self, sigma):
+        '''Return the target function evaluated at this valid.
+
+        Params:
+            sigma The parameters
+
+        Returns:
+            The value of the target function at the given value.
+
+        '''
+        return -self.likelihood(sigma[0])
+
+    def likelihood(self, sigma_m):
+        '''Return the likelihood of the current sigma
+
+        Params:
+            sigma_m the estimated mosaicity
+
+        Returns:
+            The likelihood of this value.
+
+        '''
+        from scitbx.array_family import flex
+        return flex.sum(self._R(sigma_m))
+
+    def __call__(self):
+        '''Perform maximum likelihood estimation of sigma_m
+
+        Returns:
+            The value of sigma_m
+
+        '''
+        return self._optimizer.get_solution()[0]
 
 
 class ComputeEsdReflectingRange(object):
+    '''Calculate the E.s.d of the reflecting range (mosaicity).'''
 
-    def __init__(self):
-        pass
+    def __init__(self, sweep):
+        '''Initialise the algorithm with the scan.
+
+        Params:
+            scan The scan object
+
+        '''
+        self._sweep = sweep
 
     def __call__(self, reflections):
-        pass
+        '''Calculate the value for the reflecting range (mosaicity).
+
+        Params:
+            reflections The list of reflections
+
+        Returns:
+            The calculated value of sigma_m
+
+        '''
+        maximum_likelihood = MaximumLikelihoodEstimator(
+            reflections, self._sweep)
+        return maximum_likelihood()
 
 
 class BeamDivergenceAndMosaicity(object):
 
-    def __init__(self, detector, max_separation=2):
+    def __init__(self, sweep, max_separation=2):
         '''Initialise the algorithm.
 
         Params:
+            sweep The sweep object
             max_separation Max pixel dist between predicted and observed spot
 
         '''
-        self._compute_sigma_d = ComputeEsdBeamDivergence(detector)
+        # Setup the algorithm objects
+        self._compute_sigma_d = ComputeEsdBeamDivergence(sweep.get_detector())
+        self._compute_sigma_m = ComputeEsdReflectingRange(sweep)
 
         # Set the parameters
         self._max_separation = max_separation
@@ -168,21 +352,25 @@ class BeamDivergenceAndMosaicity(object):
             sigma_d, sigma_m
 
         '''
+        from math import pi
+
         # Map observed to predicted reflections
         print 'Matching observed and predicted reflections.'
         self._data = self._match_observed_w_predicted(observed, predicted)
         print '{0} reflections remaining.'.format(len(self._data))
 
         # Calculate the standard deviation of the beam divergence
+        print 'Calculating sigma_d'
         sigma_d = self._calculate_esd_beam_divergence(self._data)
-        from math import pi
-        print sigma_d * 180 / pi
+        print 'Sigma D = {0}'.format(sigma_d * 180 / pi)
 
         # Calculate the standard deviation of the reflecting range (mosaicity)
-        #sigma_m = self._calculate_esd_reflecting_range()
+        print 'Calculating sigma_m'
+        sigma_m = self._calculate_esd_reflecting_range(self._data)
+        print 'Sigma M = {0}'.format(sigma_m * 180 / pi)
 
         # Return the parameters
-        #return sigma_d, sigma_m
+        return sigma_d, sigma_m
 
     def _match_observed_w_predicted(self, observed, predicted):
         '''Match the observed reflections with the predicted.
@@ -224,8 +412,8 @@ class BeamDivergenceAndMosaicity(object):
     def _calculate_esd_beam_divergence(self, reflections):
         return self._compute_sigma_d(reflections)
 
-    def _calculate_esd_reflecting_range(self):
-        pass
+    def _calculate_esd_reflecting_range(self, reflections):
+        return self._compute_sigma_m(reflections)
 
     def _find_nearest_neighbours(self, observed, predicted):
         '''Find the nearest predicted spot to the observed spot.
