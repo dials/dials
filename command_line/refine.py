@@ -113,7 +113,7 @@ class RefinementRunner(object):
 
         # Read other data (need to assume an XPARM file)
         xparm_handle = xparm.reader()
-        xparm_handle.read_file(self.xparm_file)
+        xparm_handle.read_file(self.xparm_file, check_filename = False)
         self.space_group = ioutil.get_space_group_type_from_xparm(xparm_handle)
         cfc = coordinate_frame_converter(self.xparm_file)
         a_vec = cfc.get('real_space_a')
