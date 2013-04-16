@@ -1,6 +1,6 @@
 import numpy
 
-def find_mask_2d(data2d):
+def find_mask_2d(data2d, n_times):
 
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
@@ -9,12 +9,24 @@ def find_mask_2d(data2d):
     diffdata2d = numpy.zeros_like(data2d)
     data2dtmp = numpy.copy(data2d)
 
-    for times in range(5):
+    for times in range(n_times):
+
         for row in range(1, n_row - 1, 1):
             for col in range(1, n_col - 1, 1):
-                pscan = numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0
-                data2dsmoth[row, col] = int(pscan)
+                #pscan = numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0
+                #data2dsmoth[row, col] = int(pscan)
+                data2dsmoth[row, col] = (data2dtmp[row - 1, col - 1] + data2dtmp[row - 1, col] + data2dtmp[row - 1, col + 1]  \
+                                          + data2dtmp[row  , col - 1] + data2dtmp[row  , col + 1]    \
+                                      + data2dtmp[row + 1, col - 1] + data2dtmp[row + 1, col] + data2dtmp[row + 1, col + 1]) / 8.0
         data2dtmp[:, :] = data2dsmoth[:, :]
+#for y in range(1, ysize - 1):
+#    for x in range(1, xsize - 1):
+#        suma = mat2dres[y - 1, x - 1] + mat2dres[y - 1, x] + mat2dres[y - 1, x + 1] \
+#             + mat2dres[y, x - 1] + mat2dres[y, x + 1]             \
+#             + mat2dres[y + 1, x - 1] + mat2dres[y + 1, x] + mat2dres[y + 1, x + 1]
+#        mat2dsmoth[y, x] = suma / 8
+
+
 
 #######################################################################################################
     #cont = 0                                                                  # This way to calculate
@@ -27,9 +39,7 @@ def find_mask_2d(data2d):
     ##print 'dif_avg=', dif_avg                                                #
     ##threshold_shift = 7.39432533334
 #######################################################################################################
-    threshold_shift = 7
-
-    #print 'threshold_shift =', threshold_shift
+    threshold_shift = 10
 
     data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
 
@@ -52,11 +62,25 @@ def find_ext_mask_3d(diffdata3d):
                     diffdata3d_ext[frm - ext_area:frm + ext_area + 1, row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
     return diffdata3d_ext
 
+def find_ext_mask_2d(diffdata2d):
+    n_row = numpy.size(diffdata2d[:, 0:1])
+    n_col = numpy.size(diffdata2d[0:1, :])
+    ext_area = 1
+    diffdata2d_ext = numpy.zeros_like(diffdata2d)
+    for row in range(ext_area, n_row - ext_area + 1, 1):
+        for col in range(ext_area, n_col - ext_area + 1, 1):
+            if diffdata2d[row, col] == 1:
+                diffdata2d_ext[row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
+    return diffdata2d_ext
+
 def find_bound_2d(mask):
     n_col = numpy.size(mask[0:1, :])
     n_row = numpy.size(mask[:, 0:1])
-    tmp_mask = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
-    tmp_mask[:, :] = mask[:, :]
+    #tmp_mask = numpy.zeros(n_row * n_col, dtype = int).reshape(n_row, n_col)
+    #tmp_mask[:, :] = mask[:, :]
+
+    tmp_mask = numpy.copy(mask)
+
     x_from_lst = []
     x_to_lst = []
     y_from_lst = []
@@ -64,7 +88,7 @@ def find_bound_2d(mask):
 
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
-            if mask[row, col] == 1 and tmp_mask[row, col] == 1:
+            if tmp_mask[row, col] == 1:
                 lft_bound = col - 1
                 rgt_bound = col + 1
                 bot_bound = row - 1
@@ -77,10 +101,11 @@ def find_bound_2d(mask):
                 in_img = "True"
                 while in_img == "True":
 
+
                     # left wall
-                    if lft_bound > 0 and top_bound + 1 < n_row and bot_bound > 0:
+                    if lft_bound >= 0 and top_bound < n_row and bot_bound >= 0:
                         for scan_row in range(bot_bound, top_bound + 1, 1):
-                            if mask[scan_row, lft_bound] == 1:
+                            if tmp_mask[scan_row, lft_bound] == 1:
                                 lft_bound -= 1
                                 break
                     else:
@@ -88,27 +113,29 @@ def find_bound_2d(mask):
                         break
 
                     # right wall
-                    if rgt_bound < n_col and top_bound + 1 < n_row and bot_bound > 0:
+                    if rgt_bound < n_col and top_bound < n_row and bot_bound >= 0:
                         for scan_row in range(bot_bound, top_bound + 1, 1):
-                            if mask[scan_row, rgt_bound] == 1:
+                            if tmp_mask[scan_row, rgt_bound] == 1:
                                 rgt_bound += 1
                                 break
                     else:
                         in_img = "false"
                         break
+
                     # bottom wall
-                    if bot_bound > 0 and lft_bound > 0 and rgt_bound + 1 < n_col:
+                    if bot_bound >= 0 and lft_bound >= 0 and rgt_bound < n_col:
                         for scan_col in range(lft_bound, rgt_bound + 1 , 1):
-                            if mask[bot_bound, scan_col] == 1:
+                            if tmp_mask[bot_bound, scan_col] == 1:
                                 bot_bound -= 1
                                 break
                     else:
                         in_img = "false"
                         break
+
                     # top wall
-                    if top_bound < n_row and lft_bound > 0 and rgt_bound + 1 < n_col:
+                    if top_bound < n_row and lft_bound >= 0 and rgt_bound < n_col:
                         for scan_col in range(lft_bound, rgt_bound + 1 , 1):
-                            if mask[top_bound, scan_col] == 1:
+                            if tmp_mask[top_bound, scan_col] == 1:
                                 top_bound += 1
                                 break
                     else:
