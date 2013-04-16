@@ -42,13 +42,13 @@ def select_strong_pixels(sweep, trusted_range):
     print "Selecting pixels"
     image = sweep.to_array().as_numpy_array()
     mask = image >= threshold
-    
-    
+
+
 #    from matplotlib import pylab, cm
 #    for f in range(9):
 #        pylab.imshow(image[f,:,:], cmap=cm.Greys_r, vmax=9)
 #        pylab.show()
-    
+
     return image, mask
 
 def group_pixels(mask):
@@ -451,7 +451,7 @@ if __name__ == '__main__':
     print 'XDS Sigma_d = {0} deg'.format(xds_sigma_d)
 
 
-    
+
 
     import numpy
     z_coord = numpy.array([zz for xx, yy, zz in cent[indices]])

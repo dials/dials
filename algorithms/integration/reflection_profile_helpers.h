@@ -29,15 +29,18 @@ namespace dials { namespace algorithms {
    * @param reflections The reflection list.
    */
   inline
-  ReflectionList allocate_reflection_profiles(ReflectionList &reflections) {
+  ReflectionList allocate_reflection_profiles(ReflectionList &reflections,
+      int shoebox_default = 0, int shoebox_mask_default = 1) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
       int size_z = r.get_bounding_box()[5] - r.get_bounding_box()[4];
       int size_y = r.get_bounding_box()[3] - r.get_bounding_box()[2];
       int size_x = r.get_bounding_box()[1] - r.get_bounding_box()[0];
       DIALS_ASSERT(size_z > 0 && size_y > 0 && size_x > 0);
-      r.set_shoebox(flex_int(flex_grid<>(size_z, size_y, size_x), 0));
-      r.set_shoebox_mask(flex_int(flex_grid<>(size_z, size_y, size_x), 1));
+      r.set_shoebox(flex_int(flex_grid<>(size_z, size_y, size_x),
+        shoebox_default));
+      r.set_shoebox_mask(flex_int(flex_grid<>(size_z, size_y, size_x),
+        shoebox_mask_default));
     }
     return reflections;
   }

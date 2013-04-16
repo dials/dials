@@ -20,7 +20,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     def("allocate_reflection_profiles",
       &allocate_reflection_profiles, (
-        arg("reflections")));
+        arg("reflections"),
+        arg("shoebox_default") = 0,
+        arg("shoebox_mask_default") = 1));
   
     def("copy_single_image_pixels",
       &copy_single_image_pixels, (

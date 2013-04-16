@@ -32,7 +32,11 @@ algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/shoebox_masker.h -text
 algorithms/integration/subtract_background.h -text
 algorithms/integration/xds_coordinate_system.h -text
+algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
+algorithms/peak_finding/boost_python/label_pixels.cc -text
+algorithms/peak_finding/boost_python/peak_finding_ext.cc -text
+algorithms/peak_finding/label_pixels.h -text
 algorithms/peak_finding/lui_find_peak.py -text svneol=unset#text/plain
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
@@ -379,7 +383,10 @@ scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py 
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
 scratch/jmp/find_strong_spots/calculate_divergence.py -text
 scratch/jmp/find_strong_spots/calculate_divergence2.py -text
+scratch/jmp/find_strong_spots/calculate_divergence3.py -text
+scratch/jmp/find_strong_spots/calculate_divergence4.py -text
 scratch/jmp/find_strong_spots/histogram_pixels.py -text
+scratch/jmp/find_strong_spots/select_spots.py -text
 scratch/jmp/find_strong_spots/thresholding.py -text
 scratch/jmp/index_test.py -text
 scratch/jmp/misc/normality_check.py -text
