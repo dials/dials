@@ -1,57 +1,4 @@
 
-def calculate_threshold(image, trusted_range):
-    from scipy.ndimage.measurements import histogram
-    from thresholding import maximum_deviation
-    import numpy
-
-    # Cap pixels to within trusted range
-    image.shape = -1
-    ind = numpy.where(image < trusted_range[0])
-    image[ind] = trusted_range[0]
-    ind = numpy.where(image > trusted_range[1])
-    image[ind] = trusted_range[1]
-
-    # Histogram the pixels
-    histo = histogram(image, trusted_range[0], trusted_range[1], trusted_range[1])
-    histo = histo / numpy.sum(histo)
-
-    # Calculate the threshold and add to list
-    return maximum_deviation(histo)
-
-def select_strong_pixels(sweep, trusted_range):
-    from dials.util.command_line import ProgressBar
-    import numpy
-
-    # Calculate the threshold
-    coordinate = []
-    intensity = []
-    progress = ProgressBar()
-    for i, flex_image in enumerate(sweep):
-        image = flex_image.as_numpy_array()
-        height, width = image.shape
-        threshold = calculate_threshold(image, trusted_range)
-        image.shape = -1
-        mask = image >= threshold
-
-        ind = numpy.where(mask != 0)[0]
-        z = [i] * len(ind)
-        y = [int(idx // width) for idx in ind]
-        x = [int(idx % width) for idx in ind]
-        coords = zip(x, y, z)
-        coordinate.extend(coords)
-        intensity.extend(list(image[ind]))
-        progress.update(100.0 * float(i) / len(sweep))
-    progress.finished()
-
-    return coordinate, intensity
-
-def create_groups(pixels, grid_size):
-
-    from scitbx.array_family import flex
-    from dials.algorithms.peak_finding import LabelPixels, flex_vec3_int
-    label_pixels = LabelPixels(grid_size)
-    labels = label_pixels(flex_vec3_int(pixels))
-    return labels
 
 if __name__ == '__main__':
 
@@ -81,8 +28,8 @@ if __name__ == '__main__':
 
     # Get the reflection list
     print 'Reading reflections.'
-    reflections = handle.get_reflections()
-    print 'Read {0} reflections.'.format(len(reflections))
+    predicted = handle.get_reflections()
+    print 'Read {0} reflections.'.format(len(predicted))
 
     # Read images
     template = os.path.join(dials_regression,
@@ -95,22 +42,14 @@ if __name__ == '__main__':
     sweep = SweepFactory.sweep(filenames)
     print 'Loaded sweep of {0} images.'.format(len(sweep))
 
-#    # Select the strong pixels to use in the divergence calculation
-#    print 'Select the strong pixels from the images.'
-#    trusted_range = (0, 20000)
-#    coordinate, intensity = select_strong_pixels(sweep, trusted_range)
-#    print 'Selected {0} pixels'.format(len(coordinate))
-#
-#    print 'Create blobs'
-#    image_size = sweep.get_detector().get_image_size()
-#    grid_size = (image_size[0], image_size[1], len(sweep))
-#    labels = create_groups(coordinate, grid_size)
-#    print 'Labelled {0} blobs.'.format(max(labels)+1)
-
     from select_spots import SpotFinder
 
-    print sweep.get_detector()
     sweep.get_detector().set_trusted_range((0, 20000))
     find_spots = SpotFinder()
 
-    find_spots(sweep)
+    observed = find_spots(sweep)
+
+    from divergence_and_mosaicity import BeamDivergenceAndMosaicity
+
+    calculate_params = BeamDivergenceAndMosaicity(sweep.get_detector())
+    calculate_params(observed, predicted)
