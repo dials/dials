@@ -101,7 +101,10 @@ def fnd_pk():
 
         print "n_frm,n_row,n_col", n_frm, n_row, n_col
 
-        dif3d = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+        #dif3d = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+
+        dif3d = numpy.zeros_like(data3d)
+
         n_blocks_x = 5
         n_blocks_y = 12
         col_block_size = n_col / n_blocks_x
@@ -118,8 +121,11 @@ def fnd_pk():
                     col_to = int((tmp_block_x_pos + 1) * col_block_size)
                     row_from = int(tmp_block_y_pos * row_block_size)
                     row_to = int((tmp_block_y_pos + 1) * row_block_size)
-                    print 'col_from, col_to, row_from, row_to =', col_from, col_to, row_from, row_to
-                    dif3d[frm_tmp, row_from:row_to, col_from:col_to] = find_mask_2d(data3d[frm_tmp, row_from:row_to, col_from:col_to])
+
+                    tmp_dat2d = numpy.copy(data3d[frm_tmp, row_from:row_to, col_from:col_to])
+                    tmp_dif = find_mask_2d(tmp_dat2d, tm)
+                    dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
+
             print 'time.time() =', time.time()
             time2 = time.time()
             time_dif = time2 - time1
@@ -137,6 +143,12 @@ def fnd_pk():
             print "x_from, x_to, y_from, y_to, z_from, z_to =" \
             , x_from_lst[pos], x_to_lst[pos], y_from_lst[pos], y_to_lst[pos], z_from_lst[pos], z_to_lst[pos]
 
+        from matplotlib import pylab, cm
+        plt = pylab.imshow(data3d[1, :, :] , vmin = 0, vmax = 1000, cmap = cm.Greys_r,
+                       interpolation = 'nearest', origin = 'lower')
+        pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
+        pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
+        pylab.show()
     else:
         print "No IMG file to load"
 

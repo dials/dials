@@ -10,23 +10,16 @@ def find_mask_2d(data2d, n_times):
     data2dtmp = numpy.copy(data2d)
 
     for times in range(n_times):
-
         for row in range(1, n_row - 1, 1):
             for col in range(1, n_col - 1, 1):
-                #pscan = numpy.sum(data2dtmp[row - 1:row + 2, col - 1:col + 2]) / 9.0
-                #data2dsmoth[row, col] = int(pscan)
                 data2dsmoth[row, col] = (data2dtmp[row - 1, col - 1] + data2dtmp[row - 1, col] + data2dtmp[row - 1, col + 1]  \
                                           + data2dtmp[row  , col - 1] + data2dtmp[row  , col + 1]    \
                                       + data2dtmp[row + 1, col - 1] + data2dtmp[row + 1, col] + data2dtmp[row + 1, col + 1]) / 8.0
         data2dtmp[:, :] = data2dsmoth[:, :]
-#for y in range(1, ysize - 1):
-#    for x in range(1, xsize - 1):
-#        suma = mat2dres[y - 1, x - 1] + mat2dres[y - 1, x] + mat2dres[y - 1, x + 1] \
-#             + mat2dres[y, x - 1] + mat2dres[y, x + 1]             \
-#             + mat2dres[y + 1, x - 1] + mat2dres[y + 1, x] + mat2dres[y + 1, x + 1]
-#        mat2dsmoth[y, x] = suma / 8
 
-
+#    promedio = numpy.mean(data2d)
+#    data2dsmoth[:, :] = promedio
+#    print 'promedio =', promedio
 
 #######################################################################################################
     #cont = 0                                                                  # This way to calculate
@@ -37,8 +30,8 @@ def find_mask_2d(data2d, n_times):
     #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
     #dif_avg = dif_tot / cont                                                  #
     ##print 'dif_avg=', dif_avg                                                #
-    ##threshold_shift = 7.39432533334
 #######################################################################################################
+
     threshold_shift = 10
 
     data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
@@ -46,6 +39,7 @@ def find_mask_2d(data2d, n_times):
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
             if data2d[row, col] > data2dsmoth[row, col]:
+#            if data2d[row, col] > 20:
                 diffdata2d[row, col] = 1
 
     return diffdata2d
@@ -54,7 +48,8 @@ def find_ext_mask_3d(diffdata3d):
     n_row = numpy.size(diffdata3d[0:1, :, 0:1])
     n_col = numpy.size(diffdata3d[0:1, 0:1, :])
     ext_area = 1
-    diffdata3d_ext = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+    diffdata3d_ext = numpy.zeros_like(diffdata3d)
+
     for frm in range(ext_area, n_frm - ext_area + 1, 1):
         for row in range(ext_area, n_row - ext_area + 1, 1):
             for col in range(ext_area, n_col - ext_area + 1, 1):
