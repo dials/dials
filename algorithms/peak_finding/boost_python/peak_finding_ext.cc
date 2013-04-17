@@ -16,10 +16,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_label_pixels();
+  void export_mean_sdev_filter();
 
   BOOST_PYTHON_MODULE(dials_algorithms_peak_finding_ext)
   {
     export_label_pixels();
+    export_mean_sdev_filter();
   }
 
 }}} // namespace = dials::algorithms::boost_python

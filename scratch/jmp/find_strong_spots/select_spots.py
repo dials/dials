@@ -1,3 +1,12 @@
+#
+# spot_finder.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 from __future__ import division
 
 class SpotFinder(object):
@@ -99,8 +108,40 @@ class SpotFinder(object):
         '''
         from scitbx.array_family import flex
         from dials.algorithms.peak_finding import flex_vec3_int
+        from dials.algorithms.peak_finding import mean_sdev_filter
         import numpy
+        from time import time
+        
+#        image = flex_image.as_numpy_array()
+#        image[numpy.where(image < 0)] = 0
+#        flex_image = flex.int(image)
+#        
+#        st = time()
+#        mean, sdev = mean_sdev_filter(flex_image.as_double(), (100, 100))
+#        print time() - st
 
+#        from matplotlib import pylab, cm
+#        pylab.imshow(mean.as_numpy_array(), cmap=cm.Greys_r)
+#        pylab.show()
+#        
+#        pylab.imshow(sdev.as_numpy_array(), cmap=cm.Greys_r)
+#        pylab.show()
+#        
+#        threshold = (mean + 5 * sdev).as_numpy_array()
+#        
+#        print numpy.min(threshold)
+#        print numpy.max(threshold)
+#        pylab.imshow(threshold, cmap=cm.Greys_r)
+#        pylab.show()
+#        
+#        
+#        mask = flex_image.as_numpy_array() >= threshold
+#        
+#        pylab.imshow(mask, cmap=cm.Greys_r)
+#        pylab.show()
+#        
+#        print 1/0
+        
         image = flex_image.as_numpy_array()
         height, width = image.shape
 
@@ -137,16 +178,19 @@ class SpotFinder(object):
         from thresholding import maximum_deviation
         import numpy
 
+        # Get the histogram range
+        minh = 0
+        maxh = min([numpy.max(image), trusted_range[1]])
+
         # Cap pixels to within trusted range
         image.shape = -1
-        ind = numpy.where(image < trusted_range[0])
-        image[ind] = trusted_range[0]
-        ind = numpy.where(image > trusted_range[1])
-        image[ind] = trusted_range[1]
+        ind = numpy.where(image < minh)
+        image[ind] = minh
+        ind = numpy.where(image > maxh)
+        image[ind] = maxh
 
         # Histogram the pixels
-        histo = histogram(image, trusted_range[0],
-            trusted_range[1], trusted_range[1])
+        histo = histogram(image, minh, maxh, maxh)
         histo = histo / numpy.sum(histo)
 
         # Calculate the threshold and add to list

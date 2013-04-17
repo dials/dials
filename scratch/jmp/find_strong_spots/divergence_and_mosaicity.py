@@ -1,3 +1,112 @@
+#
+# beam_divergence_and_mosaicity.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+from __future__ import division
+
+class SpotMatcher(object):
+    '''Match the observed with predicted spots.'''
+    
+    def __init__(self, max_separation=2):
+      '''Setup the algorithm
+      
+      Params:
+          max_separation Max pixel dist between predicted and observed spot
+      
+      '''
+      # Set the algorithm parameters
+      self._max_separation = max_separation
+
+    def __call__(self, observed, predicted):
+        '''Match the observed reflections with the predicted.
+
+        Params:
+            observed The list of observed reflections.
+            predicted The list of predicted reflections.
+
+        Returns:
+            The list of matched reflections
+
+        '''
+        from dials.model.data import ReflectionList
+
+        # Find the nearest neighbours and distances
+        nn, dist = self._find_nearest_neighbours(observed, predicted)
+
+        # Filter the matches by distance
+        index = self._filter_by_distance(nn, dist)
+
+        # Copy all of the reflection data for the matched reflections
+        reflections = ReflectionList()
+        for i in index:
+            o = observed[i]
+            p = predicted[nn[i]]
+            o.miller_index = p.miller_index
+            o.rotation_angle = p.rotation_angle
+            o.beam_vector = p.beam_vector
+            o.image_coord_px = p.image_coord_px
+            o.image_coord_mm = p.image_coord_mm
+            o.panel_number = p.panel_number
+            o.frame_number = p.frame_number
+            reflections.append(o)
+
+        # Return the list of reflections
+        return reflections
+
+    def _find_nearest_neighbours(self, observed, predicted):
+        '''Find the nearest predicted spot to the observed spot.
+
+        Params:
+            observed The observed reflections
+            predicted The predicted reflections
+
+        Returns:
+            (nearest neighbours, distance)
+
+        '''
+        from annlib_ext import AnnAdaptor
+        from scitbx.array_family import flex
+        from math import sqrt
+
+        # Get the predicted coordinates
+        predicted_xyz = []
+        for r in predicted:
+            x, y = r.image_coord_px
+            z = r.frame_number
+            predicted_xyz.append((x, y, z))
+
+        # Create the KD Tree
+        ann = AnnAdaptor(flex.double(predicted_xyz).as_1d(), 3)
+
+        # Get the observed coordinates
+        observed_xyz = [r.centroid_position for r in observed]
+
+        # Query to find all the nearest neighbours
+        ann.query(flex.double(observed_xyz).as_1d())
+
+        # Return the nearest neighbours and distances
+        return ann.nn, flex.sqrt(ann.distances)
+
+    def _filter_by_distance(self, nn, dist):
+        '''Filter the matches by distance.
+
+        Params:
+            nn The nearest neighbour list
+            dist The distances
+
+        Returns:
+            A reduced list of nearest neighbours
+
+        '''
+        from scitbx.array_family import flex
+        index = range(len(nn))
+        return flex.int([i for i in index if dist[i] <= self._max_separation])
+        
 
 class ComputeEsdBeamDivergence(object):
     '''Calculate the E.s.d of the beam divergence.'''
@@ -183,9 +292,7 @@ class FractionOfObservedIntensity(object):
         import numpy
 
         # Tiny value
-        TINY = 1e-5
-
-        print sigma_m
+        TINY = 1e-10
 
         # Ensure value for sigma_m is valid
         if sigma_m < TINY:
@@ -197,8 +304,6 @@ class FractionOfObservedIntensity(object):
         # Calculate the denominator to the fraction
         den =  sqrt(2) * sigma_m / flex.abs(self.zeta)
 
-        print den
-
         # Calculate the two components to the fraction
         a = flex.double([erf(x) for x in (self.tau + dphi2) / den])
         b = flex.double([erf(x) for x in (self.tau - dphi2) / den])
@@ -208,15 +313,12 @@ class FractionOfObservedIntensity(object):
 
         # Set any points <= 0 to 1e-10 (otherwise will get a floating
         # point error in log calculation below).
-        bad_index = flex.int(numpy.where(R.as_numpy_array() < TINY)[0])
-        for i in bad_index: print i
+        bad_index = numpy.where(R.as_numpy_array() < TINY)[0]
         for i in bad_index:
-            R[i] = TINY
+            R[int(i)] = TINY
 
         # Return the logarithm of r
-       # for r in R: print r
-#        SR = flex.log(R)
-        print 1/0
+        return flex.log(R)
 
 
 class MaximumLikelihoodEstimator(object):
@@ -233,14 +335,9 @@ class MaximumLikelihoodEstimator(object):
         self._R = FractionOfObservedIntensity(reflections, sweep)
 
         # Set the starting values to try
-        start = random.random() * 0.1 * pi / 180
-        stop = random.random() * 0.1 * pi / 180
-        start = 0.00114272027152
-        stop = 0.000314804513814
-        print start, stop
-        starting_simplex = [flex.double([0.3*pi/180]), flex.double([0.4*pi/180])]
+        start = 0.1 * random.random() * pi / 180
+        stop = 0.1 * random.random() * pi / 180
         starting_simplex = [flex.double([start]), flex.double([stop])]
-
 
         # Initialise the optimizer
         self._optimizer = simplex.simplex_opt(1, matrix=starting_simplex,
@@ -309,6 +406,7 @@ class ComputeEsdReflectingRange(object):
 
 
 class BeamDivergenceAndMosaicity(object):
+    '''An algorithm to calculate the beam divergence and mosaicity params.'''
 
     def __init__(self, sweep, max_separation=2):
         '''Initialise the algorithm.
@@ -319,11 +417,9 @@ class BeamDivergenceAndMosaicity(object):
 
         '''
         # Setup the algorithm objects
+        self._match_spots = SpotMatcher(max_separation)
         self._compute_sigma_d = ComputeEsdBeamDivergence(sweep.get_detector())
         self._compute_sigma_m = ComputeEsdReflectingRange(sweep)
-
-        # Set the parameters
-        self._max_separation = max_separation
 
         # Set the internal reflection list to None
         self._data = None
@@ -362,104 +458,21 @@ class BeamDivergenceAndMosaicity(object):
         # Calculate the standard deviation of the beam divergence
         print 'Calculating sigma_d'
         sigma_d = self._calculate_esd_beam_divergence(self._data)
-        print 'Sigma D = {0}'.format(sigma_d * 180 / pi)
+        print 'Sigma D = {0} deg'.format(sigma_d * 180 / pi)
 
         # Calculate the standard deviation of the reflecting range (mosaicity)
         print 'Calculating sigma_m'
         sigma_m = self._calculate_esd_reflecting_range(self._data)
-        print 'Sigma M = {0}'.format(sigma_m * 180 / pi)
+        print 'Sigma M = {0} deg'.format(sigma_m * 180 / pi)
 
         # Return the parameters
         return sigma_d, sigma_m
 
     def _match_observed_w_predicted(self, observed, predicted):
-        '''Match the observed reflections with the predicted.
-
-        Params:
-            observed The list of observed reflections.
-            predicted The list of predicted reflections.
-
-        Returns:
-            The list of matched reflections
-
-        '''
-        from dials.model.data import ReflectionList
-
-        # Find the nearest neighbours and distances
-        nn, dist = self._find_nearest_neighbours(observed, predicted)
-
-        # Filter the matches by distance
-        index = self._filter_by_distance(nn, dist)
-
-        # Copy all of the reflection data for the matched reflections
-        reflections = ReflectionList()
-        for i in index:
-            o = observed[i]
-            p = predicted[nn[i]]
-            o.miller_index = p.miller_index
-            o.rotation_angle = p.rotation_angle
-            o.beam_vector = p.beam_vector
-            o.image_coord_px = p.image_coord_px
-            o.image_coord_mm = p.image_coord_mm
-            o.panel_number = p.panel_number
-            o.frame_number = p.frame_number
-            reflections.append(o)
-
-        # Return the list of reflections
-        return reflections
-
+        return self._match_spots(observed, predicted)
 
     def _calculate_esd_beam_divergence(self, reflections):
         return self._compute_sigma_d(reflections)
 
     def _calculate_esd_reflecting_range(self, reflections):
         return self._compute_sigma_m(reflections)
-
-    def _find_nearest_neighbours(self, observed, predicted):
-        '''Find the nearest predicted spot to the observed spot.
-
-        Params:
-            observed The observed reflections
-            predicted The predicted reflections
-
-        Returns:
-            (nearest neighbours, distance)
-
-        '''
-        from annlib_ext import AnnAdaptor
-        from scitbx.array_family import flex
-        from math import sqrt
-
-        # Get the predicted coordinates
-        predicted_xyz = []
-        for r in predicted:
-            x, y = r.image_coord_px
-            z = r.frame_number
-            predicted_xyz.append((x, y, z))
-
-        # Create the KD Tree
-        ann = AnnAdaptor(flex.double(predicted_xyz).as_1d(), 3)
-
-        # Get the observed coordinates
-        observed_xyz = [r.centroid_position for r in observed]
-
-        # Query to find all the nearest neighbours
-        ann.query(flex.double(observed_xyz).as_1d())
-
-        # Return the nearest neighbours and distances
-        return ann.nn, flex.sqrt(ann.distances)
-
-    def _filter_by_distance(self, nn, dist):
-        '''Filter the matches by distance.
-
-        Params:
-            nn The nearest neighbour list
-            dist The distances
-
-        Returns:
-            A reduced list of nearest neighbours
-
-        '''
-        from scitbx.array_family import flex
-        index = range(len(nn))
-        return flex.int([i for i in index if dist[i] <= self._max_separation])

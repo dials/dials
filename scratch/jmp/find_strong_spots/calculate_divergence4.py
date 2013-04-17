@@ -2,6 +2,7 @@
 
 if __name__ == '__main__':
 
+
     import os
     import libtbx.load_env
     from dials.util.nexus import NexusFile
@@ -43,7 +44,7 @@ if __name__ == '__main__':
     print 'Loaded sweep of {0} images.'.format(len(sweep))
 
     from select_spots import SpotFinder
-
+    sweep.reader().set_max_cache(1)
     sweep.get_detector().set_trusted_range((0, 20000))
     find_spots = SpotFinder()
 
