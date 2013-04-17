@@ -11,13 +11,13 @@ from __future__ import division
 
 class SpotMatcher(object):
     '''Match the observed with predicted spots.'''
-    
+
     def __init__(self, max_separation=2):
       '''Setup the algorithm
-      
+
       Params:
           max_separation Max pixel dist between predicted and observed spot
-      
+
       '''
       # Set the algorithm parameters
       self._max_separation = max_separation
@@ -106,7 +106,7 @@ class SpotMatcher(object):
         from scitbx.array_family import flex
         index = range(len(nn))
         return flex.int([i for i in index if dist[i] <= self._max_separation])
-        
+
 
 class ComputeEsdBeamDivergence(object):
     '''Calculate the E.s.d of the beam divergence.'''

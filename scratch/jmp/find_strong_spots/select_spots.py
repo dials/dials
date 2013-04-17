@@ -111,37 +111,7 @@ class SpotFinder(object):
         from dials.algorithms.peak_finding import mean_sdev_filter
         import numpy
         from time import time
-        
-#        image = flex_image.as_numpy_array()
-#        image[numpy.where(image < 0)] = 0
-#        flex_image = flex.int(image)
-#        
-#        st = time()
-#        mean, sdev = mean_sdev_filter(flex_image.as_double(), (100, 100))
-#        print time() - st
 
-#        from matplotlib import pylab, cm
-#        pylab.imshow(mean.as_numpy_array(), cmap=cm.Greys_r)
-#        pylab.show()
-#        
-#        pylab.imshow(sdev.as_numpy_array(), cmap=cm.Greys_r)
-#        pylab.show()
-#        
-#        threshold = (mean + 5 * sdev).as_numpy_array()
-#        
-#        print numpy.min(threshold)
-#        print numpy.max(threshold)
-#        pylab.imshow(threshold, cmap=cm.Greys_r)
-#        pylab.show()
-#        
-#        
-#        mask = flex_image.as_numpy_array() >= threshold
-#        
-#        pylab.imshow(mask, cmap=cm.Greys_r)
-#        pylab.show()
-#        
-#        print 1/0
-        
         image = flex_image.as_numpy_array()
         height, width = image.shape
 
