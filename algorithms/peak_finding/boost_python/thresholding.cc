@@ -1,5 +1,5 @@
 /*
- * peak_finding_ext.cc
+ * thresholding.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,20 +10,17 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/peak_finding/thresholding.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_label_pixels();
-  void export_mean_sdev_filter();
-  void export_thresholding();
-
-  BOOST_PYTHON_MODULE(dials_algorithms_peak_finding_ext)
+  void export_thresholding() 
   {
-    export_label_pixels();
-    export_mean_sdev_filter();
-    export_thresholding();
+    def("maximum_deviation", &maximum_deviation, (arg("histo")));
+    def("probability_distribution", &probability_distribution, (
+      arg("image"), arg("range")));
   }
 
 }}} // namespace = dials::algorithms::boost_python
