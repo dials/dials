@@ -5,6 +5,7 @@ sources = [
     'boost_python/label_pixels.cc',
     'boost_python/mean_sdev_filter.cc',
     'boost_python/thresholding.cc',
+    'boost_python/lui_find_peak_helper.cc',
     'boost_python/peak_finding_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_peak_finding_ext', 
