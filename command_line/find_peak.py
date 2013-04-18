@@ -3,7 +3,7 @@ from dxtbx.sweep import SweepFactory
 #from dials.scratch.luiso_s.to_dials_reg.func_fnd_pk import *
 
 from dials.algorithms.peak_finding.lui_find_peak import *
-import time
+
 
 import numpy
 def fnd_pk():
@@ -71,7 +71,7 @@ def fnd_pk():
 
         print 'col_block_size, row_block_size =', col_block_size, row_block_size
 
-        time1 = time.time()
+#        time1 = time.time()
         for frm_tmp in range(n_frm):
             for tmp_block_x_pos in range(n_blocks_x):
                 for tmp_block_y_pos in range(n_blocks_y):
@@ -85,11 +85,11 @@ def fnd_pk():
                     tmp_dif = find_mask_2d(tmp_dat2d, tm)
                     dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
 
-            print 'time.time() =', time.time()
-            time2 = time.time()
-            time_dif = time2 - time1
-            print time2, ' - ', time1, '=', time_dif
-            time1 = time2
+ #           print 'time.time() =', time.time()
+ #           time2 = time.time()
+ #           time_dif = time2 - time1
+ #           print time2, ' - ', time1, '=', time_dif
+ #           time1 = time2
 
 
         dif_3d_ext = find_ext_mask_3d(dif3d)
