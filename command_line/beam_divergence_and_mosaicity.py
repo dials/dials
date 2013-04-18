@@ -36,7 +36,7 @@ class ScriptRunner(object):
         print '    Maximum bragg peak-centroid distance = {0}'\
             .format(self.max_bc_separation)
         print ''
-        
+
     def __call__(self):
         '''Run the script.'''
         from dxtbx.sweep import SweepFactory
@@ -45,15 +45,15 @@ class ScriptRunner(object):
         from dials.algorithms.integration.divergence_and_mosaicity \
             import BeamDivergenceAndMosaicity
         from dials.util.nexus import NexusFile
-        
+
         # Set the print output
         Command.indent = 4
         print 'Running {0}\n'.format(__file__)
         self.print_params()
-        
-        # Heading for file read bit       
+
+        # Heading for file read bit
         print 'Reading datafiles...'
-        
+
         # Load the sweep
         Command.start('Loading sweep')
         sweep = SweepFactory.sweep(self.sweep_filenames)
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
     # Print help if no arguments specified, otherwise call function
     if len(args) < 2:
-        print parser.print_help()
+        parser.print_help()
     else:
         # Initialise the script runner
         runner = ScriptRunner(
@@ -123,4 +123,3 @@ if __name__ == '__main__':
 
         # Run the script
         runner()
-

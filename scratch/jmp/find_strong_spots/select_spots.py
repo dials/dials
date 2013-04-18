@@ -14,11 +14,11 @@ class SpotFinder(object):
 
     def __init__(self, min_spot_size=6, max_separation=2):
         '''Initialise the algorithm with some parameters.
-        
+
         Params:
             min_spot_size The minimum number of pixels in spot
             max_separation The maximum maximum-centroid distance
-        
+
         '''
         self._min_spot_size = min_spot_size
         self._max_separation = max_separation
@@ -38,9 +38,9 @@ class SpotFinder(object):
         from dials.util.command_line import Command
 
         # Set a command indent to 4
-        Command.indent = 4        
+        Command.indent = 4
         print '\nFinding spot in {0} images...'.format(len(sweep))
-        
+
         # Extract the image pixels from the sweep
         Command.start('Extracting pixels from sweep')
         coords, intensity = self._extract_pixels(sweep)
@@ -65,7 +65,7 @@ class SpotFinder(object):
         Command.start('Calculating centroids')
         cpos, cvar = self._calculate_centroids(coords, intensity, spots)
         Command.end('Calculated {0} centroids'.format(len(cpos)))
-  
+
         # Filter the spots by centroid-maxmimum distance
         Command.start('Filtering spots by distance')
         index = self._filter_maximum_centroid(coords, intensity, spots, cpos)
@@ -146,7 +146,7 @@ class SpotFinder(object):
         coords = flex_vec3_int(zip(x, y, z))
 
         # Get the array of pixel intensities
-        intensity = flex.int(image[index])      
+        intensity = flex.int(image[index])
 
         # Return the pixel values
         return coords, intensity
@@ -167,13 +167,13 @@ class SpotFinder(object):
 
         # Make sure the range is valid
         hrange = (0, int(trusted_range[1]))
-        
+
         # Get the probability distribution from the image
         p = probability_distribution(image, hrange)
 
         # Calculate the threshold and add to list
         return maximum_deviation(p)
-        
+
     def _label_pixels(self, pixels, sweep):
         '''Do a connected component labelling of the pixels to get
         groups of spots.
@@ -304,15 +304,15 @@ class SpotFinder(object):
         '''Filter the reflections by the distance between the maximum pixel
         value and the centroid position. If the centroid is a greater than the
         maximum separation from maximum pixel (in pixel coords) then discard.
-        
+
         Params:
             coords The list of coordinates
             values The list of values
             cpos The list of centroids
-        
+
         Returns:
             An index list of valid spots
-        
+
         '''
         from scitbx.array_family import flex
         from scitbx import matrix
@@ -323,11 +323,11 @@ class SpotFinder(object):
             xm = matrix.col(coords[s[im]])
             if (xc - xm).length() <= self._max_separation:
                 index.append(si)
-                
+
         # Return the list of indices
         return index
 
-    def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar, 
+    def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar,
                                 index):
         '''Create a reflection list from the spot data.
 
@@ -356,7 +356,7 @@ class SpotFinder(object):
         # Create the reflection list
         reflection_list = ReflectionList(len(index))
         for i, r in zip(index, reflection_list):
-            r.bounding_box = bbox[i] 
+            r.bounding_box = bbox[i]
             r.centroid_position = cpos[i]
             r.centroid_variance = cvar[i]
 

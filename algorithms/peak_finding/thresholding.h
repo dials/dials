@@ -19,7 +19,7 @@
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
-  
+
   using scitbx::af::int2;
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
@@ -27,7 +27,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::max_index;
   using scitbx::af::max;
   using scitbx::af::min;
-  
+
   /**
    * Calculate the maximum_deviation unimodal histogram threshold.
    * @param histo The histogram
@@ -40,7 +40,7 @@ namespace dials { namespace algorithms {
     std::size_t i1 = histo.size() - 1;
     double x0 = (double)i0 + 0.5, y0 = histo[i0];
     double x1 = (double)i1 + 0.5, y1 = histo[i1];
-    
+
     // Calculate the line parameters
     double m = (y1 - y0) / (x1 - x0);
     double c = y0 - m * x0;
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms {
     // Return the maximum index
     return imax;
   }
-  
+
   /**
    * Calculate the probability distribution of an image histogram
    * @param image The image to process
@@ -84,10 +84,10 @@ namespace dials { namespace algorithms {
         count++;
       }
     }
-        
+
     // Ensure more than 0 counts
     DIALS_ASSERT(count > 0);
-    
+
     // Make into probability distribution
     for (std::size_t i = 0; i < p.size(); ++i) {
       p[i] /= count;
@@ -96,8 +96,7 @@ namespace dials { namespace algorithms {
     // Return the probability distribution
     return p;
   }
-  
+
 }} // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_PEAK_FINDING_THRESHOLDING_H */
-

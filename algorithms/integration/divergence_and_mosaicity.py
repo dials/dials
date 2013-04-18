@@ -450,7 +450,7 @@ class BeamDivergenceAndMosaicity(object):
         '''
         from math import pi
         from dials.util.command_line import Command
-        
+
         # Setup the output
         Command.indent = 4
         print '\nCalculating e.s.d of beam divergence and mosaicity...'

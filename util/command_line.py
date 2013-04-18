@@ -74,7 +74,7 @@ class ProgressBarTimer:
 class ProgressBar:
     """ A command line progress bar. """
 
-    def __init__(self, title=None, spinner=True, bar=True, estimate_time=True, 
+    def __init__(self, title=None, spinner=True, bar=True, estimate_time=True,
                  indent=0, length=80):
         """ Init the progress bar parameters. """
 
@@ -146,7 +146,7 @@ class ProgressBar:
         """ The progress bar is finished. """
         if string:
             self._title = string
-    
+
         ''' Print the 'end of comand' string.'''
         from sys import stdout
         from time import time
@@ -165,16 +165,16 @@ class ProgressBar:
             string = (' ' * self._indent) + string
             string = string + '.' * (dot_length)
             string = string + time_string
-            
+
         else:
-        
+
             # Truncaet the string
             max_length = self._length - self._indent
             string = string[:max_length]
 
             # Add a load of dots
-            dot_length = max_length - len(string) 
-            string = (' ' * self._indent) + string           
+            dot_length = max_length - len(string)
+            string = (' ' * self._indent) + string
             string = string + '.' * (dot_length)
 
         # Write the string to stdout
@@ -184,8 +184,8 @@ class ProgressBar:
 class Command(object):
     '''Class to nicely print out a command with timing info.'''
 
-    # Variables available in class methods    
-    indent = 0    
+    # Variables available in class methods
+    indent = 0
     max_length = 80
     print_time = True
 
@@ -194,18 +194,18 @@ class Command(object):
         ''' Print the 'start command' string.'''
         from sys import stdout
         from time import time
-        
+
         # Truncate the string to the maximum length
         max_length = self.max_length - self.indent - 3
         string = string[:max_length]
         string = (' ' * self.indent) + string + '...'
-        
+
         # Write the string to stdout
         stdout.write(string)
         stdout.flush()
-        
+
         # Get the command start time
-        self._start_time = time() 
+        self._start_time = time()
 
     @classmethod
     def end(self, string):
@@ -215,7 +215,7 @@ class Command(object):
 
         # Check if we want to print the time or not
         if self.print_time:
-            
+
             # Get the time string
             time_string = '{0:.2f}s'.format(time() - self._start_time)
 
@@ -228,16 +228,16 @@ class Command(object):
             string = (' ' * self.indent) + string
             string = string + '.' * (dot_length)
             string = string + time_string
-            
+
         else:
-        
+
             # Truncaet the string
             max_length = self.max_length - self.indent
             string = string[:max_length]
 
             # Add a load of dots
             dot_length = max_length - len(string)
-            string = (' ' * self.indent) + string            
+            string = (' ' * self.indent) + string
             string = string + '.' * (dot_length)
 
         # Write the string to stdout
@@ -255,7 +255,7 @@ if __name__ == '__main__':
         time.sleep(0.05)
 
     p.finished()
-    
+
     Command.start("Starting to do a command")
     time.sleep(1)
     Command.end("Ending the command")
