@@ -1,5 +1,5 @@
 import numpy
-
+from dials.algorithms.peak_finding import smooth_2d
 def do_all_2d(sweep):
 
     array_2d = sweep.to_array()
@@ -51,7 +51,7 @@ def do_all_2d(sweep):
     return x_from_lst, x_to_lst, y_from_lst, y_to_lst
 
 def find_mask_2d(data2d, n_times):
-
+    from scitbx.array_family import flex
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
 
@@ -59,13 +59,17 @@ def find_mask_2d(data2d, n_times):
     diffdata2d = numpy.zeros_like(data2d)
     data2dtmp = numpy.copy(data2d)
     if n_times > 0:
-        for times in range(n_times):
-            for row in range(1, n_row - 1, 1):
-                for col in range(1, n_col - 1, 1):
-                    data2dsmoth[row, col] = (data2dtmp[row - 1, col - 1] + data2dtmp[row - 1, col] + data2dtmp[row - 1, col + 1]  \
-                                             + data2dtmp[row  , col - 1] + data2dtmp[row  , col + 1]    \
-                                             + data2dtmp[row + 1, col - 1] + data2dtmp[row + 1, col] + data2dtmp[row + 1, col + 1]) / 8.0
-            data2dtmp[:, :] = data2dsmoth[:, :]
+
+        data2dsmoth = smooth_2d(flex.int(data2d)).as_numpy_array()
+
+    #    for times in range(n_times):
+    #        for row in range(1, n_row - 1, 1):
+    #            for col in range(1, n_col - 1, 1):
+    #                data2dsmoth[row, col] = (data2dtmp[row - 1, col - 1] + data2dtmp[row - 1, col] + data2dtmp[row - 1, col + 1]  \
+    #                                         + data2dtmp[row  , col - 1] + data2dtmp[row  , col + 1]    \
+    #                                         + data2dtmp[row + 1, col - 1] + data2dtmp[row + 1, col] + data2dtmp[row + 1, col + 1]) / 8.0
+    #        data2dtmp[:, :] = data2dsmoth[:, :]
+
     else:
         promedio = numpy.mean(data2d)
         data2dsmoth[:, :] = promedio

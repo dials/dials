@@ -19,6 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_mean_sdev_filter();
   void export_thresholding();
   void export_lui_find_peak_helper();
+  void export_lui_find_peak_smoothing();
 
   BOOST_PYTHON_MODULE(dials_algorithms_peak_finding_ext)
   {
@@ -26,6 +27,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_mean_sdev_filter();
     export_thresholding();
     export_lui_find_peak_helper();
+    export_lui_find_peak_smoothing();
   }
 
 }}} // namespace = dials::algorithms::boost_python

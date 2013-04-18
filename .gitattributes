@@ -37,12 +37,15 @@ algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/label_pixels.cc -text
 algorithms/peak_finding/boost_python/lui_find_peak_helper.cc -text svneol=unset#text/plain
+algorithms/peak_finding/boost_python/lui_find_peak_smoothing.cc -text svneol=unset#text/plain
+algorithms/peak_finding/boost_python/lui_find_peak_smothing.cc -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/mean_sdev_filter.cc -text
 algorithms/peak_finding/boost_python/peak_finding_ext.cc -text
 algorithms/peak_finding/boost_python/thresholding.cc -text
 algorithms/peak_finding/label_pixels.h -text
 algorithms/peak_finding/lui_find_peak.py -text svneol=unset#text/plain
 algorithms/peak_finding/lui_find_peak_helper.h -text svneol=unset#text/plain
+algorithms/peak_finding/lui_find_peak_smoothing.h -text svneol=unset#text/plain
 algorithms/peak_finding/mean_sdev_filter.h -text
 algorithms/peak_finding/spot_finder.py -text
 algorithms/peak_finding/thresholding.h -text
