@@ -68,6 +68,7 @@ algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/rotation_angles.h -text
+command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
