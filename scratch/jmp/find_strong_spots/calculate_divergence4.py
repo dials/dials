@@ -43,7 +43,7 @@ if __name__ == '__main__':
     sweep = SweepFactory.sweep(filenames)
     print 'Loaded sweep of {0} images.'.format(len(sweep))
 
-    from select_spots import SpotFinder
+    from dials.algorithms.peak_finding.spot_finder import SpotFinder
     sweep.reader().set_max_cache(1)
     sweep.get_detector().set_trusted_range((0, 20000))
     find_spots = SpotFinder()

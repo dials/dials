@@ -449,21 +449,28 @@ class BeamDivergenceAndMosaicity(object):
 
         '''
         from math import pi
+        from dials.util.command_line import Command
+        
+        # Setup the output
+        Command.indent = 4
+        print '\nCalculating e.s.d of beam divergence and mosaicity...'
 
         # Map observed to predicted reflections
-        print 'Matching observed and predicted reflections.'
+        Command.start('Matching observed and predicted reflections.')
         self._data = self._match_observed_w_predicted(observed, predicted)
-        print '{0} reflections remaining.'.format(len(self._data))
+        Command.end('Matched {0} observed reflections.'.format(len(self._data)))
 
         # Calculate the standard deviation of the beam divergence
-        print 'Calculating sigma_d'
+        Command.start('Calculating e.s.d of the beam divergence')
         sigma_d = self._calculate_esd_beam_divergence(self._data)
-        print 'Sigma D = {0} deg'.format(sigma_d * 180 / pi)
+        Command.end('Calculated e.s.d of the beam divergence = {0:.3f} deg' \
+            .format(sigma_d * 180 / pi))
 
         # Calculate the standard deviation of the reflecting range (mosaicity)
-        print 'Calculating sigma_m'
+        Command.start('Calculating the mosaicity')
         sigma_m = self._calculate_esd_reflecting_range(self._data)
-        print 'Sigma M = {0} deg'.format(sigma_m * 180 / pi)
+        Command.end('Calculated mosaicity = {0:.3f} deg'\
+            .format(sigma_m * 180 / pi))
 
         # Return the parameters
         return sigma_d, sigma_m

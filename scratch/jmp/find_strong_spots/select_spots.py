@@ -12,9 +12,16 @@ from __future__ import division
 class SpotFinder(object):
     '''A class to perform spot finding operations on a sweep of images.'''
 
-    def __init__(self, min_spot_size=6):
-        '''Initialise the algorithm with some parameters.'''
+    def __init__(self, min_spot_size=6, max_separation=2):
+        '''Initialise the algorithm with some parameters.
+        
+        Params:
+            min_spot_size The minimum number of pixels in spot
+            max_separation The maximum maximum-centroid distance
+        
+        '''
         self._min_spot_size = min_spot_size
+        self._max_separation = max_separation
 
     def __call__(self, sweep):
         '''The main function of the spot finder. Select the pixels from
@@ -28,34 +35,45 @@ class SpotFinder(object):
             The reflection list
 
         '''
+        from dials.util.command_line import Command
+
+        # Set a command indent to 4
+        Command.indent = 4        
+        print '\nFinding spot in {0} images...'.format(len(sweep))
+        
         # Extract the image pixels from the sweep
-        print 'Extracting pixels from sweep'
+        Command.start('Extracting pixels from sweep')
         coords, intensity = self._extract_pixels(sweep)
-        print 'Extracted {0} strong pixels.'.format(len(coords))
+        Command.end('Extracted {0} strong pixels'.format(len(coords)))
 
         # Label the pixels and group into spots
-        print 'Labelling the pixels'
+        Command.start('Labelling connected components')
         labels = self._label_pixels(coords, sweep)
-        print 'Formed {0} spots'.format(max(labels) + 1)
+        Command.end('Found {0} connected components'.format(max(labels) + 1))
 
         # Filter spots that are too small
-        print 'Filtering spots by size'
+        Command.start('Filtering spots by size')
         spots = self._filter_spots(labels)
-        print 'Filtered {0} spots'.format(len(spots))
+        Command.end('Filtered {0} spots by size'.format(len(spots)))
 
         # Calculate the bounding box for each spot
-        print 'Calculating spot bounding box.'
+        Command.start('Calculating bounding boxes')
         bbox = self._calculate_bbox(coords, spots, sweep)
-        print 'Calculated bounding box for {0} spots.'.format(len(bbox))
+        Command.end('Calculated {0} bounding boxes'.format(len(bbox)))
 
         # Calculate the spot centroids
-        print 'Calculating centroids.'
+        Command.start('Calculating centroids')
         cpos, cvar = self._calculate_centroids(coords, intensity, spots)
+        Command.end('Calculated {0} centroids'.format(len(cpos)))
+  
+        # Filter the spots by centroid-maxmimum distance
+        Command.start('Filtering spots by distance')
+        index = self._filter_maximum_centroid(coords, intensity, spots, cpos)
+        Command.end('Filtered {0} spots by distance'.format(len(index)))
 
         # Create a reflection list and return
-        print 'Creating reflection list.'
-        return self._create_reflection_list(coords, intensity, spots, bbox,
-            cpos, cvar)
+        return self._create_reflection_list(
+            coords, intensity, spots, bbox, cpos, cvar, index)
 
     def _extract_pixels(self, sweep):
         '''Extract the pixels from the sweep
@@ -112,13 +130,13 @@ class SpotFinder(object):
         import numpy
         from time import time
 
-        image = flex_image.as_numpy_array()
-        height, width = image.shape
-
         # Calculate the threshold
-        threshold = self._calculate_threshold(image, trusted_range)
+        threshold = self._calculate_threshold(flex_image, trusted_range)
 
         # Extract the pixel indices
+        image = flex_image.as_numpy_array()
+        height, width = image.shape
+        image.shape = -1
         index = numpy.where(image >= threshold)[0]
 
         # Create the array of pixel coordinates
@@ -128,7 +146,7 @@ class SpotFinder(object):
         coords = flex_vec3_int(zip(x, y, z))
 
         # Get the array of pixel intensities
-        intensity = flex.int(image[index])
+        intensity = flex.int(image[index])      
 
         # Return the pixel values
         return coords, intensity
@@ -144,28 +162,18 @@ class SpotFinder(object):
             The threshold value
 
         '''
-        from scipy.ndimage.measurements import histogram
-        from thresholding import maximum_deviation
-        import numpy
+        from dials.algorithms.peak_finding import maximum_deviation
+        from dials.algorithms.peak_finding import probability_distribution
 
-        # Get the histogram range
-        minh = 0
-        maxh = min([numpy.max(image), trusted_range[1]])
-
-        # Cap pixels to within trusted range
-        image.shape = -1
-        ind = numpy.where(image < minh)
-        image[ind] = minh
-        ind = numpy.where(image > maxh)
-        image[ind] = maxh
-
-        # Histogram the pixels
-        histo = histogram(image, minh, maxh, maxh)
-        histo = histo / numpy.sum(histo)
+        # Make sure the range is valid
+        hrange = (0, int(trusted_range[1]))
+        
+        # Get the probability distribution from the image
+        p = probability_distribution(image, hrange)
 
         # Calculate the threshold and add to list
-        return maximum_deviation(histo)
-
+        return maximum_deviation(p)
+        
     def _label_pixels(self, pixels, sweep):
         '''Do a connected component labelling of the pixels to get
         groups of spots.
@@ -292,7 +300,35 @@ class SpotFinder(object):
         # Return the centroid and variance
         return centroid_pos, centroid_var
 
-    def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar):
+    def _filter_maximum_centroid(self, coords, values, spots, cpos):
+        '''Filter the reflections by the distance between the maximum pixel
+        value and the centroid position. If the centroid is a greater than the
+        maximum separation from maximum pixel (in pixel coords) then discard.
+        
+        Params:
+            coords The list of coordinates
+            values The list of values
+            cpos The list of centroids
+        
+        Returns:
+            An index list of valid spots
+        
+        '''
+        from scitbx.array_family import flex
+        from scitbx import matrix
+        index = []
+        for si, (s, c) in enumerate(zip(spots, cpos)):
+            im = flex.max_index(flex.int([values[i] for i in s]))
+            xc = matrix.col(c)
+            xm = matrix.col(coords[s[im]])
+            if (xc - xm).length() <= self._max_separation:
+                index.append(si)
+                
+        # Return the list of indices
+        return index
+
+    def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar, 
+                                index):
         '''Create a reflection list from the spot data.
 
         Params:
@@ -302,6 +338,7 @@ class SpotFinder(object):
             bbox The spot bounding boxes
             cpos The centroid position
             cvar The centroid variance
+            index The list of valid indices
 
         Returns:
             A list of reflections
@@ -311,26 +348,24 @@ class SpotFinder(object):
         from dials.algorithms.integration import allocate_reflection_profiles
 
         # Ensure the lengths are ok
+        assert(len(index) > 0)
         assert(len(spots) == len(bbox))
         assert(len(spots) == len(cpos))
         assert(len(spots) == len(cvar))
 
         # Create the reflection list
-        reflection_list = ReflectionList(len(spots))
-        for i in range(len(spots)):
-            r = Reflection()
-            r.bounding_box = bbox[i]
+        reflection_list = ReflectionList(len(index))
+        for i, r in zip(index, reflection_list):
+            r.bounding_box = bbox[i] 
             r.centroid_position = cpos[i]
             r.centroid_variance = cvar[i]
-            reflection_list[i] = r
 
         # Allocate memory for the reflection profiles
         allocate_reflection_profiles(reflection_list,
             shoebox_default=0, shoebox_mask_default=0)
 
         # Set the pixel and mask values
-        for i in range(len(spots)):
-            r = reflection_list[i]
+        for i, r in zip(index, reflection_list):
             xs, xf, ys, yf, zs, zf = r.bounding_box
             for s in spots[i]:
                 x, y, z = coords[s]
