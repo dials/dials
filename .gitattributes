@@ -48,6 +48,7 @@ algorithms/peak_finding/lui_find_peak_helper.h -text svneol=unset#text/plain
 algorithms/peak_finding/lui_find_peak_smoothing.h -text svneol=unset#text/plain
 algorithms/peak_finding/mean_sdev_filter.h -text
 algorithms/peak_finding/spot_finder.py -text
+algorithms/peak_finding/spot_finder_lui.py -text svneol=unset#text/plain
 algorithms/peak_finding/thresholding.h -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
@@ -77,6 +78,7 @@ command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
+command_line/find_peak_old.py -text svneol=unset#text/plain
 command_line/predict_spots.py -text
 command_line/refine.py -text
 command_line/reflection_stats.py -text
