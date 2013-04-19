@@ -1,7 +1,7 @@
 import numpy
 from dials.algorithms.peak_finding import smooth_2d
 def do_all_2d(sweep):
-    import time
+    #import time
 
     array_2d = sweep.to_array()
     data3d = array_2d.as_numpy_array()
@@ -12,12 +12,12 @@ def do_all_2d(sweep):
 
     dif2d = numpy.zeros_like(data2d)
     tm = 2
-    n_blocks_x = 5
-    n_blocks_y = 6
+    n_blocks_x = 1
+    n_blocks_y = 1
     col_block_size = n_col / n_blocks_x
     row_block_size = n_row / n_blocks_y
 
-    time1 = time.time()
+    #time1 = time.time()
     for tmp_block_x_pos in range(n_blocks_x):
         for tmp_block_y_pos in range(n_blocks_y):
             col_from = int(tmp_block_x_pos * col_block_size)
@@ -28,22 +28,27 @@ def do_all_2d(sweep):
             tmp_dif2d = find_mask_2d(tmp_dat2d, tm)
             dif2d[row_from:row_to, col_from:col_to] = tmp_dif2d[:, :]
 
-    print 'time.time() =', time.time()
-    time2 = time.time()
-    time_dif = time2 - time1
-    print time2, ' - ', time1, '=', time_dif
-    time1 = time2
+    #print 'time.time() =', time.time()
+    #time2 = time.time()
+    #time_dif = time2 - time1
+    #print time2, ' - ', time1, '=', time_dif
+    #time1 = time2
 
     dif_2d_ext = find_ext_mask_2d(dif2d)
     x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif_2d_ext)
 
-    from matplotlib import pylab, cm
-    plt = pylab.imshow(data2d , vmin = 0, vmax = 1000, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-    pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
-    pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
-    pylab.show()
+    #from matplotlib import pylab, cm
+    #plt = pylab.imshow(data2d , vmin = 0, vmax = 1000, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+    #pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
+    #pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
+    #pylab.show()
 
     return x_from_lst, x_to_lst, y_from_lst, y_to_lst
+
+def do_all_3d(sweep):
+    print 'Hi there'
+
+
 
 def find_mask_2d(data2d, n_times):
     from scitbx.array_family import flex
@@ -82,14 +87,14 @@ def find_mask_2d(data2d, n_times):
             if data2d[row, col] > data2dsmoth[row, col]:
 #            if data2d[row, col] > 20:
                 diffdata2d[row, col] = 1
-
-    from matplotlib import pyplot as plt                                        #                             to be removed
-    plt.imshow(data2d, interpolation = "nearest", origin = 'lower')             #                             to be removed
-    plt.show()                                                                  #                             to be removed
-    plt.imshow(data2dsmoth, interpolation = "nearest", origin = 'lower')        #                             to be removed
-    plt.show()                                                                  #                             to be removed
-    plt.imshow(diffdata2d, interpolation = "nearest", origin = 'lower')         #                             to be removed
-    plt.show()                                                                  #                             to be removed
+    #
+    #from matplotlib import pyplot as plt                                        #                             to be removed
+    #plt.imshow(data2d, interpolation = "nearest", origin = 'lower')             #                             to be removed
+    #plt.show()                                                                  #                             to be removed
+    #plt.imshow(data2dsmoth, interpolation = "nearest", origin = 'lower')        #                             to be removed
+    #plt.show()                                                                  #                             to be removed
+    #plt.imshow(diffdata2d, interpolation = "nearest", origin = 'lower')         #                             to be removed
+    #plt.show()                                                                  #                             to be removed
 
     return diffdata2d
 def find_ext_mask_3d(diffdata3d):
