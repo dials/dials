@@ -8,11 +8,12 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
+from dials.interfaces.peak_finding import SpotFinderInterface
 
-class SpotFinder(object):
+class SpotFinder(SpotFinderInterface):
     '''A class to perform spot finding operations on a sweep of images.'''
 
-    def __init__(self, min_spot_size=6, max_separation=2):
+    def __init__(self, **kwargs):
         '''Initialise the algorithm with some parameters.
 
         Params:
@@ -20,8 +21,8 @@ class SpotFinder(object):
             max_separation The maximum maximum-centroid distance
 
         '''
-        self._min_spot_size = min_spot_size
-        self._max_separation = max_separation
+        self._min_spot_size = kwargs['min_spot_size']
+        self._max_separation = kwargs['max_separation']
 
     def __call__(self, sweep):
         '''The main function of the spot finder. Select the pixels from
