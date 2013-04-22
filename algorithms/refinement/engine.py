@@ -204,6 +204,13 @@ class AdaptLstbx(
         self._target.predict()
 
         if self._verbosity > 1:
+
+            # Compute target function and its gradients. The LSTBX minimiser
+            # does not require this to be called, unlike the LBFGS versions.
+            # Therefore put this call inside this conditional so that it is
+            # only called for reporting purposes.
+            self._f, self._g = self._target.compute_functional_and_gradients()
+            
             print "Function evaluation"
             msg = "  Params: " + "%.5f " * len(self._parameters)
             print msg % tuple(self._parameters.get_p())
