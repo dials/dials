@@ -44,8 +44,8 @@ class RefinementRunner(object):
         px_size = self.detector.get_pixel_size()
         im_width = self.scan.get_oscillation(deg=False)[1]
 
-        # warning! hard coded nastiness!
-        sweep_range = (0, 900 * im_width)
+        # get the angular range of the sweep
+        sweep_range = self.scan.get_oscillation_range(deg=False)
 
         # change variances to sigmas and convert units
         sig_d1s = [px_size[0] * sqrt(e) for e in var_d1s]
