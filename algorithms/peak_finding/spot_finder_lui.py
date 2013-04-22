@@ -34,7 +34,11 @@ class SpotFinderLui(SpotFinderInterface):
             The reflection list
 
         '''
-        do_all_3d(sweep)
+        x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = do_all_3d(sweep)
+        reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
+
+        for r_lst in reflection_list:
+            print r_lst
 
 def do_all_3d(sweep):
 
@@ -74,56 +78,43 @@ def do_all_3d(sweep):
     #dif_3d_ext[(n_frm - 1):, :, :] = 0
 
     x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
-    print "x_from,   x_to,   y_from,    y_to,  z_from,    z_to "
-    print "_________________________________________________________"
-    for pos in range(len(x_from_lst)):
-        print x_from_lst[pos], ',    ', x_to_lst[pos], ',   ', y_from_lst[pos], ',   ', y_to_lst[pos], ',   ', z_from_lst[pos], ',   ', z_to_lst[pos]
 
-#def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar,
-#                                index):
+    #print "x_from,   x_to,   y_from,    y_to,  z_from,    z_to "
+    #print "_________________________________________________________"
+    #for pos in range(len(x_from_lst)):
+    #    print x_from_lst[pos], ',    ', x_to_lst[pos], ',   ', y_from_lst[pos], ',   ', y_to_lst[pos], ',   ', z_from_lst[pos], ',   ', z_to_lst[pos]
+
+    return x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst
 
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):
 
-        '''Create a reflection list from the spot data.
+    '''Create a reflection list from the spot data.
+    
+    Params:
+        coords The pixel coordinates
+        values The pixel values
+        spots The pixel->spot mapping
+        bbox The spot bounding boxes
+        cpos The centroid position
+        cvar The centroid variance
+        index The list of valid indices
+    
+    Returns:
+        A list of reflections
+    '''
+    from dials.model.data import Reflection, ReflectionList
+    from dials.algorithms.integration import allocate_reflection_profiles
 
-        Params:
-            coords The pixel coordinates
-            values The pixel values
-            spots The pixel->spot mapping
-            bbox The spot bounding boxes
-            cpos The centroid position
-            cvar The centroid variance
-            index The list of valid indices
+    # Create the reflection list
+    length = len(x_from_lst)
 
-        Returns:
-            A list of reflections
-        '''
-        from dials.model.data import Reflection, ReflectionList
-        from dials.algorithms.integration import allocate_reflection_profiles
-        # Create the reflection list
-        long = len(x_from_lst)
+    reflection_list = ReflectionList(length)
 
-        reflection_list = ReflectionList(long)
-        for i, r in zip(index, reflection_list):
-            r.bounding_box = bbox[i]
-            r.centroid_position = cpos[i]
-            r.centroid_variance = cvar[i]
+    for i, r in enumerate(reflection_list):
+        bbox = [x_from_lst[i], x_to_lst[i], y_from_lst[i], y_to_lst[i], z_from_lst[i], z_to_lst[i]]
+        r.bounding_box = bbox
 
-
-        # Allocate memory for the reflection profiles
-        allocate_reflection_profiles(reflection_list,
-            shoebox_default = 0, shoebox_mask_default = 0)
-
-        # Set the pixel and mask values
-        for i, r in zip(index, reflection_list):
-            xs, xf, ys, yf, zs, zf = r.bounding_box
-            for s in spots[i]:
-                x, y, z = coords[s]
-                x = x - xs
-                y = y - ys
-                z = z - zs
-                r.shoebox[z, y, x] = values[s]
-                r.shoebox_mask[z, y, x] = 1
-
-        # Return the reflection list
-        return reflection_list
+    #from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
+    #centroid = toy_centroid_lui(reflection_list)
+    #reflection_list = centroid.get_reflections()
+    return reflection_list
