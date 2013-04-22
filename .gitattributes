@@ -95,6 +95,7 @@ command_line/extract_spot_xds.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
 command_line/find_peak_old.py -text svneol=unset#text/plain
 command_line/predict_spots.py -text
+command_line/print_reflection_stats.py -text
 command_line/refine.py -text
 command_line/reflection_stats.py -text
 command_line/toy_centroid_runner.py -text
