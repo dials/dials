@@ -9,11 +9,11 @@ from scitbx import matrix
 
 #### Import model parameterisations
 
-from dials.algorithms.refinement.detector_parameters import \
+from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.source_parameters import \
+from dials.algorithms.refinement.parameterisation.source_parameters import \
     BeamParameterisationOrientation
-from dials.algorithms.refinement.crystal_parameters import \
+from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from cctbx.array_family import flex
 from dials_refinement_ext import *

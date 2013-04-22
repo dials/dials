@@ -21,13 +21,13 @@ from dials.model.experiment import detector_factory
 from dials.model.experiment.crystal_model import Crystal
 
 # Model parameterisations
-from dials.algorithms.refinement.prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
-from dials.algorithms.refinement.detector_parameters import \
+from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.source_parameters import \
+from dials.algorithms.refinement.parameterisation.source_parameters import \
     BeamParameterisationOrientation
-from dials.algorithms.refinement.crystal_parameters import \
+from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
 # Reflection prediction
@@ -36,7 +36,7 @@ from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from dials.algorithms.refinement.prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 
 # Import helper functions

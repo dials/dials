@@ -5,7 +5,7 @@
 # testing purposes only
 
 """Investigate the convergence radius of refinement by multiple refinement runs
-changing one parameter at a time"""
+doing random sampling of parameter space."""
 
 # Python and cctbx imports
 from __future__ import division
@@ -14,17 +14,22 @@ from math import pi
 from scitbx import matrix
 from libtbx.phil import parse
 
-# Get class to build experimental models
+# Get module to build experimental models
 from setup_geometry import Extract
 
 # Model parameterisations
-from dials.algorithms.refinement.detector_parameters import \
+from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.source_parameters import \
+from dials.algorithms.refinement.parameterisation.source_parameters import \
     BeamParameterisationOrientation
-from dials.algorithms.refinement.crystal_parameters import \
+from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from dials.algorithms.refinement import random_param_shift
+
+# Symmetry constrained parameterisation for the unit cell
+from cctbx.uctbx import unit_cell
+from rstbx.symmetry.constraints.parameter_reduction import \
+    symmetrize_reduce_enlarge
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
@@ -32,7 +37,7 @@ from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from dials.algorithms.refinement.prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 
 # Imports for the target function
@@ -40,7 +45,9 @@ from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import the refinement engine
-from dials.algorithms.refinement.engine import SimpleLBFGS, LBFGScurvs
+from dials.algorithms.refinement.engine import SimpleLBFGS
+from dials.algorithms.refinement.engine import LBFGScurvs
+from dials.algorithms.refinement.engine import GaussNewtonIterations
 
 # Import helper functions
 from dials.algorithms.refinement import print_model_geometry
@@ -79,7 +86,7 @@ def setup_models(seed):
     s0_param.set_fixed([True, False])
 
     # Fix crystal parameters
-    xluc_param.set_fixed([True, True, True, True, True, True])
+    #xluc_param.set_fixed([True, True, True, True, True, True])
 
     ########################################################################
     # Link model parameterisations together into a parameterisation of the #
@@ -108,20 +115,34 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Apply random parameter shifts #
     #################################
 
-    # shift one detector param by normal deviate of sd 10.0 mm translation
+    # shift detector by normal deviate of sd 2.0 mm each translation and 4 mrad
+    # each rotation
     det_p = det_param.get_p()
-    shift_det_p = random_param_shift(det_p, [10.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    shift_det_p = random_param_shift(det_p, [2.0, 2.0, 2.0, 4.0, 4.0, 4.0])
     det_param.set_p(shift_det_p)
 
     # rotate beam by normal deviate with sd 4 mrad. There is only one free axis!
     s0_p = s0_param.get_p()
-    #shift_s0_p = random_param_shift(s0_p, [4.0])
-    #s0_param.set_p(shift_s0_p)
+    shift_s0_p = random_param_shift(s0_p, [4.0])
+    s0_param.set_p(shift_s0_p)
 
     # rotate crystal by normal deviates with sd 4 mrad for each rotation.
     xlo_p = xlo_param.get_p()
-    #shift_xlo_p = random_param_shift(xlo_p, [4.0, 4.0, 4.0])
-    #xlo_param.set_p(shift_xlo_p)
+    shift_xlo_p = random_param_shift(xlo_p, [4.0, 4.0, 4.0])
+    xlo_param.set_p(shift_xlo_p)
+
+    # change unit cell a bit (by normal deviates of 0.5 Angstrom length
+    # upsets, 0.5 degree of gamma angle only)
+    xluc_p_vals = xluc_param.get_p()
+    cell_params = mycrystal.get_unit_cell().parameters()
+    shift_cell = random_param_shift(cell_params, [0.5, 0.5, 0.5,
+                                                  0.0, 0.0, 0.5])
+    new_uc = unit_cell(shift_cell)
+    newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
+    S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
+    S.set_orientation(orientation=newB)
+    X = S.forward_independent_parameters()
+    xluc_param.set_p(X)
 
     target_param_values = tuple(pred_param.get_p())
 
@@ -189,7 +210,8 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     ################################
 
     #refiner = SimpleLBFGS(mytarget, pred_param)
-    refiner = LBFGScurvs(mytarget, pred_param)
+    #refiner = LBFGScurvs(mytarget, pred_param)
+    refiner = GaussNewtonIterations(mytarget, pred_param)
     refiner.run()
 
     msg = "%d %s " + "%.5f " * len(pred_param)
@@ -222,7 +244,7 @@ if __name__ == "__main__":
     header = "Nsteps Completed " + "Param_%02d " * len(pred_param)
     print header % tuple(range(1, len(pred_param) + 1))
 
-    for i in xrange(100):
+    for i in xrange(50):
         sys.stdout.flush()
         output = run(mydetector, mygonio, mycrystal, mybeam,
             det_param, s0_param, xlo_param, xluc_param,

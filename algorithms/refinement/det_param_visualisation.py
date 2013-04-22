@@ -5,7 +5,7 @@
 # of geometry relevant to the detector and sensor models, using R and the
 # rgl library
 from __future__ import division
-from detector_parameters import *
+from dials_algorithms.refinement.parameterisation.detector_parameters import *
 
 def vis(dp, header=True):
     # print out rgl code for testing by visualisation

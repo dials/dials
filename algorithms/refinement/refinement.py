@@ -105,11 +105,11 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     from dials.algorithms.refinement.prediction import ReflectionPredictor
 
     # Model parameterisations
-    from dials.algorithms.refinement.detector_parameters import \
+    from dials.algorithms.refinement.parameterisation.detector_parameters import \
         DetectorParameterisationSinglePanel
-    from dials.algorithms.refinement.source_parameters import \
+    from dials.algorithms.refinement.parameterisation.source_parameters import \
         BeamParameterisationOrientation
-    from dials.algorithms.refinement.crystal_parameters import \
+    from dials.algorithms.refinement.parameterisation.crystal_parameters import \
         CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
     # Symmetry constrained parameterisation for the unit cell
@@ -118,7 +118,7 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     #    symmetrize_reduce_enlarge
 
     # Parameterisation of the prediction equation
-    from dials.algorithms.refinement.prediction_parameters import \
+    from dials.algorithms.refinement.parameterisation.prediction_parameters import \
         DetectorSpacePredictionParameterisation
 
     # Imports for the target function
