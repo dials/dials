@@ -8,6 +8,24 @@ algorithms/centroid/filtered_centroid.py -text
 algorithms/centroid/toy_centroid.py -text
 algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain
 algorithms/centroid/toy_centroid_helpers.py -text
+algorithms/image/SConscript -text
+algorithms/image/__init__.py -text
+algorithms/image/filter/SConscript -text
+algorithms/image/filter/__init__.py -text
+algorithms/image/filter/boost_python/fano_filter.cc -text
+algorithms/image/filter/boost_python/filter_ext.cc -text
+algorithms/image/filter/boost_python/mean_and_variance.cc -text
+algorithms/image/filter/boost_python/summed_area.cc -text
+algorithms/image/filter/fano_filter.h -text
+algorithms/image/filter/mean_and_variance.h -text
+algorithms/image/filter/summed_area.h -text
+algorithms/image/threshold/SConscript -text
+algorithms/image/threshold/__init__.py -text
+algorithms/image/threshold/boost_python/local.cc -text
+algorithms/image/threshold/boost_python/threshold_ext.cc -text
+algorithms/image/threshold/boost_python/unimodal.cc -text
+algorithms/image/threshold/local.h -text
+algorithms/image/threshold/unimodal.h -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/background_intensity.h -text
