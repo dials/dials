@@ -17,8 +17,10 @@ class SpotFinder(SpotFinderInterface):
         '''Initialise the algorithm with some parameters.
 
         Params:
-            min_spot_size The minimum number of pixels in spot
-            max_separation The maximum maximum-centroid distance
+            kwargs The keyword arguments. This algorithm expects the following
+            arguments:
+                min_spot_size The minimum number of pixels in spot
+                max_separation The maximum maximum-centroid distance
 
         '''
         self._min_spot_size = kwargs['min_spot_size']
@@ -125,7 +127,6 @@ class SpotFinder(SpotFinderInterface):
         '''
         from scitbx.array_family import flex
         from dials.algorithms.peak_finding import flex_vec3_int
-        from dials.algorithms.peak_finding import mean_sdev_filter
         import numpy
         from time import time
 
@@ -161,8 +162,8 @@ class SpotFinder(SpotFinderInterface):
             The threshold value
 
         '''
-        from dials.algorithms.peak_finding import maximum_deviation
-        from dials.algorithms.peak_finding import probability_distribution
+        from dials.algorithms.image.threshold import maximum_deviation
+        from dials.algorithms.image.threshold import probability_distribution
 
         # Make sure the range is valid
         hrange = (0, int(trusted_range[1]))
