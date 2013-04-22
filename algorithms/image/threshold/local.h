@@ -133,6 +133,7 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum counts for a point to be valid
    * @param n_sigma The number of standard deviations.
    */
+  inline
   flex_bool fano_masked(const flex_double &image, const flex_bool &mask,
       int2 size, int min_count, double n_sigma) {
 
@@ -174,6 +175,7 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum counts for a point to be valid
    * @param n_sigma The number of standard deviations.
    */
+  inline
   flex_bool gain(const flex_double &image, const flex_bool &mask,
       flex_double gain, int2 size, int min_count, double n_sigma) {
 

@@ -41,7 +41,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("min_count"),
       arg("n_sigma")));
 
-
     def("gain", &gain, (
       arg("image"),
       arg("mask"),

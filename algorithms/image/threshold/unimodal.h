@@ -33,6 +33,7 @@ namespace dials { namespace algorithms {
    * @param histo The histogram
    * @returns The threshold value
    */
+  inline
   std::size_t maximum_deviation(const flex_double &histo) {
 
     // Get x, y at peak and at end of tail.
@@ -68,6 +69,7 @@ namespace dials { namespace algorithms {
    * @param range The range of values to consider
    * @returns The probability distribution of values
    */
+  inline
   flex_double probability_distribution(const flex_int &image, int2 range) {
 
     // Get the histogram range
