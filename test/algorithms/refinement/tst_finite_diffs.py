@@ -237,6 +237,7 @@ def get_fd_gradients(target, pred_param, deltas):
         val = p_vals[i]
 
         print i,
+        sys.stdout.flush()
         p_vals[i] -= deltas[i] / 2.
         pred_param.set_p(p_vals)
         target.predict()
@@ -278,8 +279,11 @@ msg = "dL/dp - dL[fd]/dp               = " + "%.6f " * len(diffs)
 print msg % tuple(diffs)
 print "Normalised differences:"
 msg = "(dL/dp - dL[fd]/dp) / dL[fd]/dp = " + "%.6f " * len(diffs)
-print msg % tuple([a / b for a, b in zip(diffs, fdgrads[0])])
+norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[0])])
+print msg % norm_diffs
 print
+
+for e in norm_diffs: assert abs(e) < 0.001 # check differences less than 0.1%
 
 if curvs:
     print "Finite difference curvatures"
@@ -292,3 +296,5 @@ if curvs:
     print "Normalised differences:"
     msg = "(d2L/dp2 - d2L[fd]/dp2) / d2L[fd]/dp2 = " + "%.6f " * len(diffs)
     print msg % tuple([a / b for a, b in zip(diffs, fdgrads[1])])
+
+print "OK"

@@ -199,7 +199,6 @@ model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/crystal_model/__init__.py -text
 model/experiment/crystal_model/crystal.py -text
-model/experiment/crystal_model/tst_crystal.py -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/dgw/__init__.py -text

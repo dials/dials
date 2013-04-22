@@ -20,7 +20,7 @@ class SpotFinderInterface(object):
 
         '''
         raise RuntimeError('Please overload!')
-        
+
     def __call__(self, sweep):
         '''The main function of the spot finder. Select the pixels from
         the sweep and then group the pixels into spots. Return the data

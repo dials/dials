@@ -561,7 +561,7 @@ class MaximumLikelihoodEstimatorPerFrame(object):
 
         '''
         return self._optimizer.get_solution()[0]
-        
+
 
 class ComputeEsdReflectingRangePerFrame(object):
     '''Calculate the E.s.d of the reflecting range (mosaicity).'''
@@ -594,7 +594,7 @@ class ComputeEsdReflectingRangePerFrame(object):
             except(ValueError):
                 sigma_m.append(0)
             print sigma_m[-1]
-                
+
         return sigma_m
 
 
