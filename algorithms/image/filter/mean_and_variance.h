@@ -209,7 +209,7 @@ namespace dials { namespace algorithms {
      */
     MeanAndVarianceFilterMasked(const flex_double &image,
         const flex_int &mask, int2 size, int min_count)
-        : mask_(mask) {
+        : min_count_(min_count), mask_(mask) {
 
       // Check the input is valid
       DIALS_ASSERT(size[0] > 0 && size[1] > 0);
@@ -218,10 +218,10 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(image.accessor().all().all_eq(mask.accessor().all()));
 
       // Ensure the min counts are valid
-      if (min_count <= 0) {
-        min_count = (2 * size[0] + 1) * (2 * size[1] + 1);
+      if (min_count_ <= 0) {
+        min_count_ = (2 * size[0] + 1) * (2 * size[1] + 1);
       } else {
-        DIALS_ASSERT(min_count <= (2 * size[0] + 1) * (2 * size[1] + 1));
+        DIALS_ASSERT(min_count_ <= (2 * size[0] + 1) * (2 * size[1] + 1));
       }
 
       // Calculate the summed area under the mask
@@ -232,7 +232,7 @@ namespace dials { namespace algorithms {
       flex_double image_sq(image.accessor());
       for (std::size_t i = 0; i < image.size(); ++i) {
         temp[i] *= (mask[i] != 0);
-        mask_[i] *= (summed_mask_[i] >= min_count);
+        mask_[i] *= (summed_mask_[i] >= min_count_);
         image_sq[i] = temp[i] * temp[i];
       }
 
