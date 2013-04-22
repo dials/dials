@@ -560,3 +560,4 @@ util/command_line.py -text
 util/ioutil.py -text
 util/nexus.py -text
 util/pycbf_extra.py -text
+util/xds_cbf_image.py -text

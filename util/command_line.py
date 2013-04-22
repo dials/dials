@@ -194,6 +194,7 @@ class Command(object):
         ''' Print the 'start command' string.'''
         from sys import stdout
         from time import time
+        from termcolor import colored
 
         # Truncate the string to the maximum length
         max_length = self.max_length - self.indent - 3
@@ -201,7 +202,7 @@ class Command(object):
         string = (' ' * self.indent) + string + '...'
 
         # Write the string to stdout
-        stdout.write(string)
+        stdout.write(colored(string, 'cyan') )
         stdout.flush()
 
         # Get the command start time
@@ -212,6 +213,7 @@ class Command(object):
         ''' Print the 'end of comand' string.'''
         from sys import stdout
         from time import time
+        from termcolor import colored
 
         # Check if we want to print the time or not
         if self.print_time:
@@ -227,7 +229,7 @@ class Command(object):
             dot_length = 1 + max_length - len(string)
             string = (' ' * self.indent) + string
             string = string + '.' * (dot_length)
-            string = string + time_string
+            string = string + colored(time_string, attrs=['underline'])
 
         else:
 
@@ -241,7 +243,7 @@ class Command(object):
             string = string + '.' * (dot_length)
 
         # Write the string to stdout
-        stdout.write('\r' + string + '\n')
+        stdout.write('\r' + colored(string, 'cyan') + '\n')
         stdout.flush()
 
 
