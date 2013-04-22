@@ -16,7 +16,7 @@ from dials.algorithms.refinement.parameterisation.source_parameters import \
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from cctbx.array_family import flex
-from dials_refinement_ext import *
+from dials_refinement_helpers_ext import *
 
 class PredictionParameterisation(object):
     '''
