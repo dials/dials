@@ -57,8 +57,8 @@ class RefinementRunner(object):
         assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
                len(sig_d2s) == len(angles) == len(sig_angles)
 
-        from dials.scratch.dgw.refinement import print_model_geometry, refine
-        from dials.scratch.dgw.crystal_model import Crystal
+        from dials.algorithms.refinement import print_model_geometry, refine
+        from dials.model.experiment.crystal_model import Crystal
 
         # build a Crystal
         # need a_vec, b_vec, c_vec in the lab frame
