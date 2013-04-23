@@ -61,7 +61,7 @@ geometry.parameters.crystal.b.length.range = 10 15
 geometry.parameters.crystal.c.length.range = 10 15"""
 
 master_phil = parse("""
-    include file geometry.params
+    include scope dials.test.algorithms.refinement.geometry_phil
     """, process_includes=True)
 
 models = Extract(master_phil, overrides, cmdline_args = args)

@@ -62,8 +62,8 @@ def setup_models(seed):
     print override
 
     master_phil = parse("""
-    include file geometry.params
-    include file minimiser.params
+    include scope dials.test.algorithms.refinement.geometry_phil
+    include scope dials.test.algorithms.refinement.minimiser_phil
     """, process_includes=True)
 
     models = Extract(master_phil, local_overrides=override)

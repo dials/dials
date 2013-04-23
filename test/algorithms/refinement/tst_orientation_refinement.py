@@ -62,8 +62,8 @@ from dials.algorithms.refinement import print_model_geometry
 
 args = sys.argv[1:]
 master_phil = parse("""
-    include file geometry.params
-    include file minimiser.params
+    include scope dials.test.algorithms.refinement.geometry_phil
+    include scope dials.test.algorithms.refinement.minimiser_phil
     """, process_includes=True)
 
 models = setup_geometry.Extract(master_phil, cmdline_args = args)
