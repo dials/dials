@@ -67,6 +67,7 @@ algorithms/peak_finding/lui_find_peak_helper.h -text svneol=unset#text/plain
 algorithms/peak_finding/lui_find_peak_smoothing.h -text svneol=unset#text/plain
 algorithms/peak_finding/spot_finder.py -text
 algorithms/peak_finding/spot_finder_lui.py -text svneol=unset#text/plain
+algorithms/peak_finding/spot_matcher.py -text
 algorithms/peak_finding/threshold.py -text
 algorithms/refinement/README -text
 algorithms/refinement/SConscript -text
