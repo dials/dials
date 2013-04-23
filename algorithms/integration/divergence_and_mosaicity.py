@@ -188,22 +188,18 @@ class FractionOfObservedIntensity(object):
             A list of fractions of length n
 
         '''
-        from math import sqrt, erf
+        from math import sqrt, erf, exp
         from scitbx.array_family import flex
         import numpy
 
         # Tiny value
         TINY = 1e-10
 
-        # Ensure value for sigma_m is valid
-        if sigma_m < TINY:
-            raise ValueError('sigma_m must be > 0')
-
         # Oscillation range / 2
         dphi2 = self.dphi / 2
 
         # Calculate the denominator to the fraction
-        den =  sqrt(2) * sigma_m / flex.abs(self.zeta)
+        den =  sqrt(2) * exp(sigma_m) / flex.abs(self.zeta)
 
         # Calculate the two components to the fraction
         a = flex.double([erf(x) for x in (self.tau + dphi2) / den])
@@ -236,8 +232,8 @@ class MaximumLikelihoodEstimator(object):
         self._R = FractionOfObservedIntensity(reflections, sweep)
 
         # Set the starting values to try
-        start = 0.1 * random.random() * pi / 180
-        stop = 0.1 * random.random() * pi / 180
+        start = random.random() * pi / 180
+        stop = random.random() * pi / 180
         starting_simplex = [flex.double([start]), flex.double([stop])]
 
         # Initialise the optimizer
@@ -276,7 +272,8 @@ class MaximumLikelihoodEstimator(object):
             The value of sigma_m
 
         '''
-        return self._optimizer.get_solution()[0]
+        from math import exp
+        return exp(self._optimizer.get_solution()[0])
 
 
 class ComputeEsdReflectingRange(object):
@@ -381,14 +378,14 @@ class FractionOfObservedIntensityPerFrame(object):
         TINY = 1e-10
 
         # Ensure value for sigma_m is valid
-        if sigma_m < TINY:
-            raise ValueError('sigma_m must be > 0')
+        #if sigma_m < TINY:
+        #    raise ValueError('sigma_m must be > 0')
 
         # Oscillation range / 2
         dphi2 = self.dphi / 2
 
         # Calculate the denominator to the fraction
-        den =  sqrt(2) * sigma_m / flex.abs(self.zeta)
+        den =  sqrt(2) * exp(sigma_m) / flex.abs(self.zeta)
 
         # Calculate the two components to the fraction
         a = flex.double([erf(x) for x in (self.tau + dphi2) / den])
