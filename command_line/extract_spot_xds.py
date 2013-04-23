@@ -86,7 +86,7 @@ if __name__ == '__main__':
                       dest='zero_hkl', action="store_true", default=False,
                       help='Include invalid reflections')
     parser.add_option('-o', '--output-file',
-                      dest='output_file', type="string", default="",
+                      dest='output_file', type="string", default=None,
                       help='Destination filename for reflections')
 
     # Parse the arguments
