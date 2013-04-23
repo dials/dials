@@ -45,6 +45,8 @@ class ScriptRunner(object):
         from dials.algorithms.integration.divergence_and_mosaicity \
             import BeamDivergenceAndMosaicity
         from dials.util.nexus import NexusFile
+        from dials.algorithms.peak_finding.threshold \
+            import GainThresholdStrategy, UnimodalThresholdStrategy
 
         # Set the print output
         Command.indent = 4
@@ -66,10 +68,13 @@ class ScriptRunner(object):
         nexus_handle.close()
         Command.end('Read {0} predicted reflections.'.format(len(predicted)))
 
-        # Setup the algorithms
+        # Setup the spot finder
         find_spots = SpotFinder(
             min_spot_size=self.min_spot_size,
-            max_separation=self.max_pc_separation)
+            max_separation=self.max_pc_separation,
+            threshold_strategy=XDSThresholdStrategy())
+
+        # Setup the beam divergence and mosaicity calculator
         compute_sigma = BeamDivergenceAndMosaicity(
             sweep,
             max_separation=self.max_bc_separation)
