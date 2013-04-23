@@ -2,13 +2,12 @@ from __future__ import division
 
 import math
 from scitbx import matrix
+from cctbx.array_family import flex
 from dials.algorithms.refinement.prediction import AnglePredictor_rstbx
 from dials.algorithms.refinement.prediction import AnglePredictor_py
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.spot_prediction import RotationAngles
 from dials.algorithms.spot_prediction import RayPredictor
-from cctbx.array_family import flex
-
 
 #### For a unit test, we need two of Graeme's functions taken from
 #### use_case_xds_method/tdi.py
