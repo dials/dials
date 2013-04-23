@@ -48,6 +48,21 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("size"),
       arg("min_count"),
       arg("n_sigma")));
+
+    def("kabsch", &kabsch, (
+      arg("image"),
+      arg("mask"),
+      arg("size"),
+      arg("n_sigma_b"),
+      arg("n_sigma_s")));
+      
+    def("kabsch_w_gain", &kabsch_w_gain, (
+      arg("image"),
+      arg("mask"),
+      arg("gain"),
+      arg("size"),
+      arg("n_sigma_b"),
+      arg("n_sigma_s")));
     
   }
 

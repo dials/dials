@@ -11,6 +11,8 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_FANO_FILTER_H
 
+#include <omp.h>
+
 #include <algorithm>
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
@@ -51,6 +53,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the filtered image
       fano_ = flex_double(var_.accessor(), 0);
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mean_[i] > 0) {
           fano_[i] = var_[i] / mean_[i];
@@ -126,6 +129,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the filtered image.
       fano_ = flex_double(var_.accessor(), 0);
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mask_[i] && mean_[i] > 0) {
           fano_[i] = var_[i] / mean_[i];

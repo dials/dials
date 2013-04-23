@@ -11,6 +11,8 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_MEAN_AND_VARIANCE_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_MEAN_AND_VARIANCE_H
 
+#include <omp.h>
+
 #include <algorithm>
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
@@ -37,7 +39,9 @@ namespace dials { namespace algorithms {
   flex_double mean_filter(const flex_double &image, int2 size) {
     flex_double mean = summed_area<double>(image, size);
     double inv_count = 1.0 / ((double)(size[0] * size[1]));
-    for (std::size_t i = 0; i < image.size(); ++i) {
+    
+    #pragma omp parallel for
+    for (std::size_t i = 0; i < mean.size(); ++i) {
       mean[i] *= inv_count;
     }
     return mean;
@@ -83,6 +87,7 @@ namespace dials { namespace algorithms {
 
     // Ensure that all masked pixels are zero in the image and update the mask
     flex_double temp(image);
+    #pragma omp parallel for    
     for (std::size_t i = 0; i < image.size(); ++i) {
       temp[i] *= (mask[i] != 0);
       mask[i] *= (summed_mask[i] >= min_count);
@@ -92,6 +97,7 @@ namespace dials { namespace algorithms {
     flex_double summed_image = summed_area<double>(temp, size);
 
     // Calculate the mean filtered image
+    #pragma omp parallel for    
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (mask[i]) {
         summed_image[i] /= summed_mask[i];
@@ -125,6 +131,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the squared image
       flex_double image_sq(image.accessor());
+      #pragma omp parallel for      
       for (std::size_t i = 0; i < image.size(); ++i) {
         image_sq[i] = image[i] * image[i];
       }
@@ -145,6 +152,7 @@ namespace dials { namespace algorithms {
      */
     flex_double mean() const {
       flex_double m(sum_.accessor());
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         m[i] = sum_[i] * inv_count_;
       }
@@ -157,6 +165,7 @@ namespace dials { namespace algorithms {
      */
     flex_double variance() const {
       flex_double v(sum_.accessor());
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_count_);
       }
@@ -169,6 +178,7 @@ namespace dials { namespace algorithms {
      */
     flex_double sample_variance() const {
       flex_double v(sum_.accessor());
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_countm1_);
       }
@@ -230,6 +240,7 @@ namespace dials { namespace algorithms {
       // Ensure that all masked pixels are zero in the image and update the mask
       flex_double temp(image);
       flex_double image_sq(image.accessor());
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < image.size(); ++i) {
         temp[i] *= (mask[i] != 0);
         mask_[i] *= (summed_mask_[i] >= min_count_);
@@ -246,6 +257,7 @@ namespace dials { namespace algorithms {
      */
     flex_double mean() const {
       flex_double m(summed_image_.accessor(), 0);
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
           m[i] = summed_image_[i] / summed_mask_[i];
@@ -259,6 +271,7 @@ namespace dials { namespace algorithms {
      */
     flex_double variance() const {
       flex_double v(summed_image_.accessor(), 0);
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
           int c = summed_mask_[i];
@@ -276,6 +289,7 @@ namespace dials { namespace algorithms {
     flex_double sample_variance() const {
       DIALS_ASSERT(min_count_ > 1);
       flex_double v(summed_image_.accessor(), 0);
+      #pragma omp parallel for        
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
           int c = summed_mask_[i];

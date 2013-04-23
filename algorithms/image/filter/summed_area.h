@@ -11,6 +11,8 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_SUMMED_AREA_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_SUMMED_AREA_H
 
+#include <omp.h>
+
 #include <algorithm>
 #include <cmath>
 #include <scitbx/array_family/flex_types.h>
@@ -83,10 +85,11 @@ namespace dials { namespace algorithms {
     std::size_t xsize = image.accessor().all()[1];
 
     // Calculate the local mean at every point
+    #pragma omp parallel for
     for (std::size_t j = 0; j < ysize; ++j) {
       for (std::size_t i = 0 ; i < xsize; ++i) {
-        int i0 = i - size[0] - 1, i1 = i + size[0];
-        int j0 = j - size[1] - 1, j1 = j + size[1];
+        int i0 = i - size[1] - 1, i1 = i + size[1];
+        int j0 = j - size[0] - 1, j1 = j + size[0];
         i1 = i1 < xsize ? i1 : xsize - 1;
         j1 = j1 < ysize ? j1 : ysize - 1;
 
