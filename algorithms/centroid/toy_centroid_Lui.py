@@ -24,30 +24,17 @@ class toy_centroid_lui(centroid_interface):
             if i < 0:
                 raise CentroidException, 'negative pixels in cube'
         data3d = shoebox.as_numpy_array()
-        #print data3d
+
         tot_itst = 0.0
         tot_f = 0.0
         tot_r = 0.0
         tot_c = 0.0
 
-        #time1 = time.time()
-        #print "time1 =", time1
-
         for f in range(f_size):
             #print '__________________________________________________________________________________ new image'
             if numpy.sum(data3d[f, :, :]) > 0:
-                #print '______________________data2d before'
-                #print data3d[f, :, :]
-
                 locl_itst = single_spot_integrate_2d(data3d[f, :, :])
-                #print '______________________data2d after'
-                #print data3d[f, :, :]
-
                 tot_itst += locl_itst
-
-        #print data3d
-
-
 
         for f in range(f_size):
             for r in range(r_size):
@@ -93,11 +80,6 @@ class toy_centroid_lui(centroid_interface):
         _f += 0.5
         _r += 0.5
         _c += 0.5
-
-        #time2 = time.time()
-        #print "time2 =", time2
-        #timedif = time2 - time1
-        #print "timedif =", timedif
 
         return _f, _r, _c, _sf, _sr, _sc
 
@@ -146,11 +128,6 @@ def single_spot_integrate_2d(data2d):
             if diffdata2d[row, col] == 1:
                 diffdata2d_ext[row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
 
-    #print '_____________diffdata2d'
-    #print diffdata2d
-    #print '_____________diffdata2d_ext'
-    #print diffdata2d_ext
-
 
 ############################################################################### flat background
     tot_bkgr = 0.0                                                            # version
@@ -190,8 +167,7 @@ def single_spot_integrate_2d(data2d):
 #           if diffdata2d_ext[row,col] == 0:                                     #
 #               data2d[row,col] = 0                                              #
 ###############################################################################
-    #col_num_sum = 0.0
-    #row_num_sum = 0.0
+
     itst_sum = 0.0
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):

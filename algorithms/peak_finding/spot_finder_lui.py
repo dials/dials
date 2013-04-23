@@ -34,14 +34,13 @@ class SpotFinderLui(SpotFinderInterface):
             The reflection list
 
         '''
-        x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = do_all_3d(sweep)
-        reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
+        reflection_list = do_all_3d(sweep)
 
         for r_lst in reflection_list:
             print r_lst
 
 def do_all_3d(sweep):
-
+    from scitbx.array_family import flex
     import numpy
     array_3d = sweep.to_array()
     data3d = array_3d.as_numpy_array()
@@ -74,17 +73,25 @@ def do_all_3d(sweep):
                 dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
 
     dif_3d_ext = find_ext_mask_3d(dif3d)
-    #dif_3d_ext[0:1, :, :] = 0
-    #dif_3d_ext[(n_frm - 1):, :, :] = 0
 
     x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
 
-    #print "x_from,   x_to,   y_from,    y_to,  z_from,    z_to "
-    #print "_________________________________________________________"
-    #for pos in range(len(x_from_lst)):
-    #    print x_from_lst[pos], ',    ', x_to_lst[pos], ',   ', y_from_lst[pos], ',   ', y_to_lst[pos], ',   ', z_from_lst[pos], ',   ', z_to_lst[pos]
+    reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
 
-    return x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst
+    for i, rf_lst in enumerate(reflection_list):
+        rf_lst.shoebox = flex.int(numpy.copy(data3d[          \
+                                  z_from_lst[i]: z_to_lst[i], \
+                                  y_from_lst[i]: y_to_lst[i], \
+                                  x_from_lst[i]: x_to_lst[i] ]))
+        rf_lst.shoebox_mask = flex.int(numpy.copy(dif_3d_ext[ \
+                                  z_from_lst[i]: z_to_lst[i], \
+                                  y_from_lst[i]: y_to_lst[i], \
+                                  x_from_lst[i]: x_to_lst[i] ]))
+    from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
+    centroid = toy_centroid_lui(reflection_list)
+    reflection_list = centroid.get_reflections()
+
+    return reflection_list
 
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):
 
@@ -110,11 +117,11 @@ def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_l
 
     reflection_list = ReflectionList(length)
 
-    for i, r in enumerate(reflection_list):
+    for i, rf_lst in enumerate(reflection_list):
         bbox = [x_from_lst[i], x_to_lst[i], y_from_lst[i], y_to_lst[i], z_from_lst[i], z_to_lst[i]]
-        r.bounding_box = bbox
+        rf_lst.bounding_box = bbox
 
-    #from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
-    #centroid = toy_centroid_lui(reflection_list)
-    #reflection_list = centroid.get_reflections()
+
+
+
     return reflection_list
