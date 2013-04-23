@@ -1,5 +1,5 @@
 #
-# beam_divergence_and_mosaicity.py
+# spot_matcher.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
