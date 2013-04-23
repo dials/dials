@@ -36,8 +36,7 @@ class SpotFinderLui(SpotFinderInterface):
         '''
         reflection_list = do_all_3d(sweep)
 
-        for r_lst in reflection_list:
-            print r_lst
+        return reflection_list
 
 def do_all_3d(sweep):
     from scitbx.array_family import flex
