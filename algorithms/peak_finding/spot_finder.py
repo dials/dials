@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dials.interfaces.peak_finding import SpotFinderInterface
+from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 class SpotFinder(SpotFinderInterface):
     '''A class to perform spot finding operations on a sweep of images.'''
@@ -23,8 +24,13 @@ class SpotFinder(SpotFinderInterface):
                 max_separation The maximum maximum-centroid distance
 
         '''
-        self._min_spot_size = kwargs['min_spot_size']
-        self._max_separation = kwargs['max_separation']
+        # Get some parameters
+        self._min_spot_size = kwargs.get('min_spot_size', 6)
+        self._max_separation = kwargs.get('max_separation', 2)
+
+        # Set the threshold strategy
+        self._threshold_strategy = kwargs.get(
+            'threshold_strategy', XDSThresholdStrategy())
 
     def __call__(self, sweep):
         '''The main function of the spot finder. Select the pixels from
@@ -102,8 +108,7 @@ class SpotFinder(SpotFinderInterface):
         # from each of the images
         progress = ProgressBar(indent=4, title='Extracting pixels from sweep')
         for frame, image in enumerate(sweep):
-            c, i = self._extract_image_pixels(image, frame + start,
-                trusted_range)
+            c, i = self._extract_image_pixels(image, frame + start)
             coords.extend(c)
             intensity.extend(i)
             progress.update(100.0 * float(frame + 1) / len(sweep))
@@ -113,7 +118,7 @@ class SpotFinder(SpotFinderInterface):
         # Reuturn the pixel values
         return coords, intensity
 
-    def _extract_image_pixels(self, flex_image, frame, trusted_range):
+    def _extract_image_pixels(self, image, frame):
         '''Extract pixels from a single image
 
         Params:
@@ -131,48 +136,22 @@ class SpotFinder(SpotFinderInterface):
         from time import time
 
         # Calculate the threshold
-        threshold = self._calculate_threshold(flex_image, trusted_range)
+        mask = self._threshold_strategy(image)
 
         # Extract the pixel indices
-        image = flex_image.as_numpy_array()
-        height, width = image.shape
-        image.shape = -1
-        index = numpy.where(image >= threshold)[0]
+        index = numpy.where(mask.as_numpy_array())
 
         # Create the array of pixel coordinates
-        z = [frame] * len(index)
-        y = map(int, index // width)
-        x = map(int, index  % width)
+        z = [frame] * len(index[0])
+        y = map(int, index[0])
+        x = map(int, index[1])
         coords = flex_vec3_int(zip(x, y, z))
 
         # Get the array of pixel intensities
-        intensity = flex.int(image[index])
+        intensity = flex.int(image.as_numpy_array()[index])
 
         # Return the pixel values
         return coords, intensity
-
-    def _calculate_threshold(self, image, trusted_range):
-        '''Calculate the threshold for this image.
-
-        Params:
-            image The image to process
-            trusted_range The trusted range of pixel values
-
-        Returns:
-            The threshold value
-
-        '''
-        from dials.algorithms.image.threshold import maximum_deviation
-        from dials.algorithms.image.threshold import probability_distribution
-
-        # Make sure the range is valid
-        hrange = (0, int(trusted_range[1]))
-
-        # Get the probability distribution from the image
-        p = probability_distribution(image, hrange)
-
-        # Calculate the threshold and add to list
-        return maximum_deviation(p)
 
     def _label_pixels(self, pixels, sweep):
         '''Do a connected component labelling of the pixels to get
