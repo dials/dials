@@ -3,6 +3,8 @@
 from __future__ import division
 from math import sin, cos
 from scitbx import matrix
+# required before the boost python import to avoid an import error
+from cctbx.array_family import flex
 from dials_refinement_helpers_ext import *
 import random
 
