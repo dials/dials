@@ -47,7 +47,7 @@ namespace dials { namespace algorithms {
 
     // Assign the pixels to object and background
     flex_bool result(image.accessor());
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] + n_sigma * sqrt(var[i]) ? 1 : 0;
     }
@@ -79,7 +79,7 @@ namespace dials { namespace algorithms {
 
     // Assign the pixels to object and background
     flex_bool result(image.accessor());
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] * (
         1.0 + k * (sqrt(var[i]) / r - 1)) ? 1 : 0;
@@ -117,7 +117,7 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     flex_bool result(image.accessor());
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       result[i] = (fano_mask[i] && fano_image[i]) > bound ? 1 : 0;
     }
@@ -160,7 +160,7 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     flex_bool result(image.accessor(), 0);
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         double bound = 1.0 + n_sigma * sqrt(2.0 / (count[i] - 1));
@@ -176,7 +176,7 @@ namespace dials { namespace algorithms {
    * Threshold the image using a gain filter. Same as the fano filter but
    * using a gain map for the calculation
    *
-   * var/mean > g + n_sigma * 2 * g / sqrt(n - 1) ? object : background
+   * var/mean > g + n_sigma * g * sqrt(2 / (n - 1)) ? object : background
    *
    * @param image The image to threshold
    * @param mask The mask to use
@@ -207,7 +207,7 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     flex_bool result(image.accessor(), 0);
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         double bound = gain[i] + n_sigma * gain[i] * sqrt(2.0 / (count[i] - 1));
@@ -223,7 +223,7 @@ namespace dials { namespace algorithms {
    * Threshold the image as in xds. Same as the fano filter but
    * using a gain map for the calculation
    *
-   * var/mean > g + n_sigma * 2 * g / sqrt(n - 1) && 
+   * var/mean > g + n_sigma * g * sqrt(2 / (n - 1)) &&
    * pixel > mean + sqrt(mean) ? object : background
    *
    * @param image The image to threshold
@@ -255,7 +255,7 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     flex_bool result(image.accessor(), 0);
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         double bnd_b = 1.0 + nsig_b * sqrt(2.0 / (count[i] - 1));
@@ -266,13 +266,13 @@ namespace dials { namespace algorithms {
 
     // Return thresholded image
     return result;
-  }  
-     
+  }
+
   /**
    * Threshold the image as in xds. Same as the fano filter but
    * using a gain map for the calculation
    *
-   * var/mean > g + n_sigma * 2 * g / sqrt(n - 1) && 
+   * var/mean > g + n_sigma * g * sqrt(2 / (n - 1)) &&
    * pixel > mean + sqrt(gain * mean) ? object : background
    *
    * @param image The image to threshold
@@ -305,7 +305,7 @@ namespace dials { namespace algorithms {
 
     // Assign pixels to object or background
     flex_bool result(image.accessor(), 0);
-    #pragma omp parallel for      
+    #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
         double bnd_b = gain[i] + nsig_b * gain[i] * sqrt(2.0 / (count[i] - 1));
@@ -316,7 +316,7 @@ namespace dials { namespace algorithms {
 
     // Return thresholded image
     return result;
-  }  
+  }
 
 }} // namespace dials::algorithms
 

@@ -53,7 +53,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the filtered image
       fano_ = flex_double(var_.accessor(), 0);
-      #pragma omp parallel for        
+      #pragma omp parallel for
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mean_[i] > 0) {
           fano_[i] = var_[i] / mean_[i];
@@ -129,7 +129,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the filtered image.
       fano_ = flex_double(var_.accessor(), 0);
-      #pragma omp parallel for        
+      #pragma omp parallel for
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mask_[i] && mean_[i] > 0) {
           fano_[i] = var_[i] / mean_[i];
