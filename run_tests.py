@@ -19,6 +19,7 @@ tst_list = (
     "$B/test/algorithms/spatial_indexing/tst_quadtree",
     "$B/test/algorithms/spatial_indexing/tst_octree",
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
+    "$D/test/algorithms/refinement/tst_refinement_regression.py",
     )
 
 def run () :
