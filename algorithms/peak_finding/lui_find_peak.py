@@ -11,7 +11,7 @@ def do_all_2d(sweep):
     print 'n_frm, n_row, n_col =', n_row, n_col
 
     dif2d = numpy.zeros_like(data2d)
-    tm = 2
+    tm = 3
     n_blocks_x = 1
     n_blocks_y = 1
     col_block_size = n_col / n_blocks_x
@@ -60,7 +60,7 @@ def find_mask_2d(data2d, n_times):
     data2dtmp = numpy.copy(data2d)
     if n_times > 0:
 
-        data2dsmoth = smooth_2d(flex.int(data2d), 5).as_numpy_array()
+        data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
 
     else:
         promedio = numpy.mean(data2d)

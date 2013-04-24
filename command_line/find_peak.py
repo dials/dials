@@ -30,9 +30,12 @@ def fnd_pk():
         if algrm == 'lui':
             sweep = SweepFactory.sweep(filenames)
             find_spots = SpotFinderLui()
-            reflection_list = find_spots(sweep)
-            for rfl_lst in reflection_list:
-                print rfl_lst
+            reflection_list = find_spots(sweep, 6)
+            #for rfl_lst in reflection_list:
+            #        if self.output_file:
+            import pickle
+            output_file = 'lui_reflections.pkl'
+            pickle.dump(reflection_list, open(output_file, 'wb'))
 
         elif algrm == 'xds':
             pass

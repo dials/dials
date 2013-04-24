@@ -22,7 +22,7 @@ class SpotFinderLui(SpotFinderInterface):
         '''
         pass
 
-    def __call__(self, sweep):
+    def __call__(self, sweep, times):
         '''The main function of the spot finder. Select the pixels from
         the sweep and then group the pixels into spots. Return the data
         in the form of a reflection list.
@@ -34,11 +34,11 @@ class SpotFinderLui(SpotFinderInterface):
             The reflection list
 
         '''
-        reflection_list = do_all_3d(sweep)
+        reflection_list = do_all_3d(sweep, times)
 
         return reflection_list
 
-def do_all_3d(sweep):
+def do_all_3d(sweep, times):
     from scitbx.array_family import flex
     import numpy
     array_3d = sweep.to_array()
@@ -68,7 +68,7 @@ def do_all_3d(sweep):
                 row_to = int((tmp_block_y_pos + 1) * row_block_size)
 
                 tmp_dat2d = numpy.copy(data3d[frm_tmp, row_from:row_to, col_from:col_to])
-                tmp_dif = find_mask_2d(tmp_dat2d, 5)
+                tmp_dif = find_mask_2d(tmp_dat2d, times)
                 dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
 
     dif_3d_ext = find_ext_mask_3d(dif3d)
