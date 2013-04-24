@@ -13,11 +13,13 @@
 class ScriptRunner(object):
     '''Class to run script.'''
 
-    def __init__(self, spot_filename, output_filename, include_invalid):
+    def __init__(self, spot_filename, xparm_filename,
+                 output_filename, include_invalid):
         '''Setup the script.'''
 
         # Filename data
         self.spot_filename = spot_filename
+        self.xparm_filename = xparm_filename
         self.output_filename = output_filename
         self.include_invalid = include_invalid
 
@@ -26,6 +28,7 @@ class ScriptRunner(object):
         from iotbx.xds import spot_xds
         from dials.model.data import Reflection, ReflectionList
         from dials.util.command_line import Command
+        import dxtbx
 
         # Read the SPOT.XDS file
         Command.start('Reading SPOT.XDS')
@@ -42,38 +45,30 @@ class ScriptRunner(object):
 
         Command.end('Read {0} spots from SPOT.XDS file.'.format(len(centroid)))
 
+        # Read the models from the xparm file
+        Command.start('Reading models from {0}'.format(self.xparm_filename))
+        models = dxtbx.load(self.xparm_filename)
+        self.detector = models.get_detector()
+        self.scan = models.get_scan()
+        self.pixel_size = self.detector.get_pixel_size()
+        self.oscillation_range = self.scan.get_oscillation(deg=False)
+        Command.end('Read models from {0}'.format(self.xparm_filename))
+
         # Create the reflection list
         Command.start('Creating reflection list')
         if miller_index:
             rlist = ReflectionList()
             for c, i, h in zip(centroid, intensity, miller_index):
                 if self.include_invalid == True or tuple(h) != (0, 0, 0):
-                    r = Reflection()
-
-                    import math
-                    d2r = math.pi / 180.0
-
-                    # FIXME hard-coded conversion from pixels to mm / rad
-
-                    r.centroid_position = (0.172 * c[0], 0.172 * c[1],
-                                           d2r * 0.2 * c[2])
-                    r.centroid_variance = (0.172 * 1.0, 0.172 * 1.0,
-                                           d2r * 0.2 * 1.0)
-                    r.rotation_angle = d2r * 0.2 * c[2]
-                    r.image_coord_mm = (0.172 * c[0], 0.172 * c[1])
-
-                    # END FIXME
-
-                    r.intensity = i
-                    r.miller_index = h
+                    r = self._get_reflection_data(c, i, h)
                     rlist.append(r)
 
         else:
-            rlist = ReflectionList(len(centroid))
+            rlist = ReflectionList()
             for r, c, i in zip(rlist, centroid, intensity):
-                r.centroid_position = c
-                r.centroid_variance = (1.0, 1.0, 1.0)
-                r.intensity = i
+                r = self._get_reflection_data(c, i, (0, 0, 0))
+                rlist.append(r)
+
         Command.end('Created reflection list')
 
         # Save the reflection list
@@ -85,13 +80,43 @@ class ScriptRunner(object):
             Command.end('Saved reflections to {0}'.format(
                 self.output_filename))
 
+    def _get_reflection_data(self, pos_px, intensity, hkl):
+        '''Create the reflection data'''
+        from dials.model.data import Reflection
+
+        r = Reflection()
+
+        # Centroid position/variance in pixels
+        var_px = (1.0, 1.0, 1.0)
+
+        # Centroid position/variance in millimeters/radians
+        xy_mm = self.detector.pixel_to_millimeter((pos_px[0], pos_px[1]))
+        phi_rad = self.scan.get_angle_from_array_index(pos_px[2], deg=False)
+        pos_mm_rad = xy_mm + (phi_rad,)
+        var_mm_rad = (var_px[0] * self.pixel_size[0],
+                      var_px[1] * self.pixel_size[1],
+                      var_px[2] * self.oscillation_range[1])
+
+        # Put all the info into the file
+        r.centroid_position = pos_mm_rad
+        r.centroid_variance = var_mm_rad
+        r.rotation_angle    = phi_rad
+        r.image_coord_mm    = xy_mm
+        r.intensity         = intensity
+        r.miller_index      = hkl
+
+        # Return reflection
+        return r
+
 
 if __name__ == '__main__':
 
     from optparse import OptionParser
 
     # Specify the command line options
-    usage  = "usage: %prog [options] /path/to/SPOT.XDS"
+    usage  = "usage: %prog [options] "
+    usage += "/path/to/SPOT.XDS "
+    usage += "/path/to/XPARM.XDS"
 
     # Create an option parser
     parser = OptionParser(usage)
@@ -108,12 +133,13 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call function
-    if len(args) < 1:
+    if len(args) < 2:
         parser.print_help()
     else:
         # Initialise the script runner
         runner = ScriptRunner(
             spot_filename=args[0],
+            xparm_filename=args[1],
             output_filename=options.output_file,
             include_invalid=options.zero_hkl)
 
