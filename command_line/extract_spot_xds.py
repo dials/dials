@@ -45,13 +45,15 @@ class ScriptRunner(object):
         # Create the reflection list
         Command.start('Creating reflection list')
         if miller_index:
-            rlist = ReflectionList(len(centroid))
-            for r, c, i, h in zip(rlist, centroid, intensity, miller_index):
-                if not self.include_invalid and h != (0, 0, 0):
+            rlist = ReflectionList()
+            for c, i, h in zip(centroid, intensity, miller_index):
+                if not self.include_invalid or tuple(h) != (0, 0, 0):
+                    r = Reflection()
                     r.centroid_position = c
                     r.centroid_variance = (1.0, 1.0, 1.0)
                     r.intensity = i
                     r.miller_index = h
+                    rlist.append(r)
 
         else:
             rlist = ReflectionList(len(centroid))
