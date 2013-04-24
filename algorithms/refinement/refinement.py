@@ -165,7 +165,9 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
-                            beam, goniometer)
+                            beam, goniometer, verbosity = verbosity)
+
+    if verbosity > 2: print "Reflection manager built\n"
 
     ##############################
     # Set up the target function #
@@ -174,12 +176,16 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
         refman, ref_predictor, detector, pred_param, image_width)
 
+    if verbosity > 2: print "Target function built\n"
+
     ################################
     # Set up the refinement engine #
     ################################
 
     refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
                                     verbosity=verbosity)
+
+    if verbosity > 2: print "Refinement engine built\n"
 
     ###################################
     # Do refinement and return models #

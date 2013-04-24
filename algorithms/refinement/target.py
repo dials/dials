@@ -374,7 +374,7 @@ class ReflectionManager(object):
                        Xo, sigXo,
                        Yo, sigYo,
                        Phio, sigPhio,
-                       beam, gonio):
+                       beam, gonio, verbosity=0):
 
         # check the observed values
         Ho = list(Ho)
@@ -393,6 +393,9 @@ class ReflectionManager(object):
                len(Phio) == \
                len(sigPhio) == \
                len(Ho))
+
+        # set verbosity
+        self._verbosity = verbosity
 
         # track whether this is the first update of predictions or not
         self._first_update = True
@@ -480,6 +483,19 @@ class ReflectionManager(object):
                                             v.Phio[i], v.weightPhio[i],
                                             v.Xc[i], v.Yc[i], v.Phic[i],
                                             v.Sc[i]))
+
+        if self._verbosity > 2 and len(l) > 20:
+            print
+            print "Listing predictions matched with observations for the first 20 reflections:"
+            print "H, K, L, Xresid, Yresid, Phiresid"
+            fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f"
+            for i in xrange(20):
+                e = l[i]
+                msg = fmt % tuple(e.H + (e.Xresid,
+                                 e.Yresid,
+                                 e.Phiresid))
+                print msg
+            print
 
         return l
 

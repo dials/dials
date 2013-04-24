@@ -89,7 +89,7 @@ class RefinementRunner(object):
 
         refine(self.beam, self.gonio, mycrystal, self.detector, im_width,
                sweep_range, hkls, svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
-               sig_angles, verbosity = 1, fix_cell=False)
+               sig_angles, verbosity = 3, fix_cell=False)
 
         print
         print "Refinement has completed with the following geometry:"
