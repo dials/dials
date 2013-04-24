@@ -59,33 +59,6 @@ class ScriptRunner(object):
             pickle.dump(matched, open(self.output_file, 'wb'))
             Command.end('Saved spots to {0}'.format(self.output_file))
 
-    def _spotfinder(self, sweep):
-        '''Get the spot finder'''
-        from dials.algorithms.peak_finding.spot_finder import SpotFinder
-        return SpotFinder(
-            min_spot_size = self.min_spot_size,
-            max_separation = self.max_pc_separation,
-            threshold_strategy = self._threshold_strategy(sweep))
-
-    def _threshold_strategy(self, sweep):
-        '''Get the threshold strategy'''
-        from dials.algorithms.peak_finding.threshold \
-            import UnimodalThresholdStrategy, XDSThresholdStrategy
-
-        # Chose the strategy
-        if self.threshold == 'xds':
-            return XDSThresholdStrategy(
-                kernel_size = self.kernel_size,
-                gain = self.gain_map,
-                mask = self.mask,
-                n_sigma_b = self.sigma_background,
-                n_sigma_s = self.sigma_strong)
-        elif self.threshold == 'unimodal':
-            trusted_range = sweep.get_detector().get_trusted_range()
-            return UnimodalThresholdStrategy(trusted_range=trusted_range)
-        else:
-            raise RuntimeError('Unknown threshold strategy')
-
 
 if __name__ == '__main__':
 
