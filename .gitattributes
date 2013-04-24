@@ -501,6 +501,7 @@ scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test_f.f90 -text
 scratch/luiso_s/test_code/tst05.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_CLI.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_loops.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_math.py -text svneol=unset#text/plain
