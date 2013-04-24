@@ -102,6 +102,8 @@ class ScriptRunner(object):
         r.centroid_variance = var_mm_rad
         r.rotation_angle    = phi_rad
         r.image_coord_mm    = xy_mm
+        r.image_coord_px    = (pos_px[0], pos_px[1])
+        r.frame_number      = pos_px[2]
         r.intensity         = intensity
         r.miller_index      = hkl
 
