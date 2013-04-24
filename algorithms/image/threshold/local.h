@@ -11,7 +11,7 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H
 #define DIALS_ALGORITHMS_IMAGE_THRESHOLD_UNIMODAL_H
 
-#include <omp.h>
+// #include <omp.h>
 
 #include <cmath>
 #include <iostream>

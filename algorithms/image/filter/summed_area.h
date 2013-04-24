@@ -11,7 +11,7 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_SUMMED_AREA_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_SUMMED_AREA_H
 
-#include <omp.h>
+// #include <omp.h>
 
 #include <algorithm>
 #include <cmath>
