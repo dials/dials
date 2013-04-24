@@ -30,10 +30,23 @@ class RefinementRunner(object):
 
         self._saved_reflections = self.reflections.deep_copy()
 
+        # check that the beam vectors are stored: if not, compute them
+        # perhaps we should just be computing them here...
+
+        from scitbx import matrix
+
+        for ref in self.reflections:
+            if ref.beam_vector != (0.0, 0.0, 0.0):
+                continue
+            x, y = self.detector.millimeter_to_pixel(ref.image_coord_mm)
+            ref.beam_vector = matrix.col(self.detector.get_pixel_lab_coord(
+                (x, y))).normalize() / self.beam.get_wavelength()
+
         # pull out data needed for refinement
         temp = [(ref.miller_index, ref.rotation_angle,
             matrix.col(ref.beam_vector), ref.image_coord_mm,
             ref.centroid_variance) for ref in self.reflections]
+
 
         hkls, angles, svecs, intersects, variances = zip(*temp)
 
@@ -52,8 +65,6 @@ class RefinementRunner(object):
         sig_d2s = [px_size[1] * sqrt(e) for e in var_d2s]
         sig_angles = [im_width * sqrt(e) for e in var_angles]
 
-        #for i in range(10):
-        #    print hkls[i], svecs[i], d1s[i], sig_d1s[i], d2s[i], sig_d2s[i], angles[i], sig_angles[i]
         assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
                len(sig_d2s) == len(angles) == len(sig_angles)
 
@@ -148,6 +159,7 @@ class RefinementRunner(object):
 
         # Get miller indices from saved reflectons
         miller_indices = [r.miller_index for r in self._saved_reflections]
+
         self.miller_indices = flex.miller_index(miller_indices)
 
         print "Predicting new reflections"
@@ -200,7 +212,6 @@ class RefinementRunner(object):
 
         # Calculate the frame numbers of all the reflections
         calculate_bbox(self._new_reflections)
-
 
 def read_reflection_file(filename):
     '''Read reflections from pickle file.'''

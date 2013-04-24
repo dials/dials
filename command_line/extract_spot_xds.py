@@ -49,8 +49,21 @@ class ScriptRunner(object):
             for c, i, h in zip(centroid, intensity, miller_index):
                 if self.include_invalid == True or tuple(h) != (0, 0, 0):
                     r = Reflection()
-                    r.centroid_position = c
-                    r.centroid_variance = (1.0, 1.0, 1.0)
+
+                    import math
+                    d2r = math.pi / 180.0
+
+                    # FIXME hard-coded conversion from pixels to mm / rad
+
+                    r.centroid_position = (0.172 * c[0], 0.172 * c[1],
+                                           d2r * 0.2 * c[2])
+                    r.centroid_variance = (0.172 * 1.0, 0.172 * 1.0,
+                                           d2r * 0.2 * 1.0)
+                    r.rotation_angle = d2r * 0.2 * c[2]
+                    r.image_coord_mm = (0.172 * c[0], 0.172 * c[1])
+
+                    # END FIXME
+
                     r.intensity = i
                     r.miller_index = h
                     rlist.append(r)
