@@ -64,7 +64,7 @@ if __name__ == '__main__':
     usage  = "usage: %prog [options] "
     usage += "/path/to/reflection_file.pkl "
     usage += "/path/to/image_files"
-    
+
     # Create an option parser
     parser = OptionParser(usage)
 

@@ -47,7 +47,7 @@ class ScriptRunner(object):
         if miller_index:
             rlist = ReflectionList()
             for c, i, h in zip(centroid, intensity, miller_index):
-                if not self.include_invalid or tuple(h) != (0, 0, 0):
+                if self.include_invalid == True or tuple(h) != (0, 0, 0):
                     r = Reflection()
                     r.centroid_position = c
                     r.centroid_variance = (1.0, 1.0, 1.0)
