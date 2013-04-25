@@ -8,7 +8,7 @@ def do_all_2d(sweep):
     data2d = numpy.copy(data3d[0, :, :])
     n_row = numpy.size(data2d[:, 0:1])
     n_col = numpy.size(data2d[0:1, :])
-    print 'n_frm, n_row, n_col =', n_row, n_col
+    # print 'n_frm, n_row, n_col =', n_row, n_col
 
     dif2d = numpy.zeros_like(data2d)
     tm = 3
@@ -45,19 +45,14 @@ def do_all_2d(sweep):
 
     return x_from_lst, x_to_lst, y_from_lst, y_to_lst
 
-def do_all_3d(sweep):
-    print 'Hi there'
-
-
-
-def find_mask_2d(data2d, n_times):
+def find_mask_2d(data2d, n_times, threshold_shift):
     from scitbx.array_family import flex
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
 
     data2dsmoth = numpy.zeros_like(data2d)
     diffdata2d = numpy.zeros_like(data2d)
-    data2dtmp = numpy.copy(data2d)
+    #data2dtmp = numpy.copy(data2d)
     if n_times > 0:
 
         data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
@@ -65,7 +60,7 @@ def find_mask_2d(data2d, n_times):
     else:
         promedio = numpy.mean(data2d)
         data2dsmoth[:, :] = promedio
-        print 'promedio =', promedio
+        print 'mean =', promedio
 
 #######################################################################################################
     #cont = 0                                                                  # This way to calculate
@@ -76,25 +71,16 @@ def find_mask_2d(data2d, n_times):
     #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
     #dif_avg = dif_tot / cont                                                  #
     ##print 'dif_avg=', dif_avg                                                #
+    #threshold_shift = dif_avg
 #######################################################################################################
 
-    threshold_shift = 10
-
     data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
-
+    # print 'shift=', threshold_shift
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
             if data2d[row, col] > data2dsmoth[row, col]:
 #            if data2d[row, col] > 20:
-                diffdata2d[row, col] = 1
-    #
-    #from matplotlib import pyplot as plt                                        #                             to be removed
-    #plt.imshow(data2d, interpolation = "nearest", origin = 'lower')             #                             to be removed
-    #plt.show()                                                                  #                             to be removed
-    #plt.imshow(data2dsmoth, interpolation = "nearest", origin = 'lower')        #                             to be removed
-    #plt.show()                                                                  #                             to be removed
-    #plt.imshow(diffdata2d, interpolation = "nearest", origin = 'lower')         #                             to be removed
-    #plt.show()                                                                  #                             to be removed
+                diffdata2d[row, col] = 1                                                                  #                             to be removed
 
     return diffdata2d
 def find_ext_mask_3d(diffdata3d):

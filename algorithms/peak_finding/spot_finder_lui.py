@@ -7,6 +7,7 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+# from dials.algorithms.peak_finding.spot_finder_lui import SpotFinderLui
 from __future__ import division
 from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.lui_find_peak import *
@@ -22,23 +23,24 @@ class SpotFinderLui(SpotFinderInterface):
         '''
         pass
 
-    def __call__(self, sweep, times):
+    def __call__(self, sweep, times, shift):
         '''The main function of the spot finder. Select the pixels from
         the sweep and then group the pixels into spots. Return the data
         in the form of a reflection list.
 
         Params:
             sweep The sweep object
+            some parameters to
 
         Returns:
             The reflection list
 
         '''
-        reflection_list = do_all_3d(sweep, times)
+        reflection_list = do_all_3d(sweep, times, shift)
 
         return reflection_list
 
-def do_all_3d(sweep, times):
+def do_all_3d(sweep, times, shift):
     from scitbx.array_family import flex
     import numpy
     array_3d = sweep.to_array()
@@ -47,9 +49,7 @@ def do_all_3d(sweep, times):
     n_row = numpy.size(data3d[0:1, :, 0:1])
     n_col = numpy.size(data3d[0:1, 0:1, :])
 
-    print "n_frm,n_row,n_col", n_frm, n_row, n_col
-
-    #dif3d = numpy.zeros(n_row * n_col * n_frm , dtype = int).reshape(n_frm, n_row, n_col)
+    # print "n_frm,n_row,n_col", n_frm, n_row, n_col
 
     dif3d = numpy.zeros_like(data3d)
 
@@ -68,12 +68,13 @@ def do_all_3d(sweep, times):
                 row_to = int((tmp_block_y_pos + 1) * row_block_size)
 
                 tmp_dat2d = numpy.copy(data3d[frm_tmp, row_from:row_to, col_from:col_to])
-                tmp_dif = find_mask_2d(tmp_dat2d, times)
+                tmp_dif = find_mask_2d(tmp_dat2d, times, shift)
                 dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
 
     dif_3d_ext = find_ext_mask_3d(dif3d)
 
     x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
+
 
     reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
 
@@ -95,7 +96,7 @@ def do_all_3d(sweep, times):
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):
 
     '''Create a reflection list from the spot data.
-
+    
     Params:
         coords The pixel coordinates
         values The pixel values
@@ -104,7 +105,7 @@ def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_l
         cpos The centroid position
         cvar The centroid variance
         index The list of valid indices
-
+    
     Returns:
         A list of reflections
     '''
