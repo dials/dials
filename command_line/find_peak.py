@@ -8,19 +8,25 @@ def fnd_pk():
     import sys
     from dxtbx.format.Registry import Registry
 
-    filenames = []
     arg_lst = sys.argv[1:]
-
     algrm = 'none'
-
+    filenames = []
+    times = 5
+    shift = 10
     for arg in arg_lst:
-        if arg == 'lui':
-            algrm = 'lui'
-        elif arg == 'xds':
-            algrm = 'xds'
+        if '=' in arg:
+            leng_01 = arg.find('=')
+            if arg[:leng_01] == 'algr' or arg[:leng_01] == 'al':
+                if arg[leng_01 + 1:] == 'lui':
+                    algrm = 'lui'
+                else:
+                    algrm = 'xds'
+            elif arg[:leng_01] == 'times' or arg[:leng_01] == 'tm':
+                times = int(arg[leng_01 + 1:])
+            elif arg[:leng_01] == 'shf' or arg[:leng_01] == 'shift':
+                shift = int(arg[leng_01 + 1:])
         else:
             filenames.append(arg)
-
     print len(filenames), "images given"
     print 'following', algrm, 'algorithm'
 
@@ -30,15 +36,14 @@ def fnd_pk():
         if algrm == 'lui':
             sweep = SweepFactory.sweep(filenames)
             find_spots = SpotFinderLui()
-            reflection_list = find_spots(sweep, 6)
-            #for rfl_lst in reflection_list:
-            #        if self.output_file:
+            reflection_list = find_spots(sweep, times, shift)
+
             import pickle
             output_file = 'lui_reflections.pkl'
             pickle.dump(reflection_list, open(output_file, 'wb'))
 
         elif algrm == 'xds':
-            pass
+            print 'xds algorithm needs to be connected'
 
             #from optparse import OptionParser, OptionGroup, IndentedHelpFormatter
             #
@@ -104,8 +109,6 @@ def fnd_pk():
             #
             ## Parse the arguments
             #options, args = parser.parse_args()
-
-
 
 if __name__ == '__main__':
     fnd_pk()
