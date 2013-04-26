@@ -12,13 +12,14 @@ class RefinementRunner(object):
     '''Class to run the refinement script.'''
 
     def __init__(self, xparm_file, integrate_file,
-                 reflections):
+                 reflections, verbosity):
         '''Initialise the script.'''
 
         # Set the required input arguments
         self.xparm_file = xparm_file
         self.integrate_file = integrate_file
         self.reflections = reflections
+        self.verbosity = verbosity
 
     def __call__(self):
         '''The main body of the script.'''
@@ -89,7 +90,7 @@ class RefinementRunner(object):
 
         refine(self.beam, self.gonio, mycrystal, self.detector, im_width,
                sweep_range, hkls, svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
-               sig_angles, verbosity = 1, fix_cell=False)
+               sig_angles, verbosity = self.verbosity, fix_cell=False)
 
         print
         print "Refinement has completed with the following geometry:"
@@ -213,7 +214,7 @@ class RefinementRunner(object):
         # Calculate the frame numbers of all the reflections
         calculate_bbox(self._new_reflections)
 
-def read_reflection_file(filename):
+def read_reflection_file(reflection_file):
     '''Read reflections from pickle file.'''
     from dials.model.data import ReflectionList
     import pickle
@@ -229,31 +230,20 @@ def run(reflection_file):
 
 
 if __name__ == '__main__':
-    from optparse import OptionParser
+    import argparse
 
-    # Specify the command line options
-    usage = "usage: %prog [options] /path/to/data.p "
-    usage += "/path/to/XPARM.XDS "
-    usage += "/path/to/INTEGRATE.HKL "
+    parser = argparse.ArgumentParser()
+    parser.add_argument("reflection_file", help="/path/to/data.pkl")
+    parser.add_argument("xparm_file", help="/path/to/XPARM.XDS")
+    parser.add_argument("integrate_file", help="/path/to/INTEGRATE.HKL")
+    parser.add_argument("-v", "--verbosity", action="count", default=0,
+                        help="set verbosity level; -vv gives verbosity level 2")
+    args = parser.parse_args()
 
-    # Parse the command line options
-    parser = OptionParser(usage)
-    options, args = parser.parse_args()
+    # reconstitute the reflections
+    reflections = read_reflection_file(args.reflection_file)
 
-    # Print help if no arguments specified, otherwise call spot prediction
-    if len(args) < 3:
-        print parser.print_help()
-    else:
-
-        # Get stuff from args
-        reflection_file = args[0]
-        xparm_file = args[1]
-        integrate_file = args[2]
-
-        # reconstitute the reflections
-        reflections = read_reflection_file(reflection_file)
-        # Run the refinement
-#        run(reflection_file)
-        runner = RefinementRunner(xparm_file, integrate_file,
-                                  reflections)
-        runner()
+    # Run the refinement
+    runner = RefinementRunner(args.xparm_file, args.integrate_file,
+                              reflections, args.verbosity)
+    runner()
