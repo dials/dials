@@ -30,9 +30,9 @@ class CrystalOrientationParameterisation(ModelParameterisation):
         istate = crystal.get_U()
 
         ### Set up the parameters
-        phi1 = Parameter(.0, matrix.col((1, 0, 0)), 'angle')
-        phi2 = Parameter(.0, matrix.col((0, 1, 0)), 'angle')
-        phi3 = Parameter(.0, matrix.col((0, 0, 1)), 'angle')
+        phi1 = Parameter(.0, matrix.col((1, 0, 0)), 'angle', 'Phi1')
+        phi2 = Parameter(.0, matrix.col((0, 1, 0)), 'angle', 'Phi2')
+        phi3 = Parameter(.0, matrix.col((0, 0, 1)), 'angle', 'Phi3')
 
         # build the parameter list in a specific,  maintained order
         p_list = [phi1, phi2, phi3]
@@ -115,7 +115,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         B = self._S.backward_orientation(independent=X).reciprocal_matrix()
 
         ### Set up the independent parameters
-        p_list = [Parameter(e) for e in X]
+        p_list = [Parameter(e, name = "g_param_%d" % i) for i, e in enumerate(X)]
 
         # set up the list of model objects being parameterised (here
         # just a single crystal model)

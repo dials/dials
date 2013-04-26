@@ -19,18 +19,23 @@ class Parameter(object):
     parameter value is set, the esd is reset to None. So this must be
     set separately, and after the parameter value if it is required'''
 
-    def __init__(self, value, axis = None, ptype = None):
+    def __init__(self, value, axis = None, ptype = None, name = None):
         self._value = value
         self._esd = None
         self._axis = axis
         #assert ptype in ['length', 'angle']
         self._ptype = ptype
+        self._name = name
 
         return
 
     @property
     def value(self):
         return self._value
+
+    @property
+    def name(self):
+        return self._name
 
     @value.setter
     def value(self, val):
@@ -99,6 +104,20 @@ class ModelParameterisation(object):
 
         else:
             return [x.value for x in self._plist]
+
+    def get_pnames(self, only_free = True):
+        '''export the names of the internal list of parameters
+
+        If only_free, the names of fixed parameters are filtered from the
+        returned list. Otherwise all parameter names are returned'''
+
+        # FIXME combine functionality with get_p by returning a named, ordered
+        # list
+        if only_free:
+            return [x.name for x, f in zip(self._plist, self._pfixed) if not f]
+
+        else:
+            return [x.name for x in self._plist]
 
     def set_p(self, vals):
         '''set the values of the internal list of parameters from a

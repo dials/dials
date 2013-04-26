@@ -485,7 +485,6 @@ class ReflectionManager(object):
                                             v.Sc[i]))
 
         if self._verbosity > 2 and len(l) > 20:
-            print
             print "Listing predictions matched with observations for the first 20 reflections:"
             print "H, K, L, Xresid, Yresid, Phiresid"
             fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f"

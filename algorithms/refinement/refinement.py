@@ -157,6 +157,13 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     detector, beam, crystal, goniometer, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
+    if verbosity > 2:
+        print "Prediction equation parameterisation built\n"
+        print "Parameter order:name mapping"
+        for i, e in enumerate(pred_param.get_p_names()):
+            print "Parameter %03d : " % i + e
+        print
+
     #####################################
     # Select reflections for refinement #
     #####################################
@@ -167,7 +174,7 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
                             angles, sigangles,
                             beam, goniometer, verbosity = verbosity)
 
-    if verbosity > 2: print "Reflection manager built"
+    if verbosity > 2: print "Reflection manager built\n"
 
     ##############################
     # Set up the target function #
@@ -176,7 +183,7 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
         refman, ref_predictor, detector, pred_param, image_width)
 
-    if verbosity > 2: print "Target function built"
+    if verbosity > 2: print "Target function built\n"
 
     ################################
     # Set up the refinement engine #
@@ -185,7 +192,7 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
                                     verbosity=verbosity)
 
-    if verbosity > 2: print "Refinement engine built"
+    if verbosity > 2: print "Refinement engine built\n"
 
     ###################################
     # Do refinement and return models #

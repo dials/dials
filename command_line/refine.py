@@ -46,7 +46,6 @@ class RefinementRunner(object):
             matrix.col(ref.beam_vector), ref.image_coord_mm,
             ref.centroid_variance) for ref in self.reflections]
 
-
         hkls, angles, svecs, intersects, variances = zip(*temp)
 
         # tease out tuples to separate lists

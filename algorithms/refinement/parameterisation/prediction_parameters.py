@@ -161,6 +161,40 @@ class PredictionParameterisation(object):
 
         return global_p_list
 
+    def get_p_names(self):
+        '''Return a list of the names of parameters in the order they are
+        concatenated. Useful for output to log files and debugging.'''
+        pnames = []
+        if self._detector_parameterisations:
+            det_pname_lists = [x.get_pnames() for x in \
+                               self._detector_parameterisations]
+            names = ["Detector%d" % i + x for i, l \
+                     in enumerate(det_pname_lists) for x in l]
+            pnames.extend(names)
+
+        if self._beam_parameterisations:
+            src_pname_lists = [x.get_pnames() for x in \
+                               self._beam_parameterisations]
+            params = ["Source%d" % i + x for i, l \
+                      in enumerate(src_pname_lists) for x in l]
+            pnames.extend(params)
+
+        if self._xl_orientation_parameterisations:
+            xlo_pname_lists = [x.get_pnames() for x
+                          in self._xl_orientation_parameterisations]
+            params = ["Crystal%d" % i + x for i, l \
+                      in enumerate(xlo_pname_lists) for x in l]
+            pnames.extend(params)
+
+        if self._xl_unit_cell_parameterisations:
+            xluc_pname_lists = [x.get_pnames() for x
+                           in self._xl_unit_cell_parameterisations]
+            params = ["Crystal%d" % i + x for i, l \
+                      in enumerate(xluc_pname_lists) for x in l]
+            pnames.extend(params)
+
+        return pnames
+
     def set_p(self, vals):
         '''Set the parameter values of the contained models to the values in
         vals. This list must be of the same length as the result of get_p and
