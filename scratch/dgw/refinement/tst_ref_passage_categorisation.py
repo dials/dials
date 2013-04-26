@@ -28,8 +28,8 @@ from dials.scratch.dgw.refinement.target import ReflectionManager
 args = sys.argv[1:]
 
 master_phil = parse("""
-include file geometry.params
-include file minimiser.params
+include scope dials.test.algorithms.refinement.geometry_phil
+include scope dials.test.algorithms.refinement.minimiser_phil
 """, process_includes=True)
 
 overrides = """geometry.parameters.crystal.a.length.range = 10 50

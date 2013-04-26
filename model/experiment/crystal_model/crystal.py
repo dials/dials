@@ -25,6 +25,28 @@ class Crystal:
         # initial orientation matrix
         self._U = A * self._B.inverse()
 
+    def __str__(self):
+        uc = self.get_unit_cell().parameters()
+        umat = self.get_U().mathematica_form(format="% 5.4f",
+                                             one_row_per_line=True).splitlines()
+        bmat = self.get_B().mathematica_form(format="% 5.4f",
+                                             one_row_per_line=True).splitlines()
+        amat = (self.get_U() * self.get_B()).mathematica_form(format="% 5.4f",
+                                             one_row_per_line=True).splitlines()
+
+        msg =  "Crystal:\n"
+        msg += "    Unit cell: " + "(%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f)" % uc + "\n"
+        msg += "    U matrix:  " + umat[0] + "\n"
+        msg += "               " + umat[1] + "\n"
+        msg += "               " + umat[2] + "\n"
+        msg += "    B matrix:  " + bmat[0] + "\n"
+        msg += "               " + bmat[1] + "\n"
+        msg += "               " + bmat[2] + "\n"
+        msg += "    A = UB:    " + amat[0] + "\n"
+        msg += "               " + amat[1] + "\n"
+        msg += "               " + amat[2] + "\n"
+        return msg
+
     def set_unit_cell(self, real_space_a, real_space_b, real_space_c):
         cell = (real_space_a.length(),
                 real_space_b.length(),

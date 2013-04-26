@@ -34,8 +34,6 @@ class RefinementRunner(object):
         # check that the beam vectors are stored: if not, compute them
         # perhaps we should just be computing them here...
 
-        from scitbx import matrix
-
         for ref in self.reflections:
             if ref.beam_vector != (0.0, 0.0, 0.0):
                 continue
@@ -70,33 +68,17 @@ class RefinementRunner(object):
                len(sig_d2s) == len(angles) == len(sig_angles)
 
         from dials.algorithms.refinement import print_model_geometry, refine
-        from dials.model.experiment.crystal_model import Crystal
-
-        # build a Crystal
-        # need a_vec, b_vec, c_vec in the lab frame
-
-        from rstbx.cftbx.coordinate_frame_converter import \
-            coordinate_frame_converter
-        cfc = coordinate_frame_converter(self.xparm_file)
-
-        a_vec = cfc.get_c('real_space_a')
-        b_vec = cfc.get_c('real_space_b')
-        c_vec = cfc.get_c('real_space_c')
-
-        mycrystal = Crystal(a_vec, b_vec, c_vec, self.space_group.number())
 
         print "Prior to refinement the experimental model is:"
-        print_model_geometry(self.beam, self.detector, mycrystal)
+        print_model_geometry(self.beam, self.detector, self.crystal)
 
-        refine(self.beam, self.gonio, mycrystal, self.detector, im_width,
+        refine(self.beam, self.gonio, self.crystal, self.detector, im_width,
                sweep_range, hkls, svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
                sig_angles, verbosity = self.verbosity, fix_cell=False)
 
         print
         print "Refinement has completed with the following geometry:"
         print_model_geometry(self.beam, self.detector, mycrystal)
-
-        self.crystal = mycrystal
 
         # Do a test of new reflection pos
         self._update_reflections_test()
@@ -128,11 +110,14 @@ class RefinementRunner(object):
         xparm_handle.read_file(self.xparm_file, check_filename = False)
         self.space_group = ioutil.get_space_group_type_from_xparm(xparm_handle)
         cfc = coordinate_frame_converter(self.xparm_file)
-        a_vec = cfc.get('real_space_a')
-        b_vec = cfc.get('real_space_b')
-        c_vec = cfc.get('real_space_c')
+        a_vec = cfc.get_c('real_space_a')
+        b_vec = cfc.get_c('real_space_b')
+        c_vec = cfc.get_c('real_space_c')
         self.unit_cell = cfc.get_unit_cell()
-        self.UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
+        self.UB = matrix.sqr(a_vec.elems + b_vec.elems + c_vec.elems).inverse()
+
+        from dials.model.experiment.crystal_model import Crystal
+        self.crystal = Crystal(a_vec, b_vec, c_vec, self.space_group.number())
 
         # Calculate resolution
         d_min = self.detector.get_max_resolution_at_corners(
@@ -152,7 +137,7 @@ class RefinementRunner(object):
         print self.detector
         print self.gonio
         print self.scan
-        print self.UB
+        print self.crystal
 
     def _update_reflections_test(self):
         from cctbx.array_family import flex

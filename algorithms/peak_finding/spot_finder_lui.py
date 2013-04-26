@@ -96,7 +96,7 @@ def do_all_3d(sweep, times, shift):
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):
 
     '''Create a reflection list from the spot data.
-    
+
     Params:
         coords The pixel coordinates
         values The pixel values
@@ -105,7 +105,7 @@ def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_l
         cpos The centroid position
         cvar The centroid variance
         index The list of valid indices
-    
+
     Returns:
         A list of reflections
     '''

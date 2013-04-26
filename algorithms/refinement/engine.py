@@ -284,7 +284,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\
-                    as_scitbx_matrix().mathematica_form(format="%5.3g",
+                    as_scitbx_matrix().matlab_form(format="% 8.2g",
                     one_row_per_line=True)
 
             if self.has_gradient_converged_to_zero():
