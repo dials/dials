@@ -58,18 +58,32 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y):
     col_block_size = n_col / n_blocks_x
     row_block_size = n_row / n_blocks_y
 
-    for frm_tmp in range(n_frm):
-        for tmp_block_x_pos in range(n_blocks_x):
-            for tmp_block_y_pos in range(n_blocks_y):
 
-                col_from = int(tmp_block_x_pos * col_block_size)
-                col_to = int((tmp_block_x_pos + 1) * col_block_size)
-                row_from = int(tmp_block_y_pos * row_block_size)
-                row_to = int((tmp_block_y_pos + 1) * row_block_size)
+#    for tmp_block_x_pos in range(n_blocks_x):
+#        for tmp_block_y_pos in range(n_blocks_y):
+#            col_from = int(tmp_block_x_pos * col_block_size)
+#            col_to = int((tmp_block_x_pos + 1) * col_block_size)
+#            row_from = int(tmp_block_y_pos * row_block_size)
+#            row_to = int((tmp_block_y_pos + 1) * row_block_size)
+#            for frm_tmp in range(n_frm):
+#                tmp_dat2d = numpy.copy(data3d[frm_tmp, row_from:row_to, col_from:col_to])
+#                tmp_dif = find_mask_2d(tmp_dat2d, times, shift)
+#                dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
 
-                tmp_dat2d = numpy.copy(data3d[frm_tmp, row_from:row_to, col_from:col_to])
+
+    for tmp_block_x_pos in range(n_blocks_x):
+        for tmp_block_y_pos in range(n_blocks_y):
+            col_from = int(tmp_block_x_pos * col_block_size)
+            col_to = int((tmp_block_x_pos + 1) * col_block_size)
+            row_from = int(tmp_block_y_pos * row_block_size)
+            row_to = int((tmp_block_y_pos + 1) * row_block_size)
+
+            tmp_dat3d = numpy.copy(data3d[:, row_from:row_to, col_from:col_to])
+            for frm_tmp in range(n_frm):
+                tmp_dat2d = numpy.copy(tmp_dat3d[frm_tmp, :, :])
                 tmp_dif = find_mask_2d(tmp_dat2d, times, shift)
                 dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
+
 
     dif_3d_ext = find_ext_mask_3d(dif3d)
 

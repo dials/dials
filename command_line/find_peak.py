@@ -13,22 +13,36 @@ def fnd_pk():
     filenames = []
     times = 5
     shift = 10
+    n_blocks_x = 5
+    n_blocks_y = 12
     for arg in arg_lst:
         if '=' in arg:
             leng_01 = arg.find('=')
-            if arg[:leng_01] == 'algr' or arg[:leng_01] == 'al':
+            lft_str = arg[:leng_01].lower()
+            print lft_str
+            if lft_str == 'algr' or lft_str == 'al':
                 if arg[leng_01 + 1:] == 'lui':
                     algrm = 'lui'
                 else:
                     algrm = 'xds'
-            elif arg[:leng_01] == 'times' or arg[:leng_01] == 'tm':
+            elif lft_str == 'times' or lft_str == 'tm':
                 times = int(arg[leng_01 + 1:])
-            elif arg[:leng_01] == 'shf' or arg[:leng_01] == 'shift':
+            elif lft_str == 'shf' or lft_str == 'shift':
                 shift = int(arg[leng_01 + 1:])
+            elif lft_str == 'nbx' or lft_str == 'numblockx':
+                n_blocks_x = int(arg[leng_01 + 1:])
+            elif lft_str == 'nby' or lft_str == 'numblocky':
+                n_blocks_y = int(arg[leng_01 + 1:])
+
         else:
             filenames.append(arg)
     print len(filenames), "images given"
     print 'following', algrm, 'algorithm'
+
+    print 'algrm =', algrm
+
+    print'___________________________'
+    print 'filenames =', filenames
 
     if algrm == 'none':
         print 'no algorithm spesifyed'
@@ -36,12 +50,11 @@ def fnd_pk():
         if algrm == 'lui':
             sweep = SweepFactory.sweep(filenames)
             find_spots = SpotFinderLui()
-            reflection_list = find_spots(sweep, times, shift)
+            reflection_list = find_spots(sweep, times, shift, n_blocks_x, n_blocks_y)
 
             import pickle
             output_file = 'lui_reflections.pkl'
             pickle.dump(reflection_list, open(output_file, 'wb'))
-
         elif algrm == 'xds':
             print 'xds algorithm needs to be connected'
 
