@@ -281,11 +281,14 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         while self.n_iterations < self.n_max_iterations:
             self.non_linear_ls.build_up()
             if self._verbosity > 2:
+
+                print "Objective value after overall scale applied:", self.objective(), "\n"
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\
                     as_scitbx_matrix().matlab_form(format="% 8.2g",
                     one_row_per_line=True)
+                print
 
             if self.has_gradient_converged_to_zero():
                 print "Gradient converged to zero"
