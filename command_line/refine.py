@@ -77,7 +77,7 @@ class RefinementRunner(object):
 
         print
         print "Refinement has completed with the following geometry:"
-        print_model_geometry(self.beam, self.detector, mycrystal)
+        print_model_geometry(self.beam, self.detector, self.crystal)
 
         # Do a test of new reflection pos
         self._update_reflections_test()
