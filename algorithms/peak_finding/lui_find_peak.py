@@ -1,49 +1,54 @@
 import numpy
 from dials.algorithms.peak_finding import smooth_2d, smooth_3d
-def do_all_2d(sweep):
-    #import time
 
-    array_2d = sweep.to_array()
-    data3d = array_2d.as_numpy_array()
-    data2d = numpy.copy(data3d[0, :, :])
-    n_row = numpy.size(data2d[:, 0:1])
-    n_col = numpy.size(data2d[0:1, :])
-    # print 'n_frm, n_row, n_col =', n_row, n_col
+def find_mask_3d(data3d, n_times, threshold_shift):
+    from scitbx.array_family import flex
+    n_frm = numpy.size(data3d[:, 0:1, 0:1])
+    n_row = numpy.size(data3d[0:1, :, 0:1])
+    n_col = numpy.size(data3d[0:1, 0:1, :])
+    data3dsmoth = numpy.zeros_like(data3d)
+    diffdata3d = numpy.zeros_like(data3d)
 
-    dif2d = numpy.zeros_like(data2d)
-    tm = 3
-    n_blocks_x = 1
-    n_blocks_y = 1
-    col_block_size = n_col / n_blocks_x
-    row_block_size = n_row / n_blocks_y
+    if n_times > 0:
+        data3dsmoth[:, :, :] = smooth_3d(flex.int(data3d), n_times).as_numpy_array()
 
-    #time1 = time.time()
-    for tmp_block_x_pos in range(n_blocks_x):
-        for tmp_block_y_pos in range(n_blocks_y):
-            col_from = int(tmp_block_x_pos * col_block_size)
-            col_to = int((tmp_block_x_pos + 1) * col_block_size)
-            row_from = int(tmp_block_y_pos * row_block_size)
-            row_to = int((tmp_block_y_pos + 1) * row_block_size)
-            tmp_dat2d = numpy.copy(data2d[row_from:row_to, col_from:col_to])
-            tmp_dif2d = find_mask_2d(tmp_dat2d, tm)
-            dif2d[row_from:row_to, col_from:col_to] = tmp_dif2d[:, :]
+    else:
+        promedio = numpy.mean(data3d)
+        data3dsmoth[:, :, :] = promedio
+        print 'mean =', promedio
 
-    #print 'time.time() =', time.time()
-    #time2 = time.time()
-    #time_dif = time2 - time1
-    #print time2, ' - ', time1, '=', time_dif
-    #time1 = time2
+#######################################################################################################
+    #cont = 0                                                                  # This way to calculate
+    #dif_tot = 0                                                               # this magical variable
+    #for row in range(0, n_row, 1):                                            # is more statistical
+    #    for col in range(0, n_col, 1):                                        # and seems to be giving
+    #        cont += 1                                                         # better results
+    #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
+    #dif_avg = dif_tot / cont                                                  #
+    ##print 'dif_avg=', dif_avg                                                #
+    #threshold_shift = dif_avg
+#######################################################################################################
 
-    dif_2d_ext = find_ext_mask_2d(dif2d)
-    x_from_lst, x_to_lst, y_from_lst, y_to_lst = find_bound_2d(dif_2d_ext)
+    data3dsmoth[:, :, :] = data3dsmoth[:, :, :] + threshold_shift
+    for frm_tmp in range(n_frm):
+        for row in range(0, n_row, 1):
+            for col in range(0, n_col, 1):
+                if data3d[frm_tmp, row, col] > data3dsmoth[frm_tmp, row, col]:
+                    diffdata3d[frm_tmp, row, col] = 1                                                                  #                             to be removed
 
-    #from matplotlib import pylab, cm
-    #plt = pylab.imshow(data2d , vmin = 0, vmax = 1000, cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-    #pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
-    #pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
-    #pylab.show()
+    from matplotlib import pyplot as plt
+    print "Plotting data3d[5,:,:]"
+    plt.imshow(numpy.transpose(data3d[5, :, :]), interpolation = "nearest")
+    plt.show()
 
-    return x_from_lst, x_to_lst, y_from_lst, y_to_lst
+    print "Plotting data3dsmoth[5,:,:]"
+    plt.imshow(numpy.transpose(data3dsmoth[5, :, :]), interpolation = "nearest")
+    plt.show()
+
+    print "Plotting diffdata3d[5,:,:]"
+    plt.imshow(numpy.transpose(diffdata3d[5, :, :]), interpolation = "nearest")
+    plt.show()
+    return diffdata3d
 
 def find_mask_2d(data2d, n_times, threshold_shift):
     from scitbx.array_family import flex
@@ -54,9 +59,7 @@ def find_mask_2d(data2d, n_times, threshold_shift):
     diffdata2d = numpy.zeros_like(data2d)
     #data2dtmp = numpy.copy(data2d)
     if n_times > 0:
-
-        #data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
-        data2dsmoth = smooth_3d(flex.int(data2d), n_times).as_numpy_array()
+        data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
     else:
         promedio = numpy.mean(data2d)
         data2dsmoth[:, :] = promedio
@@ -76,6 +79,12 @@ def find_mask_2d(data2d, n_times, threshold_shift):
 
     data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
     # print 'shift=', threshold_shift
+
+    from matplotlib import pyplot as plt
+    print "Plotting data3dsmoth[5,:,:]"
+    plt.imshow(numpy.transpose(data2dsmoth), interpolation = "nearest")
+    plt.show()
+
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
             if data2d[row, col] > data2dsmoth[row, col]:
