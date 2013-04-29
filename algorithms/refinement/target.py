@@ -152,6 +152,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i + 1)
             jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i + 2)
 
+        # We return the Jacobian, not its transpose.
         jacobian_t.matrix_transpose_in_place()
 
         return(residuals, jacobian_t, weights)

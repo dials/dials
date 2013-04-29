@@ -232,6 +232,11 @@ class AdaptLstbx(
         residuals *= self._scale
         jacobian *= self._scale
         #weights *= (self._scale)**2.
+        if self._verbosity > 2:
+            print "The Jacobian matrix for the current step is:"
+            print jacobian.as_scitbx_matrix().matlab_form(format="% 8.2g",
+                    one_row_per_line=True)
+            print
 
         #Reset the state to construction time, i.e. no equations accumulated
         self.reset()
