@@ -175,10 +175,10 @@ class AdaptLstbx(
 
         normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
 
-        # determine overall scale factor so that the objective is approx in
-        # [0,1]
+        # determine overall scale factor for the weights so that the objective
+        # is approx in [0,1]
         self._target.predict()
-        self._scale = 1./math.sqrt(self._target.compute_functional_and_gradients()[0])
+        self._scale = 1./self._target.compute_functional_and_gradients()[0]
 
 
     def restart(self):
@@ -228,10 +228,9 @@ class AdaptLstbx(
         #print "scaled objective", 0.5* sum(weights * self._scale**2 * residuals**2)
         #print "scale factor", self._scale
 
-        # apply overall scale factor
-        residuals *= self._scale
-        jacobian *= self._scale
-        #weights *= (self._scale)**2.
+        # apply overall scale factor to the weights vector.
+        weights *= self._scale
+
         if self._verbosity > 2:
             print "The Jacobian matrix for the current step is:"
             print jacobian.as_scitbx_matrix().matlab_form(format="% 8.2g",
