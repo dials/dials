@@ -8,7 +8,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_lui_find_peak_smoothing() {
     def("smooth_2d", &smooth_2d, (arg("data2d"),arg("a") = 5) );
-
+    def("smooth_3d", &smooth_3d, (arg("data2d"),arg("a") = 5) );
   }
 
 }}} // namespace = dials::algorithms::boost_python

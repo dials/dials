@@ -1,5 +1,5 @@
 import numpy
-from dials.algorithms.peak_finding import smooth_2d
+from dials.algorithms.peak_finding import smooth_2d, smooth_3d
 def do_all_2d(sweep):
     #import time
 
@@ -55,8 +55,8 @@ def find_mask_2d(data2d, n_times, threshold_shift):
     #data2dtmp = numpy.copy(data2d)
     if n_times > 0:
 
-        data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
-
+        #data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
+        data2dsmoth = smooth_3d(flex.int(data2d), n_times).as_numpy_array()
     else:
         promedio = numpy.mean(data2d)
         data2dsmoth[:, :] = promedio

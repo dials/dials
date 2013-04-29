@@ -20,9 +20,15 @@ class SpotFinderLui(SpotFinderInterface):
             kwargs Key word arguments
 
         '''
-        pass
+        self.times = kwargs['times']
+        self.shift = kwargs['shift']
+        #self.block_size = kwargs['block_size']
+        self.n_blocks_y = kwargs['n_blocks_y']
+        self.n_blocks_x = kwargs['n_blocks_x']
+        self.dimensions = kwargs['dimensions']
 
-    def __call__(self, sweep, times, shift, n_blocks_x, n_blocks_y):
+
+    def __call__(self, sweep):
         '''The main function of the spot finder. Select the pixels from
         the sweep and then group the pixels into spots. Return the data
         in the form of a reflection list.
@@ -35,7 +41,7 @@ class SpotFinderLui(SpotFinderInterface):
             The reflection list
 
         '''
-        reflection_list = do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y)
+        reflection_list = do_all_3d(sweep, self.times, self.shift, self.n_blocks_x, self.n_blocks_y)
 
         return reflection_list
 
@@ -115,7 +121,7 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y):
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):
 
     '''Create a reflection list from the spot data.
-    
+
     Params:
         coords The pixel coordinates
         values The pixel values
@@ -124,7 +130,7 @@ def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_l
         cpos The centroid position
         cvar The centroid variance
         index The list of valid indices
-    
+
     Returns:
         A list of reflections
     '''

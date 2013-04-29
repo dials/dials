@@ -20,18 +20,22 @@ class ScriptRunner(object):
         self.sweep_filenames = sweep_filenames
 
         # Set the options
-        self.threshold         = kwargs['threshold']
-        self.output_file       = kwargs['output_file']
+        self.algorithm = kwargs['algorithm']
+        self.output_file = kwargs['output_file']
 
         # Threshold options
         self.dark_current_file = kwargs['dark_current_file']
-        self.gain_map_file     = kwargs['gain_map_file']
-        self.sigma_background  = kwargs['sigma_background']
-        self.sigma_strong      = kwargs['sigma_strong']
-        self.kernel_size       = kwargs['kernel_size']
+        self.gain_map_file = kwargs['gain_map_file']
+        self.sigma_background = kwargs['sigma_background']
+        self.sigma_strong = kwargs['sigma_strong']
+        self.kernel_size = kwargs['kernel_size']
+        self.times = kwargs['times']
+        self.shift = kwargs['shift']
+        self.block_size = kwargs['block_size']
+        self.dimensions = kwargs['dimensions']
 
         # Filter options
-        self.min_spot_size     = kwargs['min_spot_size']
+        self.min_spot_size = kwargs['min_spot_size']
         self.max_pc_separation = kwargs['max_pc_separation']
 
         # Set some other stuff
@@ -59,6 +63,31 @@ class ScriptRunner(object):
         sweep = SweepFactory.sweep(self.sweep_filenames)
         Command.end('Loaded sweep of {0} images.'.format(len(sweep)))
 
+        # Calling spot finder algorithms
+        if self.algorithm == 'lui':
+            observed = self._spotfinder_lui(sweep)
+        else:
+            observed = self._spotfinder_xds(sweep)
+
+        # Save the reflections
+        if self.output_file:
+            import pickle
+            Command.start('Saving spots to {0}'.format(self.output_file))
+            pickle.dump(observed, open(self.output_file, 'wb'))
+            Command.end('Saved spots to {0}'.format(self.output_file))
+
+    def _spotfinder_lui(self, sweep):
+        '''Call the lui spotfinder algorithm.'''
+        from dials.algorithms.peak_finding.spot_finder_lui import SpotFinderLui
+        find_spots = SpotFinderLui(times = self.times, shift = self.shift,
+          n_blocks_x = self.block_size[0], n_blocks_y = self.block_size[1],
+          dimensions = self.dimensions)
+        return find_spots(sweep)
+
+    def _spotfinder_xds(self, sweep):
+        '''Call the XDS spot finder algorithms.'''
+        from dials.util.command_line import Command
+
         # Read the dark current file
         if self.dark_current_file:
             Command.start('Reading dark current file')
@@ -85,14 +114,7 @@ class ScriptRunner(object):
         find_spots = self._spotfinder(sweep)
 
         # Find some spots in the sweep
-        observed = find_spots(sweep)
-
-        # Save the reflections
-        if self.output_file:
-            import pickle
-            Command.start('Saving spots to {0}'.format(self.output_file))
-            pickle.dump(observed, open(self.output_file, 'wb'))
-            Command.end('Saved spots to {0}'.format(self.output_file))
+        return find_spots(sweep)
 
     def _spotfinder(self, sweep):
         '''Get the spot finder'''
@@ -108,16 +130,16 @@ class ScriptRunner(object):
             import UnimodalThresholdStrategy, XDSThresholdStrategy
 
         # Chose the strategy
-        if self.threshold == 'xds':
+        if self.algorithm == 'xds':
             return XDSThresholdStrategy(
                 kernel_size = self.kernel_size,
                 gain = self.gain_map,
                 mask = self.mask,
                 n_sigma_b = self.sigma_background,
                 n_sigma_s = self.sigma_strong)
-        elif self.threshold == 'unimodal':
+        elif self.algorithm == 'unimodal':
             trusted_range = sweep.get_detector().get_trusted_range()
-            return UnimodalThresholdStrategy(trusted_range=trusted_range)
+            return UnimodalThresholdStrategy(trusted_range = trusted_range)
         else:
             raise RuntimeError('Unknown threshold strategy')
 
@@ -127,17 +149,17 @@ if __name__ == '__main__':
     from optparse import OptionParser, OptionGroup, IndentedHelpFormatter
 
     # Specify the command line options
-    usage  = "usage: %prog [options] /path/to/image/files"
+    usage = "usage: %prog [options] /path/to/image/files"
 
     # Create an option parser
     parser = OptionParser(usage)
 
     # Add algorithm options
     parser.add_option(
-        '-t', '--threshold',
-        dest = 'threshold',
-        type = 'choice', choices = ['xds', 'unimodal'], default = 'xds',
-        help = 'The threshold algorithm to use (default = %default)')
+        '-a', '--algorithm',
+        dest = 'algorithm',
+        type = 'choice', choices = ['lui', 'xds', 'unimodal'], default = 'xds',
+        help = 'The spot finding algorithm to use (default = %default)')
     parser.add_option(
         '-o', '--output-file',
         dest = 'output_file',
@@ -166,8 +188,25 @@ if __name__ == '__main__':
         help = 'pixel > mean + n_sigma*sdev (used by: xds) (default: %default)')
     threshold_group.add_option(
         '--kernel-size',
-        dest = 'kernel_size', type = 'int', nargs=2, default = (3, 3),
+        dest = 'kernel_size', type = 'int', nargs = 2, default = (3, 3),
         help = 'Local window size (2 * s + 1) centred on pixel')
+    threshold_group.add_option(
+        '--times',
+        dest = 'times', type = 'int', default = 5,
+        help = 'times = how many times will be done the smoothing algorithm')
+    threshold_group.add_option(
+        '--block-size',
+        dest = 'block_size', type = 'int', nargs = 2, default = (5, 12),
+        help = 'numX by numY blocks per image')
+    threshold_group.add_option(
+        '--shift',
+        dest = 'shift', type = 'int', default = 10,
+        help = 'shift = shift value added to threshold ')
+    threshold_group.add_option(
+        '--dimensions',
+        dest = 'dimensions',
+        type = 'choice', choices = ['2d', '3d'], default = '2d',
+        help = 'which way will be done the smoothing algorithm 2D or 3D')
 
     # Create group for filter options
     filter_group = OptionGroup(
@@ -195,7 +234,7 @@ if __name__ == '__main__':
     else:
 
         # Initialise the script runner
-        runner = ScriptRunner(sweep_filenames=args, **options.__dict__)
+        runner = ScriptRunner(sweep_filenames = args, **options.__dict__)
 
         # Run the script
         runner()
