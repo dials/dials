@@ -11,13 +11,20 @@
 
 from __future__ import division
 
+
 class HalError(RuntimeError):
     def __init__(self, string=''):
-        from getpass import getuser
+
+        # Get the username
+        try:
+            from getpass import getuser
+            username = getuser()
+        except Exception:
+            username = 'Dave'
 
         # Put in HAL error text.
         text = 'I\'m sorry {0}. I\'m afraid I can\'t do that. {1}'.format(
-            getuser(), string)
+            username, string)
 
         # Init base class
         RuntimeError.__init__(self, text)

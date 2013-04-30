@@ -98,7 +98,13 @@ class SystemConfig(object):
                 self._files.user_filename()))
 
         # Fetch the working phil from all the system sources
-        return master_phil.fetch(sources = [user_phil])
+        try:
+            phil = master_phil.fetch(sources = [user_phil])
+        except Exception, e:
+            raise HalError(e)
+
+        # Return the system phil
+        return phil
 
 
 class CommandLineConfig(object):
@@ -200,7 +206,10 @@ class OptionParser(optparse.OptionParser):
         args, command_phil = comconfig.config(args)
 
         # Fetch the working phil from all the sources
-        phil = system_phil.fetch(sources = command_phil)
+        try:
+            phil = system_phil.fetch(sources = command_phil)
+        except Exception, e:
+            raise HalError(e)
 
         # Return the parameters
         return phil, options, args

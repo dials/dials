@@ -245,7 +245,7 @@ class Command(object):
             string = string + '.' * (dot_length)
 
         # Write the string to stdout
-        stdout.write('\r' + 'cyan' + '\n')
+        stdout.write('\r' + string + '\n')
         stdout.flush()
 
 
