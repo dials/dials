@@ -207,19 +207,29 @@ class OptionParser(optparse.OptionParser):
 
     def print_phil(self, attributes_level=0):
         '''Print the system and command line parameters.'''
+        import sys
 
         # Parse the system and command line arguments
-        phil, options, args = self._parse_args_internal()
+        try:
+            phil, options, args = self._parse_args_internal()
+        except HalError, e:
+            print e
+            sys.exit(0)
 
         # Print the phil parameters
         print phil.as_str(attributes_level=attributes_level)
 
     def print_system_phil(self, attributes_level=0):
         '''Print the system parameters.'''
+        import sys
 
         # Parse the system arguments from the master and user files
-        sysconfig = SystemConfig()
-        system_phil = sysconfig.config()
+        try:
+            sysconfig = SystemConfig()
+            system_phil = sysconfig.config()
+        except HalError, e:
+            print e
+            sys.exit(0)
 
         # Print the system parameters
         print system_phil.as_str(attributes_level=attributes_level)

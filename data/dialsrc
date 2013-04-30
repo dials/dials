@@ -14,18 +14,80 @@ spotfinder
                     "to calculate the mean and variance. The kernel is"
                     "given as a box of size (2 * nx + 1, 2 * ny + 1) centred"
                     "at the pixel."
+                    ""
+                    "Used by: xds."
             .type = ints(size=2)
         
         sigma_background = 6
             .help = "The number of standard deviations of the coefficient of"
                     "variation (variance / mean) in the local area below"
                     "which the pixel will be classified as background."
+                    ""
+                    "Used by: xds."
             .type = float
 
         sigma_strong = 3
             .help = "The number of standard deviations above the mean in the"
                     "local area above which the pixel will be classified as"
                     "strong."
+                    ""
+                    "Used by: xds."
             .type = float
+        
+        noise_file = ''
+            .help = "A file containing a map of the dark current across the"
+                    "detector."
+                    ""
+                    "Used by: xds."
+            .type = str
+                    
+        gain_file = ''
+            .help = "A file containing a map of the detector gain."
+                    ""
+                    "Used by: xds."
+            .type = str
+        
+        times = 5
+            .help = "How many times to run the smoothing algorithm."
+                    ""
+                    "Used by: lui"
+            .type = int    
+
+        block_size = 5 12
+            .help = "How many (nx x ny) blocks per image."
+                    ""
+                    "Used by: lui"
+            .type = ints(size=2)
+
+        shift = 10
+            .help = "The shift value (in counts) added to the threshold."
+                    ""
+                    "Used by: lui"
+            .type = int
+        
+        dimensions = *2d 3d
+            .help = "Use the 2D or 3D smoothing algorithm."
+                    ""
+                    "Used by: lui"
+            .type = choice
+    }
+    
+    filter
+        .help = "Parameters used in the spot finding filter strategy."
+        
+    {
+        min_spot_size = 6
+            .help = "The minimum number of contiguous pixels for a spot"
+                    "to be accepted by the filtering algorithm·"
+                    ""
+                    "Used by: xds."
+            .type = int
+        
+        max_separation = 2
+            .help = "The maximum peak-to-centroid separation (in pixels)"
+                    "for a spot to be accepted by the filtering algorithm."
+                    ""
+                    "Used by: xds."
+            .type = float    
     }
 }

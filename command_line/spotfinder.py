@@ -13,30 +13,30 @@ from __future__ import division
 class ScriptRunner(object):
     '''Class to run script.'''
 
-    def __init__(self, sweep_filenames, **kwargs):
+    def __init__(self, sweep_filenames, output_file, params):
         '''Setup the script.'''
 
         # Filename data
         self.sweep_filenames = sweep_filenames
+        self.output_file = output_file
 
         # Set the options
-        self.algorithm = kwargs['algorithm']
-        self.output_file = kwargs['output_file']
+        self.algorithm = params.threshold.algorithm
 
         # Threshold options
-        self.dark_current_file = kwargs['dark_current_file']
-        self.gain_map_file = kwargs['gain_map_file']
-        self.sigma_background = kwargs['sigma_background']
-        self.sigma_strong = kwargs['sigma_strong']
-        self.kernel_size = kwargs['kernel_size']
-        self.times = kwargs['times']
-        self.shift = kwargs['shift']
-        self.block_size = kwargs['block_size']
-        self.dimensions = kwargs['dimensions']
+        self.dark_current_file = params.threshold.noise_file
+        self.gain_map_file = params.threshold.gain_file
+        self.sigma_background = params.threshold.sigma_background
+        self.sigma_strong = params.threshold.sigma_strong
+        self.kernel_size = params.threshold.kernel_size
+        self.times = params.threshold.times
+        self.shift = params.threshold.shift
+        self.block_size = params.threshold.block_size
+        self.dimensions = params.threshold.dimensions
 
         # Filter options
-        self.min_spot_size = kwargs['min_spot_size']
-        self.max_pc_separation = kwargs['max_pc_separation']
+        self.min_spot_size = params.filter.min_spot_size
+        self.max_pc_separation = params.filter.max_separation
 
         # Set some other stuff
         self.gain_map = None
@@ -148,87 +148,23 @@ class ScriptRunner(object):
 
 if __name__ == '__main__':
 
-    from optparse import OptionParser, OptionGroup, IndentedHelpFormatter
+    from dials.util.options import OptionParser
 
     # Specify the command line options
     usage = "usage: %prog [options] /path/to/image/files"
 
     # Create an option parser
-    parser = OptionParser(usage)
+    parser = OptionParser(home_scope='spotfinder', usage=usage)
 
-    # Add algorithm options
-    parser.add_option(
-        '-a', '--algorithm',
-        dest = 'algorithm',
-        type = 'choice', choices = ['lui', 'xds', 'unimodal'], default = 'xds',
-        help = 'The spot finding algorithm to use (default = %default)')
+    # Add options
     parser.add_option(
         '-o', '--output-file',
         dest = 'output_file',
         type = 'string', default = None,
         help = 'Select a file to save the spots.')
 
-    # Create a group for threshold options
-    threshold_group = OptionGroup(
-        parser, 'Threshold Options',
-        'Options affecting threshold algorithms')
-    threshold_group.add_option(
-        '--dark-current-file',
-        dest = 'dark_current_file', type = "string", default = None,
-        help = 'Dark current map filename')
-    threshold_group.add_option(
-        '--gain-map-file',
-        dest = 'gain_map_file', type = "string", default = None,
-        help = 'Gain map filename')
-    threshold_group.add_option(
-        '--sigma-background',
-        dest = 'sigma_background', type = 'float', default = 6.0,
-        help = '(var/mean) > gain + n_sigma*gain*sqrt(2/(n - 1))')
-    threshold_group.add_option(
-        '--sigma-strong',
-        dest = 'sigma_strong', type = 'float', default = 3.0,
-        help = 'pixel > mean + n_sigma*sdev (used by: xds) (default: %default)')
-    threshold_group.add_option(
-        '--kernel-size',
-        dest = 'kernel_size', type = 'int', nargs = 2, default = (3, 3),
-        help = 'Local window size (2 * s + 1) centred on pixel')
-    threshold_group.add_option(
-        '--times',
-        dest = 'times', type = 'int', default = 5,
-        help = 'times = how many times will be done the smoothing algorithm')
-    threshold_group.add_option(
-        '--block-size',
-        dest = 'block_size', type = 'int', nargs = 2, default = (5, 12),
-        help = 'numX by numY blocks per image')
-    threshold_group.add_option(
-        '--shift',
-        dest = 'shift', type = 'int', default = 10,
-        help = 'shift = shift value added to threshold ')
-    threshold_group.add_option(
-        '--dimensions',
-        dest = 'dimensions',
-        type = 'choice', choices = ['2d', '3d'], default = '2d',
-        help = 'which way will be done the smoothing algorithm 2D or 3D')
-
-    # Create group for filter options
-    filter_group = OptionGroup(
-        parser, 'Filter options',
-        'Options affecting filter algorithms')
-    filter_group.add_option(
-        '--min-spot-size',
-        dest = 'min_spot_size', type = "int", default = 6,
-        help = 'Minimum pixels in spot')
-    filter_group.add_option(
-        '--max-pc-separation',
-        dest = 'max_pc_separation', type = "int", default = 2,
-        help = 'Maximum peak-centroid distance')
-
-    # Add the related groups of options
-    parser.add_option_group(threshold_group)
-    parser.add_option_group(filter_group)
-
     # Parse the arguments
-    options, args = parser.parse_args()
+    params, options, args = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call function
     if len(args) < 1:
@@ -236,7 +172,10 @@ if __name__ == '__main__':
     else:
 
         # Initialise the script runner
-        runner = ScriptRunner(sweep_filenames = args, **options.__dict__)
+        runner = ScriptRunner(
+            sweep_filenames = args,
+            output_file=options.output_file,
+            params=params.spotfinder)
 
         # Run the script
         runner()
