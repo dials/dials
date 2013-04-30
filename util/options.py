@@ -156,13 +156,28 @@ class OptionParser(optparse.OptionParser):
 
         # Parse arguments, if an error occurs then exit
         try:
-            result = self._parse_args_internal()
+            result = self._parse_and_extract_args()
         except HalError, e:
             print e
             sys.exit(0)
 
         # Return the result
         return result
+
+    def _parse_and_extract_args(self):
+        '''Parse and extract the arguments.'''
+
+        # Parse the arguments
+        phil, options, args = self._parse_args_internal()
+
+        # Extract the parameters
+        try:
+            parameters = phil.extract()
+        except RuntimeError, e:
+            raise HalError(e)
+
+        # return the result
+        return parameters, options, args
 
     def _parse_args_internal(self):
         '''Parse the command line arguments and get system configuration.'''
@@ -185,23 +200,28 @@ class OptionParser(optparse.OptionParser):
         args, command_phil = comconfig.config(args)
 
         # Fetch the working phil from all the sources
-        working_phil = system_phil.fetch(sources = command_phil)
-
-        # Extract the parameters
-        try:
-            parameters = working_phil.extract()
-        except RuntimeError, e:
-            raise HalError(e)
+        phil = system_phil.fetch(sources = command_phil)
 
         # Return the parameters
-        return parameters, options, args
+        return phil, options, args
 
     def print_phil(self, attributes_level=0):
+        '''Print the system and command line parameters.'''
+
+        # Parse the system and command line arguments
+        phil, options, args = self._parse_args_internal()
+
+        # Print the phil parameters
+        print phil.as_str(attributes_level=attributes_level)
+
+    def print_system_phil(self, attributes_level=0):
         '''Print the system parameters.'''
 
         # Parse the system arguments from the master and user files
         sysconfig = SystemConfig()
         system_phil = sysconfig.config()
+
+        # Print the system parameters
         print system_phil.as_str(attributes_level=attributes_level)
 
 
@@ -211,3 +231,4 @@ if __name__ == '__main__':
     parser.add_option('-a', dest='a', type='int', help='hello world')
     print parser.parse_args()
     parser.print_phil(attributes_level=1)
+    parser.print_system_phil()
