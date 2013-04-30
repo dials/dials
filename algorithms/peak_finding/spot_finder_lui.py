@@ -56,11 +56,11 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     n_col = numpy.size(data3d[0:1, 0:1, :])
 
     # print "n_frm,n_row,n_col", n_frm, n_row, n_col
-    print 'times =', times
-    print 'shift =', shift
-    print 'n_blocks_x =', n_blocks_x
-    print 'n_blocks_y =', n_blocks_y
-    print 'self.dimensions =', dimensions
+    # print 'times =', times
+    # print 'shift =', shift
+    # print 'n_blocks_x =', n_blocks_x
+    # print 'n_blocks_y =', n_blocks_y
+    # print 'self.dimensions =', dimensions
     dif3d = numpy.zeros_like(data3d)
 
     col_block_size = n_col / n_blocks_x
@@ -82,18 +82,8 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
             else:
                 dif3d = find_mask_3d(tmp_dat3d, times, shift)
 
-'''
-
     dif_3d_ext = find_ext_mask_3d(dif3d)
-
     x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
-
-    print 'x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst'
-    print '_________________________________________________________________'
-    for pstn in range(len(x_from_lst)):
-        print x_from_lst[pstn], x_to_lst[pstn], y_from_lst[pstn], y_to_lst[pstn], z_from_lst[pstn], z_to_lst[pstn]
-
-
     reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
 
     for i, rf_lst in enumerate(reflection_list):
@@ -110,7 +100,7 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     reflection_list = centroid.get_reflections()
 
     return reflection_list
-'''
+
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):
 
     '''Create a reflection list from the spot data.
@@ -132,14 +122,10 @@ def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_l
 
     # Create the reflection list
     length = len(x_from_lst)
-
     reflection_list = ReflectionList(length)
 
     for i, rf_lst in enumerate(reflection_list):
         bbox = [x_from_lst[i], x_to_lst[i], y_from_lst[i], y_to_lst[i], z_from_lst[i], z_to_lst[i]]
         rf_lst.bounding_box = bbox
-
-
-
 
     return reflection_list

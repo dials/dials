@@ -17,18 +17,6 @@ def find_mask_3d(data3d, n_times, threshold_shift):
         data3dsmoth[:, :, :] = promedio
         print 'mean =', promedio
 
-#######################################################################################################
-    #cont = 0                                                                  # This way to calculate
-    #dif_tot = 0                                                               # this magical variable
-    #for row in range(0, n_row, 1):                                            # is more statistical
-    #    for col in range(0, n_col, 1):                                        # and seems to be giving
-    #        cont += 1                                                         # better results
-    #        dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
-    #dif_avg = dif_tot / cont                                                  #
-    ##print 'dif_avg=', dif_avg                                                #
-    #threshold_shift = dif_avg
-#######################################################################################################
-
     data3dsmoth[:, :, :] = data3dsmoth[:, :, :] + threshold_shift
     for frm_tmp in range(n_frm):
         for row in range(0, n_row, 1):
@@ -36,18 +24,6 @@ def find_mask_3d(data3d, n_times, threshold_shift):
                 if data3d[frm_tmp, row, col] > data3dsmoth[frm_tmp, row, col]:
                     diffdata3d[frm_tmp, row, col] = 1                                                                  #                             to be removed
 
-    from matplotlib import pyplot as plt
-    print "Plotting data3d[5,:,:]"
-    plt.imshow(numpy.transpose(data3d[5, :, :]), interpolation = "nearest")
-    plt.show()
-
-    print "Plotting data3dsmoth[5,:,:]"
-    plt.imshow(numpy.transpose(data3dsmoth[5, :, :]), interpolation = "nearest")
-    plt.show()
-
-    print "Plotting diffdata3d[5,:,:]"
-    plt.imshow(numpy.transpose(diffdata3d[5, :, :]), interpolation = "nearest")
-    plt.show()
     return diffdata3d
 
 def find_mask_2d(data2d, n_times, threshold_shift):
@@ -79,11 +55,6 @@ def find_mask_2d(data2d, n_times, threshold_shift):
 
     data2dsmoth[:, :] = data2dsmoth[:, :] + threshold_shift
     # print 'shift=', threshold_shift
-
-    from matplotlib import pyplot as plt
-    print "Plotting data3dsmoth[5,:,:]"
-    plt.imshow(numpy.transpose(data2dsmoth), interpolation = "nearest")
-    plt.show()
 
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):

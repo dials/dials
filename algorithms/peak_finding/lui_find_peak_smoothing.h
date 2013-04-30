@@ -15,7 +15,7 @@ namespace dials { namespace algorithms {
         flex_int data2dsmoth(data2d.accessor(),0);
         // std::cout <<"times =" << tot_times << "\n";
         // std::cout <<"ncol =" << ncol << "  nrow =" << nrow <<" \n";
-    std::cout <<"2D in " << " \n";
+        // std::cout <<"2D in " << " \n";
         for (int time = 0; time < tot_times; time++) {
           for (int row = 1; row<nrow-1;row++) {
             for (int col = 1; col<ncol-1;col++) {
@@ -31,19 +31,19 @@ namespace dials { namespace algorithms {
 
 
   flex_int smooth_3d(flex_int & data3d, int tot_times) {
-    std::cout << "length =" << data3d.size() << " \n";
     std::size_t ncol=data3d.accessor().all()[2];
     std::size_t nrow=data3d.accessor().all()[1];
     std::size_t nfrm=data3d.accessor().all()[0];
-    // double tot_i;
-    int tot_i;
+    float tot_i,cont;
+    // int tot_i,cont;
     flex_int data3dtmp(data3d);
     flex_int data3dsmoth(data3d.accessor(),0);
-    std::cout <<"times =" << tot_times << "\n";
-    std::cout <<"ncol =" << ncol << "\n";
-    std::cout <<"nrow =" << nrow <<" \n";
-    std::cout <<"nfrm =" << nfrm <<" \n";
-    std::cout <<"[dimensions] =3D " << " \n";
+    // std::cout << "length =" << data3d.size() << " \n";
+    // std::cout <<"times =" << tot_times << "\n";
+    // std::cout <<"ncol =" << ncol << "\n";
+    // std::cout <<"nrow =" << nrow <<" \n";
+    // std::cout <<"nfrm =" << nfrm <<" \n";
+    // std::cout <<"[dimensions] =3D " << " \n";
                                           // scanning the block
 
     for (int time = 0; time < tot_times; time++) {
@@ -53,16 +53,18 @@ namespace dials { namespace algorithms {
 
                                           // average of all surrounding pixels
             tot_i=0.0;
-            for (int lp_frm=frm-1;lp_frm<frm+1;lp_frm++){
-              for (int lp_row=frm-1;lp_row<frm+1;lp_row++){
-                for (int lp_col=frm-1;lp_col<frm+1;lp_col++){
-                  if (lp_frm != frm and lp_row != row and lp_col != col){
-                    tot_i+=data3dtmp(lp_frm,lp_row,lp_col);
+            cont=0;
+            for (int lp_frm = frm - 1; lp_frm <= frm + 1; lp_frm++) {
+              for (int lp_row = row - 1; lp_row <= row + 1; lp_row++) {
+                for (int lp_col = col - 1; lp_col <= col + 1; lp_col++) {
+                  if (lp_frm != frm or lp_row != row or lp_col != col){
+                    tot_i += data3dtmp(lp_frm, lp_row, lp_col);
+                    cont++;
                   }
                 }
               }
             }
-            data3dsmoth(frm,row,col) = int(tot_i/26.0);
+            data3dsmoth(frm,row,col) = tot_i/cont;
           }
         }
       }
