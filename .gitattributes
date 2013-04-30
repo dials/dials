@@ -194,6 +194,7 @@ interfaces/centroid/__init__.py -text
 interfaces/centroid/centroid_interface_prototype.py -text
 interfaces/peak_finding/__init__.py -text
 /libtbx_config -text
+/license.txt -text
 model/SConscript -text
 model/__init__.py -text
 model/data/SConscript -text
