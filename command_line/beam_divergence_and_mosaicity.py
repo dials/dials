@@ -21,7 +21,7 @@ class ScriptRunner(object):
 
     def __call__(self):
         '''Run the script.'''
-        from dxtbx.sweep import SweepFactory
+        from dxtbx.imageset import ImageSetFactory
         from dials.util.command_line import Command
         from dials.algorithms.integration.divergence_and_mosaicity \
             import BeamDivergenceAndMosaicity
@@ -34,7 +34,9 @@ class ScriptRunner(object):
 
         # Load the sweep
         Command.start('Loading sweep')
-        sweep = SweepFactory.sweep(self.sweep_filename)
+        sweep = ImageSetFactory.new(self.sweep_filename)
+        assert(len(sweep) == 1)
+        sweep = sweep[0]
         Command.end('Loaded sweep of {0} images.'.format(len(sweep)))
 
         # Heading for file read bit

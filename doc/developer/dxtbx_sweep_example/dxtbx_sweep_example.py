@@ -5,7 +5,7 @@ if __name__ == '__main__':
     import os
     import libtbx.load_env
     from glob import glob
-    from dxtbx.sweep import SweepFactory
+    from dxtbx.imageset import ImageSetFactory
 
     # Check dials_regression is configured
     try:
@@ -19,7 +19,9 @@ if __name__ == '__main__':
     filenames = glob(template)
 
     # Create the sweep
-    sweep = SweepFactory.sweep(filenames)
+    sweep = ImageSetFactory.new(filenames)
+    assert(len(sweep) == 1)
+    sweep = sweep[0]
 
     # Get the models
     beam = sweep.get_beam()

@@ -1,4 +1,4 @@
-import scitbx.array_family.flex
+import scitbx.array_family.flex # import dependency
 import toytbx
 
 def tst_toytbx():

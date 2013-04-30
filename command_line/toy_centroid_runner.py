@@ -50,7 +50,7 @@ class ToyCentroidRunner(object):
     def _load_models(self):
         '''Load the models from file.'''
         from iotbx.xds import xparm, integrate_hkl
-        from dxtbx.sweep import SweepFactory
+        from dxtbx.imageset import ImageSetFactory
         from dials.util import ioutil
         import dxtbx
         from rstbx.cftbx.coordinate_frame_converter import \
@@ -59,7 +59,9 @@ class ToyCentroidRunner(object):
 
         # Load the sweep from the image files
         print "Reading image files for sweep."
-        self.sweep = SweepFactory.sweep(self.image_files)
+        self.sweep = ImageSetFactory.new(self.image_files)
+        assert(len(self.sweep) == 1)
+        self.sweep = self.sweep[0]
 
         # Load the models from the xparm file
         print "Reading: \"{0}\"".format(self.xparm_file)

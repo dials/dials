@@ -525,7 +525,6 @@ test/algorithms/integration/tst_from_xds_e3_to_phi.py -text
 test/algorithms/integration/tst_from_xds_to_beam_vector.py -text
 test/algorithms/integration/tst_shoebox_masker.py -text
 test/algorithms/integration/tst_xds_coordinate_system.py -text
-test/algorithms/peak_finding/tst_mean_sdev_filter.py -text
 test/algorithms/refinement/__init__.py -text
 test/algorithms/refinement/params.py -text
 test/algorithms/refinement/setup_geometry.py -text

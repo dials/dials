@@ -44,7 +44,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     from dials.util import ioutil
     from math import pi
     import dxtbx
-    from dxtbx.sweep import SweepFactory
+    from dxtbx.imageset import ImageSetFactory
     from iotbx.xds import integrate_hkl
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
@@ -66,7 +66,9 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
 
     # Read the sweep
     print "Reading: \"{0}\"".format("sweep")
-    sweep = SweepFactory.sweep(image_frames)
+    sweep = ImageSetFactory.new(image_frames)
+    assert(len(sweep) == 1)
+    sweep = sweep[0]
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()

@@ -85,7 +85,7 @@ class RefinementRunner(object):
     def _load_models(self):
         '''Load the models from file.'''
         from iotbx.xds import xparm, integrate_hkl
-        from dxtbx.sweep import SweepFactory
+        from dxtbx.imageset import ImageSetFactory
         from dials.util import ioutil
         import dxtbx
         from rstbx.cftbx.coordinate_frame_converter import \

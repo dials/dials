@@ -21,7 +21,7 @@ class ScriptRunner(object):
 
     def __call__(self):
         '''Run the script.'''
-        from dxtbx.sweep import SweepFactory
+        from dxtbx.imageset import ImageSetFactory
         from dials.util.command_line import Command, ProgressBar
         from dials.algorithms.background_lookup import ComputeDetectorNoise
         from dials.algorithms.background_lookup import ComputeBackgroundAndGain
@@ -32,7 +32,9 @@ class ScriptRunner(object):
 
         # Load the sweep
         Command.start('Loading sweep')
-        sweep = SweepFactory.sweep(self.sweep_filenames)
+        sweep = ImageSetFactory.new(self.sweep_filenames)
+        assert(len(sweep) == 1)
+        sweep = sweep[0]
         Command.end('Loaded sweep of {0} images.'.format(len(sweep)))
 
         # Any image pixels < 0 are set to 0 in the mask

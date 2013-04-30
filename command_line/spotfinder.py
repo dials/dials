@@ -46,7 +46,7 @@ class ScriptRunner(object):
     def __call__(self):
         '''Run the script.'''
         from scitbx.array_family import flex
-        from dxtbx.sweep import SweepFactory
+        from dxtbx.imageset import ImageSetFactory
         from dials.util.command_line import Command
         from dials.algorithms.peak_finding.spot_finder import SpotFinder
         from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
@@ -60,7 +60,9 @@ class ScriptRunner(object):
 
         # Load the sweep
         Command.start('Loading sweep')
-        sweep = SweepFactory.sweep(self.sweep_filenames)
+        sweep = ImageSetFactory.new(self.sweep_filenames)
+        assert(len(sweep) == 1)
+        sweep = sweep[0]
         Command.end('Loaded sweep of {0} images.'.format(len(sweep)))
 
         # Calling spot finder algorithms

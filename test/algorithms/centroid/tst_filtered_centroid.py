@@ -14,9 +14,11 @@ def tst_filtered_centroid():
     frames = [os.path.join(dials_regression, 'centroid_test_data',
                            'centroid_%04d.cbf' % j) for j in range(1, 10)]
 
-    from dxtbx.sweep import SweepFactory
+    from dxtbx.imageset import ImageSetFactory
 
-    sweep = SweepFactory.sweep(frames)
+    sweep = ImageSetFactory.new(frames)
+    assert(len(sweep) == 1)
+    sweep = sweep[0]
 
     from dials.model.data import Reflection, ReflectionList
     ref = Reflection()

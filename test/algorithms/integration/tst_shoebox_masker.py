@@ -116,7 +116,7 @@ def run():
     from dials.util import ioutil
     from math import pi
     import dxtbx
-    from dxtbx.sweep import SweepFactory
+    from dxtbx.imageset import ImageSetFactory
     from iotbx.xds import integrate_hkl
     import os
     from rstbx.cftbx.coordinate_frame_converter import \

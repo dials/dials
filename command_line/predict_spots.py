@@ -78,7 +78,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     from iotbx.xds import xparm
     from dials.util import ioutil
     from math import pi
-    from dxtbx.sweep import SweepFactory
+    from dxtbx.imageset import ImageSetFactory
     import dxtbx
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
@@ -104,7 +104,9 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
 
     # Read image data from sweep
     if image_frames:
-        sweep = SweepFactory.sweep(image_frames)
+        sweep = ImageSetFactory.new(image_frames)
+        assert(len(sweep) == 1)
+        sweep = sweep[0]
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
@@ -216,14 +218,14 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
 
     # Dump the reflections to file
     if output_file:
-#        import pickle
-#        print "\nPickling the reflection list."
-#        pickle.dump(reflections, open(output_file, 'wb'))
-        from dials.util.nexus import NexusFile
-        print "\nSaving the reflection list to {0}".format(output_file)
-        handle = NexusFile(output_file, 'w')
-        handle.set_reflections(reflections)
-        handle.close()
+        import pickle
+        print "\nPickling the reflection list."
+        pickle.dump(reflections, open(output_file, 'wb'))
+#        from dials.util.nexus import NexusFile
+#        print "\nSaving the reflection list to {0}".format(output_file)
+#        handle = NexusFile(output_file, 'w')
+#        handle.set_reflections(reflections)
+#        handle.close()
 
 
 def display_frame_callback(option, opt, value, parser):
