@@ -63,6 +63,12 @@ class RefinementRunner(object):
         sig_d2s = [px_size[1] * sqrt(e) for e in var_d2s]
         sig_angles = [im_width * sqrt(e) for e in var_angles]
 
+        # DEBUGGING: ignore calculated variances and just use invented values,
+        # based on half the pixel size and half the image width
+        #sig_d1s = [px_size[0] / 2.] * len(hkls)
+        #sig_d2s = [px_size[1] / 2.] * len(hkls)
+        #sig_angles = [im_width / 2.] * len(hkls)
+
         assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
                len(sig_d2s) == len(angles) == len(sig_angles)
 

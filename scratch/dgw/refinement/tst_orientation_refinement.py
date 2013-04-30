@@ -78,7 +78,7 @@ mybeam = models.beam
 ###########################
 
 det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisationOrientation(mybeam)
+s0_param = BeamParameterisationOrientation(mybeam, mygonio)
 xlo_param = CrystalOrientationParameterisation(mycrystal)
 xluc_param = CrystalUnitCellParameterisation(mycrystal)
 

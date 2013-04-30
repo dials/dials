@@ -9,10 +9,13 @@ from dials.algorithms.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift
 
 class BeamParameterisationOrientation(ModelParameterisation):
-    '''implementation of parameterisation for the beam (direction only)
-    with angles expressed in mrad'''
+    '''Implementation of parameterisation for the beam (direction only)
+    with angles expressed in mrad.
 
-    def __init__(self, beam):
+    Pass in a goniometer (if present) to ensure consistent definition of the
+    beam rotation angles with respect to the spindle-beam plane.'''
+
+    def __init__(self, beam, goniometer = None):
 
         # The state of the beam model consists of the orientation of the
         # s0 vector that it is modelling. The initial state is a snapshot
@@ -28,8 +31,14 @@ class BeamParameterisationOrientation(ModelParameterisation):
         istate = s0dir
 
         ### Set up the parameters
-        s0_plane_dir1 = s0.ortho().normalize()
-        s0_plane_dir2 = s0.cross(s0_plane_dir1).normalize()
+        if goniometer:
+            spindle = matrix.col(goniometer.get_rotation_axis())
+            s0_plane_dir2 = s0.cross(spindle).normalize()
+            s0_plane_dir1 = s0_plane_dir2.cross(s0).normalize()
+        else:
+            s0_plane_dir1 = s0.ortho().normalize()
+            s0_plane_dir2 = s0.cross(s0_plane_dir1).normalize()
+
         # rotation around s0_plane_dir1
         mu1 = Parameter(.0, s0_plane_dir1, 'angle', 'Mu1')
         # rotation around s0_plane_dir2

@@ -97,7 +97,7 @@ mybeam = models.beam
 ###########################
 
 det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisationOrientation(mybeam)
+s0_param = BeamParameterisationOrientation(mybeam, mygonio)
 xlo_param = CrystalOrientationParameterisation(mycrystal)
 xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
@@ -226,9 +226,9 @@ refiner = setup_minimiser.Extract(master_phil,
 refiner.run()
 
 assert refiner.get_num_steps() == 2
-assert approx_equal(mytarget.rmsds(), (0.00274680743002703,
-                                       0.004445169477293466,
-                                       3.8234148559192454e-05))
+assert approx_equal(mytarget.rmsds(), (0.00508772022458,
+                                       0.00422540287125,
+                                       8.84202542576e-05))
 assert mytarget.achieved()
 
 print "OK"
@@ -255,9 +255,9 @@ refiner = setup_minimiser.Extract(master_phil,
 
 refiner.run()
 
-assert refiner.get_num_steps() == 8
-assert approx_equal(mytarget.rmsds(), (0.029953039678936887,
-                                       0.019417125914453277,
-                                       0.0005794861425423279))
 assert mytarget.achieved()
+assert refiner.get_num_steps() == 11
+assert approx_equal(mytarget.rmsds(), (0.0362094330646,
+                                       0.0283111683407,
+                                       0.000219585147398))
 print "OK"

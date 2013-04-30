@@ -137,7 +137,7 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     ###########################
 
     det_param = DetectorParameterisationSinglePanel(detector)
-    s0_param = BeamParameterisationOrientation(beam)
+    s0_param = BeamParameterisationOrientation(beam, goniometer)
     xlo_param = CrystalOrientationParameterisation(crystal)
     xluc_param = CrystalUnitCellParameterisation(crystal)
 
