@@ -193,6 +193,7 @@ framework/dftbx/dftbx.h -text
 framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 interfaces/__init__.py -text
+interfaces/background/__init__.py -text
 interfaces/centroid/__init__.py -text
 interfaces/centroid/centroid_interface_prototype.py -text
 interfaces/peak_finding/__init__.py -text
