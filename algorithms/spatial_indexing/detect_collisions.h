@@ -376,7 +376,7 @@ namespace dials { namespace algorithms {
       // Calculate the maximum depth we can go to. Make sure that max depth
       // is atleast twice the size of the smallest object or zero.
       CoordType min_length = box.max[0] - box.min[0];
-      std::size_t j;
+      std::size_t j = 0;
       for (std::size_t i = 0; i < DIM; ++i) {
         if (box.max[i] - box.min[i] < min_length) {
           min_length = box.max[i] - box.min[i];
