@@ -65,7 +65,8 @@ class centroid_interface_prototype(object):
                 ref.centroid_spot_width_variance = (sc, sr, sf)
 
                 if cnt > 0:
-                    ref.centroid_variance = (sc / cnt, sr / cnt, sf / cnt)
+                    ref.centroid_variance = (1 + sc / cnt, 1 + sr / cnt,
+                                             1 + sf / cnt)
 
                 # Copy reflection back into array
                 self._reflections.append(ref)
