@@ -134,6 +134,7 @@ command_line/refine.py -text
 command_line/reflection_stats.py -text
 command_line/spotfinder.py -text
 command_line/toy_centroid_runner.py -text
+data/completion_template.txt -text
 data/dialsrc -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text
@@ -196,6 +197,7 @@ interfaces/centroid/__init__.py -text
 interfaces/centroid/centroid_interface_prototype.py -text
 interfaces/peak_finding/__init__.py -text
 /libtbx_config -text
+/libtbx_refresh.py -text
 /license.txt -text
 model/SConscript -text
 model/__init__.py -text
@@ -554,6 +556,7 @@ test/data/sim_mx/INTEGRATE.HKL -text
 test/model/data/tst_reflection_pickle.py -text
 util/__init__.py -text
 util/command_line.py -text
+util/config.py -text
 util/ioutil.py -text
 util/nexus.py -text
 util/options.py -text

@@ -1,0 +1,21 @@
+_$program ()
+{
+  local cur opt
+
+  COMPREPLY=()
+  cur=$${COMP_WORDS[COMP_CWORD]}
+
+  opt='$options'
+
+  case "$$cur" in
+    *)
+      param=$$(compgen -S '=' -W "$${opt}" -- $$cur)
+      files=$$(compgen -f -- $$cur)
+      COMPREPLY=($$param $$files)
+      ;;
+  esac
+
+  return 0
+}
+
+complete -F _$program dials.$program
