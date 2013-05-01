@@ -22,6 +22,7 @@ class ScriptRunner(object):
 
         # Set the options
         self.algorithm = params.threshold.algorithm
+        self.scan_range = params.scan_range
 
         # Threshold options
         self.dark_current_file = params.threshold.noise_file
@@ -65,11 +66,24 @@ class ScriptRunner(object):
         sweep = sweep[0]
         Command.end('Loaded sweep of {0} images.'.format(len(sweep)))
 
-        # Calling spot finder algorithms
-        if self.algorithm == 'lui':
-            observed = self._spotfinder_lui(sweep)
+        # Get list of scan ranges
+        if len(self.scan_range) > 0:
+            scan_range = self.scan_range
         else:
-            observed = self._spotfinder_xds(sweep)
+            scan_range = [(0, len(sweep))]
+
+        # Get spots from bits of scan
+        observed = []
+        for scan in scan_range:
+            j0, j1 = scan
+            assert(j1 > j0 and j0 >= 0 and j1 <= len(sweep))
+            print '\nFinding spots in image {0} to {1}...'.format(j0, j1)
+
+            # Calling spot finder algorithms
+            if self.algorithm == 'lui':
+                observed.extend(self._spotfinder_lui(sweep[j0:j1]))
+            else:
+                observed.extend(self._spotfinder_xds(sweep[j0:j1]))
 
         # Save the reflections
         if self.output_file:

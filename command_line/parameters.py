@@ -13,4 +13,4 @@ if __name__ == '__main__':
 
     from dials.util.options import OptionParser
     parser = OptionParser()
-    parser.print_system_phil(attributes_level=1)
+    parser.print_phil(attributes_level=1)
