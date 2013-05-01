@@ -1,19 +1,41 @@
 from __future__ import division
 
-def tst_non_overlapping(reflections, non_overlapping):
+def tst_non_overlapping(reflections, non_overlapping, image_size):
     '''Ensure non-overlapping reflections have all their values 1.'''
     import numpy
 
     # Check that all elements in non_overlapping masks are 1
     for i in non_overlapping:
         mask = reflections[i].shoebox_mask.as_numpy_array()
-        ind = numpy.where(mask != 1)[0]
-        assert(len(ind) == 0)
+        bbox = reflections[i].bounding_box
+        if bbox[0] < 0:
+            x0 = 0 - bbox[0]
+        else:
+            x0 = 0
+        if bbox[2] < 0:
+            y0 = 0 - bbox[2]
+        else:
+            y0 = 0
+        if bbox[1] > image_size[0]:
+            x1 = image_size[0] - bbox[1]
+        else:
+            x1 = bbox[1] - bbox[0]
+        if bbox[3] > image_size[1]:
+            y1 = image_size[1] - bbox[2]
+        else:
+            y1 = bbox[3] - bbox[2]
+
+        ind = numpy.where(mask[:,y0:y1,x0:x1] != 1)[0]
+        try:
+            assert(len(ind) == 0)
+        except AssertionError:
+            print len(ind), bbox, mask.all(), x0, x1, y0, y1
+            raise
 
     # Passed that test
     print "OK"
 
-def tst_overlapping(reflections, overlapping, adjacency_list):
+def tst_overlapping(reflections, overlapping, adjacency_list, image_size):
     '''Ensure masks for overlapping reflections are set properly.'''
     import numpy
     from scitbx import matrix
@@ -70,6 +92,15 @@ def tst_overlapping(reflections, overlapping, adjacency_list):
             intersect_mask[:,:] = intersect_mask_1d.reshape(intersect_mask.shape)
             expected_mask[k0:k1, j0:j1, i0:i1] = intersect_mask
 
+            if bbox_1[0] < 0:
+                expected_mask[:,:,0:0-bbox_1[0]] = 0
+            if bbox_1[2] < 0:
+                expected_mask[:,0:0-bbox_1[2],:] = 0
+            if bbox_1[1] > image_size[0]:
+                expected_mask[:,:,image_size[0] - bbox_1[1]:] = 0
+            if bbox_1[3] > image_size[1]:
+                expected_mask[:,image_size[1] - bbox_1[2]:,:] = 0
+
         # Check the masks are the same
         calculated_mask = r1.shoebox_mask.as_numpy_array()
         assert(numpy.all(calculated_mask == expected_mask))
@@ -77,7 +108,7 @@ def tst_overlapping(reflections, overlapping, adjacency_list):
     # Passed the test
     print "OK"
 
-def tst_reflection_mask(reflections, adjacency_list):
+def tst_reflection_mask(reflections, adjacency_list, image_size):
     '''Ensure masked values are correct'''
     import numpy
 
@@ -99,8 +130,8 @@ def tst_reflection_mask(reflections, adjacency_list):
     non_overlapping = all_r.difference(overlapping)
 
     # Run tests of overlapping and non_overlapping reflections
-    tst_non_overlapping(reflections, non_overlapping)
-    tst_overlapping(reflections, overlapping, adjacency_list)
+    tst_non_overlapping(reflections, non_overlapping, image_size)
+    tst_overlapping(reflections, overlapping, adjacency_list, image_size)
 
 def run():
     """Read the required data from the file, predict the spots and display."""
@@ -122,6 +153,8 @@ def run():
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
     from scitbx import matrix
+    from glob import glob
+    from scitbx.array_family import flex
 
     import libtbx.load_env
     try:
@@ -130,10 +163,16 @@ def run():
         print 'FAIL: dials_regression not configured'
         return
 
+    sweep_filenames = glob(os.path.join(dials_regression, 'centroid_test_data',
+                           'centroid*.cbf'))
+
     xparm_path = os.path.join(dials_regression, 'centroid_test_data',
                            'GXPARM.XDS')
     integrate_path = os.path.join(dials_regression, 'centroid_test_data',
                            'INTEGRATE.HKL')
+
+    sweep = ImageSetFactory.new(sweep_filenames)[0]
+    detector_mask = flex.int(flex.grid(sweep[0].all())) + 1
 
     # Set the number of frames
     num_frames = 1000
@@ -148,6 +187,7 @@ def run():
     first_image = scan.get_image_range()[0]
     image_range = (first_image, first_image + num_frames)
     scan.set_image_range(image_range)
+    image_size = detector.get_image_size()
 
     # Read other data (need to assume an XPARM file
     xparm_handle = xparm.reader()
@@ -215,11 +255,11 @@ def run():
     reflections = allocate_reflection_profiles(reflections)
 
     # If the adjacency list is given, then create the reflection mask
-    shoebox_masker = ShoeboxMasker()
+    shoebox_masker = ShoeboxMasker(detector_mask)
     shoebox_masker(reflections, adjacency_list)
 
     # Run the test
-    tst_reflection_mask(reflections, adjacency_list)
+    tst_reflection_mask(reflections, adjacency_list, image_size)
 
 if __name__ == '__main__':
     run()
