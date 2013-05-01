@@ -103,7 +103,7 @@ class ScriptRunner(object):
         r.centroid_variance = (
             self.pixel_size[0] ** 2 + var_mm_rad[0] / intensity,
             self.pixel_size[1] ** 2+ var_mm_rad[1] / intensity,
-            self.oscillation_range[1] ** 2 + var_mm_rad[1] / intensity)
+            self.oscillation_range[1] ** 2 + var_mm_rad[2] / intensity)
         r.rotation_angle    = phi_rad
         r.image_coord_mm    = xy_mm
         r.image_coord_px    = (pos_px[0], pos_px[1])
