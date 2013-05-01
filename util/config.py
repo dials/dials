@@ -9,7 +9,8 @@ class CompletionGenerator(object):
 
         # A dictionary of program/phil scope pairs
         self.programs = {
-            'spotfinder' : 'spotfinder'
+            'spotfinder' : 'spotfinder',
+            'subtract_background' : 'background'
         }
 
         # Find the dials distribution directory
