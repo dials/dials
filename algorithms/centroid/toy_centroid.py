@@ -74,4 +74,4 @@ class toy_centroid(centroid_interface):
         _sr = r_tot / d_tot
         _sc = c_tot / d_tot
 
-        return _f, _r, _c, _sf, _sr, _sc
+        return _f, _r, _c, _sf, _sr, _sc, d_tot

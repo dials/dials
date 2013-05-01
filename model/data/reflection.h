@@ -84,7 +84,10 @@ namespace dials { namespace model {
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
         panel_number_(0),
-        bounding_box_(0, 0, 0, 0, 0, 0) {}
+        bounding_box_(0, 0, 0, 0, 0, 0),
+        centroid_position_(0, 0, 0),
+        centroid_variance_(0, 0, 0),
+        centroid_spot_width_variance_(0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -98,7 +101,10 @@ namespace dials { namespace model {
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
         panel_number_(0),
-        bounding_box_(0, 0, 0, 0, 0, 0) {}
+        bounding_box_(0, 0, 0, 0, 0, 0),
+        centroid_position_(0, 0, 0),
+        centroid_variance_(0, 0, 0),
+        centroid_spot_width_variance_(0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -117,7 +123,10 @@ namespace dials { namespace model {
         image_coord_mm_(0.0, 0.0),
         frame_number_(0),
         panel_number_(0),
-        bounding_box_(0, 0, 0, 0, 0, 0) {}
+        bounding_box_(0, 0, 0, 0, 0, 0),
+        centroid_position_(0, 0, 0),
+        centroid_variance_(0, 0, 0),
+        centroid_spot_width_variance_(0, 0, 0) {}
 
     /** Virtual destructor */
     virtual ~Reflection() {}
@@ -197,6 +206,11 @@ namespace dials { namespace model {
       return centroid_variance_;
     }
 
+    /** Get the centroid spot width variance */
+    vec3<double> get_centroid_spot_width_variance() const {
+      return centroid_spot_width_variance_;
+    }
+
     /** Set the rotation angle */
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
@@ -257,6 +271,11 @@ namespace dials { namespace model {
       centroid_variance_ = centroid_variance;
     }
 
+    /** Set the centroid spot width varaicen */
+    void set_centroid_spot_width_variance(vec3<double> centroid_variance) {
+      centroid_spot_width_variance_ = centroid_variance;
+    }
+
   protected:
 
     double rotation_angle_;
@@ -273,6 +292,7 @@ namespace dials { namespace model {
 
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;
+    vec3<double> centroid_spot_width_variance_;
   };
 
   /** Print reflection to std::out */
@@ -289,6 +309,8 @@ namespace dials { namespace model {
     os << "  bounding box:      " << r.get_bounding_box() << "\n";
     os << "  centroid position: " << r.get_centroid_position().as_tiny() << "\n";
     os << "  centroid variance: " << r.get_centroid_variance().as_tiny() << "\n";
+    os << "  centroid spot width variance: "
+       << r.get_centroid_spot_width_variance().as_tiny() << "\n";
     return os;
   }
 

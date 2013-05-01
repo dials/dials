@@ -99,7 +99,8 @@ class ScriptRunner(object):
 
         # Put all the info into the file
         r.centroid_position = pos_mm_rad
-        r.centroid_variance = var_mm_rad
+        r.centroid_spot_width_variance = var_mm_rad
+        r.centroid_variance = map(lambda x: x / intensity, var_mm_rad)
         r.rotation_angle    = phi_rad
         r.image_coord_mm    = xy_mm
         r.image_coord_px    = (pos_px[0], pos_px[1])

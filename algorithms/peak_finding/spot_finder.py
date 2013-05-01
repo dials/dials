@@ -70,7 +70,7 @@ class SpotFinder(SpotFinderInterface):
 
         # Calculate the spot centroids
         Command.start('Calculating centroids')
-        cpos, cvar = self._calculate_centroids(coords, intensity, spots)
+        cpos, cvar, counts = self._calculate_centroids(coords, intensity, spots)
         Command.end('Calculated {0} centroids'.format(len(cpos)))
 
         # Filter the spots by centroid-maxmimum distance
@@ -79,8 +79,8 @@ class SpotFinder(SpotFinderInterface):
         Command.end('Filtered {0} spots by distance'.format(len(index)))
 
         # Create a reflection list and return
-        return self._create_reflection_list(
-            coords, intensity, spots, bbox, cpos, cvar, index)
+        return self._create_reflection_list(coords, intensity, spots, bbox,
+            cpos, cvar, counts, index)
 
     def _extract_pixels(self, sweep):
         '''Extract the pixels from the sweep
@@ -258,6 +258,7 @@ class SpotFinder(SpotFinderInterface):
         # Loop through all the spots
         centroid_pos = flex.vec3_double()
         centroid_var = flex.vec3_double()
+        counts = flex.double()
         for s in spots:
 
             # Get pixel coords and values
@@ -276,8 +277,11 @@ class SpotFinder(SpotFinderInterface):
                                  yc.gsl_stats_wvariance(),
                                  zc.gsl_stats_wvariance()))
 
+            # Total pixel counts
+            counts.append(sum(pixel_values))
+
         # Return the centroid and variance
-        return centroid_pos, centroid_var
+        return centroid_pos, centroid_var, counts
 
     def _filter_maximum_centroid(self, coords, values, spots, cpos):
         '''Filter the reflections by the distance between the maximum pixel
@@ -307,7 +311,7 @@ class SpotFinder(SpotFinderInterface):
         return index
 
     def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar,
-                                index):
+                                counts, index):
         '''Create a reflection list from the spot data.
 
         Params:
@@ -337,7 +341,10 @@ class SpotFinder(SpotFinderInterface):
         for i, r in zip(index, reflection_list):
             r.bounding_box = bbox[i]
             r.centroid_position = cpos[i]
-            r.centroid_variance = cvar[i]
+            if counts[i] > 0:
+                r.centroid_variance = map(lambda x: x / counts[i], cvar[i])
+            r.centroid_spot_width_variance = cvar[i]
+            r.intensity = counts[i]
 
         # Allocate memory for the reflection profiles
         allocate_reflection_profiles(reflection_list,

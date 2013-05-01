@@ -168,4 +168,4 @@ class FilteredCentroid(centroid_interface):
         _vc = c_tot / d_tot
 
         # Return the position and variance
-        return _f, _r, _c, _vf, _vr, _vc
+        return _f, _r, _c, _vf, _vr, _vc, d_tot

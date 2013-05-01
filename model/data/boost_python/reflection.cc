@@ -51,6 +51,7 @@ namespace dials { namespace model { namespace boost_python {
         r.get_bounding_box(),
         r.get_centroid_position(),
         r.get_centroid_variance(),
+        r.get_centroid_spot_width_variance(),
         r.get_shoebox(),
         r.get_shoebox_mask(),
         r.get_transformed_shoebox());
@@ -61,7 +62,7 @@ namespace dials { namespace model { namespace boost_python {
       Reflection &r = extract<Reflection&>(obj)();
       
       // Check that the number of items is correct
-      if (len(state) != 14) {
+      if (len(state) != 15) {
         PyErr_SetObject(PyExc_ValueError, (
           "expected 14-item tuple in call to __setstate__; got %s" 
           % state).ptr());
@@ -83,9 +84,10 @@ namespace dials { namespace model { namespace boost_python {
       r.set_bounding_box(extract<int6>(state[8]));
       r.set_centroid_position(extract<vec3<double> >(state[9]));
       r.set_centroid_variance(extract<vec3<double> >(state[10]));
-      r.set_shoebox(extract<const flex_int&>(state[11]));
-      r.set_shoebox_mask(extract<const flex_int&>(state[12]));
-      r.set_transformed_shoebox(extract<const flex_double&>(state[13]));
+      r.set_centroid_spot_width_variance(extract<vec3<double> >(state[11]));
+      r.set_shoebox(extract<const flex_int&>(state[12]));
+      r.set_shoebox_mask(extract<const flex_int&>(state[13]));
+      r.set_transformed_shoebox(extract<const flex_double&>(state[14]));
     }
   };
 
@@ -151,6 +153,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("centroid_variance",
         &Reflection::get_centroid_variance,
         &Reflection::set_centroid_variance)
+      .add_property("centroid_spot_width_variance",
+        &Reflection::get_centroid_spot_width_variance,
+        &Reflection::set_centroid_spot_width_variance)
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 

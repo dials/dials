@@ -81,7 +81,7 @@ class toy_centroid_lui(centroid_interface):
         _r += 0.5
         _c += 0.5
 
-        return _f, _r, _c, _sf, _sr, _sc
+        return _f, _r, _c, _sf, _sr, _sc, tot_itst
 
 def single_spot_integrate_2d(data2d):
 

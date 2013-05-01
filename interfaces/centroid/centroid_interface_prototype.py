@@ -51,7 +51,8 @@ class centroid_interface_prototype(object):
             try:
 
                 # Compute the centroid
-                f, r, c, sf, sr, sc = self.compute_shoebox_centroid(ref.shoebox)
+                f, r, c, sf, sr, sc, cnt = self.compute_shoebox_centroid(
+                    ref.shoebox)
 
                 # Add the bounding box offset to the centroid position
                 f += ref.bounding_box[4]
@@ -59,8 +60,12 @@ class centroid_interface_prototype(object):
                 c += ref.bounding_box[0]
 
                 # Add centroid data to reflection
+                ref.intensity = cnt
                 ref.centroid_position = (c, r, f)
-                ref.centroid_variance = (sc, sr, sf)
+                ref.centroid_spot_width_variance = (sc, sr, sf)
+
+                if cnt > 0:
+                    ref.centroid_variance = (sc / cnt, sr / cnt, sf / cnt)
 
                 # Copy reflection back into array
                 self._reflections.append(ref)
