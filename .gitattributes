@@ -126,7 +126,6 @@ command_line/detector_max_resolution.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/extract_spot_xds.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
-command_line/lui_reflections.pkl -text
 command_line/match_observed_w_predicted.py -text
 command_line/parameters.py -text
 command_line/predict_spots.py -text
@@ -134,6 +133,7 @@ command_line/print_reflection_stats.py -text
 command_line/refine.py -text
 command_line/reflection_stats.py -text
 command_line/spotfinder.py -text
+command_line/subtract_background.py -text
 command_line/toy_centroid_runner.py -text
 data/completion_template.txt -text
 data/dialsrc -text
