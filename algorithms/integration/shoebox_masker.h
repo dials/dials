@@ -27,8 +27,16 @@ namespace dials { namespace algorithms {
     typedef std::pair<adjacency_iterator,adjacency_iterator>
       adjacency_iterator_range;
 
-    /** Constructor (does nothing) */
-    ShoeboxMasker() {}
+    /**
+     * Initialise the algorithm with the detector mask
+     * @param detector_mask The mask of good/bad detector pixels.
+     */
+    ShoeboxMasker(const flex_int &detector_mask)
+      : detector_mask_(detector_mask),
+        detector_size_(detector_mask.accessor().all()) {
+      DIALS_ASSERT(detector_size_.size() == 2);
+      DIALS_ASSERT(detector_size_[0] > 0 && detector_size_[1] > 0);
+    }
 
     /**
      * The entry point of the functor. The list of reflections is queried
@@ -43,7 +51,7 @@ namespace dials { namespace algorithms {
      * @param adjacency_list The adjacency_list
      */
     void operator()(ReflectionList &reflections,
-        const boost::shared_ptr<AdjacencyList> &adjacency_list) {
+        const boost::shared_ptr<AdjacencyList> &adjacency_list) const {
 
       // Begin by setting all the mask values to 1
       initialise_mask(reflections, 1);
@@ -72,7 +80,7 @@ namespace dials { namespace algorithms {
      * @param b Point b
      * @returns The distance from a to b
      */
-    double distance(vec3<double> a, vec3<double> b) {
+    double distance(vec3<double> a, vec3<double> b) const {
       return (b - a).length_sq();
     }
 
@@ -81,7 +89,7 @@ namespace dials { namespace algorithms {
      * @param r The reflection
      * @returns An (x, y, z) coordinate
      */
-    vec3<double> reflection_coord(Reflection &r) {
+    vec3<double> reflection_coord(Reflection &r) const {
       return vec3<double>(
         r.get_image_coord_px()[0],
         r.get_image_coord_px()[1],
@@ -95,7 +103,7 @@ namespace dials { namespace algorithms {
      * @param k THe voxel z index
      * @returns An (x, y, z) coordinate
      */
-    vec3<double> voxel_coord(double i, double j, double k) {
+    vec3<double> voxel_coord(double i, double j, double k) const {
       return vec3<double>(i+0.5, j+0.5, k+0.5);
     }
 
@@ -105,7 +113,7 @@ namespace dials { namespace algorithms {
      * @param b Reflection b
      * @throws RuntimeError if reflections to do overlap.
      */
-    void assign_ownership(Reflection &a, Reflection &b) {
+    void assign_ownership(Reflection &a, Reflection &b) const {
 
       // Get the reflection mask arrays
       flex_int &mask_a = a.get_shoebox_mask();
@@ -173,10 +181,36 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      * @param value The value to set
      */
-    void initialise_mask(Reflection &reflection, int value) {
+    void initialise_mask(Reflection &reflection, int value) const {
+
+      // Get the mask and roi from the reflection
       flex_int &mask = reflection.get_shoebox_mask();
-      for (std::size_t i = 0; i < mask.size(); ++i) {
-        mask[i] = value;
+      flex_int::index_type size = mask.accessor().all();
+      int6 roi = reflection.get_bounding_box();
+
+      // Check sizes are ok
+      DIALS_ASSERT(size.size() == 3);
+      DIALS_ASSERT(size[2] == (roi[1] - roi[0]));
+      DIALS_ASSERT(size[1] == (roi[3] - roi[2]));
+      DIALS_ASSERT(size[0] == (roi[5] - roi[4]));
+
+      // Loop through all the pixels in the reflection mask and check them
+      // against the detector mask. If the detector mask pixel is ok then
+      // set the reflection mask pixel to the given value, otherwise set it
+      // to zero.
+      for (std::size_t j = 0; j < size[1]; ++j) {
+        for (std::size_t i = 0; i < size[2]; ++i) {
+          int di = roi[0] + i;
+          int dj = roi[2] + j;
+          int mask_value = 0;
+          if (di >= 0 && di < detector_size_[1] &&
+              dj >= 0 && dj < detector_size_[0]) {
+            mask_value = detector_mask_(dj, di);
+          }
+          for (std::size_t k = 0; k < size[0]; ++k) {
+            mask(k, j, i) = mask_value ? value : 0;
+          }
+        }
       }
     }
 
@@ -185,11 +219,14 @@ namespace dials { namespace algorithms {
      * @param reflections The reflection list
      * @param value The value to set
      */
-    void initialise_mask(ReflectionList &reflections, int value) {
+    void initialise_mask(ReflectionList &reflections, int value) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         initialise_mask(reflections[i], value);
       }
     }
+
+    flex_int detector_mask_;
+    flex_int::index_type detector_size_;
   };
 
 }} // namespace dials::algorithms

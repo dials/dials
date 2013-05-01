@@ -19,7 +19,6 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::int6;
   using scitbx::af::flex_bool;
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
@@ -33,24 +32,15 @@ namespace dials { namespace algorithms {
 
     /**
      * Initialise the class with parameters
-     * @param image_volume The 3D image volume array
-     * @param reflection_mask The 3D reflection mask
      * @param delta The deviation from normal
      * @param max_iter The maximum numner of iterations as a fraction of the
      *        elements in the input data array
      * @param min_pixels The minimum number of pixels needed to calculate
      *        the background intensity
      */
-    SubtractBackground(const flex_int &image_volume,
-                       const flex_int &reflection_mask,
-                       int min_pixels = 10,
-                       double n_sigma = -1)
-      : image_volume_(image_volume),
-        reflection_mask_(reflection_mask),
-        min_pixels_(min_pixels),
-        n_sigma_(n_sigma) {
-      DIALS_ASSERT(are_image_sizes_valid());
-    }
+    SubtractBackground(int min_pixels = 10, double n_sigma = -1)
+      : min_pixels_(min_pixels),
+        n_sigma_(n_sigma) {}
 
     /**
      * Calculate the background intensity for a single reflection and subtract
@@ -60,51 +50,35 @@ namespace dials { namespace algorithms {
      *       for strong reflections and is adjusted using the modelled
      *       intensity profile in the xds frame. This needs to be done.
      *
-     * @param roi The region of interest
+     * @param reflection The reflection
      */
-    double operator()(int index, int6 roi)
+    void operator()(Reflection &reflection)
     {
-      // Check the roi is valid
-      DIALS_ASSERT(is_roi_valid(roi));
+      // Get the shoebox
+      flex_int shoebox = reflection.get_shoebox();
+      flex_int mask    = reflection.get_shoebox_mask();
 
-      // Number of pixels in the ROI
-      int num_roi = (roi[1] - roi[0]) * (roi[3] - roi[2]) * (roi[5] - roi[4]);
+      // Ensure data is correctly sized.
+      DIALS_ASSERT(shoebox.size() == mask.size());
 
-      // Allocate memory for a temp array
-      flex_double data(num_roi);
-
-      // Copy the image pixels into a temp array
-      int data_index = 0;
-      for (int k = roi[4]; k < roi[5]; ++k) {
-        for (int j = roi[2]; j < roi[3]; ++j) {
-          for (int i = roi[0]; i < roi[1]; ++i) {
-            if (reflection_mask_(k, j, i) == index) {
-                data[data_index++] = image_volume_(k, j, i);
-            }
-          }
+      // Copy valid pixels into list
+      std::size_t count = 0;
+      flex_double shoebox_pixels = flex_double(shoebox.size());
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        if (mask[i]) {
+          shoebox_pixels[count++] = (double)shoebox[i];
         }
       }
+      shoebox_pixels.resize(count);
 
-      // Ensure we have enough pixels to calculate the background
-      DIALS_ASSERT(data_index > min_pixels_);
+      // Estimate the background intensity
+      double background = background_intensity(shoebox_pixels,
+          min_pixels_, n_sigma_);
 
-      // Calculate the background value
-      double background_value = background_intensity(
-        data, min_pixels_, n_sigma_);
-
-      // Loop through elements, subtract background and ensure >= 0
-      for (int k = roi[4]; k < roi[5]; ++k) {
-        for (int j = roi[2]; j < roi[3]; ++j) {
-          for (int i = roi[0]; i < roi[1]; ++i) {
-            if (reflection_mask_(k, j, i) == index) {
-              image_volume_(k, j, i) -= background_value;
-            }
-          }
-        }
+      // Subtract background from shoebox profile
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        shoebox[i] -= (int)background;
       }
-
-      // Return the calculated background value
-      return background_value;
     }
 
     /**
@@ -117,9 +91,7 @@ namespace dials { namespace algorithms {
       flex_bool result(reflections.size());
       for (int i = 0; i < reflections.size(); ++i) {
         try {
-//          reflections[i].set_background_intensity(
-//              subtract(reflections[i].get_mask_index(),
-//                   reflections[i].get_shoebox()));
+          this->operator()(reflections[i]);
           result[i] = true;
         } catch(error) {
           result[i] = false;
@@ -130,23 +102,6 @@ namespace dials { namespace algorithms {
 
   private:
 
-    /** Ensure the images are 3D and of the same size */
-    bool are_image_sizes_valid() const {
-      return image_volume_.accessor().all().size() == 3
-          && reflection_mask_.accessor().all().size() == 3
-          && (image_volume_.accessor().all() ==
-              reflection_mask_.accessor().all()).all_eq(true);
-    }
-
-    /** Check the roi is valid */
-    bool is_roi_valid(int6 roi) const {
-      return roi[0] >= 0 && roi[1] <= image_volume_.accessor().all()[2]
-          && roi[2] >= 0 && roi[3] <= image_volume_.accessor().all()[1]
-          && roi[4] >= 0 && roi[5] <= image_volume_.accessor().all()[0];
-    }
-
-    flex_int image_volume_;
-    flex_int reflection_mask_;
     int min_pixels_;
     double n_sigma_;
   };

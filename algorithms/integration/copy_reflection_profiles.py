@@ -99,7 +99,8 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
 
     # If the adjacency list is given, then create the reflection mask
     if adjacency_list:
-        shoebox_masker = ShoeboxMasker()
+        detector_mask = (sweep[0] >= 0).as_int()
+        shoebox_masker = ShoeboxMasker(detector_mask)
         shoebox_masker(reflections, adjacency_list)
 
     # Return the reflections

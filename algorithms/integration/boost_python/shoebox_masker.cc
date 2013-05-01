@@ -18,7 +18,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_shoebox_masker()
   {
-    class_ <ShoeboxMasker> ("ShoeboxMasker")
+    class_ <ShoeboxMasker> ("ShoeboxMasker", no_init)
+      .def(init<const flex_int&>((
+          arg("detector_mask"))))
       .def("__call__", 
         &ShoeboxMasker::operator(), (
           arg("reflection_list"), 

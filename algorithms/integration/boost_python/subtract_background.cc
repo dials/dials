@@ -18,25 +18,19 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_subtract_background()
   {
-    double (SubtractBackground::*subtract_single)(int, int6) =
+    void (SubtractBackground::*subtract_single)(Reflection&) =
       &SubtractBackground::operator();
 
     flex_bool (SubtractBackground::*subtract_array)(ReflectionList&) = 
       &SubtractBackground::operator();
 
     class_ <SubtractBackground> ("SubtractBackground", no_init)
-        .def(init <flex_int,
-                   flex_int,
-                   int,
+        .def(init <int,
                    double> ((
-            arg("image_volume"),
-            arg("reflection_mask"),
-            arg("delta") = 0.1,
-            arg("max_iter") = 0.1,
-            arg("min_pixels") = 10)))
+            arg("min_pixels") = 10,
+            arg("n_sigma") = -1)))
         .def("__call__", subtract_single, (
-            arg("index"),
-            arg("roi")))
+            arg("reflection")))
         .def("__call__", subtract_array, (
             arg("reflections")));
   }
