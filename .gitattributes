@@ -3,6 +3,7 @@
 /__init__.py -text
 algorithms/SConscript -text
 algorithms/__init__.py -text
+algorithms/background/__init__.py -text
 algorithms/background/subtraction.py -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text

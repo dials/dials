@@ -26,4 +26,4 @@ class BackgroundSubtractor(BackgroundSubtractionInterface):
 
     def __call__(self, reflections):
         '''Subtract the background the reflections.'''
-        self._subtract_background(reflections)
+        return self._subtract_background(reflections)
