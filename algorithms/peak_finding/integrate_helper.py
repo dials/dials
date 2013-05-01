@@ -1,5 +1,10 @@
-from dials.algorithms.peak_finding import hi_there
-hi_there()
-# data3d <- numpy array
+from scitbx.array_family import flex
+from dials.algorithms.peak_finding import ref_2d
+import numpy
 
-# data3dsmoth[:, :, :] = smooth_3d(flex.int(data3d), n_times).as_numpy_array()
+n_times = 5
+dat2d = numpy.zeros((10, 10), dtype = int)
+print dat2d
+ref_2d()
+# dat2d_ref[:, :] = ref_2d(flex.int(dat2d), n_times).as_numpy_array()
+print dat2d
