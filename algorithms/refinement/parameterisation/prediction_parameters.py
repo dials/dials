@@ -1,6 +1,11 @@
-# Copyright (C) (2012) David Waterman, STFC Rutherford Appleton Laboratory, UK.
-# This code is developed as part of the DIALS project and is provided for
-# testing purposes only
+#
+#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
+#
+#  Author: David Waterman.
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+#
 
 #### Python and general cctbx imports
 

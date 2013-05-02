@@ -1,6 +1,11 @@
-# Copyright (C) (2012) David Waterman, STFC Rutherford Appleton Laboratory, UK.
-# This code is developed as part of the DIALS project and is provided for
-# testing purposes only
+#
+#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
+#
+#  Author: David Waterman.
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+#
 
 from __future__ import division
 from scitbx import lbfgs
@@ -287,6 +292,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self._verbosity > 2:
 
                 print "Objective value after overall scale applied:", self.objective(), "\n"
+                print "Gradient values after overall scale applied:" + \
+                    "% 9.4f " * len(self._parameters) % tuple(-1. * self.opposite_of_gradient()), "\n"
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\
