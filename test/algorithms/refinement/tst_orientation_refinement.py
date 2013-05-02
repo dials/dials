@@ -134,7 +134,7 @@ new_uc = unit_cell(cell_params)
 newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
 S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
 S.set_orientation(orientation=newB)
-X = S.forward_independent_parameters()
+X = tuple([e * 1.e5 for e in S.forward_independent_parameters()])
 xluc_param.set_p(X)
 
 #############################

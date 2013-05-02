@@ -141,7 +141,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
     S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
     S.set_orientation(orientation=newB)
-    X = S.forward_independent_parameters()
+    X = tuple([e * 1.e5 for e in S.forward_independent_parameters()])
     xluc_param.set_p(X)
 
     target_param_values = tuple(pred_param.get_p())
