@@ -1,0 +1,11 @@
+
+Import('env')
+
+sources = [
+    'boost_python/centroid2d.cc',
+    'boost_python/centroid3d.cc',
+    'boost_python/centroid_list.cc',
+    'boost_python/centroid_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_image_centroid_ext', 
+    source=sources)

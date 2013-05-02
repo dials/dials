@@ -15,6 +15,14 @@ algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain
 algorithms/centroid/toy_centroid_helpers.py -text
 algorithms/image/SConscript -text
 algorithms/image/__init__.py -text
+algorithms/image/centroid/SConscript -text
+algorithms/image/centroid/boost_python/centroid2d.cc -text
+algorithms/image/centroid/boost_python/centroid3d.cc -text
+algorithms/image/centroid/boost_python/centroid_ext.cc -text
+algorithms/image/centroid/boost_python/centroid_list.cc -text
+algorithms/image/centroid/centroid2d.h -text
+algorithms/image/centroid/centroid3d.h -text
+algorithms/image/centroid/centroid_list.h -text
 algorithms/image/filter/SConscript -text
 algorithms/image/filter/__init__.py -text
 algorithms/image/filter/boost_python/fano_filter.cc -text

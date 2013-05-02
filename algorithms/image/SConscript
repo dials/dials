@@ -3,3 +3,4 @@ Import('env')
 
 env.SConscript('filter/SConscript', exports={ 'env' : env })
 env.SConscript('threshold/SConscript', exports={ 'env' : env })
+env.SConscript('centroid/SConscript', exports={ 'env' : env })
