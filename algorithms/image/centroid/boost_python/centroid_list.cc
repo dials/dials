@@ -19,16 +19,16 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_centroid_list() 
   {
     class_<CentroidList2d>("CentroidList2d", no_init)
-      .def(init<const flex_vec2_double&, const flex_int&>((
-        arg("coord"), arg("value"))))
+      .def(init<const flex_int&, const flex_vec2_double&>((
+        arg("value"), arg("coord"))))
       .def("counts", &CentroidList2d::counts)
       .def("position", &CentroidList2d::position)
       .def("variance", &CentroidList2d::variance)
       .def("variance_per_count", &CentroidList2d::variance_per_count);
 
     class_<CentroidList3d>("CentroidList3d", no_init)
-      .def(init<const flex_vec3_double&, const flex_int&>((
-        arg("coord"), arg("value"))))
+      .def(init<const flex_int&, const flex_vec3_double&>((
+        arg("value"), arg("coord"))))
       .def("counts", &CentroidList3d::counts)
       .def("position", &CentroidList3d::position)
       .def("variance", &CentroidList3d::variance)

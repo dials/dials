@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
      * @param coord The list of coordinates.
      * @param value The list of values
      */
-    CentroidList2d(const flex_vec2_double &coord, const flex_int &value)
+    CentroidList2d(const flex_int &value, const flex_vec2_double &coord)
       : counts_(0),
         position_(0, 0),
         variance_(0, 0) {
@@ -107,7 +107,7 @@ namespace dials { namespace algorithms {
      * @param coord The list of coordinates.
      * @param value The list of values
      */
-    CentroidList3d(const flex_vec3_double &coord, const flex_int &value)
+    CentroidList3d(const flex_int &value, const flex_vec3_double &coord)
       : counts_(0),
         position_(0, 0, 0),
         variance_(0, 0, 0) {
