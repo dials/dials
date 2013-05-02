@@ -8,7 +8,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_lui_integrate_helper() {
 //    def("lui_hi", &hello);
-    def("ref_2d", &ref_2d);
+    def("ref_2d", &ref_2d, (arg("data2d"),arg("a") = 5) );
   }
 
 }}} // namespace = dials::algorithms::boost_python
