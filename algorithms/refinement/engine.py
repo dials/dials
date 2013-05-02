@@ -69,10 +69,11 @@ class Refinery(object):
 
         if self._verbosity > 1:
             print "Function evaluation"
-            msg = "  Params: " + "%.5f " * len(self._parameters)
+            #msg = "  Params: " + "%.5f " * len(self._parameters)
+            msg = "  Params: " + "%.3g " * len(self._parameters)
             print msg % tuple(self._parameters.get_p())
-            print "  L: %.5f" % self._f
-            msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
+            print "  L: % .3g" % self._f
+            msg = "  dL/dp: " + "% .3g " * len(tuple(self._g))
             print msg % tuple(self._g)
 
         return self._f, flex.double(self._g)
@@ -236,11 +237,11 @@ class AdaptLstbx(
         # apply overall scale factor to the weights vector.
         weights *= self._scale
 
-        if self._verbosity > 2:
-            print "The Jacobian matrix for the current step is:"
-            print jacobian.as_scitbx_matrix().matlab_form(format="% 8.2g",
-                    one_row_per_line=True)
-            print
+        #if self._verbosity > 2:
+        #    print "The Jacobian matrix for the current step is:"
+        #    print jacobian.as_scitbx_matrix().matlab_form(format="% 8.2g",
+        #            one_row_per_line=True)
+        #    print
 
         #Reset the state to construction time, i.e. no equations accumulated
         self.reset()
@@ -292,8 +293,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self._verbosity > 2:
 
                 print "Objective value after overall scale applied:", self.objective(), "\n"
-                print "Gradient values after overall scale applied:" + \
-                    "% 9.4f " * len(self._parameters) % tuple(-1. * self.opposite_of_gradient()), "\n"
+                print "Gradient values after overall scale applied: " + \
+                    "%.3g " * len(self._parameters) % tuple(-1. * self.opposite_of_gradient()), "\n"
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\

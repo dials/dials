@@ -119,8 +119,9 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         dB_dp = self._S.forward_gradients()
         B = self._S.backward_orientation(independent=X).reciprocal_matrix()
 
-        ### Set up the independent parameters
-        p_list = [Parameter(e, name = "g_param_%d" % i) for i, e in enumerate(X)]
+        ### Set up the independent parameters, with a change of scale       
+        p_list = [Parameter(e * 1.e5, name = "g_param_%d" % i) \
+                  for i, e in enumerate(X)]
 
         # set up the list of model objects being parameterised (here
         # just a single crystal model)
@@ -135,7 +136,8 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     def compose(self):
         '''calculate state and derivatives'''
 
-        p_vals = [p.value for p in self._plist]
+        # obtain parameters on natural scale
+        p_vals = [p.value / 1.e5 for p in self._plist]
 
         # set parameter values in the symmetrizing object and obtain new B
         newB = matrix.sqr(self._S.backward_orientation(p_vals).reciprocal_matrix())
@@ -147,8 +149,9 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         # used here for side effects
         self._S.forward_independent_parameters()
 
-        # get the gradients
-        self._dstate_dp = [matrix.sqr(e) for e in self._S.forward_gradients()]
+        # get the gradients on the adjusted scale
+        self._dstate_dp = [matrix.sqr(e) / 1.e5 \
+                           for e in self._S.forward_gradients()]
 
         return
 
