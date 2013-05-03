@@ -70,11 +70,14 @@ class Centroid(object):
 class CentroidPxAndMM(object):
     '''Class to calculate centroid in pixels and millimeters'''
 
-    def __init__(self, detector, pixels, mask=None, coords=None):
+    def __init__(self, detector, scan, pixels, mask=None, coords=None):
         '''Calculate the centroid in pixels and millimeters.'''
+        from operator import mul
 
         # Get the pixel to millimeter function
-        pixel_to_mm = detector.pixel_to_millimeter
+        pixel_size = detector.get_pixel_size()
+        oscillation = scan.get_oscillation()
+        scale = pixel_size + (oscillation[1],)
 
         # Calculate the centroid and extract the values
         centroid = Centroid(pixels, mask, coords)
@@ -82,7 +85,14 @@ class CentroidPxAndMM(object):
         self.variance_px = centroid.variance
         self.sq_width_px = centroid.sq_width
 
-        # Get the centroid in millimeters
-        self.position_mm = pixel_to_mm(self.position_px)
-        self.variance_mm = pixel_to_mm(self.position_px)
-        self.sq_width_mm = pixel_to_mm(self.position_px)
+        # Convert Pixel coordinate into mm/rad
+        x, y, z = self.position_px
+        xy_mm = detector.pixel_to_millimeter((x, y))
+        z_rad = scan.get_angle_from_array_index(z)
+
+        # Set the position, variance and squared width in mm/rad
+        # N.B assuming locally flat pixel to millimeter transform
+        # for variance calculation.
+        self.position_mm = xy_mm + (z_rad,)
+        self.variance_mm = map(mul, self.position_px ,scale**2)
+        self.sq_width_mm = map(mul, self.position_px, scale**2)

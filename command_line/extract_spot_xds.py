@@ -93,17 +93,17 @@ class ScriptRunner(object):
         xy_mm = self.detector.pixel_to_millimeter((pos_px[0], pos_px[1]))
         phi_rad = self.scan.get_angle_from_array_index(pos_px[2], deg=False)
         pos_mm_rad = xy_mm + (phi_rad,)
-        var_mm_rad = (var_px[0] * self.pixel_size[0],
-                      var_px[1] * self.pixel_size[1],
-                      var_px[2] * self.oscillation_range[1])
+        var_mm_rad = (var_px[0] * self.pixel_size[0]**2,
+                      var_px[1] * self.pixel_size[1]**2,
+                      var_px[2] * self.oscillation_range[1]**2)
 
         # Put all the info into the file
         r.centroid_position = pos_mm_rad
         r.centroid_spot_width_variance = var_mm_rad
         r.centroid_variance = (
-            self.pixel_size[0] ** 2 + var_mm_rad[0] / intensity,
-            self.pixel_size[1] ** 2+ var_mm_rad[1] / intensity,
-            self.oscillation_range[1] ** 2 + var_mm_rad[2] / intensity)
+            self.pixel_size[0]**2 + var_mm_rad[0] / intensity,
+            self.pixel_size[1]**2 + var_mm_rad[1] / intensity,
+            self.oscillation_range[1]**2 + var_mm_rad[2] / intensity)
         r.rotation_angle    = phi_rad
         r.image_coord_mm    = xy_mm
         r.image_coord_px    = (pos_px[0], pos_px[1])
