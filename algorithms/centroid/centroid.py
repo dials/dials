@@ -22,29 +22,32 @@ class Centroid(object):
         Params:
             pixels The image (or list of pixel values) to centroid
             mask The mask of the image (optional)
-            coords The coordianates for each pixel value
+            coords The coordianates for each pixel value (optional)
 
         Returns:
             The centroid data
 
         '''
+        # Choose the algorithm
         if coords:
-            return self._centroid_coords(image, coords)
-        else if mask:
-            return self._centroid_mask(image, mask)
+            result self._centroid_coords(image, coords)
+        elif mask:
+            result self._centroid_mask(image, mask)
         else:
-            return self._centroid_basic(image)
+            result self._centroid_basic(image)
+
+        # Extract the result quantities
+        self.position = result.position
+        self.variance = result.variance
+        self.sq_width = result.sq_width
 
         def _centroid_coords(self, image, coords):
-            from dials.image.centroid import CentroidList2d, CentroidList3d
-            if isinstance(coords, flex.vec2_double):
-                return CentroidList2d(image, coords)
-            elif isinstance(coords, flex.vec3_double):
-                return CentroidList3d(image, coords)
-            else:
-                raise RuntimeError("Bad coordinate type")
+            '''Do the centroid on a list of coordinates.'''
+            from dials.image.centroid import centroid_coord_list
+            return centroid_coord_list(image, coords)
 
         def _centroid_mask(self, image, mask):
+            '''Do the centroid on an image and mask.'''
             from dials.image.centroid import MaskedCentroid2d, MaskedCentroid3d
             if len(image.all() == 2):
                 return MaskedCentroid2d(image, mask)
@@ -54,6 +57,7 @@ class Centroid(object):
                 raise RuntimeError("Bad dimensions")
 
         def _centroid_basic(self, image):
+            '''Do the centroid on an image.'''
             from dials.image.centroid import Centroid2d, Centroid3d
             if len(image.all() == 2):
                 return Centroid2d(image, mask)
@@ -61,3 +65,24 @@ class Centroid(object):
                 return Centroid3d(image, mask)
             else:
                 raise RuntimeError("Bad dimensions")
+
+
+class CentroidPxAndMM(object):
+    '''Class to calculate centroid in pixels and millimeters'''
+
+    def __init__(self, detector, pixels, mask=None, coords=None):
+        '''Calculate the centroid in pixels and millimeters.'''
+
+        # Get the pixel to millimeter function
+        pixel_to_mm = detector.pixel_to_millimeter
+
+        # Calculate the centroid and extract the values
+        centroid = Centroid(pixels, mask, coords)
+        self.position_px = centroid.position
+        self.variance_px = centroid.variance
+        self.sq_width_px = centroid.sq_width
+
+        # Get the centroid in millimeters
+        self.position_mm = pixel_to_mm(self.position_px)
+        self.variance_mm = pixel_to_mm(self.position_px)
+        self.sq_width_mm = pixel_to_mm(self.position_px)
