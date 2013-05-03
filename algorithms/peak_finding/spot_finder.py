@@ -343,7 +343,7 @@ class SpotFinder(SpotFinderInterface):
             r.centroid_position = cpos[i]
             if counts[i] > 0:
                 r.centroid_variance = map(lambda x: x / counts[i], cvar[i])
-            r.centroid_spot_width_variance = cvar[i]
+            r.centroid_sq_width = cvar[i]
             r.intensity = counts[i]
 
         # Allocate memory for the reflection profiles

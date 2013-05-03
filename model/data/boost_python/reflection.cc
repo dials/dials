@@ -51,7 +51,7 @@ namespace dials { namespace model { namespace boost_python {
         r.get_bounding_box(),
         r.get_centroid_position(),
         r.get_centroid_variance(),
-        r.get_centroid_spot_width_variance(),
+        r.get_centroid_sq_width(),
         r.get_shoebox(),
         r.get_shoebox_mask(),
         r.get_transformed_shoebox());
@@ -84,7 +84,7 @@ namespace dials { namespace model { namespace boost_python {
       r.set_bounding_box(extract<int6>(state[8]));
       r.set_centroid_position(extract<vec3<double> >(state[9]));
       r.set_centroid_variance(extract<vec3<double> >(state[10]));
-      r.set_centroid_spot_width_variance(extract<vec3<double> >(state[11]));
+      r.set_centroid_sq_width(extract<vec3<double> >(state[11]));
       r.set_shoebox(extract<const flex_int&>(state[12]));
       r.set_shoebox_mask(extract<const flex_int&>(state[13]));
       r.set_transformed_shoebox(extract<const flex_double&>(state[14]));
@@ -153,9 +153,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("centroid_variance",
         &Reflection::get_centroid_variance,
         &Reflection::set_centroid_variance)
-      .add_property("centroid_spot_width_variance",
-        &Reflection::get_centroid_spot_width_variance,
-        &Reflection::set_centroid_spot_width_variance)
+      .add_property("centroid_sq_width",
+        &Reflection::get_centroid_sq_width,
+        &Reflection::set_centroid_sq_width)
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 

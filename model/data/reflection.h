@@ -87,7 +87,7 @@ namespace dials { namespace model {
         bounding_box_(0, 0, 0, 0, 0, 0),
         centroid_position_(0, 0, 0),
         centroid_variance_(0, 0, 0),
-        centroid_spot_width_variance_(0, 0, 0) {}
+        centroid_sq_width_(0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -104,7 +104,7 @@ namespace dials { namespace model {
         bounding_box_(0, 0, 0, 0, 0, 0),
         centroid_position_(0, 0, 0),
         centroid_variance_(0, 0, 0),
-        centroid_spot_width_variance_(0, 0, 0) {}
+        centroid_sq_width_(0, 0, 0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -126,7 +126,7 @@ namespace dials { namespace model {
         bounding_box_(0, 0, 0, 0, 0, 0),
         centroid_position_(0, 0, 0),
         centroid_variance_(0, 0, 0),
-        centroid_spot_width_variance_(0, 0, 0) {}
+        centroid_sq_width_(0, 0, 0) {}
 
     /** Virtual destructor */
     virtual ~Reflection() {}
@@ -207,8 +207,8 @@ namespace dials { namespace model {
     }
 
     /** Get the centroid spot width variance */
-    vec3<double> get_centroid_spot_width_variance() const {
-      return centroid_spot_width_variance_;
+    vec3<double> get_centroid_sq_width() const {
+      return centroid_sq_width_;
     }
 
     /** Set the rotation angle */
@@ -272,8 +272,8 @@ namespace dials { namespace model {
     }
 
     /** Set the centroid spot width varaicen */
-    void set_centroid_spot_width_variance(vec3<double> centroid_variance) {
-      centroid_spot_width_variance_ = centroid_variance;
+    void set_centroid_sq_width(vec3<double> centroid_variance) {
+      centroid_sq_width_ = centroid_variance;
     }
 
   protected:
@@ -292,7 +292,7 @@ namespace dials { namespace model {
 
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;
-    vec3<double> centroid_spot_width_variance_;
+    vec3<double> centroid_sq_width_;
   };
 
   /** Print reflection to std::out */
@@ -310,7 +310,7 @@ namespace dials { namespace model {
     os << "  centroid position: " << r.get_centroid_position().as_tiny() << "\n";
     os << "  centroid variance: " << r.get_centroid_variance().as_tiny() << "\n";
     os << "  centroid spot width variance: "
-       << r.get_centroid_spot_width_variance().as_tiny() << "\n";
+       << r.get_centroid_sq_width().as_tiny() << "\n";
     return os;
   }
 

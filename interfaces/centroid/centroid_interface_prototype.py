@@ -62,7 +62,7 @@ class centroid_interface_prototype(object):
                 # Add centroid data to reflection
                 ref.intensity = cnt
                 ref.centroid_position = (c, r, f)
-                ref.centroid_spot_width_variance = (sc, sr, sf)
+                ref.centroid_sq_width = (sc, sr, sf)
 
                 if cnt > 0:
                     ref.centroid_variance = (1 + sc / cnt, 1 + sr / cnt,
