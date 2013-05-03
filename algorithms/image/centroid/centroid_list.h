@@ -16,6 +16,7 @@
 #include <scitbx/array_family/tiny.h>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <scitbx/array_family/misc_functions.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -35,8 +36,12 @@ namespace dials { namespace algorithms {
   class CentroidList {
   public:
 
+    // Get the dimensions
+    static const std::size_t DIM = CoordType::fixed_size;
+
     // Useful typedefs
     typedef CoordType coord_type;
+    typedef tiny<double, DIM*DIM> matrix_type;
     typedef typename flex<coord_type>::type flex_type;
 
     /**
@@ -52,8 +57,8 @@ namespace dials { namespace algorithms {
         sum_pixels_delta_cross_(0.0) {
 
       // Check the size of the input
+      DIALS_ASSERT(DIM > 1);
       DIALS_ASSERT(coords.size() > 0);
-      DIALS_ASSERT(coords[0].size() > 1);
       DIALS_ASSERT(coords.size() == pixels.size());
       DIALS_ASSERT(sum_pixels_ > 0);
 
@@ -73,8 +78,8 @@ namespace dials { namespace algorithms {
       // Calculate the sum of pixels * (coordA - meanA) * (coordB - meanB)
       // for the cross terms of the covariance matrix
       for (std::size_t i = 0; i < coords.size(); ++i) {
-        for (std::size_t j = 0, l = 0; j < coords[0].size() - 1; ++j) {
-          for (std::size_t k = j + 1; k < coords[0].size(); ++k, ++l) {
+        for (std::size_t j = 0, l = 0; j < DIM - 1; ++j) {
+          for (std::size_t k = j + 1; k < DIM; ++k, ++l) {
             sum_pixels_delta_cross_[l] += pixels[i] *
               (coords[i][j] - m[j]) * (coords[i][k] - m[k]);
           }
@@ -82,58 +87,71 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /** @returns The sum of the pixel counts. */
     double sum_pixels() const {
       return sum_pixels_;
     }
 
+    /** @returns The sum of the pixels squared */
     double sum_pixels_sq() const {
       return sum_pixels_sq_;
     }
 
+    /** @returns The sum of the pixels * coordinates */
     coord_type sum_pixels_coords() const {
       return sum_pixels_coords_;
     }
 
+    /** @returns The sum of the pixels x (coords - mean)**2 */
     coord_type sum_pixels_delta_sq() const {
       return sum_pixels_delta_sq_;
     }
 
+    /** @returns The sum of pixels x (coordsA - meanA) x (coordsB - meanB) */
     coord_type sum_pixels_delta_cross() const {
       return sum_pixels_delta_cross_;
     }
 
+    /** @returns The centroid position. */
     coord_type mean() const {
       return sum_pixels_coords_ / sum_pixels_;
     }
 
+    /** @returns The biased variance. */
     coord_type biased_variance() const {
       return sum_pixels_delta_sq_ / sum_pixels_;
     }
 
+    /** @returns The unbiased variance. */
     coord_type unbiased_variance() const {
       DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_);
       return sum_pixels_delta_sq_ * sum_pixels_ /
-        (pow2(sum_pixels) - sum_pixels_sq_);
+        (pow2(sum_pixels_) - sum_pixels_sq_);
     }
 
+    /** @returns The biased standard error on the mean squared. */
     coord_type biased_standard_error_sq() const {
       return biased_variance() / sum_pixels_ + 1.0;
     }
 
+    /** @returns The unbiased standard error on the mean squared. */
     coord_type unbiased_standard_error_sq() const {
       return unbiased_variance() / sum_pixels_ + 1.0;
     }
 
-    tiny<double, 9> covariance_matrix() const {
+    /** @returns The covariance matrix. */
+    matrix_type covariance_matrix() const {
       DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_);
-      double scale = sum_pixels_ / (pow2(sum_pixels) - sum_pixels_sq_);
 
-      coord_type variance = unbiased_variance();
+      // Calculate the scaling of covariance terms.
+      double scale = sum_pixels_ / (pow2(sum_pixels_) - sum_pixels_sq_);
+
+      // Calculate the diagonal and cross terms
+      coord_type variance = scale * sum_pixels_delta_sq_;
       coord_type covariance = scale * sum_pixels_delta_cross_;
 
-      const int DIM = 3;
-
-      tiny<double, 9> matrix;
+      // Create the covariance matrix
+      matrix_type matrix;
       for (std::size_t j = 0, k = 0; j < DIM-1; ++j) {
         matrix[j + j * DIM] = variance[j];
         for (std::size_t i = j+1; i < DIM; ++i, ++k) {
@@ -142,6 +160,7 @@ namespace dials { namespace algorithms {
         }
       }
 
+      // Return the covariance matrix
       return matrix;
     }
 

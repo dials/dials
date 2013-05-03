@@ -25,12 +25,31 @@ namespace dials { namespace algorithms { namespace boost_python {
     typedef CentroidList<CoordType> CentroidListType;  
     
     return class_<CentroidListType>(name, no_init)
-      .def(init<const flex_double&, const typename CentroidListType::flex_type&>((
-        arg("pixels"), arg("coord"))))
-      .def("counts", &CentroidListType::mean);
-//      .def("position", &CentroidListType::position)
-//      .def("sq_width", &CentroidListType::sq_width)
-//      .def("variance", &CentroidListType::variance);
+      .def(init<const flex_double&, 
+                const typename CentroidListType::flex_type&>((
+          arg("pixels"), arg("coord"))))
+      .def("sum_pixels", 
+        &CentroidListType::sum_pixels)
+      .def("sum_pixels_sq", 
+        &CentroidListType::sum_pixels_sq)
+      .def("sum_pixels_coords", 
+        &CentroidListType::sum_pixels_coords)      
+      .def("sum_pixels_delta_sq", 
+        &CentroidListType::sum_pixels_delta_sq)
+      .def("sum_pixels_delta_cross", 
+        &CentroidListType::sum_pixels_delta_cross)
+      .def("mean", 
+        &CentroidListType::mean)
+      .def("biased_variance", 
+        &CentroidListType::biased_variance)
+      .def("unbiased_variance",
+        &CentroidListType::unbiased_variance)
+      .def("biased_standard_error_sq", 
+        &CentroidListType::biased_standard_error_sq)
+      .def("unbiased_standard_error_sq", 
+        &CentroidListType::unbiased_standard_error_sq)
+      .def("covariance_matrix", 
+        &CentroidListType::covariance_matrix);
   }
   
   CentroidList<vec2<double> > centroid_list_2d(const flex_double &pixels, 
