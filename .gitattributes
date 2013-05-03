@@ -17,6 +17,7 @@ algorithms/centroid/toy_centroid_helpers.py -text
 algorithms/image/SConscript -text
 algorithms/image/__init__.py -text
 algorithms/image/centroid/SConscript -text
+algorithms/image/centroid/__init__.py -text
 algorithms/image/centroid/boost_python/centroid2d.cc -text
 algorithms/image/centroid/boost_python/centroid3d.cc -text
 algorithms/image/centroid/boost_python/centroid_ext.cc -text

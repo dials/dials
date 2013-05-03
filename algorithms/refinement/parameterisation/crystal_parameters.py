@@ -119,7 +119,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         dB_dp = self._S.forward_gradients()
         B = self._S.backward_orientation(independent=X).reciprocal_matrix()
 
-        ### Set up the independent parameters, with a change of scale       
+        ### Set up the independent parameters, with a change of scale
         p_list = [Parameter(e * 1.e5, name = "g_param_%d" % i) \
                   for i, e in enumerate(X)]
 
