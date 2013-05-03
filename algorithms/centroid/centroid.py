@@ -107,4 +107,6 @@ class CentroidPxAndMM(object):
 
         # Convert Pixel coordinate into mm/rad
         result = centroid_px_to_mm(detector, scan, position, variance, sq_width)
-        self.position_mm, self.variance_mm, self.sq_width_mm = result
+        self.position_mm = result[0]
+        self.variance_mm = result[1]
+        self.sq_width_mm = result[2]
