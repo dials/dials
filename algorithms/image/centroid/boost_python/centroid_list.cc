@@ -29,7 +29,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("pixels"), arg("coord"))))
       .def("counts", &CentroidListType::counts)
       .def("position", &CentroidListType::position)
-      .def("squared_width", &CentroidListType::squared_width)
+      .def("sq_width", &CentroidListType::sq_width)
       .def("variance", &CentroidListType::variance);
   }
   

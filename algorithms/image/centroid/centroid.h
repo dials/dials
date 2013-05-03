@@ -12,12 +12,14 @@
 #define DIALS_ALGORITHMS_IMAGE_CENTROID_CENTROID2D_H
 
 #include <scitbx/vec2.h>
+#include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::vec2;
+  using scitbx::vec3;
   using scitbx::af::flex_int;
 
   template <typename T>
@@ -38,7 +40,7 @@ namespace dials { namespace algorithms {
     Centroid2d(const flex_int &image)
       : counts_(0),
         position_(0, 0),
-        variance_(0, 0) {
+        sq_width_(0, 0) {
 
       // Check the image size
       DIALS_ASSERT(image.accessor().all().size() == 2);
@@ -63,11 +65,11 @@ namespace dials { namespace algorithms {
       for (std::size_t j = 0; j < ysize; ++j) {
         for (std::size_t i = 0; i < xsize; ++i) {
           int c = image(j, i);
-          variance_[0] += c * sqr(i + 0.5 - position_[0]);
-          variance_[1] += c * sqr(j + 0.5 - position_[1]);
+          sq_width_[0] += c * sqr(i + 0.5 - position_[0]);
+          sq_width_[1] += c * sqr(j + 0.5 - position_[1]);
         }
       }
-      variance_ = variance_ / counts_;
+      sq_width_ = sq_width_ / counts_;
     }
 
     /** Get the total counts */
@@ -80,54 +82,54 @@ namespace dials { namespace algorithms {
       return position_;
     }
 
-    /** Get the centroid variance */
-    vec2<double> variance() {
-      return variance_;
+    /** Get the centroid squared width */
+    vec2<double> sq_width() {
+      return sq_width_;
     }
 
-    /** Get the centroid variance per count */
-    vec2<double> variance_per_count() {
+    /** Get the centroid variance */
+    vec2<double> variance() {
       DIALS_ASSERT(counts_ > 0);
-      return variance_ / counts_ + 1.0;
+      return sq_width_ / counts_ + 1.0;
     }
 
   private:
 
     int counts_;
     vec2<double> position_;
-    vec2<double> variance_;
+    vec2<double> sq_width_;
   };
 
   /**
-   * Class to calculate the masked 2D centroid of an image.
+   * Class to calculate the 3D centroid of an image.
    */
-  class MaskedCentroid2d {
+  class Centroid3d {
   public:
 
     /**
      * Calculate the centroid.
      * @param image The image to calculate the centroid from.
-     * @param mask The image mask
      */
-    MaskedCentroid2d(const flex_int &image, const flex_int &mask)
+    Centroid3d(const flex_int &image)
       : counts_(0),
-        position_(0, 0),
-        variance_(0, 0) {
+        position_(0, 0, 0),
+        sq_width_(0, 0, 0) {
 
       // Check the image size
-      DIALS_ASSERT(image.accessor().all().size() == 2);
-      DIALS_ASSERT(image.accessor().all().all_eq(mask.accessor().all()));
-      std::size_t ysize = image.accessor().all()[0];
-      std::size_t xsize = image.accessor().all()[1];
-      DIALS_ASSERT(xsize > 0 && ysize > 0);
+      DIALS_ASSERT(image.accessor().all().size() == 3);
+      std::size_t zsize = image.accessor().all()[0];
+      std::size_t ysize = image.accessor().all()[1];
+      std::size_t xsize = image.accessor().all()[2];
+      DIALS_ASSERT(xsize > 0 && ysize > 0 && zsize > 0);
 
       // Calculate the centroid and total counts
-      for (std::size_t j = 0; j < ysize; ++j) {
-        for (std::size_t i = 0; i < xsize; ++i) {
-          if (mask(j, i)) {
-            int c = image(j, i);
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            int c = image(k, j, i);
             position_[0] += c * (i + 0.5);
             position_[1] += c * (j + 0.5);
+            position_[2] += c * (k + 0.5);
             counts_ += c;
           }
         }
@@ -137,16 +139,17 @@ namespace dials { namespace algorithms {
       position_ = position_ / counts_;
 
       // Calculate the variance on the centroid.
-      for (std::size_t j = 0; j < ysize; ++j) {
-        for (std::size_t i = 0; i < xsize; ++i) {
-          if (mask(j, i)) {
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
             int c = image(j, i);
-            variance_[0] += c * sqr(i + 0.5 - position_[0]);
-            variance_[1] += c * sqr(j + 0.5 - position_[1]);
+            sq_width_[0] += c * sqr(i + 0.5 - position_[0]);
+            sq_width_[1] += c * sqr(j + 0.5 - position_[1]);
+            sq_width_[2] += c * sqr(k + 0.5 - position_[2]);
           }
         }
       }
-      variance_ = variance_ / counts_;
+      sq_width_ = sq_width_ / counts_;
     }
 
     /** Get the total counts */
@@ -155,26 +158,26 @@ namespace dials { namespace algorithms {
     }
 
     /** Get the centroid position */
-    vec2<double> position() {
+    vec3<double> position() {
       return position_;
     }
 
-    /** Get the centroid variance */
-    vec2<double> variance() {
-      return variance_;
+    /** Get the centroid squared width */
+    vec3<double> sq_width() {
+      return sq_width_;
     }
 
-    /** Get the centroid variance per count */
-    vec2<double> variance_per_count() {
+    /** Get the centroid variance */
+    vec3<double> variance() {
       DIALS_ASSERT(counts_ > 0);
-      return variance_ / counts_ + 1.0;
+      return sq_width_ / counts_ + 1.0;
     }
 
   private:
 
     int counts_;
-    vec2<double> position_;
-    vec2<double> variance_;
+    vec3<double> position_;
+    vec3<double> sq_width_;
   };
 }}
 

@@ -45,7 +45,7 @@ namespace dials { namespace algorithms {
     CentroidList(const flex_int &value, const flex_type &coord)
       : counts_(0),
         position_(0.0),
-        squared_width_(0.0) {
+        sq_width_(0.0) {
 
       // Check the size of the input
       DIALS_ASSERT(coord.size() > 0);
@@ -64,9 +64,9 @@ namespace dials { namespace algorithms {
       // Calculate the variance on the centroid.
       for (std::size_t i = 0; i < coord.size(); ++i) {
         int c = value[i];
-        squared_width_ += (sqr(coord[i] - position_[0]) * (double)c);
+        sq_width_ += (sqr(coord[i] - position_[0]) * (double)c);
       }
-      squared_width_ = squared_width_ / counts_;
+      sq_width_ = sq_width_ / counts_;
     }
 
     /** Get the total counts */
@@ -80,21 +80,21 @@ namespace dials { namespace algorithms {
     }
 
     /** Get the centroid variance */
-    coord_type squared_width() {
-      return squared_width_;
+    coord_type sq_width() {
+      return sq_width_;
     }
 
     /** Get the centroid variance per count */
     coord_type variance() {
       DIALS_ASSERT(counts_ > 0);
-      return squared_width_ / counts_ + 1.0;
+      return sq_width_ / counts_ + 1.0;
     }
 
   private:
 
     int counts_;
     coord_type position_;
-    coord_type squared_width_;
+    coord_type sq_width_;
   };
 }}
 

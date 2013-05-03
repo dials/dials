@@ -2,8 +2,8 @@
 Import('env')
 
 sources = [
-    'boost_python/centroid2d.cc',
-    'boost_python/centroid3d.cc',
+    'boost_python/centroid.cc',
+    'boost_python/masked_centroid.cc',
     'boost_python/centroid_list.cc',
     'boost_python/centroid_ext.cc']
 
