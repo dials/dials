@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+#
+# config.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 
 class CompletionGenerator(object):
     '''A class to auto-generate bash-completion scripts for dials'''
@@ -9,6 +19,7 @@ class CompletionGenerator(object):
 
         # A dictionary of program/phil scope pairs
         self.programs = {
+            'parameters' : '',
             'spotfinder' : 'spotfinder',
             'subtract_background' : 'background'
         }
@@ -32,7 +43,11 @@ class CompletionGenerator(object):
         # Generate a script for each program
         text = '#!/bin/bash'
         for p, s in self.programs.iteritems():
-            text += '\n\n' + self._generate_single(p, options[s])
+            if s:
+                opt = options[s]
+            else:
+                opt = [o for ol in options for o in options[ol]]
+            text += '\n\n' + self._generate_single(p, opt)
 
         # Save the generated completion stuff to file
         with open(self.output_filename, 'w') as f:

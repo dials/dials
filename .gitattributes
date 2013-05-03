@@ -578,3 +578,4 @@ util/ioutil.py -text
 util/nexus.py -text
 util/options.py -text
 util/pycbf_extra.py -text
+util/script.py -text

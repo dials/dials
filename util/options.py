@@ -85,21 +85,21 @@ class SystemConfig(object):
 
         # Parse the files with phil
         try:
-            master_phil  = parse(master_text)
+            self.master_phil  = parse(master_text)
         except RuntimeError, e:
             raise HalError(str(e) + ' ({0})'.format(
                 self._files.master_filename()))
 
         # Parse the user file with phil
         try:
-            user_phil = parse(user_text)
+            self.user_phil = parse(user_text)
         except RuntimeError, e:
             raise HalError(str(e) + ' ({0})'.format(
                 self._files.user_filename()))
 
         # Fetch the working phil from all the system sources
         try:
-            phil = master_phil.fetch(sources = [user_phil])
+            phil = self.master_phil.fetch(sources = [self.user_phil])
         except Exception, e:
             raise HalError(e)
 
@@ -195,24 +195,28 @@ class OptionParser(optparse.OptionParser):
 
         # Parse the system arguments from the master and user files
         sysconfig = SystemConfig()
-        system_phil = sysconfig.config()
+        self._system_phil = sysconfig.config()
 
         # Parse the command line arguments. This will separate true
         # positional arguments from phil arguments.
         comconfig = CommandLineConfig(
-            system_phil.command_line_argument_interpreter(
+            self._system_phil.command_line_argument_interpreter(
                 home_scope=self._scope))
 
         args, command_phil = comconfig.config(args)
 
         # Fetch the working phil from all the sources
         try:
-            phil = system_phil.fetch(sources = command_phil)
+            phil = self._system_phil.fetch(sources = command_phil)
         except Exception, e:
             raise HalError(e)
 
         # Return the parameters
         return phil, options, args
+
+    def system_phil(self):
+        '''Get the system phil.'''
+        return self._system_phil
 
     def print_phil(self, attributes_level=0):
         '''Print the system and command line parameters.'''
@@ -242,6 +246,26 @@ class OptionParser(optparse.OptionParser):
 
         # Print the system parameters
         print system_phil.as_str(attributes_level=attributes_level)
+
+
+class ConfigWriter(object):
+    '''Class to write configuration to file.'''
+
+    def __init__(self, master_phil):
+        '''Initialise with the master phil.'''
+        self._master_phil = master_phil
+
+    def write(self, params, filename):
+        '''Write the configuration to file.'''
+        # Get the modified phil
+        modified_phil = self._master_phil.format(python_object=params)
+
+        # Get the phil as text
+        text = modified_phil.as_str()
+
+        # Write the text to file
+        with open(filename, 'w') as f:
+            f.write(text)
 
 
 if __name__ == '__main__':
