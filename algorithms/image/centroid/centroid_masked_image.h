@@ -32,16 +32,17 @@ namespace dials { namespace algorithms {
   public:
 
     // Useful typedefs
-    typedef typename CentroidPoints::coord_type coord_type;
-    typedef typename CentroidPoints::matrix_type matrix_type;
-    typedef typename CentroidPoints::flex_type flex_type;
+    typedef CentroidPoints<vec2<double> > centroid_algorithm_type;
+    typedef centroid_algorithm_type::coord_type coord_type;
+    typedef centroid_algorithm_type::matrix_type matrix_type;
+    typedef centroid_algorithm_type::flex_type flex_type;
 
     /**
      * Initialise the algorithm
      * @param image The image pixels
      */
     CentroidMaskedImage2d(const flex_double &image, const flex_int &mask)
-      : CentroidPoints(
+      : centroid_algorithm_type(
           select_pixels(image, mask),
           generate_coords(image, mask)) {}
 
@@ -110,16 +111,17 @@ namespace dials { namespace algorithms {
   public:
 
     // Useful typedefs
-    typedef typename CentroidPoints::coord_type coord_type;
-    typedef typename CentroidPoints::matrix_type matrix_type;
-    typedef typename CentroidPoints::flex_type flex_type;
+    typedef CentroidPoints<vec3<double> > centroid_algorithm_type;
+    typedef centroid_algorithm_type::coord_type coord_type;
+    typedef centroid_algorithm_type::matrix_type matrix_type;
+    typedef centroid_algorithm_type::flex_type flex_type;
 
     /**
      * Initialise the algorithm
      * @param image The image pixels
      */
     CentroidMaskedImage3d(const flex_double &image, const flex_int &mask)
-      : CentroidPoints(
+      : centroid_algorithm_type(
           select_pixels(image, mask),
           generate_coords(image, mask)) {}
 
