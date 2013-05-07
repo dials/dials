@@ -114,6 +114,7 @@ class FilteredCentroid(centroid_interface):
 
     def compute_shoebox_centroid(self, shoebox):
         """ Compute the centroid """
+        from dials.algorithms.image.centroid import centroid_points
         from scitbx.array_family import flex
         import math
 
@@ -137,35 +138,15 @@ class FilteredCentroid(centroid_interface):
         pixel_index = select_foreground_pixels(shoebox, self.min_pixels,
                                                self.n_sigma, self.conn)
 
-        # compute averages of positions
-        f_tot, r_tot, c_tot, d_tot = 0.0, 0.0, 0.0, 0.0
+        points = flex.vec3_double()
+        pixels = flex.double()
         for i in pixel_index:
-            f, r, c, d = pixel_list[i]
-            f_tot += d * f
-            r_tot += d * r
-            c_tot += d * c
-            d_tot += d
+            points.append(pixel_list[i][0:3])
+            pixels.append(pixel_list[i][3])
 
-        # Ensure d_tot is not zero
-        if not d_tot:
-            raise CentroidException("Invalid value for total intensity")
+        centroid = centroid_points(pixels, points)
+        _f, _r, _c = centroid.mean()
+        _sf, _sr, _sc = centroid.unbiased_variance()
+        _d = centroid.sum_pixels()
 
-        # Calculate the centroid position
-        _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
-
-        # now compute the variance
-        f_tot, r_tot, c_tot, d_tot = 0.0, 0.0, 0.0, 0.0
-        for i in pixel_index:
-            f, r, c, d = pixel_list[i]
-            f_tot += d * (f - _f) ** 2
-            r_tot += d * (r - _r) ** 2
-            c_tot += d * (c - _c) ** 2
-            d_tot += d
-
-        # Compute variance of the centroid position
-        _vf = f_tot / d_tot
-        _vr = r_tot / d_tot
-        _vc = c_tot / d_tot
-
-        # Return the position and variance
-        return _f, _r, _c, _vf, _vr, _vc, d_tot
+        return _f, _r, _c, _sf, _sr, _sc, _d

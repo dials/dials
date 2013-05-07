@@ -14,7 +14,8 @@ class toy_centroid(centroid_interface):
         return
 
     def compute_shoebox_centroid(self, shoebox):
-
+        from dials.algorithms.image.centroid import centroid_points
+        from scitbx.array_family import flex
         import math
 
         f_size, r_size, c_size = shoebox.all()
@@ -23,7 +24,8 @@ class toy_centroid(centroid_interface):
         # list - and assign density of a pixel to the centre of the
         # volume...
 
-        pixel_list = []
+        points = flex.vec3_double()
+        pixels = flex.double()
 
         for i in shoebox:
             if i < 0:
@@ -33,45 +35,16 @@ class toy_centroid(centroid_interface):
             for f in range(f_size):
                 for r in range(r_size):
                     for c in range(c_size):
-                        pixel_list.append(
-                            (f + 0.5, r + 0.5, c + 0.5, shoebox[f, r, c]))
+                        points.append((f + 0.5, r + 0.5, c + 0.5))
+                        pixels.append(shoebox[f, r, c])
 
         except IndexError, e:
             raise CentroidException, 'data outside range'
 
-        # compute averages of positions
+        centroid = centroid_points(pixels, points)
+        _f, _r, _c = centroid.mean()
+        _sf, _sr, _sc = centroid.unbiased_variance()
+        _d = centroid.sum_pixels()
 
-        f_tot = 0.0
-        r_tot = 0.0
-        c_tot = 0.0
-        d_tot = 0.0
+        return _f, _r, _c, _sf, _sr, _sc, _d
 
-        for f, r, c, d in pixel_list:
-            f_tot += d * f
-            r_tot += d * r
-            c_tot += d * c
-            d_tot += d
-
-        # print shoebox.as_numpy_array()
-
-        if not d_tot:
-            raise CentroidException("Invalid value for total intensity")
-
-        _f, _r, _c = f_tot / d_tot, r_tot / d_tot, c_tot / d_tot
-
-        # now compute the variance
-
-        f_tot = 0.0
-        r_tot = 0.0
-        c_tot = 0.0
-
-        for f, r, c, d in pixel_list:
-            f_tot += d * (f - _f) ** 2
-            r_tot += d * (r - _r) ** 2
-            c_tot += d * (c - _c) ** 2
-
-        _sf = f_tot / d_tot
-        _sr = r_tot / d_tot
-        _sc = c_tot / d_tot
-
-        return _f, _r, _c, _sf, _sr, _sc, d_tot
