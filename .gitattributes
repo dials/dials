@@ -9,7 +9,7 @@ algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text
 algorithms/background_lookup/detector_noise.py -text
 algorithms/centroid/__init__.py -text
-algorithms/centroid/centroid.py -text
+algorithms/centroid/centroid_px_to_mm.py -text
 algorithms/centroid/filtered_centroid.py -text
 algorithms/centroid/toy_centroid.py -text
 algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain

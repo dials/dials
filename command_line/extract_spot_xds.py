@@ -83,7 +83,7 @@ class ScriptRunner(object):
     def _get_reflection_data(self, pos_px, intensity, hkl):
         '''Create the reflection data'''
         from dials.model.data import Reflection
-        from dials.algorithms.centroid.centroid import centroid_px_to_mm
+        from dials.algorithms.centroid import centroid_px_to_mm
 
         r = Reflection()
 
