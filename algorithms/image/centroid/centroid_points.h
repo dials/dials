@@ -22,9 +22,11 @@
 namespace dials { namespace algorithms {
 
   // Useful imports
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::fn::pow2;
   using scitbx::af::sum;
   using scitbx::af::sum_sq;
-  using scitbx::fn::pow2;
   using scitbx::af::tiny;
   using scitbx::af::flex;
   using scitbx::af::flex_double;
@@ -72,7 +74,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the sum of pixels * (coord - mean)**2
       for (std::size_t i = 0; i < coords.size(); ++i) {
-        sum_pixels_delta_sq_ += pixels[i] * pow2(coords[i] - m);
+        sum_pixels_delta_sq_ += pixels[i] * pow2c(coords[i] - m);
       }
 
       // Calculate the sum of pixels * (coordA - meanA) * (coordB - meanB)
@@ -118,7 +120,7 @@ namespace dials { namespace algorithms {
     }
 
     /** @returns The biased variance. */
-    coord_type biased_variance() const {
+    coord_type variance() const {
       return sum_pixels_delta_sq_ / sum_pixels_;
     }
 
@@ -130,8 +132,8 @@ namespace dials { namespace algorithms {
     }
 
     /** @returns The biased standard error on the mean squared. */
-    coord_type biased_standard_error_sq() const {
-      return biased_variance() / sum_pixels_ + 1.0;
+    coord_type standard_error_sq() const {
+      return variance() / sum_pixels_ + 1.0;
     }
 
     /** @returns The unbiased standard error on the mean squared. */
@@ -165,6 +167,14 @@ namespace dials { namespace algorithms {
     }
 
   private:
+
+    coord_type pow2c(const coord_type &x) const {
+      coord_type r;
+      for (std::size_t i = 0; i < DIM; ++i) {
+        r[i] = x[i] * x[i];
+      }
+      return r;
+    }
 
     double sum_pixels_;
     double sum_pixels_sq_;

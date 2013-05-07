@@ -40,12 +40,12 @@ namespace dials { namespace algorithms { namespace boost_python {
         &CentroidPointsType::sum_pixels_delta_cross)
       .def("mean", 
         &CentroidPointsType::mean)
-      .def("biased_variance", 
-        &CentroidPointsType::biased_variance)
+      .def("variance", 
+        &CentroidPointsType::variance)
       .def("unbiased_variance",
         &CentroidPointsType::unbiased_variance)
-      .def("biased_standard_error_sq", 
-        &CentroidPointsType::biased_standard_error_sq)
+      .def("standard_error_sq", 
+        &CentroidPointsType::standard_error_sq)
       .def("unbiased_standard_error_sq", 
         &CentroidPointsType::unbiased_standard_error_sq)
       .def("covariance_matrix", 

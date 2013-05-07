@@ -15,15 +15,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  void export_centroid_points();
   void export_centroid_image();
   void export_centroid_masked_image();
-  void export_centroid_points();
 
   BOOST_PYTHON_MODULE(dials_algorithms_image_centroid_ext)
   {
+    export_centroid_points();
     export_centroid_image();
     export_centroid_masked_image();
-    export_centroid_points();
   }
 
 }}} // namespace = dials::algorithms::boost_python

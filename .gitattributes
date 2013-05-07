@@ -544,6 +544,7 @@ test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/centroid/tst_toy_centroid_helpers.py -text
+test/algorithms/image/tst_centroid.py -text
 test/algorithms/integration/tst_from_beam_vector_to_xds.py -text
 test/algorithms/integration/tst_from_xds_e3_to_phi.py -text
 test/algorithms/integration/tst_from_xds_to_beam_vector.py -text

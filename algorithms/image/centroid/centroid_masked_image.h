@@ -42,10 +42,36 @@ namespace dials { namespace algorithms {
      */
     CentroidMaskedImage2d(const flex_double &image, const flex_int &mask)
       : CentroidPoints(
-          image,
+          select_pixels(image, mask),
           generate_coords(image, mask)) {}
 
   private:
+
+    /**
+     * Get the mask indices.
+     * @param size The size of the image
+     */
+    flex_double select_pixels(const flex_double &image, const flex_int &mask) {
+
+      // Check the sizes
+      flex_int::index_type size = mask.accessor().all();
+      DIALS_ASSERT(size.size() == 2);
+      DIALS_ASSERT(size.all_eq(image.accessor().all()));
+      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
+
+      // Put all the image coordinates into the array
+      flex_double pixels(product(size));
+      std::size_t count = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i]) {
+          pixels[count++] = image[i];
+        }
+      }
+      pixels.resize(count);
+
+      // Return the array
+      return pixels;
+    }
 
     /**
      * Generate coordinates.
@@ -74,6 +100,7 @@ namespace dials { namespace algorithms {
       // Return the array
       return coords;
     }
+
   };
 
   /**
@@ -93,10 +120,36 @@ namespace dials { namespace algorithms {
      */
     CentroidMaskedImage3d(const flex_double &image, const flex_int &mask)
       : CentroidPoints(
-          image,
+          select_pixels(image, mask),
           generate_coords(image, mask)) {}
 
   private:
+
+    /**
+     * Get the mask indices.
+     * @param size The size of the image
+     */
+    flex_double select_pixels(const flex_double &image, const flex_int &mask) {
+
+      // Check the sizes
+      flex_int::index_type size = mask.accessor().all();
+      DIALS_ASSERT(size.size() == 3);
+      DIALS_ASSERT(size.all_eq(image.accessor().all()));
+      DIALS_ASSERT(size[0] > 0 && size[1] > 0 && size[2] > 0);
+
+      // Put all the image coordinates into the array
+      flex_double pixels(product(size));
+      std::size_t count = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i]) {
+          pixels[count++] = image[i];
+        }
+      }
+      pixels.resize(count);
+
+      // Return the array
+      return pixels;
+    }
 
     /**
      * Generate coordinates.
