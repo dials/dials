@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
    * Class to calculate the centroid of a list of coordinates
    */
   template <typename CoordType>
-  class CentroidList {
+  class CentroidPoints {
   public:
 
     // Get the dimensions
@@ -49,7 +49,7 @@ namespace dials { namespace algorithms {
      * @param coord The list of coordinates.
      * @param value The list of values
      */
-    CentroidList(const flex_double &pixels, const flex_type &coords)
+    CentroidPoints(const flex_double &pixels, const flex_type &coords)
       : sum_pixels_(sum(pixels.const_ref())),
         sum_pixels_sq_(sum_sq(pixels.const_ref())),
         sum_pixels_coords_(0.0),
