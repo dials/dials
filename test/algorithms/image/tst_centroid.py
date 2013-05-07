@@ -25,6 +25,7 @@ class CentroidTest(object):
 
         assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
+        assert(abs(self.gold2dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
         print 'OK'
 
     def tst_centroid_points3d(self):
@@ -35,6 +36,7 @@ class CentroidTest(object):
 
         assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)
+        assert(abs(self.gold3dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
         print 'OK'
 
     def tst_centroid_image(self):
@@ -49,6 +51,7 @@ class CentroidTest(object):
 
         assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
+        assert(abs(self.gold2dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
         print 'OK'
 
     def tst_centroid_image3d(self):
@@ -59,6 +62,7 @@ class CentroidTest(object):
 
         assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)
+        assert(abs(self.gold3dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
         print 'OK'
 
     def tst_centroid_masked_image(self):
@@ -73,6 +77,7 @@ class CentroidTest(object):
 
         assert(abs(self.goldmasked2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.goldmasked2dvar - matrix.col(centroid.variance())) < self.EPS)
+        assert(abs(self.goldmasked2dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
         print 'OK'
 
     def tst_centroid_masked_image3d(self):
@@ -83,6 +88,7 @@ class CentroidTest(object):
 
         assert(abs(self.goldmasked3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.goldmasked3dvar - matrix.col(centroid.variance())) < self.EPS)
+        assert(abs(self.goldmasked3dubvar - matrix.col(centroid.unbiased_variance())) < self.EPS)
         print 'OK'
 
     def generate_data(self):
@@ -117,6 +123,7 @@ class CentroidTest(object):
 
     def calculate_gold2d(self):
 
+        from scitbx.array_family import flex
         from scitbx import matrix
 
         r_tot = 0.0
@@ -143,8 +150,15 @@ class CentroidTest(object):
 
         self.gold2dvar = matrix.col((_sr, _sc))
 
+        pixel_x, pixel_y = zip(*self.points2d)
+        xc = flex.mean_and_variance(flex.double(pixel_x), self.pixels2d.as_1d())
+        yc = flex.mean_and_variance(flex.double(pixel_y), self.pixels2d.as_1d())
+        self.gold2dubvar = matrix.col((xc.gsl_stats_wvariance(),
+                                       yc.gsl_stats_wvariance()))
+
     def calculate_gold3d(self):
 
+        from scitbx.array_family import flex
         from scitbx import matrix
 
         f_tot = 0.0
@@ -177,8 +191,17 @@ class CentroidTest(object):
 
         self.gold3dvar = matrix.col((_sf, _sr, _sc))
 
+        pixel_x, pixel_y, pixel_z = zip(*self.points3d)
+        xc = flex.mean_and_variance(flex.double(pixel_x), self.pixels3d.as_1d())
+        yc = flex.mean_and_variance(flex.double(pixel_y), self.pixels3d.as_1d())
+        zc = flex.mean_and_variance(flex.double(pixel_z), self.pixels3d.as_1d())
+        self.gold3dubvar = matrix.col((xc.gsl_stats_wvariance(),
+                                       yc.gsl_stats_wvariance(),
+                                       zc.gsl_stats_wvariance()))
+
     def calculate_gold_masked2d(self):
 
+        from scitbx.array_family import flex
         from scitbx import matrix
 
         r_tot = 0.0
@@ -208,8 +231,23 @@ class CentroidTest(object):
 
         self.goldmasked2dvar = matrix.col((_sr, _sc))
 
+        pixel_x = flex.double()
+        pixel_y = flex.double()
+        pixel_d = flex.double()
+        for (x, y), d, m in zip(self.points2d, self.pixels2d, self.mask2d):
+            if m:
+                pixel_x.append(x)
+                pixel_y.append(y)
+                pixel_d.append(d)
+
+        xc = flex.mean_and_variance(flex.double(pixel_x), pixel_d)
+        yc = flex.mean_and_variance(flex.double(pixel_y), pixel_d)
+        self.goldmasked2dubvar = matrix.col((xc.gsl_stats_wvariance(),
+                                             yc.gsl_stats_wvariance()))
+
     def calculate_gold_masked3d(self):
 
+        from scitbx.array_family import flex
         from scitbx import matrix
 
         f_tot = 0.0
@@ -244,6 +282,24 @@ class CentroidTest(object):
         _sc = c_tot / d_tot
 
         self.goldmasked3dvar = matrix.col((_sf, _sr, _sc))
+
+        pixel_x = flex.double()
+        pixel_y = flex.double()
+        pixel_z = flex.double()
+        pixel_d = flex.double()
+        for (x, y, z), d, m in zip(self.points3d, self.pixels3d, self.mask3d):
+            if m:
+                pixel_x.append(x)
+                pixel_y.append(y)
+                pixel_z.append(z)
+                pixel_d.append(d)
+
+        xc = flex.mean_and_variance(flex.double(pixel_x), pixel_d)
+        yc = flex.mean_and_variance(flex.double(pixel_y), pixel_d)
+        zc = flex.mean_and_variance(flex.double(pixel_z), pixel_d)
+        self.goldmasked3dubvar = matrix.col((xc.gsl_stats_wvariance(),
+                                             yc.gsl_stats_wvariance(),
+                                             zc.gsl_stats_wvariance()))
 
 if __name__ == '__main__':
     test = CentroidTest()
