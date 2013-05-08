@@ -138,6 +138,32 @@ class CommandLineConfig(object):
         return positionals, phils
 
 
+class PhilToDict(object):
+    '''Get a dictionary from the phil objects.'''
+
+    def __init__(self):
+        '''Init the class'''
+        pass
+
+    def __call__(self, phil):
+        '''Recursively get the dictionary objects.'''
+
+        d = {}
+        for obj in phil.objects:
+            if obj.is_scope:
+                d[obj.name] = self.__call__(obj)
+            else:
+                if obj.multiple:
+                    try:
+                        d[obj.name] = d[obj.name] + [obj.extract()]
+                    except Exception:
+                        d[obj.name] = [obj.extract()]
+                else:
+                    d[obj.name] = obj.extract()
+
+        return d
+
+
 class OptionParser(optparse.OptionParser):
     '''A class to parse command line options and get the system configuration.
     The class extends optparse.OptionParser to include the reading of phil
@@ -207,12 +233,16 @@ class OptionParser(optparse.OptionParser):
 
         # Fetch the working phil from all the sources
         try:
-            phil = self._system_phil.fetch(sources = command_phil)
+            self._phil = self._system_phil.fetch(sources = command_phil)
         except Exception, e:
             raise HalError(e)
 
         # Return the parameters
-        return phil, options, args
+        return self._phil, options, args
+
+    def phil(self):
+        '''Get the phil object'''
+        return self._phil
 
     def system_phil(self):
         '''Get the system phil.'''

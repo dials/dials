@@ -1,4 +1,52 @@
 
+logging {
+  version = 1
+    .type = int
+  disable_existing_loggers = True
+    .type = bool
+
+  formatters {
+    standard {
+      format = '%(asctime)s [%(levelname)s] %(name)s: %(message)s'
+        .type = str
+    }
+  }
+
+  handlers {
+    console {
+      level = 'WARN'
+        .type = str
+      class = 'logging.StreamHandler'
+        .type = str
+      formatter = 'standard'
+        .type = str
+    }
+    file {
+      level = 'INFO'
+        .type = str
+      class = 'logging.FileHandler'
+        .type = str
+      formatter = 'standard'
+        .type = str    
+      directory = '~/.dials'
+        .type = str
+    }
+  }
+
+  loggers { 
+    default {
+      handlers = 'console'
+        .multiple = True
+        .type = str
+      handlers = 'file'
+      level = 'DEBUG'
+        .type = str
+      propagate = True  
+        .type = bool
+    }
+  }
+}
+
 background
   .help = "Parameters used in the background subtraction algorithm."
 {

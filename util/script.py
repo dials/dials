@@ -9,6 +9,52 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+class LoggingConfig(object):
+    '''Class to configure logging.'''
+
+    def __init__(self):
+        '''Init the class'''
+        pass
+
+    def configure(self, phil):
+        '''Configure the logging.'''
+        import logging.config
+        from dials.util.options import PhilToDict
+
+        # Get the dictionary from the phil spec
+        logging_dict = PhilToDict()(phil)['logging']
+
+        # Create the filename and logging name
+        self.create_filename(logging_dict)
+        self.create_loggername(logging_dict)
+
+        # Configure the logger
+        logging.config.dictConfig(logging_dict)
+
+    def create_filename(self, logging_dict):
+        '''Hack to set the log file name'''
+        from datetime import datetime
+        import os
+
+        # Hack to create the file name from the config. Get and create dir
+        directory = logging_dict['handlers']['file']['directory']
+        directory = os.path.expanduser(directory)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        # Get filename
+        filename = 'dials_{0}.log'.format(
+            datetime.now().strftime("%Y-%m-%d_%H_%M_%S"))
+        filename = os.path.expanduser(os.path.join(directory, filename))
+        del(logging_dict['handlers']['file']['directory'])
+        logging_dict['handlers']['file']['filename'] = filename
+
+    def create_loggername(self, logging_dict):
+        '''Hack to change logger name.'''
+        logging_dict['loggers'][''] = logging_dict['loggers']['default']
+        del(logging_dict['loggers']['default'])
+
+
 class ScriptRunner(object):
     '''A class to write scripts in a consistent way.'''
 
@@ -53,6 +99,9 @@ class ScriptRunner(object):
         # Parse the configuration parameters
         params, options, args = self._config.parse_args()
 
+        # Configure the logging
+        self._configure_logging(self._config.phil())
+
         # Save the working parameters
         self.working_params = params
 
@@ -74,6 +123,11 @@ class ScriptRunner(object):
                 writer.write(self.working_params, options.output_config_file)
         except AttributeError:
             pass
+
+    def _configure_logging(self, phil):
+        '''Configure the logging.'''
+        log = LoggingConfig()
+        log.configure(phil)
 
     def config(self):
         '''Get the configuration'''
