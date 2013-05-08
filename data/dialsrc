@@ -48,6 +48,11 @@ logging {
 background
   .help = "Parameters used in the background subtraction algorithm."
 {
+
+  algorithm = *xds flat curved
+      .help = "The background subtraction algorithm."
+      .type = choice
+      
   min_pixels = 10
     .help = "The minimum number of pixels to use in calculating the"
             "background intensity." 
