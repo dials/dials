@@ -14,20 +14,20 @@ logging {
 
   handlers {
     console {
-      level = 'WARN'
-        .type = str
+      level = DEBUG INFO *WARN ERROR CRITICAL NOTSET
+        .type = choice
       class = 'logging.StreamHandler'
         .type = str
-      formatter = 'standard'
-        .type = str
+      formatter = *standard
+        .type = choice
     }
     file {
-      level = 'INFO'
-        .type = str
+      level = DEBUG *INFO WARN ERROR CRITICAL NOTSET
+        .type = choice
       class = 'logging.FileHandler'
         .type = str
-      formatter = 'standard'
-        .type = str    
+      formatter = *standard
+        .type = choice    
       directory = '~/.dials'
         .type = str
     }
@@ -35,12 +35,10 @@ logging {
 
   loggers { 
     default {
-      handlers = 'console'
-        .multiple = True
-        .type = str
-      handlers = 'file'
-      level = 'DEBUG'
-        .type = str
+      handlers = *console *file
+        .type = choice(multi=True)
+      level = *DEBUG INFO WARN ERROR CRITICAL NOTSET
+        .type = choice
       propagate = True  
         .type = bool
     }
