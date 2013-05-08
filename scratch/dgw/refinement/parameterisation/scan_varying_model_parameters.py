@@ -9,6 +9,7 @@
 
 from __future__ import division
 from dials.algorithms.refinement.parameterisation.model_parameters import *
+from math import exp
 
 class ScanVaryingParameter(Parameter):
     '''Testing a class for a scan-varying parameter, in which values at rotation
@@ -18,17 +19,27 @@ class ScanVaryingParameter(Parameter):
     num_samples is the number of checkpoints. Other arguments are as Parameter.
     '''
 
-    def __init__(self, value, num_samples = 5, axis = None, ptype = None, name = None):
+    def __init__(self, value, num_samples = 5, axis = None, ptype = None, name = "ScanVaryingParameter"):
+
+        Parameter.__init__(self, value, axis, ptype, name)
+
         assert num_samples >= 5 # could be lower
+        self._num_samples = num_samples
         self._value = [value] * num_samples
         self._esd = [None] * num_samples
         self._axis = axis
         self._ptype = ptype
         name_stem = [name] * num_samples
         self._name = [e + "_sample%d" % i for i, e in enumerate(name_stem)]
-        self.__len__ = num_samples
 
         return
+
+    def __len__(self):
+        return self._num_samples
+
+    @property
+    def value(self):
+        return self._value
 
     @value.setter
     def value(self, val):
@@ -44,47 +55,11 @@ class ScanVaryingParameter(Parameter):
 class GaussianSmoother(object):
     '''A Gaussian smoother for ScanVaryingModelParameterisations'''
 
-    # Based largely on class SmoothedValue from Aimless. Comments from that:
-
-    # Provides a smoothed moving average value over a range of "normalised"
-    # coordinate
-    #
-    # For normalised coordinate z which runs over the range 0 to zmax, we
-    # have values at positions -0.5, +0.5, 1.5, ... Nint(zmax)+0.5 (ie extended
-    # beyond actual range at both ends). Number of points Np = Ns + 2
-    # Normalised coordinate z is derived from raw coordinate x as
-    #    z  =  (x - x0)/Dx
-    # Dx (= spacing) is adjusted to make an integral multiple into x range
-    # ie Dx = (x1 - x0) / Ns
-    # Raw coordinates range from x0 to x1 corresponding to z = 0 -> Ns
-    #
-    # The moving average is taken over Nav points
-    #   (at present limited to 3, 4 or 5)
-    # The weight at each point w(i) = exp[- d^2] where d = (z - z(i))/sigma
-    #
-    # Special cases:
-    #  1) If number of intervals = 0, then value is a single constant
-    #  2) If number of sample points Np < Nav, then Nav = Np
-    #     Note that since Np = Ns + 2, even if Ns = 1, Np = 3, so Nav can be = 3
-    #  3) Ends: always uses Nav points, abutting ends if necessary
-    #
-
-    # Example of usage in Aimless:
-    # // Set up smoothed scales object
-    # smoothscale = SmoothedValue(phirange, nscaleintervals);
-    # // Get actual number of scales parameters
-    # //  may be = 1 for single value
-    # nscales = smoothscale.Nvalues();
-    # // Get revised scale interval
-    # scalespacing = smoothscale.Spacing();
-    # // Set averaging parameters
-    # smoothscale.SetSmoothing(navgscale, sdwz);
-    # // Default to 1.0
-    # smoothscale.StoreValue(1.0);
+    # Based largely on class SmoothedValue from Aimless.
 
     # Construct from range of raw unnormalised coordinate & number of sample intervals
     # Set smoothing values to defaults, Nav = 3
-    def __init__(phi_range, num_intervals):
+    def __init__(self, phi_range, num_intervals):
 
         self._x0 = phi_range[0] # coordinate of z = 0
         self._nsample = num_intervals # number of intervals
@@ -106,9 +81,10 @@ class GaussianSmoother(object):
         if self._nvalues == 3:
             self._positions = [0.0, 1.0, 2.0]
         else:
-            self._positions = [e - 0.5 for e in xrange(self._nvalues + 1)]
+            self._positions = [e - 0.5 for e in range(self._nvalues)]
 
-        self.set_smoothing(3, -1.0) # set default smoothing parameters
+        # set default smoothing parameters
+        self.set_smoothing(3, -1.0)
 
     def set_smoothing(self, num_average, sigma):
 
@@ -120,13 +96,13 @@ class GaussianSmoother(object):
         If sigma < 0, set to "optimum" (!) (or at least suitable) value from
         num_average '''
 
-        self._naverage = max(3, num_average) # use a minimum of 3 points to smooth
+        self._naverage = num_average
         if self._naverage > self._nvalues:
             self._naverage = self._nvalues
         self._half_naverage = self._naverage / 2.0
         self._sigma = sigma
 
-        if self._naverage < 1 or self._naverage > 5):
+        if self._naverage < 1 or self._naverage > 5:
             msg = "num_average must be between 1 & 5"
             raise ValueError, msg
 
@@ -142,22 +118,20 @@ class GaussianSmoother(object):
     def num_samples(self):
         return self._nsample
 
-    #// Return all values - no need, these are held by ScanVaryingParameter
-    #std::vector<double> Values() const {return values;}
-
-    # Return interpolated value at point (original unnormalised coordinate)
-    def value(self, x, param):
-        pass # just use value_weight instead
-
-    # Return interpolated value of param at point, plus weights at each point,
-    # for original unnormalised coordinate, as list of tuples
+    # Return interpolated value of param at point, original unnormalised
+    # coordinate. Also return the weights at each position.
     def value_weight(self, x, param):
         pass
 
+        weight = [0.0] * len(self._positions)
+
         # normalised coordinate
-        z = x - self._x0
+        z = (x - self._x0) / self._spacing
         sumwv = 0.0
         sumweight = 0.0
+
+        # get values
+        values = param.value
 
         if self._nvalues <= 3:
             i1 = 0
@@ -174,65 +148,19 @@ class GaussianSmoother(object):
                 i1 = min(i1, self._nvalues - 2) # ensure a separation of at least 2
 
         # now do stuff
+        for i in range(i1, i2):
 
-#  // Return interpolated value at point, plus weights at each point,
-#  // for original unnormalised coordinate
-#  {
-#    ASSERT (int(weight.size()) == nvalues);
-#    double value;
-#    if (nvalues == 1) {
-#      // Special for single value
-#      value = values[0];
-#      weight[0] = 1.0;
-#      sumweight = 1.0;
-#    } else {
-#      // clear weight vector
-#      for (int i=0;i<nvalues;++i) {weight[i] = 0.0;}
-#      // Normalised coordinate
-#      double z = (x-x0)/spacing;
-#      double sumwv = 0.0;
-#      sumweight = 0.0;
-#
-#      int i1, i2;
-#      if (nvalues <= 3) { // 2 or 3 points, positions are at ends
-#        i1 = 0;
-#        i2 = nvalues;
-#      } else { // > 3 points
-#        // 1st point in array (index 0) is at position -0.5
-#        // Reduce number of points at ends, but not less than 2
-#        i1 = Nint(z - half_nav)+1;
-#        i2 = i1 + naverage;
-#        if (i1 < 0) {
-#          // beginning of range
-#          i1 = 0;
-#          i2 = Max(2,i2);
-#        }
-#        if (i2 > nvalues) {
-#          i2 = nvalues;
-#          i1 = Min(i1, nvalues-2);
-#        }
-#      }
-#      //^
-#      //^      std::cout << "z, i1, i2 sigma " << z << " " << i1 << " " << i2
-#      //^               << " " << sigma << "\n";
-#      for (int i=i1;i<i2;++i) {
-#        double ds = (z - positions[i])/sigma;
-#        weight[i] = exp(-ds*ds);
-#        sumwv += weight[i] * values[i];
-#        sumweight  += weight[i];
-#        //^
-#        //^     std::cout << "    i, ds, weight, values[i] "
-#        //^               << i << " " << ds << " " << weight[i] << " " << values[i] << "\n";
-#      }
-#      if (sumweight > 0.0) {
-#        value = sumwv/sumweight;
-#      } else {
-#        value = 0.0;
-#      }
-#      //^      std::cout << "  Value " << value << "\n";
-#    }
-#    return value;
-#  }
+            ds = (z - self._positions[i]) / self._sigma
+            weight[i] = exp(-ds*ds)
+            sumwv += weight[i] * values[i]
+            sumweight  += weight[i]
+
+        if sumweight > 0.0:
+            value = sumwv / sumweight;
+        else:
+            value = 0
+
+        return value, weight
 
     # Return number of points averaged
     def num_average(self):

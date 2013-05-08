@@ -24,7 +24,7 @@ class Parameter(object):
     parameter value is set, the esd is reset to None. So this must be
     set separately, and after the parameter value if it is required'''
 
-    def __init__(self, value, axis = None, ptype = None, name = None):
+    def __init__(self, value, axis = None, ptype = None, name = "Parameter"):
         self._value = value
         self._esd = None
         self._axis = axis

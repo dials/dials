@@ -248,6 +248,7 @@ scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/detector_parameters.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
 scratch/dgw/refinement/parameterisation/scan_varying_model_parameters.py -text
+scratch/dgw/refinement/parameterisation/tst_scan_varying_model_parameters.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
 scratch/dgw/refinement/tst_convergence_radius.py -text
 scratch/dgw/refinement/tst_convergence_radius_one_parameter.py -text
