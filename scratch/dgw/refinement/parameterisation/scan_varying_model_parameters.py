@@ -120,10 +120,10 @@ class GaussianSmoother(object):
         If sigma < 0, set to "optimum" (!) (or at least suitable) value from
         num_average '''
 
-        self._naverage = num_average
+        self._naverage = max(3, num_average) # use a minimum of 3 points to smooth
         if self._naverage > self._nvalues:
-            naverage = nvalues
-        self._half_naverage = naverage / 2.0
+            self._naverage = self._nvalues
+        self._half_naverage = self._naverage / 2.0
         self._sigma = sigma
 
         if self._naverage < 1 or self._naverage > 5):
