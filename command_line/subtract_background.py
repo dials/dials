@@ -19,13 +19,13 @@ class ScriptRunner(object):
         self.output_file = options.output_file
 
         # Get the parameters
+        self.algorithm = params.background.algorithm
         self.min_pixels = params.background.min_pixels
         self.num_sigma = params.background.sigma_background
 
     def __call__(self):
         '''Subtract the background from the reflections.'''
 
-        from dials.algorithms.background.subtraction import BackgroundSubtractor
         from dials.util.command_line import Command
         from dials.model.data import Reflection, ReflectionList
         import pickle
@@ -37,8 +37,7 @@ class ScriptRunner(object):
             len(reflections), self.input_file))
 
         # Create the subtraction algorithm
-        subtract_background = BackgroundSubtractor(
-            min_pixels=self.min_pixels, num_sigma=self.num_sigma)
+        subtract_background = self.get_algorithm()
 
         # Subtract the background from each reflection
         Command.start('Subtracting background from {0} reflections'.format(
@@ -53,6 +52,23 @@ class ScriptRunner(object):
             pickle.dump(reflections, open(self.output_file, 'wb'))
             Command.end('Saved reflections to {0}'.format(self.output_file))
 
+    def get_algorithm(self):
+        '''Get the background subtraction algorithm.'''
+        from dials.algorithms.background.subtraction import BackgroundSubtractor
+
+        from dials.algorithms.background.flat_background_subtraction import FlatBackgroundSubtraction
+        # Choose the algorithm object
+        if self.algorithm == 'xds':
+            algorithm = BackgroundSubtractor(
+                min_pixels = self.min_pixels,
+                num_sigma = self.num_sigma)
+        elif self.algorithm == 'flat':
+            algorithm = FlatBackgroundSubtraction()
+        elif self.algorithm == 'curved':
+            pass
+
+        # Return the algorithm object
+        return algorithm
 
 if __name__ == '__main__':
 
@@ -62,7 +78,7 @@ if __name__ == '__main__':
     usage = "usage: %prog [options] /path/to/reflection/file"
 
     # Create an option parser
-    parser = OptionParser(home_scope='background', usage=usage)
+    parser = OptionParser(home_scope = 'background', usage = usage)
 
     # Add options
     parser.add_option(

@@ -1,10 +1,20 @@
 from scitbx.array_family import flex
 from dials.algorithms.peak_finding import ref_2d
+
 import numpy
 
 n_times = 5
-dat2d = numpy.zeros((10, 10), dtype = int)
+dat2d = numpy.zeros((100, 100), dtype = numpy.int32)
+
+dat2d[:, :] = 11
 print dat2d
-# ref_2d()
-dat2d_ref = ref_2d(flex.int(dat2d), n_times).as_numpy_array()
+
+dat2d_flex = flex.int(dat2d)
+flex_ref2d = ref_2d(dat2d_flex, 5, 20, .5, 1000)
+dat2d_ref = flex_ref2d.as_numpy_array()
+
+from matplotlib import pyplot as plt
+plt.imshow(dat2d_ref , interpolation = "nearest")
+plt.show()
+
 print dat2d_ref
