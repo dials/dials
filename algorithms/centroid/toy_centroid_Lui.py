@@ -104,15 +104,15 @@ def single_spot_integrate_2d(data2d):
     #threshold_shift = (numpy.max(data2dsmoth) - numpy.min(data2dsmoth)) / 2.0 # This used to be one of this "magical variables"
 
 #######################################################################################################
-    cont = 0                                                           # This way to calculate
-    dif_tot = 0                                                        # this magical variable
-    for row in range(0, n_row, 1):                                        # is more statistical
-        for col in range(0, n_col, 1):                                    # and seems to be giving
-            cont += 1                                                  # better results
-            dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])     #
-    dif_avg = dif_tot / cont                                           #
-    #print 'dif_avg=', dif_avg                                         #
-    threshold_shift = dif_avg * 2.0                                    #
+    cont = 0                                                                  # This way to calculate
+    dif_tot = 0                                                               # this magical variable
+    for row in range(0, n_row, 1):                                            # is more statistical
+        for col in range(0, n_col, 1):                                        # and seems to be giving
+            cont += 1                                                         # better results
+            dif_tot += numpy.abs(data2d[row, col] - data2dsmoth[row, col])    #
+    dif_avg = dif_tot / cont                                                  #
+    #print 'dif_avg=', dif_avg                                                #
+    threshold_shift = dif_avg * 2.0                                           #
 #######################################################################################################
     #print 'threshold_shift =', threshold_shift
 
@@ -129,26 +129,26 @@ def single_spot_integrate_2d(data2d):
                 diffdata2d_ext[row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
 
 
-############################################################################### flat background
-    tot_bkgr = 0.0                                                            # version
-    cont = 0.0                                                                #
-    for row in range(0, n_row, 1):                                            #
-        for col in range(0, n_col, 1):                                        #
-            if diffdata2d_ext[row, col] == 0:                                 #
-                cont += 1                                                     #
-                tot_bkgr += data2d[row, col]                                  #
-    if tot_bkgr > 0 and cont > 0:                                               #
-        bkgr = tot_bkgr / cont                                                #
-    else:                                                                     #
-        bkgr = 0                                                               #
-    #print 'bkgr=', bkgr                                                      #
-    for row in range(0, n_row, 1):                                            #
-        for col in range(0, n_col, 1):                                        #
-            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > bkgr:     #
-                data2d[row, col] = data2d[row, col] - bkgr                    #
-            else:                                                             #
-                data2d[row, col] = 0                                          #
-###############################################################################
+###########################################################################flat background
+    tot_bkgr = 0.0                                                       # version
+    cont = 0.0                                                           #
+    for row in range(0, n_row, 1):                                       #
+        for col in range(0, n_col, 1):                                   #
+            if diffdata2d_ext[row, col] == 0:                            #
+                cont += 1                                                #
+                tot_bkgr += data2d[row, col]                             #
+    if tot_bkgr > 0 and cont > 0:                                        #
+        bkgr = tot_bkgr / cont                                           #
+    else:                                                                #
+        bkgr = 0                                                         #
+    #print 'bkgr=', bkgr                                                 #
+    for row in range(0, n_row, 1):                                       #
+        for col in range(0, n_col, 1):                                   #
+            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > bkgr:#
+                data2d[row, col] = data2d[row, col] - bkgr               #
+            else:                                                        #
+                data2d[row, col] = 0                                     #
+###########################################################################
 
 ############################################################################### curved background
 #   colbord = int(n_col / 5)                                                     # version
