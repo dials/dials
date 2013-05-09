@@ -11,9 +11,158 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_NORMAL_DISCRIMINATOR_H
 #define DIALS_ALGORITHMS_BACKGROUND_NORMAL_DISCRIMINATOR_H
 
+#include <algorithm>
+#include <scitbx/array_family/shared.h>
+#include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/ref_reductions.h>
+#include <boost/math/special_functions/erf.hpp>
+#include <scitbx/math/mean_and_variance.h>
+#include <dials/array_family/sort_index.h>
+#include <dials/error.h>
 #include "discriminator_strategy.h"
 
 namespace dials { namespace algorithms {
+
+  using boost::math::erfc;
+  using scitbx::af::shared;
+  using scitbx::af::const_ref;
+  using scitbx::af::ref;
+  using scitbx::af::min;
+  using scitbx::af::max;
+  using scitbx::af::mean;
+  using scitbx::math::mean_and_variance;
+  using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
+  using dials::af::sort_index;
+
+  /**
+   * Get the expected number of standard deviations based on the number of
+   * observations. Given by erf(x / sqrt(2)) = 1 - 1 / N
+   * @param n_obs The number of observations
+   * @returns The expected number of standard deviations
+   */
+  inline
+  double normal_expected_n_sigma(int n_obs) {
+    return sqrt(2.0) * erfc(1.0 - (1.0 / n_obs));
+  }
+
+  /**
+   * Get the maximum number of standard deviations in the range of data
+   * @param n_obs The number of observations
+   * @returns The expected number of standard deviations
+   */
+  double maximum_n_sigma(const const_ref<double> &data) {
+
+    // Calculate the mean and standard deviation of the data
+    mean_and_variance <double> mean_and_variance(data);
+    double mean = mean_and_variance.mean();
+    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+
+    // If sdev is zero then the extent of the data is 0 sigma
+    if (sdev == 0) {
+      return 0.0;
+    }
+
+    // Calculate the min/max of the data
+    double mind = min(data);
+    double maxd = max(data);
+
+    // Calculate t-statistic of min/max
+    double min_n_sigma = (mean - mind) / sdev;
+    double max_n_sigma = (maxd - mean) / sdev;
+
+    // return the maximum number of sigma
+    return max_n_sigma > min_n_sigma ? max_n_sigma : min_n_sigma;
+  }
+
+  /**
+   * Check if the data is normally distributed.
+   *
+   * Calculate the t-statistic of the min/max of the data and check if it is
+   * between the given n_sigma.
+   *
+   * @param data The array of pixel values
+   * @returns True/False
+   */
+  inline
+  bool is_normally_distributed(const const_ref<double> &data, double n_sigma) {
+
+    // Get the maximum n sigma
+    double max_n_sigma = maximum_n_sigma(data);
+
+    // return whether within required sigma
+    return max_n_sigma < n_sigma;
+  }
+
+  /**
+   * Check if the data is normally distributed.
+   *
+   * Calculate the t-statistic of the min/max of the data and check if it is
+   * between the expected n_sigma
+   *
+   * @param data The array of pixel values
+   * @returns True/False
+   */
+  inline
+  bool is_normally_distributed(const const_ref<double> &data) {
+
+    // Calculate expected sigma from number of points
+    double n_sigma = normal_expected_n_sigma(data.size());
+
+    // Check if data is normally distributed using sigma value
+    return is_normally_distributed(data, n_sigma);
+  }
+
+
+//  /**
+//   * Functor to compare in sort_index.
+//   */
+//  template <class T>
+//  struct index_less {
+//    index_less(const T &v) : v_(v) {}
+
+//    template <class IndexType>
+//    bool operator() (const IndexType& x, const IndexType& y) const {
+//      return v_[x] < v_[y];
+//    }
+//    const T &v_;
+//  };
+
+//  /**
+//   * Given a vector return a sorted list of indices.
+//   * @param v The list of values
+//   * @returns A sorted list of indices
+//   */
+//  template <typename T>
+//  shared<std::size_t> sort_index(const const_ref<T> &v) {
+
+//    // initialize original index locations
+//    shared<std::size_t> index(v.size());
+//    for (size_t i = 0; i != index.size(); ++i) {
+//      index[i] = i;
+//    }
+
+//    // sort indexes based on comparing values in v
+//    std::sort(index.begin(), index.end(), index_less<const_ref<T> >(v));
+
+//    // Return indices
+//    return index;
+//  }
+
+
+//  /**
+//   * Given a vector return a sorted list of indices.
+//   * @param v The list of values
+//   * @returns A sorted list of indices
+//   */
+//  template <typename T, typename A>
+//  void sort_index(const const_ref<T, A> &v, shared<int> &index) {
+
+//    DIALS_ASSERT(index.size() == v.size());
+
+//    // sort indexes based on comparing values in v
+//    std::sort(index.begin(), index.end(), index_less<const_ref<T, A> >(v));
+//  }
 
   /**
    * A class that uses normal distribution statistics to discriminate
@@ -26,13 +175,68 @@ namespace dials { namespace algorithms {
     NormalDiscriminator() {}
 
     /**
-     * Process the reflection list
-     * @params reflections The list of reflections
-     * @return Arrays of booleans True/False successful.
+     * Process the reflection
+     * @params reflection The reflection
      */
-    virtual flex_bool operator()(ReflectionList &reflections) const {
-      return flex_bool();
+    virtual void operator()(Reflection &reflection) const {
+
+      // Get the shoebox
+      flex_int shoebox = reflection.get_shoebox();
+      flex_int mask    = reflection.get_shoebox_mask();
+
+      // Ensure data is correctly sized.
+      DIALS_ASSERT(shoebox.size() == mask.size());
+
+      // Copy valid pixels and indices into list
+      shared<int> indices;
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        if (mask[i]) {
+          indices.push_back(i);
+        }
+      }
+
+      // Catagorise the pixels as either peak or background
+      discriminate(shoebox, mask, indices);
     }
+
+    void discriminate(flex_int &shoebox, flex_int &mask,
+        shared<int> &indices) const {
+
+      // Check we have enough data
+      DIALS_ASSERT(indices.size() >= min_data_);
+
+      // Sort the pixels into ascending intensity order
+      sort_index(indices.begin(), indices.end(), shoebox.begin());
+      flex_double pixels(indices.size());
+      for (std::size_t i = 0; i < indices.size(); ++i) {
+        pixels[i] = (double)shoebox[indices[i]];
+      }
+
+      // Check if the data is normally distributed. If it is not, then remove
+      // a value of high intensity and keep looping until it is. If the number
+      // of iterations exceeds the maximum then exit the loop.
+      std::size_t num_data = pixels.size();
+      for (; num_data > min_data_; --num_data) {
+        if (is_normally_distributed(const_ref<double>(
+            pixels.begin(), num_data), n_sigma_)) {
+          break;
+        }
+      }
+
+      // Set all the rejected pixels as peak pixels and all the accepted
+      // pixels as background pixels
+      for (std::size_t i = 0; i < num_data; ++i) {
+        mask[indices[i]] = (1 << 0);
+      }
+      for (std::size_t i = num_data; i < indices.size(); ++i) {
+        mask[indices[i]] = (1 << 1);
+      }
+    }
+
+  private:
+
+    std::size_t min_data_;
+    double n_sigma_;
   };
 }}
 

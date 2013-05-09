@@ -15,6 +15,7 @@ algorithms/background/boost_python/skew_discriminator.cc -text
 algorithms/background/boost_python/subtractor_strategy.cc -text
 algorithms/background/discriminator_strategy.h -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
+algorithms/background/gaussian_corrected_mean_subtractor.h -text
 algorithms/background/mean_subtractor.h -text
 algorithms/background/normal_discriminator.h -text
 algorithms/background/poisson_discriminator.h -text
@@ -154,6 +155,9 @@ algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/rotation_angles.h -text
+array_family/__init__.py -text
+array_family/flex.py -text
+array_family/sort_index.h -text
 command_line/background_lookup.py -text
 command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text

@@ -20,8 +20,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     class_<PoissonDiscriminator, bases<DiscriminatorStrategy> >(
         "PoissonDiscriminator")
-      .def(init<>())
-      .def("__call__", &PoissonDiscriminator::operator());
+      .def(init<>());
   }
 
 }}} // namespace = dials::algorithms::boost_python

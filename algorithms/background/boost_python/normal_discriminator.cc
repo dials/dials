@@ -16,12 +16,29 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  bool is_normally_distributed_wrapper(const const_ref<double> &data, 
+      double n_sigma) {
+    if (n_sigma <= 0) {
+      return is_normally_distributed(data);
+    }
+    return is_normally_distributed(data, n_sigma);
+  }
+
   void export_normal_discriminator()
   {
+    // Export the expected number of sdevs
+    def("normal_expected_n_sigma", &normal_expected_n_sigma, (arg("n_obs")));
+  
+    // Export maximum_n_sigma
+    def("maximum_n_sigma", &maximum_n_sigma, (arg("data")));
+  
+    // Export normality test
+    def("is_normally_distributed", &is_normally_distributed_wrapper, (
+      arg("data"), arg("n_sigma") = -1));  
+  
     class_<NormalDiscriminator, bases<DiscriminatorStrategy> >(
         "NormalDiscriminator")
-      .def(init<>())
-      .def("__call__", &NormalDiscriminator::operator());
+      .def(init<>());
   }
 
 }}} // namespace = dials::algorithms::boost_python

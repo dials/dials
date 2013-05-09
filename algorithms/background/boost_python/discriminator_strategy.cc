@@ -18,9 +18,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_discriminator_strategy()
   {
+    void (DiscriminatorStrategy::*call_single)(Reflection&) const =
+      &DiscriminatorStrategy::operator();
+    flex_bool (DiscriminatorStrategy::*call_array)(ReflectionList&) const =
+      &DiscriminatorStrategy::operator();
+  
     class_<DiscriminatorStrategy, boost::noncopyable>(
         "DiscriminatorStrategy", no_init)
-      .def("__call__", &DiscriminatorStrategy::operator());
+      .def("__call__", call_single)
+      .def("__call__", call_array); 
   }
 
 }}} // namespace = dials::algorithms::boost_python

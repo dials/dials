@@ -20,8 +20,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     class_<SkewDiscriminator, bases<DiscriminatorStrategy> >(
         "SkewDiscriminator")
-      .def(init<>())
-      .def("__call__", &SkewDiscriminator::operator());
+      .def(init<>());
   }
 
 }}} // namespace = dials::algorithms::boost_python

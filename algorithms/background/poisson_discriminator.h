@@ -26,12 +26,10 @@ namespace dials { namespace algorithms {
     PoissonDiscriminator() {}
 
     /**
-     * Process the reflection list
-     * @params reflections The list of reflections
-     * @return Arrays of booleans True/False successful.
+     * Process the reflection
+     * @params reflection The reflection
      */
-    virtual flex_bool operator()(ReflectionList &reflections) const {
-      return flex_bool();
+    virtual void operator()(Reflection &reflection) const {
     }
   };
 }}
