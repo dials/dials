@@ -122,7 +122,17 @@ namespace dials { namespace algorithms {
   public:
 
     /** Initialise the class. */
-    NormalDiscriminator() {}
+    NormalDiscriminator()
+      : min_data_(10),
+        n_sigma_(3.0) {}
+
+    /** Initialise the class with parameters. */
+    NormalDiscriminator(std::size_t min_data, double n_sigma)
+      : min_data_(min_data),
+        n_sigma_(n_sigma) {
+      DIALS_ASSERT(min_data > 0);
+      DIALS_ASSERT(n_sigma > 0.0);
+    }
 
     /**
      * Discriminate between peak and background pixels.

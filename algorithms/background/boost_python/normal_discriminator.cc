@@ -44,7 +44,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   
     class_<NormalDiscriminator, bases<DiscriminatorStrategy> >(
         "NormalDiscriminator")
-      .def(init<>())
+      .def(init<std::size_t, double>((
+        arg("min_data"),
+        arg("n_sigma"))))
       .def("__call__", call_shoebox_and_mask, (
         arg("shoebox"),
         arg("mask")))
