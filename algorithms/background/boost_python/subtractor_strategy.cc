@@ -18,9 +18,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_subtractor_strategy()
   {
+    void (SubtractorStrategy::*call_single)(Reflection&) const =
+      &SubtractorStrategy::operator();
+    flex_bool (SubtractorStrategy::*call_array)(ReflectionList&) const =
+      &SubtractorStrategy::operator();
+  
     class_<SubtractorStrategy, boost::noncopyable>(
         "SubtractorStrategy", no_init)
-      .def("__call__", &SubtractorStrategy::operator());
+      .def("__call__", call_single)
+      .def("__call__", call_array);
   }
 
 }}} // namespace = dials::algorithms::boost_python

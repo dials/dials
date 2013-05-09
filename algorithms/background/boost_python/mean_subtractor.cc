@@ -19,9 +19,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_mean_subtractor()
   {
     class_<MeanSubtractor, bases<SubtractorStrategy> >(
-        "MeanSubtractor")
-      .def(init<>())
-      .def("__call__", &MeanSubtractor::operator());
+        "MeanSubtractor", no_init)
+      .def(init<std::size_t>((
+        arg("min_pixels") = 10)));
   }
 
 }}} // namespace = dials::algorithms::boost_python
