@@ -6,6 +6,8 @@ sources = [
     'boost_python/normal_discriminator.cc',
     'boost_python/poisson_discriminator.cc',
     'boost_python/skew_discriminator.cc',
+    'boost_python/subtractor_strategy.cc',
+    'boost_python/mean_subtractor.cc',
     'boost_python/background_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_ext', 

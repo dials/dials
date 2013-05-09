@@ -19,6 +19,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_normal_discriminator();
   void export_poisson_discriminator();
   void export_skew_discriminator();
+  void export_subtractor_strategy();
+  void export_mean_subtractor();
   
   BOOST_PYTHON_MODULE(dials_algorithms_background_ext)
   {
@@ -26,6 +28,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_normal_discriminator();
     export_poisson_discriminator();
     export_skew_discriminator();
+    export_subtractor_strategy();
+    export_mean_subtractor();
   }
 
 }}} // namespace = dials::algorithms::boost_python

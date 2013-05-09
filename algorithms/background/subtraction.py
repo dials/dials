@@ -48,6 +48,9 @@ class PixelDiscrimination(BackgroundSubtractionInterface):
             kwargs - The keyword arguments
 
         '''
+        from dials.algorithms.background import NormalDiscriminator
+        from dials.algorithms.background import MeanSubtractor
+
         # Get the pixel discrimination and subtraction stratgies
         self._discriminate = kwargs.get('discriminate', NormalDiscriminator())
         self._subtract     = kwargs.get('subtract', MeanSubtractor())
