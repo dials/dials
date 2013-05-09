@@ -7,8 +7,14 @@ algorithms/background/SConscript -text
 algorithms/background/__init__.py -text
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/discriminator_strategy.cc -text
+algorithms/background/boost_python/normal_discriminator.cc -text
+algorithms/background/boost_python/poisson_discriminator.cc -text
+algorithms/background/boost_python/skew_discriminator.cc -text
 algorithms/background/discriminator_strategy.h -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
+algorithms/background/normal_discriminator.h -text
+algorithms/background/poisson_discriminator.h -text
+algorithms/background/skew_discriminator.h -text
 algorithms/background/subtraction.py -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text

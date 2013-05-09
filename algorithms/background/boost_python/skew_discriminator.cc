@@ -1,5 +1,5 @@
 /*
- * background_ext.cc
+ * skew_discriminator.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,22 +10,18 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/background/skew_discriminator.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_discriminator_strategy();
-  void export_normal_discriminator();
-  void export_poisson_discriminator();
-  void export_skew_discriminator();
-  
-  BOOST_PYTHON_MODULE(dials_algorithms_background_ext)
+  void export_skew_discriminator()
   {
-    export_discriminator_strategy();
-    export_normal_discriminator();
-    export_poisson_discriminator();
-    export_skew_discriminator();
+    class_<SkewDiscriminator, bases<DiscriminatorStrategy> >(
+        "SkewDiscriminator")
+      .def(init<>())
+      .def("__call__", &SkewDiscriminator::operator());
   }
 
 }}} // namespace = dials::algorithms::boost_python
