@@ -109,6 +109,12 @@ namespace dials { namespace algorithms {
     return is_normally_distributed(data, n_sigma);
   }
 
+  inline
+  bool is_poisson_distributed(const const_ref<double> &data, double n_sigma) {
+    return false;
+
+  }
+
   /**
    * Functor to compare in sort_index.
    */

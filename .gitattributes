@@ -56,6 +56,7 @@ algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/shoebox_masker.cc -text
 algorithms/integration/boost_python/subtract_background.cc -text
+algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/xds_coordinate_system.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
 algorithms/integration/divergence_and_mosaicity.py -text
@@ -68,6 +69,7 @@ algorithms/integration/integrate3d.py -text
 algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/shoebox_masker.h -text
 algorithms/integration/subtract_background.h -text
+algorithms/integration/summation.h -text
 algorithms/integration/xds_coordinate_system.h -text
 algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain

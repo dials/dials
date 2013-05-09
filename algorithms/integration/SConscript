@@ -12,6 +12,7 @@ sources = [
     'boost_python/find_overlapping_reflections.cc',
     'boost_python/reflection_profile_helpers.cc',
     'boost_python/shoebox_masker.cc',
+    'boost_python/summation.cc',
     'boost_python/integration_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_integration_ext', 
