@@ -114,56 +114,6 @@ namespace dials { namespace algorithms {
   }
 
 
-//  /**
-//   * Functor to compare in sort_index.
-//   */
-//  template <class T>
-//  struct index_less {
-//    index_less(const T &v) : v_(v) {}
-
-//    template <class IndexType>
-//    bool operator() (const IndexType& x, const IndexType& y) const {
-//      return v_[x] < v_[y];
-//    }
-//    const T &v_;
-//  };
-
-//  /**
-//   * Given a vector return a sorted list of indices.
-//   * @param v The list of values
-//   * @returns A sorted list of indices
-//   */
-//  template <typename T>
-//  shared<std::size_t> sort_index(const const_ref<T> &v) {
-
-//    // initialize original index locations
-//    shared<std::size_t> index(v.size());
-//    for (size_t i = 0; i != index.size(); ++i) {
-//      index[i] = i;
-//    }
-
-//    // sort indexes based on comparing values in v
-//    std::sort(index.begin(), index.end(), index_less<const_ref<T> >(v));
-
-//    // Return indices
-//    return index;
-//  }
-
-
-//  /**
-//   * Given a vector return a sorted list of indices.
-//   * @param v The list of values
-//   * @returns A sorted list of indices
-//   */
-//  template <typename T, typename A>
-//  void sort_index(const const_ref<T, A> &v, shared<int> &index) {
-
-//    DIALS_ASSERT(index.size() == v.size());
-
-//    // sort indexes based on comparing values in v
-//    std::sort(index.begin(), index.end(), index_less<const_ref<T, A> >(v));
-//  }
-
   /**
    * A class that uses normal distribution statistics to discriminate
    * between background and peak pixels in a reflection shoebox.
@@ -175,14 +125,20 @@ namespace dials { namespace algorithms {
     NormalDiscriminator() {}
 
     /**
-     * Process the reflection
-     * @params reflection The reflection
+     * Discriminate between peak and background pixels.
+     *
+     * First get the indices of those pixels that belong to the reflection.
+     * Sort the pixels in order of ascending intensity. Then check if the
+     * intensities are normally distributed. If not then remove the pixel
+     * with the highest intensity from the list and check again. Keep going
+     * untill the list of pixels is normally distributed, or the maximum
+     * number of iterations is reached. The remaining pixels are classes
+     * as background, the rest are peak.
+     *
+     * @params shoebox The shoebox profile
+     * @params mask The shoebox mask
      */
-    virtual void operator()(Reflection &reflection) const {
-
-      // Get the shoebox
-      flex_int shoebox = reflection.get_shoebox();
-      flex_int mask    = reflection.get_shoebox_mask();
+    void operator()(const flex_int &shoebox, flex_int &mask) const {
 
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
@@ -194,13 +150,6 @@ namespace dials { namespace algorithms {
           indices.push_back(i);
         }
       }
-
-      // Catagorise the pixels as either peak or background
-      discriminate(shoebox, mask, indices);
-    }
-
-    void discriminate(flex_int &shoebox, flex_int &mask,
-        shared<int> &indices) const {
 
       // Check we have enough data
       DIALS_ASSERT(indices.size() >= min_data_);
@@ -231,6 +180,25 @@ namespace dials { namespace algorithms {
       for (std::size_t i = num_data; i < indices.size(); ++i) {
         mask[indices[i]] = (1 << 1);
       }
+    }
+
+    /**
+     * Process just a shoebox and return a mask
+     * @param shoebox The shoebox profile
+     * @return The mask
+     */
+    flex_int operator()(const flex_int &shoebox) const {
+      flex_int mask(shoebox.accessor(), 1);
+      this->operator()(shoebox, mask);
+      return mask;
+    }
+
+    /**
+     * Process the reflection
+     * @param reflection The reflection
+     */
+    virtual void operator()(Reflection &reflection) const {
+      this->operator()(reflection.get_shoebox(), reflection.get_shoebox_mask());
     }
 
   private:

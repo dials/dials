@@ -35,10 +35,21 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export normality test
     def("is_normally_distributed", &is_normally_distributed_wrapper, (
       arg("data"), arg("n_sigma") = -1));  
+    
+    // Overloads for call method
+    void (NormalDiscriminator::*call_shoebox_and_mask)(const flex_int&,
+        flex_int &) const = &NormalDiscriminator::operator();
+    flex_int (NormalDiscriminator::*call_shoebox)(const flex_int&) const =
+      &NormalDiscriminator::operator();
   
     class_<NormalDiscriminator, bases<DiscriminatorStrategy> >(
         "NormalDiscriminator")
-      .def(init<>());
+      .def(init<>())
+      .def("__call__", call_shoebox_and_mask, (
+        arg("shoebox"),
+        arg("mask")))
+      .def("__call__", call_shoebox, (
+        arg("shoebox")));
   }
 
 }}} // namespace = dials::algorithms::boost_python
