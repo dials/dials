@@ -27,16 +27,34 @@ namespace dials { namespace algorithms {
   public:
 
     /** Initialise the class. */
-    MeanSubtractor(std::size_t min_pixels)
-      : min_pixels_(min_pixels) {
-      DIALS_ASSERT(min_pixels_ > 0);
-    }
+    MeanSubtractor() {}
 
     /**
      * Process the reflection list
      * @params reflection The reflections
      */
     virtual void operator()(Reflection &reflection) const {
+
+      // Get the shoebox
+      flex_int shoebox = reflection.get_shoebox();
+
+      // Calculate the background intensity
+      int background = background_intensity(reflection);
+
+      // Subtract background from shoebox profile
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        shoebox[i] -= background;
+      }
+    }
+
+  protected:
+
+    /**
+     * Calculate the background intensity.
+     * @param reflection The reflection
+     * @return The background intensity.
+     */
+    virtual int background_intensity(Reflection &reflection) const {
 
       // Get the shoebox and mask and ensure the correct size
       flex_int mask = reflection.get_shoebox_mask();
@@ -51,21 +69,10 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Ensure that we have enough pixels
-      DIALS_ASSERT(pixels.size() > min_pixels_);
-
       // Calculate the mean of the background pixels
-      int background = (int)mean(pixels.const_ref());
-
-      // Subtract background from shoebox profile
-      for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        shoebox[i] -= background;
-      }
+      return (int)mean(pixels.const_ref());
     }
-
-  private:
-    std::size_t min_pixels_;
-  };
+ };
 
 }}
 

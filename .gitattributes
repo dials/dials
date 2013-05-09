@@ -7,6 +7,7 @@ algorithms/background/SConscript -text
 algorithms/background/__init__.py -text
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/discriminator_strategy.cc -text
+algorithms/background/boost_python/gaussian_corrected_mean_subtractor.cc -text
 algorithms/background/boost_python/mean_subtractor.cc -text
 algorithms/background/boost_python/normal_discriminator.cc -text
 algorithms/background/boost_python/poisson_discriminator.cc -text
@@ -564,6 +565,7 @@ scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plai
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
+test/algorithms/background/tst_mean_subtractor.py -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text

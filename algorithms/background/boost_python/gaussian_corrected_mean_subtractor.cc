@@ -1,5 +1,5 @@
 /*
- * mean_subtractor.cc
+ * gaussian_corrected_mean_subtractor.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,16 +10,16 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/background/mean_subtractor.h>
+#include <dials/algorithms/background/gaussian_corrected_mean_subtractor.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_mean_subtractor()
+  void export_gaussian_corrected_mean_subtractor()
   {
-    class_<MeanSubtractor, bases<SubtractorStrategy> >(
-        "MeanSubtractor", no_init)
+    class_<GaussianCorrectedMeanSubtractor, bases<MeanSubtractor> >(
+        "GaussianCorrectedMeanSubtractor", no_init)
       .def(init<>());
   }
 
