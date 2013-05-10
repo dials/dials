@@ -18,9 +18,26 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_poisson_discriminator()
   {
+    // Export normality test
+    def("is_poisson_distributed", &is_poisson_distributed, (
+      arg("data"), arg("n_sigma")));  
+    
+    // Overloads for call method
+    void (PoissonDiscriminator::*call_shoebox_and_mask)(const flex_int&,
+        flex_int &) const = &PoissonDiscriminator::operator();
+    flex_int (PoissonDiscriminator::*call_shoebox)(const flex_int&) const =
+      &PoissonDiscriminator::operator();
+  
     class_<PoissonDiscriminator, bases<DiscriminatorStrategy> >(
         "PoissonDiscriminator")
-      .def(init<>());
+      .def(init<std::size_t, double>((
+        arg("min_data"),
+        arg("n_sigma"))))
+      .def("__call__", call_shoebox_and_mask, (
+        arg("shoebox"),
+        arg("mask")))
+      .def("__call__", call_shoebox, (
+        arg("shoebox")));
   }
 
 }}} // namespace = dials::algorithms::boost_python

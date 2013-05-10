@@ -11,9 +11,70 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_POISSON_DISCRIMINATOR_H
 #define DIALS_ALGORITHMS_BACKGROUND_POISSON_DISCRIMINATOR_H
 
+#include <cmath>
+#include <scitbx/array_family/ref_reductions.h>
+#include <scitbx/math/mean_and_variance.h>
+#include <dials/array_family/sort_index.h>
+#include <dials/error.h>
 #include "discriminator_strategy.h"
 
 namespace dials { namespace algorithms {
+
+  using std::sqrt;
+  using std::pow;
+  using scitbx::math::mean_and_variance;
+  using scitbx::af::shared;
+  using scitbx::af::const_ref;
+  using scitbx::af::ref;
+  using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
+  using dials::af::sort_index;
+
+  /**
+   * Calculate the kth central moment.
+   * @param data The data array
+   * @param c The centre
+   * @param k The number of the moment
+   * @return The moment
+   */
+  inline
+  double moment(const const_ref<double> &data, double c, std::size_t k) {
+    std::size_t n = data.size();
+    double m = 0.0;
+    for (std::size_t i = 0; i < n; ++i) {
+      m += pow(data[i] - c, k);
+    }
+    return m / n;
+  }
+
+  /**
+   * Check if the data is poisson distributed.
+   *
+   * True is the absolute difference between the mean and sample variance
+   * is less than a given number of standard deviations of the variance.
+   *
+   * @param data The array of pixel values
+   * @param n_sigma The number of standard deviations
+   * @returns True/False
+   */
+  inline
+  bool is_poisson_distributed(const const_ref<double> &data, double n_sigma) {
+
+    // Calculate the mean and standard deviation of the data
+    mean_and_variance <double> mean_and_variance(data);
+    double m1 = mean_and_variance.mean();
+    double m2 = mean_and_variance.unweighted_sample_variance();
+
+    // Estmate the variance of the variance and get the sdev
+    double m4 = moment(data, m1, 4);
+
+    // Estimate the standard deviation of the variance
+    std::size_t n = data.size();
+    double sdev = sqrt((m4 - m2 * m2 * (n - 3) / (n - 1)) / n);
+
+    // Return True/False
+    return abs(m2 - m1) <= n_sigma * sdev;
+  }
 
   /**
    * A class that uses poisson distribution statistics to discriminate
@@ -23,14 +84,106 @@ namespace dials { namespace algorithms {
   public:
 
     /** Initialise the class. */
-    PoissonDiscriminator() {}
+    PoissonDiscriminator()
+      : min_data_(10),
+        n_sigma_(3.0) {}
+
+    /** Initialise the class with parameters. */
+    PoissonDiscriminator(std::size_t min_data, double n_sigma)
+      : min_data_(min_data),
+        n_sigma_(n_sigma) {
+      DIALS_ASSERT(min_data > 0);
+      DIALS_ASSERT(n_sigma > 0.0);
+    }
+
+    /**
+     * Discriminate between peak and background pixels.
+     *
+     * First get the indices of those pixels that belong to the reflection.
+     * Sort the pixels in order of ascending intensity. Then check if the
+     * intensities are poisson distributed. If not then remove the pixel
+     * with the highest intensity from the list and check again. Keep going
+     * untill the list of pixels is poisson distributed, or the maximum
+     * number of iterations is reached. The remaining pixels are classed
+     * as background, the rest are peak.
+     *
+     * The test performed is to check that the absolute difference between
+     * the sample variance and the mean is less than a certain number of
+     * standard deviations of the variance.
+     *
+     * @params shoebox The shoebox profile
+     * @params mask The shoebox mask
+     */
+    void operator()(const flex_int &shoebox, flex_int &mask) const {
+
+      // Ensure data is correctly sized.
+      DIALS_ASSERT(shoebox.size() == mask.size());
+
+      // Copy valid pixels and indices into list
+      shared<int> indices;
+      for (std::size_t i = 0; i < shoebox.size(); ++i) {
+        if (mask[i]) {
+          indices.push_back(i);
+        }
+      }
+
+      // Check we have enough data
+      DIALS_ASSERT(indices.size() >= min_data_);
+
+      // Check we have enough data
+      DIALS_ASSERT(indices.size() >= min_data_);
+
+      // Sort the pixels into ascending intensity order
+      sort_index(indices.begin(), indices.end(), shoebox.begin());
+      flex_double pixels(indices.size());
+      for (std::size_t i = 0; i < indices.size(); ++i) {
+        pixels[i] = (double)shoebox[indices[i]];
+      }
+
+      // Check if the data is poissson distributed. If it is not, then remove
+      // a value of high intensity and keep looping until it is. If the number
+      // of iterations exceeds the maximum then exit the loop.
+      std::size_t num_data = pixels.size();
+      for (; num_data > min_data_; --num_data) {
+        if (is_poisson_distributed(const_ref<double>(
+            pixels.begin(), num_data), n_sigma_)) {
+          break;
+        }
+      }
+
+      // Set all the rejected pixels as peak pixels and all the accepted
+      // pixels as background pixels
+      for (std::size_t i = 0; i < num_data; ++i) {
+        mask[indices[i]] = (1 << 0);
+      }
+      for (std::size_t i = num_data; i < indices.size(); ++i) {
+        mask[indices[i]] = (1 << 1);
+      }
+    }
+
+    /**
+     * Process just a shoebox and return a mask
+     * @param shoebox The shoebox profile
+     * @return The mask
+     */
+    flex_int operator()(const flex_int &shoebox) const {
+      flex_int mask(shoebox.accessor(), 1);
+      this->operator()(shoebox, mask);
+      return mask;
+    }
 
     /**
      * Process the reflection
-     * @params reflection The reflection
+     * @param reflection The reflection
      */
     virtual void operator()(Reflection &reflection) const {
+      this->operator()(reflection.get_shoebox(), reflection.get_shoebox_mask());
     }
+
+  private:
+
+    std::size_t min_data_;
+    double n_sigma_;
   };
 }}
 
