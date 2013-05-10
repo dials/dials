@@ -31,6 +31,7 @@ class Parameter(object):
         #assert ptype in ['length', 'angle']
         self._ptype = ptype
         self._name = name
+        self._fixed = False
 
         return
 
@@ -58,6 +59,15 @@ class Parameter(object):
     @property
     def axis(self):
         return self._axis
+
+    def get_fixed(self):
+        return self._fixed
+
+    def fix(self):
+        self._fixed = True
+
+    def unfix(self):
+        self._fixed = False
 
 
 
