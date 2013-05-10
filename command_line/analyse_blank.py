@@ -51,10 +51,13 @@ class Script(ScriptRunner):
         var  = var * mask.as_double()
         diff = flex.abs(mean - var)
 
-        print "Mean abs(mean - var)", flex.median(diff.as_1d())
+        # Print some statistics
+        print "Mean abs(mean - var)", flex.mean(diff.as_1d())
+        print "Median abs(mean - var)", flex.median(diff.as_1d())
 
         # Get the range in which to print
-        vmax = 5
+        mv = flex.mean_and_variance((image * mask.as_double()).as_1d())
+        vmax = mv.mean() + 3 * mv.unweighted_sample_standard_deviation()
 
         # Display images
         from matplotlib import pylab
@@ -71,6 +74,7 @@ class Script(ScriptRunner):
         pylab.imshow(diff.as_numpy_array(), interpolation='none',
             vmin=0, vmax=vmax)
         pylab.show()
+
 
 if __name__ == '__main__':
 
