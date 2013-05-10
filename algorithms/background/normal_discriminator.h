@@ -51,7 +51,61 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
+  double minimum_n_sigma(const const_ref<double> &data) {
+
+    // Calculate the mean and standard deviation of the data
+    mean_and_variance <double> mean_and_variance(data);
+    double mean = mean_and_variance.mean();
+    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+
+    // If sdev is zero then the extent of the data is 0 sigma
+    if (sdev == 0) {
+      return 0.0;
+    }
+
+    // Calculate the min/max of the data
+    double mind = min(data);
+
+    // Calculate t-statistic of min/max
+    double min_n_sigma = (mind - mean) / sdev;
+
+    // return the maximum number of sigma
+    return min_n_sigma;
+  }
+
+  /**
+   * Get the maximum number of standard deviations in the range of data
+   * @param n_obs The number of observations
+   * @returns The expected number of standard deviations
+   */
   double maximum_n_sigma(const const_ref<double> &data) {
+
+    // Calculate the mean and standard deviation of the data
+    mean_and_variance <double> mean_and_variance(data);
+    double mean = mean_and_variance.mean();
+    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+
+    // If sdev is zero then the extent of the data is 0 sigma
+    if (sdev == 0) {
+      return 0.0;
+    }
+
+    // Calculate the min/max of the data
+    double maxd = max(data);
+
+    // Calculate t-statistic of min/max
+    double max_n_sigma = (maxd - mean) / sdev;
+
+    // return the maximum number of sigma
+    return max_n_sigma;
+  }
+
+  /**
+   * Get the maximum number of standard deviations in the range of data
+   * @param n_obs The number of observations
+   * @returns The expected number of standard deviations
+   */
+  double absolute_maximum_n_sigma(const const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
     mean_and_variance <double> mean_and_variance(data);

@@ -32,6 +32,12 @@ namespace dials { namespace algorithms { namespace boost_python {
     // Export maximum_n_sigma
     def("maximum_n_sigma", &maximum_n_sigma, (arg("data")));
   
+    // Export minimum_n_sigma
+    def("minimum_n_sigma", &minimum_n_sigma, (arg("data")));
+  
+    // Export maximum_n_sigma
+    def("absolute_maximum_n_sigma", &maximum_n_sigma, (arg("data")));
+  
     // Export normality test
     def("is_normally_distributed", &is_normally_distributed_wrapper, (
       arg("data"), arg("n_sigma") = -1));  
@@ -45,8 +51,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<NormalDiscriminator, bases<DiscriminatorStrategy> >(
         "NormalDiscriminator")
       .def(init<std::size_t, double>((
-        arg("min_data"),
-        arg("n_sigma"))))
+        arg("min_data") = 10,
+        arg("n_sigma") = 3.0)))
       .def("__call__", call_shoebox_and_mask, (
         arg("shoebox"),
         arg("mask")))

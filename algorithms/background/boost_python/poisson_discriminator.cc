@@ -18,6 +18,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_poisson_discriminator()
   {
+    def("moment", &moment, (
+      arg("data"), arg("centre"), arg("k")));
+  
     // Export normality test
     def("is_poisson_distributed", &is_poisson_distributed, (
       arg("data"), arg("n_sigma")));  
@@ -31,8 +34,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<PoissonDiscriminator, bases<DiscriminatorStrategy> >(
         "PoissonDiscriminator")
       .def(init<std::size_t, double>((
-        arg("min_data"),
-        arg("n_sigma"))))
+        arg("min_data") = 10,
+        arg("n_sigma") = 3.0)))
       .def("__call__", call_shoebox_and_mask, (
         arg("shoebox"),
         arg("mask")))
