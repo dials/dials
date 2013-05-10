@@ -8,7 +8,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_lui_integrate_helper() {
     def("ref_2d", &ref_2d, (arg("data2d"),arg("a") = 10,
-    arg("b") = 20, arg("delta_ang") = 1, arg("imax") = 50) );
+    arg("b") = 20, arg("delta_ang") = 1,
+    arg("imax") = 50 ,   arg("asp") = 0.5 ) );
   }
 
 }}} // namespace = dials::algorithms::boost_python

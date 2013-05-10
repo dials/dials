@@ -10,7 +10,7 @@ dat2d[:, :] = 11
 print dat2d
 
 dat2d_flex = flex.int(dat2d)
-flex_ref2d = ref_2d(dat2d_flex, 5, 20, .5, 1000)
+flex_ref2d = ref_2d(dat2d_flex, 10, 20, .33333, 1000, 0.5)
 dat2d_ref = flex_ref2d.as_numpy_array()
 
 from matplotlib import pyplot as plt
