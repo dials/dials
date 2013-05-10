@@ -570,6 +570,7 @@ test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
 test/algorithms/background/tst_mean_subtractor.py -text
+test/algorithms/background/tst_normal_discriminator.py -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text
