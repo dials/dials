@@ -11,15 +11,15 @@ from __future__ import division
 from dials.algorithms.refinement.parameterisation.model_parameters import *
 from math import exp
 
-class ScanVaryingParameter(Parameter):
+class ScanVaryingParameterSet(Parameter):
     '''Testing a class for a scan-varying parameter, in which values at rotation
     angle phi may be derived using smoothed interpolation between checkpoint
-    values stored here.
+    values stored here. Externally, this is presented as a set of parameters.
 
     num_samples is the number of checkpoints. Other arguments are as Parameter.
     '''
 
-    def __init__(self, value, num_samples = 5, axis = None, ptype = None, name = "ScanVaryingParameter"):
+    def __init__(self, value, num_samples = 5, axis = None, ptype = None, name = "ScanVaryingParameterSet"):
 
         Parameter.__init__(self, value, axis, ptype, name)
 
@@ -31,6 +31,7 @@ class ScanVaryingParameter(Parameter):
         self._ptype = ptype
         name_stem = [name] * num_samples
         self._name = [e + "_sample%d" % i for i, e in enumerate(name_stem)]
+        self._fixed = False
 
         return
 
@@ -59,9 +60,9 @@ class GaussianSmoother(object):
 
     # Construct from range of raw unnormalised coordinate & number of sample intervals
     # Set smoothing values to defaults, Nav = 3
-    def __init__(self, phi_range, num_intervals):
+    def __init__(self, x_range, num_intervals):
 
-        self._x0 = phi_range[0] # coordinate of z = 0
+        self._x0 = x_range[0] # coordinate of z = 0
         self._nsample = num_intervals # number of intervals
         assert self._nsample > 0 # otherwise use scan-independent parameterisation
         if self._nsample == 1:
@@ -72,9 +73,9 @@ class GaussianSmoother(object):
             self._nvalues = self._nsample + 2
 
         # smoothing spacing
-        self._spacing = (phi_range[1] - phi_range[0]) / float(self._nsample)
+        self._spacing = (x_range[1] - x_range[0]) / float(self._nsample)
 
-        # the values are actually held by ScanVaryingParameter classes, but
+        # the values are actually held by ScanVaryingParameterSet classes, but
         # we need the positions
         if self._nvalues == 2:
             self._positions = [1.0, 2.0]
@@ -160,7 +161,7 @@ class GaussianSmoother(object):
         else:
             value = 0
 
-        return value, weight
+        return value, weight, sumweight
 
     # Return number of points averaged
     def num_average(self):
@@ -181,10 +182,10 @@ class GaussianSmoother(object):
 
 
 class ScanVaryingModelParameterisation(ModelParameterisation):
-    '''Extending ModelParameterisation to deal with ScanVaryingParameters.
+    '''Extending ModelParameterisation to deal with ScanVaryingParameterSets.
 
     For simplicity at this stage it is decreed that a
-    ScanVaryingModelParameterisation consists only of ScanVaryingParameters.
+    ScanVaryingModelParameterisation consists only of ScanVaryingParameterSets.
     There is no combination with normal Parameters. This could be changed later,
     but there may be no reason to do so, hence starting with this simpler
     design'''
@@ -193,35 +194,37 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     # time static version of the parameterisation, as it is assumed that we
     # start with a flat model wrt rotation angle.
 
-    def __init__(self, models, initial_state, param_list, num_samples, smoother):
-        assert(isinstance(param_list, list))
+    def __init__(self, models, initial_state, param_sets, smoother):
+        assert(isinstance(param_sets, list))
         self._initial_state = initial_state
         self._models = models
-        self._plist = list(param_list)
-        self._dstate_dp = [None] * len(param_list)
-        self._pfixed = [False] * len(param_list)
+        self._param_sets = list(param_sets)
+        self._num_sets = len(self._param_sets)
+        self._total_len = self._set_len * self._num_sets
 
-        # Choose the number of checkpoints for each parameter. This could be
-        # determined automatically in the scope that creates this object,
-        # or via user preferences. It will affect the smoothing properties of
-        # the parameterisation.
-        self._num_samples = num_samples
+        # ensure all internal parameter sets have the same number of parameters
+        self._set_len = len(param_sets[0])
+        for param in self._param_sets[1:]: assert len(param) == self._set_len
 
-        # Link up with an object that will perform the smoothing
+        #self._dstate_dp = [None] * self._total_len
+        #self._pset_fixed = [False] * self._num_sets
+
+        # Link up with an object that will perform the smoothing.
         self._smoother = smoother
+        assert self._smoother.num_values() == self._set_len
 
         return
 
     #def __len__(self):
-    #    return len(self._plist)
+    #    return len(self._param_sets)
 
     def num_free(self):
         '''the number of free parameters'''
-        return len([x for x in self._pfixed if not x])
+        return sum(not x.get_fixed() for x in self._param_sets) * self._set_len
 
     def num_total(self):
         '''the total number of parameters, both fixed and free'''
-        return len(self._plist)
+        return self._total_len
 
     def compose(self):
         '''compose the current model state from its initial state and its
@@ -239,10 +242,13 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         returned list. Otherwise all parameter values are returned'''
 
         if only_free:
-            return [x.value for x, f in zip(self._plist, self._pfixed) if not f]
+            return [x for e in self._param_sets \
+                    if not x.get_fixed() for x in e.value]
+            #return [x for e, f in zip(self._param_sets, self._pset_fixed) \
+            #        if not f for x in e.value]
 
         else:
-            return [x.value for x in self._plist]
+            return [x for e in self._param_sets for x in e.value]
 
     def get_pnames(self, only_free = True):
         '''export the names of the internal list of parameters
@@ -253,41 +259,54 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         # FIXME combine functionality with get_p by returning a named, ordered
         # list
         if only_free:
-            return [x.name for x, f in zip(self._plist, self._pfixed) if not f]
+            return [x for e in self._param_sets \
+                    if not x.get_fixed() for x in e.name]
+            #return [x for e, f in zip(self._param_sets, self._pset_fixed) \
+            #        if not f for x in e.name]
 
         else:
-            return [x.name for x in self._plist]
+            return [x for e in self._param_sets for x in e.name]
 
     def set_p(self, vals):
         '''set the values of the internal list of parameters from a
         sequence of floats.
 
-        Only free parameters can be set, therefore the length of vals must equal
-        the value of num_free'''
+        First break the sequence into sub sequences of the same length
+        as the _set_len.
+
+        Only free parameter sets can have values assigned, therefore the
+        length of vals must equal the value of num_free'''
 
         assert(len(vals) == self.num_free())
-        for par, new_val in zip((p for p, f in zip(self._plist, self._pfixed) if not f), vals):
-            par.value = new_val
+        i = 0
+        for p in self._param_sets:
+            if not p.get_fixed(): # only set the free parameter sets
+                new_vals = vals[i:i+self._set_len]
+                p.value = new_vals
+                i += self._set_len
 
         # compose with the new parameter values
-        self.compose()
+        #self.compose()
 
         return
 
     def get_fixed(self):
-        '''return the list determining whether each parameter is fixed or not'''
-        return list(self._pfixed)
+        '''return the list determining whether each parameter set is fixed or not'''
+        return [p.get_fixed() for p in self._param_sets]
 
     def set_fixed(self, fix):
-        '''set the list determining whether each parameter is fixed or not'''
+        '''set parameter sets to be fixed or free from a list'''
 
-        assert(len(fix) == len(self._plist))
-        self._pfixed = [True if e else False for e in fix]
+        assert(len(fix) == len(self._param_sets))
 
-    def get_state(self):
-        '''return the current state of the model under parameterisation. This is
-        required, for example, by the calculation of finite difference
-        gradients.'''
+        for f, p in zip(fix, self._param_sets):
+            if f: p.fix()
+            else: p.unfix()
+
+    def get_state(self, t):
+        '''return the current state of the model under parameterisation
+        at time t. This is required, for example, by the calculation
+        of finite difference gradients.'''
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state. The
@@ -295,19 +314,168 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         # value of get_ds_dp.
         raise RuntimeError, 'implement me'
 
-    def get_ds_dp(self, at_phi, only_free = True):
+    def get_ds_dp(self, t, only_free = True):
         '''get a list of derivatives of the state wrt each parameter, as
         a list in the same order as the internal list of parameters. Evaluate
-        each scan-dependent parameter at angle at_phi
+        each scan-dependent parameter at coordinate t, corresponding to
+        the original, unnormalised coordinates used to set up the smoother
+        (t will most likely be along the dimension of image number).
 
         If only_free, the derivatives with respect to fixed parameters are
         omitted from the returned list. Otherwise a list for all parameters is
         returned, with values of 0.0 for the fixed parameters'''
 
-        if only_free:
-            return [e for e, f in zip(self._dstate_dp,
-                                      self._pfixed) if not f]
+        # To be implemented by the derived class. A list _dstate_dp cannot
+        # reasonably be stored here, because the derivatives are time
+        # dependent, so must be calculated for each requested point t
+        raise RuntimeError, 'implement me'
 
-        else:
-            return [0. * e if f else e for e, f in zip(self._dstate_dp,
-                                                       self._pfixed)]
+        # make a list that tells whether each parameter is fixed
+#        p_fixed = [x for f in self.get_fixed() for x in [f] * self._set_len]
+#
+#        if only_free:
+#
+#            return [e for e, f in zip(self._dstate_dp,
+#                                      p_fixed) if not f]
+#
+#        else:
+#            return [0. * e if f else e for e, f in zip(self._dstate_dp,
+#                                                       p_fixed)]
+
+
+class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
+    '''A work-in-progress time-dependent parameterisation for crystal
+    orientation, with angles expressed in mrad'''
+
+    def __init__(self, crystal, t_range, num_intervals):
+
+        # The state of a scan varying crystal orientation parameterisation
+        # is an orientation
+        # matrix '[U](t)', expressed as a function of 'time' t (which could
+        # actually be measured by image number in a sequential scan)
+
+        # The initial state is a snapshot of the crystal orientation
+        # at the time of initialisation '[U0]', which independent of time.
+        # Future states are composed by
+        # rotations around axes of the phi-axis frame by Tait-Bryan angles.
+        #
+        # [U](t) = [Phi3](t)[Phi2](t)[Phi1](t)[U0]
+
+        # Set up the smoother
+        smoother = GaussianSmoother(t_range, num_intervals)
+        nv = smoother.num_values()
+
+        ### Set up the initial state
+        istate = crystal.get_U()
+
+        ### Set up the parameters
+        phi1 = ScanVaryingParameterSet(0.0, nv,
+                            matrix.col((1., 0., 0.)), 'angle', 'Phi1')
+        phi2 = ScanVaryingParameterSet(0.0, nv,
+                            matrix.col((0., 1., 0.)), 'angle', 'Phi2')
+        phi3 = ScanVaryingParameterSet(0.0, nv,
+                            matrix.col((1., 0., 0.)), 'angle', 'Phi3')
+
+        # build the list of parameter sets in a specific, maintained order
+        p_list = [phi1, phi2, phi3]
+
+        # set up the list of model objects being parameterised (here
+        # just a single crystal model)
+        models = [crystal]
+
+        # set up the base class
+        ScanVaryingModelParameterisation.__init__(self, models, istate,
+                                                  p_list, smoother)
+
+        # call compose to calculate all the derivatives
+        #FIXME cannot use compose to calculate derivatives as they are
+        # time dependent now
+        #self.compose()
+
+    def get_ds_dp(self, t, only_free = True):
+        '''calculate derivatives'''
+
+        # Extract orientation from the initial state
+        U0 = self._initial_state
+
+        # extract parameter sets from the internal list
+        phi1_set, phi2_set, phi3_set = self._param_sets
+
+        # extract angles and other data at time t using the smoother
+        phi1, phi1_weights, phi1_sumweights = self._smoother(t, phi1_set)
+        phi2, phi2_weights, phi2_sumweights = self._smoother(t, phi2_set)
+        phi3, phi3_weights, phi3_sumweights = self._smoother(t, phi3_set)
+
+        # calculate derivatives of angles wrt underlying parameters.
+        # Call the sets 'a', 'b' and 'c'
+        # FIXME write up notes in orange notebook
+        dphi1_da = [e / phi1_sumweights for e in phi1_weights]
+        dphi2_db = [e / phi2_sumweights for e in phi2_weights]
+        dphi3_dc = [e / phi3_sumweights for e in phi3_weights]
+
+        # convert angles to radians
+        phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
+                                     phi3 / 1000.)
+
+        # compose rotation matrices and their first order derivatives wrt angle
+        Phi1 = (phi1_set.axis).axis_and_angle_as_r3_rotation_matrix(phi1rad, deg=False)
+        dPhi1_dphi1 = dR_from_axis_and_angle(phi1_set.axis, phi1rad, deg=False)
+
+        Phi2 = (phi2_set.axis).axis_and_angle_as_r3_rotation_matrix(phi2rad, deg=False)
+        dPhi2_dphi2 = dR_from_axis_and_angle(phi2_set.axis, phi2rad, deg=False)
+
+        Phi3 = (phi3_set.axis).axis_and_angle_as_r3_rotation_matrix(phi3rad, deg=False)
+        dPhi3_dphi3 = dR_from_axis_and_angle(phi3_set.axis, phi3rad, deg=False)
+
+        Phi21 = Phi2 * Phi1
+        Phi321 = Phi3 * Phi21
+
+        ### Compose new state
+
+        #newU = Phi321 * U0
+        #self._models[0].set_U(newU)
+
+        ### calculate derivatives of the state wrt angle, convert back to mrad
+        dU_dphi1 = Phi3 * Phi2 * dPhi1_dphi1 * U0 / 1000.
+        dU_dphi2 = Phi3 * dPhi2_dphi2 * Phi1 * U0 / 1000.
+        dU_dphi3 = dPhi3_dphi3 * Phi21 * U0 / 1000.
+
+        # calculate derivatives of state wrt underlying parameters
+        dU_da = [dU_dphi1 * e for e in dphi1_da]
+        dU_db = [dU_dphi2 * e for e in dphi1_db]
+        dU_dc = [dU_dphi3 * e for e in dphi1_dc]
+
+        # return concatenated list of derivatives
+        return dU_da + dU_db + dU_dc
+
+    def get_state(self):
+
+        # Extract orientation from the initial state
+        U0 = self._initial_state
+
+        # extract parameter sets from the internal list
+        phi1_set, phi2_set, phi3_set = self._param_sets
+
+        # extract angles and other data at time t using the smoother
+        phi1, phi1_weights, phi1_sumweights = self._smoother(t, phi1_set)
+        phi2, phi2_weights, phi2_sumweights = self._smoother(t, phi2_set)
+        phi3, phi3_weights, phi3_sumweights = self._smoother(t, phi3_set)
+
+        # convert angles to radians
+        phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
+                                     phi3 / 1000.)
+
+        # compose rotation matrices
+        Phi1 = (phi1_set.axis).axis_and_angle_as_r3_rotation_matrix(phi1rad, deg=False)
+        Phi2 = (phi2_set.axis).axis_and_angle_as_r3_rotation_matrix(phi2rad, deg=False)
+        Phi3 = (phi3_set.axis).axis_and_angle_as_r3_rotation_matrix(phi3rad, deg=False)
+
+        Phi21 = Phi2 * Phi1
+        Phi321 = Phi3 * Phi21
+
+        ### Compose new state
+
+        newU = Phi321 * U0
+        #self._models[0].set_U(newU)
+        # get U(t)
+        return newU

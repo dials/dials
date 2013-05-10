@@ -10,7 +10,7 @@
 from scan_varying_model_parameters import *
 from math import pi
 
-myparam = ScanVaryingParameter(1.0, 5)
+myparam = ScanVaryingParameterSet(1.0, 5)
 
 #print dir (myparam)
 
@@ -21,6 +21,7 @@ vals[4] = 2.0
 myparam.value = vals
 print myparam.value
 
+# treat x range as the phi range of a scan
 smoother = GaussianSmoother((0, 2 * pi), 3)
 
 print smoother.num_values()
@@ -32,8 +33,8 @@ print smoother.spacing()
 smooth_vals = [2*pi*e/100 for e in range(1, 100)]
 for e in smooth_vals:
 
-    y = smoother.value_weight(e, myparam)
-    print e, y[0],
-    for i in y[1]: print i,
-    print ""
+    val, weights, sumweights = smoother.value_weight(e, myparam)
+    print e, val,
+    for i in weights: print i,
+    print sumweights
 #print pi, smoother.value_weight(pi, myparam)
