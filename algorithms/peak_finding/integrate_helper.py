@@ -10,11 +10,22 @@ dat2d[:, :] = 11
 print dat2d
 
 dat2d_flex = flex.int(dat2d)
-flex_ref2d = ref_2d(dat2d_flex, 10, 20, .33333, 1000, 0.5)
-dat2d_ref = flex_ref2d.as_numpy_array()
+
+flex_ref2d_g = ref_2d(dat2d_flex, 10, 20, .33333, 1000, 0.9)
+dat2d_ref_g = flex_ref2d_g.as_numpy_array()
+
+
+flex_ref2d_l = ref_2d(dat2d_flex, 10, 20, .33333, 1000, 0.1)
+dat2d_ref_l = flex_ref2d_l.as_numpy_array()
+
+
 
 from matplotlib import pyplot as plt
-plt.imshow(dat2d_ref , interpolation = "nearest")
+
+plt.imshow(dat2d_ref_g , interpolation = "nearest")
 plt.show()
 
-print dat2d_ref
+plt.imshow(dat2d_ref_l , interpolation = "nearest")
+plt.show()
+
+
