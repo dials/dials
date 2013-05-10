@@ -6,6 +6,7 @@
 const float pi=3.141595358;
 namespace dials { namespace algorithms {
   using scitbx::af::flex_int;
+  using scitbx::af::flex_grid;
   void rotate (float& x, float& y, float delta_ang){
     float ang,dist;
     ang = atan2(x, y);
@@ -15,18 +16,18 @@ namespace dials { namespace algorithms {
     y = dist * cos(ang);
   }
 
-  flex_int ref_2d(flex_int & data2d, float a, float b,
-                       float delta_ang, float imax, float asp) {
-    int ncol=data2d.accessor().all()[1];
-    int nrow=data2d.accessor().all()[0];
+  flex_int ref_2d(int nrow,int ncol, float a, float b,
+                float delta_ang, float imax, float asp) {
+    //int ncol=data2d.accessor().all()[1];
+    //int nrow=data2d.accessor().all()[0];
     float dx,dy,dd,xc,yc;
     float mw = 0.5;
     float cntnt, gss, lrz, i_tt;
     xc=ncol/2;
     yc=nrow/2;
-    flex_int curv3d(data2d.accessor(),0);
-    // std::cout << "size(x) =" << ncol <<"\n";
-    // std::cout << "size(y) =" << nrow <<"\n";
+    // flex_int curv3d(data2d.accessor(),0);
+    flex_int curv3d(flex_grid<>(nrow, ncol),0);
+
     cntnt=1/sqrt(2.0*pi);
 
     for (int row = 0; row<nrow; row++) {
@@ -43,7 +44,8 @@ namespace dials { namespace algorithms {
         gss=(1.0/pi) * exp(-mw * (dd*dd));
         lrz=(1.0/pi) * ( mw / ( dd*dd + mw*mw ) );
         i_tt=gss*asp+lrz*(1-asp);
-        curv3d(row, col) = data2d(row, col) + int(i_tt*imax);
+        // curv3d(row, col) = data2d(row, col) + int(i_tt*imax);
+        curv3d(row, col) = int(i_tt*imax);
       }
     }
     return curv3d;
