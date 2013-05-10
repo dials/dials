@@ -158,6 +158,7 @@ algorithms/spot_prediction/rotation_angles.h -text
 array_family/__init__.py -text
 array_family/flex.py -text
 array_family/sort_index.h -text
+command_line/analyse_blank.py -text
 command_line/background_lookup.py -text
 command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text

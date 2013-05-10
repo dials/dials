@@ -29,12 +29,18 @@ def poisson_noise(grid, A):
     from scitbx.array_family import flex
     return flex.double(numpy.random.poisson(A, grid).astype(numpy.float64))
 
+def gaussian_noise(grid, A, sig):
+    import numpy
+    from scitbx.array_family import flex
+    return flex.double(numpy.random.normal(A, sig, grid).astype(numpy.float64))
+
 if __name__ == '__main__':
 
     from scitbx.array_family import flex
 
     spot = gaussian((30,30), 20, (15,15), (3,3))
     background = poisson_noise((30,30), 20)
+    background = gaussian_noise((30,30),20,5)
     grid = background + spot
 
     from dials.algorithms.background import NormalDiscriminator
@@ -42,7 +48,7 @@ if __name__ == '__main__':
     from dials.algorithms.background import MeanSubtractor
 
     discriminate_normal = NormalDiscriminator(n_sigma = 3.0)
-    discriminate_poisson = PoissonDiscriminator(n_sigma = 3.0)
+    discriminate_poisson = PoissonDiscriminator(n_sigma = 1.0)
 
     grid_i = flex.int(flex.grid(grid.all()))
     for i, g in enumerate(grid):
