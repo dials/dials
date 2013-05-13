@@ -23,13 +23,14 @@ namespace dials { namespace algorithms {
     float dx,dy,dd,xc,yc;
     float mw = 0.5;
     float cntnt, gss, lrz, i_tt;
+    // float tot=0;
     xc=float(ncol)/2;
     yc=float(nrow)/2;
     // flex_int curv3d(data2d.accessor(),0);
     flex_int curv3d(flex_grid<>(nrow, ncol),0);
     cntnt=1.0 / sqrt(2.0 * pi);
-    for (int row = 0; row<nrow; row++) {
-      for (int col = 0; col<ncol; col++) {
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
         dx = float(col) - xc;
         dy = float(row) - yc;
         rotate(dx, dy, delta_ang);
@@ -44,8 +45,11 @@ namespace dials { namespace algorithms {
         i_tt=gss*asp+lrz*(1.0 - asp);
         // curv3d(row, col) = data2d(row, col) + int(i_tt*imax);
         curv3d(row, col) = int(i_tt*imax);
+        // tot+=i_tt*imax;
+
       }
     }
+    // std::cout <<"\n"<<"tot ="<<tot<<"\n";
     return curv3d;
   }
 
