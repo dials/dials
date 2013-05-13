@@ -33,6 +33,7 @@ def print_call_info(callback, info, result_type):
 def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     """Read the required data from the file, predict the spots and display."""
 
+    from dials.model.data import ReflectionList
     from dials.algorithms.spot_prediction import IndexGenerator
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
@@ -166,11 +167,42 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
         from dials.util.command_line import interactive_console
         interactive_console(namespace=locals())
 
+#    indices = []
+#    for i, r in enumerate(reflections):
+#        shoebox = r.shoebox
+#        mins = min(list(shoebox))
+#        maxs = max(list(shoebox))
+#        if mins < 0:
+#            continue
+
+#        if maxs < 100:
+#            continue
+#
+#        if shoebox.all()[0] > 15:
+#            continue
+#
+#        indices.append(i)
+#
+#    print len(indices)
+
+#    sub_ref = ReflectionList(10)
+#    for i in range(0, 10):
+#        sub_ref[i] = reflections[indices[i]]
+#        from matplotlib import pylab, cm
+#        volume = sub_ref[i].shoebox.as_numpy_array()
+#        image = volume[volume.shape[0]/2,:,:]
+#        pylab.imshow(image, interpolation='none', cmap=cm.Greys_r)
+#        pylab.show()
+
     # Dump the reflections to file
     if output_file:
-        import pickle
-        print "\nPickling the reflection list."
-        pickle.dump(reflections, open(output_file, 'wb'))
+#        import pickle
+#        print "\nPickling the reflection list."
+#        pickle.dump(reflections, open(output_file, 'wb'))
+        from dials.util.nexus import NexusFile
+        handle = NexusFile(output_file, 'w')
+        handle.set_reflections(reflections)
+        handle.close()
 
 
 if __name__ == '__main__':

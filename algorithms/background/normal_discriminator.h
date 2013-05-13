@@ -23,7 +23,7 @@
 
 namespace dials { namespace algorithms {
 
-  using boost::math::erfc;
+  using boost::math::erf_inv;
   using scitbx::af::shared;
   using scitbx::af::const_ref;
   using scitbx::af::ref;
@@ -43,7 +43,7 @@ namespace dials { namespace algorithms {
    */
   inline
   double normal_expected_n_sigma(int n_obs) {
-    return sqrt(2.0) * erfc(1.0 - (1.0 / n_obs));
+    return sqrt(2.0) * erf_inv(1.0 - (1.0 / n_obs));
   }
 
   /**
@@ -125,6 +125,8 @@ namespace dials { namespace algorithms {
     double min_n_sigma = (mean - mind) / sdev;
     double max_n_sigma = (maxd - mean) / sdev;
 
+    std::cout << min_n_sigma << " " << max_n_sigma << std::endl;
+
     // return the maximum number of sigma
     return max_n_sigma > min_n_sigma ? max_n_sigma : min_n_sigma;
   }
@@ -142,7 +144,7 @@ namespace dials { namespace algorithms {
   bool is_normally_distributed(const const_ref<double> &data, double n_sigma) {
 
     // Get the maximum n sigma
-    double max_n_sigma = maximum_n_sigma(data);
+    double max_n_sigma = absolute_maximum_n_sigma(data);
 
     // return whether within required sigma
     return max_n_sigma < n_sigma;

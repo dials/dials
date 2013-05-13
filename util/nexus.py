@@ -63,13 +63,10 @@ class ReflectionListEncoder(H5PYEncoder):
             name The name of the property
 
         '''
-        g.create_dataset(name, data=[getattr(r, name) for r in rl])
+        g[name] = [getattr(r, name) for r in rl]
 
     def create_profile(self, g, rl, name):
-        '''Create a profile dataset. The reflection profiles are 3D arrays
-        which vary in size depending on the reflection. They are therefore
-        saved in the HDF file as a single 1D array containing the data from
-        all reflections, an offset inot the array and the shape of the array.
+        '''Create a profile group and save each profile in its own dataset
 
         Params:
             g The group
@@ -77,30 +74,13 @@ class ReflectionListEncoder(H5PYEncoder):
             name The profile name
 
         '''
-        import numpy
-
-        # Create the data offset and shape arrays
-        data = numpy.zeros(shape=0, dtype=numpy.int32)
-        offset = numpy.zeros(shape=len(rl) + 1, dtype=numpy.int32)
-        shape = numpy.zeros(shape=(len(rl),3), dtype=numpy.int32)
-
-        # Loop through all the reflections. Get the array from the struct
-        # and append the data to the data array. Also add the offset and
-        # shape to their respective arrays
+        from scitbx.array_family import flex
+        subgroup = g.create_group(name)
         for i, r in enumerate(rl):
-            flex_array = getattr(r, name)
-            data = numpy.append(data, flex_array.as_1d().as_numpy_array())
-            offset[i+1] = offset[i] + len(flex_array)
-            if len(flex_array):
-                shape[i,:] = flex_array.all()
-            else:
-                shape[i,:] = [0, 0, 0]
-
-        # Create datasets for the profile information
-        sub_group = g.create_group(name)
-        sub_group.create_dataset('offset', data=offset)
-        sub_group.create_dataset('data',   data=data)
-        sub_group.create_dataset('shape', data=shape)
+            dataset_name  = '{0}'.format(i)
+            dataset_value = getattr(r, name)
+            if len(dataset_value) > 0:
+                subgroup[dataset_name] = dataset_value.as_numpy_array()
 
 
 class ReflectionListDecoder(H5PYDecoder):
@@ -131,9 +111,9 @@ class ReflectionListDecoder(H5PYDecoder):
         self.extract_values(rl, g, 'centroid_variance', lambda x: map(float, x))
 
         # Extract the reflection profiles
-        self.extract_profiles(g, rl, 'shoebox', flex.int)
-        self.extract_profiles(g, rl, 'shoebox_mask', flex.int)
-        self.extract_profiles(g, rl, 'transformed_shoebox', flex.double)
+        self.extract_profile(g, rl, 'shoebox', flex.int)
+        self.extract_profile(g, rl, 'shoebox_mask', flex.int)
+        self.extract_profile(g, rl, 'transformed_shoebox', flex.double)
 
         # Return the list of reflections
         return rl
@@ -157,7 +137,7 @@ class ReflectionListDecoder(H5PYDecoder):
         for i, x in enumerate(numpy.array(g[name])):
             setattr(rl[i], name, setter(x));
 
-    def extract_profiles(self, g, rl, name, flex_type):
+    def extract_profile(self, g, rl, name, flex_type):
         '''Extract the reflection profiles.
 
         Params:
@@ -168,55 +148,10 @@ class ReflectionListDecoder(H5PYDecoder):
 
         '''
         import numpy
-
-        # Get the group
-        sub_group = g[name]
-
-        # Ensure datasets are longer than zero
-        if (len(sub_group['data'])   > 0 and
-            len(sub_group['offset']) > 0 and
-            len(sub_group['shape'])  > 0):
-
-            # Extract the datasets as numpy arrays
-            data   = numpy.array(sub_group['data'])
-            offset = numpy.array(sub_group['offset'])
-            shape  = numpy.array(sub_group['shape'])
-
-            # Loop through the array of reflections and extract a profile
-            for i in range(len(rl)):
-                setattr(rl[i], name, self.extract_single(
-                    data, offset, shape, i, flex_type))
-
-    def extract_single(self, data, offset, shape, index, flex_type):
-        '''The profiles are stored in the form of a 1D array containing
-        all the data values and an array containing the offset for each
-        reflection within the data array. Extract the profile for the
-        given reflection and return it as a flex array
-
-        Params:
-            data The value dataset
-            offset The offset dataset
-            index The index of the reflection
-            flex_type The flex array type
-            shape The shape of array
-
-        Returns:
-            A flex array of flex_type containing the profile data
-
-        '''
-        import numpy
-
-        # Get the index range
-        first, last = offset[index], offset[index+1]
-
-        # Check the offset and return the array
-        if last > first:
-            array = data[first:last]
-            array.shape = shape[index]
-            return flex_type(array)
-        else:
-            assert((shape[index] == (0, 0, 0)).all())
-            return flex_type()
+        subgroup = g[name]
+        for k, v in subgroup.iteritems():
+            if len(v.shape) > 0:
+                setattr(rl[int(k)], name, flex_type(numpy.array(v)))
 
 
 class NexusFile(object):
@@ -251,12 +186,15 @@ class NexusFile(object):
 
 if __name__ == '__main__':
     from dials.model.data import Reflection, ReflectionList
+    from scitbx.array_family import flex
+    r = Reflection()
+    r.shoebox = flex.int(flex.grid(10, 10, 10))
 
     reflections = ReflectionList()
-    reflections.append(Reflection())
-    reflections.append(Reflection())
-    reflections.append(Reflection())
-    reflections.append(Reflection())
+    reflections.append(r)
+    reflections.append(r)
+    reflections.append(r)
+    reflections.append(r)
 
     writer = NexusFile('temp.h5', 'w')
     writer.set_reflections(reflections)

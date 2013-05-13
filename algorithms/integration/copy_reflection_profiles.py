@@ -87,6 +87,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
     """
     from dials.algorithms.integration import allocate_reflection_profiles
     from dials.algorithms.integration import ShoeboxMasker
+    from scitbx.array_family import flex
 
     # Allocate memory for reflection profiles
     reflections = allocate_reflection_profiles(reflections)
@@ -99,7 +100,8 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
 
     # If the adjacency list is given, then create the reflection mask
     if adjacency_list:
-        detector_mask = (sweep[0] >= 0).as_int()
+        detector_mask = (sweep[0] >= 0).as_1d().as_int()
+        detector_mask.reshape(flex.grid(sweep[0].all()))
         shoebox_masker = ShoeboxMasker(detector_mask)
         shoebox_masker(reflections, adjacency_list)
 
