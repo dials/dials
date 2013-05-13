@@ -10,6 +10,8 @@
 from __future__ import division
 from dials.algorithms.refinement.parameterisation.model_parameters import *
 from math import exp
+from scitbx import matrix
+from dials.algorithms.refinement import dR_from_axis_and_angle
 
 class ScanVaryingParameterSet(Parameter):
     '''Testing a class for a scan-varying parameter, in which values at rotation
@@ -200,10 +202,10 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         self._models = models
         self._param_sets = list(param_sets)
         self._num_sets = len(self._param_sets)
+        self._set_len = len(param_sets[0])
         self._total_len = self._set_len * self._num_sets
 
         # ensure all internal parameter sets have the same number of parameters
-        self._set_len = len(param_sets[0])
         for param in self._param_sets[1:]: assert len(param) == self._set_len
 
         #self._dstate_dp = [None] * self._total_len
@@ -243,7 +245,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
         if only_free:
             return [x for e in self._param_sets \
-                    if not x.get_fixed() for x in e.value]
+                    if not e.get_fixed() for x in e.value]
             #return [x for e, f in zip(self._param_sets, self._pset_fixed) \
             #        if not f for x in e.value]
 
@@ -260,7 +262,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         # list
         if only_free:
             return [x for e in self._param_sets \
-                    if not x.get_fixed() for x in e.name]
+                    if not e.get_fixed() for x in e.name]
             #return [x for e, f in zip(self._param_sets, self._pset_fixed) \
             #        if not f for x in e.name]
 
@@ -393,7 +395,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         #self.compose()
 
     def get_ds_dp(self, t, only_free = True):
-        '''calculate derivatives'''
+        '''calculate derivatives for model at time t'''
 
         # Extract orientation from the initial state
         U0 = self._initial_state
@@ -402,16 +404,15 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         phi1_set, phi2_set, phi3_set = self._param_sets
 
         # extract angles and other data at time t using the smoother
-        phi1, phi1_weights, phi1_sumweights = self._smoother(t, phi1_set)
-        phi2, phi2_weights, phi2_sumweights = self._smoother(t, phi2_set)
-        phi3, phi3_weights, phi3_sumweights = self._smoother(t, phi3_set)
+        phi1, phi1_weights, phi1_sumweights = self._smoother.value_weight(t, phi1_set)
+        phi2, phi2_weights, phi2_sumweights = self._smoother.value_weight(t, phi2_set)
+        phi3, phi3_weights, phi3_sumweights = self._smoother.value_weight(t, phi3_set)
 
         # calculate derivatives of angles wrt underlying parameters.
-        # Call the sets 'a', 'b' and 'c'
         # FIXME write up notes in orange notebook
-        dphi1_da = [e / phi1_sumweights for e in phi1_weights]
-        dphi2_db = [e / phi2_sumweights for e in phi2_weights]
-        dphi3_dc = [e / phi3_sumweights for e in phi3_weights]
+        dphi1_dp = [e / phi1_sumweights for e in phi1_weights]
+        dphi2_dp = [e / phi2_sumweights for e in phi2_weights]
+        dphi3_dp = [e / phi3_sumweights for e in phi3_weights]
 
         # convert angles to radians
         phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
@@ -441,14 +442,16 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         dU_dphi3 = dPhi3_dphi3 * Phi21 * U0 / 1000.
 
         # calculate derivatives of state wrt underlying parameters
-        dU_da = [dU_dphi1 * e for e in dphi1_da]
-        dU_db = [dU_dphi2 * e for e in dphi1_db]
-        dU_dc = [dU_dphi3 * e for e in dphi1_dc]
+        dU_dp1 = [dU_dphi1 * e for e in dphi1_dp]
+        dU_dp2 = [dU_dphi2 * e for e in dphi2_dp]
+        dU_dp3 = [dU_dphi3 * e for e in dphi3_dp]
 
         # return concatenated list of derivatives
-        return dU_da + dU_db + dU_dc
+        return dU_dp1 + dU_dp2 + dU_dp3
 
-    def get_state(self):
+    def get_state(self, t):
+
+        '''Return crystal orientation matrix [U] at time t'''
 
         # Extract orientation from the initial state
         U0 = self._initial_state
@@ -457,9 +460,9 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         phi1_set, phi2_set, phi3_set = self._param_sets
 
         # extract angles and other data at time t using the smoother
-        phi1, phi1_weights, phi1_sumweights = self._smoother(t, phi1_set)
-        phi2, phi2_weights, phi2_sumweights = self._smoother(t, phi2_set)
-        phi3, phi3_weights, phi3_sumweights = self._smoother(t, phi3_set)
+        phi1, phi1_weights, phi1_sumweights = self._smoother.value_weight(t, phi1_set)
+        phi2, phi2_weights, phi2_sumweights = self._smoother.value_weight(t, phi2_set)
+        phi3, phi3_weights, phi3_sumweights = self._smoother.value_weight(t, phi3_set)
 
         # convert angles to radians
         phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
