@@ -16,7 +16,7 @@ namespace dials { namespace algorithms {
     y = dist * cos(ang);
   }
 
-  flex_int ref_2d(int nrow, int ncol, float a, float b,
+  flex_int model_2d(int nrow, int ncol, float a, float b,
                 float delta_ang, float imax, float asp) {
     //int ncol=data2d.accessor().all()[1];
     //int nrow=data2d.accessor().all()[0];
@@ -54,16 +54,12 @@ namespace dials { namespace algorithms {
   }
 
 
-  int measure_2d(flex_int & data2d, float a, float b) {
-    int rtn;
+  float measure_2d_angl(flex_int & data2d) {
+    float ang;
+    ang=5;
 
-    std::cout <<"\n"<<"Hi there "<<"\n";
 
-    a=5;
-    b=6;
-    rtn=7;
-
-    return rtn;
+    return ang;
   }
 
 
