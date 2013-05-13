@@ -42,7 +42,7 @@ namespace dials { namespace algorithms {
     std::size_t n = data.size();
     double m = 0.0;
     for (std::size_t i = 0; i < n; ++i) {
-      m += pow(data[i] - c, k);
+      m += pow<double>(data[i] - c, k);
     }
     return m / n;
   }
