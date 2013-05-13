@@ -10,7 +10,7 @@
 from scan_varying_model_parameters import *
 from math import pi
 
-myparam = ScanVaryingParameterSet(1.0, 5)
+myparam = ScanVaryingParameterSet(1.0, 7)
 
 #print dir (myparam)
 
@@ -21,8 +21,8 @@ vals[4] = 2.0
 myparam.value = vals
 print myparam.value
 
-# treat x range as the phi range of a scan
-smoother = GaussianSmoother((0, 2 * pi), 3)
+# treat x range as image range, between 1 and 100
+smoother = GaussianSmoother((1, 100), 5)
 
 print smoother.num_values()
 print smoother.num_samples()
@@ -30,20 +30,22 @@ print smoother.num_average()
 print smoother.positions()
 print smoother.spacing()
 
-smooth_vals = [2*pi*e/100 for e in range(1, 100)]
+smooth_vals = [e for e in range(1, 101)]
 for e in smooth_vals:
 
     val, weights, sumweights = smoother.value_weight(e, myparam)
     print e, val,
     for i in weights: print i,
     print sumweights
-#print pi, smoother.value_weight(pi, myparam)
 
 class TestModel(ScanVaryingCrystalOrientationParameterisation):
 
     def __init__(self, image_number, *args):
         self.image_number = image_number
         ScanVaryingCrystalOrientationParameterisation.__init__(self, *args)
+
+    def set_time_point(self, t):
+        self.image_number = t
 
     def get_state(self):
 
@@ -85,6 +87,16 @@ if __name__ == '__main__':
     xl_op = TestModel(50, xl, image_range, 5)
     #xl_ucp = CrystalUnitCellParameterisation(xl)
 
+    print "testing smoothed values for phi1 parameter"
+    smooth_vals = [e for e in range(1, 101)]
+    for e in smooth_vals:
+
+        val, weights, sumweights = smoother.value_weight(e, xl_op._param_sets[0])
+        print e, val,
+        for i in weights: print i,
+        print sumweights
+    print
+
     # how many parameters?
     num_param = xl_op.num_free()
 
@@ -105,17 +117,35 @@ if __name__ == '__main__':
     fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
     pnames = xl_op.get_pnames()
 
-    print "Gradients:"
-    for s, a, f in zip(pnames, an_ds_dp, fd_ds_dp):
-        print s
-        print a
-        print f
-        print "diff:", a-f
-        print
+    #print "Gradients:"
+    #for s, a, f in zip(pnames, an_ds_dp, fd_ds_dp):
+    #    print s
+    #    print a
+    #    print f
+    #    print "diff:", a-f
+    #    print
 
-    1/0
     for e, f in zip(an_ds_dp, fd_ds_dp):
         assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+
+    # try the same at various other time points
+    for t in (1.0, 92, 100):
+
+        xl_op.set_time_point(t)
+        an_ds_dp = xl_op.get_ds_dp(t)
+        fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
+        print t
+        print "Gradients:"
+        for s, a, f in zip(pnames, an_ds_dp, fd_ds_dp):
+            print s
+            print a
+            print f
+            print "diff:", a-f
+            print
+
+        for e, f in zip(an_ds_dp, fd_ds_dp):
+            assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+    1/0
 
     #an_ds_dp = xl_ucp.get_ds_dp()
     #fd_ds_dp = get_fd_gradients(xl_ucp, [1.e-7] * xl_ucp.num_free())
