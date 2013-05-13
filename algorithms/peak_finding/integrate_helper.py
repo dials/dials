@@ -3,7 +3,7 @@ from dials.algorithms.peak_finding import model_2d, measure_2d_angl
 
 ref2d = model_2d(20, 20, 1, 2, .33333, 125, 0.5)
 
-ang = measure_2d_angl(ref2d)
+ang = measure_2d_angl(ref2d, 10, 10)
 
 print "ang =", ang
 

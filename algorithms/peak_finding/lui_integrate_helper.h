@@ -18,8 +18,6 @@ namespace dials { namespace algorithms {
 
   flex_int model_2d(int nrow, int ncol, float a, float b,
                 float delta_ang, float imax, float asp) {
-    //int ncol=data2d.accessor().all()[1];
-    //int nrow=data2d.accessor().all()[0];
     float dx,dy,dd,xc,yc;
     float mw = 0.5;
     float cntnt, gss, lrz, i_tt;
@@ -41,27 +39,45 @@ namespace dials { namespace algorithms {
           dd=0.000000000000000000001;
         }
         gss = cntnt * exp(-mw * (dd*dd));
-        lrz = 1.0 /(pi * (1.0 + dd*dd )) ;
+        lrz = 1.0 /(pi * (1.0 + dd*dd ));
         i_tt=gss*asp+lrz*(1.0 - asp);
         // curv3d(row, col) = data2d(row, col) + int(i_tt*imax);
         curv3d(row, col) = int(i_tt*imax);
         // tot+=i_tt*imax;
-
       }
     }
     // std::cout <<"\n"<<"tot ="<<tot<<"\n";
     return curv3d;
   }
 
+  float measure_2d_angl(flex_int & data2d, float xpos, float ypos) {
+    int ncol=data2d.accessor().all()[1];
+    int nrow=data2d.accessor().all()[0];
+    float dx, dy, xfl, yfl;
+    float ang, ang_tot = 0, tot =0;
+    std::cout <<"\n" << "x,y =" << xpos << ", " << ypos << "\n";
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
+        xfl = float(col);// + 0.5;
+        yfl = float(row);// + 0.5;
+        dx = xfl - xpos;
+        dy = yfl - ypos;
+        ang = atan2(dx, dy);
+        if (ang>pi){
+          ang=ang-pi;
+        }
+        else if (ang<0){
+          ang=ang+pi;
+        }
+        ang_tot += ang*float(data2d(row, col));
+        tot += data2d(row, col);
 
-  float measure_2d_angl(flex_int & data2d) {
-    float ang;
-    ang=5;
-
+      }
+    }
+    ang = (ang_tot/tot)/pi;
 
     return ang;
   }
-
 
 }}
 
