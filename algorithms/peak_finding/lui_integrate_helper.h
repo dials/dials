@@ -53,6 +53,20 @@ namespace dials { namespace algorithms {
     return curv3d;
   }
 
+
+  int measure_2d(flex_int & data2d, float a, float b) {
+    int rtn;
+
+    std::cout <<"\n"<<"Hi there "<<"\n";
+
+    a=5;
+    b=6;
+    rtn=7;
+
+    return rtn;
+  }
+
+
 }}
 
 #endif

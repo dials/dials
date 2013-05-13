@@ -10,6 +10,9 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("ref_2d", &ref_2d, (arg("nrow")=100, arg("ncol")=100,
     arg("a") = 10, arg("b") = 20, arg("delta_ang") = 1,
     arg("imax") = 50 ,   arg("asp") = 0.5 ) );
+
+    def("measure_2d", &measure_2d, ( arg("data2d"),  arg("a"), arg("b") ) );
+
   }
 
 }}} // namespace = dials::algorithms::boost_python
