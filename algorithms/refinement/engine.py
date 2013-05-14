@@ -10,7 +10,6 @@
 from __future__ import division
 from scitbx import lbfgs
 from cctbx.array_family import flex
-import math
 import libtbx
 
 # use lstbx classes

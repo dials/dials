@@ -12,7 +12,6 @@ parameters using generated reflection positions from ideal geometry.
 
 # Python and cctbx imports
 from __future__ import division
-import sys
 from math import pi
 from scitbx import matrix
 from libtbx.phil import parse
@@ -47,9 +46,6 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 # Imports for the target function
 from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
-
-# Import helper functions
-from dials.algorithms.refinement import print_model_geometry
 
 #############################
 # Setup experimental models #

@@ -3,10 +3,13 @@
 from __future__ import division
 from math import sin, cos
 from scitbx import matrix
-# required before the boost python import to avoid an import error
+import random
+
+# flex is required before the boost python import to avoid an import error.
+# Ignore complaints by libtbx.find_clutter
 from cctbx.array_family import flex
 from dials_refinement_helpers_ext import *
-import random
+
 
 def dR_from_axis_and_angle(axis, angle, deg=False):
     '''return the first derivative of a rotation matrix specified by its

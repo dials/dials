@@ -107,7 +107,6 @@ class BeamParameterisationOrientation(ModelParameterisation):
 
 if __name__ == '__main__':
 
-    import random
     from libtbx.test_utils import approx_equal
 
     # make a random beam vector and parameterise it

@@ -9,7 +9,7 @@
 
 from __future__ import division
 
-from math import pi, sin, cos, sqrt, acos, atan2, fabs
+from math import pi, sqrt, acos, atan2, fabs
 from scitbx import matrix
 from cctbx.array_family import flex
 from dials.algorithms.spot_prediction import RayPredictor
