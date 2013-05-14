@@ -168,6 +168,7 @@ command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/extract_spot_xds.py -text
+command_line/extract_xds_integrate.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
 command_line/h5dump.py -text
 command_line/integrate.py -text
@@ -577,6 +578,7 @@ scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plai
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
+test/algorithms/background/real.py -text
 test/algorithms/background/simulate.py -text
 test/algorithms/background/tst_mean_subtractor.py -text
 test/algorithms/background/tst_normal_discriminator.py -text
