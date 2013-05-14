@@ -10,5 +10,6 @@ def raw_2d_integration(data2d, mask2d):
     for col in range(n_col):
         for row in range(n_row):
             tot += data2d[row, col]
+    sig = numpy.sqrt(tot)
     #print "tot =", tot
-    return tot
+    return tot, sig

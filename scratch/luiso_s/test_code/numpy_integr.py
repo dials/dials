@@ -18,5 +18,6 @@ mask2d[1:4, 1:4] = 1
 print mask2d
 
 from dials.algorithms.integration.sumation_2d import raw_2d_integration
-itns = raw_2d_integration(data2d, mask2d)
+itns, sigma = raw_2d_integration(data2d, mask2d)
 print "I =", itns
+print "Sigma =", sigma
