@@ -251,11 +251,11 @@ if __name__ == '__main__':
                 print "failure for parameter number", j
                 print "of the orientation parameterisation"
                 print "with fd_ds_dp = "
-                print fd_ds_dp[j]
+                print xl_op_fd_ds_dp[j]
                 print "and an_ds_dp = "
-                print an_ds_dp[j]
+                print xl_op_an_ds_dp[j]
                 print "so that difference fd_ds_dp - an_ds_dp ="
-                print fd_ds_dp[j] - an_ds_dp[j]
+                print xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j]
 
         for j in range(xl_ucp.num_free()):
             try:
@@ -267,10 +267,10 @@ if __name__ == '__main__':
                 print "failure for parameter number", j
                 print "of the unit cell parameterisation"
                 print "with fd_ds_dp = "
-                print fd_ds_dp[j]
+                print xl_uc_fd_ds_dp[j]
                 print "and an_ds_dp = "
-                print an_ds_dp[j]
+                print xl_uc_an_ds_dp[j]
                 print "so that difference fd_ds_dp - an_ds_dp ="
-                print fd_ds_dp[j] - an_ds_dp[j]
+                print xl_uc_fd_ds_dp[j] - xl_uc_an_ds_dp[j]
 
     if failures == 0: print "OK"
