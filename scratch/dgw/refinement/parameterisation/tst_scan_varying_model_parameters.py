@@ -25,7 +25,10 @@ from dials.model.experiment.crystal_model import Crystal
 class SmootherTest(object):
 
     '''Test a bare parameter set with the smoother'''
-    def __init__(self):
+    def __init__(self, plots = False):
+
+        # make scatterplots
+        self.do_plots = plots
 
         # 7 values, all set to 1.0
         self.myparam = ScanVaryingParameterSet(1.0, 7)
@@ -52,14 +55,19 @@ class SmootherTest(object):
         # coordinate
         assert self.smoother.spacing() == 19.8
 
-        # FIXME remove this printout, replace with optional scatterplot
-        smooth_vals = [e for e in range(1, 101)]
-        for e in smooth_vals:
+        smooth_at = [e for e in range(1, 101)]
+        data = [self.smoother.value_weight(e, self.myparam) for e in smooth_at]
+        vals = [v for v, w, sw in data]
+        assert len(smooth_at) == len(vals)
 
-            val, weights, sumweights = self.smoother.value_weight(e, self.myparam)
-            print e, val,
-            for i in weights: print i,
-            print sumweights
+        if self.do_plots:
+            try:
+                import matplotlib.pyplot as plt
+                plt.ion()
+                plt.scatter(smooth_at, vals)
+                plt.draw()
+            except ImportError as e:
+                print "pyplot not available", e
 
         print "OK"
 
@@ -87,7 +95,10 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
 
     '''Test a ScanVaryingCrystalOrientationParameterisation'''
 
-    def __init__(self):
+    def __init__(self, plots = False):
+
+        # Do we make scatterplots?
+        self.do_plots = plots
 
         # Let's say we have a scan of 100 images
         self.image_range = (1, 100)
@@ -139,9 +150,19 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
         # Now test gradients at equally spaced time points across the whole
         # range
         num_points = 50
+        smooth_at = []
+        phi1_data = []
+        phi2_data = []
+        phi3_data = []
         step_size = (self.image_range[1] - self.image_range[0]) / num_points
         for t in [self.image_range[0] + e * step_size \
                     for e in range(num_points + 1)]:
+
+            # collect data for plot
+            smooth_at.append(t)
+            phi1_data.append(xl_op._smoother.value_weight(t, xl_op._param_sets[0])[0])
+            phi2_data.append(xl_op._smoother.value_weight(t, xl_op._param_sets[1])[0])
+            phi3_data.append(xl_op._smoother.value_weight(t, xl_op._param_sets[2])[0])
 
             xl_op.set_time_point(t)
             an_ds_dp = xl_op.get_ds_dp(t)
@@ -158,6 +179,33 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
             for e, f in zip(an_ds_dp, fd_ds_dp):
                 assert(approx_equal((e - f), null_mat, eps = 1.e-6))
 
+        if self.do_plots:
+            try:
+                import matplotlib.pyplot as plt
+                plt.ion()
+                plt.clf()
+                plt.subplot(311)
+                plt.cla()
+                plt.scatter(smooth_at, phi1_data)
+                plt.title("Phi1")
+                plt.xlabel("image number")
+                plt.ylabel("Phi1 (mrad)")
+                plt.subplot(312)
+                plt.cla()
+                plt.scatter(smooth_at, phi2_data)
+                plt.title("Phi2")
+                plt.xlabel("image number")
+                plt.ylabel("Phi2 (mrad)")
+                plt.subplot(313)
+                plt.cla()
+                plt.scatter(smooth_at, phi3_data)
+                plt.title("Phi3")
+                plt.xlabel("image number")
+                plt.ylabel("Phi3 (mrad)")
+                plt.suptitle("Parameter smoothing with %d intervals" % nintervals)
+                plt.draw()
+            except ImportError as e:
+                print "pyplot not available", e
 
         print "OK"
 
@@ -230,8 +278,8 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
 
 if __name__ == '__main__':
 
-    test = SmootherTest()
+    test = SmootherTest(plots = False)
     test.run()
 
-    test = TestScanVaryingCrystalOrientationParameterisation()
+    test = TestScanVaryingCrystalOrientationParameterisation(plots = False)
     test.run()
