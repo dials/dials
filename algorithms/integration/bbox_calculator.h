@@ -99,6 +99,9 @@ namespace dials { namespace algorithms {
      */
     int6 operator()(vec3 <double> s1, double phi, std::size_t panel) const {
 
+      // Ensure our values are ok
+      DIALS_ASSERT(s1.length_sq() > 0);
+
       // Create the coordinate system for the reflection
       XdsCoordinateSystem xcs(s0_, s1, m2_, phi);
 
