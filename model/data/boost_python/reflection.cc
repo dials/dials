@@ -64,7 +64,7 @@ namespace dials { namespace model { namespace boost_python {
       // Check that the number of items is correct
       if (len(state) != 15) {
         PyErr_SetObject(PyExc_ValueError, (
-          "expected 14-item tuple in call to __setstate__; got %s" 
+          "expected 15-item tuple in call to __setstate__; got %s" 
           % state).ptr());
         throw_error_already_set();
       }
@@ -156,6 +156,12 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("centroid_sq_width",
         &Reflection::get_centroid_sq_width,
         &Reflection::set_centroid_sq_width)
+      .add_property("intensity",
+        &Reflection::get_intensity,
+        &Reflection::set_intensity)
+      .add_property("intensity_variance",
+        &Reflection::get_intensity_variance,
+        &Reflection::set_intensity_variance)
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 

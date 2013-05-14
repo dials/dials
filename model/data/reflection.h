@@ -87,7 +87,9 @@ namespace dials { namespace model {
         bounding_box_(0, 0, 0, 0, 0, 0),
         centroid_position_(0, 0, 0),
         centroid_variance_(0, 0, 0),
-        centroid_sq_width_(0, 0, 0) {}
+        centroid_sq_width_(0, 0, 0),
+        intensity_(0.0),
+        intensity_variance_(0.0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -104,7 +106,9 @@ namespace dials { namespace model {
         bounding_box_(0, 0, 0, 0, 0, 0),
         centroid_position_(0, 0, 0),
         centroid_variance_(0, 0, 0),
-        centroid_sq_width_(0, 0, 0) {}
+        centroid_sq_width_(0, 0, 0),
+        intensity_(0.0),
+        intensity_variance_(0.0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -126,7 +130,9 @@ namespace dials { namespace model {
         bounding_box_(0, 0, 0, 0, 0, 0),
         centroid_position_(0, 0, 0),
         centroid_variance_(0, 0, 0),
-        centroid_sq_width_(0, 0, 0) {}
+        centroid_sq_width_(0, 0, 0),
+        intensity_(0.0),
+        intensity_variance_(0.0) {}
 
     /** Virtual destructor */
     virtual ~Reflection() {}
@@ -211,6 +217,14 @@ namespace dials { namespace model {
       return centroid_sq_width_;
     }
 
+    double get_intensity() const {
+      return intensity_;
+    }
+
+    double get_intensity_variance() const {
+      return intensity_variance_;
+    }
+
     /** Set the rotation angle */
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
@@ -276,6 +290,14 @@ namespace dials { namespace model {
       centroid_sq_width_ = centroid_variance;
     }
 
+    void set_intensity(double intensity) {
+      intensity_ = intensity;
+    }
+
+    void set_intensity_variance(double var) {
+      intensity_variance_ = var;
+    }
+
   protected:
 
     double rotation_angle_;
@@ -293,6 +315,9 @@ namespace dials { namespace model {
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;
     vec3<double> centroid_sq_width_;
+
+    double intensity_;
+    double intensity_variance_;
   };
 
   /** Print reflection to std::out */
@@ -311,6 +336,8 @@ namespace dials { namespace model {
     os << "  centroid variance: " << r.get_centroid_variance().as_tiny() << "\n";
     os << "  centroid spot width variance: "
        << r.get_centroid_sq_width().as_tiny() << "\n";
+    os << "  intensity:         " << r.get_intensity() << "\n";
+    os << "  intensity variance: " << r.get_intensity_variance() << "\n";
     return os;
   }
 
