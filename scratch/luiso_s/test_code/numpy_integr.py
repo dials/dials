@@ -1,5 +1,5 @@
 import numpy
-from dials.algorithms.background.flat_subtraction import flat_background_subtraction_2d
+
 
 data2d = numpy.zeros((5, 5), dtype = numpy.int32)
 data2d[0, 1] = data2d[1, 0] = 1
@@ -18,7 +18,16 @@ mask2d = numpy.zeros((5, 5), dtype = numpy.int32)
 mask2d[1:4, 1:4] = 1
 print mask2d
 
-# def layer_treatment(self, data2d, diffdata2d_ext):
+
+from dials.algorithms.background.flat_subtraction import flat_background_subtraction_2d
+n_col = numpy.size(data2d[0:1, :])
+n_row = numpy.size(data2d[:, 0:1])
 bkgr = flat_background_subtraction_2d(data2d, mask2d)
 print 'bkgr =', bkgr
 print data2d
+tot = 0
+for col in range(n_col):
+    for row in range(n_row):
+        print data2d[row, col]
+        tot += data2d[row, col]
+print "tot =", tot
