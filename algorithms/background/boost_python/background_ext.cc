@@ -18,6 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_discriminator_strategy();
   void export_normal_discriminator();
   void export_poisson_discriminator();
+  void export_index_of_dispersion_discriminator();
   void export_skew_discriminator();
   void export_subtractor_strategy();
   void export_mean_subtractor();
@@ -28,6 +29,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_discriminator_strategy();
     export_normal_discriminator();
     export_poisson_discriminator();
+    export_index_of_dispersion_discriminator();
     export_skew_discriminator();
     export_subtractor_strategy();
     export_mean_subtractor();

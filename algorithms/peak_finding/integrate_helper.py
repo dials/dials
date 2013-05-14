@@ -13,5 +13,3 @@ from matplotlib import pyplot as plt
 
 plt.imshow(dat2d_ref , interpolation = "nearest")
 plt.show()
-
-

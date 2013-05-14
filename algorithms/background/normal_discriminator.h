@@ -125,7 +125,7 @@ namespace dials { namespace algorithms {
     double min_n_sigma = (mean - mind) / sdev;
     double max_n_sigma = (maxd - mean) / sdev;
 
-    std::cout << min_n_sigma << " " << max_n_sigma << std::endl;
+    //std::cout << min_n_sigma << " " << max_n_sigma << std::endl;
 
     // return the maximum number of sigma
     return max_n_sigma > min_n_sigma ? max_n_sigma : min_n_sigma;

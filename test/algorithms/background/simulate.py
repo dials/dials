@@ -52,18 +52,19 @@ if __name__ == '__main__':
 
     spot = gaussian((30,30), 20, (15,15), (3,3))
     background = poisson_noise((30,30), 20)
-    #background = gaussian_noise((30,30),20,5)
+    background = gaussian_noise((30,30),20,2)
     grid = background + spot
 
     from dials.algorithms.background import NormalDiscriminator
     from dials.algorithms.background import PoissonDiscriminator
+    from dials.algorithms.background import IndexOfDispersionDiscriminator
     from dials.algorithms.background import MeanSubtractor
     from dials.algorithms.background import normal_expected_n_sigma
 
     print normal_expected_n_sigma(30 * 30)
 
-    discriminate_normal = NormalDiscriminator(n_sigma = 3.0)#normal_expected_n_sigma(30 * 30))
-    discriminate_poisson = PoissonDiscriminator(n_sigma = 1.0)
+    discriminate_normal = NormalDiscriminator(n_sigma = normal_expected_n_sigma(30 * 30))
+    discriminate_poisson = IndexOfDispersionDiscriminator(n_sigma = 2)
 
     grid_i = flex.int(flex.grid(grid.all()))
     for i, g in enumerate(grid):
@@ -72,15 +73,25 @@ if __name__ == '__main__':
     mask_normal = discriminate_normal(grid_i)
     mask_poisson = discriminate_poisson(grid_i)
 
+    normal_pixels = flex.select(grid, flags=(mask_normal == 1))
+    poisson_pixels = flex.select(grid, flags=(mask_poisson == 1))
+    all_pixels = list(grid)
+
     line = grid.as_numpy_array()[15,:]
 
     from matplotlib import pylab, cm
-    pylab.subplot2grid((2, 3), (0, 0), colspan=3)
+    pylab.subplot2grid((3, 3), (0, 0))
+    pylab.hist(all_pixels, bins=20)
+    pylab.subplot2grid((3, 3), (0, 1))
+    pylab.hist(normal_pixels, bins=20)
+    pylab.subplot2grid((3, 3), (0, 2))
+    pylab.hist(poisson_pixels, bins=20)
+    pylab.subplot2grid((3, 3), (1, 0), colspan=3)
     pylab.plot(line)
-    pylab.subplot2grid((2, 3), (1, 0))
+    pylab.subplot2grid((3, 3), (2, 0))
     pylab.imshow(grid.as_numpy_array(), interpolation='none')
-    pylab.subplot2grid((2, 3), (1, 1))
+    pylab.subplot2grid((3, 3), (2, 1))
     pylab.imshow(mask_normal.as_numpy_array(), interpolation='none')
-    pylab.subplot2grid((2, 3), (1, 2))
+    pylab.subplot2grid((3, 3), (2, 2))
     pylab.imshow(mask_poisson.as_numpy_array(), interpolation='none')
     pylab.show()
