@@ -84,7 +84,6 @@ class ModelParameterisation(object):
         self._models = models
         self._plist = list(param_list)
         self._dstate_dp = [None] * len(param_list)
-        self._pfixed = [False] * len(param_list)
 
         return
 
@@ -93,7 +92,8 @@ class ModelParameterisation(object):
 
     def num_free(self):
         '''the number of free parameters'''
-        return len([x for x in self._pfixed if not x])
+
+        return sum(not x.get_fixed() for x in self._plist)
 
     def num_total(self):
         '''the total number of parameters, both fixed and free'''
@@ -115,7 +115,8 @@ class ModelParameterisation(object):
         returned list. Otherwise all parameter values are returned'''
 
         if only_free:
-            return [x.value for x, f in zip(self._plist, self._pfixed) if not f]
+
+            return [x.value for x in self._plist if not x.get_fixed()]
 
         else:
             return [x.value for x in self._plist]
@@ -128,8 +129,10 @@ class ModelParameterisation(object):
 
         # FIXME combine functionality with get_p by returning a named, ordered
         # list
+
         if only_free:
-            return [x.name for x, f in zip(self._plist, self._pfixed) if not f]
+
+            return [x.name for x in self._plist if not x.get_fixed()]
 
         else:
             return [x.name for x in self._plist]
@@ -142,8 +145,11 @@ class ModelParameterisation(object):
         the value of num_free'''
 
         assert(len(vals) == self.num_free())
-        for par, new_val in zip((p for p, f in zip(self._plist, self._pfixed) if not f), vals):
-            par.value = new_val
+
+        v = iter(vals)
+        for p in self._plist:
+            if not p.get_fixed(): # only set the free parameters
+                p.value = v.next()
 
         # compose with the new parameter values
         self.compose()
@@ -152,13 +158,20 @@ class ModelParameterisation(object):
 
     def get_fixed(self):
         '''return the list determining whether each parameter is fixed or not'''
-        return list(self._pfixed)
+
+        return [p.get_fixed() for p in self._param_sets]
+
 
     def set_fixed(self, fix):
-        '''set the list determining whether each parameter is fixed or not'''
+        '''set parameters to be fixed or free'''
 
         assert(len(fix) == len(self._plist))
-        self._pfixed = [True if e else False for e in fix]
+
+        for f, p in zip(fix, self._plist):
+            if f: p.fix()
+            else: p.unfix()
+
+        return
 
     def get_state(self):
         '''return the current state of the model under parameterisation. This is
@@ -180,9 +193,9 @@ class ModelParameterisation(object):
         returned, with values of 0.0 for the fixed parameters'''
 
         if only_free:
-            return [e for e, f in zip(self._dstate_dp,
-                                      self._pfixed) if not f]
+            return [ds_dp for ds_dp, p in zip(self._dstate_dp, self._plist) \
+                    if not p.get_fixed()]
 
         else:
-            return [0. * e if f else e for e, f in zip(self._dstate_dp,
-                                                       self._pfixed)]
+            return [0. * ds_dp if p.get_fixed() else ds_dp \
+                        for ds_dp, p in zip(self._dstate_dp, self._plist)]
