@@ -30,6 +30,24 @@ def print_call_info(callback, info, result_type):
         print "{0} {1} in {2} s".format(len(result), result_type, time_taken)
     return result
 
+def filter_reflection_profiles(reflections, detector, scan):
+    '''Filter invalid reflections.'''
+    from dials.model.data import ReflectionList
+    width, height = detector.get_image_size()
+    nframes = scan.get_array_range()[1]
+    valid = []
+    for r in reflections:
+        bbox = r.bounding_box
+        if bbox[0] < 0 or bbox[2] < 0 or bbox[4] < 0:
+            continue
+        if bbox[1] > width or bbox[3] > height or bbox[5] > nframes:
+            continue
+        shoebox = r.shoebox
+        if not (shoebox >= 0).all_eq(True):
+            continue
+        valid.append(r)
+    return ReflectionList(valid)
+
 def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     """Read the required data from the file, predict the spots and display."""
 
@@ -162,6 +180,12 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     from reflection_stats import ReflectionStats
     print ReflectionStats(reflections, adjacency_list)
 
+    # Filter invalid reflections
+    reflections = print_call_info(
+        lambda: filter_reflection_profiles(reflections, detector, scan),
+        "Filtering invalid reflection profiles", "reflections")
+
+
     # Enter an interactive python session
     if interactive:
         from dials.util.command_line import interactive_console
@@ -196,13 +220,13 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
 
     # Dump the reflections to file
     if output_file:
-#        import pickle
-#        print "\nPickling the reflection list."
-#        pickle.dump(reflections, open(output_file, 'wb'))
-        from dials.util.nexus import NexusFile
-        handle = NexusFile(output_file, 'w')
-        handle.set_reflections(reflections)
-        handle.close()
+        import pickle
+        print "\nPickling the reflection list."
+        pickle.dump(reflections, open(output_file, 'wb'))
+#        from dials.util.nexus import NexusFile
+#        handle = NexusFile(output_file, 'w')
+#        handle.set_reflections(reflections)
+#        handle.close()
 
 
 if __name__ == '__main__':
