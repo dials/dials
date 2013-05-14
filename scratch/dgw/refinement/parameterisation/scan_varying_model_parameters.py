@@ -25,7 +25,7 @@ class ScanVaryingParameterSet(Parameter):
 
         Parameter.__init__(self, value, axis, ptype, name)
 
-        assert num_samples >= 5 # could be lower
+        assert num_samples >= 2 # otherwise use scan-independent parameterisation
         self._num_samples = num_samples
         self._value = [value] * num_samples
         self._esd = [None] * num_samples
@@ -66,7 +66,7 @@ class GaussianSmoother(object):
 
         self._x0 = x_range[0] # coordinate of z = 0
         self._nsample = num_intervals # number of intervals
-        assert self._nsample > 0 # otherwise use scan-independent parameterisation
+        assert self._nsample > 0
         if self._nsample == 1:
             self._nvalues = 2
         elif self._nsample == 2:

@@ -7,48 +7,62 @@
 #  included in the root directory of this package.
 #
 
-from scan_varying_model_parameters import *
+# Python imports
+from __future__ import division
 from math import pi
+import random
 
-###########################################################
-# Start by testing a bare parameter set with the smoother #
-###########################################################
+# CCTBX imports
+from libtbx.test_utils import approx_equal
+from scitbx import matrix
 
-# 7 values, all set to 1.0
-myparam = ScanVaryingParameterSet(1.0, 7)
+# DIALS imports
+from dials.algorithms.refinement \
+    import get_fd_gradients, random_param_shift
+from scan_varying_model_parameters import *
+from dials.model.experiment.crystal_model import Crystal
 
-# Adjust a couple of the values
-myparam.value[3:4] = [2.0, 2.0]
+class SmootherTest(object):
 
-# Make a smoother with x_range as an 'image range', between 1 and 100. This
-# smoother needs 5 intervals (for 7 total values). The default smoother uses
-# an averaging window of 3 values
-smoother = GaussianSmoother((1, 100), 5)
+    '''Test a bare parameter set with the smoother'''
+    def __init__(self):
 
-assert smoother.num_values() == 7
-assert smoother.num_samples() == 5
-assert smoother.num_average() == 3
+        # 7 values, all set to 1.0
+        self.myparam = ScanVaryingParameterSet(1.0, 7)
 
-# The smoother positions depend on the number of intervals but not the x_range
-assert smoother.positions() == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
+        # Adjust a couple of the values
+        self.myparam.value[3:4] = [2.0, 2.0]
 
-# By contrast the spacing is in the original, unnormalised coordinate
-assert smoother.spacing() == 19.8
+        # Make a smoother with x_range as an 'image range', between 1 and 100.
+        # This smoother needs 5 intervals (for 7 total values). The default
+        # smoother uses an averaging window of 3 values
+        self.smoother = GaussianSmoother((1, 100), 5)
 
-# FIXME remove this printout, replace with optional scatterplot
-smooth_vals = [e for e in range(1, 101)]
-for e in smooth_vals:
+    def run(self):
 
-    val, weights, sumweights = smoother.value_weight(e, myparam)
-    print e, val,
-    for i in weights: print i,
-    print sumweights
+        assert self.smoother.num_values() == 7
+        assert self.smoother.num_samples() == 5
+        assert self.smoother.num_average() == 3
 
-print "OK"
+        # The smoother positions depend on the number of intervals but not on
+        # the x_range
+        assert self.smoother.positions() == [-0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5]
 
-#################################################################
-# Now test a full ScanVaryingCrystalOrientationParameterisation #
-#################################################################
+        # By contrast the spacing is in units of the original, unnormalised
+        # coordinate
+        assert self.smoother.spacing() == 19.8
+
+        # FIXME remove this printout, replace with optional scatterplot
+        smooth_vals = [e for e in range(1, 101)]
+        for e in smooth_vals:
+
+            val, weights, sumweights = self.smoother.value_weight(e, self.myparam)
+            print e, val,
+            for i in weights: print i,
+            print sumweights
+
+        print "OK"
+
 
 # Use a class to wrap up ScanVaryingCrystalOrientationParameterisation with
 # get_state overridden, so it can be passed to the existing FD derivative code.
@@ -69,133 +83,155 @@ class TestModel(ScanVaryingCrystalOrientationParameterisation):
             self.image_number)
 
 
-from dials.algorithms.refinement \
-    import get_fd_gradients, dR_from_axis_and_angle, random_param_shift
-import random
-from libtbx.test_utils import approx_equal
-from cctbx.uctbx import unit_cell
-from scitbx import matrix
-from dials.model.experiment.crystal_model import Crystal
+class TestScanVaryingCrystalOrientationParameterisation(object):
 
-def random_direction_close_to(vector):
-    return vector.rotate_around_origin(matrix.col(
-                (random.random(),
-                 random.random(),
-                 random.random())).normalize(),
-                 random.gauss(0, 1.0),  deg = True)
+    '''Test a ScanVaryingCrystalOrientationParameterisation'''
 
-# Make a random crystal
-a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
-b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
-c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-xl = Crystal(a, b, c)
+    def __init__(self):
 
-# Let's say we have a scan of 100 images
-image_range = (1, 100)
+        # Let's say we have a scan of 100 images
+        self.image_range = (1, 100)
 
-# Parameterise the crystal with the image range and five intervals. Use
-# TestModel to explore gradients at image 50.
-xl_op = TestModel(50, xl, image_range, 5)
+        # Make a random crystal
+        a = random.uniform(10,50) * \
+            self.random_direction_close_to(matrix.col((1, 0, 0)))
+        b = random.uniform(10,50) * \
+            self.random_direction_close_to(matrix.col((0, 1, 0)))
+        c = random.uniform(10,50) * \
+            self.random_direction_close_to(matrix.col((0, 0, 1)))
+        self.xl = Crystal(a, b, c)
 
-# FIXME remove this printout, replace with optional scatterplot
-print "testing smoothed values for phi1 parameter"
-smooth_vals = [e for e in range(1, 101)]
-for e in smooth_vals:
+    def random_direction_close_to(self, vector):
+        return vector.rotate_around_origin(matrix.col(
+                    (random.random(),
+                     random.random(),
+                     random.random())).normalize(),
+                     random.gauss(0, 1.0),  deg = True)
 
-    val, weights, sumweights = smoother.value_weight(e, xl_op._param_sets[0])
-    print e, val,
-    for i in weights: print i,
-    print sumweights
-print
+    def test_num_intervals(self, nintervals):
+        '''Test a range of different numbers of intervals'''
 
-# How many parameters?
-num_param = xl_op.num_free()
+        # Parameterise the crystal with the image range and five intervals. Init
+        # TestModel to explore gradients at image 50, but actually we will try
+        # various time points.
+        xl_op = TestModel(50, self.xl, self.image_range, nintervals)
 
-# shift the parameters away from zero
-p_vals = xl_op.get_p()
-print "Original parameter vals", p_vals
-sigmas = [0.1] * len(p_vals)
-new_vals = random_param_shift(p_vals, sigmas)
-xl_op.set_p(new_vals)
-p_vals = xl_op.get_p()
-print "Shifted parameter vals", p_vals
+        # How many parameters?
+        num_param = xl_op.num_free()
 
-# compare analytical and finite difference derivatives at image 50
-an_ds_dp = xl_op.get_ds_dp(50)
-fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
-pnames = xl_op.get_pnames()
+        # shift the parameters away from zero
+        p_vals = xl_op.get_p()
+        sigmas = [0.1] * len(p_vals)
+        new_vals = random_param_shift(p_vals, sigmas)
+        xl_op.set_p(new_vals)
+        p_vals = xl_op.get_p()
+        #print "Shifted parameter vals", p_vals
 
-null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
-for e, f in zip(an_ds_dp, fd_ds_dp):
-    assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+        # compare analytical and finite difference derivatives at image 50
+        an_ds_dp = xl_op.get_ds_dp(50)
+        fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
+        pnames = xl_op.get_pnames()
 
-print "OK"
+        null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
+        for e, f in zip(an_ds_dp, fd_ds_dp):
+            assert(approx_equal((e - f), null_mat, eps = 1.e-6))
 
-#################################
-# Test a few random time points #
-#################################
-for t in [random.uniform(1, 100) for x in range(50)]:
+        # Now test gradients at equally spaced time points across the whole
+        # range
+        num_points = 50
+        step_size = (self.image_range[1] - self.image_range[0]) / num_points
+        for t in [self.image_range[0] + e * step_size \
+                    for e in range(num_points + 1)]:
 
-    xl_op.set_time_point(t)
-    an_ds_dp = xl_op.get_ds_dp(t)
-    fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
-    #print t
-    #print "Gradients:"
-    #for s, a, f in zip(pnames, an_ds_dp, fd_ds_dp):
-    #    print s
-    #    print a
-    #    print f
-    #    print "diff:", a-f
-    #    print
-    #
-    for e, f in zip(an_ds_dp, fd_ds_dp):
-        assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+            xl_op.set_time_point(t)
+            an_ds_dp = xl_op.get_ds_dp(t)
+            fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
+            #print t
+            #print "Gradients:"
+            #for s, a, f in zip(pnames, an_ds_dp, fd_ds_dp):
+            #    print s
+            #    print a
+            #    print f
+            #    print "diff:", a-f
+            #    print
+            #
+            for e, f in zip(an_ds_dp, fd_ds_dp):
+                assert(approx_equal((e - f), null_mat, eps = 1.e-6))
 
-print "OK"
 
-######################################################################
-# Random initial orientations, random parameter shifts, random times #
-######################################################################
+        print "OK"
 
-attempts = 100
-failures = 0
-for i in range(attempts):
+    def test_random(self):
 
-    # make a random crystal and parameterise it
-    a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
-    b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
-    c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-    xl = Crystal(a, b, c)
-    xl_op = TestModel(50, xl, image_range, 5)
+        '''Test random initial orientations, random parameter shifts and random
+        times'''
 
-    # apply random parameter shifts to the orientation (2.0 mrad each checkpoint)
-    p_vals = xl_op.get_p()
-    sigmas = [2.0] * len(p_vals)
-    new_vals = random_param_shift(p_vals, sigmas)
-    xl_op.set_p(new_vals)
+        attempts = 100
+        failures = 0
+        null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
 
-    # select random time point at which to make comparisons
-    t = random.uniform(*image_range)
-    xl_op.set_time_point(t)
+        for i in range(attempts):
 
-    # compare analytical and finite difference derivatives
-    xl_op_an_ds_dp = xl_op.get_ds_dp(t)
-    xl_op_fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
+            # make a new random crystal and parameterise it
+            a = random.uniform(10,50) * \
+                    self.random_direction_close_to(matrix.col((1, 0, 0)))
+            b = random.uniform(10,50) * \
+                    self.random_direction_close_to(matrix.col((0, 1, 0)))
+            c = random.uniform(10,50) * \
+                    self.random_direction_close_to(matrix.col((0, 0, 1)))
+            xl = Crystal(a, b, c)
 
-    for j in range(num_param):
-        try:
-            assert(approx_equal((xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j]),
-                                null_mat, eps = 1.e-6))
-        except Exception:
-            failures += 1
-            print "for try", i
-            print "failure for parameter number", j
-            print "of the orientation parameterisation"
-            print "with fd_ds_dp = "
-            print fd_ds_dp[j]
-            print "and an_ds_dp = "
-            print an_ds_dp[j]
-            print "so that difference fd_ds_dp - an_ds_dp ="
-            print fd_ds_dp[j] - an_ds_dp[j]
+            xl_op = TestModel(50, xl, self.image_range, 5)
 
-if failures == 0: print "OK"
+            # How many parameters?
+            num_param = xl_op.num_free()
+
+            # apply random parameter shifts to the orientation (2.0 mrad each
+            # checkpoint)
+            p_vals = xl_op.get_p()
+            sigmas = [2.0] * len(p_vals)
+            new_vals = random_param_shift(p_vals, sigmas)
+            xl_op.set_p(new_vals)
+
+            # select random time point at which to make comparisons
+            t = random.uniform(*self.image_range)
+            xl_op.set_time_point(t)
+
+            # compare analytical and finite difference derivatives
+            xl_op_an_ds_dp = xl_op.get_ds_dp(t)
+            xl_op_fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * \
+                                              num_param)
+
+            for j in range(num_param):
+                try:
+                    assert(approx_equal((xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j]),
+                                        null_mat, eps = 1.e-6))
+                except Exception:
+                    failures += 1
+                    print "for try", i
+                    print "failure for parameter number", j
+                    print "of the orientation parameterisation"
+                    print "with fd_ds_dp = "
+                    print xl_op_fd_ds_dp[j]
+                    print "and an_ds_dp = "
+                    print xl_op_an_ds_dp[j]
+                    print "so that difference fd_ds_dp - an_ds_dp ="
+                    print xl_op_fd_ds_dp[j] - xl_op_an_ds_dp[j]
+
+        if failures == 0: print "OK"
+
+    def run(self):
+
+        for n in (1, 2, 3, 4, 5, 6, 7):
+            self.test_num_intervals(n)
+
+        self.test_random()
+
+
+if __name__ == '__main__':
+
+    test = SmootherTest()
+    test.run()
+
+    test = TestScanVaryingCrystalOrientationParameterisation()
+    test.run()
