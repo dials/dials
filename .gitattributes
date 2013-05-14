@@ -16,6 +16,7 @@ algorithms/background/boost_python/skew_discriminator.cc -text
 algorithms/background/boost_python/subtractor_strategy.cc -text
 algorithms/background/discriminator_strategy.h -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
+algorithms/background/flat_subtraction.py -text svneol=unset#text/plain
 algorithms/background/gaussian_corrected_mean_subtractor.h -text
 algorithms/background/index_of_dispersion_discriminator.h -text
 algorithms/background/mean_subtractor.h -text
@@ -550,6 +551,7 @@ scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/matplotlib_cut.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
