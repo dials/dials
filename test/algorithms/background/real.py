@@ -16,6 +16,25 @@ def display(shoebox):
         pylab.imshow(shoebox[i], vmin=0, vmax=vmax, interpolation='none')
     pylab.show()
 
+def display2(xyz1, xyz2, xyz3):
+
+    ymax = max([max(xyz1), max(xyz2), max(xyz3)])
+
+    from matplotlib import pylab
+    pylab.subplot(3, 1, 1)
+    pylab.title('XDS Obs - XDS Cal')
+    pylab.ylim([0, ymax])
+    pylab.scatter(range(len(xyz1)), xyz1, color='blue')
+    pylab.subplot(3, 1, 2)
+    pylab.title('My Obs - XDS Cal')
+    pylab.ylim([0, ymax])
+    pylab.scatter(range(len(xyz2)), xyz2, color='blue')
+    pylab.subplot(3, 1, 3)
+    pylab.title('My Obs - XDS Obs')
+    pylab.ylim([0, ymax])
+    pylab.scatter(range(len(xyz3)), xyz3, color='blue')
+    pylab.show()
+
 if __name__ == '__main__':
 
     from dials.model.data import ReflectionList
@@ -34,6 +53,11 @@ if __name__ == '__main__':
     discriminate = NormalDiscriminator()
     subtract = MeanSubtractor()
 
+
+    xyz_diff_xds_cal = []
+    xyz_diff_obs_cal = []
+    xyz_diff_obs_xds = []
+
     for r in reflections:
 
         if matrix.col(r.centroid_position).length() > 0:
@@ -51,12 +75,16 @@ if __name__ == '__main__':
             mask = (r.shoebox_mask == 2).as_1d().as_int()
             mask.reshape(flex.grid(shoebox.all()))
 
-            centroid = CentroidImage3d(shoebox.as_double())
-            #centroid = CentroidMaskedImage3d(shoebox.as_double(), mask)
+            #centroid = CentroidImage3d(shoebox.as_double())
+            try:
+                centroid = CentroidMaskedImage3d(shoebox.as_double(), mask)
+            except:
+                continue
+
             bbox = r.bounding_box
             offset = matrix.col((bbox[0], bbox[2], bbox[4]))
-            xyz1 = r.centroid_position
-            xyzcal = r.image_coord_px + (r.frame_number,)
+            xyz1 = matrix.col(r.centroid_position)
+            xyzcal = matrix.col(r.image_coord_px + (r.frame_number,))
             xyz2 = offset + matrix.col(centroid.mean())
             hkl = r.miller_index
 
@@ -65,6 +93,12 @@ if __name__ == '__main__':
             str3 = '({0:.2f}, {1:.2f}, {2:.2f})'.format(*xyz2)
             print '{0:>16} {1:>24} {2:>24} {3:>24} {4:>6}'.format(hkl, str1, str2, str3, max_val)
 
+            xyz_diff_xds_cal.append((xyz1 - xyzcal).length())
+            xyz_diff_obs_cal.append((xyz2 - xyzcal).length())
+            xyz_diff_obs_xds.append((xyz2 - xyz1).length())
 
+
+
+    #display2(xyz_diff_xds_cal, xyz_diff_obs_cal, xyz_diff_obs_xds)
 
         #display(shoebox)
