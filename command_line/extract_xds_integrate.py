@@ -42,6 +42,8 @@ class ScriptRunner(object):
         hkl    = handle.hkl
         xyzcal = handle.xyzcal
         xyzobs = handle.xyzobs
+        iobs   = handle.iobs
+        sigma  = handle.sigma
         sigma_divergence = handle.sigma_divergence
         sigma_mosaicity = handle.sigma_mosaicity
         Command.end('Read {0} reflections from INTEGRATE.HKL file.'.format(
@@ -68,11 +70,13 @@ class ScriptRunner(object):
 
         # Create the reflection list
         rlist = ReflectionList(len(hkl))
-        for r, h, x1, x2 in zip(rlist, hkl, xyzcal, xyzobs):
+        for r, h, x1, x2, i, sig in zip(rlist, hkl, xyzcal, xyzobs, iobs, sigma):
             r.miller_index = h
             r.image_coord_px = x1[0:2]
             r.frame_number = x1[2]
             r.centroid_position = x2
+            r.intensity = i
+            r.intensity_variance = sig
 
             # Calculate the beam vectors
             s1 = matrix.col(detector.get_pixel_lab_coord(r.image_coord_px))
