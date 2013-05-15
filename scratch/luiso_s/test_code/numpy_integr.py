@@ -43,12 +43,4 @@ integrate = Integrate2d()
 integrate(rlist)
 for r in rlist:
     print r
-#
-# from dials.algorithms.integration.sumation_2d import raw_2d_integration
-# from dials.algorithms.background.flat_subtraction import flat_background_subtraction_2d
-# bkgr = flat_background_subtraction_2d(data2d, mask2d)
-# itns, sigma = raw_2d_integration(data2d, mask2d)
-#
-# print "I =", itns
-# print "Sigma =", sigma
-#
+
