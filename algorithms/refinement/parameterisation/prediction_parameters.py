@@ -302,8 +302,6 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         scattering vector s that reflects at rotation angle phi. That is,
         calculate dX/dp, dY/dp and dphi/dp'''
 
-        from libtbx.test_utils import approx_equal
-
         ### Calculate various quantities of interest for this reflection
 
         R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
@@ -566,6 +564,9 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
 
     def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
                                     e_X_r, e_r_s0):
+
+        '''helper function to extend the derivatives lists by
+        derivatives of the crystal unit cell parameterisations'''
 
         for xluc in self._xl_unit_cell_parameterisations:
             dB_dxluc_p = xluc.get_ds_dp()
