@@ -91,7 +91,7 @@ class ScriptRunner(object):
         self.add_option = self._config.add_option
 
     def run(self):
-        '''Run the script. This function calls the 'start' method that
+        '''Run the script. This function calls the 'main' method that
         should be overloaded in your script.'''
         from dials.util.options import ConfigWriter
         import sys
