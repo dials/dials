@@ -121,6 +121,8 @@ algorithms/refinement/parameterisation/crystal_parameters.py -text
 algorithms/refinement/parameterisation/detector_parameters.py -text
 algorithms/refinement/parameterisation/model_parameters.py -text
 algorithms/refinement/parameterisation/prediction_parameters.py -text
+algorithms/refinement/parameterisation/scan_varying_crystal_parameters.py -text
+algorithms/refinement/parameterisation/scan_varying_model_parameters.py -text
 algorithms/refinement/parameterisation/source_parameters.py -text
 algorithms/refinement/plot_derivatives.py -text
 algorithms/refinement/prediction/.Rhistory -text
@@ -280,8 +282,6 @@ scratch/dgw/refinement/README -text
 scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/detector_parameters.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
-scratch/dgw/refinement/parameterisation/scan_varying_model_parameters.py -text
-scratch/dgw/refinement/parameterisation/tst_scan_varying_model_parameters.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
 scratch/dgw/refinement/tst_convergence_radius.py -text
 scratch/dgw/refinement/tst_convergence_radius_one_parameter.py -text
@@ -605,6 +605,7 @@ test/algorithms/refinement/tst_prediction_parameters.py -text
 test/algorithms/refinement/tst_ref_passage_categorisation.py -text
 test/algorithms/refinement/tst_refine_fn.py -text
 test/algorithms/refinement/tst_refinement_regression.py -text
+test/algorithms/refinement/tst_scan_varying_model_parameters.py -text
 test/algorithms/spatial_indexing/tst_collision_detection.cc -text
 test/algorithms/spatial_indexing/tst_octree.cc -text
 test/algorithms/spatial_indexing/tst_quadtree.cc -text

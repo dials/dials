@@ -19,7 +19,11 @@ from scitbx import matrix
 # DIALS imports
 from dials.algorithms.refinement \
     import get_fd_gradients, random_param_shift
-from scan_varying_model_parameters import *
+from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
+    import ScanVaryingParameterSet, GaussianSmoother, \
+        ScanVaryingModelParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
+    import ScanVaryingCrystalOrientationParameterisation
 from dials.model.experiment.crystal_model import Crystal
 
 class SmootherTest(object):
