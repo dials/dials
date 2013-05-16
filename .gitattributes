@@ -564,6 +564,7 @@ scratch/luiso_s/test_code/mix_py_cpp/cpp_func.cpp -text svneol=unset#text/plain
 scratch/luiso_s/test_code/mix_py_cpp/lui_find_peak_helper.cc -text svneol=unset#text/plain
 scratch/luiso_s/test_code/mix_py_cpp/lui_find_peak_helper.h -text svneol=unset#text/plain
 scratch/luiso_s/test_code/mix_py_cpp/py_caller.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/numpy_centoid.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst05.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_CLI.py -text svneol=unset#text/plain

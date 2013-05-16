@@ -69,7 +69,7 @@ namespace dials { namespace algorithms {
           r_ang = atan2(dx, dy);
           r_ang_tot += r_ang * float(data2d(row, col));
           r_tot += data2d(row, col);
-        } else {
+        }else{
           l_ang = atan2(dx, dy);
           l_ang_tot += l_ang * float(data2d(row, col));
           l_tot += data2d(row, col);

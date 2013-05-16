@@ -84,7 +84,7 @@ class toy_centroid_lui(centroid_interface):
         return _f, _r, _c, _sf, _sr, _sc, tot_itst
 
 def single_spot_integrate_2d(data2d):
-
+    from dials.algorithms.background.flat_subtraction import flat_background_subtraction_2d
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
     #print 'n_col,n_row =', n_col, n_row
@@ -128,28 +128,8 @@ def single_spot_integrate_2d(data2d):
             if diffdata2d[row, col] == 1:
                 diffdata2d_ext[row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
 
-
-###########################################################################flat background
-    tot_bkgr = 0.0                                                       # version
-    cont = 0.0                                                           #
-    for row in range(0, n_row, 1):                                       #
-        for col in range(0, n_col, 1):                                   #
-            if diffdata2d_ext[row, col] == 0:                            #
-                cont += 1                                                #
-                tot_bkgr += data2d[row, col]                             #
-    if tot_bkgr > 0 and cont > 0:                                        #
-        bkgr = tot_bkgr / cont                                           #
-    else:                                                                #
-        bkgr = 0                                                         #
-    #print 'bkgr=', bkgr                                                 #
-    for row in range(0, n_row, 1):                                       #
-        for col in range(0, n_col, 1):                                   #
-            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > bkgr:#
-                data2d[row, col] = data2d[row, col] - bkgr               #
-            else:                                                        #
-                data2d[row, col] = 0                                     #
 ###########################################################################
-
+    flat_background_subtraction_2d(data2d, diffdata2d_ext)# <- fix me
 ######################################################################################## curved background
 #   colbord = int(n_col / 5)                                                           # version
 #   colbord = int(n_row / 5)                                                           #
