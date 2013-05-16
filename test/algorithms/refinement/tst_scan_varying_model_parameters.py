@@ -77,22 +77,32 @@ class SmootherTest(object):
 
 
 # Use a class to wrap up ScanVaryingCrystalOrientationParameterisation with
-# get_state overridden, so it can be passed to the existing FD derivative code.
+# compose and get_state overridden, so it can be passed to the existing FD
+# derivative code.
 class TestModel(ScanVaryingCrystalOrientationParameterisation):
 
     def __init__(self, image_number, *args):
-        self.image_number = image_number
         ScanVaryingCrystalOrientationParameterisation.__init__(self, *args)
+        self.set_time_point(image_number)
 
     def set_time_point(self, t):
         self.image_number = t
+        self.compose()
+
+    def compose(self):
+
+        '''override compose to pass in the requested t'''
+
+        ScanVaryingCrystalOrientationParameterisation.compose(self,
+                self.image_number)
 
     def get_state(self):
 
         '''override get state to do so only at the requested t'''
 
-        return ScanVaryingCrystalOrientationParameterisation.get_state(self,
-            self.image_number)
+        # ensure the state is updated by re-composing
+        self.compose()
+        return ScanVaryingCrystalOrientationParameterisation.get_state(self)
 
 
 class TestScanVaryingCrystalOrientationParameterisation(object):
@@ -143,7 +153,7 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
         #print "Shifted parameter vals", p_vals
 
         # compare analytical and finite difference derivatives at image 50
-        an_ds_dp = xl_op.get_ds_dp(50)
+        an_ds_dp = xl_op.get_ds_dp()
         fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
         pnames = xl_op.get_pnames()
 
@@ -164,12 +174,12 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
 
             # collect data for plot
             smooth_at.append(t)
-            phi1_data.append(xl_op._smoother.value_weight(t, xl_op._param_sets[0])[0])
-            phi2_data.append(xl_op._smoother.value_weight(t, xl_op._param_sets[1])[0])
-            phi3_data.append(xl_op._smoother.value_weight(t, xl_op._param_sets[2])[0])
+            phi1_data.append(xl_op._smoother.value_weight(t, xl_op._param[0])[0])
+            phi2_data.append(xl_op._smoother.value_weight(t, xl_op._param[1])[0])
+            phi3_data.append(xl_op._smoother.value_weight(t, xl_op._param[2])[0])
 
             xl_op.set_time_point(t)
-            an_ds_dp = xl_op.get_ds_dp(t)
+            an_ds_dp = xl_op.get_ds_dp()
             fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
             #print t
             #print "Gradients:"
@@ -250,7 +260,7 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
             xl_op.set_time_point(t)
 
             # compare analytical and finite difference derivatives
-            xl_op_an_ds_dp = xl_op.get_ds_dp(t)
+            xl_op_an_ds_dp = xl_op.get_ds_dp()
             xl_op_fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * \
                                               num_param)
 

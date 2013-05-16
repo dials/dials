@@ -16,7 +16,7 @@ from scitbx import matrix
 from dials.algorithms.refinement import dR_from_axis_and_angle
 
 class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
-    
+
     '''A work-in-progress time-dependent parameterisation for crystal
     orientation, with angles expressed in mrad'''
 
@@ -62,15 +62,15 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
         return
 
-    def get_ds_dp(self, t, only_free = True):
-        
-        '''calculate derivatives for model at time t'''
+    def compose(self, t):
+
+        '''calculate state and derivatives for model at time t'''
 
         # Extract orientation from the initial state
         U0 = self._initial_state
 
         # extract parameter sets from the internal list
-        phi1_set, phi2_set, phi3_set = self._param_sets
+        phi1_set, phi2_set, phi3_set = self._param
 
         # extract angles and other data at time t using the smoother
         phi1, phi1_weights, phi1_sumweights = self._smoother.value_weight(t, phi1_set)
@@ -102,8 +102,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
         # Compose new state
 
-        #newU = Phi321 * U0
-        #self._models[0].set_U(newU)
+        self._U_at_t = Phi321 * U0
 
         ### calculate derivatives of the state wrt angle, convert back to mrad
         dU_dphi1 = Phi3 * Phi2 * dPhi1_dphi1 * U0 / 1000.
@@ -115,46 +114,20 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         dU_dp2 = [dU_dphi2 * e for e in dphi2_dp]
         dU_dp3 = [dU_dphi3 * e for e in dphi3_dp]
 
-        # return concatenated list of derivatives
-        return dU_dp1 + dU_dp2 + dU_dp3
+        # store derivatives as list-of-lists
+        self._dstate_dp = [dU_dp1, dU_dp2, dU_dp3]
 
-    def get_state(self, t):
+        return
+
+    def get_state(self):
 
         '''Return crystal orientation matrix [U] at time t'''
 
-        # Extract orientation from the initial state
-        U0 = self._initial_state
-
-        # extract parameter sets from the internal list
-        phi1_set, phi2_set, phi3_set = self._param_sets
-
-        # extract angles and other data at time t using the smoother
-        phi1, phi1_weights, phi1_sumweights = self._smoother.value_weight(t, phi1_set)
-        phi2, phi2_weights, phi2_sumweights = self._smoother.value_weight(t, phi2_set)
-        phi3, phi3_weights, phi3_sumweights = self._smoother.value_weight(t, phi3_set)
-
-        # convert angles to radians
-        phi1rad, phi2rad, phi3rad = (phi1 / 1000., phi2 / 1000.,
-                                     phi3 / 1000.)
-
-        # compose rotation matrices
-        Phi1 = (phi1_set.axis).axis_and_angle_as_r3_rotation_matrix(phi1rad, deg=False)
-        Phi2 = (phi2_set.axis).axis_and_angle_as_r3_rotation_matrix(phi2rad, deg=False)
-        Phi3 = (phi3_set.axis).axis_and_angle_as_r3_rotation_matrix(phi3rad, deg=False)
-
-        Phi21 = Phi2 * Phi1
-        Phi321 = Phi3 * Phi21
-
-        # Compose new state
-
-        newU = Phi321 * U0
-        #self._models[0].set_U(newU)
-        # get U(t)
-        return newU
+        return self._U_at_t
 
 
 class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisation):
-    
+
     '''A work-in-progress time-dependent parameterisation for the crystal
     unit cell'''
 
@@ -164,7 +137,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
         # reciprocal space orthogonalisation matrix '[B](t)', expressed as a
         # function of time 't' (which could actually be measured by image number
         #  in a sequential scan).
-        
+
         # Other comments from CrystalUnitCellParameterisation are relevant here
 
         # Set up the smoother
@@ -183,7 +156,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
         ### Set up the independent parameters, with a change of scale
         p_list = [ScanVaryingParameterSet(e * 1.e5, nv, name = "g_param_%d" % i) \
-                  for i, e in enumerate(X)]                 
+                  for i, e in enumerate(X)]
 
         # set up the list of model objects being parameterised (here
         # just a single crystal model)
@@ -193,15 +166,14 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
         ScanVaryingModelParameterisation.__init__(self, models, istate,
                                                   p_list, smoother)
 
-    def get_ds_dp(self, t, only_free = True):
-        '''calculate derivatives for model at time t'''
+        return
 
     def get_state(self, t):
 
         '''Return orthogonalisation matrix [B] at time t'''
 
         # extract values and weights at time t using the smoother
-        data = [self._smoother.value_weight(t, pset) for pset in self._param_sets]
+        data = [self._smoother.value_weight(t, pset) for pset in self._param]
 
         # obtain parameters on natural scale
         p_vals = [val / 1.e5 for val, weights, sumweight in data]

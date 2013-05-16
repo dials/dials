@@ -223,10 +223,10 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         '''compose the model state at time t from its initial state and its
         parameter list. Also calculate the derivatives of the state wrt
         each parameter in the list.
-        
+
         Unlike ModelParameterisation, does not automatically update the actual
         model class. This should be done once refinement is complete.'''
-    
+
         raise RuntimeError, 'implement me'
 
     def get_p(self, only_free = True):
@@ -296,10 +296,11 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         # value of get_ds_dp.
         raise RuntimeError, 'implement me'
 
-    def get_ds_dp(self, t, only_free = True):
+    def get_ds_dp(self, only_free = True):
         '''get a list of derivatives of the state wrt each parameter, as
-        a list in the same order as the internal list of parameters. Evaluate
-        each scan-dependent parameter at coordinate t, corresponding to
+        a list in the same order as the internal list of parameters. Requires
+        compose to be called first at scan coordinate 't' so that each
+        scan-dependent parameter is evaluated at coordinate t, corresponding to
         the original, unnormalised coordinates used to set up the smoother
         (t will most likely be along the dimension of image number).
 
@@ -307,7 +308,12 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         omitted from the returned list. Otherwise a list for all parameters is
         returned, with values of 0.0 for the fixed parameters'''
 
-        # To be implemented by the derived class. A list _dstate_dp cannot
-        # reasonably be stored here, because the derivatives are time
-        # dependent, so must be calculated for each requested point t
-        raise RuntimeError, 'implement me'
+        if only_free:
+
+            return [ds_dp for row, p in zip(self._dstate_dp, self._param) \
+                    if not p.get_fixed() for ds_dp in row]
+
+        else:
+            return [0. * ds_dp if p.get_fixed() else ds_dp \
+                    for row, p in zip(self._dstate_dp, self._param) \
+                    for ds_dp in row]
