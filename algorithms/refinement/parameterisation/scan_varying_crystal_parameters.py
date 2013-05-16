@@ -13,6 +13,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
                ScanVaryingModelParameterisation, \
                GaussianSmoother
 from scitbx import matrix
+from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from dials.algorithms.refinement import dR_from_axis_and_angle
 
 class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
@@ -183,7 +184,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
         # set parameter values in the symmetrizing object and obtain new B
         self._B_at_t = matrix.sqr(
-                    self._S.backward_orientation(p_vals).reciprocal_matrix())
+                    self._S.backward_orientation(vals).reciprocal_matrix())
 
         # returns the independent parameters given the set_orientation() B matrix
         # used here for side effects
@@ -195,7 +196,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
                            for e in self._S.forward_gradients()]
 
         # calculate derivatives of state wrt underlying parameters
-        self._dstate_dp = [b * e for a, b in zip(dvals_dp, dB_dval) for e in a]
+        self._dstate_dp = [[b * e for e in a] for a, b in zip(dvals_dp, dB_dval)]
 
     def get_state(self):
 

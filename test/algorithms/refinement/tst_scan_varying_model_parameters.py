@@ -15,6 +15,7 @@ import random
 # CCTBX imports
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
+from cctbx.uctbx import unit_cell
 
 # DIALS imports
 from dials.algorithms.refinement \
@@ -82,10 +83,12 @@ class SmootherTest(object):
 class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
 
     def __init__(self, image_number, *args):
+
         ScanVaryingCrystalOrientationParameterisation.__init__(self, *args)
         self.set_time_point(image_number)
 
     def set_time_point(self, t):
+
         self.image_number = t
         self.compose()
 
@@ -107,10 +110,12 @@ class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
 class TestUnitCellModel(ScanVaryingCrystalUnitCellParameterisation):
 
     def __init__(self, image_number, *args):
+
         ScanVaryingCrystalUnitCellParameterisation.__init__(self, *args)
         self.set_time_point(image_number)
 
     def set_time_point(self, t):
+
         self.image_number = t
         self.compose()
 
@@ -130,9 +135,7 @@ class TestUnitCellModel(ScanVaryingCrystalUnitCellParameterisation):
         return ScanVaryingCrystalUnitCellParameterisation.get_state(self)
 
 
-class TestScanVaryingCrystalOrientationParameterisation(object):
-
-    '''Test a ScanVaryingCrystalOrientationParameterisation'''
+class TestScanVaryingCrystalParameterisation(object):
 
     def __init__(self, plots = False):
 
@@ -158,22 +161,29 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
                      random.random())).normalize(),
                      random.gauss(0, 1.0),  deg = True)
 
+class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalParameterisation):
+
+    '''Test a ScanVaryingCrystalOrientationParameterisation'''
+
     def test_num_intervals(self, nintervals):
         '''Test a range of different numbers of intervals'''
 
         # Parameterise the crystal with the image range and five intervals. Init
         # TestOrientationModel to explore gradients at image 50, but actually
         # will try various time points in the test
-        xl_op = TestModel(50, self.xl, self.image_range, nintervals)
+        xl_op = TestOrientationModel(50, self.xl, self.image_range, nintervals)
 
         # How many parameters?
         num_param = xl_op.num_free()
 
         # shift the parameters away from zero
         p_vals = xl_op.get_p()
-        sigmas = [0.1] * len(p_vals)
+        sigmas = [1.0] * len(p_vals)
         new_vals = random_param_shift(p_vals, sigmas)
         xl_op.set_p(new_vals)
+
+        # recalc state and gradients at image 50
+        xl_op.compose()
         p_vals = xl_op.get_p()
         #print "Shifted parameter vals", p_vals
 
@@ -268,7 +278,7 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
                     self.random_direction_close_to(matrix.col((0, 0, 1)))
             xl = Crystal(a, b, c)
 
-            xl_op = TestModel(50, xl, self.image_range, 5)
+            xl_op = TestOrientationModel(50, xl, self.image_range, 5)
 
             # How many parameters?
             num_param = xl_op.num_free()
@@ -314,11 +324,67 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
 
         self.test_random()
 
+class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParameterisation):
+
+    '''Basic test of a ScanVaryingCrystalUnitCellParameterisation'''
+
+    def test_num_intervals(self, nintervals):
+        '''Test a range of different numbers of intervals'''
+
+
+        # Parameterise the crystal with the image range and five intervals. Init
+        # TestOrientationModel to explore gradients at image 50
+        xl_ucp = TestUnitCellModel(50, self.xl, self.image_range, nintervals)
+
+        # How many parameters?
+        num_param = xl_ucp.num_free()
+
+        # apply a random parameter shift to the unit cell, on order of 2% of
+        # the initial metrical matrix parameters
+        p_vals = xl_ucp.get_p()
+        sigmas = [0.02  * p for p in p_vals]
+        new_vals = random_param_shift(p_vals, sigmas)
+        xl_ucp.set_p(new_vals)
+
+        # calculate state and gradients at image 50
+        xl_ucp.compose()
+
+        xl_uc_an_ds_dp = xl_ucp.get_ds_dp()
+        xl_uc_fd_ds_dp = get_fd_gradients(xl_ucp, [1.e-7] * num_param)
+
+        null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
+
+        # compare analytical and finite difference derivatives at image 50
+        an_ds_dp = xl_ucp.get_ds_dp()
+        fd_ds_dp = get_fd_gradients(xl_ucp, [1.e-7] * num_param)
+        pnames = xl_ucp.get_pnames()
+
+        for e, f in zip(an_ds_dp, fd_ds_dp):
+            assert(approx_equal((e - f), null_mat, eps = 1.e-6))
+
+        print "OK"
+        return
+
+    def run(self):
+
+        for n in (1, 2, 3, 4, 5, 6, 7):
+            self.test_num_intervals(n)
+
+        return
+
 
 if __name__ == '__main__':
 
+    print "Testing the GaussianSmoother and ScanVaryingParameterSet"
     test = SmootherTest(plots = False)
     test.run()
+    print
 
+    print "Testing the ScanVaryingCrystalOrientationParameterisation"
     test = TestScanVaryingCrystalOrientationParameterisation(plots = False)
+    test.run()
+    print
+
+    print "Testing the ScanVaryingCrystalUnitCellParameterisation"
+    test = TestScanVaryingCrystalUnitCellParameterisation(plots = False)
     test.run()
