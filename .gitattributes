@@ -14,6 +14,7 @@ algorithms/background/boost_python/normal_discriminator.cc -text
 algorithms/background/boost_python/poisson_discriminator.cc -text
 algorithms/background/boost_python/skew_discriminator.cc -text
 algorithms/background/boost_python/subtractor_strategy.cc -text
+algorithms/background/curved_subtraction.py -text svneol=unset#text/plain
 algorithms/background/discriminator_strategy.h -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
 algorithms/background/flat_subtraction.py -text svneol=unset#text/plain
