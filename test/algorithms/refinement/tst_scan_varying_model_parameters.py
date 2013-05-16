@@ -23,7 +23,8 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
     import ScanVaryingParameterSet, GaussianSmoother, \
         ScanVaryingModelParameterisation
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
-    import ScanVaryingCrystalOrientationParameterisation
+    import ScanVaryingCrystalOrientationParameterisation, \
+           ScanVaryingCrystalUnitCellParameterisation
 from dials.model.experiment.crystal_model import Crystal
 
 class SmootherTest(object):
@@ -75,11 +76,10 @@ class SmootherTest(object):
 
         print "OK"
 
-
-# Use a class to wrap up ScanVaryingCrystalOrientationParameterisation with
-# compose and get_state overridden, so it can be passed to the existing FD
+# Use classes to wrap up ScanVaryingCrystal*Parameterisation with
+# compose and get_state overridden, so they can be passed to the existing FD
 # derivative code.
-class TestModel(ScanVaryingCrystalOrientationParameterisation):
+class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
 
     def __init__(self, image_number, *args):
         ScanVaryingCrystalOrientationParameterisation.__init__(self, *args)
@@ -103,6 +103,31 @@ class TestModel(ScanVaryingCrystalOrientationParameterisation):
         # ensure the state is updated by re-composing
         self.compose()
         return ScanVaryingCrystalOrientationParameterisation.get_state(self)
+
+class TestUnitCellModel(ScanVaryingCrystalUnitCellParameterisation):
+
+    def __init__(self, image_number, *args):
+        ScanVaryingCrystalUnitCellParameterisation.__init__(self, *args)
+        self.set_time_point(image_number)
+
+    def set_time_point(self, t):
+        self.image_number = t
+        self.compose()
+
+    def compose(self):
+
+        '''override compose to pass in the requested t'''
+
+        ScanVaryingCrystalUnitCellParameterisation.compose(self,
+                self.image_number)
+
+    def get_state(self):
+
+        '''override get state to do so only at the requested t'''
+
+        # ensure the state is updated by re-composing
+        self.compose()
+        return ScanVaryingCrystalUnitCellParameterisation.get_state(self)
 
 
 class TestScanVaryingCrystalOrientationParameterisation(object):
@@ -137,8 +162,8 @@ class TestScanVaryingCrystalOrientationParameterisation(object):
         '''Test a range of different numbers of intervals'''
 
         # Parameterise the crystal with the image range and five intervals. Init
-        # TestModel to explore gradients at image 50, but actually we will try
-        # various time points.
+        # TestOrientationModel to explore gradients at image 50, but actually
+        # will try various time points in the test
         xl_op = TestModel(50, self.xl, self.image_range, nintervals)
 
         # How many parameters?

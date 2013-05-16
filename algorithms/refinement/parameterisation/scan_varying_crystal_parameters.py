@@ -101,10 +101,9 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         Phi321 = Phi3 * Phi21
 
         # Compose new state
-
         self._U_at_t = Phi321 * U0
 
-        ### calculate derivatives of the state wrt angle, convert back to mrad
+        # calculate derivatives of the state wrt angle, convert back to mrad
         dU_dphi1 = Phi3 * Phi2 * dPhi1_dphi1 * U0 / 1000.
         dU_dphi2 = Phi3 * dPhi2_dphi2 * Phi1 * U0 / 1000.
         dU_dphi3 = dPhi3_dphi3 * Phi21 * U0 / 1000.
@@ -168,27 +167,38 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
         return
 
-    def get_state(self, t):
+    def compose(self, t):
 
-        '''Return orthogonalisation matrix [B] at time t'''
+        '''calculate state and derivatives for model at time t'''
 
         # extract values and weights at time t using the smoother
         data = [self._smoother.value_weight(t, pset) for pset in self._param]
 
-        # obtain parameters on natural scale
-        p_vals = [val / 1.e5 for val, weights, sumweight in data]
+        # obtain metrical matrix parameters on natural scale
+        vals = [val / 1.e5 for val, weights, sumweight in data]
+
+        # calculate derivatives of metrical matrix parameters wrt underlying
+        # scan-varying parameters
+        dvals_dp =  [tuple([e / sw for e in w]) for v, w, sw in data]
 
         # set parameter values in the symmetrizing object and obtain new B
-        newB = matrix.sqr(self._S.backward_orientation(p_vals).reciprocal_matrix())
-
-        # Now pass new B to the crystal model
-        #self._models[0].set_B(newB)
-        return newB
+        self._B_at_t = matrix.sqr(
+                    self._S.backward_orientation(p_vals).reciprocal_matrix())
 
         # returns the independent parameters given the set_orientation() B matrix
         # used here for side effects
         self._S.forward_independent_parameters()
 
-        # get the gradients on the adjusted scale
-        self._dstate_dp = [matrix.sqr(e) / 1.e5 \
+        # get the derivatives of state wrt metrical matrix parameters on the
+        # adjusted scale
+        dB_dval = [matrix.sqr(e) / 1.e5 \
                            for e in self._S.forward_gradients()]
+
+        # calculate derivatives of state wrt underlying parameters
+        self._dstate_dp = [b * e for a, b in zip(dvals_dp, dB_dval) for e in a]
+
+    def get_state(self):
+
+        '''Return crystal orthogonalisation matrix [B] at time t'''
+
+        return self._B_at_t
