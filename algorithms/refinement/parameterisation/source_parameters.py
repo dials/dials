@@ -63,7 +63,7 @@ class BeamParameterisationOrientation(ModelParameterisation):
         is0 = self._initial_state
 
         # extract parameters from the internal list
-        mu1, mu2 = self._plist
+        mu1, mu2 = self._param
 
         # convert to radians
         mu1rad, mu2rad = mu1.value / 1000., mu2.value / 1000.

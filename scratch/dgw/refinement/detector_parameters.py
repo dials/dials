@@ -107,7 +107,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
         ioffset = self._initial_state['offset']
 
         # extract parameters from the internal list
-        dist, shift1, shift2, tau1, tau2, tau3 = self._plist
+        dist, shift1, shift2, tau1, tau2, tau3 = self._param
 
         # convert angles to radians
         tau1rad = tau1.value / 1000.

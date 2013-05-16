@@ -16,6 +16,7 @@ from scitbx import matrix
 from dials.algorithms.refinement import dR_from_axis_and_angle
 
 class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
+    
     '''A work-in-progress time-dependent parameterisation for crystal
     orientation, with angles expressed in mrad'''
 
@@ -37,10 +38,10 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         smoother = GaussianSmoother(t_range, num_intervals)
         nv = smoother.num_values()
 
-        ### Set up the initial state
+        # Set up the initial state
         istate = crystal.get_U()
 
-        ### Set up the parameters
+        # Set up the parameters
         phi1 = ScanVaryingParameterSet(0.0, nv,
                             matrix.col((1., 0., 0.)), 'angle', 'Phi1')
         phi2 = ScanVaryingParameterSet(0.0, nv,
@@ -48,20 +49,21 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         phi3 = ScanVaryingParameterSet(0.0, nv,
                             matrix.col((1., 0., 0.)), 'angle', 'Phi3')
 
-        # build the list of parameter sets in a specific, maintained order
+        # Build the list of parameter sets in a specific, maintained order
         p_list = [phi1, phi2, phi3]
 
-        # set up the list of model objects being parameterised (here
+        # Set up the list of model objects being parameterised (here
         # just a single crystal model)
         models = [crystal]
 
-        # set up the base class
+        # Set up the base class
         ScanVaryingModelParameterisation.__init__(self, models, istate,
                                                   p_list, smoother)
 
         return
 
     def get_ds_dp(self, t, only_free = True):
+        
         '''calculate derivatives for model at time t'''
 
         # Extract orientation from the initial state
@@ -98,7 +100,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         Phi21 = Phi2 * Phi1
         Phi321 = Phi3 * Phi21
 
-        ### Compose new state
+        # Compose new state
 
         #newU = Phi321 * U0
         #self._models[0].set_U(newU)
@@ -143,9 +145,78 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
         Phi21 = Phi2 * Phi1
         Phi321 = Phi3 * Phi21
 
-        ### Compose new state
+        # Compose new state
 
         newU = Phi321 * U0
         #self._models[0].set_U(newU)
         # get U(t)
         return newU
+
+
+class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisation):
+    
+    '''A work-in-progress time-dependent parameterisation for the crystal
+    unit cell'''
+
+    def __init__(self, crystal, t_range, num_intervals):
+
+        # The state of a scan-varying unit cell parameterisation is the
+        # reciprocal space orthogonalisation matrix '[B](t)', expressed as a
+        # function of time 't' (which could actually be measured by image number
+        #  in a sequential scan).
+        
+        # Other comments from CrystalUnitCellParameterisation are relevant here
+
+        # Set up the smoother
+        smoother = GaussianSmoother(t_range, num_intervals)
+        nv = smoother.num_values()
+
+        ### Set up the initial state
+        istate = None
+
+        ### Set up symmetrizing object
+        self._S = symmetrize_reduce_enlarge(crystal.get_space_group())
+        self._S.set_orientation(orientation=crystal.get_B())
+        X = self._S.forward_independent_parameters()
+        dB_dp = self._S.forward_gradients()
+        B = self._S.backward_orientation(independent=X).reciprocal_matrix()
+
+        ### Set up the independent parameters, with a change of scale
+        p_list = [ScanVaryingParameterSet(e * 1.e5, nv, name = "g_param_%d" % i) \
+                  for i, e in enumerate(X)]                 
+
+        # set up the list of model objects being parameterised (here
+        # just a single crystal model)
+        models = [crystal]
+
+        # Set up the base class
+        ScanVaryingModelParameterisation.__init__(self, models, istate,
+                                                  p_list, smoother)
+
+    def get_ds_dp(self, t, only_free = True):
+        '''calculate derivatives for model at time t'''
+
+    def get_state(self, t):
+
+        '''Return orthogonalisation matrix [B] at time t'''
+
+        # extract values and weights at time t using the smoother
+        data = [self._smoother.value_weight(t, pset) for pset in self._param_sets]
+
+        # obtain parameters on natural scale
+        p_vals = [val / 1.e5 for val, weights, sumweight in data]
+
+        # set parameter values in the symmetrizing object and obtain new B
+        newB = matrix.sqr(self._S.backward_orientation(p_vals).reciprocal_matrix())
+
+        # Now pass new B to the crystal model
+        #self._models[0].set_B(newB)
+        return newB
+
+        # returns the independent parameters given the set_orientation() B matrix
+        # used here for side effects
+        self._S.forward_independent_parameters()
+
+        # get the gradients on the adjusted scale
+        self._dstate_dp = [matrix.sqr(e) / 1.e5 \
+                           for e in self._S.forward_gradients()]

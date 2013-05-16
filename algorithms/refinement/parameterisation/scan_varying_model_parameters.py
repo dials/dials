@@ -199,13 +199,13 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         assert(isinstance(param_sets, list))
         self._initial_state = initial_state
         self._models = models
-        self._param_sets = list(param_sets)
-        self._num_sets = len(self._param_sets)
+        self._param = list(param_sets)
+        self._num_sets = len(self._param)
         self._set_len = len(param_sets[0])
         self._total_len = self._set_len * self._num_sets
 
         # ensure all internal parameter sets have the same number of parameters
-        for param in self._param_sets[1:]: assert len(param) == self._set_len
+        for param in self._param[1:]: assert len(param) == self._set_len
 
         # Link up with an object that will perform the smoothing.
         self._smoother = smoother
@@ -215,18 +215,18 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
     def num_free(self):
         '''the number of free parameters'''
-        return sum(not x.get_fixed() for x in self._param_sets) * self._set_len
+        return sum(not x.get_fixed() for x in self._param) * self._set_len
 
-    def num_total(self):
-        '''the total number of parameters, both fixed and free'''
-        return self._total_len
+    # def num_total(self): inherited unchanged from ModelParameterisation
 
-    def compose(self):
-        '''compose the current model state from its initial state and its
+    def compose(self, t):
+        '''compose the model state at time t from its initial state and its
         parameter list. Also calculate the derivatives of the state wrt
-        each parameter in the list. Should be called automatically once
-        parameters are updated, e.g. at the end of each refinement cycle'''
-
+        each parameter in the list.
+        
+        Unlike ModelParameterisation, does not automatically update the actual
+        model class. This should be done once refinement is complete.'''
+    
         raise RuntimeError, 'implement me'
 
     def get_p(self, only_free = True):
@@ -237,11 +237,11 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         returned list. Otherwise all parameter values are returned'''
 
         if only_free:
-            return [x for e in self._param_sets \
+            return [x for e in self._param \
                     if not e.get_fixed() for x in e.value]
 
         else:
-            return [x for e in self._param_sets for x in e.value]
+            return [x for e in self._param for x in e.value]
 
     def get_pnames(self, only_free = True):
         '''export the names of the internal list of parameters
@@ -252,11 +252,11 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         # FIXME combine functionality with get_p by returning a named, ordered
         # list
         if only_free:
-            return [x for e in self._param_sets \
+            return [x for e in self._param \
                     if not e.get_fixed() for x in e.name]
 
         else:
-            return [x for e in self._param_sets for x in e.name]
+            return [x for e in self._param for x in e.name]
 
     def set_p(self, vals):
         '''set the values of the internal list of parameters from a
@@ -270,7 +270,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
         assert(len(vals) == self.num_free())
         i = 0
-        for p in self._param_sets:
+        for p in self._param:
             if not p.get_fixed(): # only set the free parameter sets
                 new_vals = vals[i:i+self._set_len]
                 p.value = new_vals
@@ -281,18 +281,9 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
         return
 
-    def get_fixed(self):
-        '''return the list determining whether each parameter set is fixed or not'''
-        return [p.get_fixed() for p in self._param_sets]
+    #def get_fixed(self): inherited unchanged from ModelParameterisation
 
-    def set_fixed(self, fix):
-        '''set parameter sets to be fixed or free from a list'''
-
-        assert(len(fix) == len(self._param_sets))
-
-        for f, p in zip(fix, self._param_sets):
-            if f: p.fix()
-            else: p.unfix()
+    #def set_fixed(self, fix): inherited unchanged from ModelParameterisation
 
     def get_state(self, t):
         '''return the current state of the model under parameterisation

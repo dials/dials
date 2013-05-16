@@ -59,7 +59,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
         U0 = self._initial_state
 
         # extract parameters from the internal list
-        phi1, phi2, phi3 = self._plist
+        phi1, phi2, phi3 = self._param
 
         # convert to radians
         phi1rad, phi2rad, phi3rad = (phi1.value / 1000., phi2.value / 1000.,
@@ -137,7 +137,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         '''calculate state and derivatives'''
 
         # obtain parameters on natural scale
-        p_vals = [p.value / 1.e5 for p in self._plist]
+        p_vals = [p.value / 1.e5 for p in self._param]
 
         # set parameter values in the symmetrizing object and obtain new B
         newB = matrix.sqr(self._S.backward_orientation(p_vals).reciprocal_matrix())
