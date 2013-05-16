@@ -5,6 +5,7 @@ from dials_model_data_ext import *
 reflection_list_attributes = [
   'miller_index',
   'rotation_angle',
+  'beam_vector',
   'image_coord_px',
   'image_coord_mm',
   'frame_number',
