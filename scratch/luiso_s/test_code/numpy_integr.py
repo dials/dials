@@ -19,7 +19,6 @@ mask2d[1:4, 1:4] = 1
 
 print mask2d
 
-
 data3d = data2d
 data3d.shape = (1,) + data2d.shape
 print data3d.shape

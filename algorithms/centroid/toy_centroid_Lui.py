@@ -84,7 +84,10 @@ class toy_centroid_lui(centroid_interface):
         return _f, _r, _c, _sf, _sr, _sc, tot_itst
 
 def single_spot_integrate_2d(data2d):
-    from dials.algorithms.background.flat_subtraction import flat_background_subtraction_2d
+
+    from dials.algorithms.background.background_subtraction_2d \
+      import flat_background_subtraction_2d , curved_background_subtraction_2d
+
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
     #print 'n_col,n_row =', n_col, n_row
@@ -129,8 +132,8 @@ def single_spot_integrate_2d(data2d):
                 diffdata2d_ext[row - ext_area:row + ext_area + 1, col - ext_area:col + ext_area + 1] = 1
 
 ###########################################################################
-    flat_background_subtraction_2d(data2d, diffdata2d_ext)# <- fix me
-
+#    flat_background_subtraction_2d(data2d, diffdata2d_ext)
+    curved_background_subtraction_2d(data2d, diffdata2d_ext)
 
     itst_sum = 0.0
     for row in range(0, n_row, 1):

@@ -37,7 +37,6 @@ def curved_background_subtraction_2d(data2d, mask2d):
         for col in range(0, n_col, 1):
             if mask2d[row, col] == 0:
                 data2d[row, col] = 0
-    print "Hi from curved algr"
     return avg_bkgr
 
 def flat_background_subtraction_2d(data2d, diffdata2d_ext):
@@ -64,5 +63,4 @@ def flat_background_subtraction_2d(data2d, diffdata2d_ext):
                 data2d[row, col] = data2d[row, col] - bkgr
             else:
                 data2d[row, col] = 0
-    print "Hi from flat algr"
     return bkgr
