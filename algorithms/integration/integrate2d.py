@@ -39,8 +39,8 @@ class Integrate2d(IntegrationInterface):
                 data2d = shoebox[i]
                 mask2d = mask[i]
 
-                bkgr = flat_background_subtraction_2d(data2d, mask2d) # <- and here
-#                bkgr = curved_background_subtraction_2d(data2d, mask2d) # <- and here
+#                bkgr = flat_background_subtraction_2d(data2d, mask2d) # <- and here
+                bkgr = curved_background_subtraction_2d(data2d, mask2d) # <- and here
 
                 shoebox[i] = data2d
                 mask[i] = mask2d
