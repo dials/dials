@@ -14,7 +14,9 @@ data2d[2:3, 2:3] = 50
 print data2d
 
 mask2d = numpy.zeros((5, 5), dtype = numpy.int32)
+
 mask2d[1:4, 1:4] = 1
+
 print mask2d
 
 
@@ -25,7 +27,6 @@ print data3d.shape
 mask3d = mask2d
 mask3d.shape = (1,) + mask2d.shape
 print mask3d.shape
-
 
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
@@ -43,4 +44,6 @@ integrate = Integrate2d()
 integrate(rlist)
 for r in rlist:
     print r
+    matrix_img = r.shoebox.as_numpy_array()
+    print matrix_img
 

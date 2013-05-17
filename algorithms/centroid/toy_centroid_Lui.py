@@ -130,26 +130,7 @@ def single_spot_integrate_2d(data2d):
 
 ###########################################################################
     flat_background_subtraction_2d(data2d, diffdata2d_ext)# <- fix me
-######################################################################################## curved background
-#   colbord = int(n_col / 5)                                                           # version
-#   colbord = int(n_row / 5)                                                           #
-#   for row in range(0, n_row, 1):                                                     #
-#       for col in range(0, n_col, 1):                                                 #
-#           if diffdata2d_ext[row,col] == 1:                                           #     #
-#               top_av = float(numpy.sum(data2d[:colbord, col - 1:col + 2]))           #
-#               bot_av = float(numpy.sum(data2d[n_row - colbord:, col - 1:col + 2]))   #
-#               lft_av = float(numpy.sum(data2d[row - 1:row + 2, colbord]))            #
-#               rgt_av = float(numpy.sum(data2d[row - 1:row + 2, n_col - colbord:]))   #
-#               bkgr = (top_av + bot_av + lft_av + rgt_av) / 4.0                       #
-#               if data2d[row,col] > bkgr:                                             #
-#                   data2d[row,col] = data2d[row,col] - bkgr                           #
-#               else:                                                                  #
-#                   data2d[row,col] = 0                                                #
-#   for row in range(0, n_row, 1):                                                     #
-#       for col in range(0, n_col, 1):                                                 #
-#           if diffdata2d_ext[row,col] == 0:                                           #
-#               data2d[row,col] = 0                                                    #
-###############################################################################
+
 
     itst_sum = 0.0
     for row in range(0, n_row, 1):
