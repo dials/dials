@@ -24,7 +24,12 @@ class Integrate2d(IntegrationInterface):
     def subract_background(self, reflections):
 
 #        from dials.algorithms.background.flat_subtraction import flat_background_subtraction_2d # <- here
-        from dials.algorithms.background.curved_subtraction import curved_background_subtraction_2d # <- here
+#        from dials.algorithms.background.curved_subtraction import curved_background_subtraction_2d # <- here
+        #from dials.algorithms.background.background_subtraction_2d  import curved_background_subtraction_2d # <- here
+
+        from dials.algorithms.background.background_subtraction_2d \
+          import flat_background_subtraction_2d , curved_background_subtraction_2d
+
         from scitbx.array_family import flex
         for ref in reflections:
             shoebox = ref.shoebox.as_numpy_array()
@@ -34,8 +39,8 @@ class Integrate2d(IntegrationInterface):
                 data2d = shoebox[i]
                 mask2d = mask[i]
 
-#                bkgr = flat_background_subtraction_2d(data2d, mask2d) # <- and here
-                bkgr = curved_background_subtraction_2d(data2d, mask2d) # <- and here
+                bkgr = flat_background_subtraction_2d(data2d, mask2d) # <- and here
+#                bkgr = curved_background_subtraction_2d(data2d, mask2d) # <- and here
 
                 shoebox[i] = data2d
                 mask[i] = mask2d
