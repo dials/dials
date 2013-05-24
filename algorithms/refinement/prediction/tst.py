@@ -271,7 +271,7 @@ dials_panel = Panel("PAD", fast, slow, origin,
 # get the bits needed to make a RayPredictor
 s0 = mybeam.get_s0()
 spindle = mygonio.get_rotation_axis()
-ray_predictor = RayPredictor(s0, spindle, UB, sweep_range)
+ray_predictor = RayPredictor(s0, spindle, sweep_range)
 
 # also make a reflection_prediction object
 from rstbx.diffraction import reflection_prediction
@@ -285,7 +285,7 @@ hkls, d1s, d2s, angles, s_dirs = rp.predict(
 
 # dials_indices is a cctbx_array_family_flex_ext.miller_index object
 # dials_reflections is a dials_model_data_ext.ReflectionList object
-dials_reflections = ray_predictor(dials_indices)
+dials_reflections = ray_predictor(dials_indices, UB)
 
 # I can use ray_predictor one reflection at a time by looping over
 # dials_indices. It will return a ReflectionList, which will be of length
