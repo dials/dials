@@ -9,6 +9,9 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
+# LIBTBX_SET_DISPATCHER_NAME dials.spotfinder
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
+# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 class ScriptRunner(object):
     '''Class to run script.'''
@@ -44,6 +47,8 @@ class ScriptRunner(object):
         self.dark_current = None
         self.mask = None
 
+        self.params = params
+
     def __call__(self):
         '''Run the script.'''
         from scitbx.array_family import flex
@@ -58,6 +63,9 @@ class ScriptRunner(object):
 
         # Heading for file read bit
         print 'Reading datafiles...'
+
+        if len(self.sweep_filenames) == 1:
+            raise RuntimeError("spotfinding currently requires more than one image.")
 
         # Load the sweep
         Command.start('Loading sweep')
@@ -84,6 +92,13 @@ class ScriptRunner(object):
                 observed.extend(self._spotfinder_lui(sweep[j0:j1]))
             else:
                 observed.extend(self._spotfinder_xds(sweep[j0:j1]))
+
+        # Store the reflections
+        self.reflections = observed
+
+
+        if self.params.image_viewer:
+            self.view()
 
         # Save the reflections
         if self.output_file:
@@ -159,6 +174,10 @@ class ScriptRunner(object):
         else:
             raise RuntimeError('Unknown threshold strategy')
 
+    def view(self):
+        from dials.util.spotfinder_wrap import spot_wrapper
+        spot_wrapper(working_phil=self.params).display(
+            sweep_filenames=self.sweep_filenames, reflections=self.reflections)
 
 if __name__ == '__main__':
 

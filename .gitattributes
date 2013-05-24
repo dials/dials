@@ -169,6 +169,7 @@ command_line/analyse_blank.py -text
 command_line/background_lookup.py -text
 command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text
+command_line/dials_spotfinder.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
@@ -181,7 +182,6 @@ command_line/predict_spots.py -text
 command_line/print_reflection_stats.py -text
 command_line/refine.py -text
 command_line/reflection_stats.py -text
-command_line/spotfinder.py -text
 command_line/subtract_background.py -text
 command_line/toy_centroid_runner.py -text
 data/completion_template.txt -text
@@ -629,3 +629,5 @@ util/nexus.py -text
 util/options.py -text
 util/pycbf_extra.py -text
 util/script.py -text
+util/spotfinder_frame.py -text
+util/spotfinder_wrap.py -text
