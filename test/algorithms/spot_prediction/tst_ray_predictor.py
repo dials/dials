@@ -68,10 +68,11 @@ class TestRayPredictor:
         dphi = self.scan.get_oscillation_range(deg=False)
 
         # Create the ray predictor
-        self.predict_rays = RayPredictor(s0, m2, UB, dphi)
+        self.predict_rays = RayPredictor(s0, m2, dphi)
 
         # Predict the spot locations
-        self.reflections = self.predict_rays(self.generate_indices.to_array())
+        self.reflections = self.predict_rays(
+                                self.generate_indices.to_array(), UB)
 
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""

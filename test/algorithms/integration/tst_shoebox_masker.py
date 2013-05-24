@@ -223,14 +223,14 @@ def run():
     generate_indices = IndexGenerator(unit_cell, space_group, d_min)
 
     # Create the spot predictor
-    predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(), UB,
+    predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(),
                                 scan.get_oscillation_range(deg=False))
 
     # Generate Indices
     miller_indices = generate_indices.to_array()
 
     # Predict reflections
-    reflections = predict_rays(miller_indices)
+    reflections = predict_rays(miller_indices, UB)
 
     # Get detector coordinates (mm)
     reflections = ray_intersection(detector, reflections)

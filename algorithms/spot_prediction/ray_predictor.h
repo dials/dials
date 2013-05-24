@@ -49,16 +49,14 @@ namespace dials { namespace algorithms {
      * Initialise the ray predictor.
      * @param s0 The incident beam vector
      * @param m2 The rotation axis
-     * @param UB The ub matrix
      * @param dphi The total oscillation range
      */
-    RayPredictor(vec3 <double> s0, vec3 <double> m2, mat3 <double> UB,
+    RayPredictor(vec3 <double> s0, vec3 <double> m2,
                  vec2 <double> dphi)
       : calculate_rotation_angles_(s0, m2),
         dphi_(dphi),
         s0_(s0),
-        m2_(m2.normalize()),
-        UB_(UB) {}
+        m2_(m2.normalize()){}
 
     /** Virtual destructor to allow inheritance */
     virtual ~RayPredictor() {}
@@ -81,12 +79,12 @@ namespace dials { namespace algorithms {
      * @returns An array of predicted reflections
      */
     reflection_list_type
-    operator()(miller_index h) const {
+    operator()(miller_index h, mat3 <double> UB) const {
 
       reflection_list_type reflections;
 
       // Calculate the reciprocal space vector
-      vec3 <double> pstar0 = UB_ * h;
+      vec3 <double> pstar0 = UB * h;
 
       // Try to calculate the diffracting rotation angles
       vec2 <double> phi;
@@ -115,14 +113,16 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * For a given set of miller indices, predict the detector coordinates.
+     * For a given set of miller indices and a single UB matrix, predict
+     * the detector coordinates.
      * @param miller_indices The array of miller indices.
      */
     reflection_list_type
-    operator()(const flex_miller_index &miller_indices) const {
+    operator()(const flex_miller_index &miller_indices,
+               mat3 <double> UB) const {
       reflection_list_type reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {
-        reflection_list_type r = operator()(miller_indices[i]);
+        reflection_list_type r = operator()(miller_indices[i], UB);
         for (std::size_t j = 0; j < r.size(); ++j) {
           reflections.push_back(r[j]);
         }
@@ -136,7 +136,6 @@ namespace dials { namespace algorithms {
     vec2 <double> dphi_;
     vec3 <double> s0_;
     vec3 <double> m2_;
-    mat3 <double> UB_;
   };
 
 }} // namespace dials::algorithms

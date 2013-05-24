@@ -162,7 +162,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     generate_indices = IndexGenerator(unit_cell, space_group, d_min)
 
     # Create the spot predictor
-    predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(), UB,
+    predict_rays = RayPredictor(beam.get_s0(), gonio.get_rotation_axis(),
                                 scan.get_oscillation_range(deg=False))
 
     # Generate Indices
@@ -170,7 +170,8 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
         "Generating miller indices", "miller indices")
 
     # Predict reflections
-    reflections = print_call_info(lambda: predict_rays(miller_indices),
+    reflections = print_call_info(lambda: predict_rays(miller_indices,
+                                                       UB),
         "Predicting rays", "reflections")
 
     # Get detector coordinates (mm)

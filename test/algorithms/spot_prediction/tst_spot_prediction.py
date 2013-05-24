@@ -66,10 +66,11 @@ class TestSpotPredictor:
         dphi = self.scan.get_oscillation_range(deg=False)
 
         # Create the ray predictor
-        self.predict_rays = RayPredictor(s0, m2, UB, dphi)
+        self.predict_rays = RayPredictor(s0, m2, dphi)
 
         # Predict the spot locations
-        self.reflections = self.predict_rays(generate_indices.to_array())
+        self.reflections = self.predict_rays(
+                                        generate_indices.to_array(), UB)
 
         # Calculate the intersection of the detector and reflection frames
         self.reflections = ray_intersection(self.detector, self.reflections)

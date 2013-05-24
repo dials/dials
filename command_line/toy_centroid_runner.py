@@ -137,11 +137,11 @@ class ToyCentroidRunner(object):
         m2 = self.gonio.get_rotation_axis()
         UB = self.UB
         dphi = self.scan.get_oscillation_range(deg=False)
-        predict_rays = RayPredictor(s0, m2, UB, dphi)
+        predict_rays = RayPredictor(s0, m2, dphi)
 
         # Predict the reflections
         self.reflections = reflection_frames(self.scan, ray_intersection(
-            self.detector, predict_rays(self.miller_indices)))
+            self.detector, predict_rays(self.miller_indices, UB)))
 
         # Set the divergence and mosaicity
         n_sigma = 5.0

@@ -38,13 +38,13 @@ class ReflectionPredictor(object):
 
         self._ray_predictor = RayPredictor(self._beam.get_s0(),
                         self._gonio.get_rotation_axis(),
-                        self._crystal.get_U() * self._crystal.get_B(),
                         self._sweep_range)
 
     def predict(self, hkl):
         '''Solve the prediction formula for the reflecting angle phi'''
 
-        return self._ray_predictor(hkl)
+        return self._ray_predictor(hkl,
+                        self._crystal.get_U() * self._crystal.get_B())
 
 class AnglePredictor_rstbx(object):
     '''Predict the reflecting angles for a relp based on the current states
