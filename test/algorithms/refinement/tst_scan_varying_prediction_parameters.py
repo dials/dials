@@ -43,12 +43,11 @@ from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameter
     ScanVaryingCrystalOrientationParameterisation, \
     ScanVaryingCrystalUnitCellParameterisation
 
-#### Local functions
+#### Import helper functions
 
-def print_grads(grad_list):
-    for i, grad in enumerate(grad_list):
-        print ("Param %02d. Gradients: "
-               "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
+from dials.algorithms.refinement import random_param_shift, print_grads
+
+#### Local functions
 
 # Functions required for finite difference calculations
 
@@ -130,7 +129,7 @@ from time import time
 
 start_time = time()
 
-#### Create models
+#### Create models and parameterisations
 
 args = sys.argv[1:]
 overrides = """geometry.parameters.crystal.a.length.range = 10 50
@@ -162,6 +161,21 @@ xlo_param = ScanVaryingCrystalOrientationParameterisation(
         mycrystal, myscan.get_image_range(), 5)
 xluc_param = ScanVaryingCrystalUnitCellParameterisation(
         mycrystal, myscan.get_image_range(), 5)
+
+#### Cause the crystal U and B to vary over the scan
+
+# Vary orientation angles by ~1.0 mrad each checkpoint
+p_vals = xlo_param.get_p()
+sigmas = [1.0] * len(p_vals)
+new_vals = random_param_shift(p_vals, sigmas)
+xlo_param.set_p(new_vals)
+
+# Vary unit cell parameters, on order of 1% of the initial metrical
+# matrix parameters
+p_vals = xluc_param.get_p()
+sigmas = [0.01 * p for p in p_vals]
+new_vals = random_param_shift(p_vals, sigmas)
+xluc_param.set_p(new_vals)
 
 #### Unit tests
 
@@ -211,7 +225,34 @@ exclusion_limit = max(uc.reciprocal_parameters()[0:3])
 
 verbose = False
 for iref in selection:
-    hkl, s, angle, frame = hkls[iref], s_vecs[iref], angles[iref], frames[iref]
+
+    hkl, angle, frame = hkls[iref], angles[iref], frames[iref]
+
+    # re-predict this hkl based on the perturbed UB at its frame
+    xlo_param.compose(frame)
+    xluc_param.compose(frame)
+    UB = xlo_param.get_state() * xluc_param.get_state()
+
+    ref_list = ref_predictor.predict(hkl, UB)
+
+    if len(ref_list) == 0: continue
+
+    if len(ref_list) == 1:
+        angle = ref_list[0].rotation_angle
+        s = matrix.col(ref_list[0].beam_vector)
+
+    elif len(ref_list) == 2: # take the one with the closest angle
+        phi_diff = (abs(ref_list[0].rotation_angle - angle),
+                    abs(ref_list[1].rotation_angle - angle))
+        if phi_diff[1] > phi_diff[0]:
+            angle = ref_list[0].rotation_angle
+            s = matrix.col(ref_list[0].beam_vector)
+        else:
+            angle = ref_list[1].rotation_angle
+            s = matrix.col(ref_list[1].beam_vector)
+
+    else: # cannot have more than two reflections, this should never execute
+        raise RuntimeError("Predicted more than two angles for a single hkl")
 
     # get analytical gradients
     an_grads = pred_param.get_gradients(hkl, s, angle, frame)

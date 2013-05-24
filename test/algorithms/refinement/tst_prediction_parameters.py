@@ -42,12 +42,11 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
 
-#### Local functions
+#### Import helper function
 
-def print_grads(grad_list):
-    for i, grad in enumerate(grad_list):
-        print ("Param %02d. Gradients: "
-               "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
+from dials.algorithms.refinement import print_grads
+
+#### Local functions
 
 # Functions required for finite difference calculations
 
