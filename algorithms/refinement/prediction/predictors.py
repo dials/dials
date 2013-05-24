@@ -40,11 +40,16 @@ class ReflectionPredictor(object):
                         self._gonio.get_rotation_axis(),
                         self._sweep_range)
 
-    def predict(self, hkl):
-        '''Solve the prediction formula for the reflecting angle phi'''
+    def predict(self, hkl, UB = None):
+        '''
+        Solve the prediction formula for the reflecting angle phi.
 
-        return self._ray_predictor(hkl,
-                        self._crystal.get_U() * self._crystal.get_B())
+        If UB is given, override the contained crystal model. This is
+        for use in refinement with time-varying crystal parameters'''
+
+        UB_ = UB if UB else self._crystal.get_U() * self._crystal.get_B()
+
+        return self._ray_predictor(hkl, UB_)
 
 class AnglePredictor_rstbx(object):
     '''Predict the reflecting angles for a relp based on the current states
