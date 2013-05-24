@@ -69,8 +69,10 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         # parameterisation of each type
         xl_op = self._xl_orientation_parameterisations[0]
         xl_ucp = self._xl_unit_cell_parameterisations[0]
-        U = xl_op.get_state(obs_image_number)
-        B = xl_ucp.get_state(obs_image_number)
+        xl_op.compose(obs_image_number)
+        xl_ucp.compose(obs_image_number)
+        U = xl_op.get_state()
+        B = xl_ucp.get_state()
 
         # pv is the 'projection vector' for the reflection s.
         s = matrix.col(s)

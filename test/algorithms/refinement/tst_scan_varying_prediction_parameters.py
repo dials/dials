@@ -52,14 +52,14 @@ def print_grads(grad_list):
 
 # Functions required for finite difference calculations
 
-def get_state(det, hkl, angle, reflection_predictor):
+def get_state(det, hkl, UB, angle, reflection_predictor):
     '''reflection prediction for the current state of the models'''
 
     # update reflection_predictor with latest geometry
     reflection_predictor.update()
 
     # predict for this hkl
-    refs = reflection_predictor.predict(hkl)
+    refs = reflection_predictor.predict(hkl, UB)
 
     # select which is nearest the observed angle
     deltas = [abs(ref.rotation_angle - angle) for ref in refs]
@@ -70,7 +70,7 @@ def get_state(det, hkl, angle, reflection_predictor):
 
     return matrix.col((impact) + (new_ref.rotation_angle,))
 
-def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
+def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
                      deltas):
     '''Calculate centered finite difference gradients for each of the
     parameters of the prediction parameterisation object, for reflection
@@ -96,11 +96,27 @@ def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
 
         p_vals[i] -= deltas[i] / 2.
         pred_param.set_p(p_vals)
-        rev_state = get_state(det, hkl, phi, rp)
+
+        # get UB for the current frame
+        xlo_param.compose(frame)
+        xluc_param.compose(frame)
+        U = xlo_param.get_state()
+        B = xluc_param.get_state()
+        UB = U * B
+
+        rev_state = get_state(det, hkl, UB, phi, rp)
 
         p_vals[i] += deltas[i]
         pred_param.set_p(p_vals)
-        fwd_state = get_state(det, hkl, phi, rp)
+
+        # get UB for the current frame
+        xlo_param.compose(frame)
+        xluc_param.compose(frame)
+        U = xlo_param.get_state()
+        B = xluc_param.get_state()
+        UB = U * B
+
+        fwd_state = get_state(det, hkl, UB, phi, rp)
 
         fd_grad.append((fwd_state - rev_state) / deltas[i])
         p_vals[i] = val
@@ -135,6 +151,7 @@ mybeam = models.beam
 # Make a scan of 1-360 * 0.5 deg images
 sf = scan_factory()
 myscan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
+print myscan
 
 # Create parameterisations of these models, with 5 samples for the
 # scan-varying crystal parameterisations
@@ -171,6 +188,10 @@ temp = [(ref.miller_index, ref.rotation_angle,
          matrix.col(ref.beam_vector)) for ref in ref_list]
 hkls, angles, s_vecs = zip(*temp)
 
+# convert angles to image number
+frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False), angles)
+print max(frames), min(frames), sum(frames) / len(frames)
+
 # Project positions on camera. Currently assuming all reflections
 # intersect panel 0
 impacts = [mydetector[0].get_ray_intersection(
@@ -178,7 +199,7 @@ impacts = [mydetector[0].get_ray_intersection(
 d1s, d2s = zip(*impacts)
 
 # Test get_state for the first reflection
-tmp = get_state(mydetector, hkls[0], angles[0], ref_predictor)
+tmp = get_state(mydetector, hkls[0], UB, angles[0], ref_predictor)
 for (a, b) in zip(tmp, (d1s[0], d2s[0], angles[0])):
     assert a == b
 
@@ -190,10 +211,10 @@ exclusion_limit = max(uc.reciprocal_parameters()[0:3])
 
 verbose = False
 for iref in selection:
-    hkl, s, angle = hkls[iref], s_vecs[iref], angles[iref]
+    hkl, s, angle, frame = hkls[iref], s_vecs[iref], angles[iref], frames[iref]
 
     # get analytical gradients
-    an_grads = pred_param.get_gradients(hkl, s, angle)
+    an_grads = pred_param.get_gradients(hkl, s, angle, frame)
 
 # NB, reflections that just touch the Ewald sphere have large
 # derivatives of phi wrt some parameters (asymptotically approching
@@ -211,7 +232,7 @@ for iref in selection:
     if r_dist_from_plane <= exclusion_limit:
         continue
 
-    fd_grads = get_fd_gradients(pred_param, hkl, angle, ref_predictor,
+    fd_grads = get_fd_gradients(pred_param, hkl, angle, frame, ref_predictor,
                                 [1.e-7] * len(pred_param))
 
     if verbose:
@@ -228,7 +249,7 @@ for iref in selection:
             except AssertionError:
                 print "Failure for parameter number %d" %i
                 print "Analytical derivatives: %.6f, %.6f, %.6f" % tuple(an_grad)
-                print "Finite derivatives: %.6f, %.6f, %.6f" % tuple(fd_grad)
+                print "Finite difference derivatives: %.6f, %.6f, %.6f" % tuple(fd_grad)
                 finish_time = time()
                 print "Time Taken: ",finish_time - start_time
                 raise
