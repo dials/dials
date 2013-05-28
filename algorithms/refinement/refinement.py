@@ -100,6 +100,11 @@ def print_model_geometry(beam = None, detector = None, crystal = None):
         print "crystal orientation matrix U ="
         print crystal.get_U().round(4)
 
+def print_grads(grad_list):
+    for i, grad in enumerate(grad_list):
+        print ("Param %02d. Gradients: "
+               "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
+
 def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
            hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
            verbosity = 0, fix_cell = False):
