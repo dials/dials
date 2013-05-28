@@ -133,7 +133,6 @@ algorithms/refinement/prediction/ap_indices.dat -text
 algorithms/refinement/prediction/predictors.py -text
 algorithms/refinement/prediction/ra_indices.dat -text
 algorithms/refinement/prediction/rscript.R -text
-algorithms/refinement/prediction/tst.py -text
 algorithms/refinement/prediction_parameter_helpers.h -text
 algorithms/refinement/refinement.py -text
 algorithms/refinement/target.py -text
@@ -289,6 +288,7 @@ scratch/dgw/refinement/tst_convergence_radius_one_parameter.py -text
 scratch/dgw/refinement/tst_dials_models.py -text
 scratch/dgw/refinement/tst_finite_diffs.py -text
 scratch/dgw/refinement/tst_orientation_refinement.py -text
+scratch/dgw/refinement/tst_prediction.py -text
 scratch/dgw/refinement/tst_prediction_parameters.py -text
 scratch/dgw/refinement/tst_ref_passage_categorisation.py -text
 scratch/dgw/refinement/tst_refine_fn.py -text

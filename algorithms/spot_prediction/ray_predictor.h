@@ -75,7 +75,7 @@ namespace dials { namespace algorithms {
      *
      *  - The reciprocal lattice vectors are then calculated, followed by the
      *    diffracted beam vector for each reflection.
-     * 
+     *
      *  - The diffracted beam vectors are then classified according to whether
      *    the reciprocal lattice point is entering or exiting the Ewald sphere.
      *
