@@ -285,25 +285,14 @@ hkls, d1s, d2s, angles, s_dirs = rp.predict(
                                     dials_obs_indices.as_vec3_double(),
                                     dials_angles)
 
-# dials_indices is a cctbx_array_family_flex_ext.miller_index object
-# dials_reflections is a dials_model_data_ext.ReflectionList object
-dials_reflections = ray_predictor(dials_obs_indices, UB)
-
 # I can use ray_predictor one reflection at a time by looping over
 # dials_indices. It will return a ReflectionList, which will be of length
 # zero if the reflection has no predicted angles, or of length two, if
 # the enter and exit angles are predicted.
 
-print "check indices"
-for h in dials_obs_indices: print h
-for h1, h2 in zip(hkls,dials_obs_indices): print h1, h2
-
-# test
 for h, ang, s_dir in zip(hkls, angles, s_dirs):
     int_h = tuple(map(int, h))
     refs = ray_predictor(int_h, UB)
-    #print dir (ref)
-    print int_h, [ref.miller_index for ref in refs]
     assert int_h in [ref.miller_index for ref in refs]
     assert ang in [ref.rotation_angle for ref in refs]
     vecs = [matrix.col(ref.beam_vector).normalize().elems for ref in refs]
@@ -315,16 +304,13 @@ for h, ang, s_dir in zip(hkls, angles, s_dirs):
         assert entering == ref.entering
 
 # Good, ray prediction works fine. What about impact prediction?
-# We do that one reflection at a time with the Panel class, like this:
-print dials_panel.get_ray_intersection(dials_reflections[0].beam_vector)
+# We do that one reflection at a time with the Panel class.
 
 # Do them all, but one at a time
-impacts = [dials_panel.get_ray_intersection(e.beam_vector) \
-                                            for e in dials_reflections]
+impacts = [dials_panel.get_ray_intersection(e) \
+                                            for e in s_dirs]
 for e1, e2 in zip(impacts, zip(d1s,d2s)):
     assert approx_equal(e1, e2)
 print len(impacts), len(d1s)
-
-print len(hkls), len(dials_reflections)
 
 print "OK"
