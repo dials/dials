@@ -56,7 +56,8 @@ namespace dials { namespace algorithms {
       : calculate_rotation_angles_(s0, m2),
         dphi_(dphi),
         s0_(s0),
-        m2_(m2.normalize()){}
+        m2_(m2.normalize()),
+        s0_m2_plane(s0.cross(m2).normalize()){}
 
     /** Virtual destructor to allow inheritance */
     virtual ~RayPredictor() {}
@@ -74,6 +75,9 @@ namespace dials { namespace algorithms {
      *
      *  - The reciprocal lattice vectors are then calculated, followed by the
      *    diffracted beam vector for each reflection.
+     * 
+     *  - The diffracted beam vectors are then classified according to whether
+     *    the reciprocal lattice point is entering or exiting the Ewald sphere.
      *
      * @param h The miller index
      * @returns An array of predicted reflections
@@ -106,8 +110,11 @@ namespace dials { namespace algorithms {
         vec3 <double> pstar = pstar0.unit_rotate_around_origin(m2_, phi[i]);
         vec3 <double> s1 = s0_ + pstar;
 
+        // Calculate the direction of reflection passage
+        bool entering = s1 * s0_m2_plane < 0.;
+
         // Add the reflection
-        reflections.push_back(reflection_type(h, mod_2pi(phi[i]), s1));
+        reflections.push_back(reflection_type(h, mod_2pi(phi[i]), s1, entering));
       }
       return reflections;
     }
@@ -136,6 +143,7 @@ namespace dials { namespace algorithms {
     vec2 <double> dphi_;
     vec3 <double> s0_;
     vec3 <double> m2_;
+    vec3 <double> s0_m2_plane;
   };
 
 }} // namespace dials::algorithms

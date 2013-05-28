@@ -145,6 +145,34 @@ namespace dials { namespace model {
         intensity_(0.0),
         intensity_variance_(0.0) {}
 
+    /**
+     * Initialise the reflection with the miller index, rotation angle,
+     * beam parameters and direction of reflection passage
+     * @param miller_index The miller index
+     * @param rotation_angle The rotation angle
+     * @param beam_vector The beam vector
+     * @param entering True if the reflection is entering the Ewald sphere
+     */
+    Reflection(miller_index_type miller_index,
+               double rotation_angle,
+               vec3 <double> beam_vector,
+               bool entering)
+      : ReflectionBase(miller_index),
+        rotation_angle_(rotation_angle),
+        beam_vector_(beam_vector),
+        image_coord_px_(0.0, 0.0),
+        image_coord_mm_(0.0, 0.0),
+        frame_number_(0),
+        panel_number_(0),
+        bounding_box_(0, 0, 0, 0, 0, 0),
+        centroid_position_(0, 0, 0),
+        centroid_variance_(0, 0, 0),
+        centroid_sq_width_(0, 0, 0),
+        intensity_(0.0),
+        intensity_variance_(0.0) {
+    set_entering(entering);
+    }
+
     /** Virtual destructor */
     virtual ~Reflection() {}
 
