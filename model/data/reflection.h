@@ -38,7 +38,8 @@ namespace dials { namespace model {
 
     /** Initialise the reflection */
     ReflectionBase()
-      : miller_index_(0, 0, 0) {}
+      : miller_index_(0, 0, 0),
+        entering_(true) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -60,6 +61,15 @@ namespace dials { namespace model {
       miller_index_ = miller_index;
     }
 
+    /** Does the reflection enter or exit the ewald sphere */
+    bool get_entering() const {
+      return entering_;
+    }
+
+    void set_entering(bool entering) {
+      entering_ = entering;
+    }
+
     /** True/False the miller index is (0, 0, 0) */
     bool is_zero() {
       return miller_index_.is_zero();
@@ -67,6 +77,7 @@ namespace dials { namespace model {
 
   protected:
     miller_index_type miller_index_;
+    bool entering_;
   };
 
   /**
@@ -325,6 +336,7 @@ namespace dials { namespace model {
   std::ostream& operator<<(std::ostream &os, const Reflection &r) {
     os << "Reflection:\n";
     os << "  miller index:      " << r.get_miller_index().as_tiny() << "\n";
+    os << "  entering:          " << (r.get_entering() ? "True" : "False") << "\n";
     os << "  rotation angle:    " << r.get_rotation_angle() << "\n";
     os << "  beam vector:       " << r.get_beam_vector().as_tiny() << "\n";
     os << "  image coord (mm):  " << r.get_image_coord_mm().as_tiny() << "\n";
