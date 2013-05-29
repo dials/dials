@@ -50,7 +50,10 @@ class ScriptRunner(object):
             len(hkl)))
 
         # Set the number of frames
-        num_frames = len(self.image_filenames)
+        if self.image_filenames:
+            num_frames = len(self.image_filenames)
+        else:
+            num_frames = 1
 
         # Read the models from the input file
         print "Reading: \"{0}\"".format(self.xparm_filename)
@@ -73,6 +76,7 @@ class ScriptRunner(object):
         for r, h, x1, x2, i, sig in zip(rlist, hkl, xyzcal, xyzobs, iobs, sigma):
             r.miller_index = h
             r.image_coord_px = x1[0:2]
+            r.image_coord_mm = detector.pixel_to_millimeter(r.image_coord_px)
             r.frame_number = x1[2]
             r.centroid_position = x2
             r.intensity = i
@@ -97,21 +101,26 @@ class ScriptRunner(object):
         Command.end('Calculated {0} bounding boxes.'.format(len(rlist)))
 
         # Extract the reflection profiles
-        Command.start('Extracting reflection profiles')
-        sweep = ImageSetFactory.new(self.image_filenames)[0]
-        reflections = extract_reflection_profiles(sweep, rlist)
-        Command.end('Extracted {0} reflection profiles.'.format(len(rlist)))
+        if self.image_filenames:
+            Command.start('Extracting reflection profiles')
+            sweep = ImageSetFactory.new(self.image_filenames)[0]
+            rlist = extract_reflection_profiles(sweep, rlist)
+            Command.end('Extracted {0} reflection profiles.'.format(len(rlist)))
 
-        # Filter valid reflections
-        Command.start('Filtering reflections')
-        rlist = self.filter_reflection_profiles(rlist, detector, scan)
-        Command.end('Filtered {0} reflections'.format(len(rlist)))
+            # Filter valid reflections
+            Command.start('Filtering reflections')
+            rlist = self.filter_reflection_profiles(rlist, detector, scan)
+            Command.end('Filtered {0} reflections'.format(len(rlist)))
 
         # Save the reflection list
         if self.output_filename != None:
-            import pickle
+            import cPickle as pickle
             Command.start('Saving reflections to {0}'.format(
                 self.output_filename))
+#            from dials.util.nexus import NexusFile
+#            handle = NexusFile(self.output_filename, 'w')
+#            handle.set_reflections(rlist)
+#            handle.close()
             pickle.dump(rlist, open(self.output_filename, 'wb'))
             Command.end('Saved reflections to {0}'.format(
                 self.output_filename))
@@ -156,14 +165,19 @@ if __name__ == '__main__':
     options, args = parser.parse_args()
 
     # Print help if no arguments specified, otherwise call function
-    if len(args) < 3:
+    if len(args) < 2:
         parser.print_help()
     else:
+
+        image_filenames = None
+        if len(args) > 2:
+            image_filenames = args[2:]
+
         # Initialise the script runner
         runner = ScriptRunner(
             xparm_filename=args[0],
             integrate_filename=args[1],
-            image_filenames=args[2:],
+            image_filenames=image_filenames,
             output_filename=options.output_file)
 
         # Run the script

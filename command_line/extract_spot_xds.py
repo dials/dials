@@ -94,8 +94,8 @@ class ScriptRunner(object):
                   1.0 + sqw_px[2] / intensity)
 
         # Get the centroid in mm/rad
-        pos_mm, var_mm, sqw_mm = centroid_px_to_mm(self.detector,
-            self.scan, pos_px, var_px, sqw_px)
+        pos_mm, sqw_mm, var_mm, = centroid_px_to_mm(self.detector,
+            self.scan, pos_px, sqw_px, var_px)
 
         # Put everything into the reflection struct
         r.centroid_position = pos_mm
