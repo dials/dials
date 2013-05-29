@@ -239,9 +239,9 @@ class ObservationPrediction(object):
     def __init__(self, H,
                        Xo, sigXo, weightXo,
                        Yo, sigYo, weightYo,
-                       Phio, sigPhio, weightPhio, exiting):
+                       Phio, sigPhio, weightPhio, entering):
         '''initialise from one observation'''
-        assert isinstance(exiting, bool)
+        assert isinstance(entering, bool)
         self.H = H
         self.Xo = [Xo]
         self.sigXo = [sigXo]
@@ -256,7 +256,7 @@ class ObservationPrediction(object):
         self.Yc = [None]
         self.Phic = [None]
         self.Sc = [None]
-        self.exiting = [exiting]
+        self.entering = [entering]
         self.use = [False]
         self.num_obs = 1
 
@@ -272,7 +272,7 @@ class ObservationPrediction(object):
 
     def add_observation(self, Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
-                              Phio, sigPhio, weightPhio, exiting):
+                              Phio, sigPhio, weightPhio, entering):
         '''Add another observation of this reflection'''
         self.Xo.append(Xo)
         self.sigXo.append(sigXo)
@@ -283,7 +283,7 @@ class ObservationPrediction(object):
         self.Phio.append(Phio)
         self.sigPhio.append(sigPhio)
         self.weightPhio.append(weightPhio)
-        self.exiting.append(exiting)
+        self.entering.append(entering)
         self.Xc.append(None)
         self.Yc.append(None)
         self.Phic.append(None)
@@ -291,7 +291,7 @@ class ObservationPrediction(object):
         self.use.append(False)
         self.num_obs += 1
 
-    def update_prediction(self, Sc, Xc, Yc, Phic, pred_exiting,
+    def update_prediction(self, Sc, Xc, Yc, Phic, pred_entering,
                           first_update = False):
         '''Update the observations with a new prediction.'''
 
@@ -308,7 +308,7 @@ class ObservationPrediction(object):
         # corresponds to.
         # Anyway, this will have to be addressed to accommodate time dependent
         # parameterisation of models.
-        to_update = [pred_exiting == n for n in self.exiting]
+        to_update = [pred_entering == n for n in self.entering]
 
         for i, t in enumerate(to_update):
 
@@ -413,18 +413,18 @@ class ReflectionManager(object):
         # pairs (prediction information will go in here later)
         self._H = {}
         for i, h in enumerate(Ho):
-            exiting = So[i].dot(self._vecn) > 0.
+            entering = So[i].dot(self._vecn) < 0.
             if h not in self._H:
                 self._H[h] = ObservationPrediction(h,
                                         Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2,
-                                        exiting)
+                                        entering)
             else:
                 self._H[h].add_observation(Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2,
-                                        exiting)
+                                        entering)
 
     def _spindle_beam_plane_normal(self):
         '''return a unit vector that when placed at the origin of reciprocal
@@ -514,17 +514,10 @@ class ReflectionManager(object):
         # reflections intersect panel 0
         impacts = ray_intersection(self._detector, predictions, panel=0)
 
-        temp = [ref.image_coord_mm for ref in impacts]
-        Xc, Yc = zip(*temp)
-
-        temp = [(ref.miller_index, ref.rotation_angle,
-                 matrix.col(ref.beam_vector)) for ref in impacts]
-        Hc, Phic, Sc = zip(*temp)
-
         # update the ReflectionManager
-        self.update_predictions(Hc, Sc, Xc, Yc, Phic)
+        self.update_predictions(impacts)
 
-    def update_predictions(self, Hc, Sc, Xc, Yc, Phic):
+    def update_predictions(self, predictions):
         '''Update with the latest values for the predictions.
 
         Any observations that do not have a prediction are flagged to be
@@ -535,17 +528,20 @@ class ReflectionManager(object):
         #    v.reset_predictions()
 
         # Loop over new predictions, updating matches
-        for h, s, x, y, p in zip(Hc, Sc, Xc, Yc, Phic):
+        for ref in predictions:
 
-            if h in self._H: # found an observation for this prediction
+            if ref.miller_index in self._H: # found an observation for this prediction
+
+                h = ref.miller_index
+                s = matrix.col(ref.beam_vector)
+                x, y = ref.image_coord_mm
+                p = ref.rotation_angle
 
                 # exclude reflections that fail inclusion criteria
-                if not self._inclusion_test(h, s, self._vecn): continue
+                if not self._inclusion_test(
+                        h, s, self._vecn): continue
 
-                # find the hemisphere of this prediction
-                exiting = matrix.col(s).dot(self._vecn) > 0.
-
-                self._H[h].update_prediction(s, x, y, p, exiting,
+                self._H[h].update_prediction(s, x, y, p, ref.entering,
                     first_update = self._first_update)
         self._first_update = False
 
