@@ -37,13 +37,9 @@ class Target(object):
 
     def __init__(self,
                  ref_manager,
-                 reflection_predictor,
-                 detector,
                  prediction_parameterisation):
 
         self._H = ref_manager
-        self._reflection_predictor = reflection_predictor
-        self._detector = detector
         self._prediction_parameterisation = prediction_parameterisation
 
     def predict(self):
@@ -62,23 +58,8 @@ class Target(object):
         # data structure to be in C++ as well). This needs reworking of the
         # ReflectionManager and other classes too.
 
-        # update the reflection_predictor with current geometry
-        self._reflection_predictor.update()
-
-        # predict for all observations in the manager
-        predictions = self._reflection_predictor.predict(
-                                                self._H.get_indices())
-        temp = [(ref.miller_index, ref.rotation_angle,
-                 matrix.col(ref.beam_vector)) for ref in predictions]
-        Hc, Phic, Sc = zip(*temp)
-
-        # currently assume all reflections intersect panel 0
-        impacts = [self._detector[0].get_ray_intersection(
-                                ref.beam_vector) for ref in predictions]
-        Xc, Yc = zip(*impacts)
-
-        # update the ReflectionManager
-        self._H.update_predictions(Hc, Sc, Xc, Yc, Phic)
+        # Delegate to the reflection_manager for this
+        self._H.predict()
 
     def get_num_reflections(self):
         '''return the number of reflections currently used in the calculation'''
@@ -103,16 +84,14 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     in terms of detector impact position X, Y and phi, terminating on achieved
     rmsd (or on intrisic convergence of the chosen minimiser)'''
 
-    def __init__(self, ref_man, reflection_predictor, detector,
-                 prediction_parameterisation, image_width):
+    def __init__(self, ref_man, prediction_parameterisation, pixel_size,
+                 image_width):
 
-        Target.__init__(self, ref_man, reflection_predictor, detector,
-                        prediction_parameterisation)
+        Target.__init__(self, ref_man, prediction_parameterisation)
 
         # Scale units for the RMSD achieved criterion
-        self._pixelsize = detector.get_pixel_size()
+        self._pixel_size = pixel_size
         self._image_width = image_width
-
 
     def compute_residuals_and_gradients(self):
         '''return the vector of residuals plus their gradients
@@ -238,8 +217,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     def achieved(self):
         '''RMSD criterion for target achieved '''
         r = self.rmsds()
-        if (r[0] < self._pixelsize[0] * 0.33333 and
-            r[1] < self._pixelsize[1] * 0.33333 and
+        if (r[0] < self._pixel_size[0] * 0.33333 and
+            r[1] < self._pixel_size[1] * 0.33333 and
             r[2] < self._image_width * 0.33333):
             return True
         return False
@@ -376,11 +355,15 @@ class ReflectionManager(object):
     '''A class to maintain information about observed and predicted
     reflections for refinement.'''
 
-    def __init__(self, Ho, So,
+    def __init__(self, reflection_predictor, detector,
+                       Ho, So,
                        Xo, sigXo,
                        Yo, sigYo,
                        Phio, sigPhio,
                        beam, gonio, verbosity=0):
+
+        self._reflection_predictor = reflection_predictor
+        self._detector = detector
 
         # check the observed values
         Ho = list(Ho)
@@ -513,6 +496,26 @@ class ReflectionManager(object):
         '''Get the number of reflections currently to be used for refinement'''
 
         return sum(v.get_num_pairs() for v in self._H.values())
+
+    def predict(self):
+
+        # update the reflection_predictor with current geometry
+        self._reflection_predictor.update()
+
+        # predict for all observations in the manager
+        predictions = self._reflection_predictor.predict(
+                                                self.get_indices())
+        temp = [(ref.miller_index, ref.rotation_angle,
+                 matrix.col(ref.beam_vector)) for ref in predictions]
+        Hc, Phic, Sc = zip(*temp)
+
+        # currently assume all reflections intersect panel 0
+        impacts = [self._detector[0].get_ray_intersection(
+                                ref.beam_vector) for ref in predictions]
+        Xc, Yc = zip(*impacts)
+
+        # update the ReflectionManager
+        self.update_predictions(Hc, Sc, Xc, Yc, Phic)
 
     def update_predictions(self, Hc, Sc, Xc, Yc, Phic):
         '''Update with the latest values for the predictions.

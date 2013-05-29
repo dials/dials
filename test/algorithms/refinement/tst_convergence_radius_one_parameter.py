@@ -176,7 +176,8 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(hkls, svecs,
+    refman = ReflectionManager(ref_predictor, mydetector,
+                            hkls, svecs,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
@@ -187,7 +188,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     ##############################
 
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-        refman, ref_predictor, mydetector, pred_param, im_width)
+        refman, pred_param, mydetector.get_pixel_size(), im_width)
 
     ################################
     # Set up the refinement engine #

@@ -192,7 +192,8 @@ xluc_param.set_p(xluc_p_vals)
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(hkls, svecs,
+refman = ReflectionManager(ref_predictor, mydetector,
+                        hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
@@ -205,7 +206,7 @@ refman = ReflectionManager(hkls, svecs,
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-    refman, ref_predictor, mydetector, pred_param, im_width)
+    refman, pred_param, mydetector.get_pixel_size(), im_width)
 
 ######################################
 # Set up the LSTBX refinement engine #
