@@ -7,10 +7,14 @@
 #  included in the root directory of this package.
 #
 
+# python and cctbx imports
 from __future__ import division
 from scitbx import matrix
 from math import pi, sqrt
 from cctbx.array_family import flex
+
+# dials imports
+from dials.algorithms.spot_prediction import ray_intersection
 
 # constants
 TWO_PI = 2.0 * pi
@@ -505,14 +509,17 @@ class ReflectionManager(object):
         # predict for all observations in the manager
         predictions = self._reflection_predictor.predict(
                                                 self.get_indices())
-        temp = [(ref.miller_index, ref.rotation_angle,
-                 matrix.col(ref.beam_vector)) for ref in predictions]
-        Hc, Phic, Sc = zip(*temp)
 
-        # currently assume all reflections intersect panel 0
-        impacts = [self._detector[0].get_ray_intersection(
-                                ref.beam_vector) for ref in predictions]
-        Xc, Yc = zip(*impacts)
+        # obtain the impact positions, currently assuming all
+        # reflections intersect panel 0
+        impacts = ray_intersection(self._detector, predictions, panel=0)
+
+        temp = [ref.image_coord_mm for ref in impacts]
+        Xc, Yc = zip(*temp)
+
+        temp = [(ref.miller_index, ref.rotation_angle,
+                 matrix.col(ref.beam_vector)) for ref in impacts]
+        Hc, Phic, Sc = zip(*temp)
 
         # update the ReflectionManager
         self.update_predictions(Hc, Sc, Xc, Yc, Phic)

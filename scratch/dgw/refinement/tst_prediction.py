@@ -94,7 +94,8 @@ from libtbx.test_utils import approx_equal
 
 ### import models
 from dials.model.experiment.crystal_model import Crystal
-from dials.model.experiment import beam_factory, goniometer_factory
+from dials.model.experiment import beam_factory, goniometer_factory, \
+        detector_factory
 
 ### local functions
 def random_direction_close_to(vector):
@@ -265,8 +266,12 @@ lim = (0,50)
 my_panel = sensor(origin, fast, slow, lim, lim)
 
 # equivalent using the dials Panel
-dials_panel = Panel("PAD", fast, slow, origin,
+#dials_panel = Panel("PAD", fast, slow, origin,
+#            (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20))
+df = detector_factory()
+dials_det = df.make_detector("PAD", fast, slow, origin,
             (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20))
+dials_panel = dials_det[0]
 
 # get the bits needed to make a RayPredictor
 s0 = mybeam.get_s0()
@@ -313,4 +318,11 @@ for e1, e2 in zip(impacts, zip(d1s,d2s)):
     assert approx_equal(e1, e2)
 print len(impacts), len(d1s)
 
+# Do the same using ray_intersection
+from dials.algorithms.spot_prediction import ray_intersection
+refs = ray_predictor(dials_obs_indices, UB)
+impacts = ray_intersection(dials_det, refs, panel=0)
+
+assert len(refs) == len(impacts)
+# impacts is the same as refs except with image coordinates added
 print "OK"
