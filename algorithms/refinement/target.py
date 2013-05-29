@@ -291,8 +291,7 @@ class ObservationPrediction(object):
         self.use.append(False)
         self.num_obs += 1
 
-    def update_prediction(self, Sc, Xc, Yc, Phic, pred_entering,
-                          first_update = False):
+    def update_prediction(self, ref, first_update = False):
         '''Update the observations with a new prediction.'''
 
         # Current behaviour is to update all observations in the same
@@ -308,19 +307,19 @@ class ObservationPrediction(object):
         # corresponds to.
         # Anyway, this will have to be addressed to accommodate time dependent
         # parameterisation of models.
-        to_update = [pred_entering == n for n in self.entering]
+        to_update = [ref.entering == n for n in self.entering]
 
         for i, t in enumerate(to_update):
 
             if t: # update the prediction for this observation
-
+                Xc, Yc = ref.image_coord_mm
                 self.Xc[i] = Xc
                 self.Yc[i] = Yc
                 # do not wrap around multiples of 2*pi; keep the full rotation
                 # from zero to differentiate repeat observations.
-                resid = Phic - (self.Phio[i] % TWO_PI)
+                resid = ref.rotation_angle - (self.Phio[i] % TWO_PI)
                 self.Phic[i] = self.Phio[i] + resid
-                self.Sc[i] = Sc
+                self.Sc[i] = matrix.col(ref.beam_vector)
 
                 #if not self.use[i]:
                 # set use flags only for observations that have a prediction
@@ -541,7 +540,7 @@ class ReflectionManager(object):
                 if not self._inclusion_test(
                         h, s, self._vecn): continue
 
-                self._H[h].update_prediction(s, x, y, p, ref.entering,
+                self._H[h].update_prediction(ref,
                     first_update = self._first_update)
         self._first_update = False
 
