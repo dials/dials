@@ -26,6 +26,7 @@ from setup_geometry import Extract
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
+from dials.algorithms.spot_prediction import ray_intersection
 
 # Imports for the target function
 from dials.algorithms.refinement.target import ReflectionManager
@@ -65,16 +66,18 @@ ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 
+# Project positions on camera
+# currently assume all reflections intersect panel 0
+impacts = ray_intersection(mydetector, obs_refs, panel=0)
+
 # Pull out reflection data as lists
 temp = [(ref.miller_index, ref.rotation_angle,
          matrix.col(ref.beam_vector)) for ref in obs_refs]
 hkls, angles, svecs = zip(*temp)
 
-# Project positions on camera
-# currently assume all reflections intersect panel 0
-impacts = [mydetector[0].get_ray_intersection(
-                        ref.beam_vector) for ref in obs_refs]
-d1s, d2s = zip(*impacts)
+# Pull out impact positions as lists
+temp = [ref.image_coord_mm for ref in impacts]
+d1s, d2s = zip(*temp)
 
 # Invent some uncertainties
 im_width = 0.1 * pi / 180.
@@ -85,7 +88,8 @@ sigangles = [im_width / 2.] * len(hkls)
 
 # Build list of observations in the reflection manager. This classifies each
 # reflection as passing into or out of the Ewald sphere
-refman = ReflectionManager(hkls, svecs,
+refman = ReflectionManager(ref_predictor, mydetector,
+                        hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
@@ -94,7 +98,7 @@ refman = ReflectionManager(hkls, svecs,
 # Also update the reflection manager with the observation data as perfect
 # predictions. We do this as the scattering vectors are only stored for
 # the predicted reflections
-refman.update_predictions(hkls, svecs, d1s, d2s, angles)
+refman.update_predictions(impacts)
 
 # for each reflection, reconstitute its relp vector and rotate it back by 1
 # degree, so that it matches the originally generated reflection. Now test
@@ -105,13 +109,13 @@ s0 = matrix.col(mybeam.get_s0())
 spindle = matrix.col(mygonio.get_rotation_axis())
 for hkl, v in refman._H.items():
 
-    for i, e in enumerate(v.exiting):
+    for i, e in enumerate(v.entering):
 
         r = v.Sc[i] - s0
         r_orig = r.rotate(spindle, -1., deg=True)
 
-        # is it inside the Ewald sphere (i.e. exiting)?
-        test = (s0 + r_orig).length() < s0.length()
+        # is it outside the Ewald sphere (i.e. entering)?
+        test = (s0 + r_orig).length() > s0.length()
         assert(e == test)
 
 print "OK"
