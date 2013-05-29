@@ -236,11 +236,11 @@ class AdaptLstbx(
         # apply overall scale factor to the weights vector.
         weights *= self._scale
 
-        #if self._verbosity > 2:
-        #    print "The Jacobian matrix for the current step is:"
-        #    print jacobian.as_scitbx_matrix().matlab_form(format="% 8.2g",
-        #            one_row_per_line=True)
-        #    print
+        if self._verbosity > 2:
+            print "The Jacobian matrix for the current step is:"
+            print jacobian.as_scitbx_matrix().matlab_form(format=None,
+                    one_row_per_line=True)
+            print
 
         #Reset the state to construction time, i.e. no equations accumulated
         self.reset()
@@ -297,7 +297,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\
-                    as_scitbx_matrix().matlab_form(format="% 8.2g",
+                    as_scitbx_matrix().matlab_form(format=None,
                     one_row_per_line=True)
                 print
 
