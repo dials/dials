@@ -229,8 +229,8 @@ for iref in selection:
     hkl, angle, frame = hkls[iref], angles[iref], frames[iref]
 
     # re-predict this hkl based on the perturbed UB at its frame
-    xlo_param.compose(frame)
-    xluc_param.compose(frame)
+    pred_param.compose(frame)
+
     UB = xlo_param.get_state() * xluc_param.get_state()
 
     ref_list = ref_predictor.predict(hkl, UB)
@@ -255,7 +255,7 @@ for iref in selection:
         raise RuntimeError("Predicted more than two angles for a single hkl")
 
     # get analytical gradients
-    an_grads = pred_param.get_gradients(hkl, s, angle, frame)
+    an_grads = pred_param.get_gradients(hkl, s, angle)
 
 # NB, reflections that just touch the Ewald sphere have large
 # derivatives of phi wrt some parameters (asymptotically approching

@@ -229,7 +229,7 @@ class PredictionParameterisation(object):
                 tmp = [it.next() for i in range(model.num_free())]
                 model.set_p(tmp)
 
-    def _prepare(self):
+    def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''
 
         # Note, the reflection prediction code should be improved to also
@@ -266,7 +266,7 @@ class PredictionParameterisation(object):
         d\vec{r}/dp for the prediction formula in reciprocal space
         '''
 
-        self._prepare()
+        self.prepare()
 
         return self._get_gradients_core(h, s, phi)
 
@@ -274,14 +274,14 @@ class PredictionParameterisation(object):
         '''
         perform the functionality of get_gradients but for a list of many
         reflections in one call in the form of a list of ObsPredMatch objects
-        (see target.py). The advantage of this is that _prepare needs only be
+        (see target.py). The advantage of this is that prepare needs only be
         called once.
         '''
 
         # This is effectively calculating the Jacobian and perhaps should be
         # renamed as such (and returned as a matrix not a list of lists)
 
-        self._prepare()
+        self.prepare()
 
         return [self._get_gradients_core(m.H, m.Sc, m.Phic) for m in match_list]
 

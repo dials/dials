@@ -402,7 +402,6 @@ class ReflectionManager(object):
         # set verbosity
         self._verbosity = verbosity
 
-
         # keep references to the beam and goniometer models (for reflection
         # exclusion test)
         self._beam = beam

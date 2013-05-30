@@ -24,36 +24,46 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
     '''Support crystal parameterisations that vary with time (via its
     proxy of "observed image number"'''
 
-    def _prepare(self):
+    def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''
 
-        # Same as _prepare for the parent class except we don't get
+        # Same as prepare for the parent class except we don't get
         # U and B from the model
         self._D = matrix.sqr(self._detector[0].get_D_matrix())
         self._s0 = matrix.col(self._beam.get_s0())
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
-    def get_gradients(self, h, s, phi, obs_image_number):
+    def compose(self, obs_image_number):
+        '''Compose scan-varying crystal parameterisations at the specified
+        image number'''
+
+        self._obs_image_number = obs_image_number
+        xl_op = self._xl_orientation_parameterisations[0]
+        xl_ucp = self._xl_unit_cell_parameterisations[0]
+        xl_op.compose(obs_image_number)
+        xl_ucp.compose(obs_image_number)
+
+    def get_gradients(self, h, s, phi):
 
         '''Adds obs_image_number for scan-varying parameters'''
 
-        self._prepare()
+        self.prepare()
 
-        return self._get_gradients_core(h, s, phi, obs_image_number)
+        return self._get_gradients_core(h, s, phi)
 
-    def get_multi_gradients(self, match_list):
-        '''
-        Adds passing the observed image number to the gradient calc
-        for scan-varying parameters
-        '''
+    #def get_multi_gradients(self, match_list):
+    #    '''
+    #    Adds passing the observed image number to the gradient calc
+    #    for scan-varying parameters
+    #    '''
+    #
+    #    self.prepare()
+    #
+    #    # FIXME ObsPredMatch does not have an image attribute yet so
+    #    # the following line will not work...
+    #    return [self._get_gradients_core(m.H, m.Sc, m.Phic, m.image) for m in match_list]
 
-        self._prepare()
-
-        # FIXME ObsPredMatch does not have an image attribute yet so
-        # the following line will not work...
-        return [self._get_gradients_core(m.H, m.Sc, m.Phic, m.image) for m in match_list]
-
-    def _get_gradients_core(self, h, s, phi, obs_image_number):
+    def _get_gradients_core(self, h, s, phi):
 
         '''Calculate gradients of the prediction formula with respect to each
         of the parameters of the contained models, for reflection h with
@@ -61,16 +71,16 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         calculate dX/dp, dY/dp and dphi/dp. Scan-varying parameters (for
         the crystal) are evaluated at obs_image_number'''
 
+        # compose must be called first
+
         ### Calculate various quantities of interest for this reflection
 
         R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
 
-        # Get U and B for obs_image_number. Assume there is only one
-        # parameterisation of each type
+        # Get U and B at the composed image number obs_image_number. Assume
+        # there is only one parameterisation of each type
         xl_op = self._xl_orientation_parameterisations[0]
         xl_ucp = self._xl_unit_cell_parameterisations[0]
-        xl_op.compose(obs_image_number)
-        xl_ucp.compose(obs_image_number)
         U = xl_op.get_state()
         B = xl_ucp.get_state()
 
@@ -127,13 +137,13 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         # scan-varying crystal orientation parameterisation
         if self._xl_orientation_parameterisations:
             self._xl_orientation_derivatives(dpv_dp, dphi_dp, \
-                    obs_image_number, B, R, h, s, e_X_r, e_r_s0)
+                    self._obs_image_number, B, R, h, s, e_X_r, e_r_s0)
 
         # Now derivatives of pv and phi wrt each parameter of each
         # scan-varying crystal unit cell parameterisation
         if self._xl_unit_cell_parameterisations:
             self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, \
-                    obs_image_number, U, R, h, s, e_X_r, e_r_s0)
+                    self._obs_image_number, U, R, h, s, e_X_r, e_r_s0)
 
         # calculate positional derivatives from d[pv]/dp
         pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e) for e in dpv_dp]
