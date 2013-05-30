@@ -51,11 +51,11 @@ class ScriptRunner(object):
 
     def __call__(self):
         '''Run the script.'''
-        from scitbx.array_family import flex
         from dxtbx.imageset import ImageSetFactory
         from dials.util.command_line import Command
         from dials.algorithms.peak_finding.spot_finder import SpotFinder
         from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
+        from dials.model.data import ReflectionList
 
         # Set the print output
         Command.indent = 4
@@ -96,7 +96,6 @@ class ScriptRunner(object):
         # Store the reflections
         self.reflections = observed
 
-
         if self.params.image_viewer:
             self.view()
 
@@ -104,7 +103,7 @@ class ScriptRunner(object):
         if self.output_file:
             import pickle
             Command.start('Saving spots to {0}'.format(self.output_file))
-            pickle.dump(observed, open(self.output_file, 'wb'))
+            pickle.dump(ReflectionList(observed), open(self.output_file, 'wb'))
             Command.end('Saved spots to {0}'.format(self.output_file))
 
     def _spotfinder_lui(self, sweep):
