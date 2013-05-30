@@ -221,13 +221,12 @@ newrefman = NewReflectionManager(hkls, svecs,
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
     refman, pred_param, mydetector.get_pixel_size(), im_width)
 
-newtarget = NewTarget(ref_predictor, mydetector, refman, pred_param, im_width)
+newtarget = NewTarget(ref_predictor, mydetector, newrefman, pred_param, im_width)
 
 ##################
 # Compare output #
 ##################
 from time import time
-
 
 print "predict for old target"
 start_time = time()
@@ -240,6 +239,9 @@ start_time = time()
 newtarget.predict()
 finish_time = time()
 print "Time Taken: ",finish_time - start_time
+
+print len(refman.get_matches())
+print len(newrefman.get_matches())
 
 print "calc grads for old target"
 start_time = time()

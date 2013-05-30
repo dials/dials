@@ -66,6 +66,9 @@ class Target(object):
 
         # update the reflection_predictor with current geometry
         self._reflection_predictor.update()
+        
+        # reset the 'use' flag for all observations
+        self._H.reset_accepted_reflections()
 
         # loop over all reflections in the manager
         for h in self._H.get_indices():
@@ -77,8 +80,8 @@ class Target(object):
             # intersect panel 0
             impacts = ray_intersection(self._detector, predictions, panel=0)
 
-        # update the ReflectionManager
-        self._H.update_predictions(impacts)
+            # update the ReflectionManager
+            self._H.update_predictions(impacts)
 
     def get_num_reflections(self):
         '''return the number of reflections currently used in the calculation'''
@@ -274,12 +277,18 @@ class ObservationPrediction(object):
         self.Phic = [None]
         self.Sc = [None]
         self.entering = [entering]
+        self.use = [False]
         self.num_obs = 1
 
     def get_num_pairs(self):
         '''Count the number of observations that are paired with a prediction'''
-        return self.num_obs
+        return sum(1 for x in self.use if x)
 
+    def reset_predictions(self):
+        '''Set the use flag to false for all observations, so that after
+        updating, any observations that still do not have a prediction are
+        flagged to be removed from calculation of residual and gradients.'''
+        self.use = [False] * self.num_obs
 
     def add_observation(self, Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
@@ -299,6 +308,7 @@ class ObservationPrediction(object):
         self.Yc.append(None)
         self.Phic.append(None)
         self.Sc.append(None)
+        self.use.append(False)
         self.num_obs += 1
 
     def update_prediction(self, ref):
@@ -330,6 +340,9 @@ class ObservationPrediction(object):
                 resid = ref.rotation_angle - (self.Phio[i] % TWO_PI)
                 self.Phic[i] = self.Phio[i] + resid
                 self.Sc[i] = matrix.col(ref.beam_vector)
+                
+                # mark this observation for use
+                self.use[i] = True
 
 class ObsPredMatch:
     '''A bucket class containing data for a prediction that has been
@@ -466,9 +479,9 @@ class ReflectionManager(object):
         l = []
         for hkl, v in self._H.items():
 
-            for i in range(v.num_obs):
+            for i, u in enumerate(v.use):
 
-                l.append(ObsPredMatch(hkl, v.Xo[i], v.weightXo[i],
+                if u: l.append(ObsPredMatch(hkl, v.Xo[i], v.weightXo[i],
                                             v.Yo[i], v.weightYo[i],
                                             v.Phio[i], v.weightPhio[i],
                                             v.Xc[i], v.Yc[i], v.Phic[i],
@@ -498,15 +511,17 @@ class ReflectionManager(object):
 
         return sum(v.get_num_pairs() for v in self._H.values())
 
+    def reset_accepted_reflections(self):
+        '''Reset all observations to use=False in preparation for a new set of
+        predictions'''
+        for v in self._H.values():
+            v.reset_predictions()
+
     def update_predictions(self, predictions):
         '''Update with the latest values for the predictions.
 
         Any observations that do not have a prediction are flagged to be
         removed from calculation of residual and gradients.'''
-
-        # Remove all existing predictions (i.e. set use flags to False)
-        #for v in self._H.values():
-        #    v.reset_predictions()
 
         # Loop over new predictions, updating matches
         for ref in predictions:
