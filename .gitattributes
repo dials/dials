@@ -284,10 +284,12 @@ scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/detector_parameters.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
+scratch/dgw/refinement/scan_varying_target.py -text
 scratch/dgw/refinement/tst_convergence_radius.py -text
 scratch/dgw/refinement/tst_convergence_radius_one_parameter.py -text
 scratch/dgw/refinement/tst_dials_models.py -text
 scratch/dgw/refinement/tst_finite_diffs.py -text
+scratch/dgw/refinement/tst_new_target.py -text
 scratch/dgw/refinement/tst_orientation_refinement.py -text
 scratch/dgw/refinement/tst_prediction.py -text
 scratch/dgw/refinement/tst_prediction_parameters.py -text
