@@ -23,8 +23,11 @@ def curved_background_subtraction_2d(data2d, mask2d):
                 if mask2d[row, 0] == 0:
                     loc_bkgr_tot += data2d[row, 0]
                     loc_bkgr_cont += 1
-                loc_bkgr = loc_bkgr_tot / float(loc_bkgr_cont)
 
+                if loc_bkgr_cont > 0:
+                    loc_bkgr = loc_bkgr_tot / float(loc_bkgr_cont)
+                else:
+                    loc_bkgr = 0
                 avg_bkgr_tot += loc_bkgr
                 avg_bkgr_cont += 1
 
