@@ -21,8 +21,8 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 
 class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameterisation):
 
-    '''Support crystal parameterisations that vary with time (via its
-    proxy of "observed image number"'''
+    '''Support crystal parameterisations that vary with time (via the proxy of
+    "observed image number")'''
 
     def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''
@@ -45,9 +45,9 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
     def get_gradients(self, h, s, phi):
 
-        '''Adds obs_image_number for scan-varying parameters'''
+        #'''Adds obs_image_number for scan-varying parameters'''
 
-        self.prepare()
+        #self.prepare()
 
         return self._get_gradients_core(h, s, phi)
 
@@ -71,7 +71,7 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         calculate dX/dp, dY/dp and dphi/dp. Scan-varying parameters (for
         the crystal) are evaluated at obs_image_number'''
 
-        # compose must be called first
+        # NB prepare and compose must be called first
 
         ### Calculate various quantities of interest for this reflection
 

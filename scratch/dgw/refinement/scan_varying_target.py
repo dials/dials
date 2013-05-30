@@ -64,14 +64,27 @@ class Target(object):
         # data structure to be in C++ as well). This needs reworking of the
         # ReflectionManager and other classes too.
 
-        # update the reflection_predictor with current geometry
+        # update the reflection_predictor and the prediction parameterisation
+        # with the scan-independent part of the current geometry
         self._reflection_predictor.update()
-        
+        self._prediction_parameterisation.prepare()
+
         # reset the 'use' flag for all observations
         self._H.reset_accepted_reflections()
 
         # loop over all reflections in the manager
         for h in self._H.get_indices():
+
+            #FIXME Following lines for the scan varying version only
+
+            # get the image number
+            #xxxx
+
+            # compose the prediction parameterisation at the requested image
+            # number
+            #self._prediction_parameterisation.compose(t)
+            
+            #END FIXME
 
             # predict for this hkl
             predictions = self._reflection_predictor.predict(h)
@@ -379,6 +392,7 @@ class ReflectionManager(object):
                        Xo, sigXo,
                        Yo, sigYo,
                        Phio, sigPhio,
+                       Frameo,
                        beam, gonio, verbosity=0):
 
         # check the observed values
@@ -390,6 +404,7 @@ class ReflectionManager(object):
         sigYo = list(sigYo)
         Phio = list(Phio)
         sigPhio = list(sigPhio)
+        Frameo = list(Frameo)
         assert(len(So) == \
                len(Xo) == \
                len(sigXo) == \
@@ -397,6 +412,7 @@ class ReflectionManager(object):
                len(sigYo) == \
                len(Phio) == \
                len(sigPhio) == \
+               len(Frameo) == \
                len(Ho))
 
         # set verbosity

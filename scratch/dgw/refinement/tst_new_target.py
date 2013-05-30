@@ -22,8 +22,9 @@ from math import pi
 from scitbx import matrix
 from libtbx.phil import parse
 
-# Get modules to build models and minimiser using PHIL
+# Models
 from dials.test.algorithms.refinement import setup_geometry
+from dxtbx.model.scan import scan_factory
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -39,7 +40,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
     symmetrize_reduce_enlarge
 
 # Reflection prediction
-from dials.algorithms.spot_prediction import IndexGenerator
+from dials.algorithms.spot_prediction import IndexGenerator, ray_intersection
 from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -157,19 +158,30 @@ UB = mycrystal.get_U() * mycrystal.get_B()
 sweep_range = (0., pi)
 ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 
-obs_refs = ref_predictor.predict(indices)
+# Make a scan of 1-180 * 0.5 deg images
+sf = scan_factory()
+myscan = sf.make_scan((1,180), 0.5, (0, 0.5), range(180))
+print myscan
 
-print "Total number of reflections excited", len(obs_refs)
+excited_refs = ref_predictor.predict(indices)
+obs_refs = ray_intersection(mydetector, excited_refs, panel=0)
+
+# Now set frame numbers of the reflections from the scan
+for ref in obs_refs:
+    ref.frame_number = myscan.get_image_index_from_angle(
+                                ref.rotation_angle, deg=False)
+
+print "Total number of reflections excited", len(excited_refs)
+print "Total number of reflections observed", len(obs_refs)
 
 # Pull out reflection data as lists
-temp = [(ref.miller_index, ref.rotation_angle,
+temp = [(ref.miller_index, ref.rotation_angle, ref.frame_number,
          matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, svecs = zip(*temp)
+hkls, angles, frames, svecs = zip(*temp)
 
 # Project positions on camera
 # currently assume all reflections intersect panel 0
-impacts = [mydetector[0].get_ray_intersection(
-                        ref.beam_vector) for ref in obs_refs]
+impacts = [ref.image_coord_mm for ref in obs_refs]
 d1s, d2s = zip(*impacts)
 
 print "Total number of observations made", len(hkls)
@@ -210,6 +222,7 @@ newrefman = NewReflectionManager(hkls, svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
+                        frames,
                         mybeam, mygonio)
 
 ##############################

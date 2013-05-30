@@ -223,6 +223,10 @@ selection = random.sample(xrange(len(hkls)), min(len(hkls), 50))
 uc = mycrystal.get_unit_cell()
 exclusion_limit = max(uc.reciprocal_parameters()[0:3])
 
+# prepare the prediction parameterisation with the scan-independent part of the
+# current geometry
+pred_param.prepare()
+
 verbose = False
 for iref in selection:
 
