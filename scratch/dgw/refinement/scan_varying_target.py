@@ -67,13 +67,15 @@ class Target(object):
         # update the reflection_predictor with current geometry
         self._reflection_predictor.update()
 
-        # predict for all observations in the manager
-        predictions = self._reflection_predictor.predict(
-                                                self._H.get_indices())
+        # loop over all reflections in the manager
+        for h in self._H.get_indices():
 
-        # obtain the impact positions, currently assuming all
-        # reflections intersect panel 0
-        impacts = ray_intersection(self._detector, predictions, panel=0)
+            # predict for this hkl
+            predictions = self._reflection_predictor.predict(h)
+
+            # obtain the impact positions, currently assuming reflections only 
+            # intersect panel 0
+            impacts = ray_intersection(self._detector, predictions, panel=0)
 
         # update the ReflectionManager
         self._H.update_predictions(impacts)
@@ -272,18 +274,12 @@ class ObservationPrediction(object):
         self.Phic = [None]
         self.Sc = [None]
         self.entering = [entering]
-        self.use = [False]
         self.num_obs = 1
 
     def get_num_pairs(self):
         '''Count the number of observations that are paired with a prediction'''
-        return sum(1 for x in self.use if x)
+        return self.num_obs
 
-    #def reset_predictions(self):
-    #    '''Set the use flag to false for all observations, so that after
-    #    updating, any observations that still do not have a prediction are
-    #    flagged to be removed from calculation of residual and gradients.'''
-    #    self.use = [False] * self.num_obs
 
     def add_observation(self, Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
@@ -303,10 +299,9 @@ class ObservationPrediction(object):
         self.Yc.append(None)
         self.Phic.append(None)
         self.Sc.append(None)
-        self.use.append(False)
         self.num_obs += 1
 
-    def update_prediction(self, ref, first_update = False):
+    def update_prediction(self, ref):
         '''Update the observations with a new prediction.'''
 
         # Current behaviour is to update all observations in the same
@@ -335,12 +330,6 @@ class ObservationPrediction(object):
                 resid = ref.rotation_angle - (self.Phio[i] % TWO_PI)
                 self.Phic[i] = self.Phio[i] + resid
                 self.Sc[i] = matrix.col(ref.beam_vector)
-
-                #if not self.use[i]:
-                # set use flags only for observations that have a prediction
-                # on the first cycle
-                if first_update:
-                    self.use[i] = True
 
 class ObsPredMatch:
     '''A bucket class containing data for a prediction that has been
@@ -400,8 +389,6 @@ class ReflectionManager(object):
         # set verbosity
         self._verbosity = verbosity
 
-        # track whether this is the first update of predictions or not
-        self._first_update = True
 
         # keep references to the beam and goniometer models (for reflection
         # exclusion test)
@@ -479,9 +466,9 @@ class ReflectionManager(object):
         l = []
         for hkl, v in self._H.items():
 
-            for i, u in enumerate(v.use):
+            for i in range(v.num_obs):
 
-                if u: l.append(ObsPredMatch(hkl, v.Xo[i], v.weightXo[i],
+                l.append(ObsPredMatch(hkl, v.Xo[i], v.weightXo[i],
                                             v.Yo[i], v.weightYo[i],
                                             v.Phio[i], v.weightPhio[i],
                                             v.Xc[i], v.Yc[i], v.Phic[i],
@@ -531,12 +518,6 @@ class ReflectionManager(object):
                 x, y = ref.image_coord_mm
                 p = ref.rotation_angle
 
-                # exclude reflections that fail inclusion criteria
-                if not self._inclusion_test(
-                        h, s, self._vecn): continue
-
-                self._H[h].update_prediction(ref,
-                    first_update = self._first_update)
-        self._first_update = False
+                self._H[h].update_prediction(ref)
 
         return

@@ -226,14 +226,38 @@ newtarget = NewTarget(ref_predictor, mydetector, refman, pred_param, im_width)
 ##################
 # Compare output #
 ##################
+from time import time
+
 
 print "predict for old target"
+start_time = time()
 mytarget.predict()
-print "predict for new target"
-newtarget.predict()
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
 
+print "predict for new target"
+start_time = time()
+newtarget.predict()
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
+
+print "calc grads for old target"
+start_time = time()
 L1, dL_dp1 = mytarget.compute_functional_and_gradients()
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
+
+print "calc grads for new target"
+start_time = time()
 L2, dL_dp2 = newtarget.compute_functional_and_gradients()
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
 
 # compare
+print L1
+print L2
 assert L1 == L2
+
+for d1, d2 in zip(dL_dp1, dL_dp2):
+    print d1, d2
+    assert d1 == d2
