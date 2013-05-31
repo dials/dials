@@ -254,7 +254,7 @@ class PredictionParameterisation(object):
         self._B = self._crystal.get_B()
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
-    def get_gradients(self, h, s, phi):
+    def get_gradients(self, h, s, phi, obs_image_number = None):
         '''
         Calculate gradients of the prediction formula with respect to each
         of the parameters of the contained models, for the reflection with
@@ -264,6 +264,9 @@ class PredictionParameterisation(object):
         prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
         prediction formula expressed in detector space, but components of
         d\vec{r}/dp for the prediction formula in reciprocal space
+
+        obs_image_number included to match the interface of a scan-
+        varying version of the class
         '''
 
         self.prepare()

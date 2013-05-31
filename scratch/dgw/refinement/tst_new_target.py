@@ -274,6 +274,8 @@ print L1
 print L2
 assert L1 == L2
 
-for d1, d2 in zip(dL_dp1, dL_dp2):
-    print d1, d2
-    assert d1 == d2
+# gradients calculated with the old class, the new class in the old
+# way, and the new class during the predict loop (the new way)
+for d1, d2, d3 in zip(dL_dp1, dL_dp2, newtarget._dL_dp):
+    print d1, d2, d3
+    assert d1 == d2 == d3

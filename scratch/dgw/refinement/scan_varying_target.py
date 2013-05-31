@@ -47,22 +47,12 @@ class Target(object):
         self._detector = detector
         self._H = ref_manager
         self._prediction_parameterisation = prediction_parameterisation
+        self._dL_dp = [0.] * len(self._prediction_parameterisation)
 
     def predict(self):
         '''perform reflection prediction and update the reflection manager'''
 
         # get predictions from the current model and the list of observed hkls
-
-        # FIXME Reorganise this so that there is a loop over all observations
-        # that are flagged to be used in refinement. For each observation,
-        # predict its rotation angles (what to do for an observation that fails
-        # to produce predicted angles?) and the impact positions. Update these
-        # each loop cycle. This removes the need for reflection matching,
-        # because the observations are explicitly stepped through. Use the
-        # DIALS prediction code for this. If it is too slow doing this loop in
-        # Python, then move it to C++ (but that will require the observation
-        # data structure to be in C++ as well). This needs reworking of the
-        # ReflectionManager and other classes too.
 
         # update the reflection_predictor and the prediction parameterisation
         # with the scan-independent part of the current geometry
@@ -78,11 +68,10 @@ class Target(object):
             # loop over observations of this hkl
             for obs in self._H.get_obs(h):
 
-
                 #FIXME Following lines for the scan varying version only
 
                 # get the image number
-                #frame = obs.
+                frame = obs.frame_o
 
                 # compose the prediction parameterisation at the requested image
                 # number
@@ -103,10 +92,34 @@ class Target(object):
                 # intersect panel 0
                 impacts = ray_intersection(self._detector, predictions, panel=0)
 
-                # update the ReflectionManager
-                self._H.update_predictions(impacts)
+                # find the prediction with the right 'entering' flag
+                try:
+                    i = [x.entering == obs.entering for x in impacts].index(True)
+                except ValueError:
+                    # we don't have a prediction for this obs
+                    continue
 
-                # calculate residuals
+                ref = impacts[i]
+                Xc, Yc = ref.image_coord_mm
+
+                # do not wrap around multiples of 2*pi; keep the full rotation
+                # from zero to differentiate repeat observations.
+                resid = ref.rotation_angle - (obs.Phio % TWO_PI)
+                Phic = obs.Phio + resid
+                Sc = matrix.col(ref.beam_vector)
+                obs.update_prediction(Xc, Yc, Phic, Sc)
+
+                # update the ReflectionManager
+                #self._H.update_predictions(impacts)
+
+                # calculate gradients for this reflection
+                grads = self._prediction_parameterisation.get_gradients(
+                                                h, Sc, Phic, frame)
+
+                for j, (grad_X, grad_Y, grad_Phi) in enumerate(grads):
+                    self._dL_dp[j] += (obs.weightXo * obs.Xresid * grad_X +
+                                 obs.weightYo * obs.Yresid * grad_Y +
+                                 obs.weightPhio * obs.Phiresid * grad_Phi)
 
     def get_num_reflections(self):
         '''return the number of reflections currently used in the calculation'''
@@ -566,23 +579,23 @@ class ReflectionManager(object):
 
         for v in self._H.values(): v.reset_predictions()
 
-    def update_predictions(self, predictions):
-        '''Update with the latest values for the predictions.
-
-        Any observations that do not have a prediction are flagged to be
-        removed from calculation of residual and gradients.'''
-
-        # Loop over new predictions, updating matches
-        for ref in predictions:
-
-            if ref.miller_index in self._H:
-                # there is an observation for this prediction
-
-                h = ref.miller_index
-                s = matrix.col(ref.beam_vector)
-                x, y = ref.image_coord_mm
-                p = ref.rotation_angle
-
-                self._H[h].update_prediction(ref)
-
-        return
+    #def update_predictions(self, predictions):
+    #    '''Update with the latest values for the predictions.
+    #
+    #   Any observations that do not have a prediction are flagged to be
+    #   removed from calculation of residual and gradients.'''
+    #
+    #   # Loop over new predictions, updating matches
+    #   for ref in predictions:
+    #
+    #       if ref.miller_index in self._H:
+    #           # there is an observation for this prediction
+    #
+    #           h = ref.miller_index
+    #           s = matrix.col(ref.beam_vector)
+    #           x, y = ref.image_coord_mm
+    #           p = ref.rotation_angle
+    #
+    #           self._H[h].update_prediction(ref)
+    #
+    #   return
