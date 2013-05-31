@@ -24,6 +24,28 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
     '''Support crystal parameterisations that vary with time (via the proxy of
     "observed image number")'''
 
+    def __init__(self,
+                 detector_model,
+                 beam_model,
+                 crystal_model,
+                 goniometer_model,
+                 detector_parameterisations = None,
+                 beam_parameterisations = None,
+                 xl_orientation_parameterisations = None,
+                 xl_unit_cell_parameterisations = None):
+
+        DetectorSpacePredictionParameterisation.__init__(self,
+                 detector_model,
+                 beam_model,
+                 crystal_model,
+                 goniometer_model,
+                 detector_parameterisations,
+                 beam_parameterisations,
+                 xl_orientation_parameterisations,
+                 xl_unit_cell_parameterisations)
+
+        self._obs_image_number = None
+
     def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''
 
@@ -43,11 +65,13 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         xl_op.compose(obs_image_number)
         xl_ucp.compose(obs_image_number)
 
-    def get_gradients(self, h, s, phi):
+    def get_gradients(self, h, s, phi, obs_image_number):
 
         #'''Adds obs_image_number for scan-varying parameters'''
 
         #self.prepare()
+        if obs_image_number != self._obs_image_number:
+            self.compose(obs_image_number)
 
         return self._get_gradients_core(h, s, phi)
 

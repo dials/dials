@@ -259,7 +259,7 @@ for iref in selection:
         raise RuntimeError("Predicted more than two angles for a single hkl")
 
     # get analytical gradients
-    an_grads = pred_param.get_gradients(hkl, s, angle)
+    an_grads = pred_param.get_gradients(hkl, s, angle, frame)
 
 # NB, reflections that just touch the Ewald sphere have large
 # derivatives of phi wrt some parameters (asymptotically approching
