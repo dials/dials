@@ -176,8 +176,9 @@ print "Total number of reflections observed", len(obs_refs)
 
 # Pull out reflection data as lists
 temp = [(ref.miller_index, ref.rotation_angle, ref.frame_number,
+         ref.entering,
          matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, frames, svecs = zip(*temp)
+hkls, angles, frames, enterings, svecs = zip(*temp)
 
 # Project positions on camera
 # currently assume all reflections intersect panel 0
@@ -218,11 +219,11 @@ refman = ReflectionManager(ref_predictor, mydetector,
                         angles, sigangles,
                         mybeam, mygonio)
 
-newrefman = NewReflectionManager(hkls, svecs,
+newrefman = NewReflectionManager(hkls, enterings, frames,
+                        svecs,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
-                        frames,
                         mybeam, mygonio)
 
 ##############################

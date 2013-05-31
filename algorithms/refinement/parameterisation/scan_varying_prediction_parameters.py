@@ -65,6 +65,17 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         xl_op.compose(obs_image_number)
         xl_ucp.compose(obs_image_number)
 
+    def get_UB(self, obs_image_number):
+        '''Extract the setting matrix from the contained scan
+        dependent crystal parameterisations at specified image number'''
+
+        if obs_image_number != self._obs_image_number:
+            self.compose(obs_image_number)
+
+        UB = self._xl_orientation_parameterisations[0].get_state() * \
+             self._xl_unit_cell_parameterisations[0].get_state()
+        return UB
+
     def get_gradients(self, h, s, phi, obs_image_number):
 
         #'''Adds obs_image_number for scan-varying parameters'''
