@@ -48,10 +48,6 @@ class Target(object):
         self._H = ref_manager
         self._prediction_parameterisation = prediction_parameterisation
 
-        # no longer used. predict puts the gradients in with the matches,
-        # and the other function access them from there
-        #self._dL_dp = [0.] * len(self._prediction_parameterisation)
-
     def predict(self):
         '''perform reflection prediction and update the reflection manager'''
 
@@ -121,8 +117,6 @@ class Target(object):
                 # update the ReflectionManager
                 #self._H.update_predictions(impacts)
 
-
-
     def get_num_reflections(self):
         '''return the number of reflections currently used in the calculation'''
 
@@ -164,7 +158,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         self._matches = self._H.get_matches()
 
         # return residuals and weights as 1d flex.double vectors
-        # that is, unroll X, Y and Phi residuals for each match.
         nelem = len(self._matches) * 3
         residuals = flex.double(nelem)
         jacobian_t = flex.double(flex.grid(
@@ -189,10 +182,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             # fill jacobian elements here.
             # m.gradients is a nparam length list, each element of which is a triplet of
             # values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
-
-            #print "dX/dp = ", dX_dp
-            #print "dY/dp = ", dY_dp
-            #print "dPhi/dp = ", dPhi_dp
 
             jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
             jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i + 1)
@@ -225,19 +214,13 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         # prepare list of gradients
         dL_dp = [0.] * len(self._prediction_parameterisation)
 
-        # for each reflection, get the gradients wrt each parameter
-        #self._gradients = [self._prediction_parameterisation.get_gradients(m.H,
-        #                        m.Sc, m.Phic) for m in self._matches]
-        #self._gradients = self._prediction_parameterisation.get_multi_gradients(self._matches)
-        # the gradients are now stored in the matches
-
+        # the gradients wrt each parameter are stored with the matches
         for m in self._matches:
 
             for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
                 dL_dp[j] += (m.weightXo * m.Xresid * grad_X +
                              m.weightYo * m.Yresid * grad_Y +
                              m.weightPhio * m.Phiresid * grad_Phi)
-
 
         return (L, dL_dp)
 

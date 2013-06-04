@@ -25,6 +25,7 @@ from libtbx.phil import parse
 # Models
 from dials.test.algorithms.refinement import setup_geometry
 from dxtbx.model.scan import scan_factory
+from dials.test.algorithms.refinement import setup_minimiser
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -281,8 +282,6 @@ r2, j2, w2 = newtarget.compute_residuals_and_gradients()
 finish_time = time()
 print "Time Taken: ",finish_time - start_time
 
-print dir(j1)
-
 # compare
 print L1
 print L2
@@ -297,3 +296,18 @@ for d1, d2 in zip(dL_dp1, dL_dp2):
 for a, b in zip(r1, r2): assert a==b
 for a, b in zip(w1, w2): assert a==b
 for a, b in zip(j1, j2): assert a==b
+
+
+################################
+# Set up the refinement engine #
+################################
+
+refiner = setup_minimiser.Extract(master_phil,
+                                  mytarget,
+                                  pred_param,
+                                  cmdline_args = args).refiner
+
+print "Prior to refinement the experimental model is:"
+print_model_geometry(mybeam, mydetector, mycrystal)
+
+refiner.run()
