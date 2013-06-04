@@ -269,13 +269,31 @@ L2, dL_dp2 = newtarget.compute_functional_and_gradients()
 finish_time = time()
 print "Time Taken: ",finish_time - start_time
 
+print "calc jacobian for old target"
+start_time = time()
+r1, j1, w1 = mytarget.compute_residuals_and_gradients()
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
+
+print "calc jacobian for new target"
+start_time = time()
+r2, j2, w2 = newtarget.compute_residuals_and_gradients()
+finish_time = time()
+print "Time Taken: ",finish_time - start_time
+
+print dir(j1)
+
 # compare
 print L1
 print L2
 assert L1 == L2
 
-# gradients calculated with the old class, the new class in the old
-# way, and the new class during the predict loop (the new way)
-for d1, d2, d3 in zip(dL_dp1, dL_dp2, newtarget._dL_dp):
-    print d1, d2, d3
-    assert d1 == d2 == d3
+# compare gradients calculated with the old class and the new class
+for d1, d2 in zip(dL_dp1, dL_dp2):
+    print d1, d2
+    assert d1 == d2
+
+# residuals, jacobians and weights
+for a, b in zip(r1, r2): assert a==b
+for a, b in zip(w1, w2): assert a==b
+for a, b in zip(j1, j2): assert a==b

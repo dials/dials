@@ -47,7 +47,10 @@ class Target(object):
         self._detector = detector
         self._H = ref_manager
         self._prediction_parameterisation = prediction_parameterisation
-        self._dL_dp = [0.] * len(self._prediction_parameterisation)
+
+        # no longer used. predict puts the gradients in with the matches,
+        # and the other function access them from there
+        #self._dL_dp = [0.] * len(self._prediction_parameterisation)
 
     def predict(self):
         '''perform reflection prediction and update the reflection manager'''
@@ -107,19 +110,18 @@ class Target(object):
                 resid = ref.rotation_angle - (obs.Phio % TWO_PI)
                 Phic = obs.Phio + resid
                 Sc = matrix.col(ref.beam_vector)
-                obs.update_prediction(Xc, Yc, Phic, Sc)
-
-                # update the ReflectionManager
-                #self._H.update_predictions(impacts)
 
                 # calculate gradients for this reflection
                 grads = self._prediction_parameterisation.get_gradients(
                                                 h, Sc, Phic, frame)
 
-                for j, (grad_X, grad_Y, grad_Phi) in enumerate(grads):
-                    self._dL_dp[j] += (obs.weightXo * obs.Xresid * grad_X +
-                                 obs.weightYo * obs.Yresid * grad_Y +
-                                 obs.weightPhio * obs.Phiresid * grad_Phi)
+                # store all this information in the matched obs-pred pair
+                obs.update_prediction(Xc, Yc, Phic, Sc, grads)
+
+                # update the ReflectionManager
+                #self._H.update_predictions(impacts)
+
+
 
     def get_num_reflections(self):
         '''return the number of reflections currently used in the calculation'''
@@ -161,8 +163,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
         self._matches = self._H.get_matches()
 
-        self._gradients = self._prediction_parameterisation.get_multi_gradients(self._matches)
-
         # return residuals and weights as 1d flex.double vectors
         # that is, unroll X, Y and Phi residuals for each match.
         nelem = len(self._matches) * 3
@@ -171,7 +171,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             len(self._prediction_parameterisation), nelem))
         weights = flex.double(nelem)
 
-        for i, (m, g) in enumerate(zip(self._matches, self._gradients)):
+        for i, m in enumerate(self._matches):
             residuals[3*i] = m.Xresid
             residuals[3*i + 1] = m.Yresid
             residuals[3*i + 2] = m.Phiresid
@@ -185,9 +185,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             #print "Y residual, weight = ", residuals[3*i + 1], weights[3*i + 1]
             #print "Phi residual, weight = ", residuals[3*i + 2], weights[3*i + 2]
 
-            dX_dp, dY_dp, dPhi_dp = zip(*g)
+            dX_dp, dY_dp, dPhi_dp = zip(*m.gradients)
             # fill jacobian elements here.
-            # g is a nparam length list, each element of which is a triplet of
+            # m.gradients is a nparam length list, each element of which is a triplet of
             # values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
 
             #print "dX/dp = ", dX_dp
@@ -228,14 +228,16 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         # for each reflection, get the gradients wrt each parameter
         #self._gradients = [self._prediction_parameterisation.get_gradients(m.H,
         #                        m.Sc, m.Phic) for m in self._matches]
-        self._gradients = self._prediction_parameterisation.get_multi_gradients(self._matches)
+        #self._gradients = self._prediction_parameterisation.get_multi_gradients(self._matches)
+        # the gradients are now stored in the matches
 
-        for m, grads in zip(self._matches, self._gradients):
+        for m in self._matches:
 
-            for j, (grad_X, grad_Y, grad_Phi) in enumerate(grads):
+            for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
                 dL_dp[j] += (m.weightXo * m.Xresid * grad_X +
                              m.weightYo * m.Yresid * grad_Y +
                              m.weightPhio * m.Phiresid * grad_Phi)
+
 
         return (L, dL_dp)
 
@@ -286,8 +288,13 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return False
 
 class ObsPredMatch:
-    '''A bucket class containing data for a prediction that has been
-    matched to an observation'''
+    '''
+    A bucket class containing data for a prediction that has been
+    matched to an observation.
+
+    This contains all the raw material needed to calculate the target function
+    value and gradients
+    '''
 
     # initialise with an observation
     def __init__(self, hkl, entering, frame, Xo, sigXo, weightXo,
@@ -313,6 +320,10 @@ class ObsPredMatch:
         self.Phic = None
         self.Sc = None
 
+        # gradients will be a list, of length equal to the number of free
+        # parameters, whose elements are triplets (dX/dp, dY/dp, dPhi/dp)
+        self.gradients = None
+
         self.Yresid = None
         self.Yresid2 = None
         self.Xresid = None
@@ -323,12 +334,14 @@ class ObsPredMatch:
         self.use = False
 
     # update with a prediction
-    def update_prediction(self, Xc, Yc, Phic, Sc):
+    def update_prediction(self, Xc, Yc, Phic, Sc, gradients):
 
         self.Xc = Xc
         self.Yc = Yc
         self.Phic = Phic
         self.Sc = Sc
+
+        self.gradients = gradients
 
         # calculate residuals
         self.Xresid = Xc - self.Xo
@@ -396,35 +409,36 @@ class ObservationPrediction(object):
                                      Phio, sigPhio, weightPhio))
         self.num_obs += 1
 
-    def update_prediction(self, ref):
-        '''Update the observations with a new prediction.'''
-
-        # Current behaviour is to update all observations in the same
-        # hemisphere as this prediction. This implies that all reflections
-        # in the ReflectionManager come from a model with the same parameter
-        # values. This is not the case in reality, as repeat observations of one
-        # reflection may be at multiples of 2.*pi from each other, with
-        # increasing dose delivered, therefore different cells, etc.
-        # Different reflection managers will be needed for each local
-        # refinement, where parameter values may differ. In future, it may be
-        # better to have one global reflection manager that is able to identify
-        # which of multiple observations in one hemisphere a new prediction
-        # corresponds to.
-        # Anyway, this will have to be addressed to accommodate time dependent
-        # parameterisation of models.
-        to_update = [ref.entering == x.entering for x in self.obs]
-
-        for i, t in enumerate(to_update):
-
-            if t: # update the prediction for this observation
-
-                # do not wrap around multiples of 2*pi; keep the full rotation
-                # from zero to differentiate repeat observations.
-                Xc, Yc = ref.image_coord_mm
-                resid = ref.rotation_angle - (self.obs[i].Phio % TWO_PI)
-                Phic = self.obs[i].Phio + resid
-                Sc = matrix.col(ref.beam_vector)
-                self.obs[i].update_prediction(Xc, Yc, Phic, Sc)
+    # DEPRECATED. Now update_prediction on the ObsPredMatch object directly
+    #def update_prediction(self, ref):
+    #    '''Update the observations with a new prediction.'''
+    #
+    #    # Current behaviour is to update all observations in the same
+    #    # hemisphere as this prediction. This implies that all reflections
+    #    # in the ReflectionManager come from a model with the same parameter
+    #    # values. This is not the case in reality, as repeat observations of one
+    #    # reflection may be at multiples of 2.*pi from each other, with
+    #    # increasing dose delivered, therefore different cells, etc.
+    #    # Different reflection managers will be needed for each local
+    #    # refinement, where parameter values may differ. In future, it may be
+    #    # better to have one global reflection manager that is able to identify
+    #    # which of multiple observations in one hemisphere a new prediction
+    #    # corresponds to.
+    #    # Anyway, this will have to be addressed to accommodate time dependent
+    #    # parameterisation of models.
+    #    to_update = [ref.entering == x.entering for x in self.obs]
+    #
+    #    for i, t in enumerate(to_update):
+    #
+    #        if t: # update the prediction for this observation
+    #
+    #            # do not wrap around multiples of 2*pi; keep the full rotation
+    #            # from zero to differentiate repeat observations.
+    #            Xc, Yc = ref.image_coord_mm
+    #            resid = ref.rotation_angle - (self.obs[i].Phio % TWO_PI)
+    #            Phic = self.obs[i].Phio + resid
+    #            Sc = matrix.col(ref.beam_vector)
+    #            self.obs[i].update_prediction(Xc, Yc, Phic, Sc)
 
 class ReflectionManager(object):
     '''A class to maintain information about observed and predicted
