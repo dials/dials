@@ -78,8 +78,6 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
     def get_gradients(self, h, s, phi, obs_image_number):
 
-        #'''Adds obs_image_number for scan-varying parameters'''
-
         #self.prepare()
         if obs_image_number != self._obs_image_number:
             self.compose(obs_image_number)
