@@ -88,7 +88,7 @@ class ToyCentroidRunner(object):
 
         # Calculate resolution
         d_min = self.detector.get_max_resolution_at_corners(
-            self.beam.get_direction(), self.beam.get_wavelength())
+            self.beam.get_unit_s0(), self.beam.get_wavelength())
 
         # Read the integrate file to get the sigma_d and sigma_m
         print "Reading: \"{0}\"".format(self.integrate_file)

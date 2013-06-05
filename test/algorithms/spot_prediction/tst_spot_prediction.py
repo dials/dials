@@ -48,7 +48,7 @@ class TestSpotPredictor:
 
         # Get the minimum resolution in the integrate file
         self.d_min = self.detector.get_max_resolution_at_corners(
-            self.beam.get_direction(), self.beam.get_wavelength())
+            self.beam.get_unit_s0(), self.beam.get_wavelength())
 
         # Get the number of frames from the max z value
         xcal, ycal, zcal = zip(*self.integrate_handle.xyzcal)

@@ -136,7 +136,7 @@ class AnglePredictor_rstbx(object):
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
-                    self._beam.get_direction(), (0.0, 0.0, 1.0),
+                    self._beam.get_unit_s0(), (0.0, 0.0, 1.0),
                     self._gonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
         # Create a rotation_angles object for the current geometry
@@ -160,7 +160,7 @@ class AnglePredictor_rstbx(object):
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
-                    self._beam.get_direction(), (0.0, 0.0, 1.0),
+                    self._beam.get_unit_s0(), (0.0, 0.0, 1.0),
                     self._gonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
         # Create a rotation_angles object for the current geometry

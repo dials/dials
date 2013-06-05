@@ -129,7 +129,7 @@ indices = full_sphere_indices(
 
 # generate list of phi values
 R_to_rossmann = align_reference_frame(
-    mybeam.get_direction(), (0.0, 0.0, 1.0),
+    mybeam.get_unit_s0(), (0.0, 0.0, 1.0),
     mygonio.get_rotation_axis(), (0.0, 1.0, 0.0))
 
 ra = rotation_angles(resolution,

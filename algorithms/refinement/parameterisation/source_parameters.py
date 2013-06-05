@@ -27,7 +27,7 @@ class BeamParameterisationOrientation(ModelParameterisation):
 
         ### Set up the initial state
         s0 = matrix.col(beam.get_s0())
-        s0dir = matrix.col(beam.get_direction())
+        s0dir = matrix.col(beam.get_unit_s0())
         istate = s0dir
 
         ### Set up the parameters
@@ -82,7 +82,7 @@ class BeamParameterisationOrientation(ModelParameterisation):
 
         # now update the model with its new orientation
         s0mag = 1. / self._models[0].get_wavelength()
-        self._models[0].set_direction(s0mag * s0_new_dir)
+        self._models[0].set_unit_s0(s0mag * s0_new_dir)
 
         ### calculate derivatives of the state wrt parameters
         # derivative wrt mu1

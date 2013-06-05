@@ -118,7 +118,8 @@ class Extract(object):
 
             beam_dir = matrix.col(self._params.beam.direction.exactly)
 
-        self.beam = beam_factory.make_beam(beam_dir, wavelength)
+        self.beam = beam_factory.make_beam(unit_s0 = beam_dir,
+                                           wavelength = wavelength)
 
     def build_detector(self):
 

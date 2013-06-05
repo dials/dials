@@ -200,7 +200,7 @@ def run():
     unit_cell = cfc.get_unit_cell()
     UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
     ub_matrix = UB
-    d_min = detector.get_max_resolution(beam.get_direction(),
+    d_min = detector.get_max_resolution(beam.get_unit_s0(),
         beam.get_wavelength())
 
     # If the integrate.hkl path has been set get the bbox parameters

@@ -102,7 +102,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
 
     # Calculate resolution
     d_min = detector.get_max_resolution_at_corners(
-        beam.get_direction(), beam.get_wavelength())
+        beam.get_unit_s0(), beam.get_wavelength())
 
     # If the integrate.hkl path has been set get the bbox parameters
     print "Reading: \"{0}\"".format(integrate_path)

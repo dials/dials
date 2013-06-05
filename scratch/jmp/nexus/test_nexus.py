@@ -76,7 +76,7 @@ class NexusWriter(object):
         '''Open the beam group and write the beam attributes.'''
         self._make_and_open_group('beam', 'NXbeam')
         self._write_attribute('wavelength', beam.get_wavelength())
-        self._write_attribute('direction',  beam.get_direction())
+        self._write_attribute('direction',  beam.get_unit_s0())
         self._handle.closegroup()
 
     def _write_goniometer(self, gonio):

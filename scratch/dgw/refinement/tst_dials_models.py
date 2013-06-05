@@ -72,11 +72,11 @@ dials_gonio = gf.make_goniometer(spindle_axis,
 # my_beam has 'get_beam', 'get_s0', 'get_wavelength', 'set_s0' as its
 # public interface.
 # dials_beam has 'get_direction', 'get_s0', 'get_wavelength',
-# 'set_direction', 'set_s0', 'set_wavelength'
+# 'set_direction', 'set_s0', 'set_wavelength', 'get_unit_s0', 'set_unit_s0'
 
 # the analogue of my_beam.get_beam() is
 assert my_beam.get_beam() == dials_beam.get_wavelength() * \
-                             matrix.col(dials_beam.get_direction())
+                             matrix.col(dials_beam.get_unit_s0())
 
 # the dials model getters return a tuple, whereas my models return
 # matrix.col
@@ -94,10 +94,10 @@ assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 
 # compare the setters. My set_s0 setter does not allow setting the
 # wavelength, whereas the dials model does. To get the same behaviour as
-# mine, use set_direction instead
+# mine, use set_unit_s0 instead
 random_vec = matrix.col.random(3, 0.5, 1.5)
 my_s0.set_s0(random_vec)
-dials_s0.set_direction(random_vec)
+dials_s0.set_unit_s0(random_vec)
 assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 
 # To change to DIALS models, I must modify these modules:
