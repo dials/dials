@@ -34,6 +34,9 @@ from dials.algorithms.refinement.parameterisation.source_parameters import \
     BeamParameterisationOrientation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters import \
+    ScanVaryingCrystalOrientationParameterisation, \
+    ScanVaryingCrystalUnitCellParameterisation
 
 # Symmetry constrained parameterisation for the unit cell
 from cctbx.uctbx import unit_cell
@@ -48,6 +51,8 @@ from cctbx.sgtbx import space_group, space_group_symbols
 # Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
+from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+    import VaryingCrystalPredictionParameterisation
 
 # Imports for the target function
 from dials.algorithms.refinement.target import \
@@ -108,21 +113,21 @@ mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
 
 # shift detector by 1.0 mm each translation and 2 mrad each rotation
 det_p_vals = det_param.get_p()
-p_vals = [a + b for a, b in zip(det_p_vals,
+shifted_det_p_vals = [a + b for a, b in zip(det_p_vals,
                                 [1.0, 1.0, 1.0, 2., 2., 2.])]
-det_param.set_p(p_vals)
+det_param.set_p(shifted_det_p_vals)
 
 # shift beam by 2 mrad in free axis
 s0_p_vals = s0_param.get_p()
-p_vals = list(s0_p_vals)
+shifted_s0_p_vals = list(s0_p_vals)
 
-p_vals[0] += 2.
-s0_param.set_p(p_vals)
+shifted_s0_p_vals[0] += 2.
+s0_param.set_p(shifted_s0_p_vals)
 
 # rotate crystal a bit (=2 mrad each rotation)
 xlo_p_vals = xlo_param.get_p()
-p_vals = [a + b for a, b in zip(xlo_p_vals, [2., 2., 2.])]
-xlo_param.set_p(p_vals)
+shifted_xlo_p_vals = [a + b for a, b in zip(xlo_p_vals, [2., 2., 2.])]
+xlo_param.set_p(shifted_xlo_p_vals)
 
 # change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of
 # gamma angle)
@@ -134,8 +139,8 @@ new_uc = unit_cell(cell_params)
 newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
 S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
 S.set_orientation(orientation=newB)
-X = tuple([e * 1.e5 for e in S.forward_independent_parameters()])
-xluc_param.set_p(X)
+shifted_xluc_p_vals = tuple([e * 1.e5 for e in S.forward_independent_parameters()])
+xluc_param.set_p(shifted_xluc_p_vals)
 
 #############################
 # Generate some reflections #
@@ -302,6 +307,7 @@ for a, b in zip(j1, j2): assert a==b
 # Set up the refinement engine #
 ################################
 
+print "Building refinement engine"
 refiner = setup_minimiser.Extract(master_phil,
                                   mytarget,
                                   pred_param,
@@ -311,3 +317,44 @@ print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
 refiner.run()
+
+# Reset models to initial, upset geometry
+det_param.set_p(shifted_det_p_vals)
+s0_param.set_p(shifted_s0_p_vals)
+xlo_param.set_p(shifted_xlo_p_vals)
+xluc_param.set_p(shifted_xluc_p_vals)
+
+######################################################
+# Make scan-varying paramaterisations of the crystal #
+######################################################
+
+sv_xlo_param = ScanVaryingCrystalOrientationParameterisation(
+        mycrystal, myscan.get_image_range(), 5)
+sv_xluc_param = ScanVaryingCrystalUnitCellParameterisation(
+        mycrystal, myscan.get_image_range(), 5)
+
+########################################################################
+# Link model parameterisations together into a scan-varying            #
+# parameterisation of the prediction equation                          #
+########################################################################
+
+sv_pred_param = VaryingCrystalPredictionParameterisation(
+mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
+[sv_xlo_param], [sv_xluc_param])
+
+#########################################
+# Set up a scan-varying target function #
+#########################################
+
+sv_target = NewTarget(ref_predictor, mydetector, newrefman, sv_pred_param, im_width)
+
+print "Building refinement engine for scan-varying classes"
+refiner = setup_minimiser.Extract(master_phil,
+                                  sv_target,
+                                  sv_pred_param).refiner
+
+print "Prior to refinement the experimental model is:"
+print_model_geometry(mybeam, mydetector, mycrystal)
+
+refiner.run()
+
