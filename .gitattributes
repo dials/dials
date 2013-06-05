@@ -578,6 +578,7 @@ scratch/luiso_s/test_code/tst_mask.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_math.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/tst_plotting_1d_demo.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain

@@ -13,19 +13,32 @@ namespace dials { namespace algorithms {
         std::size_t nrow=data2d.accessor().all()[0];
         flex_int data2dtmp(data2d);
         flex_int data2dsmoth(data2d.accessor(),0);
+        float tot_i,cont;
         // std::cout <<"times =" << tot_times << "\n";
         // std::cout <<"ncol =" << ncol << "  nrow =" << nrow <<" \n";
-        // std::cout <<"2D in " << " \n";
+        std::cout <<"2D in tst" << " \n";
+
         for (int time = 0; time < tot_times; time++) {
           for (int row = 1; row<nrow-1;row++) {
             for (int col = 1; col<ncol-1;col++) {
-                  data2dsmoth(row,col) = (data2dtmp(row - 1, col - 1) + data2dtmp(row - 1, col) + data2dtmp(row - 1, col + 1)
-                                + data2dtmp(row  , col - 1) + data2dtmp(row  , col + 1)
-                        + data2dtmp(row + 1, col - 1) + data2dtmp(row + 1, col) + data2dtmp(row + 1, col + 1)) / 8.0;
+
+              // average of all surrounding pixels
+              tot_i=0.0;
+              cont=0.0;
+              for (int lp_row = row - 1; lp_row <= row + 1; lp_row++) {
+                for (int lp_col = col - 1; lp_col <= col + 1; lp_col++) {
+                  if (lp_row != row or lp_col != col){
+                    tot_i += data2dtmp(lp_row, lp_col);
+                    cont++;
+                  }
+                }
+              }
+              data2dsmoth(row,col) = tot_i/cont;
             }
           }
           std::copy(data2dsmoth.begin(),data2dsmoth.end(),data2dtmp.begin() );
         }
+
     return data2dsmoth;
   }
 

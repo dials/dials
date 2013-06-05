@@ -56,14 +56,14 @@ def flat_background_subtraction_2d(data2d, diffdata2d_ext):
                 cont += 1
                 tot_bkgr += data2d[row, col]
     if tot_bkgr > 0 and cont > 0:
-        bkgr = tot_bkgr / cont
+        avg_bkgr = tot_bkgr / cont
     else:
-        bkgr = 0
-    #print 'bkgr=', bkgr
+        avg_bkgr = 0
+    #print 'avg_bkgr=', avg_bkgr
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
-            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > bkgr:
-                data2d[row, col] = data2d[row, col] - bkgr
+            if diffdata2d_ext[row, col] == 1 and data2d[row, col] > avg_bkgr:
+                data2d[row, col] = data2d[row, col] - avg_bkgr
             else:
                 data2d[row, col] = 0
-    return bkgr
+    return avg_bkgr

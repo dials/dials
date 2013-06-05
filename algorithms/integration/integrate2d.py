@@ -9,44 +9,55 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dials.interfaces.integration import IntegrationInterface
-
+n_ref = 0
+ref_bkgr = []
 class Integrate2d(IntegrationInterface):
     '''A class to perform 2D integration'''
 
     def __init__(self, **kwargs):
         '''Initialise algorithm.'''
         pass
-
     def __call__(self, reflections):
         '''Process the reflections.'''
+        print 'n_ref =', n_ref
+        print 'len(ref_bkgr) =', len(ref_bkgr)
         self.subract_background(reflections)
+        print 'n_ref =', n_ref
+        print 'len(ref_bkgr) =', len(ref_bkgr)
         self.integrate(reflections)
     def subract_background(self, reflections):
-
+        global n_ref, ref_bkgr
         from dials.algorithms.background.background_subtraction_2d \
           import flat_background_subtraction_2d , curved_background_subtraction_2d
 
         from scitbx.array_family import flex
+        n_ref = len(reflections)
         for ref in reflections:
             shoebox = ref.shoebox.as_numpy_array()
             mask = ref.shoebox_mask.as_numpy_array()
-
+            tot_bkgr = 0
+            cont_bkgr = 0
             for i in range(shoebox.shape[0]):
                 data2d = shoebox[i]
                 mask2d = mask[i]
 
-#                bkgr = flat_background_subtraction_2d(data2d, mask2d)
-                bkgr = curved_background_subtraction_2d(data2d, mask2d)
-
+                bkgr = flat_background_subtraction_2d(data2d, mask2d)
+#                bkgr = curved_background_subtraction_2d(data2d, mask2d)
+                tot_bkgr += bkgr
+                cont_bkgr += 1
                 shoebox[i] = data2d
                 mask[i] = mask2d
-
+            avg_bkgr = tot_bkgr / cont_bkgr
+            ref_bkgr.append(avg_bkgr)
+            print 'avg_bkgr =', avg_bkgr
             ref.shoebox = flex.int(shoebox)
             ref.mask = flex.int(mask)
 
+
     def integrate(self, reflections):
         from dials.algorithms.integration.sumation_2d import raw_2d_integration
-
+        global ref_bkgr
+        cont = 0
         for ref in reflections:
             shoebox = ref.shoebox.as_numpy_array()
             mask = ref.shoebox_mask.as_numpy_array()
@@ -54,6 +65,7 @@ class Integrate2d(IntegrationInterface):
             for i in range(shoebox.shape[0]):
                 data2d = shoebox[i]
                 mask2d = mask[i]
-                itns, sigma = raw_2d_integration(data2d, mask2d)
+                itns, sigma = raw_2d_integration(data2d, mask2d, ref_bkgr[cont])
+            cont += 1
             ref.intensity = float(itns)
-            ref.intensity_variance = float(sigma)
+            ref.intensity_variance = float(sigma * sigma)
