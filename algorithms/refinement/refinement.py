@@ -105,9 +105,10 @@ def print_grads(grad_list):
         print ("Param %02d. Gradients: "
                "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
 
-def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
-           hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-           verbosity = 0, fix_cell = False):
+def refine(beam, goniometer, crystal, detector, image_width, scan,
+           hkls, enterings, frames,
+           svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+           verbosity = 0, fix_cell = False, scan_varying=False):
 
     """Simple refinement interface for the centroid refinement sprint"""
 
@@ -138,6 +139,7 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     # Import the refinement engine
     from dials.algorithms.refinement.engine import GaussNewtonIterations
 
+    sweep_range = scan.get_oscillation_range(deg=False)
     ref_predictor = ReflectionPredictor(crystal, beam, goniometer, sweep_range)
 
     ###########################
@@ -206,7 +208,137 @@ def refine(beam, goniometer, crystal, detector, image_width, sweep_range,
     ###################################
     # Do refinement and return models #
     ###################################
+
     refiner.run()
 
-    # These are set by side effect anyway, so don't strictly have to be returned
+    #############################################################
+    # Do a second round of refinement with scan-varying models? #
+    #############################################################
+
+    if scan_varying: scan_varying_refine(beam, goniometer, crystal,
+           detector, image_width, scan,
+           hkls, enterings, frames,
+           svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+           verbosity, fix_cell = fix_cell)
+
+    # Return models (crystal not updated with scan-varying U, B)
     return(beam, goniometer, crystal, detector)
+
+
+def scan_varying_refine(beam, goniometer, crystal, detector,
+           image_width, scan,
+           hkls,  enterings, frames,
+           svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+           verbosity = 0, fix_cell = False):
+
+    """experimental refinement function for scan-varying refinement"""
+
+    # Reflection prediction
+    from dials.algorithms.refinement.prediction import ReflectionPredictor
+
+    # Model parameterisations
+    from dials.algorithms.refinement.parameterisation.detector_parameters import \
+        DetectorParameterisationSinglePanel
+    from dials.algorithms.refinement.parameterisation.source_parameters import \
+        BeamParameterisationOrientation
+    from dials.algorithms.refinement.parameterisation.\
+        scan_varying_crystal_parameters import \
+            ScanVaryingCrystalOrientationParameterisation, \
+            ScanVaryingCrystalUnitCellParameterisation
+
+    # Symmetry constrained parameterisation for the unit cell
+    #from cctbx.uctbx import unit_cell
+    #from rstbx.symmetry.constraints.parameter_reduction import \
+    #    symmetrize_reduce_enlarge
+
+    # Parameterisation of the prediction equation
+    from dials.algorithms.refinement.parameterisation.\
+        scan_varying_prediction_parameters \
+            import VaryingCrystalPredictionParameterisation
+
+    # Imports for the target function
+    from dials.scratch.dgw.refinement.scan_varying_target import \
+        LeastSquaresPositionalResidualWithRmsdCutoff
+    from dials.scratch.dgw.refinement.scan_varying_target import \
+        ReflectionManager
+
+    # Import the refinement engine
+    from dials.algorithms.refinement.engine import GaussNewtonIterations
+
+    sweep_range = scan.get_oscillation_range(deg=False)
+    ref_predictor = ReflectionPredictor(crystal, beam, goniometer, sweep_range)
+
+    ###########################
+    # Parameterise the models #
+    ###########################
+
+    det_param = DetectorParameterisationSinglePanel(detector)
+    s0_param = BeamParameterisationOrientation(beam, goniometer)
+    xlo_param = ScanVaryingCrystalOrientationParameterisation(
+            crystal, scan.get_image_range(), 2)
+    xluc_param = ScanVaryingCrystalUnitCellParameterisation(
+            crystal, scan.get_image_range(), 2)
+
+    # Fix beam to the X-Z plane (imgCIF geometry)
+    s0_param.set_fixed([True, False])
+
+    # Fix cell if requested
+    if fix_cell:
+        xluc_param.set_fixed([True] * xluc_param.num_free())
+
+    ########################################################################
+    # Link model parameterisations together into a parameterisation of the #
+    # prediction equation                                                  #
+    ########################################################################
+
+    pred_param = VaryingCrystalPredictionParameterisation(
+        detector, beam, crystal, goniometer, [det_param], [s0_param],
+        [xlo_param], [xluc_param])
+
+    if verbosity > 2:
+        print "Prediction equation parameterisation built\n"
+        print "Parameter order:name mapping"
+        for i, e in enumerate(pred_param.get_p_names()):
+            print "Parameter %03d : " % i + e
+        print
+
+    #####################################
+    # Select reflections for refinement #
+    #####################################
+
+    refman = ReflectionManager(hkls, enterings, frames,
+                            svecs,
+                            d1s, sigd1s,
+                            d2s, sigd2s,
+                            angles, sigangles,
+                            beam, goniometer)
+
+    if verbosity > 2: print "Reflection manager built\n"
+
+    ##############################
+    # Set up the target function #
+    ##############################
+
+    mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
+        ref_predictor, detector, refman, pred_param, image_width)
+
+    if verbosity > 2: print "Target function built\n"
+
+    ################################
+    # Set up the refinement engine #
+    ################################
+
+    refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
+                                    verbosity=verbosity)
+
+    if verbosity > 2: print "Refinement engine built\n"
+
+    ###################################
+    # Do refinement and return models #
+    ###################################
+
+    refiner.run()
+
+    # NB scan-independent models set by side-effect, scan-varying
+    # crystal model not yet set at all
+    return

@@ -12,7 +12,7 @@ class RefinementRunner(object):
     '''Class to run the refinement script.'''
 
     def __init__(self, xparm_file, integrate_file,
-                 reflections, verbosity):
+                 reflections, verbosity=0, scan_varying=False):
         '''Initialise the script.'''
 
         # Set the required input arguments
@@ -20,6 +20,7 @@ class RefinementRunner(object):
         self.integrate_file = integrate_file
         self.reflections = reflections
         self.verbosity = verbosity
+        self.scan_varying = scan_varying
 
     def __call__(self):
         '''The main body of the script.'''
@@ -42,11 +43,11 @@ class RefinementRunner(object):
                 (x, y))).normalize() / self.beam.get_wavelength()
 
         # pull out data needed for refinement
-        temp = [(ref.miller_index, ref.rotation_angle,
-            matrix.col(ref.beam_vector), ref.image_coord_mm,
-            ref.centroid_variance) for ref in self.reflections]
-
-        hkls, angles, svecs, intersects, variances = zip(*temp)
+        temp = [(ref.miller_index, ref.entering, ref.frame_number,
+                 ref.rotation_angle, matrix.col(ref.beam_vector),
+                 ref.image_coord_mm, ref.centroid_variance) \
+                    for ref in self.reflections]
+        hkls, enterings, frames, angles, svecs, intersects, variances = zip(*temp)
 
         # tease out tuples to separate lists
         d1s, d2s = zip(*intersects)
@@ -78,8 +79,10 @@ class RefinementRunner(object):
         print_model_geometry(self.beam, self.detector, self.crystal)
 
         refine(self.beam, self.gonio, self.crystal, self.detector, im_width,
-               sweep_range, hkls, svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
-               sig_angles, verbosity = self.verbosity, fix_cell=False)
+               self.scan, hkls, enterings, frames,
+               svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
+               sig_angles, verbosity = self.verbosity, fix_cell=False,
+               scan_varying=self.scan_varying)
 
         print
         print "Refinement has completed with the following geometry:"
@@ -228,6 +231,11 @@ if __name__ == '__main__':
     parser.add_argument("integrate_file", help="/path/to/INTEGRATE.HKL")
     parser.add_argument("-v", "--verbosity", action="count", default=0,
                         help="set verbosity level; -vv gives verbosity level 2")
+    parser.add_argument("--scan_varying",
+            help="experimental option to follow refinement to " + \
+                 "convergence with a round of refinement using a " + \
+                 "scan-varying parameterisation (i.e. time dependence)",
+                 action="store_true")
     args = parser.parse_args()
 
     # reconstitute the reflections
@@ -235,5 +243,6 @@ if __name__ == '__main__':
 
     # Run the refinement
     runner = RefinementRunner(args.xparm_file, args.integrate_file,
-                              reflections, args.verbosity)
+                              reflections, args.verbosity,
+                              args.scan_varying)
     runner()

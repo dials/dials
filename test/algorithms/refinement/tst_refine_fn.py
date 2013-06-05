@@ -224,6 +224,10 @@ mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
 print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
+print "FIXME. This is currently broken, as refine now needs a scan " + \
+      "object instead of sweep_range and takes entering flags and " + \
+      "frame numbers"
+print 1/0
 refine(mybeam, mygonio, mycrystal, mydetector, im_width, sweep_range,
        hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
        verbosity = 1)
