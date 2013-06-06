@@ -44,6 +44,55 @@ def model_to_dict(filenames=None, beam=None, detector=None,
     # Return the model
     return model
 
+def compact_simple_list(match):
+    ''' Callback function. Given a simple list match, compact it and ensure
+    that it wraps around by 80 characters.
+
+    Params:
+        match The regular expression match
+
+    Returns:
+        The string to replace the expression with
+
+    '''
+    import textwrap
+
+    # Calculate the initial indent as the length of the first match group
+    initial_indent = len(match.group(1))
+
+    # Get the lines in the match
+    lines = match.group(2).splitlines()
+
+    # Set the indent by finding the indent of the first lines
+    if len(lines) > 1:
+        subsequent_indent = len(lines[1]) - len(lines[1].lstrip())
+    else:
+        subsequent_indent = 0
+
+    # Strip whitespace from the lines
+    lines = [l.strip() for l in lines]
+
+    # Create and return the string wrapped about 80 chars
+    list_string = '\n'.join(textwrap.wrap(' '.join(lines),
+        80, initial_indent=' '*initial_indent,
+        subsequent_indent=' '*subsequent_indent)).lstrip()
+
+    # Return the string
+    return match.group(1) + list_string
+
+def compact_simple_lists(string):
+    ''' Find simple lists in the string and compact.
+
+    Params:
+        string The input JSON string
+
+    Returns:
+        The output JSON string
+
+    '''
+    import re
+    return re.sub(r'(.*"\w+".*:.*)(\[[^\{\}\[\]]*\])', compact_simple_list, string)
+
 def dumps(**kwargs):
     ''' Dump the given object to string.
 
@@ -70,7 +119,10 @@ def dumps(**kwargs):
     import textwrap
 
     # Return as a JSON string
-    return '\n'.join(textwrap.wrap(json.dumps(model_to_dict(**kwargs)), 80))
+    string = json.dumps(model_to_dict(**kwargs), indent=2)
+
+    # Hack to make more readable
+    return compact_simple_lists(string)
 
 def dump(outfile, **kwargs):
     ''' Dump the given object to file.

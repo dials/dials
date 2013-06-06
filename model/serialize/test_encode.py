@@ -55,17 +55,19 @@
 from dials.model.experiment import Scan, Beam, Goniometer, Detector, Panel, Crystal
 
 filenames = 'filenames###.cbf'
-scan = Scan((1, 2), (0, 1), 0)
+scan = Scan((1, 100), (0, 1), 0)
 beam = Beam((0, 0, 1), 1.0)
 gonio = Goniometer()
-detector = Detector()
+detector = Detector(Panel("UNKNOWN", (1, 0, 0), (0, 1, 0), (0, 0, 1), (0.1, 0.1), (100, 100), (0, 100)))
 crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 10)
 
 from dials.model.serialize import dumps, loads
 
-s = dumps(filenames=filenames, scan=scan, beam=beam, goniometer=gonio, crystal=crystal)
+print dumps(filenames=filenames, scan=scan, beam=beam, goniometer=gonio, crystal=crystal, detector=detector)
 
-print loads(s)
+
+
+#print loads(s)
 
 #for line in textwrap.wrap(json.dumps(scan, sort_keys=False, cls=Encoder), 80):
 #    print line
