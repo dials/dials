@@ -54,7 +54,7 @@
 #print Encoder().encode(scan)
 from dials.model.experiment import Scan, Beam, Goniometer, Detector, Panel, Crystal
 
-filenames = 'filenames###.cbf'
+filenames = 'filenames####.cbf'
 scan = Scan((1, 100), (0, 1), 0)
 beam = Beam((0, 0, 1), 1.0)
 gonio = Goniometer()

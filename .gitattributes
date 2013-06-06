@@ -271,6 +271,7 @@ model/serialize/crystal.py -text
 model/serialize/detector.py -text
 model/serialize/dump.py -text
 model/serialize/goniometer.py -text
+model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/scan.py -text
 model/serialize/test_encode.py -text

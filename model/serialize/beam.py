@@ -20,9 +20,9 @@ def beam_to_dict(beam):
 
     '''
     from collections import OrderedDict
-    return OrderedDict((
+    return OrderedDict([
         ('direction', beam.get_direction()),
-        ('wavelength', beam.get_wavelength())))
+        ('wavelength', beam.get_wavelength())])
 
 def beam_from_dict(d):
     ''' Convert the dictionary to a beam model

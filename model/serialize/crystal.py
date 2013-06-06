@@ -30,11 +30,11 @@ def crystal_to_dict(crystal):
     space_group = crystal.get_space_group().info().type().number()
 
     # Return the information as a python dictionary
-    return OrderedDict((
+    return OrderedDict([
         ('real_space_a', real_space_a),
         ('real_space_b', real_space_b),
         ('real_space_c', real_space_c),
-        ('space_group', space_group)))
+        ('space_group', space_group)])
 
 def crystal_from_dict(d):
     ''' Convert the dictionary to a crystal model

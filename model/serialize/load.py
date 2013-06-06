@@ -20,6 +20,7 @@ def model_from_dict(obj):
 
     '''
     from collections import namedtuple
+    from dials.model.serialize.imageset import imageset_from_dict
     from dials.model.serialize.beam import beam_from_dict
     from dials.model.serialize.detector import detector_from_dict
     from dials.model.serialize.goniometer import goniometer_from_dict
@@ -27,14 +28,14 @@ def model_from_dict(obj):
     from dials.model.serialize.crystal import crystal_from_dict
 
     # Create the named tuple type
-    Model = namedtuple('Model', ['filenames', 'beam', 'detector',
+    Model = namedtuple('Model', ['imageset', 'beam', 'detector',
                                  'goniometer', 'scan', 'crystal'])
 
     # Convert all dictionaries to models
-    if 'filenames' in obj:
-        filenames = str(obj['filenames'])
+    if 'imageset' in obj:
+        imageset = imageset_from_dict(obj['imageset'])
     else:
-        filenames = None
+        imageset = None
 
     if 'beam' in obj:
         beam = beam_from_dict(obj['beam'])
@@ -61,7 +62,7 @@ def model_from_dict(obj):
         crystal = None
 
     # Return models in a named tuple
-    return Model(filenames=filenames,
+    return Model(imageset=imageset,
                  beam=beam,
                  detector=detector,
                  goniometer=goniometer,
@@ -99,3 +100,39 @@ def load(infile):
     # Otherwise assume the input is a file and read from it
     else:
         return loads(infile.read())
+
+
+def load2(infile):
+
+    from collections import namedtuple
+    from dxtbx.imageset import ImageSetFactory
+
+    # Get all the information from the model file
+    imageset, beam, detector, goniometer, scan, crystal = load(infile)
+
+    # If the filenames parameter has been set
+    if imageset != None:
+
+        # If the beam is not set, then get it from the sweep
+        if beam == None:
+            beam = imageset.get_beam()
+
+        # If the detector is not set, then get it from the sweep
+        if detector == None:
+            detector = imageset.get_detector()
+
+        # If the goniometer is not set, then get it from the sweep
+        if goniometer == None:
+            goniometer = imageset.get_goniometer()
+
+        # If the scan is not set, then get it from the sweep
+        if scan == None:
+            scan = imageset.get_scan()
+
+    # Create a named tuple with the results
+    Model = namedtuple('Model', ['sweep', 'beam', 'detector',
+                                 'goniometer', 'scan', 'crystal'])
+
+    # Return the tuple with the results
+    return Model(sweep=sweep, beam=beam, detector=detector,
+                 goniometer=gonimeter, scan=scan, crystal=crystal)
