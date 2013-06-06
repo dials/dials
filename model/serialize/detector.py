@@ -44,8 +44,8 @@ def panel_from_dict(d):
                  tuple(d['fast_axis']),
                  tuple(d['slow_axis']),
                  tuple(d['origin']),
-                 tuple(d['image_size']),
                  tuple(d['pixel_size']),
+                 tuple(d['image_size']),
                  tuple(d['trusted_range']))
 
 def detector_to_dict(detector):

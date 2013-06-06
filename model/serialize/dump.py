@@ -9,50 +9,6 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def model_to_dict(imageset=None, beam=None, detector=None,
-                  goniometer=None, scan=None, crystal=None):
-    ''' Dump the experimental models to a dictionary
-
-    Params:
-        imageset The filename list specifying the imageset
-        beam The beam model
-        detector The detector model
-        gonio The goniometer model
-        scan The scan model
-        crystal The crystal model
-
-    Returns:
-        The JSON string
-
-    '''
-    from collections import OrderedDict
-    from dials.model.serialize.imageset import imageset_to_dict
-    from dials.model.serialize.beam import beam_to_dict
-    from dials.model.serialize.detector import detector_to_dict
-    from dials.model.serialize.goniometer import goniometer_to_dict
-    from dials.model.serialize.scan import scan_to_dict
-    from dials.model.serialize.crystal import crystal_to_dict
-
-    # Convert all models to dictionaries
-    model = OrderedDict()
-    model['__id__'] = 'input'
-    model['__version__'] = '0.1'
-    if imageset is not None:
-        model['filenames'] = imageset_to_dict(imageset)
-    if beam is not None:
-        model['beam'] = beam_to_dict(beam)
-    if detector is not None:
-        model['detector'] = detector_to_dict(detector)
-    if goniometer is not None:
-        model['goniometer'] = goniometer_to_dict(goniometer)
-    if scan is not None:
-        model['scan'] = scan_to_dict(scan)
-    if crystal is not None:
-        model['crystal'] = crystal_to_dict(crystal)
-
-    # Return the model
-    return model
-
 def compact_simple_list(match):
     ''' Callback function. Given a simple list match, compact it and ensure
     that it wraps around by 80 characters.
@@ -103,23 +59,12 @@ def compact_simple_lists(string):
     return re.sub(r'(.*"\w+".*:.*)(\[[^\{\}\[\]]*\])',
         compact_simple_list, string)
 
-def dumps(compact=False, **kwargs):
+def dumps(imageset, compact=False):
     ''' Dump the given object to string.
 
-    Input must be of the form
-
-        dumps((beam, detector, goniometer, scan))
-
-    or
-        dumps(crystal)
-
     Params:
-        filenames The filename list
-        beam The beam model
-        detector The detector model
-        gonio The goniometer model
-        scan The scan model
-        crystal The crystal model
+        imageset The imageset
+        compact Write in compact representation
 
     Returns:
         The JSON string
@@ -127,46 +72,35 @@ def dumps(compact=False, **kwargs):
     '''
     import json
     import textwrap
+    from dials.model.serialize.imageset import imageset_to_dict
 
     # Return as a JSON string
     if compact == False:
-        string = json.dumps(model_to_dict(**kwargs), indent=2)
+        string = json.dumps(imageset_to_dict(imageset), indent=2)
 
         # Hack to make more readable
         string = compact_simple_lists(string)
 
     else:
-        string = json.dumps(model_to_dict(**kwargs), separators=(',',':'))
+        string = json.dumps(imageset_to_dict(imageset), separators=(',',':'))
 
     # Return the string
     return string
 
-def dump(outfile, **kwargs):
+def dump(imageset, outfile, compact=False):
     ''' Dump the given object to file.
 
-    Input must be of the form
-
-        dumps((beam, detector, goniometer, scan))
-
-    or
-        dumps(crystal)
-
     Params:
+        imageset The imageset to dump
         outfile The output file name or file object
         compact Write in compact representation
-        filenames The filename list
-        beam The beam model
-        detector The detector model
-        gonio The goniometer model
-        scan The scan model
-        crystal The crystal model
 
     '''
     # If the input is a string then open and write to that file
     if isinstance(outfile, str):
         with open(outfile, 'w') as outfile:
-            outfile.write(dumps(**kwargs))
+            outfile.write(dumps(imageset, compact))
 
     # Otherwise assume the input is a file and write to it
     else:
-        outfile.write(dumps(**kwargs))
+        outfile.write(dumps(imageset, compact))

@@ -9,36 +9,77 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def imageset_to_dict(imageset):
-    ''' Convert the imageset to a dictionary
+def basic_imageset_to_dict(imageset):
+    ''' Convert an imageset to a dictionary
 
     Params:
-        sweep The imageset
+        imageset The imageset
 
     Returns:
         A dictionary of the parameters
 
     '''
     from collections import OrderedDict
+    from dials.model.serialize.beam import beam_to_dict
+    from dials.model.serialize.detector import detector_to_dict
+
+    # Return the dictionary representation
+    return OrderedDict([
+        ("filenames", imageset.paths()),
+        ("beam", beam_to_dict(imageset.get_beam())),
+        ("detector", detector_to_dict(imageset.get_detector()))])
+
+def imagesweep_to_dict(sweep):
+    ''' Convert a sweep to a dictionary
+
+    Params:
+        sweep The sweep
+
+    Returns:
+        A dictionary of the parameters
+
+    '''
+    from collections import OrderedDict
+    from dials.model.serialize.beam import beam_to_dict
+    from dials.model.serialize.detector import detector_to_dict
+    from dials.model.serialize.goniometer import goniometer_to_dict
+    from dials.model.serialize.scan import scan_to_dict
+
+    # Return the dictionary representation
+    return OrderedDict([
+        ("template", template_format_to_string(sweep.get_template())),
+        ("beam", beam_to_dict(sweep.get_beam())),
+        ("detector", detector_to_dict(sweep.get_detector())),
+        ("goniometer", goniometer_to_dict(sweep.get_goniometer())),
+        ("scan", scan_to_dict(sweep.get_scan()))])
+
+def replace_template_format_with_hash(match):
+    return '#'*len(match.group(0))
+
+def template_format_to_string(template):
+    import re
+    return re.sub(r'%0[0-9]+d', replace_template_format_with_hash, template)
+
+
+def imageset_to_dict(imageset):
+    ''' Convert the imageset to a dictionary
+
+    Params:
+        imageset The imageset
+
+    Returns:
+        A dictionary of the parameters
+
+    '''
     from dxtbx.imageset import ImageSet, ImageSweep
 
     # If this is an imageset then return a list of filenames
-    if isinstance(imageset, ImageSet):
-        d = OrderedDict([("filenames", imageset.paths())])
-
-    # Otherwise return a template and the image range
-    elif isinstance(imageset, ImageSweep):
-        template = imageset.get_template()
-        array_range = imageset.get_array_range()
-        image_range = (array_range[0] + 1, array_range[1])
-        d = OrderedDict([
-            ("template", imageset.get_template()),
-            ("image_range", imageset.get_array_range())])
+    if isinstance(imageset, ImageSweep):
+        return imagesweep_to_dict(imageset)
+    elif isinstance(imageset, ImageSet):
+        return basic_imageset_to_dict(imageset)
     else:
         raise TypeError("Unknown ImageSet Type")
-
-    # Return the dictionary
-    return d
 
 def template_string_to_glob_expr(template):
     '''Convert the template to a glob expression.'''
