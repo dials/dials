@@ -63,7 +63,8 @@ crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 10)
 
 from dials.model.serialize import dumps, loads
 
-print dumps(filenames=filenames, scan=scan, beam=beam, goniometer=gonio, crystal=crystal, detector=detector)
+print dumps(filenames=filenames, scan=scan, beam=beam, goniometer=gonio,
+            crystal=crystal, detector=detector, compact=False)
 
 
 

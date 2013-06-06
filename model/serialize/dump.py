@@ -94,7 +94,7 @@ def compact_simple_lists(string):
     return re.sub(r'(.*"\w+".*:.*)(\[[^\{\}\[\]]*\])',
         compact_simple_list, string)
 
-def dumps(**kwargs):
+def dumps(compact=False, **kwargs):
     ''' Dump the given object to string.
 
     Input must be of the form
@@ -120,10 +120,17 @@ def dumps(**kwargs):
     import textwrap
 
     # Return as a JSON string
-    string = json.dumps(model_to_dict(**kwargs), indent=2)
+    if compact == False:
+        string = json.dumps(model_to_dict(**kwargs), indent=2)
 
-    # Hack to make more readable
-    return compact_simple_lists(string)
+        # Hack to make more readable
+        string = compact_simple_lists(string)
+
+    else:
+        string = json.dumps(model_to_dict(**kwargs), separators=(',',':'))
+
+    # Return the string
+    return string
 
 def dump(outfile, **kwargs):
     ''' Dump the given object to file.
@@ -137,6 +144,7 @@ def dump(outfile, **kwargs):
 
     Params:
         outfile The output file name or file object
+        compact Write in compact representation
         filenames The filename list
         beam The beam model
         detector The detector model
