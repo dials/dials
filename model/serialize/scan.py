@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def scan_to_dict(scan):
+def to_dict(scan):
     ''' Convert the scan model to a dictionary
 
     Params:
@@ -26,7 +26,7 @@ def scan_to_dict(scan):
         ('exposure_time', scan.get_exposure_time()),
         ('epochs', list(scan.get_epochs()))])
 
-def scan_from_dict(d):
+def from_dict(d):
     ''' Convert the dictionary to a scan model
 
     Params:

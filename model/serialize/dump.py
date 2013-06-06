@@ -59,11 +59,11 @@ def compact_simple_lists(string):
     return re.sub(r'(.*"\w+".*:.*)(\[[^\{\}\[\]]*\])',
         compact_simple_list, string)
 
-def dumps(imageset, compact=False):
+def dumps(obj, compact=False):
     ''' Dump the given object to string.
 
     Params:
-        imageset The imageset
+        obj The imageset
         compact Write in compact representation
 
     Returns:
@@ -72,26 +72,26 @@ def dumps(imageset, compact=False):
     '''
     import json
     import textwrap
-    from dials.model.serialize.imageset import imageset_to_dict
+    from dials.model.serialize import imageset
 
     # Return as a JSON string
     if compact == False:
-        string = json.dumps(imageset_to_dict(imageset), indent=2)
+        string = json.dumps(imageset.to_dict(obj), indent=2)
 
         # Hack to make more readable
         string = compact_simple_lists(string)
 
     else:
-        string = json.dumps(imageset_to_dict(imageset), separators=(',',':'))
+        string = json.dumps(imageset.to_dict(obj), separators=(',',':'))
 
     # Return the string
     return string
 
-def dump(imageset, outfile, compact=False):
+def dump(obj, outfile, compact=False):
     ''' Dump the given object to file.
 
     Params:
-        imageset The imageset to dump
+        obj The imageset to dump
         outfile The output file name or file object
         compact Write in compact representation
 
@@ -99,8 +99,8 @@ def dump(imageset, outfile, compact=False):
     # If the input is a string then open and write to that file
     if isinstance(outfile, str):
         with open(outfile, 'w') as outfile:
-            outfile.write(dumps(imageset, compact))
+            outfile.write(dumps(obj, compact))
 
     # Otherwise assume the input is a file and write to it
     else:
-        outfile.write(dumps(imageset, compact))
+        outfile.write(dumps(obj, compact))

@@ -48,7 +48,7 @@ def panel_from_dict(d):
                  tuple(d['image_size']),
                  tuple(d['trusted_range']))
 
-def detector_to_dict(detector):
+def to_dict(detector):
     ''' Convert the detector model to a dictionary
 
     Params:
@@ -60,7 +60,7 @@ def detector_to_dict(detector):
     '''
     return [panel_to_dict(p) for p in detector]
 
-def detector_from_dict(d):
+def from_dict(d):
     ''' Convert the dictionary to a detector model
 
     Params:

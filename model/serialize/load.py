@@ -20,8 +20,8 @@ def loads(string):
 
     '''
     import json
-    from dials.model.serialize.imageset import imageset_from_dict
-    return imageset_from_dict(json.loads(string))
+    from dials.model.serialize import imageset
+    return imageset.from_dict(json.loads(string))
 
 def load(infile):
     ''' Load the given JSON file.

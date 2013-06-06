@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def goniometer_to_dict(gonio):
+def to_dict(gonio):
     ''' Convert the goniometer model to a dictionary
 
     Params:
@@ -24,7 +24,7 @@ def goniometer_to_dict(gonio):
         ('rotation_axis', gonio.get_rotation_axis()),
         ('fixed_rotation', gonio.get_fixed_rotation())])
 
-def goniometer_from_dict(d):
+def from_dict(d):
     ''' Convert the dictionary to a goniometer model
 
     Params:

@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def crystal_to_dict(crystal):
+def to_dict(crystal):
     ''' Convert the crystal model to a dictionary
 
     Params:
@@ -36,7 +36,7 @@ def crystal_to_dict(crystal):
         ('real_space_c', real_space_c),
         ('space_group', space_group)])
 
-def crystal_from_dict(d):
+def from_dict(d):
     ''' Convert the dictionary to a crystal model
 
     Params:

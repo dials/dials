@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def beam_to_dict(beam):
+def to_dict(beam):
     ''' Convert the beam model to a dictionary
 
     Params:
@@ -24,7 +24,7 @@ def beam_to_dict(beam):
         ('direction', beam.get_direction()),
         ('wavelength', beam.get_wavelength())])
 
-def beam_from_dict(d):
+def from_dict(d):
     ''' Convert the dictionary to a beam model
 
     Params:
