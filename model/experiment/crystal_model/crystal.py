@@ -9,6 +9,10 @@ class Crystal:
 
     def __init__(self, real_space_a, real_space_b, real_space_c, sg = 1):
 
+        real_space_a = matrix.col(real_space_a)
+        real_space_b = matrix.col(real_space_b)
+        real_space_c = matrix.col(real_space_c)
+
         self._sg = space_group(space_group_symbols(sg).hall())
 
         # setting matrix at initialisation
