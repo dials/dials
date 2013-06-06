@@ -12,7 +12,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     arg("imax") = 50 ,   arg("asp") = 0.5 ) );
 
     def("measure_2d_angl", &measure_2d_angl, ( arg("data2d"),
-        arg("xpos")=1, arg("ypos")=20 ) );
+         arg("mask2d"), arg("xpos")=1, arg("ypos")=20 ) );
 
   }
 

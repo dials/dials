@@ -51,35 +51,47 @@ namespace dials { namespace algorithms {
     return curv3d;
   }
 
-  float measure_2d_angl(flex_int & data2d, float xpos, float ypos) {
+  float measure_2d_angl(flex_int & data2d, flex_int & mask2d,float xpos, float ypos) {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
-    float dx, dy, xfl, yfl;
-    float r_ang, r_avg_ang, r_ang_tot = 0, r_tot = 0;
-    float l_ang, l_avg_ang, l_ang_tot = 0, l_tot = 0;
-    float avg_ang;
+    std::cout <<"\n" << "ncol =" << ncol <<"\n" << "nrow =" << nrow <<"\n";
+    float dx, dy;
+    float pie_size;
     // std::cout <<"\n" << "x,y =" << xpos << ", " << ypos << "\n";
+    int contr = 0;
+    float pi_sqrt = 1.77245385091;
+
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
-        xfl = float(col);// + 0.5;
-        yfl = float(row);// + 0.5;
-        dx = xfl - xpos;
-        dy = yfl - ypos;
-        if( dx < 0 ){
-          r_ang = atan2(dx, dy);
-          r_ang_tot += r_ang * float(data2d(row, col));
-          r_tot += data2d(row, col);
-        }else{
-          l_ang = atan2(dx, dy);
-          l_ang_tot += l_ang * float(data2d(row, col));
-          l_tot += data2d(row, col);
+        if( mask2d(row, col)==1 ){
+          contr++;
         }
       }
     }
-    r_avg_ang = (r_ang_tot/r_tot)/pi;
-    l_avg_ang = (l_ang_tot/l_tot)/pi;
-    avg_ang=(r_avg_ang+(l_avg_ang-pi))/2.0;
-    return avg_ang;
+
+    std::cout <<"\n" << "cont =" << contr <<"\n";
+    float angl_tmp[int(contr)];
+    float dist_tmp[int(contr)];
+    contr = 0;
+
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
+        if( mask2d(row, col)==1 ){
+          contr++;
+          dx = float(col) - xpos;
+          dy = float(row) - ypos;
+          angl_tmp[contr] = atan2(dx, dy);
+          dist_tmp[contr] = sqrt(dx * dx + dy * dy);
+
+        }
+      }
+    }
+    int area=contr;
+    pie_size=2.0 * pi_sqrt * sqrt(contr);
+    float dist[int(pie_size)];
+    float angl[int(pie_size)];
+
+    return pie_size;
   }
 
 }}
