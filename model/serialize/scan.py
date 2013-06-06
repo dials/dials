@@ -36,6 +36,7 @@ def scan_from_dict(d):
 
     '''
     from dials.model.experiment import Scan
+    from scitbx.array_family import flex
     return Scan(tuple(d['image_range']),
                 tuple(d['oscillation']),
                 float(d['exposure_time']),

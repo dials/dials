@@ -9,46 +9,66 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def load_experimental_models_from_string(string):
-    ''' Load the experimental models from a JSON string
+def model_from_dict(obj):
+    ''' Convert the dictionary into a set of models.
 
     Params:
-        string The JSON string
+        obj The input dictionary
 
     Returns:
-        (beam, detector, goniometer, scan)
+        A set of models in a named tuple
 
     '''
-    import json
+    from collections import namedtuple
     from dials.model.serialize.beam import beam_from_dict
     from dials.model.serialize.detector import detector_from_dict
     from dials.model.serialize.goniometer import goniometer_from_dict
     from dials.model.serialize.scan import scan_from_dict
-
-    # Convert all string to dictionaries
-    models = json.loads(string)
-
-    # Return a tuple of the models
-    return (beam_from_dict(models['beam']),
-            detector_from_dict(models['detector']),
-            goniometer_from_dict(models['goniometer']),
-            scan_from_dict(models['scan']))
-
-def load_crystal_model_from_string(string):
-    ''' Load the crystal model from a JSON string
-
-    Params:
-        string The JSON string
-
-    Returns:
-        The crystal model
-
-    '''
-    import json
     from dials.model.serialize.crystal import crystal_from_dict
-    return crystal_from_dict(json.loads(string))
 
-def loads(string, model):
+    # Create the named tuple type
+    Model = namedtuple('Model', ['filenames', 'beam', 'detector',
+                                 'goniometer', 'scan', 'crystal'])
+
+    # Convert all dictionaries to models
+    if 'filenames' in obj:
+        filenames = str(obj['filenames'])
+    else:
+        filenames = None
+
+    if 'beam' in obj:
+        beam = beam_from_dict(obj['beam'])
+    else:
+        beam = None
+
+    if 'detector' in obj:
+        detector = detector_from_dict(obj['detector'])
+    else:
+        detector = None
+
+    if 'goniometer' in obj:
+        goniometer = goniometer_from_dict(obj['goniometer'])
+    else:
+        goniometer = None
+    if 'scan' in obj:
+        scan = scan_from_dict(obj['scan'])
+    else:
+        scan = None
+
+    if 'crystal' in obj:
+        crystal = crystal_from_dict(obj['crystal'])
+    else:
+        crystal = None
+
+    # Return models in a named tuple
+    return Model(filenames=filenames,
+                 beam=beam,
+                 detector=detector,
+                 goniometer=goniometer,
+                 scan=scan,
+                 crystal=crystal)
+
+def loads(string):
     ''' Load the string and return the models.
 
     Params:
@@ -58,26 +78,8 @@ def loads(string, model):
         The models
 
     '''
-    from dials.model.experiment import Beam, Detector, Goniometer, Scan
-    from dials.model.experiment.crystal_model.crystal import Crystal
-
-    # If this is a tuple of 4 elements
-    if type(obj) == tuple and len(obj) == 4:
-
-        # If the types for experimental models
-        if (isinstance(obj[0], Beam) and
-            isinstance(obj[1], Detector) and
-            isinstance(obj[2], Goniometer) and
-            isinstance(obj[3], Scan):
-            return dump_experimental_models_to_string(*obj)
-
-    # If this is a crystal model then dump
-    elif isinstance(obj, Crystal):
-        return dump_crystal_model_to_string(obj)
-
-    # Otherwise raise an exception
-    else:
-        raise TypeError("Unknown type to serialize")
+    import json
+    return model_from_dict(json.loads(string))
 
 def load(infile):
     ''' Load the given JSON file.
@@ -91,7 +93,7 @@ def load(infile):
     '''
     # If the input is a string then open and read from that file
     if isinstance(infile, str):
-        with infile = open(infile, 'r'):
+        with open(infile, 'r') as infile:
             return loads(infile.read())
 
     # Otherwise assume the input is a file and read from it
