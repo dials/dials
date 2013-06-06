@@ -35,5 +35,11 @@ def goniometer_from_dict(d):
 
     '''
     from dials.model.experiment import Goniometer
+
+    # If None, return None
+    if d == None:
+        return None
+
+    # Create the model from the dictionary
     return Goniometer(tuple(d['rotation_axis']),
                       tuple(d['fixed_rotation']))

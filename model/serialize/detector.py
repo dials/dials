@@ -71,4 +71,10 @@ def detector_from_dict(d):
 
     '''
     from dials.model.experiment import Detector, PanelList
+
+    # If None, return None
+    if d == None:
+        return None
+
+    # Create the model from the dictionary
     return Detector(PanelList([panel_from_dict(p) for p in d]))

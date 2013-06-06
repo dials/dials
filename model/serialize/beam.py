@@ -35,5 +35,11 @@ def beam_from_dict(d):
 
     '''
     from dials.model.experiment import Beam
+
+    # If None, return None
+    if d == None:
+        return None
+
+    # Create the model from the dictionary
     return Beam(tuple(d['direction']),
                 float(d['wavelength']))

@@ -48,6 +48,10 @@ def crystal_from_dict(d):
     '''
     from dials.model.experiment.crystal_model.crystal import Crystal
 
+    # If None, return None
+    if d == None:
+        return None
+
     # Try to get the crystal model from the dictionary
     real_space_a = d['real_space_a']
     real_space_b = d['real_space_b']
