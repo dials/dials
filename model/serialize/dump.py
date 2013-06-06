@@ -91,7 +91,8 @@ def compact_simple_lists(string):
 
     '''
     import re
-    return re.sub(r'(.*"\w+".*:.*)(\[[^\{\}\[\]]*\])', compact_simple_list, string)
+    return re.sub(r'(.*"\w+".*:.*)(\[[^\{\}\[\]]*\])',
+        compact_simple_list, string)
 
 def dumps(**kwargs):
     ''' Dump the given object to string.

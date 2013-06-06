@@ -20,10 +20,11 @@ def scan_to_dict(scan):
 
     '''
     from collections import OrderedDict
-    return OrderedDict(image_range=scan.get_image_range(),
-                       oscillation=scan.get_oscillation(),
-                       exposure_time=scan.get_exposure_time(),
-                       epochs=list(scan.get_epochs()))
+    return OrderedDict((
+        ('image_range', scan.get_image_range()),
+        ('oscillation', scan.get_oscillation()),
+        ('exposure_time', scan.get_exposure_time()),
+        ('epochs', list(scan.get_epochs()))))
 
 def scan_from_dict(d):
     ''' Convert the dictionary to a scan model

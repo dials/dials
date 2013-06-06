@@ -20,13 +20,14 @@ def panel_to_dict(panel):
 
     '''
     from collections import OrderedDict
-    return OrderedDict(type=panel.get_type(),
-                       fast_axis=panel.get_fast_axis(),
-                       slow_axis=panel.get_slow_axis(),
-                       origin=panel.get_origin(),
-                       pixel_size=panel.get_pixel_size(),
-                       image_size=panel.get_image_size(),
-                       trusted_range=panel.get_trusted_range())
+    return OrderedDict((
+        ('type', panel.get_type()),
+        ('fast_axis', panel.get_fast_axis()),
+        ('slow_axis', panel.get_slow_axis()),
+        ('origin', panel.get_origin()),
+        ('pixel_size', panel.get_pixel_size()),
+        ('image_size', panel.get_image_size()),
+        ('trusted_range', panel.get_trusted_range())))
 
 def panel_from_dict(d):
     ''' Convert the dictionary to a panel model

@@ -20,8 +20,9 @@ def goniometer_to_dict(gonio):
 
     '''
     from collections import OrderedDict
-    return OrderedDict(rotation_axis=gonio.get_rotation_axis(),
-                       fixed_rotation=gonio.get_fixed_rotation())
+    return OrderedDict((
+        ('rotation_axis', gonio.get_rotation_axis()),
+        ('fixed_rotation', gonio.get_fixed_rotation())))
 
 def goniometer_from_dict(d):
     ''' Convert the dictionary to a goniometer model
