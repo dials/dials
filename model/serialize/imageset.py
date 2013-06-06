@@ -78,6 +78,52 @@ def template_image_range(template):
     # Reutrn the image range
     return (first, last)
 
+def basic_imageset_from_dict(d):
+    ''' Construct an ImageSet class from the dictionary.'''
+    from dxtbx.imageset import ImageSetFactory
+    from dials.model.serialize.beam import beam_from_dict
+    from dials.model.serialize.detector import detector_from_dict
+
+    # Get the filename list and create the imageset
+    filenames = map(str, d['filenames'])
+    imageset = ImageSetFactory.new(filenames)[0]
+
+    # Set models
+    imageset.set_beam(beam_from_dict(d.get('beam')))
+    imageset.set_detector(detector_from_dict(d.get('detector')))
+
+    # Return the imageset
+    return imageset
+
+def imagesweep_from_dict(d):
+    '''Construct and image sweep from the dictionary.'''
+    from dxtbx.imageset import ImageSetFactory
+    from dials.model.serialize.beam import beam_from_dict
+    from dials.model.serialize.detector import detector_from_dict
+    from dials.model.serialize.goniometer import goniometer_from_dict
+    from dials.model.serialize.scan import scan_from_dict
+
+    # Get the template (required)
+    template = str(d['template'])
+
+    # Get the scan
+    scan = scan_from_dict(d.get('scan'))
+
+    # If the scan isn't set, find all available files
+    if scan is None:
+        image_range = template_image_range(template)
+    else:
+        image_range = scan.get_image_range()
+
+    # Construct the sweep
+    sweep = ImageSetFactory.from_template(template, image_range)[0]
+    sweep.set_beam(beam_from_dict(d.get('beam')))
+    sweep.set_goniometer(goniometer_from_dict(d.get('goniometer')))
+    sweep.set_detector(detector_from_dict(d.get('detector')))
+
+    # Return the sweep
+    return sweep
+
 def imageset_from_dict(d):
     ''' Convert the dictionary to a sweep
 
@@ -88,51 +134,11 @@ def imageset_from_dict(d):
         The sweep
 
     '''
-    from dxtbx.imageset import ImageSetFactory
-    from dials.model.serialize.beam import beam_from_dict
-    from dials.model.serialize.detector import detector_from_dict
-    from dials.model.serialize.goniometer import goniometer_from_dict
-    from dials.model.serialize.scan import scan_from_dict
-
-    # If this is a generic imageset then construct as normal
+    if d == None:
+        return None
     if "filenames" in d:
-        filenames = map(str, d['filenames'])
-        imageset = ImageSetFactory.new(filenames)[0]
-
-        # Get the models
-        beam = beam_from_dict(d.get('beam'))
-        detector = detector_from_dict(d.get('detector'))
-
-        # Set models
-        imageset.set_beam(beam)
-        imageset.set_detector(detector)
-
-        # Return the imageset
-        return imageset
-
-    # If this is specifically a sweep then construct through the template
+        return basic_imageset_from_dict(d)
+    elif "template" in d:
+        return imagesweep_from_dict(d)
     else:
-
-        # Get the template (required)
-        template = str(d['template'])
-
-        # Get the models
-        beam = beam_from_dict(d.get('beam'))
-        detector = detector_from_dict(d.get('detector'))
-        goniometer = goniometer_from_dict(d.get('goniometer'))
-        scan = scan_from_dict(d.get('scan'))
-
-        # If the scan isn't set, find all available files
-        if scan is None:
-            image_range = template_image_range(template)
-        else:
-            image_range = scan.get_image_range()
-
-        # Construct the sweep
-        sweep = ImageSetFactory.from_template(template, image_range)[0]
-        sweep.set_beam(beam)
-        sweep.set_goniometer(goniometer)
-        sweep.set_detector(detector)
-
-        # Return the sweep
-        return sweep
+        raise TypeError("Unable to deserialize given imageset")
