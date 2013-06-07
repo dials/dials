@@ -9,6 +9,8 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+from dxtbx.serialize.xds import to_imageset as to_sweep
+
 def to_crystal(filename):
     ''' Get the crystal model from the xparm file
 

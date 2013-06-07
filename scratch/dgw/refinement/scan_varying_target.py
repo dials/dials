@@ -181,7 +181,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
             # its transpose when done. This seems inefficient: can we just start
             # with the Jacobian and fill elements sequentially, using row-major
             # order to ensure the values are filled in the right order?
-            
+
             # fill jacobian elements here.
             jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
             jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i + 1)

@@ -39,25 +39,11 @@ class RawSweepImporter(object):
         return imagesets[0]
 
 
-class XdsSweepImporter(object):
+class XDSFile(object):
+    '''Class to find XDS config files.'''
 
-    def __init__(self, directory):
-        pass
-
-    def __call__(self):
-        return None
-
-
-class XdsCrystImporter(object):
-    ''' Class to import crystal from XDS files.'''
-
-    def __init__(self, directory, file_choice):
-        '''Init the class.'''
-
-        self.directory = directory
-        self.file_choice = file_choice
-
-    def get_filename(self, choice):
+    @staticmethod
+    def get_filename(directory, choice):
         '''Get filename from choice.'''
         import os
 
@@ -72,21 +58,60 @@ class XdsCrystImporter(object):
           'INTEGRATE' : 'INTEGRATE.HKL',
           'XDS_ASCII' : 'XDS_ASCII.HKL'
         }
-        return os.path.join(self.directory, filename[choice])
+        return os.path.join(directory, filename[choice])
 
-    def find_best_file(self):
+    @staticmethod
+    def find_best_file(directory):
         ''' Find the best available file.'''
         import os
-        if os.path.exists(self.get_filename('XDS_ASCII')):
-            return self.get_filename('XDS_ASCII')
-        elif os.path.exists(self.get_filename('INTEGRATE.HKL')):
-            return self.get_filename('INTEGRATE.HKL')
-        elif os.path.exists(self.get_filename('GXPARM.XDS')):
-            return self.get_filename('GXPARM.XDS')
-        elif os.path.exists(self.get_filename('XPARM')):
-            return self.get_filename('XPARM')
+        if os.path.exists(XDSFile.get_filename(directory, 'XDS_ASCII')):
+            return XDSFile.get_filename(directory, 'XDS_ASCII')
+        elif os.path.exists(XDSFile.get_filename(directory, 'INTEGRATE.HKL')):
+            return XDSFile.get_filename(directory, 'INTEGRATE.HKL')
+        elif os.path.exists(XDSFile.get_filename(directory, 'GXPARM.XDS')):
+            return XDSFile.get_filename(directory, 'GXPARM.XDS')
+        elif os.path.exists(XDSFile.get_filename(directory, 'XPARM')):
+            return XDSFile.get_filename(directory, 'XPARM')
         else:
-            raise RuntimeError('No XDS files found.')
+            return None
+
+
+class XdsSweepImporter(object):
+    ''' Class to import sweep from XDS files.'''
+
+    def __init__(self, directory, file_choice):
+        '''Init the class.'''
+
+        self.directory = directory
+        self.file_choice = file_choice
+
+    def __call__(self):
+        ''' Import the sweep. '''
+        import os
+        from dials.model.serialize import xds
+
+        # Set the input filename
+        input_filename = os.path.join(self.directory, 'XDS.INP')
+
+        # Get the filename if given a choice
+        extra_filename = XDSFile.get_filename(self.directory, self.file_choice)
+
+        # If the choice doesn't exist then find best file
+        if extra_filename == None or not os.path.exists(extra_filename):
+            extra_filename = XDSFile.find_best_file(self.directory)
+
+        # Return the crystal model
+        return xds.to_sweep(input_filename, extra_filename)
+
+
+class XdsCrystImporter(object):
+    ''' Class to import crystal from XDS files.'''
+
+    def __init__(self, directory, file_choice):
+        '''Init the class.'''
+
+        self.directory = directory
+        self.file_choice = file_choice
 
     def __call__(self):
         ''' Import the crystal. '''
@@ -94,11 +119,13 @@ class XdsCrystImporter(object):
         from dials.model.serialize import xds
 
         # Get the filename if given a choice
-        filename = self.get_filename(self.file_choice)
+        filename = XDSFile.get_filename(self.directory, self.file_choice)
 
         # If the choice doesn't exist then find best file
         if filename == None or not os.path.exists(filename):
-            filename = self.find_best_file()
+            filename = XDSFile.find_best_file(self.directory)
+            if filename == None:
+                raise RuntimeError('Unable to find crystal file.')
 
         # Return the crystal model
         return xds.to_crystal(filename)
@@ -125,6 +152,16 @@ class Script(ScriptRunner):
             type = 'string', default = None,
             help = 'Directory containing XDS files.')
 
+        # XDS sweep choice
+        self.config().add_option(
+            '--xds-sweep',
+            dest = 'xds_sweep',
+            type = 'choice',
+            choices = ['XPARM', 'GXPARM', 'INTEGRATE', 'XDS_ASCII'],
+            default = None,
+            help = 'Choose the XDS file to use for the geometry models: '
+                   'XPARM|GXPARM|INTEGRATE|XDS_ASCII')
+
         # XDS crystal choice
         self.config().add_option(
             '--xds-crystal',
@@ -132,7 +169,29 @@ class Script(ScriptRunner):
             type = 'choice',
             choices = ['XPARM', 'GXPARM', 'INTEGRATE', 'XDS_ASCII'],
             default = None,
-            help = 'Choose the XDS file to use for the Crystal model')
+            help = 'Choose the XDS file to use for the Crystal model: '
+                   'XPARM|GXPARM|INTEGRATE|XDS_ASCII')
+
+        # Add options to do with XDS
+        self.config().add_option(
+            '--sweep-filename',
+            dest = 'sweep_filename',
+            type = 'string', default = "sweep.json",
+            help = 'Filename for output sweep file.')
+
+        # Add options to do with XDS
+        self.config().add_option(
+            '--crystal-filename',
+            dest = 'crystal_filename',
+            type = 'string', default = "crystal.json",
+            help = 'Filename for output crystal file.')
+
+        # Add options to do with XDS
+        self.config().add_option(
+            '--param-filename',
+            dest = 'param_filename',
+            type = 'string', default = "param.phil",
+            help = 'Filename for output param file.')
 
     def main(self, params, options, args):
         ''' Run the script.'''
@@ -140,24 +199,48 @@ class Script(ScriptRunner):
         from dials.model.serialize import dump
         from dials.util.options import ConfigWriter
 
+        # No source!
+        sweep_source = "nowhere!"
+        cryst_source = "nowhere!"
+        param_source = "system parameters"
+
         # Add raw importers
         if len(args) > 0:
+
+            # Get sweep from image file input
             import_sweep = RawSweepImporter(args)
             import_cryst = lambda: None
             import_param = lambda: params
+            sweep_source = "image file data"
+
+            # See if we can get crystal from XDS
+            if options.xds_dir:
+                import_cryst = XdsCrystImporter(
+                    options.xds_dir,
+                    options.xds_crystal)
+                import_param = lambda: params
+                cryst_source = "xds configuration files"
+
+        # Get sweep and crystal from XDS
         elif options.xds_dir:
-            import_sweep = XdsSweepImporter(options.xds_dir)
+            import_sweep = XdsSweepImporter(
+                options.xds_dir,
+                options.xds_sweep)
             import_cryst = XdsCrystImporter(
-                options.xds_dir, options.xds_crystal)
+                options.xds_dir,
+                options.xds_crystal)
             import_param = lambda: params
+            sweep_source = "xds configuration files"
+            cryst_source = "xds configuration files"
         else:
             self.config().print_help()
             return
 
-        # Set the output filenames
-        sweep_filename = 'sweep.json'
-        cryst_filename = 'crystal.json'
-        param_filename = 'params.phil'
+        # Print some information
+        print "Importing data from the following sources:"
+        print " - Sweep from {0}".format(sweep_source)
+        print " - Crystal from {0}".format(cryst_source)
+        print " - Parameters from {0}".format(param_source)
 
         # Import the sweep, crystal, params from the input data representation
         sweep = import_sweep()
@@ -166,15 +249,15 @@ class Script(ScriptRunner):
 
         # Serialize the sweep, crystal and params
         if sweep:
-            dump.sweep(sweep, sweep_filename)
-            print 'Saved sweep to {0}'.format(sweep_filename)
+            dump.sweep(sweep, options.sweep_filename)
+            print 'Saved sweep to {0}'.format(options.sweep_filename)
         if cryst:
-            dump.crystal(cryst, cryst_filename)
-            print 'Saved crystal to {0}'.format(cryst_filename)
+            dump.crystal(cryst, options.crystal_filename)
+            print 'Saved crystal to {0}'.format(options.crystal_filename)
         if param:
             writer = ConfigWriter(self.config().system_phil())
-            writer.write(param, param_filename)
-            print 'Saved parameters to {0}'.format(param_filename)
+            writer.write(param, options.param_filename)
+            print 'Saved parameters to {0}'.format(options.param_filename)
 
 
 if __name__ == '__main__':

@@ -65,6 +65,3 @@ pylab.plot(line1)
 pylab.subplot2grid((2, 3), (1, 0), colspan = 3)
 pylab.plot(line2)
 pylab.show()
-
-
-
