@@ -66,10 +66,10 @@ class XDSFile(object):
         import os
         if os.path.exists(XDSFile.get_filename(directory, 'XDS_ASCII')):
             return XDSFile.get_filename(directory, 'XDS_ASCII')
-        elif os.path.exists(XDSFile.get_filename(directory, 'INTEGRATE.HKL')):
-            return XDSFile.get_filename(directory, 'INTEGRATE.HKL')
-        elif os.path.exists(XDSFile.get_filename(directory, 'GXPARM.XDS')):
-            return XDSFile.get_filename(directory, 'GXPARM.XDS')
+        elif os.path.exists(XDSFile.get_filename(directory, 'INTEGRATE')):
+            return XDSFile.get_filename(directory, 'INTEGRATE')
+        elif os.path.exists(XDSFile.get_filename(directory, 'GXPARM')):
+            return XDSFile.get_filename(directory, 'GXPARM')
         elif os.path.exists(XDSFile.get_filename(directory, 'XPARM')):
             return XDSFile.get_filename(directory, 'XPARM')
         else:
