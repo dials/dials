@@ -266,14 +266,9 @@ model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/crystal_model/__init__.py -text
 model/experiment/crystal_model/crystal.py -text
 model/serialize/__init__.py -text
-model/serialize/beam.py -text
 model/serialize/crystal.py -text
-model/serialize/detector.py -text
 model/serialize/dump.py -text
-model/serialize/goniometer.py -text
-model/serialize/imageset.py -text
 model/serialize/load.py -text
-model/serialize/scan.py -text
 model/serialize/test_encode.py -text
 /run_tests.py -text
 scratch/__init__.py -text

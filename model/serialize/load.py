@@ -20,8 +20,8 @@ def loads(string):
 
     '''
     import json
-    from dials.model.serialize import imageset
-    return imageset.from_dict(json.loads(string))
+    from dials.model.serialize import crystal
+    return crystal.from_dict(json.loads(string))
 
 def load(infile):
     ''' Load the given JSON file.
@@ -40,4 +40,4 @@ def load(infile):
 
     # Otherwise assume the input is a file and read from it
     else:
-        return loads(infile.read())
+        return loads_crystal(infile.read())
