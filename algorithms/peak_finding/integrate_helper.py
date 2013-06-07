@@ -20,8 +20,8 @@ for int_ref_ang in range(20):
             else:
                 mask2d[row, col] = 0
     msk_felx = flex.int(mask2d)
-    for pr_line in dat2d_ref:
-        print pr_line
+    #for pr_line in dat2d_ref:
+    #    print pr_line
     print "_________________________________________"
     for pr_line in mask2d:
         print pr_line
