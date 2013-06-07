@@ -20,6 +20,7 @@ def crystal_to_dict(crystal):
 
     '''
     from collections import OrderedDict
+
     # Get the real space vectors
     U = crystal.get_U()
     real_space_a = (U[0], U[3], U[6])
@@ -29,13 +30,17 @@ def crystal_to_dict(crystal):
     # Get the space group number
     space_group = crystal.get_space_group().info().type().number()
 
+    # Get the mosaicity
+    mosaicity = crystal.get_mosaicity()
+
     # Return the information as a python dictionary
     return OrderedDict([
         ('__id__', 'crystal'),
         ('real_space_a', real_space_a),
         ('real_space_b', real_space_b),
         ('real_space_c', real_space_c),
-        ('space_group', space_group)])
+        ('space_group', space_group),
+        ('mosaicity', mosaicity)])
 
 def crystal_from_dict(d):
     ''' Convert the dictionary to a crystal model
@@ -50,7 +55,7 @@ def crystal_from_dict(d):
     from dials.model.experiment.crystal_model.crystal import Crystal
 
     # If None, return None
-    if d == None:
+    if d is None:
         return None
 
     # Check the version and id
@@ -62,4 +67,6 @@ def crystal_from_dict(d):
     real_space_b = d['real_space_b']
     real_space_c = d['real_space_c']
     space_group  = d['space_group']
-    return Crystal(real_space_a, real_space_b, real_space_c, space_group)
+    mosaicity    = d['mosaicity']
+    return Crystal(real_space_a, real_space_b, real_space_c,
+                   space_group, mosaicity)

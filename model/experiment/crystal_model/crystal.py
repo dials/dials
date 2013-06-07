@@ -7,15 +7,19 @@ from cctbx.crystal_orientation import crystal_orientation
 class Crystal:
     '''Simple model for the crystal lattice geometry and symmetry'''
 
-    def __init__(self, real_space_a, real_space_b, real_space_c, sg = 1):
+    def __init__(self, real_space_a, real_space_b, real_space_c, sg = 1,
+                 mosaicity=None):
 
-        real_space_a = matrix.col(real_space_a)
-        real_space_b = matrix.col(real_space_b)
-        real_space_c = matrix.col(real_space_c)
+        # Set the mosaicity
+        self._mosaicity = mosaicity
 
+        # Set the space group
         self._sg = space_group(space_group_symbols(sg).hall())
 
         # setting matrix at initialisation
+        real_space_a = matrix.col(real_space_a)
+        real_space_b = matrix.col(real_space_b)
+        real_space_c = matrix.col(real_space_c)
         A = matrix.sqr(real_space_a.elems +  real_space_b.elems + \
                        real_space_c.elems).inverse()
 
@@ -88,3 +92,9 @@ class Crystal:
 
     def get_space_group(self):
         return self._sg
+
+    def get_mosaicity(self):
+        return self._mosaicity
+
+    def set_mosaicity(self, mosaicity):
+        self._mosaicity = mosaicity

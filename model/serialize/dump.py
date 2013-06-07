@@ -10,8 +10,8 @@
 #  included in the root directory of this package.
 
 # Import to give access from here
-from dxtbx.serialize import dump as sweep
-from dxtbx.serialize import dumps as sweep_to_string
+from dxtbx.serialize.dump import imageset as sweep
+from dxtbx.serialize.dump import imageset_to_string as sweep_to_string
 
 def crystal_to_string(obj, compact=False):
     ''' Dump the given object to string.
