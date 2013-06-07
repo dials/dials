@@ -9,7 +9,11 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def loads(string):
+# Import to give access from here
+from dxtbx.serialize import load as sweep
+from dxtbx.serialize import loads as sweep_from_string
+
+def crystal_from_string(string):
     ''' Load the string and return the models.
 
     Params:
@@ -20,10 +24,10 @@ def loads(string):
 
     '''
     import json
-    from dials.model.serialize import crystal
-    return crystal.from_dict(json.loads(string))
+    from dials.model.serialize.crystal import crystal_from_dict
+    return crystal_from_dict(json.loads(string))
 
-def load(infile):
+def crystal(infile):
     ''' Load the given JSON file.
 
     Params:
@@ -36,8 +40,8 @@ def load(infile):
     # If the input is a string then open and read from that file
     if isinstance(infile, str):
         with open(infile, 'r') as infile:
-            return loads(infile.read())
+            return crystal_from_string(infile.read())
 
     # Otherwise assume the input is a file and read from it
     else:
-        return loads_crystal(infile.read())
+        return crystal_from_string(infile.read())

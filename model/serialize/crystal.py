@@ -9,7 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def to_dict(crystal):
+def crystal_to_dict(crystal):
     ''' Convert the crystal model to a dictionary
 
     Params:
@@ -31,12 +31,13 @@ def to_dict(crystal):
 
     # Return the information as a python dictionary
     return OrderedDict([
+        ('__id__', 'crystal'),
         ('real_space_a', real_space_a),
         ('real_space_b', real_space_b),
         ('real_space_c', real_space_c),
         ('space_group', space_group)])
 
-def from_dict(d):
+def crystal_from_dict(d):
     ''' Convert the dictionary to a crystal model
 
     Params:
@@ -51,6 +52,10 @@ def from_dict(d):
     # If None, return None
     if d == None:
         return None
+
+    # Check the version and id
+    if str(d['__id__']) != "crystal":
+        raise ValueError("\"__id__\" does not equal \"crystal\"")
 
     # Try to get the crystal model from the dictionary
     real_space_a = d['real_space_a']

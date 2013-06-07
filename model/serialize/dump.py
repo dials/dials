@@ -9,7 +9,11 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-def dumps(obj, compact=False):
+# Import to give access from here
+from dxtbx.serialize import dump as sweep
+from dxtbx.serialize import dumps as sweep_to_string
+
+def crystal_to_string(obj, compact=False):
     ''' Dump the given object to string.
 
     Params:
@@ -22,23 +26,23 @@ def dumps(obj, compact=False):
     '''
     import json
     import textwrap
-    from dials.model.serialize import crystal
+    from dials.model.serialize.crystal import crystal_to_dict
     from dxtbx.serialize.dump import compact_simple_lists
 
     # Return as a JSON string
     if compact == False:
-        string = json.dumps(crystal.to_dict(obj), indent=2)
+        string = json.dumps(crystal_to_dict(obj), indent=2)
 
         # Hack to make more readable
         string = compact_simple_lists(string)
 
     else:
-        string = json.dumps(crystal.to_dict(obj), separators=(',',':'))
+        string = json.dumps(crystal_to_dict(obj), separators=(',',':'))
 
     # Return the string
     return string
 
-def dump(obj, outfile, compact=False):
+def crystal(obj, outfile, compact=False):
     ''' Dump the given object to file.
 
     Params:
@@ -50,8 +54,8 @@ def dump(obj, outfile, compact=False):
     # If the input is a string then open and write to that file
     if isinstance(outfile, str):
         with open(outfile, 'w') as outfile:
-            outfile.write(dumps_crystal(obj, compact))
+            outfile.write(crystal_to_string(obj, compact))
 
     # Otherwise assume the input is a file and write to it
     else:
-        outfile.write(dumps_crystal(obj, compact))
+        outfile.write(crystal_to_string(obj, compact))
