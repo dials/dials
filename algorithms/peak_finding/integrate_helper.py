@@ -1,7 +1,7 @@
 from scitbx.array_family import flex
 from dials.algorithms.peak_finding import model_2d, measure_2d_angl
 import numpy
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 ncol = 36
 nrow = 36
 
@@ -31,7 +31,7 @@ for int_ref_ang in range(20):
     print "ang =", ang
 
 
-    #new_ref2d = model_2d(30, 30, 2, 5, ang, 25, 0.5)
-    #dat2d_paint = new_ref2d.as_numpy_array()
-    #plt.imshow(dat2d_paint , interpolation = "nearest")
-    #plt.show()
+    new_ref2d = model_2d(30, 30, 2, 5, ang, 25, 0.5)
+    dat2d_paint = new_ref2d.as_numpy_array()
+    plt.imshow(dat2d_paint , interpolation = "nearest")
+    plt.show()

@@ -175,9 +175,29 @@ namespace dials { namespace algorithms {
       std::cout <<"ang ="<<angl[pos]<< "\n"<<"dst ="<<dist[pos]<<"\n";
     }
 */
+    int pos2,pos3,pos4, fin_pos = -1;
+    float avg_1, avg_2, dd, fin_dd = 0.0;
+    for (int pos1=0; pos1 < pie_size / 2; pos1++){
+      pos2 = pos1 + pie_size / 4;
+      pos3 = pos1 + pie_size / 2;
+      pos4 = pos1 + pie_size * 3 / 4;
+      if (pos3 > pie_size){
+        pos3 -= pie_size;
+      }
+      if (pos4 > pie_size){
+        pos4 -= pie_size;
+      }
+      avg_1=(dist[pos1]+dist[pos3])/2.0;
+      avg_2=(dist[pos2]+dist[pos4])/2.0;
+      dd=avg_1-avg_2;
+      if (dd > fin_dd){
+        fin_dd = dd;
+        fin_pos = pos1;
+      }
+    }
+    float fin_ang = angl[fin_pos];
 
-
-    return pie_size;
+    return fin_ang;
   }
 
 }}
