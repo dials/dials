@@ -22,7 +22,8 @@ class SystemConfigReader(object):
 
     def master(self):
         '''Get the master config text.'''
-        return self._read_file(self.master_filename(), True)
+        return '\n'.join([self._read_file(filename, True)
+            for filename in self.master_filenames()])
 
     def user(self):
         '''Get the user config text.'''
@@ -44,7 +45,7 @@ class SystemConfigReader(object):
         # Return the text
         return text
 
-    def master_filename(self):
+    def master_filenames(self):
         '''Get the master filename.'''
         import libtbx.load_env
         import os
@@ -56,7 +57,9 @@ class SystemConfigReader(object):
             raise HalError('dials is not configured.')
 
         # Get the location of the master file
-        return os.path.join(path, 'data', 'dialsrc')
+        return [os.path.join(path, 'data', 'logging.phil'),
+                os.path.join(path, 'data', 'spotfinding.phil'),
+                os.path.join(path, 'data', 'integration.phil')]
 
     def user_filename(self):
         '''Get the user filename.'''

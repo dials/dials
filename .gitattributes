@@ -182,7 +182,9 @@ command_line/reflection_stats.py -text
 command_line/subtract_background.py -text
 command_line/toy_centroid_runner.py -text
 data/completion_template.txt -text
-data/dialsrc -text
+data/integration.phil -text
+data/logging.phil -text
+data/spotfinding.phil -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.py -text
