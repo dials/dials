@@ -11,7 +11,9 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 #define DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 
+#include <algorithm>
 #include <scitbx/array_family/tiny_algebra.h>
+#include <dials/model/data/reflection.h>
 #include <dials/algorithms/image/centroid/centroid_image.h>
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/algorithms/image/centroid/centroid_points.h>
@@ -19,6 +21,8 @@
 namespace dials { namespace algorithms {
 
   using scitbx::af::sqrt;
+  using dials::model::Reflection;
+  using dials::model::ReflectionList;
 
   typedef flex< vec3<double> >::type flex_vec3_double;
 
@@ -79,28 +83,38 @@ namespace dials { namespace algorithms {
       return intensity_;
     }
 
+    /** @return The variance on the intensity */
+    double variance() const {
+      return 0.0;
+    }
+
+    /** @return the standard deviation on the intensity */
+    double standard_deviation() const {
+      return std::sqrt(variance());
+    }
+
     /** @return The spot centroid. */
     coord_type centroid() const {
       return centroid_;
     }
 
     /** @return The centroid variance. */
-    coord_type variance() const {
+    coord_type centroid_variance() const {
       return variance_;
     }
 
     /** @return The centroid standard error squared. */
-    coord_type standard_error_sq() const {
+    coord_type centroid_standard_error_sq() const {
       return standard_error_sq_;
     }
 
     /** @return The centroid standard error. */
-    coord_type standard_error() const {
+    coord_type centroid_standard_error() const {
       return sqrt(standard_error_sq_.as_tiny());
     }
 
     /** @return The covariance matrix. */
-    matrix_type covariance_matrix() const {
+    matrix_type centroid_covariance_matrix() const {
       return covariance_matrix_;
     }
 
@@ -113,6 +127,68 @@ namespace dials { namespace algorithms {
     matrix_type covariance_matrix_;
   };
 
+
+  /**
+   * A class to do 3D summation integration
+   */
+  class Summation3d {
+  public:
+
+    typedef IntegrateBySummation integrator;
+
+    /** Init the algorithm. */
+    Summation3d() {}
+
+    /**
+     * Integrate a set of pixels with a mask
+     * @param pixels The array of pixels
+     * @param background The background pixels
+     * @param mask The mask
+     * @returns The integrator struct
+     */
+    integrator operator()(const flex_int &pixels, const flex_int &background,
+        const flex_int &mask) const {
+      flex_double pixels_double(pixels.accessor());
+      for (std::size_t i = 0; i < pixels.size(); ++i) {
+        pixels_double[i] = (double)(pixels[i] - background[i]);
+      }
+      return integrator(pixels_double, mask);
+    }
+
+    /**
+     * Integrate a reflection
+     * @param r The reflection container
+     */
+    void operator()(Reflection &r) const {
+
+      // Integrate the reflection
+      integrator result = this->operator()(
+        r.get_shoebox(),
+        r.get_shoebox_background(),
+        r.get_shoebox_mask());
+
+      // Put data back into reflection container
+      r.set_centroid_position(result.centroid());
+      r.set_centroid_variance(result.centroid_standard_error_sq());
+      r.set_centroid_sq_width(result.centroid_variance());
+      r.set_intensity(result.intensity());
+      r.set_intensity_variance(result.variance());
+    }
+
+    /**
+     * Integrate a list of reflections
+     * @param reflections The reflection list
+     */
+    void operator()(ReflectionList &reflections) const {
+      for (std::size_t i = 0; i < reflections.size(); ++i) {
+        try {
+          this->operator()(reflections[i]);
+        } catch (dials::error) {
+          continue;
+        }
+      }
+    }
+  };
 }}
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H */

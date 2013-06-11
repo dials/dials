@@ -151,6 +151,7 @@ class IntegratorFactory(object):
             The intensity calculator instance
 
         '''
+        from dials.algorithms.integration import Summation3d
 
         # Configure the 2D summation algorithm
         if params.integration.algorithm == 'sum2d':
@@ -158,7 +159,7 @@ class IntegratorFactory(object):
 
         # Configure the 3D summation algorithm
         elif params.integration.algorithm == 'sum3d':
-            algorithm = lambda x, y, z: z
+            algorithm = Summation3d()
 
         # Configure the reciprocal space summation algorithm
         elif params.integration.algorithm == 'sum_rs':

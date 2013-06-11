@@ -6,3 +6,4 @@ from dials_algorithms_integration_ext import *
 from copy_reflection_profiles import *
 from reflection_extractor import *
 from integrator import *
+from summation3d import *
