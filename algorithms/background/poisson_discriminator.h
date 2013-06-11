@@ -15,8 +15,8 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/math/mean_and_variance.h>
 #include <dials/array_family/sort_index.h>
+#include <dials/model/data/reflection.h>
 #include <dials/error.h>
-#include "discriminator_strategy.h"
 
 namespace dials { namespace algorithms {
 
@@ -29,6 +29,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
   using dials::af::sort_index;
+  using dials::model::Reflection;
 
   /**
    * Calculate the kth central moment.
@@ -80,7 +81,7 @@ namespace dials { namespace algorithms {
    * A class that uses poisson distribution statistics to discriminate
    * between background and peak pixels in a reflection shoebox.
    */
-  class PoissonDiscriminator : public DiscriminatorStrategy {
+  class PoissonDiscriminator {
   public:
 
     /** Initialise the class. */
@@ -176,7 +177,7 @@ namespace dials { namespace algorithms {
      * Process the reflection
      * @param reflection The reflection
      */
-    virtual void operator()(Reflection &reflection) const {
+    void operator()(Reflection &reflection) const {
       this->operator()(reflection.get_shoebox(), reflection.get_shoebox_mask());
     }
 

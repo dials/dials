@@ -18,8 +18,8 @@
 #include <boost/math/special_functions/erf.hpp>
 #include <scitbx/math/mean_and_variance.h>
 #include <dials/array_family/sort_index.h>
+#include <dials/model/data/reflection.h>
 #include <dials/error.h>
-#include "discriminator_strategy.h"
 
 namespace dials { namespace algorithms {
 
@@ -34,6 +34,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
   using dials::af::sort_index;
+  using dials::model::Reflection;
 
   /**
    * Get the expected number of standard deviations based on the number of
@@ -51,6 +52,7 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
+  inline
   double minimum_n_sigma(const const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
@@ -78,6 +80,7 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
+  inline
   double maximum_n_sigma(const const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
@@ -105,6 +108,7 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
+  inline
   double absolute_maximum_n_sigma(const const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
@@ -174,7 +178,7 @@ namespace dials { namespace algorithms {
    * A class that uses normal distribution statistics to discriminate
    * between background and peak pixels in a reflection shoebox.
    */
-  class NormalDiscriminator : public DiscriminatorStrategy {
+  class NormalDiscriminator {
   public:
 
     /** Initialise the class. */
@@ -263,7 +267,7 @@ namespace dials { namespace algorithms {
      * Process the reflection
      * @param reflection The reflection
      */
-    virtual void operator()(Reflection &reflection) const {
+    void operator()(Reflection &reflection) const {
       this->operator()(reflection.get_shoebox(), reflection.get_shoebox_mask());
     }
 

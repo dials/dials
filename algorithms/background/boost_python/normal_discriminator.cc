@@ -47,8 +47,10 @@ namespace dials { namespace algorithms { namespace boost_python {
         flex_int &) const = &NormalDiscriminator::operator();
     flex_int (NormalDiscriminator::*call_shoebox)(const flex_int&) const =
       &NormalDiscriminator::operator();
+    void (NormalDiscriminator::*call_reflection)(Reflection &) const =
+      &NormalDiscriminator::operator();  
   
-    class_<NormalDiscriminator, bases<DiscriminatorStrategy> >(
+    class_<NormalDiscriminator>(
         "NormalDiscriminator")
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
@@ -57,7 +59,9 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("shoebox"),
         arg("mask")))
       .def("__call__", call_shoebox, (
-        arg("shoebox")));
+        arg("shoebox")))
+      .def("__call__", call_reflection, (
+        arg("reflection")));
   }
 
 }}} // namespace = dials::algorithms::boost_python

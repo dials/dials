@@ -7,24 +7,20 @@ algorithms/background/SConscript -text
 algorithms/background/__init__.py -text
 algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
-algorithms/background/boost_python/discriminator_strategy.cc -text
-algorithms/background/boost_python/gaussian_corrected_mean_subtractor.cc -text
-algorithms/background/boost_python/index_of_dispersion_discriminator.cc -text
-algorithms/background/boost_python/mean_subtractor.cc -text
+algorithms/background/boost_python/fable_subtractor.cc -text
+algorithms/background/boost_python/helpers.cc -text
 algorithms/background/boost_python/normal_discriminator.cc -text
 algorithms/background/boost_python/poisson_discriminator.cc -text
-algorithms/background/boost_python/skew_discriminator.cc -text
-algorithms/background/boost_python/subtractor_strategy.cc -text
-algorithms/background/discriminator_strategy.h -text
+algorithms/background/boost_python/xds_subtractor.cc -text
+algorithms/background/fable_subtractor.h -text
+algorithms/background/fable_subtractor.py -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
-algorithms/background/gaussian_corrected_mean_subtractor.h -text
-algorithms/background/index_of_dispersion_discriminator.h -text
-algorithms/background/mean_subtractor.h -text
+algorithms/background/helpers.h -text
 algorithms/background/normal_discriminator.h -text
+algorithms/background/null_subtractor.py -text
 algorithms/background/poisson_discriminator.h -text
-algorithms/background/skew_discriminator.h -text
-algorithms/background/subtraction.py -text
-algorithms/background/subtractor_strategy.h -text
+algorithms/background/xds_subtractor.h -text
+algorithms/background/xds_subtractor.py -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text
 algorithms/background_lookup/detector_noise.py -text

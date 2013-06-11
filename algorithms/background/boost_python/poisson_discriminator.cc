@@ -30,8 +30,10 @@ namespace dials { namespace algorithms { namespace boost_python {
         flex_int &) const = &PoissonDiscriminator::operator();
     flex_int (PoissonDiscriminator::*call_shoebox)(const flex_int&) const =
       &PoissonDiscriminator::operator();
+    void (PoissonDiscriminator::*call_reflection)(Reflection &) const =
+      &PoissonDiscriminator::operator();        
   
-    class_<PoissonDiscriminator, bases<DiscriminatorStrategy> >(
+    class_<PoissonDiscriminator>(
         "PoissonDiscriminator")
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
@@ -40,7 +42,9 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("shoebox"),
         arg("mask")))
       .def("__call__", call_shoebox, (
-        arg("shoebox")));
+        arg("shoebox")))
+      .def("__call__", call_reflection, (
+        arg("reflection")));        
   }
 
 }}} // namespace = dials::algorithms::boost_python

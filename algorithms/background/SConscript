@@ -2,14 +2,11 @@
 Import('env')
 
 sources = [
-    'boost_python/discriminator_strategy.cc',
+    'boost_python/helpers.cc',
     'boost_python/normal_discriminator.cc',
     'boost_python/poisson_discriminator.cc',
-    'boost_python/index_of_dispersion_discriminator.cc',
-    'boost_python/skew_discriminator.cc',
-    'boost_python/subtractor_strategy.cc',
-    'boost_python/mean_subtractor.cc',
-    'boost_python/gaussian_corrected_mean_subtractor.cc',
+    'boost_python/xds_subtractor.cc',
+    'boost_python/fable_subtractor.cc',
     'boost_python/background_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_ext', 
