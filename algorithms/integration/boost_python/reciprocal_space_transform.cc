@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("grid_size_e3"))))
       .def("__call__",
         &ReciprocalSpaceTransformE3Fraction::operator(), (
-          arg("roi_z"),
+          arg("bbox_z"),
           arg("phi"),
           arg("zeta")));
   
@@ -29,6 +29,45 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("detector"),
           arg("scan"),
           arg("n_div")));
+  
+  
+    flex_double (ReciprocalSpaceTransform::*call_single)(
+      const flex_int&, const flex_int&, int6, vec3<double>, double) const = 
+        &ReciprocalSpaceTransform::operator();
+  
+    void (ReciprocalSpaceTransform::*call_reflection)(
+      Reflection&) const = &ReciprocalSpaceTransform::operator();
+    
+    void (ReciprocalSpaceTransform::*call_reflection_list)(
+      ReflectionList&) const = &ReciprocalSpaceTransform::operator();
+  
+    class_<ReciprocalSpaceTransform>("ReciprocalSpaceTransform", no_init)
+      .def(init<const Beam&,
+                const Detector&,
+                const Goniometer&,
+                const Scan&,
+                double,
+                double,
+                flex_double::index_type,
+                std::size_t>((
+        arg("beam"),
+        arg("detector"),
+        arg("goniometer"),
+        arg("scan"),
+        arg("mosaicity"),
+        arg("n_sigma"),
+        arg("grid_size"),
+        arg("n_div"))))
+      .def("__call__", call_single, (
+        arg("pixels"),
+        arg("mask"),
+        arg("bbox"),
+        arg("s1"),
+        arg("phi")))
+      .def("__call__", call_reflection, (
+        arg("reflection")))
+      .def("__call__", call_reflection_list, (
+        arg("reflection_list")));
   
 //    void (XdsTransform::*calculate_single)(int, int, scitbx::af::tiny <int, 6>,
 //        scitbx::vec3 <double>, double) = &XdsTransform::calculate;
