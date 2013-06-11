@@ -81,6 +81,8 @@ algorithms/integration/from_xds_e3_to_phi.h -text
 algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/integrate2d.py -text
 algorithms/integration/integrate3d.py -text
+algorithms/integration/integrator.py -text
+algorithms/integration/reflection_extractor.py -text
 algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/shoebox_masker.h -text
 algorithms/integration/subtract_background.h -text
