@@ -6,9 +6,11 @@ ncol = 36
 nrow = 36
 
 for int_ref_ang in range(20):
+
+#int_ref_ang = 10
     print "_________________________________________"
     ref_ang = float(int_ref_ang) / 20.0
-
+    print "ref_ang =", ref_ang
     ref2d = model_2d(nrow, ncol, 3, 7, ref_ang, 25, 0.5)
 
     dat2d_ref = ref2d.as_numpy_array()
@@ -27,11 +29,12 @@ for int_ref_ang in range(20):
         print pr_line
 
     ang = measure_2d_angl(ref2d, msk_felx, 18, 18)
-    print "ref_ang =", ref_ang
+
     print "ang =", ang
+    print "amg/pi =", ang / 3.14159265358
 
 
-    new_ref2d = model_2d(30, 30, 2, 5, ang, 25, 0.5)
+    new_ref2d = model_2d(30, 30, 2, 5, 3.14159265358 - ang / 3.14159265358, 25, 0.5)
     dat2d_paint = new_ref2d.as_numpy_array()
     plt.imshow(dat2d_paint , interpolation = "nearest")
     plt.show()

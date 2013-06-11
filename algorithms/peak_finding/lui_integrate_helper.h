@@ -152,6 +152,7 @@ namespace dials { namespace algorithms {
         if (angl[next_pos]==-1 and dist[next_pos]==-1
          and angl[prev_pos]==-1 and dist[prev_pos]==-1){
            angl[pos]=float(pos)/pie_size;
+           std::cout <<"___________________________________________________________ exeption";
         }
         else if (angl[next_pos]!=-1 and dist[next_pos]!=-1
             and angl[prev_pos]!=-1 and dist[prev_pos]!=-1){
@@ -171,7 +172,7 @@ namespace dials { namespace algorithms {
     }
 /*
     for (int pos=0; pos < pie_size; pos++){
-      std::cout <<"pos ="<<pos<<"\n________________________________________\n";
+      std::cout <<"________________________________________\n"<<"pos ="<<pos<<"\n";
       std::cout <<"ang ="<<angl[pos]<< "\n"<<"dst ="<<dist[pos]<<"\n";
     }
 */
@@ -193,8 +194,14 @@ namespace dials { namespace algorithms {
       if (dd > fin_dd){
         fin_dd = dd;
         fin_pos = pos1;
+        std::cout <<"____"<< pos1 <<"____here";
       }
     }
+    std::cout << "__fn=__" << fin_pos << "\n";
+    if (fin_pos == -1) {
+      std::cout <<"____________________________________________________ -1 ang\n";
+    }
+
     float fin_ang = angl[fin_pos];
 
     return fin_ang;
