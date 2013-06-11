@@ -94,6 +94,7 @@ class ScriptRunner(object):
         '''Run the script. This function calls the 'main' method that
         should be overloaded in your script.'''
         from dials.util.options import ConfigWriter
+        from dials.util import HalError
         import sys
 
         # Parse the configuration parameters
@@ -114,7 +115,10 @@ class ScriptRunner(object):
             pass
 
         # Run the actual script
-        self.main(params, options, args)
+        try:
+            self.main(params, options, args)
+        except Exception, e:
+            raise HalError(e)
 
         # If the save_config flag is set, then save the configuration
         try:

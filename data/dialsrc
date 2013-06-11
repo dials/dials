@@ -64,6 +64,15 @@ background
     .type = float
 }
 
+integration
+  .help = "Parameters used in the integration"
+{
+  bbox_nsigma = 5
+    .help = "The number of standard deviations of the beam divergence and the"
+            "mosaicity to use for the bounding box size."
+    .type = float
+}
+
 spotfinder
   .help = "Parameters used in the spot finding algorithm."
 {

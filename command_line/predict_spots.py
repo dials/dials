@@ -98,7 +98,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     gonio = models.get_goniometer()
     scan = models.get_scan()
     first_image = scan.get_image_range()[0]
-    image_range = (first_image, first_image + num_frames)
+    image_range = (first_image, first_image + num_frames - 1)
     #image_range = (1, 4000)
     scan.set_image_range(image_range)
 
@@ -118,6 +118,8 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     c_vec = cfc.get('real_space_c')
     unit_cell = cfc.get_unit_cell()
     UB = matrix.sqr(a_vec + b_vec + c_vec).inverse()
+
+    print unit_cell, xparm_handle.space_group
 
     # Calculate resolution
     d_min = detector.get_max_resolution_at_corners(

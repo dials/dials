@@ -55,7 +55,7 @@ def copy_image_pixels(sweep, reflections, frame_indices):
     from dials.util.command_line import ProgressBar
 
     # Create a progress bar
-    progress = ProgressBar()
+    progress = ProgressBar(title="Extracting reflections")
 
     # For each image in the sweep, get the reflections predicted to have
     # been recorded on the image and copy the pixels from the image to
@@ -68,7 +68,7 @@ def copy_image_pixels(sweep, reflections, frame_indices):
         progress.update(100 * (index + 1) / len(sweep))
 
     # Progress bar finished
-    progress.finished()
+    progress.finished("Extracted {0} reflections".format(len(reflections)))
 
     # Return the reflections
     return reflections
