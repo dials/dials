@@ -24,6 +24,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_reflection_profile_helpers();
   void export_shoebox_masker();
   void export_summation();
+  void export_reciprocal_space_transform();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -36,6 +37,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_reflection_profile_helpers();
     export_shoebox_masker();
     export_summation();
+    export_reciprocal_space_transform();
   }
 
 }}} // namespace = dials::algorithms::boost_python

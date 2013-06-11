@@ -66,6 +66,7 @@ algorithms/integration/boost_python/from_beam_vector_to_xds.cc -text
 algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
 algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
+algorithms/integration/boost_python/reciprocal_space_transform.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/shoebox_masker.cc -text
 algorithms/integration/boost_python/summation.cc -text
@@ -78,6 +79,7 @@ algorithms/integration/from_xds_e3_to_phi.h -text
 algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/integrate2d.py -text
 algorithms/integration/integrator.py -text
+algorithms/integration/reciprocal_space_transform.h -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/shoebox_masker.h -text
