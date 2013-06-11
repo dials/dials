@@ -110,6 +110,9 @@ namespace dials { namespace model { namespace boost_python {
     flex_int& (Reflection::*reflection_get_shoebox_mask)() = 
       &Reflection::get_shoebox_mask;
 
+    flex_int& (Reflection::*reflection_get_shoebox_background)() = 
+      &Reflection::get_shoebox_background;
+
     flex_double& (Reflection::*reflection_get_transformed_shoebox)() = 
       &Reflection::get_transformed_shoebox;
 
@@ -146,6 +149,10 @@ namespace dials { namespace model { namespace boost_python {
         make_function(reflection_get_shoebox_mask, 
           return_internal_reference<>()),
         &Reflection::set_shoebox_mask)
+      .add_property("shoebox_background",
+        make_function(reflection_get_shoebox_background, 
+          return_internal_reference<>()),
+        &Reflection::set_shoebox_background)        
       .add_property("transformed_shoebox",
         make_function(reflection_get_transformed_shoebox, 
           return_internal_reference<>()),
