@@ -194,16 +194,93 @@ class IntegratorFactory(object):
             The integrator instance
 
         '''
-        # Construct the reflection extractor
-        compute_spots = ReflectionExtractor(params.integration.bbox_nsigma)
 
-        compute_background = lambda x, y, z: z
-        compute_intensity = lambda x, y, z: z
+        # Configure the algorithms to extract reflections, compute the
+        # background intensity and integrate the reflection intensity
+        compute_spots = IntegratorFactory.configure_extractor(params)
+        compute_background = IntegratorFactory.configure_background(params)
+        compute_intensity = IntegratorFactory.configure_intensity(params)
 
         # Return the integrator with the given strategies
         return Integrator(compute_spots=compute_spots,
                           compute_background=compute_background,
                           compute_intensity=compute_intensity)
+
+    @staticmethod
+    def configure_extractor(params):
+        ''' Given a set of parameters, configure the reflection extractor
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The extractor instance
+
+        '''
+        return ReflectionExtractor(params.integration.bbox_nsigma)
+
+    @staticmethod
+    def configure_background(params):
+        ''' Given a set of parameters, configure the background calculator
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The background calculator instance
+
+        '''
+        from dials.algorithms.background import NullSubtractor
+        from dials.algorithms.background import XdsSubtractor
+        from dials.algorithms.background import FableSubtractor
+
+        # Configure the NULL subtractor
+        if params.background.algorithm == 'none':
+            algorithm = NullSubtractor()
+
+        # Configure the XDS subtractor
+        elif params.background.algorithm == 'xds':
+            algorithm = XdsSubtractor(
+                min_data=params.background.min_pixels,
+                n_sigma=params.background.sigma_background)
+
+        # Configure the Fable subtractor
+        elif params.background.algorithm == 'fable':
+            algorithm = FableSubtractor(
+                min_data=params.background.min_pixels,
+                n_sigma=params.background.sigma_background)
+
+        # Configure the flat subtractor
+        elif params.background.algorithm == 'flat':
+            raise RuntimeError('Not implemented yet')
+
+        # Configure the curved subtractor
+        elif params.background.algorithm == 'curved':
+            raise RuntimeError('Not implemented yet')
+
+        # Configure the esmerelda subtractor
+        elif params.background.algorithm == 'esmerelda':
+            raise RuntimeError('Not implemented yet')
+
+        # Unknown subtractor
+        else:
+            raise RuntimeError('Unknown background algorithm')
+
+        # Return the algorithm
+        return algorithm
+
+    @staticmethod
+    def configure_intensity(params):
+        ''' Given a set of parameters, configure the intensity calculator
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The intensity calculator instance
+
+        '''
+        return lambda x, y, z: z
 
 
 class Script(ScriptRunner):
