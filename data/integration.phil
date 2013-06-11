@@ -1,6 +1,10 @@
 integration
   .help = "Parameters used in the integration"
 {
+  algorithm = sum2d *sum3d sum_rs fit_2d fit_3d fit_rs
+    .help = "The integration algorithm to use."
+    .type = choice
+
   shoebox
     .help = "Parameters used in the integration shoebox"
   {

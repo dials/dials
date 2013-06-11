@@ -151,4 +151,34 @@ class IntegratorFactory(object):
             The intensity calculator instance
 
         '''
-        return lambda x, y, z: z
+
+        # Configure the 2D summation algorithm
+        if params.integration.algorithm == 'sum2d':
+            raise RuntimeError('Not implemented yet')
+
+        # Configure the 3D summation algorithm
+        elif params.integration.algorithm == 'sum3d':
+            algorithm = lambda x, y, z: z
+
+        # Configure the reciprocal space summation algorithm
+        elif params.integration.algorithm == 'sum_rs':
+            raise RuntimeError('Not implemented yet')
+
+        # Configure the 2D profile fitting algorithm
+        elif params.integration.algorithm == 'fit_2d':
+            raise RuntimeError('Not implemented yet')
+
+        # Configure the 3D profile fitting algorithm
+        elif params.integration.algorithm == 'fit_3d':
+            raise RuntimeError('Not implemented yet')
+
+        # Configure the reciprocal space profile fitting algorithm
+        elif params.integration.algorithm == 'fit_rs':
+            raise RuntimeError('Not implemented yet')
+
+        # Unknown algorithm
+        else:
+            raise RuntimeError('Unknown integration algorithm')
+
+        # Return the algorithm
+        return algorithm
