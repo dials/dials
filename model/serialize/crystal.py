@@ -22,10 +22,10 @@ def crystal_to_dict(crystal):
     from collections import OrderedDict
 
     # Get the real space vectors
-    U = crystal.get_U()
-    real_space_a = (U[0], U[3], U[6])
-    real_space_b = (U[1], U[4], U[7])
-    real_space_c = (U[2], U[5], U[8])
+    A = crystal.get_A().inverse()
+    real_space_a = (A[0], A[1], A[2])
+    real_space_b = (A[3], A[4], A[5])
+    real_space_c = (A[6], A[7], A[8])
 
     # Get the space group number
     space_group = crystal.get_space_group().info().type().number()

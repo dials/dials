@@ -8,10 +8,17 @@ class Crystal:
     '''Simple model for the crystal lattice geometry and symmetry'''
 
     def __init__(self, real_space_a, real_space_b, real_space_c, sg = 1,
-                 mosaicity=None):
+                 mosaicity=None, deg = True):
 
         # Set the mosaicity
-        self._mosaicity = mosaicity
+        if mosaicity:
+            from math import pi
+            if deg == True:
+                self._mosaicity = mosaicity * pi / 180.0
+            else:
+                self._mosaicity = mosaicity
+        else:
+            self._mosaicity = 0.0
 
         # Set the space group
         self._sg = space_group(space_group_symbols(sg).hall())
@@ -93,8 +100,30 @@ class Crystal:
     def get_space_group(self):
         return self._sg
 
-    def get_mosaicity(self):
+    def get_mosaicity(self, deg=True):
+        from math import pi
+        if deg == True:
+            return self._mosaicity * 180.0 / pi
+
         return self._mosaicity
 
     def set_mosaicity(self, mosaicity):
-        self._mosaicity = mosaicity
+        from math import pi
+        if deg == True:
+            self._mosaicity = mosaicity * pi / 180.0
+        else:
+            self._mosaicity = mosaicity
+
+    def get_A(self):
+        return self._U * self._B
+
+    def __eq__(self, other):
+        from scitbx import matrix
+        eps = 1e-7
+        d_mosaicity = abs(self._mosaicity - other._mosaicity)
+        d_U = sum([abs(u1 - u2) for u1, u2 in zip(self._U, other._U)])
+        d_B = sum([abs(b1 - b2) for b1, b2 in zip(self._B, other._B)])
+        return (d_mosaicity <= eps and
+                d_U <= eps and
+                d_B <= eps and
+                self._sg == other._sg)
