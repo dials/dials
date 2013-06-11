@@ -22,6 +22,14 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("phi"),
           arg("zeta")));
   
+    class_<ReciprocalSpaceTransformDetectorLabCoords>(
+        "ReciprocalSpaceTransformDetectorLabCoords")
+      .def("__call__",
+        &ReciprocalSpaceTransformDetectorLabCoords::operator(), (
+          arg("detector"),
+          arg("scan"),
+          arg("n_div")));
+  
 //    void (XdsTransform::*calculate_single)(int, int, scitbx::af::tiny <int, 6>,
 //        scitbx::vec3 <double>, double) = &XdsTransform::calculate;
 

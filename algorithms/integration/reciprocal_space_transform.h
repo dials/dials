@@ -39,6 +39,8 @@ namespace dials { namespace algorithms {
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
+  typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
+
   /**
    * A class to calculate calculate the fraction of counts contributed by each
    * data frame, j, around the reflection to each grid point, v3 in the profile
@@ -127,7 +129,7 @@ namespace dials { namespace algorithms {
       // The data frame j covers the range of phi such that
       // rj = {phi':phi0 + (j-1)dphi <= phi' >= phi0 + jdpi}
       // Therefore the range of phi for j is given as follows.
-      double aj = starting_angle_ + j * oscillation_;                             # FIX
+      double aj = starting_angle_ + j * oscillation_;                             // FIX
       double bj = aj + oscillation_;
 
       // Calculate the integral over rj (leaving out scaling factors):
@@ -177,95 +179,55 @@ namespace dials { namespace algorithms {
     return fraction;
   }
 
-///**
-// * A class to calculate the beam vector at each sub-divided pixel coordinate
-// * that will be used during the transformation of the reflections from the
-// * detector to the xds coordinate frame. This class is used during pre-
-// * processing since no knowledge of the specific reflections are needed in order
-// * to calculate the beam vectors. The beam vectors are then used along with
-// * reflection specific stuff to calculate the xds coordinate for each pixel.
-// */
-//class XdsTransformDetectorBeamVectors {
+  /**
+   * A class to calculate the beam vector at each sub-divided pixel coordinate
+   * that will be used during the transformation of the reflections from the
+   * detector to the xds coordinate frame. This class is used during pre-
+   * processing since no knowledge of the specific reflections are needed in order
+   * to calculate the beam vectors. The beam vectors are then used along with
+   * reflection specific stuff to calculate the xds coordinate for each pixel.
+   */
+  class ReciprocalSpaceTransformDetectorLabCoords {
 
-//public:
+  public:
 
-//    /** The default constructor */
-//    XdsTransformDetectorBeamVectors() {}
+    /**
+     * Initialise the class.
+     */
+    ReciprocalSpaceTransformDetectorLabCoords() {}
 
-//    /**
-//     * Initialise the class.
-//     * @param detector The detector struct
-//     * @param wavelength The wavelength of the radiation
-//     * @param n_div The number of pixel sub-divisions
-//     */
-//    XdsTransformDetectorBeamVectors(const equipment::Detector &detector,
-//                                    double wavelength,
-//                                    int n_div)
-//        : size_(detector.get_size()),
-//          origin_(detector.get_origin()),
-//          x_axis_(detector.get_x_axis().normalize() *
-//                detector.get_pixel_size()[0]),
-//          y_axis_(detector.get_y_axis().normalize() *
-//                detector.get_pixel_size()[1]),
-//          normal_(detector.get_normal()),
-//          distance_(detector.get_distance()),
-//          wavelength_r_(1.0 / wavelength),
-//          n_div_(n_div) {}
+    /**
+     * Calculate the beam vector at every pixel on the detector, sub-divided
+     * into (n_div * n_div) equal areas. This is done to remove a certain
+     * amount of processing from being done per reflection and ensuring it
+     * is only done before the reflections are procesed.
+     * @returns An array of beam vectors
+     */
+    flex_vec3_double operator()(const Detector &detector,
+                                const Beam &beam,
+                                int n_div) {
 
-//    /**
-//     * Calculate the beam vector at every pixel on the detector, sub-divided
-//     * into (n_div * n_div) equal areas. This is done to remove a certain
-//     * amount of processing from being done per reflection and ensuring it
-//     * is only done before the reflections are procesed.
-//     * @returns An array of beam vectors
-//     */
-//    af::flex_vec3_double calculate() {
+      // Calculate the image size
+      vec2<std::size_t> image_size = detector.get_image_size();
+      std::size_t x_size = image_size[0] * n_div;
+      std::size_t y_size = image_size[1] * n_div;
+      double n_div_r = 1.0 / (double)n_div;
 
-//        // Calculate the image size
-//        int x_size = size_[0] * n_div_;
-//        int y_size = size_[1] * n_div_;
-//        int image_size = x_size * y_size;
-//        double n_div_r = 1.0 / (double)n_div_;
+      // Create the necessary arrays
+      flex_vec3_double detector_s1(flex_grid<>(y_size, x_size));
 
-//        // Create the necessary arrays
-//        af::flex_vec3_double detector_s1x(x_size);
-//        af::flex_vec3_double detector_s1y(y_size);
-//        af::flex_vec3_double detector_s1(image_size);
+      // Calculate the beam vectors for each sub-division of the detector
+      for (std::size_t j = 0, k = 0; j < y_size; ++j) {
+        for (std::size_t i = 0; i < x_size; ++i, ++k) {
+          detector_s1[k] = detector.get_pixel_lab_coord(
+            vec2<double>((i + 0.5) * n_div_r, (j + 0.5) * n_div_r));
+        }
+      }
 
-//        // Calculate the x and y components of the detector s1 vectors
-//        for (std::size_t i = 0; i < x_size; ++i) {
-//            detector_s1x[i] = (i * n_div_r - origin_[0]) * x_axis_;
-//        }
-//        for (std::size_t j = 0; j < y_size; ++j) {
-//            detector_s1y[j] = (j * n_div_r - origin_[1]) * y_axis_;
-//        }
-
-//        // Calculate the s1 vector for each sub-division of the detector
-//        for (std::size_t k = 0, j = 0; j < y_size; ++j) {
-//            for (std::size_t i = 0; i < x_size; ++i, ++k) {
-//                detector_s1[k] = (
-//                    detector_s1x[i] +
-//                    detector_s1y[j] +
-//                    distance_ * normal_).normalize() * wavelength_r_;
-//            }
-//        }
-
-//        // Return the s1 vector
-//        return detector_s1;
-//    }
-
-//private:
-
-//    equipment::Detector detector;
-//    scitbx::vec2 <int> size_;
-//    scitbx::vec2 <double> origin_;
-//    scitbx::vec3 <double> x_axis_;
-//    scitbx::vec3 <double> y_axis_;
-//    scitbx::vec3 <double> normal_;
-//    double distance_;
-//    double wavelength_r_;
-//    int n_div_;
-//};
+      // Return the s1 vector
+      return detector_s1;
+    }
+  };
 
 ///**
 // * Class representing the XDS transform of the reflection profile on the
