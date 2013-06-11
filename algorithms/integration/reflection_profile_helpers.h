@@ -30,7 +30,8 @@ namespace dials { namespace algorithms {
    */
   inline
   ReflectionList allocate_reflection_profiles(ReflectionList &reflections,
-      int shoebox_default = 0, int shoebox_mask_default = 1) {
+      int shoebox_default = 0, int shoebox_mask_default = 1,
+      int shoebox_background_default = 0) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
       int size_z = r.get_bounding_box()[5] - r.get_bounding_box()[4];
@@ -41,6 +42,8 @@ namespace dials { namespace algorithms {
         shoebox_default));
       r.set_shoebox_mask(flex_int(flex_grid<>(size_z, size_y, size_x),
         shoebox_mask_default));
+      r.set_shoebox_background(flex_int(flex_grid<>(size_z, size_y, size_x),
+        shoebox_background_default));
     }
     return reflections;
   }

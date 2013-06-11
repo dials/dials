@@ -13,6 +13,7 @@ reflection_list_attributes = [
   'bounding_box',
   'shoebox',
   'shoebox_mask',
+  'shoebox_background',
   'transformed_shoebox',
   'centroid_position',
   'centroid_variance',

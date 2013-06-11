@@ -217,7 +217,7 @@ class IntegratorFactory(object):
             The extractor instance
 
         '''
-        return ReflectionExtractor(params.integration.bbox_nsigma)
+        return ReflectionExtractor(params.integration.shoebox.n_sigma)
 
     @staticmethod
     def configure_background(params):
@@ -235,31 +235,31 @@ class IntegratorFactory(object):
         from dials.algorithms.background import FableSubtractor
 
         # Configure the NULL subtractor
-        if params.background.algorithm == 'none':
+        if params.integration.background.algorithm == 'none':
             algorithm = NullSubtractor()
 
         # Configure the XDS subtractor
-        elif params.background.algorithm == 'xds':
+        elif params.integration.background.algorithm == 'xds':
             algorithm = XdsSubtractor(
-                min_data=params.background.min_pixels,
-                n_sigma=params.background.sigma_background)
+                min_data=params.integration.background.min_pixels,
+                n_sigma=params.integration.background.n_sigma)
 
         # Configure the Fable subtractor
-        elif params.background.algorithm == 'fable':
+        elif params.integration.background.algorithm == 'fable':
             algorithm = FableSubtractor(
-                min_data=params.background.min_pixels,
-                n_sigma=params.background.sigma_background)
+                min_data=params.integration.background.min_pixels,
+                n_sigma=params.integration.background.n_sigma)
 
         # Configure the flat subtractor
-        elif params.background.algorithm == 'flat':
+        elif params.integration.background.algorithm == 'flat':
             raise RuntimeError('Not implemented yet')
 
         # Configure the curved subtractor
-        elif params.background.algorithm == 'curved':
+        elif params.integration.background.algorithm == 'curved':
             raise RuntimeError('Not implemented yet')
 
         # Configure the esmerelda subtractor
-        elif params.background.algorithm == 'esmerelda':
+        elif params.integration.background.algorithm == 'esmerelda':
             raise RuntimeError('Not implemented yet')
 
         # Unknown subtractor
