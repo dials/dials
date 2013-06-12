@@ -62,12 +62,14 @@ class SummationReciprocalSpace(IntegrationInterface):
         # Transform the reflections to reciprocal space
         Command.start('Transforming reflections to reciprocal space')
         transform(reflections)
-        Command.end('Transformed {0} reflections'.format(len(reflections)))
+        Command.end('Transformed {0} reflections'.format(
+            len([r for r in reflections if r.status == 0])))
 
         # Integrate the reflections
         Command.start('Integrate the reflections in reciprocal space')
         integrate(reflections)
-        Command.end('Integrated {0} reflections'.format(len(reflections)))
+        Command.end('Integrated {0} reflections'.format(
+            len([r for r in reflections if r.status == 0])))
 
         # Return the reflections
         return reflections
