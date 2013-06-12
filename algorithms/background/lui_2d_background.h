@@ -12,8 +12,8 @@ namespace dials { namespace algorithms {
         std::size_t nrow=data2d.accessor().all()[0];
         flex_int data2d_aft(data2d.accessor(),0);
 
-        for (int row = 1; row<nrow;row++) {
-          for (int col = 1; col<ncol;col++) {
+        for (int row = 0; row<nrow;row++) {
+          for (int col = 0; col<ncol;col++) {
             data2d_aft(row,col)=data2d(row,col);
           }
         }
@@ -50,10 +50,8 @@ def flat_background_subtraction_2d(data2d, diffdata2d_ext):
                 data2d[row, col] = data2d[row, col] - avg_bkgr
             else:
                 data2d[row, col] = 0
-    print "______________________________________________________________________________"
 
-
-    print "______________________________________________________________________________"
+    return avg_bkgr
 
 */
 #endif

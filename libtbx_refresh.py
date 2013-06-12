@@ -4,4 +4,4 @@ def run():
     gen = CompletionGenerator()
     gen.generate()
 
-run()
+#run()

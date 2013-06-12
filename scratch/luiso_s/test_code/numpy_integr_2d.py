@@ -1,3 +1,12 @@
+#
+#  numpy_integr_2d testing code
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: Luis Fuentes-Montero (Luiso)
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 import numpy
 
 data2d = numpy.zeros((5, 5), dtype = numpy.int32)

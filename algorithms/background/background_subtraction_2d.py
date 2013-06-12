@@ -1,3 +1,12 @@
+#
+# Background Subtraction 2D lower level numpy version
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: Luis Fuentes-Montero (Luiso)
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 def curved_background_subtraction_2d(data2d, mask2d):
 
     import numpy
