@@ -95,12 +95,16 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms.integration import find_overlapping_reflections
         from dials.algorithms.integration import extract_reflection_profiles
+        from dials.algorithms.integration import filter_by_detector_mask
 
         # Get models from the sweep
         beam = sweep.get_beam()
         detector = sweep.get_detector()
         gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
+
+        # Get the detector mask
+        detector_mask = sweep[0] >= 0
 
         # Generate Indices
         Command.start('Generating miller indices')
@@ -134,6 +138,13 @@ class ReflectionExtractor(object):
 
         # Extract the reflection profiles
         extract_reflection_profiles(sweep, reflections, overlaps)
+
+        # Set all reflections which overlap bad pixels to zero
+        Command.start('Filtering reflections using detector mask')
+        array_range = scan.get_array_range()
+        filter_by_detector_mask(reflections, detector_mask, array_range)
+        Command.end('Filtered {0} reflections'.format(
+            len([r for r in reflections if r.status == 0])))
 
         # Return the list of reflections
         return reflections

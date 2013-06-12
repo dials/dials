@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 
 #include <algorithm>
+#include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/tiny_algebra.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/image/centroid/centroid_image.h>
@@ -20,6 +21,7 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::af::int6;
   using scitbx::af::sqrt;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
@@ -167,8 +169,12 @@ namespace dials { namespace algorithms {
         r.get_shoebox_background(),
         r.get_shoebox_mask());
 
+      // Get the centroid offset
+      int6 bbox = r.get_bounding_box();
+      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+
       // Put data back into reflection container
-      r.set_centroid_position(result.centroid());
+      r.set_centroid_position(offset + result.centroid());
       r.set_centroid_variance(result.centroid_standard_error_sq());
       r.set_centroid_sq_width(result.centroid_variance());
       r.set_intensity(result.intensity());

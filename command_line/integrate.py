@@ -31,6 +31,13 @@ class Script(ScriptRunner):
             type = 'string', default = 'integrated.pickle',
             help = 'Set the filename for integrated reflections.')
 
+        # Option to save profiles with reflection data
+        self.config().add_option(
+            '-p', '--save-profiles',
+            dest = 'save_profiles',
+            action = 'store_true', default = False,
+            help = 'Output profiles with reflection data.')
+
     def main(self, params, options, args):
         '''Execute the script.'''
         from dials.algorithms.integration import IntegratorFactory
@@ -57,6 +64,13 @@ class Script(ScriptRunner):
 
         # Save the reflections to file
         print 'Saving reflections to {0}'.format(options.output_filename)
+        if options.save_profiles == False:
+            from scitbx.array_family import flex
+            for r in reflections:
+                r.shoebox = flex.int()
+                r.shoebox_mask = flex.int()
+                r.shoebox_background = flex.int()
+                r.transformed_shoebox = flex.double()
         pickle.dump(reflections, open(options.output_filename, 'w'))
 
 

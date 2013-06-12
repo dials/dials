@@ -47,7 +47,8 @@ namespace dials { namespace model {
      * @param miller_index The miller index
      */
     ReflectionBase(miller_index_type miller_index)
-      : miller_index_(miller_index) {}
+      : miller_index_(miller_index),
+        status_(0) {}
 
     /** Virtual destructor */
     virtual ~ReflectionBase() {}

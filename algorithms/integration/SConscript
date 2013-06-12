@@ -2,6 +2,7 @@
 Import('env')
 
 sources = [
+    'boost_python/helpers.cc',
     'boost_python/xds_coordinate_system.cc',
     'boost_python/from_beam_vector_to_xds.cc',
     'boost_python/from_xds_to_beam_vector.cc',
