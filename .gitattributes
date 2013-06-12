@@ -9,6 +9,8 @@ algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/fable_subtractor.cc -text
 algorithms/background/boost_python/helpers.cc -text
+algorithms/background/boost_python/lui_2d_background.cc -text svneol=unset#text/plain
+algorithms/background/boost_python/lui_2d_bakground.cc -text svneol=unset#text/plain
 algorithms/background/boost_python/normal_discriminator.cc -text
 algorithms/background/boost_python/poisson_discriminator.cc -text
 algorithms/background/boost_python/xds_subtractor.cc -text
@@ -16,6 +18,7 @@ algorithms/background/fable_subtractor.h -text
 algorithms/background/fable_subtractor.py -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
 algorithms/background/helpers.h -text
+algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/normal_discriminator.h -text
 algorithms/background/null_subtractor.py -text
 algorithms/background/poisson_discriminator.h -text

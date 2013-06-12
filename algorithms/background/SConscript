@@ -7,7 +7,7 @@ sources = [
     'boost_python/poisson_discriminator.cc',
     'boost_python/xds_subtractor.cc',
     'boost_python/fable_subtractor.cc',
-    'boost_python/lui_2d_background.cc'
+    'boost_python/lui_2d_background.cc',
     'boost_python/background_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_background_ext', 

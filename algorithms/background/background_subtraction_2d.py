@@ -44,6 +44,7 @@ def curved_background_subtraction_2d(data2d, mask2d):
 
 def flat_background_subtraction_2d(data2d, diffdata2d_ext):
 
+
     import numpy
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
@@ -66,4 +67,9 @@ def flat_background_subtraction_2d(data2d, diffdata2d_ext):
                 data2d[row, col] = data2d[row, col] - avg_bkgr
             else:
                 data2d[row, col] = 0
+    print "______________________________________________________________________________"
+
+
+    print "______________________________________________________________________________"
+
     return avg_bkgr

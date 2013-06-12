@@ -20,7 +20,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_poisson_discriminator();  
   void export_xds_subtractor();
   void export_fable_subtractor();
-  
+  void export_lui_2d_background();
+
   BOOST_PYTHON_MODULE(dials_algorithms_background_ext)
   {
     export_helpers();
@@ -28,6 +29,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_poisson_discriminator();
     export_xds_subtractor();
     export_fable_subtractor();
+    export_lui_2d_background();
   }
 
 }}} // namespace = dials::algorithms::boost_python

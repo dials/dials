@@ -3,7 +3,7 @@
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
-#  Author: James Parkhurst
+#  Author: Luiso & James
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
@@ -29,10 +29,14 @@ class Integrate2d(IntegrationInterface):
         global n_ref, ref_bkgr
         from dials.algorithms.background.background_subtraction_2d \
           import flat_background_subtraction_2d , curved_background_subtraction_2d
+        from dials.algorithms.background import background_subtract_2d
+
+
 
         from scitbx.array_family import flex
         n_ref = len(reflections)
         for ref in reflections:
+
             shoebox = ref.shoebox.as_numpy_array()
             mask = ref.shoebox_mask.as_numpy_array()
             tot_bkgr = 0
@@ -40,8 +44,9 @@ class Integrate2d(IntegrationInterface):
             for i in range(shoebox.shape[0]):
                 data2d = shoebox[i]
                 mask2d = mask[i]
-
+                background_subtract_2d(flex.int(data2d))
                 bkgr = flat_background_subtraction_2d(data2d, mask2d)
+
 #                bkgr = curved_background_subtraction_2d(data2d, mask2d)
                 tot_bkgr += bkgr
                 cont_bkgr += 1
