@@ -55,10 +55,10 @@ namespace dials { namespace algorithms {
 
     /**
      * Initialise the fraction calculation class
-     * @param goniometer The goniometer parameters
-     * @param grid_origin_e3 The XDS grid origin in the e3 direction
-     * @param step_size_e3 The XDS grid step size in the e3 direction
-     * @param sigma_mosaicity The standard deviation of the mosaicity
+     * @param scan The scan parameters
+     * @param mosaicity The crystal mosaicity
+     * @param n_sigma The number of standard deviation to use
+     * @param grid_size_e3 The size of the grid
      */
     ReciprocalSpaceTransformE3Fraction(const Scan &scan,
                                        double mosaicity,
@@ -97,7 +97,7 @@ namespace dials { namespace algorithms {
    *
    * Further details of the method can be found in Kabsch 2010.
    *
-   * @param frame The z coordinate of the reflection (i.e. frame number)
+   * @param bbox_z The z bounds of the reflection
    * @param phi The rotation angle of the reflection
    * @param zeta The lorentz correction factor
    *
@@ -130,9 +130,9 @@ namespace dials { namespace algorithms {
     for (std::size_t i = 0, j = j0; j < j1; ++j) {
 
       // The data frame j covers the range of phi such that
-      // rj = {phi':phi0 + (j-1)dphi <= phi' >= phi0 + jdpi}
+      // rj = {phi':phi0 + j*dphi <= phi' >= phi0 + (j+1)*dpi}
       // Therefore the range of phi for j is given as follows.
-      double aj = starting_angle_ + j * oscillation_;                             // FIX
+      double aj = starting_angle_ + j * oscillation_;
       double bj = aj + oscillation_;
 
       // Calculate the integral over rj (leaving out scaling factors):
@@ -205,17 +205,25 @@ namespace dials { namespace algorithms {
      * into (n_div * n_div) equal areas. This is done to remove a certain
      * amount of processing from being done per reflection and ensuring it
      * is only done before the reflections are procesed.
+     * @param detector The detector model
+     * @param beam The beam model
+     * @param n_div The number of sub-divisions to use
      * @returns An array of beam vectors
      */
     flex_vec3_double operator()(const Detector &detector,
                                 const Beam &beam,
-                                int n_div) const {
+                                std::size_t n_div) const {
+
+      // check the input
+      DIALS_ASSERT(beam.get_wavelength() > 0.0);
+      DIALS_ASSERT(n_div > 0);
 
       // Calculate the image size
       vec2<std::size_t> image_size = detector.get_image_size();
       std::size_t x_size = image_size[0] * n_div;
       std::size_t y_size = image_size[1] * n_div;
       double n_div_r = 1.0 / (double)n_div;
+      double wavelength_r = 1.0 / beam.get_wavelength();
 
       // Create the necessary arrays
       flex_vec3_double detector_s1(flex_grid<>(y_size, x_size));
@@ -224,7 +232,8 @@ namespace dials { namespace algorithms {
       for (std::size_t j = 0, k = 0; j < y_size; ++j) {
         for (std::size_t i = 0; i < x_size; ++i, ++k) {
           detector_s1[k] = detector.get_pixel_lab_coord(
-            vec2<double>((i + 0.5) * n_div_r, (j + 0.5) * n_div_r));
+            vec2<double>((i + 0.5) * n_div_r,
+                         (j + 0.5) * n_div_r)).normalize() * wavelength_r;
         }
       }
 
@@ -243,29 +252,61 @@ namespace dials { namespace algorithms {
 
     /**
      * Initialise the transform.
-     * @param grid The transform grid container
-     * @param image The raw image volume
-     * @param mask The reflection mask
-     * @param detector The detector struct
-     * @param beam The beam struct
-     * @param gonio The goniometer struct
+     * @param beam The beam model
+     * @param detector The detector model
+     * @param gonio The goniometer model
+     * @param scan The scan model
+     * @param mosaicity The crystal mosaicity
+     * @param n_sigma The number of standard deviations to use
+     * @param grid_half_size The size of the grid about the origin
      * @param n_div The number of pixel sub divisions to use (default 5)
      */
     ReciprocalSpaceTransform(const Beam &beam, const Detector &detector,
                              const Goniometer &gonio, const Scan &scan,
                              double mosaicity, double n_sigma,
-                             flex_double::index_type grid_size,
-                             std::size_t n_div = 5)
-      : e3_fraction_(scan, mosaicity, n_sigma, grid_size[2]),
+                             std::size_t grid_half_size, std::size_t n_div = 5)
+      : e3_fraction_(scan, mosaicity, n_sigma, grid_half_size),
         detector_s1_(ReciprocalSpaceTransformDetectorLabCoords()(
           detector, beam, n_div)),
-        grid_size_(grid_size),
-        n_div_(n_div) {
+        s0_(beam.get_s0()),
+        m2_(gonio.get_rotation_axis()) {
+
+      // Check some input
+      DIALS_ASSERT(n_div > 0);
+      DIALS_ASSERT(grid_half_size > 0);
+
+      // Set the image volume size
+      volume_ = vec3<std::size_t>(
+          scan.get_array_range()[1],
+          detector.get_image_size()[1],
+          detector.get_image_size()[0]);
+
+      // Set the grid size specifiers
+      grid_half_size_ = grid_half_size;
+      grid_size_ = 2 * grid_half_size + 1;
+
+      // Calculate the grid step size
+      double delta_d = beam.get_sigma_divergence() * n_sigma;
+      double delta_m = mosaicity * n_sigma;
+      step_size_ = vec3<double>(
+        delta_d / grid_size_,
+        delta_d / grid_size_,
+        delta_m / grid_size_);
+
+      // Check the step size is valid
+      DIALS_ASSERT(step_size_[0] > 0 && step_size_[1] > 0 && step_size_[2] > 0);
+
+      // Set the number of sub-divisions
+      n_div_ = n_div;
     }
 
     flex_double operator()(const flex_int &pixels, const flex_int &mask,
                            int6 bbox, vec3<double> s1, double phi) const;
 
+    /**
+     * Transform a single reflection
+     * @param reflection The reflection
+     */
     void operator()(Reflection &reflection) const {
 
       // Get the shoebox profiles
@@ -284,10 +325,8 @@ namespace dials { namespace algorithms {
 
       // Transform the shoebox
       flex_double result = this->operator()(shoebox_input,
-                                            reflection.get_shoebox_mask(),
-                                            reflection.get_bounding_box(),
-                                            reflection.get_beam_vector(),
-                                            reflection.get_rotation_angle());
+        reflection.get_shoebox_mask(), reflection.get_bounding_box(),
+        reflection.get_beam_vector(), reflection.get_rotation_angle());
 
       // Copy the transformed shoebox back to the reflection
       for (std::size_t i = 0; i < transformed.size(); ++i) {
@@ -295,6 +334,10 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * Transform all the reflections in a list
+     * @param reflections The reflection list
+     */
     void operator()(ReflectionList &reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         this->operator()(reflections[i]);
@@ -305,13 +348,13 @@ namespace dials { namespace algorithms {
 
     ReciprocalSpaceTransformE3Fraction e3_fraction_;
     flex_vec3_double detector_s1_;
-    flex_double::index_type grid_size_;
     vec3<double> s0_;
     vec3<double> m2_;
-    vec3<double> volume_;
-    std::size_t n_div_;
+    vec3<std::size_t> volume_;
+    std::size_t grid_half_size_;
+    std::size_t grid_size_;
     vec3<double> step_size_;
-    vec3<int> grid_origin_;
+    std::size_t n_div_;
   };
 
   /**
@@ -325,10 +368,12 @@ namespace dials { namespace algorithms {
    * XDS reciprocal lattice coordinate frame and determining the fraction of the
    * pixel value that is given to each element in the XDS grid.
    *
-   * @param reflection_index The index of the reflection
-   * @param xyz The coordinate of the reflection in the detector image volume
+   * @param image The reflection image pixels
+   * @param mask The reflection pixel mask
+   * @param bbox The bounding box of the reflection
    * @param s1 The beam vector of the reflection
    * @param phi The rotation angle of the reflection
+   * @returns The transformed grid
    * @throws std::rumtime_error if input is invalid
    */
   flex_double ReciprocalSpaceTransform::operator()(const flex_int &image,
@@ -337,21 +382,26 @@ namespace dials { namespace algorithms {
     // Constant for scaling values
     static const double r2d = 1.0 / scitbx::constants::pi_180;
 
-    // Check the input bbox size
-    DIALS_ASSERT(bbox[0] >= 0 && bbox[1] > bbox[0] && bbox[1] <= volume_[0]);
-    DIALS_ASSERT(bbox[3] >= 0 && bbox[3] > bbox[2] && bbox[3] <= volume_[1]);
-    DIALS_ASSERT(bbox[4] >= 0 && bbox[5] > bbox[4] && bbox[5] <= volume_[2]);
+    // Check the image sizes match
+    DIALS_ASSERT(image.accessor().all().all_eq(mask.accessor().all()));
+
+    // Check the bounding box size matches the image size
+    DIALS_ASSERT(bbox[1] - bbox[0] == image.accessor().all()[2]);
+    DIALS_ASSERT(bbox[3] - bbox[2] == image.accessor().all()[1]);
+    DIALS_ASSERT(bbox[5] - bbox[4] == image.accessor().all()[0]);
+
+    // Check the bounding box is in the image range
+    DIALS_ASSERT(bbox[0] >= 0 && bbox[1] <= volume_[0]);
+    DIALS_ASSERT(bbox[3] >= 0 && bbox[3] <= volume_[1]);
+    DIALS_ASSERT(bbox[4] >= 0 && bbox[5] <= volume_[2]);
 
     // Get the grid data array
-    flex_double grid(flex_grid<>(grid_size_[0], grid_size_[1], grid_size_[2]));
+    flex_double grid(flex_grid<>(grid_size_, grid_size_, grid_size_));
 
     // Calculate the x, y, z ranges to iterate over
-    std::size_t x0 = bbox[0] * n_div_;
-    std::size_t x1 = bbox[1] * n_div_;
-    std::size_t y0 = bbox[2] * n_div_;
-    std::size_t y1 = bbox[3] * n_div_;
-    std::size_t z0 = bbox[4];
-    std::size_t z1 = bbox[5];
+    std::size_t x0 = bbox[0] * n_div_, x1 = bbox[1] * n_div_;
+    std::size_t y0 = bbox[2] * n_div_, y1 = bbox[3] * n_div_;
+    std::size_t z0 = bbox[4], z1 = bbox[5];
 
     // Calculate 1 / n_div and 1 / (n_div*n_div) for convenience
     double n_div_r = 1.0 / n_div_;
@@ -377,19 +427,20 @@ namespace dials { namespace algorithms {
     // add the counts for that pixel to the grid. See Kabsch 2010
     for (std::size_t yy = y0; yy < y1; ++yy) {
       for (std::size_t xx = x0; xx < x1; ++xx) {
-        double c1 = e1 * (detector_s1_(yy, xx) - s1);
-        double c2 = e2 * (detector_s1_(yy, xx) - s1);
-        int gi = grid_origin_[2] + c1 / step_size_[2];
-        int gj = grid_origin_[1] + c2 / step_size_[1];
-        if (gi < 0 || gi >= grid_size_[2] || gj < 0 || gj >= grid_size_[1]) {
+        vec3<double> ds = detector_s1_(yy, xx) - s1;
+        double c1 = e1 * ds;
+        double c2 = e2 * ds;
+        int gi = grid_half_size_ + c1 / step_size_[2];
+        int gj = grid_half_size_ + c2 / step_size_[1];
+        if (gi < 0 || gi >= grid_size_ || gj < 0 || gj >= grid_size_) {
           continue;
         }
         std::size_t x = xx * n_div_r;
         std::size_t y = yy * n_div_r;
         for (std::size_t z = z0; z <= z1; ++z) {
-          if (mask(z, y, z) == (1 << 0)) {
+          if (mask(z, y, z) != 0) {
             int value = image(z, y, x) * div_fraction;
-            for (std::size_t gk = 0; gk < grid_size_[0]; ++gk) {
+            for (std::size_t gk = 0; gk < grid_size_; ++gk) {
               grid(gk, gj, gi) += value * fraction(z, gk);
             }
           }

@@ -48,7 +48,7 @@ namespace dials { namespace algorithms { namespace boost_python {
                 const Scan&,
                 double,
                 double,
-                flex_double::index_type,
+                std::size_t,
                 std::size_t>((
         arg("beam"),
         arg("detector"),
