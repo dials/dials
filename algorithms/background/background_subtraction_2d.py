@@ -78,3 +78,33 @@ def flat_background_subtraction_2d(data2d, diffdata2d_ext):
                 data2d[row, col] = 0
 
     return avg_bkgr
+
+def flat_background_calc_2d(data2d, diffdata2d_ext):
+
+    import numpy
+    n_col = numpy.size(data2d[0:1, :])
+    n_row = numpy.size(data2d[:, 0:1])
+    avg_bkgr_2d = numpy.copy(data2d)
+
+    tot_bkgr = 0.0
+    cont = 0.0
+    for row in range(0, n_row, 1):
+        for col in range(0, n_col, 1):
+            if diffdata2d_ext[row, col] == 0:
+                cont += 1
+                tot_bkgr += data2d[row, col]
+    if tot_bkgr > 0 and cont > 0:
+        avg_bkgr = tot_bkgr / cont
+    else:
+        avg_bkgr = 0
+    #print 'avg_bkgr=', avg_bkgr
+    for row in range(0, n_row, 1):
+        for col in range(0, n_col, 1):
+            avg_bkgr_2d[row, col] = avg_bkgr
+
+            #if diffdata2d_ext[row, col] == 1 and data2d[row, col] > avg_bkgr:
+            #    data2d[row, col] = data2d[row, col] - avg_bkgr
+            #else:
+            #    data2d[row, col] = 0
+
+    return avg_bkgr_2d

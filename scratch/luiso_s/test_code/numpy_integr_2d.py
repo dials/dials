@@ -53,5 +53,16 @@ integrate(rlist)
 for r in rlist:
     print r
     matrix_img = r.shoebox.as_numpy_array()
+    print
+    print "shoebox"
     print matrix_img
 
+    matrix_bkg = r.shoebox_background.as_numpy_array()
+    print
+    print "background"
+    print matrix_bkg
+
+    matrix_mask = r.shoebox_mask.as_numpy_array()
+    print
+    print "mask"
+    print matrix_mask
