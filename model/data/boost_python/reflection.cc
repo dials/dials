@@ -97,12 +97,19 @@ namespace dials { namespace model { namespace boost_python {
       .def(init <miller_index_type> ((
           arg("miller_index"))))
       .add_property("miller_index", 
-        &Reflection::get_miller_index,
-        &Reflection::set_miller_index)
+        &ReflectionBase::get_miller_index,
+        &ReflectionBase::set_miller_index)
       .add_property("entering",
-        &Reflection::get_entering,
-        &Reflection::set_entering)
-      .def("is_zero", &Reflection::is_zero);
+        &ReflectionBase::get_entering,
+        &ReflectionBase::set_entering)
+      .add_property("status",
+        &ReflectionBase::get_status,
+        &ReflectionBase::set_status)
+      .def("is_valid", &ReflectionBase::is_valid)
+      .def("is_active", &ReflectionBase::is_active)
+      .def("set_valid", &ReflectionBase::set_valid)
+      .def("set_active", &ReflectionBase::set_active)
+      .def("is_zero", &ReflectionBase::is_zero);
 
     flex_int& (Reflection::*reflection_get_shoebox)() = 
       &Reflection::get_shoebox;

@@ -39,7 +39,8 @@ namespace dials { namespace model {
     /** Initialise the reflection */
     ReflectionBase()
       : miller_index_(0, 0, 0),
-        entering_(true) {}
+        entering_(true),
+        status_(0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -70,14 +71,45 @@ namespace dials { namespace model {
       entering_ = entering;
     }
 
+    /** Get the current status */
+    std::size_t get_status() const {
+      return status_;
+    }
+
+    /** Set the current status */
+    void set_status(std::size_t status) {
+      status_ = status;
+    }
+
+    /** Get if the status is valid */
+    bool is_valid() const {
+      return !(status_ & (1 << 1));
+    }
+
+    /** Get if to be used */
+    bool is_active() const {
+      return !(status_ & (1 << 0));
+    }
+
+    /** Set the status to valid */
+    void set_valid(bool valid) {
+      status_ = valid ? status_ & ~(1 << 1) : status_ | (1 << 1);
+    }
+
+    /** Set the status to active */
+    void set_active(bool active) {
+      status_ = active ? status_ & ~(1 << 0) : status_ | (1 << 0);
+    }
+
     /** True/False the miller index is (0, 0, 0) */
-    bool is_zero() {
+    bool is_zero() const {
       return miller_index_.is_zero();
     }
 
   protected:
     miller_index_type miller_index_;
     bool entering_;
+    std::size_t status_;
   };
 
   /**
@@ -381,6 +413,7 @@ namespace dials { namespace model {
     os << "Reflection:\n";
     os << "  miller index:      " << r.get_miller_index().as_tiny() << "\n";
     os << "  entering:          " << (r.get_entering() ? "True" : "False") << "\n";
+    os << "  status:            " << r.get_status() << "\n";
     os << "  rotation angle:    " << r.get_rotation_angle() << "\n";
     os << "  beam vector:       " << r.get_beam_vector().as_tiny() << "\n";
     os << "  image coord (mm):  " << r.get_image_coord_mm().as_tiny() << "\n";
