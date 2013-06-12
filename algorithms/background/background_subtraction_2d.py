@@ -67,9 +67,5 @@ def flat_background_subtraction_2d(data2d, diffdata2d_ext):
                 data2d[row, col] = data2d[row, col] - avg_bkgr
             else:
                 data2d[row, col] = 0
-    print "______________________________________________________________________________"
-
-
-    print "______________________________________________________________________________"
 
     return avg_bkgr

@@ -44,10 +44,13 @@ class Integrate2d(IntegrationInterface):
             for i in range(shoebox.shape[0]):
                 data2d = shoebox[i]
                 mask2d = mask[i]
-                background_subtract_2d(flex.int(data2d))
-                bkgr = flat_background_subtraction_2d(data2d, mask2d)
-
-#                bkgr = curved_background_subtraction_2d(data2d, mask2d)
+                ######################################################################################
+                fl_Bkg = background_subtract_2d(flex.int(data2d))
+                data2d = fl_Bkg.as_numpy_array()
+                bkgr = 2.625
+                ######################################################################################
+                #bkgr = flat_background_subtraction_2d(data2d, mask2d)
+                ##bkgr = curved_background_subtraction_2d(data2d, mask2d)
                 tot_bkgr += bkgr
                 cont_bkgr += 1
                 shoebox[i] = data2d
