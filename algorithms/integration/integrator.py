@@ -152,6 +152,7 @@ class IntegratorFactory(object):
 
         '''
         from dials.algorithms.integration import Summation3d
+        from dials.algorithms.integration import SummationReciprocalSpace
 
         # Configure the 2D summation algorithm
         if params.integration.algorithm == 'sum2d':
@@ -163,7 +164,10 @@ class IntegratorFactory(object):
 
         # Configure the reciprocal space summation algorithm
         elif params.integration.algorithm == 'sum_rs':
-            raise RuntimeError('Not implemented yet')
+            algorithm = SummationReciprocalSpace(
+              n_sigma=params.integration.shoebox.n_sigma,
+              grid_size=params.integration.reciprocal_space.grid_size,
+              n_div=params.integration.reciprocal_space.n_divisions)
 
         # Configure the 2D profile fitting algorithm
         elif params.integration.algorithm == 'fit_2d':

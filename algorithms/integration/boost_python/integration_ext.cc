@@ -23,8 +23,9 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_find_overlapping_reflections();
   void export_reflection_profile_helpers();
   void export_shoebox_masker();
-  void export_summation();
   void export_reciprocal_space_transform();
+  void export_summation();
+  void export_summation_reciprocal_space();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
@@ -36,8 +37,9 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_find_overlapping_reflections();
     export_reflection_profile_helpers();
     export_shoebox_masker();
-    export_summation();
     export_reciprocal_space_transform();
+    export_summation();
+    export_summation_reciprocal_space();    
   }
 
 }}} // namespace = dials::algorithms::boost_python

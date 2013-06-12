@@ -42,6 +42,7 @@ namespace dials { namespace algorithms {
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
+  typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
   typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
 
   /**
@@ -340,7 +341,11 @@ namespace dials { namespace algorithms {
      */
     void operator()(ReflectionList &reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
-        this->operator()(reflections[i]);
+        try {
+          this->operator()(reflections[i]);
+        } catch (dials::error) {
+          continue;
+        }
       }
     }
 

@@ -31,5 +31,18 @@ integration
               "below which the pixel will be classified as background."
       .type = float
   }
+  
+  reciprocal_space
+    .help = "Parameters for the reciprocal space transform."
+  {
+    grid_size = 4
+      .help = "The size of the reciprocal space grid for each reflection."
+              "The size is the same in each dimensions"
+      .type = int
+
+    n_divisions = 5
+      .help = "The number of pixel sub-divisions to use in the transform"
+      .type = int
+  }
 }
 

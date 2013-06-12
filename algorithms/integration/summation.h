@@ -189,6 +189,7 @@ namespace dials { namespace algorithms {
       }
     }
   };
+
 }}
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H */

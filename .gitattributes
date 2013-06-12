@@ -72,6 +72,7 @@ algorithms/integration/boost_python/reciprocal_space_transform.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/shoebox_masker.cc -text
 algorithms/integration/boost_python/summation.cc -text
+algorithms/integration/boost_python/summation_reciprocal_space.cc -text
 algorithms/integration/boost_python/xds_coordinate_system.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
 algorithms/integration/divergence_and_mosaicity.py -text
@@ -88,6 +89,8 @@ algorithms/integration/shoebox_masker.h -text
 algorithms/integration/sumation_2d.py -text svneol=unset#text/plain
 algorithms/integration/summation.h -text
 algorithms/integration/summation3d.py -text
+algorithms/integration/summation_reciprocal_space.h -text
+algorithms/integration/summation_reciprocal_space.py -text
 algorithms/integration/xds_coordinate_system.h -text
 algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
