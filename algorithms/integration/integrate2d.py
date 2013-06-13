@@ -37,8 +37,8 @@ class Integrate2d(IntegrationInterface):
                 mask2d = mask[i]
                 background2d = background[i]
 
-                #background2d = flat_background_calc_2d(data2d, mask2d)
-                background2d = curved_background_calc_2d(data2d, mask2d)
+                background2d = flat_background_calc_2d(data2d, mask2d)
+                #background2d = curved_background_calc_2d(data2d, mask2d)
                 background[i] = background2d
             ref.shoebox = flex.int(shoebox)
             ref.shoebox_background = flex.int(background)

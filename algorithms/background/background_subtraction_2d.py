@@ -100,7 +100,8 @@ def flat_background_calc_2d(data2d, diffdata2d_ext):
     #print 'avg_bkgr=', avg_bkgr
     for row in range(0, n_row, 1):
         for col in range(0, n_col, 1):
-            avg_bkgr_2d[row, col] = avg_bkgr
+            if diffdata2d_ext[row, col] != 0:
+                avg_bkgr_2d[row, col] = avg_bkgr
 
             #if diffdata2d_ext[row, col] == 1 and data2d[row, col] > avg_bkgr:
             #    data2d[row, col] = data2d[row, col] - avg_bkgr
