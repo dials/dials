@@ -26,7 +26,6 @@ def raw_2d_integration(data2d, mask2d, bkgr2d):
     n_col = numpy.size(data2d[0:1, :])
     n_row = numpy.size(data2d[:, 0:1])
 
-
     #print data2d
     i_tot = 0
     npix_bkgr = 0
