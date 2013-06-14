@@ -108,7 +108,8 @@ class IntegratorFactory(object):
         from dials.algorithms.background import CurvedSubtractor
 
         # Configure the NULL subtractor
-        if params.integration.background.algorithm == 'none':
+        if (params.integration.background.algorithm == 'none' or
+            params.integration.background.algorithm == None):
             algorithm = NullSubtractor()
 
         # Configure the XDS subtractor

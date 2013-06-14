@@ -72,7 +72,10 @@ namespace dials { namespace algorithms {
         detector_(detector),
         scan_(scan),
         delta_divergence_(delta_divergence),
-        delta_mosaicity_(delta_mosaicity) {}
+        delta_mosaicity_(delta_mosaicity) {
+      DIALS_ASSERT(delta_divergence > 0.0);
+      DIALS_ASSERT(delta_mosaicity > 0.0);
+    }
 
     /**
      * Calculate the bbox on the detector image volume for the reflection.
@@ -89,9 +92,6 @@ namespace dials { namespace algorithms {
      *
      * to the detector image volume and return the minimum and maximum values
      * for the x, y, z image volume coordinates.
-     *
-     * @todo Figure out why scitbx::af::tiny <int, 6> doesn't convert to a
-     * python type but scitbx::af::tiny <double, 6> does.
      *
      * @param s1 The diffracted beam vector
      * @param phi The rotation angle

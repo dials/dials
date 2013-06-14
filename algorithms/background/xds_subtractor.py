@@ -41,7 +41,8 @@ class XdsSubtractor(BackgroundSubtractionInterface):
         # Do the background subtraction
         Command.start('Calculating reflection background')
         self._subtractor(reflections)
-        Command.end('Calculated {0} background values'.format(len(reflections)))
+        Command.end('Calculated {0} background values'.format(
+            len([r for r in reflections if r.status == 0])))
 
         # Return the reflections
         return reflections
