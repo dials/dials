@@ -43,12 +43,11 @@ def raw_2d_integration(data2d, mask2d, bkgr2d):
 
             cont += 1
             tot_bkgr += bkgr2d[row, col]
-    if tot_bkgr > 0 and cont > 0:
+    if tot_bkgr > 0 and cont > 0 and npix_mask > 0 and npix_bkgr > 0 :  #fix me
         bkgr = tot_bkgr / cont
+        sig = numpy.sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr))
     else:
         bkgr = 0
-    print 'bkgr =', bkgr
+        sig = numpy.sqrt(i_tot)
 
-    sig = numpy.sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr))
-    #print "i_tot =", i_tot
     return i_tot, sig

@@ -4,4 +4,5 @@ from dials_algorithms_background_ext import *
 from dials.algorithms.background.null_subtractor import NullSubtractor
 from dials.algorithms.background.xds_subtractor import XdsSubtractor
 from dials.algorithms.background.fable_subtractor import FableSubtractor
-
+from dials.algorithms.background.flat_background_subtractor import FlatSubtractor
+from dials.algorithms.background.curved_background_subtractor import CurvedSubtractor

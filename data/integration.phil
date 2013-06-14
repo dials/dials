@@ -17,7 +17,7 @@ integration
   background
     .help = "Parameters used in the background subtraction algorithm."
   {
-    algorithm = none *xds fable flat curved esmerelda
+    algorithm = none *xds fable flat inclined esmeralda
         .help = "The background subtraction algorithm."
         .type = choice
 

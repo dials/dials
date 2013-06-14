@@ -28,7 +28,7 @@ class Integrator(object):
         self.compute_background = compute_background
         self.compute_intensity = compute_intensity
 
-    def __call__(self, sweep, crystal, reflections=None):
+    def __call__(self, sweep, crystal, reflections = None):
         ''' Call to integrate.
 
         Params:
@@ -72,9 +72,9 @@ class IntegratorFactory(object):
         compute_intensity = IntegratorFactory.configure_intensity(params)
 
         # Return the integrator with the given strategies
-        return Integrator(compute_spots=compute_spots,
-                          compute_background=compute_background,
-                          compute_intensity=compute_intensity)
+        return Integrator(compute_spots = compute_spots,
+                          compute_background = compute_background,
+                          compute_intensity = compute_intensity)
 
     @staticmethod
     def configure_extractor(params):
@@ -104,6 +104,8 @@ class IntegratorFactory(object):
         from dials.algorithms.background import NullSubtractor
         from dials.algorithms.background import XdsSubtractor
         from dials.algorithms.background import FableSubtractor
+        from dials.algorithms.background import FlatSubtractor
+        from dials.algorithms.background import CurvedSubtractor
 
         # Configure the NULL subtractor
         if params.integration.background.algorithm == 'none':
@@ -112,26 +114,26 @@ class IntegratorFactory(object):
         # Configure the XDS subtractor
         elif params.integration.background.algorithm == 'xds':
             algorithm = XdsSubtractor(
-                min_data=params.integration.background.min_pixels,
-                n_sigma=params.integration.background.n_sigma)
+                min_data = params.integration.background.min_pixels,
+                n_sigma = params.integration.background.n_sigma)
 
         # Configure the Fable subtractor
         elif params.integration.background.algorithm == 'fable':
             algorithm = FableSubtractor(
-                min_data=params.integration.background.min_pixels,
-                n_sigma=params.integration.background.n_sigma)
+                min_data = params.integration.background.min_pixels,
+                n_sigma = params.integration.background.n_sigma)
 
         # Configure the flat subtractor
         elif params.integration.background.algorithm == 'flat':
-            raise RuntimeError('Not implemented yet')
+            algorithm = FlatSubtractor()
 
         # Configure the curved subtractor
-        elif params.integration.background.algorithm == 'curved':
+        elif params.integration.background.algorithm == 'inclined':
             raise RuntimeError('Not implemented yet')
 
         # Configure the esmerelda subtractor
-        elif params.integration.background.algorithm == 'esmerelda':
-            raise RuntimeError('Not implemented yet')
+        elif params.integration.background.algorithm == 'esmeralda':
+            algorithm = CurvedSubtractor()
 
         # Unknown subtractor
         else:
@@ -151,12 +153,13 @@ class IntegratorFactory(object):
             The intensity calculator instance
 
         '''
+        from dials.algorithms.integration import Summation2d
         from dials.algorithms.integration import Summation3d
         from dials.algorithms.integration import SummationReciprocalSpace
 
         # Configure the 2D summation algorithm
         if params.integration.algorithm == 'sum2d':
-            raise RuntimeError('Not implemented yet')
+            algorithm = Summation2d()
 
         # Configure the 3D summation algorithm
         elif params.integration.algorithm == 'sum3d':
@@ -165,9 +168,9 @@ class IntegratorFactory(object):
         # Configure the reciprocal space summation algorithm
         elif params.integration.algorithm == 'sum_rs':
             algorithm = SummationReciprocalSpace(
-              n_sigma=params.integration.shoebox.n_sigma,
-              grid_size=params.integration.reciprocal_space.grid_size,
-              n_div=params.integration.reciprocal_space.n_divisions)
+              n_sigma = params.integration.shoebox.n_sigma,
+              grid_size = params.integration.reciprocal_space.grid_size,
+              n_div = params.integration.reciprocal_space.n_divisions)
 
         # Configure the 2D profile fitting algorithm
         elif params.integration.algorithm == 'fit_2d':
