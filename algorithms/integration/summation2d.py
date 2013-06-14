@@ -22,17 +22,24 @@ class Summation2d(IntegrationInterface):
         return reflections
 
     def integrate(self, reflections):
-        from dials.algorithms.integration.sumation_2d import raw_2d_integration
-        for ref in reflections:
-            if ref.status == 0:
-                shoebox = ref.shoebox.as_numpy_array()
-                mask = ref.shoebox_mask.as_numpy_array()
-                backgound = ref.shoebox_background.as_numpy_array()
+        tmp_translating_n_layering(reflections)
 
-                for i in range(shoebox.shape[0]):
-                    data2d = shoebox[i]
-                    mask2d = mask[i]
-                    backgound2d = backgound[i]
-                    itns, sigma = raw_2d_integration(data2d, mask2d, backgound2d)
-                ref.intensity = float(itns)
-                ref.intensity_variance = float(sigma * sigma)
+def tmp_translating_n_layering(reflections):
+    print "hi there translating and layering 01"
+
+    from dials.algorithms.integration.sumation_2d import raw_2d_integration
+    for ref in reflections:
+        if ref.status == 0:
+            shoebox = ref.shoebox.as_numpy_array()
+            mask = ref.shoebox_mask.as_numpy_array()
+            backgound = ref.shoebox_background.as_numpy_array()
+
+            for i in range(shoebox.shape[0]):
+                data2d = shoebox[i]
+                mask2d = mask[i]
+                backgound2d = backgound[i]
+                itns, sigma = raw_2d_integration(data2d, mask2d, backgound2d)
+            ref.intensity = float(itns)
+            ref.intensity_variance = float(sigma * sigma)
+
+    print "hi there translating and layering 02"

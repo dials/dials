@@ -23,10 +23,11 @@ data2d[2:3, 2:3] = 50
 print data2d
 
 mask2d = numpy.zeros((5, 5), dtype = numpy.int32)
-
 mask2d[1:4, 1:4] = 1
-
 print mask2d
+
+background2d = numpy.copy(data2d)
+background2d[1:4, 1:4] = 2
 
 data3d = data2d
 data3d.shape = (1,) + data2d.shape
@@ -36,20 +37,26 @@ mask3d = mask2d
 mask3d.shape = (1,) + mask2d.shape
 print mask3d.shape
 
+background3d = background2d
+background3d.shape = (1,) + background2d.shape
+print background3d.shape
+
+
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
 r = Reflection()
 r.shoebox = flex.int(data2d)
 r.shoebox_mask = flex.int(mask2d)
+r.shoebox_background = flex.int(background2d)
 
 rlist = ReflectionList()
 rlist.append(r)
 
-from dials.algorithms.integration.integrate2d import Integrate2d
 
-integrate = Integrate2d()
+from dials.algorithms.integration.summation2d \
+         import tmp_translating_n_layering
+tmp_translating_n_layering(rlist)
 
-integrate(rlist)
 for r in rlist:
     print r
     matrix_img = r.shoebox.as_numpy_array()

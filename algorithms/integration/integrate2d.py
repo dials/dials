@@ -9,6 +9,7 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dials.interfaces.integration import IntegrationInterface
+
 class Integrate2d(IntegrationInterface):
     '''A class to perform 2D integration'''
 
@@ -20,16 +21,9 @@ class Integrate2d(IntegrationInterface):
         self.integrate(reflections)
 
     def integrate(self, reflections):
-        from dials.algorithms.integration.sumation_2d import raw_2d_integration
-        for ref in reflections:
-            shoebox = ref.shoebox.as_numpy_array()
-            mask = ref.shoebox_mask.as_numpy_array()
-            backgound = ref.shoebox_background.as_numpy_array()
+        from dials.algorithms.integration.summation2d \
+         import tmp_translating_n_layering
 
-            for i in range(shoebox.shape[0]):
-                data2d = shoebox[i]
-                mask2d = mask[i]
-                backgound2d = backgound[i]
-                itns, sigma = raw_2d_integration(data2d, mask2d, backgound2d)
-            ref.intensity = float(itns)
-            ref.intensity_variance = float(sigma * sigma)
+        tmp_translating_n_layering(reflections)
+
+
