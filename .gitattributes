@@ -326,6 +326,7 @@ scratch/gw/x2tbx/x2tbx.cpp -text
 scratch/gw/x2tbx/x2tbx.h -text
 scratch/gw/x2tbx/x2tbx_ol.cpp -text
 scratch/gw/x2tbx/x2tbx_rl.cpp -text
+scratch/jmp/analysis/centroid_difference.py -text
 scratch/jmp/analysis/xds_xyz_diff_map.py -text
 scratch/jmp/build.sh -text
 scratch/jmp/cctbx_exercises/.project -text
