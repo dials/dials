@@ -24,9 +24,9 @@ class CurvedSubtractor(BackgroundSubtractionInterface):
         import numpy
 
         from scitbx.array_family import flex
-        print "averaging background"
-        for ref in reflections:
+        print "modeling background"
 
+        for ref in reflections:
             shoebox = ref.shoebox.as_numpy_array()
             mask = ref.shoebox_mask.as_numpy_array()
             background = numpy.copy(shoebox)
