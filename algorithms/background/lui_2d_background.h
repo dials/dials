@@ -18,7 +18,7 @@ namespace dials { namespace algorithms {
           }
         }
 
-        std::cout << "Hi again \n";
+        std::cout << "Hi _____________________________ there \n";
     return data2d_aft;
   }
 
