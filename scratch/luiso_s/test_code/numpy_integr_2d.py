@@ -27,7 +27,7 @@ mask2d[1:4, 1:4] = 1
 print mask2d
 
 background2d = numpy.copy(data2d)
-background2d[1:4, 1:4] = 2
+background2d[:, :] = 0
 
 data3d = data2d
 data3d.shape = (1,) + data2d.shape
@@ -51,9 +51,13 @@ r.shoebox_background = flex.int(background2d)
 
 rlist = ReflectionList()
 rlist.append(r)
+from dials.algorithms.background.flat_background_subtractor import \
+ tmp_numpy_layering_n_bkgr_avg
 
 from dials.algorithms.integration.summation2d \
  import tmp_numpy_layering_n_integrating
+
+tmp_numpy_layering_n_bkgr_avg(rlist)
 tmp_numpy_layering_n_integrating(rlist)
 
 for r in rlist:

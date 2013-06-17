@@ -28,7 +28,7 @@ class FlatSubtractor(BackgroundSubtractionInterface):
 def tmp_numpy_layering_n_bkgr_avg(reflections):
     import numpy
     from scitbx.array_family import flex
-    print "averaging background"
+    print "averaging background tmp numpy"
     for ref in reflections:
 
         shoebox = ref.shoebox.as_numpy_array()

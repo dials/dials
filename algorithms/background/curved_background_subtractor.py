@@ -24,7 +24,7 @@ class CurvedSubtractor(BackgroundSubtractionInterface):
 
         import numpy
         from scitbx.array_family import flex
-        print "modeling background"
+        print "modeling background tmp numpy"
 
         for ref in reflections:
             shoebox = ref.shoebox.as_numpy_array()
