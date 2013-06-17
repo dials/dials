@@ -22,15 +22,13 @@ class FlatSubtractor(BackgroundSubtractionInterface):
 
     def __call__(self, sweep, crystal, reflections):
         reflections = tmp_numpy_layering_n_bkgr_avg(reflections)
-
-        # Return the reflections
         return reflections
+
 def tmp_numpy_layering_n_bkgr_avg(reflections):
     import numpy
     from scitbx.array_family import flex
     print "averaging background tmp numpy"
     for ref in reflections:
-
         shoebox = ref.shoebox.as_numpy_array()
         mask = ref.shoebox_mask.as_numpy_array()
         background = numpy.copy(shoebox)
@@ -38,9 +36,10 @@ def tmp_numpy_layering_n_bkgr_avg(reflections):
             data2d = shoebox[i]
             mask2d = mask[i]
             background2d = background[i]
-
             background2d = flat_background_calc_2d(data2d, mask2d)
             background[i] = background2d
+
         ref.shoebox = flex.int(shoebox)
         ref.shoebox_background = flex.int(background)
+
     return reflections

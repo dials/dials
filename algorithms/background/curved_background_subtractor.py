@@ -21,23 +21,26 @@ class CurvedSubtractor(BackgroundSubtractionInterface):
         pass
 
     def __call__(self, sweep, crystal, reflections):
-
-        import numpy
-        from scitbx.array_family import flex
-        print "modeling background tmp numpy"
-
-        for ref in reflections:
-            shoebox = ref.shoebox.as_numpy_array()
-            mask = ref.shoebox_mask.as_numpy_array()
-            background = numpy.copy(shoebox)
-            for i in range(shoebox.shape[0]):
-                data2d = shoebox[i]
-                mask2d = mask[i]
-                background2d = background[i]
-
-                background2d = curved_background_calc_2d(data2d, mask2d)
-                background[i] = background2d
-            ref.shoebox = flex.int(shoebox)
-            ref.shoebox_background = flex.int(background)
-        # Return the reflections
+        tmp_numpy_layering_n_bkgr_modl(reflections)
         return reflections
+
+def tmp_numpy_layering_n_bkgr_modl(reflections):
+    import numpy
+    from scitbx.array_family import flex
+    print "modeling background tmp numpy"
+    for ref in reflections:
+        shoebox = ref.shoebox.as_numpy_array()
+        mask = ref.shoebox_mask.as_numpy_array()
+        background = numpy.copy(shoebox)
+        for i in range(shoebox.shape[0]):
+            data2d = shoebox[i]
+            mask2d = mask[i]
+            background2d = background[i]
+            background2d = curved_background_calc_2d(data2d, mask2d)
+            background[i] = background2d
+
+        ref.shoebox = flex.int(shoebox)
+        ref.shoebox_background = flex.int(background)
+
+    # Return the reflections
+    return reflections
