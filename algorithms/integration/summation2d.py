@@ -22,9 +22,9 @@ class Summation2d(IntegrationInterface):
         return reflections
 
     def integrate(self, reflections):
-        tmp_translating_n_layering(reflections)
+        tmp_numpy_layering_n_integrating(reflections)
 
-def tmp_translating_n_layering(reflections):
+def tmp_numpy_layering_n_integrating(reflections):
     print "hi there translating and layering 01"
 
     from dials.algorithms.integration.summation_2d import raw_2d_integration

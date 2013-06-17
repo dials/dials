@@ -52,10 +52,9 @@ r.shoebox_background = flex.int(background2d)
 rlist = ReflectionList()
 rlist.append(r)
 
-
 from dials.algorithms.integration.summation2d \
-         import tmp_translating_n_layering
-tmp_translating_n_layering(rlist)
+ import tmp_numpy_layering_n_integrating
+tmp_numpy_layering_n_integrating(rlist)
 
 for r in rlist:
     print r

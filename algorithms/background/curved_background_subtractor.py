@@ -21,8 +21,8 @@ class CurvedSubtractor(BackgroundSubtractionInterface):
         pass
 
     def __call__(self, sweep, crystal, reflections):
-        import numpy
 
+        import numpy
         from scitbx.array_family import flex
         print "modeling background"
 
