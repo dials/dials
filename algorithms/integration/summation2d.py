@@ -27,7 +27,7 @@ class Summation2d(IntegrationInterface):
 def tmp_translating_n_layering(reflections):
     print "hi there translating and layering 01"
 
-    from dials.algorithms.integration.sumation_2d import raw_2d_integration
+    from dials.algorithms.integration.summation_2d import raw_2d_integration
     for ref in reflections:
         if ref.status == 0:
             shoebox = ref.shoebox.as_numpy_array()
