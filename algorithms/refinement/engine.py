@@ -27,9 +27,6 @@ class Refinery(object):
     # predictions are made (e.g. detector space, phi), so it is not general
     # enough to sit abstractly above the prediction.
 
-    #FIXME: reflection prediction to move to ReflectionManager class, so
-    #above notes to changes
-
     # This keeps the Refinery simple and able to be focused only on generic
     # features of managing a refinement run, like reporting results and checking
     # termination criteria
