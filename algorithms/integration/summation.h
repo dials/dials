@@ -148,7 +148,8 @@ namespace dials { namespace algorithms {
      * @param mask The mask
      * @returns The integrator struct
      */
-    integrator operator()(const flex_int &pixels, const flex_int &background,
+    integrator operator()(const flex_double &pixels,
+                          const flex_double &background,
         const flex_int &mask) const {
       flex_double pixels_double(pixels.accessor());
       for (std::size_t i = 0; i < pixels.size(); ++i) {

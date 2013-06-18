@@ -45,8 +45,8 @@ namespace dials { namespace algorithms { namespace boost_python {
         &IntegrateBySummation::centroid_covariance_matrix);
         
     Summation3d::integrator (Summation3d::*call_w_pixels)(
-        const flex_int &pixels, 
-        const flex_int &background,
+        const flex_double &pixels, 
+        const flex_double &background,
         const flex_int &mask) const = 
       &Summation3d::operator();
     void (Summation3d::*call_w_reflection)(Reflection &r) const = 

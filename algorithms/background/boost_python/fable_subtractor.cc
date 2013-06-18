@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_fable_subtractor()
   {
     // Overloads for call method
-    int (FableSubtractor::*call_shoebox_and_mask)(const flex_int&,
+    double (FableSubtractor::*call_shoebox_and_mask)(const flex_double&,
         flex_int&) const = &FableSubtractor::operator();
     void (FableSubtractor::*call_reflection)(Reflection &) const =
       &FableSubtractor::operator();  

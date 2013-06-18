@@ -301,7 +301,7 @@ namespace dials { namespace algorithms {
       n_div_ = n_div;
     }
 
-    flex_double operator()(const flex_int &pixels, const flex_int &mask,
+    flex_double operator()(const flex_double &pixels, const flex_int &mask,
                            int6 bbox, vec3<double> s1, double phi) const;
 
     /**
@@ -311,15 +311,15 @@ namespace dials { namespace algorithms {
     void operator()(Reflection &reflection) const {
 
       // Get the shoebox profiles
-      flex_int shoebox = reflection.get_shoebox();
-      flex_int background = reflection.get_shoebox_background();
+      flex_double shoebox = reflection.get_shoebox();
+      flex_double background = reflection.get_shoebox_background();
       flex_double transformed = reflection.get_transformed_shoebox();
 
       // Check they're the right size
       DIALS_ASSERT(transformed.accessor().all().all_eq(grid_size_));
 
       // Copy the background subtracted pixels to a new array
-      flex_int shoebox_input(shoebox.accessor());
+      flex_double shoebox_input(shoebox.accessor());
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
         shoebox_input[i] = shoebox[i] - background[i];
       }
@@ -383,7 +383,7 @@ namespace dials { namespace algorithms {
    * @returns The transformed grid
    * @throws std::rumtime_error if input is invalid
    */
-  flex_double ReciprocalSpaceTransform::operator()(const flex_int &image,
+  flex_double ReciprocalSpaceTransform::operator()(const flex_double &image,
       const flex_int &mask, int6 bbox, vec3<double> s1, double phi) const
   {
     // Constant for scaling values
@@ -446,7 +446,7 @@ namespace dials { namespace algorithms {
         std::size_t y = yy * n_div_r;
         for (std::size_t z = z0; z <= z1; ++z) {
           if (mask(z, y, z) != 0) {
-            int value = image(z, y, x) * div_fraction;
+            double value = image(z, y, x) * div_fraction;
             for (std::size_t gk = 0; gk < grid_size_; ++gk) {
               grid(gk, gj, gi) += value * fraction(z, gk);
             }

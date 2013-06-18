@@ -245,12 +245,12 @@ namespace dials { namespace model {
     }
 
     /** Get the reflection shoebox pixels */
-    const flex_int& get_shoebox() const {
+    const flex_double& get_shoebox() const {
       return shoebox_;
     }
 
     /** Get the reflection shoebox pixels */
-    flex_int& get_shoebox() {
+    flex_double& get_shoebox() {
       return shoebox_;
     }
 
@@ -265,12 +265,12 @@ namespace dials { namespace model {
     }
 
     /** Get the shoebox background */
-    flex_int& get_shoebox_background() {
+    flex_double& get_shoebox_background() {
       return shoebox_background_;
     }
 
     /** Get the shoebox background */
-    const flex_int& get_shoebox_background() const {
+    const flex_double& get_shoebox_background() const {
       return shoebox_background_;
     }
 
@@ -343,7 +343,7 @@ namespace dials { namespace model {
     }
 
     /** Set the reflection shoebox pixels */
-    void set_shoebox(const flex_int &shoebox) {
+    void set_shoebox(const flex_double &shoebox) {
       shoebox_ = shoebox;
     }
 
@@ -353,7 +353,7 @@ namespace dials { namespace model {
     }
 
     /** Set the reflection shoebox background */
-    void set_shoebox_background(const flex_int &shoebox_background) {
+    void set_shoebox_background(const flex_double &shoebox_background) {
       shoebox_background_ = shoebox_background;
     }
 
@@ -395,9 +395,9 @@ namespace dials { namespace model {
     int panel_number_;
     int6 bounding_box_;
 
-    flex_int shoebox_;
     flex_int shoebox_mask_;
-    flex_int shoebox_background_;
+    flex_double shoebox_;
+    flex_double shoebox_background_;
     flex_double transformed_shoebox_;
 
     vec3<double> centroid_position_;

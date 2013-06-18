@@ -43,9 +43,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("data"), arg("n_sigma") = -1));  
     
     // Overloads for call method
-    void (NormalDiscriminator::*call_shoebox_and_mask)(const flex_int&,
+    void (NormalDiscriminator::*call_shoebox_and_mask)(const flex_double&,
         flex_int &) const = &NormalDiscriminator::operator();
-    flex_int (NormalDiscriminator::*call_shoebox)(const flex_int&) const =
+    flex_int (NormalDiscriminator::*call_shoebox)(const flex_double&) const =
       &NormalDiscriminator::operator();
     void (NormalDiscriminator::*call_reflection)(Reflection &) const =
       &NormalDiscriminator::operator();  

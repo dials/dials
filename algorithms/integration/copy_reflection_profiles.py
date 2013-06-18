@@ -61,7 +61,7 @@ def copy_image_pixels(sweep, reflections, frame_indices,
     # If gain map or dark map are None then set suitable defaults
     image_size = sweep.get_image_size()[::-1]
     if not gain_map:
-        gain_map = flex.int(flex.grid(*image_size), 1)
+        gain_map = flex.double(flex.grid(*image_size), 1)
     if not dark_map:
         dark_map = flex.int(flex.grid(*image_size), 0)
 

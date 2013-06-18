@@ -115,7 +115,7 @@ namespace dials { namespace algorithms {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    void operator()(const flex_int &shoebox, flex_int &mask) const {
+    void operator()(const flex_double &shoebox, flex_int &mask) const {
 
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
@@ -167,7 +167,7 @@ namespace dials { namespace algorithms {
      * @param shoebox The shoebox profile
      * @return The mask
      */
-    flex_int operator()(const flex_int &shoebox) const {
+    flex_int operator()(const flex_double &shoebox) const {
       flex_int mask(shoebox.accessor(), 1);
       this->operator()(shoebox, mask);
       return mask;

@@ -67,9 +67,9 @@ class Script(ScriptRunner):
         if options.save_profiles == False:
             from scitbx.array_family import flex
             for r in reflections:
-                r.shoebox = flex.int()
+                r.shoebox = flex.double()
                 r.shoebox_mask = flex.int()
-                r.shoebox_background = flex.int()
+                r.shoebox_background = flex.double()
                 r.transformed_shoebox = flex.double()
         pickle.dump(reflections, open(options.output_filename, 'w'))
 

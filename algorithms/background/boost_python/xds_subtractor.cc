@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_xds_subtractor()
   {
     // Overloads for call method
-    int (XdsSubtractor::*call_shoebox_and_mask)(const flex_int&,
+    double (XdsSubtractor::*call_shoebox_and_mask)(const flex_double&,
         flex_int&) const = &XdsSubtractor::operator();
     void (XdsSubtractor::*call_reflection)(Reflection &) const =
       &XdsSubtractor::operator();  

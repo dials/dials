@@ -17,7 +17,7 @@
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
@@ -26,9 +26,9 @@ namespace dials { namespace algorithms {
    * @param reflections The reflection list
    * @param value The value to set the background pixels to
    */
-  void set_shoebox_background_value(ReflectionList &reflections, int value) {
+  void set_shoebox_background_value(ReflectionList &reflections, double value) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      flex_int background = reflections[i].get_shoebox_background();
+      flex_double background = reflections[i].get_shoebox_background();
       for (std::size_t j = 0; j < background.size(); ++j) {
         background[j] = value;
       }

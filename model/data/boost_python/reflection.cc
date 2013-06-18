@@ -85,7 +85,7 @@ namespace dials { namespace model { namespace boost_python {
       r.set_centroid_position(extract<vec3<double> >(state[9]));
       r.set_centroid_variance(extract<vec3<double> >(state[10]));
       r.set_centroid_sq_width(extract<vec3<double> >(state[11]));
-      r.set_shoebox(extract<const flex_int&>(state[12]));
+      r.set_shoebox(extract<const flex_double&>(state[12]));
       r.set_shoebox_mask(extract<const flex_int&>(state[13]));
       r.set_transformed_shoebox(extract<const flex_double&>(state[14]));
     }
@@ -111,13 +111,13 @@ namespace dials { namespace model { namespace boost_python {
       .def("set_active", &ReflectionBase::set_active)
       .def("is_zero", &ReflectionBase::is_zero);
 
-    flex_int& (Reflection::*reflection_get_shoebox)() = 
+    flex_double& (Reflection::*reflection_get_shoebox)() = 
       &Reflection::get_shoebox;
 
     flex_int& (Reflection::*reflection_get_shoebox_mask)() = 
       &Reflection::get_shoebox_mask;
 
-    flex_int& (Reflection::*reflection_get_shoebox_background)() = 
+    flex_double& (Reflection::*reflection_get_shoebox_background)() = 
       &Reflection::get_shoebox_background;
 
     flex_double& (Reflection::*reflection_get_transformed_shoebox)() = 

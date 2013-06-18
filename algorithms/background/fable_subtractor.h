@@ -40,7 +40,7 @@ namespace dials { namespace algorithms {
      * @params mask The shoebox mask
      * @returns The background value
      */
-    int operator()(const flex_int &shoebox, flex_int &mask) const {
+    double operator()(const flex_double &shoebox, flex_int &mask) const {
 
       // Set which pixels belong in the background and which are spots
       discriminate_(shoebox, mask);
@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
       }
 
       // Calculate the mean of the background pixels
-      return (int)mean(pixels.const_ref());
+      return mean(pixels.const_ref());
     }
 
     /**
@@ -62,8 +62,8 @@ namespace dials { namespace algorithms {
      * @params reflection The reflection
      */
     void operator()(Reflection &reflection) const {
-      flex_int background = reflection.get_shoebox_background();
-      int value = this->operator()(
+      flex_double background = reflection.get_shoebox_background();
+      double value = this->operator()(
           reflection.get_shoebox(),
           reflection.get_shoebox_mask());
       for (std::size_t i = 0; i < background.size(); ++i) {
@@ -77,7 +77,7 @@ namespace dials { namespace algorithms {
      * @return Arrays of booleans True/False successful.
      */
     void operator()(ReflectionList &reflections) const {
-      for (int i = 0; i < reflections.size(); ++i) {
+      for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {
           if (reflections[i].get_status() == 0) {
             this->operator()(reflections[i]);

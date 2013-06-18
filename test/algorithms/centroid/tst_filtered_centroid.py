@@ -27,7 +27,7 @@ def tst_filtered_centroid():
     ref.shoebox = sweep.to_array(
         (ref.bounding_box[4], ref.bounding_box[5],
          ref.bounding_box[2], ref.bounding_box[3],
-         ref.bounding_box[0], ref.bounding_box[1]))
+         ref.bounding_box[0], ref.bounding_box[1])).as_double()
 
     reflections = ReflectionList()
     reflections.append(ref)

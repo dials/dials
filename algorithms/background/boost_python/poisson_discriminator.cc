@@ -26,9 +26,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("data"), arg("n_sigma")));  
     
     // Overloads for call method
-    void (PoissonDiscriminator::*call_shoebox_and_mask)(const flex_int&,
+    void (PoissonDiscriminator::*call_shoebox_and_mask)(const flex_double&,
         flex_int &) const = &PoissonDiscriminator::operator();
-    flex_int (PoissonDiscriminator::*call_shoebox)(const flex_int&) const =
+    flex_int (PoissonDiscriminator::*call_shoebox)(const flex_double&) const =
       &PoissonDiscriminator::operator();
     void (PoissonDiscriminator::*call_reflection)(Reflection &) const =
       &PoissonDiscriminator::operator();        

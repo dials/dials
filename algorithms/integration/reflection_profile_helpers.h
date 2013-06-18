@@ -19,6 +19,7 @@ namespace dials { namespace algorithms {
 
   using scitbx::af::int6;
   using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
   using scitbx::af::flex_grid;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
@@ -30,19 +31,19 @@ namespace dials { namespace algorithms {
    */
   inline
   ReflectionList allocate_reflection_profiles(ReflectionList &reflections,
-      int shoebox_default = 0, int shoebox_mask_default = 1,
-      int shoebox_background_default = 0) {
+      double shoebox_default = 0, int shoebox_mask_default = 1,
+      double shoebox_background_default = 0) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
       int size_z = r.get_bounding_box()[5] - r.get_bounding_box()[4];
       int size_y = r.get_bounding_box()[3] - r.get_bounding_box()[2];
       int size_x = r.get_bounding_box()[1] - r.get_bounding_box()[0];
       DIALS_ASSERT(size_z > 0 && size_y > 0 && size_x > 0);
-      r.set_shoebox(flex_int(flex_grid<>(size_z, size_y, size_x),
+      r.set_shoebox(flex_double(flex_grid<>(size_z, size_y, size_x),
         shoebox_default));
       r.set_shoebox_mask(flex_int(flex_grid<>(size_z, size_y, size_x),
         shoebox_mask_default));
-      r.set_shoebox_background(flex_int(flex_grid<>(size_z, size_y, size_x),
+      r.set_shoebox_background(flex_double(flex_grid<>(size_z, size_y, size_x),
         shoebox_background_default));
     }
     return reflections;
@@ -62,7 +63,7 @@ namespace dials { namespace algorithms {
   inline
   void copy_single_image_pixels(const flex_int &image, int array_index,
       const flex_int &index, ReflectionList &reflections,
-      flex_int gain_map, flex_int dark_map) {
+      flex_double gain_map, flex_int dark_map) {
     for (std::size_t i = 0; i < index.size(); ++i) {
 
       // Get a reference to a reflection
@@ -84,7 +85,7 @@ namespace dials { namespace algorithms {
       int ii1 = i1 <= image_size[1] ? i1 : image_size[1];
 
       // Get the reflection profile
-      flex_int profile = r.get_shoebox();
+      flex_double profile = r.get_shoebox();
 
       // Copy the image pixels
       for (int jj = jj0; jj < jj1; ++jj) {

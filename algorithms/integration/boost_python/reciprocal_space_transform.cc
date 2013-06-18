@@ -41,7 +41,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   
   
     flex_double (ReciprocalSpaceTransform::*call_single)(
-      const flex_int&, const flex_int&, int6, vec3<double>, double) const = 
+      const flex_double&, const flex_int&, int6, vec3<double>, double) const = 
         &ReciprocalSpaceTransform::operator();
   
     void (ReciprocalSpaceTransform::*call_reflection)(
