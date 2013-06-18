@@ -77,44 +77,5 @@ namespace dials { namespace algorithms {
   }
 
 }}
-/*
-
-def curved_background_calc_2d(data2d, mask2d):
-
-    import numpy
-    n_col = numpy.size(data2d[0:1, :])
-    n_row = numpy.size(data2d[:, 0:1])
-    avg_bkgr_2d = numpy.copy(data2d)
-    for row in range(0, n_row, 1):
-        for col in range(0, n_col, 1):
-            if mask2d[row, col] == 1:
-                loc_bkgr_tot = 0.0
-                loc_bkgr_cont = 0
-                if mask2d[n_row - 1, col] == 0:
-                    loc_bkgr_tot += data2d[n_row - 1, col]
-                    loc_bkgr_cont += 1
-                if mask2d[0, col] == 0:
-                    loc_bkgr_tot += data2d[0, col]
-                    loc_bkgr_cont += 1
-                if mask2d[row, n_col - 1] == 0:
-                    loc_bkgr_tot += data2d[row, n_col - 1]
-                    loc_bkgr_cont += 1
-                if mask2d[row, 0] == 0:
-                    loc_bkgr_tot += data2d[row, 0]
-                    loc_bkgr_cont += 1
-
-                if loc_bkgr_cont > 0:
-                    loc_bkgr = loc_bkgr_tot / float(loc_bkgr_cont)
-                else:
-                    loc_bkgr = 0
-
-                avg_bkgr_2d[row, col] = loc_bkgr
-
-
-    return avg_bkgr_2d
-
-
- */
-
 
 #endif
