@@ -61,7 +61,7 @@ def layering_and_background_avg(reflections):
             data2d = shoebox[i]
             mask2d = mask[i]
             background2d = background[i]
-            background2d[:, :] = background_subtract_2d(flex.int(data2d)).as_numpy_array()
+            background2d[:, :] = background_subtract_2d(flex.int(data2d), flex.int(mask2d)).as_numpy_array()
             #background2d = flat_background_calc_2d(data2d, mask2d)
 
             background[i] = background2d
