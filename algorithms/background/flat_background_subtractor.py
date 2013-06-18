@@ -49,7 +49,7 @@ def tmp_numpy_layering_n_bkgr_avg(reflections):
     return reflections
 
 def layering_and_background_avg(reflections):
-    from dials.algorithms.background import background_subtract_2d
+    from dials.algorithms.background import flat_background_flex_2d
     import numpy
     from scitbx.array_family import flex
     print "averaging background with flex-array"
@@ -61,7 +61,7 @@ def layering_and_background_avg(reflections):
             data2d = shoebox[i]
             mask2d = mask[i]
             background2d = background[i]
-            background2d[:, :] = background_subtract_2d(flex.int(data2d), flex.int(mask2d)).as_numpy_array()
+            background2d[:, :] = flat_background_flex_2d(flex.int(data2d), flex.int(mask2d)).as_numpy_array()
             #background2d = flat_background_calc_2d(data2d, mask2d)
 
             background[i] = background2d

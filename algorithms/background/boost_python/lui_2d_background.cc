@@ -7,7 +7,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_lui_2d_background() {
-    def("background_subtract_2d", &background_subtract_2d, (arg("data2d"), arg("mask2d") ));
+    def("flat_background_flex_2d", &flat_background_flex_2d, (arg("data2d"), arg("mask2d") ));
     //def("smooth_3d", &smooth_3d, (arg("data2d"),arg("a") = 5) );
   }
 

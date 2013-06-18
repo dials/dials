@@ -6,7 +6,7 @@
 namespace dials { namespace algorithms {
   using scitbx::af::flex_int;
 
-  flex_int background_subtract_2d(flex_int & data2d, flex_int & mask2d) {
+  flex_int flat_background_flex_2d(flex_int & data2d, flex_int & mask2d) {
         // std::cout << "length =" << data2d.size() << " \n";
         std::size_t ncol=data2d.accessor().all()[1];
         std::size_t nrow=data2d.accessor().all()[0];
@@ -28,6 +28,8 @@ namespace dials { namespace algorithms {
           for (int col = 0; col<ncol;col++) {
             if ( mask2d(row,col) == 1 ){
               background2d(row,col) = avg_bkgr;
+            } else {
+              background2d(row,col) = data2d(row,col);
             }
           }
         }
