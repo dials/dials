@@ -19,7 +19,7 @@ namespace dials { namespace algorithms {
               cont++;
             }
             if ( tot_bkgr > 0 and cont > 0) {
-                avg_bkgr = tot_bkgr / cont;
+              avg_bkgr = tot_bkgr / cont;
             }
           }
         }

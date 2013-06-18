@@ -21,7 +21,8 @@ class CurvedSubtractor(BackgroundSubtractionInterface):
         pass
 
     def __call__(self, sweep, crystal, reflections):
-        tmp_numpy_layering_n_bkgr_modl(reflections)
+        #tmp_numpy_layering_n_bkgr_modl(reflections)
+        layering_and_background_modl(reflections)
         return reflections
 
 def tmp_numpy_layering_n_bkgr_modl(reflections):
@@ -49,7 +50,7 @@ def layering_and_background_modl(reflections):
     from dials.algorithms.background import curved_background_flex_2d
     import numpy
     from scitbx.array_family import flex
-    print "modelling background with flex-array"
+    # print "modelling background with flex-array"
     for ref in reflections:
         shoebox = ref.shoebox.as_numpy_array()
         mask = ref.shoebox_mask.as_numpy_array()
