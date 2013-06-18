@@ -131,6 +131,10 @@ namespace dials { namespace algorithms {
       vec3<double> coord_a = reflection_coord(a);
       vec3<double> coord_b = reflection_coord(b);
 
+      // Get the status for each reflection
+      int a_status = a.get_status();
+      int b_status = b.get_status();
+
       // Get range to iterate over
       int i0 = std::max(bbox_a[0], bbox_b[0]);
       int i1 = std::min(bbox_a[1], bbox_b[1]);
@@ -141,12 +145,17 @@ namespace dials { namespace algorithms {
 
       // Ensure ranges are valid
       DIALS_ASSERT(k1 > k0 && j1 > j0 && i1 > i0);
-      DIALS_ASSERT(i0 - bbox_a[0] >= 0 && i1 - bbox_a[0] <= size_a[2]);
-      DIALS_ASSERT(j0 - bbox_a[2] >= 0 && j1 - bbox_a[2] <= size_a[1]);
-      DIALS_ASSERT(k0 - bbox_a[4] >= 0 && k1 - bbox_a[4] <= size_a[0]);
-      DIALS_ASSERT(i0 - bbox_b[0] >= 0 && i1 - bbox_b[0] <= size_b[2]);
-      DIALS_ASSERT(j0 - bbox_b[2] >= 0 && j1 - bbox_b[2] <= size_b[1]);
-      DIALS_ASSERT(k0 - bbox_b[4] >= 0 && k1 - bbox_b[4] <= size_b[0]);
+
+      if (a_status == 0) {
+        DIALS_ASSERT(i0 - bbox_a[0] >= 0 && i1 - bbox_a[0] <= size_a[2]);
+        DIALS_ASSERT(j0 - bbox_a[2] >= 0 && j1 - bbox_a[2] <= size_a[1]);
+        DIALS_ASSERT(k0 - bbox_a[4] >= 0 && k1 - bbox_a[4] <= size_a[0]);
+      }
+      if (b_status == 0) {
+        DIALS_ASSERT(i0 - bbox_b[0] >= 0 && i1 - bbox_b[0] <= size_b[2]);
+        DIALS_ASSERT(j0 - bbox_b[2] >= 0 && j1 - bbox_b[2] <= size_b[1]);
+        DIALS_ASSERT(k0 - bbox_b[4] >= 0 && k1 - bbox_b[4] <= size_b[0]);
+      }
 
       // Iterate over range of indices
       for (int k = k0; k < k1; ++k) {
@@ -165,11 +174,13 @@ namespace dials { namespace algorithms {
             // set the mask for a to 1 and b to 0, otherwise set
             // b to 1 and a to 0.
             if (distance(coord_a, coord_c) < distance(coord_b, coord_c)) {
-              mask_a(ka, ja, ia) = 1;
-              mask_b(kb, jb, ib) = 0;
+              if (b_status == 0) {
+                mask_b(kb, jb, ib) = 0;
+              }
             } else {
-              mask_a(ka, ja, ia) = 0;
-              mask_b(kb, jb, ib) = 1;
+              if (a_status == 0) {
+                mask_a(ka, ja, ia) = 0;
+              }
             }
           }
         }
@@ -221,7 +232,9 @@ namespace dials { namespace algorithms {
      */
     void initialise_mask(ReflectionList &reflections, int value) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
-        initialise_mask(reflections[i], value);
+        if (reflections[i].get_status() == 0) {
+          initialise_mask(reflections[i], value);
+        }
       }
     }
 

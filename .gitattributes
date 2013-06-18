@@ -644,6 +644,7 @@ test/model/serialize/tst_serialize.py -text
 util/__init__.py -text
 util/command_line.py -text
 util/config.py -text
+util/image.py -text
 util/ioutil.py -text
 util/nexus.py -text
 util/options.py -text

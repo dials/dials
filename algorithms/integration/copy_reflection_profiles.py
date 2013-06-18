@@ -31,10 +31,11 @@ def get_reflection_frame_indices(sweep, reflections):
     # For each reflection, Find the frames which it spans and copy an
     # index into the frame -> reflection list
     for i, r in enumerate(reflections):
-        f0 = r.bounding_box[4]
-        f1 = r.bounding_box[5]
-        for f in range(f0, f1):
-            frames_to_reflection[f].append(i)
+        if r.status == 0:
+            f0 = r.bounding_box[4]
+            f1 = r.bounding_box[5]
+            for f in range(f0, f1):
+                frames_to_reflection[f].append(i)
 
     # Return the list of lists
     return frames_to_reflection
@@ -79,7 +80,8 @@ def copy_image_pixels(sweep, reflections, frame_indices,
         progress.update(100 * (index + 1) / len(sweep))
 
     # Progress bar finished
-    progress.finished("Extracted {0} reflections".format(len(reflections)))
+    progress.finished("Extracted {0} reflections".format(
+        len([r for r in reflections if r.status == 0])))
 
     # Return the reflections
     return reflections
@@ -107,12 +109,14 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None,
     # Allocate memory for reflection profiles
     Command.start("Allocating reflection profiles")
     reflections = allocate_reflection_profiles(reflections)
-    Command.end("Allocated {0} reflection profiles".format(len(reflections)))
+    Command.end("Allocated {0} reflection profiles".format(
+        len([r for r in reflections if r.status == 0])))
 
     # Get the indices of the reflections recorded on each frame
     Command.start("Getting reflection frame indices")
     frame_indices = get_reflection_frame_indices(sweep, reflections)
-    Command.end("Got frame indices for {0} reflections".format(len(reflections)))
+    Command.end("Got frame indices for {0} reflections".format(
+        len([r for r in reflections if r.status == 0])))
 
     # Copy the pixels from the sweep to the reflection shoeboxes
     reflections = copy_image_pixels(sweep, reflections, frame_indices,

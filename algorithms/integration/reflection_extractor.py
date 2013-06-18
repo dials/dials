@@ -140,16 +140,16 @@ class ReflectionExtractor(object):
         overlaps = find_overlapping_reflections(reflections)
         Command.end('Found {0} overlaps'.format(len(overlaps)))
 
-        # Extract the reflection profiles
-        extract_reflection_profiles(sweep, reflections, overlaps,
-            self.gain_map, self.dark_map)
-
         # Set all reflections which overlap bad pixels to zero
         Command.start('Filtering reflections using detector mask')
         array_range = scan.get_array_range()
         filter_by_detector_mask(reflections, detector_mask, array_range)
         Command.end('Filtered {0} reflections'.format(
             len([r for r in reflections if r.status == 0])))
+
+        # Extract the reflection profiles
+        extract_reflection_profiles(sweep, reflections, overlaps,
+            self.gain_map, self.dark_map)
 
         # Return the list of reflections
         return reflections
