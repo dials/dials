@@ -162,7 +162,7 @@ class TestSpotPredictor:
         for hkl, xyz in zip(self.integrate_handle.hkl,
                             self.integrate_handle.xyzcal):
 
-            xds_xy = (xyz[0], xyz[1])
+            xds_xy = (xyz[0] - 0.5, xyz[1] - 0.5)
 
             # Select the nearest xy to use if there are 2
             my_xy = gen_xy[hkl]

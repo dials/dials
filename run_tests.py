@@ -21,7 +21,6 @@ tst_list = (
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/image/tst_centroid.py",
-    "$D/test/algorithms/background/tst_mean_subtractor.py",
     )
 
 def run () :

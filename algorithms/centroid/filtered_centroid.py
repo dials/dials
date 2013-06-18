@@ -83,7 +83,7 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
         A list of indices deemed to contribute to spot foreground
 
     """
-    from dials.algorithms.integration import foreground_pixels
+    from dials.algorithms.background import NormalDiscriminator
     from scitbx.array_family import flex
 
     # Get the 1D array
@@ -92,7 +92,9 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
         data[i] = pixel_data[i]
 
     # Get a list of foreground pixel indices
-    index = foreground_pixels(data, min_pixels, n_sigma)
+    discriminate = NormalDiscriminator(min_pixels, n_sigma)
+    mask = discriminate(data)
+    index = flex.select(range(len(mask)), flags=mask)
 
     # Select and return only those pixels that are contigious
     return select_contigious(index, pixel_data.all(), conn)
