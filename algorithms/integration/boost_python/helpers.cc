@@ -29,6 +29,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("is_bbox_valid", &is_bbox_valid);
     def("filter_by_detector_mask", filter_reflection_by_detector_mask);
     def("filter_by_detector_mask", filter_reflection_list_by_detector_mask);
+    def("filter_by_bbox_volume", filter_by_bbox_volume);
   }
 
 }}} // namespace = dials::algorithms::boost_python

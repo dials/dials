@@ -14,17 +14,20 @@ from __future__ import division
 class ReflectionExtractor(object):
     ''' Class to extract basic reflection information. '''
 
-    def __init__(self, bbox_nsigma, gain_map=None, dark_map=None):
+    def __init__(self, bbox_nsigma, filter_by_volume=True,
+                 gain_map=None, dark_map=None):
         ''' Initialise the extractor
 
         Params:
             bbox_nsigma The number of standard deviations for bbox
+            filter_by_volume True/False
             gain_map The detector gain map
             dark_map The detector dark map
 
         '''
         # Get parameters we need
         self.bbox_nsigma = bbox_nsigma
+        self.filter_by_volume = filter_by_volume
         self.gain_map = gain_map
         self.dark_map = dark_map
 
@@ -100,6 +103,8 @@ class ReflectionExtractor(object):
         from dials.algorithms.integration import find_overlapping_reflections
         from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
+        from dials.algorithms.integration import filter_by_bbox_volume
+        from math import sqrt
 
         # Get models from the sweep
         beam = sweep.get_beam()
@@ -146,6 +151,13 @@ class ReflectionExtractor(object):
         filter_by_detector_mask(reflections, detector_mask, array_range)
         Command.end('Filtered {0} reflections'.format(
             len([r for r in reflections if r.status == 0])))
+
+        # Filter the reflections by the bounding box volume
+        if self.filter_by_volume:
+            Command.start('Filtering reflections by bounding box volume')
+            filter_by_bbox_volume(reflections, int(sqrt(len(reflections))))
+            Command.end('Filtered {0} reflections by volume'.format(
+                len([r for r in reflections if r.status == 0])))
 
         # Extract the reflection profiles
         extract_reflection_profiles(sweep, reflections, overlaps,

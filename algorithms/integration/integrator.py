@@ -96,6 +96,7 @@ class IntegratorFactory(object):
         # Return the reflection extractor instance
         return ReflectionExtractor(
             bbox_nsigma=params.integration.shoebox.n_sigma,
+            filter_by_volume=params.integration.filter.by_volume,
             gain_map=gain_map,
             dark_map=dark_map)
 

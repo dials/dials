@@ -11,9 +11,11 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_HELPERS_H
 #define DIALS_ALGORITHMS_INTEGRATION_HELPERS_H
 
+#include <limits>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/model/data/reflection.h>
+#include <dials/algorithms/image/threshold/unimodal.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -22,8 +24,10 @@ namespace dials { namespace algorithms {
   using scitbx::af::int2;
   using scitbx::af::int6;
   using scitbx::af::flex_bool;
+  using scitbx::af::flex_double;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
+  using dials::algorithms::maximum_deviation;
 
   /**
    * Check if the bounding box has points outside the image range.
@@ -96,6 +100,47 @@ namespace dials { namespace algorithms {
       const flex_bool &mask, int2 scan_range) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       filter_by_detector_mask(reflections[i], mask, scan_range);
+    }
+  }
+
+  /**
+   * Filter the reflection list based on the bounding box volume
+   * @param reflections The list of reflections
+   */
+  void filter_by_bbox_volume(ReflectionList &reflections,
+      std::size_t num_bins) {
+
+    // Check the bins are correct
+    DIALS_ASSERT(num_bins > 0);
+
+    // Calculate the bounding box volume for all reflections and then
+    // find the minimum and maximum volumes
+    flex_int volume(reflections.size());
+    int min_volume = std::numeric_limits<int>::max(), max_volume = 0;
+    for (std::size_t i = 0; i < reflections.size(); ++i) {
+      int6 bbox = reflections[i].get_bounding_box();
+      volume[i] = (bbox[1]-bbox[0]) * (bbox[3]-bbox[2]) * (bbox[5]-bbox[4]);
+      if (volume[i] < min_volume) min_volume = volume[i];
+      if (volume[i] > max_volume) max_volume = volume[i];
+    }
+
+    // Check that the volumes are valid
+    DIALS_ASSERT(max_volume > min_volume && min_volume > 0 && max_volume > 0);
+
+    // Create the volume histogram
+    flex_double histo(num_bins);
+    double bin_size = (max_volume - min_volume) / (num_bins - 1);
+    for (std::size_t i = 0; i < volume.size(); ++i) {
+      histo[(int)(volume[i] / bin_size)]++;
+    }
+
+    // Calculate the threshold and set any reflections with bounding
+    // box size greater than the threshold to be invalid.
+    double threshold = maximum_deviation(histo) * bin_size;
+    for (std::size_t i = 0; i < reflections.size(); ++i) {
+      if (volume[i] > threshold) {
+        reflections[i].set_valid(false);
+      }
     }
   }
 

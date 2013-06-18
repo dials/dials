@@ -14,6 +14,16 @@ integration
       .type = float
   }
    
+  filter
+    .help = "Parameters for filtering reflections"
+  {
+    by_volume = True
+      .help = "Filter the reflections by the bounding box volume. Only"
+              "integrate those reflections with a bounding box volume"
+              "below a threshold calculated from the histogram of volumes"
+      .type = bool
+  }
+   
   background
     .help = "Parameters used in the background subtraction algorithm."
   {
