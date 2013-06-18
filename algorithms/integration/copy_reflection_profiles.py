@@ -39,13 +39,16 @@ def get_reflection_frame_indices(sweep, reflections):
     # Return the list of lists
     return frames_to_reflection
 
-def copy_image_pixels(sweep, reflections, frame_indices):
+def copy_image_pixels(sweep, reflections, frame_indices,
+                      gain_map=None, dark_map=None):
     """ Copy the image pixels from the sweep to the reflection profiles.
 
     Params:
         sweep The sweep object
         reflections The list of reflections
         frame_indices The list of reflections recorded on each frame
+        gain_map The gain map
+        dark_map The dark map
 
     Returns:
         The updated list of reflections
@@ -53,6 +56,14 @@ def copy_image_pixels(sweep, reflections, frame_indices):
     """
     from dials.algorithms.integration import copy_single_image_pixels
     from dials.util.command_line import ProgressBar
+    from scitbx.array_family import flex
+
+    # If gain map or dark map are None then set suitable defaults
+    image_size = sweep.get_image_size()[::-1]
+    if not gain_map:
+        gain_map = flex.int(flex.grid(*image_size), 1)
+    if not dark_map:
+        dark_map = flex.int(flex.grid(*image_size), 0)
 
     # Create a progress bar
     progress = ProgressBar(title="Extracting reflections")
@@ -64,7 +75,7 @@ def copy_image_pixels(sweep, reflections, frame_indices):
     for index, image in enumerate(sweep):
         reflection_indices = frame_indices[index]
         copy_single_image_pixels(image, index + first_array_index,
-            reflection_indices, reflections)
+            reflection_indices, reflections, gain_map, dark_map)
         progress.update(100 * (index + 1) / len(sweep))
 
     # Progress bar finished
@@ -73,13 +84,16 @@ def copy_image_pixels(sweep, reflections, frame_indices):
     # Return the reflections
     return reflections
 
-def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
+def extract_reflection_profiles(sweep, reflections, adjacency_list=None,
+                                gain_map=None, dark_map=None):
     """ Copy all the pixels from the sweep to the reflection profiles.
 
     Params:
         sweep The sweep object
         reflections The reflection list
         adjacency_list The adjacency list (optional)
+        gain_map The detector gain map
+        dark_map The detector dark map
 
     Returns:
         The updated reflection list.
@@ -88,22 +102,31 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None):
     from dials.algorithms.integration import allocate_reflection_profiles
     from dials.algorithms.integration import ShoeboxMasker
     from scitbx.array_family import flex
+    from dials.util.command_line import Command
 
     # Allocate memory for reflection profiles
+    Command.start("Allocating reflection profiles")
     reflections = allocate_reflection_profiles(reflections)
+    Command.end("Allocated {0} reflection profiles".format(len(reflections)))
 
     # Get the indices of the reflections recorded on each frame
+    Command.start("Getting reflection frame indices")
     frame_indices = get_reflection_frame_indices(sweep, reflections)
+    Command.end("Got frame indices for {0} reflections".format(len(reflections)))
 
     # Copy the pixels from the sweep to the reflection shoeboxes
-    reflections = copy_image_pixels(sweep, reflections, frame_indices)
+    reflections = copy_image_pixels(sweep, reflections, frame_indices,
+        gain_map, dark_map)
 
     # If the adjacency list is given, then create the reflection mask
     if adjacency_list:
         detector_mask = (sweep[0] >= 0).as_1d().as_int()
         detector_mask.reshape(flex.grid(sweep[0].all()))
+        Command.start("Masking overlapped reflections")
         shoebox_masker = ShoeboxMasker(detector_mask)
         shoebox_masker(reflections, adjacency_list)
+        Command.end("Masked {0} overlapped reflections".format(
+            len(adjacency_list)))
 
     # Return the reflections
     return reflections

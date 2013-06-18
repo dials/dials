@@ -72,9 +72,9 @@ class IntegratorFactory(object):
         compute_intensity = IntegratorFactory.configure_intensity(params)
 
         # Return the integrator with the given strategies
-        return Integrator(compute_spots = compute_spots,
-                          compute_background = compute_background,
-                          compute_intensity = compute_intensity)
+        return Integrator(compute_spots=compute_spots,
+                          compute_background=compute_background,
+                          compute_intensity=compute_intensity)
 
     @staticmethod
     def configure_extractor(params):
@@ -88,7 +88,16 @@ class IntegratorFactory(object):
 
         '''
         from dials.algorithms.integration import ReflectionExtractor
-        return ReflectionExtractor(params.integration.shoebox.n_sigma)
+
+        # Load some lookup maps
+        gain_map = IntegratorFactory.load_image(params.lookup.gain_map)
+        dark_map = IntegratorFactory.load_image(params.lookup.dark_map)
+
+        # Return the reflection extractor instance
+        return ReflectionExtractor(
+            bbox_nsigma=params.integration.shoebox.n_sigma,
+            gain_map=gain_map,
+            dark_map=dark_map)
 
     @staticmethod
     def configure_background(params):
@@ -191,3 +200,25 @@ class IntegratorFactory(object):
 
         # Return the algorithm
         return algorithm
+
+    @staticmethod
+    def load_image(filename):
+        ''' Given a filename, load an image
+
+        Params:
+            filename The input filename
+
+        Returns:
+            The image or None
+
+        '''
+        from dials.util import image
+
+        # If no filename is set then return None
+        if not filename:
+            return None
+
+        # Read the image and return the image data
+        handle = image.reader()
+        handle.read_file(filename)
+        return handle.get_data()

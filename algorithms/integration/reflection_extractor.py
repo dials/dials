@@ -14,15 +14,19 @@ from __future__ import division
 class ReflectionExtractor(object):
     ''' Class to extract basic reflection information. '''
 
-    def __init__(self, bbox_nsigma):
+    def __init__(self, bbox_nsigma, gain_map=None, dark_map=None):
         ''' Initialise the extractor
 
         Params:
             bbox_nsigma The number of standard deviations for bbox
+            gain_map The detector gain map
+            dark_map The detector dark map
 
         '''
         # Get parameters we need
         self.bbox_nsigma = bbox_nsigma
+        self.gain_map = gain_map
+        self.dark_map = dark_map
 
     def __call__(self, sweep, crystal):
         ''' Extract the basic reflection properties from the sweep
@@ -137,7 +141,8 @@ class ReflectionExtractor(object):
         Command.end('Found {0} overlaps'.format(len(overlaps)))
 
         # Extract the reflection profiles
-        extract_reflection_profiles(sweep, reflections, overlaps)
+        extract_reflection_profiles(sweep, reflections, overlaps,
+            self.gain_map, self.dark_map)
 
         # Set all reflections which overlap bad pixels to zero
         Command.start('Filtering reflections using detector mask')

@@ -30,7 +30,9 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("image"), 
         arg("array_index"), 
         arg("reflection_indices"), 
-        arg("reflections")));
+        arg("reflections"),
+        arg("gain_map"),
+        arg("dark_map")));
   }
 
 }}} // namespace = dials::algorithms::boost_python

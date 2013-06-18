@@ -1,0 +1,11 @@
+lookup
+  .help = "Parameters specifying lookup file path"
+{
+  gain_map = None
+    .help = "The path to the gain file."
+    .type = str
+
+  dark_map = None
+    .help = "The path to the dark current file."
+    .type = str
+}

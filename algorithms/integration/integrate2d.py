@@ -25,5 +25,3 @@ class Integrate2d(IntegrationInterface):
          import tmp_translating_n_layering
 
         tmp_translating_n_layering(reflections)
-
-

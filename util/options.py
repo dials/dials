@@ -58,6 +58,7 @@ class SystemConfigReader(object):
 
         # Get the location of the master file
         return [os.path.join(path, 'data', 'logging.phil'),
+                os.path.join(path, 'data', 'lookup.phil'),
                 os.path.join(path, 'data', 'spotfinding.phil'),
                 os.path.join(path, 'data', 'integration.phil')]
 

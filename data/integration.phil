@@ -13,7 +13,7 @@ integration
               "mosaicity to use for the bounding box size."
       .type = float
   }
-  
+   
   background
     .help = "Parameters used in the background subtraction algorithm."
   {

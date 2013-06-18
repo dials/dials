@@ -134,7 +134,7 @@ class ScriptRunner(object):
             handle = gain_cbf.reader()
             handle.read_file(self.gain_map_file)
             dim = sweep.get_detector().get_image_size()[::-1]
-            self.gain = handle.get_data(dim)
+            self.gain_map = handle.get_data(dim)
             Command.end('Read gain map file')
 
         # Create the mask

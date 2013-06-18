@@ -56,10 +56,13 @@ namespace dials { namespace algorithms {
    * @param array_index The array index of the image
    * @param index The reflection indices
    * @param reflections The reflection list.
+   * @param gain_map The detector gain map
+   * @param dark_map The detector dark map
    */
   inline
   void copy_single_image_pixels(const flex_int &image, int array_index,
-      const flex_int &index, ReflectionList &reflections) {
+      const flex_int &index, ReflectionList &reflections,
+      flex_int gain_map, flex_int dark_map) {
     for (std::size_t i = 0; i < index.size(); ++i) {
 
       // Get a reference to a reflection
@@ -88,7 +91,8 @@ namespace dials { namespace algorithms {
         for (int ii = ii0; ii < ii1; ++ii) {
           int j = jj - j0;
           int i = ii - i0;
-          profile(k, j, i) = image(jj, ii);
+          profile(k, j, i) = gain_map(jj, ii) * (
+              image(jj, ii) - dark_map(jj, ii));
         }
       }
 
