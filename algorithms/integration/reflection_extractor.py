@@ -146,10 +146,10 @@ class ReflectionExtractor(object):
         Command.end('Found {0} overlaps'.format(len(overlaps)))
 
         # Set all reflections which overlap bad pixels to zero
-        Command.start('Filtering reflections using detector mask')
+        Command.start('Filtering reflections by detector mask')
         array_range = scan.get_array_range()
         filter_by_detector_mask(reflections, detector_mask, array_range)
-        Command.end('Filtered {0} reflections'.format(
+        Command.end('Filtered {0} reflections by detector mask'.format(
             len([r for r in reflections if r.status == 0])))
 
         # Filter the reflections by the bounding box volume
