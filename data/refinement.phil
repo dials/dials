@@ -1,0 +1,13 @@
+refinement
+  .help = "Parameters to configure the refinement"
+{
+  engine = SimpleLBFGS LBFGScurvs *GaussNewtonIterations
+    .help = "The minimisation engine to use"
+    .type = choice
+
+  scan_varying = False
+    .help = "experimental option to follow refinement to "
+            "convergence with a round of refinement using a "
+            "scan-varying parameterisation (i.e. time dependence)"
+    .type = bool
+}

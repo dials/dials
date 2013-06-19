@@ -141,6 +141,7 @@ algorithms/refinement/prediction/ra_indices.dat -text
 algorithms/refinement/prediction/rscript.R -text
 algorithms/refinement/prediction_parameter_helpers.h -text
 algorithms/refinement/refinement.py -text
+algorithms/refinement/refiner.py -text
 algorithms/refinement/target.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
 algorithms/spatial_indexing/SConscript -text
@@ -188,6 +189,7 @@ command_line/parameters.py -text
 command_line/predict_spots.py -text
 command_line/print_reflection_stats.py -text
 command_line/refine.py -text
+command_line/refine2.py -text
 command_line/reflection_stats.py -text
 command_line/subtract_background.py -text
 command_line/toy_centroid_runner.py -text
@@ -195,6 +197,7 @@ data/completion_template.txt -text
 data/integration.phil -text
 data/logging.phil -text
 data/lookup.phil -text
+data/refinement.phil -text
 data/spotfinding.phil -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.pdf -text
 doc/developer/cctbx_introduction_1/cctbx_introduction_1.png -text

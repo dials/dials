@@ -60,7 +60,8 @@ class SystemConfigReader(object):
         return [os.path.join(path, 'data', 'logging.phil'),
                 os.path.join(path, 'data', 'lookup.phil'),
                 os.path.join(path, 'data', 'spotfinding.phil'),
-                os.path.join(path, 'data', 'integration.phil')]
+                os.path.join(path, 'data', 'integration.phil'),
+                os.path.join(path, 'data', 'refinement.phil')]
 
     def user_filename(self):
         '''Get the user filename.'''
