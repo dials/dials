@@ -167,7 +167,7 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
     detector, beam, crystal, goniometer, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 
-    if verbosity > 2:
+    if verbosity > 1:
         print "Prediction equation parameterisation built\n"
         print "Parameter order:name mapping"
         for i, e in enumerate(pred_param.get_p_names()):
@@ -185,7 +185,7 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
                             angles, sigangles,
                             beam, goniometer)
 
-    if verbosity > 2: print "Reflection manager built\n"
+    if verbosity > 1: print "Reflection manager built\n"
 
     ##############################
     # Set up the target function #
@@ -194,7 +194,7 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
         refman, pred_param, detector.get_pixel_size(), image_width)
 
-    if verbosity > 2: print "Target function built\n"
+    if verbosity > 1: print "Target function built\n"
 
     ################################
     # Set up the refinement engine #
@@ -203,7 +203,7 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
     refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
                                     verbosity=verbosity)
 
-    if verbosity > 2: print "Refinement engine built\n"
+    if verbosity > 1: print "Refinement engine built\n"
 
     ###################################
     # Do refinement and return models #
@@ -295,7 +295,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
         detector, beam, crystal, goniometer, [det_param], [s0_param],
         [xlo_param], [xluc_param])
 
-    if verbosity > 2:
+    if verbosity > 1:
         print "Prediction equation parameterisation built\n"
         print "Parameter order:name mapping"
         for i, e in enumerate(pred_param.get_p_names()):
@@ -313,7 +313,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
                             angles, sigangles,
                             beam, goniometer)
 
-    if verbosity > 2: print "Reflection manager built\n"
+    if verbosity > 1: print "Reflection manager built\n"
 
     ##############################
     # Set up the target function #
@@ -322,7 +322,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
         ref_predictor, detector, refman, pred_param, image_width)
 
-    if verbosity > 2: print "Target function built\n"
+    if verbosity > 1: print "Target function built\n"
 
     ################################
     # Set up the refinement engine #
@@ -331,7 +331,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
     refiner = GaussNewtonIterations(mytarget, pred_param, log=None,
                                     verbosity=verbosity)
 
-    if verbosity > 2: print "Refinement engine built\n"
+    if verbosity > 1: print "Refinement engine built\n"
 
     ###################################
     # Do refinement and return models #
