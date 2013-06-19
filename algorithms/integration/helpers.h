@@ -129,9 +129,12 @@ namespace dials { namespace algorithms {
 
     // Create the volume histogram
     flex_double histo(num_bins);
-    double bin_size = (max_volume - min_volume) / (num_bins - 1);
+    double bin_size = (float)(max_volume - min_volume) / (float)(num_bins - 1);
     for (std::size_t i = 0; i < volume.size(); ++i) {
-      histo[(int)(volume[i] / bin_size)]++;
+      int index = (int)((volume[i] - min_volume) / bin_size);
+      if (index < 0) index = 0;
+      if (index >= num_bins) index = num_bins - 1;
+      histo[(int)((volume[i] - min_volume) / bin_size)]++;
     }
 
     // Calculate the threshold and set any reflections with bounding
