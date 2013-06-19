@@ -93,6 +93,9 @@ class ScriptRunner(object):
                   1.0 + sqw_px[1] / intensity,
                   1.0 + sqw_px[2] / intensity)
 
+        # Correct for offset in origin
+        pos_px = pos_px[0] - 0.5, pos_px[1] - 0.5, pos_px[2]
+
         # Get the centroid in mm/rad
         pos_mm, sqw_mm, var_mm, = centroid_px_to_mm(self.detector,
             self.scan, pos_px, sqw_px, var_px)
@@ -106,6 +109,7 @@ class ScriptRunner(object):
         r.image_coord_px    = (pos_px[0], pos_px[1])
         r.frame_number      = pos_px[2]
         r.intensity         = intensity
+        r.panel_number      = 0
         r.miller_index      = hkl
 
         # Return reflection
