@@ -87,7 +87,7 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
 
     for i, rf_lst in enumerate(reflection_list):
-        rf_lst.shoebox = flex.int(numpy.copy(data3d[          \
+        rf_lst.shoebox = flex.double(numpy.copy(data3d[          \
                                   z_from_lst[i]: z_to_lst[i], \
                                   y_from_lst[i]: y_to_lst[i], \
                                   x_from_lst[i]: x_to_lst[i] ]))

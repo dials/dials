@@ -6,17 +6,17 @@
 
 namespace dials { namespace algorithms {
   using scitbx::af::flex_int;
-
-  flex_int smooth_2d(flex_int & data2d, int tot_times) {
+  using scitbx::af::flex_double;
+  flex_double smooth_2d(flex_double & data2d, int tot_times) {
         // std::cout << "length =" << data2d.size() << " \n";
         std::size_t ncol=data2d.accessor().all()[1];
         std::size_t nrow=data2d.accessor().all()[0];
-        flex_int data2dtmp(data2d);
-        flex_int data2dsmoth(data2d.accessor(),0);
+        flex_double data2dtmp(data2d);
+        flex_double data2dsmoth(data2d.accessor(),0);
         float tot_i,cont;
         // std::cout <<"times =" << tot_times << "\n";
         // std::cout <<"ncol =" << ncol << "  nrow =" << nrow <<" \n";
-        std::cout <<"2D in tst" << " \n";
+        std::cout <<"2D in -> tst" << " \n";
 
         for (int time = 0; time < tot_times; time++) {
           for (int row = 1; row<nrow-1;row++) {
@@ -56,7 +56,7 @@ namespace dials { namespace algorithms {
     // std::cout <<"ncol =" << ncol << "\n";
     // std::cout <<"nrow =" << nrow <<" \n";
     // std::cout <<"nfrm =" << nfrm <<" \n";
-    // std::cout <<"[dimensions] =3D " << " \n";
+    std::cout <<"[dimensions] = 3D " << " \n";
                                           // scanning the block
 
     for (int time = 0; time < tot_times; time++) {

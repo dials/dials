@@ -9,7 +9,7 @@
 #  included in the root directory of this package.
 import numpy
 
-data2d = numpy.zeros((5, 5), dtype = numpy.int32)
+data2d = numpy.zeros((5, 5), dtype = numpy.float64)
 data2d[0, 1] = data2d[1, 0] = 1
 data2d[0, 2] = data2d[2, 0] = 3
 data2d[0, 3] = data2d[3, 0] = 2
@@ -27,7 +27,7 @@ mask2d[1:4, 1:4] = 1
 print mask2d
 
 background2d = numpy.copy(data2d)
-background2d[:, :] = 0
+background2d[:, :] = 0.0
 
 data3d = data2d
 data3d.shape = (1,) + data2d.shape
@@ -45,9 +45,9 @@ print background3d.shape
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
 r = Reflection()
-r.shoebox = flex.int(data2d)
+r.shoebox = flex.double(data2d)
 r.shoebox_mask = flex.int(mask2d)
-r.shoebox_background = flex.int(background2d)
+r.shoebox_background = flex.double(background2d)
 
 rlist = ReflectionList()
 rlist.append(r)
@@ -60,9 +60,9 @@ from dials.algorithms.background.curved_background_subtractor \
 from dials.algorithms.integration.summation2d \
  import tmp_numpy_layering_n_integrating
 
-#tmp_numpy_layering_n_bkgr_avg(rlist)
+tmp_numpy_layering_n_bkgr_avg(rlist)
 #layering_and_background_avg(rlist)
-layering_and_background_modl(rlist)
+#layering_and_background_modl(rlist)
 #tmp_numpy_layering_n_bkgr_modl(rlist)
 
 

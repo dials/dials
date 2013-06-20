@@ -5,13 +5,13 @@
 
 namespace dials { namespace algorithms {
   using scitbx::af::flex_int;
-
-  flex_int flat_background_flex_2d(flex_int & data2d, flex_int & mask2d) {
+  using scitbx::af::flex_double;
+  flex_double flat_background_flex_2d(flex_double & data2d, flex_int  & mask2d) {
         std::size_t ncol=data2d.accessor().all()[1];
         std::size_t nrow=data2d.accessor().all()[0];
-        flex_int background2d(data2d.accessor(),0);
-        float cont=0.0, tot_bkgr = 0.0;
-        int avg_bkgr = 0;
+        flex_double background2d(data2d.accessor(),0);
+        double cont=0.0, tot_bkgr = 0.0;
+        double avg_bkgr = 0;
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {
             if ( mask2d(row,col) == 0 ){
@@ -34,12 +34,12 @@ namespace dials { namespace algorithms {
         }
     return background2d;
   }
-  flex_int curved_background_flex_2d(flex_int & data2d, flex_int & mask2d) {
+  flex_double curved_background_flex_2d(flex_double & data2d, flex_int & mask2d) {
         std::size_t ncol=data2d.accessor().all()[1];
         std::size_t nrow=data2d.accessor().all()[0];
-        flex_int background2d(data2d.accessor(),0);
-        float loc_bkgr_cont, loc_bkgr_tot;
-        int loc_bkgr = 0;
+        flex_double background2d(data2d.accessor(),0);
+        double loc_bkgr_cont, loc_bkgr_tot;
+        double loc_bkgr = 0;
 
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {

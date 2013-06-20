@@ -27,8 +27,10 @@ class FlatSubtractor(BackgroundSubtractionInterface):
         return reflections
 
 
-def tmp_numpy_layering_n_bkgr_avg(reflections):
 
+
+
+def tmp_numpy_layering_n_bkgr_avg(reflections):
     import numpy
     from scitbx.array_family import flex
     print "averaging background tmp numpy"
@@ -43,30 +45,32 @@ def tmp_numpy_layering_n_bkgr_avg(reflections):
             background2d = flat_background_calc_2d(data2d, mask2d)
             background[i] = background2d
 
-        ref.shoebox = flex.int(shoebox)
-        ref.shoebox_background = flex.int(background)
+        ref.shoebox = flex.double(shoebox)
+        ref.shoebox_background = flex.double(background)
 
     return reflections
 
 def layering_and_background_avg(reflections):
     from dials.algorithms.background import flat_background_flex_2d
-    import numpy
     from scitbx.array_family import flex
+    # import numpy
     # print "averaging background with flex-array"
     for ref in reflections:
-        shoebox = ref.shoebox.as_numpy_array()
-        mask = ref.shoebox_mask.as_numpy_array()
-        background = numpy.copy(shoebox)
-        for i in range(shoebox.shape[0]):
-            data2d = shoebox[i]
-            mask2d = mask[i]
-            background2d = background[i]
-            background2d[:, :] = flat_background_flex_2d(flex.int(data2d), flex.int(mask2d)).as_numpy_array()
-            #background2d = flat_background_calc_2d(data2d, mask2d)
+        if ref.status == 0:
+            shoebox = ref.shoebox
+            mask = ref.shoebox_mask
+            background = ref.shoebox_background
+            for i in range(shoebox.all()[0]):
+                data2d = shoebox[i:i + 1, :, :]
+                mask2d = mask[i:i + 1, :, :]
+                data2d.reshape(flex.grid(shoebox.all()[1:]))
+                mask2d.reshape(flex.grid(shoebox.all()[1:]))
+                background2d = flat_background_flex_2d(data2d.as_double(), mask2d)
+                background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
+                background[i:i + 1, :, :] = background2d.as_double()
 
-            background[i] = background2d
-
-        ref.shoebox = flex.int(shoebox)
-        ref.shoebox_background = flex.int(background)
+            print "-->", background.all()
+            #ref.shoebox_background = background
+            print "-->", ref.shoebox_background.all(), background.all()
 
     return reflections

@@ -35,7 +35,7 @@ def find_mask_2d(data2d, n_times, threshold_shift):
     diffdata2d = numpy.zeros_like(data2d)
     #data2dtmp = numpy.copy(data2d)
     if n_times > 0:
-        data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
+        data2dsmoth = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
     else:
         promedio = numpy.mean(data2d)
         data2dsmoth[:, :] = promedio
