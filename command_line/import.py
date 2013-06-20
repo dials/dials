@@ -131,6 +131,18 @@ class XdsCrystImporter(object):
         return xds.to_crystal(filename)
 
 
+class XdsParamImporter(object):
+    ''' Class to import parameters from XDS files. '''
+
+    def __init__(self, directory):
+        ''' Init the class. '''
+        self.directory = directory
+
+    def __call__(self):
+        ''' Import the parameters '''
+        return ''
+
+
 class Script(ScriptRunner):
     '''Class to run the script.'''
 
@@ -229,9 +241,11 @@ class Script(ScriptRunner):
             import_cryst = XdsCrystImporter(
                 options.xds_dir,
                 options.xds_crystal)
-            import_param = lambda: params
+            import_param = XdsParamImporter(
+                options.xds_dir)
             sweep_source = "xds configuration files"
             cryst_source = "xds configuration files"
+            param_source = "xds configuration files"
         else:
             self.config().print_help()
             return
