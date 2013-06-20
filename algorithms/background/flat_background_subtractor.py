@@ -27,9 +27,6 @@ class FlatSubtractor(BackgroundSubtractionInterface):
         return reflections
 
 
-
-
-
 def tmp_numpy_layering_n_bkgr_avg(reflections):
     import numpy
     from scitbx.array_family import flex

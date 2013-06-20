@@ -16,7 +16,6 @@ namespace dials { namespace algorithms {
         float tot_i,cont;
         // std::cout <<"times =" << tot_times << "\n";
         // std::cout <<"ncol =" << ncol << "  nrow =" << nrow <<" \n";
-        std::cout <<"2D in -> tst" << " \n";
 
         for (int time = 0; time < tot_times; time++) {
           for (int row = 1; row<nrow-1;row++) {
@@ -48,15 +47,8 @@ namespace dials { namespace algorithms {
     std::size_t nrow=data3d.accessor().all()[1];
     std::size_t nfrm=data3d.accessor().all()[0];
     float tot_i,cont;
-    // int tot_i,cont;
     flex_int data3dtmp(data3d);
     flex_int data3dsmoth(data3d.accessor(),0);
-    // std::cout << "length =" << data3d.size() << " \n";
-    // std::cout <<"times =" << tot_times << "\n";
-    // std::cout <<"ncol =" << ncol << "\n";
-    // std::cout <<"nrow =" << nrow <<" \n";
-    // std::cout <<"nfrm =" << nfrm <<" \n";
-    std::cout <<"[dimensions] = 3D " << " \n";
                                           // scanning the block
 
     for (int time = 0; time < tot_times; time++) {
