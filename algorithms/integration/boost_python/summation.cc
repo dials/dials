@@ -18,14 +18,42 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_summation()
   {
+    class_ <SumIntensity3d> ("SumIntensity3d", no_init)
+      .def(init <const flex_double&,
+                 const flex_double&>((
+          arg("signal"),
+          arg("background"))))
+      .def(init <const flex_double&,
+                 const flex_double&,
+                 const flex_int&>((
+          arg("signal"),
+          arg("background"),
+          arg("mask"))))
+      .def("intensity", &SumIntensity3d::intensity)
+      .def("variance", &SumIntensity3d::variance)
+      .def("signal_intensity", &SumIntensity3d::signal_intensity)
+      .def("signal_variance", &SumIntensity3d::signal_variance)
+      .def("background_intensity", &SumIntensity3d::background_intensity)
+      .def("background_variance", &SumIntensity3d::background_variance);
+      
     class_ <IntegrateBySummation> ("IntegrateBySummation", no_init)
       .def(init <const flex_double&> ((
           arg("pixels"))))
-      .def(init <const flex_double&, const flex_int&> ((
+      .def(init <const flex_double&, 
+                 const flex_double&> ((
           arg("pixels"),
-          arg("mask"))))
-      .def(init <const flex_double&, const flex_vec3_double&> ((
+          arg("background"))))
+      .def(init <const flex_double&, 
+                 const flex_double&,
+                 const flex_int&> ((
           arg("pixels"),
+          arg("mask"),
+          arg("background"))))
+      .def(init <const flex_double&, 
+                 const flex_double&,
+                 const flex_vec3_double&> ((
+          arg("pixels"),
+          arg("background"),
           arg("points"))))
       .def("intensity", 
         &IntegrateBySummation::intensity)

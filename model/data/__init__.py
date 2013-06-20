@@ -21,7 +21,7 @@ reflection_list_attributes = [
   'centroid_variance',
   'centroid_sq_width',
   'intensity',
-  'intensity_variance',
+  'intensity_variance'
 ]
 
 def get_list(rl, attr):

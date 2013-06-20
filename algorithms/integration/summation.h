@@ -30,6 +30,114 @@ namespace dials { namespace algorithms {
   typedef flex< vec3<double> >::type flex_vec3_double;
 
   /**
+   * Class to sum the intensity in 3D
+   */
+  class SumIntensity3d {
+  public:
+
+    /**
+     * Integrate the intensity
+     * @param signal The signal to integrate
+     * @param background The background to the signal
+     */
+    SumIntensity3d(const flex_double &signal,
+                   const flex_double &background)
+    {
+      // Check both arrays are the same size
+      DIALS_ASSERT(signal.size() == background.size());
+
+      // Calculate the signal and background intensity
+      signal_intensity_ = 0.0;
+      background_intensity_ = 0.0;
+      for (std::size_t i = 0; i < signal.size(); ++i) {
+        signal_intensity_ += signal[i];
+        background_intensity_ += background[i];
+      }
+
+      // Set the signal and background variance
+      signal_variance_ = signal_intensity_;
+      background_variance_ = background_intensity_;
+    }
+
+    /**
+     * Integrate the intensity
+     * @param signal The signal to integrate
+     * @param background The background to the signal
+     * @param mask The mask to the signal
+     */
+    SumIntensity3d(const flex_double &signal,
+                   const flex_double &background,
+                   const flex_int &mask)
+    {
+      // Check both arrays are the same size
+      DIALS_ASSERT(signal.size() == background.size());
+
+      // Calculate the signal and background intensity
+      signal_intensity_ = 0.0;
+      background_intensity_ = 0.0;
+      for (std::size_t i = 0; i < signal.size(); ++i) {
+        if (mask[i]) {
+          signal_intensity_ += signal[i];
+          background_intensity_ += background[i];
+        }
+      }
+
+      // Set the signal and background variance
+      signal_variance_ = signal_intensity_;
+      background_variance_ = background_intensity_;
+    }
+
+    /**
+     * @returns The reflection intensity
+     */
+    double intensity() const {
+      return signal_intensity() - background_intensity();
+    }
+
+    /**
+     * @returns the signal intensity
+     */
+    double signal_intensity() const {
+      return signal_intensity_;
+    }
+
+    /**
+     * @returns the background intensity
+     */
+    double background_intensity() const {
+      return background_intensity_;
+    }
+
+    /**
+     * @returns the variance on the integrated intensity
+     */
+    double variance() const {
+      return signal_variance() + background_variance();
+    }
+
+    /**
+     * @returns the variance on the signal intensity
+     */
+    double signal_variance() const {
+      return signal_variance_;
+    }
+
+    /**
+     * @returns the variance on the background intensity
+     */
+    double background_variance() const {
+      return background_variance_;
+    }
+
+  private:
+
+    double signal_intensity_;
+    double signal_variance_;
+    double background_intensity_;
+    double background_variance_;
+  };
+
+  /**
    * Class to perform summation integration.
    */
   class IntegrateBySummation {
@@ -44,41 +152,91 @@ namespace dials { namespace algorithms {
      * @param pixels The 3D image.
      */
     IntegrateBySummation(const flex_double &pixels) {
+
+      // Calculate the centroid
       CentroidImage3d centroid(pixels);
       intensity_         = centroid.sum_pixels();
+      ivariance_         = intensity_;
       centroid_          = centroid.mean();
       variance_          = centroid.unbiased_variance();
       standard_error_sq_ = centroid.unbiased_standard_error_sq();
       covariance_matrix_ = centroid.covariance_matrix();
+    }
+
+    /**
+     * Perform the integration on a 3D image.
+     * @param pixels The 3D image.
+     * @param background The background
+     */
+    IntegrateBySummation(const flex_double &pixels,
+                         const flex_double &background) {
+
+      // Create an array with pixels - background
+      flex_double pixels_m_background(subtract_background(pixels, background));
+
+      // Calculate the centroid
+      CentroidImage3d centroid(pixels_m_background);
+      centroid_          = centroid.mean();
+      variance_          = centroid.unbiased_variance();
+      standard_error_sq_ = centroid.unbiased_standard_error_sq();
+      covariance_matrix_ = centroid.covariance_matrix();
+
+      // Calculate the itensity and sigma
+      SumIntensity3d isum(pixels, background);
+      intensity_ = isum.intensity();
+      ivariance_ = isum.variance();
     }
 
     /**
      * Perform the integration on a 3D image with a mask.
      * @param pixels The 3D image.
+     * @param background The pixel background
      * @param mask The corresponding mask
      */
-    IntegrateBySummation(const flex_double &pixels, const flex_int &mask) {
-      CentroidMaskedImage3d centroid(pixels, mask);
-      intensity_         = centroid.sum_pixels();
+    IntegrateBySummation(const flex_double &pixels,
+                         const flex_double &background,
+                         const flex_int &mask) {
+
+      // Create an array with pixels - background
+      flex_double pixels_m_background(subtract_background(pixels, background));
+
+      // Calculate the centroid
+      CentroidMaskedImage3d centroid(pixels_m_background, mask);
       centroid_          = centroid.mean();
       variance_          = centroid.unbiased_variance();
       standard_error_sq_ = centroid.unbiased_standard_error_sq();
       covariance_matrix_ = centroid.covariance_matrix();
+
+      // Calculate the itensity and sigma
+      SumIntensity3d isum(pixels, background, mask);
+      intensity_ = isum.intensity();
+      ivariance_ = isum.variance();
     }
 
     /**
      * Perform the integration on a set of 3D points
      * @param pixels The image pixels.
+     * @param background The image background
      * @param coords The image coordinates.
      */
     IntegrateBySummation(const flex_double &pixels,
-        const flex_vec3_double &coords) {
-      CentroidPoints< vec3<double> > centroid(pixels, coords);
-      intensity_         = centroid.sum_pixels();
+                         const flex_double &background,
+                         const flex_vec3_double &coords) {
+
+      // Create an array with pixels - background
+      flex_double pixels_m_background(subtract_background(pixels, background));
+
+      // Calculate the centroid
+      CentroidPoints< vec3<double> > centroid(pixels_m_background, coords);
       centroid_          = centroid.mean();
       variance_          = centroid.unbiased_variance();
       standard_error_sq_ = centroid.unbiased_standard_error_sq();
       covariance_matrix_ = centroid.covariance_matrix();
+
+      // Calculate the itensity and sigma
+      SumIntensity3d isum(pixels, background);
+      intensity_ = isum.intensity();
+      ivariance_ = isum.variance();
     }
 
     /** @return The integrated intensity. */
@@ -88,7 +246,7 @@ namespace dials { namespace algorithms {
 
     /** @return The variance on the intensity */
     double variance() const {
-      return 0.0;
+      return ivariance_;
     }
 
     /** @return the standard deviation on the intensity */
@@ -123,7 +281,23 @@ namespace dials { namespace algorithms {
 
   private:
 
+    flex_double subtract_background(const flex_double &pixels,
+        const flex_double &background) {
+      // Check the sizes are the same
+      DIALS_ASSERT(pixels.size() == background.size());
+
+      // Create an array with pixels - background
+      flex_double pixels_m_background(pixels.accessor());
+      for (std::size_t i = 0; i < pixels.size(); ++i) {
+        pixels_m_background[i] = pixels[i] - background[i];
+      }
+
+      // Return the subtracted pixels
+      return pixels_m_background;
+    }
+
     double intensity_;
+    double ivariance_;
     coord_type centroid_;
     coord_type variance_;
     coord_type standard_error_sq_;
@@ -151,12 +325,8 @@ namespace dials { namespace algorithms {
      */
     integrator operator()(const flex_double &pixels,
                           const flex_double &background,
-        const flex_int &mask) const {
-      flex_double pixels_double(pixels.accessor());
-      for (std::size_t i = 0; i < pixels.size(); ++i) {
-        pixels_double[i] = (double)(pixels[i] - background[i]);
-      }
-      return integrator(pixels_double, mask);
+                          const flex_int &mask) const {
+      return integrator(pixels, background, mask);
     }
 
     /**
