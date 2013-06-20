@@ -80,10 +80,6 @@ def layering_and_background_modl(reflections):
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
 
-            print "-->", background.all()
-            #ref.shoebox_background = background
-            print "-->", ref.shoebox_background.all(), background.all()
-
 
     return reflections
 

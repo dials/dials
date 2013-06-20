@@ -53,8 +53,7 @@ def tmp_numpy_layering_n_bkgr_avg(reflections):
 def layering_and_background_avg(reflections):
     from dials.algorithms.background import flat_background_flex_2d
     from scitbx.array_family import flex
-    # import numpy
-    # print "averaging background with flex-array"
+
     for ref in reflections:
         if ref.status == 0:
             shoebox = ref.shoebox
@@ -69,8 +68,5 @@ def layering_and_background_avg(reflections):
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
 
-            print "-->", background.all()
-            #ref.shoebox_background = background
-            print "-->", ref.shoebox_background.all(), background.all()
 
     return reflections
