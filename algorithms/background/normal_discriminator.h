@@ -268,7 +268,9 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      */
     void operator()(Reflection &reflection) const {
-      this->operator()(reflection.get_shoebox(), reflection.get_shoebox_mask());
+      flex_double shoebox = reflection.get_shoebox();
+      flex_int mask = reflection.get_shoebox_mask();
+      this->operator()(shoebox, mask);
     }
 
   private:

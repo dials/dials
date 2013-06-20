@@ -62,10 +62,10 @@ namespace dials { namespace algorithms {
      * @params reflection The reflection
      */
     void operator()(Reflection &reflection) const {
+      flex_int mask = reflection.get_shoebox_mask();
+      flex_double shoebox = reflection.get_shoebox();
       flex_double background = reflection.get_shoebox_background();
-      double value = this->operator()(
-          reflection.get_shoebox(),
-          reflection.get_shoebox_mask());
+      double value = this->operator()(shoebox, mask);
       for (std::size_t i = 0; i < background.size(); ++i) {
         background[i] = value;
       }

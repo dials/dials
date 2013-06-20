@@ -116,8 +116,8 @@ namespace dials { namespace algorithms {
     void assign_ownership(Reflection &a, Reflection &b) const {
 
       // Get the reflection mask arrays
-      flex_int &mask_a = a.get_shoebox_mask();
-      flex_int &mask_b = b.get_shoebox_mask();
+      flex_int mask_a = a.get_shoebox_mask();
+      flex_int mask_b = b.get_shoebox_mask();
 
       // Get the sizes of the masks
       flex_int::index_type size_a = mask_a.accessor().all();
@@ -195,7 +195,7 @@ namespace dials { namespace algorithms {
     void initialise_mask(Reflection &reflection, int value) const {
 
       // Get the mask and roi from the reflection
-      flex_int &mask = reflection.get_shoebox_mask();
+      flex_int mask = reflection.get_shoebox_mask();
       flex_int::index_type size = mask.accessor().all();
       int6 roi = reflection.get_bounding_box();
 

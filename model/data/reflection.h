@@ -245,42 +245,22 @@ namespace dials { namespace model {
     }
 
     /** Get the reflection shoebox pixels */
-    const flex_double& get_shoebox() const {
-      return shoebox_;
-    }
-
-    /** Get the reflection shoebox pixels */
-    flex_double& get_shoebox() {
+    flex_double get_shoebox() const {
       return shoebox_;
     }
 
     /** Get the reflection shoebox mask */
-    const flex_int& get_shoebox_mask() const {
-      return shoebox_mask_;
-    }
-
-    /** Get the reflection shoebox mask */
-    flex_int& get_shoebox_mask() {
+    flex_int get_shoebox_mask() const {
       return shoebox_mask_;
     }
 
     /** Get the shoebox background */
-    flex_double& get_shoebox_background() {
-      return shoebox_background_;
-    }
-
-    /** Get the shoebox background */
-    const flex_double& get_shoebox_background() const {
+    flex_double get_shoebox_background() const {
       return shoebox_background_;
     }
 
     /** Get the transformed profile */
-    const flex_double& get_transformed_shoebox() const {
-      return transformed_shoebox_;
-    }
-
-    /** Get the transformed profile */
-    flex_double& get_transformed_shoebox() {
+    flex_double get_transformed_shoebox() const {
       return transformed_shoebox_;
     }
 

@@ -111,18 +111,6 @@ namespace dials { namespace model { namespace boost_python {
       .def("set_active", &ReflectionBase::set_active)
       .def("is_zero", &ReflectionBase::is_zero);
 
-    flex_double& (Reflection::*reflection_get_shoebox)() = 
-      &Reflection::get_shoebox;
-
-    flex_int& (Reflection::*reflection_get_shoebox_mask)() = 
-      &Reflection::get_shoebox_mask;
-
-    flex_double& (Reflection::*reflection_get_shoebox_background)() = 
-      &Reflection::get_shoebox_background;
-
-    flex_double& (Reflection::*reflection_get_transformed_shoebox)() = 
-      &Reflection::get_transformed_shoebox;
-
     class_<Reflection, bases<ReflectionBase> > ("Reflection")
       .def(init <const Reflection &>())
       .def(init <miller_index_type> ((
@@ -149,20 +137,16 @@ namespace dials { namespace model { namespace boost_python {
         &Reflection::get_bounding_box,
         &Reflection::set_bounding_box)  
       .add_property("shoebox",
-        make_function(reflection_get_shoebox, 
-          return_internal_reference<>()),
+        &Reflection::get_shoebox,
         &Reflection::set_shoebox)
       .add_property("shoebox_mask",
-        make_function(reflection_get_shoebox_mask, 
-          return_internal_reference<>()),
+        &Reflection::get_shoebox_mask,
         &Reflection::set_shoebox_mask)
       .add_property("shoebox_background",
-        make_function(reflection_get_shoebox_background, 
-          return_internal_reference<>()),
+        &Reflection::get_shoebox_background,
         &Reflection::set_shoebox_background)        
       .add_property("transformed_shoebox",
-        make_function(reflection_get_transformed_shoebox, 
-          return_internal_reference<>()),
+        &Reflection::get_transformed_shoebox,
         &Reflection::set_transformed_shoebox)
       .add_property("centroid_position",
         &Reflection::get_centroid_position,
