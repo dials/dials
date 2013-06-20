@@ -87,6 +87,12 @@ class ScriptRunner(object):
                 dest='output_config_file', type='string', default=None,
                 help='The file in which to save the configuration parameters.')
 
+        if kwargs.get('num_threads_option', True):
+            self._config.add_option(
+                '--num-threads',
+                dest='num_threads', type='int', default=0,
+                help='The number of threads to use. Default=max')
+
         # Bind the config add_option function to this class
         self.add_option = self._config.add_option
 
@@ -114,6 +120,12 @@ class ScriptRunner(object):
         except AttributeError:
             pass
 
+        # Configure the number of threads to use
+        try:
+            self._configure_threads(options.num_threads)
+        except AttributeError:
+            pass
+
         # Run the actual script
         try:
             self.main(params, options, args)
@@ -127,6 +139,17 @@ class ScriptRunner(object):
                 writer.write(self.working_params, options.output_config_file)
         except AttributeError:
             pass
+
+    def _configure_threads(self, num_threads):
+        '''Configure the number of parallel threads to use.'''
+        from omptbx import omp_set_num_threads, omp_get_max_threads
+
+        # If number of threads is <= 0 then set to max
+        if num_threads <= 0:
+            num_threads = omp_get_max_threads()
+
+        # Set the number of threads to use
+        omp_set_num_threads(num_threads)
 
     def _configure_logging(self, phil):
         '''Configure the logging.'''

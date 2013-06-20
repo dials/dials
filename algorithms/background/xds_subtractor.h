@@ -78,7 +78,7 @@ namespace dials { namespace algorithms {
      * @return Arrays of booleans True/False successful.
      */
     void operator()(ReflectionList &reflections) const {
-      #pragma omp parallal for
+      #pragma omp parallel for
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {
           if (reflections[i].get_status() == 0) {

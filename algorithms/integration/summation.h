@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 #define DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <algorithm>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/tiny_algebra.h>
@@ -187,6 +188,7 @@ namespace dials { namespace algorithms {
      * @param reflections The reflection list
      */
     void operator()(ReflectionList &reflections) const {
+      #pragma omp parallel for
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {
           if (reflections[i].get_status() == 0) {

@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_FABLE_SUBTRACTOR_H
 #define DIALS_ALGORITHMS_BACKGROUND_FABLE_SUBTRACTOR_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
@@ -77,6 +78,7 @@ namespace dials { namespace algorithms {
      * @return Arrays of booleans True/False successful.
      */
     void operator()(ReflectionList &reflections) const {
+      #pragma omp parallel for
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {
           if (reflections[i].get_status() == 0) {
