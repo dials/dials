@@ -114,6 +114,14 @@ class Target(object):
                 # store all this information in the matched obs-pred pair
                 obs.update_prediction(Xc, Yc, Phic, Sc, grads)
 
+        if self._H.first_update:
+            
+            # delete all obs-pred pairs from the manager that do not
+            # have a prediction
+            self._H.strip_unmatched_observations()
+            
+            self._H.first_update = False
+
         return
 
     def get_num_reflections(self):
@@ -424,6 +432,9 @@ class ReflectionManager(object):
                len(Frameo) == \
                len(Ho))
 
+        # track whether this is the first update of predictions or not
+        self.first_update = True
+
         # set verbosity
         self._verbosity = verbosity
 
@@ -511,6 +522,14 @@ class ReflectionManager(object):
             print
 
         return l
+
+    def strip_unmatched_observations(self):
+        '''
+        Delete observations from the manager that are not matched to a
+        prediction. Typically used once, after the first update of predictions
+        '''
+
+    pass
 
     def get_indices(self):
         '''Get the unique indices of all observations in the manager'''
