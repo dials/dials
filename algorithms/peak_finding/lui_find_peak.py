@@ -10,7 +10,7 @@ def find_mask_3d(data3d, n_times, threshold_shift):
     diffdata3d = numpy.zeros_like(data3d)
 
     if n_times > 0:
-        data3dsmoth[:, :, :] = smooth_3d(flex.int(data3d), n_times).as_numpy_array()
+        data3dsmoth[:, :, :] = smooth_3d(flex.double(data3d), n_times).as_numpy_array()
 
     else:
         promedio = numpy.mean(data3d)

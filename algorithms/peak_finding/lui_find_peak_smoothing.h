@@ -5,7 +5,7 @@
 #include <scitbx/array_family/flex_types.h>
 
 namespace dials { namespace algorithms {
-  using scitbx::af::flex_int;
+//  using scitbx::af::flex_int;
   using scitbx::af::flex_double;
   flex_double smooth_2d(flex_double & data2d, int tot_times) {
         // std::cout << "length =" << data2d.size() << " \n";
@@ -42,13 +42,13 @@ namespace dials { namespace algorithms {
   }
 
 
-  flex_int smooth_3d(flex_int & data3d, int tot_times) {
+  flex_double smooth_3d(flex_double & data3d, int tot_times) {
     std::size_t ncol=data3d.accessor().all()[2];
     std::size_t nrow=data3d.accessor().all()[1];
     std::size_t nfrm=data3d.accessor().all()[0];
     float tot_i,cont;
-    flex_int data3dtmp(data3d);
-    flex_int data3dsmoth(data3d.accessor(),0);
+    flex_double data3dtmp(data3d);
+    flex_double data3dsmoth(data3d.accessor(),0);
                                           // scanning the block
 
     for (int time = 0; time < tot_times; time++) {
