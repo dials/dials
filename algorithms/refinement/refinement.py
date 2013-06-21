@@ -169,7 +169,7 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
 
     if verbosity > 1:
         print "Prediction equation parameterisation built\n"
-        print "Parameter order:name mapping"
+        print "Parameter order : name mapping"
         for i, e in enumerate(pred_param.get_p_names()):
             print "Parameter %03d : " % i + e
         print
@@ -183,7 +183,7 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
-                            beam, goniometer)
+                            beam, goniometer, verbosity)
 
     if verbosity > 1: print "Reflection manager built\n"
 
@@ -311,9 +311,12 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
-                            beam, goniometer)
+                            beam, goniometer, scan, verbosity,
+                            nref_per_degree = 50)
 
-    if verbosity > 1: print "Reflection manager built\n"
+    if verbosity > 1:
+        print "Reflection manager built\n"
+        print "Working set size = %d observations" % refman.get_sample_size()
 
     ##############################
     # Set up the target function #

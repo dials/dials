@@ -26,6 +26,7 @@ class RefinementRunner(object):
         '''The main body of the script.'''
         from scitbx import matrix
         from math import sqrt
+        import random
 
         # Begin by loading models from the input files
         self._load_models()
@@ -74,6 +75,8 @@ class RefinementRunner(object):
                len(sig_d2s) == len(angles) == len(sig_angles)
 
         from dials.algorithms.refinement import print_model_geometry, refine
+        random.seed(42)
+        print "Random seed set to 42\n"
 
         print "Prior to refinement the experimental model is:"
         print_model_geometry(self.beam, self.detector, self.crystal)

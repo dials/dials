@@ -230,7 +230,7 @@ newrefman = NewReflectionManager(hkls, enterings, frames,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,
-                        mybeam, mygonio)
+                        mybeam, mygonio, myscan)
 
 ##############################
 # Set up the target function #

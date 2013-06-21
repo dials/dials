@@ -12,6 +12,7 @@ from __future__ import division
 from scitbx import matrix
 from math import pi, sqrt
 from cctbx.array_family import flex
+import random
 
 # dials imports
 from dials.algorithms.spot_prediction import ray_intersection
@@ -415,7 +416,8 @@ class ReflectionManager(object):
                        Xo, sigXo,
                        Yo, sigYo,
                        Phio, sigPhio,
-                       beam, gonio, verbosity=0):
+                       beam, gonio, scan,
+                       verbosity=0, nref_per_degree = None):
 
         # check the observed values
         Ho = list(Ho)
@@ -444,18 +446,23 @@ class ReflectionManager(object):
         # set verbosity
         self._verbosity = verbosity
 
-        # keep references to the beam and goniometer models (for reflection
-        # exclusion test)
+        # keep references to the beam, goniometer and scan models (for
+        # reflection exclusion and subsetting)
         self._beam = beam
         self._gonio = gonio
+        self._scan = scan
 
         # find vector normal to the spindle-beam plane for the initial model
         self._vecn = self._spindle_beam_plane_normal()
 
         # exclude reflections that fail inclusion criteria
         obs_data = zip(Ho, So, Xo, sigXo, Yo, sigYo, Phio, sigPhio)
-        (Ho, So, Xo, sigXo, Yo,
-         sigYo, Phio, sigPhio) = self._remove_excluded_obs(obs_data)
+        self._obs_data = self._remove_excluded_obs(obs_data)
+        self._sample_size = len(self._obs_data)
+
+        # choose a random subset of data for refinement
+        (Ho, So, Xo, sigXo, Yo, sigYo, Phio, sigPhio) = \
+                zip(*self._create_working_set(nref_per_degree))
 
         # store observation information in a dict of observation-prediction
         # pairs (prediction information will go in here later)
@@ -495,7 +502,7 @@ class ReflectionManager(object):
                (h, s, x, sx, y, sy, p, sp) in obs_data if
                self._inclusion_test(h, s, self._vecn)]
 
-        return tuple(zip(*inc))
+        return tuple(inc)
 
     def _inclusion_test(self, h, s, vecn):
         '''Test observation h for inclusion'''
@@ -509,6 +516,26 @@ class ReflectionManager(object):
         test = s.accute_angle(vecn) < 1.466077
 
         return test
+
+    def _create_working_set(self, nref_per_degree):
+        '''Make a subset of data for use in refinement'''
+
+        working_data = self._obs_data
+        if nref_per_degree:
+            temp = self._scan.get_oscillation_range(deg=True)
+            width = abs(temp[1] - temp[0])
+            sample_size = int(nref_per_degree * width)
+            if sample_size < len(working_data):
+                self._sample_size = sample_size
+                working_data = random.sample(working_data,
+                                             self._sample_size)
+        return(working_data)
+
+    def get_sample_size(self):
+        '''Return the number of observations in the working set to be
+        used for refinement'''
+
+        return self._sample_size
 
     def get_matches(self):
         '''For every observation matched with a prediction return all data'''
