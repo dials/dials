@@ -115,11 +115,11 @@ class Target(object):
                 obs.update_prediction(Xc, Yc, Phic, Sc, grads)
 
         if self._H.first_update:
-            
+
             # delete all obs-pred pairs from the manager that do not
             # have a prediction
             self._H.strip_unmatched_observations()
-            
+
             self._H.first_update = False
 
         return
@@ -322,7 +322,7 @@ class ObsPredMatch:
         self.Phiresid = None
         self.Phiresid2 = None
 
-        self.use = False
+        self.is_matched = False
 
     # update with a prediction
     def update_prediction(self, Xc, Yc, Phic, Sc, gradients):
@@ -342,12 +342,12 @@ class ObsPredMatch:
         self.Phiresid = Phic - self.Phio
         self.Phiresid2 = self.Phiresid**2
 
-        self.use = True
+        self.is_matched = True
 
     def reset(self):
 
         '''Flag this observation to not be used'''
-        self.use = False
+        self.is_matched = False
 
 class ObservationPrediction(object):
     '''A helper class for the reflection manager to contain information about
@@ -371,7 +371,9 @@ class ObservationPrediction(object):
                                  Yo, sigYo, weightYo,
                                  Phio, sigPhio, weightPhio)]
 
-        self.num_obs = 1
+    def __len__(self):
+
+        return len(self.obs)
 
     def __iter__(self):
 
@@ -380,7 +382,7 @@ class ObservationPrediction(object):
 
     def get_num_pairs(self):
         '''Count the number of observations that are paired with a prediction'''
-        return sum(1 for x in self.obs if x.use)
+        return sum(1 for x in self.obs if x.is_matched)
 
     def reset_predictions(self):
         '''Set the use flag to false for all observations, so that after
@@ -388,6 +390,11 @@ class ObservationPrediction(object):
         flagged to be removed from calculation of residual and gradients.'''
 
         map(lambda x: x.reset(), self.obs)
+
+    def remove_unmatched_obs(self):
+        '''Remove observations without a matching prediction'''
+
+        self.obs = [x for x in self.obs if x.is_matched]
 
     def add_observation(self, entering, frame, Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
@@ -398,7 +405,6 @@ class ObservationPrediction(object):
                                      Xo, sigXo, weightXo,
                                      Yo, sigYo, weightYo,
                                      Phio, sigPhio, weightPhio))
-        self.num_obs += 1
 
 
 class ReflectionManager(object):
@@ -507,7 +513,7 @@ class ReflectionManager(object):
     def get_matches(self):
         '''For every observation matched with a prediction return all data'''
 
-        l = [obs for v in self._H.values() for obs in v.obs if obs.use]
+        l = [obs for v in self._H.values() for obs in v.obs if obs.is_matched]
 
         if self._verbosity > 2 and len(l) > 20:
             print "Listing predictions matched with observations for the first 20 reflections:"
@@ -526,10 +532,19 @@ class ReflectionManager(object):
     def strip_unmatched_observations(self):
         '''
         Delete observations from the manager that are not matched to a
-        prediction. Typically used once, after the first update of predictions
+        prediction. Typically used once, after the first update of
+        predictions.
         '''
 
-    pass
+        for k, v in self._H.items():
+
+            v.remove_unmatched_obs()
+
+            # if no observations left, delete the hkl from the dict
+            if len(v) == 0:
+                del self._H[k]
+
+        return
 
     def get_indices(self):
         '''Get the unique indices of all observations in the manager'''
