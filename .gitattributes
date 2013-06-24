@@ -86,6 +86,12 @@ algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/helpers.h -text
 algorithms/integration/integrate2d.py -text
 algorithms/integration/integrator.py -text
+algorithms/integration/profile/SConscript -text
+algorithms/integration/profile/__init__.py -text
+algorithms/integration/profile/boost_python/grid_sampler.cc -text
+algorithms/integration/profile/boost_python/profile_ext.cc -text
+algorithms/integration/profile/grid_sampler.h -text
+algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/reciprocal_space_transform.h -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/reflection_profile_helpers.h -text

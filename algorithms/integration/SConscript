@@ -18,3 +18,5 @@ sources = [
 
 env.SharedLibrary(target='#/lib/dials_algorithms_integration_ext', 
     source=sources)
+    
+env.SConscript('profile/SConscript', exports={ 'env' : env })
