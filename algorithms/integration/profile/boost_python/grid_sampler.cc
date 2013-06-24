@@ -30,8 +30,16 @@ namespace dials { namespace algorithms { namespace boost_python {
     value_type operator*() { return obj_[index_]; }
     GridSamplerIterator operator++() { ++index_; return *this; }
     GridSamplerIterator operator--() { --index_; return *this; }
-    GridSamplerIterator operator++(int) { ++(*this); return *this; }
-    GridSamplerIterator operator--(int) { --(*this); return *this; }
+    GridSamplerIterator operator++(int) {
+      GridSamplerIterator result(obj_, index_);
+      ++(*this); 
+      return result; 
+    }
+    GridSamplerIterator operator--(int) {
+      GridSamplerIterator result(obj_, index_);
+      ++(*this); 
+      return result; 
+    }
     bool operator==(const GridSamplerIterator& rhs) { 
       return index_ == rhs.index_; 
     }

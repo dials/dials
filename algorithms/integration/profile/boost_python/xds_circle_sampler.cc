@@ -30,8 +30,16 @@ namespace dials { namespace algorithms { namespace boost_python {
     value_type operator*() { return obj_[index_]; }
     XdsCircleSamplerIterator operator++() { ++index_; return *this; }
     XdsCircleSamplerIterator operator--() { --index_; return *this; }
-    XdsCircleSamplerIterator operator++(int) { ++(*this); return *this; }
-    XdsCircleSamplerIterator operator--(int) { --(*this); return *this; }
+    XdsCircleSamplerIterator operator++(int) { 
+      XdsCircleSamplerIterator result(obj_, index_);
+      ++(*this); 
+      return result; 
+    }
+    XdsCircleSamplerIterator operator--(int) {
+      XdsCircleSamplerIterator result(obj_, index_);
+      --(*this); 
+      return result; 
+    }
     bool operator==(const XdsCircleSamplerIterator& rhs) { 
       return index_ == rhs.index_; 
     }
