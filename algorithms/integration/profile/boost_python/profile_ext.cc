@@ -16,10 +16,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_grid_sampler();
+  void export_xds_circle_sampler();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_profile_ext)
   {
     export_grid_sampler();
+    export_xds_circle_sampler();
   }
 
 }}} // namespace = dials::algorithms::boost_python

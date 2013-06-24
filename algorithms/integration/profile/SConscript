@@ -3,6 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/grid_sampler.cc',
+    'boost_python/xds_circle_sampler.cc',
     'boost_python/profile_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_integration_profile_ext', 
