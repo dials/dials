@@ -25,11 +25,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     typedef ImageSampler sampler_type;
     typedef ReferenceLocator<ImageSampler> locator_type;
   
-    flex_double_const_ref (locator_type::*profile_all)() const =
+    flex_double (locator_type::*profile_all)() const =
       &locator_type::profile;
-    flex_double_const_ref (locator_type::*profile_at_index)(
+    flex_double (locator_type::*profile_at_index)(
       std::size_t) const = &locator_type::profile;
-    flex_double_const_ref (locator_type::*profile_at_coord)(
+    flex_double (locator_type::*profile_at_coord)(
       double3) const = &locator_type::profile;
 
     double3 (locator_type::*coord_at_index)(
@@ -38,7 +38,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       double3) const = &locator_type::coord;
   
     class_<locator_type>(name, no_init)
-      .def(init<flex_double_const_ref, const sampler_type&>((
+      .def(init<const flex_double &, const sampler_type&>((
         arg("profiles"), arg("sampler"))))
       .def("size", &locator_type::size)
       .def("sampler", &locator_type::sampler)

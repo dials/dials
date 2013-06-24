@@ -20,7 +20,8 @@ namespace dials { namespace algorithms {
   using scitbx::af::small;
   using scitbx::af::int3;
   using scitbx::af::double3;
-  using scitbx::af::flex_double_const_ref;
+  using scitbx::af::flex_double;
+  using scitbx::af::flex_grid;
 
   /**
    * A class to provide access to reference profiles by querying either
@@ -37,7 +38,7 @@ namespace dials { namespace algorithms {
      * @param profiles The array of reference prodiles
      * @param sampler The sampler object.
      */
-    ReferenceLocator(const flex_double_const_ref &profiles,
+    ReferenceLocator(const flex_double &profiles,
                      const ImageSampler &sampler)
       : profiles_(profiles),
         sampler_(sampler) {
@@ -56,11 +57,6 @@ namespace dials { namespace algorithms {
       return sampler_;
     }
 
-    /** @returns The whole list of profiles */
-    flex_double_const_ref profile() const {
-      return profiles_;
-    }
-
     /**
      * Get the index of the profile nearest to the given coordinate.
      * @param xyz The image volume coordinate
@@ -70,17 +66,34 @@ namespace dials { namespace algorithms {
       return sampler_.nearest(xyz);
     }
 
+    /** @returns The whole list of profiles */
+    flex_double profile() const {
+      return profiles_;
+    }
+
     /**
      * Get the profile at the given index
      * @param index The profile index
      * @returns The profile array
      */
-    flex_double_const_ref profile(std::size_t index) const {
+    flex_double profile(std::size_t index) const {
+
+      // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
       small<long, 10> profile_size = profiles_.accessor().all();
       DIALS_ASSERT(profile_size.size() == 4);
-      std::size_t num = profile_size[1] * profile_size[2] * profile_size[3];
-      return flex_double_const_ref(&profiles_[index], num);
+
+      // Unfortunately, you can't take a reference from a flex array and
+      // return to python so we'll just have to make a copy.
+      flex_double result(flex_grid<>(profile_size[1],
+        profile_size[2], profile_size[2]));
+      std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = profiles_[j + i];
+      }
+
+      // Return the result
+      return result;
     }
 
     /**
@@ -88,9 +101,8 @@ namespace dials { namespace algorithms {
      * @param xyz The detector coordinate
      * @returns The profile array
      */
-    flex_double_const_ref profile(double3 xyz) const {
-      std::size_t index = sampler_.nearest(xyz);
-      return profile(index);
+    flex_double profile(double3 xyz) const {
+      return profile(sampler_.nearest(xyz));
     }
 
     /**
@@ -112,7 +124,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    flex_double_const_ref profiles_;
+    flex_double profiles_;
     ImageSampler sampler_;
   };
 
