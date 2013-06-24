@@ -29,15 +29,15 @@ namespace dials { namespace algorithms {
     /**
      * Initialise the sampler
      * @param image_size The size of the image to sample
-     * @param ngrid The number of grid points
+     * @param grid_size The number of grid points
      */
-    GridSampler(int2 image_size, int2 ngrid)
+    GridSampler(int2 image_size, int2 grid_size)
       : image_size_(image_size),
-        ngrid_(ngrid),
-        step_((double)image_size_[0] / (double)ngrid_[0],
-              (double)image_size_[1] / (double)ngrid_[1]) {
+        grid_size_(grid_size),
+        step_size_((double)image_size_[0] / (double)grid_size_[0],
+              (double)image_size_[1] / (double)grid_size_[1]) {
       DIALS_ASSERT(image_size.all_gt(0));
-      DIALS_ASSERT(ngrid.all_gt(0));
+      DIALS_ASSERT(grid_size.all_gt(0));
     }
 
     /**
@@ -50,22 +50,22 @@ namespace dials { namespace algorithms {
     /**
      * @returns the number of grid points.
      */
-    int2 ngrid() const {
-      return ngrid_;
+    int2 grid_size() const {
+      return grid_size_;
     }
 
     /**
      * @returns The step size
      */
-    double2 step() const {
-      return step_;
+    double2 step_size() const {
+      return step_size_;
     }
 
     /**
      * @returns The total number of grid points
      */
     std::size_t size() const {
-      return ngrid_[0] * ngrid_[1];
+      return grid_size_[0] * grid_size_[1];
     }
 
     /**
@@ -74,13 +74,13 @@ namespace dials { namespace algorithms {
      * @returns The index of the reference profile
      */
     std::size_t nearest(double2 xy) const {
-      int ix = (int)floor(xy[0] / step_[0]);
-      int iy = (int)floor(xy[1] / step_[1]);
+      int ix = (int)floor(xy[0] / step_size_[0]);
+      int iy = (int)floor(xy[1] / step_size_[1]);
       if (ix < 0) ix = 0;
       if (iy < 0) iy = 0;
       if (ix >= image_size_[0]) ix = image_size_[0] - 1;
       if (iy >= image_size_[1]) iy = image_size_[1] - 1;
-      return ix + iy * ngrid_[0];
+      return ix + iy * grid_size_[0];
     }
 
     /**
@@ -89,15 +89,15 @@ namespace dials { namespace algorithms {
      * @returns The x, y coordinate of the profile
      */
     double2 operator[](std::size_t index) const {
-      double x = ((index % ngrid_[0]) + 0.5) * step_[0];
-      double y = ((index / ngrid_[0]) + 0.5) * step_[1];
+      double x = ((index % grid_size_[0]) + 0.5) * step_size_[0];
+      double y = ((index / grid_size_[0]) + 0.5) * step_size_[1];
       return double2(x, y);
     }
 
   private:
     int2 image_size_;
-    int2 ngrid_;
-    double2 step_;
+    int2 grid_size_;
+    double2 step_size_;
   };
 
 }} // namespace dials::algorithms

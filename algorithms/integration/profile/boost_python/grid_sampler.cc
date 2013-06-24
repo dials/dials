@@ -64,10 +64,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<GridSampler>("GridSampler", no_init)
       .def(init<int2, int2>((
         arg("image_size"),
-        arg("ngrid"))))
+        arg("grid_size"))))
       .def("image_size", &GridSampler::image_size)
-      .def("ngrid", &GridSampler::ngrid)
-      .def("step", &GridSampler::step)
+      .def("grid_size", &GridSampler::grid_size)
+      .def("step_size", &GridSampler::step_size)
       .def("nearest", &GridSampler::nearest)
       .def("size", &GridSampler::size)
       .def("__getitem__", &GridSampler::operator[])

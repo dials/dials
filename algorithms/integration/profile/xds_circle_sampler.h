@@ -37,7 +37,7 @@ namespace dials { namespace algorithms {
      */
     XdsCircleSampler(int2 image_size)
       : image_size_(image_size),
-        centre_(image_size_[0] / 2, image_size_[1] / 2),
+        centre_(image_size_[0] / 2.0, image_size_[1] / 2.0),
         nprofile_(9) {
       DIALS_ASSERT(image_size_.all_gt(0));
       r0_ = min(centre_.const_ref());
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The image centre.
      */
-    int2 image_centre() const {
+    double2 image_centre() const {
       return centre_;
     }
 
@@ -123,7 +123,7 @@ namespace dials { namespace algorithms {
 
       // If index is zero then return central reference position
       if (index == 0) {
-          return double2(centre_[0], centre_[1]);
+          return centre_;
       }
 
       // Calculate the angle and get the x, y coordinate of the profile
@@ -135,7 +135,7 @@ namespace dials { namespace algorithms {
 
   private:
     int2 image_size_;
-    int2 centre_;
+    double2 centre_;
     std::size_t nprofile_;
     double r0_, r1_, r2_;
   };
