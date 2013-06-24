@@ -13,9 +13,11 @@ class Test(object):
         from dials.algorithms.integration.profile import GridSampler
         width = 1000
         height = 1000
+        depth = 10
         nx = 10
         ny = 10
-        sampler = GridSampler((width, height), (nx, ny))
+        nz = 2
+        sampler = GridSampler((width, height, depth), (nx, ny, nz))
         image_size = sampler.image_size()
         grid_size = sampler.grid_size()
         step_size = sampler.step_size()
@@ -23,34 +25,44 @@ class Test(object):
 
         assert(width == image_size[0])
         assert(height == image_size[1])
+        assert(depth == image_size[2])
         assert(nx == grid_size[0])
         assert(ny == grid_size[1])
+        assert(nz == grid_size[2])
         assert(step_size[0] == width / nx)
         assert(step_size[1] == height / ny)
-        assert(nx * ny == size)
+        assert(step_size[2] == depth / nz)
+        assert(nx * ny * nz == size)
         print 'OK'
 
     def tst_indexing(self):
         from dials.algorithms.integration.profile import GridSampler
         width = 1000
         height = 1000
+        depth = 10
         nx = 10
         ny = 10
-        sampler = GridSampler((width, height), (nx, ny))
-        xstep, ystep = sampler.step_size()
-        xind = [[i for i in range(nx)]] * ny
-        yind = [[j] * nx for j in range(ny)]
+        nz = 2
+        sampler = GridSampler((width, height, depth), (nx, ny, nz))
+        xstep, ystep, zstep = sampler.step_size()
+        xind = [[i for i in range(nx)]] * ny * nz
+        yind = [[j] * nx for j in range(ny)] * nz
+        zind = [[k] * nx * ny for k in range(nz)]
         xind = [i for j in xind for i in j]
         yind = [i for j in yind for i in j]
+        zind = [i for j in zind for i in j]
 
         xp = [(x + 0.5) * xstep for x in xind]
         yp = [(y + 0.5) * ystep for y in yind]
+        zp = [(z + 0.5) * zstep for z in zind]
 
         eps = 1e-10
 
-        for x0, y0, (x1, y1) in zip(xp, yp, sampler):
+        for x0, y0, z0, (x1, y1, z1) in zip(xp, yp, zp, sampler):
+            print z1, y1, x1
             assert(abs(x0 - x1) <= eps)
             assert(abs(y0 - y1) <= eps)
+            assert(abs(z0 - z1) <= eps)
 
         print 'OK'
 
@@ -60,17 +72,21 @@ class Test(object):
         from dials.algorithms.integration.profile import GridSampler
         width = 1000
         height = 1000
+        depth = 10
         nx = 10
         ny = 10
-        sampler = GridSampler((width, height), (nx, ny))
+        nz = 2
+        sampler = GridSampler((width, height, depth), (nx, ny, nz))
 
         for i in range(1000):
             x = randint(0, 1000)
             y = randint(0, 1000)
+            z = randint(0, 10)
             i = int((x+0.5) * nx // 1000)
             j = int((y+0.5) * ny // 1000)
-            index0 = i + j * nx
-            index1 = sampler.nearest((x, y))
+            k = int((z+0.5) * nz // 10)
+            index0 = i + j * nx + k * nx * ny
+            index1 = sampler.nearest((x, y, z))
             assert(index0 == index1)
 
         print 'OK'

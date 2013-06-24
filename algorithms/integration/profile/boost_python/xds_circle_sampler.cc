@@ -22,10 +22,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     XdsCircleSamplerIterator(const XdsCircleSampler &obj, int index)
       : obj_(obj), index_(index) {}
       
-    typedef double2 value_type;
+    typedef double3 value_type;
     typedef int difference_type;
-    typedef double2 reference;
-    typedef const double2* pointer;
+    typedef double3 reference;
+    typedef const double3* pointer;
     typedef std::input_iterator_tag iterator_category;
     value_type operator*() { return obj_[index_]; }
     XdsCircleSamplerIterator operator++() { ++index_; return *this; }
@@ -62,9 +62,10 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_xds_circle_sampler()
   {
     class_<XdsCircleSampler>("XdsCircleSampler", no_init)
-      .def(init<int2>((
-        arg("image_size"))))
-      .def("image_size", &XdsCircleSampler::image_size)
+      .def(init<int3, std::size_t>((
+        arg("volume_size"),
+        arg("num_z"))))
+      .def("volume_size", &XdsCircleSampler::volume_size)
       .def("image_centre", &XdsCircleSampler::image_centre)
       .def("r0", &XdsCircleSampler::r0)
       .def("r1", &XdsCircleSampler::r1)

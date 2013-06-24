@@ -22,10 +22,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     GridSamplerIterator(const GridSampler &obj, int index)
       : obj_(obj), index_(index) {}
       
-    typedef double2 value_type;
+    typedef double3 value_type;
     typedef int difference_type;
-    typedef double2 reference;
-    typedef const double2* pointer;
+    typedef double3 reference;
+    typedef const double3* pointer;
     typedef std::input_iterator_tag iterator_category;
     value_type operator*() { return obj_[index_]; }
     GridSamplerIterator operator++() { ++index_; return *this; }
@@ -62,10 +62,10 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_grid_sampler()
   {
     class_<GridSampler>("GridSampler", no_init)
-      .def(init<int2, int2>((
-        arg("image_size"),
+      .def(init<int3, int3>((
+        arg("volume_size"),
         arg("grid_size"))))
-      .def("image_size", &GridSampler::image_size)
+      .def("image_size", &GridSampler::volume_size)
       .def("grid_size", &GridSampler::grid_size)
       .def("step_size", &GridSampler::step_size)
       .def("nearest", &GridSampler::nearest)
