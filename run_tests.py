@@ -15,6 +15,7 @@ tst_list = (
     "$D/test/algorithms/integration/profile/tst_grid_sampler.py",
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",
+    "$D/test/algorithms/integration/profile/tst_reference_learner.py",
     "$D/test/algorithms/centroid/tst_filtered_centroid.py",
     "$D/test/algorithms/centroid/tst_lui_centroid.py",
     "$D/test/algorithms/centroid/tst_toy_centroid.py",
