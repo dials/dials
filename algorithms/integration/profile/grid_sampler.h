@@ -81,9 +81,9 @@ namespace dials { namespace algorithms {
       if (ix < 0) ix = 0;
       if (iy < 0) iy = 0;
       if (iz < 0) iz = 0;
-      if (ix >= volume_size_[0]) ix = volume_size_[0] - 1;
-      if (iy >= volume_size_[1]) iy = volume_size_[1] - 1;
-      if (iz >= volume_size_[2]) iz = volume_size_[2] - 1;
+      if (ix >= grid_size_[0]) ix = grid_size_[0] - 1;
+      if (iy >= grid_size_[1]) iy = grid_size_[1] - 1;
+      if (iz >= grid_size_[2]) iz = grid_size_[2] - 1;
       return ix + iy * grid_size_[0] + iz * grid_size_[0] * grid_size_[1];
     }
 

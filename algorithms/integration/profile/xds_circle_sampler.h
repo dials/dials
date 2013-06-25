@@ -105,7 +105,7 @@ namespace dials { namespace algorithms {
       // Get the k index
       int k = (int)floor(xyz[2] / step_size_);
       if (k < 0) k = 0;
-      if (k >= volume_size_[2]) k = volume_size_[2] - 1;
+      if (k >= num_z_) k = num_z_ - 1;
 
       // Return the index
       return ij + k * nprofile_;
@@ -125,7 +125,7 @@ namespace dials { namespace algorithms {
       double2 xy = image_coord_at_index(index % nprofile_);
 
       // Calculate the z coordinate
-      double z = (index / (nprofile_ * num_z_) + 0.5) * step_size_;
+      double z = (index / nprofile_ + 0.5) * step_size_;
 
       // Return the x, y, z coordinate
       return double3(xy[0], xy[1], z);
@@ -144,7 +144,7 @@ namespace dials { namespace algorithms {
       double xmc = xy[0] - centre_[0];
       double ymc = xy[1] - centre_[1];
       double r = sqrt(xmc*xmc + ymc*ymc);
-      double t = atan2(ymc, xmc) + pi;
+      double t = atan2(ymc, xmc);
 
       // If radius is less than the inner radius return 0
       if (r < r1_) return 0;
@@ -153,7 +153,7 @@ namespace dials { namespace algorithms {
       int angular_index = (int)floor(t * (nprofile_ - 1) / two_pi + 0.5);
 
       // Return the index
-      return angular_index % (nprofile_ - 1) + 1;
+      return (angular_index % (nprofile_ - 1)) + 1;
     }
 
     /**
@@ -172,8 +172,8 @@ namespace dials { namespace algorithms {
 
       // Calculate the angle and get the x, y coordinate of the profile
       double theta = (index - 1) * two_pi / (nprofile_ - 1);
-      double x = centre_[0] + r2_ * sin(theta);
-      double y = centre_[1] + r2_ * cos(theta);
+      double x = centre_[0] + r2_ * cos(theta);
+      double y = centre_[1] + r2_ * sin(theta);
       return double2(x, y);
     }
 

@@ -1,3 +1,13 @@
+/*
+ * reference_learner.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LEARNER_H
 #define DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LEARNER_H
 
@@ -16,6 +26,9 @@ namespace dials { namespace algorithms {
   using dials::model::ReflectionList;
   using dials::model::Reflection;
 
+  /**
+   * Class to learn the reference profiles
+   */
   template <typename Sampler>
   class ReferenceLearner {
   public:
@@ -23,14 +36,28 @@ namespace dials { namespace algorithms {
     typedef Sampler sampler_type;
     typedef ReferenceLocator<sampler_type> locator_type;
 
-    ReferenceLearner(const sampler_type &sampler, int3 grid_size, double threshold)
+    /**
+     * Initialise the learner class
+     * @param sampler The image volume sampler
+     * @param grid_size The size of the grid
+     * @param threshold The signal threshold
+     */
+    ReferenceLearner(const sampler_type &sampler,
+                     int3 grid_size, double threshold)
       : locator_(allocate_profiles(sampler.size(), grid_size), sampler),
         threshold_(threshold) {}
 
+    /**
+     * @returns The reference profile locator.
+     */
     locator_type locate() {
       return locator_;
     }
 
+    /**
+     * Learn the reference profiles from the reflection list.
+     * @param reflections The list of reflections
+     */
     void learn(const ReflectionList &reflections) {
       // Add the contributions of all the reflections to the references
       for (std::size_t i = 0; i < reflections.size(); ++i) {
@@ -45,7 +72,15 @@ namespace dials { namespace algorithms {
 
   private:
 
+    /**
+     * Allocate the array of reference profiles
+     * @param num The number of profiles
+     * @param grid_size The size of each profile
+     * @returns The array of reference profiles
+     */
     flex_double allocate_profiles(std::size_t num, int3 grid_size) {
+      DIALS_ASSERT(num > 0);
+      DIALS_ASSERT(grid_size.all_gt(0));
       return flex_double(flex_grid<>(num, grid_size[0],
         grid_size[1], grid_size[2]), 0);
     }
@@ -61,6 +96,11 @@ namespace dials { namespace algorithms {
       add_reflection(reflection.get_transformed_shoebox(), coord);
     }
 
+    /**
+     * Add the actual reflection data to the profile
+     * @param profile The reflection profile
+     * @param coord The coordinate of the reflection
+     */
     void add_reflection(flex_double profile, vec3<double> coord) {
 
       // Get the expected profile size
@@ -134,6 +174,11 @@ namespace dials { namespace algorithms {
       }
     }
 
+    /**
+     * Get a reference to the reflection profile
+     * @param index The index of the profile to get
+     * @returns The reference to the profile.
+     */
     flex_double_ref reference_profile(std::size_t index) {
       flex_double all_profiles = locator_.profile();
       small<long,10> size = all_profiles.accessor().all();

@@ -8,6 +8,7 @@ class Test(object):
         self.tst_getters()
         self.tst_indexing()
         self.tst_nearest()
+        self.tst_self_consistent()
 
     def tst_getters(self):
         from dials.algorithms.integration.profile import GridSampler
@@ -59,7 +60,6 @@ class Test(object):
         eps = 1e-10
 
         for x0, y0, z0, (x1, y1, z1) in zip(xp, yp, zp, sampler):
-            print z1, y1, x1
             assert(abs(x0 - x1) <= eps)
             assert(abs(y0 - y1) <= eps)
             assert(abs(z0 - z1) <= eps)
@@ -85,9 +85,32 @@ class Test(object):
             i = int((x+0.5) * nx // 1000)
             j = int((y+0.5) * ny // 1000)
             k = int((z+0.5) * nz // 10)
+            if i >= nx:
+                i = nx - 1
+            if j >= ny:
+                j = ny - 1
+            if k >= nz:
+                k = nz - 1
             index0 = i + j * nx + k * nx * ny
             index1 = sampler.nearest((x, y, z))
             assert(index0 == index1)
+
+        print 'OK'
+
+    def tst_self_consistent(self):
+        from dials.algorithms.integration.profile import GridSampler
+        width = 1000
+        height = 1000
+        depth = 10
+        nx = 10
+        ny = 10
+        nz = 2
+        sampler = GridSampler((width, height, depth), (nx, ny, nz))
+
+        for i in range(len(sampler)):
+            coord = sampler[i]
+            index = sampler.nearest(coord)
+            assert(index == i)
 
         print 'OK'
 
