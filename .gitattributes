@@ -90,9 +90,11 @@ algorithms/integration/profile/SConscript -text
 algorithms/integration/profile/__init__.py -text
 algorithms/integration/profile/boost_python/grid_sampler.cc -text
 algorithms/integration/profile/boost_python/profile_ext.cc -text
+algorithms/integration/profile/boost_python/reference_learner.cc -text
 algorithms/integration/profile/boost_python/reference_locator.cc -text
 algorithms/integration/profile/boost_python/xds_circle_sampler.cc -text
 algorithms/integration/profile/grid_sampler.h -text
+algorithms/integration/profile/reference_learner.h -text
 algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/reciprocal_space_transform.h -text
