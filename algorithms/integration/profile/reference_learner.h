@@ -106,7 +106,7 @@ namespace dials { namespace algorithms {
       // Get the expected profile size
       small<long,10> size_all = locator_.profile().accessor().all();
       DIALS_ASSERT(size_all.size() == 4);
-      small<long,10> size;
+      small<long,10> size(3);
       size[0] = size_all[1];
       size[1] = size_all[2];
       size[2] = size_all[3];
