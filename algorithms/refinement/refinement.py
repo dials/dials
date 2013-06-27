@@ -1,7 +1,7 @@
 """Auxiliary functions for the refinement package"""
 
 from __future__ import division
-from math import sin, cos
+from math import sin, cos, sqrt
 from scitbx import matrix
 import random
 
@@ -105,10 +105,9 @@ def print_grads(grad_list):
         print ("Param %02d. Gradients: "
                "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
 
-def refine(beam, goniometer, crystal, detector, image_width, scan,
-           hkls, enterings, frames,
-           svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-           verbosity = 0, fix_cell = False, scan_varying=False):
+def refine(beam, goniometer, crystal, detector, scan,
+           reflections, verbosity = 0, fix_cell = False,
+           scan_varying=False):
 
     """Simple refinement interface for the centroid refinement sprint"""
 
@@ -139,6 +138,26 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
     # Import the refinement engine
     from dials.algorithms.refinement.engine import GaussNewtonIterations
 
+    # pull out data needed for refinement
+    temp = [(ref.miller_index, ref.entering, ref.frame_number,
+             ref.rotation_angle, matrix.col(ref.beam_vector),
+             ref.image_coord_mm, ref.centroid_variance) \
+                for ref in reflections]
+    hkls, enterings, frames, angles, svecs, intersects, variances = zip(*temp)
+
+    # tease apart tuples to separate lists
+    d1s, d2s = zip(*intersects)
+    var_d1s, var_d2s, var_angles = zip(*variances)
+
+    # change variances to sigmas
+    sig_d1s = [sqrt(e) for e in var_d1s]
+    sig_d2s = [sqrt(e) for e in var_d2s]
+    sig_angles = [sqrt(e) for e in var_angles]
+
+    assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
+           len(sig_d2s) == len(angles) == len(sig_angles)
+
+    image_width = scan.get_oscillation(deg=False)[1]
     sweep_range = scan.get_oscillation_range(deg=False)
     ref_predictor = ReflectionPredictor(crystal, beam, goniometer, sweep_range)
 
@@ -180,9 +199,9 @@ def refine(beam, goniometer, crystal, detector, image_width, scan,
 
     refman = ReflectionManager(ref_predictor, detector,
                             hkls, svecs,
-                            d1s, sigd1s,
-                            d2s, sigd2s,
-                            angles, sigangles,
+                            d1s, sig_d1s,
+                            d2s, sig_d2s,
+                            angles, sig_angles,
                             beam, goniometer, verbosity)
 
     if verbosity > 1: print "Reflection manager built\n"

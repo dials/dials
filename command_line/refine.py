@@ -43,37 +43,6 @@ class RefinementRunner(object):
             ref.beam_vector = matrix.col(self.detector.get_pixel_lab_coord(
                 (x, y))).normalize() / self.beam.get_wavelength()
 
-        # pull out data needed for refinement
-        temp = [(ref.miller_index, ref.entering, ref.frame_number,
-                 ref.rotation_angle, matrix.col(ref.beam_vector),
-                 ref.image_coord_mm, ref.centroid_variance) \
-                    for ref in self.reflections]
-        hkls, enterings, frames, angles, svecs, intersects, variances = zip(*temp)
-
-        # tease out tuples to separate lists
-        d1s, d2s = zip(*intersects)
-        var_d1s, var_d2s, var_angles = zip(*variances)
-
-        px_size = self.detector.get_pixel_size()
-        im_width = self.scan.get_oscillation(deg=False)[1]
-
-        # get the angular range of the sweep
-        sweep_range = self.scan.get_oscillation_range(deg=False)
-
-        # change variances to sigmas
-        sig_d1s = [sqrt(e) for e in var_d1s]
-        sig_d2s = [sqrt(e) for e in var_d2s]
-        sig_angles = [sqrt(e) for e in var_angles]
-
-        # DEBUGGING: ignore calculated variances and just use invented values,
-        # based on half the pixel size and half the image width
-        #sig_d1s = [px_size[0] / 2.] * len(hkls)
-        #sig_d2s = [px_size[1] / 2.] * len(hkls)
-        #sig_angles = [im_width / 2.] * len(hkls)
-
-        assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
-               len(sig_d2s) == len(angles) == len(sig_angles)
-
         from dials.algorithms.refinement import print_model_geometry, refine
         random.seed(42)
         print "Random seed set to 42\n"
@@ -81,10 +50,8 @@ class RefinementRunner(object):
         print "Prior to refinement the experimental model is:"
         print_model_geometry(self.beam, self.detector, self.crystal)
 
-        refine(self.beam, self.gonio, self.crystal, self.detector, im_width,
-               self.scan, hkls, enterings, frames,
-               svecs, d1s, sig_d1s, d2s, sig_d2s, angles,
-               sig_angles, verbosity = self.verbosity, fix_cell=False,
+        refine(self.beam, self.gonio, self.crystal, self.detector,
+               self.scan, self.reflections, verbosity = self.verbosity, fix_cell=False,
                scan_varying=self.scan_varying)
 
         print

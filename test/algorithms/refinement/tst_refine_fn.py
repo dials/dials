@@ -225,8 +225,8 @@ print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
 print "FIXME. This is currently broken, as refine now needs a scan " + \
-      "object instead of sweep_range and takes entering flags and " + \
-      "frame numbers"
+      "object instead of sweep_range and takes a list of reflections" + \
+      "rather than separate arguments for each attribute"
 print 1/0
 refine(mybeam, mygonio, mycrystal, mydetector, im_width, sweep_range,
        hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
