@@ -8,6 +8,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
+from scitbx.array_family import flex
 from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
@@ -27,6 +28,8 @@ class SpotFinder(SpotFinderInterface):
         # Get some parameters
         self._min_spot_size = kwargs.get('min_spot_size', 6)
         self._max_separation = kwargs.get('max_separation', 2)
+        self._d_min = kwargs.get('d_min')
+        self._d_max = kwargs.get('d_max')
 
         # Set the threshold strategy
         self._threshold_strategy = kwargs.get(
@@ -74,14 +77,25 @@ class SpotFinder(SpotFinderInterface):
             coords, intensity, spots)
         Command.end('Calculated {0} centroids'.format(len(cpos)))
 
+        # start off by selecting all spots
+        selection = flex.bool(len(spots), True)
+
         # Filter the spots by centroid-maxmimum distance
         Command.start('Filtering spots by distance')
-        index = self._filter_maximum_centroid(coords, intensity, spots, cpos)
-        Command.end('Filtered {0} spots by distance'.format(len(index)))
+        self._filter_maximum_centroid(
+            coords, intensity, spots, cpos, selection)
+        Command.end(
+            'Filtered {0} spots by distance'.format(selection.count(True)))
+
+        # Filter the spots by resolution
+        Command.start('Filtering spots by resolution')
+        self._filter_spots_by_resolution(cpos, sweep, selection)
+        Command.end(
+            'Filtered {0} spots by resolution'.format(selection.count(True)))
 
         # Create a reflection list and return
         return self._create_reflection_list(coords, intensity, spots, bbox,
-            cpos, cvar, cerr, ctot, index)
+            cpos, cvar, cerr, ctot, selection.iselection())
 
     def _extract_pixels(self, sweep):
         '''Extract the pixels from the sweep
@@ -94,7 +108,6 @@ class SpotFinder(SpotFinderInterface):
 
         '''
         from dials.util.command_line import ProgressBar
-        from scitbx.array_family import flex
         from dials.algorithms.peak_finding import flex_vec3_int
 
         # Initialise the pixel arrays
@@ -196,6 +209,30 @@ class SpotFinder(SpotFinderInterface):
         # Filter by spot size
         return [s for s in spots if len(s) >= self._min_spot_size]
 
+    def _filter_spots_by_resolution(self, cpos, sweep, selection):
+        from scitbx.array_family import flex
+        
+        if self._d_max is None and self._d_min is None:
+            # Nothing to do here
+            return
+
+        detector = sweep.get_detector()
+        beam = sweep.get_beam()
+        
+        s0 = beam.get_s0()
+        wavelength = beam.get_wavelength()
+
+        for i, (x,y,z) in enumerate(cpos):
+            if not selection[i]: continue
+            resolution = detector.get_resolution_at_pixel(
+                s0, wavelength, (x, y))
+            if ((self._d_min is not None and
+                 resolution < self._d_min)
+                or
+                (self._d_max is not None and
+                 resolution > self._d_max)):
+                selection[i] = False    
+
     def _calculate_bbox(self, coords, spots, sweep):
         '''Calculate the bounding boxes for each spot.
 
@@ -253,7 +290,6 @@ class SpotFinder(SpotFinderInterface):
 
         '''
         from dials.algorithms.image.centroid import centroid_points
-        from scitbx.array_family import flex
 
         # Initialise arrays
         centroid_pos = flex.vec3_double()
@@ -279,7 +315,8 @@ class SpotFinder(SpotFinderInterface):
         # Return the centroid and variance
         return centroid_pos, centroid_var, centroid_err, centroid_tot
 
-    def _filter_maximum_centroid(self, coords, values, spots, cpos):
+    def _filter_maximum_centroid(
+            self, coords, values, spots, cpos, selection):
         '''Filter the reflections by the distance between the maximum pixel
         value and the centroid position. If the centroid is a greater than the
         maximum separation from maximum pixel (in pixel coords) then discard.
@@ -293,18 +330,14 @@ class SpotFinder(SpotFinderInterface):
             An index list of valid spots
 
         '''
-        from scitbx.array_family import flex
         from scitbx import matrix
-        index = []
         for si, (s, c) in enumerate(zip(spots, cpos)):
+            if not selection[si]: continue
             im = flex.max_index(flex.int([values[i] for i in s]))
             xc = matrix.col(c)
             xm = matrix.col(coords[s[im]])
-            if (xc - xm).length() <= self._max_separation:
-                index.append(si)
-
-        # Return the list of indices
-        return index
+            if (xc - xm).length() > self._max_separation:
+                selection[si] = False
 
     def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar,
                                 cerr, ctot, index):

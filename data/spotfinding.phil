@@ -88,14 +88,22 @@ spotfinder
               "to be accepted by the filtering algorithm·"
               ""
               "Used by: xds."
-      .type = int
+      .type = int(value_min=0)
 
     max_separation = 2
       .help = "The maximum peak-to-centroid separation (in pixels)"
               "for a spot to be accepted by the filtering algorithm."
               ""
               "Used by: xds."
-      .type = float
+      .type = float(value_min=0)
+    d_min = None
+      .help = "The high resolution limit in Angstrom for a spot to be"
+              "accepted by the filtering algorithm."
+      .type = float(value_min=0)
+    d_max = None
+      .help = "The low resolution limit in Angstrom for a spot to be"
+              "accepted by the filtering algorithm."
+      .type = float(value_min=0)
   }
   image_viewer = False
     .help = "Display the results of spot finding in an interactive image"
