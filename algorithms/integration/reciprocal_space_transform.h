@@ -278,9 +278,9 @@ namespace dials { namespace algorithms {
 
       // Set the image volume size
       volume_ = vec3<std::size_t>(
-          scan.get_array_range()[1],
+          detector.get_image_size()[0],
           detector.get_image_size()[1],
-          detector.get_image_size()[0]);
+          scan.get_array_range()[1]);
 
       // Set the grid size specifiers
       grid_half_size_ = grid_half_size;
@@ -313,10 +313,6 @@ namespace dials { namespace algorithms {
       // Get the shoebox profiles
       flex_double shoebox = reflection.get_shoebox();
       flex_double background = reflection.get_shoebox_background();
-      flex_double transformed = reflection.get_transformed_shoebox();
-
-      // Check they're the right size
-      DIALS_ASSERT(transformed.accessor().all().all_eq(grid_size_));
 
       // Copy the background subtracted pixels to a new array
       flex_double shoebox_input(shoebox.accessor());
@@ -329,10 +325,8 @@ namespace dials { namespace algorithms {
         reflection.get_shoebox_mask(), reflection.get_bounding_box(),
         reflection.get_beam_vector(), reflection.get_rotation_angle());
 
-      // Copy the transformed shoebox back to the reflection
-      for (std::size_t i = 0; i < transformed.size(); ++i) {
-        transformed[i] = result[i];
-      }
+      // Set the transformed shoebox
+      reflection.set_transformed_shoebox(result);
     }
 
     /**

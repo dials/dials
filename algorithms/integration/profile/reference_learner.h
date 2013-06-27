@@ -132,8 +132,10 @@ namespace dials { namespace algorithms {
       }
 
       // Add to the reference profile
-      for (std::size_t i = 0; i < reference.size(); ++i) {
-        reference[i] += weight * profile[i] / sum_profile;
+      if (sum_profile > 0) {
+        for (std::size_t i = 0; i < reference.size(); ++i) {
+          reference[i] += weight * profile[i] / sum_profile;
+        }
       }
     }
 
@@ -143,7 +145,11 @@ namespace dials { namespace algorithms {
     void normalize_reference_profiles() {
       // Normalize all the reference profiles
       for (std::size_t i = 0; i < locator_.size(); ++i) {
-        normalize_reference_profile(i);
+        try {
+          normalize_reference_profile(i);
+        } catch (dials::error) {
+
+        }
       }
     }
 

@@ -81,10 +81,7 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         # Learn the reference profiles around the detector
         Command.start('Learning reference profiles')
-        try:
-            learner.learn(reflections)
-        except Exception:
-            pass
+        learner.learn(reflections)
         locate = learner.locate()
         Command.end('Learnt {0} reference profiles'.format(locate.size()))
 
