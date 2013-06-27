@@ -4,6 +4,7 @@ import cPickle as pickle
 import libtbx.load_env
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
+from dials.model.data import ReflectionList # import dependency
 
 def exercise_spotfinder():
   if not libtbx.env.has_module("dials_regression"):
@@ -17,7 +18,6 @@ def exercise_spotfinder():
   args = ["dials.spotfinder", template, "-o spotfinder.pickle"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
-  from dials.model.data import Reflection, ReflectionList
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 384
@@ -33,7 +33,6 @@ def exercise_spotfinder():
           template, "-o spotfinder.pickle"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
-  from dials.model.data import Reflection, ReflectionList
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 308
@@ -43,7 +42,6 @@ def exercise_spotfinder():
           template, "-o spotfinder.pickle"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
-  from dials.model.data import Reflection, ReflectionList # import dependency
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 647
