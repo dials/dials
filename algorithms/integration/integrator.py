@@ -180,9 +180,9 @@ class IntegratorFactory(object):
         # Configure the reciprocal space summation algorithm
         elif params.integration.algorithm == 'sum_rs':
             algorithm = SummationReciprocalSpace(
-                n_sigma = params.integration.shoebox.n_sigma,
-                grid_size = params.integration.reciprocal_space.grid_size,
-                n_div = params.integration.reciprocal_space.n_divisions)
+                n_sigma=params.integration.shoebox.n_sigma,
+                grid_size=params.integration.reciprocal_space.grid_size,
+                n_div=params.integration.reciprocal_space.n_divisions)
 
         # Configure the 2D profile fitting algorithm
         elif params.integration.algorithm == 'fit_2d':
@@ -194,7 +194,12 @@ class IntegratorFactory(object):
 
         # Configure the reciprocal space profile fitting algorithm
         elif params.integration.algorithm == 'fit_rs':
-            algorithm = ProfileFittingReciprocalSpace()
+            algorithm = ProfileFittingReciprocalSpace(
+                n_sigma=params.integration.shoebox.n_sigma,
+                grid_size=params.integration.reciprocal_space.grid_size,
+                n_div=params.integration.reciprocal_space.n_divisions,
+                frame_interval=params.integration.profile.reference_frame_interval,
+                threshold=params.integration.profile.reference_signal_threshold)
 
         # Unknown algorithm
         else:

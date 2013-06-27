@@ -101,6 +101,7 @@ algorithms/integration/profile/reference_learner.h -text
 algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
+algorithms/integration/profile_fitting_reciprocal_space.py -text
 algorithms/integration/reciprocal_space_transform.h -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/reflection_profile_helpers.h -text

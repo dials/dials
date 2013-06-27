@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       &ProfileFittingReciprocalSpace::operator();
   
     class_<ProfileFittingReciprocalSpace>(
-        "ProfileFittingReciprocalSpace", no_init)
+        "ProfileFittingReciprocalSpaceAlgorithm", no_init)
       .def(init<shared_ptr<ProfileFittingReciprocalSpace::locator_type> >((
         arg("locate"))))
       .def("__call__", call_single)

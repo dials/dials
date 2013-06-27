@@ -54,5 +54,17 @@ integration
       .help = "The number of pixel sub-divisions to use in the transform"
       .type = int
   }
+  
+  profile
+    .help = "Parameters for profile fitting"
+  {
+    reference_frame_interval = 10
+      .help = "The oscillation at which to learn new reference profiles"
+      .type = float
+    
+    reference_signal_threshold = 0.2
+      .help = "The threshold to use in reference profile"
+      .type = float
+  }
 }
 
