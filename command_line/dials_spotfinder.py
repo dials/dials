@@ -41,6 +41,8 @@ class ScriptRunner(object):
         # Filter options
         self.min_spot_size = params.filter.min_spot_size
         self.max_pc_separation = params.filter.max_separation
+        self.d_min = params.filter.d_min
+        self.d_max = params.filter.d_max
 
         # Set some other stuff
         self.gain_map = None
@@ -152,6 +154,8 @@ class ScriptRunner(object):
         return SpotFinder(
             min_spot_size = self.min_spot_size,
             max_separation = self.max_pc_separation,
+            d_min = self.d_min,
+            d_max = self.d_max,
             threshold_strategy = self._threshold_strategy(sweep))
 
     def _threshold_strategy(self, sweep):
