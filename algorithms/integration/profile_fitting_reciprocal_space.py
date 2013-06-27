@@ -17,7 +17,6 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         '''Initialise algorithm.'''
 
         # Set the parameters
-        self.reference_oscillation = kwargs['reference_oscillation']
         self.grid_size = kwargs['grid_size']
         self.threshold = kwargs['threshold']
         self.frame_interval = kwargs['frame_interval']
@@ -38,6 +37,7 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         '''
         from dials.util.command_line import Command
+        from dials.algorithms.integration import ReciprocalSpaceTransform
         from dials.algorithms.integration.profile import \
             XdsCircleSampler
         from dials.algorithms.integration.profile import \
@@ -47,8 +47,8 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         # Create the reference profile sampler
         image_size = sweep.get_detector().get_image_size()
-        num_frames = sweep.get_scan().get_num_frames()
-        volume_size = image_size + num_frames,
+        num_frames = sweep.get_scan().get_num_images()
+        volume_size = image_size + (num_frames,)
         sampler = XdsCircleSampler(volume_size, self.frame_interval)
 
         # Initialise the reciprocal space transform
@@ -71,8 +71,9 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
             len([r for r in reflections if r.status == 0])))
 
         # Configure the reference learner
-        learn = XdsCircleReferenceLearner(
-            sampler, self.grid_size, self.threshold)
+        grid_size = (self.grid_size * 2 + 1,) * 3
+        learner = XdsCircleReferenceLearner(
+            sampler, grid_size, self.threshold)
 
 
         # FIXME Use strong reflections for reference profiles
@@ -80,8 +81,12 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         # Learn the reference profiles around the detector
         Command.start('Learning reference profiles')
-        locate = learn(reflections)
-        Command.end('Learnt {0} reference profiles'.format(len(reference)))
+        try:
+            learner.learn(reflections)
+        except Exception:
+            pass
+        locate = learner.locate()
+        Command.end('Learnt {0} reference profiles'.format(locate.size()))
 
         # Configure the integration algorithm with the locator class
         integrate = ProfileFittingReciprocalSpaceAlgorithm(locate)

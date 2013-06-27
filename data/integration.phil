@@ -60,7 +60,7 @@ integration
   {
     reference_frame_interval = 10
       .help = "The oscillation at which to learn new reference profiles"
-      .type = float
+      .type = int
     
     reference_signal_threshold = 0.2
       .help = "The threshold to use in reference profile"

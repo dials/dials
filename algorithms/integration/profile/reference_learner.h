@@ -168,6 +168,9 @@ namespace dials { namespace algorithms {
         }
       }
 
+      // If the reference profile sum is <= 0 then return
+      DIALS_ASSERT(signal_sum > 0);
+
       // Normalize the profile such that sum of signal pixels == 1
       for (std::size_t i = 0; i < reference.size(); ++i) {
         reference[i] /= signal_sum;
