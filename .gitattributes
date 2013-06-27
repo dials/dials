@@ -71,6 +71,7 @@ algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
 algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
 algorithms/integration/boost_python/helpers.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
+algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/reciprocal_space_transform.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/shoebox_masker.cc -text
@@ -99,6 +100,7 @@ algorithms/integration/profile/grid_sampler.h -text
 algorithms/integration/profile/reference_learner.h -text
 algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
+algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/reciprocal_space_transform.h -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/reflection_profile_helpers.h -text
