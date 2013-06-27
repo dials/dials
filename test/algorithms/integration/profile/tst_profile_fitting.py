@@ -7,7 +7,6 @@ class Test(object):
     def run(self):
         self.tst_identical()
         self.tst_scaled()
-        self.tst_scaled_with_background()
 
     def tst_identical(self):
 
