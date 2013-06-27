@@ -3,6 +3,7 @@ from libtbx import test_utils
 import libtbx.load_env
 
 tst_list = (
+    "$D/test/tst_spots_xds.py",
     "$D/test/model/data/tst_reflection_pickle.py",
     "$D/test/algorithms/spot_prediction/tst_index_generator.py",
     "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",

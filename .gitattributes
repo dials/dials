@@ -194,6 +194,7 @@ command_line/beam_divergence_and_mosaicity.py -text
 command_line/detector_max_resolution.py -text
 command_line/dials_spotfinder.py -text
 command_line/display_spots.py -text
+command_line/export_spot_xds.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
@@ -668,6 +669,7 @@ test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
 test/model/data/tst_reflection_pickle.py -text
 test/model/serialize/tst_serialize.py -text
+test/tst_spots_xds.py -text
 util/__init__.py -text
 util/command_line.py -text
 util/config.py -text
