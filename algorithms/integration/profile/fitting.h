@@ -11,12 +11,16 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_H
 #define DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_H
 
+#include <boost/math/tools/minima.hpp>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/ref_reductions.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
+  using scitbx::af::sum;
   using scitbx::af::flex_double;
+  using boost::math::tools::brent_find_minima;
 
   /**
    * A class representing the profile model to minimize.
@@ -71,6 +75,56 @@ namespace dials { namespace algorithms {
 
   private:
     flex_double p_, c_, b_;
+  };
+
+
+  /**
+   * Class to fix the observed with the reference profile
+   */
+  class ProfileFitting {
+  public:
+
+    /**
+     * Instantiate the fitting algorithm with the reflection profile
+     * @param p The profile to fit to
+     * @param c The contents of the pixels
+     * @param b The background of the pixels
+     */
+    ProfileFitting(const flex_double &p,
+                   const flex_double &c,
+                   const flex_double &b)
+      : model_(p, c, b) {
+
+      // Set the maximum number of iterations and the bounds
+      unsigned long max_iter = 50;
+      double xmin = -1;
+      double xmax = sum(c.const_ref());
+
+      // Find the minimum of the function
+      std::pair<double, double> xf = brent_find_minima(
+        model_, xmin, xmax, 32, max_iter);
+
+      // Set the intensity
+      intensity_ = xf.first;
+    }
+
+    /**
+     * @returns The intensity
+     */
+    double intensity() const {
+      return intensity_;
+    }
+
+    /**
+     * @returns the variance
+     */
+    double variance() const {
+      return model_.variance(intensity_);
+    }
+
+  private:
+    ProfileModel model_;
+    double intensity_;
   };
 
 }} // namespace dials::algorithms

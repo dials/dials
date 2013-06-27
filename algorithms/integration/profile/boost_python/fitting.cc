@@ -28,6 +28,16 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("background"))))
       .def("__call__", &ProfileModel::operator(), (arg("I")))
       .def("variance", &ProfileModel::variance, (arg("I")));
+      
+    class_<ProfileFitting>("ProfileFitting", no_init)
+      .def(init<const flex_double&,
+                const flex_double&,
+                const flex_double&>((
+        arg("profile"),
+        arg("contents"),
+        arg("background"))))
+      .def("intensity", &ProfileFitting::intensity)
+      .def("variance", &ProfileFitting::variance);
   }
 
 }}} // namespace = dials::algorithms::boost_python
