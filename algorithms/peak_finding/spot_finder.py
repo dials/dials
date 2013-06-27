@@ -133,23 +133,21 @@ class SpotFinder(SpotFinderInterface):
         '''
         from scitbx.array_family import flex
         from dials.algorithms.peak_finding import flex_vec3_int
-        import numpy
-        from time import time
 
         # Calculate the threshold
         mask = self._threshold_strategy(image)
 
         # Extract the pixel indices
-        index = numpy.where(mask.as_numpy_array())
+        mask_isel = mask.iselection()
 
         # Create the array of pixel coordinates
-        z = [frame] * len(index[0])
-        y = map(int, index[0])
-        x = map(int, index[1])
+        z = [frame] * mask_isel.size()
+        x = mask_isel % mask.all()[1]
+        y = mask_isel / mask.all()[1]
         coords = flex_vec3_int(zip(x, y, z))
 
-        # Get the array of pixel intensities
-        intensity = flex.int(image.as_numpy_array()[index])
+        # Get the array of pixel intensities       
+        intensity = image.select(mask_isel)
 
         # Return the pixel values
         return coords, intensity
