@@ -32,10 +32,14 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<ProfileFitting>("ProfileFitting", no_init)
       .def(init<const flex_double&,
                 const flex_double&,
-                const flex_double&>((
+                const flex_double&,
+                int,
+                std::size_t>((
         arg("profile"),
         arg("contents"),
-        arg("background"))))
+        arg("background"),
+        arg("bits") = 16,
+        arg("max_iter") = 50)))
       .def("intensity", &ProfileFitting::intensity)
       .def("variance", &ProfileFitting::variance);
   }

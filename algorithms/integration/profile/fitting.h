@@ -92,20 +92,24 @@ namespace dials { namespace algorithms {
      */
     ProfileFitting(const flex_double &p,
                    const flex_double &c,
-                   const flex_double &b)
+                   const flex_double &b,
+                   int bits = 16,
+                   std::size_t max_iter = 50)
       : model_(p, c, b) {
 
       // Set the maximum number of iterations and the bounds
-      unsigned long max_iter = 50;
-      double xmin = -1;
+      double xmin = 0;
       double xmax = sum(c.const_ref());
 
       // Find the minimum of the function
       std::pair<double, double> xf = brent_find_minima(
-        model_, xmin, xmax, 32, max_iter);
+        model_, xmin, xmax, bits, max_iter);
 
       // Set the intensity
       intensity_ = xf.first;
+
+      // Ensure the intensity is > 0 and less than max
+      DIALS_ASSERT(intensity_ > xmin);
     }
 
     /**

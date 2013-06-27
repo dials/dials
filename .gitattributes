@@ -627,6 +627,7 @@ test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/centroid/tst_toy_centroid_helpers.py -text
 test/algorithms/image/tst_centroid.py -text
 test/algorithms/integration/profile/tst_grid_sampler.py -text
+test/algorithms/integration/profile/tst_profile_fitting.py -text
 test/algorithms/integration/profile/tst_profile_helpers.py -text
 test/algorithms/integration/profile/tst_reference_learner.py -text
 test/algorithms/integration/profile/tst_reference_locator.py -text
