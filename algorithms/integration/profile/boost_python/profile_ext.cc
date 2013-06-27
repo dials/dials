@@ -19,6 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_xds_circle_sampler();
   void export_reference_locator();
   void export_reference_learner();
+  void export_fitting();
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_profile_ext)
   {
@@ -26,6 +27,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_xds_circle_sampler();
     export_reference_locator();
     export_reference_learner();
+    export_fitting();
   }
 
 }}} // namespace = dials::algorithms::boost_python
