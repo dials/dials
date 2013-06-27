@@ -23,10 +23,12 @@ class Integrator(object):
             compute_intensity The intensity strategy
 
         '''
+        from dials.algorithms.integration.lp_correction import correct_intensity
         # Initialise the reflection extractor
         self.compute_spots = compute_spots
         self.compute_background = compute_background
         self.compute_intensity = compute_intensity
+        self.correct_intensity = correct_intensity
 
     def __call__(self, sweep, crystal, reflections = None):
         ''' Call to integrate.
@@ -48,7 +50,10 @@ class Integrator(object):
         reflections = self.compute_background(sweep, crystal, reflections)
 
         # Calculate the intensity and return
-        return self.compute_intensity(sweep, crystal, reflections)
+        reflections = self.compute_intensity(sweep, crystal, reflections)
+
+        # apply Lorentz polarisation
+        return self.correct_intensity(sweep, crystal, reflections)
 
 
 class IntegratorFactory(object):
@@ -72,9 +77,9 @@ class IntegratorFactory(object):
         compute_intensity = IntegratorFactory.configure_intensity(params)
 
         # Return the integrator with the given strategies
-        return Integrator(compute_spots=compute_spots,
-                          compute_background=compute_background,
-                          compute_intensity=compute_intensity)
+        return Integrator(compute_spots = compute_spots,
+                          compute_background = compute_background,
+                          compute_intensity = compute_intensity)
 
     @staticmethod
     def configure_extractor(params):
@@ -95,10 +100,10 @@ class IntegratorFactory(object):
 
         # Return the reflection extractor instance
         return ReflectionExtractor(
-            bbox_nsigma=params.integration.shoebox.n_sigma,
-            filter_by_volume=params.integration.filter.by_volume,
-            gain_map=gain_map,
-            dark_map=dark_map)
+            bbox_nsigma = params.integration.shoebox.n_sigma,
+            filter_by_volume = params.integration.filter.by_volume,
+            gain_map = gain_map,
+            dark_map = dark_map)
 
     @staticmethod
     def configure_background(params):
@@ -180,9 +185,9 @@ class IntegratorFactory(object):
         # Configure the reciprocal space summation algorithm
         elif params.integration.algorithm == 'sum_rs':
             algorithm = SummationReciprocalSpace(
-                n_sigma=params.integration.shoebox.n_sigma,
-                grid_size=params.integration.reciprocal_space.grid_size,
-                n_div=params.integration.reciprocal_space.n_divisions)
+                n_sigma = params.integration.shoebox.n_sigma,
+                grid_size = params.integration.reciprocal_space.grid_size,
+                n_div = params.integration.reciprocal_space.n_divisions)
 
         # Configure the 2D profile fitting algorithm
         elif params.integration.algorithm == 'fit_2d':
@@ -195,11 +200,11 @@ class IntegratorFactory(object):
         # Configure the reciprocal space profile fitting algorithm
         elif params.integration.algorithm == 'fit_rs':
             algorithm = ProfileFittingReciprocalSpace(
-                n_sigma=params.integration.shoebox.n_sigma,
-                grid_size=params.integration.reciprocal_space.grid_size,
-                n_div=params.integration.reciprocal_space.n_divisions,
-                frame_interval=params.integration.profile.reference_frame_interval,
-                threshold=params.integration.profile.reference_signal_threshold)
+                n_sigma = params.integration.shoebox.n_sigma,
+                grid_size = params.integration.reciprocal_space.grid_size,
+                n_div = params.integration.reciprocal_space.n_divisions,
+                frame_interval = params.integration.profile.reference_frame_interval,
+                threshold = params.integration.profile.reference_signal_threshold)
 
         # Unknown algorithm
         else:
