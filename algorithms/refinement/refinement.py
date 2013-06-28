@@ -236,7 +236,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     if scan_varying: scan_varying_refine(beam, goniometer, crystal,
            detector, image_width, scan,
            hkls, enterings, frames,
-           svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+           svecs, d1s, sig_d1s, d2s, sig_d2s, angles, sig_angles,
            verbosity, fix_cell = fix_cell)
 
     # Return models (crystal not updated with scan-varying U, B)
