@@ -21,6 +21,9 @@ from libtbx.test_utils import approx_equal
 import setup_geometry
 import setup_minimiser
 
+# We will set up a mock scan
+from dxtbx.model.scan import scan_factory
+
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
@@ -154,23 +157,39 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Select those that are excited in a 180 degree sweep and get angles
-UB = mycrystal.get_U() * mycrystal.get_B()
-sweep_range = (0., pi)
+# Build a mock scan for a 180 degree sweep
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,1800),
+                      exposure_time = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(1800),
+                      deg = True)
+sweep_range = myscan.get_oscillation_range(deg=False)
+temp = myscan.get_oscillation(deg=False)
+im_width = temp[1] - temp[0]
+assert sweep_range == (0., pi)
+assert approx_equal(im_width, 0.1 * pi / 180.)
+
 ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 
 # Pull out reflection data as lists
-temp = [(ref.miller_index, ref.rotation_angle,
+temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
          matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, svecs = zip(*temp)
+hkls, entering_flags, angles, svecs = zip(*temp)
+
+# convert angles to image number
+frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False),
+             angles)
 
 # Project positions on camera
 # currently assume all reflections intersect panel 0
 impacts = [mydetector[0].get_ray_intersection(
                         ref.beam_vector) for ref in obs_refs]
 d1s, d2s = zip(*impacts)
+
+print "Total number of observations made", len(hkls)
 
 # Invent some uncertainties
 im_width = 0.1 * pi / 180.
@@ -192,12 +211,11 @@ xluc_param.set_p(xluc_p_vals)
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(ref_predictor, mydetector,
-                        hkls, svecs,
-                        d1s, sigd1s,
-                        d2s, sigd2s,
-                        angles, sigangles,
-                        mybeam, mygonio)
+refman = ReflectionManager(hkls, entering_flags, frames, svecs,
+                           d1s, sigd1s,
+                           d2s, sigd2s,
+                           angles, sigangles,
+                           mybeam, mygonio, myscan)
 
 ##############################
 # Set up the target function #
@@ -205,8 +223,8 @@ refman = ReflectionManager(ref_predictor, mydetector,
 
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
-mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-    refman, pred_param, mydetector.get_pixel_size(), im_width)
+mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
+    mydetector, refman, pred_param, im_width)
 
 ######################################
 # Set up the LSTBX refinement engine #
@@ -223,9 +241,9 @@ refiner = setup_minimiser.Extract(master_phil,
 refiner.run()
 
 assert refiner.get_num_steps() == 2
-assert approx_equal(mytarget.rmsds(), (0.00508772022458,
-                                       0.00422540287125,
-                                       8.84202542576e-05))
+assert approx_equal(mytarget.rmsds(), (0.00508874175692,
+                                       0.0042240683749,
+                                       8.8623393713e-05))
 assert mytarget.achieved()
 
 print "OK"
@@ -253,8 +271,8 @@ refiner = setup_minimiser.Extract(master_phil,
 refiner.run()
 
 assert mytarget.achieved()
-assert refiner.get_num_steps() == 10
-assert approx_equal(mytarget.rmsds(), (0.0571538785092,
-                                       0.0353463867263,
-                                       0.000374922829864))
+assert refiner.get_num_steps() == 11
+assert approx_equal(mytarget.rmsds(), (0.0355385109852,
+                                       0.0274478303898,
+                                       0.000220579661729))
 print "OK"

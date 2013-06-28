@@ -197,12 +197,11 @@ def refine(beam, goniometer, crystal, detector, scan,
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(ref_predictor, detector,
-                            hkls, svecs,
-                            d1s, sig_d1s,
-                            d2s, sig_d2s,
-                            angles, sig_angles,
-                            beam, goniometer, verbosity)
+    refman = ReflectionManager(hkls, enterings, frames, svecs,
+                               d1s, sig_d1s,
+                               d2s, sig_d2s,
+                               angles, sig_angles,
+                               beam, goniometer, scan, verbosity)
 
     if verbosity > 1: print "Reflection manager built\n"
 
@@ -211,7 +210,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     ##############################
 
     mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-        refman, pred_param, detector.get_pixel_size(), image_width)
+        ref_predictor, detector, refman, pred_param, image_width)
 
     if verbosity > 1: print "Target function built\n"
 

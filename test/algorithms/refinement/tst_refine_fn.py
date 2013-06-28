@@ -27,9 +27,13 @@ import sys
 from math import pi
 from scitbx import matrix
 from libtbx.phil import parse
+from libtbx.test_utils import approx_equal
 
 # Get modules to build models using PHIL
 import setup_geometry
+
+# We will set up a mock scan
+from dxtbx.model.scan import scan_factory
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -153,34 +157,53 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Select those that are excited in a 180 degree sweep and get angles
-UB = mycrystal.get_U() * mycrystal.get_B()
-sweep_range = (0., pi)
+# Build a mock scan for a 180 degree sweep of 0.1 degree images
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,1800),
+                      exposure_time = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(1800),
+                      deg = True)
+sweep_range = myscan.get_oscillation_range(deg=False)
+temp = myscan.get_oscillation(deg=False)
+im_width = temp[1] - temp[0]
+assert sweep_range == (0., pi)
+assert approx_equal(im_width, 0.1 * pi / 180.)
+
 ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 
-obs_refs = ref_predictor.predict(indices)
+excited_refs = ref_predictor.predict(indices)
 
-print "Total number of reflections excited", len(obs_refs)
+print "Total number of reflections excited", len(excited_refs)
 
 # Pull out reflection data as lists
-temp = [(ref.miller_index, ref.rotation_angle,
-         matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, svecs = zip(*temp)
+temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
+         matrix.col(ref.beam_vector)) for ref in excited_refs]
+hkls, entering_flags, angles, svecs = zip(*temp)
 
-# Project positions on camera
-# currently assume all reflections intersect panel 0
-impacts = [mydetector[0].get_ray_intersection(
-                        ref.beam_vector) for ref in obs_refs]
-d1s, d2s = zip(*impacts)
+# convert angles to image number
+frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False),
+             angles)
 
-print "Total number of observations made", len(hkls)
-
-# Invent some uncertainties
-im_width = 0.1 * pi / 180.
+# Project positions on camera (assume panel 0) and set made up
+# centroid variances and frame numbers
 px_size = mydetector.get_pixel_size()
-sigd1s = [px_size[0] / 2.] * len(hkls)
-sigd2s = [px_size[1] / 2.] * len(hkls)
-sigangles = [im_width / 2.] * len(hkls)
+
+def set_impact(ref):
+    '''helper function to set centroid and fake variance and frame
+    number in a reflection'''
+    try:
+        ref.image_coord_mm = mydetector[0].get_ray_intersection(ref.beam_vector)
+        ref.centroid_variance = (px_size[0] / 2., px_size[1] / 2., im_width / 2.)
+        ref.frame_number = myscan.get_image_index_from_angle(ref.rotation_angle, deg=False)
+        return ref
+    except RuntimeError:
+        # this reflection doesn't intersect the Panel
+        return False
+
+obs_refs = [e for e in excited_refs if set_impact(e)]
+
+print "Total number of observations made", len(obs_refs)
 
 ###############################
 # Undo known parameter shifts #
@@ -196,27 +219,6 @@ msg = "Parameters: " + "%.5f " * len(pred_param)
 print msg % tuple(pred_param.get_p())
 print
 
-#####################################
-# Select reflections for refinement #
-#####################################
-
-refman = ReflectionManager(ref_predictor, mydetector,
-                        hkls, svecs,
-                        d1s, sigd1s,
-                        d2s, sigd2s,
-                        angles, sigangles,
-                        mybeam, mygonio)
-
-##############################
-# Set up the target function #
-##############################
-
-# The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
-# 1/3 the image width in radians. For the simulated data, these are just made up
-
-mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-    refman, pred_param, mydetector.get_pixel_size(), im_width)
-
 ###########################
 # Use the refine function #
 ###########################
@@ -224,13 +226,12 @@ mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
 print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
-print "FIXME. This is currently broken, as refine now needs a scan " + \
-      "object instead of sweep_range and takes a list of reflections" + \
-      "rather than separate arguments for each attribute"
-print 1/0
-refine(mybeam, mygonio, mycrystal, mydetector, im_width, sweep_range,
-       hkls, svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-       verbosity = 1)
+#print "FIXME. This is currently broken, as refine now needs a scan " + \
+#      "object instead of sweep_range and takes a list of reflections" + \
+#      "rather than separate arguments for each attribute"
+
+refine(mybeam, mygonio, mycrystal, mydetector, myscan, obs_refs,
+       verbosity = 1, fix_cell = False, scan_varying=False)
 
 print
 print "Refinement has completed with the following geometry:"

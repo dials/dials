@@ -55,12 +55,12 @@ from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parame
     import VaryingCrystalPredictionParameterisation
 
 # Imports for the target function
-from dials.algorithms.refinement.target import \
+from dials.scratch.dgw.refinement.target_old import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
-from dials.scratch.dgw.refinement.scan_varying_target import \
+from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff as NewTarget
-from dials.scratch.dgw.refinement.scan_varying_target import \
+from dials.algorithms.refinement.target import \
     ReflectionManager as NewReflectionManager
 
 # Import helper functions

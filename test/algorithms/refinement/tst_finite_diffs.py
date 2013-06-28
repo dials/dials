@@ -19,9 +19,13 @@ from math import pi
 import random
 from scitbx import matrix
 from libtbx.phil import parse
+from libtbx.test_utils import approx_equal
 
 # Experimental model builder
 from setup_geometry import Extract
+
+# We will set up a mock scan
+from dxtbx.model.scan import scan_factory
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -94,7 +98,6 @@ xluc_param = CrystalUnitCellParameterisation(mycrystal)
 # prediction equation                                                  #
 ########################################################################
 
-# Testing the new 'coupled' version here
 pred_param = DetectorSpacePredictionParameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
@@ -135,9 +138,19 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Select those that are excited in a 180 degree sweep and get their angles
-UB = mycrystal.get_U() * mycrystal.get_B()
-sweep_range = (0., pi)
+# Build a mock scan for a 180 degree sweep of 0.1 degree images
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,1800),
+                      exposure_time = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(1800),
+                      deg = True)
+sweep_range = myscan.get_oscillation_range(deg=False)
+temp = myscan.get_oscillation(deg=False)
+im_width = temp[1] - temp[0]
+assert sweep_range == (0., pi)
+assert approx_equal(im_width, 0.1 * pi / 180.)
+
 ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 obs_refs = ref_predictor.predict(indices)
 
@@ -146,9 +159,12 @@ print "======================"
 print "Total number of reflections excited", len(obs_refs)
 
 # Pull out reflection data as lists
-temp = [(ref.miller_index, ref.rotation_angle,
+temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
          matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, svecs = zip(*temp)
+hkls, entering_flags, angles, svecs = zip(*temp)
+
+# convert angles to image number
+frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False), angles)
 
 # Project positions on camera
 # currently assume all reflections intersect panel 0
@@ -183,19 +199,18 @@ print msg % tuple(pred_param.get_p()), "\n"
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(ref_predictor, mydetector,
-                        hkls, svecs,
-                        d1s, sigd1s,
-                        d2s, sigd2s,
-                        angles, sigangles,
-                        mybeam, mygonio)
+refman = ReflectionManager(hkls, entering_flags, frames, svecs,
+                           d1s, sigd1s,
+                           d2s, sigd2s,
+                           angles, sigangles,
+                           mybeam, mygonio, myscan)
 
 ##############################
 # Set up the target function #
 ##############################
 
-mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-    refman, pred_param, mydetector.get_pixel_size(), im_width)
+mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
+    mydetector, refman, pred_param, im_width)
 
 # get the functional and gradients
 mytarget.predict()

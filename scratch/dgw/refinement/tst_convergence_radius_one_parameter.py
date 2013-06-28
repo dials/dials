@@ -36,7 +36,7 @@ from dials.scratch.dgw.refinement.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 
 # Imports for the target function
-from dials.scratch.dgw.refinement.target import \
+from dials.scratch.dgw.refinement.target_old import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import the refinement engine
