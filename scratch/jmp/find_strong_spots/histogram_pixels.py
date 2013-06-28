@@ -1,3 +1,4 @@
+from __future__ import division
 
 
 def calculate_sigma_beam_divergence(reflections):

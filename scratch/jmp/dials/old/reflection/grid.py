@@ -1,3 +1,4 @@
+from __future__ import division
 
 class Grid:
     """A class to hold the reflection profiles transformed into the specific

@@ -1,3 +1,4 @@
+from __future__ import division
 def get_image_volume_size(list_of_images):
     """Get the size of the image volume"""
     import os

@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 
 data2d = numpy.arange(6 * 6 * 6, dtype = numpy.int32).reshape(6, 6, 6)

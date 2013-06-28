@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 
 data2d = numpy.arange( 36, dtype = float ).reshape( 6, 6 )

@@ -1,3 +1,4 @@
+from __future__ import division
 import sys
 
 arg_lst = sys.argv[1:]

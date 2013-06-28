@@ -1,3 +1,4 @@
+from __future__ import division
 
 from reflection.coordinate_system import CoordinateSystem
 

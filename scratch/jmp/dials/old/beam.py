@@ -1,3 +1,4 @@
+from __future__ import division
 
 class Beam:
     """Class to hold beam parameters"""

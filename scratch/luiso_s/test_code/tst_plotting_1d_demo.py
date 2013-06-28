@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 from iotbx.detectors import ImageFactory
 from matplotlib import pyplot as plt

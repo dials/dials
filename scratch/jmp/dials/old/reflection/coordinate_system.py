@@ -1,3 +1,4 @@
+from __future__ import division
 
 class CoordinateSystem:
     """The profile specific coordinate system."""

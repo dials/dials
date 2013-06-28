@@ -1,3 +1,4 @@
+from __future__ import division
 
 class ReflectionMask:
     """A class to represent the reflection mask."""

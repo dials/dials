@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 import matrix_test02_sub
 ysize = xsize = 16

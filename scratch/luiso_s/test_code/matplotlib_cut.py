@@ -1,3 +1,4 @@
+from __future__ import division
 from matplotlib import pylab, cm
 pylab.subplot2grid((2, 3), (0, 0), colspan=3)
 pylab.plot(line)

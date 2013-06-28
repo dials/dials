@@ -1,3 +1,4 @@
+from __future__ import division
 
 class IndexGenerator:
     """A class to generate hkl indices from a unit cell."""

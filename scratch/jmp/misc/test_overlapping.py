@@ -1,3 +1,4 @@
+from __future__ import division
 
 from scitbx.array_family import flex
 from dials.model.data import Reflection, ReflectionList

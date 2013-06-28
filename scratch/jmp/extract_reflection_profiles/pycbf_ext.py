@@ -1,4 +1,5 @@
 """This module defines some useful header functions for CBF files."""
+from __future__ import division
 
 from scitbx import matrix
 import pycbf

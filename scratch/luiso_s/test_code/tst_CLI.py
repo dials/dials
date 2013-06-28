@@ -1,3 +1,4 @@
+from __future__ import division
 from libtbx.phil import parse
 import sys
 import os

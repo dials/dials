@@ -1,3 +1,4 @@
+from __future__ import division
 
 
 def extract_reflection_profiles():

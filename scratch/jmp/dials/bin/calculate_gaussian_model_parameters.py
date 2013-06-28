@@ -1,3 +1,4 @@
+from __future__ import division
 #!/usr/bin/env python
 
 def display_image_with_predicted_spots(image, xcoords, ycoords):

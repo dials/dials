@@ -1,3 +1,4 @@
+from __future__ import division
 
 def calculate_threshold(image, trusted_range):
     from scipy.ndimage.measurements import histogram

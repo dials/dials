@@ -1,3 +1,4 @@
+from __future__ import division
 
 class Reflection:
     """A class to represent a reflection"""

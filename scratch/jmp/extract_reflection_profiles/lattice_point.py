@@ -1,3 +1,4 @@
+from __future__ import division
 
 class LatticePoint:
     """A class to represent a reciprocal lattice point"""

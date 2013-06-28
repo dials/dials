@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 import time
 ysize = xsize = 10

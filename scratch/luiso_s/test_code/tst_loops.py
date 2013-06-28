@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 t_size = 5
 f_size = t_size

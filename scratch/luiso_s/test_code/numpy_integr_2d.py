@@ -1,3 +1,4 @@
+from __future__ import division
 #
 #  numpy_integr_2d testing code
 #

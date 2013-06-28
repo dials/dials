@@ -1,3 +1,4 @@
+from __future__ import division
 def filter_reflections_by_roi_volume(reflections, percent):
     """Filter the reflections by roi volume.
 

@@ -1,3 +1,4 @@
+from __future__ import division
 # -*- coding: utf-8 -*-
 import numpy
 #path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))      # start copy-pasted from example

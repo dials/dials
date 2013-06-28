@@ -1,3 +1,4 @@
+from __future__ import division
 
 def bhthreshold(histo):
     import numpy

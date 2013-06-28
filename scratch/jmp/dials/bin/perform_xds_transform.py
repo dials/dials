@@ -1,3 +1,4 @@
+from __future__ import division
 #!/usr/bin/env python
 
 def parse_list_string(string):

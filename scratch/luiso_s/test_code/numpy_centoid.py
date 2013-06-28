@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 
 data2d = numpy.zeros((5, 5), dtype = numpy.int32)
