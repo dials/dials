@@ -407,7 +407,6 @@ class ObservationPrediction(object):
                                      Yo, sigYo, weightYo,
                                      Phio, sigPhio, weightPhio))
 
-
 class ReflectionManager(object):
     '''A class to maintain information about observed and predicted
     reflections for refinement.'''

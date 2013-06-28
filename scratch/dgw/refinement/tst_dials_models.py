@@ -31,12 +31,16 @@ from dials.scratch.dgw.goniometer_model import goniometer
 
 # beam
 beam_direction = matrix.col((0., 0., 1.))
+sample_to_source = -1. * beam_direction
 wavelength = 1.2
 
 my_beam = source(beam_direction, wavelength)
 
+# dials beam factory takes sample_to_source rather than beam_direction
+# although we could use named arguments with unit_s0=beam_direction,
+# wavelength=wavelength
 bf = beam_factory()
-dials_beam = bf.make_beam(beam_direction, wavelength)
+dials_beam = bf.make_beam(sample_to_source, wavelength)
 
 # detector
 npx_fast = 1475
@@ -71,10 +75,13 @@ dials_gonio = gf.make_goniometer(spindle_axis,
 
 # my_beam has 'get_beam', 'get_s0', 'get_wavelength', 'set_s0' as its
 # public interface.
-# dials_beam has 'get_direction', 'get_s0', 'get_wavelength',
-# 'set_direction', 'set_s0', 'set_wavelength', 'get_unit_s0', 'set_unit_s0'
+# dials_beam has 'get_direction', 'get_s0', 'get_wavelength', 'get_unit_s0'
+# 'set_unit_s0', 'set_direction', 'set_s0', 'set_wavelength'
 
 # the analogue of my_beam.get_beam() is
+print my_beam.get_beam()
+print dials_beam.get_wavelength() * matrix.col(dials_beam.get_unit_s0())
+
 assert my_beam.get_beam() == dials_beam.get_wavelength() * \
                              matrix.col(dials_beam.get_unit_s0())
 
