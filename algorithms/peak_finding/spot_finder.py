@@ -159,7 +159,7 @@ class SpotFinder(SpotFinderInterface):
         y = mask_isel / mask.all()[1]
         coords = flex_vec3_int(zip(x, y, z))
 
-        # Get the array of pixel intensities       
+        # Get the array of pixel intensities
         intensity = image.select(mask_isel)
 
         # Return the pixel values
@@ -211,14 +211,14 @@ class SpotFinder(SpotFinderInterface):
 
     def _filter_spots_by_resolution(self, cpos, sweep, selection):
         from scitbx.array_family import flex
-        
+
         if self._d_max is None and self._d_min is None:
             # Nothing to do here
             return
 
         detector = sweep.get_detector()
         beam = sweep.get_beam()
-        
+
         s0 = beam.get_s0()
         wavelength = beam.get_wavelength()
 
@@ -231,7 +231,7 @@ class SpotFinder(SpotFinderInterface):
                 or
                 (self._d_max is not None and
                  resolution > self._d_max)):
-                selection[i] = False    
+                selection[i] = False
 
     def _calculate_bbox(self, coords, spots, sweep):
         '''Calculate the bounding boxes for each spot.

@@ -45,5 +45,3 @@ def LP_calculations(sweep, crystal, reflection):
 
 
     reflection.intensity = reflection.intensity / 2.0
-
-
