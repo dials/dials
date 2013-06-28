@@ -15,7 +15,8 @@ class ReflectionExtractor(object):
     ''' Class to extract basic reflection information. '''
 
     def __init__(self, bbox_nsigma, filter_by_volume=True,
-                 gain_map=None, dark_map=None):
+                 gain_map=None, dark_map=None, kernel_size=None,
+                 n_sigma_b=None, n_sigma_s=None):
         ''' Initialise the extractor
 
         Params:
@@ -23,6 +24,9 @@ class ReflectionExtractor(object):
             filter_by_volume True/False
             gain_map The detector gain map
             dark_map The detector dark map
+            kernel_size The size of the smoothing kernel to use
+            n_sigma_b The number of sigmas for the background
+            n_sigma_s The number of sigmas for a strong pixel
 
         '''
         # Get parameters we need
@@ -30,6 +34,9 @@ class ReflectionExtractor(object):
         self.filter_by_volume = filter_by_volume
         self.gain_map = gain_map
         self.dark_map = dark_map
+        self.kernel_size = kernel_size
+        self.n_sigma_b = n_sigma_b
+        self.n_sigma_s = n_sigma_s
 
     def __call__(self, sweep, crystal):
         ''' Extract the basic reflection properties from the sweep
@@ -156,12 +163,16 @@ class ReflectionExtractor(object):
         if self.filter_by_volume:
             Command.start('Filtering reflections by bounding box volume')
             filter_by_bbox_volume(reflections, int(sqrt(len(reflections))))
-            Command.end('Filtered {0} reflections by volume'.format(
+            Command.end('Filtered {0} reflections by bbox volume'.format(
                 len([r for r in reflections if r.status == 0])))
 
         # Extract the reflection profiles
-        extract_reflection_profiles(sweep, reflections, overlaps,
-            self.gain_map, self.dark_map)
+        extract_reflection_profiles(
+            sweep, reflections, overlaps,
+            self.gain_map, self.dark_map,
+            self.kernel_size,
+            self.n_sigma_b, self.n_sigma_s,
+            detector_mask)
 
         # Return the list of reflections
         return reflections

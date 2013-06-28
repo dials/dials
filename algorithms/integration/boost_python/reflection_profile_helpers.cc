@@ -33,6 +33,14 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("reflections"),
         arg("gain_map"),
         arg("dark_map")));
+        
+    def("construct_image_mask_from_shoeboxes", 
+      &construct_image_mask_from_shoeboxes, (
+        arg("mask"), 
+        arg("array_index"),
+        arg("index"),
+        arg("reflections"),
+        arg("kernel_size"))); 
   }
 
 }}} // namespace = dials::algorithms::boost_python

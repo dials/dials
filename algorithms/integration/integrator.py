@@ -42,6 +42,8 @@ class Integrator(object):
             A reflection list
 
         '''
+        from dials.util.command_line import Command
+
         # Extract the reflections from the sweep
         if reflections == None:
             reflections = self.compute_spots(sweep, crystal)
@@ -53,8 +55,13 @@ class Integrator(object):
         reflections = self.compute_intensity(sweep, crystal, reflections)
 
         # apply Lorentz polarisation
-        return self.correct_intensity(sweep, crystal, reflections)
+        Command.start('Correcting integrated intensities')
+        reflections = self.correct_intensity(sweep, crystal, reflections)
+        Command.end('Corrected {0} integrated intensities'.format(
+            len([r for r in reflections if r.status == 0])))
 
+        # Return the reflections
+        return reflections
 
 class IntegratorFactory(object):
     ''' Factory class to create integrators '''
@@ -100,10 +107,13 @@ class IntegratorFactory(object):
 
         # Return the reflection extractor instance
         return ReflectionExtractor(
-            bbox_nsigma = params.integration.shoebox.n_sigma,
-            filter_by_volume = params.integration.filter.by_volume,
-            gain_map = gain_map,
-            dark_map = dark_map)
+            bbox_nsigma=params.integration.shoebox.n_sigma,
+            filter_by_volume=params.integration.filter.by_volume,
+            gain_map=gain_map,
+            dark_map=dark_map,
+            kernel_size=params.integration.shoebox.kernel_size,
+            n_sigma_b=params.integration.shoebox.sigma_background,
+            n_sigma_s=params.integration.shoebox.sigma_strong)
 
     @staticmethod
     def configure_background(params):

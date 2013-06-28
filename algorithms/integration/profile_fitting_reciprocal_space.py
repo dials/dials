@@ -49,7 +49,8 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         image_size = sweep.get_detector().get_image_size()
         num_frames = sweep.get_scan().get_num_images()
         volume_size = image_size + (num_frames,)
-        sampler = XdsCircleSampler(volume_size, self.frame_interval)
+        num_z = int(num_frames / self.frame_interval) + 1
+        sampler = XdsCircleSampler(volume_size, num_z)
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')

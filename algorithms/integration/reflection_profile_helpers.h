@@ -17,7 +17,9 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::af::int2;
   using scitbx::af::int6;
+  using scitbx::af::flex_bool;
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
   using scitbx::af::flex_grid;
@@ -104,6 +106,62 @@ namespace dials { namespace algorithms {
         r.set_shoebox(profile);
       }
     }
+  }
+
+  /**
+   * Construct a mask of pixels to use in the determination of strong spots.
+   * Pixels that are to be used are returned as 1, otherwise as 0.
+   * @param mask The mask input
+   * @param array_index The index of the image
+   * @param index The indices of reflections on this image
+   * @param reflections The reflection array
+   * @param kernel_size The size of the kernel to use around the shoebox
+   */
+  inline
+  flex_bool construct_image_mask_from_shoeboxes(const flex_bool &mask,
+      int array_index, const flex_int &index, const ReflectionList &reflections,
+      int2 kernel_size) {
+
+    // Create the resulting mask
+    flex_bool result(mask.accessor(), false);
+
+    // Set all the shoebox pixels
+    for (std::size_t i = 0; i < index.size(); ++i) {
+
+      // Get a reference to a reflection
+      const Reflection &r = reflections[index[i]];
+      if (r.get_status() == 0) {
+        int6 bounding_box = r.get_bounding_box();
+        int i0 = bounding_box[0] - kernel_size[0];
+        int i1 = bounding_box[1] + kernel_size[0];
+        int j0 = bounding_box[2] - kernel_size[1];
+        int j1 = bounding_box[3] + kernel_size[1];
+
+        // Get the image size
+        flex_int::index_type mask_size = mask.accessor().all();
+
+        // Readjust the area to loop over to ensure we're within image bounds
+        int jj0 = j0 >= 0 ? j0 : 0;
+        int ii0 = i0 >= 0 ? i0 : 0;
+        int jj1 = j1 <= mask_size[0] ? j1 : mask_size[0];
+        int ii1 = i1 <= mask_size[1] ? i1 : mask_size[1];
+
+        // Copy the image pixels
+        for (int jj = jj0; jj < jj1; ++jj) {
+          for (int ii = ii0; ii < ii1; ++ii) {
+            result(jj, ii) = true;
+          }
+        }
+      }
+    }
+
+    // Mask the pixels
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = result[i] && mask[i];
+    }
+
+    // Return the resulting mask
+    return result;
   }
 
 }} // namespace dials::algorithms
