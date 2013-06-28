@@ -123,7 +123,7 @@ class Test(object):
             x = uniform(0, 1000)
             y = uniform(0, 1000)
             z = uniform(0, 10)
-            rlist[i].status = 0
+            rlist[i].set_strong(True)
             rlist[i].image_coord_px = (x, y)
             rlist[i].frame_number = z
             rlist[i].transformed_shoebox = profile.deep_copy()
@@ -146,7 +146,7 @@ class Test(object):
 
             profile = gaussian(self.grid_size, 1000,
                 (4 + offset, 4, 4), (1.5, 1.5, 1.5))
-            rlist[i].status = 0
+            rlist[i].set_strong(True)
             rlist[i].image_coord_px = (x, y)
             rlist[i].frame_number = z
             rlist[i].transformed_shoebox = profile
