@@ -37,7 +37,7 @@ namespace dials { namespace algorithms {
       double shoebox_background_default = 0) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
-      if (r.get_status() == 0) {
+      if (r.is_valid()) {
         int size_z = r.get_bounding_box()[5] - r.get_bounding_box()[4];
         int size_y = r.get_bounding_box()[3] - r.get_bounding_box()[2];
         int size_x = r.get_bounding_box()[1] - r.get_bounding_box()[0];
@@ -72,7 +72,7 @@ namespace dials { namespace algorithms {
 
       // Get a reference to a reflection
       Reflection &r = reflections[index[i]];
-      if (r.get_status() == 0) {
+      if (r.is_valid()) {
         int6 bounding_box = r.get_bounding_box();
         int i0 = bounding_box[0], i1 = bounding_box[1];
         int j0 = bounding_box[2], j1 = bounding_box[3];
@@ -130,7 +130,7 @@ namespace dials { namespace algorithms {
 
       // Get a reference to a reflection
       const Reflection &r = reflections[index[i]];
-      if (r.get_status() == 0) {
+      if (r.is_valid()) {
         int6 bounding_box = r.get_bounding_box();
         int i0 = bounding_box[0] - kernel_size[0];
         int i1 = bounding_box[1] + kernel_size[0];
@@ -182,7 +182,7 @@ namespace dials { namespace algorithms {
 
       // Get a reference to a reflection
       Reflection &r = reflections[index[i]];
-      if (r.get_status() == 0) {
+      if (r.is_valid()) {
         int6 bounding_box = r.get_bounding_box();
         int i0 = bounding_box[0], i1 = bounding_box[1];
         int j0 = bounding_box[2], j1 = bounding_box[3];

@@ -29,7 +29,7 @@ def tmp_numpy_layering_n_integrating(reflections):
 
     from dials.algorithms.integration.summation_2d import raw_2d_integration
     for ref in reflections:
-        if ref.status == 0:
+        if ref.is_valid():
             shoebox = ref.shoebox.as_numpy_array()
             mask = ref.shoebox_mask.as_numpy_array()
             backgound = ref.shoebox_background.as_numpy_array()

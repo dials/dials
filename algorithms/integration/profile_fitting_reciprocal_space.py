@@ -69,7 +69,7 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         Command.start('Transforming reflections to reciprocal space')
         transform(reflections)
         Command.end('Transformed {0} reflections'.format(
-            len([r for r in reflections if r.status == 0])))
+            len([r for r in reflections if r.is_valid()])))
 
         # Configure the reference learner
         grid_size = (self.grid_size * 2 + 1,) * 3
@@ -93,7 +93,7 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         Command.start('Integrating reflections in reciprocal space')
         integrate(reflections)
         Command.end('Integrated {0} reflections'.format(
-            len([r for r in reflections if r.status == 0])))
+            len([r for r in reflections if r.is_valid()])))
 
         # Return the integrated reflections
         return reflections

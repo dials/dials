@@ -31,7 +31,7 @@ def get_reflection_frame_indices(sweep, reflections):
     # For each reflection, Find the frames which it spans and copy an
     # index into the frame -> reflection list
     for i, r in enumerate(reflections):
-        if r.status == 0:
+        if r.is_valid():
             f0 = r.bounding_box[4]
             f1 = r.bounding_box[5]
             for f in range(f0, f1):
@@ -64,7 +64,7 @@ def copy_image_pixels(sweep, reflections, frame_indices,
     from dials.algorithms.integration import construct_image_mask_from_shoeboxes
     from dials.algorithms.integration import assign_strong_spots
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
-    from dials.util.command_line import ProgressBar
+    from dials.util.command_line import ProgressBar, Command
     from scitbx.array_family import flex
 
     # If gain map or dark map are None then set suitable defaults
@@ -115,7 +115,11 @@ def copy_image_pixels(sweep, reflections, frame_indices,
 
     # Progress bar finished
     progress.finished("Extracted {0} reflections".format(
-        len([r for r in reflections if r.status == 0])))
+        len([r for r in reflections if r.is_valid()])))
+
+    # Print the number of strong spots
+    Command.end('Found {0} strong spots'.format(
+        len([r for r in reflections if r.is_strong()])))
 
     # Return the reflections
     return reflections
@@ -150,13 +154,13 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None,
     Command.start("Allocating reflection profiles")
     reflections = allocate_reflection_profiles(reflections)
     Command.end("Allocated {0} reflection profiles".format(
-        len([r for r in reflections if r.status == 0])))
+        len([r for r in reflections if r.is_valid()])))
 
     # Get the indices of the reflections recorded on each frame
     Command.start("Getting reflection frame indices")
     frame_indices = get_reflection_frame_indices(sweep, reflections)
     Command.end("Got frame indices for {0} reflections".format(
-        len([r for r in reflections if r.status == 0])))
+        len([r for r in reflections if r.is_valid()])))
 
     # Copy the pixels from the sweep to the reflection shoeboxes
     reflections = copy_image_pixels(sweep, reflections, frame_indices,

@@ -36,5 +36,5 @@ class Summation3d(IntegrationInterface):
         Command.start('Integrating reflections')
         self._integrator(reflections)
         Command.end('Integrated {0} reflections'.format(
-            len([r for r in reflections if r.status == 0])))
+            len([r for r in reflections if r.is_valid()])))
         return reflections

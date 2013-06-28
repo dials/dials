@@ -58,7 +58,7 @@ class Integrator(object):
         Command.start('Correcting integrated intensities')
         reflections = self.correct_intensity(sweep, crystal, reflections)
         Command.end('Corrected {0} integrated intensities'.format(
-            len([r for r in reflections if r.status == 0])))
+            len([r for r in reflections if r.is_valid()])))
 
         # Return the reflections
         return reflections

@@ -52,7 +52,7 @@ def layering_and_background_avg(reflections):
     from scitbx.array_family import flex
 
     for ref in reflections:
-        if ref.status == 0:
+        if ref.is_valid():
             shoebox = ref.shoebox
             mask = ref.shoebox_mask
             background = ref.shoebox_background

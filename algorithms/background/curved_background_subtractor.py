@@ -49,7 +49,7 @@ def layering_and_background_modl(reflections):
     from dials.algorithms.background import curved_background_flex_2d
     from scitbx.array_family import flex
     for ref in reflections:
-        if ref.status == 0:
+        if ref.is_valid():
             shoebox = ref.shoebox
             mask = ref.shoebox_mask
             background = ref.shoebox_background

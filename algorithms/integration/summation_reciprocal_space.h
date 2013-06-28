@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
     void operator()(ReflectionList &reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {
-          if (reflections[i].get_status() == 0) {
+          if (reflections[i].is_valid()) {
             this->operator()(reflections[i]);
           }
         } catch (dials::error) {

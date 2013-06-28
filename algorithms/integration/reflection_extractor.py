@@ -157,14 +157,14 @@ class ReflectionExtractor(object):
         array_range = scan.get_array_range()
         filter_by_detector_mask(reflections, detector_mask, array_range)
         Command.end('Filtered {0} reflections by detector mask'.format(
-            len([r for r in reflections if r.status == 0])))
+            len([r for r in reflections if r.is_valid()])))
 
         # Filter the reflections by the bounding box volume
         if self.filter_by_volume:
             Command.start('Filtering reflections by bounding box volume')
             filter_by_bbox_volume(reflections, int(sqrt(len(reflections))))
             Command.end('Filtered {0} reflections by bbox volume'.format(
-                len([r for r in reflections if r.status == 0])))
+                len([r for r in reflections if r.is_valid()])))
 
         # Extract the reflection profiles
         extract_reflection_profiles(
