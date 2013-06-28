@@ -107,8 +107,10 @@ namespace dials { namespace model { namespace boost_python {
         &ReflectionBase::set_status)
       .def("is_valid", &ReflectionBase::is_valid)
       .def("is_active", &ReflectionBase::is_active)
+      .def("is_strong", &ReflectionBase::is_strong)
       .def("set_valid", &ReflectionBase::set_valid)
       .def("set_active", &ReflectionBase::set_active)
+      .def("set_strong", &ReflectionBase::set_strong)
       .def("is_zero", &ReflectionBase::is_zero);
 
     class_<Reflection, bases<ReflectionBase> > ("Reflection")

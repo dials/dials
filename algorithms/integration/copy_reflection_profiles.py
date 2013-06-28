@@ -62,6 +62,7 @@ def copy_image_pixels(sweep, reflections, frame_indices,
     """
     from dials.algorithms.integration import copy_single_image_pixels
     from dials.algorithms.integration import construct_image_mask_from_shoeboxes
+    from dials.algorithms.integration import assign_strong_spots
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
     from dials.util.command_line import ProgressBar
     from scitbx.array_family import flex
@@ -104,6 +105,10 @@ def copy_image_pixels(sweep, reflections, frame_indices,
 
         # Threshold the image
         mask = threshold(image)
+
+        # Assign the strong pixels and spots
+        assign_strong_spots(mask, index + first_array_index,
+            reflection_indices, reflections)
 
         # Update the progress bar
         progress.update(100 * (index + 1) / len(sweep))

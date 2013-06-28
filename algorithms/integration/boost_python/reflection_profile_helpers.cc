@@ -41,6 +41,13 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("index"),
         arg("reflections"),
         arg("kernel_size"))); 
+        
+    def("assign_strong_spots",
+      &assign_strong_spots, (
+        arg("image"), 
+        arg("array_index"), 
+        arg("reflection_indices"), 
+        arg("reflections")));        
   }
 
 }}} // namespace = dials::algorithms::boost_python

@@ -92,6 +92,15 @@ namespace dials { namespace model {
       return !(status_ & (1 << 0));
     }
 
+    /** Is the spot a strong spot */
+    bool is_strong() const {
+      return (status_ & (1 << 2));
+    }
+
+    void set_strong(bool strong) {
+      status_ = strong ? status_ | (1 << 2) : status_ & ~(1 << 2);
+    }
+
     /** Set the status to valid */
     void set_valid(bool valid) {
       status_ = valid ? status_ & ~(1 << 1) : status_ | (1 << 1);
