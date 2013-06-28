@@ -26,33 +26,3 @@ def LP_calculations(sweep, crystal, reflection):
 
     reflection.intensity = reflection.intensity * L_f * P_f
 
-'''
->>> from scitbx import matrix
->>> c = matrix.col((1, 0, 0))
->>> help(c)
-
->>> c.length()
-1.0
->>> b = matrix.col((0, 1, 0))
->>> c.cross(b)
-matrix.rec(elems=(0, 0, 1), n=(3,1))
->>> M = matrix.rec((1, 0, 0, 0, 0, 1, 0, 1, 0))
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-TypeError: __init__() takes exactly 3 arguments (2 given)
->>> M = matrix.rec((1, 0, 0, 0, 0, 1, 0, 1, 0))
-KeyboardInterrupt
->>> M = matrix.sqr((1, 0, 0, 0, 0, 1, 0, 1, 0))
->>> M * c
-matrix.rec(elems=(1, 0, 0), n=(3,1))
->>> M * b
-matrix.rec(elems=(0, 0, 1), n=(3,1))
->>> c.dot(c)
-1
->>> c.dot(b)
-0
->>> c.cross(b)
-matrix.rec(elems=(0, 0, 1), n=(3,1))
->>> c.length()
-1.0
-'''
