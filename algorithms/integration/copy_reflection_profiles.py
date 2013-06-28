@@ -114,12 +114,10 @@ def copy_image_pixels(sweep, reflections, frame_indices,
         progress.update(100 * (index + 1) / len(sweep))
 
     # Progress bar finished
-    progress.finished("Extracted {0} reflections".format(
-        len([r for r in reflections if r.is_valid()])))
-
-    # Print the number of strong spots
-    Command.end('Found {0} strong spots'.format(
-        len([r for r in reflections if r.is_strong()])))
+    progress.finished(
+        "Extracted {0} reflections, {1} of which are strong".format(
+            len([r for r in reflections if r.is_valid()]),
+            len([r for r in reflections if r.is_strong()])))
 
     # Return the reflections
     return reflections
@@ -156,6 +154,16 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None,
     Command.end("Allocated {0} reflection profiles".format(
         len([r for r in reflections if r.is_valid()])))
 
+    # If the adjacency list is given, then create the reflection mask
+    if adjacency_list:
+        detector_mask = (sweep[0] >= 0).as_1d().as_int()
+        detector_mask.reshape(flex.grid(sweep[0].all()))
+        Command.start("Masking overlapped reflections")
+        shoebox_masker = ShoeboxMasker(detector_mask)
+        shoebox_masker(reflections, adjacency_list)
+        Command.end("Masked {0} overlapped reflections".format(
+            len(adjacency_list)))
+
     # Get the indices of the reflections recorded on each frame
     Command.start("Getting reflection frame indices")
     frame_indices = get_reflection_frame_indices(sweep, reflections)
@@ -166,16 +174,6 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list=None,
     reflections = copy_image_pixels(sweep, reflections, frame_indices,
         gain_map, dark_map, kernel_size, n_sigma_b, n_sigma_s,
         detector_mask)
-
-    # If the adjacency list is given, then create the reflection mask
-    if adjacency_list:
-        detector_mask = (sweep[0] >= 0).as_1d().as_int()
-        detector_mask.reshape(flex.grid(sweep[0].all()))
-        Command.start("Masking overlapped reflections")
-        shoebox_masker = ShoeboxMasker(detector_mask)
-        shoebox_masker(reflections, adjacency_list)
-        Command.end("Masked {0} overlapped reflections".format(
-            len(adjacency_list)))
 
     # Return the reflections
     return reflections

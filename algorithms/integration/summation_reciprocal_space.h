@@ -24,6 +24,8 @@
 namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
+  using scitbx::af::mean;
+  using scitbx::af::flex_double;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
@@ -52,39 +54,20 @@ namespace dials { namespace algorithms {
      */
     void operator()(Reflection &r) const {
 
+      // Get the transformed shoebox
+      flex_double c = r.get_transformed_shoebox();
+
+      // Get the transformed background
+      // HACK ALERT! Should fix: setting to mean of shoebox background
+      flex_double b = flex_double(c.accessor(),
+        mean(r.get_shoebox_background().const_ref()));
+
       // Integrate the reflection
-      integrator result = integrator(r.get_transformed_shoebox());
+      integrator result = integrator(c, b);
 
       // Set intensity data in reflection container
       r.set_intensity(result.intensity());
       r.set_intensity_variance(result.variance());
-
-      // Get the centroid information from the result
-      vec3<double> centroid = result.centroid();
-      vec3<double> variance = result.centroid_standard_error_sq();
-      vec3<double> sq_width = result.centroid_variance();
-
-      // Get stuff from reflection struct
-      int panel = r.get_panel_number();
-      vec3<double> s1 = r.get_beam_vector();
-      double phi = r.get_rotation_angle();
-
-      // Initialise the transform from reciprocal space
-      XdsCoordinateSystem xcs(s0_, s1, m2_, phi);
-      FromXdsToBeamVector transform_s1(xcs, s1);
-      FromXdsE3ToPhi transform_phi(xcs.get_zeta(), phi);
-
-      // Get the mm centroid from the reciprocal space centroid
-      vec3<double> s1_centroid = transform_s1(centroid);
-      vec2<double> mm_centroid = (*detector_)[panel].get_ray_intersection(
-        s1_centroid);
-
-      // Get the phi centroid from the reciprocal space centroid
-      double phi_centroid = transform_phi(centroid[2]);
-
-      // Set the centroid data in the reflection container
-      r.set_centroid_position(vec3<double>(
-        mm_centroid[0], mm_centroid[1], phi_centroid));
     }
 
     /**

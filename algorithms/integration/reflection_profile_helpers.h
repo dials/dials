@@ -208,10 +208,12 @@ namespace dials { namespace algorithms {
           for (int ii = ii0; ii < ii1; ++ii) {
             int j = jj - j0;
             int i = ii - i0;
-            bool strong = mask(jj, ii);
-            if (strong) {
-              shoebox_mask(k, j, i) |= 2;
-              strong_count++;
+            if (shoebox_mask(k, j, i) != 0) {
+              bool strong = mask(jj, ii);
+              if (strong) {
+                shoebox_mask(k, j, i) |= 2;
+                strong_count++;
+              }
             }
           }
         }

@@ -1,0 +1,9 @@
+
+Import('env')
+
+sources = [
+    'boost_python/compute_centroid.cc',
+    'boost_python/centroid_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_centroid_ext', 
+    source=sources)

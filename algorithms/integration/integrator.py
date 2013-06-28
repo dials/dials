@@ -14,19 +14,21 @@ from __future__ import division
 class Integrator(object):
     ''' The integrator base class. '''
 
-    def __init__(self, compute_spots, compute_background, compute_intensity):
+    def __init__(self, compute_spots, compute_background, compute_centroid,
+                       compute_intensity, correct_intensity):
         ''' Initialise the integrator base class.
 
         Params:
             compute_spots The spot extractor strategy
             compute_background The background strategy
+            compute_centroid The centroid strategy
             compute_intensity The intensity strategy
+            correct_intensity The intensity correction strategy
 
         '''
-        from dials.algorithms.integration.lp_correction import correct_intensity
-        # Initialise the reflection extractor
         self.compute_spots = compute_spots
         self.compute_background = compute_background
+        self.compute_centroid = compute_centroid
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
@@ -42,26 +44,23 @@ class Integrator(object):
             A reflection list
 
         '''
-        from dials.util.command_line import Command
-
         # Extract the reflections from the sweep
         if reflections == None:
             reflections = self.compute_spots(sweep, crystal)
 
-        # Calculate the background
+        # Process the reflections in the following way:
+        #  - First calculate the background
+        #  - Second calculate the reflection centroids
+        #  - Third calculate the reflection intensities
+        #  - Fourth correct the reflection intensities
         reflections = self.compute_background(sweep, crystal, reflections)
-
-        # Calculate the intensity and return
+        reflections = self.compute_centroid(sweep, crystal, reflections)
         reflections = self.compute_intensity(sweep, crystal, reflections)
-
-        # apply Lorentz polarisation
-        Command.start('Correcting integrated intensities')
         reflections = self.correct_intensity(sweep, crystal, reflections)
-        Command.end('Corrected {0} integrated intensities'.format(
-            len([r for r in reflections if r.is_valid()])))
 
         # Return the reflections
         return reflections
+
 
 class IntegratorFactory(object):
     ''' Factory class to create integrators '''
@@ -81,12 +80,16 @@ class IntegratorFactory(object):
         # background intensity and integrate the reflection intensity
         compute_spots = IntegratorFactory.configure_extractor(params)
         compute_background = IntegratorFactory.configure_background(params)
+        compute_centroid = IntegratorFactory.configure_centroid(params)
         compute_intensity = IntegratorFactory.configure_intensity(params)
+        correct_intensity = IntegratorFactory.configure_correction(params)
 
         # Return the integrator with the given strategies
-        return Integrator(compute_spots = compute_spots,
-                          compute_background = compute_background,
-                          compute_intensity = compute_intensity)
+        return Integrator(compute_spots=compute_spots,
+                          compute_background=compute_background,
+                          compute_centroid=compute_centroid,
+                          compute_intensity=compute_intensity,
+                          correct_intensity=correct_intensity)
 
     @staticmethod
     def configure_extractor(params):
@@ -105,15 +108,18 @@ class IntegratorFactory(object):
         gain_map = IntegratorFactory.load_image(params.lookup.gain_map)
         dark_map = IntegratorFactory.load_image(params.lookup.dark_map)
 
+        # Shorten parameter path
+        integration = params.integration
+
         # Return the reflection extractor instance
         return ReflectionExtractor(
-            bbox_nsigma=params.integration.shoebox.n_sigma,
-            filter_by_volume=params.integration.filter.by_volume,
+            bbox_nsigma=integration.shoebox.n_sigma,
+            filter_by_volume=integration.filter.by_volume,
             gain_map=gain_map,
             dark_map=dark_map,
-            kernel_size=params.integration.shoebox.kernel_size,
-            n_sigma_b=params.integration.shoebox.sigma_background,
-            n_sigma_s=params.integration.shoebox.sigma_strong)
+            kernel_size=integration.shoebox.kernel_size,
+            n_sigma_b=integration.shoebox.sigma_background,
+            n_sigma_s=integration.shoebox.sigma_strong)
 
     @staticmethod
     def configure_background(params):
@@ -132,33 +138,36 @@ class IntegratorFactory(object):
         from dials.algorithms.background import FlatSubtractor
         from dials.algorithms.background import CurvedSubtractor
 
+        # Shorten parameter path
+        integration = params.integration
+
         # Configure the NULL subtractor
-        if (params.integration.background.algorithm == 'none' or
-            params.integration.background.algorithm == None):
+        if (integration.background.algorithm == 'none' or
+            integration.background.algorithm == None):
             algorithm = NullSubtractor()
 
         # Configure the XDS subtractor
-        elif params.integration.background.algorithm == 'xds':
+        elif integration.background.algorithm == 'xds':
             algorithm = XdsSubtractor(
-                min_data = params.integration.background.min_pixels,
-                n_sigma = params.integration.background.n_sigma)
+                min_data = integration.background.min_pixels,
+                n_sigma = integration.background.n_sigma)
 
         # Configure the Fable subtractor
         elif params.integration.background.algorithm == 'fable':
             algorithm = FableSubtractor(
-                min_data = params.integration.background.min_pixels,
-                n_sigma = params.integration.background.n_sigma)
+                min_data = integration.background.min_pixels,
+                n_sigma = integration.background.n_sigma)
 
         # Configure the flat subtractor
-        elif params.integration.background.algorithm == 'flat':
+        elif integration.background.algorithm == 'flat':
             algorithm = FlatSubtractor()
 
         # Configure the curved subtractor
-        elif params.integration.background.algorithm == 'inclined':
+        elif integration.background.algorithm == 'inclined':
             raise RuntimeError('Not implemented yet')
 
         # Configure the esmerelda subtractor
-        elif params.integration.background.algorithm == 'esmeralda':
+        elif integration.background.algorithm == 'esmeralda':
             algorithm = CurvedSubtractor()
 
         # Unknown subtractor
@@ -167,6 +176,20 @@ class IntegratorFactory(object):
 
         # Return the algorithm
         return algorithm
+
+    @staticmethod
+    def configure_centroid(params):
+        ''' Given a set of parameters, configure the centroid calculator
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The centroid calculator instance
+
+        '''
+        from dials.algorithms.centroid.centroider import Centroider
+        return Centroider()
 
     @staticmethod
     def configure_intensity(params):
@@ -184,37 +207,40 @@ class IntegratorFactory(object):
         from dials.algorithms.integration import SummationReciprocalSpace
         from dials.algorithms.integration import ProfileFittingReciprocalSpace
 
+        # Shorten parameter path
+        integration = params.integration
+
         # Configure the 2D summation algorithm
-        if params.integration.algorithm == 'sum2d':
+        if integration.algorithm == 'sum2d':
             algorithm = Summation2d()
 
         # Configure the 3D summation algorithm
-        elif params.integration.algorithm == 'sum3d':
+        elif integration.algorithm == 'sum3d':
             algorithm = Summation3d()
 
         # Configure the reciprocal space summation algorithm
         elif params.integration.algorithm == 'sum_rs':
             algorithm = SummationReciprocalSpace(
-                n_sigma = params.integration.shoebox.n_sigma,
-                grid_size = params.integration.reciprocal_space.grid_size,
-                n_div = params.integration.reciprocal_space.n_divisions)
+                n_sigma = integration.shoebox.n_sigma,
+                grid_size = integration.reciprocal_space.grid_size,
+                n_div = integration.reciprocal_space.n_divisions)
 
         # Configure the 2D profile fitting algorithm
-        elif params.integration.algorithm == 'fit_2d':
+        elif integration.algorithm == 'fit_2d':
             raise RuntimeError('Not implemented yet')
 
         # Configure the 3D profile fitting algorithm
-        elif params.integration.algorithm == 'fit_3d':
+        elif integration.algorithm == 'fit_3d':
             raise RuntimeError('Not implemented yet')
 
         # Configure the reciprocal space profile fitting algorithm
-        elif params.integration.algorithm == 'fit_rs':
+        elif integration.algorithm == 'fit_rs':
             algorithm = ProfileFittingReciprocalSpace(
-                n_sigma = params.integration.shoebox.n_sigma,
-                grid_size = params.integration.reciprocal_space.grid_size,
-                n_div = params.integration.reciprocal_space.n_divisions,
-                frame_interval = params.integration.profile.reference_frame_interval,
-                threshold = params.integration.profile.reference_signal_threshold)
+                n_sigma = integration.shoebox.n_sigma,
+                grid_size = integration.reciprocal_space.grid_size,
+                n_div = integration.reciprocal_space.n_divisions,
+                frame_interval = integration.profile.reference_frame_interval,
+                threshold = integration.profile.reference_signal_threshold)
 
         # Unknown algorithm
         else:
@@ -222,6 +248,20 @@ class IntegratorFactory(object):
 
         # Return the algorithm
         return algorithm
+
+    @staticmethod
+    def configure_correction(params):
+        ''' Given a set of parameters, configure the intensity correction
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The intensity corrector instance
+
+        '''
+        from dials.algorithms.integration.lp_correction import correct_intensity
+        return correct_intensity
 
     @staticmethod
     def load_image(filename):

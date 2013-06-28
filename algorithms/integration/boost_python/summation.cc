@@ -37,8 +37,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("background_variance", &SumIntensity3d::background_variance);
       
     class_ <IntegrateBySummation> ("IntegrateBySummation", no_init)
-      .def(init <const flex_double&> ((
-          arg("pixels"))))
       .def(init <const flex_double&, 
                  const flex_double&> ((
           arg("pixels"),
@@ -49,28 +47,12 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("pixels"),
           arg("mask"),
           arg("background"))))
-      .def(init <const flex_double&, 
-                 const flex_double&,
-                 const flex_vec3_double&> ((
-          arg("pixels"),
-          arg("background"),
-          arg("points"))))
       .def("intensity", 
         &IntegrateBySummation::intensity)
       .def("variance",
         &IntegrateBySummation::variance)
       .def("standard_deviation",
-        &IntegrateBySummation::standard_deviation)
-      .def("centroid", 
-        &IntegrateBySummation::centroid)
-      .def("centroid_variance", 
-        &IntegrateBySummation::centroid_variance)
-      .def("centroid_standard_error_sq", 
-        &IntegrateBySummation::centroid_standard_error_sq)
-      .def("centroid_standard_error", 
-        &IntegrateBySummation::centroid_standard_error)
-      .def("centroid_covariance_matrix", 
-        &IntegrateBySummation::centroid_covariance_matrix);
+        &IntegrateBySummation::standard_deviation);
         
     Summation3d::integrator (Summation3d::*call_w_pixels)(
         const flex_double &pixels, 

@@ -143,26 +143,6 @@ namespace dials { namespace algorithms {
   class IntegrateBySummation {
   public:
 
-    // Useful typedefs
-    typedef vec3<double> coord_type;
-    typedef tiny<double, 9> matrix_type;
-
-    /**
-     * Perform the integration on a 3D image.
-     * @param pixels The 3D image.
-     */
-    IntegrateBySummation(const flex_double &pixels) {
-
-      // Calculate the centroid
-      CentroidImage3d centroid(pixels);
-      intensity_         = centroid.sum_pixels();
-      ivariance_         = intensity_;
-      centroid_          = centroid.mean();
-      variance_          = centroid.unbiased_variance();
-      standard_error_sq_ = centroid.unbiased_standard_error_sq();
-      covariance_matrix_ = centroid.covariance_matrix();
-    }
-
     /**
      * Perform the integration on a 3D image.
      * @param pixels The 3D image.
@@ -173,13 +153,6 @@ namespace dials { namespace algorithms {
 
       // Create an array with pixels - background
       flex_double pixels_m_background(subtract_background(pixels, background));
-
-      // Calculate the centroid
-      CentroidImage3d centroid(pixels_m_background);
-      centroid_          = centroid.mean();
-      variance_          = centroid.unbiased_variance();
-      standard_error_sq_ = centroid.unbiased_standard_error_sq();
-      covariance_matrix_ = centroid.covariance_matrix();
 
       // Calculate the itensity and sigma
       SumIntensity3d isum(pixels, background);
@@ -200,41 +173,8 @@ namespace dials { namespace algorithms {
       // Create an array with pixels - background
       flex_double pixels_m_background(subtract_background(pixels, background));
 
-      // Calculate the centroid
-      CentroidMaskedImage3d centroid(pixels_m_background, mask);
-      centroid_          = centroid.mean();
-      variance_          = centroid.unbiased_variance();
-      standard_error_sq_ = centroid.unbiased_standard_error_sq();
-      covariance_matrix_ = centroid.covariance_matrix();
-
       // Calculate the itensity and sigma
       SumIntensity3d isum(pixels, background, mask);
-      intensity_ = isum.intensity();
-      ivariance_ = isum.variance();
-    }
-
-    /**
-     * Perform the integration on a set of 3D points
-     * @param pixels The image pixels.
-     * @param background The image background
-     * @param coords The image coordinates.
-     */
-    IntegrateBySummation(const flex_double &pixels,
-                         const flex_double &background,
-                         const flex_vec3_double &coords) {
-
-      // Create an array with pixels - background
-      flex_double pixels_m_background(subtract_background(pixels, background));
-
-      // Calculate the centroid
-      CentroidPoints< vec3<double> > centroid(pixels_m_background, coords);
-      centroid_          = centroid.mean();
-      variance_          = centroid.unbiased_variance();
-      standard_error_sq_ = centroid.unbiased_standard_error_sq();
-      covariance_matrix_ = centroid.covariance_matrix();
-
-      // Calculate the itensity and sigma
-      SumIntensity3d isum(pixels, background);
       intensity_ = isum.intensity();
       ivariance_ = isum.variance();
     }
@@ -252,31 +192,6 @@ namespace dials { namespace algorithms {
     /** @return the standard deviation on the intensity */
     double standard_deviation() const {
       return std::sqrt(variance());
-    }
-
-    /** @return The spot centroid. */
-    coord_type centroid() const {
-      return centroid_;
-    }
-
-    /** @return The centroid variance. */
-    coord_type centroid_variance() const {
-      return variance_;
-    }
-
-    /** @return The centroid standard error squared. */
-    coord_type centroid_standard_error_sq() const {
-      return standard_error_sq_;
-    }
-
-    /** @return The centroid standard error. */
-    coord_type centroid_standard_error() const {
-      return sqrt(standard_error_sq_.as_tiny());
-    }
-
-    /** @return The covariance matrix. */
-    matrix_type centroid_covariance_matrix() const {
-      return covariance_matrix_;
     }
 
   private:
@@ -298,10 +213,6 @@ namespace dials { namespace algorithms {
 
     double intensity_;
     double ivariance_;
-    coord_type centroid_;
-    coord_type variance_;
-    coord_type standard_error_sq_;
-    matrix_type covariance_matrix_;
   };
 
 
@@ -341,14 +252,6 @@ namespace dials { namespace algorithms {
         r.get_shoebox_background(),
         r.get_shoebox_mask());
 
-      // Get the centroid offset
-      int6 bbox = r.get_bounding_box();
-      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
-
-      // Put data back into reflection container
-      r.set_centroid_position(offset + result.centroid());
-      r.set_centroid_variance(result.centroid_standard_error_sq());
-      r.set_centroid_sq_width(result.centroid_variance());
       r.set_intensity(result.intensity());
       r.set_intensity_variance(result.variance());
     }
