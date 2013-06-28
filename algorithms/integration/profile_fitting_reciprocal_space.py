@@ -76,10 +76,6 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         learner = XdsCircleReferenceLearner(
             sampler, grid_size, self.threshold)
 
-
-        # FIXME Use strong reflections for reference profiles
-
-
         # Learn the reference profiles around the detector
         Command.start('Learning reference profiles')
         learner.learn(reflections)
