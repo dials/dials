@@ -1,3 +1,4 @@
+from __future__ import division
 # toy centroid implementation: this is deliberately bad to illustrate how the
 # interface works and how things could be improved
 # from __future__ import division

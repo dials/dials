@@ -1,3 +1,4 @@
+from __future__ import division
 #
 # dials.command_line.subtract_background.py
 #

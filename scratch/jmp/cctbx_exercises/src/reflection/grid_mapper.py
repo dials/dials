@@ -1,3 +1,4 @@
+from __future__ import division
 
 class GridMapper:
     """A class to map reflections from the detector to their own specific

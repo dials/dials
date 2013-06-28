@@ -1,3 +1,4 @@
+from __future__ import division
 def tst_dftbx():
     import dftbx
     int_ol = dftbx.int_ol()

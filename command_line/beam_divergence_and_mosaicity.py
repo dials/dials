@@ -1,3 +1,4 @@
+from __future__ import division
 #!/usr/bin/env python
 #
 # beam_divergence_and_mosaicity.py

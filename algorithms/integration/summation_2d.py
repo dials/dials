@@ -1,3 +1,4 @@
+from __future__ import division
 def raw_2d_integration_old(data2d, mask2d, bkgr):
     import numpy
     n_col = numpy.size(data2d[0:1, :])

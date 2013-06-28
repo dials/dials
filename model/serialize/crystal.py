@@ -1,3 +1,4 @@
+from __future__ import division
 #!/usr/bin/env python
 #
 # dials.model.serialize.crystal.py

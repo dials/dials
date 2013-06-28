@@ -1,3 +1,4 @@
+from __future__ import division
 def correct_intensity(sweep, crystal, reflections):
     for ref in reflections:
         if ref.status == 0:

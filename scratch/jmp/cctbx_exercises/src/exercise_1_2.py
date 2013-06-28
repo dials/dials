@@ -1,5 +1,6 @@
 """This module is a test exercise using CCTBX to do the spot prediction in the
 XDS method and to save the resulting spot profiles to a HDF file."""
+from __future__ import division
 
 from cctbx.sgtbx import space_group, space_group_symbols
 from scitbx import matrix

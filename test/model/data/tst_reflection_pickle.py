@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.model.data import Reflection, ReflectionList
 
 def pickle_then_unpickle(obj):

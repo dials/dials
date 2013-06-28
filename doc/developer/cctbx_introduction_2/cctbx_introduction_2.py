@@ -1,3 +1,4 @@
+from __future__ import division
 #!/usr/bin/env cctbx.python
 # cctbx_introduction_2.py
 #

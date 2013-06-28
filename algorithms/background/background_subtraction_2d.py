@@ -1,3 +1,4 @@
+from __future__ import division
 #
 # Background Subtraction 2D lower level numpy version
 #

@@ -1,3 +1,4 @@
+from __future__ import division
 from toytbx import make_list
 
 def main(args):

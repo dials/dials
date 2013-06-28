@@ -1,3 +1,4 @@
+from __future__ import division
 
 class CoordinateSystem:
     """ A class to represent the detector coordinate system. The coordinate

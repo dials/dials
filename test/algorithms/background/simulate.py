@@ -1,3 +1,4 @@
+from __future__ import division
 
 
 def gaussian(grid, A, cent, sig):

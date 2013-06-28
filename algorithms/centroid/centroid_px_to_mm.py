@@ -1,3 +1,4 @@
+from __future__ import division
 #
 # centroid_px_to_mm.py
 #

@@ -1,4 +1,5 @@
 """A module to provide functions to read/write XDS files."""
+from __future__ import division
 
 
 class GxParmFile:

@@ -1,3 +1,4 @@
+from __future__ import division
 
 from detector.coordinate_system import CoordinateSystem
 

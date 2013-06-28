@@ -1,4 +1,5 @@
 """A module to print information about a CBF file"""
+from __future__ import division
 
 import pycbf
 

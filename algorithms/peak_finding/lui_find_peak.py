@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy
 from dials.algorithms.peak_finding import smooth_2d, smooth_3d
 

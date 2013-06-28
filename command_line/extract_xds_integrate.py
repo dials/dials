@@ -1,3 +1,4 @@
+from __future__ import division
 #!/usr/bin/env python
 #
 # extract_xds_integrate.py
