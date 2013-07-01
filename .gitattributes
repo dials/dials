@@ -605,10 +605,6 @@ scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test_f.f90 -text
-scratch/luiso_s/test_code/mix_py_cpp/cpp_func.cpp -text svneol=unset#text/plain
-scratch/luiso_s/test_code/mix_py_cpp/lui_find_peak_helper.cc -text svneol=unset#text/plain
-scratch/luiso_s/test_code/mix_py_cpp/lui_find_peak_helper.h -text svneol=unset#text/plain
-scratch/luiso_s/test_code/mix_py_cpp/py_caller.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_centoid.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d.py -text svneol=unset#text/plain
