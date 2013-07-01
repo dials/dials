@@ -39,22 +39,18 @@ class PredictionParameterisation(object):
     It is assumed that the provided model parameterisations will be one of four
     types:
 
-    * Detector parameterisations
-    * Beam parameterisations
-    * Crystal orientation parameterisations
-    * Crystal unit cell parameterisations
+    * Detector parameterisation
+    * Beam parameterisation
+    * Crystal orientation parameterisation
+    * Crystal unit cell parameterisation
 
-    Not all of these must be supplied, and there may be multiple instances
-    of one type (independently parameterised detectors, for example). This
-    implies the type of the constructor arguments are either list (of one or
-    more elements) or None.
+    One of each must be supplied, which could be satisfied by a dummy class if
+    no parameterisation is desired for some model. 
 
     We also need access to the underlying models that are parameterised. The
-    model parameterisation objects do not provide access to these models,
-    as that is not their job. Instead we construct this object with direct
-    access to each of the models. At this stage we assume only one of each model
-    can exist, and *must* be present (otherwise reflection prediction does not
-    make sense). So, we need each of:
+    model parameterisation objects do not provide access to these models:
+    it is not their job to do so. Instead we construct this object with direct
+    access to each of the models. So, we also need each of:
 
     * A detector model (single point of reference for every sensor in the
       experiment)
