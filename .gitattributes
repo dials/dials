@@ -579,7 +579,10 @@ scratch/jmp/test/test_spot_prediction.py -text
 scratch/jmp/test/test_spot_predictor.py -text
 scratch/jmp/test/test_xds_coordinate_system.py -text
 scratch/jmp/test_map.cc -text
+scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
+scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
+scratch/luiso_s/boost_python/luiso_s_scratch_ext.cc -text svneol=unset#text/plain
 scratch/luiso_s/contrib/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
 scratch/luiso_s/contrib/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
 scratch/luiso_s/contrib/borrowed_predict_spots.py -text svneol=unset#text/plain
@@ -588,6 +591,8 @@ scratch/luiso_s/contrib/my_to_xds.py -text svneol=unset#text/plain
 scratch/luiso_s/contrib/thaumatin_die_M1S5_1_0001.img -text
 scratch/luiso_s/contrib/tst_w_predict_spots.py -text svneol=unset#text/plain
 scratch/luiso_s/contrib/ximg2701_00001.cbf -text svneol=unset#unset
+scratch/luiso_s/example_mix.py -text svneol=unset#text/plain
+scratch/luiso_s/lui_example_helper.h -text svneol=unset#text/plain
 scratch/luiso_s/old_style_code/My_new_test_Inst.inf -text
 scratch/luiso_s/old_style_code/My_new_test_Inst_stable.inf -text
 scratch/luiso_s/old_style_code/img_raw.tst -text
@@ -596,6 +601,7 @@ scratch/luiso_s/old_style_code/img_tst.raw -text
 scratch/luiso_s/old_style_code/install_intructions.txt -text svneol=unset#text/plain
 scratch/luiso_s/old_style_code/tst02.cfl -text
 scratch/luiso_s/old_style_code/tst_img_raw.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
