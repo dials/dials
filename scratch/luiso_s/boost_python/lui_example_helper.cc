@@ -8,6 +8,8 @@ namespace dials { namespace scratch { namespace boost_python {
   // testing
   void luiso_s_scratch_ext() {
     def("hello_tst", &hello_tst);
+    def("tst_01", &tst_01, (arg("data2d")));
+
   }
 
 }}}
