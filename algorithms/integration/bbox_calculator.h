@@ -82,13 +82,13 @@ namespace dials { namespace algorithms {
      *
      * The roi is calculated using the parameters delta_divergence and
      * delta_mosaicity. The reflection mask comprises all pixels where:
-     *  |e1| <= delta_d / 2, |e2| <= delta_d < 2, |e3| <= delta_m / 2
+     *  |e1| <= delta_d, |e2| <= delta_d, |e3| <= delta_m
      *
      * We transform the coordinates of the box
-     *   (-delta_d/2, -delta_d/2, 0)
-     *   (+delta_d/2, -delta_d/2, 0)
-     *   (-delta_d/2, +delta_d/2, 0)
-     *   (+delta_d/2, +delta_d/2, 0)
+     *   (-delta_d, -delta_d, 0)
+     *   (+delta_d, -delta_d, 0)
+     *   (-delta_d, +delta_d, 0)
+     *   (+delta_d, +delta_d, 0)
      *
      * to the detector image volume and return the minimum and maximum values
      * for the x, y, z image volume coordinates.
@@ -112,11 +112,11 @@ namespace dials { namespace algorithms {
       FromXdsE3ToPhi calculate_rotation_angle(xcs.get_zeta(), phi);
 
       // Calculate the beam vectors at the following xds coordinates:
-      //   (-delta_d/2, -delta_d/2, 0)
-      //   (+delta_d/2, -delta_d/2, 0)
-      //   (-delta_d/2, +delta_d/2, 0)
-      //   (+delta_d/2, +delta_d/2, 0)
-      double point = delta_divergence_ / 2.0;
+      //   (-delta_d, -delta_d, 0)
+      //   (+delta_d, -delta_d, 0)
+      //   (-delta_d, +delta_d, 0)
+      //   (+delta_d, +delta_d, 0)
+      double point = delta_divergence_;
       double3 sdash1 = calculate_beam_vector(double3(-point, -point, 0.0));
       double3 sdash2 = calculate_beam_vector(double3(+point, -point, 0.0));
       double3 sdash3 = calculate_beam_vector(double3(-point, +point, 0.0));
@@ -129,9 +129,9 @@ namespace dials { namespace algorithms {
       double2 xy4 = detector_[panel].get_ray_intersection_px(sdash4);
 
       /// Calculate the rotation angles at the following XDS
-      // e3 coordinates: -delta_m/2, +delta_m/2
-      double phi1 = calculate_rotation_angle(-delta_mosaicity_ / 2.0);
-      double phi2 = calculate_rotation_angle(+delta_mosaicity_ / 2.0);
+      // e3 coordinates: -delta_m, +delta_m
+      double phi1 = calculate_rotation_angle(-delta_mosaicity_);
+      double phi2 = calculate_rotation_angle(+delta_mosaicity_);
 
       // Get the array indices at the rotation angles
       double z1 = scan_.get_array_index_from_angle(phi1);

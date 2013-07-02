@@ -13,6 +13,7 @@ tst_list = (
     "$D/test/algorithms/integration/tst_from_xds_e3_to_phi.py",
     "$D/test/algorithms/integration/tst_from_xds_to_beam_vector.py",
     "$D/test/algorithms/integration/tst_xds_coordinate_system.py",
+    "$D/test/algorithms/integration/tst_bbox_calculator.py",
     "$D/test/algorithms/integration/profile/tst_grid_sampler.py",
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",
