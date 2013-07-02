@@ -7,7 +7,7 @@ namespace dials { namespace scratch {
   using scitbx::af::flex_double;
 
   int hello_tst() {
-    std::cout << "hi there \n";
+    std::cout << "Hello world (testing)\n";
     int a=5;
     return a;
   }
@@ -18,7 +18,7 @@ namespace dials { namespace scratch {
     flex_int data2dtmp(data2d);
     for (int row = 0; row<=nrow-1;row++) {
       for (int col = 0; col<=ncol-1;col++) {
-        data2dtmp(row,col)=1;
+        data2dtmp(row,col)=row*nrow+col;
       }
     }
 
