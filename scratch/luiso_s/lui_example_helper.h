@@ -31,20 +31,19 @@ namespace dials { namespace scratch {
 
   vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
       flex_double & background2d) {
-
-      //std::size_t ncol=data2d.accessor().all()[1];
-      //std::size_t nrow=data2d.accessor().all()[0];
+      double itnst=0,sigm=0;
+      std::size_t ncol=data2d.accessor().all()[1];
+      std::size_t nrow=data2d.accessor().all()[0];
       vec2<double> integr_data(0,1);
-      /*
+
       for (int row = 0; row<=nrow-1;row++) {
         for (int col = 0; col<=ncol-1;col++) {
-          data2dtmp(row,col)=row*nrow+col;
-
+          itnst = itnst + data2d(row,col);
         }
       }
-      */
-      integr_data[0]=5;   // intensity
-      integr_data[1]=15;  // intensity variance
+
+      integr_data[0]=itnst;        // intensity
+      integr_data[1]=itnst*itnst;  // intensity variance
       return integr_data;
 
     }
