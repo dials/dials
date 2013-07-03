@@ -36,8 +36,9 @@ class Refinery(object):
     # Refinery to be able to refer to it directly. So refinery should keep a
     # separate link to its PredictionParameterisation
 
-    def __init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = 0):
+    def __init__(self, target, prediction_parameterisation, log = None,
+                 verbosity = 0, track_step = False,
+                 track_gradient = False):
 
         self._parameters = prediction_parameterisation
         self._target = target
@@ -47,6 +48,18 @@ class Refinery(object):
         self._verbosity = verbosity
         self._target_achieved = False
         self.compute_functional_and_gradients()
+
+        # attributes for journalling functionality, based on lstbx's
+        # journaled_non_linear_ls class
+        self.objective_history = flex.double()
+        self.gradient_history = [] if track_gradient else None
+        self.gradient_norm_history = flex.double()
+        self.step_history = [] if track_step else None
+        self.step_norm_history = flex.double()
+        self.parameter_vector_history = []
+        self.parameter_vector_norm_history = flex.double()
+        self.rmsd_history = []
+
         if self._verbosity > 0.: self.print_table_row()
 
     def get_num_steps(self):
@@ -167,10 +180,12 @@ class AdaptLstbx(
     out what the interface and inheritance hierarchy should be'''
 
     def __init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = 0):
+                 verbosity = 0, track_step = False,
+                 track_gradient = False):
 
-        Refinery.__init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = verbosity)
+        Refinery.__init__(self, target, prediction_parameterisation,
+                 log=None, verbosity = verbosity, track_step = False,
+                 track_gradient = False)
 
         # required for restart to work (do I need that method?)
         self.x_0 = self.x.deep_copy()
@@ -258,9 +273,6 @@ class AdaptLstbx(
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
-    track_step = False
-    track_gradient = False
-    track_all = False
     n_max_iterations = 100
     gradient_threshold = 1.e-10
     step_threshold = None
@@ -271,16 +283,17 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     # override the base class __init__ as I don't want to start
     # refinement on initialisation
     def __init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = 0, **kwds):
+                 verbosity = 0, track_step = False,
+                 track_gradient = False, **kwds):
 
-        AdaptLstbx.__init__(self, target, prediction_parameterisation, log=None,
-                 verbosity = verbosity)
+        AdaptLstbx.__init__(self, target, prediction_parameterisation,
+                 log = None, verbosity = verbosity, track_step = False,
+                 track_gradient = False)
 
         libtbx.adopt_optional_init_args(self, kwds)
-        if self.track_all: self.track_step = self.track_gradient = True
         self.non_linear_ls = normal_eqns_solving.journaled_non_linear_ls(
-            non_linear_ls = self, journal = self, track_gradient = self.track_gradient,
-            track_step = self.track_step)
+            non_linear_ls = self, journal = self, track_gradient = track_gradient,
+            track_step = track_step)
 
     def run(self):
         self.n_iterations = 0
