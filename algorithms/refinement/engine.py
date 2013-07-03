@@ -291,14 +291,21 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                  track_gradient = False)
 
         libtbx.adopt_optional_init_args(self, kwds)
-        self.non_linear_ls = normal_eqns_solving.journaled_non_linear_ls(
-            non_linear_ls = self, journal = self, track_gradient = track_gradient,
-            track_step = track_step)
 
     def run(self):
         self.n_iterations = 0
         while self.n_iterations < self.n_max_iterations:
-            self.non_linear_ls.build_up()
+            self.build_up()
+
+            # journalling prior to solve
+            self.parameter_vector_norm_history.append(
+              self.parameter_vector_norm())
+            self.objective_history.append(self.objective())
+            self.gradient_norm_history.append(
+              self.opposite_of_gradient().norm_inf())
+            if self.gradient_history is not None:
+              self.gradient_history.append(-self.opposite_of_gradient())
+
             if self._verbosity > 2:
 
                 print "Objective value after overall scale applied:", self.objective(), "\n"
@@ -317,9 +324,15 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self.callback_after_step(None):
                 print "RMSD target achieved"
                 break
-            self.non_linear_ls.solve()
+            self.solve()
+
+            # journalling post solve
+            if self.step_history is not None:
+              self.step_history.append(self.actual.step().deep_copy())
+            self.step_norm_history.append(self.step().norm())
+
             if self.had_too_small_a_step(): break
-            self.non_linear_ls.step_forward()
+            self.step_forward()
             self.n_iterations += 1
 
     def __str__(self):
