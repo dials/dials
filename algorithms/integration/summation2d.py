@@ -104,8 +104,8 @@ def flex_2d_layering_n_integrating(reflections):
                     background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
                     background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                     background[i:i + 1, :, :] = background2d.as_double()
-    
-    
+
+
         return reflections
     '''
     print "flex array version of summation integration 02"

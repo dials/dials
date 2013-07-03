@@ -45,7 +45,7 @@ class PredictionParameterisation(object):
     * Crystal unit cell parameterisation
 
     One of each must be supplied, which could be satisfied by a dummy class if
-    no parameterisation is desired for some model. 
+    no parameterisation is desired for some model.
 
     We also need access to the underlying models that are parameterised. The
     model parameterisation objects do not provide access to these models:
