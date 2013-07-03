@@ -82,6 +82,9 @@ class RefinementRunner(object):
         # Set the scan model with the image range
         image_range = (1,900)
         self.scan.set_image_range(image_range)
+        print "\nWARNING: the image range has been hardcoded to (1,900)"
+        print "If that does not match the input data, this script will"
+        print "probably fail!\n"
 
         # Read other data (need to assume an XPARM file)
         xparm_handle = xparm.reader()
