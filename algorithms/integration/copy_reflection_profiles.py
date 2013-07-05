@@ -41,8 +41,8 @@ def get_reflection_frame_indices(sweep, reflections):
     return frames_to_reflection
 
 def copy_image_pixels(sweep, reflections, frame_indices,
-                      gain_map=None, dark_map=None, kernel_size=(3,3),
-                      n_sigma_b=6.0, n_sigma_s=3.0, detector_mask=None):
+                      gain_map = None, dark_map = None, kernel_size = (3, 3),
+                      n_sigma_b = 6.0, n_sigma_s = 3.0, detector_mask = None):
     """ Copy the image pixels from the sweep to the reflection profiles.
 
     Params:
@@ -75,7 +75,7 @@ def copy_image_pixels(sweep, reflections, frame_indices,
         dark_map = flex.int(flex.grid(*image_size), 0)
 
     # Create a progress bar
-    progress = ProgressBar(title="Extracting reflections")
+    progress = ProgressBar(title = "Extracting reflections")
 
     # For each image in the sweep, get the reflections predicted to have
     # been recorded on the image and copy the pixels from the image to
@@ -91,17 +91,17 @@ def copy_image_pixels(sweep, reflections, frame_indices,
             reflection_indices, reflections, gain_map, dark_map)
 
         # Extract a mask from the shoeboxes showing which pixels to use
-        mask = construct_image_mask_from_shoeboxes(detector_mask,
+        mask = construct_image_mask_from_shoeboxes(detector_mask != 0,
           index + first_array_index, reflection_indices,
           reflections, kernel_size)
 
         # Construct the threshold strategy
         threshold = XDSThresholdStrategy(
-            kernel_size=kernel_size,
-            gain=gain_map,
-            mask=mask,
-            n_sigma_b=n_sigma_b,
-            n_sigma_s=n_sigma_s)
+            kernel_size = kernel_size,
+            gain = gain_map,
+            mask = mask,
+            n_sigma_b = n_sigma_b,
+            n_sigma_s = n_sigma_s)
 
         # Threshold the image
         mask = threshold(image)
@@ -122,10 +122,10 @@ def copy_image_pixels(sweep, reflections, frame_indices,
     # Return the reflections
     return reflections
 
-def extract_reflection_profiles(sweep, reflections, adjacency_list=None,
-                                gain_map=None, dark_map=None, kernel_size=(3,3),
-                                n_sigma_b=6.0, n_sigma_s=3.0,
-                                detector_mask=None):
+def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
+                                gain_map = None, dark_map = None, kernel_size = (3, 3),
+                                n_sigma_b = 6.0, n_sigma_s = 3.0,
+                                detector_mask = None):
     """ Copy all the pixels from the sweep to the reflection profiles.
 
     Params:

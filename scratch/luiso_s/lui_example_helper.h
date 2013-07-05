@@ -55,13 +55,7 @@ namespace dials { namespace scratch {
       if( tot_bkgr>0 && cont>0 && npix_mask>0 && npix_bkgr>0 ){
         bkgr = tot_bkgr / cont;
         sig = sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
-//        sig = numpy.sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
-        std::cout << "\n sig =" << sig << "\n";
 
-
-
-
-        std::cout << "\n sig =" << sig << "\n";
       } else {
         bkgr = 0;
         sig = sqrt(i_tot);
@@ -71,42 +65,10 @@ namespace dials { namespace scratch {
       integr_data[1]=sig;          // intensity variance
       return integr_data;
 
-    }
+  }
 
 
 }}
-/*
 
-    import numpy
-    n_col = numpy.size(data2d[0:1, :])
-    n_row = numpy.size(data2d[:, 0:1])
-
-    #print data2d
-    i_tot = 0
-    npix_bkgr = 0
-    npix_mask = 0
-    cont = 0
-    tot_bkgr = 0
-    for col in range(n_col):
-        for row in range(n_row):
-
-            if mask2d[row, col] == 1 :
-                i_tot = i_tot + data2d[row, col] - bkgr2d[row, col]
-                npix_mask += 1
-            else:
-                npix_bkgr += 1
-
-            cont += 1
-            tot_bkgr += bkgr2d[row, col]
-    if tot_bkgr > 0 and cont > 0 and npix_mask > 0 and npix_bkgr > 0 :  #fix me
-        bkgr = tot_bkgr / cont
-        sig = numpy.sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr))
-    else:
-        bkgr = 0
-        sig = numpy.sqrt(i_tot)
-
-    return i_tot, sig
-
-*/
 
 #endif

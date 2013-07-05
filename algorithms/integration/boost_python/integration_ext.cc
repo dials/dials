@@ -25,6 +25,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_reflection_profile_helpers();
   void export_shoebox_masker();
   void export_reciprocal_space_transform();
+  void export_luiso_s_2d_integration();
   void export_summation();
   void export_summation_reciprocal_space();
   void export_profile_fitting_reciprocal_space();
@@ -41,8 +42,9 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_reflection_profile_helpers();
     export_shoebox_masker();
     export_reciprocal_space_transform();
+    export_luiso_s_2d_integration();
     export_summation();
-    export_summation_reciprocal_space();    
+    export_summation_reciprocal_space();
     export_profile_fitting_reciprocal_space();
   }
 

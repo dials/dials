@@ -19,6 +19,7 @@ data2d[4, 1] = data2d[1, 4] = 1
 data2d[4, 2] = data2d[2, 4] = 3
 data2d[4, 3] = data2d[3, 4] = 2
 data2d[0, 0] = data2d[4, 4] = 5
+
 data2d[1:4, 1:4] = 10
 data2d[2:3, 2:3] = 50
 print data2d
