@@ -51,6 +51,7 @@ class Refinery(object):
 
         # attributes for journalling functionality, based on lstbx's
         # journaled_non_linear_ls class
+        self.num_reflections_history = []
         self.objective_history = flex.double()
         self.gradient_history = [] if track_gradient else None
         self.gradient_norm_history = flex.double()
@@ -96,8 +97,10 @@ class Refinery(object):
         self._step += 1
         if self._verbosity > 0.: self.print_table_row()
 
-        # calculate rmsds
-        r = self._target.rmsds()
+        # add step quantities to journal
+        self.num_reflections_history.append(self._target.get_num_reflections())
+        self.rmsd_history.append(self._target.rmsds())
+        self.parameter_vector_history.append(self._parameters.get_p())
 
         # check if the target has been achieved
         self._target_achieved = self._target.achieved()
