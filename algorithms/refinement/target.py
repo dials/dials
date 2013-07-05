@@ -268,11 +268,20 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         resid_y = sum((m.Yresid2 for m in self._matches))
         resid_phi = sum((m.Phiresid2 for m in self._matches))
 
-        return sqrt(resid_x / n), sqrt(resid_y / n), sqrt(resid_phi / n)
+        # cache rmsd calculation for achieved test
+        self._rmsds = (sqrt(resid_x / n),
+                       sqrt(resid_y / n),
+                       sqrt(resid_phi / n))
+
+        return self._rmsds
 
     def achieved(self):
         '''RMSD criterion for target achieved '''
-        r = self.rmsds()
+        r = self._rmsds if self._rmsds else self.rmsds()
+
+        # reset cached rmsds to avoid getting out of step
+        self._rmsds = None
+
         if (r[0] < self._pixel_size[0] * 0.33333 and
             r[1] < self._pixel_size[1] * 0.33333 and
             r[2] < self._image_width * 0.33333):

@@ -88,12 +88,18 @@ class Refinery(object):
         return self._f, flex.double(self._g)
 
     def callback_after_step(self, minimizer):
-        '''returns True to terminate the refinement'''
+        '''
+        Do journalling, evaluate rmsds and return True if the target is
+        reached to terminate the refinement.
+        '''
 
         self._step += 1
         if self._verbosity > 0.: self.print_table_row()
 
-        # delegate this to the Target class
+        # calculate rmsds
+        r = self._target.rmsds()
+
+        # check if the target has been achieved
         self._target_achieved = self._target.achieved()
         return self._target_achieved
 
