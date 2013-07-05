@@ -101,6 +101,9 @@ class Refinery(object):
         self.num_reflections_history.append(self._target.get_num_reflections())
         self.rmsd_history.append(self._target.rmsds())
         self.parameter_vector_history.append(self._parameters.get_p())
+        self.objective_history.append(self._f)
+        if self.gradient_history is not None:
+            self.gradient_history.append(self._g)
 
         # check if the target has been achieved
         self._target_achieved = self._target.achieved()
@@ -233,6 +236,11 @@ class AdaptLstbx(
         # does not actually require this to be called, unlike the LBFGS
         # versions. However, we currently need _f and _g to be set for reporting
         # purposes, e.g. by print_table_row.
+
+        # NB This is soon to be deprecated as all logging to move to the
+        # callback_after_step function, and print_table_row to be
+        # removed in favour of printing the entire table after refinement
+        # completes based on values in the history.
         if self._verbosity > 0.:
             self._f, self._g = self._target.compute_functional_and_gradients()
 
@@ -306,14 +314,16 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         while self.n_iterations < self.n_max_iterations:
             self.build_up()
 
+            # set functional and gradients for the step (to be added
+            # to the history at callback_after_step())
+            self._f = self.objective()
+            self._g = -self.opposite_of_gradient()
+
             # journalling prior to solve
             self.parameter_vector_norm_history.append(
               self.parameter_vector_norm())
-            self.objective_history.append(self.objective())
             self.gradient_norm_history.append(
               self.opposite_of_gradient().norm_inf())
-            if self.gradient_history is not None:
-              self.gradient_history.append(-self.opposite_of_gradient())
 
             if self._verbosity > 2:
 
@@ -327,15 +337,15 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                     one_row_per_line=True)
                 print
 
-            if self.has_gradient_converged_to_zero():
-                print "Gradient converged to zero"
-                break
             if self.callback_after_step(None):
                 print "RMSD target achieved"
                 break
+            if self.has_gradient_converged_to_zero():
+                print "Gradient converged to zero"
+                break
             self.solve()
 
-            # journalling post solve
+            # extra journalling post solve
             if self.step_history is not None:
               self.step_history.append(self.actual.step().deep_copy())
             self.step_norm_history.append(self.step().norm())
