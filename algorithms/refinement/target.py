@@ -159,6 +159,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         self._pixel_size = detector.get_pixel_size()
         self._image_width = image_width
 
+        self._rmsds = None
+
     def compute_residuals_and_gradients(self):
         '''return the vector of residuals plus their gradients
         and weights for non-linear least squares methods'''

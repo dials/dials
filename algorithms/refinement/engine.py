@@ -19,38 +19,48 @@ class Refinery(object):
     '''Abstract interface for Refinery objects'''
 
     # NOTES. A Refinery is initialised with a Target function. The target
-    # function already contains a reflection manager (which holds the data) so
+    # function already contains a ReflectionManager (which holds the data) so
     # there's no need to pass the data in here. In fact the Target
     # class does the bulk of the work, as it also does the reflection prediction
-    # to get the updated predictions on each cycle. This makes some kind of sense
+    # to get the updated predictions on each cycle. This should make some sense
     # as the target function is inextricably linked to the space in which
     # predictions are made (e.g. detector space, phi), so it is not general
     # enough to sit abstractly above the prediction.
 
     # This keeps the Refinery simple and able to be focused only on generic
     # features of managing a refinement run, like reporting results and checking
-    # termination criteria
+    # termination criteria.
 
     # The prediction values come from a PredictionParameterisation object.
     # This is also referred to by the Target function, but it makes sense for
     # Refinery to be able to refer to it directly. So refinery should keep a
-    # separate link to its PredictionParameterisation
+    # separate link to its PredictionParameterisation.
 
     def __init__(self, target, prediction_parameterisation, log = None,
                  verbosity = 0, track_step = False,
                  track_gradient = False):
 
+        # reference to PredictionParameterisation and Target objects
         self._parameters = prediction_parameterisation
         self._target = target
+
+        # initial parameter values
         self.x = flex.double(self._parameters.get_p())
+
+        # undefined initial functional and gradients values
+        self._f = None
+        self._g = None
+
+        # filename for an optional log file
         self._log = log
-        self._step = 0
+
         self._verbosity = verbosity
+
         self._target_achieved = False
-        self.compute_functional_and_gradients()
 
         # attributes for journalling functionality, based on lstbx's
         # journaled_non_linear_ls class
+        self._step = 0
         self.num_reflections_history = []
         self.objective_history = flex.double()
         self.gradient_history = [] if track_gradient else None
@@ -61,12 +71,16 @@ class Refinery(object):
         self.parameter_vector_norm_history = flex.double()
         self.rmsd_history = []
 
+        self.prepare_for_step()
+
+        # FIXME this to be deprecated
         if self._verbosity > 0.: self.print_table_row()
 
     def get_num_steps(self):
         return self._step
 
-    def compute_functional_and_gradients(self):
+    def prepare_for_step(self):
+        '''Update the parameterisation and prepare the target function'''
 
         # set current parameter values
         self._parameters.set_p(self.x)
@@ -74,30 +88,11 @@ class Refinery(object):
         # do reflection prediction
         self._target.predict()
 
-        # compute target function and its gradients
-        self._f, self._g = self._target.compute_functional_and_gradients()
-
-        if self._verbosity > 1:
-            print "Function evaluation"
-            #msg = "  Params: " + "%.5f " * len(self._parameters)
-            msg = "  Params: " + "%.3g " * len(self._parameters)
-            print msg % tuple(self._parameters.get_p())
-            print "  L: % .3g" % self._f
-            msg = "  dL/dp: " + "% .3g " * len(tuple(self._g))
-            print msg % tuple(self._g)
-
-        return self._f, flex.double(self._g)
-
-    def callback_after_step(self, minimizer):
-        '''
-        Do journalling, evaluate rmsds and return True if the target is
-        reached to terminate the refinement.
-        '''
-
-        self._step += 1
-        if self._verbosity > 0.: self.print_table_row()
+    def update_journal(self):
+        '''Append latest step information to the journal attributes'''
 
         # add step quantities to journal
+        self._step += 1
         self.num_reflections_history.append(self._target.get_num_reflections())
         self.rmsd_history.append(self._target.rmsds())
         self.parameter_vector_history.append(self._parameters.get_p())
@@ -105,10 +100,16 @@ class Refinery(object):
         if self.gradient_history is not None:
             self.gradient_history.append(self._g)
 
-        # check if the target has been achieved
+    def test_for_termination(self):
+        '''Return True if refinement should be terminated'''
+
+        # Basic version delegate to the Target class. Derived classes may
+        # implement other termination criteria
         self._target_achieved = self._target.achieved()
+
         return self._target_achieved
 
+    # FIXME to deprecate
     def print_table_row(self):
         '''print useful output in the form of a tab separated table'''
 
@@ -130,12 +131,48 @@ class Refinery(object):
                            rmsds[2]) + tuple(params))
 
     def run(self):
-        '''To be implemented by derived class'''
+        '''
+        To be implemented by derived class. It is expected that each step of
+        refinement be preceeded by a call to prepare_for_step and followed by
+        calls to update_journal and test_for_termination (in that order).
+        '''
 
         # Specify a minimizer and its parameters, and run
         raise RuntimeError, "implement me"
 
-class SimpleLBFGS(Refinery):
+class AdaptLbfgs(Refinery):
+    '''Refinery using L-BFGS minimiser'''
+
+    def compute_functional_and_gradients(self):
+
+        self.prepare_for_step()
+
+        # compute target function and its gradients
+        self._f, self._g = self._target.compute_functional_and_gradients()
+
+        if self._verbosity > 1:
+            print "Function evaluation"
+            #msg = "  Params: " + "%.5f " * len(self._parameters)
+            msg = "  Params: " + "%.3g " * len(self._parameters)
+            print msg % tuple(self._parameters.get_p())
+            print "  L: % .3g" % self._f
+            msg = "  dL/dp: " + "% .3g " * len(tuple(self._g))
+            print msg % tuple(self._g)
+
+        return self._f, flex.double(self._g)
+
+    def callback_after_step(self, minimizer):
+        '''
+        Do journalling, evaluate rmsds and return True if the target is
+        reached to terminate the refinement.
+        '''
+
+        self.update_journal()
+        if self._verbosity > 0.: self.print_table_row()
+
+        return self.test_for_termination()
+
+class SimpleLBFGS(AdaptLbfgs):
     '''Refinery implementation, using cctbx LBFGS with basic settings'''
 
     def run(self):
@@ -146,7 +183,9 @@ class SimpleLBFGS(Refinery):
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
         if self._log: ref_log.close()
 
-class LBFGScurvs(Refinery):
+        return
+
+class LBFGScurvs(AdaptLbfgs):
     '''LBFGS Refinery using curvatures'''
 
     def run(self):
@@ -157,6 +196,8 @@ class LBFGScurvs(Refinery):
         self.diag_mode = "always"
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
         if self._log: ref_log.close()
+
+        return
 
     def compute_functional_gradients_diag(self):
 
@@ -227,20 +268,14 @@ class AdaptLstbx(
         # at 'diagonal weight matrix'
 
         # set current parameter values
-        self._parameters.set_p(self.x)
-
-        # do reflection prediction
-        self._target.predict()
+        self.prepare_for_step()
 
         # Compute target function and its gradients. The LSTBX minimiser
         # does not actually require this to be called, unlike the LBFGS
         # versions. However, we currently need _f and _g to be set for reporting
         # purposes, e.g. by print_table_row.
 
-        # NB This is soon to be deprecated as all logging to move to the
-        # callback_after_step function, and print_table_row to be
-        # removed in favour of printing the entire table after refinement
-        # completes based on values in the history.
+        # NB This is soon to be deprecated
         if self._verbosity > 0.:
             self._f, self._g = self._target.compute_functional_and_gradients()
 
@@ -337,7 +372,10 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                     one_row_per_line=True)
                 print
 
-            if self.callback_after_step(None):
+            self.update_journal()
+            if self._verbosity > 0.: self.print_table_row()
+
+            if self.test_for_termination():
                 print "RMSD target achieved"
                 break
             if self.has_gradient_converged_to_zero():
@@ -354,5 +392,4 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             self.step_forward()
             self.n_iterations += 1
 
-    def __str__(self):
-        return "pure Gauss-Newton"
+        return
