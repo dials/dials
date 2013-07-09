@@ -10,7 +10,7 @@ namespace dials { namespace scratch {
   using scitbx::vec2;
 
   int hello_tst() {
-    std::cout << "Hello world (testing)\n";
+    std::cout << "Hello world \n";
     int a=5;
     return a;
   }

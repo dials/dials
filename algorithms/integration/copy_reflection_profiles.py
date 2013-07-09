@@ -89,27 +89,27 @@ def copy_image_pixels(sweep, reflections, frame_indices,
         # Copy the image pixels from the image to the shoeboxes
         copy_single_image_pixels(image, index + first_array_index,
             reflection_indices, reflections, gain_map, dark_map)
-
-        # Extract a mask from the shoeboxes showing which pixels to use
-        mask = construct_image_mask_from_shoeboxes(detector_mask != 0,
-          index + first_array_index, reflection_indices,
-          reflections, kernel_size)
-
-        # Construct the threshold strategy
-        threshold = XDSThresholdStrategy(
-            kernel_size = kernel_size,
-            gain = gain_map,
-            mask = mask,
-            n_sigma_b = n_sigma_b,
-            n_sigma_s = n_sigma_s)
-
-        # Threshold the image
-        mask = threshold(image)
-
-        # Assign the strong pixels and spots
-        assign_strong_spots(mask, index + first_array_index,
-            reflection_indices, reflections)
-
+#
+#        # Extract a mask from the shoeboxes showing which pixels to use
+#        mask = construct_image_mask_from_shoeboxes(detector_mask != 0,
+#          index + first_array_index, reflection_indices,
+#          reflections, kernel_size)
+#
+#        # Construct the threshold strategy
+#        threshold = XDSThresholdStrategy(
+#            kernel_size = kernel_size,
+#            gain = gain_map,
+#            mask = mask,
+#            n_sigma_b = n_sigma_b,
+#            n_sigma_s = n_sigma_s)
+#
+#        # Threshold the image
+#        mask = threshold(image)
+#
+#        # Assign the strong pixels and spots
+#        assign_strong_spots(mask, index + first_array_index,
+#            reflection_indices, reflections)
+#
         # Update the progress bar
         progress.update(100 * (index + 1) / len(sweep))
 
