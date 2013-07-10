@@ -149,7 +149,48 @@ class Test(object):
         print 'OK'
 
     def tst_known_orientation(self):
-        pass
+        from scitbx.array_family import flex
+        from scitbx import matrix
+        from math import sin, cos, pi, sqrt
+
+        # Set the size of the grid
+        input_height = 4
+        input_width = 4
+        output_height = 4
+        output_width = 4
+
+        # Create the grid data
+        value = 13
+        grid = flex.double([value for i in range(input_height * input_width)])
+        grid.reshape(flex.grid(input_height, input_width))
+
+        # Create the grid coordinates
+        xy = []
+        R = matrix.sqr((cos(pi / 4), -sin(pi / 4), sin(pi / 4), cos(pi / 4)))
+        for j in range(input_height + 1):
+            for i in range(input_width + 1):
+                ij = R * matrix.col((i * sqrt(8) / 4, j * sqrt(8) / 4))
+                xy.append((ij[0] + 2, ij[1]))
+        gridxy = flex.vec2_double(xy)
+        gridxy.reshape(flex.grid(input_height+1, input_width+1))
+
+        # Get the output grid
+        output = rebin_pixels(grid, gridxy, (output_height, output_width))
+
+        expected = [
+          [0, 1, 1, 0],
+          [1, 2, 2, 1],
+          [1, 2, 2, 1],
+          [0, 1, 1, 0]]
+
+        # Check that each each pixel has a value of the input
+        eps = 1e-7
+        for j in range(1, output_height):
+            for i in range(1, output_width):
+                assert(abs(output[j,i] - expected[j][i] * value) <= eps)
+
+        # Test passed
+        print 'OK'
 
 
 if __name__ == '__main__':
