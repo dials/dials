@@ -34,7 +34,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
    */
   inline
   double zeta_factor(vec3<double> m2, vec3<double> e1) {
-    return std::abs(m2 * e1);
+    return m2 * e1;
   }
 
   /**
@@ -123,8 +123,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
     /** @returns the increase in the length of the shortest path */
     double path_length_increase() const {
-      DIALS_ASSERT(zeta_ > 0.0);
-      return 1.0 / zeta_;
+      DIALS_ASSERT(zeta_ != 0.0);
+      return abs(1.0 / zeta_);
     }
 
     /**
@@ -399,25 +399,34 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param cs The coordinate system
      */
     ToRotationAngleAccurate(const CoordinateSystem &cs)
-      : radius_(cs.p_star().length()),
-        phi_(cs.phi()) {}
+      : m2e1_(cs.m2() * cs.e1_axis()),
+        m2e1_m2e1_(m2e1_ * m2e1_),
+        m2e3_m2ps_(2.0 * (cs.m2() * cs.e3_axis()) *
+          (cs.m2() * cs.p_star().normalize())) {}
 
     /**
-     * Apply the transform by projecting the point onto the arc of rotation
-     * of the reciprocal space vector p. Then calculate the angle
+     * Apply the transform by solving the following equation for t
+     *  e3 = (m2.e1)sin(t) + (m2.e3)(m2.p*)(1 - cos(t))
+     * Giving:
+     *  t = 2 atan((sqrt((m2.e1)^2 + 2 c3(m2.e3)(m2.p*) - c3^2) + m2.e1) /
+     *             c3 - 2 (m2.e3)(m2.p*))
+     *
      * @param e3 The XDS e3 coordinate
      * @returns The rotation angle phi'
      */
-    double operator()(double e3) const {
-      double b = radius_ * radius_ - e3 * e3;
-      DIALS_ASSERT(b >= 0.0);
-      double y = radius_ - std::sqrt(b);
-      return phi_ - std::atan2(y, e3);
+    double operator()(double c3) const {
+      double l = m2e1_m2e1_ + c3 * m2e3_m2ps_ - c3*c3;
+      DIALS_ASSERT(l >= 0.0);
+      double y = sqrt(l) + m2e1_;
+      double x = c3 - m2e3_m2ps_;
+      DIALS_ASSERT(x != 0.0);
+      return 2.0*atan(y / x);
     }
 
   private:
-    double radius_;
-    double phi_;
+    double m2e1_;
+    double m2e1_m2e1_;
+    double m2e3_m2ps_;
   };
 
 
