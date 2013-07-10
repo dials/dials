@@ -1,4 +1,3 @@
-from __future__ import division
 
 class Script(object):
 
@@ -16,11 +15,11 @@ class Script(object):
         print "read file"
 
         r_to_use = [r for r in rlist
-                        if r.status == 0 and
+                        if r.is_valid() and
                            r.bounding_box[1] - r.bounding_box[0] >= 5 and
                            r.bounding_box[3] - r.bounding_box[2] >= 5 and
-                           r.intensity > 10000]
-        print "Filtered list"
+                           r.intensity / sqrt(r.intensity_variance) > 10]
+        print "Filtered list", len(r_to_use)
 
 
         px_prd = [r.image_coord_px for r in r_to_use]
@@ -39,16 +38,16 @@ class Script(object):
         f_diff = [p - o for p, o in zip(f_prd, f_obs)]
 
         from matplotlib import pylab
-#        pylab.subplot(3, 1, 1)
-#        pylab.scatter(x_prd, x_diff)
-#        pylab.axhline(numpy.mean(x_diff))
-#        pylab.subplot(3, 1, 2)
-#        pylab.scatter(y_prd, y_diff)
-#        pylab.axhline(numpy.mean(y_diff))
-#        pylab.subplot(3, 1, 3)
-#        pylab.scatter(f_prd, f_diff)
-#        pylab.axhline(numpy.mean(f_diff))
-#        pylab.show()
+        pylab.subplot(3, 1, 1)
+        pylab.scatter(x_prd, x_diff)
+        pylab.axhline(numpy.mean(x_diff))
+        pylab.subplot(3, 1, 2)
+        pylab.scatter(y_prd, y_diff)
+        pylab.axhline(numpy.mean(y_diff))
+        pylab.subplot(3, 1, 3)
+        pylab.scatter(f_prd, f_diff)
+        pylab.axhline(numpy.mean(f_diff))
+        pylab.show()
 
         #from scipy.interpolate import griddata
         points = zip(y_prd, x_prd)
@@ -96,7 +95,7 @@ def scipy_stuff():
 
 
 if __name__ == '__main__':
-#    import sys
-#    script = Script()
-#    script.run(sys.argv[1])
-    scipy_stuff()
+    import sys
+    script = Script()
+    script.run(sys.argv[1])
+#    scipy_stuff()

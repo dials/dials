@@ -354,6 +354,7 @@ scratch/gw/x2tbx/x2tbx.h -text
 scratch/gw/x2tbx/x2tbx_ol.cpp -text
 scratch/gw/x2tbx/x2tbx_rl.cpp -text
 scratch/jmp/analysis/centroid_difference.py -text
+scratch/jmp/analysis/test_parallax.py -text
 scratch/jmp/analysis/xds_xyz_diff_map.py -text
 scratch/jmp/build.sh -text
 scratch/jmp/cctbx_exercises/.project -text
@@ -548,6 +549,7 @@ scratch/jmp/find_strong_spots/select_spots.py -text
 scratch/jmp/find_strong_spots/thresholding.py -text
 scratch/jmp/index_test.py -text
 scratch/jmp/misc/normality_check.py -text
+scratch/jmp/misc/parallax_test.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/nexus/test_h5py.py -text
