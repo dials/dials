@@ -1,4 +1,10 @@
 
 Import('env')
 
+sources = [
+    'boost_python/polygon_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_polygon_ext', 
+    source=sources)
+
 env.SConscript('clip/SConscript', exports={ 'env' : env })
