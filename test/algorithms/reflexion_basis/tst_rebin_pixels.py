@@ -12,6 +12,7 @@ class Test(object):
         self.tst_larger_input()
         self.tst_larger_output()
         self.tst_known_orientation()
+        self.tst_conservation_of_counts()
 
     def tst_identical(self):
         from scitbx.array_family import flex
@@ -192,6 +193,44 @@ class Test(object):
         # Test passed
         print 'OK'
 
+    def tst_conservation_of_counts(self):
+        from scitbx.array_family import flex
+        from scitbx import matrix
+        from math import sin, cos, pi, sqrt
+        from random import uniform
+
+        # Set the size of the grid
+        input_height = 10
+        input_width = 10
+        output_height = 50
+        output_width = 50
+
+        # Create the grid data
+        grid = flex.double([uniform(0, 100)
+            for i in range(input_height * input_width)])
+        grid.reshape(flex.grid(input_height, input_width))
+
+        # Create the grid coordinates
+        xy = []
+        angle = uniform(0, pi)
+        offset = (uniform(20, 30), uniform(20, 30))
+        R = matrix.sqr((cos(angle), -sin(angle), sin(angle), cos(angle)))
+        for j in range(input_height + 1):
+            for i in range(input_width + 1):
+                ij = R * matrix.col((i, j))
+                xy.append((ij[0] + offset[0], ij[1] + offset[0]))
+        gridxy = flex.vec2_double(xy)
+        gridxy.reshape(flex.grid(input_height+1, input_width+1))
+
+        # Get the output grid
+        output = rebin_pixels(grid, gridxy, (output_height, output_width))
+
+        # Check that the sum of the counts is conserved
+        eps = 1e-7
+        assert(abs(flex.sum(output) - flex.sum(grid)) <= eps)
+
+        # Test passed
+        print 'OK'
 
 if __name__ == '__main__':
     test = Test()

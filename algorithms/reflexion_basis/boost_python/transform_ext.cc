@@ -13,7 +13,7 @@
 #include <dials/algorithms/reflexion_basis/rebin_pixels.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
-  namespace boost_python {
+  namespace transform { namespace boost_python {
 
   using namespace boost::python;
   using scitbx::af::int2;
@@ -38,4 +38,4 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     export_rebin_pixels();
   }
 
-}}}} // namespace = dials::algorithms::reflexion_basis::boost_python
+}}}}} // namespace = dials::algorithms::reflexion_basis::transform::boost_python

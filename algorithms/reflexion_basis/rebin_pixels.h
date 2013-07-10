@@ -21,6 +21,7 @@
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
+    namespace transform {
 
   using std::floor;
   using std::ceil;
@@ -58,6 +59,11 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     std::size_t output_width = output.accessor().all()[1];
     std::size_t input_height = input.accessor().all()[0];
     std::size_t input_width = input.accessor().all()[1];
+
+    // Initialise all output counts to zero
+    for (std::size_t j = 0; j < output.size(); ++j) {
+      output[j] = 0.0;
+    }
 
     // Loop through all the input pixels
     for (std::size_t j = 0; j < input_height; ++j) {
@@ -112,6 +118,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     }
   }
 
-}}} // dials::algorithms::reflexion_basis
+}}}} // dials::algorithms::reflexion_basis::transform
 
 #endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H */
