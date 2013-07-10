@@ -1,9 +1,33 @@
 #ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H
 #define DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H
 
+#include <cmath>
+#include <scitbx/vec2.h>
+#include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/tiny_types.h>
+#include <scitbx/array_family/ref_reductions.h>
+#include <dials/algorithms/polygon/clip/clip.h>
+#include <dials/algorithms/polygon/area.h>
+#include <dials/error.h>
+
 namespace dials { namespace algorithms { namespace reflexion_basis {
 
-  void rebin_pixels(const flex_double &output, const flex_double &input,
+  using std::floor;
+  using std::ceil;
+  using scitbx::vec2;
+  using scitbx::af::flex_double;
+  using scitbx::af::double4;
+  using scitbx::af::max;
+  using scitbx::af::min;
+  using dials::algorithms::polygon::simple_area;
+  using dials::algorithms::polygon::clip::vert4;
+  using dials::algorithms::polygon::clip::vert8;
+  using dials::algorithms::polygon::clip::quad_with_convex_quad;
+
+  typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
+
+  inline
+  void rebin_pixels(flex_double &output, const flex_double &input,
                     const flex_vec2_double &inputxy) {
 
     // Check the sizes
@@ -24,21 +48,23 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       for (std::size_t i = 0; i < input_width; ++i) {
 
         // Get the x, y coords of the target point
-        ixy00 = inputxy(j, i);
-        ixy01 = inputxy(j, i+1);
-        ixy10 = inputxy(j+1, i);
-        ixy11 = inputxy(j+1, i+1);
+        vec2<double> ixy00 = inputxy(j, i);
+        vec2<double> ixy01 = inputxy(j, i+1);
+        vec2<double> ixy10 = inputxy(j+1, i);
+        vec2<double> ixy11 = inputxy(j+1, i+1);
 
         // Create the target polygon and calculate its area
         vert4 target(ixy00, ixy01, ixy11, ixy10);
-        double target_area = polygon_area(target);
+        double target_area = simple_area(target);
         double value = input(j, i);
 
         // Get the range of new grid points
         double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
         double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
-        int ox0 = (int)floor(min(ix)), ox1 = (int)ceil(max(ix));
-        int oy0 = (int)floor(min(iy)), oy1 = (int)ceil(max(iy));
+        int ox0 = (int)floor(min(ix.const_ref()));
+        int oy0 = (int)floor(min(iy.const_ref()));
+        int ox1 = (int)ceil(max(ix.const_ref()));
+        int oy1 = (int)ceil(max(iy.const_ref()));
 
         // Cap the coordinates within the the output grid
         if (ox0 < 0) ox0 = 0;
@@ -60,7 +86,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
             // fraction of the area of the clipped polygon against the target.
             // Then redistribute the values from the target grid to the subject.
             vert8 result = quad_with_convex_quad(subject, target);
-            double result_area = polygon_area(result);
+            double result_area = simple_area(result);
             double fraction = result_area / target_area;
             output(jj, ii) += fraction * value;
           }
