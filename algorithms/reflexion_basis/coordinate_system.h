@@ -11,11 +11,13 @@
 #ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H
 #define DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H
 
+#include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
 
+  using scitbx::vec2;
   using scitbx::vec3;
 
   /**
@@ -25,7 +27,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
    * @returns Zeta the path length correction factor.
    */
   inline
-  double zeta_factor(vec3<double> m2, vec2<double> e1) {
+  double zeta_factor(vec3<double> m2, vec3<double> e1) {
     return m2 * e1;
   }
 
@@ -158,9 +160,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
   private:
 
+    vec3<double> s1_;
     vec3<double> scaled_e1_;
     vec3<double> scaled_e2_;
-    vec3<double> s1_;
   };
 
 
@@ -187,7 +189,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @returns The e3 angle.
      */
     double operator()(double phi_dash) const {
-      return zeta_ * (phi_dash - phi_))
+      return zeta_ * (phi_dash - phi_);
     }
 
   private:
@@ -219,7 +221,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @returns The e3 angle.
      */
     double operator()(double phi_dash) const {
-      return scaled_e3_ * (p_star_.unit_rotate_around_origin(
+      return e3_ * (p_star_.unit_rotate_around_origin(
         m2_, phi_ - phi_dash) - p_star_);
     }
 
@@ -337,7 +339,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      */
     ToRotationAngleFast(const CoordinateSystem &cs)
      : zeta_(cs.zeta()),
-       phi_(cs.phi()) {} {}
+       phi_(cs.phi()) {}
 
     /**
      * Apply the transform
@@ -417,8 +419,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      */
     std::pair<vec3<double>, double> operator()(vec3<double> e) const {
       return std::make_pair(
-        to_beam_vector(vec2<double>(e[0], e[1])),
-        to_rotation_angle(e[2]));
+        to_beam_vector_(vec2<double>(e[0], e[1])),
+        to_rotation_angle_(e[2]));
     }
 
   private:
@@ -437,6 +439,64 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     ToBeamVector, ToRotationAngleAccurate>
       ToBeamVectorAndRotationAngleAccurate;
 
-}} // namespace = dials::algorithms::reflexion_basis
+
+  /**
+   * Class to map detector millimeter coordinates to the reciprocal space
+   * coordinate system.
+   */
+  class FromDetector {
+  public:
+
+    /**
+     * Initialise the transform with the coordinate system and the
+     * detector d matrix
+     * @param cs The coordinate system
+     * @param d The detector d matrix
+     */
+    FromDetector(const CoordinateSystem &cs, mat3<double> d)
+      : from_beam_vector_(cs),
+        d_(d) {}
+
+    vec2<double> operator()(vec2<double> xy) const {
+      return from_beam_vector_(plane_world_coordinate(d, xy));
+    }
+
+    vec3<double> operator()(vec2<double> xy, double phi) const {
+      return from_beam_vector_(plane_world_coordinate(d, xy), phi);
+    }
+
+  private:
+    from_beam_vector_;
+    mat3<double> d_;
+  };
+
+
+  /**
+   * Class to map the reciprocal space coordinate system to detector
+   * millimeter coordinates.
+   */
+  class ToDetector {
+  public:
+
+    /**
+     * Initialise the transform with the coordinate system and the
+     * detector D matrix
+     * @param cs The coordinate system
+     * @param D The detector D matrix
+     */
+    ToDetector(const CoordinateSystem &cs, mat3<double> D)
+      : to_beam_vector(cs),
+        D_(D) {}
+
+    vec2<double> operator()(vec3<double> e) const {
+      return plane_intersection(D, to_beam_vector_(e));
+    }
+
+  private:
+    to_beam_vector_;
+    mat3<double> D_;
+  };
+
+}}} // namespace = dials::algorithms::reflexion_basis
 
 #endif // DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H
