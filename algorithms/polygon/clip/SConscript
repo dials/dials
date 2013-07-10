@@ -1,0 +1,8 @@
+
+Import('env')
+
+sources = [
+    'boost_python/clip_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_polygon_clip_ext', 
+    source=sources)

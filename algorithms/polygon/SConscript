@@ -1,0 +1,4 @@
+
+Import('env')
+
+env.SConscript('clip/SConscript', exports={ 'env' : env })

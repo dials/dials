@@ -1,0 +1,49 @@
+/*
+ * clipping_ext.cc
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
+#include <dials/algorithms/polygon/clip/clip.h>
+
+namespace dials { namespace algorithms { namespace polygon { namespace clip {
+  namespace boost_python {
+
+  using namespace boost::python;
+
+  void export_clip() 
+  {
+    def("simple_with_convex", 
+      &simple_with_convex, (
+        arg("subject"),
+        arg("target")));
+    def("triangle_with_triangle", 
+      &triangle_with_triangle, (
+        arg("subject"), 
+        arg("target")));
+    def("triangle_with_convex_quad", 
+      &triangle_with_convex_quad, (
+        arg("subject"),
+        arg("target")));
+    def("quad_with_triangle", 
+      &quad_with_triangle, (
+        arg("subject"),
+        arg("target")));
+    def("quad_with_convex_quad", 
+      &quad_with_convex_quad, (
+        arg("subject"),
+        arg("target")));
+  }
+
+  BOOST_PYTHON_MODULE(dials_algorithms_polygon_clip_ext)
+  {
+    export_clip();
+  }
+
+}}}}} // namespace = dials::algorithms::polygon::clip::boost_python
