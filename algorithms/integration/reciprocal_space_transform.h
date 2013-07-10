@@ -28,6 +28,7 @@
 
 namespace dials { namespace algorithms {
 
+  using std::floor;
   using boost::math::erf;
   using scitbx::vec2;
   using scitbx::vec3;
@@ -70,7 +71,7 @@ namespace dials { namespace algorithms {
         mosaicity_(mosaicity),
         delta_mosaicity_(mosaicity_ * n_sigma),
         grid_size_e3_(grid_size_e3),
-        step_size_e3_(delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
+        step_size_e3_(2.0 * delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
 
     flex_double operator()(vec2 <int> bbox_z, double phi, double zeta) const;
 
@@ -112,23 +113,23 @@ namespace dials { namespace algorithms {
       vec2 <int> bbox_z, double phi, double zeta) const
   {
     // Check the value of zeta
-    DIALS_ASSERT(bbox_z[0] >= 0 && bbox_z[1] > bbox_z[0]);
+    DIALS_ASSERT(bbox_z[1] > bbox_z[0]);
     DIALS_ASSERT(zeta != 0.0);
 
     // The range of data frames and grid points to iterate over
-    std::size_t j0 = bbox_z[0];
-    std::size_t j1 = bbox_z[1];
+    int j0 = bbox_z[0];
+    int j1 = bbox_z[1];
     int v30 = - (int)grid_size_e3_;
     int v31 = + (int)grid_size_e3_ + 1;
 
     // Create an array to contain the intensity fractions
-    flex_double fraction(flex_grid<>((2 * grid_size_e3_ + 1), j1 - j0));
+    flex_double fraction(flex_grid<>(j1 - j0, (2 * grid_size_e3_ + 1)));
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
 
     // Loop over all j data frames in the region around the reflection
-    for (std::size_t i = 0, j = j0; j < j1; ++j) {
+    for (int i = 0, j = j0; j < j1; ++j) {
 
       // The data frame j covers the range of phi such that
       // rj = {phi':phi0 + j*dphi <= phi' >= phi0 + (j+1)*dpi}
@@ -270,17 +271,12 @@ namespace dials { namespace algorithms {
         detector_s1_(ReciprocalSpaceTransformDetectorLabCoords()(
           detector, beam, n_div)),
         s0_(beam.get_s0()),
-        m2_(gonio.get_rotation_axis()) {
+        m2_(gonio.get_rotation_axis()),
+        detector_size_(detector.get_image_size()) {
 
       // Check some input
       DIALS_ASSERT(n_div > 0);
       DIALS_ASSERT(grid_half_size > 0);
-
-      // Set the image volume size
-      volume_ = vec3<std::size_t>(
-          detector.get_image_size()[0],
-          detector.get_image_size()[1],
-          scan.get_array_range()[1]);
 
       // Set the grid size specifiers
       grid_half_size_ = grid_half_size;
@@ -351,7 +347,7 @@ namespace dials { namespace algorithms {
     flex_vec3_double detector_s1_;
     vec3<double> s0_;
     vec3<double> m2_;
-    vec3<std::size_t> volume_;
+    vec2<double> detector_size_;
     std::size_t grid_half_size_;
     std::size_t grid_size_;
     vec3<double> step_size_;
@@ -380,29 +376,25 @@ namespace dials { namespace algorithms {
   flex_double ReciprocalSpaceTransform::operator()(const flex_double &image,
       const flex_int &mask, int6 bbox, vec3<double> s1, double phi) const
   {
-    // Constant for scaling values
-    static const double r2d = 1.0 / scitbx::constants::pi_180;
-
     // Check the image sizes match
     DIALS_ASSERT(image.accessor().all().all_eq(mask.accessor().all()));
+
+    // Check the size of the detector
+    DIALS_ASSERT(bbox[0] >= 0 && bbox[1] < detector_size_[0]);
+    DIALS_ASSERT(bbox[2] >= 0 && bbox[3] < detector_size_[1]);
 
     // Check the bounding box size matches the image size
     DIALS_ASSERT(bbox[1] - bbox[0] == image.accessor().all()[2]);
     DIALS_ASSERT(bbox[3] - bbox[2] == image.accessor().all()[1]);
     DIALS_ASSERT(bbox[5] - bbox[4] == image.accessor().all()[0]);
 
-    // Check the bounding box is in the image range
-    DIALS_ASSERT(bbox[0] >= 0 && bbox[1] <= volume_[0]);
-    DIALS_ASSERT(bbox[3] >= 0 && bbox[3] <= volume_[1]);
-    DIALS_ASSERT(bbox[4] >= 0 && bbox[5] <= volume_[2]);
-
     // Get the grid data array
-    flex_double grid(flex_grid<>(grid_size_, grid_size_, grid_size_));
+    flex_double grid(flex_grid<>(grid_size_, grid_size_, grid_size_), 0);
 
     // Calculate the x, y, z ranges to iterate over
-    std::size_t x0 = bbox[0] * n_div_, x1 = bbox[1] * n_div_;
-    std::size_t y0 = bbox[2] * n_div_, y1 = bbox[3] * n_div_;
-    std::size_t z0 = bbox[4], z1 = bbox[5];
+    int x0 = bbox[0] * n_div_, x1 = bbox[1] * n_div_;
+    int y0 = bbox[2] * n_div_, y1 = bbox[3] * n_div_;
+    int z0 = bbox[4], z1 = bbox[5];
 
     // Calculate 1 / n_div and 1 / (n_div*n_div) for convenience
     double n_div_r = 1.0 / n_div_;
@@ -410,12 +402,11 @@ namespace dials { namespace algorithms {
 
     // Calculate the reflection coordinate system e1 and e2 axes, and zeta, the
     // lorentz correction (used to calculate component on e3 axis
-    vec3 <double> e1 = s1.cross(s0_).normalize();
-    vec3 <double> e2 = s1.cross(e1).normalize();
-    double zeta = m2_ * e1;
     double s1_length = s1.length();
-    e1 = e1 * r2d / s1_length;
-    e2 = e2 * r2d / s1_length;
+    DIALS_ASSERT(s1_length > 0.0);
+    vec3 <double> e1 = s1.cross(s0_).normalize() / s1_length;
+    vec3 <double> e2 = s1.cross(e1).normalize() / s1_length;
+    double zeta = m2_ * e1;
 
     // Calculate the fraction of counts contributed by each data frame, j,
     // around the reflection to each grid point, v3 in the profile frame. Hold
@@ -426,22 +417,23 @@ namespace dials { namespace algorithms {
     // coordinate of each pixel in the XDS coordinate frame e1 and e2 axes.
     // Find the grid point in which the calculate point is contained and then
     // add the counts for that pixel to the grid. See Kabsch 2010
-    for (std::size_t yy = y0; yy < y1; ++yy) {
-      for (std::size_t xx = x0; xx < x1; ++xx) {
+    for (int yy = y0; yy < y1; ++yy) {
+      for (int xx = x0; xx < x1; ++xx) {
         vec3<double> ds = detector_s1_(yy, xx) - s1;
         double c1 = e1 * ds;
         double c2 = e2 * ds;
-        int gi = grid_half_size_ + c1 / step_size_[2];
-        int gj = grid_half_size_ + c2 / step_size_[1];
+        int gi = (int)floor(grid_half_size_ + c1 / step_size_[0]);
+        int gj = (int)floor(grid_half_size_ + c2 / step_size_[1]);
         if (gi < 0 || gi >= grid_size_ || gj < 0 || gj >= grid_size_) {
           continue;
         }
-        std::size_t x = xx * n_div_r;
-        std::size_t y = yy * n_div_r;
-        for (std::size_t z = z0; z <= z1; ++z) {
-          if (mask(z, y, z) != 0) {
+        int x = xx * n_div_r - bbox[0];
+        int y = yy * n_div_r - bbox[2];
+        for (int zz = z0; zz < z1; ++zz) {
+          int z = zz - bbox[4];
+          if (mask(z, y, x) != 0) {
             double value = image(z, y, x) * div_fraction;
-            for (std::size_t gk = 0; gk < grid_size_; ++gk) {
+            for (int gk = 0; gk < grid_size_; ++gk) {
               grid(gk, gj, gi) += value * fraction(z, gk);
             }
           }
