@@ -152,8 +152,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       return double4(
         -1.0,
          1.0,
-        m2e3_m2ps + sqrt(r),
-        m2e3_m2ps - sqrt(r));
+        m2e3_m2ps - sqrt(r),
+        m2e3_m2ps + sqrt(r));
     }
 
   private:
