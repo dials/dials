@@ -142,11 +142,18 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      */
     double4 limits() const {
       vec3<double> p_star_norm = p_star_.normalize();
+      double m2e3 = m2_ * e3_;
+      double m2ps = m2_ * p_star_.normalize();
+      double m2e1 = m2_ * e1_;
+      double m2e1_m2e1 = m2e1 * m2e1;
+      double m2e3_m2ps = m2e3 * m2ps;
+      double r = m2e3_m2ps * m2e3_m2ps + m2e1_m2e1;
+      DIALS_ASSERT(r >= 0.0);
       return double4(
         -1.0,
          1.0,
-        -(m2_ * e1_) + (m2_ * e3_) * (m2_ * p_star_norm),
-         (m2_ * e1_) + (m2_ * e3_) * (m2_ * p_star_norm));
+        m2e3_m2ps + sqrt(r),
+        m2e3_m2ps - sqrt(r));
     }
 
   private:

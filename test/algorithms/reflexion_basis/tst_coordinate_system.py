@@ -223,32 +223,6 @@ class TestFromRotationAngle(object):
         # Test passed
         print "OK"
 
-    def test_limit(self):
-        """ Calculate the coordinate at the limits.
-
-        Ensure that coordinate where phi' is orthogonal to s1 is at limit.
-
-        """
-        from scitbx import matrix
-        from math import sqrt, pi
-        from random import uniform
-        eps = 1e-7
-
-        # Get the limit of phi'
-        phi_dash1 = self.phi - pi / 2.0
-        phi_dash2 = self.phi + pi / 2.0
-
-        # Get the c1, c2 coordinate
-        c31 = self.from_rotation_angle(phi_dash1)
-        c32 = self.from_rotation_angle(phi_dash2)
-
-        # Check the point is equal to the limit in rs
-        assert(abs(c31 - self.cs.limits()[2]) <= eps)
-        assert(abs(c32 - self.cs.limits()[3]) <= eps)
-
-        # Test passed
-        print 'OK'
-
     def test_e3_coordinate_approximation(self):
 
         from scitbx import matrix
@@ -275,7 +249,6 @@ class TestFromRotationAngle(object):
     def __call__(self):
         """Run all the tests"""
         self.test_coordinate_of_phi()
-        self.test_limit()
         self.test_e3_coordinate_approximation()
 
 
@@ -413,8 +386,6 @@ class TestToRotationAngle(object):
                     1.4290948735525306)
         self.m2 = ( 0.999975, -0.001289, -0.006968)
         self.phi = 0#5.83575672475 * pi / 180
-#        from scitbx import matrix
-#        self.m2 = matrix.col(self.s0).cross(matrix.col(self.s1)).normalize()
 
         self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
         self.to_rotation_angle = ToRotationAngleAccurate(self.cs)
@@ -424,111 +395,15 @@ class TestToRotationAngle(object):
     def test_forward_and_backward(self):
 
         from scitbx import matrix
-        from math import pi, acos, atan2, sqrt, sin, cos, atan
+        from math import pi
         import random
         eps = 1e-7
 
         # Set the parameters
-        min_shift = -5.0 * pi / 180.0
-        max_shift = +5.0 * pi / 180.0
+        min_shift = -20.0 * pi / 180.0
+        max_shift = +20.0 * pi / 180.0
         range_shift = max_shift - min_shift
         random_shift = lambda: min_shift + random.random() * range_shift
-
-
-        m2 = matrix.col(self.cs.m2())
-        s0 = matrix.col(self.cs.s0())
-        m1 = m2.cross(s0).normalize()
-        m3 = m1.cross(m2).normalize()
-        e1 = matrix.col(self.cs.e1_axis())
-        e3 = matrix.col(self.cs.e3_axis())
-        ps = matrix.col(self.cs.p_star())
-        ps0 = ps.normalize()
-        r = []
-        for angle in range(-180, 180):
-            ps1 = ps0.rotate(m2, angle, deg=True)
-            diff = ps1# - ps0
-            x = diff.dot(m1)
-            y = diff.dot(m3)
-            #print x**2 + y**2
-            r.append((x, y))
-
-        x, y = zip(*r)
-        dphi = 10
-        ps1 = ps0.rotate(m2, dphi, deg=True)
-        px1 = ps1.dot(m1)
-        py1 = ps1.dot(m3)
-        px0 = ps0.dot(m1)
-        py0 = ps0.dot(m3)
-
-        m2e1 = m2.dot(e1)
-        m2e3 = m2.dot(e3)
-        m2ps = m2.dot(ps0)
-
-        angle1 = self.phi + dphi * pi / 180
-
-        ma = m2.dot(e1)
-        mg = m2.dot(e3)
-        mp = m2.dot(ps0)
-
-        c = self.from_rotation_angle(angle1)
-        x = ma * sin(angle1) + (mg* mp)*(1 - cos(angle1))
-        print c, x
-        print "Angle1:", angle1
-
-
-        n = 0
-        angle2 = 2 * (atan((sqrt(ma*ma + 2*x*mg*mp - x*x) + ma) /( x - 2*mg*mp)) + n * pi)
-        angle3 = 2 * (atan2((sqrt(ma*ma + 2*x*mg*mp - x*x) + ma),( x - 2*mg*mp)) + n * pi)
-        angle4 = self.to_rotation_angle(c)
-        print "Angle2: ", angle2, angle3, angle4
-
-        print 1/0
-
-#        e31 = e3.dot(m1)
-#        e33 = e3.dot(m3)
-#        e3m = matrix.col((e31, e33))
-
-        e333 = e3.rotate(ps0, acos(abs(m2e1)), deg=False)
-
-        pe1 = ps0 - 1 * e333
-        pe2 = ps0 + 1 * e333
-        ex0 = pe1.dot(m1)
-        ey0 = pe1.dot(m3)
-        ex1 = pe2.dot(m1)
-        ey1 = pe2.dot(m3)
-        pl = self.cs.path_length_increase()
-        c = self.from_rotation_angle(self.phi + dphi * pi / 180)
-
-
-        #c = c * abs((1.0 / m2e1))
-        #c = c * 1.000245
-        print m2e1, m2e3, m2ps, acos(abs(m2e1))
-
-
-        r1 = ps0 + c * e333
-        r2 = r1 - 1 * ps0
-        rx0 = r1.dot(m1)
-        ry0 = r1.dot(m3)
-        rx1 = r2.dot(m1)
-        ry1 = r2.dot(m3)
-
-#        from mpl_toolkits.mplot3d import Axes3D
-        from matplotlib import pylab
-        pylab.plot(x, y)
-        pylab.plot([0, px0], [0, py0], color='red')
-        pylab.plot([0, px1], [0, py1], color='blue')
-        pylab.plot([ex0, ex1], [ey0, ey1])
-        pylab.plot([rx0, rx1], [ry0, ry1])
-
-        #pylab.plot([e301, e311], [e303, e313])
-        pylab.show()
-#        ax = pylab.subplot(111, projection='3d')
-#        ax.scatter(x, y, z)
-#        m20 = m2 * -10
-#        m21 = m2 * 10
-#        ax.plot([m20[0], m21[0]], [m20[1], m21[1]], [m20[2], m21[2]])
-#        pylab.show()
-
 
         # Loop a number of times
         num = 1000
@@ -542,17 +417,6 @@ class TestToRotationAngle(object):
 
             # Calculate the beam vector from the XDS coordinate
             phi_dash_2 = self.to_rotation_angle(c3)
-
-            from math import acos, pi
-            mm = (c3 * matrix.col(self.cs.e3_axis())).dot(matrix.col(self.cs.m2()))
-            print mm
-#            theta = acos(c3)
-#            print c3, theta * 180 / pi
-#            dphi = 2 * theta
-#            print dphi, phi_dash - self.cs.phi()
-#            phi_dash_3 = dphi + self.cs.phi()
-
-#            print phi_dash_2, phi_dash_3, phi_dash
 
             # Check the vectors are almost equal
             assert(abs(phi_dash_2 - phi_dash) <= eps)
@@ -574,26 +438,41 @@ class TestToRotationAngle(object):
         from math import pi
         eps = 1e-7
 
+        # Get the limits
+        lim = self.cs.limits()[2:]
+        lim0 = max(lim)
+        lim1 = min(lim)
+
         # Setting c2 and c3 to zero
-        c3 = max(self.cs.limit()[2:]) - eps
+        c3 = lim0 - eps
 
         # A large value which is still valid
-        c3 = 1.0 - eps
         phi_dash = self.to_rotation_angle(c3)
 
-        # Check we're ok
-        print phi_dash - phi, pi/2
-        assert(abs(phi_dash - phi - pi / 2) <= eps)
+        # Setting c2 and c3 to zero
+        c3 = lim1 + eps
+
+        # A large value which is still valid
+        phi_dash = self.to_rotation_angle(c3)
 
         # A large value which is raises an exception
         try:
-            c3 = 1.0 + eps
+            c3 = lim0 + eps
+            phi_dash = self.to_rotation_angle(c3)
+            print phi_dash
+            assert(False)
+        except RuntimeError:
+            pass
+
+        try:
+            c3 = lim1 - eps
             phi_dash = self.to_rotation_angle(c3)
             assert(False)
         except RuntimeError:
+            pass
 
-            #Test passed
-            print "OK"
+        #Test passed
+        print "OK"
 
     def __call__(self):
         """Run all the tests"""
