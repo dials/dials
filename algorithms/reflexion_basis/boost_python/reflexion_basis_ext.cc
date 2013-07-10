@@ -45,7 +45,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       .def("e1_axis", &CoordinateSystem::e1_axis)
       .def("e2_axis", &CoordinateSystem::e2_axis)
       .def("e3_axis", &CoordinateSystem::e3_axis)
-      .def("zeta", &CoordinateSystem::zeta);
+      .def("zeta", &CoordinateSystem::zeta)
+      .def("limits", &CoordinateSystem::limits);
+
 
     // Export From BeamVector/Rotation angle
     class_<FromBeamVector>("FromBeamVector", no_init)
@@ -60,15 +62,19 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       .def(init<const CoordinateSystem&>())
       .def("__call__", &FromRotationAngleAccurate::operator());
       
-    class_<FromBeamVectorAndRotationAngleFast>(
-        "FromBeamVectorAndRotationAngleFast", no_init)
+    class_<FromBeamVectorAndRotationAngle>(
+        "FromBeamVectorAndRotationAngle", no_init)
       .def(init<const CoordinateSystem&>())
-      .def("__call__", &FromBeamVectorAndRotationAngleFast::operator());
-      
-    class_<FromBeamVectorAndRotationAngleAccurate>(
-        "FromBeamVectorAndRotationAngleAccurate", no_init)
-      .def(init<const CoordinateSystem&>())
-      .def("__call__", &FromBeamVectorAndRotationAngleAccurate::operator());
+      .def("__call__", 
+        (double(FromBeamVectorAndRotationAngle::*)(double)const)
+          &FromBeamVectorAndRotationAngle::operator())
+      .def("__call__", 
+        (vec2<double>(FromBeamVectorAndRotationAngle::*)(vec3<double>)const)
+          &FromBeamVectorAndRotationAngle::operator())      
+      .def("__call__", 
+        (vec3<double>(FromBeamVectorAndRotationAngle::*)(
+        vec3<double>, double)const)
+          &FromBeamVectorAndRotationAngle::operator());
       
     // Export to beamvector/rotation angle
     class_<ToBeamVector>("ToBeamVector", no_init)
@@ -83,15 +89,37 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       .def(init<const CoordinateSystem&>())
       .def("__call__", &ToRotationAngleAccurate::operator());
       
-    class_<ToBeamVectorAndRotationAngleFast>(
-        "ToBeamVectorAndRotationAngleFast", no_init)
+    class_<ToBeamVectorAndRotationAngle>(
+        "ToBeamVectorAndRotationAngle", no_init)
       .def(init<const CoordinateSystem&>())
-      .def("__call__", &ToBeamVectorAndRotationAngleFast::operator());
-      
-    class_<ToBeamVectorAndRotationAngleAccurate>(
-        "ToBeamVectorAndRotationAngleAccurate", no_init)
-      .def(init<const CoordinateSystem&>())
-      .def("__call__", &ToBeamVectorAndRotationAngleAccurate::operator());      
+      .def("__call__", 
+        (double(ToBeamVectorAndRotationAngle::*)(double)const)
+          &ToBeamVectorAndRotationAngle::operator())
+      .def("__call__", 
+        (vec3<double>(ToBeamVectorAndRotationAngle::*)(vec2<double>)const)
+          &ToBeamVectorAndRotationAngle::operator())  
+      .def("__call__", 
+        (std::pair<vec3<double>, double>(ToBeamVectorAndRotationAngle::*)(
+          vec3<double>)const)&ToBeamVectorAndRotationAngle::operator()); 
+        
+    // Export transforms from/to detector plane
+    class_<FromDetector>("FromDetector", no_init)
+      .def(init<const CoordinateSystem&, mat3<double> >())
+      .def("__call__", 
+        (vec2<double>(FromDetector::*)(vec2<double>)const)
+          &FromDetector::operator())
+      .def("__call__", 
+        (vec3<double>(FromDetector::*)(vec2<double>, double)const)
+          &FromDetector::operator());   
+          
+    class_<ToDetector>("ToDetector", no_init)
+      .def(init<const CoordinateSystem&, mat3<double> >())
+      .def("__call__",
+        (vec2<double>(ToDetector::*)(vec2<double>)const)
+          &ToDetector::operator())
+      .def("__call__",
+        (std::pair<vec2<double>, double>(ToDetector::*)(vec3<double>)const)
+          &ToDetector::operator());   
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_ext)

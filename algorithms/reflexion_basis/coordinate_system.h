@@ -13,12 +13,16 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <dxtbx/model/panel.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::mat3;
+  using dxtbx::model::plane_ray_intersection;
+  using dxtbx::model::plane_world_coordinate;
 
   /**
    * Helper function to calculate path length correction factor.
@@ -115,6 +119,17 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       return zeta_;
     }
 
+    /**
+     * Return the limits of the acceptable coordinates in the reciprocal
+     * space coordinate system. The values are returned as a pair in the
+     * following form.
+     *  (sqrt(max_e1_length**2 + max_e2_length**2), max_e3_length)
+     * @returns The limits
+     */
+    vec2<double> limits() const {
+      return vec2<double>(s1_.length(), p_star_.length());
+    }
+
   private:
 
     vec3<double> m2_;
@@ -127,7 +142,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     vec3<double> e3_;
     double zeta_;
   };
-
 
   /**
    * Class to represent a geometry transform from beam vector to the local
@@ -237,17 +251,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   /**
    * Class to transform a beam vector and rotation angle to the reciprocal
    * space coordinate system.
-   * @tparam FromBeamVectorType The class to transform the beam vector
-   * @tparam FromRotationAngleType The class to transform the rotation angle
    */
-  template <typename FromBeamVectorType,
-            typename FromRotationAngleType>
   class FromBeamVectorAndRotationAngle {
   public:
-
-    // Useful typedefs
-    typedef FromBeamVectorType from_beam_vector_type;
-    typedef FromRotationAngleType from_rotation_angle_type;
 
     /**
      * Initialise the transform with the coordinate system
@@ -256,6 +262,24 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     FromBeamVectorAndRotationAngle(const CoordinateSystem &cs)
       : from_beam_vector_(cs),
         from_rotation_angle_(cs) {}
+
+    /**
+     * Map the rotation angle to the e3 coordinate of the local basis
+     * @param phi The angle.
+     * @returns The e3 angle.
+     */
+    double operator()(double phi_dash) const {
+      return from_rotation_angle_(phi_dash);
+    }
+
+    /**
+     * Apply the transform to a beam vector
+     * @param s_dash The diffracted beam vector to transform
+     * @returns The point in XDS coordinates
+     */
+    vec2 <double> operator()(vec3<double> s_dash) const {
+      return from_beam_vector_(s_dash);
+    }
 
     /**
      * Map the rotation angle and beam vector to the coordinate system
@@ -268,20 +292,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     }
 
   private:
-    from_beam_vector_type from_beam_vector_;
-    from_rotation_angle_type from_rotation_angle_;
+    FromBeamVector from_beam_vector_;
+    FromRotationAngleFast from_rotation_angle_;
   };
-
-
-  /** Mapping using fast algorithm */
-  typedef FromBeamVectorAndRotationAngle<
-    FromBeamVector, FromRotationAngleFast>
-      FromBeamVectorAndRotationAngleFast;
-
-  /** Mapping using accurate algorithm */
-  typedef FromBeamVectorAndRotationAngle<
-    FromBeamVector, FromRotationAngleAccurate>
-      FromBeamVectorAndRotationAngleAccurate;
 
 
   /**
@@ -392,17 +405,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   /**
    * Class to transform a the reciprocal space coordinate system point to
    * a beam vector and rotation angle
-   * @tparam ToBeamVectorType The class to transform the beam vector
-   * @tparam ToRotationAngleType The class to transform the rotation angle
    */
-  template <typename ToBeamVectorType,
-            typename ToRotationAngleType>
   class ToBeamVectorAndRotationAngle {
   public:
-
-    // Useful typedefs
-    typedef ToBeamVectorType to_beam_vector_type;
-    typedef ToRotationAngleType to_rotation_angle_type;
 
     /**
      * Initialise the transform with the coordinate system
@@ -411,6 +416,31 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     ToBeamVectorAndRotationAngle(const CoordinateSystem &cs)
       : to_beam_vector_(cs),
         to_rotation_angle_(cs) {}
+
+    /**
+     * Apply the transform by projecting the point onto the arc of rotation
+     * of the reciprocal space vector p. Then calculate the angle
+     * @param e3 The XDS e3 coordinate
+     * @returns The rotation angle phi'
+     */
+    double operator()(double e3) const {
+      return to_rotation_angle_(e3);
+    }
+
+    /**
+     * Apply the transform to the xds point. The transform is done by
+     * calculating the coordinate of point in the sphere tangent plane at the
+     * location of the exit point of the beam vector, s1. The beam vector, s',
+     * is then calculated by finding the intersection of line defined by the
+     * plane normal (i.e. s1 vector) with origin at the calculated tangent plane
+     * point point and the ewald sphere.
+     *
+     * @param e12 The XDS coordinate
+     * @returns The beam vector
+     */
+    vec3<double> operator()(vec2<double> e12) const {
+      return to_beam_vector_(e12);
+    }
 
     /**
      * Map the point to rotation angle and beam vector
@@ -424,20 +454,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     }
 
   private:
-    to_beam_vector_type to_beam_vector_;
-    to_rotation_angle_type to_rotation_angle_;
+    ToBeamVector to_beam_vector_;
+    ToRotationAngleFast to_rotation_angle_;
   };
-
-
-  /** Mapping using fast algorithm */
-  typedef ToBeamVectorAndRotationAngle<
-    ToBeamVector, ToRotationAngleFast>
-      ToBeamVectorAndRotationAngleFast;
-
-  /** Mapping using accurate algorithm */
-  typedef ToBeamVectorAndRotationAngle<
-    ToBeamVector, ToRotationAngleAccurate>
-      ToBeamVectorAndRotationAngleAccurate;
 
 
   /**
@@ -454,19 +473,30 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param d The detector d matrix
      */
     FromDetector(const CoordinateSystem &cs, mat3<double> d)
-      : from_beam_vector_(cs),
+      : from_s1_phi_(cs),
         d_(d) {}
 
+    /**
+     * Map the detector millimeter coordinate to the e1/e2 coordinate.
+     * @param xy The detector millimeter coordinate
+     * @returns The e1/e2 coordinate in reciprocal space
+     */
     vec2<double> operator()(vec2<double> xy) const {
-      return from_beam_vector_(plane_world_coordinate(d, xy));
+      return from_s1_phi_(plane_world_coordinate(d_, xy));
     }
 
+    /**
+     * Map the detector coordinate and rotation angle to the coordinate system.
+     * @param xy The detector millimeter coordinate
+     * @param phi The rotation angle
+     * @returns The local reciprocal space coordinate
+     */
     vec3<double> operator()(vec2<double> xy, double phi) const {
-      return from_beam_vector_(plane_world_coordinate(d, xy), phi);
+      return from_s1_phi_(plane_world_coordinate(d_, xy), phi);
     }
 
   private:
-    from_beam_vector_;
+    FromBeamVectorAndRotationAngle from_s1_phi_;
     mat3<double> d_;
   };
 
@@ -485,15 +515,33 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param D The detector D matrix
      */
     ToDetector(const CoordinateSystem &cs, mat3<double> D)
-      : to_beam_vector(cs),
+      : to_s1_phi_(cs),
         D_(D) {}
 
-    vec2<double> operator()(vec3<double> e) const {
-      return plane_intersection(D, to_beam_vector_(e));
+    /**
+     * Map the local reciprocal space e1/e2 coordinate to detector mm.
+     * @param e The e1/e2 coordinate
+     * @returns The detector mm coordinate.
+     */
+    vec2<double> operator()(vec2<double> e) const {
+      return plane_ray_intersection(D_, to_s1_phi_(e));
+    }
+
+    /**
+     * Map the local reciprocal space coordinate to the detector millimeter
+     * and rotation angle.
+     * @param e The local reciprocal space coordinate
+     * @returns The mm/rad detector, rotation angle.
+     */
+    std::pair<vec2<double>, double> operator()(vec3<double> e) const {
+      std::pair<vec3<double>, double> s1_phi = to_s1_phi_(e);
+      return std::make_pair(
+        plane_ray_intersection(D_, s1_phi.first),
+        s1_phi.second);
     }
 
   private:
-    to_beam_vector_;
+    ToBeamVectorAndRotationAngle to_s1_phi_;
     mat3<double> D_;
   };
 
