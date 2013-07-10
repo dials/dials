@@ -9,6 +9,8 @@ class Test(object):
     def run(self):
         self.tst_identical()
         self.tst_known_offset()
+        self.tst_larger_input()
+        self.tst_larger_output()
         self.tst_known_orientation()
 
     def tst_identical(self):
@@ -44,7 +46,107 @@ class Test(object):
         print 'OK'
 
     def tst_known_offset(self):
-        pass
+        from scitbx.array_family import flex
+
+        # Set the size of the grid
+        height = 10
+        width = 10
+
+        # Create the grid data
+        grid = flex.double([1 for i in range(height * width)])
+        grid.reshape(flex.grid(height, width))
+
+        # Create the grid coordinates
+        xy = []
+        for j in range(height + 1):
+            for i in range(width + 1):
+                xy.append((i + 0.5, j + 0.5))
+        gridxy = flex.vec2_double(xy)
+        gridxy.reshape(flex.grid(height+1, width+1))
+
+        # Get the output grid
+        output = rebin_pixels(grid, gridxy, (height, width))
+
+        # Check that each each pixel along the left and bottom has a value
+        # of 0.5 and that everything else is 1
+        eps = 1e-7
+        assert(abs(output[0,0] - 0.25) <= eps)
+        for i in range(1, width):
+            assert(abs(output[0,i] - 0.5) <= eps)
+        for j in range(1, height):
+            assert(abs(output[j,0] - 0.5) <= eps)
+        for j in range(1, height):
+            for i in range(1, width):
+                assert(abs(output[j,i] - 1.0) <= eps)
+
+        # Test passed
+        print 'OK'
+
+    def tst_larger_output(self):
+        from scitbx.array_family import flex
+
+        # Set the size of the grid
+        height = 10
+        width = 10
+
+        # Create the grid data
+        value = 13
+        grid = flex.double([value for i in range(height * width)])
+        grid.reshape(flex.grid(height, width))
+
+        # Create the grid coordinates
+        xy = []
+        for j in range(height + 1):
+            for i in range(width + 1):
+                xy.append((i*2, j*2))
+        gridxy = flex.vec2_double(xy)
+        gridxy.reshape(flex.grid(height+1, width+1))
+
+        # Get the output grid
+        output = rebin_pixels(grid, gridxy, (height*2, width*2))
+
+        # Check that each each pixel has a value of 0.25 the input
+        eps = 1e-7
+        for j in range(1, height):
+            for i in range(1, width):
+                assert(abs(output[j,i] - 0.25 * value) <= eps)
+
+        # Test passed
+        print 'OK'
+
+    def tst_larger_input(self):
+        from scitbx.array_family import flex
+
+        # Set the size of the grid
+        input_height = 20
+        input_width = 20
+        output_height = 10
+        output_width = 10
+
+        # Create the grid data
+        value = 13
+        grid = flex.double([value for i in range(input_height * input_width)])
+        grid.reshape(flex.grid(input_height, input_width))
+
+        # Create the grid coordinates
+        xy = []
+        for j in range(input_height + 1):
+            for i in range(input_width + 1):
+                xy.append((i/2.0, j/2.0))
+        gridxy = flex.vec2_double(xy)
+        gridxy.reshape(flex.grid(input_height+1, input_width+1))
+
+        # Get the output grid
+        output = rebin_pixels(grid, gridxy, (output_height, output_width))
+
+        # Check that each each pixel has a value of 4 times the input
+        eps = 1e-7
+        for j in range(1, output_height):
+            for i in range(1, output_width):
+                assert(abs(output[j,i] - 4 * value) <= eps)
+
+        # Test passed
+        print 'OK'
 
     def tst_known_orientation(self):
         pass
