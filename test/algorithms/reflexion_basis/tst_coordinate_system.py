@@ -474,11 +474,34 @@ class TestToRotationAngle(object):
         #Test passed
         print "OK"
 
+    def test_e3_coordinate_approximation(self):
+
+        from scitbx import matrix
+        from math import pi
+        import random
+
+        eps = 1e-4
+
+        # Select a random rotation from phi
+        phi_dash = self.phi + (2.0*random.random() - 1.0) * pi / 180
+
+        # Calculate the XDS coordinate, this class uses an approximation
+        # for c3 = zeta * (phi' - phi)
+        c3 = self.from_rotation_angle(phi_dash)
+        phi_dash_2 = self.to_rotation_angle_fast(c3)
+
+        # Check the true and approximate value are almost equal to 4dp
+        assert(abs(phi_dash - phi_dash_2) < eps)
+
+        # Test passed
+        print "OK"
+
     def __call__(self):
         """Run all the tests"""
         self.test_forward_and_backward()
         self.test_origin()
         self.test_far_out_coordinates()
+        self.test_e3_coordinate_approximation()
 
 
 class Test(object):
