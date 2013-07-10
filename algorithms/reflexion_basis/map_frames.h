@@ -92,7 +92,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
    *
    * @returns An array containing the count fractions. The fraction of counts
    *          given by frame j to grid coordinate v3 can be found in the array
-   *          by fv3j[v3-v30, j-j0]
+   *          by fv3j[j-j0, v3-v30]
    *
    * @throws std::runtime_error if the supplied values are bad
    */
@@ -251,36 +251,37 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
 
-    // Loop over all j data frames in the region around the reflection
-    for (int i = 0, j = j0; j < j1; ++j) {
+    // Loop over all v3 grid points in the profile
+    for (int i = 0, v3 = v30; v3 < v31; ++v3) {
 
-      // The data frame j covers the range of phi such that
-      // rj = {phi':phi0 + j*dphi <= phi' >= phi0 + (j+1)*dpi}
-      // Therefore the range of phi for j is given as follows.
-      double aj = starting_angle_ + j * oscillation_;
-      double bj = aj + oscillation_;
+      // The grid coordinate v3 cover the range phi such that
+      // rv3 = {phi':(v3 - 0.5)d3 <= (phi' - phi)zeta <= (v3 + 0.5)d3}
+      // Therefore the range of phi for v3 is given as follows.
+      double bv3 = ((v3 - 0.5) * step_size_e3_) / zeta + phi;
+      double av3 = ((v3 + 0.5) * step_size_e3_) / zeta + phi;
+      if (av3 > bv3) std::swap(av3, bv3);
 
-      // Calculate the integral over rj (leaving out scaling factors):
+      // Calculate the integral over rv3 (leaving out scaling factors):
       // I[exp(-(phi' - phi)^2 / (2 sigma^2)]
-      double integral_j = (erf((bj - phi) * sigr2) - erf((aj - phi) * sigr2));
+      double integral_v3 = (erf((bv3 - phi) * sigr2) -
+                            erf((av3 - phi) * sigr2));
 
       // If integral is zero then set fractions to 0.0
-      if (integral_j == 0.0) {
-        for (int v3 = v30; v3 < v31; ++v3, ++i) {
+      if (integral_v3 == 0.0) {
+        for (int j = j0; j < j1; ++j, ++i) {
           fraction[i] = 0.0;
         }
       } else {
-        double integral_j_r = 1.0 / integral_j;
+        double integral_v3_r = 1.0 / integral_v3;
 
-        // Loop over all v3 in the profile grid
-        for (int v3 = v30; v3 < v31; ++v3) {
+        // Loop over all data frames
+        for (int j = j0; j < j1; ++j) {
 
-          // The grid coordinate v3 cover the range phi such that
-          // rv3 = {phi':(v3 - 0.5)d3 <= (phi' - phi)zeta <= (v3 + 0.5)d3}
-          // Therefore the range of phi for v3 is given as follows.
-          double bv3 = ((v3 - 0.5) * step_size_e3_) / zeta + phi;
-          double av3 = ((v3 + 0.5) * step_size_e3_) / zeta + phi;
-          if (av3 > bv3) std::swap(av3, bv3);
+          // The data frame j covers the range of phi such that
+          // rj = {phi':phi0 + j*dphi <= phi' >= phi0 + (j+1)*dpi}
+          // Therefore the range of phi for j is given as follows.
+          double aj = starting_angle_ + j * oscillation_;
+          double bj = aj + oscillation_;
 
           // We need to integrate over the intersection of sets rv3 and rj
           double av3j = std::max(av3, aj);
@@ -294,7 +295,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
             fraction[i] = 0;
           } else {
             fraction[i] = (erf((bv3j - phi) * sigr2) -
-                           erf((av3j - phi) * sigr2)) * integral_j_r;
+                           erf((av3j - phi) * sigr2)) * integral_v3_r;
           }
 
           // Increment array index
