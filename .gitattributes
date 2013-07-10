@@ -139,12 +139,10 @@ algorithms/peak_finding/spot_matcher.py -text
 algorithms/peak_finding/threshold.py -text
 algorithms/polygon/SConscript -text
 algorithms/polygon/__init__.py -text
-algorithms/polygon/__init__.pyc -text svneol=unset#unset
 algorithms/polygon/area.h -text
 algorithms/polygon/boost_python/polygon_ext.cc -text
 algorithms/polygon/clip/SConscript -text
 algorithms/polygon/clip/__init__.py -text
-algorithms/polygon/clip/__init__.pyc -text svneol=unset#unset
 algorithms/polygon/clip/boost_python/clip_ext.cc -text
 algorithms/polygon/clip/clip.h -text
 algorithms/polygon/clip/sutherland_hodgman.h -text
