@@ -1,0 +1,6 @@
+
+Import('env')
+
+env.SharedLibrary(
+    target='#/lib/dials_algorithms_reflexion_basis_ext', 
+    source=['boost_python/reflexion_basis_ext.cc'])

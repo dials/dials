@@ -175,7 +175,9 @@ algorithms/refinement/refinement.py -text
 algorithms/refinement/refiner.py -text
 algorithms/refinement/target.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
+algorithms/reflexion_basis/SConscript -text
 algorithms/reflexion_basis/__init__.py -text
+algorithms/reflexion_basis/boost_python/reflexion_basis_ext.cc -text
 algorithms/reflexion_basis/coordinate_system.h -text
 algorithms/reflexion_basis/transform.py -text
 algorithms/spatial_indexing/SConscript -text
