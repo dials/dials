@@ -60,7 +60,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         grid_size_e3_(grid_size_e3),
         step_size_e3_(2.0 * delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
 
-    flex_double operator()(vec2 <int> bbox_z, double phi, double zeta) const;
+    flex_double operator()(vec2 <int> frames, double phi, double zeta) const;
 
   private:
 
@@ -246,7 +246,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     int v31 = + (int)grid_size_e3_ + 1;
 
     // Create an array to contain the intensity fractions
-    flex_double fraction(flex_grid<>(j1 - j0, (2 * grid_size_e3_ + 1)));
+    flex_double fraction(flex_grid<>((2 * grid_size_e3_ + 1), j1 - j0));
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));

@@ -37,7 +37,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   void export_map_frames()
   {
     class_<MapFramesForward>(
-        "MapFramesForward3Fraction", no_init)
+        "MapFramesForward", no_init)
       .def(init<double, double, double, double, int>((
           arg("starting_angle"),
           arg("oscillation"),
@@ -48,10 +48,10 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         &MapFramesForward::operator(), (
           arg("frames"),
           arg("phi"),
-          arg("zeta")));  
+          arg("zeta")));
 
     class_<MapFramesReverse>(
-        "MapFramesForward3Fraction", no_init)
+        "MapFramesReverse", no_init)
       .def(init<double, double, double, double, int>((
           arg("starting_angle"),
           arg("oscillation"),
@@ -62,7 +62,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         &MapFramesReverse::operator(), (
           arg("frames"),
           arg("phi"),
-          arg("zeta")));  
+          arg("zeta")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)
