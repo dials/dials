@@ -30,7 +30,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   void export_rebin_pixels() 
   {
     def("rebin_pixels", &rebin_pixels_wrapper, (
-      arg("input"), arg("inputxy")));
+      arg("input"), arg("inputxy"), arg("size")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)

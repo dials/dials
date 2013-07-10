@@ -1,3 +1,13 @@
+/*
+ * rebin_pixels.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H
 #define DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H
 
@@ -69,8 +79,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         // Cap the coordinates within the the output grid
         if (ox0 < 0) ox0 = 0;
         if (oy0 < 0) oy0 = 0;
-        if (ox1 >= output_width) ox1 = output_width - 1;
-        if (oy1 >= output_height) oy1 = output_height - 1;
+        if (ox1 > output_width) ox1 = output_width;
+        if (oy1 > output_height) oy1 = output_height;
 
         // Loop over all the pixels within the pixel range
         for (std::size_t jj = oy0; jj < oy1; ++jj) {
