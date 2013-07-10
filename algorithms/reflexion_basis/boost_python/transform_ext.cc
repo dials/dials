@@ -12,6 +12,7 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/reflexion_basis/rebin_pixels.h>
 #include <dials/algorithms/reflexion_basis/map_frames.h>
+#include <dials/algorithms/reflexion_basis/beam_vector_map.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
   namespace transform { namespace boost_python {
@@ -63,6 +64,26 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           arg("frames"),
           arg("phi"),
           arg("zeta")));
+  }
+  
+  void export_beam_vector_map()
+  {
+    flex_vec3_double (*overload1)(const Detector&, const Beam&, std::size_t, bool) = &beam_vector_map;
+    flex_vec3_double (*overload2)(const Detector&, const Beam&, bool) = &beam_vector_map;
+    flex_vec3_double (*overload3)(const Detector&, const Beam&) = &beam_vector_map;
+  
+    def("beam_vector_map", overload1, (
+      arg("detector"), 
+      arg("beam"), 
+      arg("n_div"), 
+      arg("corners")));
+    def("beam_vector_map", overload2, (
+      arg("detector"), 
+      arg("beam"), 
+      arg("corners")));
+    def("beam_vector_map", overload3, (
+      arg("detector"), 
+      arg("beam")));    
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)
