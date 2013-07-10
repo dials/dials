@@ -36,6 +36,12 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
   typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
 
+  /**
+   * Rebin pixels onto a regular grid
+   * @param output The output grid
+   * @param input The input grid
+   * @param inputxy The input x/y coordinates
+   */
   inline
   void rebin_pixels(flex_double &output, const flex_double &input,
                     const flex_vec2_double &inputxy) {
