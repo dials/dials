@@ -67,6 +67,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         vert4 target(ixy00, ixy01, ixy11, ixy10);
         double target_area = simple_area(target);
         double value = input(j, i);
+        DIALS_ASSERT(target_area > 0.0);
 
         // Get the range of new grid points
         double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
