@@ -29,6 +29,7 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
+    "$D/test/algorithms/reflexion_basis/tst_coordinate_system.h",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     )
 
