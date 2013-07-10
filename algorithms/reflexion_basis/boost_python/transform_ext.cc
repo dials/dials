@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/reflexion_basis/rebin_pixels.h>
+#include <dials/algorithms/reflexion_basis/map_frames.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
   namespace transform { namespace boost_python {
@@ -32,10 +33,42 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     def("rebin_pixels", &rebin_pixels_wrapper, (
       arg("input"), arg("inputxy"), arg("size")));
   }
+  
+  void export_map_frames()
+  {
+    class_<MapFramesForward>(
+        "MapFramesForward3Fraction", no_init)
+      .def(init<double, double, double, double, int>((
+          arg("starting_angle"),
+          arg("oscillation"),
+          arg("mosaicity"),
+          arg("n_sigma"),
+          arg("grid_size_e3"))))
+      .def("__call__",
+        &MapFramesForward::operator(), (
+          arg("frames"),
+          arg("phi"),
+          arg("zeta")));  
+
+    class_<MapFramesReverse>(
+        "MapFramesForward3Fraction", no_init)
+      .def(init<double, double, double, double, int>((
+          arg("starting_angle"),
+          arg("oscillation"),
+          arg("mosaicity"),
+          arg("n_sigma"),
+          arg("grid_size_e3"))))
+      .def("__call__",
+        &MapFramesReverse::operator(), (
+          arg("frames"),
+          arg("phi"),
+          arg("zeta")));  
+  }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)
   {
     export_rebin_pixels();
+    export_map_frames();
   }
 
 }}}}} // namespace = dials::algorithms::reflexion_basis::transform::boost_python

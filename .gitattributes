@@ -180,6 +180,7 @@ algorithms/reflexion_basis/__init__.py -text
 algorithms/reflexion_basis/boost_python/reflexion_basis_ext.cc -text
 algorithms/reflexion_basis/boost_python/transform_ext.cc -text
 algorithms/reflexion_basis/coordinate_system.h -text
+algorithms/reflexion_basis/map_frames.h -text
 algorithms/reflexion_basis/rebin_pixels.h -text
 algorithms/reflexion_basis/transform.py -text
 algorithms/spatial_indexing/SConscript -text
