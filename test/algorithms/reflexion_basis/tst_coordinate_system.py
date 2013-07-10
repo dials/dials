@@ -100,7 +100,7 @@ class TestCoordinateSystem(object):
         lim = self.cs.limits()
 
         # Check the limits
-        assert(abs(1.0 - lim[0]) <= eps)
+        assert(abs(-1.0 - lim[0]) <= eps)
         assert(abs(1.0 - lim[1]) <= eps)
 
         # Test passed
@@ -172,7 +172,7 @@ class TestFromBeamVector(object):
         c1, c2 = self.from_beam_vector(s_dash)
 
         # Check the point is equal to the limit in rs
-        assert(abs(sqrt(c1**2 + c2**2) - self.cs.limits()[0]) <= eps)
+        assert(abs(sqrt(c1**2 + c2**2) - abs(self.cs.limits()[0])) <= eps)
 
         # Test passed
         print 'OK'
@@ -205,10 +205,6 @@ class TestFromRotationAngle(object):
 
         self.p_star = self.cs.p_star()
 
-#        from scitbx import matrix
-#        print matrix.col(self.cs.e1_axis()).cross(matrix.col(self.p_star)).normalize(), self.cs.e3_axis()
-#        print 1/0
-
         self.from_rotation_angle_fast = FromRotationAngleFast(self.cs)
         self.from_rotation_angle = FromRotationAngleAccurate(self.cs)
 
@@ -239,122 +235,16 @@ class TestFromRotationAngle(object):
         eps = 1e-7
 
         # Get the limit of phi'
-        phi_dash1 = self.phi + pi / 2.0
-        phi_dash2 = self.phi - pi / 2.0
+        phi_dash1 = self.phi - pi / 2.0
+        phi_dash2 = self.phi + pi / 2.0
 
         # Get the c1, c2 coordinate
         c31 = self.from_rotation_angle(phi_dash1)
         c32 = self.from_rotation_angle(phi_dash2)
 
-        m2 = matrix.col(self.m2).normalize()
-        s0 = matrix.col(self.s0)
-        s1 = matrix.col(self.s1)
-        e1 = matrix.col(self.cs.e1_axis())
-        e2 = matrix.col(self.cs.e2_axis())
-        e3 = matrix.col(self.cs.e3_axis())
-        ps = matrix.col(self.cs.p_star())
-
-        m1 = m2.cross(s0).normalize()
-        m3 = m1.cross(m2).normalize()
-
-        d1 = ps.normalize()
-        d2 = d1.cross(s0.cross(s1).normalize()).normalize()
-        d3 = d1.cross(d2).normalize()
-
-        m2d1 = m2.dot(d1)
-        m2d2 = m2.dot(d2)
-        m2d3 = m2.dot(d3)
-
-        print m2.dot(e1)
-
-        D = m2.axis_and_angle_as_r3_rotation_matrix(phi_dash1 - self.phi)
-        print D
-        c3 = e3.dot(D * ps - ps) / ps.length()
-
-        p2 = m2.cross(ps) + m2 * m2.dot(ps)
-        p3 = p2 - ps
-        print p3.dot(e3) / ps.length()
-
-        print "hh", (m2.cross(ps).dot(e3) + m2.dot(e3)*m2.dot(ps)) / ps.length()
-        psn = ps.normalize()
-        print "hhh", (m2.dot(e1) + m2.dot(e3) * m2.dot(psn))
-        print "hhhh", m2.dot(e1 + e1)
-        print m2d1, m2d2, m2d3
-        print sqrt(m2d1**2 + m2d2**2 + m2d3**2)
-        print m2.length()
-        print c3
-        print e1.dot(m2)
-        print m2.normalize().dot(e1.normalize())
-        print ps.normalize().dot(m2)
-        print sqrt(ps.length_sq() - ps.dot(m2)**2) / ps.length()
-        print ps.dot(m1) / ps.length(), ps.dot(m2) / ps.length(), ps.dot(m3) / ps.length()
-        print sqrt(e3.dot(m2) + e3.dot(m3)**2)
-        print ((ps - m2*ps.dot(m2)).cross(m2) - ps).dot(e3) / ps.length()
-
-        x = ps.dot(m2) * m2
-        y = ps - x
-        z = y.cross(m2)
-        w = z - y + x
-        cc = w.dot(e3) / ps.length()
-        print cc
-        print 1, ps.normalize().cross(m2).dot(e3)
-        print 2, m2.cross(ps.normalize()).dot(e3)
-        print 3, (m2.cross(ps.normalize()) - ps.normalize()).dot(e3)
-
-        print tuple(ps.normalize()), tuple(m2.cross(ps.normalize()))
-        print 1/0
-
-#        print c31, m2.dot(e3), sqrt(c31**2 + m2.dot(e3)**2)
-#        print 1/0
-
-#        print c31, c32
-
-        p = matrix.col(self.cs.p_star())
-        m2 = matrix.col(m2)
-        c3 = []
-        pl = []
-        pl2 = []
-        diff = []
-        for angle in range(0, 360):
-            m22 = m2.rotate(e2, angle, deg=True)
-            D = m22.axis_and_angle_as_r3_rotation_matrix(phi_dash1 - self.phi)
-#            p = matrix.col(self.cs.p_star())
-            e3 = matrix.col(self.cs.e3_axis())
-            c = e3.dot(D * p - p) / p.length()
-            c3.append(c)
-            l = e1.dot(m22)
-            l2 = p.dot(m22)
-            pl.append(l)
-            pl2.append(l2)
-            diff.append(c - l)
-
-        from matplotlib import pylab
-#        pylab.plot(c3, color='b')
-#        pylab.plot(pl, color='r')
-        pylab.plot(diff, color='b')
-        pylab.plot(pl2, color='g')
-        pylab.show()
-
-#        print matrix.col(self.p_star).dot(matrix.col(self.m2))
-#        r = D * p - p
-#        l1 = (e3.dot(D * p - p) / p.length())
-#        l2 = (matrix.col(self.p_star).dot(matrix.col(self.m2).normalize()))
-#        l3 = matrix.col(self.cs.e1_axis()).dot(matrix.col(self.m2)) / p.length()
-#        print l1, l2, l3, sqrt(l1**2 + l3**2)
-#        print abs(l1) + abs(l3)
-#        print 1/0
-
-#        c3 = []
-#        for phi_dash in range(0, 360):
-#            phi_dash = float(phi_dash) * pi / 180.0
-#            c3.append(self.from_rotation_angle(phi_dash))
-#        from matplotlib import pylab
-#        pylab.plot(c3)
-#        pylab.show()
-
         # Check the point is equal to the limit in rs
-        assert(abs(c31 - self.cs.limits()[1]) <= eps)
-        assert(abs(c32 - self.cs.limits()[1]) <= eps)
+        assert(abs(c31 - self.cs.limits()[2]) <= eps)
+        assert(abs(c32 - self.cs.limits()[3]) <= eps)
 
         # Test passed
         print 'OK'

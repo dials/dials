@@ -13,6 +13,7 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <scitbx/array_family/tiny_types.h>
 #include <dxtbx/model/panel.h>
 #include <dials/error.h>
 
@@ -21,6 +22,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
+  using scitbx::af::double4;
   using dxtbx::model::plane_ray_intersection;
   using dxtbx::model::plane_world_coordinate;
 
@@ -32,7 +34,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
    */
   inline
   double zeta_factor(vec3<double> m2, vec3<double> e1) {
-    return m2 * e1;
+    return std::abs(m2 * e1);
   }
 
   /**
@@ -121,6 +123,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
     /** @returns the increase in the length of the shortest path */
     double path_length_increase() const {
+      DIALS_ASSERT(zeta_ > 0.0);
       return 1.0 / zeta_;
     }
 
@@ -137,10 +140,13 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      *
      * @returns The limits
      */
-    vec2<double> limits() const {
+    double4 limits() const {
       vec3<double> p_star_norm = p_star_.normalize();
-      double e3_limit = abs((m2_ * e1_) + (m2_ * e3_) * (m2_ * p_star_norm));
-      return vec2<double>(1.0, e3_limit);
+      return double4(
+        -1.0,
+         1.0,
+        -(m2_ * e1_) + (m2_ * e3_) * (m2_ * p_star_norm),
+         (m2_ * e1_) + (m2_ * e3_) * (m2_ * p_star_norm));
     }
 
   private:
