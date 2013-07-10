@@ -688,6 +688,7 @@ test/algorithms/refinement/tst_refine_fn.py -text
 test/algorithms/refinement/tst_refinement_regression.py -text
 test/algorithms/refinement/tst_scan_varying_model_parameters.py -text
 test/algorithms/refinement/tst_scan_varying_prediction_parameters.py -text
+test/algorithms/reflexion_basis/tst_beam_vector_map.py -text
 test/algorithms/reflexion_basis/tst_coordinate_system.py -text
 test/algorithms/reflexion_basis/tst_map_frames.py -text
 test/algorithms/reflexion_basis/tst_rebin_pixels.py -text

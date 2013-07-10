@@ -90,6 +90,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   {
     export_rebin_pixels();
     export_map_frames();
+    export_beam_vector_map();
   }
 
 }}}}} // namespace = dials::algorithms::reflexion_basis::transform::boost_python
