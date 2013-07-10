@@ -1,2 +1,3 @@
 from __future__ import division
-from dials_algorithms_reflexion_basis import *
+from scitbx.array_family import flex
+from dials_algorithms_reflexion_basis_ext import *

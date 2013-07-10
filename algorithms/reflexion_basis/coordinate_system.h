@@ -64,7 +64,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      */
     CoordinateSystem(vec3<double> m2, vec3<double> s0,
                      vec3<double> s1, double phi)
-      : m2_(m2),
+      : m2_(m2.normalize()),
         s0_(s0),
         s1_(s1),
         phi_(phi),
@@ -119,15 +119,28 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       return zeta_;
     }
 
+    /** @returns the increase in the length of the shortest path */
+    double path_length_increase() const {
+      return 1.0 / zeta_;
+    }
+
     /**
      * Return the limits of the acceptable coordinates in the reciprocal
      * space coordinate system. The values are returned as a pair in the
      * following form.
      *  (sqrt(max_e1_length**2 + max_e2_length**2), max_e3_length)
+     *
+     * The e3 limit is found by rotating the p* vector by pi/2 and projecting
+     * onto the e3 axis. This equation can be simplified to the one below
+     * which only requires the projection of the rotation axis onto the
+     * e1, e3 and p* vectors giving: m2xe1 + (m2xe3)(m2xp*)|p*|
+     *
      * @returns The limits
      */
     vec2<double> limits() const {
-      return vec2<double>(s1_.length(), p_star_.length());
+      vec3<double> p_star_norm = p_star_.normalize();
+      double e3_limit = abs((m2_ * e1_) + (m2_ * e3_) * (m2_ * p_star_norm));
+      return vec2<double>(1.0, e3_limit);
     }
 
   private:
@@ -225,7 +238,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      */
     FromRotationAngleAccurate(const CoordinateSystem &cs)
       : m2_(cs.m2().normalize()),
-        e3_(cs.e3_axis()),
+        scaled_e3_(cs.e3_axis() / cs.p_star().length()),
         p_star_(cs.p_star()),
         phi_(cs.phi()) {}
 
@@ -235,14 +248,14 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @returns The e3 angle.
      */
     double operator()(double phi_dash) const {
-      return e3_ * (p_star_.unit_rotate_around_origin(
-        m2_, phi_ - phi_dash) - p_star_);
+      return scaled_e3_ * (p_star_.unit_rotate_around_origin(
+        m2_, phi_dash - phi_) - p_star_);
     }
 
   private:
 
     vec3<double> m2_;
-    vec3<double> e3_;
+    vec3<double> scaled_e3_;
     vec3<double> p_star_;
     double phi_;
   };
