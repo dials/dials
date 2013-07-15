@@ -38,7 +38,11 @@ namespace dials { namespace algorithms {
     void operator()(ReflectionList &reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         if (reflections[i].is_valid()) {
-          this->operator()(reflections[i]);
+          try {
+            this->operator()(reflections[i]);
+          } catch(dials::error) {
+            reflections[i].set_valid(false);
+          }
         }
       }
     }
