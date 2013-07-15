@@ -93,10 +93,11 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   void export_map_pixels()
   {
     class_<GridIndexGenerator>("GridIndexGenerator", no_init)
-      .def(init<const CoordinateSystem&, int6, vec2<double>, 
+      .def(init<const CoordinateSystem&, int, int, vec2<double>, 
                 std::size_t, const flex_vec3_double>((
           arg("cs"), 
-          arg("bbox"), 
+          arg("x0"),
+          arg("y0"), 
           arg("step_size"), 
           arg("grid_half_size"), 
           arg("s1_map"))))
@@ -108,6 +109,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     export_rebin_pixels();
     export_map_frames();
     export_beam_vector_map();
+    export_map_pixels();
   }
 
 }}}}} // namespace = dials::algorithms::reflexion_basis::transform::boost_python

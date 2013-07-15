@@ -36,19 +36,20 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     /**
      * Initialise the class
      * @param cs The coordinate system
-     * @param bbox The bounding box
+     * @param x0 The x offset
+     * @param y0 The y offset
      * @param step_size The step size
      * @param grid_half_size The grid size
      * @param s1_map The map of detector s1 vectors.
      */
-    GridIndexGenerator(const CoordinateSystem &cs, int6 bbox,
+    GridIndexGenerator(const CoordinateSystem &cs, int x0, int y0,
         vec2<double> step_size, std::size_t grid_half_size,
         const flex_vec3_double &s1_map)
       : s1_(cs.s1()),
         e1_(cs.e1_axis() / s1_.length()),
         e2_(cs.e2_axis() / s1_.length()),
-        x0_(bbox[0]),
-        y0_(bbox[2]),
+        x0_(x0),
+        y0_(y0),
         step_size_(step_size),
         grid_half_size_(grid_half_size),
         s1_map_(s1_map) {}
@@ -102,7 +103,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       DIALS_ASSERT(image.accessor().all()[1] + 1 == s1_map_.accessor().all()[1]);
 
       // Create the index generator for each coordinate of the bounding box
-      GridIndexGenerator index(cs, bbox, step_size_, grid_half_size_, s1_map_);
+      GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_, grid_half_size_, s1_map_);
 
       // Rebin the pixels to the grid
       rebin_pixels(grid, image, index);
