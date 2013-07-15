@@ -28,7 +28,7 @@ def pull_reference(integrate_hkl):
 
 def pull_calculated(integrate_pkl):
     from dials.model.data import ReflectionList
-    import pickle
+    import cPickle as pickle
     import math
 
     r_list = pickle.load(open(integrate_pkl, 'rb'))
@@ -36,7 +36,7 @@ def pull_calculated(integrate_pkl):
     strong_reflections = []
 
     for r in r_list:
-        if r.intensity > 10.0 * math.sqrt(r.intensity_variance):
+        if r.intensity > math.sqrt(r.intensity_variance):
             strong_reflections.append(r)
 
     del(r_list)
@@ -50,7 +50,7 @@ def pull_calculated(integrate_pkl):
         hkl.append(r.miller_index)
         i.append(r.intensity)
         sigi.append(math.sqrt(r.intensity_variance))
-        x, y = f.image_coord_px
+        x, y = r.image_coord_px
         z = r.frame_number
         xyz.append((x, y, z))
         
