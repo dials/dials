@@ -30,6 +30,9 @@ tst_list = (
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
     "$D/test/algorithms/reflexion_basis/tst_coordinate_system.py",
+    "$D/test/algorithms/reflexion_basis/tst_map_frames.py",
+    "$D/test/algorithms/reflexion_basis/tst_rebin_pixels.py",
+    "$D/test/algorithms/reflexion_basis/tst_beam_vector_map.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     )
 
