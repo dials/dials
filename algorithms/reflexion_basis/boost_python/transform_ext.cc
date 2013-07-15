@@ -68,9 +68,12 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   
   void export_beam_vector_map()
   {
-    flex_vec3_double (*overload1)(const Detector&, const Beam&, std::size_t, bool) = &beam_vector_map;
-    flex_vec3_double (*overload2)(const Detector&, const Beam&, bool) = &beam_vector_map;
-    flex_vec3_double (*overload3)(const Detector&, const Beam&) = &beam_vector_map;
+    flex_vec3_double (*overload1)(const Detector&, 
+      const Beam&, std::size_t, bool) = &beam_vector_map;
+    flex_vec3_double (*overload2)(const Detector&, 
+      const Beam&, bool) = &beam_vector_map;
+    flex_vec3_double (*overload3)(const Detector&, 
+      const Beam&) = &beam_vector_map;
   
     def("beam_vector_map", overload1, (
       arg("detector"), 
