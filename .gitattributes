@@ -360,6 +360,7 @@ scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/gw/biostruct-25.py -text
+scratch/gw/cc.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/x2tbx/SConscript -text
