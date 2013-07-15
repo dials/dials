@@ -33,6 +33,7 @@ tst_list = (
     "$D/test/algorithms/reflexion_basis/tst_map_frames.py",
     "$D/test/algorithms/reflexion_basis/tst_rebin_pixels.py",
     "$D/test/algorithms/reflexion_basis/tst_beam_vector_map.py",
+    "$D/test/algorithms/reflexion_basis/tst_grid_index_generator.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     )
 
