@@ -13,6 +13,7 @@
 #include <dials/algorithms/reflexion_basis/rebin_pixels.h>
 #include <dials/algorithms/reflexion_basis/map_frames.h>
 #include <dials/algorithms/reflexion_basis/beam_vector_map.h>
+#include <dials/algorithms/reflexion_basis/map_pixels.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
   namespace transform { namespace boost_python {
@@ -87,6 +88,19 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     def("beam_vector_map", overload3, (
       arg("detector"), 
       arg("beam")));    
+  }
+  
+  void export_map_pixels()
+  {
+    class_<GridIndexGenerator>("GridIndexGenerator", no_init)
+      .def(init<const CoordinateSystem&, int6, vec2<double>, 
+                std::size_t, const flex_vec3_double>((
+          arg("cs"), 
+          arg("bbox"), 
+          arg("step_size"), 
+          arg("grid_half_size"), 
+          arg("s1_map"))))
+      .def("__call__", &GridIndexGenerator::operator());    
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)

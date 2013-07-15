@@ -43,16 +43,13 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
    * @param input The input grid
    * @param inputxy The input x/y coordinates
    */
-  inline
-  void rebin_pixels(flex_double &output, const flex_double &input,
-                    const flex_vec2_double &inputxy) {
+  template <typename InputXYType>
+  void rebin_pixels_internal(flex_double &output, const flex_double &input,
+      const InputXYType &inputxy) {
 
     // Check the sizes
     DIALS_ASSERT(output.accessor().all().size() == 2);
     DIALS_ASSERT(input.accessor().all().size() == 2);
-    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
-    DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
-    DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
 
     // Get the input and output sizes
     std::size_t output_height = output.accessor().all()[0];
@@ -116,6 +113,33 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         }
       }
     }
+  }
+
+  /**
+   * Rebin pixels onto a regular grid
+   * @param output The output grid
+   * @param input The input grid
+   * @param inputxy The input x/y coordinates
+   */
+  template <typename InputXYType>
+  void rebin_pixels(flex_double &output, const flex_double &input,
+      const InputXYType &inputxy) {
+    rebin_pixels_internal(output, input, inputxy);
+  }
+
+  /**
+   * Rebin pixels onto a regular grid
+   * @param output The output grid
+   * @param input The input grid
+   * @param inputxy The input x/y coordinates
+   */
+  inline
+  void rebin_pixels(flex_double &output, const flex_double &input,
+      const flex_vec2_double &inputxy) {
+    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
+    DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
+    DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
+    rebin_pixels_internal(output, input, inputxy);
   }
 
 }}}} // dials::algorithms::reflexion_basis::transform
