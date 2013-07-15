@@ -104,9 +104,13 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           arg("s1_map"))))
       .def("__call__", &GridIndexGenerator::operator());   
 
-    flex_double (MapPixelsForward::*call)(const CoordinateSystem&, int6,
+    flex_double (MapPixelsForward::*call_forward)(const CoordinateSystem&, int6,
         const flex_double&, const flex_bool&, const flex_double&) const = 
           &MapPixelsForward::operator();
+      
+    flex_double (MapPixelsReverse::*call_reverse)(const CoordinateSystem&, int6,
+        const flex_double&, const flex_double&) const = 
+          &MapPixelsReverse::operator();      
       
     class_<MapPixelsForward>("MapPixelsForward", no_init)
       .def(init<const flex_vec3_double &, 
@@ -115,11 +119,23 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         arg("s1_map"),
         arg("grid_half_size"),
         arg("step_size"))))
-      .def("__call__", call, (
+      .def("__call__", call_forward, (
         arg("cs"),
         arg("bbox"),
         arg("image"),
         arg("mask"))); 
+        
+    class_<MapPixelsReverse>("MapPixelsReverse", no_init)
+      .def(init<const flex_vec3_double &, 
+                std::size_t,
+                vec2<double> >((
+        arg("s1_map"),
+        arg("grid_half_size"),
+        arg("step_size"))))
+      .def("__call__", call_reverse, (
+        arg("cs"),
+        arg("bbox"),
+        arg("grid")));         
   }
   
   void export_transform()
@@ -138,6 +154,20 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         arg("bbox"),
         arg("image"),
         arg("mask")));
+
+    class_<Reverse>("Reverse", no_init)
+      .def(init<const Beam&, const Detector&, const Scan&,
+                double, std::size_t, std::size_t>((
+        arg("beam"),
+        arg("detector"),
+        arg("scan"),
+        arg("mosaicity"),
+        arg("n_sigma"),
+        arg("grid_half_size"))))
+      .def("__call__", &Forward::operator(), (
+        arg("cs"),
+        arg("bbox"),
+        arg("grid")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)

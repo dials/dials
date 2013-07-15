@@ -231,6 +231,150 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     vec2<double> step_size_;
   };
 
+
+  /**
+   * Class to map the pixels from the reflexion basis grid
+   */
+  class MapPixelsReverse {
+  public:
+
+    /**
+     * Initialise the class
+     * @param s1_map The beam vector map
+     * @param grid_half_size The grid half size
+     * @param step_size The grid step size
+     */
+    MapPixelsReverse(const flex_vec3_double &s1_map, std::size_t grid_half_size,
+        vec2<double> step_size)
+      : s1_map_(s1_map),
+        grid_half_size_(grid_half_size),
+        step_size_(step_size) {
+      DIALS_ASSERT(step_size_[0] > 0.0 && step_size_[1] > 0.0);
+    }
+
+    /**
+     * Map the pixels for a reflection
+     * @param cs The coordinate system
+     * @param bbox The bounding box
+     * @param grid The grid
+     * @param z_fraction The z fraction array
+     * @returns The mapped image
+     */
+    flex_double operator()(const CoordinateSystem &cs, int6 bbox,
+        const flex_double &grid,
+        const flex_double &z_fraction) const {
+      flex_double image(flex_grid<>(2 * grid_half_size_ + 1,
+                                    2 * grid_half_size_ + 1,
+                                    2 * grid_half_size_ + 1));
+      this->operator()(cs, bbox, grid, z_fraction, image);
+      return image;
+    }
+
+    /**
+     * Map the pixels for a reflection
+     * @param cs The coordinate system
+     * @param bbox The bounding box
+     * @param grid The grid
+     * @param z_fraction The z fraction array
+     * @param image The mapped image
+     */
+    void operator()(const CoordinateSystem &cs, int6 bbox,
+        const flex_double &grid, const flex_double z_fraction,
+        flex_double &image) const {
+
+      // Check array sizes
+      DIALS_ASSERT(grid.accessor().all().size() == 3);
+      DIALS_ASSERT(grid.accessor().all().all_eq(2 * grid_half_size_ + 1));
+      DIALS_ASSERT(z_fraction.accessor().all()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(z_fraction.accessor().all()[1] == 2 * grid_half_size_ + 1);
+      DIALS_ASSERT(image.accessor().all().size() == 3);
+      DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
+      DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
+
+      // Create the index generator for each coordinate of the bounding box
+      GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
+        grid_half_size_, s1_map_);
+
+      // Get the input and output sizes
+      std::size_t grid_depth = grid.accessor().all()[0];
+      std::size_t grid_height = grid.accessor().all()[1];
+      std::size_t grid_width = grid.accessor().all()[2];
+      std::size_t image_depth = image.accessor().all()[0];
+      std::size_t image_height = image.accessor().all()[1];
+      std::size_t image_width = image.accessor().all()[2];
+
+      // Initialise all output counts to zero
+      for (std::size_t j = 0; j < grid.size(); ++j) {
+        image[j] = 0.0;
+      }
+
+      // Loop through all the input pixels
+      for (std::size_t j = 0; j < image_height; ++j) {
+        for (std::size_t i = 0; i < image_width; ++i) {
+
+          // Get the x, y coords of the target point
+          vec2<double> ixy00 = index(j, i);
+          vec2<double> ixy01 = index(j, i+1);
+          vec2<double> ixy10 = index(j+1, i);
+          vec2<double> ixy11 = index(j+1, i+1);
+
+          // Create the target polygon and calculate its area
+          vert4 target(ixy00, ixy01, ixy11, ixy10);
+          double target_area = simple_area(target);
+          DIALS_ASSERT(target_area > 0.0);
+
+          // Get the range of new grid points
+          double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
+          double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
+          int gx0 = (int)floor(min(ix.const_ref()));
+          int gy0 = (int)floor(min(iy.const_ref()));
+          int gx1 = (int)ceil(max(ix.const_ref()));
+          int gy1 = (int)ceil(max(iy.const_ref()));
+
+          // Cap the coordinates within the the output grid
+          if (gx0 < 0) gx0 = 0;
+          if (gy0 < 0) gy0 = 0;
+          if (gx1 > grid_width) gx1 = grid_width;
+          if (gy1 > grid_height) gy1 = grid_height;
+
+          // Loop over all the pixels within the pixel range
+          for (std::size_t jj = gy0; jj < gy1; ++jj) {
+            for (std::size_t ii = gx0; ii < gx1; ++ii) {
+
+              // Create the subject polygon
+              vert4 subject(vec2<double>(ii, jj),
+                            vec2<double>(ii+1, jj),
+                            vec2<double>(ii+1,jj+1),
+                            vec2<double>(ii,jj+1));
+
+              // clip the polygon with the target polygon and calculate the
+              // fraction of the area of the clipped polygon against the target.
+              // Then redistribute the values from the target grid to the subject.
+              vert8 result = quad_with_convex_quad(subject, target);
+              double result_area = simple_area(result);
+              double xy_fraction = result_area / target_area;
+
+              // Copy the values to the grid
+              for (int k = 0; k < image_depth; ++k) {
+                double value = grid(k, j, i) * xy_fraction;
+                for (int kk = 0; kk < grid_depth; ++kk) {
+                  image(kk, jj, ii) += value * z_fraction(k, kk);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+  private:
+
+    flex_vec3_double s1_map_;
+    std::size_t grid_half_size_;
+    vec2<double> step_size_;
+  };
+
 }}}} // namespace dials::algorithms::reflexion_basis::transform
 
 #endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_PIXELS_H */
