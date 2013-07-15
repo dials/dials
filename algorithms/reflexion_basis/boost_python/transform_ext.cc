@@ -14,6 +14,7 @@
 #include <dials/algorithms/reflexion_basis/map_frames.h>
 #include <dials/algorithms/reflexion_basis/beam_vector_map.h>
 #include <dials/algorithms/reflexion_basis/map_pixels.h>
+#include <dials/algorithms/reflexion_basis/forward.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
   namespace transform { namespace boost_python {
@@ -103,10 +104,11 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           arg("s1_map"))))
       .def("__call__", &GridIndexGenerator::operator());   
 
-    flex_double (MapPixels::*call)(const CoordinateSystem&, int6,
-        const flex_double&, const flex_bool&) const = &MapPixels::operator();
+    flex_double (MapPixelsForward::*call)(const CoordinateSystem&, int6,
+        const flex_double&, const flex_bool&, const flex_double&) const = 
+          &MapPixelsForward::operator();
       
-    class_<MapPixels>("MapPixels", no_init)
+    class_<MapPixelsForward>("MapPixelsForward", no_init)
       .def(init<const flex_vec3_double &, 
                 std::size_t,
                 vec2<double> >((
@@ -118,6 +120,24 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         arg("bbox"),
         arg("image"),
         arg("mask"))); 
+  }
+  
+  void export_transform()
+  {
+    class_<Forward>("Forward", no_init)
+      .def(init<const Beam&, const Detector&, const Scan&,
+                double, std::size_t, std::size_t>((
+        arg("beam"),
+        arg("detector"),
+        arg("scan"),
+        arg("mosaicity"),
+        arg("n_sigma"),
+        arg("grid_half_size"))))
+      .def("__call__", &Forward::operator(), (
+        arg("cs"),
+        arg("bbox"),
+        arg("image"),
+        arg("mask")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)

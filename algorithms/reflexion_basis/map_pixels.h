@@ -87,7 +87,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   /**
    * Class to map the pixels to the reflexion basis grid
    */
-  class MapPixels {
+  class MapPixelsForward {
   public:
 
     /**
@@ -96,7 +96,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param grid_half_size The grid half size
      * @param step_size The grid step size
      */
-    MapPixels(const flex_vec3_double &s1_map, std::size_t grid_half_size,
+    MapPixelsForward(const flex_vec3_double &s1_map, std::size_t grid_half_size,
         vec2<double> step_size)
       : s1_map_(s1_map),
         grid_half_size_(grid_half_size),
@@ -114,11 +114,12 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @returns grid The grid array
      */
     flex_double operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_bool &mask) const {
+        const flex_double &image, const flex_bool &mask,
+        const flex_double &z_fraction) const {
       flex_double grid(flex_grid<>(2 * grid_half_size_ + 1,
                                    2 * grid_half_size_ + 1,
                                    2 * grid_half_size_ + 1));
-      this->operator()(cs, bbox, image, mask);
+      this->operator()(cs, bbox, image, mask, z_fraction, grid);
       return grid;
     }
 
