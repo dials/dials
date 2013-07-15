@@ -101,7 +101,23 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           arg("step_size"), 
           arg("grid_half_size"), 
           arg("s1_map"))))
-      .def("__call__", &GridIndexGenerator::operator());    
+      .def("__call__", &GridIndexGenerator::operator());   
+
+    flex_double (MapPixels::*call)(const CoordinateSystem&, int6,
+        const flex_double&, const flex_bool&) const = &MapPixels::operator();
+      
+    class_<MapPixels>("MapPixels", no_init)
+      .def(init<const flex_vec3_double &, 
+                std::size_t,
+                vec2<double> >((
+        arg("s1_map"),
+        arg("grid_half_size"),
+        arg("step_size"))))
+      .def("__call__", call, (
+        arg("cs"),
+        arg("bbox"),
+        arg("image"),
+        arg("mask"))); 
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)

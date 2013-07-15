@@ -111,11 +111,29 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param image The image array
      * @param mask The mask array
      * @param z_fraction The z fraction array
+     * @returns grid The grid array
+     */
+    flex_double operator()(const CoordinateSystem &cs, int6 bbox,
+        const flex_double &image, const flex_bool &mask) const {
+      flex_double grid(flex_grid<>(2 * grid_half_size_ + 1,
+                                   2 * grid_half_size_ + 1,
+                                   2 * grid_half_size_ + 1));
+      this->operator()(cs, bbox, image, mask);
+      return grid;
+    }
+
+    /**
+     * Map the pixels for a reflection
+     * @param cs The coordinate system
+     * @param bbox The bounding box
+     * @param image The image array
+     * @param mask The mask array
+     * @param z_fraction The z fraction array
      * @param grid The grid array
      */
     void operator()(const CoordinateSystem &cs, int6 bbox,
         const flex_double &image, const flex_bool &mask,
-        const flex_double z_fraction, flex_double &grid) {
+        const flex_double z_fraction, flex_double &grid) const {
 
       // Check array sizes
       DIALS_ASSERT(grid.accessor().all().size() == 3);
