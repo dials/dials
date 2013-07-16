@@ -324,6 +324,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     damping_value = 0.0007
     max_shift_over_esd = 15
     convergence_as_shift_over_esd = 1e-5
+    reduced_chi_squared_history = flex.double()
 
     # override the base class __init__ as I don't want to start
     # refinement on initialisation
@@ -383,6 +384,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self.step_history is not None:
               self.step_history.append(self.actual.step().deep_copy())
             self.step_norm_history.append(self.step().norm())
+            self.reduced_chi_squared_history.append(self.chi_sq())
 
             if self.had_too_small_a_step(): break
             self.step_forward()
