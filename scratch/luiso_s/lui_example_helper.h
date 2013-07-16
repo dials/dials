@@ -55,7 +55,10 @@ namespace dials { namespace scratch {
     for (int row = 0; row<=nrow-1;row++) {
       std::cout << "    [ ";
       for (int col = 0; col<=ncol-1;col++) {
-        printf(" %03d ", int(data2d(row,col)));
+        //printf(" %03d ", int(data2d(row,col)));
+
+        printf(" %3d ", int(data2d(row,col)));
+
         num++;
 
         //std::cout << int(matx2d[row][col]) << " ,   ";

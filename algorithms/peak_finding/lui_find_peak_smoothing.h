@@ -13,7 +13,7 @@ namespace dials { namespace algorithms {
         std::size_t nrow=data2d.accessor().all()[0];
         flex_double data2dtmp(data2d);
         flex_double data2dsmoth(data2d.accessor(),0);
-        float tot_i,cont;
+        long double tot_i,cont;
         // std::cout <<"times =" << tot_times << "\n";
         // std::cout <<"ncol =" << ncol << "  nrow =" << nrow <<" \n";
 

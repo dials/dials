@@ -2,29 +2,23 @@ from __future__ import division
 import numpy
 from iotbx.detectors import ImageFactory
 from matplotlib import pyplot as plt
-'''cad = '/scratch/my_code/dials/dials_data/data_from__dls__i02__data__2013__nt5964-1__2013_02_08_GW__DNA__P1__X4/X4_lots_M1S4_1_0005.cbf'
-/dls/i24/data/2013/mx8423-66/CPV17/./grid1/grid1_1_0001.cbf'''
-#cad = '/scratch/my_code/dials/dials_data/xrd_2d_curv_background/grid1_1_0115.cbf'
 
 
-cad = '/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0015.cbf'
-print cad
-image = ImageFactory(cad)
-image.read()
+f_names = ["/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0015.cbf", \
+           "/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0016.cbf", \
+           "/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0017.cbf"]
 
-nfast = image.parameters['SIZE1']
-nslow = image.parameters['SIZE2']
 
-data = image.get_raw_data()
-print 'here 1'
+from dxtbx.sweep import SweepFactory
+sweep = SweepFactory.sweep(f_names)
+data3d_sw = sweep.to_array()
+data3d = data3d_sw.as_numpy_array()
+n_frm = numpy.size(data3d[:, 0:1, 0:1])
+n_row = numpy.size(data3d[0:1, :, 0:1])
+n_col = numpy.size(data3d[0:1, 0:1, :])
+data2d = numpy.zeros(n_row * n_col, dtype = numpy.float64).reshape(n_row, n_col)
 
-data2d = numpy.zeros(nfast * nslow, dtype = numpy.float64).reshape(nfast, nslow)
-for f in range(nfast):
-    for s in range(nslow):
-        data2d[f, s] = data[s * nfast + f]
-
-print "nslow, nfast =", nslow, nfast
-
+data2d[:, :] = data3d[0:1, :, :]
 
 
 from dials.algorithms.peak_finding import smooth_2d, smooth_3d
@@ -47,7 +41,7 @@ plt.show()
 plt.imshow(data2dsmoth, interpolation = "nearest")
 plt.show()
 
-from matplotlib import pylab, cm
+from matplotlib import pylab
 
 #for pos in range(1585, 1590):
 pos = 1585
