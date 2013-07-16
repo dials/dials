@@ -248,10 +248,9 @@ class AdaptLstbx(
 
         normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
 
-        # determine overall scale factor for the weights so that the objective
-        # is approx in [0,1]
+        # determine overall scale factor for the gradient threshold
         self._target.predict()
-        self._scale = 1./self._target.compute_functional_and_gradients()[0]
+        self._scale = self._target.compute_functional_and_gradients()[0]
 
 
     def restart(self):
@@ -294,15 +293,6 @@ class AdaptLstbx(
         residuals, jacobian, weights = \
             self._target.compute_residuals_and_gradients()
 
-        #print "sum of residuals", sum(residuals)
-        #print "objective", 0.5* sum(weights * residuals**2)
-        #print "unweighted objective", 0.5* sum(residuals**2)
-        #print "scaled objective", 0.5* sum(weights * self._scale**2 * residuals**2)
-        #print "scale factor", self._scale
-
-        # apply overall scale factor to the weights vector.
-        weights *= self._scale
-
         if self._verbosity > 2:
             print "The Jacobian matrix for the current step is:"
             print jacobian.as_scitbx_matrix().matlab_form(format=None,
@@ -344,6 +334,9 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         AdaptLstbx.__init__(self, target, prediction_parameterisation,
                  log = None, verbosity = verbosity, track_step = False,
                  track_gradient = False)
+
+        # scale gradient threshold for this problem
+        self.gradient_threshold *= self._scale
 
         libtbx.adopt_optional_init_args(self, kwds)
 
