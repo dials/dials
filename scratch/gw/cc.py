@@ -47,6 +47,8 @@ def pull_calculated(integrate_pkl):
     xyz = []
 
     for r in strong_reflections:
+        if not r.is_valid():
+            continue
         hkl.append(r.miller_index)
         i.append(r.intensity)
         sigi.append(math.sqrt(r.intensity_variance))
@@ -78,6 +80,18 @@ def cc(a, b):
                                   for j in range(len(a))])
 
     return r
+
+def R(calc, obs):
+
+    import math
+
+    assert(len(calc) == len(obs))
+
+    scale = sum(obs) / sum(calc)
+
+    return sum([math.fabs(math.fabs(o) - math.fabs(scale * c)) \
+                for c, o in zip(calc, obs)]) / \
+                sum([math.fabs(o) for o in obs]), scale
 
 def compare(integrate_hkl, integrate_pkl):
 
@@ -118,8 +132,82 @@ def compare(integrate_hkl, integrate_pkl):
             
     c = cc(xds, dials)
 
-    print 'Correlation coefficient: %.2f' % c
+    print '1 - CC: %.6e' % (1 - c)
+
+    r, s = R(xds, dials)
+
+    print 'R: %.3f' % r
+    
+def compare_chunks(integrate_hkl, integrate_pkl):
+
+    from cctbx.array_family import flex
+    from annlib_ext import AnnAdaptor as ann_adaptor
+
+    xhkl, xi, xsigi, xxyz = pull_reference(integrate_hkl)
+    dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
+
+    reference = flex.double()
+    query = flex.double()
+
+    for xyz in xxyz:
+        reference.append(xyz[0])
+        reference.append(xyz[1])
+        reference.append(xyz[2])
+
+    for xyz in dxyz:
+        query.append(xyz[0])
+        query.append(xyz[1])
+        query.append(xyz[2])
+
+    # perform the match
+    ann = ann_adaptor(data = reference, dim = 3, k = 1)
+    ann.query(query)
+
+    XDS = []
+    DIALS = []
+    
+    # perform the analysis
+    for j, hkl in enumerate(dhkl):
+        c = ann.nn[j]
+        if hkl == xhkl[c]:
+            XDS.append(xi[c])
+            DIALS.append(di[j])
+
+    print 'Paired %d observations' % len(XDS)
+
+    chunks = [(i, i + 1000) for i in range(0, len(XDS), 1000)]
+
+    ccs = []
+    rs = []
+    ss = []
+    
+    for chunk in chunks:
+        xds = XDS[chunk[0]:chunk[1]]
+        dials = DIALS[chunk[0]:chunk[1]]
+    
+        c = cc(xds, dials)
+        r, s = R(xds, dials)
+        print '%7d %4d %.3f %.3f %.3f' % (chunk[0], chunk[1] - chunk[0], 
+                                          c, r, s)
+        ccs.append(c)
+        rs.append(r)
+        ss.append(s)
+        
+    chunks = [j for j in range(len(chunks))]
+        
+    from matplotlib import pyplot
+    pyplot.xlabel('Chunk')
+    pyplot.ylabel('Statistic')
+    pyplot.title('Statistics for 1000 reflection-pair chunks')
+    pyplot.plot(chunks, ccs, label = 'CC')
+    pyplot.plot(chunks, rs, label = 'R')
+    pyplot.plot(chunks, ss, label = 'K')
+    pyplot.legend()
+    pyplot.savefig('plot.png')
+    pyplot.close()    
+    
+    return
 
 if __name__ == '__main__':
     import sys
-    compare(sys.argv[1], sys.argv[2])
+    compare_chunks(sys.argv[1], sys.argv[2])
