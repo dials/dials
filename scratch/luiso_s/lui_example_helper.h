@@ -4,6 +4,7 @@
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/flex_types.h>
 #include <math.h>
+#include <stdio.h>
 namespace dials { namespace scratch {
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
@@ -15,20 +16,58 @@ namespace dials { namespace scratch {
     return a;
   }
 
-  flex_int tst_01(flex_int & data2d) {
-    std::size_t ncol=data2d.accessor().all()[1];
-    std::size_t nrow=data2d.accessor().all()[0];
-    flex_int data2dtmp(data2d);
+  flex_double tst_01(flex_double & data2d) {
+//    std::size_t ncol=data2d.accessor().all()[1];
+//    std::size_t nrow=data2d.accessor().all()[0];
+    int ncol=data2d.accessor().all()[1];
+    int nrow=data2d.accessor().all()[0];
+    flex_double data2dreturn(data2d);
+    double matx2d[nrow][ncol];
+    std::cout << "\n ncol=" << ncol << " ,  nrow=" << nrow << "\n";
+
+
+
     for (int row = 0; row<=nrow-1;row++) {
       for (int col = 0; col<=ncol-1;col++) {
-        data2dtmp(row,col)=row*nrow+col;
-
+        matx2d[row][col]=data2d(row,col);
       }
     }
 
-    return data2dtmp;
+
+    for (int row = 0; row<=nrow-1;row++) {
+      for (int col = 0; col<=ncol-1;col++) {
+        data2dreturn(row,col)=matx2d[row][col];
+      }
+    }
+
+    std::cout << "\n Done \n";
+
+    return data2dreturn;
 
   }
+
+
+  int write_2d(flex_double & data2d) {
+    int ncol=data2d.accessor().all()[1];
+    int nrow=data2d.accessor().all()[0];
+    int num=0;
+    std::cout << "\n [\n";
+    for (int row = 0; row<=nrow-1;row++) {
+      std::cout << "    [ ";
+      for (int col = 0; col<=ncol-1;col++) {
+        printf(" %03d ", int(data2d(row,col)));
+        num++;
+
+        //std::cout << int(matx2d[row][col]) << " ,   ";
+      }
+      //fflush(stdout);
+      std::cout << "  ]\n";
+    }
+    std::cout << " ]\n";
+
+  return num;
+  }
+
 
   vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
       flex_double & background2d) {
@@ -66,7 +105,6 @@ namespace dials { namespace scratch {
       return integr_data;
 
   }
-
 
 }}
 

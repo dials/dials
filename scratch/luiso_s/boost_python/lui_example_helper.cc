@@ -8,6 +8,7 @@ namespace dials { namespace scratch { namespace boost_python {
   // testing
   void luiso_s_scratch_ext() {
     def("hello_tst", &hello_tst);
+    def("write_2d", &write_2d, (arg("data2d")));
     def("tst_01", &tst_01, (arg("data2d")));
     def("raw_2d_cut", &raw_2d_cut, (arg("data2d")), (arg("mask2d")),
         (arg("background2d")));

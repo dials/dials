@@ -18,7 +18,7 @@ nslow = image.parameters['SIZE2']
 data = image.get_raw_data()
 print 'here 1'
 
-data2d = numpy.zeros(nfast * nslow, dtype = numpy.int32).reshape(nfast, nslow)
+data2d = numpy.zeros(nfast * nslow, dtype = numpy.float64).reshape(nfast, nslow)
 for f in range(nfast):
     for s in range(nslow):
         data2d[f, s] = data[s * nfast + f]
@@ -32,11 +32,12 @@ from scitbx.array_family import flex
 
 
 n_times = 1
-data2dsmoth = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
+data2dsmoth_tmp = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
+data2dsmoth = numpy.float64(data2dsmoth_tmp)
 
-n_times = 2
-data2dsmoth1 = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
-
+n_times = 5
+data2dsmoth1_tmp = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
+data2dsmoth1 = numpy.float64(data2dsmoth1_tmp)
 
 from matplotlib import pyplot as plt
 print "Plotting data2d"
