@@ -74,7 +74,10 @@ class Refinery(object):
         self.prepare_for_step()
 
         # FIXME this to be deprecated
-        if self._verbosity > 0.: self.print_table_row()
+        if self._verbosity > 0.:
+            # need side effect of setting self._target._matches
+            self._f, self._g = self._target.compute_functional_and_gradients()
+            self.print_table_row()
 
     def get_num_steps(self):
         return self._step
