@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
     // float tot=0;
     xc=float(ncol)/2;
     yc=float(nrow)/2;
-    std::cout << "\n" << "xc =" << xc << ", yc =" << yc << "\n";
+    // std::cout << "\n" << "xc =" << xc << ", yc =" << yc << "\n";
     // flex_int curv3d(data2d.accessor(),0);
     flex_int curv3d(flex_grid<>(nrow, ncol),0);
     cntnt=1.0 / sqrt(2.0 * pi);
