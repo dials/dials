@@ -372,12 +372,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             self.update_journal()
             if self._verbosity > 0.: self.print_table_row()
 
-            if self.test_for_termination():
-                print "RMSD target achieved"
-                break
-            if self.has_gradient_converged_to_zero():
-                print "Gradient converged to zero"
-                break
+            # solve the normal equations
             self.solve()
 
             # extra journalling post solve
@@ -386,8 +381,27 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             self.step_norm_history.append(self.step().norm())
             self.reduced_chi_squared_history.append(self.chi_sq())
 
+            # test termination criteria
+            if self.test_for_termination():
+                print "RMSD target achieved"
+                break
+            if self.has_gradient_converged_to_zero():
+                print "Gradient converged to zero"
+                break
             if self.had_too_small_a_step(): break
+
+            # prepare for next step
             self.step_forward()
             self.n_iterations += 1
+
+        # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
+        cf = self.step_equations().cholesky_factor_packed_u()
+        cf_inv = cf.matrix_packed_u_as_upper_triangle().\
+            matrix_inversion()
+        nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
+
+        # keep the estimated parameter variance-covariance matrix
+        self.parameter_var_cov = \
+            self.reduced_chi_squared_history[-1] * nm_inv
 
         return
