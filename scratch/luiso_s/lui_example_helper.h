@@ -45,7 +45,7 @@ namespace dials { namespace scratch {
     flex_double data2dreturn(total);
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
-
+    write_2d(descriptor);
 
     a=a + descriptor(0,1) + ncol + nrow;
     std::cout << "\n a=" << a << "\n";

@@ -25,7 +25,9 @@ for xpos in range(3):
 
 sumation = flex.double(flex.grid(21, 21))
 descr = flex.double(flex.grid(1, 3))
-
+descr[0, 0] = 5
+descr[0, 1] = 4
+descr[0, 2] = 3
 print "____________________________________________________________________"
 
 
