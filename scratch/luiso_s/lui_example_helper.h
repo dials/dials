@@ -9,10 +9,46 @@ namespace dials { namespace scratch {
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
   using scitbx::vec2;
-
   int hello_tst() {
     std::cout << "Hello world \n";
     int a=5;
+    return a;
+  }
+  int write_2d(flex_double & data2d) {
+    int ncol=data2d.accessor().all()[1];
+    int nrow=data2d.accessor().all()[0];
+    int num=0;
+    std::cout << "\n [\n";
+    for (int row = 0; row<=nrow-1;row++) {
+      std::cout << "    [ ";
+      for (int col = 0; col<=ncol-1;col++) {
+        //printf(" %03d ", int(data2d(row,col)));
+
+        printf(" %3d ", int(data2d(row,col)));
+
+        num++;
+
+        //std::cout << int(matx2d[row][col]) << " ,   ";
+      }
+      //fflush(stdout);
+      std::cout << "  ]\n";
+    }
+    std::cout << " ]\n";
+
+  return num;
+  }
+
+
+ // flex_double add_2d(float ctr_row, float ctr_col, flex_double data2d_in, flex_double data2d_out) {
+  int add_2d(flex_double descriptor, flex_double data2d, flex_double & total) {
+    int a=5;
+    flex_double data2dreturn(total);
+    int ncol=data2d.accessor().all()[1];
+    int nrow=data2d.accessor().all()[0];
+
+
+    a=a + descriptor(0,1) + ncol + nrow;
+    std::cout << "\n a=" << a << "\n";
     return a;
   }
 
@@ -45,32 +81,6 @@ namespace dials { namespace scratch {
     return data2dreturn;
 
   }
-
-
-  int write_2d(flex_double & data2d) {
-    int ncol=data2d.accessor().all()[1];
-    int nrow=data2d.accessor().all()[0];
-    int num=0;
-    std::cout << "\n [\n";
-    for (int row = 0; row<=nrow-1;row++) {
-      std::cout << "    [ ";
-      for (int col = 0; col<=ncol-1;col++) {
-        //printf(" %03d ", int(data2d(row,col)));
-
-        printf(" %3d ", int(data2d(row,col)));
-
-        num++;
-
-        //std::cout << int(matx2d[row][col]) << " ,   ";
-      }
-      //fflush(stdout);
-      std::cout << "  ]\n";
-    }
-    std::cout << " ]\n";
-
-  return num;
-  }
-
 
   vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
       flex_double & background2d) {
@@ -108,6 +118,8 @@ namespace dials { namespace scratch {
       return integr_data;
 
   }
+
+
 
 }}
 

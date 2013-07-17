@@ -635,6 +635,7 @@ scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test_f.f90 -text
+scratch/luiso_s/test_code/my_mosflm.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_centoid.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d.py -text svneol=unset#text/plain
@@ -652,6 +653,7 @@ scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
+scratch/test_data/my_mosflm.py -text svneol=unset#text/plain
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
