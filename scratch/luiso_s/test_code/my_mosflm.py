@@ -2,7 +2,7 @@ from __future__ import division
 
 from scitbx.array_family import flex
 from dials.algorithms.peak_finding import model_2d
-#from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt
 from dials.scratch.luiso_s import add_2d, write_2d
 
 import numpy
@@ -14,7 +14,7 @@ ncol = 10
 
 sumation = flex.double(flex.grid(21, 21))
 descr = flex.double(flex.grid(1, 3))
-descr[0, 0] = 1
+descr[0, 0] = .2
 descr[0, 1] = 5
 descr[0, 2] = 5
 print "____________________________________________________________________"
@@ -34,8 +34,12 @@ for xpos in range(3):
         sumation = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
         write_2d(sumation)
 
-'''
+
 print "Plotting data2d"
 plt.imshow(data2d, interpolation = "nearest")
 plt.show()
-'''
+
+print "Plotting reslt"
+img_suma = sumation.as_numpy_array()
+plt.imshow(img_suma, interpolation = "nearest")
+plt.show()
