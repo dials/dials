@@ -18,9 +18,14 @@ namespace dials { namespace scratch {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
     int num=0;
-    std::cout << "\n [\n";
+    std::cout << "\n";
     for (int row = 0; row<=nrow-1;row++) {
-      std::cout << "    [ ";
+      if (row==0){
+        std::cout << "\n  [ [ ";
+      } else {
+        std::cout << "\n    [ ";
+      }
+
       for (int col = 0; col<=ncol-1;col++) {
         //printf(" %03d ", int(data2d(row,col)));
 
@@ -31,10 +36,9 @@ namespace dials { namespace scratch {
         //std::cout << int(matx2d[row][col]) << " ,   ";
       }
       //fflush(stdout);
-      std::cout << "  ]\n";
+      std::cout << "  ]";
     }
-    std::cout << " ]\n";
-
+    std::cout << " ] \n";
   return num;
   }
 
@@ -46,8 +50,12 @@ namespace dials { namespace scratch {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
     write_2d(descriptor);
-
-    a=a + descriptor(0,1) + ncol + nrow;
+    for (int row = 0; row<=nrow-1;row++) {
+      for (int col = 0; col<=ncol-1;col++) {
+        total(row,col)+=data2d(row,col);
+      }
+    }
+        a=a + descriptor(0,1) + ncol + nrow;
     std::cout << "\n a=" << a << "\n";
     return a;
   }
@@ -60,7 +68,6 @@ namespace dials { namespace scratch {
     flex_double data2dreturn(data2d);
     double matx2d[nrow][ncol];
     std::cout << "\n ncol=" << ncol << " ,  nrow=" << nrow << "\n";
-
 
 
     for (int row = 0; row<=nrow-1;row++) {
@@ -118,7 +125,6 @@ namespace dials { namespace scratch {
       return integr_data;
 
   }
-
 
 
 }}

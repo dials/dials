@@ -12,6 +12,14 @@ nrow = 10
 ncol = 10
 
 
+sumation = flex.double(flex.grid(21, 21))
+descr = flex.double(flex.grid(1, 3))
+descr[0, 0] = 5
+descr[0, 1] = 4
+descr[0, 2] = 3
+print "____________________________________________________________________"
+
+
 for xpos in range(3):
     for ypos in range(3):
         row_str = ypos * 12
@@ -23,17 +31,8 @@ for xpos in range(3):
         data2d_tmp = ref2d.as_numpy_array()
         data2d[row_str:row_str + nrow, col_str:col_str + ncol] += numpy.float64(data2d_tmp)
 
-sumation = flex.double(flex.grid(21, 21))
-descr = flex.double(flex.grid(1, 3))
-descr[0, 0] = 5
-descr[0, 1] = 4
-descr[0, 2] = 3
-print "____________________________________________________________________"
-
-
-
-tst = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
-write_2d(sumation)
+        tst = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
+        write_2d(sumation)
 
 
 '''
