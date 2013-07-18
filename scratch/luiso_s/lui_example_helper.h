@@ -43,21 +43,27 @@ namespace dials { namespace scratch {
   }
 
 
- // flex_double add_2d(float ctr_row, float ctr_col, flex_double data2d_in, flex_double data2d_out) {
-  int add_2d(flex_double descriptor, flex_double data2d, flex_double & total) {
-    int a = 0;
+  flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
     flex_double data2dreturn(total);
-    int ncol=data2d.accessor().all()[1];
-    int nrow=data2d.accessor().all()[0];
+    int ncol_in = data2d.accessor().all()[1];
+    int nrow_in = data2d.accessor().all()[0];
+    int centr_row = descriptor(0,1);
+    int centr_col = descriptor(0,2);
+
+    //int ncol_tot = total.accessor().all()[1];
+    //int nrow_tot = total.accessor().all()[0];
+
+    int tot_row, tot_col;
+
     write_2d(descriptor);
-    for (int row = 0; row<=nrow-1;row++) {
-      for (int col = 0; col<=ncol-1;col++) {
-        total(row,col)+=data2d(row,col);
+    for (int row = 0; row <= nrow_in - 1;row++) {
+      for (int col = 0; col <= ncol_in-1;col++) {
+        tot_row = row + 10 - centr_row;
+        tot_col = col + 10 - centr_col;
+        data2dreturn(tot_row,tot_col)=total(tot_row,tot_col) + data2d(row,col);
       }
     }
-    a=1;
-    std::cout << "\n a=" << a << "\n";
-    return a;
+    return data2dreturn;
   }
 
   flex_double tst_01(flex_double & data2d) {

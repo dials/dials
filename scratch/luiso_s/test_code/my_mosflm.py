@@ -14,9 +14,9 @@ ncol = 10
 
 sumation = flex.double(flex.grid(21, 21))
 descr = flex.double(flex.grid(1, 3))
-descr[0, 0] = 5
-descr[0, 1] = 4
-descr[0, 2] = 3
+descr[0, 0] = 1
+descr[0, 1] = 5
+descr[0, 2] = 5
 print "____________________________________________________________________"
 
 
@@ -31,9 +31,8 @@ for xpos in range(3):
         data2d_tmp = ref2d.as_numpy_array()
         data2d[row_str:row_str + nrow, col_str:col_str + ncol] += numpy.float64(data2d_tmp)
 
-        tst = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
+        sumation = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
         write_2d(sumation)
-
 
 '''
 print "Plotting data2d"
