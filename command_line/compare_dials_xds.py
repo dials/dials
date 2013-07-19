@@ -1,7 +1,7 @@
 def pull_reference(integrate_hkl):
-    '''Generate reference data set from integrate.hkl, check out the calculated 
+    '''Generate reference data set from integrate.hkl, check out the calculated
     x, y and z centroids as well as the Miller indices as coordinates in some
-    high dimensional space. Only consider measurements with meaningful 
+    high dimensional space. Only consider measurements with meaningful
     centroids...'''
 
     hkl = []
@@ -36,7 +36,7 @@ def integrate_hkl_to_unit_cell(integrate_hkl):
             return unit_cell(tuple(map(float, record.split()[-6:])))
 
     raise RuntimeError, 'unit cell not found'
-        
+
 def pull_calculated(integrate_pkl):
     from dials.model.data import ReflectionList
     import cPickle as pickle
@@ -66,13 +66,13 @@ def pull_calculated(integrate_pkl):
         x, y = r.image_coord_px
         z = r.frame_number
         xyz.append((x, y, z))
-        
+
     print 'Computed: %d observations' % len(hkl)
     return hkl, i, sigi, xyz
 
 def meansd(values):
     import math
-    
+
     assert(len(values) > 3)
 
     mean = sum(values) / len(values)
@@ -132,7 +132,7 @@ def compare(integrate_hkl, integrate_pkl):
 
     xds = []
     dials = []
-    
+
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
@@ -141,7 +141,7 @@ def compare(integrate_hkl, integrate_pkl):
             dials.append(di[j])
 
     print 'Paired %d observations' % len(xds)
-            
+
     c = cc(xds, dials)
 
     print '1 - CC: %.6e' % (1 - c)
@@ -149,14 +149,14 @@ def compare(integrate_hkl, integrate_pkl):
     r, s = R(dials, xds)
 
     print 'R: %.3f' % r
-    
+
 def compare_chunks(integrate_hkl, integrate_pkl):
 
     from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
     uc = integrate_hkl_to_unit_cell(integrate_hkl)
-    
+
     xhkl, xi, xsigi, xxyz = pull_reference(integrate_hkl)
     dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
 
@@ -180,7 +180,7 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     XDS = []
     DIALS = []
     HKL = []
-    
+
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
@@ -198,7 +198,7 @@ def compare_chunks(integrate_hkl, integrate_pkl):
 
     for hkl in unique:
         resolutions[hkl] = uc.d(hkl)
-    
+
     # then resort the list in terms of resolution, then reverse it
 
     sort_me = []
@@ -211,35 +211,35 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     resolutions = [sm[0] for sm in sort_me]
     XDS = [sm[1] for sm in sort_me]
     DIALS = [sm[2] for sm in sort_me]
-    
+
     # then extract the original observation structure
-            
+
     print 'Paired %d observations' % len(XDS)
 
     scale = sum(XDS) / sum(DIALS)
-    
+
     chunks = [(i, i + 1000) for i in range(0, len(XDS), 1000)]
 
     ccs = []
     rs = []
     ss = []
-    
+
     for chunk in chunks:
         xds = XDS[chunk[0]:chunk[1]]
         dials = DIALS[chunk[0]:chunk[1]]
         resols = resolutions[chunk[0]:chunk[1]]
-    
+
         c = cc(dials, xds)
         r, s = R(dials, xds)
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(xds), 
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(xds),
                                                     min(resols), max(resols),
                                                     c, r, s)
         ccs.append(c)
         rs.append(r)
         ss.append(s)
-        
+
     chunks = [j for j in range(len(chunks))]
-        
+
     from matplotlib import pyplot
     pyplot.xlabel('Chunk')
     pyplot.ylabel('Statistic')
@@ -249,8 +249,8 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     pyplot.plot(chunks, ss, label = 'K')
     pyplot.legend()
     pyplot.savefig('plot.png')
-    pyplot.close()    
-    
+    pyplot.close()
+
     return
 
 if __name__ == '__main__':

@@ -73,12 +73,6 @@ class Refinery(object):
 
         self.prepare_for_step()
 
-        # FIXME this to be deprecated
-        if self._verbosity > 0.:
-            # need side effect of setting self._target._matches
-            self._f, self._g = self._target.compute_functional_and_gradients()
-            self.print_table_row()
-
     def get_num_steps(self):
         return self._step
 
@@ -127,26 +121,33 @@ class Refinery(object):
 
         return all(tests)
 
-    # FIXME to deprecate
-    def print_table_row(self):
-        '''print useful output in the form of a tab separated table'''
+    def print_step(self):
+        '''print information about the current step'''
 
-        params = self._parameters.get_p()
-        if self._step == 0: # first call, print the column headings
-            header = ("Step Nref Residual RMSD_X RMSD_Y RMSD_phi " +
-                     "Param_%02d " * len(params))
-            print header % tuple(range(1, len(params) + 1))
+        print "Function evaluation"
+        msg = "  Params: " + "%.5f " * len(self._parameters)
+        print msg % tuple(self._parameters.get_p())
+        print "  L: %.5f" % self._f
+        msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
+        print msg % tuple(self._g)
 
-        line = ("%d " + "%d " + "%.5f " + "%.5f " * 3 +
-                "%.5f " * len(params))
+    def print_table(self):
+        '''print useful output in the form of a space-separated table'''
 
-        rmsds = self._target.rmsds()
-        print line % tuple((self._step,
-                           self._target.get_num_reflections(),
-                           self._f,
-                           rmsds[0],
-                           rmsds[1],
-                           rmsds[2]) + tuple(params))
+        print
+        print "Refinement steps"
+        print "----------------"
+        header = ("Step Nref Residual RMSD_X RMSD_Y RMSD_phi " +
+                     "Param_%02d " * len(self._parameters))
+        print header % tuple(range(1, len(self._parameters) + 1))
+
+        for i in range(self._step):
+            dat = (i + 1,) + (self.num_reflections_history[i],) + \
+                  (self.objective_history[i],) + \
+                  tuple(self.rmsd_history[i]) + \
+                  tuple(self.parameter_vector_history[i])
+            print  ("%d " + "%d " + "%.5f " + "%.5f " * 3 +
+                "%.5f " * len(self._parameters)) % dat
 
     def run(self):
         '''
@@ -159,7 +160,7 @@ class Refinery(object):
         raise RuntimeError, "implement me"
 
 class AdaptLbfgs(Refinery):
-    '''Refinery using L-BFGS minimiser'''
+    '''Adapt Refinery for L-BFGS minimiser'''
 
     def compute_functional_and_gradients(self):
 
@@ -168,14 +169,7 @@ class AdaptLbfgs(Refinery):
         # compute target function and its gradients
         self._f, self._g = self._target.compute_functional_and_gradients()
 
-        if self._verbosity > 1:
-            print "Function evaluation"
-            #msg = "  Params: " + "%.5f " * len(self._parameters)
-            msg = "  Params: " + "%.3g " * len(self._parameters)
-            print msg % tuple(self._parameters.get_p())
-            print "  L: % .3g" % self._f
-            msg = "  dL/dp: " + "% .3g " * len(tuple(self._g))
-            print msg % tuple(self._g)
+        if self._verbosity > 1: self.print_step()
 
         return self._f, flex.double(self._g)
 
@@ -186,7 +180,8 @@ class AdaptLbfgs(Refinery):
         '''
 
         self.update_journal()
-        if self._verbosity > 0.: self.print_table_row()
+        if self._verbosity > 0.:
+            print "Step", self._step
 
         return self.test_for_termination()
 
@@ -201,10 +196,12 @@ class SimpleLBFGS(AdaptLbfgs):
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
         if self._log: ref_log.close()
 
+        if self._verbosity > 0.: self.print_table()
+
         return
 
 class LBFGScurvs(AdaptLbfgs):
-    '''LBFGS Refinery using curvatures'''
+    '''Refinery implementation using cctbx LBFGS with curvatures'''
 
     def run(self):
 
@@ -214,6 +211,8 @@ class LBFGScurvs(AdaptLbfgs):
         self.diag_mode = "always"
         self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
         if self._log: ref_log.close()
+
+        if self._verbosity > 0.: self.print_table()
 
         return
 
@@ -241,14 +240,7 @@ class AdaptLstbx(
     Refinery,
     normal_eqns.non_linear_ls,
     normal_eqns.non_linear_ls_mixin):
-    '''Refinery using lstbx
-    testing the use of lstbx methods for solving the normal equations
-
-    Here following the example of lstbx.tests.test_problems.exponential_fit
-    to interface to lstbx code.
-
-    There is much duplication of code with other classes while I figure
-    out what the interface and inheritance hierarchy should be'''
+    '''Adapt Refinery for lstbx'''
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
@@ -287,32 +279,9 @@ class AdaptLstbx(
         # set current parameter values
         self.prepare_for_step()
 
-        # Compute target function and its gradients. The LSTBX minimiser
-        # does not actually require this to be called, unlike the LBFGS
-        # versions. However, we currently need _f and _g to be set for reporting
-        # purposes, e.g. by print_table_row.
-
-        # NB This is soon to be deprecated
-        if self._verbosity > 0.:
-            self._f, self._g = self._target.compute_functional_and_gradients()
-
-        if self._verbosity > 1:
-
-            print "Function evaluation"
-            msg = "  Params: " + "%.5f " * len(self._parameters)
-            print msg % tuple(self._parameters.get_p())
-            print "  L: %.5f" % self._f
-            msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
-            print msg % tuple(self._g)
-
+        # get calculations from the target
         residuals, jacobian, weights = \
             self._target.compute_residuals_and_gradients()
-
-        if self._verbosity > 2:
-            print "The Jacobian matrix for the current step is:"
-            print jacobian.as_scitbx_matrix().matlab_form(format=None,
-                    one_row_per_line=True)
-            print
 
         #Reset the state to construction time, i.e. no equations accumulated
         self.reset()
@@ -332,6 +301,7 @@ class AdaptLstbx(
         self._step -= 1
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
+    '''Refinery implementation, using lstbx Gauss Newton iterations'''
 
     n_max_iterations = 100
     gradient_threshold = 1.e-10
@@ -373,10 +343,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
               self.opposite_of_gradient().norm_inf())
 
             if self._verbosity > 2:
-
-                print "Objective value after overall scale applied:", self.objective(), "\n"
-                print "Gradient values after overall scale applied: " + \
-                    "%.3g " * len(self._parameters) % tuple(-1. * self.opposite_of_gradient()), "\n"
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\
@@ -385,7 +351,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                 print
 
             self.update_journal()
-            if self._verbosity > 0.: self.print_table_row()
+            if self._verbosity > 0.: print "Step", self._step
+            if self._verbosity > 1: self.print_step()
 
             # solve the normal equations
             self.solve()
@@ -398,21 +365,26 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
             # test termination criteria
             if self.test_for_termination():
-                print "RMSD target achieved"
+                reason_for_termination = "RMSD target achieved"
                 break
             if self.test_rmsd_convergence():
-                print "RMSD no longer decreasing"
+                reason_for_termination = "RMSD no longer decreasing"
                 break
             #if self.has_gradient_converged_to_zero():
             #    print "Gradient converged to zero"
             #    break
             if self.had_too_small_a_step():
-                print "Step too small"
+                reason_for_termination = "Step too small"
                 break
 
             # prepare for next step
             self.step_forward()
             self.n_iterations += 1
+
+        # print output table
+        if self._verbosity > 0.:
+            self.print_table()
+            print reason_for_termination
 
         # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
         cf = self.step_equations().cholesky_factor_packed_u()
