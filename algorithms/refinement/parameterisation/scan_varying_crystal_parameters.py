@@ -25,11 +25,13 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
         # The state of a scan varying crystal orientation parameterisation
         # is an orientation
-        # matrix '[U](t)', expressed as a function of 'time' t (which could
-        # actually be measured by image number in a sequential scan)
-
+        # matrix '[U](t)', expressed as a function of image number 't'
+        # in a sequential scan.
+        #
         # The initial state is a snapshot of the crystal orientation
-        # at the time of initialisation '[U0]', which independent of time.
+        # at the point of initialisation '[U0]', which is independent of
+        # image number.
+        #
         # Future states are composed by
         # rotations around axes of the phi-axis frame by Tait-Bryan angles.
         #
@@ -65,7 +67,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
     def compose(self, t):
 
-        '''calculate state and derivatives for model at time t'''
+        '''calculate state and derivatives for model at image number t'''
 
         # Extract orientation from the initial state
         U0 = self._initial_state
@@ -121,7 +123,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
     def get_state(self):
 
-        '''Return crystal orientation matrix [U] at time t'''
+        '''Return crystal orientation matrix [U] at image number t'''
 
         return self._U_at_t
 
@@ -135,8 +137,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
         # The state of a scan-varying unit cell parameterisation is the
         # reciprocal space orthogonalisation matrix '[B](t)', expressed as a
-        # function of time 't' (which could actually be measured by image number
-        #  in a sequential scan).
+        # function of image number 't' in a sequential scan.
 
         # Other comments from CrystalUnitCellParameterisation are relevant here
 
@@ -170,7 +171,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
     def compose(self, t):
 
-        '''calculate state and derivatives for model at time t'''
+        '''calculate state and derivatives for model at image number t'''
 
         # extract values and weights at time t using the smoother
         data = [self._smoother.value_weight(t, pset) for pset in self._param]
@@ -200,6 +201,6 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
     def get_state(self):
 
-        '''Return crystal orthogonalisation matrix [B] at time t'''
+        '''Return crystal orthogonalisation matrix [B] at image number t'''
 
         return self._B_at_t
