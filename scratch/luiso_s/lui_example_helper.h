@@ -348,9 +348,6 @@ namespace dials { namespace scratch {
   }
 
 
-
-
-
 }}
 
 
