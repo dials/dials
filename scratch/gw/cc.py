@@ -1,5 +1,5 @@
 def pull_reference(integrate_hkl):
-    '''Generate reference data set from integrate.hkl - check out the calculated 
+    '''Generate reference data set from integrate.hkl, check out the calculated 
     x, y and z centroids as well as the Miller indices as coordinates in some
     high dimensional space. Only consider measurements with meaningful 
     centroids...'''
@@ -26,6 +26,17 @@ def pull_reference(integrate_hkl):
     print 'Reference: %d observations' % len(hkl)
     return hkl, i, sigi, xyz
 
+def integrate_hkl_to_unit_cell(integrate_hkl):
+    '''Generate a cctbx unit_cell from an integrate_hkl file.'''
+
+    from cctbx.uctbx import unit_cell
+
+    for record in open(integrate_hkl):
+        if record.startswith('!UNIT_CELL_CONSTANTS='):
+            return unit_cell(tuple(map(float, record.split()[-6:])))
+
+    raise RuntimeError, 'unit cell not found'
+        
 def pull_calculated(integrate_pkl):
     from dials.model.data import ReflectionList
     import cPickle as pickle
@@ -81,13 +92,14 @@ def cc(a, b):
 
     return r
 
-def R(calc, obs):
+def R(calc, obs, scale = None):
 
     import math
 
     assert(len(calc) == len(obs))
 
-    scale = sum(obs) / sum(calc)
+    if not scale:
+        scale = sum(obs) / sum(calc)
 
     return sum([math.fabs(math.fabs(o) - math.fabs(scale * c)) \
                 for c, o in zip(calc, obs)]) / \
@@ -134,7 +146,7 @@ def compare(integrate_hkl, integrate_pkl):
 
     print '1 - CC: %.6e' % (1 - c)
 
-    r, s = R(xds, dials)
+    r, s = R(dials, xds)
 
     print 'R: %.3f' % r
     
@@ -143,6 +155,8 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
+    uc = integrate_hkl_to_unit_cell(integrate_hkl)
+    
     xhkl, xi, xsigi, xxyz = pull_reference(integrate_hkl)
     dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
 
@@ -165,6 +179,7 @@ def compare_chunks(integrate_hkl, integrate_pkl):
 
     XDS = []
     DIALS = []
+    HKL = []
     
     # perform the analysis
     for j, hkl in enumerate(dhkl):
@@ -172,9 +187,37 @@ def compare_chunks(integrate_hkl, integrate_pkl):
         if hkl == xhkl[c]:
             XDS.append(xi[c])
             DIALS.append(di[j])
+            HKL.append(hkl)
 
+    # now compute resolution for every reflection - or at least each unique
+    # Miller index...
+
+    unique = set(HKL)
+
+    resolutions = { }
+
+    for hkl in unique:
+        resolutions[hkl] = uc.d(hkl)
+    
+    # then resort the list in terms of resolution, then reverse it
+
+    sort_me = []
+    for hkl, xds, dials in zip(HKL, XDS, DIALS):
+        sort_me.append((resolutions[hkl], xds, dials))
+
+    sort_me.sort()
+    sort_me.reverse()
+
+    resolutions = [sm[0] for sm in sort_me]
+    XDS = [sm[1] for sm in sort_me]
+    DIALS = [sm[2] for sm in sort_me]
+    
+    # then extract the original observation structure
+            
     print 'Paired %d observations' % len(XDS)
 
+    scale = sum(XDS) / sum(DIALS)
+    
     chunks = [(i, i + 1000) for i in range(0, len(XDS), 1000)]
 
     ccs = []
@@ -184,11 +227,13 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     for chunk in chunks:
         xds = XDS[chunk[0]:chunk[1]]
         dials = DIALS[chunk[0]:chunk[1]]
+        resols = resolutions[chunk[0]:chunk[1]]
     
-        c = cc(xds, dials)
-        r, s = R(xds, dials)
-        print '%7d %4d %.3f %.3f %.3f' % (chunk[0], chunk[1] - chunk[0], 
-                                          c, r, s)
+        c = cc(dials, xds)
+        r, s = R(dials, xds)
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(xds), 
+                                                    min(resols), max(resols),
+                                                    c, r, s)
         ccs.append(c)
         rs.append(r)
         ss.append(s)
