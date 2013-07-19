@@ -1,6 +1,6 @@
 from __future__ import division
 from scitbx.array_family import flex
-from dials.algorithms.peak_finding import model_2d, measure_2d_angl
+from dials.scratch.luiso_s import model_2d, measure_2d_angl
 import numpy
 from matplotlib import pyplot as plt
 ncol = 36

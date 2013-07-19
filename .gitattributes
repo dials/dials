@@ -127,7 +127,6 @@ algorithms/peak_finding/boost_python/lui_find_peak_smoothing.cc -text svneol=uns
 algorithms/peak_finding/boost_python/lui_find_peak_smothing.cc -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/lui_integrate_helper.cc -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/peak_finding_ext.cc -text
-algorithms/peak_finding/integrate_helper.py -text svneol=unset#text/plain
 algorithms/peak_finding/label_pixels.h -text
 algorithms/peak_finding/lui_find_peak.py -text svneol=unset#text/plain
 algorithms/peak_finding/lui_find_peak_helper.h -text svneol=unset#text/plain
@@ -630,6 +629,7 @@ scratch/luiso_s/test_code/example_mix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/integrate_helper.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matplotlib_cut.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
@@ -653,7 +653,6 @@ scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
-scratch/test_data/my_mosflm.py -text svneol=unset#text/plain
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
