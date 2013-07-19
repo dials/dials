@@ -260,6 +260,8 @@ def compare_chunks(integrate_hkl, integrate_pkl):
 
     return
 
+##### FIXME derive REIDX matrix if appropriate from the unit cell vectors #####
+
 if __name__ == '__main__':
     import sys
     compare_chunks(sys.argv[1], sys.argv[2])
