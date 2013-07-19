@@ -249,10 +249,6 @@ print_model_geometry(mybeam, mydetector, mycrystal)
 
 refiner.run()
 
-#FIXME why is the step count different?
-#print "number of steps", refiner.n_iterations
-#print "number of steps", refiner.get_num_steps()
-
 print
 print "Refinement has completed with the following geometry:"
 print_model_geometry(mybeam, mydetector, mycrystal)
