@@ -311,8 +311,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     convergence_as_shift_over_esd = 1e-5
     reduced_chi_squared_history = flex.double()
 
-    # override the base class __init__ as I don't want to start
-    # refinement on initialisation
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
                  track_gradient = False, **kwds):
