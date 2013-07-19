@@ -229,6 +229,9 @@ def compare_chunks(integrate_hkl, integrate_pkl):
         dials = DIALS[chunk[0]:chunk[1]]
         resols = resolutions[chunk[0]:chunk[1]]
 
+        if len(xds) < 100:
+            break
+
         c = cc(dials, xds)
         r, s = R(dials, xds)
         print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(xds),
@@ -239,6 +242,10 @@ def compare_chunks(integrate_hkl, integrate_pkl):
         ss.append(s)
 
     chunks = [j for j in range(len(chunks))]
+
+    # kludge - if we fall off
+
+    chunks = chunks[:len(rs)]
 
     from matplotlib import pyplot
     pyplot.xlabel('Chunk')
