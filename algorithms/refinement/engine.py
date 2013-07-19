@@ -112,6 +112,21 @@ class Refinery(object):
 
         return self._target_achieved
 
+    def test_rmsd_convergence(self):
+        '''Test for convergence of RMSDs'''
+
+        # http://en.wikipedia.org/wiki/
+        # Non-linear_least_squares#Convergence_criteria
+        try:
+            r1 = self.rmsd_history[-1]
+            r2 = self.rmsd_history[-2]
+        except IndexError:
+            return False
+
+        tests = [abs((e[1] - e[0])/e[1])  < 0.0001 for e in zip(r1, r2)]
+
+        return all(tests)
+
     # FIXME to deprecate
     def print_table_row(self):
         '''print useful output in the form of a tab separated table'''
@@ -385,10 +400,15 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self.test_for_termination():
                 print "RMSD target achieved"
                 break
-            if self.has_gradient_converged_to_zero():
-                print "Gradient converged to zero"
+            if self.test_rmsd_convergence():
+                print "RMSD no longer decreasing"
                 break
-            if self.had_too_small_a_step(): break
+            #if self.has_gradient_converged_to_zero():
+            #    print "Gradient converged to zero"
+            #    break
+            if self.had_too_small_a_step():
+                print "Step too small"
+                break
 
             # prepare for next step
             self.step_forward()
