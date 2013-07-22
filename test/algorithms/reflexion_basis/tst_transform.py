@@ -15,17 +15,24 @@ class TestForward(object):
         self.gonio = self.sweep.get_goniometer()
         self.scan = self.sweep.get_scan()
 
+        print self.detector.get_d_matrix()
+        print self.gonio.get_rotation_axis()
+        print self.beam.get_direction()
+        self.beam.set_direction((0.0, 0.0, 1.0))
+        self.gonio.set_rotation_axis((1.0, 0.0, 0.0))
+        self.detector.set_frame((1.0, 0.0, 0.0),
+                                (0.0, 1.0, 0.0),
+                                (-150, -150, -200))
+
         # Set some parameters
         self.sigma_divergence =self.beam.get_sigma_divergence(deg=False)
         self.mosaicity = 0.157 * pi / 180
         self.n_sigma = 3
-        self.grid_size = 4
+        self.grid_size = 7
         self.delta_divergence = self.n_sigma * self.sigma_divergence
 
         step_size = self.delta_divergence / self.grid_size
         self.delta_divergence2 = self.delta_divergence + step_size * 0.5
-
-#        self.delta_divergence2 = (self.n_sigma + 0.5) * self.sigma_divergence
         self.delta_mosaicity = self.n_sigma * self.mosaicity
 
         # Create the bounding box calculator
@@ -52,11 +59,12 @@ class TestForward(object):
         s0_length = matrix.col(self.beam.get_s0()).length()
 
         # Get random x, y, z
-#        x = uniform(300, 1800)
-#        y = uniform(300, 1800)
-#        z = uniform(-10, 0)
-
-        x, y, z = 993.376692565, 1272.1175661, -7.9419902089
+        x = uniform(300, 1800)
+        y = uniform(300, 1800)
+        z = uniform(-10, 0)
+        print x, y, z
+        x, y, z = 2000, 10, 10
+#        x, y, z = 993.376692565, 1272.1175661, -7.9419902089
 
         # Get random s1, phi, panel
         s1 = matrix.col(self.detector.get_pixel_lab_coord(
@@ -116,7 +124,6 @@ class TestForward(object):
                 labels.append('{0}, {1}'.format(i, j))
         x, y = zip(*indices)
 
-        print "Index: ", index(1, 1)
         x = [xx - 0.5 for xx in x]
         y = [yy - 0.5 for yy in y]
         #print x, y
@@ -128,16 +135,16 @@ class TestForward(object):
 #            pylab.scatter(x, y)
 
         pylab.imshow(grid.as_numpy_array()[4,:,:], origin='bottom', interpolation='none')
-        pylab.scatter(x, y)
-        for j in range(9):
-            for i in range(9):
-                ii = i - 0.5
-                jj = j - 0.5
-                px = [ii, ii + 1, ii + 1, ii, ii]
-                py = [jj, jj, jj + 1, jj + 1, jj]
-                pylab.plot(px, py, color='white')
-        for ll, xx, yy in zip(labels, x, y):
-            pylab.annotate(ll, xy = (xx, yy))
+#        pylab.scatter(x, y)
+#        for j in range(9):
+#            for i in range(9):
+#                ii = i - 0.5
+#                jj = j - 0.5
+#                px = [ii, ii + 1, ii + 1, ii, ii]
+#                py = [jj, jj, jj + 1, jj + 1, jj]
+#                pylab.plot(px, py, color='white')
+#        for ll, xx, yy in zip(labels, x, y):
+#            pylab.annotate(ll, xy = (xx, yy))
         pylab.show()
 
         # Test passed
