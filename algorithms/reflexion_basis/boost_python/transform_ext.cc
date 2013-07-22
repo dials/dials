@@ -14,7 +14,7 @@
 #include <dials/algorithms/reflexion_basis/map_frames.h>
 #include <dials/algorithms/reflexion_basis/beam_vector_map.h>
 #include <dials/algorithms/reflexion_basis/map_pixels.h>
-#include <dials/algorithms/reflexion_basis/forward.h>
+#include <dials/algorithms/reflexion_basis/transform.h>
 
 namespace dials { namespace algorithms { namespace reflexion_basis {
   namespace transform { namespace boost_python {
