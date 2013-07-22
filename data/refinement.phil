@@ -1,9 +1,43 @@
 refinement
   .help = "Parameters to configure the refinement"
 {
+  verbosity = 1
+    .help = "The verbosity level shared by all components of the refinement"
+            "module"
+    .type = int
+
   engine = SimpleLBFGS LBFGScurvs *GaussNewtonIterations
     .help = "The minimisation engine to use"
     .type = choice
+    
+    track_step = False
+      .help = "Record parameter shifts history in the refinement journal, if"
+              "the engine supports it."
+      .type = bool
+
+    track_gradient = False
+      .help = "Record parameter gradients history in the refinement journal, if"
+              "the engine supports it."
+      .type = bool
+
+    log = None
+      .help = "Filename for an optional log that a minimisation engine may use"
+              "to write additional information"
+      .type = path
+
+  manager
+    .help "Parameters used by the reflection manager"
+  {
+    reflections_per_degree = 50
+      .help = "The number of centroids per degree of the sweep to use in"
+              "refinement."
+      .type = float
+
+    use_all_reflections = False
+      .help = "Override reflections_per_degree and use all available centroids"
+              "in refinement."
+      .type = bool
+  }
 
   scan_varying = False
     .help = "experimental option to follow refinement to "
