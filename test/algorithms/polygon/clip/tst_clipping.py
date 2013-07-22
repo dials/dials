@@ -120,6 +120,59 @@ class TestSimpleWithConvex(object):
 
         print 'OK'
 
+
+class TestSimpleWithAABB(object):
+
+    def __init__(self):
+        pass
+
+    def __call__(self):
+        self.tst_intersecting()
+        self.tst_non_intersecting()
+
+    def tst_intersecting(self):
+        from dials.algorithms.polygon import clip
+        from scitbx.array_family import flex
+        for i in range(10000):
+
+            # Generate intersecting polygons
+            subject, target = generate_intersecting(target_size=2)
+            aabb = ((0, 0), (10, 10))
+
+            # Do the clipping
+            result = clip.simple_with_aabb(
+                flex.vec2_double(subject), aabb)
+
+            # Ensure we have roughly valid number of vertices
+            assert(len(result) >= 3)
+            assert(len(result) >= min([len(subject), 4]))
+
+#            for v in result:
+#                assert(point_in_polygon(v, clip))
+
+        print 'OK'
+
+    def tst_non_intersecting(self):
+        from dials.algorithms.polygon import clip
+        from scitbx.array_family import flex
+
+        for i in range(10000):
+
+            # Generate nonintersecting polygons
+            subject, target = generate_non_intersecting(target_size=2)
+            aabb = ((0, 0), (10, 10))
+
+
+            # Do the clipping
+            result = clip.simple_with_aabb(
+                flex.vec2_double(subject), aabb)
+
+            # Ensure we no vertices
+            assert(len(result) == 0)
+
+        print 'OK'
+
+
 class TestTriangleWithTriangle(object):
 
     def __init__(self):
@@ -378,14 +431,16 @@ class Test(object):
         self.tst_quad_with_triangle = TestQuadWithTriangle()
         self.tst_quad_with_convex_quad = TestQuadWithConvexQuad()
         self.tst_line_with_aabb = TestLineWithAABB()
+        self.tst_simple_with_aabb = TestSimpleWithAABB()
 
     def run(self):
-        self.tst_simple_with_convex()
-        self.tst_triangle_with_triangle()
-        self.tst_triangle_with_convex_quad()
-        self.tst_quad_with_triangle()
-        self.tst_quad_with_convex_quad()
-        self.tst_line_with_aabb()
+#        self.tst_simple_with_convex()
+#        self.tst_triangle_with_triangle()
+#        self.tst_triangle_with_convex_quad()
+#        self.tst_quad_with_triangle()
+#        self.tst_quad_with_convex_quad()
+#        self.tst_line_with_aabb()
+        self.tst_simple_with_aabb()
 
 
 if __name__ == '__main__':

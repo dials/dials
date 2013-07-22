@@ -50,6 +50,20 @@ namespace dials { namespace algorithms {
   }
 
   /**
+   * Clip a simple polygon with a rectangle using the sutherland_hodman
+   * algorithm.
+   * @param poly The subject polygon
+   * @param rect The clip polygon
+   * @returns The intersecting polygon
+   */
+  inline
+  shared_vec2_double simple_with_rect(
+      const shared_vec2_double &poly,
+      const tiny< vec2<double>, 2> &rect) {
+    return sutherland_hodgman_rect(poly, rect);
+  }
+
+  /**
    * Clip a triangle with a triangle using the sutherland_hodman
    * algorithm.
    * @param subject The subject polygon
@@ -104,12 +118,12 @@ namespace dials { namespace algorithms {
   /**
    * Clip a line with an axis aligned bounding box.
    * @param line The line to clip
-   * @param aabb The box
+   * @param rect The box
    * @returns The intersecting line
    */
   inline
-  std::pair<vert2, bool> line_with_aabb(const vert2 &line, const vert2 &aabb) {
-    return cohen_sutherland(line, aabb);
+  std::pair<vert2, bool> line_with_rect(const vert2 &line, const vert2 &rect) {
+    return cohen_sutherland_single(line, rect);
   }
 
 }}}} // namespace dials::algorithms::polygon::clipping

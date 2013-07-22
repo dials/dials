@@ -27,6 +27,10 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       &simple_with_convex, (
         arg("subject"),
         arg("target")));
+    def ("simple_with_rect",
+      &simple_with_rect, (
+        arg("poly"),
+        arg("rect")));
     def("triangle_with_triangle", 
       &triangle_with_triangle, (
         arg("subject"), 
@@ -43,10 +47,10 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       &quad_with_convex_quad, (
         arg("subject"),
         arg("target")));
-    def("line_with_aabb",
-      &line_with_aabb, (
+    def("line_with_rect",
+      &line_with_rect, (
         arg("line"),
-        arg("aabb")));
+        arg("rect")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_polygon_clip_ext)

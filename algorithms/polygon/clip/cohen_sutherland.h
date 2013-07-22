@@ -1,3 +1,13 @@
+/*
+ * cohen_sutherland.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_POLYGON_CLIP_COHEN_SUTHERLAND_H
 #define DIALS_ALGORITHMS_POLYGON_CLIP_COHEN_SUTHERLAND_H
 
@@ -151,7 +161,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
    * @returns The intersecting line
    */
   template <typename LineType, typename BoxType>
-  std::pair<LineType, bool> cohen_sutherland(
+  std::pair<LineType, bool> cohen_sutherland_single(
       const LineType &line, const BoxType &aabb) {
 
     typedef typename LineType::value_type point_type;

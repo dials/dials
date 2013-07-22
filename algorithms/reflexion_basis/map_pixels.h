@@ -118,7 +118,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         const flex_double &z_fraction) const {
       flex_double grid(flex_grid<>(2 * grid_half_size_ + 1,
                                    2 * grid_half_size_ + 1,
-                                   2 * grid_half_size_ + 1));
+                                   2 * grid_half_size_ + 1), 0);
       this->operator()(cs, bbox, image, mask, z_fraction, grid);
       return grid;
     }
@@ -158,11 +158,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       std::size_t image_height = image.accessor().all()[1];
       std::size_t image_width = image.accessor().all()[2];
 
-      // Initialise all output counts to zero
-      for (std::size_t j = 0; j < grid.size(); ++j) {
-        grid[j] = 0.0;
-      }
-
       // Loop through all the input pixels
       for (std::size_t j = 0; j < image_height; ++j) {
         for (std::size_t i = 0; i < image_width; ++i) {
@@ -176,7 +171,13 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           // Create the target polygon and calculate its area
           vert4 target(ixy00, ixy01, ixy11, ixy10);
           double target_area = simple_area(target);
-          DIALS_ASSERT(target_area > 0.0);
+          if (target_area < 0.0) {
+            std::swap(target[0], target[3]);
+            std::swap(target[1], target[2]);
+            target_area = -target_area;
+          } else if (target_area == 0.0) {
+            continue;
+          }
 
           // Get the range of new grid points
           double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
@@ -204,7 +205,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
               // clip the polygon with the target polygon and calculate the
               // fraction of the area of the clipped polygon against the target.
-              // Then redistribute the values from the target grid to the subject.
+              // Then redistribute the values from the target grid to the
+              // subject.
               vert8 result = quad_with_convex_quad(subject, target);
               double result_area = simple_area(result);
               double xy_fraction = result_area / target_area;

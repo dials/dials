@@ -194,6 +194,130 @@ namespace dials { namespace algorithms { namespace polygon {
     return output;
   }
 
+// Enum of sides
+enum {
+  LEFT = (1 << 0),
+  RIGHT = (1 << 1),
+  BOTTOM = (1 << 2),
+  TOP = (1 << 3),
+};
+
+/**
+ * Check that the point is inside or outside the rectangle
+ * @param p The point
+ * @param r The rectangle
+ * @returns True/False inside or not
+ */
+template <int side, typename PointType, typename RectType>
+bool is_inside_rect(const PointType &p, const RectType &r) {
+  bool inside = false;
+  if (side == LEFT) {
+    inside = p[0] >= r[0][0];
+  } else if (side == RIGHT) {
+    inside = p[0] <= r[1][0];
+  } else if (side == BOTTOM) {
+    inside = p[1] >= r[0][1];
+  } else if (side == TOP) {
+    inside = p[1] <= r[1][1];
+  } else {
+    DIALS_ERROR("Unreachable");
+  }
+  return inside;
+}
+
+/**
+ * Get the intersection of a line with the side of a rectangle.
+ * @param p1 The first point on the line.
+ * @param p2 The second point on the line.
+ * @param r The rectangle
+ * @returns The intersection point.
+ */
+template <int side, typename PointType, typename RectType>
+PointType intersection_rect(const PointType &p1, const PointType &p2,
+    const RectType &r) {
+  PointType p;
+  if (side == LEFT) {
+    p[0] = r[0][0];
+    p[1] = p1[1] + (p2[1] - p1[1]) * (p[0] - p1[0]) / (p2[0] - p1[0]);
+  } else if (side == RIGHT) {
+    p[0] = r[1][0];
+    p[1] = p1[1] + (p2[1] - p1[1]) * (p[0] - p1[0]) / (p2[0] - p1[0]);
+  } else if (side == BOTTOM) {
+    p[1] = r[0][1];
+    p[0] = p1[0] + (p2[0] - p1[0]) * (p[1] - p1[1]) / (p2[1] - p1[1]);
+  } else if (side == TOP) {
+    p[1] = r[1][1];
+    p[0] = p1[0] + (p2[0] - p1[0]) * (p[1] - p1[1]) / (p2[1] - p1[1]);
+  } else {
+    DIALS_ERROR("Unreachable");
+  }
+  return p;
+}
+
+/**
+ * Clip the polygon against a side of the rectangle.
+ * @param result The resulting polygon.
+ * @param poly The polygon to clip.
+ * @param rect The rectangle to clip against
+ */
+template <int side, typename PolygonType, typename RectType>
+void sutherland_hodgman_rect_line(PolygonType &result, const PolygonType &poly,
+    const RectType &rect) {
+
+  typedef typename PolygonType::value_type PointType;
+
+  if (poly.size() == 0) {
+    return;
+  }
+
+  // Loop through all the edges in the subject polygon, again starting
+  // with the last for convenience
+  PointType p1 = poly[poly.size()-1];
+  for (std::size_t i = 0; i < poly.size(); ++i) {
+    PointType p2 = poly[i];
+
+    // If the first point is inside the edge, add the intersection. If
+    // the second point is inside the edge, add the point
+    if (is_inside_rect<side>(p2, rect)) {
+      if (!is_inside_rect<side>(p1, rect)) {
+        result.push_back(intersection_rect<side>(p1, p2, rect));
+      }
+      result.push_back(p2);
+    } else if (is_inside_rect<side>(p1, rect)) {
+      result.push_back(intersection_rect<side>(p1, p2, rect));
+    }
+
+    // Advance the subject edge
+    p1 = p2;
+  }
+}
+
+/**
+ * Clip a simple polygon against a rectangle using the sutherland hodgman
+ * algorithm.
+ * @param poly The polygon to clip
+ * @param rect The rectangle to clip against
+ * @returns The clipped polygon.
+ */
+template <typename PolygonType, typename RectType>
+PolygonType sutherland_hodgman_rect(const PolygonType &poly,
+    const RectType &rect) {
+
+  // Clip along each rect line
+  PolygonType result1(poly.size()), result2(poly.size());
+  result1.clear();
+  result2.clear();
+  sutherland_hodgman_rect_line<BOTTOM>(result1, poly, rect);
+  sutherland_hodgman_rect_line<RIGHT>(result2, result1, rect);
+  result1.clear();
+  sutherland_hodgman_rect_line<TOP>(result1, result2, rect);
+  result2.clear();
+  sutherland_hodgman_rect_line<LEFT>(result2, result1, rect);
+
+  // Return the clipped polygon vertices
+  return result2;
+}
+
 }}} // namespace dials::algorithms::polygon
 
 #endif /* DIALS_ALGORITHMS_POLYGON_CLIPPING_SUTHERLAND_HODGMAN_H */
