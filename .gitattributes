@@ -569,9 +569,14 @@ scratch/jmp/find_strong_spots/histogram_pixels.py -text
 scratch/jmp/find_strong_spots/select_spots.py -text
 scratch/jmp/find_strong_spots/thresholding.py -text
 scratch/jmp/index_test.py -text
+scratch/jmp/misc/area.py -text
+scratch/jmp/misc/clip_line2.py -text
+scratch/jmp/misc/clip_line3.py -text
+scratch/jmp/misc/line_clip.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
+scratch/jmp/misc/test_area.py -text
 scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/nexus/test_h5py.py -text
 scratch/jmp/nexus/test_h5py2.py -text
