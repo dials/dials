@@ -70,7 +70,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       double c2 = e2_ * ds;
       double gi = grid_half_size_ + c1 / step_size_[0] + 0.5;
       double gj = grid_half_size_ + c2 / step_size_[1] + 0.5;
-      return vec2<double>(gj, gi);
+      return vec2<double>(gi, gj);
     }
 
   private:
@@ -213,6 +213,10 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
               vert8 result = quad_with_convex_quad(subject, target);
               double result_area = simple_area(result);
               double xy_fraction = result_area / target_area;
+
+              if (jj == 8) {
+                std::cout << i << " " << j << " " << xy_fraction << std::endl;
+              }
 
               // Copy the values to the grid
               for (int k = 0; k < image_depth; ++k) {

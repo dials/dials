@@ -21,13 +21,17 @@ class TestForward(object):
         self.n_sigma = 3
         self.grid_size = 4
         self.delta_divergence = self.n_sigma * self.sigma_divergence
-        self.delta_divergence2 = (self.n_sigma + 0.5) * self.sigma_divergence
+
+        step_size = self.delta_divergence / self.grid_size
+        self.delta_divergence2 = self.delta_divergence + step_size * 0.5
+
+#        self.delta_divergence2 = (self.n_sigma + 0.5) * self.sigma_divergence
         self.delta_mosaicity = self.n_sigma * self.mosaicity
 
         # Create the bounding box calculator
         self.calculate_bbox = BBoxCalculator(
             self.beam, self.detector, self.gonio, self.scan,
-            self.delta_divergence,
+            self.delta_divergence2,
             self.delta_mosaicity)
 
         # Initialise the transform
@@ -74,14 +78,17 @@ class TestForward(object):
 
         from_detector = FromDetector(cs, self.detector.get_d_matrix())
         step_size = self.delta_divergence / self.grid_size
+        e0, e1 = from_detector(self.detector.pixel_to_millimeter((x, y)))
         e00, e01 = from_detector(self.detector.pixel_to_millimeter((x0, y0)))
         e10, e11 = from_detector(self.detector.pixel_to_millimeter((x0, y1)))
         e20, e21 = from_detector(self.detector.pixel_to_millimeter((x1, y0)))
         e30, e31 = from_detector(self.detector.pixel_to_millimeter((x1, y1)))
-        print e00 / step_size + self.grid_size, e01 / step_size + self.grid_size
-        print e10 / step_size + self.grid_size, e11 / step_size + self.grid_size
-        print e20 / step_size + self.grid_size, e21 / step_size + self.grid_size
-        print e30 / step_size + self.grid_size, e31 / step_size + self.grid_size
+        offset = self.grid_size + 0.5
+        print e0 / step_size + offset, e1 / step_size + offset
+        print e00 / step_size + offset, e01 / step_size + offset
+        print e10 / step_size + offset, e11 / step_size + offset
+        print e20 / step_size + offset, e21 / step_size + offset
+        print e30 / step_size + offset, e31 / step_size + offset
         print self.delta_divergence, self.delta_divergence2,
 
         # Create the image
@@ -92,7 +99,7 @@ class TestForward(object):
         grid = self.transform(cs, bbox, image, mask)
 
         #print flex.min(grid), flex.max(grid)
-        #print grid.as_numpy_array()
+        print grid.as_numpy_array()[4,:,:]
         print grid.all()
 
         from dials.algorithms.reflexion_basis import transform
@@ -102,15 +109,26 @@ class TestForward(object):
             self.grid_size, s1_map)
 
         indices = []
+        labels = []
         for j in range(y1 - y0 + 1):
             for i in range(x1 - x0 + 1):
                 indices.append(index(j,i))
-        y, x = zip(*indices)
+                labels.append('{0}, {1}'.format(i, j))
+        x, y = zip(*indices)
+        x = [xx - 0.5 for xx in x]
+        y = [yy - 0.5 for yy in y]
         #print x, y
 
         from matplotlib import pylab
-        pylab.imshow(grid.as_numpy_array()[4,:,:], origin='bottom')
+#        for i in range(9):
+#            pylab.subplot(3, 3, i)
+#            pylab.imshow(grid.as_numpy_array()[i,:,:], origin='bottom')
+#            pylab.scatter(x, y)
+
+        pylab.imshow(grid.as_numpy_array()[4,:,:], origin='bottom', interpolation='none')
         pylab.scatter(x, y)
+        for ll, xx, yy in zip(labels, x, y):
+            pylab.annotate(ll, xy = (xx, yy))
         pylab.show()
 
         # Test passed
