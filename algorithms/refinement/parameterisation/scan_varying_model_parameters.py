@@ -337,9 +337,9 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         else:
             return [self._smoother.value_weight(t, e) for e in self._param]
 
-    def get_parameter_set_name(self, only_free = True):
-        '''export the name of the internal list of parameter sets, which is
-        the name stem of the individual parameter names
+    def get_parameter_set_names(self, only_free = True):
+        '''export the names of the internal list of parameter sets, which are
+        the name stems of the individual parameter names
 
         If only_free, the names of fixed parameter sets are filtered from the
         returned list. Otherwise all parameter set names are returned'''
