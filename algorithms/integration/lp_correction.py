@@ -27,5 +27,10 @@ def LP_calculations(sweep, crystal, reflection):
     P_f = (1 - 2 * p) * (1 - (n.dot(s) / s.length()) ** 2.0) + \
      p * (1 + (s.dot(s0) / (s.length() * s0.length())) ** 2.0)
 
-    reflection.intensity = reflection.intensity * L_f * P_f
+    # FIXED the polarization factor is an inverse correction see Kabsch
+    # Data Correction and Scaling (b) comment text
+    # J. Appl. Cryst 1988 21 916-924
 
+    reflection.intensity = reflection.intensity * L_f / P_f
+
+    return
