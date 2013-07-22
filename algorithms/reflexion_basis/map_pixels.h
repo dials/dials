@@ -68,8 +68,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
       vec3<double> ds = s1_map_(yy, xx) - s1_;
       double c1 = e1_ * ds;
       double c2 = e2_ * ds;
-      double gi = grid_half_size_ + c1 / step_size_[0];
-      double gj = grid_half_size_ + c2 / step_size_[1];
+      double gi = grid_half_size_ + c1 / step_size_[0] + 0.5;
+      double gj = grid_half_size_ + c2 / step_size_[1] + 0.5;
       return vec2<double>(gj, gi);
     }
 
@@ -168,17 +168,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           vec2<double> ixy10 = index(j+1, i);
           vec2<double> ixy11 = index(j+1, i+1);
 
-          // Create the target polygon and calculate its area
-          vert4 target(ixy00, ixy01, ixy11, ixy10);
-          double target_area = simple_area(target);
-          if (target_area < 0.0) {
-            std::swap(target[0], target[3]);
-            std::swap(target[1], target[2]);
-            target_area = -target_area;
-          } else if (target_area == 0.0) {
-            continue;
-          }
-
           // Get the range of new grid points
           double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
           double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
@@ -192,6 +181,20 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           if (gy0 < 0) gy0 = 0;
           if (gx1 > grid_width) gx1 = grid_width;
           if (gy1 > grid_height) gy1 = grid_height;
+          if (gx0 >= gx1 || gy0 >= gy1) {
+            continue;
+          }
+
+          // Create the target polygon and calculate its area
+          vert4 target(ixy00, ixy01, ixy11, ixy10);
+          double target_area = simple_area(target);
+          if (target_area < 0.0) {
+            std::swap(target[0], target[3]);
+            std::swap(target[1], target[2]);
+            target_area = -target_area;
+          } else if (target_area == 0.0) {
+            continue;
+          }
 
           // Loop over all the pixels within the pixel range
           for (std::size_t jj = gy0; jj < gy1; ++jj) {

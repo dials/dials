@@ -176,6 +176,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     export_map_frames();
     export_beam_vector_map();
     export_map_pixels();
+    export_transform();
   }
 
 }}}}} // namespace = dials::algorithms::reflexion_basis::transform::boost_python

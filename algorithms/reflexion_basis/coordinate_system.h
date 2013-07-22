@@ -509,7 +509,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      */
     FromDetector(const CoordinateSystem &cs, mat3<double> d)
       : from_s1_phi_(cs),
-        d_(d) {}
+        d_(d),
+        s1_length_(cs.s1().length()) {}
 
     /**
      * Map the detector millimeter coordinate to the e1/e2 coordinate.
@@ -517,7 +518,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @returns The e1/e2 coordinate in reciprocal space
      */
     vec2<double> operator()(vec2<double> xy) const {
-      return from_s1_phi_(plane_world_coordinate(d_, xy));
+      vec3<double> s1 = plane_world_coordinate(d_, xy).normalize() * s1_length_;
+      return from_s1_phi_(s1);
     }
 
     /**
@@ -527,12 +529,14 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @returns The local reciprocal space coordinate
      */
     vec3<double> operator()(vec2<double> xy, double phi) const {
-      return from_s1_phi_(plane_world_coordinate(d_, xy), phi);
+      vec3<double> s1 = plane_world_coordinate(d_, xy).normalize() * s1_length_;
+      return from_s1_phi_(s1, phi);
     }
 
   private:
     FromBeamVectorAndRotationAngle from_s1_phi_;
     mat3<double> d_;
+    double s1_length_;
   };
 
 
