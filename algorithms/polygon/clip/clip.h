@@ -15,6 +15,7 @@
 #include <scitbx/array_family/tiny.h>
 #include <scitbx/array_family/small.h>
 #include <scitbx/array_family/shared.h>
+#include <dials/algorithms/polygon/clip/cohen_sutherland.h>
 #include <dials/algorithms/polygon/clip/sutherland_hodgman.h>
 
 namespace dials { namespace algorithms {
@@ -26,6 +27,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::shared;
 
   // Convenient typedefs
+  typedef tiny< vec2<double>, 2 > vert2;
   typedef tiny< vec2<double>, 3 > vert3;
   typedef tiny< vec2<double>, 4 > vert4;
   typedef small< vec2<double>, 6 > vert6;
@@ -97,6 +99,17 @@ namespace dials { namespace algorithms {
   vert8 quad_with_convex_quad(const vert4 &subject, const vert4 &target) {
     return sutherland_hodgman_simple_convex
       <vert4, vert4, vert8, 8>(subject, target);
+  }
+
+  /**
+   * Clip a line with an axis aligned bounding box.
+   * @param line The line to clip
+   * @param aabb The box
+   * @returns The intersecting line
+   */
+  inline
+  std::pair<vert2, bool> line_with_aabb(const vert2 &line, const vert2 &aabb) {
+    return cohen_sutherland(line, aabb);
   }
 
 }}}} // namespace dials::algorithms::polygon::clipping

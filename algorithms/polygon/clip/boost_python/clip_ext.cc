@@ -10,15 +10,19 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <scitbx/boost_python/container_conversions.h>
 #include <dials/algorithms/polygon/clip/clip.h>
 
 namespace dials { namespace algorithms { namespace polygon { namespace clip {
   namespace boost_python {
 
   using namespace boost::python;
+  using scitbx::boost_python::container_conversions::to_tuple;
 
   void export_clip() 
   {
+    to_tuple< std::pair<vert2, bool> >();
+  
     def("simple_with_convex", 
       &simple_with_convex, (
         arg("subject"),
@@ -39,6 +43,10 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       &quad_with_convex_quad, (
         arg("subject"),
         arg("target")));
+    def("line_with_aabb",
+      &line_with_aabb, (
+        arg("line"),
+        arg("aabb")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_polygon_clip_ext)

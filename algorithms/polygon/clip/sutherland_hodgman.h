@@ -31,7 +31,7 @@ namespace dials { namespace algorithms { namespace polygon {
   }
 
   /**
-   * Return the intersection of a line sefment with an infinite edge.
+   * Return the intersection of a line segment with an infinite edge.
    * @param p1 The first point
    * @param p2 The second point
    * @param e1 The first edge point
