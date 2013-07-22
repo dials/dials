@@ -16,7 +16,7 @@ class TestForward(object):
         self.scan = self.sweep.get_scan()
 
         # Set some parameters
-        self.sigma_divergence = 0.060 * pi / 180
+        self.sigma_divergence =self.beam.get_sigma_divergence(deg=False)
         self.mosaicity = 0.157 * pi / 180
         self.n_sigma = 3
         self.grid_size = 4
@@ -115,6 +115,8 @@ class TestForward(object):
                 indices.append(index(j,i))
                 labels.append('{0}, {1}'.format(i, j))
         x, y = zip(*indices)
+
+        print "Index: ", index(1, 1)
         x = [xx - 0.5 for xx in x]
         y = [yy - 0.5 for yy in y]
         #print x, y
@@ -129,8 +131,8 @@ class TestForward(object):
         pylab.scatter(x, y)
         for j in range(9):
             for i in range(9):
-                ii = i -0.5
-                jj = j-0.5
+                ii = i - 0.5
+                jj = j - 0.5
                 px = [ii, ii + 1, ii + 1, ii, ii]
                 py = [jj, jj, jj + 1, jj + 1, jj]
                 pylab.plot(px, py, color='white')

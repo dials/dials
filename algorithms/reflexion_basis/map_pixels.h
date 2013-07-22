@@ -168,10 +168,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           vec2<double> ixy10 = index(j+1, i);
           vec2<double> ixy11 = index(j+1, i+1);
 
-          if (i == 1 && j == 1) {
-            std::cout << ixy00.const_ref() << " -> " << ixy01.const_ref() << ", " << ixy10.const_ref() << " -> " << ixy11.const_ref() << std::endl;
-          }
-
           // Get the range of new grid points
           double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
           double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
@@ -200,14 +196,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
             continue;
           }
 
-//          if (i == 0 && j == 1) {
-//            std::cout << gx0 << " -> " << gx1 << ", " << gy0 << " -> " << gy1 << std::endl;
-//          }
-
-          if (i == 1 && j == 1) {
-            std::cout << gx0 << " -> " << gx1 << ", " << gy0 << " -> " << gy1 << std::endl;
-          }
-
           // Loop over all the pixels within the pixel range
           for (std::size_t jj = gy0; jj < gy1; ++jj) {
             for (std::size_t ii = gx0; ii < gx1; ++ii) {
@@ -225,10 +213,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
               vert8 result = quad_with_convex_quad(subject, target);
               double result_area = simple_area(result);
               double xy_fraction = result_area / target_area;
-
-              if (jj == 8) {
-                std::cout << i << " " << j << " " << xy_fraction << std::endl;
-              }
 
               // Copy the values to the grid
               for (int k = 0; k < image_depth; ++k) {
