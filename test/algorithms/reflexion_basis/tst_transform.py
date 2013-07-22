@@ -18,6 +18,7 @@ class TestForward(object):
         print self.detector.get_d_matrix()
         print self.gonio.get_rotation_axis()
         print self.beam.get_direction()
+        print self.detector.get_beam_centre(self.beam.get_s0())
         self.beam.set_direction((0.0, 0.0, 1.0))
         self.gonio.set_rotation_axis((1.0, 0.0, 0.0))
         self.detector.set_frame((1.0, 0.0, 0.0),
@@ -63,8 +64,9 @@ class TestForward(object):
         y = uniform(300, 1800)
         z = uniform(-10, 0)
         print x, y, z
-        x, y, z = 2000, 10, 10
-#        x, y, z = 993.376692565, 1272.1175661, -7.9419902089
+
+#        x, y, z = 500, 500, 10
+        x, y, z = 993.376692565, 1272.1175661, -7.9419902089
 
         # Get random s1, phi, panel
         s1 = matrix.col(self.detector.get_pixel_lab_coord(
@@ -124,17 +126,45 @@ class TestForward(object):
                 labels.append('{0}, {1}'.format(i, j))
         x, y = zip(*indices)
 
-        x = [xx - 0.5 for xx in x]
-        y = [yy - 0.5 for yy in y]
+        #x = [xx - 0.5 for xx in x]
+        #y = [yy - 0.5 for yy in y]
         #print x, y
+        from dials.algorithms.polygon import simple_area
+        indices = []
+        area = []
+        from_detector = FromDetector(cs, self.detector.get_d_matrix())
+        #index2 = lambda j, i: matrix.col(from_detector(self.detector.pixel_to_millimeter((i, j)))) / step_size + matrix.col((offset, offset))
+
+
+        def index(j, i):
+            mm = self.detector.pixel_to_millimeter((i + x0, j + y0))
+            ee = matrix.col(from_detector(mm))
+            return (ee[0] / step_size + offset, ee[1] / step_size + offset)
+
+        for j in range(y1 - y0):
+            for i in range(x1 - x0):
+                gx00, gy00 = index(j, i)
+                gx01, gy01 = index(j, i+1)
+                gx10, gy10 = index(j+1,i)
+                gx11, gy11 = index(j+1,i+1)
+                poly = flex.vec2_double([
+                    (gx00, gy00),
+                    (gx01, gy01),
+                    (gx11, gy11),
+                    (gx10, gy10)])
+                indices.append((gx00, gy00))
+                area.append(simple_area(poly))
 
         from matplotlib import pylab
+        x, y = zip(*indices)
+        pylab.plot(y, area)
+        pylab.show()
 #        for i in range(9):
 #            pylab.subplot(3, 3, i)
 #            pylab.imshow(grid.as_numpy_array()[i,:,:], origin='bottom')
 #            pylab.scatter(x, y)
 
-        pylab.imshow(grid.as_numpy_array()[4,:,:], origin='bottom', interpolation='none')
+        #pylab.imshow(grid.as_numpy_array()[4,:,:], origin='bottom', interpolation='none')
 #        pylab.scatter(x, y)
 #        for j in range(9):
 #            for i in range(9):
@@ -145,7 +175,7 @@ class TestForward(object):
 #                pylab.plot(px, py, color='white')
 #        for ll, xx, yy in zip(labels, x, y):
 #            pylab.annotate(ll, xy = (xx, yy))
-        pylab.show()
+        #pylab.show()
 
         # Test passed
         print 'OK'

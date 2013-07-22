@@ -49,8 +49,8 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
     // Calculate the image size
     vec2<std::size_t> image_size = detector.get_image_size();
-    std::size_t x_size = image_size[0] * n_div;
-    std::size_t y_size = image_size[1] * n_div;
+    std::size_t y_size = image_size[0] * n_div;
+    std::size_t x_size = image_size[1] * n_div;
     if (corner) {
       x_size += 1;
       y_size += 1;
