@@ -127,6 +127,13 @@ class TestForward(object):
 
         pylab.imshow(grid.as_numpy_array()[4,:,:], origin='bottom', interpolation='none')
         pylab.scatter(x, y)
+        for j in range(9):
+            for i in range(9):
+                ii = i -0.5
+                jj = j-0.5
+                px = [ii, ii + 1, ii + 1, ii, ii]
+                py = [jj, jj, jj + 1, jj + 1, jj]
+                pylab.plot(px, py, color='white')
         for ll, xx, yy in zip(labels, x, y):
             pylab.annotate(ll, xy = (xx, yy))
         pylab.show()
