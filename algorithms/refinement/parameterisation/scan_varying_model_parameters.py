@@ -31,8 +31,9 @@ class ScanVaryingParameterSet(Parameter):
         self._esd = [None] * num_samples
         self._axis = axis
         self._ptype = ptype
-        name_stem = [name] * num_samples
-        self._name = [e + "_sample%d" % i for i, e in enumerate(name_stem)]
+        self._name_stem = name
+        self._name = [e + "_sample%d" % i for i, e in \
+                      enumerate([self._name_stem] * num_samples)]
         self._fixed = False
 
         return
@@ -53,6 +54,10 @@ class ScanVaryingParameterSet(Parameter):
     @property
     def axis(self):
         return self._axis
+
+    @property
+    def name_stem(self):
+        return self._name_stem
 
 
 class GaussianSmoother(object):
@@ -317,3 +322,30 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
             return [0. * ds_dp if p.get_fixed() else ds_dp \
                     for row, p in zip(self._dstate_dp, self._param) \
                     for ds_dp in row]
+
+    def get_parameter_set_values(self, t, only_free = True):
+        '''export the values of the internal list of parameter sets as a
+        sequence of floats, for image number 't'.
+
+        If only_free, the values of fixed parameter sets are filtered from the
+        returned list. Otherwise all parameter set values are returned'''
+
+        if only_free:
+            return [self._smoother.value_weight(t, e) for e in self._param \
+                    if not e.get_fixed()]
+
+        else:
+            return [self._smoother.value_weight(t, e) for e in self._param]
+
+    def get_parameter_set_name(self, only_free = True):
+        '''export the name of the internal list of parameter sets, which is
+        the name stem of the individual parameter names
+
+        If only_free, the names of fixed parameter sets are filtered from the
+        returned list. Otherwise all parameter set names are returned'''
+
+        if only_free:
+            return [x.name_stem for e in self._param if not e.get_fixed()]
+
+        else:
+            return [x.name_stem for e in self._param]
