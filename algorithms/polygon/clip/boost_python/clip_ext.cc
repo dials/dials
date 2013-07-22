@@ -10,18 +10,18 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <scitbx/boost_python/container_conversions.h>
+#include <boost_adaptbx/std_pair_conversion.h>
 #include <dials/algorithms/polygon/clip/clip.h>
 
 namespace dials { namespace algorithms { namespace polygon { namespace clip {
   namespace boost_python {
 
   using namespace boost::python;
-  using scitbx::boost_python::container_conversions::to_tuple;
+  using boost_adaptbx::std_pair_conversions::to_tuple;
 
   void export_clip() 
   {
-    to_tuple< std::pair<vert2, bool> >();
+    to_tuple<vert2, bool>();
   
     def("simple_with_convex", 
       &simple_with_convex, (

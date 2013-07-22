@@ -61,73 +61,73 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
     case LEFT:
       x = aabb[0][0];
       y = m * x + c;
-      if (y < aabb[0][1] or aabb[1][1] < y)
-        code = OUTSIDE;
+      if (y < aabb[0][1] || aabb[1][1] < y)
+        retcode = OUTSIDE;
       break;
     case RIGHT:
       x = aabb[1][0];
       y = m * x + c;
-      if (y < aabb[0][1] or aabb[1][1] < y)
-        code = OUTSIDE;
+      if (y < aabb[0][1] || aabb[1][1] < y)
+        retcode = OUTSIDE;
       break;
     case BOTTOM:
       y = aabb[0][1];
       x = (y - c) / m;
-      if (x < aabb[0][0] or aabb[1][0] < x)
-        code = OUTSIDE;
+      if (x < aabb[0][0] || aabb[1][0] < x)
+        retcode = OUTSIDE;
       break;
     case TOP:
       y = aabb[1][1];
       x = (y - c) / m;
-      if (x < aabb[0][0] or aabb[1][0] < x)
-        code = OUTSIDE;
+      if (x < aabb[0][0] || aabb[1][0] < x)
+        retcode = OUTSIDE;
       break;
     case LEFT | BOTTOM:
       x = aabb[0][0];
       y = m * x + c;
       if (y > aabb[1][1]) {
-        code = OUTSIDE;
+        retcode = OUTSIDE;
       } else if (y < aabb[0][1]) {
         y = aabb[0][1];
         x = (y - c) / m;
         if (aabb[1][0] < x)
-          code = OUTSIDE;
+          retcode = OUTSIDE;
       }
       break;
     case LEFT | TOP:
       x = aabb[0][0];
       y = m * x + c;
       if (y < aabb[0][1])
-        code = OUTSIDE;
+        retcode = OUTSIDE;
       else if (y > aabb[1][1]) {
         y = aabb[1][1];
         x = (y - c) / m;
         if (aabb[1][0] < x)
-          code = OUTSIDE;
+          retcode = OUTSIDE;
       }
       break;
     case RIGHT | BOTTOM:
-      x = aabb[0][0];
+      x = aabb[1][0];
       y = m * x + c;
       if (y > aabb[1][1]) {
-        code = OUTSIDE;
+        retcode = OUTSIDE;
       } else if (y < aabb[0][1]) {
         y = aabb[0][1];
         x = (y - c) / m;
         if (aabb[0][0] > x)
-          code = OUTSIDE;
+          retcode = OUTSIDE;
       }
       break;
     case RIGHT | TOP:
       x = aabb[1][0];
       y = m * x + c;
       if (y < aabb[0][1]) {
-        code = OUTSIDE;
+        retcode = OUTSIDE;
       } else if (y > aabb[1][1]) {
         y = aabb[1][1];
         x = (y - c) / m;
         if (aabb[0][0] > x)
-          code = OUTSIDE;
+          retcode = OUTSIDE;
       }
       break;
     default:
@@ -188,7 +188,7 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
     }
 
     // Otherwise return Null
-    return std::make_pair(LineType(), true);
+    return std::make_pair(LineType(), false);
   }
 
 }}}} // namespace dials::algorithms::polygon::clip

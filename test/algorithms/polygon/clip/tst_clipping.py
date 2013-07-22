@@ -308,6 +308,67 @@ class TestQuadWithConvexQuad(object):
         print 'OK'
 
 
+class TestLineWithAABB(object):
+
+    def __init__(self):
+        self.box = ((-10, -10), (10, 10))
+
+    def __call__(self):
+        from random import uniform
+        from dials.algorithms.polygon import clip
+
+        for i in range(1000):
+
+            point1 = uniform(-20, 20), uniform(-20, 20)
+            point2 = uniform(-20, 20), uniform(-20, 20)
+            line = (point1, point2)
+            line, status = clip.line_with_aabb(line, self.box)
+            if self.intersects(point1, point2):
+                assert(status == True)
+            else:
+                assert(status == False)
+
+
+        print 'OK'
+
+    def inbetween(self, x, x0, x1):
+        x00 = min([x0, x1])
+        x11 = max([x0, x1])
+        return x >= x00 and x <= x11
+
+    def intersects(self, point1, point2):
+        if self.is_outside(point1) and self.is_outside(point2):
+            m = (point2[1] - point1[1]) / (point2[0] - point1[0])
+            c = (point1[1] - m * point1[0])
+            x = self.box[0][0]
+            y = m * x + c
+            if (y >= self.box[0][1] and y <= self.box[1][1] and
+                self.inbetween(y, point1[1], point2[1])):
+                return True
+            x = self.box[1][0]
+            y = m * x + c
+            if (y >= self.box[0][1] and y <= self.box[1][1] and
+                self.inbetween(y, point1[1], point2[1])):
+                return True
+            y = self.box[0][1]
+            x = (y - c) / m
+            if (x >= self.box[0][0] and x <= self.box[1][0] and
+                self.inbetween(x, point1[0], point2[0])):
+                return True
+            y = self.box[1][1]
+            x = (y - c) / m
+            if (x >= self.box[0][0] and x <= self.box[0][1] and
+                self.inbetween(x, point1[0], point2[0])):
+                return True
+            return False
+        else:
+            return True
+
+    def is_outside(self, point):
+        return (point[0] < self.box[0][0] or point[1] < self.box[0][1] or
+                point[0] > self.box[1][0] or point[1] > self.box[1][1])
+
+
 class Test(object):
 
     def __init__(self):
@@ -316,6 +377,7 @@ class Test(object):
         self.tst_triangle_with_convex_quad = TestTriangleWithConvexQuad()
         self.tst_quad_with_triangle = TestQuadWithTriangle()
         self.tst_quad_with_convex_quad = TestQuadWithConvexQuad()
+        self.tst_line_with_aabb = TestLineWithAABB()
 
     def run(self):
         self.tst_simple_with_convex()
@@ -323,6 +385,7 @@ class Test(object):
         self.tst_triangle_with_convex_quad()
         self.tst_quad_with_triangle()
         self.tst_quad_with_convex_quad()
+        self.tst_line_with_aabb()
 
 
 if __name__ == '__main__':
