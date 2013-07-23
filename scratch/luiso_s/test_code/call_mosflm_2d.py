@@ -96,20 +96,8 @@ rlist = ReflectionList()
 for times in range(5):
     rlist.append(r)
 
-
-
-from dials.algorithms.background.flat_background_subtractor \
- import tmp_numpy_layering_n_bkgr_avg, layering_and_background_avg
-
-from dials.algorithms.background.curved_background_subtractor \
- import tmp_numpy_layering_n_bkgr_modl, layering_and_background_modl
-
-
-#tmp_numpy_layering_n_bkgr_avg(rlist)
-#layering_and_background_avg(rlist)
-layering_and_background_modl(rlist)
-#tmp_numpy_layering_n_bkgr_modl(rlist)
-
+from dials.scratch.luiso_s.test_code.mosflm_2D import add_2d
+add_2d(rlist)
 
 from dials.algorithms.integration.summation2d \
  import tmp_numpy_layering_n_integrating, flex_2d_layering_n_integrating

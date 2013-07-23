@@ -4,7 +4,7 @@ from scitbx.array_family import flex
 from dials.scratch.luiso_s import model_2d
 from matplotlib import pyplot as plt
 from dials.scratch.luiso_s import add_2d, write_2d
-
+'''
 import numpy
 
 data2d = numpy.zeros((40, 60), dtype = numpy.float64)
@@ -43,9 +43,10 @@ print "Plotting reslt"
 img_suma = sumation.as_numpy_array()
 plt.imshow(img_suma, interpolation = "nearest")
 plt.show()
-
-def layering_and_background_modl(reflections):
-    from dials.algorithms.background import curved_background_flex_2d
+'''
+def add_2d(reflections):
+    print "Hi 01"
+#    from dials.algorithms.background import curved_background_flex_2d
     from scitbx.array_family import flex
     for ref in reflections:
         if ref.is_valid():
@@ -60,3 +61,4 @@ def layering_and_background_modl(reflections):
                 background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
+    print "hi 02"
