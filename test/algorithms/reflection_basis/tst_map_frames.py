@@ -44,8 +44,7 @@ class TestMapFramesForward(object):
 
         from scitbx import matrix
         from random import uniform
-        from dials.algorithms.integration import FromBeamVectorToXds
-        from dials.algorithms.integration import XdsCoordinateSystem
+        from dials.algorithms.reflection_basis import CoordinateSystem
         from scitbx.array_family import flex
 
         s0 = self.beam.get_s0()
@@ -72,10 +71,10 @@ class TestMapFramesForward(object):
             z1, z2 = bbox[4], bbox[5]
 
             # Create the XDS coordinate system
-            xcs = XdsCoordinateSystem(s0, s1, m2, phi)
+            xcs = CoordinateSystem(m2, s0, s1, phi)
 
             # Calculate the transform fraction
-            fraction = self.transform(bbox[4:], phi, xcs.zeta)
+            fraction = self.transform(bbox[4:], phi, xcs.zeta())
 
             # Ensure the minimum and maximum are 0 < 1
             fmax = flex.max(fraction)
@@ -154,8 +153,7 @@ class TestMapFramesReverse(object):
 
         from scitbx import matrix
         from random import uniform
-        from dials.algorithms.integration import FromBeamVectorToXds
-        from dials.algorithms.integration import XdsCoordinateSystem
+        from dials.algorithms.reflection_basis import CoordinateSystem
         from scitbx.array_family import flex
 
         s0 = self.beam.get_s0()
@@ -182,10 +180,10 @@ class TestMapFramesReverse(object):
             z1, z2 = bbox[4], bbox[5]
 
             # Create the XDS coordinate system
-            xcs = XdsCoordinateSystem(s0, s1, m2, phi)
+            xcs = CoordinateSystem(m2, s0, s1, phi)
 
             # Calculate the transform fraction
-            fraction = self.transform(bbox[4:], phi, xcs.zeta)
+            fraction = self.transform(bbox[4:], phi, xcs.zeta())
 
             # Ensure the minimum and maximum are 0 < 1
             fmax = flex.max(fraction)
@@ -273,8 +271,7 @@ class TestMapForwardReverse(object):
 
         from scitbx import matrix
         from random import uniform
-        from dials.algorithms.integration import FromBeamVectorToXds
-        from dials.algorithms.integration import XdsCoordinateSystem
+        from dials.algorithms.reflection_basis import CoordinateSystem
         from scitbx.array_family import flex
 
         s0 = self.beam.get_s0()
@@ -301,13 +298,13 @@ class TestMapForwardReverse(object):
             z1, z2 = bbox[4], bbox[5]
 
             # Create the XDS coordinate system
-            xcs = XdsCoordinateSystem(s0, s1, m2, phi)
+            xcs = CoordinateSystem(m2, s0, s1, phi)
 
             # Calculate the transform fraction
-            forward_fraction = self.transform_forward(bbox[4:], phi, xcs.zeta)
+            forward_fraction = self.transform_forward(bbox[4:], phi, xcs.zeta())
 
             # Calculate the transform fraction
-            reverse_fraction = self.transform_reverse(bbox[4:], phi, xcs.zeta)
+            reverse_fraction = self.transform_reverse(bbox[4:], phi, xcs.zeta())
 
             # Check the same points are non-zero
             eps = 1e-7

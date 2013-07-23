@@ -152,8 +152,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       return double4(
         -1.0,
          1.0,
-        m2e3_m2ps - sqrt(r),
-        m2e3_m2ps + sqrt(r));
+        m2e3_m2ps - std::sqrt(r),
+        m2e3_m2ps + std::sqrt(r));
     }
 
   private:
@@ -424,7 +424,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     double operator()(double c3) const {
       double l = m2e1_m2e1_ + c3 * m2e3_m2ps_ - c3*c3;
       DIALS_ASSERT(l >= 0.0);
-      double y = sqrt(l) + m2e1_;
+      double y = std::sqrt(l) + m2e1_;
       double x = c3 - m2e3_m2ps_;
       DIALS_ASSERT(x != 0.0);
       return 2.0*atan(y / x);

@@ -71,9 +71,6 @@ algorithms/integration/__init__.py -text
 algorithms/integration/bbox_calculator.h -text
 algorithms/integration/boost_python/bbox_calculator.cc -text
 algorithms/integration/boost_python/find_overlapping_reflections.cc -text
-algorithms/integration/boost_python/from_beam_vector_to_xds.cc -text
-algorithms/integration/boost_python/from_xds_e3_to_phi.cc -text
-algorithms/integration/boost_python/from_xds_to_beam_vector.cc -text
 algorithms/integration/boost_python/helpers.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
@@ -83,13 +80,9 @@ algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/shoebox_masker.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/summation_reciprocal_space.cc -text
-algorithms/integration/boost_python/xds_coordinate_system.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
 algorithms/integration/divergence_and_mosaicity.py -text
 algorithms/integration/find_overlapping_reflections.h -text
-algorithms/integration/from_beam_vector_to_xds.h -text
-algorithms/integration/from_xds_e3_to_phi.h -text
-algorithms/integration/from_xds_to_beam_vector.h -text
 algorithms/integration/helpers.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain
@@ -118,7 +111,6 @@ algorithms/integration/summation2d.py -text svneol=unset#text/plain
 algorithms/integration/summation3d.py -text
 algorithms/integration/summation_reciprocal_space.h -text
 algorithms/integration/summation_reciprocal_space.py -text
-algorithms/integration/xds_coordinate_system.h -text
 algorithms/peak_finding/SConscript -text
 algorithms/peak_finding/__init__.py -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/label_pixels.cc -text
@@ -678,12 +670,8 @@ test/algorithms/integration/profile/tst_reference_learner.py -text
 test/algorithms/integration/profile/tst_reference_locator.py -text
 test/algorithms/integration/profile/tst_xds_circle_sampler.py -text
 test/algorithms/integration/tst_bbox_calculator.py -text
-test/algorithms/integration/tst_from_beam_vector_to_xds.py -text
-test/algorithms/integration/tst_from_xds_e3_to_phi.py -text
-test/algorithms/integration/tst_from_xds_to_beam_vector.py -text
 test/algorithms/integration/tst_reciprocal_space_transform.py -text
 test/algorithms/integration/tst_shoebox_masker.py -text
-test/algorithms/integration/tst_xds_coordinate_system.py -text
 test/algorithms/peak_finding/tst_spotfinder.py -text
 test/algorithms/polygon/clip/tst_clipping.py -text
 test/algorithms/refinement/__init__.py -text

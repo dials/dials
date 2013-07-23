@@ -16,10 +16,6 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_helpers();
-  void export_xds_coordinate_system();
-  void export_from_beam_vector_to_xds();
-  void export_from_xds_to_beam_vector();
-  void export_from_xds_e3_to_phi();
   void export_bbox_calculator();
   void export_find_overlapping_reflections();
   void export_reflection_profile_helpers();
@@ -33,10 +29,6 @@ namespace dials { namespace algorithms { namespace boost_python {
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
     export_helpers();
-    export_xds_coordinate_system();
-    export_from_beam_vector_to_xds();
-    export_from_xds_to_beam_vector();
-    export_from_xds_e3_to_phi();
     export_bbox_calculator();
     export_find_overlapping_reflections();
     export_reflection_profile_helpers();

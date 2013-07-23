@@ -16,9 +16,7 @@
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
 #include <dials/algorithms/integration/summation.h>
-#include <dials/algorithms/integration/xds_coordinate_system.h>
-#include <dials/algorithms/integration/from_xds_to_beam_vector.h>
-#include <dials/algorithms/integration/from_xds_e3_to_phi.h>
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
 #include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms {

@@ -47,8 +47,7 @@ class Test(object):
 
         from scitbx import matrix
         from random import uniform
-        from dials.algorithms.integration import FromBeamVectorToXds
-        from dials.algorithms.integration import XdsCoordinateSystem
+        from dials.algorithms import reflection_basis as rb
 
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
@@ -78,10 +77,10 @@ class Test(object):
             phi_dash2 = self.scan.get_angle_from_array_index(z2, deg = False)
 
             # Create the XDS coordinate system
-            xcs = XdsCoordinateSystem(s0, s1, m2, phi)
+            xcs = rb.CoordinateSystem(m2, s0, s1, phi)
 
             # Calculate reciprocal space coordinates at each point
-            to_reciprocal_space = FromBeamVectorToXds(xcs, s1, phi)
+            to_reciprocal_space = rb.FromBeamVectorAndRotationAngle(xcs)
             e11, e21, e31 = to_reciprocal_space(s1, phi_dash1)
             e12, e22, e32 = to_reciprocal_space(s1, phi_dash2)
 
@@ -120,8 +119,7 @@ class Test(object):
     def tst_radius(self):
         from scitbx import matrix
         from random import uniform
-        from dials.algorithms.integration import FromBeamVectorToXds
-        from dials.algorithms.integration import XdsCoordinateSystem
+        from dials.algorithms import reflection_basis as rb
         from math import sqrt
 
         s0 = self.beam.get_s0()
@@ -155,10 +153,10 @@ class Test(object):
             phi_dash2 = self.scan.get_angle_from_array_index(z2, deg = False)
 
             # Create the XDS coordinate system
-            xcs = XdsCoordinateSystem(s0, s1, m2, phi)
+            xcs = rb.CoordinateSystem(m2, s0, s1, phi)
 
             # Calculate reciprocal space coordinates at each point
-            to_reciprocal_space = FromBeamVectorToXds(xcs, s1, phi)
+            to_reciprocal_space = rb.FromBeamVectorAndRotationAngle(xcs)
 
             # Check vertical edges
             for j in range(bbox[2], bbox[3] + 1):

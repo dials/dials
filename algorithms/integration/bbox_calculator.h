@@ -21,9 +21,7 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
 #include <dials/model/data/reflection.h>
-#include "xds_coordinate_system.h"
-#include "from_xds_to_beam_vector.h"
-#include "from_xds_e3_to_phi.h"
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
 
 namespace dials { namespace algorithms {
 
@@ -103,13 +101,13 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(s1.length_sq() > 0);
 
       // Create the coordinate system for the reflection
-      XdsCoordinateSystem xcs(s0_, s1, m2_, phi);
+      reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
 
       // Create the transformer from the xds coordinate system to the detector
-      FromXdsToBeamVector calculate_beam_vector(xcs, s1);
+      reflection_basis::ToBeamVector calculate_beam_vector(xcs);
 
       // Create the transformer from Xds E3 to rotation angle
-      FromXdsE3ToPhi calculate_rotation_angle(xcs.get_zeta(), phi);
+      reflection_basis::ToRotationAngleFast calculate_rotation_angle(xcs);
 
       // Calculate the beam vectors at the following xds coordinates:
       //   (-delta_d, -delta_d, 0)
@@ -117,10 +115,10 @@ namespace dials { namespace algorithms {
       //   (-delta_d, +delta_d, 0)
       //   (+delta_d, +delta_d, 0)
       double point = delta_divergence_;
-      double3 sdash1 = calculate_beam_vector(double3(-point, -point, 0.0));
-      double3 sdash2 = calculate_beam_vector(double3(+point, -point, 0.0));
-      double3 sdash3 = calculate_beam_vector(double3(-point, +point, 0.0));
-      double3 sdash4 = calculate_beam_vector(double3(+point, +point, 0.0));
+      double3 sdash1 = calculate_beam_vector(double2(-point, -point));
+      double3 sdash2 = calculate_beam_vector(double2(+point, -point));
+      double3 sdash3 = calculate_beam_vector(double2(-point, +point));
+      double3 sdash4 = calculate_beam_vector(double2(+point, +point));
 
       // Get the detector coordinates (px) at the ray intersections
       double2 xy1 = detector_[panel].get_ray_intersection_px(sdash1);
