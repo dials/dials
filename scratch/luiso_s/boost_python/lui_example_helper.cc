@@ -11,7 +11,6 @@ namespace dials { namespace scratch { namespace boost_python {
     def("write_2d", &write_2d, (arg("data2d")));
     def("add_2d", &add_2d, (arg("descriptor")), (arg("data2d")), (arg("total")) );
 
-    def("tst_01", &tst_01, (arg("data2d")));
     def("raw_2d_cut", &raw_2d_cut, (arg("data2d")), (arg("mask2d")),
         (arg("background2d")));
 

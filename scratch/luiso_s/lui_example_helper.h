@@ -78,35 +78,6 @@ namespace dials { namespace scratch {
   }
 
 
-  flex_double tst_01(flex_double & data2d) {
-//    std::size_t ncol=data2d.accessor().all()[1];
-//    std::size_t nrow=data2d.accessor().all()[0];
-    int ncol=data2d.accessor().all()[1];
-    int nrow=data2d.accessor().all()[0];
-    flex_double data2dreturn(data2d);
-    double matx2d[nrow][ncol];
-    std::cout << "\n ncol=" << ncol << " ,  nrow=" << nrow << "\n";
-
-
-    for (int row = 0; row<=nrow-1;row++) {
-      for (int col = 0; col<=ncol-1;col++) {
-        matx2d[row][col]=data2d(row,col);
-      }
-    }
-
-
-    for (int row = 0; row<=nrow-1;row++) {
-      for (int col = 0; col<=ncol-1;col++) {
-        data2dreturn(row,col)=matx2d[row][col];
-      }
-    }
-
-    std::cout << "\n Done \n";
-
-    return data2dreturn;
-
-  }
-
   vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
       flex_double & background2d) {
       double i_tot = 0, tot_bkgr = 0;

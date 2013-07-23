@@ -1,5 +1,5 @@
 from __future__ import division
-from dials.scratch.luiso_s import tst_01, write_2d
+from dials.scratch.luiso_s import  write_2d
 from scitbx.array_family import flex
 from dials.scratch.luiso_s import model_2d
 from dials.algorithms.peak_finding import smooth_2d, smooth_3d
