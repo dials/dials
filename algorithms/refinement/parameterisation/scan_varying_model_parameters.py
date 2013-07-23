@@ -21,7 +21,8 @@ class ScanVaryingParameterSet(Parameter):
     num_samples is the number of checkpoints. Other arguments are as Parameter.
     '''
 
-    def __init__(self, value, num_samples = 5, axis = None, ptype = None, name = "ScanVaryingParameterSet"):
+    def __init__(self, value, num_samples = 5, axis = None, ptype = None,
+                 name = "ScanVaryingParameterSet"):
 
         Parameter.__init__(self, value, axis, ptype, name)
 
@@ -225,7 +226,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     # def num_total(self): inherited unchanged from ModelParameterisation
 
     def compose(self, t):
-        '''compose the model state at time t from its initial state and its
+        '''compose the model state at image number t from its initial state and its
         parameter list. Also calculate the derivatives of the state wrt
         each parameter in the list.
 
@@ -292,7 +293,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
     def get_state(self, t):
         '''return the current state of the model under parameterisation
-        at time t. This is required, for example, by the calculation
+        at image number t. This is required, for example, by the calculation
         of finite difference gradients.'''
 
         # To be implemented by the derived class, where it is clear what aspect
