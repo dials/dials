@@ -1,5 +1,5 @@
 
-from dials.algorithms.reflexion_basis.transform import rebin_pixels
+from dials.algorithms.reflection_basis.transform import rebin_pixels
 
 class Test(object):
 

@@ -1,4 +1,4 @@
-from dials.algorithms.reflexion_basis import *
+from dials.algorithms.reflection_basis import *
 
 class TestCoordinateSystem(object):
     """Test the XDS coordinate system class"""

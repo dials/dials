@@ -15,10 +15,10 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/flex_types.h>
-#include <dials/algorithms/reflexion_basis/rebin_pixels.h>
-#include <dials/algorithms/reflexion_basis/coordinate_system.h>
+#include <dials/algorithms/reflection_basis/rebin_pixels.h>
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using scitbx::vec2;
@@ -85,7 +85,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
 
   /**
-   * Class to map the pixels to the reflexion basis grid
+   * Class to map the pixels to the reflection basis grid
    */
   class MapPixelsForward {
   public:
@@ -244,7 +244,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
 
   /**
-   * Class to map the pixels from the reflexion basis grid
+   * Class to map the pixels from the reflection basis grid
    */
   class MapPixelsReverse {
   public:
@@ -386,6 +386,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     vec2<double> step_size_;
   };
 
-}}}} // namespace dials::algorithms::reflexion_basis::transform
+}}}} // namespace dials::algorithms::reflection_basis::transform
 
 #endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_PIXELS_H */

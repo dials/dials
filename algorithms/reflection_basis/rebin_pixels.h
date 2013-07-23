@@ -20,7 +20,7 @@
 #include <dials/algorithms/polygon/area.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using std::floor;
@@ -142,6 +142,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     rebin_pixels_internal(output, input, inputxy);
   }
 
-}}}} // dials::algorithms::reflexion_basis::transform
+}}}} // dials::algorithms::reflection_basis::transform
 
 #endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H */

@@ -1,5 +1,5 @@
 /*
- * reflexion_basis_ext.cc
+ * reflection_basis_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,9 +10,9 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/reflexion_basis/coordinate_system.h>
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
   namespace boost_python {
 
   using namespace boost::python;
@@ -123,9 +123,9 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
           &ToDetector::operator());   
   }
 
-  BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_ext)
   {
     export_coordinate_system();
   }
 
-}}}} // namespace = dials::algorithms::reflexion_basis::boost_python
+}}}} // namespace = dials::algorithms::reflection_basis::boost_python

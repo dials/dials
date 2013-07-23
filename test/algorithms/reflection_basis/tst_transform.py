@@ -2,7 +2,7 @@
 class TestForward(object):
     def __init__(self, filename):
         from dials.model.serialize import load
-        from dials.algorithms.reflexion_basis import transform
+        from dials.algorithms.reflection_basis import transform
         from dials.algorithms.integration import BBoxCalculator
         from math import pi
 
@@ -51,7 +51,7 @@ class TestForward(object):
 
         from scitbx import matrix
         from random import uniform
-        from dials.algorithms.reflexion_basis import CoordinateSystem
+        from dials.algorithms.reflection_basis import CoordinateSystem
         from scitbx.array_family import flex
         from time import time
 
@@ -78,7 +78,7 @@ class TestForward(object):
         bbox = self.calculate_bbox(s1, phi, panel)
         x0, x1, y0, y1, z0, z1 = bbox
 
-        from dials.algorithms.reflexion_basis import FromDetector
+        from dials.algorithms.reflection_basis import FromDetector
 
 
         print bbox, x, y, z
@@ -112,7 +112,7 @@ class TestForward(object):
         print grid.as_numpy_array()[4,:,:]
         print grid.all()
 
-        from dials.algorithms.reflexion_basis import transform
+        from dials.algorithms.reflection_basis import transform
         step_size = self.delta_divergence / self.grid_size
         s1_map = transform.beam_vector_map(self.detector, self.beam, True)
         index = transform.GridIndexGenerator(cs, x0, y0, (step_size, step_size),
@@ -184,7 +184,7 @@ class TestForward(object):
 class TestReverse(object):
     def __init__(self, filename):
         from dials.model.serialize import load
-        from dials.algorithms.reflexion_basis import transform
+        from dials.algorithms.reflection_basis import transform
         from math import pi
 
         # Load the sweep

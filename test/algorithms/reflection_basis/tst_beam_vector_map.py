@@ -1,4 +1,4 @@
-from dials.algorithms.reflexion_basis.transform import beam_vector_map
+from dials.algorithms.reflection_basis.transform import beam_vector_map
 
 class Test(object):
 

@@ -10,13 +10,13 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/reflexion_basis/rebin_pixels.h>
-#include <dials/algorithms/reflexion_basis/map_frames.h>
-#include <dials/algorithms/reflexion_basis/beam_vector_map.h>
-#include <dials/algorithms/reflexion_basis/map_pixels.h>
-#include <dials/algorithms/reflexion_basis/transform.h>
+#include <dials/algorithms/reflection_basis/rebin_pixels.h>
+#include <dials/algorithms/reflection_basis/map_frames.h>
+#include <dials/algorithms/reflection_basis/beam_vector_map.h>
+#include <dials/algorithms/reflection_basis/map_pixels.h>
+#include <dials/algorithms/reflection_basis/transform.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
   namespace transform { namespace boost_python {
 
   using namespace boost::python;
@@ -170,7 +170,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
         arg("grid")));
   }
 
-  BOOST_PYTHON_MODULE(dials_algorithms_reflexion_basis_transform_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_transform_ext)
   {
     export_rebin_pixels();
     export_map_frames();
@@ -179,4 +179,4 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     export_transform();
   }
 
-}}}}} // namespace = dials::algorithms::reflexion_basis::transform::boost_python
+}}}}} // namespace = dials::algorithms::reflection_basis::transform::boost_python

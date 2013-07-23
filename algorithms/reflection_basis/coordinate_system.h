@@ -17,7 +17,7 @@
 #include <dxtbx/model/panel.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
 
   using scitbx::vec2;
   using scitbx::vec3;
@@ -29,7 +29,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   /**
    * Helper function to calculate path length correction factor.
    * @param m2 The rotation axis
-   * @param e1 The e1 axis of the reflexion coordinate system
+   * @param e1 The e1 axis of the reflection coordinate system
    * @returns Zeta the path length correction factor.
    */
   inline
@@ -208,7 +208,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
 
   /**
    * Class to transform from rotation angle to the e3 coordinate of the
-   * local reflexion coordinate system.
+   * local reflection coordinate system.
    */
   class FromRotationAngleFast {
   public:
@@ -584,6 +584,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     mat3<double> D_;
   };
 
-}}} // namespace = dials::algorithms::reflexion_basis
+}}} // namespace = dials::algorithms::reflection_basis
 
 #endif // DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H

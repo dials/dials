@@ -17,12 +17,12 @@
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
-#include <dials/algorithms/reflexion_basis/coordinate_system.h>
-#include <dials/algorithms/reflexion_basis/beam_vector_map.h>
-#include <dials/algorithms/reflexion_basis/map_frames.h>
-#include <dials/algorithms/reflexion_basis/map_pixels.h>
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/reflection_basis/beam_vector_map.h>
+#include <dials/algorithms/reflection_basis/map_frames.h>
+#include <dials/algorithms/reflection_basis/map_pixels.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
   namespace transform {
 
   using scitbx::vec2;
@@ -35,7 +35,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   using dxtbx::model::Scan;
 
   /**
-   * Class to perform the forward reflexion basis transform
+   * Class to perform the forward reflection basis transform
    */
   class Forward {
   public:
@@ -47,7 +47,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param scan The scan model
      * @param mosaicity The crystal mosaicity
      * @param n_sigma The number of standard deviations
-     * @param grid_size The size of the reflexion basis grid
+     * @param grid_size The size of the reflection basis grid
      */
     Forward(const Beam &beam, const Detector &detector, const Scan &scan,
             double mosaicity, std::size_t n_sigma, std::size_t grid_size)
@@ -90,7 +90,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
   };
 
   /**
-   * Class to perform the reverse reflexion basis transform
+   * Class to perform the reverse reflection basis transform
    */
   class Reverse {
   public:
@@ -102,7 +102,7 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
      * @param scan The scan model
      * @param mosaicity The crystal mosaicity
      * @param n_sigma The number of standard deviations
-     * @param grid_size The size of the reflexion basis grid
+     * @param grid_size The size of the reflection basis grid
      */
     Reverse(const Beam &beam, const Detector &detector, const Scan &scan,
             double mosaicity, std::size_t n_sigma, std::size_t grid_size)
@@ -143,6 +143,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     MapPixelsReverse map_pixels_;
   };
 
-}}}} // namespace dials::algorithms::reflexion_basis::transform
+}}}} // namespace dials::algorithms::reflection_basis::transform
 
 #endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_FORWARD_H */

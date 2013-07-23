@@ -4,7 +4,7 @@ class TestMapFramesForward(object):
 
         from math import pi
         from dials.model.serialize import load
-        from dials.algorithms.reflexion_basis.transform import MapFramesForward
+        from dials.algorithms.reflection_basis.transform import MapFramesForward
         from dials.algorithms.integration import BBoxCalculator
 
         # Load the sweep
@@ -114,7 +114,7 @@ class TestMapFramesReverse(object):
 
         from math import pi
         from dials.model.serialize import load
-        from dials.algorithms.reflexion_basis.transform import MapFramesReverse
+        from dials.algorithms.reflection_basis.transform import MapFramesReverse
         from dials.algorithms.integration import BBoxCalculator
 
         # Load the sweep
@@ -224,8 +224,8 @@ class TestMapForwardReverse(object):
 
         from math import pi
         from dials.model.serialize import load
-        from dials.algorithms.reflexion_basis.transform import MapFramesReverse
-        from dials.algorithms.reflexion_basis.transform import MapFramesForward
+        from dials.algorithms.reflection_basis.transform import MapFramesReverse
+        from dials.algorithms.reflection_basis.transform import MapFramesForward
         from dials.algorithms.integration import BBoxCalculator
 
         # Load the sweep

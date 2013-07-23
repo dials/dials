@@ -26,7 +26,7 @@
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using boost::math::erf;
@@ -308,6 +308,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     return fraction;
   }
 
-}}}} // namespace = dials::algorithms::reflexion_basis::transform
+}}}} // namespace = dials::algorithms::reflection_basis::transform
 
 #endif // DIALS_ALGORITHMS_REFLEXION_BASIS_MAP_FRAMES_H

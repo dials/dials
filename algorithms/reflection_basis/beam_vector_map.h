@@ -17,7 +17,7 @@
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 
-namespace dials { namespace algorithms { namespace reflexion_basis {
+namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using scitbx::vec2;
@@ -111,6 +111,6 @@ namespace dials { namespace algorithms { namespace reflexion_basis {
     return beam_vector_map(detector, beam, 1, false);
   }
 
-}}}} // namespace dials::algorithms::reflexion_basis::transform
+}}}} // namespace dials::algorithms::reflection_basis::transform
 
 #endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_BEAM_VECTOR_MAP_H */

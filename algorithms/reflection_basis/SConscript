@@ -1,0 +1,10 @@
+
+Import('env')
+
+env.SharedLibrary(
+    target='#/lib/dials_algorithms_reflection_basis_ext', 
+    source=['boost_python/reflection_basis_ext.cc'])
+    
+env.SharedLibrary(
+    target='#/lib/dials_algorithms_reflection_basis_transform_ext', 
+    source=['boost_python/transform_ext.cc'])

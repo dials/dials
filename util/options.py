@@ -93,7 +93,7 @@ class SystemConfig(object):
             self.master_phil  = parse(master_text)
         except RuntimeError, e:
             raise HalError(str(e) + ' ({0})'.format(
-                self._files.master_filename()))
+                self._files.master_filenames()))
 
         # Parse the user file with phil
         try:
