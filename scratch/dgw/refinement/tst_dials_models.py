@@ -4,6 +4,8 @@ This script is an exploration of their interfaces in comparison with mine"""
 
 from __future__ import division
 
+from math import pi
+
 # cctbx imports
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
@@ -16,7 +18,7 @@ from dials.model.experiment import Panel
 
 # but use the factories instead for ease of use
 from dials.model.experiment import beam_factory, detector_factory, \
-    goniometer_factory
+    goniometer_factory, scan_factory
 
 # import my models
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
@@ -233,3 +235,23 @@ my_panel.set_frame(origin, fast, slow)
 dials_panel.set_frame(fast, slow, origin)
 
 print "OK"
+
+###################
+# Test DIALS Scan #
+###################
+
+# Build a mock scan for a 180 degree sweep of 0.1 degree images
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,1800),
+                      exposure_time = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(1800),
+                      deg = True)
+sweep_range = myscan.get_oscillation_range(deg=False)
+temp = myscan.get_oscillation(deg=False)
+im_width = temp[1] - temp[0]
+assert sweep_range == (0., pi)
+assert approx_equal(im_width, 0.1 * pi / 180.)
+
+tst = myscan.get_image_index_from_angle(0.5, deg=False)
+assert myscan.get_angle_from_image_index(tst, deg=False) == 0.5
