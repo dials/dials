@@ -164,7 +164,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         arg("mosaicity"),
         arg("n_sigma"),
         arg("grid_half_size"))))
-      .def("__call__", &Forward::operator(), (
+      .def("__call__", &Reverse::operator(), (
         arg("cs"),
         arg("bbox"),
         arg("grid")));

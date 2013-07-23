@@ -261,6 +261,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_half_size_(grid_half_size),
         step_size_(step_size) {
       DIALS_ASSERT(step_size_[0] > 0.0 && step_size_[1] > 0.0);
+      image_size_ = vec2<std::size_t>(s1_map.accessor().all()[0],
+                                      s1_map.accessor().all()[1]);
     }
 
     /**
@@ -274,9 +276,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     flex_double operator()(const CoordinateSystem &cs, int6 bbox,
         const flex_double &grid,
         const flex_double &z_fraction) const {
-      flex_double image(flex_grid<>(2 * grid_half_size_ + 1,
-                                    2 * grid_half_size_ + 1,
-                                    2 * grid_half_size_ + 1));
+      flex_double image(flex_grid<>(bbox[5] - bbox[4],
+                                    bbox[3] - bbox[2],
+                                    bbox[1] - bbox[0]));
       this->operator()(cs, bbox, grid, z_fraction, image);
       return image;
     }
@@ -296,12 +298,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       // Check array sizes
       DIALS_ASSERT(grid.accessor().all().size() == 3);
       DIALS_ASSERT(grid.accessor().all().all_eq(2 * grid_half_size_ + 1));
-      DIALS_ASSERT(z_fraction.accessor().all()[0] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(z_fraction.accessor().all()[1] == 2 * grid_half_size_ + 1);
+      DIALS_ASSERT(z_fraction.accessor().all()[1] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(z_fraction.accessor().all()[0] == 2 * grid_half_size_ + 1);
       DIALS_ASSERT(image.accessor().all().size() == 3);
       DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
       DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
       DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
+      DIALS_ASSERT(bbox[0] >= 0 && bbox[1] <= image_size_[1]);
+      DIALS_ASSERT(bbox[2] >= 0 && bbox[3] <= image_size_[0]);
 
       // Create the index generator for each coordinate of the bounding box
       GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
@@ -316,7 +320,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       std::size_t image_width = image.accessor().all()[2];
 
       // Initialise all output counts to zero
-      for (std::size_t j = 0; j < grid.size(); ++j) {
+      for (std::size_t j = 0; j < image.size(); ++j) {
         image[j] = 0.0;
       }
 
@@ -329,11 +333,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           vec2<double> ixy01 = index(j, i+1);
           vec2<double> ixy10 = index(j+1, i);
           vec2<double> ixy11 = index(j+1, i+1);
-
-          // Create the target polygon and calculate its area
-          vert4 target(ixy00, ixy01, ixy11, ixy10);
-          double target_area = simple_area(target);
-          DIALS_ASSERT(target_area > 0.0);
 
           // Get the range of new grid points
           double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
@@ -348,6 +347,20 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           if (gy0 < 0) gy0 = 0;
           if (gx1 > grid_width) gx1 = grid_width;
           if (gy1 > grid_height) gy1 = grid_height;
+          if (gx0 >= gx1 || gy0 >= gy1) {
+            continue;
+          }
+
+          // Create the target polygon and calculate its area
+          vert4 target(ixy00, ixy01, ixy11, ixy10);
+          double target_area = simple_area(target);
+          if (target_area < 0.0) {
+            std::swap(target[0], target[3]);
+            std::swap(target[1], target[2]);
+            target_area = -target_area;
+          } else if (target_area == 0.0) {
+            continue;
+          }
 
           // Loop over all the pixels within the pixel range
           for (std::size_t jj = gy0; jj < gy1; ++jj) {
@@ -364,13 +377,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
               // Then redistribute the values from the target grid to the subject.
               vert8 result = quad_with_convex_quad(subject, target);
               double result_area = simple_area(result);
-              double xy_fraction = result_area / target_area;
+              double xy_fraction = result_area / 1.0;
 
               // Copy the values to the grid
-              for (int k = 0; k < image_depth; ++k) {
-                double value = grid(k, j, i) * xy_fraction;
-                for (int kk = 0; kk < grid_depth; ++kk) {
-                  image(kk, jj, ii) += value * z_fraction(k, kk);
+              for (int kk = 0; kk < grid_depth; ++kk) {
+                double value = grid(kk, jj, ii) * xy_fraction;
+                for (int k = 0; k < image_depth; ++k) {
+                  image(k, j, i) += value * z_fraction(kk, k);
                 }
               }
             }
@@ -384,6 +397,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     flex_vec3_double s1_map_;
     std::size_t grid_half_size_;
     vec2<double> step_size_;
+    vec2<std::size_t> image_size_;
   };
 
 }}}} // namespace dials::algorithms::reflection_basis::transform

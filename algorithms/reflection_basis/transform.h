@@ -113,7 +113,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           n_sigma,
           grid_size),
         map_pixels_(
-          beam_vector_map(detector, beam, false),
+          beam_vector_map(detector, beam, true),
           grid_size,
           vec2<double>(
             beam.get_sigma_divergence() * n_sigma / grid_size,
