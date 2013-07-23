@@ -11,13 +11,17 @@ from __future__ import division
 
 from math import pi, sqrt, acos, atan2, fabs
 from scitbx import matrix
+import scitbx.math
 from cctbx.array_family import flex
 from dials.algorithms.spot_prediction import RayPredictor
 from rstbx.diffraction import reflection_prediction
 from rstbx.diffraction import rotation_angles
 
+from dials.model.data import Reflection
+
 class ReflectionPredictor(object):
-    '''Predict for a relp based on the current states of models in the
+    '''
+    Predict for a relp based on the current states of models in the
     experimental geometry model. This is a wrapper for DIALS' C++
     RayPredictor class, which does the real work. This class keeps track
     of the experimental geometry, and instantiates a RayPredictor when
@@ -51,11 +55,155 @@ class ReflectionPredictor(object):
 
         return self._ray_predictor(hkl, UB_)
 
+class ScanVaryingReflectionPredictor(object):
+    '''
+    Reflection prediction for a relp within a small segment of a scan, which
+    we assume to be a single image.
+
+    The path of the relp through reciprocal space between the start and end of
+    the image is approximated by a general linear transformation (not just a
+    rotation).
+
+    Currently it is assumed that only the crystal model varies with image
+    number, whilst the other models remain static. The prediction_parameterisation
+    object is assumed to have a method get_UB(image_number).
+    '''
+
+    def __init__(self, prediction_parameterisation, beam, gonio, scan, dmin):
+
+        self._pred_param = prediction_parameterisation
+        self._beam = beam
+        self._gonio = gonio
+        self._scan = scan
+
+        # resolution limit
+        self._dmin = dmin
+        self._dstarmax = 1. / dmin
+        self._dstarmax_sq = self._dstarmax**2
+
+        # reciprocal space beam vector
+        self._s0 = matrix.col(self._beam.get_s0())
+        self._s0mag_sq = self._s0.length_sq()
+        self._s0mag = sqrt(self._s0mag_sq)
+
+        # rotation axis
+        self._axis = matrix.col(self._gonio.get_rotation_axis())
+
+        self._dist_from_ES = None
+        self._image_number = None
+        self._step = None
+
+    def prepare(image_number, step = 1):
+        '''
+        Cache transformations that position relps at the beginning and end of
+        the step.
+        '''
+
+        self._image_number = image_number
+        self._step = step
+
+        phi_beg = self._scan.get_angle_from_image_index(image_number,
+                                                        deg = False)
+        phi_end = self._scan.get_angle_from_image_index(image_number + step,
+                                                        deg = False)
+        r_beg = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+            axis = self._axis, angle = angle, deg = False))
+        r_end = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+            axis = self._axis, angle = angle, deg = False))
+
+        self._T1 = r_beg * self._pred_param.get_UB(image_number)
+
+        self._T2 = r_end * self._pred_param(image_number + step)
+
+    def predict(self, hkl):
+        '''
+        Predict for hkl during the passage from T1*h to T2*h.
+
+        If a prediction is found, return the predicted Reflection. Otherwise
+        return None.
+        '''
+
+        r1 = self._T1 * matrix.col(hkl)
+        r2 = self._T2 * matrix.col(hkl)
+
+        dr = r2 - r1
+        s0pr1 = self._s0 + r1
+
+        # distances from Ewald sphere along radii
+        r1_from_ES = (s0pr1).length() - self._s0mag
+        r2_from_ES = (self._s0 + r2).length() - self._s0mag
+
+        # use the initial distance as approximate measure of closeness to the ES
+        self._dist_from_ES = abs(r1_from_ES)
+
+        starts_outside_ES = r1_from_ES >= 0.
+        ends_outside_ES = r2_from_ES >= 0.
+
+        # stop prediction for a relp that doesn't cross the ES (or crosses 2x)
+        if starts_outside_ES == ends_outside_ES: return None
+
+        # solve equation |s0 + r1 + alpha * dr| = |s0| for alpha. This is
+        # equivalent to solving the quadratic equation
+        #
+        # alpha^2*r1.r1 + 2*alpha(s0 + r1).dr + 2*(s0 + r1).r1
+
+        roots = solve_quad(r1.length_sq(),
+                           2*s0pr1.dot(dr),
+                           2*s0pr1.dot(r1))
+
+        # choose a root that is in [0,1]
+        alpha = filter(lambda x: x is not None and (0 <= x <= 1), roots)[0]
+
+        # calculate the scattering vector s1
+        s1 = r1 + alpha * dr + self._s0
+
+        # calculate approximate frame and rotation angle
+        frame = self._image_number + self._step * alpha
+        angle = self._scan.get_angle_from_image_index(frame, deg = False)
+
+        # create the Reflection and set properties
+        r = Reflection(hkl)
+        r.beam_vector = s1
+        r.rotation_angle = angle
+        r.frame_number = frame
+        r.entering = starts_outside_ES
+
+        return r
+
+    def distance_from_Ewald_sphere(self):
+        '''Return approximate distance from Ewald sphere of the last calculated
+        reflection'''
+
+        return self._dist_from_ES
+
+def solve_quad(a, b, c):
+    '''Robust solution, for real roots only, of a quadratic in the form
+    (ax^2 + bx + c).'''
+
+    discriminant = b**2 - 4 * a * c
+
+    if discriminant > 0:
+        sign = cmp(b, 0)
+        if sign == 0: sign = 1.0
+        q = -0.5 * (b + sign * math.sqrt(discriminant))
+        x1 = q / a if a != 0 else None
+        x2 = c / q if q != 0 else None
+        return [x1, x2]
+
+    elif discriminant == 0:
+        return [(-b) / (2 * a)] * 2
+
+    else:
+        return [None]
+
+
 class AnglePredictor_rstbx(object):
-    '''Predict the reflecting angles for a relp based on the current states
+    '''
+    Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model. This version is a wrapper
     for rstbx's C++ rotation_angles so is faster than the pure Python class
-    AnglePredictor_py'''
+    AnglePredictor_py
+    '''
 
     def __init__(self, crystal, beam, gonio, dmin):
         '''Construct by linking to instances of experimental model classes'''
@@ -309,8 +457,8 @@ class AnglePredictor_py(object):
 
 class ImpactPredictor(object):
     '''Predict observation position for supplied reflections and angles. This
-    class is just a wrapper for RSTBX's reflection_prediction class (in future
-    that class should be replaced). A wrapper is necessary because
+    class is just a wrapper for RSTBX's reflection_prediction class (which is
+    superseded by DIALS' ray_intersection function). A wrapper is necessary because
     reflection_prediction does not use the experimental models. This class
     keeps track of those models and instantiates a reflection_prediction object
     when required with the correct geometry.
