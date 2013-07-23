@@ -75,7 +75,6 @@ algorithms/integration/boost_python/helpers.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
 algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
-algorithms/integration/boost_python/reciprocal_space_transform.cc -text
 algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/shoebox_masker.cc -text
 algorithms/integration/boost_python/summation.cc -text
@@ -102,7 +101,6 @@ algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
-algorithms/integration/reciprocal_space_transform.h -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/shoebox_masker.h -text
@@ -670,7 +668,6 @@ test/algorithms/integration/profile/tst_reference_learner.py -text
 test/algorithms/integration/profile/tst_reference_locator.py -text
 test/algorithms/integration/profile/tst_xds_circle_sampler.py -text
 test/algorithms/integration/tst_bbox_calculator.py -text
-test/algorithms/integration/tst_reciprocal_space_transform.py -text
 test/algorithms/integration/tst_shoebox_masker.py -text
 test/algorithms/peak_finding/tst_spotfinder.py -text
 test/algorithms/polygon/clip/tst_clipping.py -text

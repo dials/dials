@@ -37,7 +37,7 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         '''
         from dials.util.command_line import Command
-        from dials.algorithms.integration import ReciprocalSpaceTransform
+        from dials.algorithms.reflection_basis import transform as rbt
         from dials.algorithms.integration.profile import \
             XdsCircleSampler
         from dials.algorithms.integration.profile import \
@@ -54,15 +54,13 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = ReciprocalSpaceTransform(
+        transform = rbt.Forward(
             sweep.get_beam(),
             sweep.get_detector(),
-            sweep.get_goniometer(),
             sweep.get_scan(),
             crystal.get_mosaicity(),
             self.bbox_nsigma,
-            self.grid_size,
-            self.n_div)
+            self.grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Transform the reflections to reciprocal space

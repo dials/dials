@@ -10,7 +10,6 @@ sources = [
     'boost_python/summation.cc',
     'boost_python/lui_2d_integration.cc',
     'boost_python/summation_reciprocal_space.cc',
-    'boost_python/reciprocal_space_transform.cc',
     'boost_python/profile_fitting_reciprocal_space.cc',
     'boost_python/integration_ext.cc']
 

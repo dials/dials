@@ -33,22 +33,20 @@ class SummationReciprocalSpace(IntegrationInterface):
             The list of integrated reflections
 
         '''
-        from dials.algorithms.integration import ReciprocalSpaceTransform
+        from dials.algorithms.reflection_basis import transform as rbt
         from dials.algorithms.integration import \
             SummationReciprocalSpaceAlgorithm
         from dials.util.command_line import Command
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = ReciprocalSpaceTransform(
+        transform = rbt.Forward(
             sweep.get_beam(),
             sweep.get_detector(),
-            sweep.get_goniometer(),
             sweep.get_scan(),
             crystal.get_mosaicity(),
             self._bbox_nsigma,
-            self._grid_size,
-            self._n_div)
+            self._grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Initialise the integration algorithm
