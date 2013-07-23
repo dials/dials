@@ -125,7 +125,7 @@ namespace dials { namespace scratch {
   }
 
 
-  flex_int model_2d(int nrow, int ncol, float a, float b,
+  flex_double model_2d(int nrow, int ncol, float a, float b,
                 float delta_ang, float imax, float asp) {
     float dx,dy,dd,xc,yc;
     float mw = 0.5;
@@ -135,7 +135,7 @@ namespace dials { namespace scratch {
     yc=float(nrow)/2;
     // std::cout << "\n" << "xc =" << xc << ", yc =" << yc << "\n";
     // flex_int curv3d(data2d.accessor(),0);
-    flex_int curv3d(flex_grid<>(nrow, ncol),0);
+    flex_double curv3d(flex_grid<>(nrow, ncol),0);
     cntnt=1.0 / sqrt(2.0 * pi);
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
