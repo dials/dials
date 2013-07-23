@@ -413,12 +413,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     /**
      * Apply the transform by solving the following equation for t
-     *  e3 = (m2.e1)sin(t) + (m2.e3)(m2.p*)(1 - cos(t))
+     *  c3 = (m2.e1)sin(t) + (m2.e3)(m2.p*)(1 - cos(t))
      * Giving:
      *  t = 2 atan((sqrt((m2.e1)^2 + 2 c3(m2.e3)(m2.p*) - c3^2) + m2.e1) /
      *             c3 - 2 (m2.e3)(m2.p*))
      *
-     * @param e3 The XDS e3 coordinate
+     * @param c3 The XDS e3 coordinate
      * @returns The rotation angle phi'
      */
     double operator()(double c3) const {
