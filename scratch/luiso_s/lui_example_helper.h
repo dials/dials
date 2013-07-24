@@ -55,18 +55,27 @@ namespace dials { namespace scratch {
     int nrow_in = data2d.accessor().all()[0];
     int ncol_tot = total.accessor().all()[1];
     int nrow_tot = total.accessor().all()[0];
-    double scale = descriptor(0,0);
-    double centr_row = descriptor(0,1);
-    double centr_col = descriptor(0,2);
 
+    double centr_col = int(descriptor(0,0));
+    double centr_row = int(descriptor(0,1));
+    double scale = descriptor(0,2);
     int tot_row, tot_col;
 
-    write_2d(descriptor);
+    std::cout <<"\n ncol_tot ="<< ncol_tot <<"\n";
+    std::cout <<"\n nrow_tot ="<< nrow_tot <<"\n";
+
+    std::cout <<"\n centr_col ="<< centr_col <<"\n";
+    std::cout <<"\n centr_row ="<< centr_row <<"\n";
+
+    int row_centr=int(nrow_tot / 2);
+    int col_centr=int(ncol_tot / 2);
+
+
 
     for (int row = 0; row <= nrow_in - 1;row++) {
       for (int col = 0; col <= ncol_in-1;col++) {
-        tot_row = row + 10 - centr_row;
-        tot_col = col + 10 - centr_col;
+        tot_row = row + row_centr - centr_row;
+        tot_col = col + col_centr - centr_col;
         if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and tot_col < ncol_tot) {
           data2dreturn(tot_row,tot_col)=total(tot_row,tot_col) + data2d(row,col) * scale;
         } else {
