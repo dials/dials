@@ -418,8 +418,6 @@ class TestToRotationAngle(object):
             # Calculate the beam vector from the XDS coordinate
             phi_dash_2 = self.to_rotation_angle(c3)
 
-            print phi_dash, phi_dash_2
-
             # Check the vectors are almost equal
             assert(abs(phi_dash_2 - phi_dash) <= eps)
 

@@ -143,7 +143,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     double4 limits() const {
       vec3<double> p_star_norm = p_star_.normalize();
       double m2e3 = m2_ * e3_;
-      double m2ps = m2_ * p_star_.normalize();
+      double m2ps = m2_ * p_star_norm;
       double m2e1 = m2_ * e1_;
       double m2e1_m2e1 = m2e1 * m2e1;
       double m2e3_m2ps = m2e3 * m2ps;
@@ -414,7 +414,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     /**
      * Apply the transform by solving the following equation for t
-     *  c3 = (m2.e1)sin(t) + (m2.e3)(m2.p*)(1 - cos(t))
+     *  c3 = (m2.e1)sin(dt) + (m2.e3)(m2.p*)(1 - cos(dt))
      * Giving:
      *  dt = 2 atan((sqrt((m2.e1)^2 + 2 c3(m2.e3)(m2.p*) - c3^2) + m2.e1) /
      *             c3 - 2 (m2.e3)(m2.p*))
