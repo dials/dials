@@ -197,11 +197,15 @@ namespace dials { namespace algorithms { namespace filter {
       return false;
     }
     double rt = std::sqrt(m2e1*m2e1 + m2e3_m2ps*m2e3_m2ps);
-    double tanphi0 = (m2e3_m2ps + rt) / m2e1;
-    double tanphi1 = (m2e3_m2ps - rt) / m2e1;
-    double phi0 = 2.0 * std::atan(tanphi0);
-    double phi1 = 2.0 * std::atan(tanphi1);
-    return phi0 <= delta_m && phi1 >= delta_m;
+    double tandphi0 = (m2e3_m2ps + rt) / m2e1;
+    double tandphi1 = (m2e3_m2ps - rt) / m2e1;
+    double dphi0 = 2.0 * std::atan(tandphi0);
+    double dphi1 = 2.0 * std::atan(tandphi1);
+    if (dphi0 > dphi1) {
+      std::swap(dphi0, dphi1);
+    }
+    delta_m = std::abs(delta_m);
+    return dphi0 <= -delta_m && dphi1 >= delta_m;
   }
 
   /**
@@ -225,11 +229,15 @@ namespace dials { namespace algorithms { namespace filter {
       return false;
     }
     double rt = std::sqrt(m2e1*m2e1 + m2e3_m2ps*m2e3_m2ps);
-    double tanphi0 = (m2e3_m2ps + rt) / m2e1;
-    double tanphi1 = (m2e3_m2ps - rt) / m2e1;
-    double phi0 = 2.0 * std::atan(tanphi0);
-    double phi1 = 2.0 * std::atan(tanphi1);
-    return phi0 <= delta_m && phi1 >= delta_m;
+    double tandphi0 = (m2e3_m2ps + rt) / m2e1;
+    double tandphi1 = (m2e3_m2ps - rt) / m2e1;
+    double dphi0 = 2.0 * std::atan(tandphi0);
+    double dphi1 = 2.0 * std::atan(tandphi1);
+    if (dphi0 > dphi1) {
+      std::swap(dphi0, dphi1);
+    }
+    delta_m = std::abs(delta_m);
+    return dphi0 <= -delta_m && dphi1 >= delta_m;
   }
 
   /**

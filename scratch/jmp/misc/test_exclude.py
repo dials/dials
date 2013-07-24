@@ -23,8 +23,8 @@ mask1 = flex.bool(flex.grid(int(ysize / div), int(xsize / div)))
 mask2 = flex.bool(flex.grid(int(ysize / div), int(xsize / div)))
 
 n = 5
-dm = -n * 0.157 * pi / 180.0
-#dm = -n * 1.0 * pi / 180.0
+dm = n * 0.157 * pi / 180.0
+#dm = n * 1.0 * pi / 180.0
 
 #dm /= pi / 2
 
@@ -52,70 +52,75 @@ print "Limits: ", cs.limits()
 
 
 
-m2 = matrix.col(cs.m2())
-e1 = matrix.col(cs.e1_axis())
-e3 = matrix.col(cs.e3_axis())
-ps = matrix.col(cs.p_star()).normalize()
+#m2 = matrix.col(cs.m2())
+#e1 = matrix.col(cs.e1_axis())
+#e3 = matrix.col(cs.e3_axis())
+#ps = matrix.col(cs.p_star()).normalize()
 
-m2e1 = m2.dot(e1)
-m2e3 = m2.dot(e3)
-m2ps = m2.dot(ps)
-ev = m2e1**2 + 2*dm*m2e3*m2ps - dm**2
+#m2e1 = m2.dot(e1)
+#m2e3 = m2.dot(e3)
+#m2ps = m2.dot(ps)
+#ev = m2e1**2 + 2*dm*m2e3*m2ps - dm**2
 
-inc1 = ev >= 0.0
-zeta = cs.zeta()
+#inc1 = ev >= 0.0
+#zeta = cs.zeta()
 
-inc2 = abs(zeta) >= 0.05
-print ev, zeta
+#inc2 = abs(zeta) >= 0.05
+#print ev, zeta
 
-a = m2e1
-b = m2e3*m2ps
-tanphi0 = (b + sqrt(a**2 + b**2)) / a
-tanphi1 = (b - sqrt(a**2 + b**2)) / a
-print 2.0 * atan(tanphi0), 2.0 * atan(tanphi1)
+#a = m2e1
+#b = m2e3*m2ps
+#tanphi0 = (b + sqrt(a**2 + b**2)) / a
+#tanphi1 = (b - sqrt(a**2 + b**2)) / a
+#print 2.0 * atan(tanphi0), 2.0 * atan(tanphi1)
 
-print 1/0
-
-
+#print 1/0
 
 
+
+from dials.algorithms.integration import filter
 
 for j in range(int(ysize / div)):
     print j
     for i in range(int(xsize / div)):
-
         xyz = detector.get_pixel_lab_coord((div*i, div*j))
         s1 = matrix.col(xyz).normalize() * s0.length()
         phi = 0.0
         cs = CoordinateSystem(m2, s0, s1, phi)
-        m2 = matrix.col(cs.m2())
-        e1 = matrix.col(cs.e1_axis())
-        e3 = matrix.col(cs.e3_axis())
-        ps = matrix.col(cs.p_star()).normalize()
 
-        from_angle = FromRotationAngle(cs)
-        c3 = from_angle(dm)
+        mask1[j,i] = filter.is_xds_angle_valid(cs, dm)
 
-        m2e1 = m2.dot(e1)
-        m2e3 = m2.dot(e3)
-        m2ps = m2.dot(ps)
-        ev = m2e1**2 + 2*dm*m2e3*m2ps - dm**2
 
-        inc1 = ev >= 0.0
-        zeta = cs.zeta()
+#        m2 = matrix.col(cs.m2())
+#        e1 = matrix.col(cs.e1_axis())
+#        e3 = matrix.col(cs.e3_axis())
+#        ps = matrix.col(cs.p_star()).normalize()
 
-#        if div*i == 0 and div*j == 600:
-#            print ev, zeta
-#            print 1/0
+#        from_angle = FromRotationAngle(cs)
+#        c3 = from_angle(dm)
 
-        inc2 = abs(zeta) >= 0.05
+#        m2e1 = m2.dot(e1)
+#        m2e3 = m2.dot(e3)
+#        m2ps = m2.dot(ps)
+#        ev = m2e1**2 + 2*dm*m2e3*m2ps - dm**2
 
-        mask1[j,i] = inc1
-        mask2[j,i] = inc2
+#        inc1 = ev >= 0.0
+#        zeta = cs.zeta()
+
+##        if div*i == 0 and div*j == 600:
+##            print ev, zeta
+##            print 1/0
+
+#        inc2 = abs(zeta) >= 0.05
+
+#        mask1[j,i] = inc1
+#        mask2[j,i] = inc2
+
+print flex.min(mask1.as_1d().as_int()), flex.max(mask1.as_1d().as_int())
 
 from matplotlib import pylab, cm
-pylab.subplot(1, 2, 1)
+#pylab.subplot(1, 2, 1)
 pylab.imshow(mask1.as_numpy_array(), cmap=cm.Greys_r)
-pylab.subplot(1, 2, 2)
-pylab.imshow(mask2.as_numpy_array(), cmap=cm.Greys_r)
+#pylab.subplot(1, 2, 2)
+#pylab.imshow(mask2.as_numpy_array(), cmap=cm.Greys_r)
 pylab.show()
