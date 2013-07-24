@@ -84,6 +84,20 @@ namespace dials { namespace scratch {
     return data2dreturn;
   }
 
+    flex_double subtrac_bkg_2d(flex_double data2d, flex_double background2d) {
+      int ncol = data2d.accessor().all()[1];
+      int nrow = data2d.accessor().all()[0];
+      flex_double data2dreturn(data2d);
+      for (int row = 0; row <= nrow - 1; row++) {
+        for (int col = 0; col <= ncol - 1; col++) {
+          if (data2d(row,col) > background2d(row,col) ) {
+            data2dreturn(row,col) = data2d(row,col) - background2d(row,col);
+          }
+        }
+      }
+      return data2dreturn;
+    }
+
 
   vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
       flex_double & background2d) {
