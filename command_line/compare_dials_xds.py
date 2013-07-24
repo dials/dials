@@ -181,6 +181,8 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     DIALS = []
     HKL = []
 
+    fout = open('ratio_xyz.dat', 'w')
+
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
@@ -188,6 +190,12 @@ def compare_chunks(integrate_hkl, integrate_pkl):
             XDS.append(xi[c])
             DIALS.append(di[j])
             HKL.append(hkl)
+            fout.write('%d %d %d %f %f %f %f %f %f %f %f %f\n' % \
+                       (hkl[0], hkl[1], hkl[2], uc.d(hkl),
+                        xi[c], xxyz[c][0], xxyz[c][1], xxyz[c][2],
+                        di[j], dxyz[j][0], dxyz[j][1], dxyz[j][2]))
+
+    fout.close()
 
     # now compute resolution for every reflection - or at least each unique
     # Miller index...
