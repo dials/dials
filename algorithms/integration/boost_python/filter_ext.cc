@@ -77,7 +77,7 @@ namespace dials { namespace algorithms { namespace filter {
         arg("g"), arg("b"), arg("r"), arg("delta_m")));
   }
 
-  BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_integration_filter_ext)
   {
     export_is_zeta_valid();
     export_is_xds_small_angle_valid();
