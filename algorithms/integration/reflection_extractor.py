@@ -14,14 +14,17 @@ from __future__ import division
 class ReflectionExtractor(object):
     ''' Class to extract basic reflection information. '''
 
-    def __init__(self, bbox_nsigma, filter_by_volume=True,
+    def __init__(self, bbox_nsigma, filter_by_zeta=0.0,
+                 filter_by_xds_small_angle=False, filter_by_xds_angle=False,
                  gain_map=None, dark_map=None, kernel_size=None,
                  n_sigma_b=None, n_sigma_s=None):
         ''' Initialise the extractor
 
         Params:
             bbox_nsigma The number of standard deviations for bbox
-            filter_by_volume True/False
+            filter_by_zeta Minimum zeta value
+            filter_by_xds_small_angle True/False
+            filter_by_xds_angle True/False
             gain_map The detector gain map
             dark_map The detector dark map
             kernel_size The size of the smoothing kernel to use
@@ -31,7 +34,9 @@ class ReflectionExtractor(object):
         '''
         # Get parameters we need
         self.bbox_nsigma = bbox_nsigma
-        self.filter_by_volume = filter_by_volume
+        self.filter_by_zeta = filter_by_zeta
+        self.filter_by_xds_small_angle = filter_by_xds_small_angle
+        self.filter_by_xds_angle = filter_by_xds_angle
         self.gain_map = gain_map
         self.dark_map = dark_map
         self.kernel_size = kernel_size
@@ -110,7 +115,7 @@ class ReflectionExtractor(object):
         from dials.algorithms.integration import find_overlapping_reflections
         from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
-        from dials.algorithms.integration import filter_by_bbox_volume
+        from dials.algorithms.integration import filter
         from math import sqrt
 
         # Get models from the sweep
@@ -159,11 +164,29 @@ class ReflectionExtractor(object):
         Command.end('Filtered {0} reflections by detector mask'.format(
             len([r for r in reflections if r.is_valid()])))
 
-        # Filter the reflections by the bounding box volume
-        if self.filter_by_volume:
-            Command.start('Filtering reflections by bounding box volume')
-            filter_by_bbox_volume(reflections, int(sqrt(len(reflections))))
-            Command.end('Filtered {0} reflections by bbox volume'.format(
+        # Filter the reflections by zeta
+        if self.filter_by_zeta > 0:
+            Command.start('Filtering reflections by zeta >= {0}'.format(
+                self.filter_by_zeta)
+            filter.by_zeta(gonio, beam, reflections, self.filter_by_zeta)
+            Command.end('Filtered {0} reflections by zeta >= {1}'.format(
+                len([r for r in reflections if r.is_valid()]),
+                self.filter_by_zeta))
+
+        # Filter the reflections by xds small angle validity
+        if self.filter_by_xds_small_angle:
+            Command.start('Filtering reflections by xds small angle')
+            filter.by_xds_small_angle(gonio, beam, reflections,
+              self.bbox_nsigma * crystal.get_mosaicity(deg=False))
+            Command.end('Filtered {0} reflections by xds small angle'.format(
+                len([r for r in reflections if r.is_valid()])))
+
+        # Filter the reflections by xds small angle validity
+        if self.filter_by_xds_angle:
+            Command.start('Filtering reflections by xds angle')
+            filter.by_xds_angle(gonio, beam, reflections,
+              self.bbox_nsigma * crystal.get_mosaicity(deg=False))
+            Command.end('Filtered {0} reflections by xds angle'.format(
                 len([r for r in reflections if r.is_valid()])))
 
         # Extract the reflection profiles
