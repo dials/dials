@@ -70,6 +70,7 @@ algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/bbox_calculator.h -text
 algorithms/integration/boost_python/bbox_calculator.cc -text
+algorithms/integration/boost_python/filter_ext.cc -text
 algorithms/integration/boost_python/find_overlapping_reflections.cc -text
 algorithms/integration/boost_python/helpers.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
@@ -81,6 +82,8 @@ algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/summation_reciprocal_space.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
 algorithms/integration/divergence_and_mosaicity.py -text
+algorithms/integration/filter.h -text
+algorithms/integration/filter.py -text
 algorithms/integration/find_overlapping_reflections.h -text
 algorithms/integration/helpers.h -text
 algorithms/integration/integrator.py -text
