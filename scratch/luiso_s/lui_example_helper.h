@@ -49,7 +49,7 @@ namespace dials { namespace scratch {
   return num;
   }
 
-  flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
+    flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
     flex_double data2dreturn(total);
     int ncol_in = data2d.accessor().all()[1];
     int nrow_in = data2d.accessor().all()[0];
@@ -58,6 +58,7 @@ namespace dials { namespace scratch {
 
     double centr_col = int(descriptor(0,0));
     double centr_row = int(descriptor(0,1));
+
     double scale = descriptor(0,2);
     int tot_row, tot_col;
 
@@ -66,11 +67,8 @@ namespace dials { namespace scratch {
 
     std::cout <<"\n centr_col ="<< centr_col <<"\n";
     std::cout <<"\n centr_row ="<< centr_row <<"\n";
-
-    int row_centr=int(nrow_tot / 2);
     int col_centr=int(ncol_tot / 2);
-
-
+    int row_centr=int(nrow_tot / 2);
 
     for (int row = 0; row <= nrow_in - 1;row++) {
       for (int col = 0; col <= ncol_in-1;col++) {
