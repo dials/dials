@@ -36,10 +36,20 @@ integration
   filter
     .help = "Parameters for filtering reflections"
   {
-    by_volume = True
-      .help = "Filter the reflections by the bounding box volume. Only"
-              "integrate those reflections with a bounding box volume"
-              "below a threshold calculated from the histogram of volumes"
+    by_zeta = 0.05
+      .help = "Filter the reflections by the value of zeta. A value of less"
+              "than or equal to zero indicates that this will not be used. A 
+              "positive value is used as the minimum permissable value."
+      .type = float
+    
+    by_xds_small_angle = False
+      .help = "Filter the reflections by whether the XDS small angle"
+              "approximation holds for the reflection."
+      .type = bool
+    
+    by_xds_angle = False
+      .help = "Filter the reflections by whether the geometry of the XDS"
+              "transform allows a reflection to be transformed."
       .type = bool
   }
    
