@@ -406,7 +406,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param cs The coordinate system
      */
     ToRotationAngleAccurate(const CoordinateSystem &cs)
-      : m2e1_(cs.m2() * cs.e1_axis()),
+      : phi_(cs.phi()),
+        m2e1_(cs.m2() * cs.e1_axis()),
         m2e1_m2e1_(m2e1_ * m2e1_),
         m2e3_m2ps_(2.0 * (cs.m2() * cs.e3_axis()) *
           (cs.m2() * cs.p_star().normalize())) {}
@@ -415,7 +416,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * Apply the transform by solving the following equation for t
      *  c3 = (m2.e1)sin(t) + (m2.e3)(m2.p*)(1 - cos(t))
      * Giving:
-     *  t = 2 atan((sqrt((m2.e1)^2 + 2 c3(m2.e3)(m2.p*) - c3^2) + m2.e1) /
+     *  dt = 2 atan((sqrt((m2.e1)^2 + 2 c3(m2.e3)(m2.p*) - c3^2) + m2.e1) /
      *             c3 - 2 (m2.e3)(m2.p*))
      *
      * @param c3 The XDS e3 coordinate
@@ -427,10 +428,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       double y = std::sqrt(l) + m2e1_;
       double x = c3 - m2e3_m2ps_;
       DIALS_ASSERT(x != 0.0);
-      return 2.0*atan(y / x);
+      return phi_ + 2.0*atan(y / x);
     }
 
   private:
+    double phi_;
     double m2e1_;
     double m2e1_m2e1_;
     double m2e3_m2ps_;

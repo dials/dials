@@ -385,7 +385,7 @@ class TestToRotationAngle(object):
                    -0.24786554213968193,
                     1.4290948735525306)
         self.m2 = ( 0.999975, -0.001289, -0.006968)
-        self.phi = 0#5.83575672475 * pi / 180
+        self.phi = 5.83575672475 * pi / 180
 
         self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
         self.to_rotation_angle = ToRotationAngleAccurate(self.cs)
@@ -417,6 +417,8 @@ class TestToRotationAngle(object):
 
             # Calculate the beam vector from the XDS coordinate
             phi_dash_2 = self.to_rotation_angle(c3)
+
+            print phi_dash, phi_dash_2
 
             # Check the vectors are almost equal
             assert(abs(phi_dash_2 - phi_dash) <= eps)
