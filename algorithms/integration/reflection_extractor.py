@@ -167,7 +167,7 @@ class ReflectionExtractor(object):
         # Filter the reflections by zeta
         if self.filter_by_zeta > 0:
             Command.start('Filtering reflections by zeta >= {0}'.format(
-                self.filter_by_zeta)
+                self.filter_by_zeta))
             filter.by_zeta(gonio, beam, reflections, self.filter_by_zeta)
             Command.end('Filtered {0} reflections by zeta >= {1}'.format(
                 len([r for r in reflections if r.is_valid()]),
