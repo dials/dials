@@ -116,9 +116,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       return e3_;
     }
 
-    /** @returns the lorentz correction factor */
+    /** @returns the zeta factor (related to lorentz correction) */
     double zeta() const {
       return zeta_;
+    }
+
+    /** @returns the inverse lorentz correction factor */
+    double lorentz_inv() const {
+      return std::abs(m2_ * (s1_.cross(s0_))) / (s0_.length() * s1_.length());
+    }
+
+    /** @returns the lorentz correction factor */
+    double lorentz() const {
+      return 1.0 / lorentz_inv();
     }
 
     /** @returns the increase in the length of the shortest path */

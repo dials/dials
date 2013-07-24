@@ -46,6 +46,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       .def("e2_axis", &CoordinateSystem::e2_axis)
       .def("e3_axis", &CoordinateSystem::e3_axis)
       .def("zeta", &CoordinateSystem::zeta)
+      .def("lorentz_inv", &CoordinateSystem::lorentz_inv)
+      .def("lorentz", &CoordinateSystem::lorentz)
       .def("path_length_increase", &CoordinateSystem::path_length_increase)
       .def("limits", &CoordinateSystem::limits);
 
