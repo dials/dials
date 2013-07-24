@@ -26,6 +26,7 @@ namespace dials { namespace algorithms { namespace filter {
   using dials::algorithms::reflection_basis::CoordinateSystem;
   using dials::algorithms::reflection_basis::zeta_factor;
   using dials::model::Reflection;
+  using dials::model::ReflectionList;
 
   /**
    * Calculate the zeta factor and check its absolute value is above the
@@ -259,6 +260,57 @@ namespace dials { namespace algorithms { namespace filter {
   bool is_xds_angle_valid(const Goniometer &g, const Beam &b,
       const Reflection &r, double delta_m) {
     return is_xds_angle_valid(g.get_rotation_axis(), b.get_s0(), r, delta_m);
+  }
+
+  /**
+   * Filter the reflection list by the value of zeta. Set any reflections
+   * below the value to invalid.
+   * @param g The goniometer
+   * @param b The beam
+   * @param r The reflection list
+   * @param min_zeta The minimum zeta value
+   */
+  void by_zeta(const Goniometer &g, const Beam &b, ReflectionList &r,
+      double min_zeta) {
+    for (std::size_t i = 0; i < r.size(); ++i) {
+      if (!is_zeta_valid(g, b, r[i], min_zeta)) {
+        r[i].set_valid(false);
+      }
+    }
+  }
+
+  /**
+   * Filter the reflection list by the validity of the xds small angle approx.
+   * Set any reflections for which its invalid to invalid.
+   * @param g The goniometer
+   * @param b The beam
+   * @param r The reflection list
+   * @param delta_m The mosaicity * n_sigma
+   */
+  void by_xds_small_angle(const Goniometer &g, const Beam &b,
+      ReflectionList &r, double delta_m) {
+    for (std::size_t i = 0; i < r.size(); ++i) {
+      if (!is_xds_small_angle_valid(g, b, r[i], delta_m)) {
+        r[i].set_valid(false);
+      }
+    }
+  }
+
+  /**
+   * Filter the reflection list by the validity of the xds angle.
+   * Set any reflections for which its invalid to invalid.
+   * @param g The goniometer
+   * @param b The beam
+   * @param r The reflection list
+   * @param delta_m The mosaicity * n_sigma
+   */
+  void by_xds_angle(const Goniometer &g, const Beam &b,
+      ReflectionList &r, double delta_m) {
+    for (std::size_t i = 0; i < r.size(); ++i) {
+      if (!is_xds_angle_valid(g, b, r[i], delta_m)) {
+        r[i].set_valid(false);
+      }
+    }
   }
 
 }}} // namespace dials::algorithms::filter

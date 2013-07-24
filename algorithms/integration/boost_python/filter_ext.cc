@@ -77,11 +77,23 @@ namespace dials { namespace algorithms { namespace filter {
         arg("g"), arg("b"), arg("r"), arg("delta_m")));
   }
 
+  void export_filter_list()
+  {
+    def("by_zeta", &by_zeta, (
+      arg("g"), arg("b"), arg("r"), arg("min_zeta")));
+    def("by_xds_small_angle", &by_xds_small_angle, (
+      arg("g"), arg("b"), arg("r"), arg("delta_m")));
+    def("by_xds_angle", &by_xds_angle, (
+      arg("g"), arg("b"), arg("r"), arg("delta_m")));
+  
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_integration_filter_ext)
   {
     export_is_zeta_valid();
     export_is_xds_small_angle_valid();
     export_is_xds_angle_valid();
+    export_filter_list();
   }
 
 }}}} // namespace = dials::algorithms::filter::boost_python
