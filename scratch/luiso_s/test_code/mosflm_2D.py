@@ -1,5 +1,5 @@
 from __future__ import division
-from dials.scratch.luiso_s import add_2d
+from dials.scratch.luiso_s import add_2d, write_2d, subtrac_bkg_2d
 
 def calc_background_n_make_2d_profile(reflections):
     print "Hi 01"
@@ -50,11 +50,22 @@ def calc_background_n_make_2d_profile(reflections):
             descr[0, 0] = ref.centroid_position[0]
             descr[0, 1] = ref.centroid_position[1]
             descr[0, 2] = 1.0
-            sumation = add_2d(descr, data2d, sumation)
+            print "background2d ="
+            write_2d(background2d)
+            peak2d = subtrac_bkg_2d(data2d, background2d)
+            print "peak 2d ="
+            write_2d(peak2d)
+            print "_____________________________________________________________________________________________"
+            sumation = add_2d(descr, peak2d, sumation)
 
     from matplotlib import pyplot as plt
     print "Plotting reslt"
     img_suma = sumation.as_numpy_array()
     plt.imshow(img_suma, interpolation = "nearest")
     plt.show()
+    write_2d(sumation)
+
+
+
+
     print "hi 02"

@@ -9,46 +9,6 @@ from __future__ import division
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 import numpy
-'''
-from scitbx.array_family import flex
-
-from dials.scratch.luiso_s import add_2d, write_2d
-
-#data2d = numpy.zeros((40, 60), dtype = numpy.float64)
-nrow = 10
-ncol = 10
-
-sumation = flex.double(flex.grid(21, 21))
-descr = flex.double(flex.grid(1, 3))
-descr[0, 0] = .5
-descr[0, 1] = 5
-descr[0, 2] = 5
-print "____________________________________________________________________"
-
-for xpos in range(3):
-    for ypos in range(3):
-        row_str = ypos * 12
-        col_str = xpos * 20
-        ref_ang = float((ypos + 1) / 10)
-        #flex_int model_2d(int nrow, int ncol, float a, float b,
-        #float delta_ang, float imax, float asp)
-        ref2d = model_2d(nrow, ncol, 2, 1, ref_ang, 55, 0.5)
-        data2d_tmp = ref2d.as_numpy_array()
-        #data2d[row_str:row_str + nrow, col_str:col_str + ncol] += numpy.float64(data2d_tmp)
-
-        sumation = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
-
-'''
-
-#  numpy_integr_2d testing code
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: Luis Fuentes-Montero (Luiso)
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
 rlist = ReflectionList()
@@ -72,6 +32,7 @@ for ivar in range(3):
 
     data2d[1:4, 1:4] = 10
     data2d[2:3, 2:3] = 50
+    data2d[:, :] += 20
     print data2d
 
     mask2d = numpy.zeros((nrow, ncol), dtype = numpy.int32)

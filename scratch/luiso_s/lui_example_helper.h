@@ -92,6 +92,8 @@ namespace dials { namespace scratch {
         for (int col = 0; col <= ncol - 1; col++) {
           if (data2d(row,col) > background2d(row,col) ) {
             data2dreturn(row,col) = data2d(row,col) - background2d(row,col);
+          } else {
+            data2dreturn(row,col) = 0.0;
           }
         }
       }
