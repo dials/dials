@@ -3,10 +3,9 @@
 #include <iostream>
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/flex_types.h>
-#include <math.h>
+#include <cmath>
 #include <stdio.h>
 
-//#include <cmath>
 const float pi=3.14159265358;
 
 namespace dials { namespace scratch {
@@ -55,27 +54,58 @@ namespace dials { namespace scratch {
     int nrow_in = data2d.accessor().all()[0];
     int ncol_tot = total.accessor().all()[1];
     int nrow_tot = total.accessor().all()[0];
-
-    double centr_col = int(descriptor(0,0));
-    double centr_row = int(descriptor(0,1));
-
+    double centr_col = descriptor(0,0);
+    double centr_row = descriptor(0,1);
     double scale = descriptor(0,2);
-    int tot_row, tot_col;
-
+    double tot_row, tot_col;
+    double x_contrib, y_contrib, x_pix_pos, y_pix_pos;
+    int xpos_ex, ypos_ex;
     std::cout <<"\n ncol_tot ="<< ncol_tot <<"\n";
     std::cout <<"\n nrow_tot ="<< nrow_tot <<"\n";
-
     std::cout <<"\n centr_col ="<< centr_col <<"\n";
     std::cout <<"\n centr_row ="<< centr_row <<"\n";
-    int col_centr=int(ncol_tot / 2);
-    int row_centr=int(nrow_tot / 2);
+
+    int tot_row_centr=int(nrow_tot / 2);
+    int tot_col_centr=int(ncol_tot / 2);
 
     for (int row = 0; row <= nrow_in - 1;row++) {
       for (int col = 0; col <= ncol_in-1;col++) {
-        tot_row = row + row_centr - centr_row;
-        tot_col = col + col_centr - centr_col;
+        tot_row = row + tot_row_centr - centr_row;
+        tot_col = col + tot_col_centr - centr_col;
         if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and tot_col < ncol_tot) {
-          data2dreturn(tot_row,tot_col)=total(tot_row,tot_col) + data2d(row,col) * scale;
+
+          x_pix_pos=tot_col - int(tot_col);
+          if (x_pix_pos < 0.5) {
+            x_contrib = 0.5 + x_pix_pos;
+            xpos_ex = tot_col - 1;
+          } else if ( x_pix_pos > 0.5 ) {
+            x_contrib = 1.5 - x_pix_pos;
+            xpos_ex = tot_col + 1;
+          } else {
+            x_contrib = 1;
+            xpos_ex = tot_col;
+          }
+
+          y_pix_pos=tot_row - int(tot_row);
+          if (y_pix_pos < 0.5) {
+            y_contrib = 0.5 + y_pix_pos;
+            ypos_ex = tot_row - 1;
+          } else if ( y_pix_pos > 0.5 ) {
+            y_contrib = 1.5 - y_pix_pos;
+            ypos_ex = tot_row + 1;
+          } else {
+            y_contrib = 1;
+            ypos_ex = tot_row;
+          }
+          /*
+          std::cout << "\n tot_col =" << tot_col << "\n";
+          std::cout << "\n double(int(tot_row)) =" << double(int(tot_col)) << "\n";
+           */
+          std::cout << "\n y_contrib =" << y_contrib;
+          std::cout << "\n x_contrib =" << x_contrib << "\n____________________________________________________________";
+
+          data2dreturn(tot_row,tot_col)=total(tot_row,tot_col) + data2d(row,col) * scale * x_contrib * y_contrib;
+
         } else {
           std::cout << "\n ERROR Not fitting in the area to be added \n";
         }
