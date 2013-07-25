@@ -213,12 +213,12 @@ command_line/compare_xds_dials.py -text
 command_line/detector_max_resolution.py -text
 command_line/dials_spotfinder.py -text
 command_line/display_spots.py -text
+command_line/export.py -text
 command_line/export_spot_xds.py -text
 command_line/extract_reflection_profiles.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
-command_line/h5dump.py -text
 command_line/import.py -text
 command_line/integrate.py -text
 command_line/match_observed_w_predicted.py -text

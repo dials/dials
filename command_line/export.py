@@ -25,7 +25,7 @@ class ScriptRunner(object):
 
         from dials.model.data import Reflection, ReflectionList
         from dials.util.nexus import NexusFile
-        import pickle
+        import cPickle as pickle
 
         # Load the reflections from the pickle file
         print 'Loading reflections from {0}'.format(self.pickle_filename)
