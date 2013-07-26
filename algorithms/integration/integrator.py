@@ -32,7 +32,7 @@ class Integrator(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal, reflections = None):
+    def __call__(self, sweep, crystal, reflections=None):
         ''' Call to integrate.
 
         Params:
