@@ -24,7 +24,6 @@ namespace dials { namespace scratch {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
     int num=0;
-    std::cout << "\n";
     for (int row = 0; row<=nrow-1;row++) {
       if (row==0){
         std::cout << "\n  [ [ ";
