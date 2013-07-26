@@ -33,9 +33,11 @@ namespace dials { namespace scratch {
       }
 
       for (int col = 0; col<=ncol-1;col++) {
-        //printf(" %03d ", int(data2d(row,col)));
+        //printf(" %3d ", int(data2d(row,col)));
 
-        printf(" %3d ", int(data2d(row,col)));
+        //[ 6 ] = minimum width (no maximum given)
+        //[ 2 ] = precision after the period
+        printf("%6.2f ", data2d(row,col));
 
         num++;
 

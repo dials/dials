@@ -58,11 +58,11 @@ def calc_background_n_make_2d_profile(reflections):
             print "_____________________________________________________________________________________________"
             sumation = add_2d(descr, peak2d, sumation)
 
-    from matplotlib import pyplot as plt
-    print "Plotting reslt"
-    img_suma = sumation.as_numpy_array()
-    plt.imshow(img_suma, interpolation = "nearest")
-    plt.show()
+    #from matplotlib import pyplot as plt
+    #print "Plotting reslt"
+    #img_suma = sumation.as_numpy_array()
+    #plt.imshow(img_suma, interpolation = "nearest")
+    #plt.show()
     write_2d(sumation)
 
 
