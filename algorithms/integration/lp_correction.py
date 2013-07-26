@@ -31,6 +31,6 @@ def LP_calculations(sweep, crystal, reflection):
     # Data Correction and Scaling (b) comment text
     # J. Appl. Cryst 1988 21 916-924
 
-    reflection.intensity = reflection.intensity * L_f / P_f
+    reflection.corrected_intensity = reflection.intensity * L_f / P_f
 
     return
