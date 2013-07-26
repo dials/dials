@@ -12,6 +12,7 @@ from cctbx import crystal, miller, sgtbx, uctbx, xray
 
 import dxtbx
 from dials.model.data import ReflectionList
+from dials.model.experiment.crystal_model import Crystal
 
 
 master_phil_scope = libtbx.phil.parse("""
@@ -39,6 +40,16 @@ scan_range = None
   .multiple = True
 debug = False
   .type = bool
+refinement {
+  n_macro_cycles = 3
+    .type = int(value_min=0)
+  fix_detector = False
+    .type = bool
+    .help = "Whether or not to refine the detector position and orientation."
+  fix_beam = False
+    .type = bool
+    .help = "Whether or not to refine the beam direction."
+}
 """)
 
 master_params = master_phil_scope.fetch().extract()
@@ -115,7 +126,13 @@ class indexer(object):
     self.find_candidate_basis_vectors()
     self.find_candidate_orientation_matrices()
     self.index_reflections_given_orientation_matix(
-      self.candidate_orientation_matrices[0])
+      self.candidate_crystal_models[0])
+    for i in range(self.params.refinement.n_macro_cycles):
+      print "Starting refinement (macro-cycle %i)" %(i+1)
+      print
+      self.refine(self.candidate_crystal_models[0])
+      self.index_reflections_given_orientation_matix(
+        self.candidate_crystal_models[0])
 
     if self.params.debug:
       self.debug_write_reciprocal_lattice_points_as_pdb()
@@ -171,7 +188,6 @@ class indexer(object):
         continue
 
       phi = self.scan.get_angle_from_array_index(frame_number)
-
 
       # set reflection properties that might be needed by the dials refinement
       # engine, and convert values from pixels and image number to mm/rads
@@ -322,8 +338,7 @@ class indexer(object):
     self.candidate_basis_vectors = vectors
 
   def find_candidate_orientation_matrices(self):
-    self.candidate_orientation_matrices = []
-    self.candidate_unit_cells = []
+    self.candidate_crystal_models = []
     vectors = self.candidate_basis_vectors
 
     min_angle = 20 # degrees, aritrary cutoff
@@ -349,37 +364,28 @@ class indexer(object):
           if alpha < 90:
             c = -c
           beta = c.angle(a, deg=True)
-          A = matrix.sqr(list(a) + list(b) + list(c))
-          metrical_matrix = (A * A.transpose()).as_sym_mat3()
-          uc = uctbx.unit_cell(metrical_matrix=metrical_matrix)
+          model = Crystal(a, b, c)
+          uc = model.get_unit_cell()
           params = uc.parameters()
           if uc.volume() > (params[0]*params[1]*params[2]/100):
-            self.candidate_unit_cells.append(uc)
-            self.candidate_orientation_matrices.append(A)
+            # unit cell volume cutoff from labelit 2004 paper
+            self.candidate_crystal_models.append(model)
 
   def index_reflections_given_orientation_matix(
-      self, orientation_matrix, tolerance=0.3):
-    A = orientation_matrix
-    metrical_matrix = (A * A.transpose()).as_sym_mat3()
-    unit_cell = uctbx.unit_cell(metrical_matrix=metrical_matrix)
-    print "Candidate unit cell:"
-    print unit_cell
-    print "Orientation matrix:"
-    print A
-    print "Metric tensor:"
-    print matrix.sym(sym_mat3=unit_cell.metrical_matrix())
-
-    G = matrix.sym(sym_mat3=unit_cell.metrical_matrix())
-
-    A_inv = A.inverse()
+      self, crystal_model, tolerance=0.3):
+    print "Candidate crystal model:"
+    print crystal_model
 
     n_rejects = 0
 
     miller_indices = flex.miller_index()
     self.indexed_reflections = ReflectionList()
 
+    A = crystal_model.get_A()
+    A_inv = A.inverse()
+
     for rlp, refl in zip(self.reciprocal_space_points, self.reflections_used_for_indexing):
-      hkl_float = A * matrix.col(rlp)
+      hkl_float = A_inv * matrix.col(rlp)
       hkl_int = [int(round(h)) for h in hkl_float]
       max_difference = max([abs(hkl_float[i] - hkl_int[i]) for i in range(3)])
       if max_difference> tolerance:
@@ -391,6 +397,37 @@ class indexer(object):
 
     print "%i reflections indexed successfully (%i rejects)" %(
       self.indexed_reflections.size(), n_rejects)
+
+  def refine(self, crystal_model):
+    from  dials.algorithms.refinement import refine
+    from dials.algorithms.spot_prediction import ray_intersection
+    indexed_reflections = ray_intersection(
+      self.detector, self.indexed_reflections)
+
+    print "Starting crystal model:"
+    print crystal_model
+
+    print "Starting detector model:"
+    print self.detector
+
+    print "Starting beam model:"
+    print self.beam
+
+    refine(self.beam, self.goniometer, crystal_model, self.detector, self.scan,
+           indexed_reflections, verbosity=1,
+           fix_cell=False,
+           fix_beam=self.params.refinement.fix_beam,
+           fix_detector=self.params.refinement.fix_detector,
+           scan_varying=False)
+
+    print "Refined crystal model:"
+    print crystal_model
+
+    print "Refined detector model:"
+    print self.detector
+
+    print "Refined beam model:"
+    print self.beam
 
   def debug_show_candidate_basis_vectors(self):
 
@@ -466,6 +503,9 @@ def run(args):
   gonio = models.get_goniometer()
   detector = models.get_detector()
   scan = models.get_scan()
+  # the refinement MUST have the correct image/oscillation ranges set!
+  # XXX not sure how safe this is? should load a sweep instead
+  scan.set_image_range((1, len(sweep_filenames)))
   beam = models.get_beam()
   print detector
   print scan
