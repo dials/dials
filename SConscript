@@ -24,6 +24,7 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
 		LIBS=env_etc.libm + [ 
 		"cctbx",
 		"rstbx",
+		"scitbx",
 		"scitbx_boost_python",
 		"boost_python"])
 
