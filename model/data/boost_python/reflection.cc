@@ -15,28 +15,15 @@
 #include <string>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
-//#include <scitbx/serialization/single_buffered.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
-//#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <dials/model/data/boost_python/pickle.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 
-
-
-
-//#include <scitbx/array_family/boost_python/flex_pickle_single_buffered.h>
-
 namespace dials { namespace model { namespace boost_python {
 
-  //using namespace scitbx::af::boost_python;
- // using namespace scitbx::serialization::single_buffered;
-
-
   using namespace boost::python;
- // using scitbx::af::boost_python::flex_pickle_single_buffered;
-
 
   std::string reflection_to_string(const Reflection &reflection) {
     std::stringstream ss;
@@ -107,8 +94,6 @@ namespace dials { namespace model { namespace boost_python {
 
   using scitbx::af::flex_grid;
   using scitbx::af::flex_bool;
-//  using scitbx::af::boost_python::flex_pickle_single_buffered;
-//  using scitbx::af::boost_python::pickle_size_per_element;
   typedef scitbx::af::flex<cctbx::miller::index<> >::type flex_miller_index;
   typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
   typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
@@ -577,10 +562,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 
-//    scitbx::af::boost_python::flex_wrapper 
-//        <int6>::plain("flex_int6")
-//      .def_pickle(flex_pickle_single_buffered<int6,
-//        6*pickle_size_per_element<int>::value>());
+    scitbx::af::boost_python::flex_wrapper 
+        <int6>::plain("flex_int6");
 
     scitbx::af::boost_python::flex_wrapper 
       <Reflection, return_internal_reference<> >::plain("ReflectionList")
