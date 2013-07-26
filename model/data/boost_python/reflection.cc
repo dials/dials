@@ -15,48 +15,27 @@
 #include <string>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
-#include <scitbx/serialization/single_buffered.h>
-#include <scitbx/array_family/boost_python/flex_fwd.h>
+//#include <scitbx/serialization/single_buffered.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
+//#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
+#include <dials/model/data/boost_python/pickle.h>
+#include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 
-namespace scitbx { namespace serialization { namespace single_buffered {
 
-  using scitbx::af::int6;
 
-  inline
-  char* to_string(char* start, int6 const& value)
-  {
-    return to_string(to_string(to_string(to_string(to_string(to_string(start, 
-      value[0]), value[1]), value[2]), value[3]), value[4]), value[5]);
-  }
 
-  template <>
-  struct from_string<int6>
-  {
-    from_string(const char* start)
-    {
-      end = start;
-      for(std::size_t i=0; i < 6; ++i) {
-        from_string<int> proxy(end);
-        value[i] = proxy.value;
-        end = proxy.end;
-      }
-    }
-
-    int6 value;
-    const char* end;
-  };
-
-}}} // namespace scitbx::serialization::single_buffered
-
-#include <scitbx/array_family/boost_python/flex_pickle_single_buffered.h>
+//#include <scitbx/array_family/boost_python/flex_pickle_single_buffered.h>
 
 namespace dials { namespace model { namespace boost_python {
 
-  using namespace boost::python;
+  //using namespace scitbx::af::boost_python;
+ // using namespace scitbx::serialization::single_buffered;
 
+
+  using namespace boost::python;
+ // using scitbx::af::boost_python::flex_pickle_single_buffered;
 
 
   std::string reflection_to_string(const Reflection &reflection) {
@@ -64,7 +43,7 @@ namespace dials { namespace model { namespace boost_python {
     ss << reflection;
     return ss.str();
   }
-
+  
   struct ReflectionPickleSuite : boost::python::pickle_suite {
 //    static
 //    boost::python::tuple getinitargs(const Reflection &r) {
@@ -128,8 +107,8 @@ namespace dials { namespace model { namespace boost_python {
 
   using scitbx::af::flex_grid;
   using scitbx::af::flex_bool;
-  using scitbx::af::boost_python::flex_pickle_single_buffered;
-  using scitbx::af::boost_python::pickle_size_per_element;
+//  using scitbx::af::boost_python::flex_pickle_single_buffered;
+//  using scitbx::af::boost_python::pickle_size_per_element;
   typedef scitbx::af::flex<cctbx::miller::index<> >::type flex_miller_index;
   typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
   typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
@@ -520,7 +499,7 @@ namespace dials { namespace model { namespace boost_python {
     }    
   }  
   
-
+  
   void export_reflection()
   {
     class_<ReflectionBase>("ReflectionBase")
@@ -598,17 +577,15 @@ namespace dials { namespace model { namespace boost_python {
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 
-//      class_<ReflectionList>("ReflectionList")
-//        .def(vector_indexing_suite<ReflectionList>())
-//        .enable_pickling();
-
-    scitbx::af::boost_python::flex_wrapper 
-        <int6>::plain("flex_int6")
-      .def_pickle(flex_pickle_single_buffered<int6,
-        6*pickle_size_per_element<int>::value>());
+//    scitbx::af::boost_python::flex_wrapper 
+//        <int6>::plain("flex_int6")
+//      .def_pickle(flex_pickle_single_buffered<int6,
+//        6*pickle_size_per_element<int>::value>());
 
     scitbx::af::boost_python::flex_wrapper 
       <Reflection, return_internal_reference<> >::plain("ReflectionList")
+        .def_pickle(scitbx::af::boost_python::flex_pickle_double_buffered<
+          Reflection, reflection::to_string, reflection::from_string>())      
         .def("miller_index", &reflection_list_get_miller_index)
         .def("miller_index", &reflection_list_set_miller_index)
         .def("status", &reflection_list_get_status)
@@ -646,8 +623,7 @@ namespace dials { namespace model { namespace boost_python {
         .def("shoebox_background", &reflection_list_get_shoebox_background)
         .def("shoebox_background", &reflection_list_set_shoebox_background)
         .def("transformed_shoebox", &reflection_list_get_transformed_shoebox)
-        .def("transformed_shoebox", &reflection_list_set_transformed_shoebox)
-        .enable_pickling();        
+        .def("transformed_shoebox", &reflection_list_set_transformed_shoebox);    
   }
 
 }}} // namespace dials::model::boost_python

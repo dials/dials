@@ -116,7 +116,7 @@ namespace dials { namespace model {
       return miller_index_.is_zero();
     }
 
-  protected:
+  public:
     miller_index_type miller_index_;
     bool entering_;
     std::size_t status_;
@@ -374,7 +374,7 @@ namespace dials { namespace model {
       intensity_variance_ = var;
     }
 
-  protected:
+  public:
 
     double rotation_angle_;
     vec3 <double> beam_vector_;
