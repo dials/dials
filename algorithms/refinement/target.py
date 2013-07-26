@@ -554,13 +554,16 @@ class ReflectionManager(object):
 
         if self._verbosity > 2 and len(l) > 20:
             print "Listing predictions matched with observations for the first 20 reflections:"
-            print "H, K, L, Xresid, Yresid, Phiresid"
-            fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f"
+            print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, weightPhio"
+            fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
             for i in xrange(20):
                 e = l[i]
                 msg = fmt % tuple(e.H + (e.Xresid,
                                  e.Yresid,
-                                 e.Phiresid))
+                                 e.Phiresid,
+                                 e.weightXo,
+                                 e.weightYo,
+                                 e.weightPhio))
                 print msg
             print
 
