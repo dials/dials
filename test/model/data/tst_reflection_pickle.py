@@ -55,10 +55,8 @@ def generate_reflection():
 
 def check_profile(p1, p2):
     assert(p1.all() == p2.all())
-    if len(p1) > 0:
-        for v1, v2 in zip(p1, p2):
-            print v1, v2
-            assert(v1 == v2)
+    for v1, v2 in zip(p1, p2):
+        assert(v1 == v2)
 
 def tst_reflection():
     '''Test pickling the beam object.'''

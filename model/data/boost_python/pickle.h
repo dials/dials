@@ -18,8 +18,7 @@ namespace dials { namespace model { namespace boost_python {
   {
     using scitbx::af::boost_python::pickle_double_buffered::to_string::operator<<;
 
-    to_string()
-    {
+    to_string() {
       unsigned int version = 1;
       *this << version;
     }
@@ -83,33 +82,28 @@ namespace dials { namespace model { namespace boost_python {
     using scitbx::af::boost_python::pickle_double_buffered::from_string::operator>>;
 
     from_string(const char* str_ptr)
-    : scitbx::af::boost_python::pickle_double_buffered::from_string(str_ptr)
-    {
+    : scitbx::af::boost_python::pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
       DIALS_ASSERT(version == 1);
     }
 
     template <typename ProfileType>
-    void profile_from_string(ProfileType &p) {
+    ProfileType profile_from_string() {
       typename ProfileType::index_type shape;
       typename ProfileType::size_type n_dim;
       *this >> n_dim;
       shape.resize(n_dim);
-      std::size_t capacity = 0;
       for (std::size_t i = 0; i < n_dim; ++i) {
         *this >> shape[i];
-        capacity *= shape[i];
       }
-      p.resize(capacity);
-      p.resize(flex_grid<>(shape));
+      ProfileType p = ProfileType(flex_grid<>(shape));
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this >> p[i];
       }
-      std::cout << p.size() << std::endl;
+      return p;
     }
 
-    from_string& operator>>(Reflection& val)
-    {
+    from_string& operator>>(Reflection& val) {
       *this >> val.miller_index_[0]
             >> val.miller_index_[1]
             >> val.miller_index_[2]
@@ -143,10 +137,10 @@ namespace dials { namespace model { namespace boost_python {
             >> val.intensity_
             >> val.intensity_variance_;
 
-      profile_from_string(val.shoebox_);
-      profile_from_string(val.shoebox_mask_);
-      profile_from_string(val.shoebox_background_);
-      profile_from_string(val.transformed_shoebox_);
+      val.shoebox_ = profile_from_string<flex_double>();
+      val.shoebox_mask_ = profile_from_string<flex_int>();
+      val.shoebox_background_ = profile_from_string<flex_double>();
+      val.transformed_shoebox_ = profile_from_string<flex_double>();
       return *this;
     }
 
