@@ -20,9 +20,9 @@ class CompletionGenerator(object):
 
         # A dictionary of program/phil scope pairs
         self.programs = {
-            'parameters' : '',
-            'spotfinder' : 'spotfinder',
-            'subtract_background' : 'background'
+            'parameters' : None,
+            'spotfinder' : ['spotfinder', 'logging', 'lookup'],
+            'integrate' : ['integration', 'logging', 'lookup'],
         }
 
         # Find the dials distribution directory
@@ -45,7 +45,7 @@ class CompletionGenerator(object):
         text = '#!/bin/bash'
         for p, s in self.programs.iteritems():
             if s:
-                opt = options[s]
+                opt = [o for ol in s for o in options[ol]]
             else:
                 opt = [o for ol in options for o in options[ol]]
             text += '\n\n' + self._generate_single(p, opt)
@@ -72,7 +72,7 @@ class CompletionGenerator(object):
         for d in definitions:
             path = d.path
             scope, option = path.split('.', 1)
-            options[scope].append(option)
+            options[scope].append(path)
 
         # Return the options
         return options
@@ -81,6 +81,10 @@ class CompletionGenerator(object):
         '''Generate a single script from the template.'''
 
         from string import Template
+
+        # Check the number of options
+        if len(options) == 0:
+            return ''
 
         # Open the completion template
         with open(self.template_filename, 'r') as f:

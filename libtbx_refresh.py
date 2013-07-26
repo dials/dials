@@ -5,4 +5,7 @@ def run():
     gen = CompletionGenerator()
     gen.generate()
 
-#run()
+try:
+    run()
+except Exception, e:
+    print "DIALS Warning", e
