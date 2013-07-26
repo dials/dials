@@ -1,7 +1,18 @@
-
+/*
+ * pickle.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_MODEL_DATA_BOOST_PYTHON_PICKLE_H
 #define DIALS_MODEL_DATA_BOOST_PYTHON_PICKLE_H
 
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -12,6 +23,7 @@
 namespace dials { namespace model { namespace boost_python {
     namespace reflection {
 
+  using namespace boost::python;
   using scitbx::af::flex_grid;
 
   struct to_string : scitbx::af::boost_python::pickle_double_buffered::to_string
@@ -147,6 +159,24 @@ namespace dials { namespace model { namespace boost_python {
     }
 
     unsigned int version;
+  };
+
+  struct ReflectionPickleSuite : boost::python::pickle_suite {
+
+    static
+    boost::python::tuple getstate(const Reflection &r) {
+      to_string buf;
+      buf << r;
+      return boost::python::make_tuple(buf.buffer);
+    }
+
+    static
+    void setstate(Reflection &r, boost::python::tuple state) {
+      DIALS_ASSERT(boost::python::len(state) == 1);
+      PyObject* py_str = boost::python::object(state[0]).ptr();
+      from_string buf(PyString_AsString(py_str));
+      buf >> r;
+    }
   };
 
 }}}} // namespace dials::model::boost_python::reflection
