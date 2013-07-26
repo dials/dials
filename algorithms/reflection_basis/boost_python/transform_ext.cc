@@ -15,6 +15,7 @@
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/algorithms/reflection_basis/map_pixels.h>
 #include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
   namespace transform { namespace boost_python {
@@ -22,6 +23,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using namespace boost::python;
   using scitbx::af::int2;
   using scitbx::af::flex_grid;
+  using scitbx::af::flex_int;
+  using dials::model::ReflectionList;
   
   inline
   flex_double rebin_pixels_wrapper(const flex_double &input, 
@@ -138,34 +141,83 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         arg("grid")));         
   }
   
+  inline
+  void forward_with_reflection_list(const Forward &transform, 
+      ReflectionList &rlist) {
+    for (std::size_t i = 0; i < rlist.size(); ++i) {
+      if (rlist[i].is_valid()) {
+        try {
+          flex_int shoebox_mask = rlist[i].get_shoebox_mask();
+          flex_bool mask(shoebox_mask.accessor());
+          for (std::size_t j = 0; j < mask.size(); ++j) {
+            mask[j] = shoebox_mask[j] != 0;
+          }
+          rlist[i].set_transformed_shoebox(transform(
+            rlist[i].get_beam_vector(),
+            rlist[i].get_rotation_angle(), 
+            rlist[i].get_bounding_box(), 
+            rlist[i].get_shoebox(), 
+            mask));
+        } catch(dials::error) {
+          rlist[i].set_valid(false);
+        }
+      }
+    }
+  }
+  
   void export_transform()
   {
+    flex_double(Forward::*forward_with_cs)(const CoordinateSystem&, int6, 
+      const flex_double&, const flex_bool&)const = &Forward::operator();
+    flex_double(Forward::*forward_with_s1)(vec3<double>, double, int6, 
+      const flex_double&, const flex_bool&)const = &Forward::operator();
+  
+    flex_double(Reverse::*reverse_with_cs)(const CoordinateSystem&, int6, 
+      const flex_double&)const = &Reverse::operator();
+    flex_double(Reverse::*reverse_with_s1)(vec3<double>, double, int6, 
+      const flex_double&)const = &Reverse::operator();  
+  
     class_<Forward>("Forward", no_init)
-      .def(init<const Beam&, const Detector&, const Scan&,
-                double, std::size_t, std::size_t>((
+      .def(init<const Beam&, const Detector&, const Goniometer&, const Scan&,
+                double, double, std::size_t>((
         arg("beam"),
         arg("detector"),
+        arg("gonio"),
         arg("scan"),
         arg("mosaicity"),
         arg("n_sigma"),
         arg("grid_half_size"))))
-      .def("__call__", &Forward::operator(), (
+      .def("__call__", forward_with_cs, (
         arg("cs"),
         arg("bbox"),
         arg("image"),
-        arg("mask")));
+        arg("mask")))
+      .def("__call__", forward_with_s1, (
+        arg("s1"),
+        arg("phi"),
+        arg("bbox"),
+        arg("image"),
+        arg("mask")))
+      .def("__call__", &forward_with_reflection_list, (
+        arg("rlist")));
 
     class_<Reverse>("Reverse", no_init)
-      .def(init<const Beam&, const Detector&, const Scan&,
-                double, std::size_t, std::size_t>((
+      .def(init<const Beam&, const Detector&, const Goniometer&, const Scan&,
+                double, double, std::size_t>((
         arg("beam"),
         arg("detector"),
+        arg("gonio"),
         arg("scan"),
         arg("mosaicity"),
         arg("n_sigma"),
         arg("grid_half_size"))))
-      .def("__call__", &Reverse::operator(), (
+      .def("__call__",reverse_with_cs, (
         arg("cs"),
+        arg("bbox"),
+        arg("grid")))
+      .def("__call__",reverse_with_s1, (
+        arg("s1"),
+        arg("phi"),
         arg("bbox"),
         arg("grid")));
   }

@@ -224,8 +224,7 @@ class IntegratorFactory(object):
         elif params.integration.algorithm == 'sum_rs':
             algorithm = SummationReciprocalSpace(
                 n_sigma = integration.shoebox.n_sigma,
-                grid_size = integration.reciprocal_space.grid_size,
-                n_div = integration.reciprocal_space.n_divisions)
+                grid_size = integration.reciprocal_space.grid_size)
 
         # Configure the 2D profile fitting algorithm
         elif integration.algorithm == 'fit_2d':

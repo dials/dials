@@ -19,7 +19,6 @@ class SummationReciprocalSpace(IntegrationInterface):
         # Get the parameters
         self._bbox_nsigma = kwargs['n_sigma']
         self._grid_size = kwargs['grid_size']
-        self._n_div = kwargs['n_div']
 
     def __call__(self, sweep, crystal, reflections):
         '''Process the reflections.
@@ -43,6 +42,7 @@ class SummationReciprocalSpace(IntegrationInterface):
         transform = rbt.Forward(
             sweep.get_beam(),
             sweep.get_detector(),
+            sweep.get_goniometer(),
             sweep.get_scan(),
             crystal.get_mosaicity(),
             self._bbox_nsigma,

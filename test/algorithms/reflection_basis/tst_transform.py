@@ -68,7 +68,7 @@ class TestForward(object):
 
         # Initialise the transform
         self.transform = transform.Forward(
-            self.beam, self.detector, self.scan,
+            self.beam, self.detector, self.gonio, self.scan,
             self.mosaicity, self.n_sigma, self.grid_size)
 
     def __call__(self):
@@ -292,7 +292,7 @@ class TestReverse(object):
 
         # Initialise the transform
         self.transform = transform.Reverse(
-            self.beam, self.detector, self.scan,
+            self.beam, self.detector, self.gonio, self.scan,
             self.mosaicity, self.n_sigma, self.grid_size)
 
     def __call__(self):
