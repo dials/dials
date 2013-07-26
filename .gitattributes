@@ -308,6 +308,7 @@ model/data/__init__.py -text
 model/data/adjacency_list.h -text
 model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
+model/data/boost_python/pickle.h -text
 model/data/boost_python/reflection.cc -text
 model/data/reflection.h -text
 model/experiment/SConscript -text
