@@ -106,8 +106,8 @@ def print_grads(grad_list):
                "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
 
 def refine(beam, goniometer, crystal, detector, scan,
-           reflections, verbosity = 0, fix_cell = False,
-           scan_varying=False):
+           reflections, verbosity=0, fix_cell=False,
+           scan_varying=False, fix_detector=False, fix_beam=False):
 
     """Simple refinement interface for the centroid refinement sprint"""
 
@@ -176,6 +176,12 @@ def refine(beam, goniometer, crystal, detector, scan,
     # Fix cell if requested
     if fix_cell:
         xluc_param.set_fixed([True] * xluc_param.num_free())
+
+    if fix_beam:
+        s0_param.set_fixed([True, True])
+
+    if fix_detector:
+        det_param.set_fixed([True] * det_param.num_free())
 
     ########################################################################
     # Link model parameterisations together into a parameterisation of the #
