@@ -220,6 +220,13 @@ namespace dials { namespace model { namespace boost_python {
     return result;
   }  
   
+  flex_double reflection_list_get_corrected_intensity(const ReflectionList &r) {
+    flex_double result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_corrected_intensity();
+    }
+    return result;
+  }  
  
   flex_double reflection_list_get_shoebox(const ReflectionList &r) {
     std::size_t result_size = 0;
@@ -403,6 +410,14 @@ namespace dials { namespace model { namespace boost_python {
     }
   }
   
+  void reflection_list_set_corrected_intensity(ReflectionList &r, 
+      const flex_double &input) {
+    DIALS_ASSERT(input.size() == r.size());        
+    for (std::size_t i = 0; i < input.size(); ++i) {
+      r[i].set_corrected_intensity(input[i]);
+    }
+  }  
+  
   void reflection_list_set_shoebox(ReflectionList &r, 
       const flex_double &input) {
     std::size_t total_size = 0;
@@ -559,6 +574,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("intensity_variance",
         &Reflection::get_intensity_variance,
         &Reflection::set_intensity_variance)
+      .add_property("corrected_intensity",
+        &Reflection::get_corrected_intensity,
+        &Reflection::set_corrected_intensity)
       .def("__str__", &reflection_to_string)
       .def_pickle(ReflectionPickleSuite());          
 
@@ -599,6 +617,8 @@ namespace dials { namespace model { namespace boost_python {
         .def("intensity", &reflection_list_set_intensity)
         .def("intensity_variance", &reflection_list_get_intensity_variance)
         .def("intensity_variance", &reflection_list_set_intensity_variance)
+        .def("corrected_intensity", &reflection_list_get_corrected_intensity)
+        .def("corrected_intensity", &reflection_list_set_corrected_intensity)        
         .def("shoebox", &reflection_list_get_shoebox)
         .def("shoebox", &reflection_list_set_shoebox)
         .def("shoebox_mask", &reflection_list_get_shoebox_mask)
