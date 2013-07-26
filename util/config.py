@@ -23,6 +23,7 @@ class CompletionGenerator(object):
             'parameters' : None,
             'spotfinder' : ['spotfinder', 'logging', 'lookup'],
             'integrate' : ['integration', 'logging', 'lookup'],
+            'refine' : ['refinement', 'logging'],
         }
 
         # Find the dials distribution directory
