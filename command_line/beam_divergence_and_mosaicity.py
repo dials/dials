@@ -27,7 +27,7 @@ class ScriptRunner(object):
         from dials.algorithms.integration.divergence_and_mosaicity \
             import BeamDivergenceAndMosaicity
         from dials.util.nexus import NexusFile
-        import pickle
+        import cPickle as pickle
 
         # Set the print output
         Command.indent = 4

@@ -103,9 +103,10 @@ class ScriptRunner(object):
 
         # Save the reflections
         if self.output_file:
-            import pickle
+            import cPickle as pickle
             Command.start('Saving spots to {0}'.format(self.output_file))
-            pickle.dump(ReflectionList(observed), open(self.output_file, 'wb'))
+            pickle.dump(ReflectionList(observed), open(self.output_file, 'wb'),
+                pickle.HIGHEST_PROTOCOL)
             Command.end('Saved spots to {0}'.format(self.output_file))
 
     def _spotfinder_lui(self, sweep):

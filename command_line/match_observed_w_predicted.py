@@ -29,7 +29,7 @@ class ScriptRunner(object):
         from dials.model.data import ReflectionList
         from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
         from dials.util.command_line import Command
-        import pickle
+        import cPickle as pickle
 
         # Set the print output
         Command.indent = 4
@@ -56,7 +56,8 @@ class ScriptRunner(object):
         if self.output_file:
             print 'Writing datafiles...'
             Command.start('Saving spots to {0}'.format(self.output_file))
-            pickle.dump(matched, open(self.output_file, 'wb'))
+            pickle.dump(matched, open(self.output_file, 'wb'),
+                pickle.HIGHEST_PROTOCOL)
             Command.end('Saved spots to {0}'.format(self.output_file))
 
 

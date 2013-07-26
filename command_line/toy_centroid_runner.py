@@ -185,7 +185,7 @@ class ToyCentroidRunner(object):
     def _write_output(self):
         '''Write output to std::out and files.'''
         from reflection_stats import ReflectionStats
-        import pickle
+        import cPickle as pickle
 
         # Select a certain number of random reflections
         self._select_random_reflections()
@@ -200,7 +200,8 @@ class ToyCentroidRunner(object):
         # Dump the reflections to file
         if self.output_file:
             print "\nPickling reflection list."
-            pickle.dump(self.reflections, open(self.output_file, 'wb'))
+            pickle.dump(self.reflections, open(self.output_file, 'wb'),
+                pickle.HIGHEST_PROTOCOL)
 
     def _select_random_reflections(self):
         '''Select a number of random reflections.'''

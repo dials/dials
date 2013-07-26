@@ -29,7 +29,7 @@ class ScriptRunner(object):
 
         from dials.util.command_line import Command
         from dials.model.data import Reflection, ReflectionList
-        import pickle
+        import cPickle as pickle
 
         # Read in the reflections from the inputfile
         Command.start('Reading reflections from {0}'.format(self.input_file))
@@ -50,7 +50,8 @@ class ScriptRunner(object):
         # Save the reflections
         if self.output_file:
             Command.start('Saving reflections to {0}'.format(self.output_file))
-            pickle.dump(reflections, open(self.output_file, 'wb'))
+            pickle.dump(reflections, open(self.output_file, 'wb'),
+                pickle.HIGHEST_PROTOCOL)
             Command.end('Saved reflections to {0}'.format(self.output_file))
 
     def get_algorithm(self):

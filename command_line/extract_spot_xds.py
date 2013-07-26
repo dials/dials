@@ -74,10 +74,11 @@ class ScriptRunner(object):
 
         # Save the reflection list
         if self.output_filename != None:
-            import pickle
+            import cPickle as pickle
             Command.start('Saving reflections to {0}'.format(
                 self.output_filename))
-            pickle.dump(rlist, open(self.output_filename, 'wb'))
+            pickle.dump(rlist, open(self.output_filename, 'wb'),
+                pickle.HIGHEST_PROTOCOL)
             Command.end('Saved reflections to {0}'.format(
                 self.output_filename))
 

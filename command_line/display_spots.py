@@ -25,13 +25,12 @@ class ScriptRunner(object):
 
     def __call__(self):
         '''Run the script.'''
-        import pickle
+        import cPickle as pickle
         from dials.model.data import ReflectionList # import dependency
         from dials.util.command_line import Command
 
         # Read the pickle file
         Command.start('Reading reflection file.')
-        import cPickle as pickle
         with open(self.reflections_filename, 'rb') as f:
             self.reflections = pickle.load(f)
 

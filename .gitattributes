@@ -576,6 +576,7 @@ scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/nexus/test_h5py.py -text
 scratch/jmp/nexus/test_h5py2.py -text
 scratch/jmp/nexus/test_nexus.py -text
+scratch/jmp/pickle/test_pickle.py -text
 scratch/jmp/profile/grid_sampler.py -text
 scratch/jmp/runtests.py -text
 scratch/jmp/test/data/sim_mx/DX-CORRECTIONS.cbf -text

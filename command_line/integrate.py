@@ -71,7 +71,8 @@ class Script(ScriptRunner):
                 r.shoebox_mask = flex.int()
                 r.shoebox_background = flex.double()
                 r.transformed_shoebox = flex.double()
-        pickle.dump(reflections, open(options.output_filename, 'w'))
+        pickle.dump(reflections, open(options.output_filename, 'wb'),
+            pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == '__main__':

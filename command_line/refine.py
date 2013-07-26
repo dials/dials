@@ -183,7 +183,7 @@ class RefinementRunner(object):
 def read_reflection_file(reflection_file):
     '''Read reflections from pickle file.'''
     from dials.model.data import ReflectionList
-    import pickle
+    import cPickle as pickle
     return pickle.load(open(reflection_file, 'rb'))
 
 def run(reflection_file):
