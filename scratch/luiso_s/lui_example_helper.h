@@ -69,9 +69,9 @@ namespace dials { namespace scratch {
     int tot_col_centr=int(ncol_tot / 2);
 
     for (int row = 0; row <= nrow_in - 1;row++) {
-      for (int col = 0; col <= ncol_in-1;col++) {
-        tot_row = row + tot_row_centr - centr_row;
-        tot_col = col + tot_col_centr - centr_col;
+      for (int col = 0; col <= ncol_in - 1;col++) {
+        tot_row = row + tot_row_centr - centr_row + 1;
+        tot_col = col + tot_col_centr - centr_col + 1;
         if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and tot_col < ncol_tot) {
 
           x_pix_pos=tot_col - int(tot_col);
@@ -100,11 +100,23 @@ namespace dials { namespace scratch {
           /*
           std::cout << "\n tot_col =" << tot_col << "\n";
           std::cout << "\n double(int(tot_row)) =" << double(int(tot_col)) << "\n";
-           */
+
           std::cout << "\n y_contrib =" << y_contrib;
           std::cout << "\n x_contrib =" << x_contrib << "\n____________________________________________________________";
+           */
+          data2dreturn(tot_row, tot_col)=total(tot_row, tot_col) + data2d(row, col) * scale * x_contrib * y_contrib;
+          if( xpos_ex != tot_col or ypos_ex != tot_row ){
+            if( xpos_ex != tot_col ){
+              data2dreturn(tot_row, xpos_ex)=total(tot_row, xpos_ex) + data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
+            }
+            if( ypos_ex != tot_row ){
+              data2dreturn(ypos_ex, tot_col)=total(ypos_ex, tot_col) + data2d(row, col) * scale * x_contrib * (1 - y_contrib);
+            }
+            if( xpos_ex != tot_col and ypos_ex != tot_row ){
+              data2dreturn(ypos_ex, xpos_ex)=total(ypos_ex, xpos_ex) + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
+            }
+          }
 
-          data2dreturn(tot_row,tot_col)=total(tot_row,tot_col) + data2d(row,col) * scale * x_contrib * y_contrib;
 
         } else {
           std::cout << "\n ERROR Not fitting in the area to be added \n";
