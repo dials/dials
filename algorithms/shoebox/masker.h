@@ -16,12 +16,14 @@
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/model/data/reflection.h>
 #include <dials/model/data/adjacency_list.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
 
   using scitbx::vec3;
   using scitbx::af::int6;
+  using scitbx::af::flex_bool;
   using scitbx::af::flex_int;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
@@ -40,7 +42,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Initialise the algorithm with the detector mask
      * @param detector_mask The mask of good/bad detector pixels.
      */
-    Masker(const flex_int &detector_mask)
+    Masker(const flex_bool &detector_mask)
       : detector_mask_(detector_mask),
         detector_size_(detector_mask.accessor().all()) {
       DIALS_ASSERT(detector_size_.size() == 2);
@@ -63,7 +65,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         const boost::shared_ptr<AdjacencyList> &adjacency_list) const {
 
       // Begin by setting all the mask values to 1
-      initialise_mask(reflections, 1);
+      initialise_mask(reflections);
 
       // Loop through all the reflections
       for (std::size_t i = 0; i < reflections.size(); ++i) {
@@ -184,11 +186,11 @@ namespace dials { namespace algorithms { namespace shoebox {
             // b to 1 and a to 0.
             if (distance(coord_a, coord_c) < distance(coord_b, coord_c)) {
               if (b_status == true) {
-                mask_b(kb, jb, ib) = 0;
+                mask_b(kb, jb, ib) = Invalid;
               }
             } else {
               if (a_status == true) {
-                mask_a(ka, ja, ia) = 0;
+                mask_a(ka, ja, ia) = Invalid;
               }
             }
           }
@@ -199,9 +201,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     /**
      * Set all the shoebox mask values for the reflection to value
      * @param reflection The reflection
-     * @param value The value to set
      */
-    void initialise_mask(Reflection &reflection, int value) const {
+    void initialise_mask(Reflection &reflection) const {
 
       // Get the mask and roi from the reflection
       flex_int mask = reflection.get_shoebox_mask();
@@ -222,13 +223,13 @@ namespace dials { namespace algorithms { namespace shoebox {
         for (std::size_t i = 0; i < size[2]; ++i) {
           int di = roi[0] + i;
           int dj = roi[2] + j;
-          int mask_value = 0;
+          bool mask_value = false;
           if (di >= 0 && di < detector_size_[1] &&
               dj >= 0 && dj < detector_size_[0]) {
             mask_value = detector_mask_(dj, di);
           }
           for (std::size_t k = 0; k < size[0]; ++k) {
-            mask(k, j, i) = mask_value ? value : 0;
+            mask(k, j, i) = mask_value ? (Foreground | Background) : Invalid;
           }
         }
       }
@@ -237,18 +238,17 @@ namespace dials { namespace algorithms { namespace shoebox {
     /**
      * Set all the shoebox mask values for all the reflections to value
      * @param reflections The reflection list
-     * @param value The value to set
      */
-    void initialise_mask(ReflectionList &reflections, int value) const {
+    void initialise_mask(ReflectionList &reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         if (reflections[i].is_valid()) {
-          initialise_mask(reflections[i], value);
+          initialise_mask(reflections[i]);
         }
       }
     }
 
-    flex_int detector_mask_;
-    flex_int::index_type detector_size_;
+    flex_bool detector_mask_;
+    flex_bool::index_type detector_size_;
   };
 
 }}} // namespace dials::algorithms::shoebox

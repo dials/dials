@@ -20,7 +20,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_masker()
   {
     class_ <Masker> ("Masker", no_init)
-      .def(init<const flex_int&>((
+      .def(init<const flex_bool&>((
           arg("detector_mask"))))
       .def("__call__", 
         &Masker::operator(), (
