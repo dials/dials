@@ -14,7 +14,7 @@ descr = flex.double(flex.grid(1, 3))
 '''
 for ref in reflections:
     if ref.is_valid():
-        
+
 shoebox = ref.shoebox
 mask = ref.shoebox_mask
 background = ref.shoebox_background
