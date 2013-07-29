@@ -11,19 +11,22 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 
-namespace dials { namespace algorithms { namespace boost_python {
+namespace dials { namespace algorithms { namespace shoebox {
+  namespace boost_python {
 
   using namespace boost::python;
 
+  void export_mask_code();
   void export_bbox_calculator();
   void export_find_overlapping_reflections();
-  void export_shoebox_masker();
+  void export_masker();
 
   BOOST_PYTHON_MODULE(dials_algorithms_shoebox_ext)
   {
+    export_mask_code();
     export_bbox_calculator();
     export_find_overlapping_reflections();
-    export_shoebox_masker();
+    export_masker();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}} // namespace = dials::algorithms::shoebox::boost_python

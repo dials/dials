@@ -12,7 +12,8 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/shoebox/bbox_calculator.h>
 
-namespace dials { namespace algorithms { namespace boost_python {
+namespace dials { namespace algorithms { namespace shoebox {
+  namespace boost_python {
 
   using namespace boost::python;
 
@@ -52,4 +53,4 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("reflections")));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}} // namespace = dials::algorithms::shoebox::boost_python

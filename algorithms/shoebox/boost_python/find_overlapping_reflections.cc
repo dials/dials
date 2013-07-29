@@ -14,7 +14,8 @@
 #include <boost_adaptbx/std_pair_conversion.h>
 #include <dials/algorithms/shoebox/find_overlapping_reflections.h>
 
-namespace dials { namespace algorithms { namespace boost_python {
+namespace dials { namespace algorithms { namespace shoebox {
+  namespace boost_python {
 
   using namespace boost::python;
 
@@ -25,4 +26,4 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("reflection_list")));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}} // namespace = dials::algorithms::shoebox::boost_python

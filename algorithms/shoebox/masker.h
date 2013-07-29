@@ -1,6 +1,15 @@
-
-#ifndef DIALS_ALGORITHMS_INTEGRATION_SHOEBOX_MASKER_H
-#define DIALS_ALGORITHMS_INTEGRATION_SHOEBOX_MASKER_H
+/*
+ * masker.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
+#ifndef DIALS_ALGORITHMS_INTEGRATION_MASKER_H
+#define DIALS_ALGORITHMS_INTEGRATION_MASKER_H
 
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/flex_types.h>
@@ -9,7 +18,7 @@
 #include <dials/model/data/adjacency_list.h>
 #include <dials/error.h>
 
-namespace dials { namespace algorithms {
+namespace dials { namespace algorithms { namespace shoebox {
 
   using scitbx::vec3;
   using scitbx::af::int6;
@@ -19,7 +28,7 @@ namespace dials { namespace algorithms {
   using dials::model::AdjacencyList;
 
   /** Class to calculate the shoebox masks for all reflections */
-  class ShoeboxMasker {
+  class Masker {
   public:
 
     // Useful typedefs
@@ -31,7 +40,7 @@ namespace dials { namespace algorithms {
      * Initialise the algorithm with the detector mask
      * @param detector_mask The mask of good/bad detector pixels.
      */
-    ShoeboxMasker(const flex_int &detector_mask)
+    Masker(const flex_int &detector_mask)
       : detector_mask_(detector_mask),
         detector_size_(detector_mask.accessor().all()) {
       DIALS_ASSERT(detector_size_.size() == 2);
@@ -242,6 +251,6 @@ namespace dials { namespace algorithms {
     flex_int::index_type detector_size_;
   };
 
-}} // namespace dials::algorithms
+}}} // namespace dials::algorithms::shoebox
 
-#endif /* DIALS_ALGORITHMS_INTEGRATION_SHOEBOX_MASKER_H */
+#endif /* DIALS_ALGORITHMS_INTEGRATION_MASKER_H */

@@ -23,7 +23,7 @@
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
-namespace dials { namespace algorithms {
+namespace dials { namespace algorithms { namespace shoebox {
 
   // Use a load of stuff from other namespaces
   using std::floor;
@@ -195,6 +195,6 @@ namespace dials { namespace algorithms {
     double delta_mosaicity_;
   };
 
-}} // namespace dials::algorithms
+}}} // namespace dials::algorithms::shoebox
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_BBOX_CALCULATOR_H

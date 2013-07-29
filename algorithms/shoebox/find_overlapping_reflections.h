@@ -21,9 +21,6 @@
 namespace dials { namespace algorithms {
 
   using scitbx::af::int6;
-  using dials::model::Reflection;
-  using dials::model::ReflectionList;
-  using dials::model::AdjacencyList;
 
   // Helper functions needed for 3D collision detection
   template <> struct bound_coord_type<int6> { typedef int type; };
@@ -33,6 +30,15 @@ namespace dials { namespace algorithms {
   template <> int get_maximum_bound<1, int6>(const int6 &b) { return b[3]; }
   template <> int get_minimum_bound<2, int6>(const int6 &b) { return b[4]; }
   template <> int get_maximum_bound<2, int6>(const int6 &b) { return b[5]; }
+
+}} // namespace dials::algorithms
+
+namespace dials { namespace algorithms { namespace shoebox {
+
+  using scitbx::af::int6;
+  using dials::model::Reflection;
+  using dials::model::ReflectionList;
+  using dials::model::AdjacencyList;
 
   /**
    * Given a set of reflections, find the bounding_boxes that overlap.
@@ -74,6 +80,6 @@ namespace dials { namespace algorithms {
     return list;
   }
 
-}} // namespace dials::algorithms
+}}} // namespace dials::algorithms::shoebox
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_RELFECTIONS_H

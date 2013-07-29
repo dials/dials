@@ -1,5 +1,5 @@
 /*
- * shoebox_masker.cc
+ * masker.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,21 +10,22 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/shoebox/shoebox_masker.h>
+#include <dials/algorithms/shoebox/masker.h>
 
-namespace dials { namespace algorithms { namespace boost_python {
+namespace dials { namespace algorithms { namespace shoebox {
+  namespace boost_python {
 
   using namespace boost::python;
 
-  void export_shoebox_masker()
+  void export_masker()
   {
-    class_ <ShoeboxMasker> ("ShoeboxMasker", no_init)
+    class_ <Masker> ("Masker", no_init)
       .def(init<const flex_int&>((
           arg("detector_mask"))))
       .def("__call__", 
-        &ShoeboxMasker::operator(), (
+        &Masker::operator(), (
           arg("reflection_list"), 
           arg("adjacency_list")));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}} // namespace = dials::algorithms::shoebox::boost_python

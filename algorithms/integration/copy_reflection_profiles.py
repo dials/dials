@@ -144,7 +144,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
 
     """
     from dials.algorithms.integration import allocate_reflection_profiles
-    from dials.algorithms.shoebox import ShoeboxMasker
+    from dials.algorithms import shoebox
     from scitbx.array_family import flex
     from dials.util.command_line import Command
 
@@ -159,7 +159,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
         detector_mask = (sweep[0] >= 0).as_1d().as_int()
         detector_mask.reshape(flex.grid(sweep[0].all()))
         Command.start("Masking overlapped reflections")
-        shoebox_masker = ShoeboxMasker(detector_mask)
+        shoebox_masker = shoebox.Masker(detector_mask)
         shoebox_masker(reflections, adjacency_list)
         Command.end("Masked {0} overlapped reflections".format(
             len(adjacency_list)))
