@@ -9,7 +9,6 @@ tst_list = (
     "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_rotation_angles.py",
     "$D/test/algorithms/spot_prediction/tst_spot_prediction.py",
-    "$D/test/algorithms/integration/tst_bbox_calculator.py",
     "$D/test/algorithms/integration/profile/tst_grid_sampler.py",
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",
@@ -31,6 +30,8 @@ tst_list = (
     "$D/test/algorithms/reflection_basis/tst_beam_vector_map.py",
     "$D/test/algorithms/reflection_basis/tst_grid_index_generator.py",
     "$D/test/algorithms/reflection_basis/tst_transform.py",
+    "$D/test/algorithms/shoebox/tst_bbox_calculator.py",
+    "$D/test/algorithms/shoebox/tst_shoebox_masker.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     )
 
