@@ -87,7 +87,7 @@ def is_approximate_integer_multiple(vec_a, vec_b,
                                      angular_tolerance=5.0):
   length_a = vec_a.length()
   length_b = vec_b.length()
-  assert length_b > length_a
+  assert length_b >= length_a
   angle = vec_a.angle(vec_b, deg=True)
   if angle < angular_tolerance or abs(180-angle) < angular_tolerance:
     n = length_b/length_a
@@ -98,13 +98,13 @@ def is_approximate_integer_multiple(vec_a, vec_b,
 
 class indexer(object):
 
-  def __init__(self, reflections, goniometer, detector, scan, beam,
-               params=None):
+  def __init__(self, reflections, sweep, params=None):
     self.reflections = reflections
-    self.goniometer = goniometer
-    self.detector = detector
-    self.scan = scan
-    self.beam = beam
+    self.sweep = sweep
+    self.goniometer = sweep.get_goniometer()
+    self.detector = sweep.get_detector()
+    self.scan = sweep.get_scan()
+    self.beam = sweep.get_beam()
     if params is None: params = master_params
     self.params = params
 
@@ -138,6 +138,8 @@ class indexer(object):
       self.debug_write_reciprocal_lattice_points_as_pdb()
       self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
       self.debug_show_candidate_basis_vectors()
+
+    self.export_as_json()
 
   def map_centroids_to_reciprocal_space_grid(self):
 
@@ -486,9 +488,19 @@ class indexer(object):
       map_data=map_data,
       labels=flex.std_string(labels))
 
+  def export_as_json(self, compact=False):
+    from dials.model.serialize.dump import crystal as dump_crystal
+    from dxtbx.serialize import dump
+    with open('crystal.json', 'wb') as f:
+      dump_crystal(self.candidate_crystal_models[0], f, compact=compact)
+    with open('sweep.json', 'wb') as f:
+      dump.imageset(self.sweep, f, compact=compact)
+
+
 def run(args):
-  from libtbx.phil import command_line
   import time
+  from libtbx.phil import command_line
+  from dxtbx.imageset import ImageSetFactory
 
   args = sys.argv[1:]
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
@@ -499,14 +511,13 @@ def run(args):
   reflections_filename = args[0]
   sweep_filenames = args[1:]
 
-  models = dxtbx.load(sweep_filenames[0])
-  gonio = models.get_goniometer()
-  detector = models.get_detector()
-  scan = models.get_scan()
-  # the refinement MUST have the correct image/oscillation ranges set!
-  # XXX not sure how safe this is? should load a sweep instead
-  scan.set_image_range((1, len(sweep_filenames)))
-  beam = models.get_beam()
+  sweeps = ImageSetFactory.new(sweep_filenames)
+  assert len(sweeps) == 1
+  sweep = sweeps[0]
+  gonio = sweep.get_goniometer()
+  detector = sweep.get_detector()
+  scan = sweep.get_scan()
+  beam = sweep.get_beam()
   print detector
   print scan
   print gonio
@@ -518,7 +529,7 @@ def run(args):
   t2 = time.time()
   print "Time taken loading reflection file: %.3fs" %(t2-t1)
 
-  idxr = indexer(reflections, gonio, detector, scan, beam,
+  idxr = indexer(reflections, sweep,
                  params=working_phil.extract())
   idxr.index()
   return
