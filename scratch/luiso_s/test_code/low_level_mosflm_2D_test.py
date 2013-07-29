@@ -33,7 +33,7 @@ double centr_col = descriptor(0,0);
 double centr_row = descriptor(0,1);
 double scale = descriptor(0,2);
 '''
-descr[0, 0] = 1.5
+descr[0, 0] = 1.666666
 descr[0, 1] = 1.666666
 
 descr[0, 2] = 1.0

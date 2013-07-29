@@ -70,8 +70,7 @@ centroid = toy_centroid_lui(rlist)
 rlist = centroid.get_reflections()
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import calc_background_n_make_2d_profile
-calc_background_n_make_2d_profile(rlist)
-
+profile = calc_background_n_make_2d_profile(rlist)
 
 
 for r in rlist:
@@ -90,3 +89,11 @@ for r in rlist:
     print
     print "mask"
     print matrix_mask
+    print "_____________________________________________________________________________________________"
+
+from dials.scratch.luiso_s import write_2d
+print "profile ="
+write_2d(profile)
+
+from dials.scratch.luiso_s.test_code.mosflm_2D import fit_profile_2d
+fit_profile_2d(rlist, profile)
