@@ -152,7 +152,7 @@ class Refiner(object):
         from dials.algorithms.spot_prediction import RayPredictor
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
-        from dials.algorithms.integration import BBoxCalculator
+        from dials.algorithms.shoebox import BBoxCalculator
         from math import pi
 
         # Create the spot predictor

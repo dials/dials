@@ -2,7 +2,7 @@ from __future__ import division
 
 from scitbx.array_family import flex
 from dials.model.data import Reflection, ReflectionList
-from dials.algorithms.integration import find_overlapping_reflections
+from dials.algorithms.shoebox import find_overlapping_reflections
 rl = ReflectionList()
 r1 = Reflection()
 r1.shoebox = (10, 20, 10, 20, 10, 20)

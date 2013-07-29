@@ -26,7 +26,7 @@ class ScriptRunner(object):
 
     def __call__(self):
         '''Run the script.'''
-        from dials.algorithms.integration import BBoxCalculator
+        from dials.algorithms.shoebox import BBoxCalculator
         from dials.algorithms.integration import extract_reflection_profiles
         from iotbx.xds import integrate_hkl
         from dials.model.data import Reflection, ReflectionList

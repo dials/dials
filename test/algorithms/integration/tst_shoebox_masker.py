@@ -140,8 +140,8 @@ def run():
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms.integration import BBoxCalculator
-    from dials.algorithms.integration import find_overlapping_reflections
+    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.shoebox import find_overlapping_reflections
     from dials.algorithms.integration import extract_reflection_profiles
     from iotbx.xds import xparm
     from dials.util import ioutil
@@ -249,7 +249,7 @@ def run():
     adjacency_list = find_overlapping_reflections(reflections)
 
     from dials.algorithms.integration import allocate_reflection_profiles
-    from dials.algorithms.integration import ShoeboxMasker
+    from dials.algorithms.shoebox import ShoeboxMasker
 
     # Allocate memory for reflection profiles
     reflections = allocate_reflection_profiles(reflections)

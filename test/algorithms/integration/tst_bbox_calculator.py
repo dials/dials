@@ -2,7 +2,7 @@
 class Test(object):
 
     def __init__(self):
-        from dials.algorithms.integration import BBoxCalculator
+        from dials.algorithms.shoebox import BBoxCalculator
         from dials.model.serialize import load
         from math import pi
 

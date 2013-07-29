@@ -174,6 +174,7 @@ algorithms/reflection_basis/rebin_pixels.h -text
 algorithms/reflection_basis/transform.h -text
 algorithms/reflection_basis/transform.py -text
 algorithms/shoebox/SConscript -text
+algorithms/shoebox/__init__.py -text
 algorithms/shoebox/bbox_calculator.h -text
 algorithms/shoebox/boost_python/bbox_calculator.cc -text
 algorithms/shoebox/boost_python/find_overlapping_reflections.cc -text

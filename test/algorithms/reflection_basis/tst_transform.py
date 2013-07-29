@@ -31,7 +31,7 @@ class TestForward(object):
     def __init__(self, filename):
         from dials.model.serialize import load
         from dials.algorithms.reflection_basis import transform
-        from dials.algorithms.integration import BBoxCalculator
+        from dials.algorithms.shoebox import BBoxCalculator
         from math import pi
 
         # Load the sweep
@@ -261,7 +261,7 @@ class TestReverse(object):
     def __init__(self, filename):
         from dials.model.serialize import load
         from dials.algorithms.reflection_basis import transform
-        from dials.algorithms.integration import BBoxCalculator
+        from dials.algorithms.shoebox import BBoxCalculator
         from math import pi
 
         # Load the sweep

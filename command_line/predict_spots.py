@@ -73,8 +73,8 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms.integration import BBoxCalculator
-    from dials.algorithms.integration import find_overlapping_reflections
+    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.algorithms.shoebox import find_overlapping_reflections
     from iotbx.xds import xparm
     from dials.util import ioutil
     from math import pi

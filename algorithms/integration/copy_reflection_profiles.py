@@ -144,7 +144,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
 
     """
     from dials.algorithms.integration import allocate_reflection_profiles
-    from dials.algorithms.integration import ShoeboxMasker
+    from dials.algorithms.shoebox import ShoeboxMasker
     from scitbx.array_family import flex
     from dials.util.command_line import Command
 

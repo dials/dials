@@ -72,7 +72,7 @@ class ReflectionExtractor(object):
         from dials.util.command_line import Command
         from dials.algorithms.spot_prediction import IndexGenerator
         from dials.algorithms.spot_prediction import RayPredictor
-        from dials.algorithms.integration import BBoxCalculator
+        from dials.algorithms.shoebox import BBoxCalculator
 
         # Get models from the sweep
         beam = sweep.get_beam()
@@ -112,7 +112,7 @@ class ReflectionExtractor(object):
         from dials.util.command_line import Command
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
-        from dials.algorithms.integration import find_overlapping_reflections
+        from dials.algorithms.shoebox import find_overlapping_reflections
         from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
         from dials.algorithms.integration import filter
