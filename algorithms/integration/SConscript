@@ -3,10 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/helpers.cc',
-    'boost_python/bbox_calculator.cc',
-    'boost_python/find_overlapping_reflections.cc',
     'boost_python/reflection_profile_helpers.cc',
-    'boost_python/shoebox_masker.cc',
     'boost_python/summation.cc',
     'boost_python/lui_2d_integration.cc',
     'boost_python/summation_reciprocal_space.cc',
