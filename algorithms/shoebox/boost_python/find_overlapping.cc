@@ -1,5 +1,5 @@
 /*
- * find_overlapping_reflections.cc
+ * find_overlapping.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -12,18 +12,17 @@
 #include <boost/python/def.hpp>
 #include <boost/python/iterator.hpp>
 #include <boost_adaptbx/std_pair_conversion.h>
-#include <dials/algorithms/shoebox/find_overlapping_reflections.h>
+#include <dials/algorithms/shoebox/find_overlapping.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
   namespace boost_python {
 
   using namespace boost::python;
 
-  void export_find_overlapping_reflections()
+  void export_find_overlapping()
   {
-    def("find_overlapping_reflections", 
-      &find_overlapping_reflections, (
-        arg("reflection_list")));
+    def("find_overlapping", 
+      &find_overlapping, (arg("reflection_list")));
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

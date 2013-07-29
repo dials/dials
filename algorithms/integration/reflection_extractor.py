@@ -112,7 +112,7 @@ class ReflectionExtractor(object):
         from dials.util.command_line import Command
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
-        from dials.algorithms.shoebox import find_overlapping_reflections
+        from dials.algorithms import shoebox
         from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
         from dials.algorithms.integration import filter
@@ -154,7 +154,7 @@ class ReflectionExtractor(object):
 
         # Find overlapping reflections
         Command.start('Finding overlapping reflections')
-        overlaps = find_overlapping_reflections(reflections)
+        overlaps = shoebox.find_overlapping(reflections)
         Command.end('Found {0} overlaps'.format(len(overlaps)))
 
         # Set all reflections which overlap bad pixels to zero

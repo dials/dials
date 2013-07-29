@@ -73,8 +73,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms.shoebox import BBoxCalculator
-    from dials.algorithms.shoebox import find_overlapping_reflections
+    from dials.algorithms import shoebox
     from iotbx.xds import xparm
     from dials.util import ioutil
     from math import pi
@@ -190,7 +189,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
     if calculate_bboxes:
 
         # Create the bbox calculator
-        calculate_bbox = BBoxCalculator(beam, detector, gonio, scan,
+        calculate_bbox = shoebox.BBoxCalculator(beam, detector, gonio, scan,
             delta_divergence, delta_mosaicity)
 
         # Calculate the frame numbers of all the reflections
@@ -200,7 +199,7 @@ def predict_spots(xparm_path, integrate_path, image_frames, display_frame,
 
         # Find all the overlapping reflections
         adjacency_list = print_call_info(
-            lambda: find_overlapping_reflections(reflections),
+            lambda: shoebox.find_overlapping(reflections),
             "Calculating overlapping reflections", "Edges")
 
     else:

@@ -1,5 +1,5 @@
 /*
- * find_overlapping_reflections.h
+ * find_overlapping.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_RELFECTIONS_H
-#define DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_RELFECTIONS_H
+#ifndef DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_H
+#define DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_H
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
@@ -50,7 +50,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @returns An adjacency list
    */
   inline
-  boost::shared_ptr<AdjacencyList> find_overlapping_reflections(
+  boost::shared_ptr<AdjacencyList> find_overlapping(
       const ReflectionList &reflections) {
 
     // Ensure we have a valid number of reflections
@@ -82,4 +82,4 @@ namespace dials { namespace algorithms { namespace shoebox {
 
 }}} // namespace dials::algorithms::shoebox
 
-#endif // DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_RELFECTIONS_H
+#endif // DIALS_ALGORITHMS_INTEGRATION_FIND_OVERLAPPING_H

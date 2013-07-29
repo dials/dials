@@ -56,8 +56,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     from dials.algorithms.spot_prediction import RayPredictor
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms.shoebox import BBoxCalculator
-    from dials.algorithms.shoebox import find_overlapping_reflections
+    from dials.algorithms import shoebox
     from dials.algorithms.integration import extract_reflection_profiles
     from iotbx.xds import xparm
     from dials.util import ioutil
@@ -158,7 +157,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
         "Calculating frame numbers", "frames")
 
     # Create the bbox calculator
-    calculate_bbox = BBoxCalculator(beam, detector, gonio, scan,
+    calculate_bbox = shoebox.BBoxCalculator(beam, detector, gonio, scan,
         delta_divergence, delta_mosaicity)
 
     # Calculate the frame numbers of all the reflections
@@ -168,7 +167,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
 
     # Find all the overlapping reflections
     adjacency_list = print_call_info(
-        lambda: find_overlapping_reflections(reflections),
+        lambda: shoebox.find_overlapping(reflections),
         "Calculating overlapping reflections", "edges")
 
     # Copy the reflection profiles from the sweep the reflection objects

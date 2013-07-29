@@ -177,10 +177,10 @@ algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/bbox_calculator.h -text
 algorithms/shoebox/boost_python/bbox_calculator.cc -text
-algorithms/shoebox/boost_python/find_overlapping_reflections.cc -text
+algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/masker.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
-algorithms/shoebox/find_overlapping_reflections.h -text
+algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/masker.h -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text

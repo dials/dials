@@ -172,14 +172,13 @@ class Test(object):
     def predict_reflections(self):
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
-        from dials.algorithms.shoebox import find_overlapping_reflections
+        from dials.algorithms import shoebox
         from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
         from dials.algorithms.integration import filter
         from cctbx import sgtbx
         from dials.algorithms.spot_prediction import IndexGenerator
         from dials.algorithms.spot_prediction import RayPredictor
-        from dials.algorithms.shoebox import BBoxCalculator
         from math import sqrt
 
         # Get models from the sweep
@@ -202,7 +201,7 @@ class Test(object):
             self.scan.get_oscillation_range(deg=False))
 
         # Create the bbox calculator
-        self.compute_bbox = BBoxCalculator(
+        self.compute_bbox = shoebox.BBoxCalculator(
             self.beam, self.detector, self.gonio, self.scan,
             5 * self.beam.get_sigma_divergence(deg=False),
             5 * self.crystal.get_mosaicity(deg=False))
@@ -223,7 +222,7 @@ class Test(object):
         self.compute_bbox(reflections)
 
         # Find overlapping reflections
-        overlaps = find_overlapping_reflections(reflections)
+        overlaps = shoebox.find_overlapping(reflections)
 
         # Return the reflections and overlaps
         return reflections, overlaps

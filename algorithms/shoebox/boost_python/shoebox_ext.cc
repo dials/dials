@@ -18,14 +18,14 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   void export_mask_code();
   void export_bbox_calculator();
-  void export_find_overlapping_reflections();
+  void export_find_overlapping();
   void export_masker();
 
   BOOST_PYTHON_MODULE(dials_algorithms_shoebox_ext)
   {
     export_mask_code();
     export_bbox_calculator();
-    export_find_overlapping_reflections();
+    export_find_overlapping();
     export_masker();
   }
 
