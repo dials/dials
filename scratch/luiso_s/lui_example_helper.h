@@ -49,7 +49,7 @@ namespace dials { namespace scratch {
   return num;
   }
 
-    flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
+  flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
     flex_double data2dreturn(total);
     int ncol_in = data2d.accessor().all()[1];
     int nrow_in = data2d.accessor().all()[0];
@@ -127,10 +127,83 @@ namespace dials { namespace scratch {
     return data2dreturn;
   }
 
+
+  vec2<double> fitting_2d(flex_double descriptor, flex_double data2d, flex_double background2d, flex_double profile2d) {
+      vec2<double> integr_data(0,1);
+      int ncol = profile2d.accessor().all()[1];
+      int nrow = profile2d.accessor().all()[0];
+      int counter = 0;
+      flex_double data2dmoved(profile2d.accessor(), 0);
+      flex_double background2dmoved(profile2d.accessor(), 0);
+      descriptor(0,2) = 1;
+      std::cout << "\n data2d = \n";
+      write_2d(data2d);
+      std::cout << "\n data2d end \n________________________________";
+      data2dmoved = add_2d(descriptor, data2d, data2dmoved);
+      std::cout << "data2d moved = \n";
+      write_2d(data2dmoved);
+      std::cout << "\n data2d moved end \n";
+      std::cout << "________________________________________________________________________________\n";
+
+      //descriptor(0,2) = 1;
+      std::cout << "\n background2d = \n";
+      write_2d(background2d);
+      std::cout << "\n background2d end \n______________________________";
+      background2dmoved = add_2d(descriptor, background2d, background2dmoved);
+      std::cout << "background2d moved = \n";
+      write_2d(background2dmoved);
+      std::cout << "\n background2d moved end \n";
+      std::cout << "________________________________________________________________________________\n";
+
+
+      for (int row = 0; row <= nrow - 1; row++) {
+        for (int col = 0; col <= ncol - 1; col++) {
+          if (data2dmoved(row,col) != background2dmoved(row,col) ) {
+            counter++ ;
+          }
+        }
+      }
+      double iexpr_lst[counter];
+      double imodl_lst[counter];
+      double scale = 0, sum = 0;
+      double avg_i_scale;
+      counter = 0;
+      for (int row = 0; row <= nrow - 1; row++) {
+        for (int col = 0; col <= ncol - 1; col++) {
+          if (data2dmoved(row,col) != background2dmoved(row,col) ) {
+            iexpr_lst[counter] = data2dmoved(row,col) - background2dmoved(row,col);
+            imodl_lst[counter] = profile2d(row,col);
+            counter++ ;
+          }
+        }
+      }
+      std::cout << "\n counter = " << counter << "\n";
+
+      std::cout << "\n   (exp-backgound)             mold          scale    \n";
+      for (int i = 0; i < counter; i++){
+        scale = iexpr_lst[i] / imodl_lst[i];
+        std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< scale << "\n";
+        sum += scale;
+      }
+
+      avg_i_scale = sum/double(counter);
+      std::cout << "\n   __________________________________________________ \n";
+      std::cout << "\n   (exp-backgound)           scaled mold          scale    \n";
+      for (int i = 0; i < counter; i++){
+        imodl_lst[i] *= avg_i_scale;
+        std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< avg_i_scale << "\n";
+      }
+
+      integr_data[0] = avg_i_scale;          // intensity
+      integr_data[1] = sqrt(avg_i_scale);    // intensity variance
+      return integr_data;;
+    }
+
+
     flex_double subtrac_bkg_2d(flex_double data2d, flex_double background2d) {
       int ncol = data2d.accessor().all()[1];
       int nrow = data2d.accessor().all()[0];
-      flex_double data2dreturn(data2d);
+      flex_double data2dreturn(data2d.accessor(), 0);
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
           if (data2d(row,col) > background2d(row,col) ) {
@@ -143,21 +216,6 @@ namespace dials { namespace scratch {
       return data2dreturn;
     }
 
-    flex_double fitting_2d(flex_double descriptor, flex_double data2d, flex_double background2d, flex_double profile2d) {
-      int ncol = data2d.accessor().all()[1];
-      int nrow = data2d.accessor().all()[0];
-      flex_double data2dreturn(data2d);
-      for (int row = 0; row <= nrow - 1; row++) {
-        for (int col = 0; col <= ncol - 1; col++) {
-          if (data2d(row,col) > background2d(row,col) ) {
-            data2dreturn(row,col) = data2d(row,col) - background2d(row,col);
-          } else {
-            data2dreturn(row,col) = 0.0;
-          }
-        }
-      }
-      return data2dreturn;
-    }
 
   vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
       flex_double & background2d) {

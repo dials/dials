@@ -83,6 +83,7 @@ def fit_profile_2d(reflections, average):
             data2d.reshape(flex.grid(shoebox.all()[1:]))
             mask2d.reshape(flex.grid(shoebox.all()[1:]))
             background2d.reshape(flex.grid(shoebox.all()[1:]))
+
             descr[0, 0] = ref.centroid_position[0]
             descr[0, 1] = ref.centroid_position[1]
             descr[0, 2] = 1.0 #/ (ref.intensity * counter)
