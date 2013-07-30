@@ -19,6 +19,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
   using scitbx::af::shared;
+  using scitbx::af::const_ref;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
@@ -156,6 +157,15 @@ namespace dials { namespace algorithms { namespace shoebox {
       store_frame_indices();
       mask_overlapping();
       mask_foreground();
+    }
+
+    const shared<int> indices(int image_index) const {
+      const const_ref<int> indices = index_.at(image_index).const_ref();
+      shared<int> result(indices.size());
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = indices[i];
+      }
+      return result;
     }
 
   private:

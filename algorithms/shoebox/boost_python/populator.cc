@@ -32,7 +32,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("index"), arg("kernal_size")))
       .def("allocate", &Populator::allocate)
       .def("deallocate", &Populator::deallocate)
-      .def("initialize", &Populator::initialize);
+      .def("initialize", &Populator::initialize)
+      .def("indices", &Populator::indices);
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python
