@@ -68,9 +68,12 @@ namespace dials { namespace algorithms { namespace shoebox {
         s0_(beam.get_s0()),
         phi0_(scan.get_oscillation()[0]),
         dphi_(scan.get_oscillation()[1]),
-        index0_(scan.get_array_range()[0]),
-        delta_b_r_(1.0 / delta_b),
-        delta_m_r_(1.0 / delta_m) {}
+        index0_(scan.get_array_range()[0]) {
+        DIALS_ASSERT(delta_b > 0.0);
+        DIALS_ASSERT(delta_m > 0.0);
+        delta_b_r_ = 1.0 / delta_b;
+        delta_m_r_ = 1.0 / delta_m;
+      }
 
     /**
      * Set all the foreground/background pixels in the reflection mask.
@@ -93,36 +96,34 @@ namespace dials { namespace algorithms { namespace shoebox {
         int ysize = y1 - y0;
         int zsize = z1 - z0;
 
+        // Check the size of the mask
+        DIALS_ASSERT(mask.accessor().all()[0] == zsize);
+        DIALS_ASSERT(mask.accessor().all()[1] == ysize);
+        DIALS_ASSERT(mask.accessor().all()[2] == xsize);
+
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
         CoordinateGenerator coordxy(cs, x0, y0, s1_map_);
-        FromRotationAngleFast coordz(cs);
 
-        // Calculate the phi component before hand
-        flex_double gzc2_all(zsize);
-        for (std::size_t k = 0; k < zsize; ++k) {
-          double phi_dash = phi0_ + (k + z0 - index0_) * dphi_;
-          double gz = coordz(phi_dash);
-          gzc2_all[k] = (gz * delta_m_r_)*(gz * delta_m_r_);
-        }
+        // Get the size of the image
+        std::size_t width = s1_map_.accessor().all()[1];
+        std::size_t height = s1_map_.accessor().all()[0];
 
         // Loop through all the pixels in the shoebox, transform the point
         // to the reciprocal space coordinate system and check that it is
         // within the ellipse defined by:
-        // (c1 / delta_b)^2 + (c2 / delta_b)^2 + (c3 / delta_m)^2 <= 1
+        // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
         // Mark those points within as Foreground and those without as
         // Background.
-        for (std::size_t j = 0; j < ysize; ++j) {
-          for (std::size_t i = 0; i < xsize; ++i) {
-            vec2<double> gxy = coordxy(j, i);
-            double gxa2 = (gxy[0] * delta_b_r_)*(gxy[0] * delta_b_r_);
-            double gyb2 = (gxy[1] * delta_b_r_)*(gxy[1] * delta_b_r_);
-            for (std::size_t k = 0; k < zsize; ++k) {
-              double gzc2 = gzc2_all[k];
-              if (gxa2 + gyb2 + gzc2 <= 1.0) {
-                mask(k, j, i) |= Foreground;
-              } else {
-                mask(k, j, i) |= Background;
+        for (int j = 0; j < ysize; ++j) {
+          for (int i = 0; i < xsize; ++i) {
+            if (x0 + i >= 0 && y0 + j >= 0 && x0 + i < width && y0 + j < height) {
+              vec2<double> gxy = coordxy(j, i);
+              double gxa2 = (gxy[0] * delta_b_r_)*(gxy[0] * delta_b_r_);
+              double gyb2 = (gxy[1] * delta_b_r_)*(gxy[1] * delta_b_r_);
+              int mask_value = (gxa2 + gyb2 <= 1.0) ? Foreground : Background;
+              for (std::size_t k = 0; k < zsize; ++k) {
+                mask(k, j, i) |= mask_value;
               }
             }
           }
