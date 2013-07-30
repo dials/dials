@@ -19,6 +19,9 @@ from rstbx.diffraction import rotation_angles
 
 from dials.model.data import Reflection
 
+from dials.algorithms.refinement.prediction.reeke import solve_quad
+from dials.algorithms.refinement.prediction.reeke import reeke_model
+
 class ReflectionPredictor(object):
     '''
     Predict for a relp based on the current states of models in the
@@ -143,6 +146,11 @@ class ScanVaryingReflectionPredictor(object):
 
         return self._T1
 
+    def get_T2(self):
+        '''Get the setting matrix for the end of the step'''
+
+        return self._T2
+
     def predict(self, hkl):
         '''
         Predict for hkl during the passage from T1*h to T2*h.
@@ -225,27 +233,8 @@ class ScanVaryingReflectionPredictor(object):
         return r1.length()
 
 
-def solve_quad(a, b, c):
-    '''Robust solution, for real roots only, of a quadratic in the form
-    (ax^2 + bx + c).'''
 
-    discriminant = b**2 - 4 * a * c
-
-    if discriminant > 0:
-        sign = cmp(b, 0)
-        if sign == 0: sign = 1.0
-        q = -0.5 * (b + sign * sqrt(discriminant))
-        x1 = q / a if a != 0 else None
-        x2 = c / q if q != 0 else None
-        return [x1, x2]
-
-    elif discriminant == 0:
-        return [(-b) / (2 * a)] * 2
-
-    else:
-        return [None]
-
-class ScanVaryingReflectionListGenerator(object):
+class ScanVaryingReflectionListGeneratorOld(object):
     '''
     Generate and predict all reflections for a scan with a varying crystal
     model.
@@ -463,6 +452,57 @@ class ScanVaryingReflectionListGenerator(object):
 
         return new_seed
 
+class ScanVaryingReflectionListGenerator(object):
+    '''
+    Generate and predict all reflections for a scan with a varying crystal
+    model.
+
+    Starting from the (0,0,0) reflection, known to be on the Ewald sphere, for a
+    particular image t, generate indices using the Reeke algorithm, then predict
+    using ScanVaryingReflectionPredictor to test each candidate.
+    '''
+
+    def __init__(self, prediction_parameterisation, beam,
+                    gonio, scan, dmin):
+
+        self._scan = scan
+        self._s0 = matrix.col(beam.get_s0())
+        self._axis = matrix.col(gonio.get_rotation_axis())
+        self._dmin = dmin
+        self._predictor = ScanVaryingReflectionPredictor(
+                    prediction_parameterisation, beam, gonio, scan, dmin)
+        self._reflections = []
+
+    def __call__(self):
+
+        self.step_over_images()
+        #DEBUG
+        print "number of reflections", len(self._reflections)
+        return self._reflections
+
+    def step_over_images(self):
+        '''Loop over images, doing the search on each and extending the
+        predictions list'''
+
+        im_range = self._scan.get_image_range()
+        for t in range(im_range[0], im_range[1] + 1):
+            self._search_on_image(t)
+
+    def _search_on_image(self, t):
+
+        self._predictor.prepare(t)
+
+        T1 = self._predictor.get_T1()
+        T2 = self._predictor.get_T2()
+
+        index_generator = reeke_model(T1, T2, self._axis, self._s0, self._dmin,
+                                            margin = 2)
+
+        indices = index_generator.generate_indices()
+
+        for hkl in indices:
+            r = self._predictor.predict(hkl)
+            if r: self._reflections.append(r)
 
 class AnglePredictor_rstbx(object):
     '''

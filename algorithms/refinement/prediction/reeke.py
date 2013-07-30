@@ -13,21 +13,41 @@ from __future__ import division
 
 from scitbx import matrix
 import scitbx.math
-import math
+from math import sqrt, sin, asin, fabs, pi
 from rstbx.cftbx.coordinate_frame_converter import coordinate_frame_converter
 from rstbx.diffraction import rotation_angles
 from rstbx.diffraction import full_sphere_indices
 from cctbx.sgtbx import space_group, space_group_symbols
 from cctbx.uctbx import unit_cell
 
+def solve_quad(a, b, c):
+    '''Robust solution, for real roots only, of a quadratic in the form
+    (ax^2 + bx + c).'''
+
+    discriminant = b**2 - 4 * a * c
+
+    if discriminant > 0:
+        sign = cmp(b, 0)
+        if sign == 0: sign = 1.0
+        q = -0.5 * (b + sign * sqrt(discriminant))
+        x1 = q / a if a != 0 else None
+        x2 = c / q if q != 0 else None
+        return [x1, x2]
+
+    elif discriminant == 0:
+        return [(-b) / (2 * a)] * 2
+
+    else:
+        return [None]
+
 class reeke_model:
     '''Model and methods for the Reeke algorithm'''
 
-    def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin = 1):
+    def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin = 3):
 
         # the source vector and wavelength
         self._source = -s0
-        self._wavelength = 1 / math.sqrt(s0.dot(s0))
+        self._wavelength = 1 / sqrt(s0.dot(s0))
         self._wavelength_sq = self._wavelength**2
 
         # the rotation axis
@@ -163,7 +183,7 @@ class reeke_model:
                    ub.transpose().as_list_of_lists()]
 
         # Find reciprocal lattice axis closest to source direction
-        along_beam = [math.fabs(rl_dirs[j].dot(self._source)) for j in range(3)]
+        along_beam = [fabs(rl_dirs[j].dot(self._source)) for j in range(3)]
         index_of_p = along_beam.index(max(along_beam))
 
         # Swap order to put the 'p' axis first
@@ -173,7 +193,7 @@ class reeke_model:
 
         # Now find which of the two remaining reciprocal lattice axes is
         # closest to the rotation axis.
-        along_spindle = [math.fabs(rl_dirs[j].dot(self._axis)) for j in (1, 2)]
+        along_spindle = [fabs(rl_dirs[j].dot(self._axis)) for j in (1, 2)]
 
         index_of_r = along_spindle.index(max(along_spindle)) + 1
         index_of_r = indices[index_of_r]
@@ -192,26 +212,6 @@ class reeke_model:
         # Return the permuted order of the columns
 
         return index_of_p, index_of_q, index_of_r
-
-    def _solve_quad(self, a, b, c):
-        '''Robust solution, for real roots only, of a quadratic in the form
-        (ax^2 + bx + c).'''
-
-        discriminant = b**2 - 4 * a * c
-
-        if discriminant > 0:
-            sign = cmp(b, 0)
-            if sign == 0: sign = 1.0
-            q = -0.5 * (b + sign * math.sqrt(discriminant))
-            x1 = q / a if a != 0 else None
-            x2 = c / q if q != 0 else None
-            return [x1, x2]
-
-        elif discriminant == 0:
-            return [(-b) / (2 * a)] * 2
-
-        else:
-            return [None]
 
 
     def _p_limits(self):
@@ -277,17 +277,17 @@ class reeke_model:
         # TODO better way to get sin_2theta?
         sin_theta = 0.5 * self._wavelength * self._dstarmax
         assert abs(sin_theta) <= 1.0 # sanity check
-        sin_2theta = math.sin(2.0 * math.asin(sin_theta))
+        sin_2theta = sin(2.0 * asin(sin_theta))
 
         e = 2.0 * sin_theta**2 * dp_beg
-        f = sin_2theta * math.sqrt(max(1. / self._wavelength_sq - dp_beg**2,
+        f = sin_2theta * sqrt(max(1. / self._wavelength_sq - dp_beg**2,
                                        0.))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
         e = 2.0 * sin_theta**2 * dp_end
-        f = sin_2theta * math.sqrt(max(1. / self._wavelength_sq - dp_end**2, 0))
+        f = sin_2theta * sqrt(max(1. / self._wavelength_sq - dp_end**2, 0))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_end = tuple(sorted(limits))
@@ -341,7 +341,7 @@ class reeke_model:
         b = 2.0 * p * self._cp[5]
         c = p**2 * self._cp[3] + self._cp[0] * self._dstarmax2
 
-        res_q_lim = self._solve_quad(a, b, c)
+        res_q_lim = solve_quad(a, b, c)
         res_q_lim = sorted([item for item in res_q_lim \
                             if item is not None])
         if len(res_q_lim) == 0: return None
@@ -355,13 +355,13 @@ class reeke_model:
         b = 2.0 * (self._cp[4][0] + p * self._cp[5])
         c = self._cp[1][0] + p * (2 * self._cp[2][0] + p * self._cp[3])
 
-        ewald_q_lim_beg = self._solve_quad(a, b, c)
+        ewald_q_lim_beg = solve_quad(a, b, c)
 
         # Ewald sphere limits for the end setting
         b = 2.0 * (self._cp[4][1] + p * self._cp[5])
         c = self._cp[1][1] + p * (2 * self._cp[2][1] + p * self._cp[3])
 
-        ewald_q_lim_end = self._solve_quad(a, b, c)
+        ewald_q_lim_end = solve_quad(a, b, c)
 
         # Determine the overall Ewald limits
         ewald_q_lim = sorted([item for item in ewald_q_lim_beg + \
@@ -389,7 +389,7 @@ class reeke_model:
         b = cq[0] + q * self._cp[8]
         c = cq[1] + q**2 * self._cp[10] + q * cq[2] - self._dstarmax2
 
-        res_r_lim = self._solve_quad(a, b, c)
+        res_r_lim = solve_quad(a, b, c)
         res_r_lim = sorted([item for item in res_r_lim if item is not None])
         if len(res_r_lim) == 0: return None
 
@@ -403,7 +403,7 @@ class reeke_model:
         c =  cq[1] + q * (cq[2] + self._cp[13][0]) + \
              q**2 * self._cp[10] + cq[3][0]
 
-        ewald_r_lim_beg = self._solve_quad(a, b, c)
+        ewald_r_lim_beg = solve_quad(a, b, c)
         ewald_r_lim_beg = [item for item in ewald_r_lim_beg \
                            if item is not None]
 
@@ -412,7 +412,7 @@ class reeke_model:
         c =  cq[1] + q * (cq[2] + self._cp[13][1]) + \
              q**2 * self._cp[10] + cq[3][1]
 
-        ewald_r_lim_end = self._solve_quad(a, b, c)
+        ewald_r_lim_end = solve_quad(a, b, c)
         ewald_r_lim_end = [item for item in ewald_r_lim_end \
                            if item is not None]
 
@@ -655,8 +655,8 @@ def regression_test():
     ra = rotation_angles(dmin, ub_beg, wavelength, axis)
 
     obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
-        phi_start_rad = 0.0 * math.pi / 180.0,
-        phi_end_rad = 1.0 * math.pi / 180.0,
+        phi_start_rad = 0.0 * pi / 180.0,
+        phi_end_rad = 1.0 * pi / 180.0,
         indices = indices)
 
     r = reeke_model(ub_beg, ub_end, axis, s0, dmin, 1.0)
