@@ -26,6 +26,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using scitbx::af::int6;
   using scitbx::af::flex_double;
   using scitbx::af::flex_bool;
+  using scitbx::af::flex_grid;
 
   typedef scitbx::af::flex< vec3<double> >::type flex_vec3_double;
 

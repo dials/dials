@@ -13,9 +13,9 @@ def pull_reference(integrate_mtz):
     # run 1 all
     # scales constant
     # output unmerged
-    # sdcorrection noadjust norefine both 1 0 0 
+    # sdcorrection noadjust norefine both 1 0 0
     # eof
-    
+
     from iotbx import mtz
 
     m = mtz.object(integrate_mtz)
@@ -23,7 +23,7 @@ def pull_reference(integrate_mtz):
     hkl = m.extract_original_index_miller_indices()
 
     b0 = m.batches()[0]
-    
+
     for c in m.columns():
         if c.label() == 'I':
             i = c.extract_valid_values()
@@ -36,19 +36,19 @@ def pull_reference(integrate_mtz):
         elif c.label() == 'ROT':
             rot = c.extract_valid_values()
 
-    # extract x, y, z positions for this in image address space 
-    
+    # extract x, y, z positions for this in image address space
+
     xyz = []
 
     dx = b0.detlm()[1]
     dz = b0.phiend() - b0.phistt()
     z0 = b0.phistt() / dz
-    
+
     for x, y, r in zip(xdet, ydet, rot):
         _x = y
         _y = dx - x
         _z = z0 + r / dz
-        
+
         xyz.append((_x, _y, _z))
 
     print 'Reference: %d observations' % len(hkl)
@@ -61,7 +61,7 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
     m = mtz.object(integrate_mtz)
     for c in m.crystals():
         return c.unit_cell()
-    
+
     raise RuntimeError, 'unit cell not found'
 
 def pull_calculated(integrate_pkl):
@@ -138,15 +138,15 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json):
     from annlib_ext import AnnAdaptor as ann_adaptor
 
     # FIXME read crystal.json file
-    
+
     uc = integrate_mtz_to_unit_cell(integrate_mtz)
 
     # FIXME read UB matrix from integrate.mtz
 
 
     # FIXME compute mapping from one to the other; compute reindex matrix
-    
-    
+
+
     xhkl, xi, xsigi, xxyz = pull_reference(integrate_mtz)
     dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
 

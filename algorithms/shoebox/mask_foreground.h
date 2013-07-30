@@ -11,7 +11,38 @@
 #ifndef DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_H
 #define DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_H
 
+#include <scitbx/vec2.h>
+#include <scitbx/vec3.h>
+#include <scitbx/array_family/flex_types.h>
+#include <dxtbx/model/beam.h>
+#include <dxtbx/model/goniometer.h>
+#include <dxtbx/model/detector.h>
+#include <dxtbx/model/scan.h>
+#include <dials/model/data/reflection.h>
+#include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/reflection_basis/map_pixels.h>
+#include <dials/algorithms/reflection_basis/beam_vector_map.h>
+#include <dials/algorithms/shoebox/mask_code.h>
+#include <dials/error.h>
+
 namespace dials { namespace algorithms { namespace shoebox {
+
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::af::int6;
+  using scitbx::af::flex_int;
+  using scitbx::af::flex_grid;
+  using dxtbx::model::Beam;
+  using dxtbx::model::Detector;
+  using dxtbx::model::Goniometer;
+  using dxtbx::model::Scan;
+  using dials::model::Reflection;
+  using dials::model::ReflectionList;
+  using dials::algorithms::reflection_basis::CoordinateSystem;
+  using dials::algorithms::reflection_basis::FromRotationAngleFast;
+  using dials::algorithms::reflection_basis::transform::CoordinateGenerator;
+  using dials::algorithms::reflection_basis::transform::beam_vector_map;
+  typedef scitbx::af::flex< vec3<double> >::type flex_vec3_double;
 
   /**
    * A class to mask foreground/background pixels
@@ -53,6 +84,13 @@ namespace dials { namespace algorithms { namespace shoebox {
         flex_int mask = reflection.get_shoebox_mask();
         vec3<double> s1 = reflection.get_beam_vector();
         double phi = reflection.get_rotation_angle();
+        int6 bbox = reflection.get_bounding_box();
+        int x0 = bbox[0], x1 = bbox[1];
+        int y0 = bbox[2], y1 = bbox[3];
+        int z0 = bbox[4], z1 = bbox[5];
+        int xsize = x1 - x0;
+        int ysize = y1 - y0;
+        int zsize = z1 - z0;
 
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
@@ -67,11 +105,11 @@ namespace dials { namespace algorithms { namespace shoebox {
         // Background.
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
-            vec2<double> gxy = coordxy(j, i)
+            vec2<double> gxy = coordxy(j, i);
             double gxa2 = (gxy[0] * delta_b_r_)*(gxy[0] * delta_b_r_);
             double gyb2 = (gxy[1] * delta_b_r_)*(gxy[1] * delta_b_r_);
             for (std::size_t k = 0; k < zsize; ++k) {
-              phi_dash = phi0_ + (k + z0 - index0_) * dphi_;
+              double phi_dash = phi0_ + (k + z0 - index0_) * dphi_;
               double gz = coordz(phi_dash);
               double gzc2 = (gz * delta_m_r_)*(gz * delta_m_r_);
               if (gxa2 + gyb2 + gzc2 <= 1.0) {
