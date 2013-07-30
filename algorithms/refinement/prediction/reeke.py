@@ -23,10 +23,10 @@ from cctbx.uctbx import unit_cell
 class reeke_model:
     """Model and methods for the Reeke algorithm"""
 
-    def __init__(self, ub, axis, s0, dmin, phi_beg, phi_end, margin = 3):
+    def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin = 3):
 
         # the original orientation, at phi = 0
-        self._ub = ub
+        #self._ub = ub
 
         # mapping of permuted axes p, q, and r
         self._permutation = None
@@ -37,7 +37,6 @@ class reeke_model:
 
         # the rotation axis and angular range
         self._axis = axis
-        self._phi_range = (phi_beg, phi_end)
 
         # the resolution limit
         self._dstarmax = 1 / dmin
@@ -47,30 +46,12 @@ class reeke_model:
         # It might be useful to account for errors in the orientation.
         self._margin = int(margin)
 
-        # Set the orientation at the beginning and end of this wedge, and
-        # the rotation matrix for the beginning to the mid point.
-        # NB The wedge could be the oscillation range for a single image, but
-        # would need expanding by the rocking width and beam divergence to
-        # catch all the partials on this image. Alternatively, expand only
-        # at the extrema of the whole sweep and allow the partials to be
-        # captured on adjacent wedges.
-
-        r_beg = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
-            axis = self._axis, angle = phi_beg, deg = True))
-        self._r_half_osc = matrix.sqr(
-            scitbx.math.r3_rotation_axis_and_angle_as_matrix(
-            axis = self._axis, angle = (phi_end - phi_beg) / 2.0, deg=True))
-
-        ub_beg = r_beg * self._ub
-        ub_mid = self._r_half_osc * ub_beg
-        ub_end = self._r_half_osc * ub_mid
-
         # Determine the permutation order of columns of the orientation
-        # matrix. Use the orientation from the middle of the wedge for this.
+        # matrix. Use the orientation from the start of the wedge for this.
         # As a side-effect set self._permutation.
 
         self._permutation = None
-        col1, col2, col3 = self._permute_axes(ub_mid)
+        col1, col2, col3 = self._permute_axes(ub_beg)
 
         # Thus set the reciprocal lattice axis vectors, in permuted order
         # p, q and r for both orientations
@@ -540,98 +521,98 @@ class reeke_model:
 
         return hkl
 
-    def visualize_with_rgl(self, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
-        """Write an R script and an associated data file
-        for visualisation of generated indices between phi_beg and phi_end,
-        using R and the rgl add-on package."""
+def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
+    """Write an R script and an associated data file
+    for visualisation of generated indices between phi_beg and phi_end,
+    using R and the rgl add-on package."""
 
-        # Sorry, this is ugly. I don't know matplotlib yet.
+    # Sorry, this is ugly. I don't know matplotlib yet.
 
-        # write R script
+    # write R script
 
-        f = open(rscript, "w")
+    f = open(rscript, "w")
 
-        f.write("# Run this from within R using\n" + \
-                "# install.packages('rgl')\n" + \
-                "# source('%s')\n\n" % rscript)
-        f.write("library(rgl)\n")
-        f.write("p_ax <- c(%.9f, %.9f, %.9f)\n" % self._rlv_beg[0].elems)
-        f.write("q_ax <- c(%.9f, %.9f, %.9f)\n" % self._rlv_beg[1].elems)
-        f.write("r_ax <- c(%.9f, %.9f, %.9f)\n" % self._rlv_beg[2].elems)
-        f.write("source <- c(%.9f, %.9f, %.9f)\n" % self._source.elems)
-        f.write("rot_ax <- c(%.9f, %.9f, %.9f)\n" % self._axis.elems)
-        f.write("phi_range <- c(%.9f, %.9f)\n" % self._phi_range)
-        f.write("half_osc <- matrix(data = c(" + \
-                "%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f" % \
-                self._r_half_osc.elems + \
-                "), nrow=3, byrow=T)\n")
-        f.write("dstarmax <- %.9f\n" % self._dstarmax)
-        f.write("perm <- solve(matrix(data = c(" + \
-                "%d,%d,%d,%d,%d,%d,%d,%d,%d" % self._permutation.elems + \
-                "), nrow=3, byrow=T))\n")
-        f.write("\n# draw the Ewald and limiting spheres\n" + \
-                "open3d()\n" + \
-                "spheres3d(source,radius=sqrt(sum(source*source)),color='#CCCCFF'," + \
-                "alpha=0.3)\n" + \
-                "spheres3d(c(0,0,0),radius=dstarmax," + \
-                "color='red',alpha=0.1)\n" + \
-                "\n# draw the source vector and rotation axis\n" + \
-                "lines3d(rbind(c(0,0,0),source))\n" + \
-                "lines3d(rbind(c(0,0,0),rot_ax))\n" + \
-                "\n# draw the reciprocal lattice axes at ten times their " + \
-                "length\n" + \
-                "lines3d(rbind(c(0,0,0),10*p_ax),col='red')\n" + \
-                "lines3d(rbind(c(0,0,0),10*q_ax),col='green')\n" + \
-                "lines3d(rbind(c(0,0,0),10*r_ax),col='blue')\n"
-                "sourcemag <- sqrt(sum(source*source))\n" + \
-                "sourceunit <- source / sourcemag\n" + \
-                "\n# two unit vectors orthogonal to source\n" + \
-                "sourceunitx1 <- c((-sourceunit[3]),(0),(sourceunit[1]))\n" + \
-                "sourceunitx2 <- c((sourceunit[2]*sourceunitx1[3] - " + \
-                "sourceunit[3]*sourceunitx1[2]),\n" + \
-                "   (sourceunit[1]*sourceunitx1[3] - sourceunit[3]*sourceunitx1[1]),\n" + \
-                "   (sourceunit[1]*sourceunitx1[2] - sourceunit[2]*sourceunitx1[1]))\n" + \
-                "sin_theta <- dstarmax/(2*sourcemag)\n" + \
-                "sin_2theta <- sin(2*asin(sin_theta))\n" + \
-                "\n# distance to the centre of the circle of" + \
-                "intersection, along source\n" + \
-                "e <- 2 * sqrt(sum(source*source)) * sin_theta ^2\n" + \
-                "\n# radius of the circle of intersection\n" + \
-                "R <- sourcemag * sin_2theta\n" + \
-                "\n# make points around the circle\n" + \
-                "tau <- seq(from=0,to=2*pi,by=0.01)\n" + \
-                "circ <- t(sapply(tau, function(x){\n" + \
-                "  e * sourceunit + R*sin(x) * sourceunitx1 + R*cos(x) * sourceunitx2}))\n" + \
-                "\n# draw the circle\n" + \
-                "lines3d(circ)\n" + \
-                "\n# load the generated indices\n"
-                "pts <- read.csv('./%s')\n" % dat)
-        f.write("\n# convert h, k, l to reciprocal space coordinates\n" + \
-                "conv <- function(h) {p <- perm %*% h\n" + \
-                "    return(p[1]*p_ax + p[2]*q_ax + p[3]*r_ax)}\n" + \
-                "pts <- t(apply(pts, MARGIN = 1, FUN = conv))\n" + \
-                "\n# draw the generated indices\n" + \
-                "points3d(pts, col='blue')\n" + \
-                "\n")
-        f.close()
+    f.write("# Run this from within R using\n" + \
+            "# install.packages('rgl')\n" + \
+            "# source('%s')\n\n" % rscript)
+    f.write("library(rgl)\n")
+    f.write("p_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[0].elems)
+    f.write("q_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[1].elems)
+    f.write("r_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._rlv_beg[2].elems)
+    f.write("source <- c(%.9f, %.9f, %.9f)\n" % reeke_model._source.elems)
+    f.write("rot_ax <- c(%.9f, %.9f, %.9f)\n" % reeke_model._axis.elems)
+    f.write("phi_range <- c(%.9f, %.9f)\n" % reeke_model._phi_range)
+    f.write("half_osc <- matrix(data = c(" + \
+            "%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f,%.9f" % \
+            reeke_model._r_half_osc.elems + \
+            "), nrow=3, byrow=T)\n")
+    f.write("dstarmax <- %.9f\n" % reeke_model._dstarmax)
+    f.write("perm <- solve(matrix(data = c(" + \
+            "%d,%d,%d,%d,%d,%d,%d,%d,%d" % reeke_model._permutation.elems + \
+            "), nrow=3, byrow=T))\n")
+    f.write("\n# draw the Ewald and limiting spheres\n" + \
+            "open3d()\n" + \
+            "spheres3d(source,radius=sqrt(sum(source*source)),color='#CCCCFF'," + \
+            "alpha=0.3)\n" + \
+            "spheres3d(c(0,0,0),radius=dstarmax," + \
+            "color='red',alpha=0.1)\n" + \
+            "\n# draw the source vector and rotation axis\n" + \
+            "lines3d(rbind(c(0,0,0),source))\n" + \
+            "lines3d(rbind(c(0,0,0),rot_ax))\n" + \
+            "\n# draw the reciprocal lattice axes at ten times their " + \
+            "length\n" + \
+            "lines3d(rbind(c(0,0,0),10*p_ax),col='red')\n" + \
+            "lines3d(rbind(c(0,0,0),10*q_ax),col='green')\n" + \
+            "lines3d(rbind(c(0,0,0),10*r_ax),col='blue')\n"
+            "sourcemag <- sqrt(sum(source*source))\n" + \
+            "sourceunit <- source / sourcemag\n" + \
+            "\n# two unit vectors orthogonal to source\n" + \
+            "sourceunitx1 <- c((-sourceunit[3]),(0),(sourceunit[1]))\n" + \
+            "sourceunitx2 <- c((sourceunit[2]*sourceunitx1[3] - " + \
+            "sourceunit[3]*sourceunitx1[2]),\n" + \
+            "   (sourceunit[1]*sourceunitx1[3] - sourceunit[3]*sourceunitx1[1]),\n" + \
+            "   (sourceunit[1]*sourceunitx1[2] - sourceunit[2]*sourceunitx1[1]))\n" + \
+            "sin_theta <- dstarmax/(2*sourcemag)\n" + \
+            "sin_2theta <- sin(2*asin(sin_theta))\n" + \
+            "\n# distance to the centre of the circle of" + \
+            "intersection, along source\n" + \
+            "e <- 2 * sqrt(sum(source*source)) * sin_theta ^2\n" + \
+            "\n# radius of the circle of intersection\n" + \
+            "R <- sourcemag * sin_2theta\n" + \
+            "\n# make points around the circle\n" + \
+            "tau <- seq(from=0,to=2*pi,by=0.01)\n" + \
+            "circ <- t(sapply(tau, function(x){\n" + \
+            "  e * sourceunit + R*sin(x) * sourceunitx1 + R*cos(x) * sourceunitx2}))\n" + \
+            "\n# draw the circle\n" + \
+            "lines3d(circ)\n" + \
+            "\n# load the generated indices\n"
+            "pts <- read.csv('./%s')\n" % dat)
+    f.write("\n# convert h, k, l to reciprocal space coordinates\n" + \
+            "conv <- function(h) {p <- perm %*% h\n" + \
+            "    return(p[1]*p_ax + p[2]*q_ax + p[3]*r_ax)}\n" + \
+            "pts <- t(apply(pts, MARGIN = 1, FUN = conv))\n" + \
+            "\n# draw the generated indices\n" + \
+            "points3d(pts, col='blue')\n" + \
+            "\n")
+    f.close()
 
-        # write data file
+    # write data file
 
-        indices = self.generate_indices()
+    indices = reeke_model.generate_indices()
 
-        f = open(dat, "w")
-        f.write("h, k, l\n")
+    f = open(dat, "w")
+    f.write("h, k, l\n")
 
-        for hkl in indices:
-            f.write("%d, %d, %d\n" % hkl)
-        f.close()
+    for hkl in indices:
+        f.write("%d, %d, %d\n" % hkl)
+    f.close()
 
-        print "Generated indices were written to %s" % dat
-        print "An R script for visualising these was written to %s," % rscript
-        print "which can be run from the R prompt with:"
-        print "source('%s')" % rscript
+    print "Generated indices were written to %s" % dat
+    print "An R script for visualising these was written to %s," % rscript
+    print "which can be run from the R prompt with:"
+    print "source('%s')" % rscript
 
-        return
+    return
 
 def reeke_model_for_use_case(phi_beg, phi_end, margin):
     """Construct a reeke_model for the geometry of the Use Case Thaumatin
@@ -640,31 +621,48 @@ def reeke_model_for_use_case(phi_beg, phi_end, margin):
     file."""
 
     axis = matrix.col([0.0, 1.0, 0.0])
+    
+    # original (unrotated) setting
     ub = matrix.sqr([-0.0133393674072, -0.00541609051856, -0.00367748834997,
                     0.00989309470346, 0.000574825936669, -0.0054505379664,
                     0.00475395109417, -0.0163935257377, 0.00102384915696])
+    r_beg = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+        axis = self._axis, angle = phi_beg, deg = True))
+    r_osc = matrix.sqr(
+        scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+        axis = self._axis, angle = (phi_end - phi_beg), deg=True))
+
+    ub_beg = r_beg * ub
+    ub_end = self._r_osc * ub_mid                    
     s0 = matrix.col([0.00237878589035, 1.55544539299e-16, -1.09015329696])
     dmin = 1.20117776325
 
-    return reeke_model(ub, axis, s0, dmin, phi_beg, phi_end, margin)
+    return reeke_model(ub_beg, ub_end, axis, s0, dmin, margin)
 
 def regression_test():
     """Perform a regression test by comparing to indices generating
     by the brute force method used in the Use Case."""
 
-    # cubic, 50A cell, 1A radiation, everything ideal
+    # cubic, 50A cell, 1A radiation, 1 deg osciillation, everything ideal
 
     a = 50.0
 
-    ub = matrix.sqr((1.0 / a, 0.0, 0.0,
-                     0.0, 1.0 / a, 0.0,
-                     0.0, 0.0, 1.0 / a))
+    ub_beg = matrix.sqr((1.0 / a, 0.0, 0.0,
+                         0.0, 1.0 / a, 0.0,
+                         0.0, 0.0, 1.0 / a))
+
+    axis = matrix.col((0, 1, 0))
+
+    r_osc = matrix.sqr(
+            scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+            axis = axis, angle = 1.0, deg=True))
+
+    ub_end = r_osc * ub_beg
 
     uc = unit_cell((a, a, a, 90, 90, 90))
     sg = space_group(space_group_symbols('P23').hall())
 
     s0 = matrix.col((0, 0, 1))
-    axis = matrix.col((0, 1, 0))
 
     wavelength = 1.0
     dmin = 1.5
@@ -672,14 +670,14 @@ def regression_test():
     indices = full_sphere_indices(
         unit_cell = uc, resolution_limit = dmin, space_group = sg)
 
-    ra = rotation_angles(dmin, ub, wavelength, axis)
+    ra = rotation_angles(dmin, ub_beg, wavelength, axis)
 
     obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0 * math.pi / 180.0,
         phi_end_rad = 1.0 * math.pi / 180.0,
         indices = indices)
 
-    r = reeke_model(ub, axis, s0, dmin, 0.0, 1.0, 1.0)
+    r = reeke_model(ub_beg, ub_end, axis, s0, dmin, 1.0)
     reeke_indices = r.generate_indices()
     #r.visualize_with_rgl()
 
