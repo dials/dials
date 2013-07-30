@@ -31,6 +31,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   using scitbx::vec3;
   using scitbx::af::int6;
   using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
   using scitbx::af::flex_grid;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
@@ -97,6 +98,14 @@ namespace dials { namespace algorithms { namespace shoebox {
         CoordinateGenerator coordxy(cs, x0, y0, s1_map_);
         FromRotationAngleFast coordz(cs);
 
+        // Calculate the phi component before hand
+        flex_double gzc2_all(zsize);
+        for (std::size_t k = 0; k < zsize; ++k) {
+          double phi_dash = phi0_ + (k + z0 - index0_) * dphi_;
+          double gz = coordz(phi_dash);
+          gzc2_all[k] = (gz * delta_m_r_)*(gz * delta_m_r_);
+        }
+
         // Loop through all the pixels in the shoebox, transform the point
         // to the reciprocal space coordinate system and check that it is
         // within the ellipse defined by:
@@ -109,9 +118,7 @@ namespace dials { namespace algorithms { namespace shoebox {
             double gxa2 = (gxy[0] * delta_b_r_)*(gxy[0] * delta_b_r_);
             double gyb2 = (gxy[1] * delta_b_r_)*(gxy[1] * delta_b_r_);
             for (std::size_t k = 0; k < zsize; ++k) {
-              double phi_dash = phi0_ + (k + z0 - index0_) * dphi_;
-              double gz = coordz(phi_dash);
-              double gzc2 = (gz * delta_m_r_)*(gz * delta_m_r_);
+              double gzc2 = gzc2_all[k];
               if (gxa2 + gyb2 + gzc2 <= 1.0) {
                 mask(k, j, i) |= Foreground;
               } else {

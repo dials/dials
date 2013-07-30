@@ -1,5 +1,5 @@
 /*
- * populator.cc
+ * mask_foreground.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
