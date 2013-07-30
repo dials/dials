@@ -100,24 +100,7 @@ class ScanVaryingReflectionPredictor(object):
 
         # attributes to be set during prediction and called by user of
         # the class
-        self.dist_from_ES = None
         self.is_outside_resolution_limit = False
-
-        #DEBUG
-        # reciprocal lattice coords of attempted predictions
-        self.sites = []
-
-    # DEBUG: write out search points to PDB to view by coot
-    def debug_write_reciprocal_lattice_points_as_pdb(self,
-                                file_name='reciprocal_lattice.pdb'):
-        from cctbx import crystal, xray
-        cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
-        xs = xray.structure(crystal_symmetry=cs)
-        for site in self.sites:
-          xs.add_scatterer(xray.scatterer("C", site=site))
-        xs.sites_mod_short()
-        with open(file_name, 'wb') as f:
-          print >> f, xs.as_pdb_file()
 
     def prepare(self, image_number, step = 1):
         '''
@@ -159,33 +142,20 @@ class ScanVaryingReflectionPredictor(object):
         return None.
         '''
 
-        r1 = self._T1 * matrix.col(hkl)
-        r2 = self._T2 * matrix.col(hkl)
+        self._r1 = self._T1 * matrix.col(hkl)
+        self._r2 = self._T2 * matrix.col(hkl)
 
-        dr = r2 - r1
-        s0pr1 = self._s0 + r1
-
-        #DEBUG
-        #store reciprocal lattice coordinates
-        print "storing site", hkl
-        self.sites.append(r1)
+        dr = self._r2 - self._r1
+        s0pr1 = self._s0 + self._r1
 
         # distances from Ewald sphere along radii
         r1_from_ES = (s0pr1).length() - self._s0mag
-        r2_from_ES = (self._s0 + r2).length() - self._s0mag
-
-        # use the initial distance as approximate measure of closeness to the ES
-        self.dist_from_ES = abs(r1_from_ES)
+        r2_from_ES = (self._s0 + self._r2).length() - self._s0mag
 
         starts_outside_ES = r1_from_ES >= 0.
         ends_outside_ES = r2_from_ES >= 0.
 
-        self.is_outside_res_limit = r1.length_sq() > self._dstarmax_sq
-
-        #DEBUG
-        #print "for hkl", hkl
-        #print "starts outside ES", starts_outside_ES
-        #print "ends outside ES", ends_outside_ES
+        self.is_outside_res_limit = self._r1.length_sq() > self._dstarmax_sq
 
         # stop prediction for a relp that doesn't cross the ES (or crosses 2x)
         if starts_outside_ES == ends_outside_ES: return None
@@ -200,16 +170,13 @@ class ScanVaryingReflectionPredictor(object):
 
         roots = solve_quad(dr.length_sq(),
                            2*s0pr1.dot(dr),
-                           r1.length_sq() + 2*self._s0.dot(r1))
+                           self._r1.length_sq() + 2*self._s0.dot(self._r1))
 
-        #DEBUG
-        #print "disatnce from ES", self.dist_from_ES
-        #print "roots are", roots
         # choose a root that is in [0,1]
         alpha = filter(lambda x: x is not None and (0 <= x <= 1), roots)[0]
 
         # calculate the scattering vector s1
-        s1 = r1 + alpha * dr + self._s0
+        s1 = self._r1 + alpha * dr + self._s0
 
         # calculate approximate frame and rotation angle
         frame = self._image_number + self._step * alpha
@@ -222,15 +189,35 @@ class ScanVaryingReflectionPredictor(object):
         r.frame_number = frame
         r.entering = starts_outside_ES
 
-        #DEBUG
-        print "predicted reflection", hkl
         return r
 
-    def get_relp_vector_length(self, hkl):
-        '''return the length of vector to relp hkl at the start of the step'''
 
-        r1 = self._T1 * matrix.col(hkl)
-        return r1.length()
+class ScanVaryingReflectionPredictorDebug(ScanVaryingReflectionPredictor):
+    '''Debugging version of ScanVaryingReflectionPredictor that stores all
+    the sites it tests and provides the ability to write them out by abusing
+    PDB format.'''
+
+    # reciprocal lattice coords of predictions
+    trial_sites = []
+
+    def predict(self, hkl):
+
+        r = super(ScanVaryingReflectionPredictorDebug, self).predict(hkl)
+
+        # store reciprocal lattice coordinates of the trial
+        self.trial_sites.append(self._r1)
+
+    # write out search points to PDB to view by coot
+    def debug_write_reciprocal_lattice_points_as_pdb(self,
+                                file_name='reciprocal_lattice.pdb'):
+        from cctbx import crystal, xray
+        cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
+        xs = xray.structure(crystal_symmetry=cs)
+        for site in self.trial_sites:
+          xs.add_scatterer(xray.scatterer("C", site=site))
+        xs.sites_mod_short()
+        with open(file_name, 'wb') as f:
+          print >> f, xs.as_pdb_file()
 
 class ScanVaryingReflectionListGenerator(object):
     '''
@@ -255,9 +242,12 @@ class ScanVaryingReflectionListGenerator(object):
 
     def __call__(self):
 
+        # reset generated reflections list
+        self._reflections = []
+
+        # loop over images
         self.step_over_images()
-        #DEBUG
-        print "number of reflections", len(self._reflections)
+
         return self._reflections
 
     def step_over_images(self):
@@ -276,7 +266,7 @@ class ScanVaryingReflectionListGenerator(object):
         T2 = self._predictor.get_T2()
 
         index_generator = reeke_model(T1, T2, self._axis, self._s0, self._dmin,
-                                            margin = 2)
+                                            margin = 1)
 
         indices = index_generator.generate_indices()
 
