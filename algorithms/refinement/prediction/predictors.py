@@ -49,7 +49,8 @@ class ReflectionPredictor(object):
         Solve the prediction formula for the reflecting angle phi.
 
         If UB is given, override the contained crystal model. This is
-        for use in refinement with time-varying crystal parameters'''
+        for use in refinement with time-varying crystal parameters
+        '''
 
         UB_ = UB if UB else self._crystal.get_U() * self._crystal.get_B()
 
@@ -89,11 +90,33 @@ class ScanVaryingReflectionPredictor(object):
         # rotation axis
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
-        self._dist_from_ES = None
-        self._image_number = None
+        # attributes to be set during preparation for a particular
+        # image number
         self._step = None
+        self._image_number = None
 
-    def prepare(image_number, step = 1):
+        # attributes to be set during prediction and called by user of
+        # the class
+        self.dist_from_ES = None
+        self.is_outside_resolution_limit = False
+
+        #DEBUG
+        # reciprocal lattice coords of attempted predictions
+        self.sites = []
+
+    # DEBUG: write out search points to PDB to view by coot
+    def debug_write_reciprocal_lattice_points_as_pdb(self,
+                                file_name='reciprocal_lattice.pdb'):
+        from cctbx import crystal, xray
+        cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
+        xs = xray.structure(crystal_symmetry=cs)
+        for site in self.sites:
+          xs.add_scatterer(xray.scatterer("C", site=site))
+        xs.sites_mod_short()
+        with open(file_name, 'wb') as f:
+          print >> f, xs.as_pdb_file()
+
+    def prepare(self, image_number, step = 1):
         '''
         Cache transformations that position relps at the beginning and end of
         the step.
@@ -107,13 +130,18 @@ class ScanVaryingReflectionPredictor(object):
         phi_end = self._scan.get_angle_from_image_index(image_number + step,
                                                         deg = False)
         r_beg = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
-            axis = self._axis, angle = angle, deg = False))
+            axis = self._axis, angle = phi_beg, deg = False))
         r_end = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
-            axis = self._axis, angle = angle, deg = False))
+            axis = self._axis, angle = phi_end, deg = False))
 
         self._T1 = r_beg * self._pred_param.get_UB(image_number)
 
-        self._T2 = r_end * self._pred_param(image_number + step)
+        self._T2 = r_end * self._pred_param.get_UB(image_number + step)
+
+    def get_T1(self):
+        '''Get the setting matrix for the beginning of the step'''
+        
+        return self._T1
 
     def predict(self, hkl):
         '''
@@ -129,28 +157,46 @@ class ScanVaryingReflectionPredictor(object):
         dr = r2 - r1
         s0pr1 = self._s0 + r1
 
+        #DEBUG
+        #store reciprocal lattice coordinates
+        print "storing site", hkl
+        self.sites.append(r1)
+
         # distances from Ewald sphere along radii
         r1_from_ES = (s0pr1).length() - self._s0mag
         r2_from_ES = (self._s0 + r2).length() - self._s0mag
 
         # use the initial distance as approximate measure of closeness to the ES
-        self._dist_from_ES = abs(r1_from_ES)
+        self.dist_from_ES = abs(r1_from_ES)
 
         starts_outside_ES = r1_from_ES >= 0.
         ends_outside_ES = r2_from_ES >= 0.
 
+        self.is_outside_res_limit = r1.length_sq() > self._dstarmax_sq
+
+        #DEBUG
+        #print "for hkl", hkl
+        #print "starts outside ES", starts_outside_ES
+        #print "ends outside ES", ends_outside_ES
+
         # stop prediction for a relp that doesn't cross the ES (or crosses 2x)
         if starts_outside_ES == ends_outside_ES: return None
+
+        # stop prediction if the relp is outside the resolution limit
+        if self.is_outside_res_limit: return None
 
         # solve equation |s0 + r1 + alpha * dr| = |s0| for alpha. This is
         # equivalent to solving the quadratic equation
         #
-        # alpha^2*r1.r1 + 2*alpha(s0 + r1).dr + 2*(s0 + r1).r1
+        # alpha^2*dr.dr + 2*alpha(s0 + r1).dr + 2*s0.r1 + r1.r1 = 0
 
-        roots = solve_quad(r1.length_sq(),
+        roots = solve_quad(dr.length_sq(),
                            2*s0pr1.dot(dr),
-                           2*s0pr1.dot(r1))
+                           r1.length_sq() + 2*self._s0.dot(r1))
 
+        #DEBUG
+        #print "disatnce from ES", self.dist_from_ES
+        #print "roots are", roots
         # choose a root that is in [0,1]
         alpha = filter(lambda x: x is not None and (0 <= x <= 1), roots)[0]
 
@@ -168,13 +214,16 @@ class ScanVaryingReflectionPredictor(object):
         r.frame_number = frame
         r.entering = starts_outside_ES
 
+        #DEBUG
+        print "predicted reflection", hkl
         return r
-
-    def distance_from_Ewald_sphere(self):
-        '''Return approximate distance from Ewald sphere of the last calculated
-        reflection'''
-
-        return self._dist_from_ES
+        
+    def get_relp_vector_length(self, hkl):
+        '''return the length of vector to relp hkl at the start of the step'''
+        
+        r1 = self._T1 * matrix.col(hkl)
+        return r1.length()
+        
 
 def solve_quad(a, b, c):
     '''Robust solution, for real roots only, of a quadratic in the form
@@ -185,7 +234,7 @@ def solve_quad(a, b, c):
     if discriminant > 0:
         sign = cmp(b, 0)
         if sign == 0: sign = 1.0
-        q = -0.5 * (b + sign * math.sqrt(discriminant))
+        q = -0.5 * (b + sign * sqrt(discriminant))
         x1 = q / a if a != 0 else None
         x2 = c / q if q != 0 else None
         return [x1, x2]
@@ -195,6 +244,224 @@ def solve_quad(a, b, c):
 
     else:
         return [None]
+
+class ScanVaryingReflectionListGenerator(object):
+    '''
+    Generate and predict all reflections for a scan with a varying crystal
+    model.
+
+    Starting from the (0,0,0) reflection, known to be on the Ewald sphere, for a
+    particular image t, perform an efficient local search for predictions, using
+    ScanVaryingReflectionPredictor to test each candidate.
+    '''
+
+    def __init__(self, prediction_parameterisation, beam,
+                    gonio, scan, dmin):
+
+        self._scan = scan
+        self._s0 = matrix.col(beam.get_s0())
+        self._axis = matrix.col(gonio.get_rotation_axis())
+        self._predictor = ScanVaryingReflectionPredictor(
+                    prediction_parameterisation, beam, gonio, scan, dmin)
+        self._reflections = []
+
+        # the search will not work when the resolution limit is so high that
+        # 90 degree scattering occurs, as then the volume of potential
+        # predictions wraps back upon itself. This will almost never be the
+        # case, but check anyway.
+        assert 1. / dmin < 1.414 * self._s0.length()
+
+    def __call__(self):
+
+        self.step_over_images()
+        #DEBUG
+        print "number of reflections", len(self._reflections)
+        return self._reflections
+
+    def step_over_images(self):
+        '''Loop over images, doing the search on each and extending the
+        predictions list'''
+
+        im_range = self._scan.get_image_range()
+        for t in range(im_range[0], im_range[1] + 1):
+
+            self._prepare_at_image(t)
+
+            self._do_search_and_predict()
+
+    def _prepare_at_image(self, t):
+
+        self._predictor.prepare(t)
+
+        T1 = self._predictor.get_T1()
+
+        # find permutation matrices for h,k,l <--> p,q,r
+        self._permute_axes(T1)
+
+    def _permute_axes(self, ub):
+        '''Find permutation of the columns of an orientation matrix so that
+        column p is closest to the source direction, column r is
+        closest of q and r to the spindle axis and column q is the remaining
+        direction.'''
+
+        # Extract the reciprocal lattice directions from the columns of UB
+        rl_dirs = [matrix.col(v).normalize() for v in \
+                   ub.transpose().as_list_of_lists()]
+
+        # Find reciprocal lattice axis closest to source direction by checking magnitude
+        # of dot products between normalised axes and beam, then swap as required
+        rl_dot_s0 = [rl_dirs[j].dot(self._s0) for j in range(3)]
+        along_beam = [fabs(e) for e in rl_dot_s0]
+
+        index_of_p = along_beam.index(max(along_beam))
+        self._p_along_s0 = cmp(rl_dot_s0[index_of_p], 0.)
+
+        indices = range(3)
+        print "a*, b*, c* directions projected on beam:", along_beam
+        print "that means index",index_of_p, "is determined to be axis p"
+        print "and _p_along_s0 is", self._p_along_s0
+
+        # swap axes
+        rl_dirs[0], rl_dirs[index_of_p] = rl_dirs[index_of_p], rl_dirs[0]
+        indices[0], indices[index_of_p] = indices[index_of_p], indices[0]
+
+        print "reorganised rl_dirs is", rl_dirs
+
+        # Now find which of the two remaining reciprocal lattice axes is
+        # closest to the rotation axis.
+        along_spindle = [fabs(rl_dirs[j].dot(self._axis)) for j in (1,2)]
+        print "those axes projected along the spindle:", along_spindle
+
+        index_of_r = along_spindle.index(max(along_spindle)) + 1
+        index_of_r = indices[index_of_r]
+        print "index", index_of_r, "is determined to be axis r"
+
+        # Which is the remaining column index?
+        index_of_q = [j for j in range(3) if not j in (index_of_p, index_of_r)][0]
+        print "and", index_of_q, "is axis q"
+
+        # permutation matrix such that h, k, l = M * (p, q, r)
+        elems = [int(0)] * 9
+        elems[3 * index_of_p] = int(1)
+        elems[3 * index_of_q + 1] = int(1)
+        elems[3 * index_of_r + 2] = int(1)
+
+        self._perm_p_to_h = matrix.sqr(elems)
+        self._perm_h_to_p = self._perm_p_to_h.transpose()
+
+        return
+
+    def _do_search_and_predict(self):
+        '''For the prepared image, perform local search starting from
+        the (0,0,0) reflection, predicting as we go.'''
+
+        seed_pqr = matrix.col((0, 0, 0))
+
+        # do positive r partition from the seed position
+        self._do_r_partition(seed_pqr)
+
+        return
+
+    def _do_r_partition(self, seed):
+
+        original_seed = seed
+        while True:
+
+            # do q partition from the seed position, obtain a new seed position,
+            # increment by +1 in r and repeat
+            print "1trying q partition starting at hkl", (self._perm_p_to_h * seed).elems, "which is", seed.elems, "pqr"
+            seed = self._do_q_partition(seed)
+            if not seed: break
+            seed += matrix.col((0, 0, 1))
+
+        # return to the original seed position and decrement by 1 in r
+        seed = original_seed + matrix.col((0, 0, -1))
+
+        while True:
+
+            # do q partition from the seed position, obtain a new seed position,
+            # increment by +1 in r and repeat
+            print "2trying q partition starting at", (self._perm_p_to_h * seed).elems
+            seed = self._do_q_partition(seed)
+            if not seed: break
+            seed += matrix.col((0, 0, -1))
+
+        return
+
+    def _do_q_partition(self, seed):
+
+        orig_seed = seed
+        final_seed = seed
+        final_seed_length = self._predictor.get_relp_vector_length(self._perm_p_to_h * seed)
+        count = 0
+        while True:
+            print "1trying p row starting at", (self._perm_p_to_h * seed).elems
+            new_seed = self._do_p_row(seed)
+            if not new_seed: break
+            test_lowest_resolution = self._predictor.get_relp_vector_length(self._perm_p_to_h * new_seed)
+            if test_lowest_resolution < final_seed_length:
+                final_seed_length = test_lowest_resolution
+            #if (self._perm_p_to_h * new_seed).length_sq() < (self._perm_p_to_h * final_seed).length_sq():
+            #if new_seed[0] * self._p_along_s0 > final_seed[0] * self._p_along_s0:
+                final_seed = new_seed
+            seed = new_seed + matrix.col((0, 1, 0))
+            count += 1
+
+        seed = orig_seed + matrix.col((0, -1, 0))
+        while True:
+            print "2trying p row starting at", (self._perm_p_to_h * seed).elems
+            new_seed = self._do_p_row(seed)
+            if not new_seed: break
+            test_lowest_resolution = self._predictor.get_relp_vector_length(self._perm_p_to_h * new_seed)
+            if test_lowest_resolution < final_seed_length:
+                final_seed_length = test_lowest_resolution
+            #if (self._perm_p_to_h * new_seed).length_sq() < (self._perm_p_to_h * final_seed).length_sq():
+            #if new_seed[0] * self._p_along_s0 > final_seed[0] * self._p_along_s0:
+                final_seed = new_seed
+            seed = new_seed + matrix.col((0, -1, 0))
+            count += 1
+
+        print "final seed of q partition", (self._perm_p_to_h * final_seed).elems
+        if count == 0: final_seed = None
+        return final_seed
+
+
+    def _do_p_row(self, seed):
+
+        #print "1) trying reflection", (self._perm_p_to_h * seed).elems
+        r = self._predictor.predict(self._perm_p_to_h * seed)
+        if r: self._reflections.append(r)
+        elif self._predictor.is_outside_res_limit:
+            return None
+
+        min_dist = self._predictor.dist_from_ES
+        orig_seed = seed
+        new_seed = seed
+
+        while True:
+            seed = seed + matrix.col((1, 0, 0))
+            #print "2) trying reflection", (self._perm_p_to_h * seed).elems
+            r = self._predictor.predict(self._perm_p_to_h * seed)
+            dist = self._predictor.dist_from_ES
+            if r: self._reflections.append(r)
+            elif dist > min_dist: break
+            if dist < min_dist:
+                min_dist = dist
+                new_seed = seed
+
+        seed = orig_seed
+        while True:
+            seed = seed + matrix.col((-1, 0, 0))
+            #print "3) trying reflection", (self._perm_p_to_h * seed).elems
+            r = self._predictor.predict(self._perm_p_to_h * seed)
+            dist = self._predictor.dist_from_ES
+            if r: self._reflections.append(r)
+            elif dist > min_dist: break
+            if dist < min_dist:
+                min_dist = dist
+                new_seed = seed
+
+        return new_seed
 
 
 class AnglePredictor_rstbx(object):
