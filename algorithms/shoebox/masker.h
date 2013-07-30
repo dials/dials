@@ -68,16 +68,18 @@ namespace dials { namespace algorithms { namespace shoebox {
       initialise_mask(reflections);
 
       // Loop through all the reflections
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
+      if (adjacency_list) {
+        for (std::size_t i = 0; i < reflections.size(); ++i) {
 
-        // Get a reference to the reflection
-        Reflection &r = reflections[i];
+          // Get a reference to the reflection
+          Reflection &r = reflections[i];
 
-        // Get the list of overlapping reflectionss
-        adjacency_iterator_range range = adjacent_vertices(i, *adjacency_list);
-        for (adjacency_iterator it = range.first; it != range.second; ++it) {
-          if (i < *it) {
-            assign_ownership(r, reflections[*it]);
+          // Get the list of overlapping reflectionss
+          adjacency_iterator_range range = adjacent_vertices(i, *adjacency_list);
+          for (adjacency_iterator it = range.first; it != range.second; ++it) {
+            if (i < *it) {
+              assign_ownership(r, reflections[*it]);
+            }
           }
         }
       }

@@ -17,6 +17,7 @@
 #include <scitbx/array_family/shared.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
+#include <dials/algorithms/shoebox/masker.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
@@ -48,7 +49,30 @@ namespace dials { namespace algorithms { namespace shoebox {
      */
     Populator(ReflectionList &reflections, const flex_bool &mask,
         const flex_double &gain_map, const flex_double &dark_map)
-      : reflections_(reflections),
+      : masker_(mask),
+        reflections_(reflections),
+        mask_(mask),
+        gain_map_(gain_map),
+        dark_map_(dark_map) {
+      allocate();
+      initialize();
+    }
+
+    /**
+     * Initialise the profiles.
+     * @param reflections The list of reflections
+     * @param adjacency_list The list of overlaps
+     * @param mask The detector mask
+     * @param gain_map The gain map
+     * @param dark_map The dark map
+     */
+    Populator(ReflectionList &reflections,
+        const boost::shared_ptr<AdjacencyList> adjacency_list,
+        const flex_bool &mask, const flex_double &gain_map,
+        const flex_double &dark_map)
+      : masker_(mask),
+        reflections_(reflections),
+        adjacency_list_(adjacency_list),
         mask_(mask),
         gain_map_(gain_map),
         dark_map_(dark_map) {
@@ -239,7 +263,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Mask all the overlapping shoeboxes
      */
     void mask_overlapping() {
-
+      masker_(reflections_, adjacency_list_);
     }
 
     /**
@@ -249,7 +273,9 @@ namespace dials { namespace algorithms { namespace shoebox {
 
     }
 
+    Masker masker_;
     ReflectionList reflections_;
+    const boost::shared_ptr<AdjacencyList> adjacency_list_;
     flex_bool mask_;
     flex_double gain_map_;
     flex_double dark_map_;
