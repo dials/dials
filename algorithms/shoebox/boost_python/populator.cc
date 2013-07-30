@@ -20,11 +20,16 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_populator()
   {
     class_ <Populator> ("Populator", no_init)
-      .def(init<ReflectionList&, const flex_double&, const flex_double&>((
+      .def(init<ReflectionList&, const flex_bool &,
+                const flex_double&, const flex_double&>((
         arg("reflection_list"),
+        arg("mask"),
         arg("gain_map"),
         arg("dark_map"))))
-      .def("add_image", &Populator::add_image, (arg("image"), arg("index")))
+      .def("add_image", &Populator::add_image, (
+        arg("image"), arg("index")))
+      .def("image_mask", &Populator::image_mask, (
+        arg("index"), arg("kernal_size")))
       .def("allocate", &Populator::allocate)
       .def("deallocate", &Populator::deallocate)
       .def("initialize", &Populator::initialize);

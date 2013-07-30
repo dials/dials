@@ -12,7 +12,9 @@
 namespace dials { namespace algorithms { namespace shoebox {
 
   using boost::unordered_map;
+  using scitbx::af::int2;
   using scitbx::af::int6;
+  using scitbx::af::flex_bool;
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
   using scitbx::af::flex_grid;
@@ -23,9 +25,10 @@ namespace dials { namespace algorithms { namespace shoebox {
   class Populator {
   public:
 
-    Populator(ReflectionList &reflections, const flex_double gain_map,
-        const flex_double dark_map)
+    Populator(ReflectionList &reflections, const flex_bool &mask,
+        const flex_double &gain_map, const flex_double &dark_map)
       : reflections_(reflections),
+        mask_(mask),
         gain_map_(gain_map),
         dark_map_(dark_map) {
       allocate();
@@ -75,6 +78,50 @@ namespace dials { namespace algorithms { namespace shoebox {
           r.set_shoebox(profile);
         }
       }
+    }
+
+    flex_bool image_mask(int image_index, int2 kernel_size) {
+
+      // Create the resulting mask
+      flex_bool result(mask_.accessor(), false);
+      flex_bool::index_type mask_size = result.accessor().all();
+      shared<int> indices = index_[image_index];
+
+
+      // Set all the shoebox pixels
+      for (std::size_t i = 0; i < indices.size(); ++i) {
+
+        // Get a reference to a reflection
+        const Reflection &r = reflections_[indices[i]];
+        if (r.is_valid()) {
+          int6 bounding_box = r.get_bounding_box();
+          int i0 = bounding_box[0] - kernel_size[0];
+          int i1 = bounding_box[1] + kernel_size[0];
+          int j0 = bounding_box[2] - kernel_size[1];
+          int j1 = bounding_box[3] + kernel_size[1];
+
+          // Readjust the area to loop over to ensure we're within image bounds
+          int jj0 = j0 >= 0 ? j0 : 0;
+          int ii0 = i0 >= 0 ? i0 : 0;
+          int jj1 = j1 <= mask_size[0] ? j1 : mask_size[0];
+          int ii1 = i1 <= mask_size[1] ? i1 : mask_size[1];
+
+          // Copy the image pixels
+          for (int jj = jj0; jj < jj1; ++jj) {
+            for (int ii = ii0; ii < ii1; ++ii) {
+              result(jj, ii) = true;
+            }
+          }
+        }
+      }
+
+      // Mask the pixels
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = result[i] && mask_[i];
+      }
+
+      // Return the resulting mask
+      return result;
     }
 
     void allocate() {
@@ -137,6 +184,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     ReflectionList reflections_;
+    flex_bool mask_;
     flex_double gain_map_;
     flex_double dark_map_;
     unordered_map<int, shared<int> > index_;
