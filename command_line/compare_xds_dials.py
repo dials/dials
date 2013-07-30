@@ -1,3 +1,5 @@
+from __future__ import division
+
 def pull_reference(integrate_hkl):
     '''Generate reference data set from integrate.hkl, check out the calculated
     x, y and z centroids as well as the Miller indices as coordinates in some
@@ -26,19 +28,68 @@ def pull_reference(integrate_hkl):
     print 'Reference: %d observations' % len(hkl)
     return hkl, i, sigi, xyz
 
+def get_dials_matrix(crystal_json):
+    from dials.model.serialize import load
+    crystal = load.crystal(crystal_json)
+    return crystal.get_A()
+
+def get_dials_coordinate_frame(sweep_json):
+    from dials.model.serialize import load
+    sweep = load.sweep(sweep_json)
+    return sweep.get_beam().get_direction(), \
+      sweep.get_goniometer().get_rotation_axis()
+
+def get_xds_coordinate_frame(integrate_hkl):
+    from scitbx import matrix
+    beam = axis = None
+
+    for record in open(integrate_hkl):
+        if not record.startswith('!'):
+            break
+        if record.startswith('!INCIDENT_BEAM_DIRECTION='):
+            beam = matrix.col(map(float, record.split()[-3:])).normalize()
+        if record.startswith('!ROTATION_AXIS='):
+            axis = matrix.col(map(float, record.split()[-3:])).normalize()
+
+    if not beam or not axis:
+        raise RuntimeError, 'coordinate frame information not found'
+
+    return beam, axis
+
+def integrate_hkl_to_A_matrix(integrate_hkl):
+    a = b = c = None
+
+    for record in open(integrate_hkl):
+        if not record.startswith('!'):
+            break
+        if record.startswith('!UNIT_CELL_A-AXIS='):
+            a = tuple(map(float, record.split()[-3:]))
+        if record.startswith('!UNIT_CELL_B-AXIS='):
+            b = tuple(map(float, record.split()[-3:]))
+        if record.startswith('!UNIT_CELL_C-AXIS='):
+            c = tuple(map(float, record.split()[-3:]))
+
+    if not a or not b or not c:
+        raise RuntimeError, 'unit cell vectors not found'
+
+    from scitbx import matrix
+    return matrix.sqr(a + b + c).inverse()
+
 def integrate_hkl_to_unit_cell(integrate_hkl):
     '''Generate a cctbx unit_cell from an integrate_hkl file.'''
 
     from cctbx.uctbx import unit_cell
 
     for record in open(integrate_hkl):
+        if not record.startswith('!'):
+            break
         if record.startswith('!UNIT_CELL_CONSTANTS='):
             return unit_cell(tuple(map(float, record.split()[-6:])))
 
     raise RuntimeError, 'unit cell not found'
 
 def pull_calculated(integrate_pkl):
-    from dials.model.data import ReflectionList
+    from dials.model.data import ReflectionList # implicit import
     import cPickle as pickle
     import math
 
@@ -150,10 +201,14 @@ def compare(integrate_hkl, integrate_pkl):
 
     print 'R: %.3f' % r
 
-def compare_chunks(integrate_hkl, integrate_pkl):
+def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
 
     from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
+
+    rdx = derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl)
+
+    print 'Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems)
 
     uc = integrate_hkl_to_unit_cell(integrate_hkl)
 
@@ -186,7 +241,7 @@ def compare_chunks(integrate_hkl, integrate_pkl):
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
-        if hkl == xhkl[c]:
+        if hkl == tuple(rdx * xhkl[c]):
             XDS.append(xi[c])
             DIALS.append(di[j])
             HKL.append(hkl)
@@ -270,6 +325,30 @@ def compare_chunks(integrate_hkl, integrate_pkl):
 
 ##### FIXME derive REIDX matrix if appropriate from the unit cell vectors #####
 
+def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
+    '''Derive a reindexing matrix to go from the orientation matrix used
+    for XDS integration to the one used for DIALS integration.'''
+
+    dA = get_dials_matrix(crystal_json)
+    dbeam, daxis = get_dials_coordinate_frame(sweep_json)
+    xbeam, xaxis = get_xds_coordinate_frame(integrate_hkl)
+
+    # want to align XDS -s0 vector...
+    from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+    R = align_reference_frame(- xbeam, dbeam, xaxis, daxis)
+    xA = R * integrate_hkl_to_A_matrix(integrate_hkl)
+
+    # assert that this should just be a simple integer rotation matrix
+    # i.e. reassignment of a, b, c so...
+
+    from scitbx import matrix
+    return matrix.sqr(map(int, map(round, (dA.inverse() * xA).elems)))
+
 if __name__ == '__main__':
     import sys
-    compare_chunks(sys.argv[1], sys.argv[2])
+    if len(sys.argv) != 5:
+        raise RuntimeError, \
+          '%s INTEGRATE.HKL integrate.pickle crystal.json sweep.json' % \
+          sys.argv[0]
+
+    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
