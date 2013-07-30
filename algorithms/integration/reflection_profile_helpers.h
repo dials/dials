@@ -13,6 +13,7 @@
 
 #include <scitbx/array_family/flex_types.h>
 #include <dials/model/data/reflection.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -33,7 +34,7 @@ namespace dials { namespace algorithms {
    */
   inline
   ReflectionList allocate_reflection_profiles(ReflectionList &reflections,
-      double shoebox_default = 0, int shoebox_mask_default = 1,
+      double shoebox_default = 0, int shoebox_mask_default = shoebox::Valid,
       double shoebox_background_default = 0) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
@@ -208,10 +209,10 @@ namespace dials { namespace algorithms {
           for (int ii = ii0; ii < ii1; ++ii) {
             int j = jj - j0;
             int i = ii - i0;
-            if (shoebox_mask(k, j, i) != 0) {
+            if (shoebox_mask(k, j, i) & shoebox::Valid) {
               bool strong = mask(jj, ii);
               if (strong) {
-                shoebox_mask(k, j, i) |= 2;
+                shoebox_mask(k, j, i) |= shoebox::Strong;
                 strong_count++;
               }
             }

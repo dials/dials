@@ -67,6 +67,7 @@ class Test(object):
     def tst_non_overlapping(self, reflections, non_overlapping, image_size):
         '''Ensure non-overlapping reflections have all their values 1.'''
         import numpy
+        from dials.algorithms import shoebox
 
         # Check that all elements in non_overlapping masks are 1
         for i in non_overlapping:
@@ -89,7 +90,7 @@ class Test(object):
             else:
                 y1 = bbox[3] - bbox[2]
 
-            ind = numpy.where(mask[:,y0:y1,x0:x1] != 1)[0]
+            ind = numpy.where(mask[:,y0:y1,x0:x1] != shoebox.MaskCode.Valid)[0]
             assert(len(ind) == 0)
 
         # Passed that test
@@ -100,6 +101,7 @@ class Test(object):
         '''Ensure masks for overlapping reflections are set properly.'''
         import numpy
         from scitbx import matrix
+        from dials.algorithms import shoebox
 
         # Loop through all overlaps
         for i in overlapping:
@@ -111,7 +113,8 @@ class Test(object):
             r1_size = (bbox_1[5] - bbox_1[4],
                        bbox_1[3] - bbox_1[2],
                        bbox_1[1] - bbox_1[0])
-            expected_mask = numpy.ones(shape = r1_size, dtype=numpy.int32)
+            expected_mask = numpy.zeros(shape = r1_size, dtype=numpy.int32)
+            expected_mask[:,:,:] = shoebox.MaskCode.Valid
 
             # Loop through all reflections which this reflection overlaps
             for j in adjacency_list.adjacent_vertices(i):

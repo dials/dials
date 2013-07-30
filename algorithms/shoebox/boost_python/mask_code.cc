@@ -22,7 +22,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     enum_<MaskCode>("MaskCode")
       .value("Valid", Valid)
       .value("Background", Background)
-      .value("Foreground", Foreground);
+      .value("Foreground", Foreground)
+      .value("Strong", Strong);
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

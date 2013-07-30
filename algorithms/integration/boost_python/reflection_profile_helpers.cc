@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       &allocate_reflection_profiles, (
         arg("reflections"),
         arg("shoebox_default") = 0,
-        arg("shoebox_mask_default") = 1,
+        arg("shoebox_mask_default") = shoebox::Valid,
         arg("shoebox_background_default") = 0));
   
     def("copy_single_image_pixels",

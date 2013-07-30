@@ -16,6 +16,7 @@
 #include <scitbx/math/mean_and_variance.h>
 #include <dials/array_family/sort_index.h>
 #include <dials/model/data/reflection.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -155,10 +156,10 @@ namespace dials { namespace algorithms {
       // Set all the rejected pixels as peak pixels and all the accepted
       // pixels as background pixels
       for (std::size_t i = 0; i < num_data; ++i) {
-        mask[indices[i]] = (1 << 0);
+        mask[indices[i]] |= shoebox::Background;
       }
       for (std::size_t i = num_data; i < indices.size(); ++i) {
-        mask[indices[i]] = (1 << 1);
+        mask[indices[i]] |= shoebox::Foreground;
       }
     }
 
