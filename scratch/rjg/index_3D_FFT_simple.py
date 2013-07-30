@@ -50,6 +50,9 @@ refinement {
     .type = bool
     .help = "Whether or not to refine the beam direction."
 }
+export_xds_files = False
+  .type = bool
+  .help = "Export results as XDS.INP, XPARM.XDS for integration with XDS."
 """)
 
 master_params = master_phil_scope.fetch().extract()
@@ -140,6 +143,9 @@ class indexer(object):
       self.debug_show_candidate_basis_vectors()
 
     self.export_as_json()
+    self.export_indexed_reflections()
+    if self.params.export_xds_files:
+      self.export_xds_files()
 
   def map_centroids_to_reciprocal_space_grid(self):
 
@@ -366,6 +372,12 @@ class indexer(object):
           if alpha < 90:
             c = -c
           beta = c.angle(a, deg=True)
+          if a_cross_b.dot(c) < 0:
+            # we want right-handed basis set, therefore invert all vectors
+            a = -a
+            b = -b
+            c = -c
+            #assert a.cross(b).dot(c) > 0
           model = Crystal(a, b, c)
           uc = model.get_unit_cell()
           params = uc.parameters()
@@ -496,6 +508,26 @@ class indexer(object):
     with open('sweep.json', 'wb') as f:
       dump.imageset(self.sweep, f, compact=compact)
 
+  def export_indexed_reflections(self, file_name="indexed.pickle"):
+    with open(file_name, 'wb') as f:
+      pickle.dump(self.indexed_reflections, f)
+
+  def export_xds_files(self):
+    from dxtbx.serialize import xds
+    crystal_model = self.candidate_crystal_models[0]
+    A = crystal_model.get_A()
+    A_inv = A.inverse()
+    real_space_a = A_inv.elems[:3]
+    real_space_b = A_inv.elems[3:6]
+    real_space_c = A_inv.elems[6:9]
+    to_xds = xds.to_xds(self.sweep)
+    with open('XDS.INP', 'wb') as f:
+      to_xds.XDS_INP(out=f)
+    with open('XPARM.XDS', 'wb') as f:
+      to_xds.xparm_xds(
+        real_space_a, real_space_b, real_space_c,
+        crystal_model.get_space_group().type().number(),
+        out=f)
 
 def run(args):
   import time
