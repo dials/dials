@@ -34,6 +34,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_shoebox_masker.py",
     "$D/test/algorithms/shoebox/tst_mask_foreground.py",
     "$D/test/algorithms/shoebox/tst_mask_overlapping.py",
+    "$D/test/algorithms/shoebox/tst_mask_bad_pixels.py",
     "$D/test/algorithms/shoebox/tst_populator.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     )
