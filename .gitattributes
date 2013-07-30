@@ -192,6 +192,7 @@ algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.h -text
+algorithms/shoebox/masker.py -text
 algorithms/shoebox/populator.h -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
