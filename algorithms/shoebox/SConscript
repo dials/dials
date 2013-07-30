@@ -7,6 +7,7 @@ sources = [
     'boost_python/find_overlapping.cc',
     'boost_python/mask_foreground.cc',
     'boost_python/mask_bad_pixels.cc',
+    'boost_python/mask_overlapping.cc',
     'boost_python/masker.cc',
     'boost_python/populator.cc',
     'boost_python/shoebox_ext.cc']

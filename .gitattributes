@@ -182,6 +182,7 @@ algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/mask_bad_pixels.cc -text
 algorithms/shoebox/boost_python/mask_code.cc -text
 algorithms/shoebox/boost_python/mask_foreground.cc -text
+algorithms/shoebox/boost_python/mask_overlapping.cc -text
 algorithms/shoebox/boost_python/masker.cc -text
 algorithms/shoebox/boost_python/populator.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
@@ -189,6 +190,7 @@ algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/mask_bad_pixels.h -text
 algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_foreground.h -text
+algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.h -text
 algorithms/shoebox/populator.h -text
 algorithms/spatial_indexing/SConscript -text
