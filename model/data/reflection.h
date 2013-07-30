@@ -143,7 +143,8 @@ namespace dials { namespace model {
         centroid_sq_width_(0, 0, 0),
         intensity_(0.0),
         intensity_variance_(0.0),
-        corrected_intensity_(0.0) {}
+        corrected_intensity_(0.0),
+        corrected_intensity_variance_(0.0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -163,7 +164,8 @@ namespace dials { namespace model {
         centroid_sq_width_(0, 0, 0),
         intensity_(0.0),
         intensity_variance_(0.0),
-        corrected_intensity_(0.0) {}
+        corrected_intensity_(0.0),
+        corrected_intensity_variance_(0.0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -188,7 +190,8 @@ namespace dials { namespace model {
         centroid_sq_width_(0, 0, 0),
         intensity_(0.0),
         intensity_variance_(0.0),
-        corrected_intensity_(0.0) {}
+        corrected_intensity_(0.0),
+        corrected_intensity_variance_(0.0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle,
@@ -215,7 +218,8 @@ namespace dials { namespace model {
         centroid_sq_width_(0, 0, 0),
         intensity_(0.0),
         intensity_variance_(0.0),
-        corrected_intensity_(0.0) {
+        corrected_intensity_(0.0),
+        corrected_intensity_variance_(0.0) {
     set_entering(entering);
     }
 
@@ -304,6 +308,10 @@ namespace dials { namespace model {
       return corrected_intensity_;
     }
 
+    double get_corrected_intensity_variance() const {
+      return corrected_intensity_variance_;
+    }
+
     /** Set the rotation angle */
     void set_rotation_angle(double rotation_angle) {
       rotation_angle_ = rotation_angle;
@@ -386,6 +394,10 @@ namespace dials { namespace model {
       corrected_intensity_ = intensity;
     }
 
+    void set_corrected_intensity_variance(double variance) {
+      corrected_intensity_variance_ = variance;
+    }
+
   public:
 
     double rotation_angle_;
@@ -408,6 +420,7 @@ namespace dials { namespace model {
     double intensity_;
     double intensity_variance_;
     double corrected_intensity_;
+    double corrected_intensity_variance_;
   };
 
   /** Print reflection to std::out */
@@ -431,6 +444,7 @@ namespace dials { namespace model {
     os << "  intensity:         " << r.get_intensity() << "\n";
     os << "  intensity variance: " << r.get_intensity_variance() << "\n";
     os << "  corrected intensity: " << r.get_corrected_intensity() << "\n";
+    os << "  corrected intensity variance: " << r.get_corrected_intensity_variance() << "\n";
     return os;
   }
 

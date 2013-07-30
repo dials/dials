@@ -32,5 +32,7 @@ def LP_calculations(sweep, crystal, reflection):
     # J. Appl. Cryst 1988 21 916-924
 
     reflection.corrected_intensity = reflection.intensity * L_f / P_f
+    reflection.corrected_intensity_variance = \
+        reflection.intensity_variance * L_f / P_f
 
     return

@@ -79,7 +79,8 @@ namespace dials { namespace model { namespace boost_python {
             << val.get_centroid_sq_width()[2]
             << val.get_intensity()
             << val.get_intensity_variance()
-            << val.get_corrected_intensity();
+            << val.get_corrected_intensity()
+            << val.get_corrected_intensity_variance();
 
       profile_to_string(val.get_shoebox());
       profile_to_string(val.get_shoebox_mask());
@@ -149,7 +150,8 @@ namespace dials { namespace model { namespace boost_python {
             >> val.centroid_sq_width_[2]
             >> val.intensity_
             >> val.intensity_variance_
-            >> val.corrected_intensity_;
+            >> val.corrected_intensity_
+            >> val.corrected_intensity_variance_;
 
       val.shoebox_ = profile_from_string<flex_double>();
       val.shoebox_mask_ = profile_from_string<flex_int>();

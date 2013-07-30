@@ -98,7 +98,7 @@ def pull_calculated(integrate_pkl):
     strong_reflections = []
 
     for r in r_list:
-        if r.corrected_intensity > math.sqrt(r.intensity_variance):
+        if r.corrected_intensity > math.sqrt(r.corrected_intensity_variance):
             strong_reflections.append(r)
 
     del(r_list)
@@ -113,7 +113,7 @@ def pull_calculated(integrate_pkl):
             continue
         hkl.append(r.miller_index)
         i.append(r.corrected_intensity)
-        sigi.append(math.sqrt(r.intensity_variance))
+        sigi.append(math.sqrt(r.corrected_intensity_variance))
         x, y = r.image_coord_px
         z = r.frame_number
         xyz.append((x, y, z))
