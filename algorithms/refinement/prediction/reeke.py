@@ -436,7 +436,7 @@ class reeke_model:
                   int(max(ewald_r_lim_beg)) + max(self._margin, 1)]
             l2 = [None]
 
-        # otherwise there is at least one intersection at both orientations.
+        # otherwise there is at least one intersection at both settings.
         # Set up two loops, one for each range swept out by a point of
         # intersection as it travels from the beginning to the end setting.
         else:
@@ -495,11 +495,16 @@ class reeke_model:
                 r_lim = self._r_limits(p, q, cq)
                 if r_lim is None: continue
 
+                # make list of trials, removing any duplicates
+                r_trials = []
                 for item in r_lim:
                     if item[0] is None: continue
 
-                    for r in range(item[0], item[1]+1):
-                        hkl.append((self._permutation * (p, q, r)).elems)
+                    r_seq = range(item[0], item[1]+1)
+                    r_trials += [e for e in r_seq if e not in r_trials]
+
+                for r in r_trials:
+                    hkl.append((self._permutation * (p, q, r)).elems)
 
         return hkl
 
