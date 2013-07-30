@@ -20,7 +20,6 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_mask_code()
   {
     enum_<MaskCode>("MaskCode")
-      .value("Invalid", Invalid)
       .value("Valid", Valid)
       .value("Background", Background)
       .value("Foreground", Foreground);
