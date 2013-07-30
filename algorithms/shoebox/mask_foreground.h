@@ -117,7 +117,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         // Background.
         for (int j = 0; j < ysize; ++j) {
           for (int i = 0; i < xsize; ++i) {
-            if (x0 + i >= 0 && y0 + j >= 0 && x0 + i < width && y0 + j < height) {
+            if (x0 + i >= 0 && y0 + j >= 0 &&
+                x0 + i < width && y0 + j < height) {
               vec2<double> gxy = coordxy(j, i);
               double gxa2 = (gxy[0] * delta_b_r_)*(gxy[0] * delta_b_r_);
               double gyb2 = (gxy[1] * delta_b_r_)*(gxy[1] * delta_b_r_);
