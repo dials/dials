@@ -85,7 +85,10 @@ namespace dials { namespace algorithms { namespace filter {
       arg("g"), arg("b"), arg("r"), arg("delta_m")));
     def("by_xds_angle", &by_xds_angle, (
       arg("g"), arg("b"), arg("r"), arg("delta_m")));
-  
+    def("by_bbox_volume", (void(*)(ReflectionList&, std::size_t))
+      &by_bbox_volume, (arg("r"), arg("num")));
+    def("by_bbox_volume", (void(*)(ReflectionList&))&by_bbox_volume, (
+      arg("r")));
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_filter_ext)

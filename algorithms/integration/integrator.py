@@ -114,6 +114,7 @@ class IntegratorFactory(object):
         # Return the reflection extractor instance
         return ReflectionExtractor(
             bbox_nsigma=integration.shoebox.n_sigma,
+            filter_by_bbox=integration.filter.by_bbox,
             filter_by_zeta=integration.filter.by_zeta,
             filter_by_xds_small_angle=integration.filter.by_xds_small_angle,
             filter_by_xds_angle=integration.filter.by_xds_angle,

@@ -103,50 +103,6 @@ namespace dials { namespace algorithms {
     }
   }
 
-  /**
-   * Filter the reflection list based on the bounding box volume
-   * @param reflections The list of reflections
-   */
-  void filter_by_bbox_volume(ReflectionList &reflections,
-      std::size_t num_bins) {
-
-    // Check the bins are correct
-    DIALS_ASSERT(num_bins > 0);
-
-    // Calculate the bounding box volume for all reflections and then
-    // find the minimum and maximum volumes
-    flex_int volume(reflections.size());
-    int min_volume = std::numeric_limits<int>::max(), max_volume = 0;
-    for (std::size_t i = 0; i < reflections.size(); ++i) {
-      int6 bbox = reflections[i].get_bounding_box();
-      volume[i] = (bbox[1]-bbox[0]) * (bbox[3]-bbox[2]) * (bbox[5]-bbox[4]);
-      if (volume[i] < min_volume) min_volume = volume[i];
-      if (volume[i] > max_volume) max_volume = volume[i];
-    }
-
-    // Check that the volumes are valid
-    DIALS_ASSERT(max_volume > min_volume && min_volume > 0 && max_volume > 0);
-
-    // Create the volume histogram
-    flex_double histo(num_bins);
-    double bin_size = (float)(max_volume - min_volume) / (float)(num_bins - 1);
-    for (std::size_t i = 0; i < volume.size(); ++i) {
-      int index = (int)((volume[i] - min_volume) / bin_size);
-      if (index < 0) index = 0;
-      if (index >= num_bins) index = num_bins - 1;
-      histo[(int)((volume[i] - min_volume) / bin_size)]++;
-    }
-
-    // Calculate the threshold and set any reflections with bounding
-    // box size greater than the threshold to be invalid.
-    double threshold = maximum_deviation(histo) * bin_size;
-    for (std::size_t i = 0; i < reflections.size(); ++i) {
-      if (volume[i] > threshold) {
-        reflections[i].set_valid(false);
-      }
-    }
-  }
-
 }} // namespace dials::algorithms
 
 #endif // DIALS_ALGORITHMS_INTEGRATION_HELPERS_H

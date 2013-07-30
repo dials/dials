@@ -14,7 +14,7 @@ from __future__ import division
 class ReflectionExtractor(object):
     ''' Class to extract basic reflection information. '''
 
-    def __init__(self, bbox_nsigma, filter_by_zeta=0.0,
+    def __init__(self, bbox_nsigma, filter_by_bbox=False, filter_by_zeta=0.0,
                  filter_by_xds_small_angle=False, filter_by_xds_angle=False,
                  gain_map=None, dark_map=None, kernel_size=None,
                  n_sigma_b=None, n_sigma_s=None):
@@ -22,6 +22,7 @@ class ReflectionExtractor(object):
 
         Params:
             bbox_nsigma The number of standard deviations for bbox
+            filter_by_bbox True/False
             filter_by_zeta Minimum zeta value
             filter_by_xds_small_angle True/False
             filter_by_xds_angle True/False
@@ -34,6 +35,7 @@ class ReflectionExtractor(object):
         '''
         # Get parameters we need
         self.bbox_nsigma = bbox_nsigma
+        self.filter_by_bbox = filter_by_bbox
         self.filter_by_zeta = filter_by_zeta
         self.filter_by_xds_small_angle = filter_by_xds_small_angle
         self.filter_by_xds_angle = filter_by_xds_angle
@@ -163,6 +165,13 @@ class ReflectionExtractor(object):
         filter_by_detector_mask(reflections, detector_mask, array_range)
         Command.end('Filtered {0} reflections by detector mask'.format(
             len([r for r in reflections if r.is_valid()])))
+
+        # Filter the reflections by bbox
+        if self.filter_by_bbox:
+            Command.start('Filtering reflections by bounding box')
+            filter.by_bbox_volume(reflections)
+            Command.end('Filtered {0} reflections by bounding box'.format(
+                len([r for r in reflections if r.is_valid()])))
 
         # Filter the reflections by zeta
         if self.filter_by_zeta > 0:

@@ -36,6 +36,13 @@ integration
   filter
     .help = "Parameters for filtering reflections"
   {
+    by_bbox = False
+      .help = "Filter the reflections by the volume of the bounding box."
+              "A threshold value is chosen from a histogram of the volumes."
+              "Reflections with bounding box volume above the threshold value"
+              "are not used in intergration."
+      .type = bool
+      
     by_zeta = 0.05
       .help = "Filter the reflections by the value of zeta. A value of less"
               "than or equal to zero indicates that this will not be used. A" 
