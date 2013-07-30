@@ -270,7 +270,6 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Mask all the foreground pixels
      */
     void mask_foreground() {
-
     }
 
     Masker masker_;

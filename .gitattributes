@@ -184,6 +184,7 @@ algorithms/shoebox/boost_python/populator.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/mask_code.h -text
+algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/masker.h -text
 algorithms/shoebox/populator.h -text
 algorithms/spatial_indexing/SConscript -text

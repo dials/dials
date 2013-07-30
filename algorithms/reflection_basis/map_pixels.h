@@ -32,6 +32,51 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   /**
    * A class to generate local reciprocal space coordinates
    */
+  class CoordinateGenerator {
+  public:
+
+    /**
+     * Initialise the class
+     * @param cs The coordinate system
+     * @param x0 The x offset
+     * @param y0 The y offset
+     * @param s1_map The map of detector s1 vectors.
+     */
+    CoordinateGenerator(const CoordinateSystem &cs, int x0, int y0,
+        const flex_vec3_double &s1_map)
+      : s1_(cs.s1()),
+        e1_(cs.e1_axis() / s1_.length()),
+        e2_(cs.e2_axis() / s1_.length()),
+        x0_(x0),
+        y0_(y0),
+        s1_map_(s1_map) {}
+
+    /**
+     * Get the e1/e2 coordinate at i, j
+     * @param j The slow image index
+     * @param i The fast image index
+     * @returns The e1/e2 coordinate
+     */
+    vec2<double> operator()(int j, int i) const {
+      double xx = (double)(x0_ + i);
+      double yy = (double)(y0_ + j);
+      vec3<double> ds = s1_map_(yy, xx) - s1_;
+      double c1 = e1_ * ds;
+      double c2 = e2_ * ds;
+      return vec2<double>(c1, c2);
+    }
+
+  private:
+    vec3<double> s1_;
+    vec3<double> e1_;
+    vec3<double> e2_;
+    int x0_, y0_;
+    flex_vec3_double s1_map_;
+  };
+
+  /**
+   * A class to generate local reciprocal space coordinates
+   */
   class GridIndexGenerator {
   public:
 
@@ -47,14 +92,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     GridIndexGenerator(const CoordinateSystem &cs, int x0, int y0,
         vec2<double> step_size, std::size_t grid_half_size,
         const flex_vec3_double &s1_map)
-      : s1_(cs.s1()),
-        e1_(cs.e1_axis() / s1_.length()),
-        e2_(cs.e2_axis() / s1_.length()),
-        x0_(x0),
-        y0_(y0),
+      : coordinate_(cs, x0, y0, s1_map),
         step_size_(step_size),
-        grid_half_size_(grid_half_size),
-        s1_map_(s1_map) {}
+        grid_half_size_(grid_half_size) {}
 
     /**
      * Get the e1/e2 coordinate at i, j
@@ -63,24 +103,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @returns The e1/e2 coordinate
      */
     vec2<double> operator()(int j, int i) const {
-      double xx = (double)(x0_ + i);
-      double yy = (double)(y0_ + j);
-      vec3<double> ds = s1_map_(yy, xx) - s1_;
-      double c1 = e1_ * ds;
-      double c2 = e2_ * ds;
-      double gi = grid_half_size_ + c1 / step_size_[0] + 0.5;
-      double gj = grid_half_size_ + c2 / step_size_[1] + 0.5;
+      vec2<double> c12 = coordinate_(j, i);
+      double gi = grid_half_size_ + c12[0] / step_size_[0] + 0.5;
+      double gj = grid_half_size_ + c12[1] / step_size_[1] + 0.5;
       return vec2<double>(gi, gj);
     }
 
   private:
-    vec3<double> s1_;
-    vec3<double> e1_;
-    vec3<double> e2_;
-    int x0_, y0_;
+    CoordinateGenerator coordinate_;
     vec2<double> step_size_;
     std::size_t grid_half_size_;
-    flex_vec3_double s1_map_;
   };
 
 

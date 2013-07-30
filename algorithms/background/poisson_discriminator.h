@@ -169,7 +169,7 @@ namespace dials { namespace algorithms {
      * @return The mask
      */
     flex_int operator()(const flex_double &shoebox) const {
-      flex_int mask(shoebox.accessor(), 1);
+      flex_int mask(shoebox.accessor(), shoebox::Valid);
       this->operator()(shoebox, mask);
       return mask;
     }

@@ -97,6 +97,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   
   void export_map_pixels()
   {
+    class_<CoordinateGenerator>("CoordinateGenerator", no_init)
+      .def(init<const CoordinateSystem&, int, int, const flex_vec3_double>((
+          arg("cs"), 
+          arg("x0"),
+          arg("y0"), 
+          arg("s1_map"))))
+      .def("__call__", &CoordinateGenerator::operator());  
+      
     class_<GridIndexGenerator>("GridIndexGenerator", no_init)
       .def(init<const CoordinateSystem&, int, int, vec2<double>, 
                 std::size_t, const flex_vec3_double>((
