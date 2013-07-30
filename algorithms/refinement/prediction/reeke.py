@@ -21,21 +21,16 @@ from cctbx.sgtbx import space_group, space_group_symbols
 from cctbx.uctbx import unit_cell
 
 class reeke_model:
-    """Model and methods for the Reeke algorithm"""
+    '''Model and methods for the Reeke algorithm'''
 
-    def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin = 3):
-
-        # the original orientation, at phi = 0
-        #self._ub = ub
-
-        # mapping of permuted axes p, q, and r
-        self._permutation = None
+    def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin = 1):
 
         # the source vector and wavelength
         self._source = -s0
         self._wavelength = 1 / math.sqrt(s0.dot(s0))
+        self._wavelength_sq = self._wavelength**2
 
-        # the rotation axis and angular range
+        # the rotation axis
         self._axis = axis
 
         # the resolution limit
@@ -43,19 +38,15 @@ class reeke_model:
         self._dstarmax2 = self._dstarmax**2
 
         # Margin by which to expand limits. Mosflm uses 3.
-        # It might be useful to account for errors in the orientation.
         self._margin = int(margin)
 
-        # Determine the permutation order of columns of the orientation
-        # matrix. Use the orientation from the start of the wedge for this.
+        # Determine the permutation order of columns of the setting matrix. Use
+        # the setting from the beginning for this.
         # As a side-effect set self._permutation.
-
-        self._permutation = None
         col1, col2, col3 = self._permute_axes(ub_beg)
 
         # Thus set the reciprocal lattice axis vectors, in permuted order
         # p, q and r for both orientations
-
         rl_vec = [ub_beg.extract_block(start=(0,0), stop=(3,1)),
                   ub_beg.extract_block(start=(0,1), stop=(3,2)),
                   ub_beg.extract_block(start=(0,2), stop=(3,3))]
@@ -69,8 +60,7 @@ class reeke_model:
                          rl_vec[col2],
                          rl_vec[col3]]
 
-        # Set permuted orientation matrices
-
+        # Set permuted setting matrices
         self._p_beg = matrix.sqr(self._rlv_beg[0].elems +
                                  self._rlv_beg[1].elems +
                                  self._rlv_beg[2].elems).transpose()
@@ -78,33 +68,34 @@ class reeke_model:
                                  self._rlv_end[1].elems +
                                  self._rlv_end[2].elems).transpose()
 
-        # Define a new coordinate system concentric with the Ewald sphere.
-        #
-        # X' = X - source_x
-        # Y' = Y - source_y
-        # Z' = Z - source_z
-        #
-        # X = P' h'
-        # -   =  -
-        #                                    p11 p12 p13 -source_X
-        # where h' = (p, q, r, 1)^T and P' = p21 p22 p23 -source_y
-        #       -                       =    p31 p32 p33 -source_z
-        #
+        ## Define a new coordinate system concentric with the Ewald sphere.
+        ##
+        ## X' = X - source_x
+        ## Y' = Y - source_y
+        ## Z' = Z - source_z
+        ##
+        ## X = P' h'
+        ## -   =  -
+        ##                                    / p11 p12 p13 -source_X \
+        ## where h' = (p, q, r, 1)^T and P' = | p21 p22 p23 -source_y |
+        ##       -                       =    \ p31 p32 p33 -source_z /
+        ##
 
-        # Calculate P' matrices for the beginning and end orientations
-
+        # Calculate P' matrices for the beginning and end settings
         pp_beg = matrix.rec(self._p_beg.elems[0:3] + (-1.*self._source[0],) +
                             self._p_beg.elems[3:6] + (-1.*self._source[1],) +
-                            self._p_beg.elems[6:9] + (-1.*self._source[2],), n=(3, 4))
+                            self._p_beg.elems[6:9] + (-1.*self._source[2],),
+                            n=(3, 4))
         pp_end = matrix.rec(self._p_end.elems[0:3] + (-1.*self._source[0],) +
                             self._p_end.elems[3:6] + (-1.*self._source[1],) +
-                            self._p_end.elems[6:9] + (-1.*self._source[2],), n=(3, 4))
+                            self._p_end.elems[6:9] + (-1.*self._source[2],),
+                            n=(3, 4))
 
         # Various quantities of interest are obtained from the reciprocal metric
-        # tensor T of P'. These quantities are to be used (later) for solving the
-        # intersection of a line of constant p, q index with the Ewald sphere. It
-        # is efficient to calculate these before the outer loop. So, calculate T
-        # for both beginning and end orientations
+        # tensor T of P'. These quantities are to be used (later) for solving
+        # the intersection of a line of constant p, q index with the Ewald
+        # sphere. It is efficient to calculate these before the outer loop. So,
+        # calculate T for both beginning and end settings
 
         t_beg = (pp_beg.transpose() * pp_beg).as_list_of_lists()
         t_end = (pp_end.transpose() * pp_end).as_list_of_lists()
@@ -129,14 +120,14 @@ class reeke_model:
                     (2.0 * t_beg[1][3], 2.0 * t_end[1][3]), \
                     (2.0 * t_beg[0][3], 2.0 * t_end[0][3])]
 
-        # The following are set during the generation of indices
+        ## The following are set during the generation of indices
 
         # planes of constant p tangential to the Ewald sphere
         self._ewald_p_lim_beg = None
         self._ewald_p_lim_end = None
 
-        # planes of constant p touching the circle of intersection between
-        # the Ewald and resolution limiting spheres
+        # planes of constant p touching the circle of intersection between the
+        # Ewald and resolution limiting spheres
         self._res_p_lim_beg = None
         self._res_p_lim_end = None
 
@@ -155,28 +146,29 @@ class reeke_model:
         return self._axis
 
     def get_all_p_limits(self):
-        """Get both the Ewald and limiting sphere limits for planes of p.
-        This is useful for plotting the planes, for example."""
+        '''Get both the Ewald and limiting sphere limits for planes of p.
+        This is useful for plotting the planes, for example.'''
 
         return (self._ewald_p_lim_beg, self._ewald_p_lim_end, \
                 self._res_p_lim_beg, self._res_p_lim_end)
 
     def _permute_axes(self, ub):
-        """Find permutation of the columns of an orientation matrix so that
+        '''Find permutation of the columns of an orientation matrix so that
         column p is closest to the source direction, column r is
         closest of q and r to the spindle axis and column q is the remaining
-        direction."""
+        direction.'''
 
         # Extract the reciprocal lattice directions from the columns of UB
         rl_dirs = [matrix.col(v).normalize() for v in \
                    ub.transpose().as_list_of_lists()]
 
-        # Find reciprocal lattice axis closest to source direction by checking magnitude
-        # of dot products between normalised axes and source, then swap as required
+        # Find reciprocal lattice axis closest to source direction
         along_beam = [math.fabs(rl_dirs[j].dot(self._source)) for j in range(3)]
         index_of_p = along_beam.index(max(along_beam))
-        indices = range(3)
+
+        # Swap order to put the 'p' axis first
         rl_dirs[0], rl_dirs[index_of_p] = rl_dirs[index_of_p], rl_dirs[0]
+        indices = range(3)
         indices[0], indices[index_of_p] = indices[index_of_p], indices[0]
 
         # Now find which of the two remaining reciprocal lattice axes is
@@ -187,7 +179,8 @@ class reeke_model:
         index_of_r = indices[index_of_r]
 
         # Which is the remaining column index?
-        index_of_q = [j for j in range(3) if not j in (index_of_p, index_of_r)][0]
+        index_of_q = [j for j in range(3) \
+                      if not j in (index_of_p, index_of_r)][0]
 
         # permutation matrix such that h, k, l = M * (p, q, r)
         elems = [int(0)] * 9
@@ -201,8 +194,8 @@ class reeke_model:
         return index_of_p, index_of_q, index_of_r
 
     def _solve_quad(self, a, b, c):
-        """Robust solution, for real roots only, of a quadratic in the form
-        (ax^2 + bx + c)."""
+        '''Robust solution, for real roots only, of a quadratic in the form
+        (ax^2 + bx + c).'''
 
         discriminant = b**2 - 4 * a * c
 
@@ -222,17 +215,19 @@ class reeke_model:
 
 
     def _p_limits(self):
-        """Calculate the values of p at which planes of constant p are
-        tangential to the Ewald sphere, and values of p at which planes
-        of constant p touch the circle of intersection between the Ewald
-        and resolution limiting sphere. Note p is the reciprocal cell
-        axis given by the first column of the permuted orientation matrix.
-        Set the limits as attributes and return a single set of overall
-        limits."""
+        '''
+        Calculate the values of p at which planes of constant p are tangential
+        to the Ewald sphere, and values of p at which planes of constant p touch
+        the circle of intersection between the Ewald and resolution limiting
+        sphere.
+
+        Note p is the reciprocal cell axis given by the first column of the
+        permuted orientation matrix. Set the limits as attributes and return a
+        single set of overall limits.
+        '''
 
         # Calculate unit vectors normal to planes of constant p, ensuring
         # they point in the direction of increasing p.
-
         v_beg = self._rlv_beg[1].cross(self._rlv_beg[2]).normalize()
 
         if self._rlv_beg[0].dot(v_beg) < 0:
@@ -244,12 +239,10 @@ class reeke_model:
             v_end = -1 * v_end
 
         # Find distance between the planes of p
-
         p_dist = abs(self._rlv_beg[0].dot(v_beg))
 
         # Find distances between p = 0 and the plane passing through the
         # centre of the Ewald sphere
-
         dp_beg = abs(v_beg.dot(self._source))
         dp_end = abs(v_end.dot(self._source))
 
@@ -287,13 +280,14 @@ class reeke_model:
         sin_2theta = math.sin(2.0 * math.asin(sin_theta))
 
         e = 2.0 * sin_theta**2 * dp_beg
-        f = sin_2theta * math.sqrt(max(1.0 / self._wavelength**2 - dp_beg**2, 0))
+        f = sin_2theta * math.sqrt(max(1. / self._wavelength_sq - dp_beg**2,
+                                       0.))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_beg = tuple(sorted(limits))
 
         e = 2.0 * sin_theta**2 * dp_end
-        f = sin_2theta * math.sqrt(max(1.0 / self._wavelength**2 - dp_end**2, 0))
+        f = sin_2theta * math.sqrt(max(1. / self._wavelength_sq - dp_end**2, 0))
         limits = [(sign * e + s * f) / p_dist for s in (-1, 1)]
 
         self._res_p_lim_end = tuple(sorted(limits))
@@ -301,19 +295,27 @@ class reeke_model:
         # select between Ewald and resolution limits on the basis of sign
         if sign < 0: # p axis aligned with beam, against source
 
-            p_min_beg = max(min(self._res_p_lim_beg), min(self._ewald_p_lim_beg))
-            p_min_end = max(min(self._res_p_lim_end), min(self._ewald_p_lim_end))
+            p_min_beg = max(min(self._res_p_lim_beg),
+                            min(self._ewald_p_lim_beg))
+            p_min_end = max(min(self._res_p_lim_end),
+                            min(self._ewald_p_lim_end))
 
-            p_max_beg = max(max(self._res_p_lim_beg), max(self._ewald_p_lim_beg))
-            p_max_end = max(max(self._res_p_lim_end), max(self._ewald_p_lim_end))
+            p_max_beg = max(max(self._res_p_lim_beg),
+                            max(self._ewald_p_lim_beg))
+            p_max_end = max(max(self._res_p_lim_end),
+                            max(self._ewald_p_lim_end))
 
         else: # p axis aligned with source, against beam
 
-            p_min_beg = min(min(self._res_p_lim_beg), min(self._ewald_p_lim_beg))
-            p_min_end = min(min(self._res_p_lim_end), min(self._ewald_p_lim_end))
+            p_min_beg = min(min(self._res_p_lim_beg),
+                            min(self._ewald_p_lim_beg))
+            p_min_end = min(min(self._res_p_lim_end),
+                            min(self._ewald_p_lim_end))
 
-            p_max_beg = min(max(self._res_p_lim_beg), max(self._ewald_p_lim_beg))
-            p_max_end = min(max(self._res_p_lim_end), max(self._ewald_p_lim_end))
+            p_max_beg = min(max(self._res_p_lim_beg),
+                            max(self._ewald_p_lim_beg))
+            p_max_end = min(max(self._res_p_lim_end),
+                            max(self._ewald_p_lim_end))
 
         p_lim_beg = (p_min_beg, p_max_beg)
         p_lim_end = (p_min_end, p_max_end)
@@ -328,14 +330,13 @@ class reeke_model:
         return p_lim
 
     def _q_limits(self, p):
-        """Calculate the values of q at which lines of constant p, q are
+        '''Calculate the values of q at which lines of constant p, q are
         tangential to the circle intersecting the Ewald sphere at plane p,
         and values of q at which lines of constant p, q are tangential to
         the circle intersecting the resolution limiting sphere at plane p.i
-        Return the appropriate overall limits."""
+        Return the appropriate overall limits.'''
 
         # First the resolution limits. Set up the quadratic to solve
-
         a = self._cp[6]
         b = 2.0 * p * self._cp[5]
         c = p**2 * self._cp[3] + self._cp[0] * self._dstarmax2
@@ -347,19 +348,16 @@ class reeke_model:
 
         # Extend limits by the margin, ensuring there is a range even for
         # a single quadratic root
-
         res_q_lim = [int(res_q_lim[0]) - max(self._margin, 1),
                      int(res_q_lim[-1]) + max(self._margin, 1)]
 
-        # Ewald sphere limits for the beginning orientation
-
+        # Ewald sphere limits for the beginning setting
         b = 2.0 * (self._cp[4][0] + p * self._cp[5])
         c = self._cp[1][0] + p * (2 * self._cp[2][0] + p * self._cp[3])
 
         ewald_q_lim_beg = self._solve_quad(a, b, c)
 
-        # Ewald sphere limits for the end orientation
-
+        # Ewald sphere limits for the end setting
         b = 2.0 * (self._cp[4][1] + p * self._cp[5])
         c = self._cp[1][1] + p * (2 * self._cp[2][1] + p * self._cp[3])
 
@@ -375,21 +373,18 @@ class reeke_model:
         else:
             return None
 
-        # Choose most restrictive of Ewald and res limits. The expansion of
-        # limits by the margin ensures that we have a 4 element list here
-
+        # Choose most restrictive of Ewald and res limits.
         q_lim = sorted(res_q_lim + ewald_q_lim)
         q_lim = [q_lim[1], q_lim[2]]
 
         return q_lim
 
     def _r_limits(self, p, q, cq):
-        """Calculate the values of r at which lines of constant p, q
-        intersect the resolution limiting and the Ewald spheres, and
-        return the appropriate overall limits"""
+        '''Calculate the values of r at which lines of constant p, q intersect
+        the resolution limiting and the Ewald spheres, and return the
+        appropriate overall limits'''
 
         # First the resolution limits. Set up the quadratic to solve
-
         a = self._cp[0]
         b = cq[0] + q * self._cp[8]
         c = cq[1] + q**2 * self._cp[10] + q * cq[2] - self._dstarmax2
@@ -400,12 +395,10 @@ class reeke_model:
 
         # Extend limits by the margin, ensuring there is a range even for
         # a single quadratic root
-
         res_r_lim = [int(res_r_lim[0]) - max(self._margin, 1),
                      int(res_r_lim[-1]) + max(self._margin, 1)]
 
-        # Ewald sphere limits for the beginning orientation
-
+        # Ewald sphere limits for the beginning setting
         b =  cq[0] + q * self._cp[8] + self._cp[12][0]
         c =  cq[1] + q * (cq[2] + self._cp[13][0]) + \
              q**2 * self._cp[10] + cq[3][0]
@@ -414,8 +407,7 @@ class reeke_model:
         ewald_r_lim_beg = [item for item in ewald_r_lim_beg \
                            if item is not None]
 
-        # Ewald sphere limits for the end orientation
-
+        # Ewald sphere limits for the end setting
         b = cq[0] + q * self._cp[8] + self._cp[12][0]
         c =  cq[1] + q * (cq[2] + self._cp[13][1]) + \
              q**2 * self._cp[10] + cq[3][1]
@@ -429,10 +421,9 @@ class reeke_model:
         if len(ewald_r_lim_beg) == 0 and len(ewald_r_lim_end) == 0:
             return None
 
-        # if there are no intersections at the beginning orientation, set
-        # a single loop covering the range between the intersections at
-        # the end orientation, and vice versa.
-
+        # if there are no intersections at the beginning setting, set up a
+        # single loop covering the range between the intersections at the end
+        # setting, and vice versa.
         if len(ewald_r_lim_beg) == 0:
 
             l1 = [int(min(ewald_r_lim_end)) - max(self._margin, 1), \
@@ -446,10 +437,8 @@ class reeke_model:
             l2 = [None]
 
         # otherwise there is at least one intersection at both orientations.
-        # Set two loops, one for each range swept out by a point of
-        # intersection as it travels from the beginning to the end
-        # orientation.
-
+        # Set up two loops, one for each range swept out by a point of
+        # intersection as it travels from the beginning to the end setting.
         else:
 
             l1 = sorted([min(ewald_r_lim_beg), min(ewald_r_lim_end)])
@@ -460,7 +449,6 @@ class reeke_model:
                   int(l2[1]) + max(self._margin, 1)]
 
         # restrict loops according to the resolution limit
-
         l1[0] = max(res_r_lim[0], l1[0])
         l1[1] = min(res_r_lim[1], l1[1])
         if l1[0] >= l1[1]: l1 = [None]
@@ -475,45 +463,39 @@ class reeke_model:
         return [tuple(l1), tuple(l2)]
 
     def generate_indices(self):
-        """Determine looping limits for indices h, k and l using the
-        Reeke algorithm. This is the top level method for this module.
-        All other methods are (probably) called by this, and therefore
-        may as well be private."""
+        '''Determine looping limits for indices h, k and l using the Reeke
+        algorithm. This is the top level method for this module. All other
+        methods are (probably) called by this, and therefore may as well be
+        private.'''
 
         # The outer loop is between limits for the axis most closely parallel,
         # or antiparallel, to the X-ray beam, which is called 'p'.
 
         # Determine the limiting values of p
-
         p_lim = self._p_limits()
 
         # fill indices list by looping over p, q and r
-
         hkl = []
 
         for p in range(p_lim[0], p_lim[1] + 1):
 
             # quantities that vary with p but are constant with q
-
             cq = [(p * self._cp[7]), \
                   (p**2 * self._cp[9]), \
                   (p * self._cp[11]), \
                   (p * self._cp[14][0], p * self._cp[14][1])]
 
             # find the limiting values of q
-
             q_lim = self._q_limits(p)
             if q_lim is None: continue
 
             for q in range(q_lim[0], q_lim[1] + 1):
 
                 # find the limiting values of r
-
                 r_lim = self._r_limits(p, q, cq)
                 if r_lim is None: continue
 
                 for item in r_lim:
-
                     if item[0] is None: continue
 
                     for r in range(item[0], item[1]+1):
@@ -522,9 +504,9 @@ class reeke_model:
         return hkl
 
 def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
-    """Write an R script and an associated data file
+    '''Write an R script and an associated data file
     for visualisation of generated indices between phi_beg and phi_end,
-    using R and the rgl add-on package."""
+    using R and the rgl add-on package.'''
 
     # Sorry, this is ugly. I don't know matplotlib yet.
 
@@ -615,13 +597,13 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
     return
 
 def reeke_model_for_use_case(phi_beg, phi_end, margin):
-    """Construct a reeke_model for the geometry of the Use Case Thaumatin
+    '''Construct a reeke_model for the geometry of the Use Case Thaumatin
     dataset, taken from the XDS XPARM. The values are hard-
     coded here so that this module does not rely on the location of that
-    file."""
+    file.'''
 
     axis = matrix.col([0.0, 1.0, 0.0])
-    
+
     # original (unrotated) setting
     ub = matrix.sqr([-0.0133393674072, -0.00541609051856, -0.00367748834997,
                     0.00989309470346, 0.000574825936669, -0.0054505379664,
@@ -633,15 +615,15 @@ def reeke_model_for_use_case(phi_beg, phi_end, margin):
         axis = self._axis, angle = (phi_end - phi_beg), deg=True))
 
     ub_beg = r_beg * ub
-    ub_end = self._r_osc * ub_mid                    
+    ub_end = self._r_osc * ub_mid
     s0 = matrix.col([0.00237878589035, 1.55544539299e-16, -1.09015329696])
     dmin = 1.20117776325
 
     return reeke_model(ub_beg, ub_end, axis, s0, dmin, margin)
 
 def regression_test():
-    """Perform a regression test by comparing to indices generating
-    by the brute force method used in the Use Case."""
+    '''Perform a regression test by comparing to indices generating
+    by the brute force method used in the Use Case.'''
 
     # cubic, 50A cell, 1A radiation, 1 deg osciillation, everything ideal
 

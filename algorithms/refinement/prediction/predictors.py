@@ -140,7 +140,7 @@ class ScanVaryingReflectionPredictor(object):
 
     def get_T1(self):
         '''Get the setting matrix for the beginning of the step'''
-        
+
         return self._T1
 
     def predict(self, hkl):
@@ -217,13 +217,13 @@ class ScanVaryingReflectionPredictor(object):
         #DEBUG
         print "predicted reflection", hkl
         return r
-        
+
     def get_relp_vector_length(self, hkl):
         '''return the length of vector to relp hkl at the start of the step'''
-        
+
         r1 = self._T1 * matrix.col(hkl)
         return r1.length()
-        
+
 
 def solve_quad(a, b, c):
     '''Robust solution, for real roots only, of a quadratic in the form
