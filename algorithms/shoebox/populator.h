@@ -1,3 +1,13 @@
+/*
+ * populator.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_SHOEBOX_POPULATOR_H
 #define DIALS_ALGORITHMS_SHOEBOX_POPULATOR_H
 
@@ -23,9 +33,19 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
+  /**
+   * Class to allocate and populate reflection profiles from image data
+   */
   class Populator {
   public:
 
+    /**
+     * Initialise the profiles.
+     * @param reflections The list of reflections
+     * @param mask The detector mask
+     * @param gain_map The gain map
+     * @param dark_map The dark map
+     */
     Populator(ReflectionList &reflections, const flex_bool &mask,
         const flex_double &gain_map, const flex_double &dark_map)
       : reflections_(reflections),
@@ -36,6 +56,11 @@ namespace dials { namespace algorithms { namespace shoebox {
       initialize();
     }
 
+    /**
+     * Add an image to the reflection shoebox
+     * @param image The image pixels to add
+     * @param image_index The index of the image
+     */
     void add_image(flex_int &image, std::size_t image_index) {
 
       // Get the indices for this frame
@@ -81,6 +106,12 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /**
+     * Get a mask composed of the shoeboxes on the image
+     * @param image_index The index of the image
+     * @param kernel_size The size to expand around the mask
+     * @returns A mask for the image
+     */
     flex_bool image_mask(int image_index, int2 kernel_size) {
 
       // Create the resulting mask
@@ -125,6 +156,9 @@ namespace dials { namespace algorithms { namespace shoebox {
       return result;
     }
 
+    /**
+     * Allocate the profile arrays
+     */
     void allocate() {
       // Allocate all the reflection profiles
       for (std::size_t i = 0; i < reflections_.size(); ++i) {
@@ -143,6 +177,9 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /**
+     * Deallocate the profile arrays
+     */
     void deallocate() {
       // Delete all the reflection profiles from memory
       for (std::size_t i = 0; i < reflections_.size(); ++i) {
@@ -153,12 +190,22 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /**
+     * Initialise the arrays. Store the images indices at which the reflection
+     * is recorded, mask the overlapping reflection shoeboxes and mask the
+     * foreground as predicted from the reciprocal space profile.
+     */
     void initialize() {
       store_frame_indices();
       mask_overlapping();
       mask_foreground();
     }
 
+    /**
+     * Get the reflection indices at the given image index
+     * @param image_index The image index
+     * @returns The reflection indices recorded on the image.
+     */
     const shared<int> indices(int image_index) const {
       const const_ref<int> indices = index_.at(image_index).const_ref();
       shared<int> result(indices.size());
@@ -170,6 +217,9 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   private:
 
+    /**
+     * Get the image indices at which each reflection is recorded.
+     */
     void store_frame_indices() {
       // For each reflection, Find the frames which it spans and copy an
       // index into the frame -> reflection list
@@ -185,10 +235,16 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /**
+     * Mask all the overlapping shoeboxes
+     */
     void mask_overlapping() {
 
     }
 
+    /**
+     * Mask all the foreground pixels
+     */
     void mask_foreground() {
 
     }
