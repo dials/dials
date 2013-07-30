@@ -89,3 +89,4 @@ def fit_profile_2d(reflections, average):
             descr[0, 2] = 1.0 #/ (ref.intensity * counter)
 
             I_R = fitting_2d(descr, data2d, background2d, average)
+            print "(I R) =", I_R

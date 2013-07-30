@@ -183,10 +183,12 @@ namespace dials { namespace scratch {
       for (int i = 0; i < counter; i++){
         scale = iexpr_lst[i] / imodl_lst[i];
         std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< scale << "\n";
-        sum += scale;
+        sum += scale * imodl_lst[i];
       }
 
-      avg_i_scale = sum/double(counter);
+      //avg_i_scale = sum/double(counter);
+      avg_i_scale = sum;
+
       std::cout << "\n   __________________________________________________ \n";
       std::cout << "\n   (exp-backgound)           scaled mold          scale    \n";
       for (int i = 0; i < counter; i++){
