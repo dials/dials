@@ -1,11 +1,44 @@
+/*
+ * mask_foreground.h
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 #ifndef DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_H
 #define DIALS_ALGORITHMS_SHOEBOX_MASK_FOREGROUND_H
 
 namespace dials { namespace algorithms { namespace shoebox {
 
+  /**
+   * A class to mask foreground/background pixels
+   */
   class MaskForeground {
   public:
-    MaskForeground() {}
+
+    /**
+     * Initialise the stuff needed to create the mask.
+     * @param beam The beam model
+     * @param detector The detector model
+     * @param gonio The goniometer model
+     * @param scan The scan model
+     * @param delta_b nsigma * sigma_divergence
+     * @param delta_m nsigma * mosaicity
+     */
+    MaskForeground(const Beam &beam, const Detector &detector,
+                   const Goniometer &gonio, const Scan &scan,
+                   double delta_b, double delta_m)
+      : s1_map_(beam_vector_map(detector, beam, false)),
+        m2_(gonio.get_rotation_axis()),
+        s0_(beam.get_s0()),
+        phi0_(scan.get_oscillation()[0]),
+        dphi_(scan.get_oscillation()[1]),
+        index0_(scan.get_array_range()[0]),
+        delta_b_r_(1.0 / delta_b),
+        delta_m_r_(1.0 / delta_m) {}
 
     /**
      * Set all the foreground/background pixels in the reflection mask.
@@ -42,9 +75,9 @@ namespace dials { namespace algorithms { namespace shoebox {
               double gz = coordz(phi_dash);
               double gzc2 = (gz * delta_m_r_)*(gz * delta_m_r_);
               if (gxa2 + gyb2 + gzc2 <= 1.0) {
-                mask(k, j, i) = Foreground;
+                mask(k, j, i) |= Foreground;
               } else {
-                mask(k, j, i) = Background;
+                mask(k, j, i) |= Background;
               }
             }
           }
@@ -63,13 +96,14 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
   private:
+    flex_vec3_double s1_map_;
     vec3<double> m2_;
     vec3<double> s0_;
     double phi0_;
     double dphi_;
     int index0_;
-    double delta_b_r;
-    double delta_m_r;
+    double delta_b_r_;
+    double delta_m_r_;
   };
 
 }}} // namespace dials::algorithms::shoebox
