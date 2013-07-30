@@ -718,6 +718,7 @@ test/algorithms/reflection_basis/tst_rebin_pixels.py -text
 test/algorithms/reflection_basis/tst_transform.py -text
 test/algorithms/shoebox/tst_bbox_calculator.py -text
 test/algorithms/shoebox/tst_mask_foreground.py -text
+test/algorithms/shoebox/tst_mask_overlapping.py -text
 test/algorithms/shoebox/tst_populator.py -text
 test/algorithms/shoebox/tst_shoebox_masker.py -text
 test/algorithms/spatial_indexing/tst_collision_detection.cc -text
