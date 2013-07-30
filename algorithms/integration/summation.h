@@ -251,7 +251,7 @@ namespace dials { namespace algorithms {
       flex_int shoebox_mask = r.get_shoebox_mask();
       flex_bool mask(shoebox_mask.accessor());
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        mask[i] = (shoebox_mask[i] & shoebox::Foreground) ? true : false;
+        mask[i] = (shoebox_mask[i] & shoebox::Valid) ? true : false;
       }
 
       // Integrate the reflection
