@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("background"))))
       .def(init <const flex_double&,
                  const flex_double&,
-                 const flex_int&>((
+                 const flex_bool&>((
           arg("signal"),
           arg("background"),
           arg("mask"))))
@@ -43,7 +43,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("background"))))
       .def(init <const flex_double&, 
                  const flex_double&,
-                 const flex_int&> ((
+                 const flex_bool&> ((
           arg("pixels"),
           arg("mask"),
           arg("background"))))
@@ -57,7 +57,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     Summation3d::integrator (Summation3d::*call_w_pixels)(
         const flex_double &pixels, 
         const flex_double &background,
-        const flex_int &mask) const = 
+        const flex_bool &mask) const = 
       &Summation3d::operator();
     void (Summation3d::*call_w_reflection)(Reflection &r) const = 
       &Summation3d::operator();

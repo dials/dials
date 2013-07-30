@@ -15,6 +15,7 @@
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/algorithms/reflection_basis/map_pixels.h>
 #include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
@@ -150,7 +151,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           flex_int shoebox_mask = rlist[i].get_shoebox_mask();
           flex_bool mask(shoebox_mask.accessor());
           for (std::size_t j = 0; j < mask.size(); ++j) {
-            mask[j] = shoebox_mask[j] != 0;
+            mask[j] = (shoebox_mask[j] & shoebox::Foreground);
           }
           rlist[i].set_transformed_shoebox(transform(
             rlist[i].get_beam_vector(),

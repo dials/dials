@@ -19,11 +19,13 @@
 #include <dials/algorithms/image/centroid/centroid_image.h>
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/algorithms/image/centroid/centroid_points.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::af::int6;
   using scitbx::af::sqrt;
+  using scitbx::af::flex_bool;
   using dials::model::Reflection;
   using dials::model::ReflectionList;
 
@@ -67,7 +69,7 @@ namespace dials { namespace algorithms {
      */
     SumIntensity3d(const flex_double &signal,
                    const flex_double &background,
-                   const flex_int &mask)
+                   const flex_bool &mask)
     {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
@@ -168,7 +170,7 @@ namespace dials { namespace algorithms {
      */
     IntegrateBySummation(const flex_double &pixels,
                          const flex_double &background,
-                         const flex_int &mask) {
+                         const flex_bool &mask) {
 
       // Create an array with pixels - background
       flex_double pixels_m_background(subtract_background(pixels, background));
@@ -236,7 +238,7 @@ namespace dials { namespace algorithms {
      */
     integrator operator()(const flex_double &pixels,
                           const flex_double &background,
-                          const flex_int &mask) const {
+                          const flex_bool &mask) const {
       return integrator(pixels, background, mask);
     }
 
@@ -246,11 +248,17 @@ namespace dials { namespace algorithms {
      */
     void operator()(Reflection &r) const {
 
+      flex_int shoebox_mask = r.get_shoebox_mask();
+      flex_bool mask(shoebox_mask.accessor());
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        mask[i] = (shoebox_mask[i] & shoebox::Foreground) ? true : false;
+      }
+
       // Integrate the reflection
       integrator result = this->operator()(
         r.get_shoebox(),
         r.get_shoebox_background(),
-        r.get_shoebox_mask());
+        mask);
 
       r.set_intensity(result.intensity());
       r.set_intensity_variance(result.variance());

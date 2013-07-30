@@ -13,6 +13,7 @@
 
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/model/data/reflection.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 
 namespace dials { namespace algorithms {
 
@@ -59,19 +60,17 @@ namespace dials { namespace algorithms {
 
       // Create the mask from the shoebox mask
       flex_int mask(shoebox_mask.accessor(), 0);
-//      if (reflection.is_strong()) {
-//        std::cout << "Strong" << std::endl;
-//        for (std::size_t i = 0; i < mask.size(); ++i) {
-//          if (shoebox_mask[i] & (1 << 2)) {
-//            mask[i] = 1;
-//          }
-//        }
-//      } else {
-//        std::cout << "Weak" << std::endl;
+      if (reflection.is_strong()) {
+        for (std::size_t i = 0; i < mask.size(); ++i) {
+          if (shoebox_mask[i] & shoebox::Strong) {
+            mask[i] = 1;
+          }
+        }
+      } else {
         for (std::size_t i = 0; i < mask.size(); ++i) {
           mask[i] = shoebox_mask[i] != 0;
         }
-//      }
+      }
 
       // Get the centroid offset
       int6 bbox = reflection.get_bounding_box();

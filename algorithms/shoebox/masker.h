@@ -186,11 +186,11 @@ namespace dials { namespace algorithms { namespace shoebox {
             // b to 1 and a to 0.
             if (distance(coord_a, coord_c) < distance(coord_b, coord_c)) {
               if (b_status == true) {
-                mask_b(kb, jb, ib) &= ~Valid;
+                mask_b(kb, jb, ib) = 0;
               }
             } else {
               if (a_status == true) {
-                mask_a(ka, ja, ia) &= ~Valid;
+                mask_a(ka, ja, ia) = 0;
               }
             }
           }
