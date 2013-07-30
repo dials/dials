@@ -156,8 +156,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
 
     # If the adjacency list is given, then create the reflection mask
     if adjacency_list:
-        detector_mask = (sweep[0] >= 0).as_1d().as_int()
-        detector_mask.reshape(flex.grid(sweep[0].all()))
+        detector_mask = (sweep[0] >= 0)
         Command.start("Masking overlapped reflections")
         shoebox_masker = shoebox.Masker(detector_mask)
         shoebox_masker(reflections, adjacency_list)

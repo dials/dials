@@ -186,11 +186,11 @@ namespace dials { namespace algorithms { namespace shoebox {
             // b to 1 and a to 0.
             if (distance(coord_a, coord_c) < distance(coord_b, coord_c)) {
               if (b_status == true) {
-                mask_b(kb, jb, ib) = Invalid;
+                mask_b(kb, jb, ib) &= ~Valid;
               }
             } else {
               if (a_status == true) {
-                mask_a(ka, ja, ia) = Invalid;
+                mask_a(ka, ja, ia) &= ~Valid;
               }
             }
           }
@@ -229,7 +229,7 @@ namespace dials { namespace algorithms { namespace shoebox {
             mask_value = detector_mask_(dj, di);
           }
           for (std::size_t k = 0; k < size[0]; ++k) {
-            mask(k, j, i) = mask_value ? (Foreground | Background) : Invalid;
+            mask(k, j, i) = (mask_value ? Valid : 0);
           }
         }
       }

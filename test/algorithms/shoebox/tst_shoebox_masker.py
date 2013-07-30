@@ -37,7 +37,7 @@ class Test(object):
 
         # If the adjacency list is given, then create the reflection mask
         image_size = self.detector.get_image_size()
-        detector_mask = flex.int(flex.grid(image_size[1], image_size[0]), 1)
+        detector_mask = flex.bool(flex.grid(image_size[1], image_size[0]), True)
         shoebox_masker = shoebox.Masker(detector_mask)
         shoebox_masker(reflections, adjacency_list)
 
