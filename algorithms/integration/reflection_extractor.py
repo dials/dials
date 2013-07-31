@@ -204,7 +204,9 @@ class ReflectionExtractor(object):
             self.gain_map, self.dark_map,
             self.kernel_size,
             self.n_sigma_b, self.n_sigma_s,
-            detector_mask)
+            detector_mask,
+            self.bbox_nsigma * beam.get_sigma_divergence(deg=False),
+            self.bbox_nsigma * crystal.get_mosaicity(deg=False))
 
         # Return the list of reflections
         return reflections

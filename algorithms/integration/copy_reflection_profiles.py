@@ -29,8 +29,6 @@ def copy_image_pixels(sweep, reflections, gain_map = None, dark_map = None,
         The updated list of reflections
 
     """
-    from dials.algorithms.integration import copy_single_image_pixels
-    from dials.algorithms.integration import construct_image_mask_from_shoeboxes
     from dials.algorithms.integration import assign_strong_spots
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
     from dials.util.command_line import ProgressBar, Command
@@ -98,7 +96,7 @@ def copy_image_pixels(sweep, reflections, gain_map = None, dark_map = None,
 def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
                                 gain_map = None, dark_map = None, kernel_size = (3, 3),
                                 n_sigma_b = 6.0, n_sigma_s = 3.0,
-                                detector_mask = None):
+                                detector_mask = None, delta_d=None, delta_m=None):
     """ Copy all the pixels from the sweep to the reflection profiles.
 
     Params:
@@ -116,7 +114,6 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
         The updated reflection list.
 
     """
-    from dials.algorithms.integration import allocate_reflection_profiles
     from dials.algorithms import shoebox
     from scitbx.array_family import flex
     from dials.util.command_line import Command
@@ -128,13 +125,11 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
         len([r for r in reflections if r.is_valid()])))
 
     # If the adjacency list is given, then create the reflection mask
-    if adjacency_list:
-        detector_mask = (sweep[0] >= 0)
-        Command.start("Masking overlapped reflections")
-        shoebox_masker = shoebox.Masker(detector_mask)
-        shoebox_masker(reflections, adjacency_list)
-        Command.end("Masked {0} overlapped reflections".format(
-            len(adjacency_list)))
+    detector_mask = (sweep[0] >= 0)
+    shoebox_masker = shoebox.masker.Masker(sweep, detector_mask,
+        delta_d, delta_m)
+    shoebox_masker(reflections, adjacency_list)
+
 
     # Copy the pixels from the sweep to the reflection shoeboxes
     reflections = copy_image_pixels(sweep, reflections,
