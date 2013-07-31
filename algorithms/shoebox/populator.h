@@ -49,35 +49,11 @@ namespace dials { namespace algorithms { namespace shoebox {
      */
     Populator(ReflectionList &reflections, const flex_bool &mask,
         const flex_double &gain_map, const flex_double &dark_map)
-      : masker_(mask),
-        reflections_(reflections),
+      : reflections_(reflections),
         mask_(mask),
         gain_map_(gain_map),
         dark_map_(dark_map) {
-      allocate();
-      initialize();
-    }
-
-    /**
-     * Initialise the profiles.
-     * @param reflections The list of reflections
-     * @param adjacency_list The list of overlaps
-     * @param mask The detector mask
-     * @param gain_map The gain map
-     * @param dark_map The dark map
-     */
-    Populator(ReflectionList &reflections,
-        const boost::shared_ptr<AdjacencyList> adjacency_list,
-        const flex_bool &mask, const flex_double &gain_map,
-        const flex_double &dark_map)
-      : masker_(mask),
-        reflections_(reflections),
-        adjacency_list_(adjacency_list),
-        mask_(mask),
-        gain_map_(gain_map),
-        dark_map_(dark_map) {
-      allocate();
-      initialize();
+      store_frame_indices();
     }
 
     /**
@@ -99,7 +75,7 @@ namespace dials { namespace algorithms { namespace shoebox {
           int6 bounding_box = r.get_bounding_box();
           int i0 = bounding_box[0], i1 = bounding_box[1];
           int j0 = bounding_box[2], j1 = bounding_box[3];
-          int k0 = bounding_box[4];
+          int k0 = bounding_box[4], k1 = bounding_box[5];
           int k = image_index - k0;
 
           // Get the image size
@@ -113,6 +89,9 @@ namespace dials { namespace algorithms { namespace shoebox {
 
           // Get the reflection profile
           flex_double profile = r.get_shoebox();
+          DIALS_ASSERT(profile.accessor().all()[0] == (k1 - k0));
+          DIALS_ASSERT(profile.accessor().all()[1] == (j1 - j0));
+          DIALS_ASSERT(profile.accessor().all()[2] == (i1 - i0));
 
           // Copy the image pixels
           for (int jj = jj0; jj < jj1; ++jj) {
@@ -181,51 +160,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     /**
-     * Allocate the profile arrays
-     */
-    void allocate() {
-      // Allocate all the reflection profiles
-      for (std::size_t i = 0; i < reflections_.size(); ++i) {
-        Reflection &r = reflections_[i];
-        if (r.is_valid()) {
-          int6 bbox = r.get_bounding_box();
-          int size_z = bbox[5] - bbox[4];
-          int size_y = bbox[3] - bbox[2];
-          int size_x = bbox[1] - bbox[0];
-          DIALS_ASSERT(size_z > 0 && size_y > 0 && size_x > 0);
-          flex_grid<> accessor(size_z, size_y, size_x);
-          r.set_shoebox(flex_double(accessor, 0.0));
-          r.set_shoebox_mask(flex_int(accessor, shoebox::Valid));
-          r.set_shoebox_background(flex_double(accessor, 0.0));
-        }
-      }
-    }
-
-    /**
-     * Deallocate the profile arrays
-     */
-    void deallocate() {
-      // Delete all the reflection profiles from memory
-      for (std::size_t i = 0; i < reflections_.size(); ++i) {
-        reflections_[i].set_shoebox(flex_double());
-        reflections_[i].set_shoebox_mask(flex_int());
-        reflections_[i].set_shoebox_background(flex_double());
-        reflections_[i].set_transformed_shoebox(flex_double());
-      }
-    }
-
-    /**
-     * Initialise the arrays. Store the images indices at which the reflection
-     * is recorded, mask the overlapping reflection shoeboxes and mask the
-     * foreground as predicted from the reciprocal space profile.
-     */
-    void initialize() {
-      store_frame_indices();
-      mask_overlapping();
-      mask_foreground();
-    }
-
-    /**
      * Get the reflection indices at the given image index
      * @param image_index The image index
      * @returns The reflection indices recorded on the image.
@@ -259,22 +193,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
-    /**
-     * Mask all the overlapping shoeboxes
-     */
-    void mask_overlapping() {
-      masker_(reflections_, adjacency_list_);
-    }
-
-    /**
-     * Mask all the foreground pixels
-     */
-    void mask_foreground() {
-    }
-
-    Masker masker_;
     ReflectionList reflections_;
-    const boost::shared_ptr<AdjacencyList> adjacency_list_;
     flex_bool mask_;
     flex_double gain_map_;
     flex_double dark_map_;

@@ -26,20 +26,10 @@ namespace dials { namespace algorithms { namespace shoebox {
         arg("mask"),
         arg("gain_map"),
         arg("dark_map"))))
-      .def(init<ReflectionList&, const boost::shared_ptr<AdjacencyList>,
-                const flex_bool &, const flex_double&, const flex_double&>((
-        arg("reflection_list"),
-        arg("adjacency_list"),
-        arg("mask"),
-        arg("gain_map"),
-        arg("dark_map"))))
       .def("add_image", &Populator::add_image, (
         arg("image"), arg("index")))
       .def("image_mask", &Populator::image_mask, (
         arg("index"), arg("kernal_size")))
-      .def("allocate", &Populator::allocate)
-      .def("deallocate", &Populator::deallocate)
-      .def("initialize", &Populator::initialize)
       .def("indices", &Populator::indices);
   }
 

@@ -31,53 +31,9 @@ class Test(object):
 
     def run(self):
         ''' Run the tests'''
-        self.tst_deallocate()
-        self.tst_allocate()
         self.tst_initialize()
         self.tst_add_image()
         self.tst_image_mask()
-
-    def tst_deallocate(self):
-        ''' test the delallocate function deletes all the shoeboxes'''
-        from dials.algorithms import shoebox
-
-        # Create the populator and deallocate shoeboxes
-        populator = shoebox.Populator(self.reflections, self.mask,
-                                      self.gain_map, self.dark_map)
-        populator.deallocate()
-
-        # Check all reflection shoeboxes are empty
-        for r in self.reflections:
-            assert(len(r.shoebox) == 0)
-            assert(len(r.shoebox_mask) == 0)
-            assert(len(r.shoebox_background) == 0)
-
-        # Test passed
-        print 'OK'
-
-    def tst_allocate(self):
-        ''' Test that shoeboxes are all the right size.'''
-        from dials.algorithms import shoebox
-
-        # Create the populator and deallocate shoeboxes
-        populator = shoebox.Populator(self.reflections, self.mask,
-                                      self.gain_map, self.dark_map)
-
-        # Check all reflection shoeboxes are the right size
-        for r in self.reflections:
-            x0, x1, y0, y1, z0, z1 = r.bounding_box
-            zs1 = z1 - z0
-            ys1 = y1 - y0
-            xs1 = x1 - x0
-            zs2, ys2, xs2 = r.shoebox.all()
-            zs3, ys3, xs3 = r.shoebox_mask.all()
-            zs4, ys4, xs4 = r.shoebox_background.all()
-            assert(zs1 == zs2 and zs1 == zs3 and zs1 == zs4)
-            assert(ys1 == ys2 and ys1 == ys3 and ys1 == ys4)
-            assert(xs1 == xs2 and xs1 == xs3 and xs1 == xs4)
-
-        # Test passed
-        print 'OK'
 
     def tst_initialize(self):
         ''' Test that the indices of each pixel are the same'''
@@ -85,7 +41,7 @@ class Test(object):
         from collections import defaultdict
         from scitbx.array_family import flex
 
-        # Create the populator and deallocate shoeboxes
+        # Create the populator
         populator = shoebox.Populator(self.reflections, self.mask,
                                       self.gain_map, self.dark_map)
 
@@ -117,7 +73,8 @@ class Test(object):
         from dials.algorithms import shoebox
         from scitbx.array_family import flex
 
-        # Create the populator and deallocate shoeboxes
+        # Create the populator
+        shoebox.allocate(self.reflections)
         populator = shoebox.Populator(self.reflections, self.mask,
                                       self.gain_map, self.dark_map)
 

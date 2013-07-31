@@ -24,6 +24,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_mask_overlapping();
   void export_masker();
   void export_populator();
+  void export_helpers();
 
   BOOST_PYTHON_MODULE(dials_algorithms_shoebox_ext)
   {
@@ -35,6 +36,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     export_mask_overlapping();    
     export_masker();
     export_populator();
+    export_helpers();
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python
