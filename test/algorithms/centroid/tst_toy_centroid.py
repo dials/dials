@@ -36,8 +36,9 @@ def tst_toy_centroid():
 
     centroids = tc.get_reflections()
 
-    for r in reflections:
-        print r
+    print 'OK'
+    #for r in reflections:
+    #    print r
 
 if __name__ == '__main__':
     tst_toy_centroid()

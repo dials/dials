@@ -17,7 +17,6 @@
 #include <scitbx/array_family/shared.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
-#include <dials/algorithms/shoebox/masker.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace shoebox {

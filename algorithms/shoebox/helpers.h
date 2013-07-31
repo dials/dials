@@ -29,9 +29,10 @@ namespace dials { namespace algorithms { namespace shoebox {
   /**
    * Allocate the profiles in the reflection list
    * @param reflections The reflection list
+   * @param mask_default The default mask value
    */
   inline
-  void allocate(ReflectionList &reflections) {
+  void allocate(ReflectionList &reflections, int mask_default) {
     // Allocate all the reflection profiles
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
@@ -43,10 +44,19 @@ namespace dials { namespace algorithms { namespace shoebox {
         DIALS_ASSERT(size_z > 0 && size_y > 0 && size_x > 0);
         flex_grid<> accessor(size_z, size_y, size_x);
         r.set_shoebox(flex_double(accessor, 0.0));
-        r.set_shoebox_mask(flex_int(accessor, shoebox::Valid));
+        r.set_shoebox_mask(flex_int(accessor, mask_default));
         r.set_shoebox_background(flex_double(accessor, 0.0));
       }
     }
+  }
+
+  /**
+   * Allocate the profiles in the reflection list
+   * @param reflections The reflection list
+   */
+  inline
+  void allocate(ReflectionList &reflections) {
+    allocate(reflections, shoebox::Valid);
   }
 
   /**

@@ -21,7 +21,6 @@ class Test(object):
 
     def run(self):
         from dials.model.serialize import load
-        from dials.algorithms.integration import allocate_reflection_profiles
         from dials.algorithms import shoebox
         from scitbx.array_family import flex
 
@@ -33,7 +32,7 @@ class Test(object):
         reflections, adjacency_list = self.predict_reflections()
 
         # Allocate memory for reflection profiles
-        reflections = allocate_reflection_profiles(reflections)
+        shoebox.allocate(reflections)
 
         # If the adjacency list is given, then create the reflection mask
         image_size = self.detector.get_image_size()

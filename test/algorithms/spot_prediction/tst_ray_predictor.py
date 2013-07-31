@@ -77,7 +77,7 @@ class TestRayPredictor:
     def test_miller_index_set(self):
         """Ensure we have the whole set of miller indices"""
         gen_hkl = {}
-        print len(self.reflections)
+        #print len(self.reflections)
         for r in self.reflections:
             gen_hkl[r.miller_index] = True
         for hkl in self.integrate_handle.hkl:

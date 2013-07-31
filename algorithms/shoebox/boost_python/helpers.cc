@@ -19,8 +19,12 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   void export_helpers()
   {
-    def("allocate", &allocate);
-    def("deallocate", &deallocate);
+    def("allocate", (void(*)(ReflectionList&))&allocate, (
+      arg("reflection_list")));
+    def("allocate", (void(*)(ReflectionList&,int))&allocate, (
+      arg("reflection_list"), arg("mask_default")));
+    def("deallocate", &deallocate, (
+      arg("reflection_list")));
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

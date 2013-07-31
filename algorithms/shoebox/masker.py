@@ -67,7 +67,7 @@ class Masker(object):
         # Mask the foreground region
         Command.start('Masking foreground pixels')
         self.mask_foreground(reflections)
-        Command.end('Masked foreground pixels for {0} relfections'.format(
+        Command.end('Masked foreground pixels for {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
 
         # Return the reflections

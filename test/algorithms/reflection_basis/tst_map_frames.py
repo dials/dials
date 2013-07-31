@@ -51,7 +51,7 @@ class TestMapFramesForward(object):
         m2 = self.gonio.get_rotation_axis()
         s0_length = matrix.col(self.beam.get_s0()).length()
 
-        for i in range(1000):
+        for i in range(100):
 
             # Get random x, y, z
             x = uniform(0, 2000)
@@ -160,7 +160,7 @@ class TestMapFramesReverse(object):
         m2 = self.gonio.get_rotation_axis()
         s0_length = matrix.col(self.beam.get_s0()).length()
 
-        for i in range(1000):
+        for i in range(100):
 
             # Get random x, y, z
             x = uniform(0, 2000)
@@ -278,7 +278,7 @@ class TestMapForwardReverse(object):
         m2 = self.gonio.get_rotation_axis()
         s0_length = matrix.col(self.beam.get_s0()).length()
 
-        for i in range(1000):
+        for i in range(100):
 
             # Get random x, y, z
             x = uniform(0, 2000)

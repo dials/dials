@@ -357,7 +357,7 @@ class SpotFinder(SpotFinderInterface):
 
         '''
         from dials.model.data import Reflection, ReflectionList
-        from dials.algorithms.integration import allocate_reflection_profiles
+        from dials.algorithms import shoebox
 
         # Ensure the lengths are ok
         assert(len(index) > 0)
@@ -377,8 +377,7 @@ class SpotFinder(SpotFinderInterface):
             r.intensity = ctot[i]
 
         # Allocate memory for the reflection profiles
-        allocate_reflection_profiles(reflection_list,
-            shoebox_default=0, shoebox_mask_default=0)
+        shoebox.allocate(reflection_list, mask_default=0)
 
         # Set the pixel and mask values
         for i, r in zip(index, reflection_list):

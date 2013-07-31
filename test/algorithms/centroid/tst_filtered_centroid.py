@@ -36,8 +36,9 @@ def tst_filtered_centroid():
 
     centroids = tc.get_reflections()
 
-    for r in reflections:
-        print r
+    print 'OK'
+    #for r in reflections:
+    #    print r
 
 if __name__ == '__main__':
     tst_filtered_centroid()

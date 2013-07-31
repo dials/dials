@@ -34,7 +34,7 @@ class TestSpotPredictor:
         self.detector = models.get_detector()
         self.scan = models.get_scan()
 
-        print self.detector
+        #print self.detector
 
         # Get crystal parameters
         self.space_group_type = ioutil.get_space_group_type_from_xparm(
