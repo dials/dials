@@ -62,11 +62,7 @@ def calc_background_n_make_2d_profile(reflections):
 
             sumation = add_2d(descr, peak2d, sumation)
 
-    #from matplotlib import pyplot as plt
-    #print "Plotting reslt"
-    #img_suma = sumation.as_numpy_array()
-    #plt.imshow(img_suma, interpolation = "nearest")
-    #plt.show()
+
     return sumation
 def fit_profile_2d(reflections, average):
     descr = flex.double(flex.grid(1, 3))

@@ -74,11 +74,22 @@ profile = calc_background_n_make_2d_profile(rlist)
 
 
 for r in rlist:
+
+
     print r
+
     matrix_img = r.shoebox.as_numpy_array()
     print
     print "shoebox"
     print matrix_img
+
+    '''
+    from matplotlib import pyplot as plt
+    data2d = numpy.zeros((nrow, ncol), dtype = numpy.float64)
+    data2d[:,:]=matrix_img[0:1,:,:]
+    plt.imshow(matrix_img, interpolation = "nearest")
+    plt.show()
+    '''
 
     matrix_bkg = r.shoebox_background.as_numpy_array()
     print
@@ -91,9 +102,13 @@ for r in rlist:
     print matrix_mask
     print "_____________________________________________________________________________________________"
 
+
+'''
+
 from dials.scratch.luiso_s import write_2d
 print "profile ="
 write_2d(profile)
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import fit_profile_2d
 fit_profile_2d(rlist, profile)
+'''

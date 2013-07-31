@@ -166,7 +166,7 @@ namespace dials { namespace scratch {
       double iexpr_lst[counter];
       double imodl_lst[counter];
       double scale = 0, sum = 0;
-      double avg_i_scale;
+      double avg_i_scale, diff, df_sqr;
       counter = 0;
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
@@ -190,14 +190,23 @@ namespace dials { namespace scratch {
       avg_i_scale = sum;
 
       std::cout << "\n   __________________________________________________ \n";
-      std::cout << "\n   (exp-backgound)           scaled mold          scale    \n";
+      std::cout << "\n (exp-backgound)         scaled mold          scale    \n";
       for (int i = 0; i < counter; i++){
         imodl_lst[i] *= avg_i_scale;
         std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< avg_i_scale << "\n";
       }
+      sum = 0;
+      std::cout << "\n   __________________________________________________ \n";
+      std::cout << "\n (exp-backgound)         scaled mold          diff        dif ** 2  \n";
+      for (int i = 0; i < counter; i++){
+        diff = (imodl_lst[i] - iexpr_lst[i]);
+        df_sqr = diff * diff;
+        sum += df_sqr;
+        std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< diff <<  "              " << df_sqr << "\n";
+      }
 
       integr_data[0] = avg_i_scale;          // intensity
-      integr_data[1] = sqrt(avg_i_scale);    // intensity variance
+      integr_data[1] = sum;    // intensity variance
       return integr_data;;
     }
 
