@@ -9,40 +9,9 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-def get_reflection_frame_indices(sweep, reflections):
-    """ Go through the reflection list and check for each frame which
-    reflections are recorded on which frames as defined by the reflection
-    shoebox.
-
-    Params:
-        sweep The sweep object
-        reflections The reflection list
-
-    Returns:
-        A list of frames with a list of recorded reflections
-
-    """
-    from collections import defaultdict
-    from scitbx.array_family import flex
-
-    # Create a dictionary of flex arrays
-    frames_to_reflection = defaultdict(flex.int)
-
-    # For each reflection, Find the frames which it spans and copy an
-    # index into the frame -> reflection list
-    for i, r in enumerate(reflections):
-        if r.is_valid():
-            f0 = r.bounding_box[4]
-            f1 = r.bounding_box[5]
-            for f in range(f0, f1):
-                frames_to_reflection[f].append(i)
-
-    # Return the list of lists
-    return frames_to_reflection
-
-def copy_image_pixels(sweep, reflections, frame_indices,
-                      gain_map = None, dark_map = None, kernel_size = (3, 3),
-                      n_sigma_b = 6.0, n_sigma_s = 3.0, detector_mask = None):
+def copy_image_pixels(sweep, reflections, gain_map = None, dark_map = None,
+                      kernel_size = (3, 3), n_sigma_b = 6.0, n_sigma_s = 3.0,
+                      detector_mask = None):
     """ Copy the image pixels from the sweep to the reflection profiles.
 
     Params:
@@ -66,13 +35,21 @@ def copy_image_pixels(sweep, reflections, frame_indices,
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
     from dials.util.command_line import ProgressBar, Command
     from scitbx.array_family import flex
+    from dials.algorithms import shoebox
 
     # If gain map or dark map are None then set suitable defaults
     image_size = sweep.get_image_size()[::-1]
     if not gain_map:
         gain_map = flex.double(flex.grid(*image_size), 1)
     if not dark_map:
-        dark_map = flex.int(flex.grid(*image_size), 0)
+        dark_map = flex.double(flex.grid(*image_size), 0)
+
+    # Set the detector mask if none is set
+    if detector_mask == None:
+        detector_mask = sweep[0] >= 0
+
+    # Create the class to set all the shoebox pixels
+    populate = shoebox.Populator(reflections, detector_mask, gain_map, dark_map)
 
     # Create a progress bar
     progress = ProgressBar(title = "Extracting reflections")
@@ -83,12 +60,8 @@ def copy_image_pixels(sweep, reflections, frame_indices,
     first_array_index = sweep.get_array_range()[0]
     for index, image in enumerate(sweep):
 
-        # Get the indices of reflections falling on the image
-        reflection_indices = frame_indices[index]
-
         # Copy the image pixels from the image to the shoeboxes
-        copy_single_image_pixels(image, index + first_array_index,
-            reflection_indices, reflections, gain_map, dark_map)
+        populate.add_image(image, index + first_array_index)
 #
 #        # Extract a mask from the shoeboxes showing which pixels to use
 #        mask = construct_image_mask_from_shoeboxes(detector_mask != 0,
@@ -150,7 +123,7 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
 
     # Allocate memory for reflection profiles
     Command.start("Allocating reflection profiles")
-    reflections = allocate_reflection_profiles(reflections)
+    shoebox.allocate(reflections)
     Command.end("Allocated {0} reflection profiles".format(
         len([r for r in reflections if r.is_valid()])))
 
@@ -163,14 +136,8 @@ def extract_reflection_profiles(sweep, reflections, adjacency_list = None,
         Command.end("Masked {0} overlapped reflections".format(
             len(adjacency_list)))
 
-    # Get the indices of the reflections recorded on each frame
-    Command.start("Getting reflection frame indices")
-    frame_indices = get_reflection_frame_indices(sweep, reflections)
-    Command.end("Got frame indices for {0} reflections".format(
-        len([r for r in reflections if r.is_valid()])))
-
     # Copy the pixels from the sweep to the reflection shoeboxes
-    reflections = copy_image_pixels(sweep, reflections, frame_indices,
+    reflections = copy_image_pixels(sweep, reflections,
         gain_map, dark_map, kernel_size, n_sigma_b, n_sigma_s,
         detector_mask)
 
