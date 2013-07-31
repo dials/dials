@@ -29,7 +29,6 @@ def copy_image_pixels(sweep, reflections, gain_map = None, dark_map = None,
         The updated list of reflections
 
     """
-    from dials.algorithms.integration import assign_strong_spots
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
     from dials.util.command_line import ProgressBar, Command
     from scitbx.array_family import flex

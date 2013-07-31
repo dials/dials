@@ -73,7 +73,6 @@ algorithms/integration/boost_python/helpers.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
 algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
-algorithms/integration/boost_python/reflection_profile_helpers.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/summation_reciprocal_space.cc -text
 algorithms/integration/copy_reflection_profiles.py -text
@@ -100,7 +99,6 @@ algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
 algorithms/integration/reflection_extractor.py -text
-algorithms/integration/reflection_profile_helpers.h -text
 algorithms/integration/summation.h -text
 algorithms/integration/summation2d.py -text svneol=unset#text/plain
 algorithms/integration/summation3d.py -text
