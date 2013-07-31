@@ -75,7 +75,6 @@ algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#tex
 algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/summation_reciprocal_space.cc -text
-algorithms/integration/copy_reflection_profiles.py -text
 algorithms/integration/divergence_and_mosaicity.py -text
 algorithms/integration/filter.h -text
 algorithms/integration/filter.py -text
@@ -96,6 +95,7 @@ algorithms/integration/profile/grid_sampler.h -text
 algorithms/integration/profile/reference_learner.h -text
 algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
+algorithms/integration/profile_extractor.py -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
 algorithms/integration/reflection_extractor.py -text

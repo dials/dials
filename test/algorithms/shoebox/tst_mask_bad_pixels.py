@@ -73,7 +73,6 @@ class Test(object):
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
-        from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
         from dials.algorithms.integration import filter
         from cctbx import sgtbx

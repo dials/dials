@@ -75,12 +75,15 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import IndexGenerator
         from dials.algorithms.spot_prediction import RayPredictor
         from dials.algorithms.shoebox import BBoxCalculator
+        from dials.algorithms.integration import ProfileExtractor
 
         # Get models from the sweep
         beam = sweep.get_beam()
         detector = sweep.get_detector()
         gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
+
+        self.detector_mask = sweep[0] >= 0
 
         # Create the index generator
         self.generate_hkl = IndexGenerator(
@@ -100,6 +103,11 @@ class ReflectionExtractor(object):
             self.bbox_nsigma * beam.get_sigma_divergence(deg=False),
             self.bbox_nsigma * crystal.get_mosaicity(deg=False))
 
+        # Create the class to extract the profiles
+        self.extract_profiles = ProfileExtractor(
+            sweep, crystal, self.detector_mask, self.gain_map, self.dark_map,
+            bbox_nsigma=self.bbox_nsigma)
+
     def extract(self, sweep, crystal):
         ''' Extract the reflections from the sweep.
 
@@ -115,7 +123,6 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
-        from dials.algorithms.integration import extract_reflection_profiles
         from dials.algorithms.integration import filter_by_detector_mask
         from dials.algorithms.integration import filter
         from math import sqrt
@@ -125,9 +132,6 @@ class ReflectionExtractor(object):
         detector = sweep.get_detector()
         gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
-
-        # Get the detector mask
-        detector_mask = sweep[0] >= 0
 
         # Generate Indices
         Command.start('Generating miller indices')
@@ -162,7 +166,7 @@ class ReflectionExtractor(object):
         # Set all reflections which overlap bad pixels to zero
         Command.start('Filtering reflections by detector mask')
         array_range = scan.get_array_range()
-        filter_by_detector_mask(reflections, detector_mask, array_range)
+        filter_by_detector_mask(reflections, self.detector_mask, array_range)
         Command.end('Filtered {0} reflections by detector mask'.format(
             len([r for r in reflections if r.is_valid()])))
 
@@ -199,14 +203,7 @@ class ReflectionExtractor(object):
                 len([r for r in reflections if r.is_valid()])))
 
         # Extract the reflection profiles
-        extract_reflection_profiles(
-            sweep, reflections, overlaps,
-            self.gain_map, self.dark_map,
-            self.kernel_size,
-            self.n_sigma_b, self.n_sigma_s,
-            detector_mask,
-            self.bbox_nsigma * beam.get_sigma_divergence(deg=False),
-            self.bbox_nsigma * crystal.get_mosaicity(deg=False))
+        self.extract_profiles(reflections, overlaps)
 
         # Return the list of reflections
         return reflections
