@@ -302,7 +302,8 @@ namespace dials { namespace scratch {
         lrz = 1.0 /(pi * (1.0 + dd*dd ));
         i_tt=gss*asp+lrz*(1.0 - asp);
         // curv3d(row, col) = data2d(row, col) + int(i_tt*imax);
-        curv3d(row, col) = int(i_tt*imax);
+        //curv3d(row, col) = int(i_tt*imax);
+        curv3d(row, col) = i_tt*imax;
         // tot+=i_tt*imax;
       }
     }
