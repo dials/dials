@@ -41,6 +41,7 @@ class Script(ScriptRunner):
     def main(self, params, options, args):
         '''Execute the script.'''
         from dials.algorithms.integration import IntegratorFactory
+        from dials.algorithms import shoebox
         from dials.model.serialize import load
         import cPickle as pickle
 
@@ -65,12 +66,7 @@ class Script(ScriptRunner):
         # Save the reflections to file
         print 'Saving reflections to {0}'.format(options.output_filename)
         if options.save_profiles == False:
-            from scitbx.array_family import flex
-            for r in reflections:
-                r.shoebox = flex.double()
-                r.shoebox_mask = flex.int()
-                r.shoebox_background = flex.double()
-                r.transformed_shoebox = flex.double()
+            shoebox.deallocate(reflections)
         pickle.dump(reflections, open(options.output_filename, 'wb'),
             pickle.HIGHEST_PROTOCOL)
 
