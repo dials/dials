@@ -67,7 +67,7 @@ class IntegratorFactory(object):
 
     @staticmethod
     def from_parameters(params):
-        ''' Given a set of parametets, construct the integrator
+        ''' Given a set of parameters, construct the integrator
 
         Params:
             params The input parameters

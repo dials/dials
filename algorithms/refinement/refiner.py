@@ -14,13 +14,26 @@ from __future__ import division
 class Refiner(object):
     ''' The refiner class. '''
 
-    def __init__(self, engine, scan_varying, verbosity):
-        ''' Initialise the refiner class. '''
+    def __init__(self, parameterisation_strategy, refinery_strategy,
+                 target_strategy, reflections_strategy, macrocycle_strategy,
+                 logging_strategy):
+        ''' Initialise the refiner class. 
+        
+        Params:
+            parameterisation_strategy The parameterisation strategy
+            refinery_strategy The engine strategy
+            target_strategy The target function strategy
+            reflections_strategy The reflection manager strategy
+            macrocycle_strategy The macrocycles strategy
+            logging_strategy The logging strategy
+        '''
 
-        # Set the parameters
-        self.engine = engine
-        self.scan_varying = scan_varying
-        self.verbosity = verbosity
+        self.create_param = parameterisation_strategy
+        self.create_refinery = refinery_strategy
+        self.create_target = target_strategy
+        self.create_refman = reflections_strategy # filtering level etc
+        self.create_macman = macrocycle_strategy # scan-varying cycle etc
+        self.create_loglevel = logging_strategy # verbosity etc
 
     def __call__(self, sweep, crystal, reflections):
         ''' Call to refine.
@@ -183,7 +196,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def from_parameters(params, verbosity):
-        ''' Given a set of parametets, construct the refiner
+        ''' Given a set of parameters, construct the refiner
 
         Params:
             params The input parameters
@@ -193,7 +206,39 @@ class RefinerFactory(object):
             The refiner instance
 
         '''
-        return Refiner(
-            engine=params.refinement.engine,
-            scan_varying=params.refinement.scan_varying,
-            verbosity=verbosity)
+        
+        parameterisation_strategy = \
+                    RefinerFactory.configure_parameterisation(params)
+        refinery_strategy = RefinerFactory.configure_refinery(params)
+        target_strategy = RefinerFactory.configure_target(params)
+        reflections_strategy = RefinerFactory.configure_refman(params)
+        macrocycle_strategy = RefinerFactory.configure_macman(params)
+        logging_strategy = RefinerFactory.configure_logging(params)
+        
+        return Refiner(parameterisation_strategy, refinery_strategy,
+                 target_strategy, reflections_strategy, macrocycle_strategy,
+                 logging_strategy)
+    
+    @staticmethod
+    def configure_parameterisation(params):
+        pass
+
+    @staticmethod
+    def configure_refinery(params):
+        pass
+        
+    @staticmethod
+    def configure_target(params):
+        pass
+
+    @staticmethod
+    def configure_refman(params):
+        pass
+
+    @staticmethod
+    def configure_macman(params):
+        pass
+
+    @staticmethod
+    def configure_logging(params):
+        pass
