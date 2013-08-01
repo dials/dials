@@ -41,19 +41,6 @@ spotfinder
               "Used by: xds."
       .type = float
 
-    noise_file = ''
-      .help = "A file containing a map of the dark current across the"
-              "detector."
-              ""
-              "Used by: xds."
-      .type = str
-
-    gain_file = ''
-      .help = "A file containing a map of the detector gain."
-              ""
-              "Used by: xds."
-      .type = str
-
     times = 5
       .help = "How many times to run the smoothing algorithm."
               ""
