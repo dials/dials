@@ -120,6 +120,7 @@ algorithms/peak_finding/lui_integrate_helper.h -text svneol=unset#text/plain
 algorithms/peak_finding/spot_finder.py -text
 algorithms/peak_finding/spot_finder_lui.py -text svneol=unset#text/plain
 algorithms/peak_finding/spot_matcher.py -text
+algorithms/peak_finding/spotfinder_factory.py -text
 algorithms/peak_finding/threshold.py -text
 algorithms/polygon/SConscript -text
 algorithms/polygon/__init__.py -text
