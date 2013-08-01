@@ -1,15 +1,63 @@
 refinement
   .help = "Parameters to configure the refinement"
 {
-  verbosity = 1
+  verbosity = 0
     .help = "The verbosity level shared by all components of the refinement"
             "module"
     .type = int
 
-  engine = SimpleLBFGS LBFGScurvs *GaussNewtonIterations
-    .help = "The minimisation engine to use"
-    .type = choice
-    
+  parameterisation
+    .help = "Parameters to control the parameterisation of experimental models"
+  {
+    beam
+      .help = "beam parameters"
+    {
+      fix_beam = False
+        .help = "Fix all beam orientation parameters"
+        .type = bool
+      fix_in_spindle_plane = True
+        .help = "If a goniometer is present and this option is True, the beam"
+                "orientation is restricted to a direction in the initial"
+                "spindle-beam plane"
+        .type = bool
+    }
+
+    crystal
+      .help = "crystal parameters"
+    {
+      fix_cell = False
+        .help = "Fix all cell parameters"
+        .type = bool
+      fix_orientation = False
+        .help = "Fix all orientation parameters"
+        .type = bool
+      scan_varying = False
+        .help = "Parameterise the crystal to vary during the scan"
+      num_intervals = 5
+        .help = "Number of intervals between checkpoints if scan_varying"
+                "refinement is requested"
+      .type = int
+     }
+        
+    detector
+      .help = "detector parameters"
+    {
+      panels = *single multiple
+        .help = "Parameterise a single or multiple panel detector"
+        .type = choice
+      fix_detector = False
+        .help = "Fix all detector parameters"
+        .type = bool
+    }
+  }
+
+  refinery
+    .help = "Parameters to configure the refinery"
+  {
+    engine = SimpleLBFGS LBFGScurvs *GaussNewtonIterations
+      .help = "The minimisation engine to use"
+      .type = choice
+
     track_step = False
       .help = "Record parameter shifts history in the refinement journal, if"
               "the engine supports it."
@@ -24,8 +72,17 @@ refinement
       .help = "Filename for an optional log that a minimisation engine may use"
               "to write additional information"
       .type = path
+  }
 
-  manager
+  target
+    .help = "Parameters to configure the target function"
+  {
+    implementation = *basic
+    .help = "The target object type to use. Only basic exists at present"
+    .type = choice
+  }
+
+  reflections
     .help = "Parameters used by the reflection manager"
   {
     reflections_per_degree = 50
@@ -38,10 +95,4 @@ refinement
               "in refinement."
       .type = bool
   }
-
-  scan_varying = False
-    .help = "experimental option to follow refinement to "
-            "convergence with a round of refinement using a "
-            "scan-varying parameterisation (i.e. time dependence)"
-    .type = bool
 }
