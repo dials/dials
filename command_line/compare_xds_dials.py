@@ -10,6 +10,7 @@ def pull_reference(integrate_hkl):
     i = []
     sigi = []
     xyz = []
+    lp = []
 
     for record in open(integrate_hkl):
         if record.startswith('!'):
@@ -24,9 +25,10 @@ def pull_reference(integrate_hkl):
         i.append(f_tokens[3])
         sigi.append(f_tokens[4])
         xyz.append(tuple(f_tokens[5:8]))
+        lp.append(f_tokens[8])
 
     print 'Reference: %d observations' % len(hkl)
-    return hkl, i, sigi, xyz
+    return hkl, i, sigi, xyz, lp
 
 def get_dials_matrix(crystal_json):
     from dials.model.serialize import load
@@ -107,6 +109,7 @@ def pull_calculated(integrate_pkl):
     i = []
     sigi = []
     xyz = []
+    lp = []
 
     for r in strong_reflections:
         if not r.is_valid():
@@ -114,12 +117,13 @@ def pull_calculated(integrate_pkl):
         hkl.append(r.miller_index)
         i.append(r.corrected_intensity)
         sigi.append(math.sqrt(r.corrected_intensity_variance))
+        lp.append(r.corrected_intensity / r.intensity)
         x, y = r.image_coord_px
         z = r.frame_number
         xyz.append((x, y, z))
 
     print 'Computed: %d observations' % len(hkl)
-    return hkl, i, sigi, xyz
+    return hkl, i, sigi, xyz, lp
 
 def meansd(values):
     import math
@@ -161,8 +165,8 @@ def compare(integrate_hkl, integrate_pkl):
     from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
-    xhkl, xi, xsigi, xxyz = pull_reference(integrate_hkl)
-    dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
+    xhkl, xi, xsigi, xxyz, xlp = pull_reference(integrate_hkl)
+    dhkl, di, dsigi, dxyz, dlp = pull_calculated(integrate_pkl)
 
     reference = flex.double()
     query = flex.double()
@@ -184,12 +188,17 @@ def compare(integrate_hkl, integrate_pkl):
     xds = []
     dials = []
 
+    _xlp = []
+    _dlp = []
+    
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
         if hkl == xhkl[c]:
             xds.append(xi[c])
             dials.append(di[j])
+            _xlp.append(xlp[c])
+            _dlp.append(dlp[j])
 
     print 'Paired %d observations' % len(xds)
 
@@ -200,6 +209,8 @@ def compare(integrate_hkl, integrate_pkl):
     r, s = R(dials, xds)
 
     print 'R: %.3f' % r
+
+    return
 
 def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
 
@@ -212,8 +223,8 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
 
     uc = integrate_hkl_to_unit_cell(integrate_hkl)
 
-    xhkl, xi, xsigi, xxyz = pull_reference(integrate_hkl)
-    dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
+    xhkl, xi, xsigi, xxyz, xlp = pull_reference(integrate_hkl)
+    dhkl, di, dsigi, dxyz, dlp = pull_calculated(integrate_pkl)
 
     reference = flex.double()
     query = flex.double()
@@ -236,6 +247,9 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
     DIALS = []
     HKL = []
 
+    _xlp = []
+    _dlp = []
+    
     fout = open('ratio_xyz.dat', 'w')
 
     # perform the analysis
@@ -249,7 +263,14 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
                        (hkl[0], hkl[1], hkl[2], uc.d(hkl),
                         xi[c], xxyz[c][0], xxyz[c][1], xxyz[c][2],
                         di[j], dxyz[j][0], dxyz[j][1], dxyz[j][2]))
+            _xlp.append(xlp[c])
+            _dlp.append(dlp[j])
 
+    fout.close()
+
+    fout = open('lp.dat', 'w')
+    for x, d in zip(_xlp, _dlp):
+        fout.write('%f %f\n' % (x, d))
     fout.close()
 
     # now compute resolution for every reflection - or at least each unique
