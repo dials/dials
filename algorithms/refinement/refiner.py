@@ -21,7 +21,7 @@ class Refiner(object):
         Params:
             parameterisation_strategy The parameterisation strategy
             refinery_strategy The engine strategy
-            reflections_strategy The reflection manager strategy            
+            reflections_strategy The reflection manager strategy
             target_strategy The target function strategy
             verbosity The verbosity level
         '''
@@ -118,7 +118,7 @@ class Refiner(object):
         # Do refinement and return models #
         ###################################
 
-        self.refinery.run()        
+        self.refinery.run()
 
         if verbosity > 1:
             print
@@ -168,9 +168,9 @@ class Refiner(object):
     def predict_reflections(self):
         '''Predict all reflection positions after refinement and make the
         bounding boxes.'''
-        
+
         from dials.algorithms.spot_prediction import IndexGenerator
-        
+
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms.shoebox import BBoxCalculator
@@ -182,7 +182,7 @@ class Refiner(object):
         dmin = self.detector.get_max_resolution_at_corners(s0,
                                             self.beam.get_wavelength())
         sv_predictor = ScanVaryingReflectionListGenerator(self.pred_param,
-                            self.beam, self.gonio, self.scan, dmin)        
+                            self.beam, self.gonio, self.scan, dmin)
 
         # Duck typing to determine whether prediction is scan-varying or not
         try:
@@ -214,7 +214,7 @@ class Refiner(object):
         calculate_bbox(self._new_reflections)
 
         return self._new_reflections
-        
+
 
 class RefinerFactory(object):
     ''' Factory class to create refiners '''
@@ -252,12 +252,12 @@ class RefinerFactory(object):
         Returns:
             The parameterisation factory instance
         '''
-        
+
         # Shorten parameter paths
         beam_options = params.refinement.parameterisation.beam
         crystal_options = params.refinement.parameterisation.crystal
         detector_options = params.refinement.parameterisation.detector
-        
+
         return ParameterisationFactory(beam_options, crystal_options,
                                        detector_options)
 
@@ -288,7 +288,7 @@ class RefinerFactory(object):
         Returns:
             The reflection manager factory instance
         '''
-        
+
         # Shorten parameter path
         options = params.refinement.reflections
         return RefmanFactory(options)
@@ -303,7 +303,7 @@ class RefinerFactory(object):
 
         Returns:
             The target factory instance
-        '''        
+        '''
 
         # Shorten parameter path
         options = params.refinement.target
@@ -311,7 +311,7 @@ class RefinerFactory(object):
 
 
 class ParameterisationFactory(object):
-    
+
     def __init__(self, beam_options, crystal_options, detector_options):
 
         # Shorten paths
@@ -327,14 +327,14 @@ class ParameterisationFactory(object):
         self._crystal_fix_cell = crystal_options.fix_cell
         self._crystal_fix_orientation = crystal_options.fix_orientation
         self._crystal_scan_varying = crystal_options.scan_varying
-        
+
         if self._crystal_scan_varying:
             from par.scan_varying_crystal_parameters import \
                     ScanVaryingCrystalOrientationParameterisation as cop
             from par.scan_varying_crystal_parameters import \
                     ScanVaryingCrystalUnitCellParameterisation as cucp
             self._crystal_num_intervals = crystal_options.num_intervals
-        
+
         else:
             from par.crystal_parameters import \
                     CrystalOrientationParameterisation as cop
@@ -365,9 +365,9 @@ class ParameterisationFactory(object):
                 DetectorSpacePredictionParameterisation as pep
 
         self.prediction_par = pep
-        
+
     def __call__(self, beam, crystal, goniometer, detector, scan):
-        
+
         beam_param = self._beam_par(beam, goniometer)
         if self._beam_fix_in_spindle_plane:
             beam_param.set_fixed([True, False])
@@ -399,11 +399,11 @@ class ParameterisationFactory(object):
         return (beam_param, xl_ori_param, xl_uc_param, det_param, pred_param)
 
 class RefineryFactory(object):
-    
+
     def __init__(self, options):
-        
+
         import dials.algorithms.refinement.engine as engine
-        
+
         if options.engine  == "SimpleLBFGS":
             from engine import SimpleLBFGS as ref
         elif options.engine == "LBFGScurvs":
@@ -417,9 +417,9 @@ class RefineryFactory(object):
         self._track_step = options.track_step
         self._track_gradient = options.track_gradient
         self._logfile = options.log
-    
+
     def __call__(self, target, prediction_parameterisation, verbosity):
-    
+
         return self._refinery(
             target = target,
             prediction_parameterisation = prediction_parameterisation,
@@ -429,15 +429,15 @@ class RefineryFactory(object):
             track_gradient = self._track_gradient)
 
 class RefmanFactory(object):
-    
+
     def __init__(self, options):
-        
+
         import dials.algorithms.refinement.target as target
-        
+
         self._ref_per_degree = options.reflections_per_degree
         if options.use_all_reflections:
             self._ref_per_degree = None
-        
+
         from target import ReflectionManager as refman
         self._refman = refman
 
@@ -477,28 +477,28 @@ class RefmanFactory(object):
                             nref_per_degree=self._ref_per_degree)
 
 class TargetFactory(object):
-    
+
     def __init__(self, options):
-        
+
         import dials.algorithms.refinement.target as target
-        
+
         if options.implementation == "basic":
             from target import \
                 LeastSquaresPositionalResidualWithRmsdCutoff as targ
         else:
             raise RuntimeError, "Target type " + options.implementation + \
                                 " not recognised"
-        
+
         # Reflection prediction
         from dials.algorithms.refinement.prediction import \
             ReflectionPredictor as rp
 
         self._target = targ
         self._ref_predictor = rp
-    
+
     def __call__(self, scan, detector, refman, pred_param):
 
         image_width = scan.get_oscillation(deg=False)[1]
-        
+
         return self._target(self._ref_predictor, detector, refman, pred_param,
                             image_width)
