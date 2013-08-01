@@ -106,8 +106,8 @@ def print_grads(grad_list):
                "%.5f, %.5f, %.5f" % ((i,) + tuple(grad)))
 
 def refine(beam, goniometer, crystal, detector, scan,
-           reflections, verbosity=0, fix_cell=False,
-           scan_varying=False, fix_detector=False, fix_beam=False):
+           reflections, verbosity = 0, fix_cell = False,
+           scan_varying=False, fix_detector=False, fix_beam=False, nref_per_degree = 50):
 
     """Simple refinement interface for the centroid refinement sprint"""
 
@@ -207,7 +207,8 @@ def refine(beam, goniometer, crystal, detector, scan,
                                d1s, sig_d1s,
                                d2s, sig_d2s,
                                angles, sig_angles,
-                               beam, goniometer, scan, verbosity)
+                               beam, goniometer, scan, verbosity,
+                               nref_per_degree)
 
     if verbosity > 1: print "Reflection manager built\n"
 
@@ -239,26 +240,29 @@ def refine(beam, goniometer, crystal, detector, scan,
     # Do a second round of refinement with scan-varying models? #
     #############################################################
 
-    if scan_varying: scan_varying_refine(beam, goniometer, crystal,
+    if scan_varying:
+        return scan_varying_refine(beam, goniometer, crystal,
            detector, image_width, scan,
            hkls, enterings, frames,
            svecs, d1s, sig_d1s, d2s, sig_d2s, angles, sig_angles,
-           verbosity, fix_cell = fix_cell)
+           verbosity, fix_cell = fix_cell, nref_per_degree = nref_per_degree)
 
     # Return models (crystal not updated with scan-varying U, B)
-    return(beam, goniometer, crystal, detector)
-
+    else:
+        return (beam, goniometer, crystal, detector)
 
 def scan_varying_refine(beam, goniometer, crystal, detector,
            image_width, scan,
            hkls,  enterings, frames,
            svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-           verbosity = 0, fix_cell = False):
+           verbosity = 0, fix_cell = False, nref_per_degree = None):
 
     """experimental refinement function for scan-varying refinement"""
 
     # Reflection prediction
     from dials.algorithms.refinement.prediction import ReflectionPredictor
+    from dials.algorithms.refinement.prediction import \
+        ScanVaryingReflectionListGenerator
 
     # Model parameterisations
     from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -336,7 +340,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
                             d2s, sigd2s,
                             angles, sigangles,
                             beam, goniometer, scan, verbosity,
-                            nref_per_degree = 50)
+                            nref_per_degree)
 
     if verbosity > 1:
         print "Reflection manager built\n"
@@ -368,4 +372,16 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
 
     # NB scan-independent models set by side-effect, scan-varying
     # crystal model not yet set at all
-    return
+
+    #####################################################################
+    # Return object to predict reflections using the scan-varying model #
+    #####################################################################
+
+    # resolution limit to corners of image
+    dmin = detector.get_max_resolution_at_corners(
+            beam.get_s0(), beam.get_wavelength())
+
+    sv_predictor = ScanVaryingReflectionListGenerator(pred_param, beam,
+                                                      goniometer, scan, dmin)
+
+    return refman, sv_predictor
