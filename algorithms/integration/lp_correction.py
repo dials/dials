@@ -1,8 +1,12 @@
 from __future__ import division
 def correct_intensity(sweep, crystal, reflections):
+    from dials.util.command_line import Command
+    Command.start('Performing LP-correction')
     for ref in reflections:
         if ref.status == 0:
             LP_calculations(sweep, crystal, ref)
+    Command.end('Performed LP-correction on {0} reflections'.format(
+        len([r for r in reflections if r.is_valid()])))
     return reflections
 
 def LP_calculations(sweep, crystal, reflection):

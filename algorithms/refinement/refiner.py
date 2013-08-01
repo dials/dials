@@ -17,8 +17,8 @@ class Refiner(object):
     def __init__(self, parameterisation_strategy, refinery_strategy,
                  target_strategy, reflections_strategy, macrocycle_strategy,
                  logging_strategy):
-        ''' Initialise the refiner class. 
-        
+        ''' Initialise the refiner class.
+
         Params:
             parameterisation_strategy The parameterisation strategy
             refinery_strategy The engine strategy
@@ -206,7 +206,7 @@ class RefinerFactory(object):
             The refiner instance
 
         '''
-        
+
         parameterisation_strategy = \
                     RefinerFactory.configure_parameterisation(params)
         refinery_strategy = RefinerFactory.configure_refinery(params)
@@ -214,11 +214,11 @@ class RefinerFactory(object):
         reflections_strategy = RefinerFactory.configure_refman(params)
         macrocycle_strategy = RefinerFactory.configure_macman(params)
         logging_strategy = RefinerFactory.configure_logging(params)
-        
+
         return Refiner(parameterisation_strategy, refinery_strategy,
                  target_strategy, reflections_strategy, macrocycle_strategy,
                  logging_strategy)
-    
+
     @staticmethod
     def configure_parameterisation(params):
         pass
@@ -226,7 +226,7 @@ class RefinerFactory(object):
     @staticmethod
     def configure_refinery(params):
         pass
-        
+
     @staticmethod
     def configure_target(params):
         pass
