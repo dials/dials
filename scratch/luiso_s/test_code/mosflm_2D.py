@@ -53,10 +53,10 @@ def calc_background_n_make_2d_profile(reflections):
             descr[0, 1] = ref.centroid_position[1]
             descr[0, 2] = 1.0 / (ref.intensity * counter)
             print "background2d ="
-            write_2d(background2d)
+            #write_2d(background2d)
             peak2d = subtrac_bkg_2d(data2d, background2d)
             print "peak 2d ="
-            write_2d(peak2d)
+            #write_2d(peak2d)
             print "I =", ref.intensity
             print "_____________________________________________________________________________________________"
 

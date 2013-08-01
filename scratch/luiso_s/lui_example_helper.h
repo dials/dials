@@ -137,23 +137,15 @@ namespace dials { namespace scratch {
       flex_double background2dmoved(profile2d.accessor(), 0);
       descriptor(0,2) = 1;
       std::cout << "\n data2d = \n";
-      write_2d(data2d);
+      //write_2d(data2d);
       std::cout << "\n data2d end \n________________________________";
       data2dmoved = add_2d(descriptor, data2d, data2dmoved);
       std::cout << "data2d moved = \n";
-      write_2d(data2dmoved);
-      std::cout << "\n data2d moved end \n";
-      std::cout << "________________________________________________________________________________\n";
+      //write_2d(data2dmoved);
 
-      //descriptor(0,2) = 1;
-      std::cout << "\n background2d = \n";
-      write_2d(background2d);
-      std::cout << "\n background2d end \n______________________________";
+      //write_2d(background2d);
       background2dmoved = add_2d(descriptor, background2d, background2dmoved);
-      std::cout << "background2d moved = \n";
-      write_2d(background2dmoved);
-      std::cout << "\n background2d moved end \n";
-      std::cout << "________________________________________________________________________________\n";
+      //write_2d(background2dmoved);
 
 
       for (int row = 0; row <= nrow - 1; row++) {
@@ -165,6 +157,7 @@ namespace dials { namespace scratch {
       }
       double iexpr_lst[counter];
       double imodl_lst[counter];
+      double modl_scal_lst[counter];
       double scale = 0, sum = 0;
       double avg_i_scale, diff, df_sqr;
       counter = 0;
@@ -182,7 +175,7 @@ namespace dials { namespace scratch {
       std::cout << "\n   (exp-backgound)             mold          scale    \n";
       for (int i = 0; i < counter; i++){
         scale = iexpr_lst[i] / imodl_lst[i];
-        std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< scale << "\n";
+        //std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< scale << "\n";
         sum += scale * imodl_lst[i];
       }
 
@@ -192,21 +185,26 @@ namespace dials { namespace scratch {
       std::cout << "\n   __________________________________________________ \n";
       std::cout << "\n (exp-backgound)         scaled mold          scale    \n";
       for (int i = 0; i < counter; i++){
-        imodl_lst[i] *= avg_i_scale;
-        std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< avg_i_scale << "\n";
+        modl_scal_lst[i] =imodl_lst[i] * avg_i_scale;
+        //std::cout << iexpr_lst[i] << "              " << modl_scal_lst[i] << "              "<< avg_i_scale << "\n";
       }
       sum = 0;
+      double i_sum = 0;
+
       std::cout << "\n   __________________________________________________ \n";
       std::cout << "\n (exp-backgound)         scaled mold          diff        dif ** 2  \n";
       for (int i = 0; i < counter; i++){
-        diff = (imodl_lst[i] - iexpr_lst[i]);
+        diff = (modl_scal_lst[i] - iexpr_lst[i]);
         df_sqr = diff * diff;
+        //sum += df_sqr * imodl_lst[i];
         sum += df_sqr;
-        std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< diff <<  "              " << df_sqr << "\n";
-      }
 
+        i_sum += modl_scal_lst[i];
+        //std::cout << iexpr_lst[i] << "              " << modl_scal_lst[i] << "              "<< diff <<  "              " << df_sqr << "\n";
+      }
+      std::cout << "\n==========================\n Intensity =" << sum << "\n==========================\n";
       integr_data[0] = avg_i_scale;          // intensity
-      integr_data[1] = sum;    // intensity variance
+      integr_data[1] = sum / avg_i_scale;                  // intensity variance
       return integr_data;;
     }
 

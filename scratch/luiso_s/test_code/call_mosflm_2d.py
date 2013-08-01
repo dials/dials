@@ -40,14 +40,31 @@ for ivar in range(5):
     data2d[3:15, 3:15] += numpy.float64(ref2d.as_numpy_array())
     data2d[:, :] += 20
 
-    print data2d
+
 
     mask2d = numpy.zeros((nrow, ncol), dtype = numpy.int32)
     mask2d[1:17, 1:17] = 1
-    print mask2d
 
+    bkg_const = 40
     background2d = numpy.copy(data2d)
-    background2d[:, :] = 0.0
+    background2d[:, :] = bkg_const
+
+
+    for row in range(nrow):
+        for col in range(ncol):
+            if(data2d[row, col] < bkg_const):
+                data2d[row, col] = bkg_const
+                mask2d[row, col] = 0
+            else:
+                mask2d[row, col] = 1
+
+
+
+    #print data2d
+    #print mask2d
+    #print background2d
+
+
 
     data3d = data2d
     data3d.shape = (1,) + data2d.shape
@@ -67,21 +84,30 @@ for ivar in range(5):
     r.shoebox_mask = flex.int(mask2d)
     r.shoebox_background = flex.double(background2d)
     r.centroid_position = (9.5, 9.5, 0.5)
-    r.intensity = 150.0
-    #r.centroid_position = (0, 2, 2)
+    #r.intensity = 150.0
 
     rlist.append(r)
+
+from dials.algorithms.integration import flex_2d_layering_n_integrating
+flex_2d_layering_n_integrating(rlist)
+
+for r in rlist:
+    print r
+
+
 '''
 from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
 centroid = toy_centroid_lui(rlist)
 rlist = centroid.get_reflections()
 '''
+
+
 from dials.scratch.luiso_s.test_code.mosflm_2D import calc_background_n_make_2d_profile
 profile = calc_background_n_make_2d_profile(rlist)
 
 from dials.scratch.luiso_s import write_2d
-print "profile ="
-write_2d(profile)
+#print "profile ="
+#write_2d(profile)
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import fit_profile_2d
 fit_profile_2d(rlist, profile)
@@ -95,7 +121,6 @@ plt.show()
 
 
 for r in rlist:
-
     print r
 
     data2d = r.shoebox.as_numpy_array()
@@ -103,4 +128,3 @@ for r in rlist:
     matrix_img[:, :] = data2d[0:1, :, :]
     plt.imshow(matrix_img, interpolation = "nearest")
     plt.show()
-

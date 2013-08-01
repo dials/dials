@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
         for (int row = 0; row<=nrow-1;row++) {
           for (int col = 0; col<=ncol-1;col++) {
             if ( mask2d(row,col)==1 ){
-              i_tot = i_tot + data2d(row,col);
+              i_tot = i_tot + data2d(row,col) - background2d(row,col);
               npix_mask++;
             } else {
               npix_bkgr++;
