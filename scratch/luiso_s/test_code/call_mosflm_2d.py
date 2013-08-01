@@ -66,15 +66,16 @@ for ivar in range(5):
     r.shoebox = flex.double(data2d)
     r.shoebox_mask = flex.int(mask2d)
     r.shoebox_background = flex.double(background2d)
-
+    r.centroid_position = (9.5, 9.5, 0.5)
+    r.intensity = 150.0
     #r.centroid_position = (0, 2, 2)
 
     rlist.append(r)
-
+'''
 from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
 centroid = toy_centroid_lui(rlist)
 rlist = centroid.get_reflections()
-
+'''
 from dials.scratch.luiso_s.test_code.mosflm_2D import calc_background_n_make_2d_profile
 profile = calc_background_n_make_2d_profile(rlist)
 
@@ -102,3 +103,4 @@ for r in rlist:
     matrix_img[:, :] = data2d[0:1, :, :]
     plt.imshow(matrix_img, interpolation = "nearest")
     plt.show()
+
