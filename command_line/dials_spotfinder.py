@@ -35,26 +35,35 @@ class Script(ScriptRunner):
 
     def main(self, params, options, args):
         '''Execute the script.'''
-        from dials.algorithms.peak_finding.spotfinder_factory import SpotFinderFactory
+        from dials.algorithms.peak_finding.spotfinder_factory \
+            import SpotFinderFactory
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
+        from dxtbx.imageset import ImageSetFactory
 
         # Check the number of arguments is correct
-        if len(args) != 1:
+        if len(args) == 1:
+            print 'Loading initial models from {0}'.format(args[0])
+            sweep = load.sweep(args[0])
+        elif len(args) > 1:
+            print 'Loading initial models from {0}'.format(args[0])
+            sweep_list = ImageSetFactory.new(args)
+            assert(len(sweep_list) == 1)
+            sweep = sweep_list[0]
+        else:
             self.config().print_help()
             return
+
+        # Check length of sweep
+        if len(sweep) == 1:
+            raise RuntimeError("spotfinding currently requires "
+                               "more than one image.")
+
 
         # Get the integrator from the input parameters
         print 'Configurating spot finder from input parameters'
         find_spots = SpotFinderFactory.from_parameters(params)
-
-        # Try to load the models
-        print 'Loading initial models from {0}'.format(args[0])
-        sweep = load.sweep(args[0])
-        if len(sweep) == 1:
-            raise RuntimeError("spotfinding currently requires "
-                               "more than one image.")
 
         # Find the strong spots in the sweep
         print 'Finding strong spots'

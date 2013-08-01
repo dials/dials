@@ -176,7 +176,7 @@ def meansd(values):
     mean = sum(values) / len(values)
     var = sum([(v - mean) ** 2 for v in values]) / len(values)
     return mean, math.sqrt(var)
-                
+
 def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
                    d_min = 0.0):
 
@@ -303,7 +303,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
     _plus = [_m + _s for _m, _s in zip(_ms, _ss)]
     _minus = [_m - _s for _m, _s in zip(_ms, _ss)]
-    
+
     from matplotlib import pyplot
     pyplot.xlabel('Chunk')
     pyplot.ylabel('Statistic')
