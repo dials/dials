@@ -24,27 +24,7 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
     '''Support crystal parameterisations that vary with time (via the proxy of
     "observed image number")'''
 
-    def __init__(self,
-                 detector_model,
-                 beam_model,
-                 crystal_model,
-                 goniometer_model,
-                 detector_parameterisations = None,
-                 beam_parameterisations = None,
-                 xl_orientation_parameterisations = None,
-                 xl_unit_cell_parameterisations = None):
-
-        DetectorSpacePredictionParameterisation.__init__(self,
-                 detector_model,
-                 beam_model,
-                 crystal_model,
-                 goniometer_model,
-                 detector_parameterisations,
-                 beam_parameterisations,
-                 xl_orientation_parameterisations,
-                 xl_unit_cell_parameterisations)
-
-        self._obs_image_number = None
+    _obs_image_number = None
 
     def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''
