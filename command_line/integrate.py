@@ -43,6 +43,7 @@ class Script(ScriptRunner):
         from dials.algorithms.integration import IntegratorFactory
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
+        from dials.util.command_line import Command
 
         # Check the number of arguments is correct
         if len(args) != 2:
@@ -63,10 +64,13 @@ class Script(ScriptRunner):
         reflections = integrate(sweep, crystal)
 
         # Save the reflections to file
-        print 'Saving reflections to {0}'.format(options.output_filename)
+        Command.start('Saving reflections to {0}'.format(
+            options.output_filename))
         if options.save_profiles == False:
             shoebox.deallocate(reflections)
         dump.reflections(reflections, options.output_filename)
+        Command.end('Saved reflections to {0}'.format(
+            options.output_filename))
 
 
 if __name__ == '__main__':
