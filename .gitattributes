@@ -39,6 +39,9 @@ algorithms/centroid/filtered_centroid.py -text
 algorithms/centroid/toy_centroid.py -text
 algorithms/centroid/toy_centroid_Lui.py -text svneol=unset#text/plain
 algorithms/centroid/toy_centroid_helpers.py -text
+algorithms/filtering/__init__.py -text
+algorithms/filtering/boost_python/filter_ext.cc -text
+algorithms/filtering/filter.h -text
 algorithms/image/SConscript -text
 algorithms/image/__init__.py -text
 algorithms/image/centroid/SConscript -text
@@ -68,7 +71,6 @@ algorithms/image/threshold/local.h -text
 algorithms/image/threshold/unimodal.h -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
-algorithms/integration/boost_python/filter_ext.cc -text
 algorithms/integration/boost_python/helpers.cc -text
 algorithms/integration/boost_python/integration_ext.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
@@ -76,8 +78,6 @@ algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/summation_reciprocal_space.cc -text
 algorithms/integration/divergence_and_mosaicity.py -text
-algorithms/integration/filter.h -text
-algorithms/integration/filtering.py -text
 algorithms/integration/helpers.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain

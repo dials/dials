@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/algorithms/integration/filter.h>
+#include <dials/algorithms/filtering/filter.h>
 
 namespace dials { namespace algorithms { namespace filter { 
     namespace boost_python {
@@ -91,7 +91,7 @@ namespace dials { namespace algorithms { namespace filter {
       arg("r")));
   }
 
-  BOOST_PYTHON_MODULE(dials_algorithms_integration_filter_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_filter_ext)
   {
     export_is_zeta_valid();
     export_is_xds_small_angle_valid();

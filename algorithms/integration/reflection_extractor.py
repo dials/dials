@@ -124,7 +124,7 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
         from dials.algorithms.integration import filter_by_detector_mask
-        from dials.algorithms.integration import filtering
+        from dials.algorithms import filtering
         from math import sqrt
 
         # Get models from the sweep

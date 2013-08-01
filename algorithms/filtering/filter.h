@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_INTEGRATION_FILTER_H
-#define DIALS_ALGORITHMS_INTEGRATION_FILTER_H
+#ifndef DIALS_ALGORITHMS_FILTER_H
+#define DIALS_ALGORITHMS_FILTER_H
 
 #include <cmath>
 #include <scitbx/vec3.h>
@@ -381,4 +381,4 @@ namespace dials { namespace algorithms { namespace filter {
 
 }}} // namespace dials::algorithms::filter
 
-#endif /* DIALS_ALGORITHMS_INTEGRATION_FILTER_H */
+#endif /* DIALS_ALGORITHMS_FILTER_H */
