@@ -77,7 +77,7 @@ algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/boost_python/summation_reciprocal_space.cc -text
 algorithms/integration/divergence_and_mosaicity.py -text
 algorithms/integration/filter.h -text
-algorithms/integration/filter.py -text
+algorithms/integration/filtering.py -text
 algorithms/integration/helpers.h -text
 algorithms/integration/integrator.py -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain

@@ -68,10 +68,11 @@ class Script(ScriptRunner):
                 reflections=reflections)
 
         # Save the reflections to file
-        Command.start('Saving reflections to {0}'.format(
-            options.output_filename))
+        Command.start('Saving {0} reflections to {1}'.format(
+            len(reflections), options.output_filename))
         dump.reflections(reflections, options.output_filename)
-        Command.end('Saved reflections to {0}'.format(options.output_filename))
+        Command.end('Saved {0} reflections to {1}'.format(
+            len(reflections), options.output_filename))
 
 
 if __name__ == '__main__':

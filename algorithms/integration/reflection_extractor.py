@@ -124,7 +124,7 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
         from dials.algorithms.integration import filter_by_detector_mask
-        from dials.algorithms.integration import filter
+        from dials.algorithms.integration import filtering
         from math import sqrt
 
         # Get models from the sweep
@@ -173,7 +173,7 @@ class ReflectionExtractor(object):
         # Filter the reflections by bbox
         if self.filter_by_bbox:
             Command.start('Filtering reflections by bounding box')
-            filter.by_bbox_volume(reflections)
+            filtering.by_bbox_volume(reflections)
             Command.end('Filtered {0} reflections by bounding box'.format(
                 len([r for r in reflections if r.is_valid()])))
 
@@ -181,7 +181,7 @@ class ReflectionExtractor(object):
         if self.filter_by_zeta > 0:
             Command.start('Filtering reflections by zeta >= {0}'.format(
                 self.filter_by_zeta))
-            filter.by_zeta(gonio, beam, reflections, self.filter_by_zeta)
+            filtering.by_zeta(gonio, beam, reflections, self.filter_by_zeta)
             Command.end('Filtered {0} reflections by zeta >= {1}'.format(
                 len([r for r in reflections if r.is_valid()]),
                 self.filter_by_zeta))
@@ -189,7 +189,7 @@ class ReflectionExtractor(object):
         # Filter the reflections by xds small angle validity
         if self.filter_by_xds_small_angle:
             Command.start('Filtering reflections by xds small angle')
-            filter.by_xds_small_angle(gonio, beam, reflections,
+            filtering.by_xds_small_angle(gonio, beam, reflections,
               self.bbox_nsigma * crystal.get_mosaicity(deg=False))
             Command.end('Filtered {0} reflections by xds small angle'.format(
                 len([r for r in reflections if r.is_valid()])))
@@ -197,7 +197,7 @@ class ReflectionExtractor(object):
         # Filter the reflections by xds small angle validity
         if self.filter_by_xds_angle:
             Command.start('Filtering reflections by xds angle')
-            filter.by_xds_angle(gonio, beam, reflections,
+            filtering.by_xds_angle(gonio, beam, reflections,
               self.bbox_nsigma * crystal.get_mosaicity(deg=False))
             Command.end('Filtered {0} reflections by xds angle'.format(
                 len([r for r in reflections if r.is_valid()])))
