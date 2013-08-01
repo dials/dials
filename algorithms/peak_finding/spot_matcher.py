@@ -34,12 +34,24 @@ class SpotMatcher(object):
 
         '''
         from dials.model.data import ReflectionList
+        from dials.util.command_line import Command
 
         # Find the nearest neighbours and distances
+        Command.start('Finding nearest neighbours')
         nn, dist = self._find_nearest_neighbours(observed, predicted)
+        Command.end('Found nearest neighbours')
 
         # Filter the matches by distance
+        Command.start('Filtering matches by distance')
         index = self._filter_by_distance(nn, dist)
+        Command.end('Filtered {0} matches by distance'.format(len(index)))
+
+        # Filter out duplicates to just leave the closest pairs
+        Command.start('Removing duplicate matches')
+        len_index = len(index)
+        index = self._filter_duplicates(index, nn, dist)
+        len_diff = len_index - len(index)
+        Command.end('Removed {0} duplicate match(es)'.format(len_diff))
 
         # Copy all of the reflection data for the matched reflections
         reflections = ReflectionList()
@@ -80,11 +92,10 @@ class SpotMatcher(object):
             z = r.frame_number
             predicted_xyz.append((x, y, z))
 
+        observed_xyz = [r.centroid_position for r in observed]
+
         # Create the KD Tree
         ann = AnnAdaptor(flex.double(predicted_xyz).as_1d(), 3)
-
-        # Get the observed coordinates
-        observed_xyz = [r.centroid_position for r in observed]
 
         # Query to find all the nearest neighbours
         ann.query(flex.double(observed_xyz).as_1d())
@@ -106,3 +117,30 @@ class SpotMatcher(object):
         from scitbx.array_family import flex
         index = range(len(nn))
         return flex.int([i for i in index if dist[i] <= self._max_separation])
+
+    def _filter_duplicates(self, index, nn, dist):
+        ''' Filter the matches to remove duplicates
+
+        Params:
+            index The indices of valid spots
+            nn The nearest neighbour indices
+            dist The distances
+
+        Returns:
+            A reduced list of nearest neighbours
+
+        '''
+        seen = {}
+        for i in index:
+            p = nn[i]
+            if p in seen:
+                j = seen[p]
+                if dist[i] < dist[j]:
+                    seen[p] = i
+            else:
+                seen[p] = i;
+
+        index = []
+        for k, v in seen.iteritems():
+            index.append(v)
+        return index

@@ -13,7 +13,7 @@ from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 
-class SpotFinder(SpotFinderInterface):
+class StrongSpotPicker(object):
     '''A class to perform spot finding operations on a sweep of images.'''
 
     def __init__(self, **kwargs):
@@ -28,9 +28,6 @@ class SpotFinder(SpotFinderInterface):
         '''
         # Get some parameters
         self._min_spot_size = kwargs.get('min_spot_size', 6)
-        self._max_separation = kwargs.get('max_separation', 2)
-        self._d_min = kwargs.get('d_min')
-        self._d_max = kwargs.get('d_max')
 
         # Set the threshold strategy
         self._threshold_strategy = kwargs.get(
@@ -80,19 +77,6 @@ class SpotFinder(SpotFinderInterface):
 
         # start off by selecting all spots
         selection = flex.bool(len(spots), True)
-
-        # Filter the spots by centroid-maxmimum distance
-        Command.start('Filtering spots by distance')
-        self._filter_maximum_centroid(
-            coords, intensity, spots, cpos, selection)
-        Command.end('Filtered {0} spots by distance'.format(
-            selection.count(True)))
-
-        # Filter the spots by resolution
-        Command.start('Filtering spots by resolution')
-        self._filter_spots_by_resolution(cpos, sweep, selection)
-        Command.end('Filtered {0} spots by resolution'.format(
-            selection.count(True)))
 
         # Create a reflection list and return
         reflections = self._create_reflection_list(coords, intensity, spots,
@@ -212,30 +196,6 @@ class SpotFinder(SpotFinderInterface):
         # Filter by spot size
         return [s for s in spots if len(s) >= self._min_spot_size]
 
-    def _filter_spots_by_resolution(self, cpos, sweep, selection):
-        from scitbx.array_family import flex
-
-        if self._d_max is None and self._d_min is None:
-            # Nothing to do here
-            return
-
-        detector = sweep.get_detector()
-        beam = sweep.get_beam()
-
-        s0 = beam.get_s0()
-        wavelength = beam.get_wavelength()
-
-        for i, (x,y,z) in enumerate(cpos):
-            if not selection[i]: continue
-            resolution = detector.get_resolution_at_pixel(
-                s0, wavelength, (x, y))
-            if ((self._d_min is not None and
-                 resolution < self._d_min)
-                or
-                (self._d_max is not None and
-                 resolution > self._d_max)):
-                selection[i] = False
-
     def _calculate_bbox(self, coords, spots, sweep):
         '''Calculate the bounding boxes for each spot.
 
@@ -318,30 +278,6 @@ class SpotFinder(SpotFinderInterface):
         # Return the centroid and variance
         return centroid_pos, centroid_var, centroid_err, centroid_tot
 
-    def _filter_maximum_centroid(
-            self, coords, values, spots, cpos, selection):
-        '''Filter the reflections by the distance between the maximum pixel
-        value and the centroid position. If the centroid is a greater than the
-        maximum separation from maximum pixel (in pixel coords) then discard.
-
-        Params:
-            coords The list of coordinates
-            values The list of values
-            cpos The list of centroids
-
-        Returns:
-            An index list of valid spots
-
-        '''
-        from scitbx import matrix
-        for si, (s, c) in enumerate(zip(spots, cpos)):
-            if not selection[si]: continue
-            im = flex.max_index(flex.int([values[i] for i in s]))
-            xc = matrix.col(c)
-            xm = matrix.col(coords[s[im]])
-            if (xc - xm).length() > self._max_separation:
-                selection[si] = False
-
     def _create_reflection_list(self, coords, values, spots, bbox, cpos, cvar,
                                 cerr, ctot, index):
         '''Create a reflection list from the spot data.
@@ -395,3 +331,42 @@ class SpotFinder(SpotFinderInterface):
 
         # Return the reflection list
         return reflection_list
+
+
+class StrongSpotOrganiser(object):
+    ''' A class to perform spot picking and matching with predictions. '''
+
+    def __init__(self, **kwargs):
+        ''' Initialise the spot picker and spot matcher.
+
+        Params:
+            kwargs The keyword arguments to configure the spot picker
+
+        '''
+        from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
+        # Create the spot picking object
+        self.pick_spots = StrongSpotPicker(**kwargs)
+        self.match_spots = SpotMatcher(kwargs['max_separation'])
+        self.observed = None
+
+    def __call__(self, sweep, crystal, predicted):
+        ''' Given a set of predictions. Get the observed strong spots
+        and match them to the predictions. On the first round, extract all
+        the strong spots to begin with. On subsequent rounds, just match
+        the stored observed spots to the predictions.
+
+        Params:
+            sweep The sweep to process
+            crystal The crystal model
+            predicted The predicted reflections
+
+        Returns:
+            The list of matched reflections
+
+        '''
+        # The first time we call this. Pick the strong spots
+        if not self.observed:
+            self.observed = self.pick_spots(sweep)
+
+        # Return the matched spots
+        return self.match_spots(self.observed, predicted)

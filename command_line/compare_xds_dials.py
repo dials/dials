@@ -7,7 +7,7 @@ def pull_reference(integrate_hkl, d_min = 0.0):
     centroids...'''
 
     uc = integrate_hkl_to_unit_cell(integrate_hkl)
-    
+
     hkl = []
     i = []
     sigi = []
@@ -26,11 +26,11 @@ def pull_reference(integrate_hkl, d_min = 0.0):
         _hkl = tuple(map(int, f_tokens[0:3]))
         if uc.d(_hkl) < d_min:
             continue
-        
+
         hkl.append(_hkl)
 
         # need to scale by PEAK stored value to get comparison value
-        
+
         peak = 0.01 * f_tokens[9]
         i.append(f_tokens[3] * peak)
         sigi.append(f_tokens[4] * peak)
@@ -215,7 +215,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
     _xlp = []
     _dlp = []
-    
+
     fout = open('ratio_xyz.dat', 'w')
 
     # perform the analysis
@@ -353,4 +353,3 @@ if __name__ == '__main__':
     else:
         compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
                        d_min = float(sys.argv[5]))
-        

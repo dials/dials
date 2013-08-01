@@ -17,10 +17,10 @@ def LP_calculations(sweep, crystal, reflection):
     tpl_m2 = sweep.get_goniometer().get_rotation_axis()
     tpl_s1 = reflection.beam_vector
     p = sweep.get_beam().get_polarization_fraction()
-    
+
     # FIXME hack for testing
     # p = 0.5
-    
+
     from scitbx import matrix
 
     n = matrix.col(tpl_n)
