@@ -12,18 +12,22 @@
 #define DIALS_ALGORITHMS_FILTER_H
 
 #include <cmath>
+#include <limits>
+#include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/small.h>
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/beam.h>
+#include <dxtbx/model/detector.h>
 #include <dials/algorithms/image/threshold/unimodal.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 #include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace filter {
 
+  using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::small;
   using scitbx::af::int6;
@@ -31,6 +35,7 @@ namespace dials { namespace algorithms { namespace filter {
   using scitbx::af::flex_bool;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Beam;
+  using dxtbx::model::Detector;
   using dials::algorithms::reflection_basis::CoordinateSystem;
   using dials::algorithms::reflection_basis::zeta_factor;
   using dials::model::Reflection;
@@ -286,6 +291,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param r The reflection list
    * @param min_zeta The minimum zeta value
    */
+  inline
   void by_zeta(const Goniometer &g, const Beam &b, ReflectionList &r,
       double min_zeta) {
     for (std::size_t i = 0; i < r.size(); ++i) {
@@ -303,6 +309,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param r The reflection list
    * @param delta_m The mosaicity * n_sigma
    */
+  inline
   void by_xds_small_angle(const Goniometer &g, const Beam &b,
       ReflectionList &r, double delta_m) {
     for (std::size_t i = 0; i < r.size(); ++i) {
@@ -320,6 +327,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param r The reflection list
    * @param delta_m The mosaicity * n_sigma
    */
+  inline
   void by_xds_angle(const Goniometer &g, const Beam &b,
       ReflectionList &r, double delta_m) {
     for (std::size_t i = 0; i < r.size(); ++i) {
@@ -333,6 +341,7 @@ namespace dials { namespace algorithms { namespace filter {
    * Filter the reflection list based on the bounding box volume
    * @param reflections The list of reflections
    */
+  inline
   void by_bbox_volume(ReflectionList &reflections, std::size_t num_bins) {
 
     // Check the bins are correct
@@ -377,6 +386,7 @@ namespace dials { namespace algorithms { namespace filter {
    * nbins = cube_root(nref)
    * @param reflections The reflections list
    */
+  inline
   void by_bbox_volume(ReflectionList &reflections) {
     std::size_t num = std::exp((1.0/3.0) * std::log(reflections.size()));
     return by_bbox_volume(reflections, num);
@@ -389,6 +399,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param scan_range The scan range
    * @returns True/False
    */
+  inline
   bool is_bbox_outside_image_range(int6 bbox, small<long,10> image_size,
       int2 scan_range) {
     DIALS_ASSERT(image_size.size() == 2);
@@ -403,6 +414,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param mask The mask array
    * @returns True/False
    */
+  inline
   bool does_bbox_contain_bad_pixels(int6 bbox, const flex_bool &mask) {
     DIALS_ASSERT(mask.accessor().all().size() == 2);
     for (int j = bbox[2]; j < bbox[3]; ++j) {
@@ -422,6 +434,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param scan_range The scan range
    * @returns True/False
    */
+  inline
   bool is_bbox_valid(int6 bbox, const flex_bool &mask, int2 scan_range) {
     return !(is_bbox_outside_image_range(
         bbox, mask.accessor().all(), scan_range) ||
@@ -434,6 +447,7 @@ namespace dials { namespace algorithms { namespace filter {
    * @param mask The detector mask
    * @param scan_range The scan range
    */
+  inline
   void by_detector_mask(Reflection &reflection, const flex_bool &mask,
       int2 scan_range) {
     // get the bounding box
@@ -449,12 +463,80 @@ namespace dials { namespace algorithms { namespace filter {
    * @param mask The detector mask
    * @param scan_range The scan range
    */
+  inline
   void by_detector_mask(ReflectionList &reflections,
       const flex_bool &mask, int2 scan_range) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       by_detector_mask(reflections[i], mask, scan_range);
     }
   }
+
+  inline
+  void by_centroid_peak_separation(ReflectionList &reflections,
+      double max_separation) {
+//    for (std::size_t i = 0; i < reflections.size(); ++i) {
+//      if (reflections[i].is_valid()) {
+//        vec3<double> c = reflections[i].get_centroid_position();
+//        std::size_t index = max_index(reflections[i].get_shoebox());
+//      }
+//    }
+  }
+
+  /**
+   * Filter the reflection list by the distance between the centroid
+   * position and predicted position.
+   * @param reflections The reflection list
+   * @param max_separation The maximum allowed separation
+   */
+  inline
+  void by_centroid_prediction_separation(ReflectionList &reflections,
+      double max_separation) {
+    for (std::size_t i = 0; i < reflections.size(); ++i) {
+      if (reflections[i].is_valid()) {
+        vec3<double> c = reflections[i].get_centroid_position();
+        vec2<double> px = reflections[i].get_image_coord_px();
+        double f = reflections[i].get_frame_number();
+        double sep = std::sqrt((c[0] - px[0]) * (c[0] - px[0]) +
+                               (c[1] - px[1]) * (c[1] - px[1]) +
+                               (c[2] - f) * (c[2] - f));
+        if (sep > max_separation) {
+          reflections[i].set_valid(false);
+        }
+      }
+    }
+  }
+
+  /**
+   * Filter the reflection list by resolution
+   * position and predicted position.
+   * @param reflections The reflection list
+   * @param beam The beam model
+   * @param detector The detector model
+   * @param d_min The maximum resolution
+   * @param d_max The minimum resolution
+   */
+  inline
+  void by_resolution_at_centroid(ReflectionList &reflections,
+      const Beam &beam, const Detector &detector,
+      double d_min, double d_max) {
+    vec3<double> s0 = beam.get_s0();
+    double wavelength = beam.get_wavelength();
+    if (d_max < 0) {
+      d_max = std::numeric_limits<double>::max();
+    }
+    for (std::size_t i = 0; i < reflections.size(); ++i) {
+      if (reflections[i].is_valid()) {
+        vec3<double> c = reflections[i].get_centroid_position();
+        vec2<double> px(c[0], c[1]);
+        double resolution = detector.get_resolution_at_pixel(
+            s0, wavelength, px);
+        if (resolution < d_min || resolution > d_max) {
+          reflections[i].set_valid(false);
+        }
+      }
+    }
+  }
+
 
 }}} // namespace dials::algorithms::filter
 

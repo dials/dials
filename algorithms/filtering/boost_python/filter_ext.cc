@@ -100,7 +100,12 @@ namespace dials { namespace algorithms { namespace filter {
     def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels);
     def("is_bbox_valid", &is_bbox_valid);
     def("by_detector_mask", filter_reflection_by_detector_mask);
-    def("by_detector_mask", filter_reflection_list_by_detector_mask);      
+    def("by_detector_mask", filter_reflection_list_by_detector_mask); 
+    
+    def("by_centroid_prediction_separation", 
+      &by_centroid_prediction_separation);  
+    def("by_resolution_at_centroid",
+      &by_resolution_at_centroid);   
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_filter_ext)
