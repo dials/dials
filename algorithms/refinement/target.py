@@ -422,33 +422,33 @@ class ReflectionManager(object):
     '''A class to maintain information about observed and predicted
     reflections for refinement.'''
 
-    def __init__(self, Ho, entering_o, Frameo, So,
-                       Xo, sigXo,
-                       Yo, sigYo,
-                       Phio, sigPhio,
+    def __init__(self, h_obs, entering_obs, frame_obs, svec_obs,
+                       x_obs, sigx_obs,
+                       y_obs, sigy_obs,
+                       phi_obs, sigphi_obs,
                        beam, gonio, scan,
                        verbosity=0, nref_per_degree = None):
 
         # check the observed values
-        Ho = list(Ho)
-        So = list(So)
-        Xo = list(Xo)
-        sigXo = list(sigXo)
-        Yo = list(Yo)
-        sigYo = list(sigYo)
-        Phio = list(Phio)
-        sigPhio = list(sigPhio)
-        Frameo = list(Frameo)
-        entering_o = list(entering_o)
-        assert(len(So) == \
-               len(Xo) == \
-               len(sigXo) == \
-               len(Yo) == \
-               len(sigYo) == \
-               len(Phio) == \
-               len(sigPhio) == \
-               len(Frameo) == \
-               len(Ho))
+        h_obs = list(h_obs)
+        svec_obs = list(svec_obs)
+        x_obs = list(x_obs)
+        sigx_obs = list(sigx_obs)
+        y_obs = list(y_obs)
+        sigy_obs = list(sigy_obs)
+        phi_obs = list(phi_obs)
+        sigphi_obs = list(sigphi_obs)
+        frame_obs = list(frame_obs)
+        entering_obs = list(entering_obs)
+        assert(len(svec_obs) == \
+               len(x_obs) == \
+               len(sigx_obs) == \
+               len(y_obs) == \
+               len(sigy_obs) == \
+               len(phi_obs) == \
+               len(sigphi_obs) == \
+               len(frame_obs) == \
+               len(h_obs))
 
         # track whether this is the first update of predictions or not
         self.first_update = True
@@ -466,29 +466,29 @@ class ReflectionManager(object):
         self._vecn = self._spindle_beam_plane_normal()
 
         # exclude reflections that fail inclusion criteria
-        obs_data = zip(Ho, So, Xo, sigXo, Yo, sigYo, Phio, sigPhio)
+        obs_data = zip(h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs, phi_obs, sigphi_obs)
         self._obs_data = self._remove_excluded_obs(obs_data)
         self._sample_size = len(self._obs_data)
 
         # choose a random subset of data for refinement
-        (Ho, So, Xo, sigXo, Yo, sigYo, Phio, sigPhio) = \
+        (h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs, phi_obs, sigphi_obs) = \
                 zip(*self._create_working_set(nref_per_degree))
 
         # store observation information in a dict of observation-prediction
         # pairs (prediction information will go in here later)
         self._H = {}
-        for i, h in enumerate(Ho):
-            entering = So[i].dot(self._vecn) < 0.
+        for i, h in enumerate(h_obs):
+            entering = svec_obs[i].dot(self._vecn) < 0.
             if h not in self._H:
-                self._H[h] = ObservationPrediction(h, entering, Frameo[i],
-                                        Xo[i], sigXo[i], 1./sigXo[i]**2,
-                                        Yo[i], sigYo[i], 1./sigYo[i]**2,
-                                        Phio[i], sigPhio[i], 1./sigPhio[i]**2)
+                self._H[h] = ObservationPrediction(h, entering, frame_obs[i],
+                                        x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
+                                        y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
+                                        phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
             else:
-                self._H[h].add_observation(entering, Frameo[i],
-                                        Xo[i], sigXo[i], 1./sigXo[i]**2,
-                                        Yo[i], sigYo[i], 1./sigYo[i]**2,
-                                        Phio[i], sigPhio[i], 1./sigPhio[i]**2)
+                self._H[h].add_observation(entering, frame_obs[i],
+                                        x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
+                                        y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
+                                        phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
 
     def _spindle_beam_plane_normal(self):
         '''return a unit vector that when placed at the origin of reciprocal
