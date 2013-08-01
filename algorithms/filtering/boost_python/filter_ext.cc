@@ -89,6 +89,18 @@ namespace dials { namespace algorithms { namespace filter {
       &by_bbox_volume, (arg("r"), arg("num")));
     def("by_bbox_volume", (void(*)(ReflectionList&))&by_bbox_volume, (
       arg("r")));
+      
+    void (*filter_reflection_by_detector_mask)(Reflection&, const flex_bool&,
+        int2) = &by_detector_mask;
+  
+    void (*filter_reflection_list_by_detector_mask)(ReflectionList&, 
+      const flex_bool&, int2) = &by_detector_mask;
+  
+    def("is_bbox_outside_image_range", &is_bbox_outside_image_range);
+    def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels);
+    def("is_bbox_valid", &is_bbox_valid);
+    def("by_detector_mask", filter_reflection_by_detector_mask);
+    def("by_detector_mask", filter_reflection_list_by_detector_mask);      
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_filter_ext)

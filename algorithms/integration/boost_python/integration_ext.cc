@@ -15,7 +15,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_helpers();
   void export_luiso_s_2d_integration();
   void export_summation();
   void export_summation_reciprocal_space();
@@ -23,7 +22,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   BOOST_PYTHON_MODULE(dials_algorithms_integration_ext)
   {
-    export_helpers();
     export_luiso_s_2d_integration();
     export_summation();
     export_summation_reciprocal_space();

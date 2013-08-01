@@ -123,7 +123,6 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
-        from dials.algorithms.integration import filter_by_detector_mask
         from dials.algorithms import filtering
         from math import sqrt
 
@@ -166,7 +165,7 @@ class ReflectionExtractor(object):
         # Set all reflections which overlap bad pixels to zero
         Command.start('Filtering reflections by detector mask')
         array_range = scan.get_array_range()
-        filter_by_detector_mask(reflections, self.detector_mask, array_range)
+        filtering.by_detector_mask(reflections, self.detector_mask, array_range)
         Command.end('Filtered {0} reflections by detector mask'.format(
             len([r for r in reflections if r.is_valid()])))
 
