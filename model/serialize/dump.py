@@ -60,3 +60,21 @@ def crystal(obj, outfile, compact=False):
     # Otherwise assume the input is a file and write to it
     else:
         outfile.write(crystal_to_string(obj, compact))
+
+def reflections(obj, outfile):
+    ''' Dump the given object to file
+
+    Params:
+        obj The reflection list to dump
+        outfile The output file name or file object
+
+    '''
+    import cPickle as pickle
+
+    if isinstance(outfile, str):
+        with open(outfile, 'wb') as outfile:
+            pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
+
+    # Otherwise assume the input is a file and write to it
+    else:
+        pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)

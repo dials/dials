@@ -46,3 +46,24 @@ def crystal(infile):
     # Otherwise assume the input is a file and read from it
     else:
         return crystal_from_string(infile.read())
+
+def reflections(infile):
+    ''' Load the given reflection file.
+
+    Params:
+        infile The input filename or file object
+
+    Returns:
+        The reflection list
+
+    '''
+    import cPickle as pickle
+
+    # If the input is a string then open and read from that file
+    if isinstance(infile, str):
+        with open(infile, 'rb') as infile:
+            return pickle.load(infile)
+
+    # Otherwise assume the input is a file and read from it
+    else:
+        return pickle.load(infile)

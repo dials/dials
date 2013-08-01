@@ -42,8 +42,7 @@ class Script(ScriptRunner):
         '''Execute the script.'''
         from dials.algorithms.integration import IntegratorFactory
         from dials.algorithms import shoebox
-        from dials.model.serialize import load
-        import cPickle as pickle
+        from dials.model.serialize import load, dump
 
         # Check the number of arguments is correct
         if len(args) != 2:
@@ -67,8 +66,7 @@ class Script(ScriptRunner):
         print 'Saving reflections to {0}'.format(options.output_filename)
         if options.save_profiles == False:
             shoebox.deallocate(reflections)
-        pickle.dump(reflections, open(options.output_filename, 'wb'),
-            pickle.HIGHEST_PROTOCOL)
+        dump.reflections(reflections, options.output_filename)
 
 
 if __name__ == '__main__':
