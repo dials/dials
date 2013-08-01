@@ -94,7 +94,8 @@ class Target(object):
 
                 # find the prediction with the right 'entering' flag
                 try:
-                    i = [x.entering == obs.entering for x in impacts].index(True)
+                    i = [x.entering == obs.entering \
+                         for x in impacts].index(True)
                 except ValueError:
                     # we don't have a prediction for this obs
                     continue
@@ -195,8 +196,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
             # fill jacobian elements here.
             jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
-            jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i + 1)
-            jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i + 2)
+            jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i+1)
+            jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
 
         # We return the Jacobian, not its transpose.
         jacobian_t.matrix_transpose_in_place()
@@ -466,12 +467,16 @@ class ReflectionManager(object):
         self._vecn = self._spindle_beam_plane_normal()
 
         # exclude reflections that fail inclusion criteria
-        obs_data = zip(h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs, phi_obs, sigphi_obs)
+        obs_data = zip(h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs,
+                       phi_obs, sigphi_obs)
         self._obs_data = self._remove_excluded_obs(obs_data)
         self._sample_size = len(self._obs_data)
 
         # choose a random subset of data for refinement
-        (h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs, phi_obs, sigphi_obs) = \
+        (h_obs, svec_obs,
+         x_obs, sigx_obs,
+         y_obs, sigy_obs,
+         phi_obs, sigphi_obs) = \
                 zip(*self._create_working_set(nref_per_degree))
 
         # store observation information in a dict of observation-prediction
@@ -481,14 +486,14 @@ class ReflectionManager(object):
             entering = svec_obs[i].dot(self._vecn) < 0.
             if h not in self._H:
                 self._H[h] = ObservationPrediction(h, entering, frame_obs[i],
-                                        x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
-                                        y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
-                                        phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
+                                x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
+                                y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
+                                phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
             else:
                 self._H[h].add_observation(entering, frame_obs[i],
-                                        x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
-                                        y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
-                                        phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
+                                x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
+                                y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
+                                phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
 
     def _spindle_beam_plane_normal(self):
         '''return a unit vector that when placed at the origin of reciprocal
@@ -553,8 +558,10 @@ class ReflectionManager(object):
         l = [obs for v in self._H.values() for obs in v.obs if obs.is_matched]
 
         if self._verbosity > 2 and len(l) > 20:
-            print "Listing predictions matched with observations for the first 20 reflections:"
-            print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, weightPhio"
+            print "Listing predictions matched with observations for " + \
+                  "the first 20 reflections:"
+            print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
+                  "weightPhio"
             fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
             for i in xrange(20):
                 e = l[i]

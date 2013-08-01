@@ -26,7 +26,7 @@ class ScanVaryingParameterSet(Parameter):
 
         Parameter.__init__(self, value, axis, ptype, name)
 
-        assert num_samples >= 2 # otherwise use scan-independent parameterisation
+        assert num_samples >= 2 #otherwise use scan-independent parameterisation
         self._num_samples = num_samples
         self._value = [value] * num_samples
         self._esd = [None] * num_samples
@@ -66,8 +66,8 @@ class GaussianSmoother(object):
 
     # Based largely on class SmoothedValue from Aimless.
 
-    # Construct from range of raw unnormalised coordinate & number of sample intervals
-    # Set smoothing values to defaults, Nav = 3
+    # Construct from range of raw unnormalised coordinate & number of sample
+    # intervals. Set smoothing values to defaults, Nav = 3
     def __init__(self, x_range, num_intervals):
 
         self._x0 = x_range[0] # coordinate of z = 0
@@ -154,7 +154,7 @@ class GaussianSmoother(object):
                 i2 = max(2, i2) # ensure a separation of at least 2
             if i2 > self._nvalues:
                 i2 = self._nvalues
-                i1 = min(i1, self._nvalues - 2) # ensure a separation of at least 2
+                i1 = min(i1, self._nvalues - 2) # ensure separation of >= 2
 
         # now do stuff
         for i in range(i1, i2):
@@ -226,8 +226,8 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     # def num_total(self): inherited unchanged from ModelParameterisation
 
     def compose(self, t):
-        '''compose the model state at image number t from its initial state and its
-        parameter list. Also calculate the derivatives of the state wrt
+        '''compose the model state at image number t from its initial state and
+        its parameter list. Also calculate the derivatives of the state wrt
         each parameter in the list.
 
         Unlike ModelParameterisation, does not automatically update the actual
