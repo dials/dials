@@ -171,6 +171,12 @@ def R(calc, obs, scale = None):
                 for c, o in zip(calc, obs)]) / \
                 sum([math.fabs(o) for o in obs]), scale
 
+def meansd(values):
+    import math
+    mean = sum(values) / len(values)
+    var = sum([(v - mean) ** 2 for v in values]) / len(values)
+    return mean, math.sqrt(var)
+                
 def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
                    d_min = 0.0):
 
@@ -267,6 +273,8 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
     ccs = []
     rs = []
     ss = []
+    _ms = []
+    _ss = []
 
     for chunk in chunks:
         xds = XDS[chunk[0]:chunk[1]]
@@ -278,12 +286,14 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
         c = cc(dials, xds)
         r, s = R(dials, xds)
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(xds),
-                                                    min(resols), max(resols),
-                                                    c, r, s)
+        _m, _s = meansd([x / d for x, d in zip(xds, dials)])
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f %3f %3f' % \
+          (chunk[0], len(xds), min(resols), max(resols), c, r, s, _m, _s)
         ccs.append(c)
         rs.append(r)
         ss.append(s)
+        _ms.append(_m)
+        _ss.append(_s)
 
     chunks = [j for j in range(len(chunks))]
 
@@ -291,6 +301,9 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
     chunks = chunks[:len(rs)]
 
+    _plus = [_m + _s for _m, _s in zip(_ms, _ss)]
+    _minus = [_m - _s for _m, _s in zip(_ms, _ss)]
+    
     from matplotlib import pyplot
     pyplot.xlabel('Chunk')
     pyplot.ylabel('Statistic')
@@ -298,7 +311,10 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
     pyplot.plot(chunks, ccs, label = 'CC')
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
-    pyplot.legend()
+    pyplot.plot(chunks, _ms, label = '<K>')
+    pyplot.plot(chunks, _plus, label = '<K>+1s')
+    pyplot.plot(chunks, _minus, label = '<K>-1s')
+    pyplot.legend(bbox_to_anchor=(1.05,1.0), loc=2, borderaxespad=0.0)
     pyplot.savefig('plot.png')
     pyplot.close()
 
