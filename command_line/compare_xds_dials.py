@@ -1,11 +1,13 @@
 from __future__ import division
 
-def pull_reference(integrate_hkl):
+def pull_reference(integrate_hkl, d_min = 0.0):
     '''Generate reference data set from integrate.hkl, check out the calculated
     x, y and z centroids as well as the Miller indices as coordinates in some
     high dimensional space. Only consider measurements with meaningful
     centroids...'''
 
+    uc = integrate_hkl_to_unit_cell(integrate_hkl)
+    
     hkl = []
     i = []
     sigi = []
@@ -21,9 +23,17 @@ def pull_reference(integrate_hkl):
         if f_tokens[12:15] == [0.0, 0.0, 0.0]:
             continue
 
-        hkl.append(tuple(map(int, f_tokens[0:3])))
-        i.append(f_tokens[3])
-        sigi.append(f_tokens[4])
+        _hkl = tuple(map(int, f_tokens[0:3]))
+        if uc.d(_hkl) < d_min:
+            continue
+        
+        hkl.append(_hkl)
+
+        # need to scale by PEAK stored value to get comparison value
+        
+        peak = 0.01 * f_tokens[9]
+        i.append(f_tokens[3] * peak)
+        sigi.append(f_tokens[4] * peak)
         xyz.append(tuple(f_tokens[5:8]))
         lp.append(f_tokens[8])
 
@@ -100,8 +110,11 @@ def pull_calculated(integrate_pkl):
     strong_reflections = []
 
     for r in r_list:
-        if r.corrected_intensity > math.sqrt(r.corrected_intensity_variance):
-            strong_reflections.append(r)
+        if not r.is_valid():
+            continue
+        if r.intensity ** 2 < r.intensity_variance:
+            continue
+        strong_reflections.append(r)
 
     del(r_list)
 
@@ -112,8 +125,6 @@ def pull_calculated(integrate_pkl):
     lp = []
 
     for r in strong_reflections:
-        if not r.is_valid():
-            continue
         hkl.append(r.miller_index)
         i.append(r.corrected_intensity)
         sigi.append(math.sqrt(r.corrected_intensity_variance))
@@ -160,59 +171,8 @@ def R(calc, obs, scale = None):
                 for c, o in zip(calc, obs)]) / \
                 sum([math.fabs(o) for o in obs]), scale
 
-def compare(integrate_hkl, integrate_pkl):
-
-    from cctbx.array_family import flex
-    from annlib_ext import AnnAdaptor as ann_adaptor
-
-    xhkl, xi, xsigi, xxyz, xlp = pull_reference(integrate_hkl)
-    dhkl, di, dsigi, dxyz, dlp = pull_calculated(integrate_pkl)
-
-    reference = flex.double()
-    query = flex.double()
-
-    for xyz in xxyz:
-        reference.append(xyz[0])
-        reference.append(xyz[1])
-        reference.append(xyz[2])
-
-    for xyz in dxyz:
-        query.append(xyz[0])
-        query.append(xyz[1])
-        query.append(xyz[2])
-
-    # perform the match
-    ann = ann_adaptor(data = reference, dim = 3, k = 1)
-    ann.query(query)
-
-    xds = []
-    dials = []
-
-    _xlp = []
-    _dlp = []
-    
-    # perform the analysis
-    for j, hkl in enumerate(dhkl):
-        c = ann.nn[j]
-        if hkl == xhkl[c]:
-            xds.append(xi[c])
-            dials.append(di[j])
-            _xlp.append(xlp[c])
-            _dlp.append(dlp[j])
-
-    print 'Paired %d observations' % len(xds)
-
-    c = cc(xds, dials)
-
-    print '1 - CC: %.6e' % (1 - c)
-
-    r, s = R(dials, xds)
-
-    print 'R: %.3f' % r
-
-    return
-
-def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
+def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
+                   d_min = 0.0):
 
     from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
@@ -223,7 +183,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json):
 
     uc = integrate_hkl_to_unit_cell(integrate_hkl)
 
-    xhkl, xi, xsigi, xxyz, xlp = pull_reference(integrate_hkl)
+    xhkl, xi, xsigi, xxyz, xlp = pull_reference(integrate_hkl, d_min=d_min)
     dhkl, di, dsigi, dxyz, dlp = pull_calculated(integrate_pkl)
 
     reference = flex.double()
@@ -367,9 +327,14 @@ def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv) != 5:
+    if len(sys.argv) < 5:
         raise RuntimeError, \
-          '%s INTEGRATE.HKL integrate.pickle crystal.json sweep.json' % \
+          '%s INTEGRATE.HKL integrate.pickle crystal.json sweep.json [dmin]' % \
           sys.argv[0]
 
-    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    if len(sys.argv) == 5:
+        compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    else:
+        compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
+                       d_min = float(sys.argv[5]))
+        
