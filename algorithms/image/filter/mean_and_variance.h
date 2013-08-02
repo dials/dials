@@ -11,7 +11,7 @@
 #ifndef DIALS_ALGORITHMS_IMAGE_FILTER_MEAN_AND_VARIANCE_H
 #define DIALS_ALGORITHMS_IMAGE_FILTER_MEAN_AND_VARIANCE_H
 
-// #include <omp.h>
+#include <omptbx/omp_or_stubs.h>
 
 #include <algorithm>
 #include <cmath>
