@@ -96,11 +96,11 @@ mydetector = detector_factory.make_detector("PAD",
                             (ds.npx_fast, ds.npx_slow),
                             (0, 1.e6))
 
-# Make a random crystal
+# Make a random P1 crystal
 a = random.uniform(10,30) * random_direction_close_to(matrix.col((1, 0, 0)))
 b = random.uniform(10,30) * random_direction_close_to(matrix.col((0, 1, 0)))
 c = random.uniform(10,30) * random_direction_close_to(matrix.col((0, 0, 1)))
-mycrystal = Crystal(a, b, c)
+mycrystal = Crystal(a, b, c, space_group_symbol="P 1")
 
 print "Reflections will be generated with the following geometry:"
 print_model_geometry(mybeam, mydetector, mycrystal)

@@ -171,11 +171,11 @@ if __name__ == '__main__':
                      random.random())).normalize(),
                      random.gauss(0, 1.0),  deg = True)
 
-    # make a random crystal and parameterise it
+    # make a random P1 crystal and parameterise it
     a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
     b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-    xl = Crystal(a, b, c)
+    xl = Crystal(a, b, c, space_group_symbol="P 1")
 
     xl_op = CrystalOrientationParameterisation(xl)
     xl_ucp = CrystalUnitCellParameterisation(xl)
@@ -200,11 +200,11 @@ if __name__ == '__main__':
     failures = 0
     for i in range(attempts):
 
-        # make a random crystal and parameterise it
+        # make a random P1 crystal and parameterise it
         a = random.uniform(10,50) * random_direction_close_to(matrix.col((1, 0, 0)))
         b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
         c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
-        xl = Crystal(a, b, c)
+        xl = Crystal(a, b, c, space_group_symbol="P 1")
         xl_op = CrystalOrientationParameterisation(xl)
         xl_uc = CrystalUnitCellParameterisation(xl)
 

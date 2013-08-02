@@ -24,6 +24,6 @@ if __name__ == '__main__':
     b = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * random_direction_close_to(matrix.col((0, 0, 1)))
 
-    xl = Crystal(a, b, c)
+    xl = Crystal(a, b, c, space_group_symbol="P 1")
 
     print "OK"

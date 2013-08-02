@@ -60,7 +60,7 @@ scan = Scan((1, 100), (0, 1), 0)
 beam = Beam((0, 0, 1), 1.0)
 gonio = Goniometer()
 detector = Detector(Panel("UNKNOWN", (1, 0, 0), (0, 1, 0), (0, 0, 1), (0.1, 0.1), (100, 100), (0, 100)))
-crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 10)
+crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol="P 1 2/m 1")
 
 from dials.model.serialize import dumps, loads
 

@@ -111,11 +111,11 @@ def random_direction_close_to(vector):
 direction = random_direction_close_to(matrix.col((0, 0, 1)))
 mybeam = beam_factory.make_beam(direction, 1.5)
 
-# make a random crystal
+# make a random P1 crystal
 a = random.uniform(10,20) * random_direction_close_to(matrix.col((1, 0, 0)))
 b = random.uniform(10,20) * random_direction_close_to(matrix.col((0, 1, 0)))
 c = random.uniform(10,20) * random_direction_close_to(matrix.col((0, 0, 1)))
-mycrystal = Crystal(a, b, c)
+mycrystal = Crystal(a, b, c, space_group_symbol="P 1")
 
 # make a dumb goniometer that rotates around X
 mygonio = goniometer_factory.known_axis((1, 0, 0))

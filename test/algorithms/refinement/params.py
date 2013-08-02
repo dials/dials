@@ -40,6 +40,8 @@ geometry_phil = """geometry.parameters
     }
     crystal
     {
+        space_group_symbol = "P 1"
+            .type = str
         a
         {
             length

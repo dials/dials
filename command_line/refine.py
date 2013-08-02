@@ -89,7 +89,7 @@ class RefinementRunner(object):
         # Read other data (need to assume an XPARM file)
         xparm_handle = xparm.reader()
         xparm_handle.read_file(self.xparm_file, check_filename = False)
-        self.space_group = ioutil.get_space_group_type_from_xparm(xparm_handle)
+        self.space_group_type = ioutil.get_space_group_type_from_xparm(xparm_handle)
         cfc = coordinate_frame_converter(self.xparm_file)
         a_vec = cfc.get_c('real_space_a')
         b_vec = cfc.get_c('real_space_b')
@@ -98,7 +98,8 @@ class RefinementRunner(object):
         self.UB = matrix.sqr(a_vec.elems + b_vec.elems + c_vec.elems).inverse()
 
         from dials.model.experiment.crystal_model import Crystal
-        self.crystal = Crystal(a_vec, b_vec, c_vec, self.space_group.number())
+        self.crystal = Crystal(a_vec, b_vec, c_vec,
+                               space_group = self.space_group_type.group())
 
         # Calculate resolution
         d_min = self.detector.get_max_resolution_at_corners(

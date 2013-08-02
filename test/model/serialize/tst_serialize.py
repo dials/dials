@@ -21,7 +21,7 @@ class Test(object):
             real_space_a=real_space_a,
             real_space_b=real_space_b,
             real_space_c=real_space_c,
-            sg=10,
+            space_group_symbol="P 1 2/m 1",
             mosaicity=0.1)
 
         d = crystal_to_dict(c1)
@@ -30,7 +30,7 @@ class Test(object):
         assert(abs(matrix.col(d['real_space_a']) - real_space_a) <= eps)
         assert(abs(matrix.col(d['real_space_b']) - real_space_b) <= eps)
         assert(abs(matrix.col(d['real_space_c']) - real_space_c) <= eps)
-        assert(d['space_group'] == 10)
+        assert(d['space_group_hall_symbol'] == "-P 2y")
         assert(d['mosaicity'] == 0.1)
         assert(c1 == c2)
         print 'OK'

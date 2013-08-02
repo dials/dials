@@ -145,14 +145,14 @@ class TestScanVaryingCrystalParameterisation(object):
         # Let's say we have a scan of 100 images
         self.image_range = (1, 100)
 
-        # Make a random crystal
+        # Make a random P1 crystal
         a = random.uniform(10,50) * \
             self.random_direction_close_to(matrix.col((1, 0, 0)))
         b = random.uniform(10,50) * \
             self.random_direction_close_to(matrix.col((0, 1, 0)))
         c = random.uniform(10,50) * \
             self.random_direction_close_to(matrix.col((0, 0, 1)))
-        self.xl = Crystal(a, b, c)
+        self.xl = Crystal(a, b, c, space_group_symbol = "P 1")
 
     def random_direction_close_to(self, vector):
         return vector.rotate_around_origin(matrix.col(
@@ -269,14 +269,14 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
 
         for i in range(attempts):
 
-            # make a new random crystal and parameterise it
+            # make a new P1 random crystal and parameterise it
             a = random.uniform(10,50) * \
                     self.random_direction_close_to(matrix.col((1, 0, 0)))
             b = random.uniform(10,50) * \
                     self.random_direction_close_to(matrix.col((0, 1, 0)))
             c = random.uniform(10,50) * \
                     self.random_direction_close_to(matrix.col((0, 0, 1)))
-            xl = Crystal(a, b, c)
+            xl = Crystal(a, b, c, space_group_symbol="P 1")
 
             xl_op = TestOrientationModel(50, xl, self.image_range, 5)
 

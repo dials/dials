@@ -28,8 +28,8 @@ def crystal_to_dict(crystal):
     real_space_b = (A[3], A[4], A[5])
     real_space_c = (A[6], A[7], A[8])
 
-    # Get the space group number
-    space_group = crystal.get_space_group().info().type().number()
+    # Get the space group Hall symbol
+    hall = crystal.get_space_group().info().type().hall_symbol()
 
     # Get the mosaicity
     mosaicity = crystal.get_mosaicity()
@@ -40,7 +40,7 @@ def crystal_to_dict(crystal):
         ('real_space_a', real_space_a),
         ('real_space_b', real_space_b),
         ('real_space_c', real_space_c),
-        ('space_group', space_group),
+        ('space_group_hall_symbol', hall),
         ('mosaicity', mosaicity)])
 
 def crystal_from_dict(d):
@@ -67,7 +67,8 @@ def crystal_from_dict(d):
     real_space_a = d['real_space_a']
     real_space_b = d['real_space_b']
     real_space_c = d['real_space_c']
-    space_group  = d['space_group']
+    space_group  = "Hall:" + d['space_group_hall_symbol']
     mosaicity    = d['mosaicity']
     return Crystal(real_space_a, real_space_b, real_space_c,
-                   space_group, mosaicity)
+                   space_group_symbol=space_group,
+                   mosaicity=mosaicity)

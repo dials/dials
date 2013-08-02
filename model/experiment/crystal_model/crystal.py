@@ -1,14 +1,38 @@
 from __future__ import division
 from scitbx import matrix
 from cctbx.uctbx import unit_cell
-from cctbx.sgtbx import space_group, space_group_symbols
+from cctbx.sgtbx import space_group as SG
+from cctbx.sgtbx import space_group_symbols
 from cctbx.crystal_orientation import crystal_orientation
 
 class Crystal:
-    '''Simple model for the crystal lattice geometry and symmetry'''
+    '''Simple model for the crystal lattice geometry and symmetry
 
-    def __init__(self, real_space_a, real_space_b, real_space_c, sg = 1,
-                 mosaicity=None, deg = True):
+    A crystal is initialised from the elements of its real space axes
+    a, b, and c. Space group information must also be provided, either
+    in the form of a symbol, or an existing
+    cctbx.sgtbx.space_group object. If space_group_symbol is provided,
+    it is passed to the cctbx.sgtbx.space_group_symbols constructor.
+    This accepts either extended Hermann Mauguin format, or Hall format
+    with the prefix 'Hall:'. E.g.
+
+    space_group_symbol = "P b a n:1"
+        or
+    space_group_symbol = "Hall:P 2 2 -1ab"
+
+    Optionally the crystal mosaicity value may be set, with the deg
+    parameter controlling whether this value is treated as being an
+    angle in degrees or radians.'''
+
+    def __init__(self, real_space_a, real_space_b, real_space_c,
+                 space_group_symbol=None, space_group=None,
+                 mosaicity=None, deg=True):
+
+        # Set the space group
+        assert [space_group_symbol, space_group].count(None) == 1
+        if space_group_symbol:
+            self._sg = SG(space_group_symbols(space_group_symbol))
+        else: self._sg = space_group
 
         # Set the mosaicity
         if mosaicity:
@@ -19,9 +43,6 @@ class Crystal:
                 self._mosaicity = mosaicity
         else:
             self._mosaicity = 0.0
-
-        # Set the space group
-        self._sg = space_group(space_group_symbols(sg).hall())
 
         # setting matrix at initialisation
         real_space_a = matrix.col(real_space_a)
@@ -42,6 +63,7 @@ class Crystal:
 
     def __str__(self):
         uc = self.get_unit_cell().parameters()
+        sg = str(self.get_space_group().info())
         umat = self.get_U().mathematica_form(format="% 5.4f",
                                              one_row_per_line=True).splitlines()
         bmat = self.get_B().mathematica_form(format="% 5.4f",
@@ -51,6 +73,7 @@ class Crystal:
 
         msg =  "Crystal:\n"
         msg += "    Unit cell: " + "(%5.3f, %5.3f, %5.3f, %5.3f, %5.3f, %5.3f)" % uc + "\n"
+        msg += "    Space group: " + sg + "\n"
         msg += "    U matrix:  " + umat[0] + "\n"
         msg += "               " + umat[1] + "\n"
         msg += "               " + umat[2] + "\n"

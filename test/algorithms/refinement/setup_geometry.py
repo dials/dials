@@ -203,4 +203,6 @@ class Extract(object):
                     self._params.crystal.b,
                     self._params.crystal.c])
 
-        self.crystal = Crystal(*vecs)
+        sg = self._params.crystal.space_group_symbol
+
+        self.crystal = Crystal(*vecs, space_group_symbol = sg)
