@@ -541,7 +541,7 @@ class indexer(object):
     real_space_c = A_inv.elems[6:9]
     to_xds = xds.to_xds(self.sweep)
     with open('XDS.INP', 'wb') as f:
-      to_xds.XDS_INP(out=f)
+      to_xds.XDS_INP(out=f, job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
     with open('XPARM.XDS', 'wb') as f:
       to_xds.xparm_xds(
         real_space_a, real_space_b, real_space_c,
