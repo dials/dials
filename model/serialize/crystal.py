@@ -67,7 +67,8 @@ def crystal_from_dict(d):
     real_space_a = d['real_space_a']
     real_space_b = d['real_space_b']
     real_space_c = d['real_space_c']
-    space_group  = "Hall:" + d['space_group_hall_symbol']
+    # str required to force unicode to ascii conversion
+    space_group  = str("Hall:" + d['space_group_hall_symbol'])
     mosaicity    = d['mosaicity']
     return Crystal(real_space_a, real_space_b, real_space_c,
                    space_group_symbol=space_group,
