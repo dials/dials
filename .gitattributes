@@ -688,6 +688,9 @@ test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/centroid/tst_toy_centroid_helpers.py -text
+test/algorithms/image/filter/tst_fano.py -text
+test/algorithms/image/filter/tst_mean_and_variance.py -text
+test/algorithms/image/filter/tst_summed_area.py -text
 test/algorithms/image/tst_centroid.py -text
 test/algorithms/integration/profile/__init__.py -text
 test/algorithms/integration/profile/tst_grid_sampler.py -text

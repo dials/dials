@@ -38,7 +38,7 @@ namespace dials { namespace algorithms {
   inline
   flex_double mean_filter(const flex_double &image, int2 size) {
     flex_double mean = summed_area<double>(image, size);
-    double inv_count = 1.0 / ((double)(size[0] * size[1]));
+    double inv_count = 1.0 / ((double)(2 * size[0] + 1) * (2 * size[1] + 1));
 
     #pragma omp parallel for
     for (std::size_t i = 0; i < mean.size(); ++i) {
@@ -137,7 +137,7 @@ namespace dials { namespace algorithms {
       }
 
       // Inverse of counts to avoid excessive division
-      int count = (size[0] * size[1]);
+      int count = (2 * size[0] + 1) * (2 * size[1] + 1);
       inv_count_ = 1.0 / count;
       inv_countm1_ = 1.0 / (count - 1);
 
