@@ -224,7 +224,6 @@ array_family/sort_index.h -text
 command_line/analyse_blank.py -text
 command_line/background_lookup.py -text
 command_line/beam_divergence_and_mosaicity.py -text
-command_line/centroid.py -text
 command_line/compare_mosflm_dials.py -text
 command_line/compare_xds_dials.py -text
 command_line/detector_max_resolution.py -text
@@ -245,6 +244,7 @@ command_line/print_reflection_stats.py -text
 command_line/refine.py -text
 command_line/refine2.py -text
 command_line/reflection_stats.py -text
+command_line/strong_spots.py -text
 command_line/subtract_background.py -text
 command_line/toy_centroid_runner.py -text
 data/completion_template.txt -text
