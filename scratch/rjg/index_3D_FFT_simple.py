@@ -11,6 +11,7 @@ from cctbx.array_family import flex
 from cctbx import crystal, miller, sgtbx, uctbx, xray
 
 import dxtbx
+from dials.algorithms.centroid import centroid_px_to_mm
 from dials.model.data import ReflectionList
 from dials.model.experiment.crystal_model import Crystal
 
@@ -99,6 +100,9 @@ def is_approximate_integer_multiple(vec_a, vec_b,
   return False
 
 
+deg_to_radians = math.pi/180
+
+
 class indexer(object):
 
   def __init__(self, reflections, sweep, params=None):
@@ -116,8 +120,9 @@ class indexer(object):
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
     n_points = self.gridding[0]
+    self.prepare_reflections()
+    self.filter_reflections_by_scan_range()
     self.map_centroids_to_reciprocal_space_grid()
-
     self.unit_cell = uctbx.unit_cell([n_points*self.params.d_min/2]*3+[90]*3)
     self.crystal_symmetry = crystal.symmetry(unit_cell=self.unit_cell,
                                              space_group_symbol="P1")
@@ -147,14 +152,68 @@ class indexer(object):
     if self.params.export_xds_files:
       self.export_xds_files()
 
-  def map_centroids_to_reciprocal_space_grid(self):
+  def prepare_reflections(self):
+    """Reflections that come from dials.spotfinder only have the centroid
+    position and variance set, """
+
+    for i_ref, refl in enumerate(self.reflections):
+      # just a quick check for now that the reflections haven't come from
+      # somewhere else
+      assert refl.image_coord_mm == (0,0)
+
+      # set reflection properties that might be needed by the dials refinement
+      # engine, and convert values from pixels and image number to mm/rads
+      refl.frame_number = refl.centroid_position[2]
+      centroid_position, centroid_variance, _ = centroid_px_to_mm(
+        self.detector, self.scan,
+        refl.centroid_position,
+        refl.centroid_variance,
+        (1,1,1))
+      refl.centroid_position = centroid_position
+      refl.centroid_variance = centroid_variance
+      refl.rotation_angle = centroid_position[2]
+
+  def filter_reflections_by_scan_range(self):
+    self.reflections_in_scan_range = flex.size_t()
+    for i_ref, refl in enumerate(self.reflections):
+      frame_number = refl.frame_number
+
+      if len(self.params.scan_range):
+        reflections_in_range = False
+        for scan_range in self.params.scan_range:
+          if scan_range is None: continue
+          range_start, range_end = scan_range
+          if frame_number >= range_start and frame_number < range_end:
+            reflections_in_range = True
+            break
+        if not reflections_in_range:
+          continue
+      self.reflections_in_scan_range.append(i_ref)
+
+  def map_centroids_to_reciprocal_space(self):
+    self.reciprocal_space_points = flex.vec3_double()
 
     wavelength = self.beam.get_wavelength()
     s0 = matrix.col(self.beam.get_s0())
     rotation_axis = matrix.col(
       self.goniometer.get_rotation_axis())
 
-    self.reciprocal_space_points = []
+    for i_ref in self.reflections_in_scan_range:
+      refl = self.reflections[i_ref]
+      s1 = matrix.col(
+        self.detector.get_lab_coord(refl.centroid_position[:2]))
+      s1 = s1.normalize()/wavelength
+      refl.beam_vector = tuple(s1) # needed by ray_intersection
+      S = s1 - s0
+      spot_resolution = 1/S.length()
+      phi = refl.rotation_angle
+      point = S.rotate_around_origin(rotation_axis, -phi, deg=False)
+      self.reciprocal_space_points.append(tuple(point))
+
+  def map_centroids_to_reciprocal_space_grid(self):
+    self.map_centroids_to_reciprocal_space()
+    assert len(self.reciprocal_space_points) == len(self.reflections_in_scan_range)
+    wavelength = self.beam.get_wavelength()
 
     n_points = self.gridding[0]
     rlgrid = 2 * wavelength / (self.params.d_min * n_points)
@@ -162,71 +221,23 @@ class indexer(object):
 
     grid = flex.double(flex.grid(self.gridding), 0)
 
-    reflections_used_for_indexing = ReflectionList()
+    reflections_used_for_indexing = flex.size_t()
+    reflections_in_scan_range = flex.size_t()
 
-    deg_to_radians = math.pi/180
-
-    oscillation_range = self.scan.get_oscillation_range(deg=True)
-    phi_zero = oscillation_range[0]
-    image_width_rad = (
-      oscillation_range[1] - oscillation_range[0]) * deg_to_radians
-
-    for refl in self.reflections:
-
-      frame_number = refl.centroid_position[2]
-
-      if len(self.params.scan_range):
-        use_reflection = False
-        for scan_range in self.params.scan_range:
-          if scan_range is None: continue
-          range_start, range_end = scan_range
-          if frame_number >= range_start and frame_number < range_end:
-            use_reflection = True
-            break
-        if not use_reflection:
-          continue
-
-      s1 = matrix.col(
-        self.detector.get_pixel_lab_coord(refl.centroid_position[:2]))
-      s1 = s1.normalize()/wavelength
-      S = s1 - s0
-      spot_resolution = 1/S.length()
-
+    for i_pnt, point in enumerate(self.reciprocal_space_points):
+      point = matrix.col(point)
+      spot_resolution = 1/point.length()
       if spot_resolution < self.params.d_min:
         continue
-
-      phi = self.scan.get_angle_from_array_index(frame_number)
-
-      # set reflection properties that might be needed by the dials refinement
-      # engine, and convert values from pixels and image number to mm/rads
-      from dials.algorithms.centroid import centroid_px_to_mm
-      refl.beam_vector = tuple(s1)
-      refl.frame_number = refl.centroid_position[2]
-      centroid_position, centroid_variance, _ = centroid_px_to_mm(
-        self.detector, self.scan,
-        refl.centroid_position,
-        refl.centroid_variance,
-        (1,1,1))
-      refl.beam_vector = tuple(s1)
-      refl.frame_number = refl.centroid_position[2]
-      refl.centroid_position = centroid_position
-      refl.centroid_variance = centroid_variance
-      refl.rotation_angle = centroid_position[2]
-
-      point = S.rotate_around_origin(rotation_axis, -phi, deg=True)
-
-      #assert round(detector.get_resolution_at_pixel(beam.get_s0(), wavelength,
-                                                    #refl.centroid_position[:2]),
-                   #4) == \
-             #round(spot_resolution, 4)
 
       grid_coordinates = [int(round(point[i]/rlgrid)+n_points/2) for i in range(3)]
       if max(grid_coordinates) >= n_points: continue # this reflection is outside the grid
       if min(grid_coordinates) < 0: continue # this reflection is outside the grid
-      T = math.exp(-self.params.b_iso * S.length()**2 / 4)
+      T = math.exp(-self.params.b_iso * point.length()**2 / 4)
       grid[grid_coordinates] = T
-      self.reciprocal_space_points.append(tuple(point))
-      reflections_used_for_indexing.append(refl)
+
+      i_ref = self.reflections_in_scan_range[i_pnt]
+      reflections_used_for_indexing.append(i_ref)
 
     self.reciprocal_space_grid = grid
     self.reflections_used_for_indexing = reflections_used_for_indexing
@@ -398,7 +409,10 @@ class indexer(object):
     A = crystal_model.get_A()
     A_inv = A.inverse()
 
-    for rlp, refl in zip(self.reciprocal_space_points, self.reflections_used_for_indexing):
+    for i_ref in self.reflections_used_for_indexing:
+      i_rlp = flex.first_index(self.reflections_in_scan_range, i_ref)
+      rlp = self.reciprocal_space_points[i_rlp]
+      refl = self.reflections[i_ref]
       hkl_float = A_inv * matrix.col(rlp)
       hkl_int = [int(round(h)) for h in hkl_float]
       max_difference = max([abs(hkl_float[i] - hkl_int[i]) for i in range(3)])
@@ -433,6 +447,11 @@ class indexer(object):
            fix_beam=self.params.refinement.fix_beam,
            fix_detector=self.params.refinement.fix_detector,
            scan_varying=False)
+
+    if not (self.params.refinement.fix_beam and self.params.refinement.fix_detector):
+      # Experimental geometry may have changed - re-map centroids to
+      # reciprocal space
+      self.map_centroids_to_reciprocal_space()
 
     print "Refined crystal model:"
     print crystal_model
