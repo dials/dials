@@ -213,11 +213,6 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
     DIALS = []
     HKL = []
 
-    _xlp = []
-    _dlp = []
-
-    fout = open('ratio_xyz.dat', 'w')
-
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
@@ -225,19 +220,6 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
             XDS.append(xi[c])
             DIALS.append(di[j])
             HKL.append(hkl)
-            fout.write('%d %d %d %f %f %f %f %f %f %f %f %f\n' % \
-                       (hkl[0], hkl[1], hkl[2], uc.d(hkl),
-                        xi[c], xxyz[c][0], xxyz[c][1], xxyz[c][2],
-                        di[j], dxyz[j][0], dxyz[j][1], dxyz[j][2]))
-            _xlp.append(xlp[c])
-            _dlp.append(dlp[j])
-
-    fout.close()
-
-    fout = open('lp.dat', 'w')
-    for x, d in zip(_xlp, _dlp):
-        fout.write('%f %f\n' % (x, d))
-    fout.close()
 
     # now compute resolution for every reflection - or at least each unique
     # Miller index...
@@ -273,8 +255,6 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
     ccs = []
     rs = []
     ss = []
-    _ms = []
-    _ss = []
 
     for chunk in chunks:
         xds = XDS[chunk[0]:chunk[1]]
@@ -286,23 +266,17 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
         c = cc(dials, xds)
         r, s = R(dials, xds)
-        _m, _s = meansd([x / d for x, d in zip(xds, dials)])
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f %3f %3f' % \
-          (chunk[0], len(xds), min(resols), max(resols), c, r, s, _m, _s)
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
+          (chunk[0], len(xds), min(resols), max(resols), c, r, s)
         ccs.append(c)
         rs.append(r)
         ss.append(s)
-        _ms.append(_m)
-        _ss.append(_s)
 
     chunks = [j for j in range(len(chunks))]
 
     # kludge - if we fall off
 
     chunks = chunks[:len(rs)]
-
-    _plus = [_m + _s for _m, _s in zip(_ms, _ss)]
-    _minus = [_m - _s for _m, _s in zip(_ms, _ss)]
 
     from matplotlib import pyplot
     pyplot.xlabel('Chunk')
@@ -311,16 +285,11 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
     pyplot.plot(chunks, ccs, label = 'CC')
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
-    pyplot.plot(chunks, _ms, label = '<K>')
-    pyplot.plot(chunks, _plus, label = '<K>+1s')
-    pyplot.plot(chunks, _minus, label = '<K>-1s')
     pyplot.legend(bbox_to_anchor=(1.05,1.0), loc=2, borderaxespad=0.0)
     pyplot.savefig('plot.png')
     pyplot.close()
 
     return
-
-##### FIXME derive REIDX matrix if appropriate from the unit cell vectors #####
 
 def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
     '''Derive a reindexing matrix to go from the orientation matrix used
