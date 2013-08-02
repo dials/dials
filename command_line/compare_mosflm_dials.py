@@ -26,7 +26,7 @@ def pull_reference(integrate_mtz):
 
     for c in m.columns():
         if c.label() == 'I':
-            i = c.extract_valid_values()
+            i_lp = c.extract_valid_values()
         elif c.label() == 'SIGI':
             sigi = c.extract_valid_values()
         elif c.label() == 'XDET':
@@ -35,6 +35,8 @@ def pull_reference(integrate_mtz):
             ydet = c.extract_valid_values()
         elif c.label() == 'ROT':
             rot = c.extract_valid_values()
+        elif c.label() == 'LP':
+            lp = c.extract_valid_values()
 
     # extract x, y, z positions for this in image address space
 
@@ -42,14 +44,16 @@ def pull_reference(integrate_mtz):
 
     dx = b0.detlm()[1]
     dz = b0.phiend() - b0.phistt()
-    z0 = b0.phistt() / dz
+    z0 = b0.phistt()
 
     for x, y, r in zip(xdet, ydet, rot):
         _x = y
-        _y = dx - x
-        _z = z0 + r / dz
+        _y = x
+        _z = (r - z0) / dz
 
         xyz.append((_x, _y, _z))
+
+    i = i_lp / lp
 
     print 'Reference: %d observations' % len(hkl)
     return hkl, i, sigi, xyz
@@ -132,20 +136,16 @@ def R(calc, obs, scale = None):
                 for c, o in zip(calc, obs)]) / \
                 sum([math.fabs(o) for o in obs]), scale
 
-def compare_chunks(integrate_mtz, integrate_pkl, crystal_json):
+def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
 
     from cctbx.array_family import flex
     from annlib_ext import AnnAdaptor as ann_adaptor
 
-    # FIXME read crystal.json file
-
     uc = integrate_mtz_to_unit_cell(integrate_mtz)
 
-    # FIXME read UB matrix from integrate.mtz
+    rdx = derive_reindex_matrix(crystal_json, sweep_json, integrate_mtz)
 
-
-    # FIXME compute mapping from one to the other; compute reindex matrix
-
+    print rdx
 
     xhkl, xi, xsigi, xxyz = pull_reference(integrate_mtz)
     dhkl, di, dsigi, dxyz = pull_calculated(integrate_pkl)
@@ -167,25 +167,17 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json):
     ann = ann_adaptor(data = reference, dim = 3, k = 1)
     ann.query(query)
 
-    XDS = []
+    MOS = []
     DIALS = []
     HKL = []
-
-    fout = open('ratio_xyz.dat', 'w')
 
     # perform the analysis
     for j, hkl in enumerate(dhkl):
         c = ann.nn[j]
-        if hkl == xhkl[c]:
-            XDS.append(xi[c])
+        if hkl == tuple(rdx * xhkl[c]):
+            MOS.append(xi[c])
             DIALS.append(di[j])
             HKL.append(hkl)
-            fout.write('%d %d %d %f %f %f %f %f %f %f %f %f\n' % \
-                       (hkl[0], hkl[1], hkl[2], uc.d(hkl),
-                        xi[c], xxyz[c][0], xxyz[c][1], xxyz[c][2],
-                        di[j], dxyz[j][0], dxyz[j][1], dxyz[j][2]))
-
-    fout.close()
 
     # now compute resolution for every reflection - or at least each unique
     # Miller index...
@@ -200,39 +192,39 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json):
     # then resort the list in terms of resolution, then reverse it
 
     sort_me = []
-    for hkl, xds, dials in zip(HKL, XDS, DIALS):
-        sort_me.append((resolutions[hkl], xds, dials))
+    for hkl, mos, dials in zip(HKL, MOS, DIALS):
+        sort_me.append((resolutions[hkl], mos, dials))
 
     sort_me.sort()
     sort_me.reverse()
 
     resolutions = [sm[0] for sm in sort_me]
-    XDS = [sm[1] for sm in sort_me]
+    MOS = [sm[1] for sm in sort_me]
     DIALS = [sm[2] for sm in sort_me]
 
     # then extract the original observation structure
 
-    print 'Paired %d observations' % len(XDS)
+    print 'Paired %d observations' % len(MOS)
 
-    scale = sum(XDS) / sum(DIALS)
+    scale = sum(MOS) / sum(DIALS)
 
-    chunks = [(i, i + 1000) for i in range(0, len(XDS), 1000)]
+    chunks = [(i, i + 1000) for i in range(0, len(MOS), 1000)]
 
     ccs = []
     rs = []
     ss = []
 
     for chunk in chunks:
-        xds = XDS[chunk[0]:chunk[1]]
+        mos = MOS[chunk[0]:chunk[1]]
         dials = DIALS[chunk[0]:chunk[1]]
         resols = resolutions[chunk[0]:chunk[1]]
 
-        if len(xds) < 100:
+        if len(mos) < 100:
             break
 
-        c = cc(dials, xds)
-        r, s = R(dials, xds)
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(xds),
+        c = cc(dials, mos)
+        r, s = R(dials, mos)
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(mos),
                                                     min(resols), max(resols),
                                                     c, r, s)
         ccs.append(c)
@@ -253,13 +245,59 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json):
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
     pyplot.legend()
-    pyplot.savefig('plot.png')
+    pyplot.savefig('plot-vs-mosflm.png')
     pyplot.close()
 
     return
 
-##### FIXME derive REIDX matrix if appropriate from the unit cell vectors #####
+def get_dials_matrix(crystal_json):
+    from dials.model.serialize import load
+    crystal = load.crystal(crystal_json)
+    return crystal.get_A()
+
+def get_dials_coordinate_frame(sweep_json):
+    from dials.model.serialize import load
+    sweep = load.sweep(sweep_json)
+    return sweep.get_beam().get_direction(), \
+      sweep.get_goniometer().get_rotation_axis()
+
+def get_mosflm_coordinate_frame(integrate_mtz):
+    from iotbx import mtz
+    from scitbx import matrix
+    m = mtz.object(integrate_mtz)
+    b = m.batches()[0]
+    return matrix.col(b.source()), matrix.col(b.e1())
+
+def integrate_mtz_to_A_matrix(integrate_mtz):
+    from iotbx import mtz
+    from cctbx.uctbx import unit_cell
+    from scitbx import matrix
+    m = mtz.object(integrate_mtz)
+    b = m.batches()[0]
+    u = matrix.sqr(b.umat()).transpose()
+    c = unit_cell(tuple(b.cell()))
+    f = matrix.sqr(c.fractionalization_matrix()).transpose()
+
+    return (u * f)
+
+def derive_reindex_matrix(crystal_json, sweep_json, integrate_mtz):
+    '''Derive a reindexing matrix to go from the orientation matrix used
+    for MOSFLM integration to the one used for DIALS integration.'''
+
+    dA = get_dials_matrix(crystal_json)
+    dbeam, daxis = get_dials_coordinate_frame(sweep_json)
+    mbeam, maxis = get_mosflm_coordinate_frame(integrate_mtz)
+
+    from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+    R = align_reference_frame(mbeam, dbeam, maxis, daxis)
+    mA = R * integrate_mtz_to_A_matrix(integrate_mtz)
+
+    # assert that this should just be a simple integer rotation matrix
+    # i.e. reassignment of a, b, c so...
+
+    from scitbx import matrix
+    return matrix.sqr(map(int, map(round, (dA.inverse() * mA).elems)))
 
 if __name__ == '__main__':
     import sys
-    compare_chunks(sys.argv[1], sys.argv[2])
+    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
