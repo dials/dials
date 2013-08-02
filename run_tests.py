@@ -23,6 +23,8 @@ tst_list = (
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/image/tst_centroid.py",
+    "$D/test/algorithms/image/filter/tst_summed_area.py",
+    "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
     "$D/test/algorithms/reflection_basis/tst_coordinate_system.py",
     "$D/test/algorithms/reflection_basis/tst_map_frames.py",
