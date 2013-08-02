@@ -285,7 +285,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
     pyplot.plot(chunks, ccs, label = 'CC')
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
-    pyplot.legend(bbox_to_anchor=(1.05,1.0), loc=2, borderaxespad=0.0)
+    pyplot.legend()
     pyplot.savefig('plot-vs-xds.png')
     pyplot.close()
 
