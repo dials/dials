@@ -33,12 +33,13 @@ refinement
         .type = bool
       scan_varying = False
         .help = "Parameterise the crystal to vary during the scan"
+        .type = bool
       num_intervals = 5
         .help = "Number of intervals between checkpoints if scan_varying"
                 "refinement is requested"
       .type = int
      }
-        
+
     detector
       .help = "detector parameters"
     {

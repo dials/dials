@@ -73,13 +73,13 @@ class Refiner(object):
 
         (self.beam_param, self.xl_ori_param, self.xl_uc_param, self.det_param,
          self.pred_param) = \
-            self.create_param(self.beam, self.crystal, self.goniometer,
+            self.create_param(self.beam, self.crystal, self.gonio,
                               self.detector, self.scan)
 
-        if verbosity > 1:
+        if self._verbosity > 1:
             print "Prediction equation parameterisation built\n"
             print "Parameter order : name mapping"
-            for i, e in enumerate(pred_param.get_p_names()):
+            for i, e in enumerate(self.pred_param.get_p_names()):
                 print "Parameter %03d : " % i + e
             print
 
@@ -92,27 +92,28 @@ class Refiner(object):
         #####################################
 
         self.refman = self.create_refman(self.reflections, self.beam,
-                                self.goniometer, self.scan, self.verbosity)
+                                self.gonio, self.scan, self._verbosity)
 
-        if verbosity > 1: print "Reflection manager built\n"
+        if self._verbosity > 1: print "Reflection manager built\n"
 
         ##############################
         # Set up the target function #
         ##############################
 
-        self.target = self.create_target(self.scan, self.detector, self.refman,
-                                         self.pred_param)
+        self.target = self.create_target(self.crystal, self.beam,
+            self.gonio, self.detector, self.scan, self.refman,
+            self.pred_param)
 
-        if verbosity > 1: print "Target function built\n"
+        if self._verbosity > 1: print "Target function built\n"
 
         ################################
         # Set up the refinement engine #
         ################################
 
         self.refinery = self.create_refinery(self.target, self.pred_param,
-                                             self.verbosity)
+                                             self._verbosity)
 
-        if verbosity > 1: print "Refinement engine built\n"
+        if self._verbosity > 1: print "Refinement engine built\n"
 
         ###################################
         # Do refinement and return models #
@@ -120,7 +121,7 @@ class Refiner(object):
 
         self.refinery.run()
 
-        if verbosity > 1:
+        if self._verbosity > 1:
             print
             print "Refinement has completed with the following geometry:"
             print_model_geometry(self.beam, self.detector, self.crystal)
@@ -239,7 +240,7 @@ class RefinerFactory(object):
         target_strategy = RefinerFactory.configure_target(params)
 
         return Refiner(parameterisation_strategy, refinery_strategy,
-                 target_strategy, reflections_strategy, verbosity)
+                 reflections_strategy, target_strategy, verbosity)
 
     @staticmethod
     def configure_parameterisation(params):
@@ -318,8 +319,7 @@ class ParameterisationFactory(object):
         import dials.algorithms.refinement.parameterisation as par
 
         # Beam
-        from par.source_parameters import BeamParameterisationOrientation as bp
-        self._beam_par = bp
+        self._beam_par = par.BeamParameterisationOrientation
         self._beam_fix_all = beam_options.fix_beam
         self._beam_fix_in_spindle_plane = beam_options.fix_in_spindle_plane
 
@@ -327,27 +327,20 @@ class ParameterisationFactory(object):
         self._crystal_fix_cell = crystal_options.fix_cell
         self._crystal_fix_orientation = crystal_options.fix_orientation
         self._crystal_scan_varying = crystal_options.scan_varying
+        self._crystal_num_intervals = crystal_options.num_intervals
 
         if self._crystal_scan_varying:
-            from par.scan_varying_crystal_parameters import \
-                    ScanVaryingCrystalOrientationParameterisation as cop
-            from par.scan_varying_crystal_parameters import \
-                    ScanVaryingCrystalUnitCellParameterisation as cucp
-            self._crystal_num_intervals = crystal_options.num_intervals
-
+            cop = par.ScanVaryingCrystalOrientationParameterisation
+            cucp = par.ScanVaryingCrystalUnitCellParameterisation
         else:
-            from par.crystal_parameters import \
-                    CrystalOrientationParameterisation as cop
-            from par.crystal_parameters import \
-                    CrystalUnitCellParameterisation as cucp
-
+            cop = par.CrystalOrientationParameterisation
+            cucp = par.CrystalUnitCellParameterisation
         self._crystal_ori_par = cop
         self._crystal_uc_par = cucp
 
         # Detector
         if detector_options.panels == "single":
-            from dials.algorithms.refinement.parameterisation.detector_parameters import \
-                DetectorParameterisationSinglePanel as dp
+            dp = par.DetectorParameterisationSinglePanel
         elif detector_options.panels == "multiple":
             raise RuntimeError, "multiple panel detector parameterisation is not yet implemented"
         else:
@@ -358,11 +351,9 @@ class ParameterisationFactory(object):
 
         # Prediction equation parameterisation
         if self._crystal_scan_varying:
-            from par.scan_varying_prediction_parameters \
-                    import VaryingCrystalPredictionParameterisation as pep
+            pep = par.VaryingCrystalPredictionParameterisation
         else:
-            from par.prediction_parameters import \
-                DetectorSpacePredictionParameterisation as pep
+            pep = par.DetectorSpacePredictionParameterisation
 
         self.prediction_par = pep
 
@@ -375,15 +366,16 @@ class ParameterisationFactory(object):
             beam_param.set_fixed([True, True])
 
         if self._crystal_scan_varying:
-            xl_ori_param = self._crystal_ori_par(crystal)
-            xl_uc_param = self._crystal_uc_par(crystal)
-        else:
             xl_ori_param = self._crystal_ori_par(crystal,
                                                  scan.get_image_range(),
                                                  self._crystal_num_intervals)
             xl_uc_param = self._crystal_uc_par(crystal,
                                                scan.get_image_range(),
                                                self._crystal_num_intervals)
+        else:
+            xl_ori_param = self._crystal_ori_par(crystal)
+            xl_uc_param = self._crystal_uc_par(crystal)
+
         if self._crystal_fix_orientation:
             xl_ori_param.set_fixed([True] * xl_ori_param.num_free())
         if self._crystal_fix_cell:
@@ -443,6 +435,9 @@ class RefmanFactory(object):
 
     def __call__(self, reflections, beam, goniometer, scan, verbosity):
 
+        from scitbx import matrix
+        from math import sqrt
+
         # pull out data needed for refinement
         temp = [(ref.miller_index, ref.entering, ref.frame_number,
                  ref.rotation_angle, matrix.col(ref.beam_vector),
@@ -496,9 +491,12 @@ class TargetFactory(object):
         self._target = targ
         self._ref_predictor = rp
 
-    def __call__(self, scan, detector, refman, pred_param):
+    def __call__(self, crystal, beam, goniometer, detector, scan,
+        refman, pred_param):
 
+        sweep_range = scan.get_oscillation_range(deg=False)
         image_width = scan.get_oscillation(deg=False)[1]
 
-        return self._target(self._ref_predictor, detector, refman, pred_param,
+        rp = self._ref_predictor(crystal, beam, goniometer, sweep_range)
+        return self._target(rp, detector, refman, pred_param,
                             image_width)
