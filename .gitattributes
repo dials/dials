@@ -225,6 +225,7 @@ command_line/analyse_blank.py -text
 command_line/background_lookup.py -text
 command_line/beam_divergence_and_mosaicity.py -text
 command_line/compare_mosflm_dials.py -text
+command_line/compare_mosflm_xds.py -text
 command_line/compare_xds_dials.py -text
 command_line/detector_max_resolution.py -text
 command_line/dials_spotfinder.py -text
