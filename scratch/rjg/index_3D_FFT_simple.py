@@ -56,6 +56,8 @@ debug = False
 refinement {
   n_macro_cycles = 3
     .type = int(value_min=0)
+  nref_per_degree = 50
+    .type = int(value_min=0)
   fix_detector = False
     .type = bool
     .help = "Whether or not to refine the detector position and orientation."
@@ -581,7 +583,8 @@ class indexer(object):
            fix_cell=False,
            fix_beam=self.params.refinement.fix_beam,
            fix_detector=self.params.refinement.fix_detector,
-           scan_varying=False)
+           scan_varying=False,
+           nref_per_degree=self.params.refinement.nref_per_degree)
 
     if not (self.params.refinement.fix_beam and self.params.refinement.fix_detector):
       # Experimental geometry may have changed - re-map centroids to
