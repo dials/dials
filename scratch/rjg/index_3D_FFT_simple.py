@@ -216,7 +216,7 @@ class indexer(object):
     wavelength = self.beam.get_wavelength()
 
     n_points = self.gridding[0]
-    rlgrid = 2 * wavelength / (self.params.d_min * n_points)
+    rlgrid = 2 / (self.params.d_min * n_points)
     print "FFT gridding: (%i,%i,%i)" %self.gridding
 
     grid = flex.double(flex.grid(self.gridding), 0)
