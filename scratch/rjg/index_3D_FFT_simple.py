@@ -389,7 +389,7 @@ class indexer(object):
             b = -b
             c = -c
             #assert a.cross(b).dot(c) > 0
-          model = Crystal(a, b, c)
+          model = Crystal(a, b, c, space_group_symbol="P 1")
           uc = model.get_unit_cell()
           params = uc.parameters()
           if uc.volume() > (params[0]*params[1]*params[2]/100):
