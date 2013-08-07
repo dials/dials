@@ -72,6 +72,7 @@ class Refinery(object):
         self.rmsd_history = []
 
         self.prepare_for_step()
+        self._initial_rmsds = self._target.rmsds()
 
     def get_num_steps(self):
         return self._step
@@ -113,9 +114,13 @@ class Refinery(object):
         # Non-linear_least_squares#Convergence_criteria
         try:
             r1 = self.rmsd_history[-1]
-            r2 = self.rmsd_history[-2]
         except IndexError:
             return False
+
+        try:
+            r2 = self.rmsd_history[-2]
+        except IndexError:
+            r2 = self._initial_rmsds
 
         tests = [abs((e[1] - e[0])/e[1])  < 0.0001 for e in zip(r1, r2)]
 

@@ -160,7 +160,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         self._pixel_size = detector.get_pixel_size()
         self._image_width = image_width
 
+        # Quantities to cache each step
         self._rmsds = None
+        self._matches = None
 
     def compute_residuals_and_gradients(self):
         '''return the vector of residuals plus their gradients
@@ -264,6 +266,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     def rmsds(self):
         '''calculate unweighted RMSDs'''
+
+        if not self._matches:
+            self._matches = self._H.get_matches()
 
         n = self._H.get_accepted_reflection_count()
 
