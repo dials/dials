@@ -114,13 +114,13 @@ class Refinery(object):
         # Non-linear_least_squares#Convergence_criteria
         try:
             r1 = self.rmsd_history[-1]
+            r2 = self.rmsd_history[-2]
         except IndexError:
             return False
 
-        try:
-            r2 = self.rmsd_history[-2]
-        except IndexError:
-            r2 = self._initial_rmsds
+        #FIXME use self._initial_rmsds. At the moment the rsmd history
+        #for the GaussNewton minimiser refers to rmsd _before_ each
+        #step is taken.
 
         tests = [abs((e[1] - e[0])/e[1])  < 0.0001 for e in zip(r1, r2)]
 

@@ -171,11 +171,6 @@ class Refiner(object):
         # Do a test of new reflection pos
         #self._update_reflections_test()
 
-        # Update models in sweep
-        sweep.set_detector(self.detector)
-        sweep.set_beam(self.beam)
-        sweep.set_goniometer(self.gonio)
-
         # Return the refinery, containing useful information such as the
         # refinement history. The refined models are set by side-effect
         return self.refinery
