@@ -140,6 +140,10 @@ class Refiner(object):
     def rmsds(self):
         '''Return rmsds of the current model'''
 
+        self.refinery.prepare_for_step()
+
+        return self.target.rmsds()
+
     def __call__(self, sweep=None, crystal=None, reflections=None):
         '''Run refinement'''
 
