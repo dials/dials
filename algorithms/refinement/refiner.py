@@ -47,6 +47,12 @@ class Refiner(object):
         '''
         from scitbx import matrix
         from math import sqrt
+        import random
+
+        # While a random subset of reflections is used, continue to
+        # set random.seed to get consistent behaviour
+        random.seed(42)
+        if self._verbosity > 1: print "Random seed set to 42\n"
 
         # Get the models from the sweep
         self.beam = sweep.get_beam()
