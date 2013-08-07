@@ -169,7 +169,7 @@ class Refiner(object):
             print_model_geometry(self.beam, self.detector, self.crystal)
 
         # Do a test of new reflection pos
-        self._update_reflections_test()
+        #self._update_reflections_test()
 
         # Update models in sweep
         sweep.set_detector(self.detector)
