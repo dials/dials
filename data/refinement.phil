@@ -1,10 +1,6 @@
 refinement
   .help = "Parameters to configure the refinement"
 {
-  verbosity = 0
-    .help = "The verbosity level shared by all components of the refinement"
-            "module"
-    .type = int
 
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"
