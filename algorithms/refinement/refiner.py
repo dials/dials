@@ -9,6 +9,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
+from dials.algorithms.refinement import print_model_geometry
 
 
 class Refiner(object):
@@ -32,8 +33,8 @@ class Refiner(object):
         self.create_refman = reflections_strategy
         self._verbosity = verbosity
 
-    def __call__(self, sweep, crystal, reflections):
-        ''' Call to refine.
+    def prepare(self, sweep, crystal, reflections):
+        ''' Prepare refiner with experimental models and data.
 
         Params:
             sweep The sweep to process
@@ -53,6 +54,17 @@ class Refiner(object):
         self.gonio = sweep.get_goniometer()
         self.scan = sweep.get_scan()
         self.crystal = crystal
+
+        if self._verbosity > 1:
+            print ""
+            print "Experimental Models"
+            print "-------------------"
+            print self.beam
+            print self.detector
+            print self.gonio
+            print self.scan
+            print self.crystal
+
 
         # Copy the reflections
         self.reflections = reflections
@@ -83,22 +95,28 @@ class Refiner(object):
                 print "Parameter %03d : " % i + e
             print
 
-            from dials.algorithms.refinement import print_model_geometry
             print "Prior to refinement the experimental model is:"
             print_model_geometry(self.beam, self.detector, self.crystal)
+            print
 
         #####################################
         # Select reflections for refinement #
         #####################################
 
+        if self._verbosity > 1: print "Building reflection manager"
+
         self.refman = self.create_refman(self.reflections, self.beam,
                                 self.gonio, self.scan, self._verbosity)
 
-        if self._verbosity > 1: print "Reflection manager built\n"
+        if self._verbosity > 1:
+            print "Working set size = %d observations" % self.refman.get_sample_size()
+            print "Reflection manager built\n"
 
         ##############################
         # Set up the target function #
         ##############################
+
+        if self._verbosity > 1: print "Building target function"
 
         self.target = self.create_target(self.crystal, self.beam,
             self.gonio, self.detector, self.scan, self.refman,
@@ -110,10 +128,24 @@ class Refiner(object):
         # Set up the refinement engine #
         ################################
 
+        if self._verbosity > 1: print "Building refinement engine"
+
         self.refinery = self.create_refinery(self.target, self.pred_param,
                                              self._verbosity)
 
         if self._verbosity > 1: print "Refinement engine built\n"
+
+        return
+
+    def rmsds(self):
+        '''Return rmsds of the current model'''
+
+    def __call__(self, sweep=None, crystal=None, reflections=None):
+        '''Run refinement'''
+
+        if sweep and crystal and reflections:
+            self.prepare(sweep, crystal, reflections)
+        else: assert [sweep, crystal, reflections].count(None) == 3
 
         ###################################
         # Do refinement and return models #
@@ -148,7 +180,7 @@ class Refiner(object):
         self.miller_indices = flex.miller_index(miller_indices)
 
         print "Predicting new reflections"
-        self._predict_reflections()
+        self.predict_reflections()
 
         # Put coords from same hkl in dict for saved reflections
         coord1 = defaultdict(list)
@@ -177,7 +209,7 @@ class Refiner(object):
         from dials.algorithms.shoebox import BBoxCalculator
         from math import pi
         from dials.algorithms.refinement.prediction.predictors import \
-                ScanVaryingReflectionPredictor
+                ScanVaryingReflectionListGenerator
 
         s0 = self.beam.get_s0()
         dmin = self.detector.get_max_resolution_at_corners(s0,
@@ -207,12 +239,14 @@ class Refiner(object):
         delta_divergence = n_sigma * self.sigma_divergence * pi / 180.0
         delta_mosaicity = n_sigma * self.sigma_mosaicity * pi / 180.0
 
+        # FIXME: DIALS_ASSERT(delta_divergence > 0.0) failure.
+        #
         # Create the bounding box calculator
-        calculate_bbox = BBoxCalculator(self.beam, self.detector, self.gonio,
-            self.scan, delta_divergence, delta_mosaicity)
+        #calculate_bbox = BBoxCalculator(self.beam, self.detector, self.gonio,
+        #    self.scan, delta_divergence, delta_mosaicity)
 
         # Calculate the frame numbers of all the reflections
-        calculate_bbox(self._new_reflections)
+        #calculate_bbox(self._new_reflections)
 
         return self._new_reflections
 

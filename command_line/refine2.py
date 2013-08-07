@@ -69,7 +69,9 @@ class Script(ScriptRunner):
 
         # Refine the geometry
         print 'Performing refinement'
-        sweep, crystal = refine(sweep, crystal, reflections)
+        refined = refine(sweep, crystal, reflections)
+
+        # The sweep and crystal are updated by side-effect
 
         # Save the refined geometry to file
         output_sweep_filename = options.output_sweep_filename

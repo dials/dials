@@ -591,6 +591,10 @@ class ReflectionManager(object):
             if len(v) == 0:
                 del self._H[k]
 
+        if self._verbosity > 1:
+            print len(self._H), "observations remain in the manager after " + \
+                "removing those unmatched with predictions"
+
         return
 
     def get_indices(self):
