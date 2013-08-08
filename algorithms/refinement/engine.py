@@ -15,6 +15,10 @@ import libtbx
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
+class Journal(object):
+    '''Container in which to store information about refinement history'''
+    pass
+
 class Refinery(object):
     '''Abstract interface for Refinery objects'''
 
@@ -60,22 +64,22 @@ class Refinery(object):
 
         # attributes for journalling functionality, based on lstbx's
         # journaled_non_linear_ls class
-        self._step = 0
-        self.num_reflections_history = []
-        self.objective_history = flex.double()
-        self.gradient_history = [] if track_gradient else None
-        self.gradient_norm_history = flex.double()
-        self.step_history = [] if track_step else None
-        self.step_norm_history = flex.double()
-        self.parameter_vector_history = []
-        self.parameter_vector_norm_history = flex.double()
-        self.rmsd_history = []
+        self.history = Journal()
+        self.history._step = -1
+        self.history.num_reflections = []
+        self.history.objective = flex.double()
+        self.history.gradient = [] if track_gradient else None
+        self.history.gradient_norm = flex.double()
+        self.history.solution = [] if track_step else None
+        self.history.solution_norm = flex.double()
+        self.history.parameter_vector = []
+        self.history.parameter_vector_norm = flex.double()
+        self.history.rmsd = []
 
         self.prepare_for_step()
-        self._initial_rmsds = self._target.rmsds()
 
     def get_num_steps(self):
-        return self._step
+        return self.history._step
 
     def prepare_for_step(self):
         '''Update the parameterisation and prepare the target function'''
@@ -90,13 +94,13 @@ class Refinery(object):
         '''Append latest step information to the journal attributes'''
 
         # add step quantities to journal
-        self._step += 1
-        self.num_reflections_history.append(self._target.get_num_reflections())
-        self.rmsd_history.append(self._target.rmsds())
-        self.parameter_vector_history.append(self._parameters.get_p())
-        self.objective_history.append(self._f)
-        if self.gradient_history is not None:
-            self.gradient_history.append(self._g)
+        self.history._step += 1
+        self.history.num_reflections.append(self._target.get_num_reflections())
+        self.history.rmsd.append(self._target.rmsds())
+        self.history.parameter_vector.append(self._parameters.get_p())
+        self.history.objective.append(self._f)
+        if self.history.gradient is not None:
+            self.history.gradient.append(self._g)
 
     def test_for_termination(self):
         '''Return True if refinement should be terminated'''
@@ -113,14 +117,10 @@ class Refinery(object):
         # http://en.wikipedia.org/wiki/
         # Non-linear_least_squares#Convergence_criteria
         try:
-            r1 = self.rmsd_history[-1]
-            r2 = self.rmsd_history[-2]
+            r1 = self.history.rmsd[-1]
+            r2 = self.history.rmsd[-2]
         except IndexError:
             return False
-
-        #FIXME use self._initial_rmsds. At the moment the rsmd history
-        #for the GaussNewton minimiser refers to rmsd _before_ each
-        #step is taken.
 
         tests = [abs((e[1] - e[0])/e[1])  < 0.0001 for e in zip(r1, r2)]
 
@@ -146,11 +146,11 @@ class Refinery(object):
                      "Param_%02d " * len(self._parameters))
         print header % tuple(range(1, len(self._parameters) + 1))
 
-        for i in range(self._step):
-            dat = (i + 1,) + (self.num_reflections_history[i],) + \
-                  (self.objective_history[i],) + \
-                  tuple(self.rmsd_history[i]) + \
-                  tuple(self.parameter_vector_history[i])
+        for i in range(self.history._step + 1):
+            dat = (i,) + (self.history.num_reflections[i],) + \
+                  (self.history.objective[i],) + \
+                  tuple(self.history.rmsd[i]) + \
+                  tuple(self.history.parameter_vector[i])
             print  ("%d " + "%d " + "%.5f " + "%.5f " * 3 +
                 "%.5f " * len(self._parameters)) % dat
 
@@ -186,7 +186,7 @@ class AdaptLbfgs(Refinery):
 
         self.update_journal()
         if self._verbosity > 0.:
-            print "Step", self._step
+            print "Step", self.history._step
 
         return self.test_for_termination()
 
@@ -260,11 +260,6 @@ class AdaptLstbx(
 
         normal_eqns.non_linear_ls.__init__(self, n_parameters = len(self._parameters))
 
-        # determine overall scale factor for the gradient threshold
-        self._target.predict()
-        self._scale = self._target.compute_functional_and_gradients()[0]
-
-
     def restart(self):
         self.x = self.x_0.deep_copy()
         self.old_x = None
@@ -288,7 +283,7 @@ class AdaptLstbx(
         residuals, jacobian, weights = \
             self._target.compute_residuals_and_gradients()
 
-        #Reset the state to construction time, i.e. no equations accumulated
+        # Reset the state to construction time, i.e. no equations accumulated
         self.reset()
 
         if objective_only:
@@ -303,7 +298,7 @@ class AdaptLstbx(
     def step_backward(self):
         assert self.old_x is not None
         self.x, self.old_x = self.old_x, None
-        self._step -= 1
+        self.history._step -= 1
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     '''Refinery implementation, using lstbx Gauss Newton iterations'''
@@ -314,7 +309,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     damping_value = 0.0007
     max_shift_over_esd = 15
     convergence_as_shift_over_esd = 1e-5
-    reduced_chi_squared_history = flex.double()
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
@@ -324,8 +318,8 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                  log = None, verbosity = verbosity, track_step = False,
                  track_gradient = False)
 
-        # scale gradient threshold for this problem
-        self.gradient_threshold *= self._scale
+        # add an attribute to the journal
+        self.history.reduced_chi_squared = flex.double()
 
         libtbx.adopt_optional_init_args(self, kwds)
 
@@ -334,15 +328,14 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         while self.n_iterations < self.n_max_iterations:
             self.build_up()
 
-            # set functional and gradients for the step (to be added
-            # to the history at callback_after_step())
+            # set functional and gradients for the step (to add to the history)
             self._f = self.objective()
             self._g = -self.opposite_of_gradient()
 
-            # journalling prior to solve
-            self.parameter_vector_norm_history.append(
+            # extra journalling prior to solve
+            self.history.parameter_vector_norm.append(
               self.parameter_vector_norm())
-            self.gradient_norm_history.append(
+            self.history.gradient_norm.append(
               self.opposite_of_gradient().norm_inf())
 
             if self._verbosity > 2:
@@ -353,18 +346,19 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                     one_row_per_line=True)
                 print
 
-            self.update_journal()
-            if self._verbosity > 0.: print "Step", self._step
-            if self._verbosity > 1: self.print_step()
-
             # solve the normal equations
             self.solve()
 
+            # standard journalling
+            self.update_journal()
+            if self._verbosity > 0.: print "Step", self.history._step
+            if self._verbosity > 1: self.print_step()
+
             # extra journalling post solve
-            if self.step_history is not None:
-              self.step_history.append(self.actual.step().deep_copy())
-            self.step_norm_history.append(self.step().norm())
-            self.reduced_chi_squared_history.append(self.chi_sq())
+            if self.history.solution is not None:
+              self.history.solution.append(self.actual.step().deep_copy())
+            self.history.solution_norm.append(self.step().norm())
+            self.history.reduced_chi_squared.append(self.chi_sq())
 
             # test termination criteria
             if self.test_for_termination():
@@ -397,6 +391,11 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
         # keep the estimated parameter variance-covariance matrix
         self.parameter_var_cov = \
-            self.reduced_chi_squared_history[-1] * nm_inv
+            self.history.reduced_chi_squared[-1] * nm_inv
+
+        # TODO
+        # send parameter variances back to the parameter classes
+        # themselves, for reporting purposes and for building restraints
+        # based on existing parameterisations.
 
         return

@@ -186,7 +186,7 @@ def compare_chunks(integrate_mtz, integrate_hkl):
     rdx = derive_reindex_matrix(integrate_hkl, integrate_mtz)
 
     print rdx
-    
+
     xhkl, xi, xsigi, xxyz = pull_reference(integrate_mtz)
     dhkl, di, dsigi, dxyz = pull_reference_xds(integrate_hkl)
 

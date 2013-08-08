@@ -240,7 +240,7 @@ refiner = setup_minimiser.Extract(master_phil,
 
 refiner.run()
 
-assert refiner.get_num_steps() == 2
+assert refiner.get_num_steps() == 1
 assert approx_equal(mytarget.rmsds(), (0.005088741756908138,
                                        0.004224068374918179,
                                        8.862339371231795e-05))
@@ -271,7 +271,8 @@ refiner = setup_minimiser.Extract(master_phil,
 refiner.run()
 
 assert mytarget.achieved()
-assert refiner.get_num_steps() == 11
+assert refiner.get_num_steps() == 10
+print refiner.get_num_steps()
 assert approx_equal(mytarget.rmsds(), (0.0355385109852,
                                        0.0274478303898,
                                        0.000220579661729))
