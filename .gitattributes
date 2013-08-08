@@ -141,6 +141,7 @@ algorithms/refinement/boost_python/refinement_ext.cc -text
 algorithms/refinement/det_param_visualisation.py -text
 algorithms/refinement/engine.py -text
 algorithms/refinement/parameterisation/__init__.py -text
+algorithms/refinement/parameterisation/beam_parameters.py -text
 algorithms/refinement/parameterisation/crystal_parameters.py -text
 algorithms/refinement/parameterisation/detector_parameters.py -text
 algorithms/refinement/parameterisation/model_parameters.py -text
@@ -148,7 +149,6 @@ algorithms/refinement/parameterisation/prediction_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_crystal_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_model_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_prediction_parameters.py -text
-algorithms/refinement/parameterisation/source_parameters.py -text
 algorithms/refinement/plot_derivatives.py -text
 algorithms/refinement/prediction/.Rhistory -text
 algorithms/refinement/prediction/README -text

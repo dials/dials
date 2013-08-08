@@ -31,7 +31,7 @@ from dials.scratch.dgw.refinement.parameterisation.prediction_parameters import 
     DetectorSpacePredictionParameterisation
 from dials.scratch.dgw.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.scratch.dgw.refinement.parameterisation.source_parameters import \
+from dials.scratch.dgw.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \

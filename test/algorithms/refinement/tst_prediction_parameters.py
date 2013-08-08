@@ -36,7 +36,7 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.parameterisation.source_parameters import \
+from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \

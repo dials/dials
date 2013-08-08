@@ -112,7 +112,7 @@ assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 # To change to DIALS models, I must modify these modules:
 ## prediction/tst
 ## prediction/predictors
-## source_parameters
+## beam_parameters
 ## prediction_parameters
 ## tst_prediction_parameters
 ## setup_geometry

@@ -367,9 +367,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self.test_rmsd_convergence():
                 reason_for_termination = "RMSD no longer decreasing"
                 break
-            #if self.has_gradient_converged_to_zero():
-            #    print "Gradient converged to zero"
-            #    break
+
             if self.had_too_small_a_step():
                 reason_for_termination = "Step too small"
                 break

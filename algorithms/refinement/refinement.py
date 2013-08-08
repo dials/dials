@@ -117,7 +117,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     # Model parameterisations
     from dials.algorithms.refinement.parameterisation.detector_parameters import \
         DetectorParameterisationSinglePanel
-    from dials.algorithms.refinement.parameterisation.source_parameters import \
+    from dials.algorithms.refinement.parameterisation.beam_parameters import \
         BeamParameterisationOrientation
     from dials.algorithms.refinement.parameterisation.crystal_parameters import \
         CrystalOrientationParameterisation, CrystalUnitCellParameterisation
@@ -267,7 +267,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
     # Model parameterisations
     from dials.algorithms.refinement.parameterisation.detector_parameters import \
         DetectorParameterisationSinglePanel
-    from dials.algorithms.refinement.parameterisation.source_parameters import \
+    from dials.algorithms.refinement.parameterisation.beam_parameters import \
         BeamParameterisationOrientation
     from dials.algorithms.refinement.parameterisation.\
         scan_varying_crystal_parameters import \

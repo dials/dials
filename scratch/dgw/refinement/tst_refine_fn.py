@@ -29,7 +29,7 @@ import setup_geometry
 # Model parameterisations
 from dials.scratch.dgw.refinement.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.scratch.dgw.refinement.source_parameters import \
+from dials.scratch.dgw.refinement.beam_parameters import \
     BeamParameterisationOrientation
 from dials.scratch.dgw.refinement.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation

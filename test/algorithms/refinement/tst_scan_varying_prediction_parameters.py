@@ -37,7 +37,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parame
     VaryingCrystalPredictionParameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.algorithms.refinement.parameterisation.source_parameters import \
+from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters import \
     ScanVaryingCrystalOrientationParameterisation, \
