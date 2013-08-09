@@ -126,6 +126,30 @@ class indexer(object):
     if params is None: params = master_params
     self.params = params
 
+    self.target_symmetry_primitive = None
+    self.target_symmetry_centred = None
+    if (self.params.known_symmetry.space_group is not None or
+        self.params.known_symmetry.unit_cell is not None):
+      is_centred = False
+      if self.params.known_symmetry.space_group is not None:
+        space_group_info = self.params.known_symmetry.space_group
+        is_centred = space_group_info.group().conventional_centring_type_symbol() != 'P'
+        cb_op_to_primitive = space_group_info.change_of_basis_op_to_primitive_setting()
+        sgi_primitive = space_group_info.change_basis(cb_op_to_primitive)
+        space_group_primitive = sgi_primitive.group()
+      else:
+        space_group_primitive = sgtbx.space_group("P 1")
+      self.target_symmetry_primitive = crystal.symmetry(
+        unit_cell=self.params.known_symmetry.unit_cell,
+        space_group=space_group_primitive,
+        assert_is_compatible_unit_cell=False)
+      if is_centred:
+        self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
+          self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
+      if self.params.known_symmetry.unit_cell is not None:
+        assert self.target_symmetry_primitive.unit_cell().is_similar_to(
+          self.params.known_symmetry.unit_cell)
+
   def index(self):
     n_points = self.params.fft_n_points
     self.gridding = fftpack.adjust_gridding_triple(
@@ -150,11 +174,10 @@ class indexer(object):
     self.d_min = self.params.d_min
     self.index_reflections_given_orientation_matix(
       crystal_model)
-    if self.params.known_symmetry.space_group is not None:
+    if self.target_symmetry_primitive is not None:
       symmetrized_model = self.apply_symmetry(
-        crystal_model, self.params.known_symmetry.space_group.group())
-      self.index_reflections_given_orientation_matix(
-        symmetrized_model)
+        crystal_model, self.target_symmetry_primitive)
+      self.index_reflections_given_orientation_matix(symmetrized_model)
       crystal_model = symmetrized_model
     for i in range(self.params.refinement.n_macro_cycles):
       print "Starting refinement (macro-cycle %i)" %(i+1)
@@ -282,8 +305,9 @@ class indexer(object):
     grid_real.set_selected(grid_real < (self.params.rmsd_cutoff)*rmsd, 0)
     grid_real_binary = grid_real.deep_copy()
     grid_real_binary.as_1d().set_selected(grid_real.as_1d() > 0, 1)
+    grid_real_binary = grid_real_binary.iround()
     from cctbx import masks
-    flood_fill = masks.flood_fill(grid_real_binary.iround(), self.unit_cell)
+    flood_fill = masks.flood_fill(grid_real_binary, self.unit_cell)
     # the peak at the origin might have a significantly larger volume than the
     # rest so exclude this peak from determining maximum volume
     isel = (flood_fill.grid_points_per_void() > int(
@@ -416,9 +440,9 @@ class indexer(object):
             #assert a.cross(b).dot(c) > 0
           model = Crystal(a, b, c, space_group_symbol="P 1")
           uc = model.get_unit_cell()
-          if self.params.known_symmetry.space_group is not None:
+          if self.target_symmetry_primitive is not None:
             symmetrized_model = self.apply_symmetry(
-              model, self.params.known_symmetry.space_group.group())
+              model, self.target_symmetry_primitive)
             if symmetrized_model is None:
               continue
 
@@ -476,20 +500,16 @@ class indexer(object):
     from dials.model.serialize import dump
     dump.reflections(self.predicted_reflections, file_name)
 
-  def apply_symmetry(self, crystal_model, space_group):
+  def apply_symmetry(self, crystal_model, target_symmetry):
     unit_cell = crystal_model.get_unit_cell()
-    sgi = sgtbx.space_group_info(group=space_group)
-    cb_op_to_primitive = sgi.change_of_basis_op_to_primitive_setting()
-    sgi_primitive = sgi.change_basis(cb_op_to_primitive)
-    sg_primitive = sgi_primitive.group()
+    target_unit_cell = target_symmetry.unit_cell()
+    target_space_group = target_symmetry.space_group()
     A = crystal_model.get_A()
     A_inv = A.inverse()
     unit_cell_is_similar = False
     real_space_a = A_inv[:3]
     real_space_b = A_inv[3:6]
     real_space_c = A_inv[6:9]
-    from cctbx.crystal_orientation import crystal_orientation, basis_type
-    orientation_p1 = crystal_orientation(list(A_inv), basis_type.direct)
     basis_vectors = [real_space_a, real_space_b, real_space_c]
     min_bmsd = 1e8
     best_perm = None
@@ -498,11 +518,13 @@ class indexer(object):
         basis_vectors[perm[0]],
         basis_vectors[perm[1]],
         basis_vectors[perm[2]],
-        space_group=sg_primitive)
+        space_group=target_space_group)
       unit_cell = crystal_model.get_unit_cell()
+      if target_unit_cell is None:
+        target_unit_cell = unit_cell
       symm_target_sg = crystal.symmetry(
-        unit_cell=unit_cell,
-        space_group=sg_primitive,
+        unit_cell=target_unit_cell,
+        space_group=target_space_group,
         assert_is_compatible_unit_cell=False)
       # this assumes that the initial basis vectors are good enough that
       # we can tell which should be the unique axis - probably not a robust
@@ -522,8 +544,19 @@ class indexer(object):
       basis_vectors[best_perm[0]],
       basis_vectors[best_perm[1]],
       basis_vectors[best_perm[2]],
-      space_group=sg_primitive)
-    model = crystal_model
+      space_group=target_space_group)
+    from rstbx.symmetry.constraints import parameter_reduction
+    s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
+    s.set_orientation(crystal_model.get_A())
+    s.symmetrize()
+    direct_matrix = s.orientation.direct_matrix()
+    a = matrix.col(direct_matrix[:3])
+    b = matrix.col(direct_matrix[3:6])
+    c = matrix.col(direct_matrix[6:9])
+    ## verify it is still right-handed basis set
+    #assert a.cross(b).dot(c) > 0
+    model = Crystal(
+      a, b, c, space_group=target_space_group)
     return model
 
   def index_reflections_given_orientation_matix(
