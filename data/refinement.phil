@@ -33,7 +33,7 @@ refinement
       num_intervals = 5
         .help = "Number of intervals between checkpoints if scan_varying"
                 "refinement is requested"
-      .type = int
+      .type = int(value_min=1)
      }
 
     detector
@@ -90,12 +90,12 @@ refinement
               "(pixel width, pixel height, image thickness in phi) to use to"
               "determine when the RMSD target is achieved. Only used if"
               "rmsd_cutoff = fraction_of_bin_size."
-      .type = float
+      .type = float(value_min=0.)
 
     absolute_cutoffs = None
       .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
               "Phi. The units are (mm, mm, rad)."
-      .type = floats(size=3)
+      .type = floats(size=3, value_min=0.)
   }
 
   reflections
@@ -104,7 +104,7 @@ refinement
     reflections_per_degree = 50
       .help = "The number of centroids per degree of the sweep to use in"
               "refinement."
-      .type = float
+      .type = float(value_min=0.)
 
     use_all_reflections = False
       .help = "Override reflections_per_degree and use all available centroids"
