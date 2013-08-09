@@ -351,8 +351,7 @@ class indexer(object):
     # group similar angle and lengths, also catch integer multiples of vectors
 
     vector_groups = []
-    length_tolerance = 5 # Angstrom
-    # XXX maybe the tolerance should be unitless, i.e. proportional to vector length?
+    relative_length_tolerance = 0.1
     angle_tolerance = 10 # degrees
 
     orth = self.unit_cell.orthogonalize
@@ -363,7 +362,9 @@ class indexer(object):
       matched_group = False
       for group in vector_groups:
         mean_v = group.mean()
-        if abs(mean_v.length() - length) < length_tolerance:
+        mean_v_length = mean_v.length()
+        if (abs(mean_v_length - length)/max(mean_v_length, length)
+            < relative_length_tolerance):
           angle = mean_v.angle(v, deg=True)
           if angle < angle_tolerance:
             group.append(v, length)
