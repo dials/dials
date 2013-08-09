@@ -15,6 +15,8 @@ from dials.algorithms.centroid import centroid_px_to_mm
 from dials.model.data import ReflectionList
 from dials.model.experiment.crystal_model import Crystal
 
+import libtbx.load_env
+dials_path = libtbx.env.dist_path('dials')
 
 master_phil_scope = iotbx.phil.parse("""
 min_cell = 20
@@ -53,22 +55,17 @@ known_symmetry {
 }
 debug = False
   .type = bool
+include file %s/data/refinement.phil
 refinement {
   n_macro_cycles = 3
     .type = int(value_min=0)
-  nref_per_degree = 50
+  verbosity = 1
     .type = int(value_min=0)
-  fix_detector = False
-    .type = bool
-    .help = "Whether or not to refine the detector position and orientation."
-  fix_beam = False
-    .type = bool
-    .help = "Whether or not to refine the beam direction."
 }
 export_xds_files = False
   .type = bool
   .help = "Export results as XDS.INP, XPARM.XDS for integration with XDS."
-""")
+""" %dials_path, process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
 
@@ -564,41 +561,22 @@ class indexer(object):
       self.indexed_reflections.size(), n_rejects)
 
   def refine(self, crystal_model):
-    from  dials.algorithms.refinement import refine
     from dials.algorithms.spot_prediction import ray_intersection
     reflections_for_refinement = ray_intersection(
       self.detector, self.reflections.select(self.indexed_reflections))
 
-    print "Starting crystal model:"
-    print crystal_model
+    params = self.params.refinement
+    from dials.algorithms.refinement import RefinerFactory
+    refine = RefinerFactory.from_parameters(self.params, params.verbosity)
+    refine.prepare(self.sweep, crystal_model, reflections_for_refinement)
+    #rmsds = refine.rmsds()
+    refined = refine()
 
-    print "Starting detector model:"
-    print self.detector
-
-    print "Starting beam model:"
-    print self.beam
-
-    refine(self.beam, self.goniometer, crystal_model, self.detector, self.scan,
-           reflections_for_refinement, verbosity=1,
-           fix_cell=False,
-           fix_beam=self.params.refinement.fix_beam,
-           fix_detector=self.params.refinement.fix_detector,
-           scan_varying=False,
-           nref_per_degree=self.params.refinement.nref_per_degree)
-
-    if not (self.params.refinement.fix_beam and self.params.refinement.fix_detector):
+    if not (params.parameterisation.beam.fix_beam
+            and params.parameterisation.detector.fix_detector):
       # Experimental geometry may have changed - re-map centroids to
       # reciprocal space
       self.map_centroids_to_reciprocal_space()
-
-    print "Refined crystal model:"
-    print crystal_model
-
-    print "Refined detector model:"
-    print self.detector
-
-    print "Refined beam model:"
-    print self.beam
 
   def debug_show_candidate_basis_vectors(self):
 
