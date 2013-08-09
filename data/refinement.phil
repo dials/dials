@@ -75,8 +75,27 @@ refinement
     .help = "Parameters to configure the target function"
   {
     implementation = *basic
-    .help = "The target object type to use. Only basic exists at present"
-    .type = choice
+      .help = "The target object type to use. Only basic exists at present"
+      .type = choice
+
+    rmsd_cutoff = *fraction_of_bin_size absolute
+      .help = "Method to choose rmsd cutoffs. This is currently either as a"
+              "fraction of the discrete units of the spot positional data, i.e."
+              "(pixel width, pixel height, image thickness in phi), or a tuple"
+              "of absolute values to use as the cutoffs"
+      .type = choice
+
+    bin_size_fraction = 0.33333
+      .help = "Cut off in the natural discrete units of positional data, viz.,"
+              "(pixel width, pixel height, image thickness in phi) to use to"
+              "determine when the RMSD target is achieved. Only used if"
+              "rmsd_cutoff = fraction_of_bin_size."
+      .type = float
+
+    absolute_cutoffs = None
+      .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
+              "Phi. The units are (mm, mm, rad)."
+      .type = floats(size=3)
   }
 
   reflections

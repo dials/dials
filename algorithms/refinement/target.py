@@ -151,14 +151,19 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     def __init__(self, reflection_predictor, detector, ref_man,
                  prediction_parameterisation,
-                 image_width):
+                 image_width, frac_binsize_cutoff=0.33333,
+                 absolute_cutoffs=None):
 
         Target.__init__(self, reflection_predictor, detector, ref_man,
                         prediction_parameterisation)
 
-        # Scale units for the RMSD achieved criterion
-        self._pixel_size = detector.get_pixel_size()
-        self._image_width = image_width
+        # Set up the RMSD achieved criterion
+        if not absolute_cutoffs:
+            self._binsize_cutoffs = [e * frac_binsize_cutoff for e in \
+                                    detector.get_pixel_size() + (image_width,)]
+        else:
+            assert len(absolute_cutoffs) == 3
+            self._binsize_cutoffs = absolute_cutoffs
 
         # Quantities to cache each step
         self._rmsds = None
@@ -290,9 +295,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         # reset cached rmsds to avoid getting out of step
         self._rmsds = None
 
-        if (r[0] < self._pixel_size[0] * 0.33333 and
-            r[1] < self._pixel_size[1] * 0.33333 and
-            r[2] < self._image_width * 0.33333):
+        if (r[0] < self._binsize_cutoffs[0] and
+            r[1] < self._binsize_cutoffs[1] and
+            r[2] < self._binsize_cutoffs[2]):
             return True
         return False
 

@@ -523,6 +523,15 @@ class TargetFactory(object):
             raise RuntimeError, "Target type " + options.implementation + \
                                 " not recognised"
 
+        self._frac_binsize_cutoff = options.bin_size_fraction
+        if options.rmsd_cutoff == "fraction_of_bin_size":
+            self._absolute_cutoffs = None
+        elif options.rmsd_cutoff == "absolute":
+            self._absolute_cutoffs = options.absolute_cutoffs
+        else:
+            raise RuntimeError, "Target function rmsd_cutoff option" + \
+                options.rmsd_cutoff + " not recognised"
+
         # Reflection prediction
         from dials.algorithms.refinement.prediction import \
             ReflectionPredictor as rp
@@ -538,4 +547,5 @@ class TargetFactory(object):
 
         rp = self._ref_predictor(crystal, beam, goniometer, sweep_range)
         return self._target(rp, detector, refman, pred_param,
-                            image_width)
+                            image_width, self._frac_binsize_cutoff,
+                            self._absolute_cutoffs)
