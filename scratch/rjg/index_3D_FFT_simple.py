@@ -25,11 +25,14 @@ min_cell = 20
 max_cell = 160
   .type = float(value_min=0)
   .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
-fft_n_points = 256
-  .type = int(value_min=0)
-d_min = 4
-  .type = float(value_min=0)
-  .help = "The high resolution limit in Angstrom for spots to include in indexing."
+reciprocal_space_grid {
+  n_points = 256
+    .type = int(value_min=0)
+  d_min = 4
+    .type = float(value_min=0)
+    .help = "The high resolution limit in Angstrom for spots to include in "
+            "the initial indexing."
+}
 b_iso = 200
   .type = float(value_min=0)
 rmsd_cutoff = 15
@@ -56,9 +59,15 @@ known_symmetry {
 debug = False
   .type = bool
 include file %s/data/refinement.phil
-refinement {
+refinement_protocol {
   n_macro_cycles = 3
     .type = int(value_min=0)
+  d_min_step = 0.5
+    .type = float(value_min=0.0)
+    .help = "Reduction per step in d_min for reflections to include in refinement."
+  d_min_final = None
+    .type = float(value_min=0.0)
+    .help = "Do not ever include reflections below this value in refinement."
   verbosity = 1
     .type = int(value_min=0)
 }
@@ -151,7 +160,7 @@ class indexer(object):
           self.params.known_symmetry.unit_cell)
 
   def index(self):
-    n_points = self.params.fft_n_points
+    n_points = self.params.reciprocal_space_grid.n_points
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
     n_points = self.gridding[0]
@@ -171,7 +180,7 @@ class indexer(object):
       self.debug_show_candidate_basis_vectors()
     self.find_candidate_orientation_matrices()
     crystal_model = self.candidate_crystal_models[0]
-    self.d_min = self.params.d_min
+    self.d_min = self.params.reciprocal_space_grid.d_min
     self.index_reflections_given_orientation_matix(
       crystal_model)
     if self.target_symmetry_primitive is not None:
@@ -179,11 +188,21 @@ class indexer(object):
         crystal_model, self.target_symmetry_primitive)
       self.index_reflections_given_orientation_matix(symmetrized_model)
       crystal_model = symmetrized_model
-    for i in range(self.params.refinement.n_macro_cycles):
+    for i in range(self.params.refinement_protocol.n_macro_cycles):
       print "Starting refinement (macro-cycle %i)" %(i+1)
       print
       self.refine(crystal_model)
+      self.d_min -= self.params.refinement_protocol.d_min_step
+      self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
+      print "Increasing resolution to %.1f Angstrom" %self.d_min
+      n_indexed_last_cycle = self.indexed_reflections.size()
       self.index_reflections_given_orientation_matix(crystal_model)
+      if self.indexed_reflections.size() == n_indexed_last_cycle:
+        print "No more reflections indexed this cycle - finished with refinement"
+        break
+      elif self.d_min == self.params.refinement_protocol.d_min_final:
+        print "Target d_min_final reached: finished with refinement"
+        break
 
     self.candidate_crystal_models.insert(0, crystal_model)
 
@@ -256,12 +275,13 @@ class indexer(object):
     self.map_centroids_to_reciprocal_space()
     assert len(self.reciprocal_space_points) == len(self.reflections_in_scan_range)
     wavelength = self.beam.get_wavelength()
+    d_min = self.params.reciprocal_space_grid.d_min
 
     n_points = self.gridding[0]
-    rlgrid = 2 / (self.params.d_min * n_points)
+    rlgrid = 2 / (d_min * n_points)
 
     # real space FFT grid dimensions
-    cell_lengths = [n_points * self.params.d_min/2 for i in range(3)]
+    cell_lengths = [n_points * d_min/2 for i in range(3)]
     self.unit_cell = uctbx.unit_cell(cell_lengths+[90]*3)
     self.crystal_symmetry = crystal.symmetry(unit_cell=self.unit_cell,
                                              space_group_symbol="P1")
@@ -275,7 +295,7 @@ class indexer(object):
     for i_pnt, point in enumerate(self.reciprocal_space_points):
       point = matrix.col(point)
       spot_resolution = 1/point.length()
-      if spot_resolution < self.params.d_min:
+      if spot_resolution < d_min:
         continue
 
       grid_coordinates = [int(round(point[i]/rlgrid)+n_points/2) for i in range(3)]
@@ -598,10 +618,11 @@ class indexer(object):
     from dials.algorithms.spot_prediction import ray_intersection
     reflections_for_refinement = ray_intersection(
       self.detector, self.reflections.select(self.indexed_reflections))
+    verbosity = self.params.refinement_protocol.verbosity
 
     params = self.params.refinement
     from dials.algorithms.refinement import RefinerFactory
-    refine = RefinerFactory.from_parameters(self.params, params.verbosity)
+    refine = RefinerFactory.from_parameters(self.params, verbosity)
     refine.prepare(self.sweep, crystal_model, reflections_for_refinement)
     #rmsds = refine.rmsds()
     refined = refine()
