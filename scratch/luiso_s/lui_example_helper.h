@@ -5,6 +5,7 @@
 #include <scitbx/array_family/flex_types.h>
 #include <cmath>
 #include <stdio.h>
+#include <cstdlib>
 
 const float pi=3.14159265358;
 
@@ -241,6 +242,9 @@ namespace dials { namespace scratch {
         // curv3d(row, col) = data2d(row, col) + int(i_tt*imax);
         //curv3d(row, col) = int(i_tt*imax);
         curv3d(row, col) = i_tt*imax;
+
+        curv3d(row, col) += rand() % 30;
+
         // tot+=i_tt*imax;
       }
     }
