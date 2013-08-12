@@ -5,7 +5,7 @@ from cctbx.sgtbx import space_group as SG
 from cctbx.sgtbx import space_group_symbols
 from cctbx.crystal_orientation import crystal_orientation
 
-class Crystal:
+class Crystal(object):
     '''Simple model for the crystal lattice geometry and symmetry
 
     A crystal is initialised from the elements of its real space axes
@@ -136,9 +136,7 @@ class Crystal:
     def get_A(self):
         return self._U * self._B
 
-    def __eq__(self, other):
-        from scitbx import matrix
-        eps = 1e-7
+    def __eq__(self, other, eps=1e-7):
         d_mosaicity = abs(self._mosaicity - other._mosaicity)
         d_U = sum([abs(u1 - u2) for u1, u2 in zip(self._U, other._U)])
         d_B = sum([abs(b1 - b2) for b1, b2 in zip(self._B, other._B)])
