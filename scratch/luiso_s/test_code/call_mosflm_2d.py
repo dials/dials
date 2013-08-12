@@ -111,8 +111,9 @@ from dials.scratch.luiso_s import write_2d
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import fit_profile_2d
 fit_profile_2d(rlist, profile)
-
-
+for r in rlist:
+    print r
+'''
 from matplotlib import pyplot as plt
 data2d_prof = profile.as_numpy_array()
 
@@ -120,11 +121,11 @@ plt.imshow(data2d_prof, interpolation = "nearest")
 plt.show()
 
 
-for r in rlist:
-    print r
+
 
     data2d = r.shoebox.as_numpy_array()
     matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
     matrix_img[:, :] = data2d[0:1, :, :]
     plt.imshow(matrix_img, interpolation = "nearest")
     plt.show()
+'''

@@ -137,17 +137,10 @@ namespace dials { namespace scratch {
       flex_double background2dmoved(profile2d.accessor(), 0);
       descriptor(0,2) = 1;
       std::cout << "\n data2d = \n";
-      //write_2d(data2d);
       std::cout << "\n data2d end \n________________________________";
       data2dmoved = add_2d(descriptor, data2d, data2dmoved);
       std::cout << "data2d moved = \n";
-      //write_2d(data2dmoved);
-
-      //write_2d(background2d);
       background2dmoved = add_2d(descriptor, background2d, background2dmoved);
-      //write_2d(background2dmoved);
-
-
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
           if (data2dmoved(row,col) != background2dmoved(row,col) ) {
@@ -155,6 +148,7 @@ namespace dials { namespace scratch {
           }
         }
       }
+
       double iexpr_lst[counter];
       double imodl_lst[counter];
       double modl_scal_lst[counter];
@@ -170,44 +164,27 @@ namespace dials { namespace scratch {
           }
         }
       }
-      std::cout << "\n counter = " << counter << "\n";
 
-      std::cout << "\n   (exp-backgound)             mold          scale    \n";
       for (int i = 0; i < counter; i++){
         scale = iexpr_lst[i] / imodl_lst[i];
-        //std::cout << iexpr_lst[i] << "              " << imodl_lst[i] << "              "<< scale << "\n";
         sum += scale * imodl_lst[i];
       }
 
-      //avg_i_scale = sum/double(counter);
       avg_i_scale = sum;
-
-      std::cout << "\n   __________________________________________________ \n";
-      std::cout << "\n (exp-backgound)         scaled mold          scale    \n";
       for (int i = 0; i < counter; i++){
         modl_scal_lst[i] =imodl_lst[i] * avg_i_scale;
-        //std::cout << iexpr_lst[i] << "              " << modl_scal_lst[i] << "              "<< avg_i_scale << "\n";
       }
-      sum = 0;
-      double i_sum = 0;
 
-      std::cout << "\n   __________________________________________________ \n";
-      std::cout << "\n (exp-backgound)         scaled mold          diff        dif ** 2  \n";
+      sum = 0;
       for (int i = 0; i < counter; i++){
         diff = (modl_scal_lst[i] - iexpr_lst[i]);
         df_sqr = diff * diff;
-        //sum += df_sqr * imodl_lst[i];
         sum += df_sqr;
-
-        i_sum += modl_scal_lst[i];
-        //std::cout << iexpr_lst[i] << "              " << modl_scal_lst[i] << "              "<< diff <<  "              " << df_sqr << "\n";
       }
-      std::cout << "\n==========================\n Intensity =" << sum << "\n==========================\n";
       integr_data[0] = avg_i_scale;          // intensity
-      integr_data[1] = sum / avg_i_scale;                  // intensity variance
+      integr_data[1] = sum;                  // intensity variance
       return integr_data;;
     }
-
 
     flex_double subtrac_bkg_2d(flex_double data2d, flex_double background2d) {
       int ncol = data2d.accessor().all()[1];
@@ -224,44 +201,6 @@ namespace dials { namespace scratch {
       }
       return data2dreturn;
     }
-
-
-  vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
-      flex_double & background2d) {
-      double i_tot = 0, tot_bkgr = 0;
-      int npix_bkgr = 0, npix_mask = 0, cont = 0;
-      double bkgr, sig;
-      std::size_t ncol=data2d.accessor().all()[1];
-      std::size_t nrow=data2d.accessor().all()[0];
-      vec2<double> integr_data(0,1);
-
-      for (int row = 0; row<=nrow-1;row++) {
-        for (int col = 0; col<=ncol-1;col++) {
-          if ( mask2d(row,col)==1 ){
-            i_tot = i_tot + data2d(row,col);
-            npix_mask++;
-          } else {
-            npix_bkgr++;
-          }
-          cont++;
-          tot_bkgr+=background2d(row,col);
-
-        }
-      }
-      if( tot_bkgr>0 && cont>0 && npix_mask>0 && npix_bkgr>0 ){
-        bkgr = tot_bkgr / cont;
-        sig = sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
-
-      } else {
-        bkgr = 0;
-        sig = sqrt(i_tot);
-      }
-
-      integr_data[0]=i_tot;        // intensity
-      integr_data[1]=sig;          // intensity variance
-      return integr_data;
-
-  }
 
   void rotate (float& x, float& y, float delta_ang){
     float ang,dist;
