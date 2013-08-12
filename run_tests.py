@@ -40,6 +40,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_populator.py",
     "$D/test/algorithms/shoebox/tst_helpers.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
+    "$D/scratch/rjg/tst_index.py",
     )
 
 def run () :
