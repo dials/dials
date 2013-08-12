@@ -35,12 +35,8 @@ class Crystal:
         else: self._sg = space_group
 
         # Set the mosaicity
-        if mosaicity:
-            from math import pi
-            if deg == True:
-                self._mosaicity = mosaicity * pi / 180.0
-            else:
-                self._mosaicity = mosaicity
+        if mosaicity is not None:
+            self.set_mosaicity(mosaicity, deg=deg)
         else:
             self._mosaicity = 0.0
 
@@ -130,7 +126,7 @@ class Crystal:
 
         return self._mosaicity
 
-    def set_mosaicity(self, mosaicity):
+    def set_mosaicity(self, mosaicity, deg=True):
         from math import pi
         if deg == True:
             self._mosaicity = mosaicity * pi / 180.0

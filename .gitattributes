@@ -678,7 +678,9 @@ scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
+scratch/rjg/__init__.py -text
 scratch/rjg/index_3D_FFT_simple.py -text
+scratch/rjg/tst_index.py -text
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
@@ -737,6 +739,7 @@ test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
 test/model/data/tst_reflection_pickle.py -text
+test/model/experiment/tst_crystal_model.py -text
 test/model/serialize/tst_serialize.py -text
 test/tst_spots_xds.py -text
 util/__init__.py -text
