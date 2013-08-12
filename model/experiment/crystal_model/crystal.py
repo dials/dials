@@ -146,3 +146,9 @@ class Crystal:
                 d_U <= eps and
                 d_B <= eps and
                 self._sg == other._sg)
+
+    def get_real_space_vectors(self):
+        A_inv = self.get_A().inverse()
+        return (matrix.col(A_inv[:3]),
+                matrix.col(A_inv[3:6]),
+                matrix.col(A_inv[6:9]))
