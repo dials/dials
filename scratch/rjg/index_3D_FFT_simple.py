@@ -541,10 +541,12 @@ class indexer(object):
         basis_vectors[perm[2]],
         space_group=target_space_group)
       unit_cell = crystal_model.get_unit_cell()
-      if target_unit_cell is None:
-        target_unit_cell = unit_cell
+      uc = target_unit_cell
+      if uc is None:
+        uc = unit_cell
+      # XXX what about permuting the target_unit_cell (if not None)?
       symm_target_sg = crystal.symmetry(
-        unit_cell=target_unit_cell,
+        unit_cell=uc,
         space_group=target_space_group,
         assert_is_compatible_unit_cell=False)
       # this assumes that the initial basis vectors are good enough that
