@@ -150,3 +150,18 @@ class Crystal(object):
         return (matrix.col(A_inv[:3]),
                 matrix.col(A_inv[3:6]),
                 matrix.col(A_inv[6:9]))
+
+    def change_basis(self, change_of_basis_op):
+        orientation = crystal_orientation(self.get_A().elems, True)
+        orientation = orientation.change_basis(change_of_basis_op)
+        direct_matrix = matrix.sqr(orientation.direct_matrix())
+        real_space_a = direct_matrix[:3]
+        real_space_b = direct_matrix[3:6]
+        real_space_c = direct_matrix[6:9]
+        other = Crystal(real_space_a,
+                        real_space_b,
+                        real_space_c,
+                        space_group=self.get_space_group().change_basis(
+                          change_of_basis_op),
+                        mosaicity=self.get_mosaicity())
+        return other
