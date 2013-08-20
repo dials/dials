@@ -26,6 +26,7 @@ tst_list = (
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",
     "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
+    "$D/test/algorithms/image/connected_components/tst_connected_components.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
     "$D/test/algorithms/reflection_basis/tst_coordinate_system.py",
     "$D/test/algorithms/reflection_basis/tst_map_frames.py",

@@ -55,6 +55,10 @@ algorithms/image/centroid/boost_python/centroid_points.cc -text
 algorithms/image/centroid/centroid_image.h -text
 algorithms/image/centroid/centroid_masked_image.h -text
 algorithms/image/centroid/centroid_points.h -text
+algorithms/image/connected_components/SConscript -text
+algorithms/image/connected_components/__init__.py -text
+algorithms/image/connected_components/boost_python/connected_components_ext.cc -text
+algorithms/image/connected_components/connected_components.h -text
 algorithms/image/filter/SConscript -text
 algorithms/image/filter/__init__.py -text
 algorithms/image/filter/boost_python/fano_filter.cc -text
@@ -691,6 +695,7 @@ test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/centroid/tst_toy_centroid_helpers.py -text
+test/algorithms/image/connected_components/tst_connected_components.py -text
 test/algorithms/image/filter/tst_mean_and_variance.py -text
 test/algorithms/image/filter/tst_summed_area.py -text
 test/algorithms/image/tst_centroid.py -text
