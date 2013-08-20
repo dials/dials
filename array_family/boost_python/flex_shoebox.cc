@@ -18,12 +18,17 @@
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
+  using scitbx::af::int2;
+  using scitbx::af::small;
   using scitbx::vec3;
   using dials::model::Shoebox;
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::algorithms::LabelImageStack;
 
+  /**
+   * Construct an array of shoebxoes from a spot labelling class
+   */
   scitbx::af::flex<Shoebox>::type* from_labels(const LabelImageStack &label) {
 
     // Get the stuff from the label struct
@@ -82,11 +87,56 @@ namespace dials { namespace af { namespace boost_python {
     return new scitbx::af::flex<Shoebox>::type(
       result, scitbx::af::flex_grid<>(num));
   }  
+  
+  /**
+   * Check if the arrays are consistent
+   */
+  scitbx::af::flex_bool is_consistent(
+      const scitbx::af::const_ref<Shoebox> &a) {
+    scitbx::af::flex_bool result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].is_consistent();
+    }
+    return result;
+  }
+  
+  /**
+   * Check if the bounding box has points outside the image range.
+   */
+  scitbx::af::flex_bool is_bbox_within_image_volume(
+      const scitbx::af::const_ref<Shoebox> &a,
+      small<long,10> image_size, int2 scan_range) {
+    scitbx::af::flex_bool result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].is_bbox_within_image_volume(image_size, scan_range);
+    }
+    return result;
+  }
+  
+  /**
+   * Check if the bounding box has points that cover bad pixels
+   */
+  scitbx::af::flex_bool does_bbox_contain_bad_pixels(
+      const scitbx::af::const_ref<Shoebox> &a, 
+      const scitbx::af::flex_bool &mask) {
+    scitbx::af::flex_bool result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].does_bbox_contain_bad_pixels(mask);
+    }
+    return result;
+  }
 
   void export_flex_shoebox()
   {
     scitbx::af::boost_python::flex_wrapper <Shoebox>::plain("shoebox")
-      .def("__init__", make_constructor(from_labels));
+      .def("__init__", make_constructor(from_labels))
+      .def("is_consistent", &is_consistent)
+      .def("is_bbox_within_image_volume", 
+        &is_bbox_within_image_volume, (
+          arg("image_size"), arg("scan_range")))
+      .def("does_bbox_contain_bad_pixels",
+        &does_bbox_contain_bad_pixels, (
+          arg("mask")));
   }
 
 }}} // namespace dials::af::boost_python

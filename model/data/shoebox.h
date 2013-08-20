@@ -18,10 +18,12 @@
 
 namespace dials { namespace model {
 
+  using scitbx::af::int2;
   using scitbx::af::int6;
   using scitbx::af::small;
   using scitbx::af::flex_double;
   using scitbx::af::flex_int;
+  using scitbx::af::flex_bool;
   using scitbx::af::flex_grid;
 
   /**
@@ -119,13 +121,45 @@ namespace dials { namespace model {
     }
 
     /** @return True/False whether the array and bbox sizes are consistent */
-    bool consistent() const {
+    bool is_consistent() const {
       bool result = true;
       result = result && (data.accessor().all().size() == 3);
       result = result && (mask.accessor().all().size() == 3);
       result = result && (data.accessor().all().all_eq(size()));
       result = result && (mask.accessor().all().all_eq(size()));
       return result;
+    }
+
+    /**
+     * Check if the bounding box has points outside the image range.
+     * @param image_size The image size
+     * @param scan_range The scan range
+     * @returns True/False
+     */
+    bool is_bbox_within_image_volume(small<long,10> image_size,
+        int2 scan_range) const {
+      DIALS_ASSERT(image_size.size() == 2);
+      return bbox[0] >= 0 && bbox[1] < image_size[1] &&
+             bbox[2] >= 0 && bbox[3] < image_size[0] &&
+             bbox[4] >= scan_range[0] && bbox[5] < scan_range[1];
+    }
+
+    /**
+     * Check if the bounding box has points that cover bad pixels
+     * @param mask The mask array
+     * @returns True/False
+     */
+    inline
+    bool does_bbox_contain_bad_pixels(const flex_bool &mask) const {
+      DIALS_ASSERT(mask.accessor().all().size() == 2);
+      for (int j = bbox[2]; j < bbox[3]; ++j) {
+        for (int i = bbox[0]; i < bbox[1]; ++i) {
+          if (mask(j, i) == false) {
+            return true;
+          }
+        }
+      }
+      return false;
     }
   };
 

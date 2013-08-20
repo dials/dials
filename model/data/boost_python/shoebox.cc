@@ -40,7 +40,13 @@ namespace dials { namespace model { namespace boost_python {
       .def("ysize", &Shoebox::ysize)
       .def("zsize", &Shoebox::zsize)
       .def("size", &Shoebox::size)
-      .def("consistent", &Shoebox::consistent);
+      .def("is_consistent", &Shoebox::is_consistent)
+      .def("is_bbox_within_image_volume", 
+        &Shoebox::is_bbox_within_image_volume, (
+          arg("image_size"), arg("scan_range")))
+      .def("does_bbox_contain_bad_pixels",
+        &Shoebox::does_bbox_contain_bad_pixels, (
+          arg("mask")));
   }
 
 }}} // namespace dials::model::boost_python
