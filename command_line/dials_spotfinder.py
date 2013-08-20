@@ -30,8 +30,8 @@ class Script(ScriptRunner):
         self.config().add_option(
             '-o', '--output-filename',
             dest = 'output_filename',
-            type = 'string', default = 'spots.pickle',
-            help = 'Set the filename for found spots.')
+            type = 'string', default = 'strong.pickle',
+            help = 'Set the filename for found strong spots.')
 
     def main(self, params, options, args):
         '''Execute the script.'''
@@ -59,7 +59,6 @@ class Script(ScriptRunner):
         if len(sweep) == 1:
             raise RuntimeError("spotfinding currently requires "
                                "more than one image.")
-
 
         # Get the integrator from the input parameters
         print 'Configurating spot finder from input parameters'
