@@ -28,7 +28,7 @@ class SpotFinderWrapper(object):
             scan_range = [(0, len(sweep))]
         else:
             scan_range = self.scan_range
-        print scan_range
+
         # Get spots from bits of scan
         observed = []
         for scan in scan_range:
