@@ -145,6 +145,9 @@ class ReflectionExtractor(object):
         self.n_sigma_b = n_sigma_b
         self.n_sigma_s = n_sigma_s
 
+        # Initialise the predictor
+        self.predict = ReflectionPredictor()
+
     def __call__(self, sweep, crystal):
         ''' Extract the basic reflection properties from the sweep
 
@@ -159,8 +162,11 @@ class ReflectionExtractor(object):
         # Initialise the algorithms
         self.initialise(sweep, crystal)
 
+        # Predict the reflections
+        reflections = self.predict(sweep, crystal)
+
         # Extract the reflections
-        return self.extract(sweep, crystal)
+        return self.extract(sweep, crystal, reflections)
 
     def initialise(self, sweep, crystal):
         ''' Initialise the extraction algorithms
@@ -185,18 +191,6 @@ class ReflectionExtractor(object):
 
         self.detector_mask = sweep[0] >= 0
 
-        # Create the index generator
-        self.generate_hkl = IndexGenerator(
-            crystal.get_unit_cell(),
-            sgtbx.space_group_type(crystal.get_space_group()),
-            detector.get_max_resolution(beam.get_s0(), beam.get_wavelength()))
-
-        # Create the spot predictor
-        self.predict_rays = RayPredictor(
-            beam.get_s0(),
-            gonio.get_rotation_axis(),
-            scan.get_oscillation_range(deg=False))
-
         # Create the bbox calculator
         self.compute_bbox = BBoxCalculator(
             beam, detector, gonio, scan,
@@ -208,12 +202,13 @@ class ReflectionExtractor(object):
             sweep, crystal, self.detector_mask, self.gain_map, self.dark_map,
             bbox_nsigma=self.bbox_nsigma)
 
-    def extract(self, sweep, crystal):
+    def extract(self, sweep, crystal, reflections):
         ''' Extract the reflections from the sweep.
 
         Params:
             sweep The sweep to process
             crystal The crystal model to use
+            reflections The reflections to extract
 
         Returns:
             A list of reflections
@@ -231,26 +226,6 @@ class ReflectionExtractor(object):
         detector = sweep.get_detector()
         gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
-
-        # Generate Indices
-        Command.start('Generating miller indices')
-        miller_indices = self.generate_hkl.to_array()
-        Command.end('Generating {0} miller indices'.format(len(miller_indices)))
-
-        # Predict reflections
-        Command.start('Predicting rays')
-        reflections = self.predict_rays(miller_indices, crystal.get_A())
-        Command.end('Predicted {0} rays'.format(len(reflections)))
-
-        # Get detector coordinates (mm)
-        Command.start('Calculating ray-detector intersections')
-        reflections = ray_intersection(detector, reflections)
-        Command.end('Calculated {0} intersections'.format(len(reflections)))
-
-        # Calculate the frame numbers of all the reflections
-        Command.start('Calculating reflection frames')
-        reflections = reflection_frames(scan, reflections)
-        Command.end('Calculated {0} frames'.format(len(reflections)))
 
         # Calculate the bounding boxes of all the reflections
         Command.start('Calculating bounding boxes')
