@@ -26,7 +26,7 @@ namespace dials { namespace af { namespace boost_python {
 
     // Get the stuff from the label struct
     scitbx::af::shared<int> labels = label.labels();
-    scitbx::af::shared<double> values = label.values();
+    scitbx::af::shared<int> values = label.values();
     scitbx::af::shared< vec3<int> > coords = label.coords();
 
     // Get the number of labels and allocate the array
@@ -71,7 +71,7 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(ii < result[l].xsize());
       DIALS_ASSERT(jj < result[l].ysize());
       DIALS_ASSERT(kk < result[l].zsize());     
-      result[l].data(kk,jj,ii) = v;
+      result[l].data(kk,jj,ii) = (double)v;
       result[l].mask(kk,jj,ii) = 1;
     }  
 

@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
      * @param image The image to use
      * @param mask The mask to use
      */
-    void add_image(const flex_double &image, const flex_bool &mask) {
+    void add_image(const flex_int &image, const flex_bool &mask) {
 
       // Check the input
       DIALS_ASSERT(mask.accessor().all().size() == 2);
@@ -105,7 +105,7 @@ namespace dials { namespace algorithms {
     /**
      * @returns The list of valid point values
      */
-    scitbx::af::shared<double> values() const {
+    scitbx::af::shared<int> values() const {
       return values_;
     }
 
@@ -125,7 +125,7 @@ namespace dials { namespace algorithms {
 
     AdjacencyList graph_;
     scitbx::af::shared< vec3<int> > coords_;
-    scitbx::af::shared<double> values_;
+    scitbx::af::shared<int> values_;
     scitbx::af::flex_size_t buffer_;
     int2 size_;
     std::size_t k_;

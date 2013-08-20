@@ -52,7 +52,7 @@ class SpotFinder2(object):
             # Create the mask by thresholding the image. Then add the mask
             # and the image to the pixel labeller
             mask = self.threshold_image(image)
-            label.add_image(image.as_double(), mask)
+            label.add_image(image, mask)
             progress.update(100.0 * float(frame + 1) / len(sweep))
 
         # Finish the progess bar
