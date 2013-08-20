@@ -3,7 +3,8 @@ class Test:
 
     def __init__(self):
         from dials.algorithms.image.connected_components import LabelImageStack
-        self.label_images = LabelImageStack((1000, 1000))
+        self.size = (500, 500)
+        self.label_images = LabelImageStack(self.size)
 
     def run(self):
 
@@ -12,10 +13,11 @@ class Test:
         data_list = []
         mask_list = []
         for i in range(10):
-            data = flex.random_double(1000 * 1000, 100)
-            data.reshape(flex.grid(1000, 1000))
-            mask = flex.random_bool(1000 * 1000, 0.1)
-            mask.reshape(flex.grid(1000, 1000))
+            data = flex.random_int_gaussian_distribution(
+                self.size[0] * self.size[1], 100, 10)
+            data.reshape(flex.grid(self.size))
+            mask = flex.random_bool(self.size[0] * self.size[1], 0.1)
+            mask.reshape(flex.grid(self.size))
             data_list.append(data)
             mask_list.append(mask)
 
@@ -30,8 +32,8 @@ class Test:
         assert(len(labels) == len(coords))
         assert(len(labels) == len(values))
 
-        #self.tst_coords_are_valid(mask_list, coords)
-        #self.tst_values_are_valid(data_list, mask_list, values)
+        self.tst_coords_are_valid(mask_list, coords)
+        self.tst_values_are_valid(data_list, mask_list, values)
         self.tst_labels_are_valid(data_list, mask_list, coords, labels)
 
     def tst_coords_are_valid(self, mask_list, coords):
@@ -40,8 +42,8 @@ class Test:
         vi = 0
         for k in range(10):
             ind = 0
-            for j in range(1000):
-                for i in range(1000):
+            for j in range(self.size[0]):
+                for i in range(self.size[1]):
                     m = mask_list[k][ind]
                     if m:
                         c1 = (k, j, i)
@@ -73,15 +75,15 @@ class Test:
         from scitbx.array_family import flex
 
         # Create a map of labels
-        label_map = flex.int(flex.grid(10, 1000, 1000))
+        label_map = flex.int(flex.grid(10, self.size[0], self.size[1]))
         for c, l in zip(coords, labels):
             label_map[c] = l
 
         # Ensure all labels are correct
         vi = 0
         for k in range(10):
-            for j in range(1000):
-                for i in range(1000):
+            for j in range(self.size[0]):
+                for i in range(self.size[1]):
                     if mask_list[k][j,i]:
 
                         l1 = labels[vi]
