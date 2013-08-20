@@ -18,10 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_label_pixels() 
-  {
-    scitbx::af::boost_python::flex_wrapper< vec3<int> >::plain(
-      "flex_vec3_int");
-  
+  { 
     class_<LabelPixels>("LabelPixels", no_init)
       .def(init< vec3<int> >((arg("grid_size"))))
       .def("__call__", &LabelPixels::operator(), (arg("pixels")));

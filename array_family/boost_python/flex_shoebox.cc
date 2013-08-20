@@ -30,7 +30,7 @@ namespace dials { namespace af { namespace boost_python {
     scitbx::af::shared< vec3<int> > coords = label.coords();
 
     // Get the number of labels and allocate the array
-    std::size_t num = scitbx::af::max(labels.const_ref());
+    std::size_t num = scitbx::af::max(labels.const_ref()) + 1;
     scitbx::af::shared<Shoebox> result(num);
     
     // Initialise the bboxes
@@ -41,24 +41,24 @@ namespace dials { namespace af { namespace boost_python {
       result[i].bbox[2] = HIGH; result[i].bbox[3] = LOW;
       result[i].bbox[4] = HIGH; result[i].bbox[5] = LOW;
     }
-    
+
     // Set the shoeboxes
     for (std::size_t i = 0; i < labels.size(); ++i) {
       int l = labels[i];
       vec3<int> c = coords[i];
-      if (c[2] < result[l].bbox[0]) result[l].bbox[0] = c[2];
-      if (c[2] > result[l].bbox[1]) result[l].bbox[1] = c[2];
-      if (c[1] < result[l].bbox[2]) result[l].bbox[2] = c[1];
-      if (c[1] > result[l].bbox[3]) result[l].bbox[3] = c[1];
-      if (c[0] < result[l].bbox[4]) result[l].bbox[4] = c[0];
-      if (c[0] > result[l].bbox[5]) result[l].bbox[5] = c[0];
+      if (c[2] <  result[l].bbox[0]) result[l].bbox[0] = c[2];
+      if (c[2] >= result[l].bbox[1]) result[l].bbox[1] = c[2] + 1;
+      if (c[1] <  result[l].bbox[2]) result[l].bbox[2] = c[1];
+      if (c[1] >= result[l].bbox[3]) result[l].bbox[3] = c[1] + 1;
+      if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
+      if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
     }
-    
+
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].allocate();
     } 
-    
+
     // Set all the mask and data points
     for (std::size_t i = 0; i < labels.size(); ++i) {
       int l = labels[i];
@@ -67,10 +67,14 @@ namespace dials { namespace af { namespace boost_python {
       int ii = c[2] - result[l].bbox[0];
       int jj = c[1] - result[l].bbox[2];
       int kk = c[0] - result[l].bbox[4];
+      DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
+      DIALS_ASSERT(ii < result[l].xsize());
+      DIALS_ASSERT(jj < result[l].ysize());
+      DIALS_ASSERT(kk < result[l].zsize());     
       result[l].data(kk,jj,ii) = v;
       result[l].mask(kk,jj,ii) = 1;
     }  
-    
+
     // Return the array
     return new scitbx::af::flex<Shoebox>::type(
       result, scitbx::af::flex_grid<>(num));

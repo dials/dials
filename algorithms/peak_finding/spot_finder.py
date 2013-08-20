@@ -13,6 +13,61 @@ from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 
+class SpotFinder2(object):
+    ''' Class to find spots in an image and extract them into shoeboxes. '''
+
+    def __init__(self, threshold_image):
+        ''' Initialise the class with the strategy
+
+        Params:
+            threshold_image The image thresholding strategy
+
+        '''
+        # Set the required strategies
+        self.threshold_image = threshold_image
+
+    def __call__(self, sweep):
+        ''' Find the spots in the sweep
+
+        Params:
+            sweep The sweep to process
+
+        Returns:
+            The list of spot shoeboxes
+
+        '''
+        from dials.util.command_line import ProgressBar, Command
+        from dials.algorithms.image.connected_components import LabelImageStack
+        from dials.array_family import flex
+
+        # Construct the pixel labeller
+        label = LabelImageStack(sweep.get_image_size()[::-1])
+
+        # Loop through all the images in the sweep and extract the pixels
+        # from each of the images
+        progress = ProgressBar(title='Extracting pixels from sweep')
+        start = sweep.get_array_range()[0]
+        for frame, image in enumerate(sweep):
+
+            # Create the mask by thresholding the image. Then add the mask
+            # and the image to the pixel labeller
+            mask = self.threshold_image(image)
+            label.add_image(image.as_double(), mask)
+            progress.update(100.0 * float(frame + 1) / len(sweep))
+
+        # Finish the progess bar
+        progress.finished('Extracted {0} strong pixels'.format(
+            len(label.values())))
+
+        # Extract the shoeboxes
+        Command.start('Extracting spots from pixels')
+        shoeboxes = flex.shoebox(label)
+        Command.end('Extracted {0} spots from pixels'.format(len(shoeboxes)))
+
+        # Return the shoeboxes
+        return shoeboxes
+
+
 class SpotFinder(SpotFinderInterface):
     '''A class to perform spot finding operations on a sweep of images.'''
 
@@ -98,6 +153,7 @@ class SpotFinder(SpotFinderInterface):
         reflections = self._create_reflection_list(coords, intensity, spots,
             bbox, cpos, cvar, cerr, ctot, selection.iselection())
 
+        # Return the reflection list
         return reflections
 
     def _extract_pixels(self, sweep):
