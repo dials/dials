@@ -55,8 +55,91 @@ class SpotFinder(object):
             # Add the spots to the list
             spots_all.extend(spots)
 
+        # Calculate the centroids
+        cpos, cvar, cerr, ctot = self.centroid(spots_all)
+
         # Return the spots in a reflection list
-        return spots_all
+        return self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
+
+    def centroid(self, spots):
+        '''Calculate the spot centroids.
+
+        Params:
+            spots The list of spots
+
+        Returns:
+            (centroid position, centroid variance)
+
+        '''
+        from dials.algorithms.image.centroid import CentroidMaskedImage3d
+        from scitbx.array_family import flex
+
+        # Initialise arrays
+        centroid_pos = flex.vec3_double()
+        centroid_var = flex.vec3_double()
+        centroid_err = flex.vec3_double()
+        centroid_tot = flex.double()
+
+        # Loop through each spot
+        for s in spots:
+
+            # Find the spot centroid
+            centroid = CentroidMaskedImage3d(s.data, s.mask)
+            pos = centroid.mean()
+            pos = pos[0] + s.bbox[0], pos[1] + s.bbox[2], pos[2] + s.bbox[4]
+            centroid_pos.append(pos)
+            centroid_tot.append(centroid.sum_pixels())
+            try:
+                centroid_var.append(centroid.unbiased_variance())
+                centroid_err.append(centroid.unbiased_standard_error_sq())
+            except RuntimeError:
+                centroid_var.append((0.0, 0.0, 0.0))
+                centroid_err.append((0.0, 0.0, 0.0))
+
+        # Return the centroid and variance
+        return centroid_pos, centroid_var, centroid_err, centroid_tot
+
+    def reflection_list(self, spots, cpos, cvar, cerr, ctot):
+        '''Create a reflection list from the spot data.
+
+        Params:
+            spots The spot list
+            cpos The centroid position
+            cvar The centroid variance
+            cerr The centroid error
+            ctot The centroid total counts
+
+        Returns:
+            A list of reflections
+
+        '''
+        from dials.model.data import Reflection, ReflectionList
+        from dials.algorithms import shoebox
+
+        # Ensure the lengths are ok
+        assert(len(spots) > 0)
+        assert(len(spots) == len(cpos))
+        assert(len(spots) == len(cvar))
+        assert(len(spots) == len(cerr))
+        assert(len(spots) == len(ctot))
+
+        # Create the reflection list
+        rlist = ReflectionList(len(spots))
+        for i in range(len(spots)):
+
+            # Set the shoebox info
+            rlist[i].bounding_box = spots[i].bbox
+            rlist[i].shoebox = spots[i].data
+            rlist[i].shoebox_mask = spots[i].mask
+
+            # Set the centroid and intensity info
+            rlist[i].centroid_position = cpos[i]
+            rlist[i].centroid_variance = cerr[i]
+            rlist[i].centroid_sq_width = cvar[i]
+            rlist[i].intensity = ctot[i]
+
+        # Return the reflection list
+        return rlist
 
 
 class SpotFinderFactory(object):

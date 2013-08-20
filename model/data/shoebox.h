@@ -55,25 +55,24 @@ namespace dials { namespace model {
      * Initialise the shoebox
      */
     Shoebox()
-      : data(flex_grid(0, 0, 0)),
-        mask(flex_grid(0, 0, 0)) {}
+      : bbox(0, 0, 0, 0, 0, 0),
+        data(flex_grid<>(0, 0, 0)),
+        mask(flex_grid<>(0, 0, 0)) {}
 
     /**
      * Allocate the mask and data from the bounding box
      */
     void allocate() {
-      flex_grid<> accessor(zsize(), ysize(), xsize());
-      data.resize(accessor);
-      mask.resize(accessor);
+      data = flex_double(flex_grid<>(zsize(), ysize(), xsize()));
+      mask = flex_int(flex_grid<>(zsize(), ysize(), xsize()));
     }
 
     /**
      * Deallocate the mask and data arrays
      */
     void deallocate() {
-      flex_grid<> accessor(0, 0, 0);
-      data.resize(accessor);
-      mask.resize(accessor);
+      data = flex_double(flex_grid<>(0, 0, 0));
+      mask = flex_int(flex_grid<>(0, 0, 0));
     }
 
     /** @returns The x offset */
