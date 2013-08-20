@@ -222,7 +222,10 @@ algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/rotation_angles.h -text
+array_family/SConscript -text
 array_family/__init__.py -text
+array_family/boost_python/flex_ext.cc -text
+array_family/boost_python/flex_shoebox.cc -text
 array_family/flex.py -text
 array_family/sort_index.h -text
 command_line/analyse_blank.py -text
@@ -332,7 +335,9 @@ model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
 model/data/boost_python/pickle.h -text
 model/data/boost_python/reflection.cc -text
+model/data/boost_python/shoebox.cc -text
 model/data/reflection.h -text
+model/data/shoebox.h -text
 model/experiment/SConscript -text
 model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text

@@ -29,6 +29,7 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
 		"boost_python"])
 
     env.SConscript('model/SConscript', exports={ 'env' : env })
+    env.SConscript('array_family/SConscript', exports={ 'env' : env })
     env.SConscript('algorithms/SConscript', exports={ 'env' : env })
     env.SConscript('test/SConscript', exports={ 'env' : env })
     env.SConscript('scratch/luiso_s/SConscript', exports={ 'env' : env })

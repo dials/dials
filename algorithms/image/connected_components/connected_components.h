@@ -117,6 +117,7 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<int> labels() const {
       scitbx::af::shared<int> labels(num_vertices(graph_));
       int num = boost::connected_components(graph_, &labels[0]);
+      DIALS_ASSERT(num == labels.size());
       return labels;
     }
 

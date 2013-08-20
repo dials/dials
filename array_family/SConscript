@@ -1,0 +1,10 @@
+
+Import('env')
+
+sources = [
+    'boost_python/flex_shoebox.cc',
+    'boost_python/flex_ext.cc']
+
+env.SharedLibrary(
+    target='#/lib/dials_array_family_flex_ext', 
+    source=sources)
