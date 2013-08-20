@@ -20,6 +20,8 @@ namespace dials { namespace af { namespace boost_python {
   using namespace boost::python;
   using scitbx::vec3;
   using dials::model::Shoebox;
+  using dials::model::Valid;
+  using dials::model::Foreground;
   using dials::algorithms::LabelImageStack;
 
   scitbx::af::flex<Shoebox>::type* from_labels(const LabelImageStack &label) {
@@ -73,7 +75,7 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(jj < result[l].ysize());
       DIALS_ASSERT(kk < result[l].zsize());     
       result[l].data(kk,jj,ii) = (double)v;
-      result[l].mask(kk,jj,ii) = 1;
+      result[l].mask(kk,jj,ii) = Valid | Foreground;
     }  
 
     // Return the array
