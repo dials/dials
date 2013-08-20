@@ -13,7 +13,7 @@ from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 
-class SpotFinder2(object):
+class FindSpots(object):
     ''' Class to find spots in an image and extract them into shoeboxes. '''
 
     def __init__(self, threshold_image):
@@ -68,7 +68,7 @@ class SpotFinder2(object):
         return shoeboxes
 
 
-class SpotFinder(SpotFinderInterface):
+class SpotFinderOld(SpotFinderInterface):
     '''A class to perform spot finding operations on a sweep of images.'''
 
     def __init__(self, **kwargs):

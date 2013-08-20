@@ -243,6 +243,7 @@ command_line/extract_reflection_profiles.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
 command_line/find_peak.py -text svneol=unset#text/plain
+command_line/find_spots.py -text
 command_line/import.py -text
 command_line/integrate.py -text
 command_line/match_observed_w_predicted.py -text
