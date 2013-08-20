@@ -20,6 +20,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     class_<LabelImageStack>("LabelImageStack", no_init)
       .def(init<int2>((arg("size"))))
+      .def("size", &LabelImageStack::size)
+      .def("num_images", &LabelImageStack::num_images)
       .def("add_image", &LabelImageStack::add_image, (
         arg("image"), arg("mask")))
       .def("labels", &LabelImageStack::labels)

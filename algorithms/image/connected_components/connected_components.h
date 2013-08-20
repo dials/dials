@@ -50,6 +50,20 @@ namespace dials { namespace algorithms {
         k_(0) {}
 
     /**
+     * @returns The image size
+     */
+    int2 size() const {
+      return size_;
+    }
+
+    /**
+     * @returns The number of images processed
+     */
+    int num_images() const {
+      return k_;
+    }
+
+    /**
      * Add another image to be labelled
      * @param image The image to use
      * @param mask The mask to use

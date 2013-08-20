@@ -34,12 +34,13 @@ namespace dials { namespace af { namespace boost_python {
     scitbx::af::shared<Shoebox> result(num);
     
     // Initialise the bboxes
-    const int HIGH = 1000000;
-    const int LOW = -1000000;
+    int xsize = label.size()[1];
+    int ysize = label.size()[0];
+    int zsize = label.num_images();
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i].bbox[0] = HIGH; result[i].bbox[1] = LOW;
-      result[i].bbox[2] = HIGH; result[i].bbox[3] = LOW;
-      result[i].bbox[4] = HIGH; result[i].bbox[5] = LOW;
+      result[i].bbox[0] = xsize; result[i].bbox[1] = 0;
+      result[i].bbox[2] = ysize; result[i].bbox[3] = 0;
+      result[i].bbox[4] = zsize; result[i].bbox[5] = 0;
     }
 
     // Set the shoeboxes
