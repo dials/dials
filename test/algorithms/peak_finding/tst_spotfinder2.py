@@ -23,7 +23,7 @@ class Test:
         # Create the threshold strategy
         threshold_image = XDSThresholdStrategy(
                 kernel_size=(3, 3), gain=None,
-                n_sigma_b=3, n_sigma_s=6)
+                n_sigma_b=6, n_sigma_s=3)
 
         # Create the spot finder
         self.find_spots = SpotFinder2(threshold_image=threshold_image)
@@ -32,6 +32,9 @@ class Test:
 
         # Get all the shoeboxes
         shoeboxes = self.find_spots(self.sweep)
+
+        # Expected number
+        assert(len(shoeboxes) == 1756)
 
         # Test passed
         print 'OK'

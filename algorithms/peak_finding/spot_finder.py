@@ -167,10 +167,10 @@ class SpotFinder(SpotFinderInterface):
 
         '''
         from dials.util.command_line import ProgressBar
-        from dials.algorithms.peak_finding import flex_vec3_int
+        from dials.array_family import flex
 
         # Initialise the pixel arrays
-        coords = flex_vec3_int()
+        coords = flex.vec3_int()
         intensity = flex.int()
 
         # Get the start index and trusted range from the sweep
@@ -204,7 +204,7 @@ class SpotFinder(SpotFinderInterface):
 
         '''
         from scitbx.array_family import flex
-        from dials.algorithms.peak_finding import flex_vec3_int
+        from dials.array_family import flex
 
         # Calculate the threshold
         mask = self._threshold_strategy(image)
@@ -216,7 +216,7 @@ class SpotFinder(SpotFinderInterface):
         z = [frame] * mask_isel.size()
         x = mask_isel % mask.all()[1]
         y = mask_isel / mask.all()[1]
-        coords = flex_vec3_int(zip(x, y, z))
+        coords = flex.vec3_int(zip(x, y, z))
 
         # Get the array of pixel intensities
         intensity = image.select(mask_isel)
