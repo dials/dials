@@ -581,6 +581,8 @@ scratch/jmp/extract_reflection_profiles/save_image_volume_images.py -text
 scratch/jmp/extract_reflection_profiles/test/__init__.py -text
 scratch/jmp/extract_reflection_profiles/test/test_detector_coordinate_system.py -text
 scratch/jmp/extract_reflection_profiles/xdsio.py -text
+scratch/jmp/find_roots/find_roots.py -text
+scratch/jmp/find_roots/find_roots_2.py -text
 scratch/jmp/find_strong_spots/calculate_divergence.py -text
 scratch/jmp/find_strong_spots/calculate_divergence2.py -text
 scratch/jmp/find_strong_spots/calculate_divergence3.py -text
