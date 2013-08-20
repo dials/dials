@@ -52,6 +52,13 @@ namespace dials { namespace model {
     flex_int mask;      ///< The shoebox mask
 
     /**
+     * Initialise the shoebox
+     */
+    Shoebox()
+      : data(flex_grid(0, 0, 0)),
+        mask(flex_grid(0, 0, 0)) {}
+
+    /**
      * Allocate the mask and data from the bounding box
      */
     void allocate() {
@@ -160,6 +167,21 @@ namespace dials { namespace model {
         }
       }
       return false;
+    }
+
+    /**
+     * Count the number of mask pixels with the given value
+     * @param code The code
+     * @returns The number of pixels with that code
+     */
+    int count_mask_values(int code) const {
+      int count = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i] & code) {
+          count++;
+        }
+      }
+      return count;
     }
   };
 

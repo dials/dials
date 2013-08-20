@@ -46,7 +46,9 @@ namespace dials { namespace model { namespace boost_python {
           arg("image_size"), arg("scan_range")))
       .def("does_bbox_contain_bad_pixels",
         &Shoebox::does_bbox_contain_bad_pixels, (
-          arg("mask")));
+          arg("mask")))
+      .def("count_mask_values",
+        &Shoebox::count_mask_values);
   }
 
 }}} // namespace dials::model::boost_python

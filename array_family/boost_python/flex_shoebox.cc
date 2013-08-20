@@ -19,6 +19,7 @@ namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
   using scitbx::af::int2;
+  using scitbx::af::int6;
   using scitbx::af::small;
   using scitbx::vec3;
   using dials::model::Shoebox;
@@ -125,18 +126,44 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
+  
+  /**
+   * Count the number of mask pixels with the given code
+   */
+  scitbx::af::flex_int count_mask_values(
+      const scitbx::af::const_ref<Shoebox> &a,
+      int code) {
+    scitbx::af::flex_int result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].count_mask_values(code);
+    }
+    return result;
+  }
+
+  /**
+   * Get the bounding boxes
+   */
+  scitbx::af::flex<int6>::type bounding_boxes(
+      const scitbx::af::const_ref<Shoebox> &a) {
+    scitbx::af::flex<int6>::type result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].bbox;
+    }
+    return result;
+  }
 
   void export_flex_shoebox()
   {
     scitbx::af::boost_python::flex_wrapper <Shoebox>::plain("shoebox")
       .def("__init__", make_constructor(from_labels))
       .def("is_consistent", &is_consistent)
-      .def("is_bbox_within_image_volume", 
-        &is_bbox_within_image_volume, (
-          arg("image_size"), arg("scan_range")))
-      .def("does_bbox_contain_bad_pixels",
-        &does_bbox_contain_bad_pixels, (
-          arg("mask")));
+      .def("bounding_boxes", &bounding_boxes)
+      .def("count_mask_values", &count_mask_values)
+      .def("is_bbox_within_image_volume", &is_bbox_within_image_volume, (
+        arg("image_size"), 
+        arg("scan_range")))
+      .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
+        arg("mask")));
   }
 
 }}} // namespace dials::af::boost_python
