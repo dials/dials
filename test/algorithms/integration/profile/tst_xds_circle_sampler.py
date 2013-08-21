@@ -11,6 +11,7 @@ class Test(object):
         self.tst_nearest()
         self.tst_self_consistent()
         self.tst_z_index()
+        self.tst_pickle()
 
     def tst_getters(self):
         from math import sqrt
@@ -141,9 +142,28 @@ class Test(object):
         assert((sampler.nearest((500, 500, 9.0)) / 9) == 1)
         assert((sampler.nearest((500, 500, 10.0)) / 9) == 1)
 
-
         print 'OK'
 
+    def tst_pickle(self):
+        from dials.algorithms.integration.profile import XdsCircleSampler
+        import tempfile
+        import cPickle as pickle
+        width = 1000
+        height = 1000
+        depth = 10
+        nz = 2
+        sampler = XdsCircleSampler((width, height, depth), nz)
+
+        tf = tempfile.TemporaryFile()
+        pickle.dump(sampler, tf)
+        tf.flush()
+        tf.seek(0)
+        sampler2 = pickle.load(tf)
+
+        assert(sampler.volume_size() == sampler2.volume_size())
+        assert(sampler.num_z() == sampler2.num_z())
+
+        print 'OK'
 
 if __name__ == '__main__':
     test = Test()

@@ -18,6 +18,8 @@ class Test(object):
 
         from dials.algorithms.integration.profile import \
             XdsCircleReferenceLocator
+        import tempfile
+        import cPickle as pickle
 
         # Create the reference locator
         locator = XdsCircleReferenceLocator(self.profiles, self.sampler)
@@ -40,6 +42,30 @@ class Test(object):
 
         print 'OK'
 
+        # Dump the locator to pickle
+        tf = tempfile.TemporaryFile()
+        pickle.dump(locator, tf)
+        tf.flush()
+        tf.seek(0)
+        locator2 = pickle.load(tf)
+
+        # Check the profiles are the same
+        p1 = locator.profile()
+        p2 = locator2.profile()
+        assert(len(p1) == len(p2))
+        assert(p1.all() == p2.all())
+        eps = 1e-7
+        for i in range(len(p1)):
+            assert((p1[i] - p2[i]) <= eps)
+
+        # Check the sampler is the same
+        s1 = locator.sampler()
+        s2 = locator2.sampler()
+        assert(s1.volume_size() == s2.volume_size())
+        assert(s1.num_z() == s2.num_z())
+
+        # test passed
+        print 'OK'
 
 if __name__ == '__main__':
     test = Test()

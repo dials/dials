@@ -10,6 +10,7 @@ class Test(object):
         self.tst_indexing()
         self.tst_nearest()
         self.tst_self_consistent()
+        self.tst_pickle()
 
     def tst_getters(self):
         from dials.algorithms.integration.profile import GridSampler
@@ -20,14 +21,14 @@ class Test(object):
         ny = 10
         nz = 2
         sampler = GridSampler((width, height, depth), (nx, ny, nz))
-        image_size = sampler.image_size()
+        volume_size = sampler.volume_size()
         grid_size = sampler.grid_size()
         step_size = sampler.step_size()
         size = len(sampler)
 
-        assert(width == image_size[0])
-        assert(height == image_size[1])
-        assert(depth == image_size[2])
+        assert(width == volume_size[0])
+        assert(height == volume_size[1])
+        assert(depth == volume_size[2])
         assert(nx == grid_size[0])
         assert(ny == grid_size[1])
         assert(nz == grid_size[2])
@@ -115,6 +116,28 @@ class Test(object):
 
         print 'OK'
 
+    def tst_pickle(self):
+        from dials.algorithms.integration.profile import GridSampler
+        import tempfile
+        import cPickle as pickle
+        width = 1000
+        height = 1000
+        depth = 10
+        nx = 10
+        ny = 10
+        nz = 2
+        sampler = GridSampler((width, height, depth), (nx, ny, nz))
+
+        tf = tempfile.TemporaryFile()
+        pickle.dump(sampler, tf)
+        tf.flush()
+        tf.seek(0)
+        sampler2 = pickle.load(tf)
+
+        assert(sampler.volume_size() == sampler2.volume_size())
+        assert(sampler.grid_size() == sampler2.grid_size())
+
+        print 'OK'
 
 if __name__ == '__main__':
     test = Test()

@@ -171,6 +171,7 @@ class ReferenceProfileFactory(object):
                 grid_size=p.reciprocal_space.grid_size,
                 threshold=p.profile.reference_signal_threshold,
                 frame_interval=p.profile.reference_frame_interval)
+
         else:
 
             # If no profile fitting algorithm is selected, output a warning

@@ -73,7 +73,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<int3, int3>((
         arg("volume_size"),
         arg("grid_size"))))
-      .def("image_size", &GridSampler::volume_size)
+      .def("volume_size", &GridSampler::volume_size)
       .def("grid_size", &GridSampler::grid_size)
       .def("step_size", &GridSampler::step_size)
       .def("nearest", &GridSampler::nearest)
