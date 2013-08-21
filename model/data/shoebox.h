@@ -60,6 +60,15 @@ namespace dials { namespace model {
         mask(flex_grid<>(0, 0, 0)) {}
 
     /**
+     * Initialise the shoebox
+     * @param bbox_ The bounding box to initialise with
+     */
+    Shoebox(const int6 &bbox_)
+      : bbox(bbox_),
+        data(flex_grid<>(0, 0, 0)),
+        mask(flex_grid<>(0, 0, 0)) {}
+
+    /**
      * Allocate the mask and data from the bounding box
      */
     void allocate() {
@@ -158,8 +167,14 @@ namespace dials { namespace model {
     inline
     bool does_bbox_contain_bad_pixels(const flex_bool &mask) const {
       DIALS_ASSERT(mask.accessor().all().size() == 2);
-      for (int j = bbox[2]; j < bbox[3]; ++j) {
-        for (int i = bbox[0]; i < bbox[1]; ++i) {
+      std::size_t ysize = mask.accessor().all()[0];
+      std::size_t xsize = mask.accessor().all()[1];
+      int j0 = bbox[2] > 0 ? bbox[2] : 0;
+      int j1 = bbox[3] < ysize ? bbox[3] : ysize;
+      int i0 = bbox[0] > 0 ? bbox[0] : 0;
+      int i1 = bbox[1] < xsize ? bbox[1] : xsize;
+      for (int j = j0; j < j1; ++j) {
+        for (int i = i0; i < i1; ++i) {
           if (mask(j, i) == false) {
             return true;
           }

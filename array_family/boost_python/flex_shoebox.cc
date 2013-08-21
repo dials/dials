@@ -154,7 +154,8 @@ namespace dials { namespace af { namespace boost_python {
 
   void export_flex_shoebox()
   {
-    scitbx::af::boost_python::flex_wrapper <Shoebox>::plain("shoebox")
+    scitbx::af::boost_python::flex_wrapper <
+        Shoebox, return_internal_reference<> >::plain("shoebox")
       .def("__init__", make_constructor(from_labels))
       .def("is_consistent", &is_consistent)
       .def("bounding_boxes", &bounding_boxes)

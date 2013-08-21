@@ -27,6 +27,7 @@ namespace dials { namespace model { namespace boost_python {
   void export_shoebox()
   {
     class_<Shoebox>("Shoebox")
+      .def(init<const int6&>())
       .def_readwrite("data", &Shoebox::data)
       .def_readwrite("mask", &Shoebox::mask)
       .add_property("bbox", get_bbox, set_bbox)

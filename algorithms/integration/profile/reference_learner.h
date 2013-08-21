@@ -145,11 +145,7 @@ namespace dials { namespace algorithms {
     void normalize_reference_profiles() {
       // Normalize all the reference profiles
       for (std::size_t i = 0; i < locator_.size(); ++i) {
-        try {
-          normalize_reference_profile(i);
-        } catch (dials::error) {
-
-        }
+        normalize_reference_profile(i);
       }
     }
 

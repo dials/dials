@@ -4,7 +4,9 @@ import libtbx.load_env
 
 tst_list = (
     "$D/test/tst_spots_xds.py",
+    "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/model/data/tst_reflection_pickle.py",
+    "$D/test/model/data/tst_shoebox.py",
     "$D/test/model/experiment/tst_crystal_model.py",
     "$D/test/algorithms/spot_prediction/tst_index_generator.py",
     "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",

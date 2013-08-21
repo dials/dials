@@ -32,6 +32,7 @@ class SpotFinder(object):
     def __call__(self, sweep):
         ''' Do the spot finding '''
         from dials.model.data import ReflectionList
+        from dials.util.command_line import Command
 
         # Get list of scan ranges
         if not self.scan_range:
@@ -56,10 +57,15 @@ class SpotFinder(object):
             spots_all.extend(spots)
 
         # Calculate the centroids
+        Command.start('Calculating {0} centroids'.format(len(spots_all)))
         cpos, cvar, cerr, ctot = self.centroid(spots_all)
+        Command.end('Calculated {0} centroids'.format(len(spots_all)))
 
         # Return the spots in a reflection list
-        return self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
+        Command.start('Creating reflection list')
+        rlist self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
+        Command.end('Created list of {0} reflections'.format(len(rlist)))
+        return rlist
 
     def centroid(self, spots):
         '''Calculate the spot centroids.
