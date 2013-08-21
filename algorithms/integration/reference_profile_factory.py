@@ -113,10 +113,6 @@ class ProfileLearner(object):
             self.grid_size)
         Command.end('Initialised reciprocal space transform')
 
-        # Set all to strong for the moment
-        for r in reflections:
-            r.set_strong(True)
-
         # Transform the reflections to reciprocal space
         Command.start('Transforming reflections to reciprocal space')
         transform(reflections)
@@ -127,7 +123,8 @@ class ProfileLearner(object):
         Command.start('Learning reference profiles from {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
         learner.learn(reflections)
-        Command.end('Learnt reference profiles from {0} reflections'.format(
+        Command.end('Learnt {0} reference profiles from {1} reflections'.format(
+            len(learner.locate()),
             len([r for r in reflections if r.is_valid()])))
 
         # Return the reference profile locator

@@ -28,7 +28,7 @@ class Script(ScriptRunner):
         self.config().add_option(
             '-o', '--output-filename',
             dest = 'output_filename',
-            type = 'string', default = 'spots.pickle',
+            type = 'string', default = 'strong.pickle',
             help = 'Set the filename for found spots.')
 
     def main(self, params, options, args):

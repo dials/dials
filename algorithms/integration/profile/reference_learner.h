@@ -61,7 +61,7 @@ namespace dials { namespace algorithms {
     void learn(const ReflectionList &reflections) {
       // Add the contributions of all the reflections to the references
       for (std::size_t i = 0; i < reflections.size(); ++i) {
-        if (reflections[i].is_valid() && reflections[i].is_strong()) {
+        if (reflections[i].is_valid()) {
           add_reflection(reflections[i]);
         }
       }
