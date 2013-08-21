@@ -162,9 +162,26 @@ class ReferenceProfileFactory(object):
             The profile learner
 
         '''
-        p = params.integration
-        return ProfileLearner(
-            bbox_nsigma=p.shoebox.n_sigma,
-            grid_size=p.reciprocal_space.grid_size,
-            threshold=p.profile.reference_signal_threshold,
-            frame_interval=p.profile.reference_frame_interval)
+        if params.integration.algorithm == "fit_rs":
+
+            # Create the profile learner for reciprocal space fitting
+            p = params.integration
+            learner = ProfileLearner(
+                bbox_nsigma=p.shoebox.n_sigma,
+                grid_size=p.reciprocal_space.grid_size,
+                threshold=p.profile.reference_signal_threshold,
+                frame_interval=p.profile.reference_frame_interval)
+        else:
+
+            # If no profile fitting algorithm is selected, output a warning
+            import sys
+            import logging
+            log = logging.getLogger(__name__)
+            log.warn("No reference profiles were created for integration "
+                     "algorithm '{0}'. In order to create reference profiles "
+                     "you need to select a profile fitting integration "
+                     "algorithm.".format(params.integration.algorithm))
+            sys.exit(0)
+
+        # Return the learner
+        return learner
