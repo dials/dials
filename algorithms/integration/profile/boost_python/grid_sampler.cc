@@ -59,6 +59,14 @@ namespace dials { namespace algorithms { namespace boost_python {
     return GridSamplerIterator(obj, obj.size());
   }
 
+
+  struct GridSamplerPickleSuite : boost::python::pickle_suite {
+    static
+    boost::python::tuple getinitargs(const GridSampler &obj) {
+      return boost::python::make_tuple(obj.volume_size(), obj.grid_size());
+    }
+  };
+
   void export_grid_sampler()
   {
     class_<GridSampler>("GridSampler", no_init)
@@ -72,7 +80,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("size", &GridSampler::size)
       .def("__getitem__", &GridSampler::operator[])
       .def("__len__", &GridSampler::size)
-      .def("__iter__", range(&grid_sampler_begin, &grid_sampler_end));
+      .def("__iter__", range(&grid_sampler_begin, &grid_sampler_end))
+      .def_pickle(GridSamplerPickleSuite());
   }
 
 }}} // namespace = dials::algorithms::boost_python

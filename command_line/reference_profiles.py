@@ -67,12 +67,12 @@ class Script(ScriptRunner):
         print 'Create the reference profiles'
         reference = create_reference(sweep, crystal, strong)
 
-#        # Save the reference profiles to file
-#        Command.start('Saving {0} reference profiles to {1}'.format(
-#            len(reference), options.output_filename))
-#        dump.reference(reference, options.output_filename)
-#        Command.end('Saved {0} reference profiles to {1}'.format(
-#            len(reference), options.output_filename))
+        # Save the reference profiles to file
+        Command.start('Saving {0} reference profiles to {1}'.format(
+            len(reference), options.output_filename))
+        dump.reference(reference, options.output_filename)
+        Command.end('Saved {0} reference profiles to {1}'.format(
+            len(reference), options.output_filename))
 
 
 if __name__ == '__main__':

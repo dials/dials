@@ -58,6 +58,13 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @returns The number of grid points in z
+     */
+    std::size_t num_z() const {
+      return num_z_;
+    }
+
+    /**
      * @returns The image centre.
      */
     double2 image_centre() const {

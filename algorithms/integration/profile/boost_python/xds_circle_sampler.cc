@@ -58,6 +58,13 @@ namespace dials { namespace algorithms { namespace boost_python {
   XdsCircleSamplerIterator xds_sampler_end(const XdsCircleSampler &obj) {
     return XdsCircleSamplerIterator(obj, obj.size());
   }
+  
+  struct XdsCircleSamplerPickleSuite : boost::python::pickle_suite {
+    static
+    boost::python::tuple getinitargs(const XdsCircleSampler &obj) {
+      return boost::python::make_tuple(obj.volume_size(), obj.num_z());
+    }
+  };
 
   void export_xds_circle_sampler()
   {
@@ -66,6 +73,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("volume_size"),
         arg("num_z"))))
       .def("volume_size", &XdsCircleSampler::volume_size)
+      .def("num_z", &XdsCircleSampler::num_z)
       .def("image_centre", &XdsCircleSampler::image_centre)
       .def("r0", &XdsCircleSampler::r0)
       .def("r1", &XdsCircleSampler::r1)
@@ -74,7 +82,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("size", &XdsCircleSampler::size)
       .def("__getitem__", &XdsCircleSampler::operator[])
       .def("__len__", &XdsCircleSampler::size)
-      .def("__iter__", range(xds_sampler_begin, xds_sampler_end));
+      .def("__iter__", range(xds_sampler_begin, xds_sampler_end))
+      .def_pickle(XdsCircleSamplerPickleSuite());
   }
 
 }}} // namespace = dials::algorithms::boost_python

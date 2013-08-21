@@ -67,3 +67,24 @@ def reflections(infile):
     # Otherwise assume the input is a file and read from it
     else:
         return pickle.load(infile)
+
+def reference(infile):
+    ''' Load the given reference profile file.
+
+    Params:
+        infile The input filename or file object
+
+    Returns:
+        The reflection list
+
+    '''
+    import cPickle as pickle
+
+    # If the input is a string then open and read from that file
+    if isinstance(infile, str):
+        with open(infile, 'rb') as infile:
+            return pickle.load(infile)
+
+    # Otherwise assume the input is a file and read from it
+    else:
+        return pickle.load(infile)

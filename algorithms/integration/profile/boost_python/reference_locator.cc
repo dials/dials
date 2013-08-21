@@ -20,6 +20,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   template <typename ImageSampler>
+  struct ReferenceLocatorPickleSuite : boost::python::pickle_suite {
+    static
+    boost::python::tuple getinitargs(const ReferenceLocator<ImageSampler> &r) {
+      return boost::python::make_tuple(r.profile(), r.sampler());
+    }
+  };
+
+  template <typename ImageSampler>
   void reference_locator_wrapper(const char *name) {
   
     typedef ImageSampler sampler_type;
@@ -47,7 +55,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("profile", profile_at_index)
       .def("profile", profile_at_coord)
       .def("coord", coord_at_index)
-      .def("coord", coord_at_coord);
+      .def("coord", coord_at_coord)
+      .def("__len__", &locator_type::size)
+      .def_pickle(ReferenceLocatorPickleSuite<sampler_type>());
   }
 
   void export_reference_locator()
