@@ -43,6 +43,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_populator.py",
     "$D/test/algorithms/shoebox/tst_helpers.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
+    "$D/test/algorithms/peak_finding/tst_spotfinder2.py",
     "$D/scratch/rjg/tst_index.py",
     )
 

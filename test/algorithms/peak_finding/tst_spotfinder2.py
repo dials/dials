@@ -3,7 +3,7 @@ class Test:
 
     def __init__(self):
         from dials.algorithms.peak_finding import XDSThresholdStrategy
-        from dials.algorithms.peak_finding import SpotFinder2
+        from dials.algorithms.peak_finding import FindSpots
         from dials.model.serialize import load
         import libtbx.load_env
         import os
@@ -26,7 +26,7 @@ class Test:
                 n_sigma_b=6, n_sigma_s=3)
 
         # Create the spot finder
-        self.find_spots = SpotFinder2(threshold_image=threshold_image)
+        self.find_spots = FindSpots(threshold_image=threshold_image)
 
     def run(self):
 
