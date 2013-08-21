@@ -102,6 +102,7 @@ algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/profile_extractor.py -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
+algorithms/integration/reference_profile_factory.py -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/summation.h -text
 algorithms/integration/summation2d.py -text svneol=unset#text/plain
@@ -250,6 +251,7 @@ command_line/match_observed_w_predicted.py -text
 command_line/parameters.py -text
 command_line/predict_spots.py -text
 command_line/print_reflection_stats.py -text
+command_line/reference_profiles.py -text
 command_line/refine.py -text
 command_line/refine2.py -text
 command_line/reflection_stats.py -text

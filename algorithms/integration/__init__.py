@@ -11,3 +11,4 @@ from summation2d import *
 from summation_reciprocal_space import *
 from profile_fitting_reciprocal_space import *
 from profile_extractor import *
+from reference_profile_factory import *
