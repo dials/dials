@@ -63,7 +63,7 @@ class SpotFinder(object):
 
         # Return the spots in a reflection list
         Command.start('Creating reflection list')
-        rlist self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
+        rlist = self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
         Command.end('Created list of {0} reflections'.format(len(rlist)))
         return rlist
 
