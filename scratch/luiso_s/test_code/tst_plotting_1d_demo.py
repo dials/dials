@@ -29,11 +29,11 @@ n_times = 1
 data2dsmoth_tmp = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
 data2dsmoth = numpy.float64(data2dsmoth_tmp)
 
-n_times = 5
+n_times = 3
 data2dsmoth1_tmp = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
 data2dsmoth1 = numpy.float64(data2dsmoth1_tmp)
 
-from matplotlib import pyplot as plt
+#from matplotlib import pyplot as plt
 print "Plotting data2d"
 plt.imshow(data2d, interpolation = "nearest")
 plt.show()
@@ -43,8 +43,8 @@ plt.show()
 
 from matplotlib import pylab
 
-#for pos in range(1585, 1590):
-pos = 1585
+pos = 1590
+print "row =", pos
 
 line = numpy.copy(data2d[:, pos])
 line1 = numpy.copy(data2dsmoth[:, pos ])
@@ -55,9 +55,11 @@ pylab.plot(line)
 pylab.subplot2grid((2, 3), (1, 0), colspan = 3)
 pylab.plot(line1)
 pylab.show()
-
+'''
 pylab.subplot2grid((2, 3), (0, 0), colspan = 3)
 pylab.plot(line1)
 pylab.subplot2grid((2, 3), (1, 0), colspan = 3)
 pylab.plot(line2)
 pylab.show()
+
+'''

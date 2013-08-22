@@ -10,97 +10,73 @@ from __future__ import division
 #  included in the root directory of this package.
 from dials.scratch.luiso_s import model_2d
 import numpy
+import random
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
 rlist = ReflectionList()
 
-for ivar in range(5):
-    print ivar
-    nrow = 18 + ivar
-    ncol = 20 - ivar
-    print nrow, ncol
-
-
+for ivar in range(16):
+    nrow = 16
+    ncol = 18
     data2d = numpy.zeros((nrow, ncol), dtype = numpy.float64)
-    '''
-    data2d[0, 1] = data2d[1, 0] = 1
-    data2d[0, 2] = data2d[2, 0] = 3
-    data2d[0, 3] = data2d[3, 0] = 2
-    data2d[0, 4] = data2d[4, 0] = 4
-    data2d[4, 1] = data2d[1, 4] = 1
-    data2d[4, 2] = data2d[2, 4] = 3
-    data2d[4, 3] = data2d[3, 4] = 2
-    data2d[0, 0] = data2d[4, 4] = 5
-    '''
-    #data2d[1:4, 1:4] = 10
-    #data2d[2:3, 2:3] = 50
 
-    ref_ang = float((ivar + 3) / 15)
+    ref_ang = float((ivar / 80) + .65)
     ref2d = model_2d(12, 12, 3, 5, ref_ang, 155, 0.5)
     data2d[3:15, 3:15] += numpy.float64(ref2d.as_numpy_array())
     data2d[:, :] += 20
 
-
-
     mask2d = numpy.zeros((nrow, ncol), dtype = numpy.int32)
-    mask2d[1:17, 1:17] = 1
 
-    bkg_const = 40
+    bkg_const = 30
     background2d = numpy.copy(data2d)
-    background2d[:, :] = bkg_const
+    for row in range(nrow):
+        for col in range(ncol):
+            background2d[row, col] = bkg_const + random.random() * bkg_const / 3 + row + col
 
 
     for row in range(nrow):
         for col in range(ncol):
-            if(data2d[row, col] < bkg_const):
-                data2d[row, col] = bkg_const
+            if(data2d[row, col] < background2d[row, col]):
+                data2d[row, col] = background2d[row, col]
                 mask2d[row, col] = 0
             else:
                 mask2d[row, col] = 1
 
 
-
-    #print data2d
-    #print mask2d
-    #print background2d
-
-
-
     data3d = data2d
     data3d.shape = (1,) + data2d.shape
-    print data3d.shape
+    #print data3d.shape
 
     mask3d = mask2d
     mask3d.shape = (1,) + mask2d.shape
-    print mask3d.shape
+    #print mask3d.shape
 
     background3d = background2d
     background3d.shape = (1,) + background2d.shape
-    print background3d.shape
+    #print background3d.shape
 
 
     r = Reflection()
-    r.shoebox = flex.double(data2d)
-    r.shoebox_mask = flex.int(mask2d)
-    r.shoebox_background = flex.double(background2d)
+    r.shoebox = flex.double(data3d)
+    r.shoebox_mask = flex.int(mask3d)
+    r.shoebox_background = flex.double(background3d)
     r.centroid_position = (9.5, 9.5, 0.5)
     #r.intensity = 150.0
 
     rlist.append(r)
 
+
+
+
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
-for r in rlist:
-    print r
-
-
-'''
-from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
-centroid = toy_centroid_lui(rlist)
-rlist = centroid.get_reflections()
-'''
-
+old_rlist = numpy.zeros((len(rlist)), dtype = numpy.float64)
+old_rlist_var = numpy.zeros((len(rlist)), dtype = numpy.float64)
+for n in range(len(rlist)):
+    print rlist[n].intensity, rlist[n].intensity_variance
+    old_rlist[n] = rlist[n].intensity
+    old_rlist_var[n] = rlist[n].intensity_variance
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import calc_background_n_make_2d_profile
 profile = calc_background_n_make_2d_profile(rlist)
@@ -111,20 +87,31 @@ from dials.scratch.luiso_s import write_2d
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import fit_profile_2d
 fit_profile_2d(rlist, profile)
-
-
+'''
 from matplotlib import pyplot as plt
-data2d_prof = profile.as_numpy_array()
-
-plt.imshow(data2d_prof, interpolation = "nearest")
-plt.show()
-
-
 for r in rlist:
-    print r
-
     data2d = r.shoebox.as_numpy_array()
     matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
     matrix_img[:, :] = data2d[0:1, :, :]
     plt.imshow(matrix_img, interpolation = "nearest")
     plt.show()
+
+    data2d = r.shoebox_mask.as_numpy_array()
+    matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
+    matrix_img[:, :] = data2d[0:1, :, :]
+    plt.imshow(matrix_img, interpolation = "nearest")
+    plt.show()
+
+data2d_prof = profile.as_numpy_array()
+plt.imshow(data2d_prof, interpolation = "nearest")
+plt.show()
+'''
+print "sum integration alone"
+for r in rlist:
+    print  r.intensity, r.intensity_variance
+print "____________________________________________________________________________"
+print "sum integration                      vs                      Profile fitting"
+print "____________________________________________________________________________"
+print "I             Variance              vs           I            Variance     "
+for n in range(len(rlist)):
+    print old_rlist[n], ", ", old_rlist_var[n], "       vs         ", rlist[n].intensity, ", ", rlist[n].intensity_variance

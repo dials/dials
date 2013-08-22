@@ -33,6 +33,7 @@ def calc_background_n_make_2d_profile(reflections):
     print "big (nrow, ncol) =", big_nrow, big_ncol
     big_nrow = big_nrow * 2 + 1
     big_ncol = big_ncol * 2 + 1
+    print "big (nrow, ncol) used for profile =", big_nrow, big_ncol
     sumation = flex.double(flex.grid(big_nrow, big_ncol))
     descr = flex.double(flex.grid(1, 3))
     for ref in reflections:
@@ -47,18 +48,13 @@ def calc_background_n_make_2d_profile(reflections):
             mask2d.reshape(flex.grid(shoebox.all()[1:]))
             background2d.reshape(flex.grid(shoebox.all()[1:]))
 
-            #print "ref.centroid =", ref.centroid
-            print "ref.centroid_position =", ref.centroid_position
+            #print "ref.centroid_position =", ref.centroid_position
             descr[0, 0] = ref.centroid_position[0]
             descr[0, 1] = ref.centroid_position[1]
             descr[0, 2] = 1.0 / (ref.intensity * counter)
-            print "background2d ="
-            #write_2d(background2d)
+            #print "background2d ="
             peak2d = subtrac_bkg_2d(data2d, background2d)
-            print "peak 2d ="
-            #write_2d(peak2d)
-            print "I =", ref.intensity
-            print "_____________________________________________________________________________________________"
+            #print "peak 2d ="
 
             sumation = add_2d(descr, peak2d, sumation)
 

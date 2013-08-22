@@ -62,10 +62,12 @@ namespace dials { namespace scratch {
     double tot_row, tot_col;
     double x_contrib, y_contrib, x_pix_pos, y_pix_pos;
     int xpos_ex, ypos_ex;
+    /*
     std::cout <<"\n ncol_tot ="<< ncol_tot <<"\n";
     std::cout <<"\n nrow_tot ="<< nrow_tot <<"\n";
     std::cout <<"\n centr_col ="<< centr_col <<"\n";
     std::cout <<"\n centr_row ="<< centr_row <<"\n";
+    */
 
     int tot_row_centr=int(nrow_tot / 2);
     int tot_col_centr=int(ncol_tot / 2);
@@ -137,11 +139,13 @@ namespace dials { namespace scratch {
       flex_double data2dmoved(profile2d.accessor(), 0);
       flex_double background2dmoved(profile2d.accessor(), 0);
       descriptor(0,2) = 1;
-      std::cout << "\n data2d = \n";
-      std::cout << "\n data2d end \n________________________________";
+      //std::cout << "\n data2d = \n";
+      //std::cout << "\n data2d end \n________________________________";
       data2dmoved = add_2d(descriptor, data2d, data2dmoved);
-      std::cout << "data2d moved = \n";
+      //std::cout << "data2d moved = \n";
       background2dmoved = add_2d(descriptor, background2d, background2dmoved);
+
+      // Counting how many pixels are useful so far
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
           if (data2dmoved(row,col) != background2dmoved(row,col) ) {
@@ -150,22 +154,25 @@ namespace dials { namespace scratch {
         }
       }
 
+      // Building a set 1D lists with the useful pixels
       double iexpr_lst[counter];
       double imodl_lst[counter];
+      double iback_lst[counter];
       double modl_scal_lst[counter];
-      double scale = 0, sum = 0;
+      double scale = 0, sum = 0, i_var, bkg_var;
       double avg_i_scale, diff, df_sqr;
       counter = 0;
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
-          if (data2dmoved(row,col) != background2dmoved(row,col) ) {
+          if (data2dmoved(row,col) > background2dmoved(row,col) ) {
             iexpr_lst[counter] = data2dmoved(row,col) - background2dmoved(row,col);
             imodl_lst[counter] = profile2d(row,col);
+            iback_lst[counter] = background2dmoved(row,col);
             counter++ ;
           }
         }
       }
-
+      // finding the scale needed to fit profile list to experiment list
       for (int i = 0; i < counter; i++){
         scale = iexpr_lst[i] / imodl_lst[i];
         sum += scale * imodl_lst[i];
@@ -182,8 +189,19 @@ namespace dials { namespace scratch {
         df_sqr = diff * diff;
         sum += df_sqr;
       }
+      i_var = sum;
+
+      sum = 0;
+        for (int i = 0; i < counter; i++){
+          df_sqr = iback_lst[i] * iback_lst[i];
+          sum += df_sqr;
+        }
+      bkg_var = sum;
+
       integr_data[0] = avg_i_scale;          // intensity
-      integr_data[1] = sum;                  // intensity variance
+      integr_data[1] = sqrt(i_var) + sqrt(bkg_var);                  // intensity variance
+
+
       return integr_data;;
     }
 
@@ -243,7 +261,7 @@ namespace dials { namespace scratch {
         //curv3d(row, col) = int(i_tt*imax);
         curv3d(row, col) = i_tt*imax;
 
-        curv3d(row, col) += rand() % 30;
+        curv3d(row, col) += rand() % 10;
 
         // tot+=i_tt*imax;
       }
