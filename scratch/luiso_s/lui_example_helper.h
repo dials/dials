@@ -201,7 +201,7 @@ namespace dials { namespace scratch {
       bkg_var = sum;
 
       integr_data[0] = avg_i_scale;//                            // intensity
-      integr_data[1] = sqrt( i_var ) + sqrt( bkg_var );          // intensity variance
+      integr_data[1] = i_var;// + bkg_var ;          // intensity variance
 
       return integr_data;;
     }

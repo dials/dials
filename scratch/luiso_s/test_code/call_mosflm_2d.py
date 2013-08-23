@@ -21,7 +21,7 @@ for ivar in range(16):
     data2d = numpy.zeros((nrow, ncol), dtype = numpy.float64)
 
     ref_ang = float((ivar / 30) + .65)
-    ref2d = model_2d(12, 12, 3, 5, ref_ang, ivar * 3 + 80 , 0.5) # make the 100 smaller than 50 to make it crash
+    ref2d = model_2d(12, 12, 3, 5, ref_ang, ivar * 5 + 80 , 0.5) # make the 100 smaller than 50 to make it crash
     data2d[3:15, 3:15] += numpy.float64(ref2d.as_numpy_array())
     data2d[:, :] += 20
 
@@ -100,7 +100,7 @@ print "I             Variance              vs           I            Variance   
 for n in range(len(rlist)):
     print old_rlist[n], ", ", old_rlist_var[n], "       vs         ", rlist[n].intensity, ", ", rlist[n].intensity_variance
 
-'''
+
 from matplotlib import pyplot as plt
 for r in rlist:
     data2d = r.shoebox.as_numpy_array()
@@ -108,14 +108,20 @@ for r in rlist:
     matrix_img[:, :] = data2d[0:1, :, :]
     plt.imshow(matrix_img, interpolation = "nearest")
     plt.show()
-
+    '''
     data2d = r.shoebox_mask.as_numpy_array()
     matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
     matrix_img[:, :] = data2d[0:1, :, :]
     plt.imshow(matrix_img, interpolation = "nearest")
     plt.show()
+    '''
+    data2d = r.shoebox_background.as_numpy_array()
+    matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
+    matrix_img[:, :] = data2d[0:1, :, :]
+    plt.imshow(matrix_img, interpolation = "nearest")
+    plt.show()
+
 
 data2d_prof = profile.as_numpy_array()
 plt.imshow(data2d_prof, interpolation = "nearest")
 plt.show()
-'''
