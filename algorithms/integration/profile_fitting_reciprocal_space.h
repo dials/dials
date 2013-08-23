@@ -92,4 +92,4 @@ namespace dials { namespace algorithms {
 
 }} // namespace dials::algorithms
 
-#endif /* DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H */
+#endif // DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H
