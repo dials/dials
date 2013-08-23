@@ -39,14 +39,7 @@ class SummationReciprocalSpace(IntegrationInterface):
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = rbt.Forward(
-            sweep.get_beam(),
-            sweep.get_detector(),
-            sweep.get_goniometer(),
-            sweep.get_scan(),
-            crystal.get_mosaicity(),
-            self._bbox_nsigma,
-            self._grid_size)
+        transform = rbt.Forward(sweep, crystal, self._bbox_nsigma, self._grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Initialise the integration algorithm

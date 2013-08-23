@@ -10,6 +10,7 @@
 from __future__ import division
 from dials.interfaces.integration import IntegrationInterface
 
+
 class ProfileFittingReciprocalSpace(IntegrationInterface):
     '''A class to perform reciprocal space profile fitting'''
 
@@ -21,7 +22,6 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         self.threshold = kwargs['threshold']
         self.frame_interval = kwargs['frame_interval']
         self.bbox_nsigma = kwargs['n_sigma']
-
 
     def __call__(self, sweep, crystal, reflections, reference=None):
         '''Process the reflections.
@@ -42,14 +42,7 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = rbt.Forward(
-            sweep.get_beam(),
-            sweep.get_detector(),
-            sweep.get_goniometer(),
-            sweep.get_scan(),
-            crystal.get_mosaicity(),
-            self.bbox_nsigma,
-            self.grid_size)
+        transform = rbt.Forward(sweep, crystal, self.bbox_nsigma, self.grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Transform the reflections to reciprocal space

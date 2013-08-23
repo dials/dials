@@ -42,6 +42,22 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("max_iter") = 50)))
       .def("intensity", &ProfileFitting::intensity)
       .def("variance", &ProfileFitting::variance);
+      
+    class_<ProfileFitting2>("ProfileFitting2", no_init)
+      .def(init<const flex_double&,
+                const flex_double&,
+                const flex_double&,
+                double,
+                std::size_t>((
+        arg("profile"),
+        arg("contents"),
+        arg("background"),
+        arg("bits") = 1e-3,
+        arg("max_iter") = 10)))
+      .def("intensity", &ProfileFitting2::intensity)
+      .def("variance", &ProfileFitting2::variance)
+      .def("niter", &ProfileFitting2::niter)
+      .def("error", &ProfileFitting2::error);
   }
 
 }}} // namespace = dials::algorithms::boost_python

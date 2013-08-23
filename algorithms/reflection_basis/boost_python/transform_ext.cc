@@ -152,6 +152,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   }
   
   inline
+  boost::shared_ptr<Forward> init_from_sweep_and_crystal(
+      PyObject *sweep, PyObject *crystal,
+      double nsigma, std::size_t grid_size) {
+    return boost::shared_ptr<Forward>(new Forward(
+      call_method<Beam>(sweep, "get_beam"), 
+      call_method<Detector>(sweep, "get_detector"),
+      call_method<Goniometer>(sweep, "get_goniometer"),
+      call_method<Scan>(sweep, "get_scan"),
+      call_method<double>(crystal, "get_mosaicity"),
+      nsigma, grid_size));
+  }
+  
+  inline
   void forward_with_reflection_list(const Forward &transform, 
       ReflectionList &rlist) {
     // FIXME: Get Python error GC object already tracked. Possibly related to 
@@ -200,6 +213,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         arg("mosaicity"),
         arg("n_sigma"),
         arg("grid_half_size"))))
+      .def("__init__", 
+        make_constructor(&init_from_sweep_and_crystal))
       .def("__call__", forward_with_cs, (
         arg("cs"),
         arg("bbox"),

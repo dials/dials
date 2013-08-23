@@ -612,6 +612,7 @@ scratch/jmp/nexus/test_nexus.py -text
 scratch/jmp/pickle/memory_leak.py -text
 scratch/jmp/pickle/test_pickle.py -text
 scratch/jmp/profile/grid_sampler.py -text
+scratch/jmp/profile/test_profile.py -text
 scratch/jmp/runtests.py -text
 scratch/jmp/test/data/sim_mx/DX-CORRECTIONS.cbf -text
 scratch/jmp/test/data/sim_mx/DY-CORRECTIONS.cbf -text

@@ -81,7 +81,7 @@ namespace dials { namespace algorithms {
       flex_double p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance
-      ProfileFitting fit(p, c, b);
+      ProfileFitting2 fit(p, c, b);
       reflection.set_intensity(fit.intensity());
       reflection.set_intensity_variance(fit.variance());
     }

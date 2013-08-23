@@ -103,14 +103,7 @@ class ProfileLearner(object):
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = rbt.Forward(
-            sweep.get_beam(),
-            sweep.get_detector(),
-            sweep.get_goniometer(),
-            sweep.get_scan(),
-            crystal.get_mosaicity(),
-            self.bbox_nsigma,
-            self.grid_size)
+        transform = rbt.Forward(sweep, crystal, self.bbox_nsigma, self.grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Transform the reflections to reciprocal space

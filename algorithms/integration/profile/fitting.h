@@ -131,6 +131,116 @@ namespace dials { namespace algorithms {
     double intensity_;
   };
 
+  /**
+   * Class to fix the observed with the reference profile
+   */
+  class ProfileFitting2 {
+  public:
+
+    /**
+     * Instantiate the fitting algorithm with the reflection profile
+     * @param p The profile to fit to
+     * @param c The contents of the pixels
+     * @param b The background of the pixels
+     */
+    ProfileFitting2(const flex_double &p,
+                    const flex_double &c,
+                    const flex_double &b,
+                    double eps = 1e-3,
+                    std::size_t max_iter = 10)
+    {
+      // Check the input
+      DIALS_ASSERT(p.size() == c.size());
+      DIALS_ASSERT(p.size() == b.size());
+      DIALS_ASSERT(eps > 0.0);
+      DIALS_ASSERT(max_iter >= 1);
+
+      // Iterate to calculate the intensity. Exit if intensity goes less
+      // than zero or if the tolerance or number of iteration is reached.
+      double I = 0.0, I0 = sum(c.const_ref());
+      for (niter_ = 0; niter_ < max_iter; ++niter_) {
+        I = estimate_intensity(p, c, b, I0);
+        DIALS_ASSERT(I >= 0.0);
+        if ((error_ = std::abs(I - I0)) < eps) {
+          break;
+        }
+        I0 = I;
+      }
+
+      // Set the intensity and variance
+      intensity_ = I;
+      variance_ = estimate_variance(p, b, I);
+    }
+
+    /**
+     * @returns The intensity
+     */
+    double intensity() const {
+      return intensity_;
+    }
+
+    /**
+     * @returns the variance
+     */
+    double variance() const {
+      return variance_;
+    }
+
+    /**
+     * @returns The number of iterations
+     */
+    std::size_t niter() const {
+      return niter_;
+    }
+
+    /**
+     * @returns The error in the fit
+     */
+    double error() const {
+      return error_;
+    }
+
+  private:
+
+    /**
+     * Evaluate the next intensity iteration.
+     * @ returns The estimate of the intensity
+     */
+    double estimate_intensity(const flex_double &p,
+                              const flex_double &c,
+                              const flex_double &b,
+                              double I0) {
+      double s1 = 0.0, s2 = 0.0;
+      for (std::size_t i = 0; i < p.size(); ++i) {
+        double v = b[i] + I0 * p[i];
+        if (v == 0.0) continue;
+        double pv = p[i] / v;
+        s1 += (c[i] - b[i]) * pv;
+        s2 += p[i] * pv;
+      }
+      return s2 == 0.0 ? 0.0 : s1 / s2;
+    }
+
+    /**
+     * Calculate the total variance in the profile.
+     * @returns The total variance
+     */
+    double estimate_variance(const flex_double &p,
+                             const flex_double &b,
+                             double I) {
+      double V = 0.0;
+      for (std::size_t i = 0; i < p.size(); ++i) {
+        V += b[i] + I * p[i];
+      }
+      return V;
+    }
+
+    double intensity_;
+    double variance_;
+    std::size_t niter_;
+    double error_;
+  };
+
 }} // namespace dials::algorithms
 
 #endif /* DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_H */
