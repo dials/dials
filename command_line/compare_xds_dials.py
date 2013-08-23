@@ -114,6 +114,8 @@ def pull_calculated(integrate_pkl):
             continue
         if r.intensity ** 2 < r.intensity_variance:
             continue
+        if r.intensity <= 0.0:
+            continue
         strong_reflections.append(r)
 
     del(r_list)
