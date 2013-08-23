@@ -119,9 +119,8 @@ class ProfileExtractor(object):
 
         # Progress bar finished
         progress.finished(
-            "Extracted {0} reflections, {1} of which are strong".format(
-                len([r for r in reflections if r.is_valid()]),
-                len([r for r in reflections if r.is_strong()])))
+            "Extracted {0} reflections".format(
+                len([r for r in reflections if r.is_valid()])))
 
         # Return the reflections
         return reflections
