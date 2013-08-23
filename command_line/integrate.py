@@ -19,7 +19,8 @@ class Script(ScriptRunner):
         '''Initialise the script.'''
 
         # The script usage
-        usage = "usage: %prog [options] [param.phil] sweep.json crystal.json"
+        usage  = "usage: %prog [options] [param.phil] "
+        usage += "sweep.json crystal.json [reference.pickle]"
 
         # Initialise the base class
         ScriptRunner.__init__(self, usage=usage)
@@ -46,7 +47,7 @@ class Script(ScriptRunner):
         from dials.util.command_line import Command
 
         # Check the number of arguments is correct
-        if len(args) != 2:
+        if len(args) != 2 and len(args) != 3:
             self.config().print_help()
             return
 
@@ -59,9 +60,15 @@ class Script(ScriptRunner):
         sweep = load.sweep(args[0])
         crystal = load.crystal(args[1])
 
+        # Load the reference profiles
+        if len(args) == 3:
+            reference = load.reference(args[2])
+        else:
+            reference = None
+
         # Intregate the sweep's reflections
         print 'Integrating reflections'
-        reflections = integrate(sweep, crystal)
+        reflections = integrate(sweep, crystal, reference=reference)
 
         # Save the reflections to file
         Command.start('Saving reflections to {0}'.format(

@@ -18,7 +18,7 @@ class Summation3d(IntegrationInterface):
         from dials.algorithms.integration import Summation3dAlgorithm
         self._integrator = Summation3dAlgorithm()
 
-    def __call__(self, sweep, crystal, reflections):
+    def __call__(self, sweep, crystal, reflections, reference=None):
         '''Process the reflections.
 
         Params:

@@ -17,7 +17,7 @@ class Summation2d(IntegrationInterface):
     def __init__(self, **kwargs):
         '''Initialise algorithm.'''
         pass
-    def __call__(self, sweep, crystal, reflections):
+    def __call__(self, sweep, crystal, reflections, reference=None):
         '''Process the reflections.'''
         self.integrate(reflections)
         return reflections

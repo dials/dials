@@ -20,7 +20,7 @@ class SummationReciprocalSpace(IntegrationInterface):
         self._bbox_nsigma = kwargs['n_sigma']
         self._grid_size = kwargs['grid_size']
 
-    def __call__(self, sweep, crystal, reflections):
+    def __call__(self, sweep, crystal, reflections, reference=None):
         '''Process the reflections.
 
         Params:

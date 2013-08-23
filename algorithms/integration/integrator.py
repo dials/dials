@@ -32,13 +32,14 @@ class Integrator(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal, reflections=None):
+    def __call__(self, sweep, crystal, reflections=None, reference=None):
         ''' Call to integrate.
 
         Params:
             sweep The sweep to process
             crystal The crystal to process
             reflections The reflection list
+            reference The reference profiles
 
         Returns:
             A reflection list
@@ -55,7 +56,7 @@ class Integrator(object):
         #  - Fourth correct the reflection intensities
         reflections = self.compute_background(sweep, crystal, reflections)
         reflections = self.compute_centroid(sweep, crystal, reflections)
-        reflections = self.compute_intensity(sweep, crystal, reflections)
+        reflections = self.compute_intensity(sweep, crystal, reflections, reference)
         reflections = self.correct_intensity(sweep, crystal, reflections)
 
         # Return the reflections
@@ -240,7 +241,6 @@ class IntegratorFactory(object):
             algorithm = ProfileFittingReciprocalSpace(
                 n_sigma = integration.shoebox.n_sigma,
                 grid_size = integration.reciprocal_space.grid_size,
-                n_div = integration.reciprocal_space.n_divisions,
                 frame_interval = integration.profile.reference_frame_interval,
                 threshold = integration.profile.reference_signal_threshold)
 

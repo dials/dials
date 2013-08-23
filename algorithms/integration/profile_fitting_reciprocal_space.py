@@ -21,10 +21,9 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         self.threshold = kwargs['threshold']
         self.frame_interval = kwargs['frame_interval']
         self.bbox_nsigma = kwargs['n_sigma']
-        self.n_div = kwargs['n_div']
 
 
-    def __call__(self, sweep, crystal, reflections):
+    def __call__(self, sweep, crystal, reflections, reference=None):
         '''Process the reflections.
 
         Params:
@@ -38,25 +37,15 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         '''
         from dials.util.command_line import Command
         from dials.algorithms.reflection_basis import transform as rbt
-        from dials.algorithms.integration.profile import \
-            XdsCircleSampler
-        from dials.algorithms.integration.profile import \
-            XdsCircleReferenceLearner
         from dials.algorithms.integration import \
             ProfileFittingReciprocalSpaceAlgorithm
-
-        # Create the reference profile sampler
-        image_size = sweep.get_detector().get_image_size()
-        num_frames = sweep.get_scan().get_num_images()
-        volume_size = image_size + (num_frames,)
-        num_z = int(num_frames / self.frame_interval) + 1
-        sampler = XdsCircleSampler(volume_size, num_z)
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
         transform = rbt.Forward(
             sweep.get_beam(),
             sweep.get_detector(),
+            sweep.get_goniometer(),
             sweep.get_scan(),
             crystal.get_mosaicity(),
             self.bbox_nsigma,
@@ -69,19 +58,8 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         Command.end('Transformed {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
 
-        # Configure the reference learner
-        grid_size = (self.grid_size * 2 + 1,) * 3
-        learner = XdsCircleReferenceLearner(
-            sampler, grid_size, self.threshold)
-
-        # Learn the reference profiles around the detector
-        Command.start('Learning reference profiles')
-        learner.learn(reflections)
-        locate = learner.locate()
-        Command.end('Learnt {0} reference profiles'.format(locate.size()))
-
         # Configure the integration algorithm with the locator class
-        integrate = ProfileFittingReciprocalSpaceAlgorithm(locate)
+        integrate = ProfileFittingReciprocalSpaceAlgorithm(reference)
 
         # Perform the integration
         Command.start('Integrating reflections in reciprocal space')
