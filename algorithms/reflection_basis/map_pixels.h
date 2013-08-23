@@ -59,8 +59,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @returns The e1/e2 coordinate
      */
     vec2<double> operator()(int j, int i) const {
-      double xx = (double)(x0_ + i);
-      double yy = (double)(y0_ + j);
+      int xx = x0_ + i;
+      int yy = y0_ + j;
       vec3<double> ds = s1_map_(yy, xx) - s1_;
       double c1 = e1_ * ds;
       double c2 = e2_ * ds;

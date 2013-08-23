@@ -11,6 +11,7 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H
 #define DIALS_ALGORITHMS_INTEGRATION_PROFILE_FITTING_RECIPROCAL_SPACE_H
 
+#include <omptbx/omp_or_stubs.h>
 #include <boost/shared_ptr.hpp>
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/model/data/reflection.h>
@@ -47,6 +48,7 @@ namespace dials { namespace algorithms {
      * @param reflections The reflection list
      */
     void operator()(ReflectionList &reflections) const {
+      #pragma omp parallel for
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         if (reflections[i].is_valid()) {
           try {

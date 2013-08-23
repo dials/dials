@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <omptbx/omp_or_stubs.h>
 #include <dials/algorithms/reflection_basis/rebin_pixels.h>
 #include <dials/algorithms/reflection_basis/map_frames.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
@@ -153,6 +154,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   inline
   void forward_with_reflection_list(const Forward &transform, 
       ReflectionList &rlist) {
+    // FIXME: Get Python error GC object already tracked. Possibly related to 
+    // creation of flex arrays in multiple threads 
+    //#pragma omp parallel for
     for (std::size_t i = 0; i < rlist.size(); ++i) {
       if (rlist[i].is_valid()) {
         try {
