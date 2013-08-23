@@ -134,6 +134,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       : s1_map_(s1_map),
         grid_half_size_(grid_half_size),
         step_size_(step_size) {
+      DIALS_ASSERT(grid_half_size > 0);
       DIALS_ASSERT(step_size_[0] > 0.0 && step_size_[1] > 0.0);
       DIALS_ASSERT(s1_map.accessor().all().size() == 2);
       image_size_ = vec2<std::size_t>(s1_map.accessor().all()[0],
@@ -181,8 +182,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
       DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
       DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
-      DIALS_ASSERT(bbox[0] >= 0 && bbox[1] <= image_size_[1]);
-      DIALS_ASSERT(bbox[2] >= 0 && bbox[3] <= image_size_[0]);
+      DIALS_ASSERT(bbox[0] >= 0 && bbox[1] < image_size_[1]);
+      DIALS_ASSERT(bbox[2] >= 0 && bbox[3] < image_size_[0]);
 
       // Create the index generator for each coordinate of the bounding box
       GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
@@ -293,6 +294,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       : s1_map_(s1_map),
         grid_half_size_(grid_half_size),
         step_size_(step_size) {
+      DIALS_ASSERT(grid_half_size > 0);
       DIALS_ASSERT(step_size_[0] > 0.0 && step_size_[1] > 0.0);
       image_size_ = vec2<std::size_t>(s1_map.accessor().all()[0],
                                       s1_map.accessor().all()[1]);
