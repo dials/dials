@@ -20,8 +20,8 @@ for ivar in range(16):
     ncol = 18
     data2d = numpy.zeros((nrow, ncol), dtype = numpy.float64)
 
-    ref_ang = float((ivar / 80) + .65)
-    ref2d = model_2d(12, 12, 3, 5, ref_ang, 155, 0.5)
+    ref_ang = float((ivar / 30) + .65)
+    ref2d = model_2d(12, 12, 3, 5, ref_ang, ivar * 3 + 80 , 0.5) # make the 100 smaller than 50 to make it crash
     data2d[3:15, 3:15] += numpy.float64(ref2d.as_numpy_array())
     data2d[:, :] += 20
 
@@ -68,6 +68,7 @@ for ivar in range(16):
 
 
 
+
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
@@ -79,14 +80,26 @@ for n in range(len(rlist)):
     old_rlist_var[n] = rlist[n].intensity_variance
 
 from dials.scratch.luiso_s.test_code.mosflm_2D import calc_background_n_make_2d_profile
-profile = calc_background_n_make_2d_profile(rlist)
+profile, tr_hold = calc_background_n_make_2d_profile(rlist)
 
-from dials.scratch.luiso_s import write_2d
+#from dials.scratch.luiso_s import write_2d
 #print "profile ="
 #write_2d(profile)
 
+print "tr_hold =", tr_hold
+
+
 from dials.scratch.luiso_s.test_code.mosflm_2D import fit_profile_2d
-fit_profile_2d(rlist, profile)
+fit_profile_2d(rlist, profile, tr_hold)
+
+
+print "____________________________________________________________________________"
+print "sum integration                      vs                      Profile fitting"
+print "____________________________________________________________________________"
+print "I             Variance              vs           I            Variance     "
+for n in range(len(rlist)):
+    print old_rlist[n], ", ", old_rlist_var[n], "       vs         ", rlist[n].intensity, ", ", rlist[n].intensity_variance
+
 '''
 from matplotlib import pyplot as plt
 for r in rlist:
@@ -106,12 +119,3 @@ data2d_prof = profile.as_numpy_array()
 plt.imshow(data2d_prof, interpolation = "nearest")
 plt.show()
 '''
-print "sum integration alone"
-for r in rlist:
-    print  r.intensity, r.intensity_variance
-print "____________________________________________________________________________"
-print "sum integration                      vs                      Profile fitting"
-print "____________________________________________________________________________"
-print "I             Variance              vs           I            Variance     "
-for n in range(len(rlist)):
-    print old_rlist[n], ", ", old_rlist_var[n], "       vs         ", rlist[n].intensity, ", ", rlist[n].intensity_variance

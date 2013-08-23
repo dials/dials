@@ -131,24 +131,23 @@ namespace dials { namespace scratch {
   }
 
 
-  vec2<double> fitting_2d(flex_double descriptor, flex_double data2d, flex_double background2d, flex_double profile2d) {
+  vec2<double> fitting_2d(flex_double descriptor, flex_double data2d, flex_double backg2d, flex_double profile2d) {
       vec2<double> integr_data(0,1);
       int ncol = profile2d.accessor().all()[1];
       int nrow = profile2d.accessor().all()[0];
       int counter = 0;
-      flex_double data2dmoved(profile2d.accessor(), 0);
-      flex_double background2dmoved(profile2d.accessor(), 0);
+      flex_double data2dmov(profile2d.accessor(), 0);
+      flex_double backg2dmov(profile2d.accessor(), 0);
       descriptor(0,2) = 1;
-      //std::cout << "\n data2d = \n";
-      //std::cout << "\n data2d end \n________________________________";
-      data2dmoved = add_2d(descriptor, data2d, data2dmoved);
-      //std::cout << "data2d moved = \n";
-      background2dmoved = add_2d(descriptor, background2d, background2dmoved);
+
+      data2dmov = add_2d(descriptor, data2d, data2dmov);
+
+      backg2dmov = add_2d(descriptor, backg2d, backg2dmov);
 
       // Counting how many pixels are useful so far
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
-          if (data2dmoved(row,col) != background2dmoved(row,col) ) {
+          if (data2dmov(row,col) != backg2dmov(row,col) ) {
             counter++ ;
           }
         }
@@ -164,19 +163,21 @@ namespace dials { namespace scratch {
       counter = 0;
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
-          if (data2dmoved(row,col) > background2dmoved(row,col) ) {
-            iexpr_lst[counter] = data2dmoved(row,col) - background2dmoved(row,col);
-            imodl_lst[counter] = profile2d(row,col);
-            iback_lst[counter] = background2dmoved(row,col);
+          if (data2dmov(row,col) != backg2dmov(row,col) and profile2d(row,col) > 0 ) {
+            iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
+            imodl_lst[counter] = profile2d(row,col);// * conv_scale;
+            iback_lst[counter] = backg2dmov(row,col);
             counter++ ;
           }
         }
       }
+
       // finding the scale needed to fit profile list to experiment list
       for (int i = 0; i < counter; i++){
         scale = iexpr_lst[i] / imodl_lst[i];
         sum += scale * imodl_lst[i];
       }
+
 
       avg_i_scale = sum;
       for (int i = 0; i < counter; i++){
@@ -189,6 +190,7 @@ namespace dials { namespace scratch {
         df_sqr = diff * diff;
         sum += df_sqr;
       }
+
       i_var = sum;
 
       sum = 0;
@@ -198,21 +200,20 @@ namespace dials { namespace scratch {
         }
       bkg_var = sum;
 
-      integr_data[0] = avg_i_scale;          // intensity
-      integr_data[1] = sqrt(i_var) + sqrt(bkg_var);                  // intensity variance
-
+      integr_data[0] = avg_i_scale;//                            // intensity
+      integr_data[1] = sqrt( i_var ) + sqrt( bkg_var );          // intensity variance
 
       return integr_data;;
     }
 
-    flex_double subtrac_bkg_2d(flex_double data2d, flex_double background2d) {
+    flex_double subtrac_bkg_2d(flex_double data2d, flex_double backg2d) {
       int ncol = data2d.accessor().all()[1];
       int nrow = data2d.accessor().all()[0];
       flex_double data2dreturn(data2d.accessor(), 0);
       for (int row = 0; row <= nrow - 1; row++) {
         for (int col = 0; col <= ncol - 1; col++) {
-          if (data2d(row,col) > background2d(row,col) ) {
-            data2dreturn(row,col) = data2d(row,col) - background2d(row,col);
+          if (data2d(row,col) > backg2d(row,col) ) {
+            data2dreturn(row,col) = data2d(row,col) - backg2d(row,col);
           } else {
             data2dreturn(row,col) = 0.0;
           }
