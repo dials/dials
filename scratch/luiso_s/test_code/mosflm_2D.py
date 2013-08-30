@@ -100,3 +100,4 @@ def fit_profile_2d(reflections, average, thold):
             ref.intensity = I_R[0]
             ref.intensity_variance = I_R[1]
             #return I_R[0], I_R[1]
+    return reflections

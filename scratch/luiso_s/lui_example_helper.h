@@ -262,7 +262,7 @@ namespace dials { namespace scratch {
         //curv3d(row, col) = int(i_tt*imax);
         curv3d(row, col) = i_tt*imax;
 
-        curv3d(row, col) += rand() % 10;
+        curv3d(row, col) += rand() % 110 - 70;
 
         // tot+=i_tt*imax;
       }

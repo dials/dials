@@ -13,14 +13,17 @@ import numpy
 import random
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
-rlist = ReflectionList()
 
-for ivar in range(166):
+xmax = 500
+ymax = 400
+rlist = ReflectionList()
+num_of_ref = 144
+for ivar in range(num_of_ref):
     nrow = 16
     ncol = 18
     data2d = numpy.zeros((nrow, ncol), dtype = numpy.float64)
 
-    ref_ang = float((ivar / 130) + .65)
+    ref_ang = float((ivar / 30) + .65)
     ref2d = model_2d(12, 12, 3, 5, ref_ang, ivar * 1.5 + 80 , 0.5) # make the 100 smaller than 50 to make it crash
     data2d[3:15, 3:15] += numpy.float64(ref2d.as_numpy_array())
     data2d[:, :] += 20
@@ -55,64 +58,21 @@ for ivar in range(166):
     background3d.shape = (1,) + background2d.shape
     #print background3d.shape
 
-
     r = Reflection()
     r.shoebox = flex.double(data3d)
     r.shoebox_mask = flex.int(mask3d)
     r.shoebox_background = flex.double(background3d)
     r.centroid_position = (9.5, 9.5, 0.5)
-    #r.intensity = 150.0
-
+    r.image_coord_px = random.random() * xmax, random.random() * ymax
+    print r.image_coord_px
+    #x, y = r.image_coord_px
     rlist.append(r)
-
-
-
 
 
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
-old_rlist = numpy.zeros((len(rlist)), dtype = numpy.float64)
-old_rlist_var = numpy.zeros((len(rlist)), dtype = numpy.float64)
-for n in range(len(rlist)):
-    print rlist[n].intensity, rlist[n].intensity_variance
-    old_rlist[n] = rlist[n].intensity
-    old_rlist_var[n] = rlist[n].intensity_variance
-
-######################################################################################################################
 
 from dials.scratch.luiso_s.test_code.call_mosflm_2d import mosflm_caller
-mosflm_caller(rlist)
+rlist = mosflm_caller(rlist, xmax, ymax, 4)
 
-######################################################################################################################
-
-
-
-print "____________________________________________________________________________"
-print "sum integration                      vs                      Profile fitting"
-print "____________________________________________________________________________"
-print "I             Variance              vs           I            Variance     "
-for n in range(len(rlist)):
-    print old_rlist[n], ", ", old_rlist_var[n], "       vs         ", rlist[n].intensity, ", ", rlist[n].intensity_variance
-
-'''
-from matplotlib import pyplot as plt
-
-for r in rlist:
-    data2d = r.shoebox.as_numpy_array()
-    matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
-    matrix_img[:, :] = data2d[0:1, :, :]
-    plt.imshow(matrix_img, interpolation = "nearest")
-    plt.show()
-
-    data2d = r.shoebox_background.as_numpy_array()
-    matrix_img = numpy.zeros((r.shoebox.all()[1] , r.shoebox.all()[2]), dtype = numpy.float64)
-    matrix_img[:, :] = data2d[0:1, :, :]
-    plt.imshow(matrix_img, interpolation = "nearest")
-    plt.show()
-
-
-data2d_prof = profile.as_numpy_array()
-plt.imshow(data2d_prof, interpolation = "nearest")
-plt.show()
-'''
