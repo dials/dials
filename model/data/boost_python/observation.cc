@@ -19,90 +19,54 @@ namespace dials { namespace model { namespace boost_python {
   using namespace boost::python;
   using scitbx::vec2;
   using scitbx::vec3;
-
-  /** Wrapper function to get the position */
-  static
-  vec3<double> position_data_get_position(const Position::PositionData &obj) {
-    return obj.position;
-  }
-
-  /** Wrapper function to set the position */
-  static
-  void position_data_set_position(Position::PositionData &obj, vec3<double> v) {
-    obj.position = v;
-  }
-
-  /** Wrapper function to get the variance */
-  static
-  vec3<double> position_data_get_variance(const Position::PositionData &obj) {
-    return obj.variance;
-  }
-
-  /** Wrapper function to set the variance */
-  static
-  void position_data_set_variance(Position::PositionData &obj, vec3<double> v) {
-    obj.variance = v;
-  }
-  
-  /** Wrapper function to get the standard error squared */
-  static
-  vec3<double> position_data_get_std_err_sq(const Position::PositionData &obj) {
-    return obj.std_err_sq;
-  }
  
-  /** Wrapper function to set the standard error squared */
-  static
-  void position_data_set_std_err_sq(Position::PositionData &obj, vec3<double> v) {
-    obj.std_err_sq = v;
-  }
-  
   /** Wrapper function to get the xy pixel coordinate */
   static
-  vec2<double> position_get_px_xy(const Position &obj) {
+  vec2<double> centroid_get_px_xy(const Centroid &obj) {
     return vec2<double>(obj.px.position[0], obj.px.position[1]);
   }
   
   /** Wrapper function to set the xy pixel coordinate */
   static
-  void position_set_px_xy(Position &obj, vec2<double> v) {
+  void centroid_set_px_xy(Centroid &obj, vec2<double> v) {
     obj.px.position[0] = v[0];
     obj.px.position[1] = v[1];
   }
   
   /** Wrapper function to get the frame */
   static
-  double position_get_frame(const Position &obj) {
+  double centroid_get_frame(const Centroid &obj) {
     return obj.px.position[2];
   }
   
   /** Wrapper function to set the frame */
   static
-  void position_set_frame(Position &obj, double v) {
+  void centroid_set_frame(Centroid &obj, double v) {
     obj.px.position[2] = v;
   }
   
   /** Wrapper function to get the millimeter xy coordinate */
   static
-  vec2<double> position_get_mm_xy(const Position &obj) {
+  vec2<double> centroid_get_mm_xy(const Centroid &obj) {
     return vec2<double>(obj.mm.position[0], obj.mm.position[1]);
   }
   
   /** Wrapper function to set the millimeter xy coordinate */
   static
-  void position_set_mm_xy(Position &obj, vec2<double> v) {
+  void centroid_set_mm_xy(Centroid &obj, vec2<double> v) {
     obj.mm.position[0] = v[0];
     obj.mm.position[1] = v[1];
   }
   
   /** Wrapper function to get the angle */
   static
-  double position_get_angle(const Position &obj) {
+  double centroid_get_angle(const Centroid &obj) {
     return obj.mm.position[2];
   }
   
   /** Wrapper function to set the angle */
   static
-  void position_set_angle(Position &obj, double v) {
+  void centroid_set_angle(Centroid &obj, double v) {
     obj.mm.position[2] = v;
   }
   
@@ -113,7 +77,9 @@ namespace dials { namespace model { namespace boost_python {
         arg("value"),
         arg("variance"))))
       .def_readwrite("value", &Intensity::IntensityData::value)
-      .def_readwrite("variance", &Intensity::IntensityData::variance);
+      .def_readwrite("variance", &Intensity::IntensityData::variance)
+      .def("__eq__", &Intensity::IntensityData::operator==)
+      .def("__ne__", &Intensity::IntensityData::operator!=);
     
     class_<Intensity>("Intensity")
       .def(init<double, double>((
@@ -132,24 +98,34 @@ namespace dials { namespace model { namespace boost_python {
         arg("observed"),
         arg("corrected"))))
       .def_readwrite("observed", &Intensity::observed)
-      .def_readwrite("corrected", &Intensity::corrected);
+      .def_readwrite("corrected", &Intensity::corrected)
+      .def("__eq__", &Intensity::operator==)
+      .def("__ne__", &Intensity::operator!=);
 
-    class_<Position::PositionData>("PositionData")
+    class_<Centroid::CentroidData>("CentroidData")
       .def(init<vec3<double>, vec3<double>, vec3<double> >((
         arg("position"),
         arg("variance"),
         arg("std_err_sq"))))
       .add_property("position", 
-        &position_data_get_position,
-        &position_data_set_position)
+        make_getter(&Centroid::CentroidData::position, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Centroid::CentroidData::position,
+          return_value_policy<return_by_value>()))
       .add_property("variance", 
-        &position_data_get_variance,
-        &position_data_set_variance)
+        make_getter(&Centroid::CentroidData::variance, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Centroid::CentroidData::variance, 
+          return_value_policy<return_by_value>()))
       .add_property("std_err_sq",
-        &position_data_get_std_err_sq,
-        &position_data_set_std_err_sq);
+        make_getter(&Centroid::CentroidData::std_err_sq, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Centroid::CentroidData::std_err_sq, 
+          return_value_policy<return_by_value>()))
+      .def("__eq__", &Centroid::CentroidData::operator==)
+      .def("__ne__", &Centroid::CentroidData::operator!=);
       
-    class_<Position>("Position")
+    class_<Centroid>("Centroid")
       .def(init<vec3<double>, vec3<double>, vec3<double> >((
         arg("px_position"),
         arg("px_variance"),
@@ -162,54 +138,56 @@ namespace dials { namespace model { namespace boost_python {
         arg("mm_position"),
         arg("mm_variance"),
         arg("mm_std_err_sq"))))   
-      .def(init<const Position::PositionData&>((
+      .def(init<const Centroid::CentroidData&>((
         arg("px"))))
-      .def(init<const Position::PositionData&, const Position::PositionData&>((
+      .def(init<const Centroid::CentroidData&, const Centroid::CentroidData&>((
         arg("px"),
-        arg("mm"))))    
-      .def_readwrite("px", &Position::px)
-      .def_readwrite("mm", &Position::mm)
+        arg("mm"))))
+      .def_readwrite("px", &Centroid::px)
+      .def_readwrite("mm", &Centroid::mm)
       .add_property("px_xy",
-        &position_get_px_xy,
-        &position_set_px_xy)
+        &centroid_get_px_xy,
+        &centroid_set_px_xy)
       .add_property("frame",
-        &position_get_frame,
-        &position_set_frame)
+        &centroid_get_frame,
+        &centroid_set_frame)
       .add_property("mm_xy",
-        &position_get_mm_xy,
-        &position_set_mm_xy)
+        &centroid_get_mm_xy,
+        &centroid_set_mm_xy)
       .add_property("angle",
-        &position_get_angle,
-        &position_set_angle)
+        &centroid_get_angle,
+        &centroid_set_angle)
       .def("update_mm", 
-        (void(Position::PositionData::*)(const Detector&,const Scan&))
-        &Position::update_mm, (
+        (void(Centroid::*)(const Detector&,const Scan&))
+        &Centroid::update_mm, (
           arg("detector"),
           arg("scan")))
       .def("update_mm", 
-        (void(Position::PositionData::*)(std::size_t,const Detector&,const Scan&))
-        &Position::update_mm, (
+        (void(Centroid::*)(std::size_t,const Detector&,const Scan&))
+        &Centroid::update_mm, (
           arg("panel"),
           arg("detector"),
-          arg("scan")));
+          arg("scan")))
+      .def("__eq__", &Centroid::operator==)
+      .def("__ne__", &Centroid::operator!=);
     
     class_<Observation>("Observation")
-      .def(init<const Position&>((
+      .def(init<const Centroid&>((
         arg("centroid"))))
       .def(init<const Intensity&>((
         arg("intensity"))))
-      .def(init<const Position&, const Intensity&>((
+      .def(init<const Centroid&, const Intensity&>((
         arg("centroid"),
         arg("intensity"))))
       .def(init<std::size_t>((
         arg("panel"))))
-      .def(init<std::size_t, const Position&>((
+      .def(init<std::size_t, const Centroid&>((
         arg("panel"),
         arg("centroid"))))
       .def(init<std::size_t, const Intensity&>((
         arg("panel"),
         arg("intensity"))))
-      .def(init<std::size_t, const Position&, const Intensity&>((
+      .def(init<std::size_t, const Centroid&, const Intensity&>((
         arg("panel"),
         arg("centroid"),
         arg("intensity"))))
@@ -218,7 +196,9 @@ namespace dials { namespace model { namespace boost_python {
       .def("update_centroid_mm", 
         &Observation::update_centroid_mm, (
           arg("detector"),
-          arg("scan")));
+          arg("scan")))
+      .def("__eq__", &Observation::operator==)
+      .def("__ne__", &Observation::operator!=);
   }
 
 }}} // namespace dials::model::boost_python

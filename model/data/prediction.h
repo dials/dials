@@ -47,6 +47,29 @@ namespace dials { namespace model {
                    vec2<double> mm_, double angle_)
         : px(px_[0], px_[1], frame_),
           mm(mm_[0], mm_[1], angle_) {}
+
+      /**
+       * Test to see if positions contain the same data
+       * @param rhs The other position
+       * @returns True/False. They are the same
+       */
+      bool operator==(const PositionData &rhs) const {
+        const double eps = 1e-7;
+        return ((std::abs(px[0] - rhs.px[0]) < eps) &&
+                (std::abs(px[1] - rhs.px[1]) < eps) &&
+                (std::abs(px[2] - rhs.px[2]) < eps) &&
+                (std::abs(mm[0] - rhs.mm[0]) < eps) &&
+                (std::abs(mm[1] - rhs.mm[1]) < eps));
+      }
+
+      /**
+       * Test to see if positions contain the same data
+       * @param rhs The other position
+       * @returns True/False. They are the same
+       */
+      bool operator!=(const PositionData &rhs) const {
+        return !(*this == rhs);
+      }
     };
 
     MillerIndex miller_index;
@@ -114,6 +137,31 @@ namespace dials { namespace model {
         position(px_position_, frame_, mm_position_, angle_),
         panel(panel_),
         entering(entering_) {}
+
+    /**
+     * Test to see if positions contain the same data
+     * @param rhs The other position
+     * @returns True/False. They are the same
+     */
+    bool operator==(const Prediction &rhs) const {
+      const double eps = 1e-7;
+      return ((miller_index == rhs.miller_index) &&
+              (std::abs(beam_vector[0] - rhs.beam_vector[0]) < eps) &&
+              (std::abs(beam_vector[1] - rhs.beam_vector[1]) < eps) &&
+              (std::abs(beam_vector[2] - rhs.beam_vector[2]) < eps) &&
+              (panel == rhs.panel) &&
+              (entering == rhs.entering) &&
+              (position == rhs.position));
+    }
+
+    /**
+     * Test to see if positions contain the same data
+     * @param rhs The other position
+     * @returns True/False. They are the same
+     */
+    bool operator!=(const Prediction &rhs) const {
+      return !(*this == rhs);
+    }
   };
 
 }}; // namespace dials::model

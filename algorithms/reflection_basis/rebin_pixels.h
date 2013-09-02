@@ -37,6 +37,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
 
+  /**
+   * Rebin pixels onto a regular grid
+   * @param map_values The function to map the values
+   * @param inputxy The input coordinates
+   * @param input_size The size of the input grid
+   * @param output_size The size of the output grid
+   */
   template <typename MappingFunction, typename InputXYType>
   void rebin_pixels_internal2(MappingFunction map_values,
     const InputXYType &inputxy, vec2<int> input_size, vec2<int> output_size) {

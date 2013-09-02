@@ -49,7 +49,9 @@ namespace dials { namespace model { namespace boost_python {
         &Shoebox::does_bbox_contain_bad_pixels, (
           arg("mask")))
       .def("count_mask_values",
-        &Shoebox::count_mask_values);
+        &Shoebox::count_mask_values)
+      .def("__eq__", &Shoebox::operator==)
+      .def("__ne__", &Shoebox::operator!=);
   }
 
 }}} // namespace dials::model::boost_python

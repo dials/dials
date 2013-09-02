@@ -15,31 +15,7 @@
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
- 
-  /** Wrapper function to get the pixel coordinates */
-  static
-  vec3<double> position_data_get_px(const Prediction::PositionData& obj) {
-    return obj.px;
-  }
 
-  /** Wrapper function to set the pixel coordinates */
-  static
-  void position_data_set_px(Prediction::PositionData& obj, vec3<double> v) {
-    obj.px = v;
-  }
-
-  /** Wrapper function to get the millimeter coordinates */
-  static
-  vec3<double> position_data_get_mm(const Prediction::PositionData& obj) {
-    return obj.mm;
-  }
-  
-  /** Wrapper function to set the millimeter coordinates */
-  static
-  void position_data_set_mm(Prediction::PositionData& obj, vec3<double> v) {
-    obj.mm = v;
-  }
- 
   /** Wrapper function to get the millimeter x/y coordinate */
   static
   vec2<double> position_data_get_mm_xy(const Prediction::PositionData& obj) {
@@ -90,39 +66,19 @@ namespace dials { namespace model { namespace boost_python {
     obj.px[2] = v;
   }
   
-  /** Wrapper function to get the miller index */
-  static
-  MillerIndex prediction_get_miller_index(const Prediction &obj) {
-    return obj.miller_index;
-  }
- 
-  /** Wrapper function to set the miller index */
-  static
-  void prediction_set_miller_index(Prediction &obj, MillerIndex v) {
-    obj.miller_index = v;
-  }
-  
-  /** Wrapper function to get the beam vector */
-  static
-  vec3<double> prediction_get_beam_vector(const Prediction& obj) {
-    return obj.beam_vector;
-  }
-  
-  /** Wrapper function to set the beam vector */
-  static
-  void prediction_set_beam_vector(Prediction& obj, vec3<double> v) {
-    obj.beam_vector = v;
-  }
-
   void export_prediction()
   {
     class_<Prediction::PositionData>("PositionData")
       .add_property("px",
-        &position_data_get_px,
-        &position_data_set_px) 
+        make_getter(&Prediction::PositionData::px, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Prediction::PositionData::px, 
+          return_value_policy<return_by_value>()))
       .add_property("mm",
-        &position_data_get_mm,
-        &position_data_set_mm)
+        make_getter(&Prediction::PositionData::mm, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Prediction::PositionData::mm, 
+          return_value_policy<return_by_value>()))
       .add_property("mm_xy",
         &position_data_get_mm_xy,
         &position_data_set_mm_xy)
@@ -134,18 +90,26 @@ namespace dials { namespace model { namespace boost_python {
         &position_data_set_px_xy)
       .add_property("frame",
         &position_data_get_frame,
-        &position_data_set_frame);
+        &position_data_set_frame)
+      .def("__eq__", &Prediction::PositionData::operator==)
+      .def("__ne__", &Prediction::PositionData::operator!=);
     
     class_<Prediction>("Prediction")
       .add_property("miller_index",
-        &prediction_get_miller_index,
-        &prediction_set_miller_index)
+        make_getter(&Prediction::miller_index, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Prediction::miller_index, 
+          return_value_policy<return_by_value>()))      
       .add_property("beam_vector",
-        &prediction_get_beam_vector,
-        &prediction_set_beam_vector)        
+        make_getter(&Prediction::beam_vector, 
+          return_value_policy<return_by_value>()),
+        make_setter(&Prediction::beam_vector, 
+          return_value_policy<return_by_value>()))      
       .def_readwrite("position", &Prediction::position)
       .def_readwrite("panel", &Prediction::panel)
-      .def_readwrite("entering", &Prediction::entering);
+      .def_readwrite("entering", &Prediction::entering)
+      .def("__eq__", &Prediction::operator==)
+      .def("__ne__", &Prediction::operator!=);
   }
 
 }}} // namespace dials::model::boost_python

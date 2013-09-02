@@ -197,6 +197,26 @@ namespace dials { namespace model {
       }
       return count;
     }
+
+    /**
+     * Test to see if shoeboxs contain the same data
+     * @param rhs The other shoebox
+     * @returns True/False. They are the same
+     */
+    bool operator==(const Shoebox &rhs) const {
+      return ((bbox.all_eq(rhs.bbox)) &&
+              (data.all_eq(rhs.data)) &&
+              (mask.all_eq(rhs.mask)));
+    }
+
+    /**
+     * Test to see if shoeboxs contain the same data
+     * @param rhs The other shoebox
+     * @returns True/False. They are not the same
+     */
+    bool operator!=(const Shoebox &rhs) const {
+      return !(*this == rhs);
+    }
   };
 
 }};

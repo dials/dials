@@ -46,6 +46,26 @@ namespace dials { namespace model {
       IntensityData(double value_, double variance_)
         : value(value_),
           variance(variance_) {}
+
+      /**
+       * Test to see if intensity contain the same data
+       * @param rhs The other intensity
+       * @returns True/False. They are the same
+       */
+      bool operator==(const IntensityData &rhs) const {
+        const double eps = 1e-7;
+        return (std::abs(value - rhs.value) < eps &&
+                std::abs(value - rhs.variance) < eps);
+      }
+
+      /**
+       * Test to see if intensity contain the same data
+       * @param rhs The other intensity
+       * @returns True/False. They are the same
+       */
+      bool operator!=(const IntensityData &rhs) const {
+        return !(*this == rhs);
+      }
     };
 
     IntensityData observed;
@@ -72,51 +92,96 @@ namespace dials { namespace model {
     Intensity(const IntensityData &observed_, const IntensityData &corrected_)
       : observed(observed_),
         corrected(corrected_) {}
+
+    /**
+     * Test to see if intensity contain the same data
+     * @param rhs The other intensity
+     * @returns True/False. They are the same
+     */
+    bool operator==(const Intensity &rhs) const {
+      return observed == rhs.observed && corrected == rhs.corrected;
+    }
+
+    /**
+     * Test to see if intensity contain the same data
+     * @param rhs The other intensity
+     * @returns True/False. They are the same
+     */
+    bool operator!=(const Intensity &rhs) const {
+      return !(*this == rhs);
+    }
   };
 
   /**
    * A struct containing the centroid position and variance in both pixel
    * and millimeter coordinates.
    */
-  struct Position {
+  struct Centroid {
 
     /**
      * The centroid data
      */
-    struct PositionData {
+    struct CentroidData {
       vec3<double> position;
       vec3<double> variance;
       vec3<double> std_err_sq;
 
       /** Default construct */
-      PositionData()
+      CentroidData()
         : position(0, 0, 0),
           variance(0, 0, 0),
           std_err_sq(0, 0, 0) {}
 
       /** Construct from values */
-      PositionData(vec3<double> position_,
+      CentroidData(vec3<double> position_,
                    vec3<double> variance_,
                    vec3<double> std_err_sq_)
         : position(position_),
           variance(variance_),
           std_err_sq(std_err_sq_) {}
+
+      /**
+       * Test to see if centroids contain the same data
+       * @param rhs The other centroid
+       * @returns True/False. They are the same
+       */
+      bool operator==(const CentroidData &rhs) const {
+        const double eps = 1e-7;
+        return ((std::abs(position[0] - rhs.position[0]) < eps) &&
+                (std::abs(position[1] - rhs.position[1]) < eps) &&
+                (std::abs(position[2] - rhs.position[2]) < eps) &&
+                (std::abs(variance[0] - rhs.variance[0]) < eps) &&
+                (std::abs(variance[1] - rhs.variance[1]) < eps) &&
+                (std::abs(variance[2] - rhs.variance[2]) < eps) &&
+                (std::abs(std_err_sq[0] - rhs.std_err_sq[0]) < eps) &&
+                (std::abs(std_err_sq[1] - rhs.std_err_sq[1]) < eps) &&
+                (std::abs(std_err_sq[2] - rhs.std_err_sq[2]) < eps));
+      }
+
+      /**
+       * Test to see if centroids contain the same data
+       * @param rhs The other centroid
+       * @returns True/False. They are the same
+       */
+      bool operator!=(const CentroidData &rhs) const {
+        return !(*this == rhs);
+      }
     };
 
-    PositionData px;
-    PositionData mm;
+    CentroidData px;
+    CentroidData mm;
 
     /** Default construct */
-    Position() {}
+    Centroid() {}
 
     /** Construct with pixel coordinates */
-    Position(vec3<double> px_position,
+    Centroid(vec3<double> px_position,
              vec3<double> px_variance,
              vec3<double> px_std_err_sq)
       : px(px_position, px_variance, px_std_err_sq) {}
 
     /** Construct with pixel and millimeter coordinates */
-    Position(vec3<double> px_position,
+    Centroid(vec3<double> px_position,
              vec3<double> px_variance,
              vec3<double> px_std_err_sq,
              vec3<double> mm_position,
@@ -126,13 +191,31 @@ namespace dials { namespace model {
         mm(mm_position, mm_variance, mm_std_err_sq) {}
 
     /** Construct with the pixel coordinate */
-    Position(const PositionData &px_)
+    Centroid(const CentroidData &px_)
       : px(px_) {}
 
     /** Construct the with pixel and millimetre position */
-    Position(const PositionData &px_, const PositionData &mm_)
+    Centroid(const CentroidData &px_, const CentroidData &mm_)
       : px(px_),
         mm(mm_) {}
+
+    /**
+     * Test to see if centroids contain the same data
+     * @param rhs The other centroid
+     * @returns True/False. They are the same
+     */
+    bool operator==(const Centroid &rhs) const {
+      return px == rhs.px && mm == rhs.mm;
+    }
+
+    /**
+     * Test to see if centroids contain the same data
+     * @param rhs The other centroid
+     * @returns True/False. They are the same
+     */
+    bool operator!=(const Centroid &rhs) const {
+      return !(*this == rhs);
+    }
 
     /**
      * Update the millimeter centroid position from the pixel centroid
@@ -184,7 +267,7 @@ namespace dials { namespace model {
   struct Observation {
 
     std::size_t panel;
-    Position centroid;
+    Centroid centroid;
     Intensity intensity;
 
     /** Default construct */
@@ -192,7 +275,7 @@ namespace dials { namespace model {
       : panel(0) {}
 
     /** Construct with position */
-    Observation(const Position &centroid_)
+    Observation(const Centroid &centroid_)
       : panel(0),
         centroid(centroid_) {}
 
@@ -202,7 +285,7 @@ namespace dials { namespace model {
         intensity(intensity_) {}
 
     /** Construct with position and intensity */
-    Observation(const Position &centroid_, const Intensity &intensity_)
+    Observation(const Centroid &centroid_, const Intensity &intensity_)
       : panel(0),
         centroid(centroid_),
         intensity(intensity_) {}
@@ -212,7 +295,7 @@ namespace dials { namespace model {
       : panel(panel_) {}
 
     /** Construct with position */
-    Observation(std::size_t panel_, const Position &centroid_)
+    Observation(std::size_t panel_, const Centroid &centroid_)
       : panel(panel_),
         centroid(centroid_) {}
 
@@ -222,7 +305,7 @@ namespace dials { namespace model {
         intensity(intensity_) {}
 
     /** Construct with position and intensity */
-    Observation(std::size_t panel_, const Position &centroid_,
+    Observation(std::size_t panel_, const Centroid &centroid_,
       const Intensity &intensity_)
       : panel(panel_),
         centroid(centroid_),
@@ -236,6 +319,26 @@ namespace dials { namespace model {
      */
     void update_centroid_mm(const Detector &d, const Scan &s) {
       centroid.update_mm(d, s);
+    }
+
+    /**
+     * Test to see if observations contain the same data
+     * @param rhs The other observation
+     * @returns True/False. They are the same
+     */
+    bool operator==(const Observation &rhs) const {
+      return (panel == rhs.panel &&
+              centroid == rhs.centroid &&
+              intensity == rhs.intensity);
+    }
+
+    /**
+     * Test to see if observations contain the same data
+     * @param rhs The other observation
+     * @returns True/False. They are not the same
+     */
+    bool operator!=(const Observation &rhs) const {
+      return !(*this == rhs);
     }
   };
 
