@@ -15,12 +15,9 @@ def calc_background_n_make_2d_profile(reflections):
         if ref.is_valid():
             if ref.intensity > max_i:
                 max_i = ref.intensity
-    print "________ max_i =", max_i
     thold = 0.5 * max_i
-    print "________ thold =", thold
     for ref in reflections:
         if ref.is_valid() and ref.intensity > thold:
-            print "I =", ref.intensity
             select_rlist.append(ref)
 
 
@@ -47,10 +44,8 @@ def calc_background_n_make_2d_profile(reflections):
             big_ncol = local_ncol
         counter += 1
 
-    print "big (nrow, ncol) =", big_nrow, big_ncol
     big_nrow = big_nrow * 2 + 1
     big_ncol = big_ncol * 2 + 1
-    print "big (nrow, ncol) used for profile =", big_nrow, big_ncol
     sumation = flex.double(flex.grid(big_nrow, big_ncol))
     descr = flex.double(flex.grid(1, 3))
     for ref in select_rlist:

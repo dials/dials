@@ -64,15 +64,24 @@ for ivar in range(num_of_ref):
     r.shoebox_background = flex.double(background3d)
     r.centroid_position = (9.5, 9.5, 0.5)
     r.image_coord_px = random.random() * xmax, random.random() * ymax
-    print r.image_coord_px
-    #x, y = r.image_coord_px
     rlist.append(r)
 
 
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
+old_rlist = rlist
 
 from dials.scratch.luiso_s.test_code.call_mosflm_2d import mosflm_caller
 rlist = mosflm_caller(rlist, xmax, ymax, 4)
+
+print '_____________________________________________________________________________________________'
+print "== new intensity , new intensity variance  //// old  intensity ,  old intensity variance  ======"
+for pos in range(len(rlist)):
+    print '   ', rlist[pos].intensity, ', ' , rlist[pos].intensity_variance, '              ', old_rlist[pos].intensity, ', ' , old_rlist[pos].intensity_variance
+
+print '_____________________________________________________________________________________________'
+print "== new coordinate px                ////               old coordinate px   ======"
+for pos in range(len(rlist)):
+    print '   ', rlist[pos].image_coord_px, '              ', old_rlist[pos].image_coord_px
 
