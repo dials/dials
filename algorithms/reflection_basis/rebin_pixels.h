@@ -37,6 +37,83 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
 
+  template <typename MappingFunction, typename InputXYType>
+  void rebin_pixels_internal2(MappingFunction map_values,
+    const InputXYType &inputxy, vec2<int> input_size, vec2<int> output_size) {
+
+    // Check the data sizes
+    DIALS_ASSERT(input_size[0] > 0 && input_size[1] > 0);
+    DIALS_ASSERT(output_size[0] > 0 && output_size[1] > 0);
+
+    // Get the input and output sizes
+    std::size_t output_height = output_size[0];
+    std::size_t output_width = output_size[1];
+    std::size_t input_height = input_size[0];
+    std::size_t input_width = input_size[1];
+
+    // Loop through all the input pixels
+    for (std::size_t j = 0; j < input_height; ++j) {
+      for (std::size_t i = 0; i < input_width; ++i) {
+
+        // Get the x, y coords of the target point
+        vec2<double> ixy00 = inputxy(j, i);
+        vec2<double> ixy01 = inputxy(j, i+1);
+        vec2<double> ixy10 = inputxy(j+1, i);
+        vec2<double> ixy11 = inputxy(j+1, i+1);
+
+        // Get the range of new grid points
+        double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
+        double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
+        int ox0 = (int)floor(min(ix.const_ref()));
+        int oy0 = (int)floor(min(iy.const_ref()));
+        int ox1 = (int)ceil(max(ix.const_ref()));
+        int oy1 = (int)ceil(max(iy.const_ref()));
+
+        // Cap the coordinates within the the output grid
+        if (ox0 < 0) ox0 = 0;
+        if (oy0 < 0) oy0 = 0;
+        if (ox1 > output_width) ox1 = output_width;
+        if (oy1 > output_height) oy1 = output_height;
+        if (ox0 >= ox1 || oy0 >= oy1) {
+          continue;
+        }
+
+        // Create the target polygon and calculate its area
+        vert4 target(ixy00, ixy01, ixy11, ixy10);
+        double target_area = simple_area(target);
+        if (target_area < 0.0) {
+          std::swap(target[0], target[3]);
+          std::swap(target[1], target[2]);
+          target_area = -target_area;
+        } else if (target_area == 0.0) {
+          continue;
+        }
+
+        // Loop over all the pixels within the pixel range
+        for (std::size_t jj = oy0; jj < oy1; ++jj) {
+          for (std::size_t ii = ox0; ii < ox1; ++ii) {
+
+            // Create the subject polygon
+            vert4 subject(vec2<double>(ii, jj),
+                          vec2<double>(ii+1, jj),
+                          vec2<double>(ii+1,jj+1),
+                          vec2<double>(ii,jj+1));
+
+            // clip the polygon with the target polygon and calculate the
+            // fraction of the area of the clipped polygon against the target.
+            // Then redistribute the values from the target grid to the subject.
+            vert8 result = quad_with_convex_quad(subject, target);
+            double result_area = simple_area(result);
+            double xy_fraction = result_area / target_area;
+
+            // Call the templated mapping function to rebin the pixels
+            map_values(j, i, jj, ii, xy_fraction);
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Rebin pixels onto a regular grid
    * @param output The output grid
