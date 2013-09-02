@@ -107,6 +107,48 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       return this->operator()(cs, bbox, image, mask);
     }
 
+    /**
+     * Transform the reflection into its own recirprocal space basis grid
+     * @param cs The coordinate system
+     * @param bbox The bounding box
+     * @param image The image
+     * @param background The background image
+     * @param mask The mask
+     * @returns The grid
+     */
+    std::pair<flex_double, flex_double> operator()(
+        const CoordinateSystem &cs, int6 bbox,
+        const flex_double &image, const flex_double &background,
+        const flex_bool &mask) const {
+
+      // Calculate the fraction of intensity contributed from each data
+      // frame to each grid coordinate
+      flex_double zfraction = map_frames_(vec2<int>(bbox[4], bbox[5]),
+        cs.phi(), cs.zeta());
+
+      // Map the image pixels to the grid points
+      return map_pixels_(cs, bbox, image, background, mask, zfraction);
+    }
+
+    /**
+     * Transform the reflection image and background into it's own
+     * reciprocal space coordinate system grid.
+     * @param s1 The beam vector
+     * @param phi The rotation angle
+     * @param bbox The bounding box
+     * @param image The image
+     * @param background The background image
+     * @param mask The mask
+     * @returns (transformed image, transformed background)
+     */
+    std::pair<flex_double, flex_double> operator()(
+        vec3<double> s1, double phi, int6 bbox,
+        const flex_double &image, const flex_double &background,
+        const flex_bool &mask) const {
+      CoordinateSystem cs(m2_, s0_, s1, phi);
+      return this->operator()(cs, bbox, image, background, mask);
+    }
+
   private:
     vec3<double> s0_;
     vec3<double> m2_;

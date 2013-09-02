@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <omptbx/omp_or_stubs.h>
+#include <boost_adaptbx/std_pair_conversion.h>
 #include <dials/algorithms/reflection_basis/rebin_pixels.h>
 #include <dials/algorithms/reflection_basis/map_frames.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
@@ -197,11 +198,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       const flex_double&, const flex_bool&)const = &Forward::operator();
     flex_double(Forward::*forward_with_s1)(vec3<double>, double, int6,
       const flex_double&, const flex_bool&)const = &Forward::operator();
+    std::pair<flex_double, flex_double>(Forward::*forward_with_background_cs)(
+      const CoordinateSystem&, int6, const flex_double&, const flex_double&, 
+      const flex_bool&)const = &Forward::operator();
+    std::pair<flex_double, flex_double>(Forward::*forward_with_background_s1)(
+      vec3<double>, double, int6, const flex_double&, const flex_double&, 
+      const flex_bool&)const = &Forward::operator();
 
     flex_double(Reverse::*reverse_with_cs)(const CoordinateSystem&, int6,
       const flex_double&)const = &Reverse::operator();
     flex_double(Reverse::*reverse_with_s1)(vec3<double>, double, int6,
       const flex_double&)const = &Reverse::operator();
+
+    boost_adaptbx::std_pair_conversions::to_tuple<flex_double, flex_double>();
 
     class_<Forward>("Forward", no_init)
       .def(init<const Beam&, const Detector&, const Goniometer&, const Scan&,
@@ -225,6 +234,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         arg("phi"),
         arg("bbox"),
         arg("image"),
+        arg("mask")))
+      .def("__call__", forward_with_background_cs, (
+        arg("cs"),
+        arg("bbox"),
+        arg("image"),
+        arg("background"),
+        arg("mask")))        
+      .def("__call__", forward_with_background_s1, (
+        arg("s1"),
+        arg("phi"),
+        arg("bbox"),
+        arg("image"),
+        arg("background"),
         arg("mask")))
       .def("__call__", &forward_with_reflection_list, (
         arg("rlist")));
