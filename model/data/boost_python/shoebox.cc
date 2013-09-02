@@ -30,7 +30,7 @@ namespace dials { namespace model { namespace boost_python {
       .def(init<const int6&>())
       .def_readwrite("data", &Shoebox::data)
       .def_readwrite("mask", &Shoebox::mask)
-      .add_property("bbox", get_bbox, set_bbox)
+      .add_property("bbox", &get_bbox, &set_bbox)
       .def("allocate", &Shoebox::allocate)
       .def("deallocate", &Shoebox::deallocate)
       .def("xoffset", &Shoebox::xoffset)
