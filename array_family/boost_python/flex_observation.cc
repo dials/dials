@@ -33,6 +33,7 @@ namespace dials { namespace af { namespace boost_python {
   using dxtbx::model::Scan;
   using dials::model::Observation;
 
+  /** @returns An array of panel numbers */
   static
   shared<std::size_t> observation_panel(
       const const_ref<Observation> &obj) {
@@ -43,6 +44,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of pixel positions */
   static
   shared< vec3<double> > observation_centroid_px_position(
       const const_ref<Observation> &obj) {
@@ -53,6 +55,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of pixel variances */
   static
   shared< vec3<double> > observation_centroid_px_variance(
       const const_ref<Observation> &obj) {
@@ -63,6 +66,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of pixel standard error squareds */
   static
   shared< vec3<double> > observation_centroid_px_std_err_sq(
       const const_ref<Observation> &obj) {
@@ -73,6 +77,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of millimeter positions */
   static
   shared< vec3<double> > observation_centroid_mm_position(
       const const_ref<Observation> &obj) {
@@ -83,6 +88,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of millimeter variances */
   static
   shared< vec3<double> > observation_centroid_mm_variance(
       const const_ref<Observation> &obj) {
@@ -93,6 +99,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of millimeter standard error squareds */
   static
   shared< vec3<double> > observation_centroid_mm_std_err_sq(
       const const_ref<Observation> &obj) {
@@ -103,6 +110,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of pixel xy positions */
   static
   shared< vec2<double> > observation_centroid_px_position_xy(
       const const_ref<Observation> &obj) {
@@ -114,6 +122,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of frames */
   static
   shared<double> observation_centroid_position_frame(
       const const_ref<Observation> &obj) {
@@ -124,6 +133,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of millimeter xy positions */
   static
   shared< vec2<double> > observation_centroid_mm_position_xy(
       const const_ref<Observation> &obj) {
@@ -135,6 +145,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of angles */
   static
   shared<double> observation_centroid_position_angle(
       const const_ref<Observation> &obj) {
@@ -145,6 +156,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of observed intensity values */
   static
   shared<double> observation_intensity_observed_value(
       const const_ref<Observation> &obj) {
@@ -155,6 +167,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of observed intensity variances */
   static
   shared<double> observation_intensity_observed_variance(
       const const_ref<Observation> &obj) {
@@ -165,6 +178,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of corrected intensity values */
   static
   shared<double> observation_intensity_corrected_value(
       const const_ref<Observation> &obj) {
@@ -175,6 +189,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of corrected intensity variances */
   static
   shared<double> observation_intensity_corrected_variance(
       const const_ref<Observation> &obj) {
@@ -185,6 +200,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
   
+  /** Update the millimeter centroid positions of all observations */
   void observation_update_centroid_mm(ref<Observation> &obj, 
       const Detector &d, const Scan &s) {
     for (std::size_t i = 0; i < obj.size(); ++i) {
@@ -192,15 +208,20 @@ namespace dials { namespace af { namespace boost_python {
     }
   }
   
+  /** 
+   * A class to create a string from observations for pickling
+   */
   struct observation_to_string : pickle_double_buffered::to_string
   {
     using pickle_double_buffered::to_string::operator<<;
 
+    /** Initialise with the version */
     observation_to_string() {
       unsigned int version = 1;
       *this << version;
     }
 
+    /** Convert a single observation to string */
     observation_to_string& operator<<(const Observation &val) {
       *this << val.panel
             << val.centroid.px.position[0]
@@ -230,16 +251,21 @@ namespace dials { namespace af { namespace boost_python {
     }
   };
 
+  /**
+   * A class to convert strings to observations for unpicklings
+   */
   struct observation_from_string : pickle_double_buffered::from_string
   {
     using pickle_double_buffered::from_string::operator>>;
 
+    /** Initialise with the string */
     observation_from_string(const char* str_ptr)
     : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
       DIALS_ASSERT(version == 1);
     }
 
+    /** Convert a string to a single observation instance */
     observation_from_string& operator>>(Observation &val) {
       *this >> val.panel
             >> val.centroid.px.position[0]

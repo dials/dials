@@ -30,6 +30,7 @@ namespace dials { namespace af { namespace boost_python {
   
   typedef cctbx::miller::index<> MillerIndex;
 
+  /** @returns An array of miller indices */
   static
   shared<MillerIndex> prediction_miller_index(
       const const_ref<Prediction> &obj) {
@@ -40,6 +41,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of beam vectors */
   static
   shared< vec3<double> > prediction_beam_vector(
       const const_ref<Prediction> &obj) {
@@ -50,6 +52,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of panel numbers */
   static
   shared<int> prediction_panel(
       const const_ref<Prediction> &obj) {
@@ -60,6 +63,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of entering flags */
   static
   shared<bool> prediction_entering(
       const const_ref<Prediction> &obj) {
@@ -70,6 +74,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of pixel positions */
   static
   shared< vec3<double> > prediction_position_px(
       const const_ref<Prediction> &obj) {
@@ -80,8 +85,9 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of pixel xy coordinates */
   static
-  shared< vec2<double> > prediction_position_px_coord(
+  shared< vec2<double> > prediction_position_px_xy(
       const const_ref<Prediction> &obj) {
      shared< vec2<double> > result(obj.size());
      for (std::size_t i = 0; i < result.size(); ++i) {
@@ -90,6 +96,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of frames */
   static
   shared<double> prediction_position_frame(
       const const_ref<Prediction> &obj) {
@@ -100,6 +107,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of millimeter positions */
   static
   shared< vec3<double> > prediction_position_mm(
       const const_ref<Prediction> &obj) {
@@ -110,8 +118,9 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of millimeter xy coordinates */
   static
-  shared< vec2<double> > prediction_position_mm_coord(
+  shared< vec2<double> > prediction_position_mm_xy(
       const const_ref<Prediction> &obj) {
      shared< vec2<double> > result(obj.size());
      for (std::size_t i = 0; i < result.size(); ++i) {
@@ -120,6 +129,7 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /** @returns An array of angles */
   static
   shared<double> prediction_position_angle(
       const const_ref<Prediction> &obj) {
@@ -130,15 +140,20 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  /**
+   * Class to convert predictions to strings for pickling
+   */
   struct prediction_to_string : pickle_double_buffered::to_string
   {
     using pickle_double_buffered::to_string::operator<<;
 
+    /** Initialise with the version */
     prediction_to_string() {
       unsigned int version = 1;
       *this << version;
     }
 
+    /** Convert a single prediction instance to string */ 
     prediction_to_string& operator<<(const Prediction &val) {
       *this << val.miller_index[0]
             << val.miller_index[1]
@@ -159,16 +174,21 @@ namespace dials { namespace af { namespace boost_python {
     }
   };
 
+  /**
+   * Class to convert strings to predictions for unpickling
+   */
   struct prediction_from_string : pickle_double_buffered::from_string
   {
     using pickle_double_buffered::from_string::operator>>;
 
+    /** Initialise with the string */
     prediction_from_string(const char* str_ptr)
     : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
       DIALS_ASSERT(version == 1);
     }
 
+    /** Convert a string to a single prediction instance */
     prediction_from_string& operator>>(Prediction &val) {
       *this >> val.miller_index[0]
             >> val.miller_index[1]
@@ -205,14 +225,14 @@ namespace dials { namespace af { namespace boost_python {
         &prediction_entering)
       .def("position_px",
         &prediction_position_px)
-      .def("position_px_coord",
-        &prediction_position_px_coord)
+      .def("position_px_xy",
+        &prediction_position_px_xy)
       .def("position_frame",
         &prediction_position_frame)
       .def("position_mm",
         &prediction_position_mm)
-      .def("position_mm_coord",
-        &prediction_position_mm_coord)
+      .def("position_mm_xy",
+        &prediction_position_mm_xy)
       .def("position_angle",
         &prediction_position_angle)
       .def_pickle(flex_pickle_double_buffered<Prediction, 

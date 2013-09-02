@@ -20,73 +20,87 @@ namespace dials { namespace model { namespace boost_python {
   using scitbx::vec2;
   using scitbx::vec3;
 
+  /** Wrapper function to get the position */
   static
   vec3<double> position_data_get_position(const Position::PositionData &obj) {
     return obj.position;
   }
 
+  /** Wrapper function to set the position */
   static
   void position_data_set_position(Position::PositionData &obj, vec3<double> v) {
     obj.position = v;
   }
 
+  /** Wrapper function to get the variance */
   static
   vec3<double> position_data_get_variance(const Position::PositionData &obj) {
     return obj.variance;
   }
 
+  /** Wrapper function to set the variance */
   static
   void position_data_set_variance(Position::PositionData &obj, vec3<double> v) {
     obj.variance = v;
   }
   
+  /** Wrapper function to get the standard error squared */
   static
   vec3<double> position_data_get_std_err_sq(const Position::PositionData &obj) {
     return obj.std_err_sq;
   }
  
+  /** Wrapper function to set the standard error squared */
   static
   void position_data_set_std_err_sq(Position::PositionData &obj, vec3<double> v) {
     obj.std_err_sq = v;
   }
   
+  /** Wrapper function to get the xy pixel coordinate */
   static
   vec2<double> position_get_px_xy(const Position &obj) {
     return vec2<double>(obj.px.position[0], obj.px.position[1]);
   }
   
+  /** Wrapper function to set the xy pixel coordinate */
   static
   void position_set_px_xy(Position &obj, vec2<double> v) {
     obj.px.position[0] = v[0];
     obj.px.position[1] = v[1];
   }
   
+  /** Wrapper function to get the frame */
   static
   double position_get_frame(const Position &obj) {
     return obj.px.position[2];
   }
   
+  /** Wrapper function to set the frame */
   static
   void position_set_frame(Position &obj, double v) {
     obj.px.position[2] = v;
   }
   
+  /** Wrapper function to get the millimeter xy coordinate */
   static
   vec2<double> position_get_mm_xy(const Position &obj) {
     return vec2<double>(obj.mm.position[0], obj.mm.position[1]);
   }
   
+  /** Wrapper function to set the millimeter xy coordinate */
   static
   void position_set_mm_xy(Position &obj, vec2<double> v) {
     obj.mm.position[0] = v[0];
     obj.mm.position[1] = v[1];
   }
   
+  /** Wrapper function to get the angle */
   static
   double position_get_angle(const Position &obj) {
     return obj.mm.position[2];
   }
   
+  /** Wrapper function to set the angle */
   static
   void position_set_angle(Position &obj, double v) {
     obj.mm.position[2] = v;

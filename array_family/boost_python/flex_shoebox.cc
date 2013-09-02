@@ -159,15 +159,20 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+  /**
+   * A class to convert the shoebox class to a string for pickling
+   */
   struct shoebox_to_string : pickle_double_buffered::to_string
   {
     using pickle_double_buffered::to_string::operator<<;
 
+    /** Initialise with the version for checking */
     shoebox_to_string() {
       unsigned int version = 1;
       *this << version;
     }
 
+    /** Convert a single shoebox instance to string */
     shoebox_to_string& operator<<(const Shoebox &val) {
       *this << val.bbox[0]
             << val.bbox[1]
@@ -182,6 +187,7 @@ namespace dials { namespace af { namespace boost_python {
       return *this;
     }
     
+    /** Convert a profile to string */
     template <typename ProfileType>
     void profile_to_string(const ProfileType &p) {
       *this << p.accessor().all().size();
@@ -194,16 +200,21 @@ namespace dials { namespace af { namespace boost_python {
     }
   };
 
+  /** 
+   * A class to convert a string to a shoebox for unpickling
+   */
   struct shoebox_from_string : pickle_double_buffered::from_string
   {
     using pickle_double_buffered::from_string::operator>>;
 
+    /** Initialise the class with the string. Get the version and check */
     shoebox_from_string(const char* str_ptr)
     : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
       DIALS_ASSERT(version == 1);
     }
 
+    /** Get a single shoebox instance from a string */
     shoebox_from_string& operator>>(Shoebox &val) {
       *this >> val.bbox[0]
             >> val.bbox[1]
@@ -218,6 +229,7 @@ namespace dials { namespace af { namespace boost_python {
       return *this;
     }
 
+    /** Get a profile from a string */
     template <typename ProfileType>
     ProfileType profile_from_string() {
       typename ProfileType::index_type shape;
