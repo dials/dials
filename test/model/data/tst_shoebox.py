@@ -191,7 +191,7 @@ class Test(object):
             for i in indices:
                 shoebox.mask[i] = value
 
-            assert(shoebox.count_mask_values(value), num)
+            assert(shoebox.count_mask_values(value) == num)
 
         # Test passed
         print 'OK'
