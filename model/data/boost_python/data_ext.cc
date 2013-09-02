@@ -17,12 +17,14 @@ namespace dials { namespace model { namespace boost_python {
 
   void export_shoebox();
   void export_observation();
+  void export_prediction();
   void export_reflection();
   void export_adjacency_list();
 
   BOOST_PYTHON_MODULE(dials_model_data_ext)
   {
     export_observation();
+    export_prediction();
     export_shoebox();
     export_reflection();
     export_adjacency_list();
