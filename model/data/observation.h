@@ -11,11 +11,18 @@
 #ifndef DIALS_MODEL_DATA_OBSERVATION_H
 #define DIALS_MODEL_DATA_OBSERVATION_H
 
+#include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <dxtbx/model/detector.h>
+#include <dxtbx/model/scan.h>
+#include <dials/error.h>
 
 namespace dials { namespace model {
 
+  using scitbx::vec2;
   using scitbx::vec3;
+  using dxtbx::model::Detector;
+  using dxtbx::model::Scan;
 
   /**
    * A structure to hold the intensity data we want for both raw and
@@ -126,30 +133,110 @@ namespace dials { namespace model {
     Position(const PositionData &px_, const PositionData &mm_)
       : px(px_),
         mm(mm_) {}
+
+    /**
+     * Update the millimeter centroid position from the pixel centroid
+     * position using the given geometry.
+     * @param panel The panel
+     * @param d The detector model
+     * @param s The scan model
+     */
+    void update_mm(std::size_t panel, const Detector &d, const Scan &s) {
+
+      // Check the panel number
+      DIALS_ASSERT(panel < d.num_panels());
+
+      // Get the milliemeter x, y, z coordinates
+      vec2<double> px_xy = vec2<double>(px.position[0], px.position[1]);
+      vec2<double> mm_xy = d[panel].pixel_to_millimeter(px_xy);
+      double px_z = px.position[2];
+      double mm_z = s.get_angle_from_array_index(px_z);
+
+      // Set the millimeter position
+      mm.position[0] = mm_xy[0];
+      mm.position[1] = mm_xy[1];
+      mm.position[2] = mm_z;
+
+      // Scale the variance and standard error squared
+      vec2<double> pixel_size = d[panel].get_pixel_size();
+      vec2<double> oscillation = s.get_oscillation();
+      vec3<double> scale(pixel_size[0], pixel_size[1], oscillation[1]);
+      for (std::size_t i = 0; i < 3; ++i) {
+        mm.variance[i] = px.variance[i] * scale[i];
+        mm.std_err_sq[i] = px.std_err_sq[i] * scale[i];
+      }
+    }
+
+    /**
+     * Update the millimeter centroid position from the pixel centroid
+     * position using the given geometry.
+     * @param d The detector model
+     * @param s The scan model
+     */
+    void update_mm(const Detector &d, const Scan &s) {
+      update_mm(0, d, s);
+    }
   };
 
   /**
    * A struct holding details about an observation
    */
   struct Observation {
+
+    std::size_t panel;
     Position centroid;
     Intensity intensity;
 
     /** Default construct */
-    Observation() {}
+    Observation()
+      : panel(0) {}
 
     /** Construct with position */
     Observation(const Position &centroid_)
-      : centroid(centroid_) {}
+      : panel(0),
+        centroid(centroid_) {}
 
     /** Construct with intensity */
     Observation(const Intensity &intensity_)
-      : intensity(intensity_) {}
+      : panel(0),
+        intensity(intensity_) {}
 
     /** Construct with position and intensity */
     Observation(const Position &centroid_, const Intensity &intensity_)
-      : centroid(centroid_),
+      : panel(0),
+        centroid(centroid_),
         intensity(intensity_) {}
+
+    /** Construct with panel */
+    Observation(std::size_t panel_)
+      : panel(panel_) {}
+
+    /** Construct with position */
+    Observation(std::size_t panel_, const Position &centroid_)
+      : panel(panel_),
+        centroid(centroid_) {}
+
+    /** Construct with intensity */
+    Observation(std::size_t panel_, const Intensity &intensity_)
+      : panel(panel_),
+        intensity(intensity_) {}
+
+    /** Construct with position and intensity */
+    Observation(std::size_t panel_, const Position &centroid_,
+      const Intensity &intensity_)
+      : panel(panel_),
+        centroid(centroid_),
+        intensity(intensity_) {}
+
+    /**
+     * Update the millimeter centroid position from the pixel centroid
+     * position using the given geometry.
+     * @param d The detector model
+     * @param s The scan model
+     */
+    void update_centroid_mm(const Detector &d, const Scan &s) {
+      centroid.update_mm(d, s);
+    }
   };
 
 }}; // namespace dials::model

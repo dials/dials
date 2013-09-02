@@ -51,12 +51,12 @@ namespace dials { namespace model { namespace boost_python {
   }
   
   static
-  vec2<double> position_get_px_coord(const Position &obj) {
+  vec2<double> position_get_px_xy(const Position &obj) {
     return vec2<double>(obj.px.position[0], obj.px.position[1]);
   }
   
   static
-  void position_set_px_coord(Position &obj, vec2<double> v) {
+  void position_set_px_xy(Position &obj, vec2<double> v) {
     obj.px.position[0] = v[0];
     obj.px.position[1] = v[1];
   }
@@ -72,12 +72,12 @@ namespace dials { namespace model { namespace boost_python {
   }
   
   static
-  vec2<double> position_get_mm_coord(const Position &obj) {
+  vec2<double> position_get_mm_xy(const Position &obj) {
     return vec2<double>(obj.mm.position[0], obj.mm.position[1]);
   }
   
   static
-  void position_set_mm_coord(Position &obj, vec2<double> v) {
+  void position_set_mm_xy(Position &obj, vec2<double> v) {
     obj.mm.position[0] = v[0];
     obj.mm.position[1] = v[1];
   }
@@ -155,19 +155,30 @@ namespace dials { namespace model { namespace boost_python {
         arg("mm"))))    
       .def_readwrite("px", &Position::px)
       .def_readwrite("mm", &Position::mm)
-      .add_property("px_coord",
-        &position_get_px_coord,
-        &position_set_px_coord)
+      .add_property("px_xy",
+        &position_get_px_xy,
+        &position_set_px_xy)
       .add_property("frame",
         &position_get_frame,
         &position_set_frame)
-      .add_property("mm_coord",
-        &position_get_mm_coord,
-        &position_set_mm_coord)
+      .add_property("mm_xy",
+        &position_get_mm_xy,
+        &position_set_mm_xy)
       .add_property("angle",
         &position_get_angle,
-        &position_set_angle);
-  
+        &position_set_angle)
+      .def("update_mm", 
+        (void(Position::PositionData::*)(const Detector&, const Scan&))
+        &Position::update_mm, (
+          arg("detector"),
+          arg("scan")))
+      .def("update_mm", 
+        (void(Position::PositionData::*)(std::size_t, const Detector&, const Scan&))
+        &Position::update_mm, (
+          arg("panel"),
+          arg("detector"),
+          arg("scan")));
+    
     class_<Observation>("Observation")
       .def(init<const Position&>((
         arg("centroid"))))
@@ -176,8 +187,24 @@ namespace dials { namespace model { namespace boost_python {
       .def(init<const Position&, const Intensity&>((
         arg("centroid"),
         arg("intensity"))))
+      .def(init<std::size_t>((
+        arg("panel"))))
+      .def(init<std::size_t, const Position&>((
+        arg("panel"),
+        arg("centroid"))))
+      .def(init<std::size_t, const Intensity&>((
+        arg("panel"),
+        arg("intensity"))))
+      .def(init<std::size_t, const Position&, const Intensity&>((
+        arg("panel"),
+        arg("centroid"),
+        arg("intensity"))))
       .def_readwrite("centroid", &Observation::centroid)
-      .def_readwrite("intensity", &Observation::intensity);
+      .def_readwrite("intensity", &Observation::intensity)
+      .def("update_centroid_mm", 
+        &Observation::update_centroid_mm, (
+          arg("detector"),
+          arg("scan")));
   }
 
 }}} // namespace dials::model::boost_python
