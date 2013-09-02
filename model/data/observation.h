@@ -132,23 +132,23 @@ namespace dials { namespace model {
    * A struct holding details about an observation
    */
   struct Observation {
-    Position position;
+    Position centroid;
     Intensity intensity;
 
     /** Default construct */
     Observation() {}
 
     /** Construct with position */
-    Observation(const Position &position_)
-      : position(position_) {}
+    Observation(const Position &centroid_)
+      : centroid(centroid_) {}
 
     /** Construct with intensity */
     Observation(const Intensity &intensity_)
       : intensity(intensity_) {}
 
     /** Construct with position and intensity */
-    Observation(const Position &position_, const Intensity &intensity_)
-      : position(position_),
+    Observation(const Position &centroid_, const Intensity &intensity_)
+      : centroid(centroid_),
         intensity(intensity_) {}
   };
 

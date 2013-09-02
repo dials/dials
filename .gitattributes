@@ -226,6 +226,7 @@ algorithms/spot_prediction/rotation_angles.h -text
 array_family/SConscript -text
 array_family/__init__.py -text
 array_family/boost_python/flex_ext.cc -text
+array_family/boost_python/flex_observation.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/flex.py -text
 array_family/sort_index.h -text
@@ -336,6 +337,7 @@ model/data/__init__.py -text
 model/data/adjacency_list.h -text
 model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
+model/data/boost_python/observation.cc -text
 model/data/boost_python/pickle.h -text
 model/data/boost_python/reflection.cc -text
 model/data/boost_python/shoebox.cc -text

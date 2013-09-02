@@ -16,10 +16,12 @@ namespace dials { namespace af { namespace boost_python {
   using namespace boost::python;
 
   void export_flex_shoebox();
+  void export_flex_observation();
 
   BOOST_PYTHON_MODULE(dials_array_family_flex_ext)
   {
     export_flex_shoebox();
+    export_flex_observation();
   }
 
 }}} // namespace = dials::af::boost_python

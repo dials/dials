@@ -3,6 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/flex_shoebox.cc',
+    'boost_python/flex_observation.cc',
     'boost_python/flex_ext.cc']
 
 env.SharedLibrary(
