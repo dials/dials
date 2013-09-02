@@ -14,12 +14,16 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
+#include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/observation.h>
+#include <dials/error.h>
 
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
-  
+  using namespace scitbx::af::boost_python;
+
   using scitbx::af::ref;
   using scitbx::af::const_ref;
   using scitbx::af::shared;
@@ -188,6 +192,85 @@ namespace dials { namespace af { namespace boost_python {
     }
   }
   
+  struct observation_to_string : pickle_double_buffered::to_string
+  {
+    using pickle_double_buffered::to_string::operator<<;
+
+    observation_to_string() {
+      unsigned int version = 1;
+      *this << version;
+    }
+
+    observation_to_string& operator<<(const Observation &val) {
+      *this << val.panel
+            << val.centroid.px.position[0]
+            << val.centroid.px.position[1]
+            << val.centroid.px.position[2]
+            << val.centroid.px.variance[0]
+            << val.centroid.px.variance[1]
+            << val.centroid.px.variance[2]
+            << val.centroid.px.std_err_sq[0]
+            << val.centroid.px.std_err_sq[1]
+            << val.centroid.px.std_err_sq[2]
+            << val.centroid.mm.position[0]
+            << val.centroid.mm.position[1]
+            << val.centroid.mm.position[2]
+            << val.centroid.mm.variance[0]
+            << val.centroid.mm.variance[1]
+            << val.centroid.mm.variance[2]
+            << val.centroid.mm.std_err_sq[0]
+            << val.centroid.mm.std_err_sq[1]
+            << val.centroid.mm.std_err_sq[2]
+            << val.intensity.observed.value
+            << val.intensity.observed.variance
+            << val.intensity.corrected.value
+            << val.intensity.corrected.variance;
+                              
+      return *this;
+    }
+  };
+
+  struct observation_from_string : pickle_double_buffered::from_string
+  {
+    using pickle_double_buffered::from_string::operator>>;
+
+    observation_from_string(const char* str_ptr)
+    : pickle_double_buffered::from_string(str_ptr) {
+      *this >> version;
+      DIALS_ASSERT(version == 1);
+    }
+
+    observation_from_string& operator>>(Observation &val) {
+      *this >> val.panel
+            >> val.centroid.px.position[0]
+            >> val.centroid.px.position[1]
+            >> val.centroid.px.position[2]
+            >> val.centroid.px.variance[0]
+            >> val.centroid.px.variance[1]
+            >> val.centroid.px.variance[2]
+            >> val.centroid.px.std_err_sq[0]
+            >> val.centroid.px.std_err_sq[1]
+            >> val.centroid.px.std_err_sq[2]
+            >> val.centroid.mm.position[0]
+            >> val.centroid.mm.position[1]
+            >> val.centroid.mm.position[2]
+            >> val.centroid.mm.variance[0]
+            >> val.centroid.mm.variance[1]
+            >> val.centroid.mm.variance[2]
+            >> val.centroid.mm.std_err_sq[0]
+            >> val.centroid.mm.std_err_sq[1]
+            >> val.centroid.mm.std_err_sq[2]
+            >> val.intensity.observed.value
+            >> val.intensity.observed.variance
+            >> val.intensity.corrected.value
+            >> val.intensity.corrected.variance;      
+
+      return *this;
+    }
+
+    unsigned int version;
+  };
+  
   void export_flex_observation()
   {
     scitbx::af::boost_python::flex_wrapper <
@@ -225,7 +308,9 @@ namespace dials { namespace af { namespace boost_python {
       .def("update_centroid_mm", 
         &observation_update_centroid_mm, (
           arg("detector"),
-          arg("scan")));
+          arg("scan")))
+      .def_pickle(flex_pickle_double_buffered<Observation, 
+        observation_to_string, observation_from_string>());
   }
 
 }}} // namespace dials::af::boost_python

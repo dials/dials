@@ -13,11 +13,15 @@
 #include <cctbx/miller.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
+#include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/prediction.h>
+#include <dials/error.h>
 
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
+  using namespace scitbx::af::boost_python;
   using scitbx::af::const_ref;
   using scitbx::af::shared;
   using scitbx::vec2;
@@ -126,6 +130,67 @@ namespace dials { namespace af { namespace boost_python {
      return result;
   }
 
+  struct prediction_to_string : pickle_double_buffered::to_string
+  {
+    using pickle_double_buffered::to_string::operator<<;
+
+    prediction_to_string() {
+      unsigned int version = 1;
+      *this << version;
+    }
+
+    prediction_to_string& operator<<(const Prediction &val) {
+      *this << val.miller_index[0]
+            << val.miller_index[1]
+            << val.miller_index[2]
+            << val.beam_vector[0]
+            << val.beam_vector[1]
+            << val.beam_vector[2]
+            << val.panel
+            << val.entering
+            << val.position.px[0]
+            << val.position.px[1]
+            << val.position.px[2]
+            << val.position.mm[0]
+            << val.position.mm[1]
+            << val.position.mm[2];
+
+      return *this;
+    }
+  };
+
+  struct prediction_from_string : pickle_double_buffered::from_string
+  {
+    using pickle_double_buffered::from_string::operator>>;
+
+    prediction_from_string(const char* str_ptr)
+    : pickle_double_buffered::from_string(str_ptr) {
+      *this >> version;
+      DIALS_ASSERT(version == 1);
+    }
+
+    prediction_from_string& operator>>(Prediction &val) {
+      *this >> val.miller_index[0]
+            >> val.miller_index[1]
+            >> val.miller_index[2]
+            >> val.beam_vector[0]
+            >> val.beam_vector[1]
+            >> val.beam_vector[2]
+            >> val.panel
+            >> val.entering
+            >> val.position.px[0]
+            >> val.position.px[1]
+            >> val.position.px[2]
+            >> val.position.mm[0]
+            >> val.position.mm[1]
+            >> val.position.mm[2];
+
+      return *this;
+    }
+
+    unsigned int version;
+  };
+
   void export_flex_prediction()
   {
     scitbx::af::boost_python::flex_wrapper <
@@ -149,7 +214,9 @@ namespace dials { namespace af { namespace boost_python {
       .def("position_mm_coord",
         &prediction_position_mm_coord)
       .def("position_angle",
-        &prediction_position_angle);
+        &prediction_position_angle)
+      .def_pickle(flex_pickle_double_buffered<Prediction, 
+        prediction_to_string, prediction_from_string>());
   }
 
 }}} // namespace dials::af::boost_python

@@ -168,12 +168,12 @@ namespace dials { namespace model { namespace boost_python {
         &position_get_angle,
         &position_set_angle)
       .def("update_mm", 
-        (void(Position::PositionData::*)(const Detector&, const Scan&))
+        (void(Position::PositionData::*)(const Detector&,const Scan&))
         &Position::update_mm, (
           arg("detector"),
           arg("scan")))
       .def("update_mm", 
-        (void(Position::PositionData::*)(std::size_t, const Detector&, const Scan&))
+        (void(Position::PositionData::*)(std::size_t,const Detector&,const Scan&))
         &Position::update_mm, (
           arg("panel"),
           arg("detector"),

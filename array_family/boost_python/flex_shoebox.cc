@@ -12,16 +12,23 @@
 #include <boost/python/def.hpp>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
+#include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>
 
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
+  using namespace scitbx::af::boost_python;
+
   using scitbx::af::int2;
   using scitbx::af::int6;
   using scitbx::af::small;
   using scitbx::vec3;
+  using scitbx::af::flex_int;
+  using scitbx::af::flex_double;
+  using scitbx::af::flex_grid;
   using dials::model::Shoebox;
   using dials::model::Valid;
   using dials::model::Foreground;
@@ -152,6 +159,84 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
+  struct shoebox_to_string : pickle_double_buffered::to_string
+  {
+    using pickle_double_buffered::to_string::operator<<;
+
+    shoebox_to_string() {
+      unsigned int version = 1;
+      *this << version;
+    }
+
+    shoebox_to_string& operator<<(const Shoebox &val) {
+      *this << val.bbox[0]
+            << val.bbox[1]
+            << val.bbox[2]
+            << val.bbox[3]
+            << val.bbox[4]
+            << val.bbox[5];
+            
+      profile_to_string(val.data);
+      profile_to_string(val.mask);
+
+      return *this;
+    }
+    
+    template <typename ProfileType>
+    void profile_to_string(const ProfileType &p) {
+      *this << p.accessor().all().size();
+      for (std::size_t i = 0; i < p.accessor().all().size(); ++i) {
+        *this << p.accessor().all()[i];
+      }
+      for (std::size_t i = 0; i < p.size(); ++i) {
+        *this << p[i];
+      }
+    }
+  };
+
+  struct shoebox_from_string : pickle_double_buffered::from_string
+  {
+    using pickle_double_buffered::from_string::operator>>;
+
+    shoebox_from_string(const char* str_ptr)
+    : pickle_double_buffered::from_string(str_ptr) {
+      *this >> version;
+      DIALS_ASSERT(version == 1);
+    }
+
+    shoebox_from_string& operator>>(Shoebox &val) {
+      *this >> val.bbox[0]
+            >> val.bbox[1]
+            >> val.bbox[2]
+            >> val.bbox[3]
+            >> val.bbox[4]
+            >> val.bbox[5];
+
+      val.data = profile_from_string<flex_double>();
+      val.mask = profile_from_string<flex_int>();
+
+      return *this;
+    }
+
+    template <typename ProfileType>
+    ProfileType profile_from_string() {
+      typename ProfileType::index_type shape;
+      typename ProfileType::size_type n_dim;
+      *this >> n_dim;
+      shape.resize(n_dim);
+      for (std::size_t i = 0; i < n_dim; ++i) {
+        *this >> shape[i];
+      }
+      ProfileType p = ProfileType(flex_grid<>(shape));
+      for (std::size_t i = 0; i < p.size(); ++i) {
+        *this >> p[i];
+      }
+      return p;
+    }
+
+    unsigned int version;
+  };
+
   void export_flex_shoebox()
   {
     scitbx::af::boost_python::flex_wrapper <
@@ -164,7 +249,9 @@ namespace dials { namespace af { namespace boost_python {
         arg("image_size"), 
         arg("scan_range")))
       .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
-        arg("mask")));
+        arg("mask")))
+      .def_pickle(flex_pickle_double_buffered<Shoebox, 
+        shoebox_to_string, shoebox_from_string>());
   }
 
 }}} // namespace dials::af::boost_python
