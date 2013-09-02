@@ -17,11 +17,13 @@ namespace dials { namespace af { namespace boost_python {
 
   void export_flex_shoebox();
   void export_flex_observation();
+  void export_flex_prediction();
 
   BOOST_PYTHON_MODULE(dials_array_family_flex_ext)
   {
     export_flex_shoebox();
     export_flex_observation();
+    export_flex_prediction();
   }
 
 }}} // namespace = dials::af::boost_python
