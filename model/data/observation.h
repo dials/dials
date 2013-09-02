@@ -55,7 +55,7 @@ namespace dials { namespace model {
       bool operator==(const IntensityData &rhs) const {
         const double eps = 1e-7;
         return (std::abs(value - rhs.value) < eps &&
-                std::abs(value - rhs.variance) < eps);
+                std::abs(variance - rhs.variance) < eps);
       }
 
       /**

@@ -16,12 +16,23 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
+  /** Get the bounding box */
+  static
   int6 get_bbox(const Shoebox &obj) {
     return obj.bbox;
   }
   
+  /** Set the bounding box */
+  static
   void set_bbox(Shoebox &obj, const int6 &v) {
     obj.bbox = v;
+  }
+  
+  /** Copy the shoebox */
+  static
+  Shoebox deepcopy(const Shoebox &shoebox) {
+    Shoebox result(shoebox);
+    return result;
   }
 
   void export_shoebox()
@@ -51,7 +62,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("count_mask_values",
         &Shoebox::count_mask_values)
       .def("__eq__", &Shoebox::operator==)
-      .def("__ne__", &Shoebox::operator!=);
+      .def("__ne__", &Shoebox::operator!=)
+      .def("deepcopy", &deepcopy);
   }
 
 }}} // namespace dials::model::boost_python
