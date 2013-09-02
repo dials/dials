@@ -16,13 +16,14 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
     ncnt = 0
     lst_pos = []
     for r in rlist:
-        x, y = r.image_coord_px
-        col = int(float(x) / float(xmax) * n_div)
-        row = int(float(y) / float(ymax) * n_div)
-        arr_rlist[row][col].append(r)
-        ncnt += 1
-        pos = [row, col, len(arr_rlist[row][col]) - 1]
-        lst_pos.append(pos)
+        if r.is_valid():
+            x, y = r.image_coord_px
+            col = int(float(x) / float(xmax) * n_div)
+            row = int(float(y) / float(ymax) * n_div)
+            arr_rlist[row][col].append(r)
+            ncnt += 1
+            pos = [row, col, len(arr_rlist[row][col]) - 1]
+            lst_pos.append(pos)
 
     for col in range(ncol):
         for row in range(nrow):

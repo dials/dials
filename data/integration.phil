@@ -98,5 +98,13 @@ integration
       .help = "The threshold to use in reference profile"
       .type = float
   }
+  
+  mosflm
+    .help = "Parameters for mosflm profile fitting"
+  {
+    nblocks = 4
+      .help = "number of block per coordinate"
+      .type = int
+  }
 }
 

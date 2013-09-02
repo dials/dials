@@ -88,6 +88,7 @@ algorithms/integration/divergence_and_mosaicity.py -text
 algorithms/integration/integrator.py -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain
 algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
+algorithms/integration/mosflm_like.py -text svneol=unset#text/plain
 algorithms/integration/profile/SConscript -text
 algorithms/integration/profile/__init__.py -text
 algorithms/integration/profile/boost_python/fitting.cc -text

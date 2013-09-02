@@ -32,7 +32,7 @@ class Integrator(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal, reflections=None, reference=None):
+    def __call__(self, sweep, crystal, reflections = None, reference = None):
         ''' Call to integrate.
 
         Params:
@@ -86,11 +86,11 @@ class IntegratorFactory(object):
         correct_intensity = IntegratorFactory.configure_correction(params)
 
         # Return the integrator with the given strategies
-        return Integrator(compute_spots=compute_spots,
-                          compute_background=compute_background,
-                          compute_centroid=compute_centroid,
-                          compute_intensity=compute_intensity,
-                          correct_intensity=correct_intensity)
+        return Integrator(compute_spots = compute_spots,
+                          compute_background = compute_background,
+                          compute_centroid = compute_centroid,
+                          compute_intensity = compute_intensity,
+                          correct_intensity = correct_intensity)
 
     @staticmethod
     def configure_extractor(params):
@@ -114,16 +114,16 @@ class IntegratorFactory(object):
 
         # Return the reflection extractor instance
         return ReflectionExtractor(
-            bbox_nsigma=integration.shoebox.n_sigma,
-            filter_by_bbox=integration.filter.by_bbox,
-            filter_by_zeta=integration.filter.by_zeta,
-            filter_by_xds_small_angle=integration.filter.by_xds_small_angle,
-            filter_by_xds_angle=integration.filter.by_xds_angle,
-            gain_map=gain_map,
-            dark_map=dark_map,
-            kernel_size=integration.shoebox.kernel_size,
-            n_sigma_b=integration.shoebox.sigma_background,
-            n_sigma_s=integration.shoebox.sigma_strong)
+            bbox_nsigma = integration.shoebox.n_sigma,
+            filter_by_bbox = integration.filter.by_bbox,
+            filter_by_zeta = integration.filter.by_zeta,
+            filter_by_xds_small_angle = integration.filter.by_xds_small_angle,
+            filter_by_xds_angle = integration.filter.by_xds_angle,
+            gain_map = gain_map,
+            dark_map = dark_map,
+            kernel_size = integration.shoebox.kernel_size,
+            n_sigma_b = integration.shoebox.sigma_background,
+            n_sigma_s = integration.shoebox.sigma_strong)
 
     @staticmethod
     def configure_background(params):
@@ -210,6 +210,7 @@ class IntegratorFactory(object):
         from dials.algorithms.integration import Summation3d
         from dials.algorithms.integration import SummationReciprocalSpace
         from dials.algorithms.integration import ProfileFittingReciprocalSpace
+        from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
 
         # Shorten parameter path
         integration = params.integration
@@ -230,7 +231,8 @@ class IntegratorFactory(object):
 
         # Configure the 2D profile fitting algorithm
         elif integration.algorithm == 'fit_2d':
-            raise RuntimeError('Not implemented yet')
+            algorithm = MosflmProfileFitting(
+                nblocks = integration.mosflm.nblocks)
 
         # Configure the 3D profile fitting algorithm
         elif integration.algorithm == 'fit_3d':
