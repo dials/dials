@@ -10,25 +10,19 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <scitbx/vec2.h>
+#include <scitbx/vec3.h>
 #include <dials/model/data/observation.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
+  using scitbx::vec2;
+  using scitbx::vec3;
 
   static
   vec3<double> position_data_get_position(const Position::PositionData &obj) {
     return obj.position;
-  }
-
-  static
-  vec3<double> position_data_get_variance(const Position::PositionData &obj) {
-    return obj.variance;
-  }
-  
-  static
-  vec3<double> position_data_get_std_err_sq(const Position::PositionData &obj) {
-    return obj.std_err_sq;
   }
 
   static
@@ -37,13 +31,65 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   static
+  vec3<double> position_data_get_variance(const Position::PositionData &obj) {
+    return obj.variance;
+  }
+
+  static
   void position_data_set_variance(Position::PositionData &obj, vec3<double> v) {
     obj.variance = v;
   }
   
   static
+  vec3<double> position_data_get_std_err_sq(const Position::PositionData &obj) {
+    return obj.std_err_sq;
+  }
+ 
+  static
   void position_data_set_std_err_sq(Position::PositionData &obj, vec3<double> v) {
     obj.std_err_sq = v;
+  }
+  
+  static
+  vec2<double> position_get_px_coord(const Position &obj) {
+    return vec2<double>(obj.px.position[0], obj.px.position[1]);
+  }
+  
+  static
+  void position_set_px_coord(Position &obj, vec2<double> v) {
+    obj.px.position[0] = v[0];
+    obj.px.position[1] = v[1];
+  }
+  
+  static
+  double position_get_frame(const Position &obj) {
+    return obj.px.position[2];
+  }
+  
+  static
+  void position_set_frame(Position &obj, double v) {
+    obj.px.position[2] = v;
+  }
+  
+  static
+  vec2<double> position_get_mm_coord(const Position &obj) {
+    return vec2<double>(obj.mm.position[0], obj.mm.position[1]);
+  }
+  
+  static
+  void position_set_mm_coord(Position &obj, vec2<double> v) {
+    obj.mm.position[0] = v[0];
+    obj.mm.position[1] = v[1];
+  }
+  
+  static
+  double position_get_angle(const Position &obj) {
+    return obj.mm.position[2];
+  }
+  
+  static
+  void position_set_angle(Position &obj, double v) {
+    obj.mm.position[2] = v;
   }
   
   void export_observation()
@@ -108,7 +154,19 @@ namespace dials { namespace model { namespace boost_python {
         arg("px"),
         arg("mm"))))    
       .def_readwrite("px", &Position::px)
-      .def_readwrite("mm", &Position::mm);
+      .def_readwrite("mm", &Position::mm)
+      .add_property("px_coord",
+        &position_get_px_coord,
+        &position_set_px_coord)
+      .add_property("frame",
+        &position_get_frame,
+        &position_set_frame)
+      .add_property("mm_coord",
+        &position_get_mm_coord,
+        &position_set_mm_coord)
+      .add_property("angle",
+        &position_get_angle,
+        &position_set_angle);
   
     class_<Observation>("Observation")
       .def(init<const Position&>((
