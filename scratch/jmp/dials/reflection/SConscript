@@ -1,8 +1,0 @@
-
-Import('env')
-
-sources = [
-    'boost_python/reflection.cc',
-    'boost_python/reflection_ext.cc']
-
-env.SharedLibrary(target='#/lib/dials_reflection_ext', source=sources)
