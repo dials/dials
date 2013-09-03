@@ -1,3 +1,5 @@
+from __future__ import division
+
 class TestMapFramesForward(object):
 
     def __init__(self, filename):

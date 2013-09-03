@@ -103,8 +103,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
             // Create the subject polygon
             vert4 subject(vec2<double>(ii, jj),
                           vec2<double>(ii+1, jj),
-                          vec2<double>(ii+1,jj+1),
-                          vec2<double>(ii,jj+1));
+                          vec2<double>(ii+1, jj+1),
+                          vec2<double>(ii, jj+1));
 
             // clip the polygon with the target polygon and calculate the
             // fraction of the area of the clipped polygon against the target.
@@ -224,6 +224,21 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
     DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
     rebin_pixels_internal(output, input, inputxy);
+  }
+
+  /**
+   * Rebin pixels onto a regular grid
+   * @param output The output grid
+   * @param input The input grid
+   * @param inputxy The input x/y coordinates
+   */
+  inline
+  void rebin_pixels2(flex_double &output, const flex_double &input,
+      const flex_vec2_double &inputxy) {
+    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
+    DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
+    DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
+    rebin_pixels_internal2(output, input, inputxy);
   }
 
 }}}} // dials::algorithms::reflection_basis::transform

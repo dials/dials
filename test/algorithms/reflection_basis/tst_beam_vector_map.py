@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.algorithms.reflection_basis.transform import beam_vector_map
 
 class Test(object):

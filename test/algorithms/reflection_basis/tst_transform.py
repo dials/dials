@@ -1,3 +1,4 @@
+from __future__ import division
 
 def evaluate_gaussian(x, a, x0, sx):
 

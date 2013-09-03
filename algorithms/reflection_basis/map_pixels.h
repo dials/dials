@@ -174,14 +174,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         const CoordinateSystem &cs, int6 bbox,
         const flex_double &image, const flex_double &background,
         const flex_bool &mask, const flex_double &z_fraction) const {
-      flex_double image_grid(flex_grid<>(
-        2 * grid_half_size_ + 1,
-        2 * grid_half_size_ + 1,
-        2 * grid_half_size_ + 1), 0);
-      flex_double background_grid(flex_grid<>(
-        2 * grid_half_size_ + 1,
-        2 * grid_half_size_ + 1,
-        2 * grid_half_size_ + 1), 0);
+      std::size_t size = 2 * grid_half_size_ + 1;
+      flex_double image_grid(flex_grid<>(size, size, size), 0);
+      flex_double background_grid(flex_grid<>(size, size, size), 0);
       this->operator()(cs, bbox, image, mask, z_fraction, image_grid);
       return std::make_pair(image_grid, background_grid);
     }

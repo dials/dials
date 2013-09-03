@@ -1,3 +1,4 @@
+from __future__ import division
 
 def point_in_polygon(point, poly):
     inside = False

@@ -1,3 +1,5 @@
+from __future__ import division
+
 class Test(object):
 
     def __init__(self):
