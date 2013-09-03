@@ -210,86 +210,49 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
         grid_half_size_, s1_map_);
 
-      // Get the input and output sizes
-      std::size_t grid_depth = grid.accessor().all()[0];
-      std::size_t grid_height = grid.accessor().all()[1];
-      std::size_t grid_width = grid.accessor().all()[2];
-      std::size_t image_depth = image.accessor().all()[0];
-      std::size_t image_height = image.accessor().all()[1];
-      std::size_t image_width = image.accessor().all()[2];
+      // Call the rebinning routine and map just the signal
+      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
+      vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
+      rebin_pixels_internal(isize, osize, index,
+        MapSignal(mask, image, grid, z_fraction));
+    }
 
-      // Loop through all the input pixels
-      for (std::size_t j = 0; j < image_height; ++j) {
-        for (std::size_t i = 0; i < image_width; ++i) {
+  private:
 
-          // Get the x, y coords of the target point
-          vec2<double> ixy00 = index(j, i);
-          vec2<double> ixy01 = index(j, i+1);
-          vec2<double> ixy10 = index(j+1, i);
-          vec2<double> ixy11 = index(j+1, i+1);
+    /**
+     * A struct used as a callback in the function rebin pixels
+     */
+    struct MapSignal {
+      MapSignal(flex_bool mask_, flex_double input_,
+                flex_double output_, flex_double z_fraction_)
+        : mask(mask_),
+          input(input_),
+          output(output_),
+          z_fraction(z_fraction_),
+          input_depth(input.accessor().all()[0]),
+          output_depth(output.accessor().all()[0]){}
 
-          // Get the range of new grid points
-          double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
-          double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
-          int gx0 = (int)floor(min(ix.const_ref()));
-          int gy0 = (int)floor(min(iy.const_ref()));
-          int gx1 = (int)ceil(max(ix.const_ref()));
-          int gy1 = (int)ceil(max(iy.const_ref()));
-
-          // Cap the coordinates within the the output grid
-          if (gx0 < 0) gx0 = 0;
-          if (gy0 < 0) gy0 = 0;
-          if (gx1 > grid_width) gx1 = grid_width;
-          if (gy1 > grid_height) gy1 = grid_height;
-          if (gx0 >= gx1 || gy0 >= gy1) {
-            continue;
-          }
-
-          // Create the target polygon and calculate its area
-          vert4 target(ixy00, ixy01, ixy11, ixy10);
-          double target_area = simple_area(target);
-          if (target_area < 0.0) {
-            std::swap(target[0], target[3]);
-            std::swap(target[1], target[2]);
-            target_area = -target_area;
-          } else if (target_area == 0.0) {
-            continue;
-          }
-
-          // Loop over all the pixels within the pixel range
-          for (std::size_t jj = gy0; jj < gy1; ++jj) {
-            for (std::size_t ii = gx0; ii < gx1; ++ii) {
-
-              // Create the subject polygon
-              vert4 subject(vec2<double>(ii, jj),
-                            vec2<double>(ii+1, jj),
-                            vec2<double>(ii+1,jj+1),
-                            vec2<double>(ii,jj+1));
-
-              // clip the polygon with the target polygon and calculate the
-              // fraction of the area of the clipped polygon against the target.
-              // Then redistribute the values from the target grid to the
-              // subject.
-              vert8 result = quad_with_convex_quad(subject, target);
-              double result_area = simple_area(result);
-              double xy_fraction = result_area / target_area;
-
-              // Copy the values to the grid
-              for (int k = 0; k < image_depth; ++k) {
-                if (mask(k, j, i) != 0) {
-                  double value = image(k, j, i) * xy_fraction;
-                  for (int kk = 0; kk < grid_depth; ++kk) {
-                    grid(kk, jj, ii) += value * z_fraction(k, kk);
-                  }
-                }
-              }
+      void operator()(std::size_t j, std::size_t i,
+                      std::size_t jj, std::size_t ii,
+                      double xy_fraction) {
+        // Copy the values to the grid
+        for (int k = 0; k < input_depth; ++k) {
+          if (mask(k, j, i) != 0) {
+            double value = input(k, j, i) * xy_fraction;
+            for (int kk = 0; kk < output_depth; ++kk) {
+              output(kk, jj, ii) += value * z_fraction(k, kk);
             }
           }
         }
       }
-    }
 
-  private:
+      flex_bool mask;
+      flex_double input;
+      flex_double output;
+      flex_double z_fraction;
+      std::size_t input_depth;
+      std::size_t output_depth;
+    };
 
     flex_vec3_double s1_map_;
     std::size_t grid_half_size_;
