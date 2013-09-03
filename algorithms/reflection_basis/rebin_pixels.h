@@ -39,14 +39,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   /**
    * Rebin pixels onto a regular grid
-   * @param map_values The function to map the values
-   * @param inputxy The input coordinates
    * @param input_size The size of the input grid
    * @param output_size The size of the output grid
+   * @param inputxy The input coordinates
+   * @param map_values The function to map the values
    */
   template <typename MappingFunction, typename InputXYType>
-  void rebin_pixels_internal2(MappingFunction map_values,
-    const InputXYType &inputxy, vec2<int> input_size, vec2<int> output_size) {
+  void rebin_pixels_internal(vec2<int> input_size, vec2<int> output_size,
+    const InputXYType &inputxy, MappingFunction map_values) {
 
     // Check the data sizes
     DIALS_ASSERT(input_size[0] > 0 && input_size[1] > 0);
@@ -122,123 +122,40 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   }
 
   /**
+   * A struct used as a callback in the function rebin pixels
+   */
+  struct Map2DImagePixels {
+    Map2DImagePixels(flex_double input_, flex_double output_)
+      : input(input_),
+        output(output_) {}
+
+    void operator()(std::size_t j, std::size_t i,
+                    std::size_t jj, std::size_t ii,
+                    double fraction) {
+      output(jj, ii) += fraction * input(j, i);
+    }
+
+    flex_double input;
+    flex_double output;
+  };
+
+  /**
    * Rebin pixels onto a regular grid
    * @param output The output grid
    * @param input The input grid
    * @param inputxy The input x/y coordinates
    */
-  template <typename InputXYType>
-  void rebin_pixels_internal(flex_double &output, const flex_double &input,
-      const InputXYType &inputxy) {
-
-    // Check the sizes
-    DIALS_ASSERT(output.accessor().all().size() == 2);
+  inline
+  void rebin_pixels(flex_double &output, const flex_double &input,
+      const flex_vec2_double &inputxy) {
+    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
     DIALS_ASSERT(input.accessor().all().size() == 2);
-
-    // Get the input and output sizes
-    std::size_t output_height = output.accessor().all()[0];
-    std::size_t output_width = output.accessor().all()[1];
-    std::size_t input_height = input.accessor().all()[0];
-    std::size_t input_width = input.accessor().all()[1];
-
-    // Initialise all output counts to zero
-    for (std::size_t j = 0; j < output.size(); ++j) {
-      output[j] = 0.0;
-    }
-
-    // Loop through all the input pixels
-    for (std::size_t j = 0; j < input_height; ++j) {
-      for (std::size_t i = 0; i < input_width; ++i) {
-
-        // Get the x, y coords of the target point
-        vec2<double> ixy00 = inputxy(j, i);
-        vec2<double> ixy01 = inputxy(j, i+1);
-        vec2<double> ixy10 = inputxy(j+1, i);
-        vec2<double> ixy11 = inputxy(j+1, i+1);
-
-        // Create the target polygon and calculate its area
-        vert4 target(ixy00, ixy01, ixy11, ixy10);
-        double target_area = simple_area(target);
-        double value = input(j, i);
-        DIALS_ASSERT(target_area > 0.0);
-
-        // Get the range of new grid points
-        double4 ix(ixy00[0], ixy01[0], ixy10[0], ixy11[0]);
-        double4 iy(ixy00[1], ixy01[1], ixy10[1], ixy11[1]);
-        int ox0 = (int)floor(min(ix.const_ref()));
-        int oy0 = (int)floor(min(iy.const_ref()));
-        int ox1 = (int)ceil(max(ix.const_ref()));
-        int oy1 = (int)ceil(max(iy.const_ref()));
-
-        // Cap the coordinates within the the output grid
-        if (ox0 < 0) ox0 = 0;
-        if (oy0 < 0) oy0 = 0;
-        if (ox1 > output_width) ox1 = output_width;
-        if (oy1 > output_height) oy1 = output_height;
-
-        // Loop over all the pixels within the pixel range
-        for (std::size_t jj = oy0; jj < oy1; ++jj) {
-          for (std::size_t ii = ox0; ii < ox1; ++ii) {
-
-            // Create the subject polygon
-            vert4 subject(vec2<double>(ii, jj),
-                          vec2<double>(ii+1, jj),
-                          vec2<double>(ii+1,jj+1),
-                          vec2<double>(ii,jj+1));
-
-            // clip the polygon with the target polygon and calculate the
-            // fraction of the area of the clipped polygon against the target.
-            // Then redistribute the values from the target grid to the subject.
-            vert8 result = quad_with_convex_quad(subject, target);
-            double result_area = simple_area(result);
-            double fraction = result_area / target_area;
-            output(jj, ii) += fraction * value;
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Rebin pixels onto a regular grid
-   * @param output The output grid
-   * @param input The input grid
-   * @param inputxy The input x/y coordinates
-   */
-  template <typename InputXYType>
-  void rebin_pixels(flex_double &output, const flex_double &input,
-      const InputXYType &inputxy) {
-    rebin_pixels_internal(output, input, inputxy);
-  }
-
-  /**
-   * Rebin pixels onto a regular grid
-   * @param output The output grid
-   * @param input The input grid
-   * @param inputxy The input x/y coordinates
-   */
-  inline
-  void rebin_pixels(flex_double &output, const flex_double &input,
-      const flex_vec2_double &inputxy) {
-    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
+    DIALS_ASSERT(output.accessor().all().size() == 2);
     DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
     DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
-    rebin_pixels_internal(output, input, inputxy);
-  }
-
-  /**
-   * Rebin pixels onto a regular grid
-   * @param output The output grid
-   * @param input The input grid
-   * @param inputxy The input x/y coordinates
-   */
-  inline
-  void rebin_pixels2(flex_double &output, const flex_double &input,
-      const flex_vec2_double &inputxy) {
-    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
-    DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
-    DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
-    rebin_pixels_internal2(output, input, inputxy);
+    vec2<int> isize(input.accessor().all()[0], input.accessor().all()[1]);
+    vec2<int> osize(output.accessor().all()[0], output.accessor().all()[1]);
+    rebin_pixels_internal(isize, osize, inputxy, Map2DImagePixels(input, output));
   }
 
 }}}} // dials::algorithms::reflection_basis::transform
