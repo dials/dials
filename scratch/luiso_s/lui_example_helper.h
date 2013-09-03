@@ -67,7 +67,7 @@ namespace dials { namespace scratch {
     std::cout <<"\n nrow_tot ="<< nrow_tot <<"\n";
     std::cout <<"\n centr_col ="<< centr_col <<"\n";
     std::cout <<"\n centr_row ="<< centr_row <<"\n";
-    */
+     */
 
     int tot_row_centr=int(nrow_tot / 2);
     int tot_col_centr=int(ncol_tot / 2);
@@ -124,6 +124,9 @@ namespace dials { namespace scratch {
 
         } else {
           std::cout << "\n ERROR Not fitting in the area to be added \n";
+          std::cout <<"  tot_row =" <<tot_row << "  tot_col =" << tot_col <<
+              "  nrow_tot =" << nrow_tot << "  ncol_tot =" << ncol_tot << "\n";
+          std::cout <<" centr_col =" <<  centr_col << " centr_row =" << centr_row << "\n";
         }
       }
     }
