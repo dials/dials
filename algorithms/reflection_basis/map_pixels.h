@@ -153,9 +153,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     flex_double operator()(const CoordinateSystem &cs, int6 bbox,
         const flex_double &image, const flex_bool &mask,
         const flex_double &z_fraction) const {
-      flex_double grid(flex_grid<>(2 * grid_half_size_ + 1,
-                                   2 * grid_half_size_ + 1,
-                                   2 * grid_half_size_ + 1), 0);
+      std::size_t size = 2 * grid_half_size_ + 1;
+      flex_double grid(flex_grid<>(size, size, size), 0);
       this->operator()(cs, bbox, image, mask, z_fraction, grid);
       return grid;
     }
@@ -188,7 +187,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param image The image array
      * @param mask The mask array
      * @param z_fraction The z fraction array
-     * @param grid The grid array
+     * @param grid The grid array (assumed to be initialised to zero)
      */
     void operator()(const CoordinateSystem &cs, int6 bbox,
         const flex_double &image, const flex_bool &mask,
@@ -297,7 +296,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         const flex_double &z_fraction) const {
       flex_double image(flex_grid<>(bbox[5] - bbox[4],
                                     bbox[3] - bbox[2],
-                                    bbox[1] - bbox[0]));
+                                    bbox[1] - bbox[0]), 0);
       this->operator()(cs, bbox, grid, z_fraction, image);
       return image;
     }
@@ -329,6 +328,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       // Create the index generator for each coordinate of the bounding box
       GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
         grid_half_size_, s1_map_);
+
+      // Call the rebinning routine and map the grid
+      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
+      vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
+      rebin_pixels_internal(isize, osize, index,
+        MapGrid(image, grid, z_fraction));
 
       // Get the input and output sizes
       std::size_t grid_depth = grid.accessor().all()[0];
@@ -412,6 +417,36 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     }
 
   private:
+
+    /**
+     * A struct used as a callback in the function rebin pixels
+     */
+    struct MapGrid {
+      MapGrid(flex_double image_, flex_double grid_, flex_double z_fraction_)
+        : image(image_),
+          grid(grid_),
+          z_fraction(z_fraction_),
+          image_depth(image.accessor().all()[0]),
+          grid_depth(grid.accessor().all()[0]){}
+
+      void operator()(std::size_t j, std::size_t i,
+                      std::size_t jj, std::size_t ii,
+                      double xy_fraction) {
+        // Copy the values to the grid
+        for (int kk = 0; kk < grid_depth; ++kk) {
+          double value = grid(kk, jj, ii) * xy_fraction;
+          for (int k = 0; k < image_depth; ++k) {
+            image(k, j, i) += value * z_fraction(kk, k);
+          }
+        }
+      }
+
+      flex_double image;
+      flex_double grid;
+      flex_double z_fraction;
+      std::size_t image_depth;
+      std::size_t grid_depth;
+    };
 
     flex_vec3_double s1_map_;
     std::size_t grid_half_size_;
