@@ -281,6 +281,11 @@ namespace dials { namespace model {
       return transformed_shoebox_;
     }
 
+    /** Get the transformed profile */
+    flex_double get_transformed_shoebox_background() const {
+      return transformed_shoebox_background_;
+    }
+
     /** Set the reflection centroid position */
     vec3<double> get_centroid_position() const {
       return centroid_position_;
@@ -367,6 +372,11 @@ namespace dials { namespace model {
       transformed_shoebox_ = transformed_shoebox;
     }
 
+    /** Set the transformed profile */
+    void set_transformed_shoebox_background(const flex_double &transformed_shoebox) {
+      transformed_shoebox_background_ = transformed_shoebox;
+    }
+
     /** Set the reflection centroid position */
     void set_centroid_position(vec3<double> centroid_position) {
       centroid_position_ = centroid_position;
@@ -412,6 +422,7 @@ namespace dials { namespace model {
     flex_double shoebox_;
     flex_double shoebox_background_;
     flex_double transformed_shoebox_;
+    flex_double transformed_shoebox_background_;
 
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;

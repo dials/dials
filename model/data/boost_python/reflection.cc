@@ -515,6 +515,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("transformed_shoebox",
         &Reflection::get_transformed_shoebox,
         &Reflection::set_transformed_shoebox)
+      .add_property("transformed_shoebox_background",
+        &Reflection::get_transformed_shoebox_background,
+        &Reflection::set_transformed_shoebox_background)        
       .add_property("centroid_position",
         &Reflection::get_centroid_position,
         &Reflection::set_centroid_position)
