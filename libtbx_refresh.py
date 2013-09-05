@@ -8,4 +8,4 @@ def run():
 try:
     run()
 except Exception, e:
-    print "DIALS Warning", e
+    pass
