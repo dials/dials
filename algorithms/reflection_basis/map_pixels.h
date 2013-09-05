@@ -176,7 +176,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       std::size_t size = 2 * grid_half_size_ + 1;
       flex_double image_grid(flex_grid<>(size, size, size), 0);
       flex_double background_grid(flex_grid<>(size, size, size), 0);
-      this->operator()(cs, bbox, image, mask, z_fraction, image_grid);
+      this->operator()(cs, bbox, image, mask, background,
+        z_fraction, image_grid, background_grid);
       return std::make_pair(image_grid, background_grid);
     }
 
@@ -202,6 +203,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
       DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
       DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
+      DIALS_ASSERT(mask.accessor().all().all_eq(image.accessor().all()));
       DIALS_ASSERT(bbox[0] >= 0 && bbox[1] < image_size_[1]);
       DIALS_ASSERT(bbox[2] >= 0 && bbox[3] < image_size_[0]);
 
@@ -214,6 +216,50 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
       rebin_pixels_internal(isize, osize, index,
         MapSignal(mask, image, grid, z_fraction));
+    }
+
+    /**
+     * Map the pixels for a reflection
+     * @param cs The coordinate system
+     * @param bbox The bounding box
+     * @param image The image array
+     * @param mask The mask array
+     * @param background The background array
+     * @param z_fraction The z fraction array
+     * @param image_grid The grid array (assumed to be initialised to zero)
+     * @param background_grid The background grid (assumed zero)
+     */
+    void operator()(const CoordinateSystem &cs, int6 bbox,
+        const flex_double &image, const flex_bool &mask,
+        const flex_double &background,
+        const flex_double z_fraction,
+        flex_double &image_grid, flex_double &background_grid) const {
+
+      // Check array sizes
+      DIALS_ASSERT(image_grid.accessor().all().size() == 3);
+      DIALS_ASSERT(image_grid.accessor().all().all_eq(2 * grid_half_size_ + 1));
+      DIALS_ASSERT(background_grid.accessor().all().all_eq(image_grid.accessor().all()));
+      DIALS_ASSERT(z_fraction.accessor().all()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(z_fraction.accessor().all()[1] == 2 * grid_half_size_ + 1);
+      DIALS_ASSERT(image.accessor().all().size() == 3);
+      DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
+      DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
+      DIALS_ASSERT(mask.accessor().all().all_eq(image.accessor().all()));
+      DIALS_ASSERT(background.accessor().all().all_eq(image.accessor().all()));
+      DIALS_ASSERT(bbox[0] >= 0 && bbox[1] < image_size_[1]);
+      DIALS_ASSERT(bbox[2] >= 0 && bbox[3] < image_size_[0]);
+
+      // Create the index generator for each coordinate of the bounding box
+      GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
+        grid_half_size_, s1_map_);
+
+      // Call the rebinning routine and map just the signal
+      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
+      vec2<int> osize(image_grid.accessor().all()[1], image_grid.accessor().all()[2]);
+      rebin_pixels_internal(isize, osize, index,
+        MapSignalAndBackground(mask, image, background, image_grid,
+          background_grid,z_fraction));
     }
 
   private:
@@ -251,6 +297,48 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       flex_double z_fraction;
       std::size_t input_depth;
       std::size_t output_depth;
+    };
+
+    /**
+     * A struct used as a callback in the function rebin pixels
+     */
+    struct MapSignalAndBackground {
+      MapSignalAndBackground(flex_bool mask_, flex_double image_,
+            flex_double background_, flex_double image_grid_,
+            flex_double background_grid_, flex_double z_fraction_)
+        : mask(mask_),
+          image(image_),
+          background(background_),
+          image_grid(image_grid_),
+          background_grid(background_grid_),
+          z_fraction(z_fraction_),
+          image_depth(image.accessor().all()[0]),
+          grid_depth(image_grid.accessor().all()[0]){}
+
+      void operator()(std::size_t j, std::size_t i,
+                      std::size_t jj, std::size_t ii,
+                      double xy_fraction) {
+        // Copy the values to the grid
+        for (int k = 0; k < image_depth; ++k) {
+          if (mask(k, j, i) != 0) {
+            double ivalue = image(k, j, i) * xy_fraction;
+            double bvalue = background(k, j, i) * xy_fraction;
+            for (int kk = 0; kk < grid_depth; ++kk) {
+              image_grid(kk, jj, ii) += ivalue * z_fraction(k, kk);
+              background_grid(kk, jj, ii) += bvalue * z_fraction(k, kk);
+            }
+          }
+        }
+      }
+
+      flex_bool mask;
+      flex_double image;
+      flex_double background;
+      flex_double image_grid;
+      flex_double background_grid;
+      flex_double z_fraction;
+      std::size_t image_depth;
+      std::size_t grid_depth;
     };
 
     flex_vec3_double s1_map_;
@@ -329,11 +417,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       GridIndexGenerator index(cs, bbox[0], bbox[2], step_size_,
         grid_half_size_, s1_map_);
 
-      // Call the rebinning routine and map the grid
-      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
-      vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
-      rebin_pixels_internal(isize, osize, index,
-        MapGrid(image, grid, z_fraction));
+//      FIXME: To use templated stuff need to divie by subject area and not
+//      by target area. Needs a bit of rejigging.
+//      // Call the rebinning routine and map the grid
+//      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
+//      vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
+//      rebin_pixels_internal(isize, osize, index,
+//        MapGrid(image, grid, z_fraction));
 
       // Get the input and output sizes
       std::size_t grid_depth = grid.accessor().all()[0];

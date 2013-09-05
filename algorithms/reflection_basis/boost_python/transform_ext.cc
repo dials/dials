@@ -179,12 +179,22 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           for (std::size_t j = 0; j < mask.size(); ++j) {
             mask[j] = (shoebox_mask[j] & shoebox::Foreground);
           }
-          rlist[i].set_transformed_shoebox(transform(
+          flex_double grid = transform(
             rlist[i].get_beam_vector(),
             rlist[i].get_rotation_angle(),
             rlist[i].get_bounding_box(),
             rlist[i].get_shoebox(),
-            mask));
+            mask);
+          rlist[i].set_transformed_shoebox(grid);
+//          std::pair<flex_double, flex_double> grid = transform(
+//            rlist[i].get_beam_vector(),
+//            rlist[i].get_rotation_angle(),
+//            rlist[i].get_bounding_box(),
+//            rlist[i].get_shoebox(),
+//            rlist[i].get_shoebox_background(),
+//            mask);
+//          rlist[i].set_transformed_shoebox(grid.first);
+////          rlist[i].set_transformed_shoebox_background(grid.second);
         } catch(dials::error) {
           rlist[i].set_valid(false);
         }
