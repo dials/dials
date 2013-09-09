@@ -562,6 +562,12 @@ class ReflectionManager(object):
 
         return self._sample_size
 
+    def get_total_size(self):
+        '''Return the number of observations that pass inclusion criteria and
+        can potentially be used for refinement'''
+
+        return len(self._obs_data)
+
     def get_matches(self):
         '''For every observation matched with a prediction return all data'''
 

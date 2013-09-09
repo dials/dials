@@ -109,12 +109,15 @@ class Refiner(object):
         # Select reflections for refinement #
         #####################################
 
-        if self._verbosity > 1: print "Building reflection manager"
+        if self._verbosity > 1:
+            print "Building reflection manager"
+            print "Input reflection list size = %d observations" % len(self.reflections)
 
         self.refman = self.create_refman(self.reflections, self.beam,
                                 self.gonio, self.scan, self._verbosity)
 
         if self._verbosity > 1:
+            print "Number of observations that pass inclusion criteria = %d" % self.refman.get_total_size()
             print "Working set size = %d observations" % self.refman.get_sample_size()
             print "Reflection manager built\n"
 
