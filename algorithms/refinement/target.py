@@ -438,7 +438,9 @@ class ReflectionManager(object):
                        y_obs, sigy_obs,
                        phi_obs, sigphi_obs,
                        beam, gonio, scan,
-                       verbosity=0, nref_per_degree = None):
+                       verbosity=0,
+                       nref_per_degree = None,
+                       min_num_obs = 20):
 
         # check the observed values
         h_obs = list(h_obs)
@@ -504,6 +506,14 @@ class ReflectionManager(object):
                                 x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
                                 y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
                                 phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
+
+        # fail if there are too few reflections in the manager
+        self._min_num_obs = min_num_obs
+        if len(self._H) < self._min_num_obs:
+            msg = ('Remaining number of reflections = {0}, which is below '+ \
+                'the configured limit for creating this reflection ' + \
+                'manager').format(len(self._H))
+            raise RuntimeError, msg
 
     def _spindle_beam_plane_normal(self):
         '''return a unit vector that when placed at the origin of reciprocal
@@ -607,8 +617,14 @@ class ReflectionManager(object):
             if len(v) == 0:
                 del self._H[k]
 
+        if len(self._H) < self._min_num_obs:
+            msg = ('Remaining number of reflections = {0}, which is below '+ \
+                'the configured limit for this reflection manager').format(
+                    len(self._H))
+            raise RuntimeError, msg
+
         if self._verbosity > 1:
-            print len(self._H), "observations remain in the manager after " + \
+            print len(self._H), "reflections remain in the manager after " + \
                 "removing those unmatched with predictions"
 
         return

@@ -110,5 +110,10 @@ refinement
       .help = "Override reflections_per_degree and use all available centroids"
               "in refinement."
       .type = bool
+
+    minimum_number_of_reflections = 20
+      .help = "The minimum number of input observations to allow a reflection"
+              "manager to be constructed for."
+      .type = int(value_min=1)
   }
 }

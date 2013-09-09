@@ -472,6 +472,8 @@ class RefmanFactory(object):
         if options.use_all_reflections:
             self._ref_per_degree = None
 
+        self._min_num_obs = options.minimum_number_of_reflections
+
         from target import ReflectionManager as refman
         self._refman = refman
 
@@ -511,7 +513,8 @@ class RefmanFactory(object):
                             gonio=goniometer,
                             scan=scan,
                             verbosity=verbosity,
-                            nref_per_degree=self._ref_per_degree)
+                            nref_per_degree=self._ref_per_degree,
+                            min_num_obs=self._min_num_obs)
 
 class TargetFactory(object):
 
