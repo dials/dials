@@ -16,18 +16,23 @@ namespace dials { namespace algorithms { namespace shoebox {
   namespace boost_python {
 
   using namespace boost::python;
+  using scitbx::af::flex_grid;
+
+  MaskBadPixels* make_mask_bad_pixels(af::versa< bool, flex_grid<> > mask) {
+    return new MaskBadPixels(af::versa< bool, af::c_grid<2> >(
+      mask.handle(), af::c_grid<2>(mask.accessor())));
+  }
 
   void export_mask_bad_pixels()
   {
     class_ <MaskBadPixels> ("MaskBadPixels", no_init)
-      .def(init<const flex_bool&>((
-        arg("detector_mask"))))
+      .def("__init__", make_constructor(&make_mask_bad_pixels))
       .def("__call__", 
         (void(MaskBadPixels::*)(Reflection&)const)
           &MaskBadPixels::operator(), (
           arg("reflection")))
       .def("__call__", 
-        (void(MaskBadPixels::*)(ReflectionList&)const)
+        (void(MaskBadPixels::*)(af::ref<Reflection>)const)
           &MaskBadPixels::operator(), (
           arg("reflection_list")));
             

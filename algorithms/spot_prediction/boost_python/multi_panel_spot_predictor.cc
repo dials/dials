@@ -31,7 +31,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     reflection_list_type (MultiPanelSpotPredictor::*predict_single)(
       miller_index) const = &MultiPanelSpotPredictor::operator();
     reflection_list_type (MultiPanelSpotPredictor::*predict_array)(
-      const flex_miller_index &) const = &MultiPanelSpotPredictor::operator();
+      const af::const_ref<miller_index> &) const = 
+        &MultiPanelSpotPredictor::operator();
 
     // Create and return the wrapper for the spot predictor object
     class_ <MultiPanelSpotPredictor> ("MultiPanelSpotPredictor", no_init)

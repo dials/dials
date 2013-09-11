@@ -13,7 +13,6 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
@@ -29,8 +28,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_bool;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
@@ -80,16 +77,18 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param mask The mask
      * @returns The grid
      */
-    flex_double operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_bool &mask) const {
+    af::versa< double, af::c_grid<3> > operator()(
+        const CoordinateSystem &cs, int6 bbox,
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< bool, af::c_grid<3> > &mask) const {
 
       // Calculate the fraction of intensity contributed from each data
       // frame to each grid coordinate
-      flex_double zfraction = map_frames_(vec2<int>(bbox[4], bbox[5]),
-        cs.phi(), cs.zeta());
+      af::versa< double, af::c_grid<2> > zfraction = map_frames_(
+        vec2<int>(bbox[4], bbox[5]), cs.phi(), cs.zeta());
 
       // Map the image pixels to the grid points
-      return map_pixels_(cs, bbox, image, mask, zfraction);
+      return map_pixels_(cs, bbox, image, mask, zfraction.const_ref());
     }
 
     /**
@@ -101,8 +100,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param mask The mask
      * @returns The grid
      */
-    flex_double operator()(vec3<double> s1, double phi, int6 bbox,
-        const flex_double &image, const flex_bool &mask) const {
+    af::versa< double, af::c_grid<3> > operator()(vec3<double> s1, double phi,
+        int6 bbox, const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< bool, af::c_grid<3> > &mask) const {
       CoordinateSystem cs(m2_, s0_, s1, phi);
       return this->operator()(cs, bbox, image, mask);
     }
@@ -116,18 +116,21 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param mask The mask
      * @returns The grid
      */
-    std::pair<flex_double, flex_double> operator()(
+    std::pair<af::versa< double, af::c_grid<3> >,
+              af::versa< double, af::c_grid<3> > > operator()(
         const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_double &background,
-        const flex_bool &mask) const {
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< double, af::c_grid<3> > &background,
+        const af::const_ref< bool, af::c_grid<3> > &mask) const {
 
       // Calculate the fraction of intensity contributed from each data
       // frame to each grid coordinate
-      flex_double zfraction = map_frames_(vec2<int>(bbox[4], bbox[5]),
-        cs.phi(), cs.zeta());
+      af::versa< double, af::c_grid<2> > zfraction = map_frames_(
+        vec2<int>(bbox[4], bbox[5]), cs.phi(), cs.zeta());
 
       // Map the image pixels to the grid points
-      return map_pixels_(cs, bbox, image, background, mask, zfraction);
+      return map_pixels_(cs, bbox, image, background,
+        mask, zfraction.const_ref());
     }
 
     /**
@@ -141,10 +144,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param mask The mask
      * @returns (transformed image, transformed background)
      */
-    std::pair<flex_double, flex_double> operator()(
+    std::pair<af::versa< double, af::c_grid<3> >,
+              af::versa< double, af::c_grid<3> > > operator()(
         vec3<double> s1, double phi, int6 bbox,
-        const flex_double &image, const flex_double &background,
-        const flex_bool &mask) const {
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< double, af::c_grid<3> > &background,
+        const af::const_ref< bool, af::c_grid<3> > &mask) const {
       CoordinateSystem cs(m2_, s0_, s1, phi);
       return this->operator()(cs, bbox, image, background, mask);
     }
@@ -199,16 +204,17 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param grid The grid
      * @returns The image
      */
-    flex_double operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &grid) const {
+    af::versa< double, af::c_grid<3> > operator()(
+        const CoordinateSystem &cs, int6 bbox,
+        const af::const_ref< double, af::c_grid<3> > &grid) const {
 
       // Calculate the fraction of intensity contributed from each data
       // frame to each grid coordinate
-      flex_double zfraction = map_frames_(vec2<int>(bbox[4], bbox[5]),
-        cs.phi(), cs.zeta());
+      af::versa< double, af::c_grid<2> > zfraction = map_frames_(
+        vec2<int>(bbox[4], bbox[5]), cs.phi(), cs.zeta());
 
       // Map the image pixels from the grid points
-      return map_pixels_(cs, bbox, grid, zfraction);
+      return map_pixels_(cs, bbox, grid, zfraction.const_ref());
     }
 
     /**
@@ -219,8 +225,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param grid The grid
      * @returns The image
      */
-    flex_double operator()(vec3<double> s1, double phi, int6 bbox,
-        const flex_double &grid) const {
+    af::versa< double, af::c_grid<3> > operator()(vec3<double> s1, double phi,
+        int6 bbox, const af::const_ref< double, af::c_grid<3> > &grid) const {
       CoordinateSystem cs(m2_, s0_, s1, phi);
       return this->operator()(cs, bbox, grid);
     }

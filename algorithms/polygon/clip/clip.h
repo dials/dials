@@ -14,9 +14,9 @@
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/tiny.h>
 #include <scitbx/array_family/small.h>
-#include <scitbx/array_family/shared.h>
 #include <dials/algorithms/polygon/clip/cohen_sutherland.h>
 #include <dials/algorithms/polygon/clip/sutherland_hodgman.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms {
   namespace polygon { namespace clip {
@@ -24,7 +24,6 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::af::tiny;
   using scitbx::af::small;
-  using scitbx::af::shared;
 
   // Convenient typedefs
   typedef tiny< vec2<double>, 2 > vert2;
@@ -33,7 +32,7 @@ namespace dials { namespace algorithms {
   typedef small< vec2<double>, 6 > vert6;
   typedef small< vec2<double>, 7 > vert7;
   typedef small< vec2<double>, 8 > vert8;
-  typedef shared< vec2<double> > shared_vec2_double;
+  typedef af::shared< vec2<double> > shared_vec2_double;
 
   /**
    * Clip a simple polygon with a convex polygon using the sutherland_hodman

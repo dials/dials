@@ -2,18 +2,22 @@
 #define DIALS_ALGORITHMS_PEAK_FINDING_LUI_SMOOTHING_H
 #include <iostream>
 
-#include <scitbx/array_family/flex_types.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms {
-  using scitbx::af::flex_double;
 
-  flex_double smooth_2d(flex_double & data2d, int tot_times) {
+  af::versa< double, af::c_grid<2> > smooth_2d(
+      const af::const_ref< double, af::c_grid<2> > &data2d, int tot_times) {
 
-    std::size_t ncol=data2d.accessor().all()[1];
-        std::size_t nrow=data2d.accessor().all()[0];
-        flex_double data2dtmp(data2d);
-        flex_double data2dsmoth(data2d.accessor(),0);
+    std::size_t ncol=data2d.accessor()[1];
+        std::size_t nrow=data2d.accessor()[0];
+        af::versa< double, af::c_grid<2> > data2dtmp(data2d.accessor());
+        af::versa< double, af::c_grid<2> > data2dsmoth(data2d.accessor(),0);
         long double tot_i,cont;
+
+        for (int i = 0; i < data2d.size(); ++i) {
+          data2dtmp[i] = data2d[i];
+        }
 
         // scanning trough all pixels
         for (int time = 0; time < tot_times; time++) {
@@ -41,15 +45,19 @@ namespace dials { namespace algorithms {
   }
 
 
-  flex_double smooth_3d(flex_double & data3d, int tot_times) {
-    std::size_t ncol=data3d.accessor().all()[2];
-    std::size_t nrow=data3d.accessor().all()[1];
-    std::size_t nfrm=data3d.accessor().all()[0];
+  af::versa< double, af::c_grid<3> > smooth_3d(
+      const af::const_ref< double, af::c_grid<3> > & data3d, int tot_times) {
+    std::size_t ncol=data3d.accessor()[2];
+    std::size_t nrow=data3d.accessor()[1];
+    std::size_t nfrm=data3d.accessor()[0];
     float tot_i,cont;
-    flex_double data3dtmp(data3d);
-    flex_double data3dsmoth(data3d.accessor(),0);
-                                          // scanning the block
+    af::versa< double, af::c_grid<3> > data3dtmp(data3d.accessor());
+    af::versa< double, af::c_grid<3> > data3dsmoth(data3d.accessor(),0);
+    for (int i = 0; i < data3d.size(); ++i) {
+      data3dtmp[i] = data3d[i];
+    }
 
+                                          // scanning the block
     for (int time = 0; time < tot_times; time++) {
       for (int frm = 1; frm<nfrm-1;frm++) {
         for (int row = 1; row<nrow-1;row++) {

@@ -11,21 +11,15 @@
 #ifndef DIALS_ALGORITHMS_SHOEBOX_HELPERS_H
 #define DIALS_ALGORITHMS_SHOEBOX_HELPERS_H
 
-#include <scitbx/array_family/flex_types.h>
-#include <scitbx/array_family/tiny_types.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
 
-  using scitbx::af::flex_grid;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
+  using scitbx::af::int2;
   using scitbx::af::int6;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
 
   /**
    * Allocate the profiles in the reflection list
@@ -33,7 +27,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param mask_default The default mask value
    */
   inline
-  void allocate(ReflectionList &reflections, int mask_default) {
+  void allocate(af::ref<Reflection> reflections, int mask_default) {
     // Allocate all the reflection profiles
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
@@ -43,10 +37,10 @@ namespace dials { namespace algorithms { namespace shoebox {
         int size_y = bbox[3] - bbox[2];
         int size_x = bbox[1] - bbox[0];
         DIALS_ASSERT(size_z > 0 && size_y > 0 && size_x > 0);
-        flex_grid<> accessor(size_z, size_y, size_x);
-        r.set_shoebox(flex_double(accessor, 0.0));
-        r.set_shoebox_mask(flex_int(accessor, mask_default));
-        r.set_shoebox_background(flex_double(accessor, 0.0));
+        af::c_grid<3> accessor(size_z, size_y, size_x);
+        r.set_shoebox(af::versa< double, af::c_grid<3> >(accessor, 0.0));
+        r.set_shoebox_mask(af::versa< int, af::c_grid<3> >(accessor, mask_default));
+        r.set_shoebox_background(af::versa< double, af::c_grid<3> >(accessor, 0.0));
       }
     }
   }
@@ -56,7 +50,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param reflections The reflection list
    */
   inline
-  void allocate(ReflectionList &reflections) {
+  void allocate(af::ref<Reflection> reflections) {
     allocate(reflections, shoebox::Valid);
   }
 
@@ -65,13 +59,13 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param reflections The reflection list
    */
   inline
-  void deallocate(ReflectionList &reflections) {
+  void deallocate(af::ref<Reflection> reflections) {
     // Delete all the reflection profiles from memory
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      reflections[i].set_shoebox(flex_double());
-      reflections[i].set_shoebox_mask(flex_int());
-      reflections[i].set_shoebox_background(flex_double());
-      reflections[i].set_transformed_shoebox(flex_double());
+      reflections[i].set_shoebox(af::versa< double, af::c_grid<3> >());
+      reflections[i].set_shoebox_mask(af::versa< int, af::c_grid<3> >());
+      reflections[i].set_shoebox_background(af::versa< double, af::c_grid<3> >());
+      reflections[i].set_transformed_shoebox(af::versa< double, af::c_grid<3> >());
     }
   }
 
@@ -87,8 +81,9 @@ namespace dials { namespace algorithms { namespace shoebox {
    * @param dark_map The detector dark map
    */
   inline
-  void assign_strong_spots(const flex_bool &mask, int array_index,
-      const flex_int &index, ReflectionList &reflections) {
+  void assign_strong_spots(const af::const_ref< bool, af::c_grid<2> > &mask,
+      int array_index, const af::const_ref<int> &index,
+      af::ref<Reflection> reflections) {
     for (std::size_t i = 0; i < index.size(); ++i) {
 
       // Get a reference to a reflection
@@ -102,7 +97,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         int k = array_index - k0;
 
         // Get the image size
-        flex_int::index_type mask_size = mask.accessor().all();
+        int2 mask_size = mask.accessor();
 
         // Readjust the area to loop over to ensure we're within image bounds
         int jj0 = j0 >= 0 ? j0 : 0;
@@ -111,7 +106,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         int ii1 = i1 <= mask_size[1] ? i1 : mask_size[1];
 
         // Get the reflection profile
-        flex_int shoebox_mask = r.get_shoebox_mask();
+        af::ref< int, af::c_grid<3> > shoebox_mask = r.get_shoebox_mask().ref();
 
         // Assign strong pixels (if any)
         std::size_t strong_count = 0;

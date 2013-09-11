@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_compute_centroid()
   {
-    void (ComputeCentroid::*call_array)(ReflectionList&) const = 
+    void (ComputeCentroid::*call_array)(af::ref<Reflection>) const = 
       &ComputeCentroid::operator();    
     
     void (ComputeCentroid::*call_single)(Reflection&) const = 

@@ -13,20 +13,17 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::af::flex_grid;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
-
-  typedef scitbx::af::flex< vec3<double> >::type flex_vec3_double;
 
   /**
    * Calculate the beam vector at every pixel on the detector, sub-divided
@@ -40,7 +37,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @returns An array of beam vectors
    */
   inline
-  flex_vec3_double beam_vector_map(const Detector &detector, const Beam &beam,
+  af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
+      const Detector &detector, const Beam &beam,
       std::size_t n_div, bool corner)
   {
     // check the input
@@ -61,7 +59,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     double wavelength_r = 1.0 / beam.get_wavelength();
 
     // Create the necessary arrays
-    flex_vec3_double detector_s1(flex_grid<>(y_size, x_size));
+    af::versa< vec3<double>, af::c_grid<2> > detector_s1(
+      af::c_grid<2>(y_size, x_size));
 
     // Add an offset if not corners
     double offset = 0.0;
@@ -92,9 +91,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @returns An array of beam vectors
    */
   inline
-  flex_vec3_double beam_vector_map(const Detector &detector,
-      const Beam &beam, bool corner)
-  {
+  af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
+      const Detector &detector, const Beam &beam, bool corner) {
     return beam_vector_map(detector, beam, 1, corner);
   }
 
@@ -105,9 +103,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @returns An array of beam vectors
    */
   inline
-  flex_vec3_double beam_vector_map(const Detector &detector,
-      const Beam &beam)
-  {
+  af::versa< vec3<double>, af::c_grid<2> > beam_vector_map(
+      const Detector &detector, const Beam &beam) {
     return beam_vector_map(detector, beam, 1, false);
   }
 

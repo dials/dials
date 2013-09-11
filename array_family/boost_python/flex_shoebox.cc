@@ -22,13 +22,10 @@ namespace dials { namespace af { namespace boost_python {
   using namespace boost::python;
   using namespace scitbx::af::boost_python;
 
-  using scitbx::af::int2;
-  using scitbx::af::int6;
-  using scitbx::af::small;
+  using af::int2;
+  using af::int6;
+  using af::small;
   using scitbx::vec3;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_grid;
   using dials::model::Shoebox;
   using dials::model::Valid;
   using dials::model::Foreground;
@@ -37,16 +34,16 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Construct an array of shoebxoes from a spot labelling class
    */
-  scitbx::af::flex<Shoebox>::type* from_labels(const LabelImageStack &label) {
+  af::flex<Shoebox>::type* from_labels(const LabelImageStack &label) {
 
     // Get the stuff from the label struct
-    scitbx::af::shared<int> labels = label.labels();
-    scitbx::af::shared<int> values = label.values();
-    scitbx::af::shared< vec3<int> > coords = label.coords();
+    af::shared<int> labels = label.labels();
+    af::shared<int> values = label.values();
+    af::shared< vec3<int> > coords = label.coords();
 
     // Get the number of labels and allocate the array
-    std::size_t num = scitbx::af::max(labels.const_ref()) + 1;
-    scitbx::af::shared<Shoebox> result(num);
+    std::size_t num = af::max(labels.const_ref()) + 1;
+    af::shared<Shoebox> result(num);
     
     // Initialise the bboxes
     int xsize = label.size()[1];
@@ -92,16 +89,15 @@ namespace dials { namespace af { namespace boost_python {
     }  
 
     // Return the array
-    return new scitbx::af::flex<Shoebox>::type(
-      result, scitbx::af::flex_grid<>(num));
+    return new af::flex<Shoebox>::type(
+      result, af::flex_grid<>(num));
   }  
   
   /**
    * Check if the arrays are consistent
    */
-  scitbx::af::flex_bool is_consistent(
-      const scitbx::af::const_ref<Shoebox> &a) {
-    scitbx::af::flex_bool result(a.size());
+  shared<bool> is_consistent(const const_ref<Shoebox> &a) {
+    shared<bool> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].is_consistent();
     }
@@ -111,10 +107,9 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Check if the bounding box has points outside the image range.
    */
-  scitbx::af::flex_bool is_bbox_within_image_volume(
-      const scitbx::af::const_ref<Shoebox> &a,
-      small<long,10> image_size, int2 scan_range) {
-    scitbx::af::flex_bool result(a.size());
+  shared<bool> is_bbox_within_image_volume(const const_ref<Shoebox> &a,
+      int2 image_size, int2 scan_range) {
+    shared<bool> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].is_bbox_within_image_volume(image_size, scan_range);
     }
@@ -124,10 +119,10 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Check if the bounding box has points that cover bad pixels
    */
-  scitbx::af::flex_bool does_bbox_contain_bad_pixels(
-      const scitbx::af::const_ref<Shoebox> &a, 
-      const scitbx::af::flex_bool &mask) {
-    scitbx::af::flex_bool result(a.size());
+  shared<bool> does_bbox_contain_bad_pixels(
+      const const_ref<Shoebox> &a, 
+      const const_ref<bool, c_grid<2> > &mask) {
+    shared<bool> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].does_bbox_contain_bad_pixels(mask);
     }
@@ -137,10 +132,8 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Count the number of mask pixels with the given code
    */
-  scitbx::af::flex_int count_mask_values(
-      const scitbx::af::const_ref<Shoebox> &a,
-      int code) {
-    scitbx::af::flex_int result(a.size());
+  shared<int> count_mask_values(const const_ref<Shoebox> &a, int code) {
+    shared<int> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].count_mask_values(code);
     }
@@ -150,9 +143,8 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Get the bounding boxes
    */
-  scitbx::af::flex<int6>::type bounding_boxes(
-      const scitbx::af::const_ref<Shoebox> &a) {
-    scitbx::af::flex<int6>::type result(a.size());
+  shared<int6> bounding_boxes(const const_ref<Shoebox> &a) {
+    shared<int6> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].bbox;
     }
@@ -190,9 +182,9 @@ namespace dials { namespace af { namespace boost_python {
     /** Convert a profile to string */
     template <typename ProfileType>
     void profile_to_string(const ProfileType &p) {
-      *this << p.accessor().all().size();
-      for (std::size_t i = 0; i < p.accessor().all().size(); ++i) {
-        *this << p.accessor().all()[i];
+      *this << p.accessor().size();
+      for (std::size_t i = 0; i < p.accessor().size(); ++i) {
+        *this << p.accessor()[i];
       }
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this << p[i];
@@ -223,8 +215,8 @@ namespace dials { namespace af { namespace boost_python {
             >> val.bbox[4]
             >> val.bbox[5];
 
-      val.data = profile_from_string<flex_double>();
-      val.mask = profile_from_string<flex_int>();
+      val.data = profile_from_string< versa<double, c_grid<3> > >();
+      val.mask = profile_from_string< versa<int, c_grid<3> > >();
 
       return *this;
     }
@@ -232,14 +224,15 @@ namespace dials { namespace af { namespace boost_python {
     /** Get a profile from a string */
     template <typename ProfileType>
     ProfileType profile_from_string() {
-      typename ProfileType::index_type shape;
+      typedef typename ProfileType::accessor_type accessor_type;
+      typename ProfileType::accessor_type::index_type shape;
       typename ProfileType::size_type n_dim;
       *this >> n_dim;
-      shape.resize(n_dim);
+      DIALS_ASSERT(n_dim == shape.size());
       for (std::size_t i = 0; i < n_dim; ++i) {
         *this >> shape[i];
       }
-      ProfileType p = ProfileType(flex_grid<>(shape));
+      ProfileType p = ProfileType(accessor_type(shape));
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this >> p[i];
       }
@@ -258,10 +251,10 @@ namespace dials { namespace af { namespace boost_python {
       .def("bounding_boxes", &bounding_boxes)
       .def("count_mask_values", &count_mask_values)
       .def("is_bbox_within_image_volume", &is_bbox_within_image_volume, (
-        arg("image_size"), 
-        arg("scan_range")))
+        boost::python::arg("image_size"), 
+        boost::python::arg("scan_range")))
       .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
-        arg("mask")))
+        boost::python::arg("mask")))
       .def_pickle(flex_pickle_double_buffered<Shoebox, 
         shoebox_to_string, shoebox_from_string>());
   }

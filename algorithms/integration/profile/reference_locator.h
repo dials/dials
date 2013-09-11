@@ -11,17 +11,15 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LOCATOR_H
 #define DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LOCATOR_H
 
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::small;
   using scitbx::af::int3;
+  using scitbx::af::int4;
   using scitbx::af::double3;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_grid;
 
   /**
    * A class to provide access to reference profiles by querying either
@@ -38,13 +36,12 @@ namespace dials { namespace algorithms {
      * @param profiles The array of reference prodiles
      * @param sampler The sampler object.
      */
-    ReferenceLocator(const flex_double &profiles,
+    ReferenceLocator(const af::versa< double, af::c_grid<4> > &profiles,
                      const ImageSampler &sampler)
       : profiles_(profiles),
         sampler_(sampler) {
-      DIALS_ASSERT(profiles.accessor().all().size() == 4);
-      DIALS_ASSERT(profiles.accessor().all().all_gt(0));
-      DIALS_ASSERT(profiles.accessor().all()[0] == sampler_.size());
+      DIALS_ASSERT(profiles.accessor().all_gt(0));
+      DIALS_ASSERT(profiles.accessor()[0] == sampler_.size());
     }
 
     /** @returns The number of profiles. */
@@ -67,7 +64,7 @@ namespace dials { namespace algorithms {
     }
 
     /** @returns The whole list of profiles */
-    flex_double profile() const {
+    af::versa< double, af::c_grid<4> > profile() const {
       return profiles_;
     }
 
@@ -76,16 +73,15 @@ namespace dials { namespace algorithms {
      * @param index The profile index
      * @returns The profile array
      */
-    flex_double profile(std::size_t index) const {
+    af::versa< double, af::c_grid<3> > profile(std::size_t index) const {
 
       // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
-      small<long, 10> profile_size = profiles_.accessor().all();
-      DIALS_ASSERT(profile_size.size() == 4);
+      int4 profile_size = profiles_.accessor();
 
-      // Unfortunately, you can't take a reference from a flex array and
+      // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
-      flex_double result(flex_grid<>(profile_size[1],
+      af::versa< double, af::c_grid<3> > result(af::c_grid<3>(profile_size[1],
         profile_size[2], profile_size[2]));
       std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -101,7 +97,7 @@ namespace dials { namespace algorithms {
      * @param xyz The detector coordinate
      * @returns The profile array
      */
-    flex_double profile(double3 xyz) const {
+    af::versa< double, af::c_grid<3> > profile(double3 xyz) const {
       return profile(sampler_.nearest(xyz));
     }
 
@@ -124,7 +120,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    flex_double profiles_;
+    af::versa< double, af::c_grid<4> > profiles_;
     ImageSampler sampler_;
   };
 

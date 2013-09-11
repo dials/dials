@@ -12,6 +12,7 @@
 #include <boost/python/def.hpp>
 #include <omptbx/omp_or_stubs.h>
 #include <boost_adaptbx/std_pair_conversion.h>
+#include <scitbx/array_family/flex_types.h>
 #include <dials/algorithms/reflection_basis/rebin_pixels.h>
 #include <dials/algorithms/reflection_basis/map_frames.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
@@ -24,16 +25,17 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   namespace transform { namespace boost_python {
 
   using namespace boost::python;
+  using dials::model::Reflection;
   using scitbx::af::int2;
-  using scitbx::af::flex_grid;
-  using scitbx::af::flex_int;
-  using dials::model::ReflectionList;
+  using scitbx::af::flex_double;
 
   inline
-  flex_double rebin_pixels_wrapper(const flex_double &input,
-      const flex_vec2_double &inputxy, int2 size) {
-    flex_double output(flex_grid<>(size[0], size[1]));
-    rebin_pixels(output, input, inputxy);
+  af::versa< double, af::c_grid<2> > rebin_pixels_wrapper(
+      const af::const_ref< double, af::c_grid<2> > &input,
+      const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy, int2 size) {
+    af::versa< double, af::c_grid<2> > output(af::c_grid<2>(size[0], size[1]));
+    af::ref< double, af::c_grid<2> > output_ref = output.ref();
+    rebin_pixels(output_ref, input, inputxy);
     return output;
   }
 
@@ -76,11 +78,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   void export_beam_vector_map()
   {
-    flex_vec3_double (*overload1)(const Detector&,
+    af::versa< vec3<double>, af::c_grid<2> > (*overload1)(const Detector&,
       const Beam&, std::size_t, bool) = &beam_vector_map;
-    flex_vec3_double (*overload2)(const Detector&,
+    af::versa< vec3<double>, af::c_grid<2> > (*overload2)(const Detector&,
       const Beam&, bool) = &beam_vector_map;
-    flex_vec3_double (*overload3)(const Detector&,
+    af::versa< vec3<double>, af::c_grid<2> > (*overload3)(const Detector&,
       const Beam&) = &beam_vector_map;
 
     def("beam_vector_map", overload1, (
@@ -97,10 +99,45 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       arg("beam")));
   }
 
+  CoordinateGenerator* make_coordinate_generator(
+      const CoordinateSystem &cs, 
+      int x0, int y0, 
+      af::versa< vec3<double>, scitbx::af::flex_grid<> > s1_map) {
+    return new CoordinateGenerator(cs, x0, y0, 
+      af::versa< vec3<double>, af::c_grid<2> >(s1_map.handle(), 
+        af::c_grid<2>(s1_map.accessor()))); 
+  }
+
+  GridIndexGenerator* make_grid_index_generator(const CoordinateSystem &cs, 
+      int x0, int y0, vec2<double> step_size, std::size_t grid_half_size, 
+      af::versa< vec3<double>, scitbx::af::flex_grid<> > s1_map) {
+    return new GridIndexGenerator(cs, x0, y0, step_size, grid_half_size, 
+      af::versa< vec3<double>, af::c_grid<2> >(
+        s1_map.handle(), af::c_grid<2>(s1_map.accessor()))); 
+  }
+
+  MapPixelsForward* make_map_pixels_forward(
+      af::versa< vec3<double>, scitbx::af::flex_grid<> > s1_map,
+      std::size_t grid_half_size, vec2<double> step_size) {
+    return new MapPixelsForward(af::versa< vec3<double>, af::c_grid<2> >(
+        s1_map.handle(), af::c_grid<2>(s1_map.accessor())),
+        grid_half_size, step_size); 
+  }
+
+  MapPixelsReverse* make_map_pixels_reverse(
+      af::versa< vec3<double>, scitbx::af::flex_grid<> > s1_map,
+      std::size_t grid_half_size, vec2<double> step_size) {
+    return new MapPixelsReverse(af::versa< vec3<double>, af::c_grid<2> >(
+        s1_map.handle(), af::c_grid<2>(s1_map.accessor())),
+        grid_half_size, step_size); 
+  }
+
   void export_map_pixels()
   {
     class_<CoordinateGenerator>("CoordinateGenerator", no_init)
-      .def(init<const CoordinateSystem&, int, int, const flex_vec3_double>((
+      .def("__init__", make_constructor(
+        &make_coordinate_generator, 
+        default_call_policies(), (
           arg("cs"),
           arg("x0"),
           arg("y0"),
@@ -108,31 +145,37 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       .def("__call__", &CoordinateGenerator::operator());
 
     class_<GridIndexGenerator>("GridIndexGenerator", no_init)
-      .def(init<const CoordinateSystem&, int, int, vec2<double>,
-                std::size_t, const flex_vec3_double>((
+      .def("__init__", make_constructor(
+        &make_grid_index_generator, 
+        default_call_policies(), (
           arg("cs"),
           arg("x0"),
           arg("y0"),
           arg("step_size"),
           arg("grid_half_size"),
-          arg("s1_map"))))
+          arg("s1_map"))))    
       .def("__call__", &GridIndexGenerator::operator());
 
-    flex_double (MapPixelsForward::*call_forward)(const CoordinateSystem&, int6,
-        const flex_double&, const flex_bool&, const flex_double&) const =
+    af::versa< double, af::c_grid<3> > (MapPixelsForward::*call_forward)(
+        const CoordinateSystem&, int6, 
+        const af::const_ref< double, af::c_grid<3> >&, 
+        const af::const_ref< bool, af::c_grid<3> >&, 
+        const af::const_ref< double, af::c_grid<2> >&) const = 
           &MapPixelsForward::operator();
 
-    flex_double (MapPixelsReverse::*call_reverse)(const CoordinateSystem&, int6,
-        const flex_double&, const flex_double&) const =
+    af::versa< double, af::c_grid<3> > (MapPixelsReverse::*call_reverse)(
+        const CoordinateSystem&, int6,
+        const af::const_ref< double, af::c_grid<3> >&, 
+        const af::const_ref< double, af::c_grid<2> >&) const =
           &MapPixelsReverse::operator();
 
     class_<MapPixelsForward>("MapPixelsForward", no_init)
-      .def(init<const flex_vec3_double &,
-                std::size_t,
-                vec2<double> >((
-        arg("s1_map"),
-        arg("grid_half_size"),
-        arg("step_size"))))
+      .def("__init__", make_constructor(
+        &make_map_pixels_forward, 
+        default_call_policies(), (
+          arg("s1_map"),  
+          arg("grid_half_size"),
+          arg("step_size"))))
       .def("__call__", call_forward, (
         arg("cs"),
         arg("bbox"),
@@ -140,12 +183,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         arg("mask")));
 
     class_<MapPixelsReverse>("MapPixelsReverse", no_init)
-      .def(init<const flex_vec3_double &,
-                std::size_t,
-                vec2<double> >((
-        arg("s1_map"),
-        arg("grid_half_size"),
-        arg("step_size"))))
+      .def("__init__", make_constructor(
+        &make_map_pixels_reverse, 
+        default_call_policies(), (
+          arg("s1_map"),  
+          arg("grid_half_size"),
+          arg("step_size"))))
       .def("__call__", call_reverse, (
         arg("cs"),
         arg("bbox"),
@@ -167,32 +210,33 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   inline
   void forward_with_reflection_list(const Forward &transform,
-      ReflectionList &rlist) {
+      af::ref<Reflection> rlist) {
     // FIXME: Get Python error GC object already tracked. Possibly related to
-    // creation of flex arrays in multiple threads
+    // creation of shared arrays in multiple threads
     //#pragma omp parallel for
     for (std::size_t i = 0; i < rlist.size(); ++i) {
       if (rlist[i].is_valid()) {
         try {
-          flex_int shoebox_mask = rlist[i].get_shoebox_mask();
-          flex_bool mask(shoebox_mask.accessor());
+          af::versa< int, af::c_grid<3> > shoebox_mask = rlist[i].get_shoebox_mask();
+          af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor());
           for (std::size_t j = 0; j < mask.size(); ++j) {
             mask[j] = (shoebox_mask[j] & shoebox::Foreground);
           }
-          flex_double grid = transform(
+          af::versa< double, af::c_grid<3> > grid = transform(
             rlist[i].get_beam_vector(),
             rlist[i].get_rotation_angle(),
             rlist[i].get_bounding_box(),
-            rlist[i].get_shoebox(),
-            mask);
+            rlist[i].get_shoebox().const_ref(),
+            mask.const_ref());
           rlist[i].set_transformed_shoebox(grid);
-//          std::pair<flex_double, flex_double> grid = transform(
-//            rlist[i].get_beam_vector(),
-//            rlist[i].get_rotation_angle(),
-//            rlist[i].get_bounding_box(),
-//            rlist[i].get_shoebox(),
-//            rlist[i].get_shoebox_background(),
-//            mask);
+//          std::pair<versa< double, c_grid<3> >, versa< double, c_grid<3> > > 
+//            grid = transform(
+//              rlist[i].get_beam_vector(),
+//              rlist[i].get_rotation_angle(),
+//              rlist[i].get_bounding_box(),
+//              rlist[i].get_shoebox(),
+//              rlist[i].get_shoebox_background(),
+//              mask);
 //          rlist[i].set_transformed_shoebox(grid.first);
 ////          rlist[i].set_transformed_shoebox_background(grid.second);
         } catch(dials::error) {
@@ -201,26 +245,58 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       }
     }
   }
+  
+  std::pair<flex_double, flex_double> forward_with_background_cs(
+      const Forward &transform,
+      const CoordinateSystem& cs, int6 bbox, 
+      const af::const_ref< double, af::c_grid<3> > &shoebox, 
+      const af::const_ref< double, af::c_grid<3> > &background, 
+      const af::const_ref< bool, af::c_grid<3> > &mask) {
+  
+    std::pair< af::versa< double, af::c_grid<3> >, 
+               af::versa< double, af::c_grid<3> > >
+      result = transform(cs, bbox, shoebox, background, mask);
+      return std::make_pair(flex_double(
+        result.first.handle(), result.first.accessor().as_flex_grid()),
+        flex_double(result.second.handle(), 
+          result.second.accessor().as_flex_grid()));
+  }
+  
+  std::pair<flex_double, flex_double> forward_with_background_s1(
+      const Forward &transform,
+      vec3<double> s1, double phi, int6 bbox, 
+      const af::const_ref< double, af::c_grid<3> > &shoebox, 
+      const af::const_ref< double, af::c_grid<3> > &background, 
+      const af::const_ref< bool, af::c_grid<3> > &mask) {
+  
+    std::pair< af::versa< double, af::c_grid<3> >, 
+               af::versa< double, af::c_grid<3> > >
+      result = transform(s1, phi, bbox, shoebox, background, mask);
+      return std::make_pair(flex_double(
+        result.first.handle(), result.first.accessor().as_flex_grid()),
+        flex_double(result.second.handle(), 
+          result.second.accessor().as_flex_grid()));
+  }
 
   void export_transform()
   {
-    flex_double(Forward::*forward_with_cs)(const CoordinateSystem&, int6,
-      const flex_double&, const flex_bool&)const = &Forward::operator();
-    flex_double(Forward::*forward_with_s1)(vec3<double>, double, int6,
-      const flex_double&, const flex_bool&)const = &Forward::operator();
-    std::pair<flex_double, flex_double>(Forward::*forward_with_background_cs)(
-      const CoordinateSystem&, int6, const flex_double&, const flex_double&, 
-      const flex_bool&)const = &Forward::operator();
-    std::pair<flex_double, flex_double>(Forward::*forward_with_background_s1)(
-      vec3<double>, double, int6, const flex_double&, const flex_double&, 
-      const flex_bool&)const = &Forward::operator();
+    af::versa< double, af::c_grid<3> >(Forward::*forward_with_cs)(
+      const CoordinateSystem&, int6,
+      const af::const_ref< double, af::c_grid<3> >&, 
+      const af::const_ref< bool, af::c_grid<3> >&)const = &Forward::operator();
+    af::versa< double, af::c_grid<3> >(Forward::*forward_with_s1)(
+      vec3<double>, double, int6,
+      const af::const_ref< double, af::c_grid<3> >&, 
+      const af::const_ref< bool, af::c_grid<3> >&)const = &Forward::operator();
+    af::versa< double, af::c_grid<3> >(Reverse::*reverse_with_cs)(
+      const CoordinateSystem&, int6,
+      const af::const_ref< double, af::c_grid<3> >&)const = &Reverse::operator();
+    af::versa< double, af::c_grid<3> >(Reverse::*reverse_with_s1)(
+      vec3<double>, double, int6,
+      const af::const_ref< double, af::c_grid<3> >&)const = &Reverse::operator();
 
-    flex_double(Reverse::*reverse_with_cs)(const CoordinateSystem&, int6,
-      const flex_double&)const = &Reverse::operator();
-    flex_double(Reverse::*reverse_with_s1)(vec3<double>, double, int6,
-      const flex_double&)const = &Reverse::operator();
-
-    boost_adaptbx::std_pair_conversions::to_tuple<flex_double, flex_double>();
+    boost_adaptbx::std_pair_conversions::to_tuple<
+      scitbx::af::flex_double, scitbx::af::flex_double>();
 
     class_<Forward>("Forward", no_init)
       .def(init<const Beam&, const Detector&, const Goniometer&, const Scan&,

@@ -19,10 +19,10 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_reflection_frames()
   {
     // Function pointers to overloads
-    shared<Reflection> (*reflection_frames_single)(const Scan&,
+    af::shared<Reflection> (*reflection_frames_single)(const Scan&,
       const Reflection&) = &reflection_frames;
-    shared<Reflection> (*reflection_frames_array)(const Scan&,
-      const ReflectionList&) = &reflection_frames;
+    af::shared<Reflection> (*reflection_frames_array)(const Scan&,
+      const af::const_ref<Reflection>&) = &reflection_frames;
 
     // Export functions
     def("reflection_frames",

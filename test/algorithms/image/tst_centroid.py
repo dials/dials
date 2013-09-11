@@ -22,7 +22,7 @@ class CentroidTest(object):
         from dials.algorithms.image.centroid import CentroidPoints2d
         from scitbx import matrix
 
-        centroid = CentroidPoints2d(self.pixels2d, self.points2d)
+        centroid = CentroidPoints2d(self.pixels2d.as_1d(), self.points2d.as_1d())
 
         assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
@@ -33,7 +33,7 @@ class CentroidTest(object):
         from dials.algorithms.image.centroid import CentroidPoints3d
         from scitbx import matrix
 
-        centroid = CentroidPoints3d(self.pixels3d, self.points3d)
+        centroid = CentroidPoints3d(self.pixels3d.as_1d(), self.points3d.as_1d())
 
         assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)

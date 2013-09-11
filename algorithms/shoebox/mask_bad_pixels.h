@@ -11,18 +11,16 @@
 #ifndef DIALS_ALGORITHMS_SHOEBOX_MASK_BAD_PIXELS_H
 #define DIALS_ALGORITHMS_SHOEBOX_MASK_BAD_PIXELS_H
 
-#include <scitbx/array_family/flex_types.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
 
+  using scitbx::af::int2;
+  using scitbx::af::int3;
   using scitbx::af::int6;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_int;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
 
   /**
    * A class to mask bad pixels from the reflection shoebox
@@ -34,11 +32,10 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Initialise the algorithm with the detector mask
      * @param detector_mask The mask of good/bad detector pixels.
      */
-    MaskBadPixels(const flex_bool &detector_mask)
+    MaskBadPixels(const af::versa< bool, af::c_grid<2> > &detector_mask)
       : detector_mask_(detector_mask),
-        detector_size_(detector_mask.accessor().all()) {
-      DIALS_ASSERT(detector_size_.size() == 2);
-      DIALS_ASSERT(detector_size_[0] > 0 && detector_size_[1] > 0);
+        detector_size_(detector_mask.accessor()) {
+      DIALS_ASSERT(detector_mask_.accessor().all_gt(0));
     }
 
     /**
@@ -48,12 +45,11 @@ namespace dials { namespace algorithms { namespace shoebox {
     void operator()(Reflection &reflection) const {
 
       // Get the mask and roi from the reflection
-      flex_int mask = reflection.get_shoebox_mask();
-      flex_int::index_type size = mask.accessor().all();
+      af::ref< int, af::c_grid<3> > mask = reflection.get_shoebox_mask().ref();
       int6 roi = reflection.get_bounding_box();
 
       // Check sizes are ok
-      DIALS_ASSERT(size.size() == 3);
+      int3 size = mask.accessor();
       DIALS_ASSERT(size[2] == (roi[1] - roi[0]));
       DIALS_ASSERT(size[1] == (roi[3] - roi[2]));
       DIALS_ASSERT(size[0] == (roi[5] - roi[4]));
@@ -82,7 +78,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Set all the shoebox mask values for all the reflections to value
      * @param reflections The reflection list
      */
-    void operator()(ReflectionList &reflections) const {
+    void operator()(af::ref<Reflection> reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         if (reflections[i].is_valid()) {
           this->operator()(reflections[i]);
@@ -91,8 +87,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
   private:
-    flex_bool detector_mask_;
-    flex_bool::index_type detector_size_;
+    af::versa< bool, af::c_grid<2> > detector_mask_;
+    int2 detector_size_;
   };
 
 }}} // namespace dials::algorithms::shoebox

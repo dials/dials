@@ -14,7 +14,6 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
-#include <scitbx/array_family/flex_types.h>
 #include <dials/algorithms/reflection_basis/rebin_pixels.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
@@ -24,11 +23,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_grid;
-
-  typedef scitbx::af::flex< vec3<double> >::type flex_vec3_double;
 
   /**
    * A class to generate local reciprocal space coordinates
@@ -44,7 +38,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param s1_map The map of detector s1 vectors.
      */
     CoordinateGenerator(const CoordinateSystem &cs, int x0, int y0,
-        const flex_vec3_double &s1_map)
+        const af::versa< vec3<double>, af::c_grid<2> > &s1_map)
       : s1_(cs.s1()),
         e1_(cs.e1_axis() / s1_.length()),
         e2_(cs.e2_axis() / s1_.length()),
@@ -72,7 +66,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     vec3<double> e1_;
     vec3<double> e2_;
     int x0_, y0_;
-    flex_vec3_double s1_map_;
+    af::versa< vec3<double>, af::c_grid<2> > s1_map_;
   };
 
   /**
@@ -92,7 +86,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      */
     GridIndexGenerator(const CoordinateSystem &cs, int x0, int y0,
         vec2<double> step_size, std::size_t grid_half_size,
-        const flex_vec3_double &s1_map)
+        const af::versa< vec3<double>, af::c_grid<2> > &s1_map)
       : coordinate_(cs, x0, y0, s1_map),
         step_size_(step_size),
         grid_half_size_(grid_half_size) {}
@@ -129,16 +123,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param grid_half_size The grid half size
      * @param step_size The grid step size
      */
-    MapPixelsForward(const flex_vec3_double &s1_map, std::size_t grid_half_size,
-        vec2<double> step_size)
+    MapPixelsForward(const af::versa< vec3<double>, af::c_grid<2> > &s1_map,
+        std::size_t grid_half_size, vec2<double> step_size)
       : s1_map_(s1_map),
         grid_half_size_(grid_half_size),
         step_size_(step_size) {
       DIALS_ASSERT(grid_half_size > 0);
       DIALS_ASSERT(step_size_[0] > 0.0 && step_size_[1] > 0.0);
-      DIALS_ASSERT(s1_map.accessor().all().size() == 2);
-      image_size_ = vec2<std::size_t>(s1_map.accessor().all()[0],
-                                      s1_map.accessor().all()[1]);
+      image_size_ = s1_map.accessor();
     }
 
     /**
@@ -150,12 +142,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param z_fraction The z fraction array
      * @returns grid The grid array
      */
-    flex_double operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_bool &mask,
-        const flex_double &z_fraction) const {
+    af::versa< double, af::c_grid<3> > operator()(
+        const CoordinateSystem &cs, int6 bbox,
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< bool, af::c_grid<3> > &mask,
+        const af::const_ref< double, af::c_grid<2> > &z_fraction) const {
       std::size_t size = 2 * grid_half_size_ + 1;
-      flex_double grid(flex_grid<>(size, size, size), 0);
-      this->operator()(cs, bbox, image, mask, z_fraction, grid);
+      af::c_grid<3> accessor(size, size, size);
+      af::versa< double, af::c_grid<3> > grid(accessor, 0);
+      af::ref< double, af::c_grid<3> > grid_ref = grid.ref();
+      this->operator()(cs, bbox, image, mask, z_fraction, grid_ref);
       return grid;
     }
 
@@ -169,15 +165,21 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param z_fraction The z fraction array
      * @returns grid The grid array
      */
-    std::pair<flex_double, flex_double> operator()(
+    std::pair<af::versa< double, af::c_grid<3> >,
+              af::versa< double, af::c_grid<3> > > operator()(
         const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_double &background,
-        const flex_bool &mask, const flex_double &z_fraction) const {
+        const af::const_ref<double, af::c_grid<3> > &image,
+        const af::const_ref<double, af::c_grid<3> > &background,
+        const af::const_ref<bool, af::c_grid<3> > &mask,
+        const af::const_ref<double, af::c_grid<2> > &z_fraction) const {
       std::size_t size = 2 * grid_half_size_ + 1;
-      flex_double image_grid(flex_grid<>(size, size, size), 0);
-      flex_double background_grid(flex_grid<>(size, size, size), 0);
+      af::c_grid<3> accessor(size, size, size);
+      af::versa<double, af::c_grid<3> > image_grid(accessor, 0);
+      af::versa<double, af::c_grid<3> > background_grid(accessor, 0);
+      af::ref<double, af::c_grid<3> > image_grid_ref = image_grid.ref();
+      af::ref<double, af::c_grid<3> > background_grid_ref = background_grid.ref();
       this->operator()(cs, bbox, image, mask, background,
-        z_fraction, image_grid, background_grid);
+        z_fraction, image_grid_ref, background_grid_ref);
       return std::make_pair(image_grid, background_grid);
     }
 
@@ -191,19 +193,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param grid The grid array (assumed to be initialised to zero)
      */
     void operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_bool &mask,
-        const flex_double z_fraction, flex_double &grid) const {
+        const af::const_ref<double, af::c_grid<3> > &image,
+        const af::const_ref<bool, af::c_grid<3> > &mask,
+        const af::const_ref<double, af::c_grid<2> > z_fraction,
+        af::ref<double, af::c_grid<3> > grid) const {
 
       // Check array sizes
-      DIALS_ASSERT(grid.accessor().all().size() == 3);
-      DIALS_ASSERT(grid.accessor().all().all_eq(2 * grid_half_size_ + 1));
-      DIALS_ASSERT(z_fraction.accessor().all()[0] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(z_fraction.accessor().all()[1] == 2 * grid_half_size_ + 1);
-      DIALS_ASSERT(image.accessor().all().size() == 3);
-      DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
-      DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
-      DIALS_ASSERT(mask.accessor().all().all_eq(image.accessor().all()));
+      DIALS_ASSERT(grid.accessor().all_eq(2 * grid_half_size_ + 1));
+      DIALS_ASSERT(z_fraction.accessor()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(z_fraction.accessor()[1] == 2 * grid_half_size_ + 1);
+      DIALS_ASSERT(image.accessor()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(image.accessor()[1] == bbox[3] - bbox[2]);
+      DIALS_ASSERT(image.accessor()[2] == bbox[1] - bbox[0]);
+      DIALS_ASSERT(mask.accessor().all_eq(image.accessor()));
       DIALS_ASSERT(bbox[0] >= 0 && bbox[1] < image_size_[1]);
       DIALS_ASSERT(bbox[2] >= 0 && bbox[3] < image_size_[0]);
 
@@ -212,8 +214,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_half_size_, s1_map_);
 
       // Call the rebinning routine and map just the signal
-      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
-      vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
+      vec2<int> isize(image.accessor()[1], image.accessor()[2]);
+      vec2<int> osize(grid.accessor()[1], grid.accessor()[2]);
       rebin_pixels_internal(isize, osize, index,
         MapSignal(mask, image, grid, z_fraction));
     }
@@ -230,23 +232,23 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param background_grid The background grid (assumed zero)
      */
     void operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &image, const flex_bool &mask,
-        const flex_double &background,
-        const flex_double z_fraction,
-        flex_double &image_grid, flex_double &background_grid) const {
+        const af::const_ref<double, af::c_grid<3> > &image,
+        const af::const_ref<bool, af::c_grid<3> > &mask,
+        const af::const_ref<double, af::c_grid<3> >&background,
+        const af::const_ref<double, af::c_grid<2> > z_fraction,
+        af::ref<double, af::c_grid<3> > image_grid,
+        af::ref<double, af::c_grid<3> > background_grid) const {
 
       // Check array sizes
-      DIALS_ASSERT(image_grid.accessor().all().size() == 3);
-      DIALS_ASSERT(image_grid.accessor().all().all_eq(2 * grid_half_size_ + 1));
-      DIALS_ASSERT(background_grid.accessor().all().all_eq(image_grid.accessor().all()));
-      DIALS_ASSERT(z_fraction.accessor().all()[0] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(z_fraction.accessor().all()[1] == 2 * grid_half_size_ + 1);
-      DIALS_ASSERT(image.accessor().all().size() == 3);
-      DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
-      DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
-      DIALS_ASSERT(mask.accessor().all().all_eq(image.accessor().all()));
-      DIALS_ASSERT(background.accessor().all().all_eq(image.accessor().all()));
+      DIALS_ASSERT(image_grid.accessor().all_eq(2 * grid_half_size_ + 1));
+      DIALS_ASSERT(background_grid.accessor().all_eq(image_grid.accessor()));
+      DIALS_ASSERT(z_fraction.accessor()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(z_fraction.accessor()[1] == 2 * grid_half_size_ + 1);
+      DIALS_ASSERT(image.accessor()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(image.accessor()[1] == bbox[3] - bbox[2]);
+      DIALS_ASSERT(image.accessor()[2] == bbox[1] - bbox[0]);
+      DIALS_ASSERT(mask.accessor().all_eq(image.accessor()));
+      DIALS_ASSERT(background.accessor().all_eq(image.accessor()));
       DIALS_ASSERT(bbox[0] >= 0 && bbox[1] < image_size_[1]);
       DIALS_ASSERT(bbox[2] >= 0 && bbox[3] < image_size_[0]);
 
@@ -255,11 +257,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_half_size_, s1_map_);
 
       // Call the rebinning routine and map just the signal
-      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
-      vec2<int> osize(image_grid.accessor().all()[1], image_grid.accessor().all()[2]);
+      vec2<int> isize(image.accessor()[1], image.accessor()[2]);
+      vec2<int> osize(image_grid.accessor()[1], image_grid.accessor()[2]);
       rebin_pixels_internal(isize, osize, index,
         MapSignalAndBackground(mask, image, background, image_grid,
-          background_grid,z_fraction));
+          background_grid, z_fraction));
     }
 
   private:
@@ -268,14 +270,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * A struct used as a callback in the function rebin pixels
      */
     struct MapSignal {
-      MapSignal(flex_bool mask_, flex_double input_,
-                flex_double output_, flex_double z_fraction_)
+      MapSignal(af::const_ref<bool, af::c_grid<3> > mask_,
+                af::const_ref<double, af::c_grid<3> > input_,
+                af::ref<double, af::c_grid<3> > output_,
+                af::const_ref<double, af::c_grid<2> > z_fraction_)
         : mask(mask_),
           input(input_),
           output(output_),
           z_fraction(z_fraction_),
-          input_depth(input.accessor().all()[0]),
-          output_depth(output.accessor().all()[0]){}
+          input_depth(input.accessor()[0]),
+          output_depth(output.accessor()[0]){}
 
       void operator()(std::size_t j, std::size_t i,
                       std::size_t jj, std::size_t ii,
@@ -291,10 +295,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         }
       }
 
-      flex_bool mask;
-      flex_double input;
-      flex_double output;
-      flex_double z_fraction;
+      af::const_ref<bool, af::c_grid<3> > mask;
+      af::const_ref<double, af::c_grid<3> > input;
+      af::ref<double, af::c_grid<3> > output;
+      af::const_ref<double, af::c_grid<2> > z_fraction;
       std::size_t input_depth;
       std::size_t output_depth;
     };
@@ -303,17 +307,21 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * A struct used as a callback in the function rebin pixels
      */
     struct MapSignalAndBackground {
-      MapSignalAndBackground(flex_bool mask_, flex_double image_,
-            flex_double background_, flex_double image_grid_,
-            flex_double background_grid_, flex_double z_fraction_)
+      MapSignalAndBackground(
+            const af::const_ref<bool, af::c_grid<3> > &mask_,
+            const af::const_ref<double, af::c_grid<3> > &image_,
+            const af::const_ref<double, af::c_grid<3> > &background_,
+            af::ref<double, af::c_grid<3> > image_grid_,
+            af::ref<double, af::c_grid<3> > background_grid_,
+            const af::const_ref<double, af::c_grid<2> > &z_fraction_)
         : mask(mask_),
           image(image_),
           background(background_),
           image_grid(image_grid_),
           background_grid(background_grid_),
           z_fraction(z_fraction_),
-          image_depth(image.accessor().all()[0]),
-          grid_depth(image_grid.accessor().all()[0]){}
+          image_depth(image.accessor()[0]),
+          grid_depth(image_grid.accessor()[0]){}
 
       void operator()(std::size_t j, std::size_t i,
                       std::size_t jj, std::size_t ii,
@@ -331,17 +339,17 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         }
       }
 
-      flex_bool mask;
-      flex_double image;
-      flex_double background;
-      flex_double image_grid;
-      flex_double background_grid;
-      flex_double z_fraction;
+      af::const_ref<bool, af::c_grid<3> > mask;
+      af::const_ref<double, af::c_grid<3> > image;
+      af::const_ref<double, af::c_grid<3> > background;
+      af::ref<double, af::c_grid<3> > image_grid;
+      af::ref<double, af::c_grid<3> > background_grid;
+      af::const_ref<double, af::c_grid<2> > z_fraction;
       std::size_t image_depth;
       std::size_t grid_depth;
     };
 
-    flex_vec3_double s1_map_;
+    af::versa< vec3<double>, af::c_grid<2> > s1_map_;
     std::size_t grid_half_size_;
     vec2<double> step_size_;
     vec2<std::size_t> image_size_;
@@ -360,15 +368,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param grid_half_size The grid half size
      * @param step_size The grid step size
      */
-    MapPixelsReverse(const flex_vec3_double &s1_map, std::size_t grid_half_size,
-        vec2<double> step_size)
+    MapPixelsReverse(const af::versa< vec3<double>, af::c_grid<2> > &s1_map,
+        std::size_t grid_half_size, vec2<double> step_size)
       : s1_map_(s1_map),
         grid_half_size_(grid_half_size),
         step_size_(step_size) {
       DIALS_ASSERT(grid_half_size > 0);
       DIALS_ASSERT(step_size_[0] > 0.0 && step_size_[1] > 0.0);
-      image_size_ = vec2<std::size_t>(s1_map.accessor().all()[0],
-                                      s1_map.accessor().all()[1]);
+      image_size_ = s1_map.accessor();
     }
 
     /**
@@ -379,13 +386,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param z_fraction The z fraction array
      * @returns The mapped image
      */
-    flex_double operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &grid,
-        const flex_double &z_fraction) const {
-      flex_double image(flex_grid<>(bbox[5] - bbox[4],
-                                    bbox[3] - bbox[2],
-                                    bbox[1] - bbox[0]), 0);
-      this->operator()(cs, bbox, grid, z_fraction, image);
+    af::versa<double, af::c_grid<3> > operator()(
+        const CoordinateSystem &cs, int6 bbox,
+        const af::const_ref<double, af::c_grid<3> > &grid,
+        const af::const_ref<double, af::c_grid<2> > &z_fraction) const {
+      af::versa<double, af::c_grid<3> > image(
+        af::c_grid<3>(bbox[5] - bbox[4],
+                      bbox[3] - bbox[2],
+                      bbox[1] - bbox[0]), 0);
+      af::ref<double, af::c_grid<3> > image_ref = image.ref();
+      this->operator()(cs, bbox, grid, z_fraction, image_ref);
       return image;
     }
 
@@ -398,18 +408,17 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param image The mapped image
      */
     void operator()(const CoordinateSystem &cs, int6 bbox,
-        const flex_double &grid, const flex_double z_fraction,
-        flex_double &image) const {
+        const af::const_ref< double, af::c_grid<3> > &grid,
+        const af::const_ref< double, af::c_grid<2> > &z_fraction,
+        af::ref< double, af::c_grid<3> > image) const {
 
       // Check array sizes
-      DIALS_ASSERT(grid.accessor().all().size() == 3);
-      DIALS_ASSERT(grid.accessor().all().all_eq(2 * grid_half_size_ + 1));
-      DIALS_ASSERT(z_fraction.accessor().all()[1] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(z_fraction.accessor().all()[0] == 2 * grid_half_size_ + 1);
-      DIALS_ASSERT(image.accessor().all().size() == 3);
-      DIALS_ASSERT(image.accessor().all()[0] == bbox[5] - bbox[4]);
-      DIALS_ASSERT(image.accessor().all()[1] == bbox[3] - bbox[2]);
-      DIALS_ASSERT(image.accessor().all()[2] == bbox[1] - bbox[0]);
+      DIALS_ASSERT(grid.accessor().all_eq(2 * grid_half_size_ + 1));
+      DIALS_ASSERT(z_fraction.accessor()[1] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(z_fraction.accessor()[0] == 2 * grid_half_size_ + 1);
+      DIALS_ASSERT(image.accessor()[0] == bbox[5] - bbox[4]);
+      DIALS_ASSERT(image.accessor()[1] == bbox[3] - bbox[2]);
+      DIALS_ASSERT(image.accessor()[2] == bbox[1] - bbox[0]);
       DIALS_ASSERT(bbox[0] >= 0 && bbox[1] <= image_size_[1]);
       DIALS_ASSERT(bbox[2] >= 0 && bbox[3] <= image_size_[0]);
 
@@ -420,18 +429,18 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 //      FIXME: To use templated stuff need to divie by subject area and not
 //      by target area. Needs a bit of rejigging.
 //      // Call the rebinning routine and map the grid
-//      vec2<int> isize(image.accessor().all()[1], image.accessor().all()[2]);
-//      vec2<int> osize(grid.accessor().all()[1], grid.accessor().all()[2]);
+//      vec2<int> isize(image.accessor()[1], image.accessor()[2]);
+//      vec2<int> osize(grid.accessor()[1], grid.accessor()[2]);
 //      rebin_pixels_internal(isize, osize, index,
 //        MapGrid(image, grid, z_fraction));
 
       // Get the input and output sizes
-      std::size_t grid_depth = grid.accessor().all()[0];
-      std::size_t grid_height = grid.accessor().all()[1];
-      std::size_t grid_width = grid.accessor().all()[2];
-      std::size_t image_depth = image.accessor().all()[0];
-      std::size_t image_height = image.accessor().all()[1];
-      std::size_t image_width = image.accessor().all()[2];
+      std::size_t grid_depth = grid.accessor()[0];
+      std::size_t grid_height = grid.accessor()[1];
+      std::size_t grid_width = grid.accessor()[2];
+      std::size_t image_depth = image.accessor()[0];
+      std::size_t image_height = image.accessor()[1];
+      std::size_t image_width = image.accessor()[2];
 
       // Initialise all output counts to zero
       for (std::size_t j = 0; j < image.size(); ++j) {
@@ -488,7 +497,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
               // clip the polygon with the target polygon and calculate the
               // fraction of the area of the clipped polygon against the target.
-              // Then redistribute the values from the target grid to the subject.
+              // Then redistribute the values from the target grid to subject.
               vert8 result = quad_with_convex_quad(subject, target);
               double result_area = simple_area(result);
               double xy_fraction = result_area / 1.0;
@@ -512,12 +521,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * A struct used as a callback in the function rebin pixels
      */
     struct MapGrid {
-      MapGrid(flex_double image_, flex_double grid_, flex_double z_fraction_)
+      MapGrid(af::ref< double, af::c_grid<3> > image_,
+              af::const_ref< double, af::c_grid<3> > &grid_,
+              af::const_ref< double, af::c_grid<2> > &z_fraction_)
         : image(image_),
           grid(grid_),
           z_fraction(z_fraction_),
-          image_depth(image.accessor().all()[0]),
-          grid_depth(grid.accessor().all()[0]){}
+          image_depth(image.accessor()[0]),
+          grid_depth(grid.accessor()[0]){}
 
       void operator()(std::size_t j, std::size_t i,
                       std::size_t jj, std::size_t ii,
@@ -531,14 +542,14 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         }
       }
 
-      flex_double image;
-      flex_double grid;
-      flex_double z_fraction;
+      af::ref< double, af::c_grid<3> > image;
+      af::const_ref< double, af::c_grid<3> > grid;
+      af::const_ref< double, af::c_grid<2> > z_fraction;
       std::size_t image_depth;
       std::size_t grid_depth;
     };
 
-    flex_vec3_double s1_map_;
+    af::versa< vec3<double>, af::c_grid<2> > s1_map_;
     std::size_t grid_half_size_;
     vec2<double> step_size_;
     vec2<std::size_t> image_size_;

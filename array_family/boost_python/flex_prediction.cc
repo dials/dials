@@ -16,14 +16,13 @@
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/prediction.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
   using namespace scitbx::af::boost_python;
-  using scitbx::af::const_ref;
-  using scitbx::af::shared;
   using scitbx::vec2;
   using scitbx::vec3;
   using dials::model::Prediction;
@@ -32,112 +31,112 @@ namespace dials { namespace af { namespace boost_python {
 
   /** @returns An array of miller indices */
   static
-  shared<MillerIndex> prediction_miller_index(
-      const const_ref<Prediction> &obj) {
-     shared<MillerIndex> result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared<MillerIndex> prediction_miller_index(
+      const af::const_ref<Prediction> &obj) {
+    af::shared<MillerIndex> result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].miller_index;
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of beam vectors */
   static
-  shared< vec3<double> > prediction_beam_vector(
-      const const_ref<Prediction> &obj) {
-     shared< vec3<double> > result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared< vec3<double> > prediction_beam_vector(
+      const af::const_ref<Prediction> &obj) {
+    af::shared< vec3<double> > result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].beam_vector;
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of panel numbers */
   static
-  shared<int> prediction_panel(
-      const const_ref<Prediction> &obj) {
-     shared<int> result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared<int> prediction_panel(
+      const af::const_ref<Prediction> &obj) {
+    af::shared<int> result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].panel;
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of entering flags */
   static
-  shared<bool> prediction_entering(
-      const const_ref<Prediction> &obj) {
-     shared<bool> result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared<bool> prediction_entering(
+      const af::const_ref<Prediction> &obj) {
+    af::shared<bool> result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].entering;
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of pixel positions */
   static
-  shared< vec3<double> > prediction_position_px(
-      const const_ref<Prediction> &obj) {
-     shared< vec3<double> > result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared< vec3<double> > prediction_position_px(
+      const af::const_ref<Prediction> &obj) {
+    af::shared< vec3<double> > result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.px;
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of pixel xy coordinates */
   static
-  shared< vec2<double> > prediction_position_px_xy(
-      const const_ref<Prediction> &obj) {
-     shared< vec2<double> > result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared< vec2<double> > prediction_position_px_xy(
+      const af::const_ref<Prediction> &obj) {
+    af::shared< vec2<double> > result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = vec2<double>(obj[i].position.px[0], obj[i].position.px[1]);
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of frames */
   static
-  shared<double> prediction_position_frame(
-      const const_ref<Prediction> &obj) {
-     shared<double> result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared<double> prediction_position_frame(
+      const af::const_ref<Prediction> &obj) {
+    af::shared<double> result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.px[2];
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of millimeter positions */
   static
-  shared< vec3<double> > prediction_position_mm(
-      const const_ref<Prediction> &obj) {
-     shared< vec3<double> > result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared< vec3<double> > prediction_position_mm(
+      const af::const_ref<Prediction> &obj) {
+    af::shared< vec3<double> > result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.mm;
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of millimeter xy coordinates */
   static
-  shared< vec2<double> > prediction_position_mm_xy(
-      const const_ref<Prediction> &obj) {
-     shared< vec2<double> > result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared< vec2<double> > prediction_position_mm_xy(
+      const af::const_ref<Prediction> &obj) {
+    af::shared< vec2<double> > result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = vec2<double>(obj[i].position.mm[0], obj[i].position.mm[1]);
-     }
-     return result;
+    }
+    return result;
   }
 
   /** @returns An array of angles */
   static
-  shared<double> prediction_position_angle(
-      const const_ref<Prediction> &obj) {
-     shared<double> result(obj.size());
-     for (std::size_t i = 0; i < result.size(); ++i) {
+  af::shared<double> prediction_position_angle(
+      const af::const_ref<Prediction> &obj) {
+    af::shared<double> result(obj.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.mm[2];
-     }
-     return result;
+    }
+    return result;
   }
 
   /**

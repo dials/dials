@@ -13,8 +13,6 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/shared.h>
-#include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/detector.h>
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
@@ -24,10 +22,8 @@ namespace dials { namespace algorithms {
   // Using lots of stuff from other namespaces
   using scitbx::vec2;
   using scitbx::vec3;
-  using scitbx::af::shared;
   using dxtbx::model::Detector;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
 
   /**
    * Calculate the intersection of a ray (given by the reflection object) with
@@ -88,9 +84,9 @@ namespace dials { namespace algorithms {
    * @returns The new reflecton object
    */
   inline
-  shared<Reflection> ray_intersection(const Detector &detector,
-      const ReflectionList &reflections) {
-    shared<Reflection> reflections_new;
+  af::shared<Reflection> ray_intersection(const Detector &detector,
+      const af::const_ref<Reflection> &reflections) {
+    af::shared<Reflection> reflections_new;
     reflections_new.reserve(reflections.size());
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       try {
@@ -113,9 +109,9 @@ namespace dials { namespace algorithms {
    * @returns The new reflecton object
    */
   inline
-  shared<Reflection> ray_intersection(const Detector &detector,
-      const ReflectionList &reflections, std::size_t panel) {
-    shared<Reflection> reflections_new;
+  af::shared<Reflection> ray_intersection(const Detector &detector,
+      const af::const_ref<Reflection> &reflections, std::size_t panel) {
+    af::shared<Reflection> reflections_new;
     reflections_new.reserve(reflections.size());
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       try {

@@ -66,13 +66,6 @@ namespace dials { namespace model { namespace boost_python {
     obj.px[2] = v;
   }
   
-  /** Copy the prediction */
-  static
-  Prediction deepcopy(const Prediction &obj) {
-    Prediction result(obj);
-    return result;
-  }  
-  
   void export_prediction()
   {
     class_<Prediction::PositionData>("PositionData")
@@ -102,6 +95,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("__ne__", &Prediction::PositionData::operator!=);
     
     class_<Prediction>("Prediction")
+      .def(init<const Prediction &>())
       .add_property("miller_index",
         make_getter(&Prediction::miller_index, 
           return_value_policy<return_by_value>()),
@@ -116,8 +110,7 @@ namespace dials { namespace model { namespace boost_python {
       .def_readwrite("panel", &Prediction::panel)
       .def_readwrite("entering", &Prediction::entering)
       .def("__eq__", &Prediction::operator==)
-      .def("__ne__", &Prediction::operator!=)
-      .def("deepcopy", &deepcopy);
+      .def("__ne__", &Prediction::operator!=);
   }
 
 }}} // namespace dials::model::boost_python

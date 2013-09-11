@@ -10,6 +10,8 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <scitbx/array_family/boost_python/c_grid_flex_conversions.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace af { namespace boost_python {
 
@@ -24,6 +26,8 @@ namespace dials { namespace af { namespace boost_python {
     export_flex_shoebox();
     export_flex_observation();
     export_flex_prediction();
+    
+    scitbx::af::boost_python::c_grid_flex_conversions<double, af::c_grid<4> >();
   }
 
 }}} // namespace = dials::af::boost_python

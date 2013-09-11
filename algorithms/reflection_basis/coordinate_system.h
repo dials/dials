@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H
-#define DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H
+#ifndef DIALS_ALGORITHMS_REFLECTION_BASIS_COORDINATE_SYSTEM_H
+#define DIALS_ALGORITHMS_REFLECTION_BASIS_COORDINATE_SYSTEM_H
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
@@ -257,7 +257,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     /**
      * Initialise the class using the coordinate system
-     * @param cs The reflextion coordinate system
+     * @param cs The reflection coordinate system
      */
     FromRotationAngleAccurate(const CoordinateSystem &cs)
       : m2_(cs.m2().normalize()),
@@ -598,4 +598,4 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
 }}} // namespace = dials::algorithms::reflection_basis
 
-#endif // DIALS_ALGORITHMS_REFLEXION_BASIS_COORDINATE_SYSTEM_H
+#endif // DIALS_ALGORITHMS_REFLECTION_BASIS_COORDINATE_SYSTEM_H

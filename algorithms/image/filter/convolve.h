@@ -15,14 +15,14 @@
 
 #include <algorithm>
 #include <cmath>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::flex_double;
+  using scitbx::af::int2;
 
   /**
    * Perform a simple convolution between an image and kernel
@@ -31,25 +31,21 @@ namespace dials { namespace algorithms {
    * @returns The convolved image
    */
   inline
-  flex_double convolve(const flex_double &image, const flex_double &kernel) {
-
-    typedef flex_double::index_type index_type;
-
-    // Check the input
-    DIALS_ASSERT(image.accessor().all().size() == 2);
-    DIALS_ASSERT(kernel.accessor().all().size() == 2);
+  af::versa< double, af::c_grid<2> > convolve(
+      const af::const_ref<double, af::c_grid<2> > &image,
+      const af::const_ref<double, af::c_grid<2> > &kernel) {
 
     // Only allow odd-sized kernel sizes
-    DIALS_ASSERT(kernel.accessor().all()[0] & 1);
-    DIALS_ASSERT(kernel.accessor().all()[1] & 1);
+    DIALS_ASSERT(kernel.accessor()[0] & 1);
+    DIALS_ASSERT(kernel.accessor()[1] & 1);
 
     // The image sizes and mid-point
-    index_type isz = image.accessor().all();
-    index_type ksz = kernel.accessor().all();
-    index_type mid(ksz[0] / 2, ksz[1] / 2);
+    int2 isz = image.accessor();
+    int2 ksz = kernel.accessor();
+    int2 mid(ksz[0] / 2, ksz[1] / 2);
 
     // Create the output
-    flex_double result(image.accessor());
+    af::versa< double, af::c_grid<2> > result(image.accessor());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -80,24 +76,20 @@ namespace dials { namespace algorithms {
    * @returns The convolved image
    */
   inline
-  flex_double convolve_row(const flex_double &image, const flex_double &kernel) {
-
-    typedef flex_double::index_type index_type;
-
-    // Check the input
-    DIALS_ASSERT(image.accessor().all().size() == 2);
-    DIALS_ASSERT(kernel.accessor().all().size() == 1);
+  af::versa< double, af::c_grid<2> > convolve_row(
+      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< double > &kernel) {
 
     // Only allow odd-sized kernel sizes
-    DIALS_ASSERT(kernel.accessor().all()[0] & 1);
+    DIALS_ASSERT(kernel.size() & 1);
 
     // The image sizes and mid-point
-    index_type isz = image.accessor().all();
-    std::size_t ksz = kernel.accessor().all()[0];
+    int2 isz = image.accessor();
+    std::size_t ksz = kernel.size();
     std::size_t mid = ksz / 2;
 
     // Create the output
-    flex_double result(image.accessor());
+    af::versa< double, af::c_grid<2> > result(image.accessor());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -123,24 +115,20 @@ namespace dials { namespace algorithms {
    * @returns The convolved image
    */
   inline
-  flex_double convolve_col(const flex_double &image, const flex_double &kernel) {
-
-    typedef flex_double::index_type index_type;
-
-    // Check the input
-    DIALS_ASSERT(image.accessor().all().size() == 2);
-    DIALS_ASSERT(kernel.accessor().all().size() == 1);
+  af::versa< double, af::c_grid<2> > convolve_col(
+      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< double > &kernel) {
 
     // Only allow odd-sized kernel sizes
-    DIALS_ASSERT(kernel.accessor().all()[0] & 1);
+    DIALS_ASSERT(kernel.size() & 1);
 
     // The image sizes and mid-point
-    index_type isz = image.accessor().all();
-    std::size_t ksz = kernel.accessor().all()[0];
+    int2 isz = image.accessor();
+    std::size_t ksz = kernel.size();
     std::size_t mid = ksz / 2;
 
     // Create the output
-    flex_double result(image.accessor());
+    af::versa< double, af::c_grid<2> > result(image.accessor());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {

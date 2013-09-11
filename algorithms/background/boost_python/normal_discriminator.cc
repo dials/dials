@@ -16,7 +16,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  bool is_normally_distributed_wrapper(const const_ref<double> &data, 
+  bool is_normally_distributed_wrapper(const af::const_ref<double> &data, 
       double n_sigma) {
     if (n_sigma <= 0) {
       return is_normally_distributed(data);
@@ -43,9 +43,11 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("data"), arg("n_sigma") = -1));  
     
     // Overloads for call method
-    void (NormalDiscriminator::*call_shoebox_and_mask)(const flex_double&,
-        flex_int &) const = &NormalDiscriminator::operator();
-    flex_int (NormalDiscriminator::*call_shoebox)(const flex_double&) const =
+    void (NormalDiscriminator::*call_shoebox_and_mask)(
+      const af::const_ref<double>&,
+      af::ref<int>) const = &NormalDiscriminator::operator();
+    af::shared<int> (NormalDiscriminator::*call_shoebox)(
+      const af::const_ref<double>&) const =
       &NormalDiscriminator::operator();
     void (NormalDiscriminator::*call_reflection)(Reflection &) const =
       &NormalDiscriminator::operator();  

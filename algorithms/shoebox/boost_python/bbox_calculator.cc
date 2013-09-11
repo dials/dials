@@ -22,13 +22,14 @@ namespace dials { namespace algorithms { namespace shoebox {
     int6 (BBoxCalculator::*calculate_single)(
       vec3 <double>, double, std::size_t) const = 
         &BBoxCalculator::operator();
-    flex_int6 (BBoxCalculator::*calculate_array) (
-      const flex_vec3_double&, const flex_double &, std::size_t) const = 
+    af::shared<int6> (BBoxCalculator::*calculate_array) (
+      const af::const_ref< vec3<double> >&, 
+      const af::const_ref<double> &, std::size_t) const = 
         &BBoxCalculator::operator();
     void (BBoxCalculator::*calculate_reflection)(Reflection &) const = 
       &BBoxCalculator::operator();
     void (BBoxCalculator::*calculate_reflection_list)(
-      ReflectionList &) const = &BBoxCalculator::operator();
+      af::ref<Reflection>) const = &BBoxCalculator::operator();
 
     class_ <BBoxCalculator> ("BBoxCalculator", no_init)
       .def(init <const Beam&,

@@ -35,25 +35,26 @@ class Test(object):
         print 'OK'
 
     def tst_equality(self):
+        from dials.model.data import Prediction
 
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         assert(pred2 == self.pred)
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         pred2.miller_index = (0, 0, 0)
         assert(pred2 != self.pred)
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         pred2.beam_vector = (0, 0, 0)
         assert(pred2 != self.pred)
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         pred2.panel = 0
         assert(pred2 != self.pred)
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         pred2.entering = False
         assert(pred2 != self.pred)
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         pred2.position.px = (0, 0, 0)
         assert(pred2 != self.pred)
-        pred2 = self.pred.deepcopy()
+        pred2 = Prediction(self.pred)
         pred2.position.mm = (0, 0, 0)
         assert(pred2 != self.pred)
         print 'OK'

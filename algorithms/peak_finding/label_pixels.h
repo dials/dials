@@ -15,14 +15,11 @@
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::vec3;
-  using scitbx::af::flex_int;
-
-  typedef scitbx::af::flex< vec3<int> >::type flex_vec3_int;
 
   /** A class to label the pixels into connected components. */
   class LabelPixels {
@@ -43,8 +40,8 @@ namespace dials { namespace algorithms {
      * @param pixels The list of pixel coordinates
      * @returns A list of labels into the pixel array.
      */
-    flex_int operator()(const flex_vec3_int &pixels) {
-      flex_int labels(pixels.size());
+    af::shared<int> operator()(const af::const_ref< vec3<int> > &pixels) {
+      af::shared<int> labels(pixels.size());
 
       // Build the adjacency list from the pixels
       AdjacencyList graph(pixels.size());
@@ -74,7 +71,8 @@ namespace dials { namespace algorithms {
      * @param pixels The pixel list
      * @param graph The adjacency list
      */
-    void build_adjacency_list(flex_vec3_int pixels, AdjacencyList &graph) {
+    void build_adjacency_list(const af::const_ref< vec3<int> > &pixels,
+        AdjacencyList &graph) {
 
       // Create a hash table of the points
       boost::unordered_map<vec3<int>, int, Vec3IntHash> grid(

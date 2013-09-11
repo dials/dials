@@ -307,11 +307,11 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Create a stack and push the current node. Loop until the stack is empty.
-      // Get the node from the stack and add any contained elements in the node
-      // to the element list. Then, if the current node is not a leaf node,
-      // search through all the children and push any that collide with the
-      // object to the stack.
+      // Create a stack and push the current node. Loop until the stack is
+      // empty. Get the node from the stack and add any contained elements in
+      // the node to the element list. Then, if the current node is not a leaf
+      // node, search through all the children and push any that collide with
+      // the object to the stack.
       std::stack<const_node_pointer> stack;
       stack.push(node);
       while (!stack.empty()) {

@@ -85,16 +85,16 @@ namespace dials { namespace algorithms { namespace filter {
       arg("g"), arg("b"), arg("r"), arg("delta_m")));
     def("by_xds_angle", &by_xds_angle, (
       arg("g"), arg("b"), arg("r"), arg("delta_m")));
-    def("by_bbox_volume", (void(*)(ReflectionList&, std::size_t))
+    def("by_bbox_volume", (void(*)(af::ref<Reflection>, std::size_t))
       &by_bbox_volume, (arg("r"), arg("num")));
-    def("by_bbox_volume", (void(*)(ReflectionList&))&by_bbox_volume, (
+    def("by_bbox_volume", (void(*)(af::ref<Reflection>))&by_bbox_volume, (
       arg("r")));
       
-    void (*filter_reflection_by_detector_mask)(Reflection&, const flex_bool&,
-        int2) = &by_detector_mask;
+    void (*filter_reflection_by_detector_mask)(Reflection&, 
+      const af::const_ref< bool, af::c_grid<2> >&, int2) = &by_detector_mask;
   
-    void (*filter_reflection_list_by_detector_mask)(ReflectionList&, 
-      const flex_bool&, int2) = &by_detector_mask;
+    void (*filter_reflection_list_by_detector_mask)(af::ref<Reflection>, 
+      const af::const_ref< bool, af::c_grid<2> >&, int2) = &by_detector_mask;
   
     def("is_bbox_outside_image_range", &is_bbox_outside_image_range);
     def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels);

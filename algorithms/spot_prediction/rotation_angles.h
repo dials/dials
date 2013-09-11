@@ -15,7 +15,6 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
-#include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
 #include <dials/error.h>
 

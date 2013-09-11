@@ -13,7 +13,6 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/detector.h>
@@ -30,20 +29,15 @@ namespace dials { namespace algorithms { namespace shoebox {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_grid;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
   using dials::algorithms::reflection_basis::CoordinateSystem;
   using dials::algorithms::reflection_basis::FromRotationAngleFast;
   using dials::algorithms::reflection_basis::transform::CoordinateGenerator;
   using dials::algorithms::reflection_basis::transform::beam_vector_map;
-  typedef scitbx::af::flex< vec3<double> >::type flex_vec3_double;
 
   /**
    * A class to mask foreground/background pixels
@@ -85,7 +79,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       if (reflection.is_valid()) {
 
         // Get some bits from the reflection
-        flex_int mask = reflection.get_shoebox_mask();
+        af::ref< int, af::c_grid<3> > mask = reflection.get_shoebox_mask().ref();
         vec3<double> s1 = reflection.get_beam_vector();
         double phi = reflection.get_rotation_angle();
         int6 bbox = reflection.get_bounding_box();
@@ -97,17 +91,17 @@ namespace dials { namespace algorithms { namespace shoebox {
         int zsize = z1 - z0;
 
         // Check the size of the mask
-        DIALS_ASSERT(mask.accessor().all()[0] == zsize);
-        DIALS_ASSERT(mask.accessor().all()[1] == ysize);
-        DIALS_ASSERT(mask.accessor().all()[2] == xsize);
+        DIALS_ASSERT(mask.accessor()[0] == zsize);
+        DIALS_ASSERT(mask.accessor()[1] == ysize);
+        DIALS_ASSERT(mask.accessor()[2] == xsize);
 
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
         CoordinateGenerator coordxy(cs, x0, y0, s1_map_);
 
         // Get the size of the image
-        std::size_t width = s1_map_.accessor().all()[1];
-        std::size_t height = s1_map_.accessor().all()[0];
+        std::size_t width = s1_map_.accessor()[1];
+        std::size_t height = s1_map_.accessor()[0];
 
         // Loop through all the pixels in the shoebox, transform the point
         // to the reciprocal space coordinate system and check that it is
@@ -136,14 +130,14 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Mask all the foreground/background pixels for all the reflections
      * @param reflections The reflection list
      */
-    void operator()(ReflectionList &reflections) const {
+    void operator()(af::ref<Reflection> reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         this->operator()(reflections[i]);
       }
     }
 
   private:
-    flex_vec3_double s1_map_;
+    af::versa< vec3<double>, af::c_grid<2> > s1_map_;
     vec3<double> m2_;
     vec3<double> s0_;
     double phi0_;

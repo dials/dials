@@ -23,12 +23,10 @@ namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
   using scitbx::af::mean;
-  using scitbx::af::flex_double;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
 
   /**
    * A class to do 3D summation integration in reciprocal space
@@ -53,15 +51,16 @@ namespace dials { namespace algorithms {
     void operator()(Reflection &r) const {
 
       // Get the transformed shoebox
-      flex_double c = r.get_transformed_shoebox();
+      af::const_ref< double, af::c_grid<3> > c =
+        r.get_transformed_shoebox().const_ref();
 
       // Get the transformed background
       // HACK ALERT! Should fix: setting to mean of shoebox background
-      flex_double b = flex_double(c.accessor(),
-        mean(r.get_shoebox_background().const_ref()));
+      af::versa< double, af::c_grid<3> > b(c.accessor(), mean(
+        r.get_shoebox_background().const_ref()));
 
       // Integrate the reflection
-      integrator result = integrator(c, b);
+      integrator result = integrator(c, b.const_ref());
 
       // Set intensity data in reflection container
       r.set_intensity(result.intensity());
@@ -72,7 +71,7 @@ namespace dials { namespace algorithms {
      * Integrate a list of reflections
      * @param reflections The reflection list
      */
-    void operator()(ReflectionList &reflections) const {
+    void operator()(af::ref<Reflection> reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {
           if (reflections[i].is_valid()) {

@@ -12,7 +12,6 @@
 #define DIALS_ALGORITHMS_INTEGRATION_MASK_OVERLAPPING_H
 
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/model/data/reflection.h>
 #include <dials/model/data/adjacency_list.h>
@@ -22,11 +21,9 @@
 namespace dials { namespace algorithms { namespace shoebox {
 
   using scitbx::vec3;
+  using scitbx::af::int3;
   using scitbx::af::int6;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_int;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
   using dials::model::AdjacencyList;
 
   /** Class to calculate the shoebox masks for all reflections */
@@ -55,7 +52,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param reflections The list of reflections
      * @param adjacency_list The adjacency_list
      */
-    void operator()(ReflectionList &reflections,
+    void operator()(af::ref<Reflection> reflections,
         const boost::shared_ptr<AdjacencyList> &adjacency_list) const {
 
       // Loop through all the reflections
@@ -120,12 +117,12 @@ namespace dials { namespace algorithms { namespace shoebox {
     void assign_ownership(Reflection &a, Reflection &b) const {
 
       // Get the reflection mask arrays
-      flex_int mask_a = a.get_shoebox_mask();
-      flex_int mask_b = b.get_shoebox_mask();
+      af::ref< int, af::c_grid<3> > mask_a = a.get_shoebox_mask().ref();
+      af::ref< int, af::c_grid<3> > mask_b = b.get_shoebox_mask().ref();
 
       // Get the sizes of the masks
-      flex_int::index_type size_a = mask_a.accessor().all();
-      flex_int::index_type size_b = mask_b.accessor().all();
+      int3 size_a = mask_a.accessor();
+      int3 size_b = mask_b.accessor();
 
       // Get the bounding boxes
       int6 bbox_a = a.get_bounding_box();

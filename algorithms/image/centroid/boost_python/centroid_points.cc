@@ -25,8 +25,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     typedef CentroidPoints<CoordType> CentroidPointsType;  
     
     return class_<CentroidPointsType>(name, no_init)
-      .def(init<const flex_double&, 
-                const typename CentroidPointsType::flex_type&>((
+      .def(init<const af::const_ref<double>&, 
+                const af::const_ref<CoordType>&>((
           arg("pixels"), arg("coord"))))
       .def("sum_pixels", 
         &CentroidPointsType::sum_pixels)
@@ -52,20 +52,22 @@ namespace dials { namespace algorithms { namespace boost_python {
         &CentroidPointsType::covariance_matrix);
   }
   
-  CentroidPoints<vec2<double> > centroid_points_2d(const flex_double &pixels, 
-      const flex<vec2<double> >::type &coords) {
-    return CentroidPoints<vec2<double> >(pixels, coords);
+  CentroidPoints< vec2<double> > centroid_points_2d(
+      const af::const_ref<double> &pixels, 
+      const af::const_ref< vec2<double> > &coords) {
+    return CentroidPoints< vec2<double> >(pixels, coords);
   }
 
-  CentroidPoints<vec3<double> > centroid_points_3d(const flex_double &pixels, 
-      const flex<vec3<double> >::type &coords) {
-    return CentroidPoints<vec3<double> >(pixels, coords);
+  CentroidPoints< vec3<double> > centroid_points_3d(
+      const af::const_ref<double> &pixels, 
+      const af::const_ref< vec3<double> > &coords) {
+    return CentroidPoints< vec3<double> >(pixels, coords);
   }
 
   void export_centroid_points() 
   {
-    class_centroid_points<vec2<double> >("CentroidPoints2d");
-    class_centroid_points<vec3<double> >("CentroidPoints3d");
+    class_centroid_points< vec2<double> >("CentroidPoints2d");
+    class_centroid_points< vec3<double> >("CentroidPoints3d");
     
     def("centroid_points", &centroid_points_2d, (
       arg("pixels"), arg("coords")));

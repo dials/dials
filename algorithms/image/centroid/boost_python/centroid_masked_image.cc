@@ -20,12 +20,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     class_<CentroidMaskedImage2d, bases<CentroidPoints <vec2<double> > > >(
         "CentroidMaskedImage2d", no_init)
-      .def(init<const flex_double&, const flex_int&>((
+      .def(init<const af::const_ref<double, af::c_grid<2> >&, 
+                const af::const_ref<int, af::c_grid<2> >&>((
         arg("image"), arg("mask"))));
 
     class_<CentroidMaskedImage3d, bases<CentroidPoints <vec3<double> > > >(
         "CentroidMaskedImage3d", no_init)
-      .def(init<const flex_double&, const flex_int&>((
+      .def(init<const af::const_ref<double, af::c_grid<3> >&, 
+                const af::const_ref<int, af::c_grid<3> >&>((
         arg("image"), arg("mask"))));
   }
 

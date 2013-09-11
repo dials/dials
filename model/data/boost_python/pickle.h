@@ -24,7 +24,6 @@ namespace dials { namespace model { namespace boost_python {
     namespace reflection {
 
   using namespace boost::python;
-  using scitbx::af::flex_grid;
 
   struct to_string : scitbx::af::boost_python::pickle_double_buffered::to_string
   {
@@ -37,9 +36,9 @@ namespace dials { namespace model { namespace boost_python {
 
     template <typename ProfileType>
     void profile_to_string(const ProfileType &p) {
-      *this << p.accessor().all().size();
-      for (std::size_t i = 0; i < p.accessor().all().size(); ++i) {
-        *this << p.accessor().all()[i];
+      *this << p.accessor().size();
+      for (std::size_t i = 0; i < p.accessor().size(); ++i) {
+        *this << p.accessor()[i];
       }
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this << p[i];
@@ -103,14 +102,22 @@ namespace dials { namespace model { namespace boost_python {
 
     template <typename ProfileType>
     ProfileType profile_from_string() {
+      typedef typename ProfileType::accessor_type accessor_type;
       typename ProfileType::index_type shape;
       typename ProfileType::size_type n_dim;
       *this >> n_dim;
-      shape.resize(n_dim);
-      for (std::size_t i = 0; i < n_dim; ++i) {
-        *this >> shape[i];
+      if (n_dim == 0) {
+        for (std::size_t i = 0; i < shape.size(); ++i) {
+          shape[i] = 0;
+        }
+      } else if (n_dim == shape.size()) {
+        for (std::size_t i = 0; i < shape.size(); ++i) {
+          *this >> shape[i];
+        }
+      } else {
+        DIALS_ERROR("n_dim != shape.size()");
       }
-      ProfileType p = ProfileType(flex_grid<>(shape));
+      ProfileType p = ProfileType(accessor_type(shape));
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this >> p[i];
       }
@@ -153,10 +160,10 @@ namespace dials { namespace model { namespace boost_python {
             >> val.corrected_intensity_
             >> val.corrected_intensity_variance_;
 
-      val.shoebox_ = profile_from_string<flex_double>();
-      val.shoebox_mask_ = profile_from_string<flex_int>();
-      val.shoebox_background_ = profile_from_string<flex_double>();
-      val.transformed_shoebox_ = profile_from_string<flex_double>();
+      val.shoebox_ = profile_from_string< af::versa< double, af::c_grid<3> > >();
+      val.shoebox_mask_ = profile_from_string< af::versa< int, af::c_grid<3> > >();
+      val.shoebox_background_ = profile_from_string< af::versa< double, af::c_grid<3> > >();
+      val.transformed_shoebox_ = profile_from_string< af::versa< double, af::c_grid<3> > >();
       return *this;
     }
 

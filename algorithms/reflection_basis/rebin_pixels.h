@@ -8,12 +8,11 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H
-#define DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H
+#ifndef DIALS_ALGORITHMS_REFLECTION_BASIS_REBIN_PIXELS_H
+#define DIALS_ALGORITHMS_REFLECTION_BASIS_REBIN_PIXELS_H
 
 #include <cmath>
 #include <scitbx/vec2.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/algorithms/polygon/clip/clip.h>
@@ -26,7 +25,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using std::floor;
   using std::ceil;
   using scitbx::vec2;
-  using scitbx::af::flex_double;
+  using scitbx::af::int2;
   using scitbx::af::double4;
   using scitbx::af::max;
   using scitbx::af::min;
@@ -34,8 +33,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using dials::algorithms::polygon::clip::vert4;
   using dials::algorithms::polygon::clip::vert8;
   using dials::algorithms::polygon::clip::quad_with_convex_quad;
-
-  typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
 
   /**
    * Rebin pixels onto a regular grid
@@ -45,12 +42,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @param map_values The function to map the values
    */
   template <typename MappingFunction, typename InputXYType>
-  void rebin_pixels_internal(vec2<int> input_size, vec2<int> output_size,
+  void rebin_pixels_internal(int2 input_size, int2 output_size,
     const InputXYType &inputxy, MappingFunction map_values) {
 
     // Check the data sizes
-    DIALS_ASSERT(input_size[0] > 0 && input_size[1] > 0);
-    DIALS_ASSERT(output_size[0] > 0 && output_size[1] > 0);
+    DIALS_ASSERT(input_size.all_gt(0) && output_size.all_gt(0));
 
     // Get the input and output sizes
     std::size_t output_height = output_size[0];
@@ -125,7 +121,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * A struct used as a callback in the function rebin pixels
    */
   struct Map2DImagePixels {
-    Map2DImagePixels(flex_double input_, flex_double output_)
+    Map2DImagePixels(const af::const_ref<double, af::c_grid<2> > &input_,
+                     af::ref<double, af::c_grid<2> > output_)
       : input(input_),
         output(output_) {}
 
@@ -135,8 +132,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       output(jj, ii) += fraction * input(j, i);
     }
 
-    flex_double input;
-    flex_double output;
+    af::const_ref<double, af::c_grid<2> > input;
+    af::ref<double, af::c_grid<2> > output;
   };
 
   /**
@@ -146,18 +143,15 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @param inputxy The input x/y coordinates
    */
   inline
-  void rebin_pixels(flex_double &output, const flex_double &input,
-      const flex_vec2_double &inputxy) {
-    DIALS_ASSERT(inputxy.accessor().all().size() == 2);
-    DIALS_ASSERT(input.accessor().all().size() == 2);
-    DIALS_ASSERT(output.accessor().all().size() == 2);
-    DIALS_ASSERT(inputxy.accessor().all()[0] == input.accessor().all()[0] + 1);
-    DIALS_ASSERT(inputxy.accessor().all()[1] == input.accessor().all()[1] + 1);
-    vec2<int> isize(input.accessor().all()[0], input.accessor().all()[1]);
-    vec2<int> osize(output.accessor().all()[0], output.accessor().all()[1]);
-    rebin_pixels_internal(isize, osize, inputxy, Map2DImagePixels(input, output));
+  void rebin_pixels(af::ref< double, af::c_grid<2> > output,
+      const af::const_ref< double, af::c_grid<2> > &input,
+      const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy) {
+    DIALS_ASSERT(inputxy.accessor()[0] == input.accessor()[0] + 1);
+    DIALS_ASSERT(inputxy.accessor()[1] == input.accessor()[1] + 1);
+    rebin_pixels_internal(input.accessor(), output.accessor(), inputxy,
+      Map2DImagePixels(input, output));
   }
 
 }}}} // dials::algorithms::reflection_basis::transform
 
-#endif /* DIALS_ALGORITHMS_REFLEXION_BASIS_REBIN_PIXELS_H */
+#endif /* DIALS_ALGORITHMS_REFLECTION_BASIS_REBIN_PIXELS_H */

@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_fano_filter() 
   {
     class_<FanoFilter>("FanoFilter", no_init)
-      .def(init<const flex_double&, int2>((
+      .def(init<const af::const_ref< double, af::c_grid<2> >&, int2>((
         arg("image"), 
         arg("size"))))
       .def("fano", &FanoFilter::fano)
@@ -28,7 +28,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("mask", &FanoFilter::mask);
 
     class_<FanoFilterMasked>("FanoFilterMasked", no_init)
-      .def(init<const flex_double&, const flex_int&, int2, int>((
+      .def(init<const af::const_ref< double, af::c_grid<2> >&, 
+                const af::const_ref< int, af::c_grid<2> >&, int2, int>((
         arg("image"), 
         arg("mask"), 
         arg("size"), 

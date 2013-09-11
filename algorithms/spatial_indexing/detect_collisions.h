@@ -488,8 +488,8 @@ namespace dials { namespace algorithms {
 
     /**
      * Parition the data based on the lower bound of the data in the given
-     * axis. All elements with their lower bound lower than the split to the left,
-     * all others to the right.
+     * axis. All elements with their lower bound lower than the split to the
+     * left, all others to the right.
      */
     template <int D>
     struct by_lower {
@@ -507,8 +507,8 @@ namespace dials { namespace algorithms {
 
     /**
      * Parition the data based on the upper bound of the data in the given
-     * axis. All elements with their upper bound lower than the split to the left,
-     * all others to the right.
+     * axis. All elements with their upper bound lower than the split to the
+     * left, all others to the right.
      */
     template <int D>
     struct by_upper {

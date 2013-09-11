@@ -15,7 +15,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <dials/error.h>
@@ -24,10 +23,6 @@
 namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
-  using scitbx::af::flex;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_double;
 
   /**
    * Calculate the mean box filtered image.
@@ -36,10 +31,19 @@ namespace dials { namespace algorithms {
    * @returns The filtered image
    */
   inline
-  flex_double mean_filter(const flex_double &image, int2 size) {
-    flex_double mean = summed_area<double>(image, size);
+  af::versa< double, af::c_grid<2> > mean_filter(
+      const af::const_ref< double, af::c_grid<2> > &image,
+      int2 size) {
+
+    // Check the input is valid
+    DIALS_ASSERT(size.all_gt(0));
+    DIALS_ASSERT(image.accessor().all_gt(0));
+
+    // Get the summed area image
+    af::versa< double, af::c_grid<2> > mean = summed_area<double>(image, size);
     double inv_count = 1.0 / ((double)(2 * size[0] + 1) * (2 * size[1] + 1));
 
+    // Calculate the mean at each point
     #pragma omp parallel for
     for (std::size_t i = 0; i < mean.size(); ++i) {
       mean[i] *= inv_count;
@@ -66,14 +70,14 @@ namespace dials { namespace algorithms {
    * @returns The filtered image
    */
   inline
-  flex_double mean_filter_masked(const flex_double &image,
-      flex_int &mask, int2 size, int min_count) {
+  af::versa< double, af::c_grid<2> > mean_filter_masked(
+      const af::const_ref< double, af::c_grid<2> > &image,
+      af::ref< int, af::c_grid<2> > mask, int2 size, int min_count) {
 
     // Check the input is valid
-    DIALS_ASSERT(size[0] > 0 && size[1] > 0);
-    DIALS_ASSERT(image.accessor().all().size() == 2);
-    DIALS_ASSERT(image.accessor().all().all_gt(0));
-    DIALS_ASSERT(image.accessor().all().all_eq(mask.accessor().all()));
+    DIALS_ASSERT(size.all_gt(0));
+    DIALS_ASSERT(image.accessor().all_gt(0));
+    DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
 
     // Ensure the min counts are valid
     if (min_count <= 0) {
@@ -83,18 +87,19 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the summed area under the mask
-    flex_int summed_mask = summed_area<int>(mask, size);
+    af::versa< int, af::c_grid<2> > summed_mask = summed_area<int>(mask, size);
 
     // Ensure that all masked pixels are zero in the image and update the mask
-    flex_double temp(image);
+    af::versa< double, af::c_grid<2> > temp(image.accessor());
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
-      temp[i] *= (mask[i] != 0);
+      temp[i] = image[i] * (mask[i] != 0);
       mask[i] *= (summed_mask[i] >= min_count);
     }
 
     // Calculate the summed area under the image
-    flex_double summed_image = summed_area<double>(temp, size);
+    af::versa< double, af::c_grid<2> > summed_image =
+      summed_area<double>(temp.const_ref(), size);
 
     // Calculate the mean filtered image
     #pragma omp parallel for
@@ -122,15 +127,15 @@ namespace dials { namespace algorithms {
      * @params image The image to filter
      * @param size The size of the filter kernel (2 * size + 1)
      */
-    MeanAndVarianceFilter(const flex_double &image, int2 size) {
+    MeanAndVarianceFilter(const af::const_ref<double, af::c_grid<2> > &image,
+        int2 size) {
 
       // Check the input is valid
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
-      DIALS_ASSERT(image.accessor().all().size() == 2);
-      DIALS_ASSERT(image.accessor().all().all_gt(0));
+      DIALS_ASSERT(size.all_gt(0));
+      DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Calculate the squared image
-      flex_double image_sq(image.accessor());
+      af::versa< double, af::c_grid<2> > image_sq(image.accessor());
       #pragma omp parallel for
       for (std::size_t i = 0; i < image.size(); ++i) {
         image_sq[i] = image[i] * image[i];
@@ -143,15 +148,15 @@ namespace dials { namespace algorithms {
 
       // Calculate the summed area under the image and image**2
       sum_ = summed_area<double>(image, size);
-      sq_sum_ = summed_area<double>(image_sq, size);
+      sq_sum_ = summed_area<double>(image_sq.const_ref(), size);
     }
 
     /**
      * Calculate the mean filtered image
      * @returns The mean filtered image.
      */
-    flex_double mean() const {
-      flex_double m(sum_.accessor());
+    af::versa< double, af::c_grid<2> > mean() const {
+      af::versa< double, af::c_grid<2> > m(sum_.accessor());
       #pragma omp parallel for
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         m[i] = sum_[i] * inv_count_;
@@ -163,8 +168,8 @@ namespace dials { namespace algorithms {
      * Calculate the variance filtered image
      * @returns The variance filtered image
      */
-    flex_double variance() const {
-      flex_double v(sum_.accessor());
+    af::versa< double, af::c_grid<2> > variance() const {
+      af::versa< double, af::c_grid<2> > v(sum_.accessor());
       #pragma omp parallel for
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_count_);
@@ -176,8 +181,8 @@ namespace dials { namespace algorithms {
      * Calculate the sample variance filtered image
      * @returns The sample variance filtered image
      */
-    flex_double sample_variance() const {
-      flex_double v(sum_.accessor());
+    af::versa< double, af::c_grid<2> > sample_variance() const {
+      af::versa< double, af::c_grid<2> > v(sum_.accessor());
       #pragma omp parallel for
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_countm1_);
@@ -188,8 +193,8 @@ namespace dials { namespace algorithms {
   private:
     double inv_count_;
     double inv_countm1_;
-    flex_double sum_;
-    flex_double sq_sum_;
+    af::versa< double, af::c_grid<2> > sum_;
+    af::versa< double, af::c_grid<2> > sq_sum_;
   };
 
 
@@ -217,15 +222,21 @@ namespace dials { namespace algorithms {
      * @param size The size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts to use
      */
-    MeanAndVarianceFilterMasked(const flex_double &image,
-        const flex_int &mask, int2 size, int min_count)
-        : min_count_(min_count), mask_(mask) {
+    MeanAndVarianceFilterMasked(
+        const af::const_ref< double, af::c_grid<2> > &image,
+        const af::const_ref< int, af::c_grid<2> > &mask,
+        int2 size, int min_count)
+      : min_count_(min_count), mask_(mask.accessor()) {
 
       // Check the input is valid
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
-      DIALS_ASSERT(image.accessor().all().size() == 2);
-      DIALS_ASSERT(image.accessor().all().all_gt(0));
-      DIALS_ASSERT(image.accessor().all().all_eq(mask.accessor().all()));
+      DIALS_ASSERT(size.all_gt(0));
+      DIALS_ASSERT(image.accessor().all_gt(0));
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+
+      // Copy the mask array
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        mask_[i] = mask[i];
+      }
 
       // Ensure the min counts are valid
       if (min_count_ <= 0) {
@@ -238,25 +249,25 @@ namespace dials { namespace algorithms {
       summed_mask_ = summed_area<int>(mask, size);
 
       // Ensure that all masked pixels are zero in the image and update the mask
-      flex_double temp(image);
-      flex_double image_sq(image.accessor());
+      af::versa< double, af::c_grid<2> > temp(image.accessor());
+      af::versa< double, af::c_grid<2> > image_sq(image.accessor());
       #pragma omp parallel for
       for (std::size_t i = 0; i < image.size(); ++i) {
-        temp[i] *= (mask[i] != 0);
+        temp[i] = image[i] * (mask[i] != 0);
         mask_[i] *= (summed_mask_[i] >= min_count_);
         image_sq[i] = temp[i] * temp[i];
       }
 
       // Calculate the summed image and the summed image**2
-      summed_image_ = summed_area<double>(temp, size);
-      summed_image_sq_ = summed_area<double>(image_sq, size);
+      summed_image_ = summed_area<double>(temp.const_ref(), size);
+      summed_image_sq_ = summed_area<double>(image_sq.const_ref(), size);
     }
 
     /**
      * @returns The mean filtered image
      */
-    flex_double mean() const {
-      flex_double m(summed_image_.accessor(), 0);
+    af::versa< double, af::c_grid<2> > mean() const {
+      af::versa< double, af::c_grid<2> > m(summed_image_.accessor(), 0);
       #pragma omp parallel for
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
@@ -269,8 +280,8 @@ namespace dials { namespace algorithms {
     /**
      * @returns The variance filtered image
      */
-    flex_double variance() const {
-      flex_double v(summed_image_.accessor(), 0);
+    af::versa< double, af::c_grid<2> > variance() const {
+      af::versa< double, af::c_grid<2> > v(summed_image_.accessor(), 0);
       #pragma omp parallel for
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
@@ -286,9 +297,9 @@ namespace dials { namespace algorithms {
     /**
      * @returns The sample variance filtered image.
      */
-    flex_double sample_variance() const {
+    af::versa< double, af::c_grid<2> > sample_variance() const {
       DIALS_ASSERT(min_count_ > 1);
-      flex_double v(summed_image_.accessor(), 0);
+      af::versa< double, af::c_grid<2> > v(summed_image_.accessor(), 0);
       #pragma omp parallel for
       for (std::size_t i = 0; i < summed_image_.size(); ++i) {
         if (mask_[i]) {
@@ -304,23 +315,23 @@ namespace dials { namespace algorithms {
     /**
      * @returns The counts per local area
      */
-    flex_int count() const {
+    af::versa< int, af::c_grid<2> > count() const {
       return summed_mask_;
     }
 
     /**
      * @returns The update mask
      */
-    flex_int mask() const {
+    af::versa< int, af::c_grid<2> > mask() const {
       return mask_;
     }
 
   private:
     int min_count_;
-    flex_int mask_;
-    flex_int summed_mask_;
-    flex_double summed_image_;
-    flex_double summed_image_sq_;
+    af::versa< int, af::c_grid<2> > mask_;
+    af::versa< int, af::c_grid<2> > summed_mask_;
+    af::versa< double, af::c_grid<2> > summed_image_;
+    af::versa< double, af::c_grid<2> > summed_image_sq_;
   };
 
 }} // namespace dials::algorithms

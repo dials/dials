@@ -15,19 +15,16 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
-#include <scitbx/array_family/shared.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/simple_io.h>
 #include <scitbx/array_family/simple_tiny_io.h>
 #include <cctbx/miller.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
 
   // Typedef the miller type
   typedef cctbx::miller::index <> miller_index_type;
@@ -262,27 +259,27 @@ namespace dials { namespace model {
     }
 
     /** Get the reflection shoebox pixels */
-    flex_double get_shoebox() const {
+    af::versa< double, af::c_grid<3> > get_shoebox() const {
       return shoebox_;
     }
 
     /** Get the reflection shoebox mask */
-    flex_int get_shoebox_mask() const {
+    af::versa< int, af::c_grid<3> > get_shoebox_mask() const {
       return shoebox_mask_;
     }
 
     /** Get the shoebox background */
-    flex_double get_shoebox_background() const {
+    af::versa< double, af::c_grid<3> > get_shoebox_background() const {
       return shoebox_background_;
     }
 
     /** Get the transformed profile */
-    flex_double get_transformed_shoebox() const {
+    af::versa< double, af::c_grid<3> > get_transformed_shoebox() const {
       return transformed_shoebox_;
     }
 
     /** Get the transformed profile */
-    flex_double get_transformed_shoebox_background() const {
+    af::versa< double, af::c_grid<3> > get_transformed_shoebox_background() const {
       return transformed_shoebox_background_;
     }
 
@@ -353,27 +350,30 @@ namespace dials { namespace model {
     }
 
     /** Set the reflection shoebox pixels */
-    void set_shoebox(const flex_double &shoebox) {
+    void set_shoebox(const af::versa< double, af::c_grid<3> > &shoebox) {
       shoebox_ = shoebox;
     }
 
     /** Set the reflection shoebox mask */
-    void set_shoebox_mask(const flex_int &shoebox_mask) {
+    void set_shoebox_mask(const af::versa< int, af::c_grid<3> > &shoebox_mask) {
       shoebox_mask_ = shoebox_mask;
     }
 
     /** Set the reflection shoebox background */
-    void set_shoebox_background(const flex_double &shoebox_background) {
+    void set_shoebox_background(
+        const af::versa< double, af::c_grid<3> > &shoebox_background) {
       shoebox_background_ = shoebox_background;
     }
 
     /** Set the transformed profile */
-    void set_transformed_shoebox(const flex_double &transformed_shoebox) {
+    void set_transformed_shoebox(
+        const af::versa< double, af::c_grid<3> > &transformed_shoebox) {
       transformed_shoebox_ = transformed_shoebox;
     }
 
     /** Set the transformed profile */
-    void set_transformed_shoebox_background(const flex_double &transformed_shoebox) {
+    void set_transformed_shoebox_background(
+        const af::versa< double, af::c_grid<3> > &transformed_shoebox) {
       transformed_shoebox_background_ = transformed_shoebox;
     }
 
@@ -418,11 +418,11 @@ namespace dials { namespace model {
     int panel_number_;
     int6 bounding_box_;
 
-    flex_int shoebox_mask_;
-    flex_double shoebox_;
-    flex_double shoebox_background_;
-    flex_double transformed_shoebox_;
-    flex_double transformed_shoebox_background_;
+    af::versa< int, af::c_grid<3> > shoebox_mask_;
+    af::versa< double, af::c_grid<3> > shoebox_;
+    af::versa< double, af::c_grid<3> > shoebox_background_;
+    af::versa< double, af::c_grid<3> > transformed_shoebox_;
+    af::versa< double, af::c_grid<3> > transformed_shoebox_background_;
 
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;
@@ -458,9 +458,6 @@ namespace dials { namespace model {
     os << "  corrected intensity variance: " << r.get_corrected_intensity_variance() << "\n";
     return os;
   }
-
-  //typedef scitbx::af::shared <Reflection> ReflectionList;
-  typedef scitbx::af::flex <Reflection>::type ReflectionList;
 
 }} // namespace dials::model
 

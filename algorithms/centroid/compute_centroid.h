@@ -14,14 +14,12 @@
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::af::int6;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
 
   /**
    * Class to calculate centroid for reflections
@@ -36,7 +34,7 @@ namespace dials { namespace algorithms {
      * Calculate the centroids for the whole reflection list
      * @param reflections The reflection list
      */
-    void operator()(ReflectionList &reflections) const {
+    void operator()(af::ref<Reflection> reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         if (reflections[i].is_valid()) {
           try {
@@ -55,11 +53,13 @@ namespace dials { namespace algorithms {
     void operator()(Reflection &reflection) const {
 
       // Get the shoebox and mask
-      flex_double shoebox = reflection.get_shoebox();
-      flex_int shoebox_mask = reflection.get_shoebox_mask();
+      af::const_ref<double, af::c_grid<3> > shoebox =
+        reflection.get_shoebox().const_ref();
+      af::const_ref<int, af::c_grid<3> > shoebox_mask =
+        reflection.get_shoebox_mask().const_ref();
 
       // Create the mask from the shoebox mask
-      flex_int mask(shoebox_mask.accessor(), 0);
+      af::versa<int, af::c_grid<3> > mask(shoebox_mask.accessor(), 0);
       if (reflection.is_strong()) {
         for (std::size_t i = 0; i < mask.size(); ++i) {
           if (shoebox_mask[i] & shoebox::Strong) {
@@ -77,7 +77,7 @@ namespace dials { namespace algorithms {
       vec3<double> offset(bbox[0], bbox[2], bbox[4]);
 
       // Compute the centroid and set the stuff
-      CentroidMaskedImage3d centroid(shoebox, mask);
+      CentroidMaskedImage3d centroid(shoebox, mask.const_ref());
       reflection.set_centroid_position(offset + centroid.mean());
       reflection.set_centroid_variance(centroid.standard_error_sq());
       reflection.set_centroid_sq_width(centroid.unbiased_variance());

@@ -18,11 +18,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_summation_reciprocal_space()
   {
-    void (SummationReciprocalSpace::*call_w_reflection)(Reflection &r) const = 
-      &SummationReciprocalSpace::operator();
+    void (SummationReciprocalSpace::*call_w_reflection)(
+      Reflection &r) const = &SummationReciprocalSpace::operator();
     void (SummationReciprocalSpace::*call_w_reflection_list)(
-        ReflectionList &reflections) const = 
-      &SummationReciprocalSpace::operator();     
+        af::ref<Reflection> reflections) const = 
+          &SummationReciprocalSpace::operator();     
   
     class_<SummationReciprocalSpace>(
         "SummationReciprocalSpaceAlgorithm", no_init)

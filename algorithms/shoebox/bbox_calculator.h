@@ -35,16 +35,11 @@ namespace dials { namespace algorithms { namespace shoebox {
   using scitbx::af::double2;
   using scitbx::af::double3;
   using scitbx::af::double4;
-  using scitbx::af::flex_double;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
-
-  typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
-  typedef scitbx::af::flex<int6>::type flex_int6;
 
   /** Calculate the bounding box for each reflection */
   class BBoxCalculator {
@@ -153,10 +148,10 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param s1 The array of diffracted beam vectors
      * @param phi The array of rotation angles.
      */
-    flex_int6 operator()(const flex_vec3_double &s1,
-        const flex_double &phi, std::size_t panel) const {
+    af::shared<int6> operator()(const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<double> &phi, std::size_t panel) const {
       DIALS_ASSERT(s1.size() == phi.size());
-      flex_int6 result(s1.size());
+      af::shared<int6> result(s1.size());
       for (std::size_t i = 0; i < s1.size(); ++i) {
         result[i] = operator()(s1[i], phi[i], panel);
       }
@@ -179,7 +174,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * reflections
      * @param reflections The list of reflections
      */
-    void operator()(ReflectionList &reflections) const {
+    void operator()(af::ref<Reflection> reflections) const {
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         operator()(reflections[i]);
       }

@@ -19,9 +19,9 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   void export_helpers()
   {
-    def("allocate", (void(*)(ReflectionList&))&allocate, (
+    def("allocate", (void(*)(af::ref<Reflection>))&allocate, (
       arg("reflection_list")));
-    def("allocate", (void(*)(ReflectionList&,int))&allocate, (
+    def("allocate", (void(*)(af::ref<Reflection>,int))&allocate, (
       arg("reflection_list"), arg("mask_default")));
     def("deallocate", &deallocate, (
       arg("reflection_list")));

@@ -19,13 +19,13 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_summation()
   {
     class_ <SumIntensity3d> ("SumIntensity3d", no_init)
-      .def(init <const flex_double&,
-                 const flex_double&>((
+      .def(init <const af::const_ref<double, af::c_grid<3> >&,
+                 const af::const_ref<double, af::c_grid<3> >&>((
           arg("signal"),
           arg("background"))))
-      .def(init <const flex_double&,
-                 const flex_double&,
-                 const flex_bool&>((
+      .def(init <const af::const_ref<double, af::c_grid<3> >&,
+                 const af::const_ref<double, af::c_grid<3> >&,
+                 const af::const_ref<bool, af::c_grid<3> >&>((
           arg("signal"),
           arg("background"),
           arg("mask"))))
@@ -37,13 +37,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("background_variance", &SumIntensity3d::background_variance);
       
     class_ <IntegrateBySummation> ("IntegrateBySummation", no_init)
-      .def(init <const flex_double&, 
-                 const flex_double&> ((
+      .def(init <const af::const_ref<double, af::c_grid<3> >&, 
+                 const af::const_ref<double, af::c_grid<3> >&> ((
           arg("pixels"),
           arg("background"))))
-      .def(init <const flex_double&, 
-                 const flex_double&,
-                 const flex_bool&> ((
+      .def(init <const af::const_ref<double, af::c_grid<3> >&, 
+                 const af::const_ref<double, af::c_grid<3> >&,
+                 const af::const_ref<bool, af::c_grid<3> >&> ((
           arg("pixels"),
           arg("mask"),
           arg("background"))))
@@ -55,14 +55,14 @@ namespace dials { namespace algorithms { namespace boost_python {
         &IntegrateBySummation::standard_deviation);
         
     Summation3d::integrator (Summation3d::*call_w_pixels)(
-        const flex_double &pixels, 
-        const flex_double &background,
-        const flex_bool &mask) const = 
+        const af::const_ref<double, af::c_grid<3> > &pixels, 
+        const af::const_ref<double, af::c_grid<3> > &background,
+        const af::const_ref<bool, af::c_grid<3> > &mask) const = 
       &Summation3d::operator();
     void (Summation3d::*call_w_reflection)(Reflection &r) const = 
       &Summation3d::operator();
     void (Summation3d::*call_w_reflection_list)(
-        ReflectionList &reflections) const = 
+        af::ref<Reflection> reflections) const = 
       &Summation3d::operator();         
         
     class_<Summation3d>("Summation3dAlgorithm")

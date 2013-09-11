@@ -233,6 +233,8 @@ array_family/boost_python/flex_observation.cc -text
 array_family/boost_python/flex_prediction.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/flex.py -text
+array_family/import_scitbx_af.h -text
+array_family/scitbx_shared_and_versa.h -text
 array_family/sort_index.h -text
 command_line/analyse_blank.py -text
 command_line/background_lookup.py -text

@@ -12,7 +12,6 @@
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_MULTI_PANEL_SPOT_PREDICTOR_H
 
 #include <scitbx/constants.h>
-#include <scitbx/array_family/flex_types.h>
 #include <dxtbx/model/scan_helpers.h>
 #include <dxtbx/model/scan.h>
 #include <dxtbx/model/beam.h>
@@ -29,18 +28,15 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::mat3;
   using scitbx::af::double4;
-  using scitbx::af::flex_double;
   using dxtbx::model::Beam;
   using dxtbx::model::MultiPanelDetector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::ScanData;
   using dials::model::BeamMultiPlaneIntersection;
   using dials::model::Reflection;
-  using dials::model::flex_double4;
 
-  // Typedef the miller_index and flex_miller_index types
+  // Typedef the miller_index type
   typedef cctbx::miller::index <> miller_index_type;
-  typedef scitbx::af::flex <miller_index_type> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
   class MultiPanelSpotPredictor {
@@ -135,7 +131,7 @@ namespace dials { namespace algorithms {
 
         // Get the list of frames at which the reflection will be observed
         // and add the predicted observations to the list of reflections
-        flex_double frames = scan_.get_frames_with_angle(phi);
+        af::shared<double> frames = scan_.get_frames_with_angle(phi);
         for (std::size_t j = 0; j < frames.size(); ++j) {
           reflection_type r;
           r.set_miller_index(h);
@@ -156,7 +152,7 @@ namespace dials { namespace algorithms {
      * @param miller_indices The array of miller indices.
      */
     reflection_list_type
-    operator()(const flex_miller_index &miller_indices) const {
+    operator()(const const_ref<miller_index> &miller_indices) const {
       reflection_list_type reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {
         reflection_list_type r = operator()(miller_indices[i]);
@@ -169,8 +165,8 @@ namespace dials { namespace algorithms {
 
   private:
 
-    flex_double4 get_image_extents(const detector_type &detector) {
-      flex_double4 extents(detector.num_panels());
+    af::shared<double4> get_image_extents(const detector_type &detector) {
+      af::shared<double4> extents(detector.num_panels());
       for (std::size_t i = 0; i < detector.num_panels(); ++i) {
         vec2<double> image_size_mm = detector[i].get_image_size_mm();
         extents[i] = double4(0.0, 0.0, image_size_mm[0], image_size_mm[1]);

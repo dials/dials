@@ -15,8 +15,6 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/mat3.h>
-#include <scitbx/array_family/shared.h>
-#include <scitbx/array_family/flex_types.h>
 #include <cctbx/miller.h>
 #include <dxtbx/model/scan_helpers.h>
 #include <dials/model/data/reflection.h>
@@ -33,9 +31,8 @@ namespace dials { namespace algorithms {
   using dxtbx::model::is_angle_in_range;
   using model::Reflection;
 
-  // Typedef the miller_index and flex_miller_index types
+  // Typedef the miller_index type
   typedef cctbx::miller::index <> miller_index;
-  typedef scitbx::af::flex <miller_index> ::type flex_miller_index;
 
   /** A class to perform spot prediction. */
   class RayPredictor {
@@ -43,7 +40,7 @@ namespace dials { namespace algorithms {
 
     // A load of useful typedefs
     typedef Reflection reflection_type;
-    typedef scitbx::af::shared <reflection_type> reflection_list_type;
+    typedef af::shared <reflection_type> reflection_list_type;
 
     /**
      * Initialise the ray predictor.
@@ -125,7 +122,7 @@ namespace dials { namespace algorithms {
      * @param miller_indices The array of miller indices.
      */
     reflection_list_type
-    operator()(const flex_miller_index &miller_indices,
+    operator()(const af::const_ref<miller_index> &miller_indices,
                mat3 <double> UB) const {
       reflection_list_type reflections;
       for (std::size_t i = 0; i < miller_indices.size(); ++i) {

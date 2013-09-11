@@ -23,13 +23,10 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::af::int3;
   using scitbx::af::int6;
   using scitbx::af::sqrt;
-  using scitbx::af::flex_bool;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
-
-  typedef flex< vec3<double> >::type flex_vec3_double;
 
   /**
    * Class to sum the intensity in 3D
@@ -42,8 +39,8 @@ namespace dials { namespace algorithms {
      * @param signal The signal to integrate
      * @param background The background to the signal
      */
-    SumIntensity3d(const flex_double &signal,
-                   const flex_double &background)
+    SumIntensity3d(const af::const_ref< double, af::c_grid<3> > &signal,
+                   const af::const_ref< double, af::c_grid<3> > &background)
     {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
@@ -67,9 +64,9 @@ namespace dials { namespace algorithms {
      * @param background The background to the signal
      * @param mask The mask to the signal
      */
-    SumIntensity3d(const flex_double &signal,
-                   const flex_double &background,
-                   const flex_bool &mask)
+    SumIntensity3d(const af::const_ref< double, af::c_grid<3> > &signal,
+                   const af::const_ref< double, af::c_grid<3> > &background,
+                   const af::const_ref< bool, af::c_grid<3> > &mask)
     {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
@@ -150,11 +147,9 @@ namespace dials { namespace algorithms {
      * @param pixels The 3D image.
      * @param background The background
      */
-    IntegrateBySummation(const flex_double &pixels,
-                         const flex_double &background) {
-
-      // Create an array with pixels - background
-      flex_double pixels_m_background(subtract_background(pixels, background));
+    IntegrateBySummation(
+        const af::const_ref< double, af::c_grid<3> > &pixels,
+        const af::const_ref< double, af::c_grid<3> > &background) {
 
       // Calculate the itensity and sigma
       SumIntensity3d isum(pixels, background);
@@ -168,12 +163,10 @@ namespace dials { namespace algorithms {
      * @param background The pixel background
      * @param mask The corresponding mask
      */
-    IntegrateBySummation(const flex_double &pixels,
-                         const flex_double &background,
-                         const flex_bool &mask) {
-
-      // Create an array with pixels - background
-      flex_double pixels_m_background(subtract_background(pixels, background));
+    IntegrateBySummation(
+        const af::const_ref< double, af::c_grid<3> > &pixels,
+        const af::const_ref< double, af::c_grid<3> > &background,
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
 
       // Calculate the itensity and sigma
       SumIntensity3d isum(pixels, background, mask);
@@ -198,21 +191,6 @@ namespace dials { namespace algorithms {
 
   private:
 
-    flex_double subtract_background(const flex_double &pixels,
-        const flex_double &background) {
-      // Check the sizes are the same
-      DIALS_ASSERT(pixels.size() == background.size());
-
-      // Create an array with pixels - background
-      flex_double pixels_m_background(pixels.accessor());
-      for (std::size_t i = 0; i < pixels.size(); ++i) {
-        pixels_m_background[i] = pixels[i] - background[i];
-      }
-
-      // Return the subtracted pixels
-      return pixels_m_background;
-    }
-
     double intensity_;
     double ivariance_;
   };
@@ -236,9 +214,10 @@ namespace dials { namespace algorithms {
      * @param mask The mask
      * @returns The integrator struct
      */
-    integrator operator()(const flex_double &pixels,
-                          const flex_double &background,
-                          const flex_bool &mask) const {
+    integrator operator()(
+        const af::const_ref< double, af::c_grid<3> > &pixels,
+        const af::const_ref< double, af::c_grid<3> > &background,
+        const af::const_ref< bool, af::c_grid<3> > &mask) const {
       return integrator(pixels, background, mask);
     }
 
@@ -248,17 +227,18 @@ namespace dials { namespace algorithms {
      */
     void operator()(Reflection &r) const {
 
-      flex_int shoebox_mask = r.get_shoebox_mask();
-      flex_bool mask(shoebox_mask.accessor());
+      af::const_ref< int, af::c_grid<3> > shoebox_mask =
+        r.get_shoebox_mask().const_ref();
+      af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor());
       for (std::size_t i = 0; i < mask.size(); ++i) {
         mask[i] = (shoebox_mask[i] & shoebox::Valid) ? true : false;
       }
 
       // Integrate the reflection
       integrator result = this->operator()(
-        r.get_shoebox(),
-        r.get_shoebox_background(),
-        mask);
+        r.get_shoebox().const_ref(),
+        r.get_shoebox_background().const_ref(),
+        mask.const_ref());
 
       r.set_intensity(result.intensity());
       r.set_intensity_variance(result.variance());
@@ -268,7 +248,7 @@ namespace dials { namespace algorithms {
      * Integrate a list of reflections
      * @param reflections The reflection list
      */
-    void operator()(ReflectionList &reflections) const {
+    void operator()(af::ref<Reflection> reflections) const {
       #pragma omp parallel for
       for (std::size_t i = 0; i < reflections.size(); ++i) {
         try {

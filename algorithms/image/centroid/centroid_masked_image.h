@@ -13,7 +13,8 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/tiny_types.h>
+#include <scitbx/array_family/ref_reductions.h>
 #include <dials/error.h>
 #include "centroid_points.h"
 
@@ -21,30 +22,30 @@ namespace dials { namespace algorithms {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::af::int2;
+  using scitbx::af::int3;
   using scitbx::af::product;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
 
   /**
    * A class to calculate the centroid of a 2D image.
    */
-  class CentroidMaskedImage2d : public CentroidPoints<vec2<double> > {
+  class CentroidMaskedImage2d : public CentroidPoints< vec2<double> > {
   public:
 
     // Useful typedefs
-    typedef CentroidPoints<vec2<double> > centroid_algorithm_type;
+    typedef CentroidPoints< vec2<double> > centroid_algorithm_type;
     typedef centroid_algorithm_type::coord_type coord_type;
     typedef centroid_algorithm_type::matrix_type matrix_type;
-    typedef centroid_algorithm_type::flex_type flex_type;
 
     /**
      * Initialise the algorithm
      * @param image The image pixels
      */
-    CentroidMaskedImage2d(const flex_double &image, const flex_int &mask)
+    CentroidMaskedImage2d(const af::const_ref< double, af::c_grid<2> > &image,
+                          const af::const_ref< int, af::c_grid<2> > &mask)
       : centroid_algorithm_type(
-          select_pixels(image, mask),
-          generate_coords(image, mask)) {}
+          select_pixels(image, mask).const_ref(),
+          generate_coords(image, mask).const_ref()) {}
 
   private:
 
@@ -52,16 +53,16 @@ namespace dials { namespace algorithms {
      * Get the mask indices.
      * @param size The size of the image
      */
-    flex_double select_pixels(const flex_double &image, const flex_int &mask) {
+    af::shared<double> select_pixels(
+        const af::const_ref<double, af::c_grid<2> > &image,
+        const af::const_ref<int, af::c_grid<2> > &mask) {
 
       // Check the sizes
-      flex_int::index_type size = mask.accessor().all();
-      DIALS_ASSERT(size.size() == 2);
-      DIALS_ASSERT(size.all_eq(image.accessor().all()));
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
+      DIALS_ASSERT(mask.accessor().all_eq(image.accessor()));
+      DIALS_ASSERT(mask.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      flex_double pixels(product(size));
+      af::shared<double> pixels(product(mask.accessor().const_ref()));
       std::size_t count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -78,19 +79,19 @@ namespace dials { namespace algorithms {
      * Generate coordinates.
      * @param size The size of the image
      */
-    flex_type generate_coords(const flex_double &image, const flex_int &mask) {
+    af::shared<coord_type> generate_coords(
+        const af::const_ref<double, af::c_grid<2> > &image,
+        const af::const_ref<int, af::c_grid<2> > &mask) {
 
       // Check the sizes
-      flex_int::index_type size = mask.accessor().all();
-      DIALS_ASSERT(size.size() == 2);
-      DIALS_ASSERT(size.all_eq(image.accessor().all()));
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
+      DIALS_ASSERT(mask.accessor().all_eq(image.accessor()));
+      DIALS_ASSERT(mask.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      flex_type coords(product(size));
+      af::shared<coord_type> coords(product(mask.accessor().const_ref()));
       std::size_t count = 0;
-      for (std::size_t j = 0; j < size[0]; ++j) {
-        for (std::size_t i = 0; i < size[1]; ++i) {
+      for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
+        for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
           if (mask(j, i)) {
             coords[count++] = vec2<double>(i + 0.5, j + 0.5);
           }
@@ -107,23 +108,23 @@ namespace dials { namespace algorithms {
   /**
    * A class to calculate the centroid of a 3D image.
    */
-  class CentroidMaskedImage3d : public CentroidPoints<vec3<double> > {
+  class CentroidMaskedImage3d : public CentroidPoints< vec3<double> > {
   public:
 
     // Useful typedefs
-    typedef CentroidPoints<vec3<double> > centroid_algorithm_type;
+    typedef CentroidPoints< vec3<double> > centroid_algorithm_type;
     typedef centroid_algorithm_type::coord_type coord_type;
     typedef centroid_algorithm_type::matrix_type matrix_type;
-    typedef centroid_algorithm_type::flex_type flex_type;
 
     /**
      * Initialise the algorithm
      * @param image The image pixels
      */
-    CentroidMaskedImage3d(const flex_double &image, const flex_int &mask)
+    CentroidMaskedImage3d(const af::const_ref<double, af::c_grid<3> > &image,
+                          const af::const_ref<int, af::c_grid<3> > &mask)
       : centroid_algorithm_type(
-          select_pixels(image, mask),
-          generate_coords(image, mask)) {}
+          select_pixels(image, mask).const_ref(),
+          generate_coords(image, mask).const_ref()) {}
 
   private:
 
@@ -131,16 +132,16 @@ namespace dials { namespace algorithms {
      * Get the mask indices.
      * @param size The size of the image
      */
-    flex_double select_pixels(const flex_double &image, const flex_int &mask) {
+    af::shared<double> select_pixels(
+        const af::const_ref< double, af::c_grid<3> > &image,
+        const af::const_ref< int, af::c_grid<3> > &mask) {
 
       // Check the sizes
-      flex_int::index_type size = mask.accessor().all();
-      DIALS_ASSERT(size.size() == 3);
-      DIALS_ASSERT(size.all_eq(image.accessor().all()));
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0 && size[2] > 0);
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      flex_double pixels(product(size));
+      af::shared<double> pixels(product(image.accessor().const_ref()));
       std::size_t count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -157,20 +158,20 @@ namespace dials { namespace algorithms {
      * Generate coordinates.
      * @param size The size of the image
      */
-    flex_type generate_coords(const flex_double &image, const flex_int &mask) {
+    af::shared<coord_type> generate_coords(
+        const af::const_ref<double, af::c_grid<3> > &image,
+        const af::const_ref<int, af::c_grid<3> > &mask) {
 
       // Check the sizes
-      flex_int::index_type size = mask.accessor().all();
-      DIALS_ASSERT(size.size() == 3);
-      DIALS_ASSERT(size.all_eq(image.accessor().all()));
-      DIALS_ASSERT(size[0] > 0 && size[1] > 0 && size[2] > 0);
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      flex_type coords(product(size));
+      af::shared<coord_type> coords(product(image.accessor().const_ref()));
       std::size_t count = 0;
-      for (std::size_t k = 0; k < size[0]; ++k) {
-        for (std::size_t j = 0; j < size[1]; ++j) {
-          for (std::size_t i = 0; i < size[2]; ++i) {
+      for (std::size_t k = 0; k < image.accessor()[0]; ++k) {
+        for (std::size_t j = 0; j < image.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < image.accessor()[2]; ++i) {
             if (mask(k, j, i)) {
               coords[count++] = vec3<double>(i + 0.5, j + 0.5, k + 0.5);
             }

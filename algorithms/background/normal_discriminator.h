@@ -12,8 +12,6 @@
 #define DIALS_ALGORITHMS_BACKGROUND_NORMAL_DISCRIMINATOR_H
 
 #include <algorithm>
-#include <scitbx/array_family/shared.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <boost/math/special_functions/erf.hpp>
 #include <scitbx/math/mean_and_variance.h>
@@ -25,15 +23,10 @@
 namespace dials { namespace algorithms {
 
   using boost::math::erf_inv;
-  using scitbx::af::shared;
-  using scitbx::af::const_ref;
-  using scitbx::af::ref;
   using scitbx::af::min;
   using scitbx::af::max;
   using scitbx::af::mean;
   using scitbx::math::mean_and_variance;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
   using dials::af::sort_index;
   using dials::model::Reflection;
 
@@ -54,7 +47,7 @@ namespace dials { namespace algorithms {
    * @returns The expected number of standard deviations
    */
   inline
-  double minimum_n_sigma(const const_ref<double> &data) {
+  double minimum_n_sigma(const af::const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
     mean_and_variance <double> mean_and_variance(data);
@@ -82,7 +75,7 @@ namespace dials { namespace algorithms {
    * @returns The expected number of standard deviations
    */
   inline
-  double maximum_n_sigma(const const_ref<double> &data) {
+  double maximum_n_sigma(const af::const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
     mean_and_variance <double> mean_and_variance(data);
@@ -110,7 +103,7 @@ namespace dials { namespace algorithms {
    * @returns The expected number of standard deviations
    */
   inline
-  double absolute_maximum_n_sigma(const const_ref<double> &data) {
+  double absolute_maximum_n_sigma(const af::const_ref<double> &data) {
 
     // Calculate the mean and standard deviation of the data
     mean_and_variance <double> mean_and_variance(data);
@@ -146,7 +139,7 @@ namespace dials { namespace algorithms {
    * @returns True/False
    */
   inline
-  bool is_normally_distributed(const const_ref<double> &data, double n_sigma) {
+  bool is_normally_distributed(const af::const_ref<double> &data, double n_sigma) {
 
     // Get the maximum n sigma
     double max_n_sigma = absolute_maximum_n_sigma(data);
@@ -165,7 +158,7 @@ namespace dials { namespace algorithms {
    * @returns True/False
    */
   inline
-  bool is_normally_distributed(const const_ref<double> &data) {
+  bool is_normally_distributed(const af::const_ref<double> &data) {
 
     // Calculate expected sigma from number of points
     double n_sigma = normal_expected_n_sigma(data.size());
@@ -209,13 +202,13 @@ namespace dials { namespace algorithms {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    void operator()(const flex_double &shoebox, flex_int &mask) const {
+    void operator()(const af::const_ref<double> &shoebox, af::ref<int> mask) const {
 
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
 
       // Copy valid pixels and indices into list
-      shared<int> indices;
+      af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
         if (mask[i] & shoebox::Valid) {
           indices.push_back(i);
@@ -227,7 +220,7 @@ namespace dials { namespace algorithms {
 
       // Sort the pixels into ascending intensity order
       sort_index(indices.begin(), indices.end(), shoebox.begin());
-      flex_double pixels(indices.size());
+      af::shared<double> pixels(indices.size());
       for (std::size_t i = 0; i < indices.size(); ++i) {
         pixels[i] = (double)shoebox[indices[i]];
       }
@@ -237,7 +230,7 @@ namespace dials { namespace algorithms {
       // of iterations exceeds the maximum then exit the loop.
       std::size_t num_data = pixels.size();
       for (; num_data > min_data_; --num_data) {
-        if (is_normally_distributed(const_ref<double>(
+        if (is_normally_distributed(af::const_ref<double>(
             pixels.begin(), num_data), n_sigma_)) {
           break;
         }
@@ -258,9 +251,10 @@ namespace dials { namespace algorithms {
      * @param shoebox The shoebox profile
      * @return The mask
      */
-    flex_int operator()(const flex_double &shoebox) const {
-      flex_int mask(shoebox.accessor(), shoebox::Valid);
-      this->operator()(shoebox, mask);
+    af::shared<int> operator()(const af::const_ref<double> &shoebox) const {
+      af::shared<int> mask(shoebox.size(), shoebox::Valid);
+      af::ref<int> mask_ref = mask.ref();
+      this->operator()(shoebox, mask_ref);
       return mask;
     }
 
@@ -269,8 +263,9 @@ namespace dials { namespace algorithms {
      * @param reflection The reflection
      */
     void operator()(Reflection &reflection) const {
-      flex_double shoebox = reflection.get_shoebox();
-      flex_int mask = reflection.get_shoebox_mask();
+      af::const_ref<double> shoebox =
+        reflection.get_shoebox().const_ref().as_1d();
+      af::ref<int> mask = reflection.get_shoebox_mask().ref().as_1d();
       this->operator()(shoebox, mask);
     }
 

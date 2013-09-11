@@ -11,20 +11,17 @@
 #ifndef DIALS_MODEL_DATA_SHOEBOX_H
 #define DIALS_MODEL_DATA_SHOEBOX_H
 
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/small.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace model {
 
   using scitbx::af::int2;
+  using scitbx::af::int3;
   using scitbx::af::int6;
   using scitbx::af::small;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_grid;
 
   /**
    * An enumeration of shoebox mask codes. If a pixel is labelled as:
@@ -47,17 +44,17 @@ namespace dials { namespace model {
    */
   struct Shoebox {
 
-    int6 bbox;          ///< The bounding box
-    flex_double data;   ///< The shoebox data
-    flex_int mask;      ///< The shoebox mask
+    int6 bbox;                                  ///< The bounding box
+    af::versa< double, af::c_grid<3> > data;    ///< The shoebox data
+    af::versa< int, af::c_grid<3> > mask;       ///< The shoebox mask
 
     /**
      * Initialise the shoebox
      */
     Shoebox()
       : bbox(0, 0, 0, 0, 0, 0),
-        data(flex_grid<>(0, 0, 0)),
-        mask(flex_grid<>(0, 0, 0)) {}
+        data(af::c_grid<3>(0, 0, 0)),
+        mask(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Initialise the shoebox
@@ -65,23 +62,25 @@ namespace dials { namespace model {
      */
     Shoebox(const int6 &bbox_)
       : bbox(bbox_),
-        data(flex_grid<>(0, 0, 0)),
-        mask(flex_grid<>(0, 0, 0)) {}
+        data(af::c_grid<3>(0, 0, 0)),
+        mask(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Allocate the mask and data from the bounding box
      */
     void allocate() {
-      data = flex_double(flex_grid<>(zsize(), ysize(), xsize()));
-      mask = flex_int(flex_grid<>(zsize(), ysize(), xsize()));
+      af::c_grid<3> accessor(zsize(), ysize(), xsize());
+      data = af::versa< double, af::c_grid<3> >(accessor);
+      mask = af::versa< int, af::c_grid<3> >(accessor);
     }
 
     /**
      * Deallocate the mask and data arrays
      */
     void deallocate() {
-      data = flex_double(flex_grid<>(0, 0, 0));
-      mask = flex_int(flex_grid<>(0, 0, 0));
+      af::c_grid<3> accessor(0, 0, 0);
+      data = af::versa< double, af::c_grid<3> >(accessor);
+      mask = af::versa< int, af::c_grid<3> >(accessor);
     }
 
     /** @returns The x offset */
@@ -118,30 +117,20 @@ namespace dials { namespace model {
     }
 
     /** @returns The offset */
-    small<long, 10> offset() const {
-      small<long, 10> off(3);
-      off[0] = zoffset();
-      off[1] = yoffset();
-      off[2] = xoffset();
-      return off;
+    int3 offset() const {
+      return int3(zoffset(), yoffset(), xoffset());
     }
 
     /** @returns The size */
-    small<long, 10> size() const {
-      small<long, 10> sz(3);
-      sz[0] = zsize();
-      sz[1] = ysize();
-      sz[2] = xsize();
-      return sz;
+    int3 size() const {
+      return int3(zsize(), ysize(), xsize());
     }
 
     /** @return True/False whether the array and bbox sizes are consistent */
     bool is_consistent() const {
       bool result = true;
-      result = result && (data.accessor().all().size() == 3);
-      result = result && (mask.accessor().all().size() == 3);
-      result = result && (data.accessor().all().all_eq(size()));
-      result = result && (mask.accessor().all().all_eq(size()));
+      result = result && (data.accessor().all_eq(size()));
+      result = result && (mask.accessor().all_eq(size()));
       return result;
     }
 
@@ -151,9 +140,7 @@ namespace dials { namespace model {
      * @param scan_range The scan range
      * @returns True/False
      */
-    bool is_bbox_within_image_volume(small<long,10> image_size,
-        int2 scan_range) const {
-      DIALS_ASSERT(image_size.size() == 2);
+    bool is_bbox_within_image_volume(int2 image_size, int2 scan_range) const {
       return bbox[0] >= 0 && bbox[1] < image_size[1] &&
              bbox[2] >= 0 && bbox[3] < image_size[0] &&
              bbox[4] >= scan_range[0] && bbox[5] < scan_range[1];
@@ -165,10 +152,10 @@ namespace dials { namespace model {
      * @returns True/False
      */
     inline
-    bool does_bbox_contain_bad_pixels(const flex_bool &mask) const {
-      DIALS_ASSERT(mask.accessor().all().size() == 2);
-      std::size_t ysize = mask.accessor().all()[0];
-      std::size_t xsize = mask.accessor().all()[1];
+    bool does_bbox_contain_bad_pixels(
+        const af::const_ref< bool, af::c_grid<2> > &mask) const {
+      std::size_t ysize = mask.accessor()[0];
+      std::size_t xsize = mask.accessor()[1];
       int j0 = bbox[2] > 0 ? bbox[2] : 0;
       int j1 = bbox[3] < ysize ? bbox[3] : ysize;
       int i0 = bbox[0] > 0 ? bbox[0] : 0;

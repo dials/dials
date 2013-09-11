@@ -15,18 +15,13 @@
 #include <boost/graph/connected_components.hpp>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
-#include <scitbx/array_family/flex_types.h>
-#include <scitbx/array_family/shared.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::vec3;
   using scitbx::af::int2;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_grid;
 
   /**
    * A class to do connected component labelling on a stack of images.
@@ -45,7 +40,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the images
      */
     LabelImageStack(int2 size)
-      : buffer_(flex_grid<>(size[0], size[1])),
+      : buffer_(af::c_grid<2>(size)),
         size_(size),
         k_(0) {}
 
@@ -68,12 +63,12 @@ namespace dials { namespace algorithms {
      * @param image The image to use
      * @param mask The mask to use
      */
-    void add_image(const flex_int &image, const flex_bool &mask) {
+    void add_image(const af::const_ref< int, af::c_grid<2> > &image,
+                   const af::const_ref< bool, af::c_grid<2> > &mask) {
 
       // Check the input
-      DIALS_ASSERT(mask.accessor().all().size() == 2);
-      DIALS_ASSERT(mask.accessor().all()[0] == size_[0]);
-      DIALS_ASSERT(mask.accessor().all()[1] == size_[1]);
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(image.accessor().all_eq(size_));
 
       // Loop through all the pixels and assign the edges
       std::size_t vertex_a = 0;
@@ -112,14 +107,14 @@ namespace dials { namespace algorithms {
     /**
      * @returns The list of valid point coordinates
      */
-    scitbx::af::shared< vec3<int> > coords() const {
+    af::shared< vec3<int> > coords() const {
       return coords_;
     }
 
     /**
      * @returns The list of valid point values
      */
-    scitbx::af::shared<int> values() const {
+    af::shared<int> values() const {
       return values_;
     }
 
@@ -128,8 +123,8 @@ namespace dials { namespace algorithms {
      * of the good pixels given to the algorithm.
      * @returns The list of labels
      */
-    scitbx::af::shared<int> labels() const {
-      scitbx::af::shared<int> labels(num_vertices(graph_));
+    af::shared<int> labels() const {
+      af::shared<int> labels(num_vertices(graph_));
       int num = boost::connected_components(graph_, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;
@@ -138,9 +133,9 @@ namespace dials { namespace algorithms {
   private:
 
     AdjacencyList graph_;
-    scitbx::af::shared< vec3<int> > coords_;
-    scitbx::af::shared<int> values_;
-    scitbx::af::flex_size_t buffer_;
+    af::shared< vec3<int> > coords_;
+    af::shared<int> values_;
+    af::versa< std::size_t, af::c_grid<2> > buffer_;
     int2 size_;
     std::size_t k_;
   };

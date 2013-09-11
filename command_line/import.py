@@ -33,7 +33,7 @@ class RawSweepImporter(object):
 
         # Ensure its a sweep
         if not isinstance(imagesets[0], ImageSweep):
-            raise RuntimeError('Dials requires an ImageSweep nor an ImageSet')
+            raise RuntimeError('Dials requires an ImageSweep not an ImageSet')
 
         # Return the sweep
         return imagesets[0]

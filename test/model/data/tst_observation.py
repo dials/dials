@@ -54,39 +54,40 @@ class Test(object):
         print 'OK'
 
     def tst_equality(self):
+        from dials.model.data import Observation
 
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         assert(obs2 == self.obs)
         obs2.panel += 1
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.centroid.px.position = (0, 0, 0)
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.centroid.px.variance = (0, 0, 0)
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.centroid.px.std_err_sq = (0, 0, 0)
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.centroid.mm.position = (0, 0, 0)
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.centroid.mm.variance = (0, 0, 0)
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.centroid.mm.std_err_sq = (0, 0, 0)
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.intensity.observed.value = 0
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.intensity.observed.variance = 0
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.intensity.corrected.value = 0
         assert(obs2 != self.obs)
-        obs2 = self.obs.deepcopy()
+        obs2 = Observation(self.obs)
         obs2.intensity.corrected.variance = 0
         assert(obs2 != self.obs)
         print 'OK'

@@ -37,7 +37,6 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   using scitbx::af::int6;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
   using dials::model::AdjacencyList;
 
   /**
@@ -51,7 +50,7 @@ namespace dials { namespace algorithms { namespace shoebox {
    */
   inline
   boost::shared_ptr<AdjacencyList> find_overlapping(
-      const ReflectionList &reflections) {
+      const af::ref<Reflection> reflections) {
 
     // Ensure we have a valid number of reflections
     DIALS_ASSERT(reflections.size() > 0);

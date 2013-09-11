@@ -14,16 +14,13 @@
 #include <cmath>
 #include <iostream>
 #include <scitbx/array_family/tiny_types.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_double;
-  using scitbx::af::const_ref;
   using scitbx::af::max_index;
   using scitbx::af::max;
   using scitbx::af::min;
@@ -34,10 +31,10 @@ namespace dials { namespace algorithms {
    * @returns The threshold value
    */
   inline
-  std::size_t maximum_deviation(const flex_double &histo) {
+  std::size_t maximum_deviation(const af::const_ref<double> &histo) {
 
     // Get x, y at peak and at end of tail.
-    std::size_t i0 = max_index(const_ref<double>(histo.begin(), histo.size()));
+    std::size_t i0 = max_index(histo);
     std::size_t i1 = histo.size() - 1;
     double x0 = (double)i0 + 0.5, y0 = histo[i0];
     double x1 = (double)i1 + 0.5, y1 = histo[i1];
@@ -70,15 +67,17 @@ namespace dials { namespace algorithms {
    * @returns The probability distribution of values
    */
   inline
-  flex_double probability_distribution(const flex_int &image, int2 range) {
+  af::shared<double> probability_distribution(
+      const af::const_ref< int, af::c_grid<2> > &image,
+      int2 range) {
 
     // Get the histogram range
     int minh = range[0];
-    int maxi = max(const_ref<int>(image.begin(), image.size()));
+    int maxi = max(image);
     int maxh = min(int2(maxi, range[1]).const_ref());
 
     // Histogram the image
-    flex_double p(maxh - minh + 1);
+    af::shared<double> p(maxh - minh + 1);
     std::size_t count = 0;
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (minh <= image[i] && image[i] <= maxh) {

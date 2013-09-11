@@ -10,7 +10,6 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <dials/algorithms/peak_finding/label_pixels.h>
 
 namespace dials { namespace algorithms { namespace boost_python {

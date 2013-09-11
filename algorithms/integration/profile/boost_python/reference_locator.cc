@@ -28,16 +28,25 @@ namespace dials { namespace algorithms { namespace boost_python {
   };
 
   template <typename ImageSampler>
+  ReferenceLocator<ImageSampler>* make_reference_locator(
+      af::versa< double, scitbx::af::flex_grid<> > &profiles, 
+      const ImageSampler &sampler_type) {
+    af::versa< double, af::c_grid<4> > profiles_c_grid(
+      profiles.handle(), af::c_grid<4>(profiles.accessor()));
+    return new ReferenceLocator<ImageSampler>(profiles_c_grid, sampler_type);
+  }
+
+  template <typename ImageSampler>
   void reference_locator_wrapper(const char *name) {
   
     typedef ImageSampler sampler_type;
     typedef ReferenceLocator<ImageSampler> locator_type;
   
-    flex_double (locator_type::*profile_all)() const =
+    af::versa<double, af::c_grid<4> > (locator_type::*profile_all)() const =
       &locator_type::profile;
-    flex_double (locator_type::*profile_at_index)(
+    af::versa<double, af::c_grid<3> > (locator_type::*profile_at_index)(
       std::size_t) const = &locator_type::profile;
-    flex_double (locator_type::*profile_at_coord)(
+    af::versa<double, af::c_grid<3> > (locator_type::*profile_at_coord)(
       double3) const = &locator_type::profile;
 
     double3 (locator_type::*coord_at_index)(
@@ -46,8 +55,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       double3) const = &locator_type::coord;
   
     class_<locator_type>(name, no_init)
-      .def(init<const flex_double &, const sampler_type&>((
-        arg("profiles"), arg("sampler"))))
+      .def("__init__", make_constructor(&make_reference_locator<ImageSampler>))    
       .def("size", &locator_type::size)
       .def("sampler", &locator_type::sampler)
       .def("index", &locator_type::index)

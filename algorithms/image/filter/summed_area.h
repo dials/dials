@@ -15,18 +15,14 @@
 
 #include <algorithm>
 #include <cmath>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
-  using scitbx::af::flex;
-  using scitbx::af::flex_int;
-  using scitbx::af::flex_bool;
-  using scitbx::af::flex_double;
 
   /**
    * Calculate the summed area table from the image.
@@ -34,18 +30,15 @@ namespace dials { namespace algorithms {
    * @returns The summed area table
    */
   template <typename T>
-  typename flex<T>::type summed_area_table(
-      const typename flex<T>::type &image) {
-
-    // Check the dimensions of the image
-    DIALS_ASSERT(image.accessor().all().size() == 2);
+  af::versa< T, af::c_grid<2> > summed_area_table(
+      const af::const_ref< T, af::c_grid<2> > &image) {
 
     // Allocate the table
-    typename flex<T>::type table(image.accessor());
+    af::versa< T, af::c_grid<2> > table(image.accessor());
 
     // Get the size of the image
-    std::size_t ysize = image.accessor().all()[0];
-    std::size_t xsize = image.accessor().all()[1];
+    std::size_t ysize = image.accessor()[0];
+    std::size_t xsize = image.accessor()[1];
 
     // Create the summed area table
     for (std::size_t j = 0; j < ysize; ++j) {
@@ -68,21 +61,20 @@ namespace dials { namespace algorithms {
    * @returns The summed area
    */
   template <typename T>
-  typename flex<T>::type summed_area(
-      const typename flex<T>::type &image, int2 size) {
+  af::versa< T, af::c_grid<2> > summed_area(
+      const af::const_ref< T, af::c_grid<2> > &image, int2 size) {
     // Check the sizes are valid
-    DIALS_ASSERT(image.accessor().all().size() == 2);
-    DIALS_ASSERT(size[0] > 0 && size[1] > 0);
+    DIALS_ASSERT(size.all_gt(0));
 
     // Calculate the summed area table
-    typename flex<T>::type I = summed_area_table<T>(image);
+    af::versa< T, af::c_grid<2> > I = summed_area_table<T>(image);
 
     // Allocate the filtered image
-    typename flex<T>::type sum(image.accessor());
+    af::versa< T, af::c_grid<2> > sum(image.accessor());
 
     // Get the size of the image
-    std::size_t ysize = image.accessor().all()[0];
-    std::size_t xsize = image.accessor().all()[1];
+    std::size_t ysize = image.accessor()[0];
+    std::size_t xsize = image.accessor()[1];
 
     // Calculate the local mean at every point
     #pragma omp parallel for

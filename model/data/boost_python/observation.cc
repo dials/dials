@@ -69,14 +69,7 @@ namespace dials { namespace model { namespace boost_python {
   void centroid_set_angle(Centroid &obj, double v) {
     obj.mm.position[2] = v;
   }
-  
-  /** Copy the observation */
-  static
-  Observation deepcopy(const Observation &obj) {
-    Observation result(obj);
-    return result;
-  }  
-    
+      
   void export_observation()
   {
     class_<Intensity::IntensityData>("IntensityData")
@@ -179,6 +172,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("__ne__", &Centroid::operator!=);
     
     class_<Observation>("Observation")
+      .def(init<const Observation&>())
       .def(init<const Centroid&>((
         arg("centroid"))))
       .def(init<const Intensity&>((
@@ -206,8 +200,7 @@ namespace dials { namespace model { namespace boost_python {
           arg("detector"),
           arg("scan")))
       .def("__eq__", &Observation::operator==)
-      .def("__ne__", &Observation::operator!=)
-      .def("deepcopy", &deepcopy);
+      .def("__ne__", &Observation::operator!=);
   }
 
 }}} // namespace dials::model::boost_python

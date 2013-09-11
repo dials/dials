@@ -15,7 +15,6 @@
 
 #include <boost/python.hpp>
 #include <scitbx/array_family/shared.h>
-#include <scitbx/array_family/flex_types.h>
 #include <miller.h>
 #include <uctbx.h>
 #include <cctype>

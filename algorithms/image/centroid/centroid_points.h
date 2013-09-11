@@ -14,9 +14,9 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/misc_functions.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -28,8 +28,6 @@ namespace dials { namespace algorithms {
   using scitbx::af::sum;
   using scitbx::af::sum_sq;
   using scitbx::af::tiny;
-  using scitbx::af::flex;
-  using scitbx::af::flex_double;
 
   /**
    * Class to calculate the centroid of a list of coordinates
@@ -44,16 +42,16 @@ namespace dials { namespace algorithms {
     // Useful typedefs
     typedef CoordType coord_type;
     typedef tiny<double, DIM*DIM> matrix_type;
-    typedef typename flex<coord_type>::type flex_type;
 
     /**
      * Calculate the centroid.
      * @param coord The list of coordinates.
      * @param value The list of values
      */
-    CentroidPoints(const flex_double &pixels, const flex_type &coords)
-      : sum_pixels_(sum(pixels.const_ref())),
-        sum_pixels_sq_(sum_sq(pixels.const_ref())),
+    CentroidPoints(const af::const_ref<double> &pixels,
+                   const af::const_ref<coord_type> &coords)
+      : sum_pixels_(sum(pixels)),
+        sum_pixels_sq_(sum_sq(pixels)),
         sum_pixels_coords_(0.0),
         sum_pixels_delta_sq_(0.0),
         sum_pixels_delta_cross_(0.0) {

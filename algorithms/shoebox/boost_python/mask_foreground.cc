@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     void (MaskForeground::*call_w_reflection)(Reflection&)const =
       &MaskForeground::operator();
   
-    void (MaskForeground::*call_w_reflection_list)(ReflectionList&)const =
+    void (MaskForeground::*call_w_reflection_list)(af::ref<Reflection>)const =
       &MaskForeground::operator();
         
     class_ <MaskForeground> ("MaskForeground", no_init)

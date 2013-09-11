@@ -24,6 +24,10 @@
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
+  using scitbx::af::flex_double;
+  using scitbx::af::flex_int;
+
+  typedef cctbx::miller::index<> miller_index;
 
   std::string reflection_to_string(const Reflection &reflection) {
     std::stringstream ss;
@@ -31,159 +35,151 @@ namespace dials { namespace model { namespace boost_python {
     return ss.str();
   }
   
-  using scitbx::af::flex_grid;
-  using scitbx::af::flex_bool;
-  typedef scitbx::af::flex<cctbx::miller::index<> >::type flex_miller_index;
-  typedef scitbx::af::flex<vec2<double> >::type flex_vec2_double;
-  typedef scitbx::af::flex<vec3<double> >::type flex_vec3_double;
-  typedef scitbx::af::flex<vec3<int> >::type flex_vec3_int;
-  typedef scitbx::af::flex<int6>::type flex_int6;
-
-  flex_miller_index reflection_list_get_miller_index(const ReflectionList &r) {
-    flex_miller_index result(r.size());
+  af::shared<miller_index> reflection_list_get_miller_index(const af::const_ref<Reflection> &r) {
+    af::shared<miller_index> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_miller_index();
     }
     return result;
   }
   
-  flex_int reflection_list_get_status(const ReflectionList &r) {
-    flex_int result(r.size());
+  af::shared<int> reflection_list_get_status(const af::const_ref<Reflection> &r) {
+    af::shared<int> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_status();
     }
     return result;
   }
   
-  flex_bool reflection_list_get_entering(const ReflectionList &r) {
-    flex_bool result(r.size());
+  af::shared<bool> reflection_list_get_entering(const af::const_ref<Reflection> &r) {
+    af::shared<bool> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_entering();
     }
     return result;
   }
 
-  flex_double reflection_list_get_rotation_angle(const ReflectionList &r) {
-    flex_double result(r.size());
+  af::shared<double> reflection_list_get_rotation_angle(const af::const_ref<Reflection> &r) {
+    af::shared<double> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_rotation_angle();
     }
     return result;
   }
 
-  flex_vec3_double reflection_list_get_beam_vector(const ReflectionList &r) {
-    flex_vec3_double result(r.size());
+  af::shared< vec3<double> > reflection_list_get_beam_vector(const af::const_ref<Reflection> &r) {
+    af::shared< vec3<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_beam_vector();
     }
     return result;
   }
   
-  flex_vec2_double reflection_list_get_image_coord_mm(const ReflectionList &r) {
-    flex_vec2_double result(r.size());
+  af::shared< vec2<double> > reflection_list_get_image_coord_mm(const af::const_ref<Reflection> &r) {
+    af::shared< vec2<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_image_coord_mm();
     }
     return result;
   }
   
-  flex_vec2_double reflection_list_get_image_coord_px(const ReflectionList &r) {
-    flex_vec2_double result(r.size());
+  af::shared< vec2<double> > reflection_list_get_image_coord_px(const af::const_ref<Reflection> &r) {
+    af::shared< vec2<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_image_coord_px();
     }
     return result;
   }
   
-  flex_double reflection_list_get_frame_number(const ReflectionList &r) {
-    flex_double result(r.size());
+  af::shared<double> reflection_list_get_frame_number(const af::const_ref<Reflection> &r) {
+    af::shared<double> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_frame_number();
     }
     return result;
   }
   
-  flex_int reflection_list_get_panel_number(const ReflectionList &r) {
-    flex_int result(r.size());
+  af::shared<int> reflection_list_get_panel_number(const af::const_ref<Reflection> &r) {
+    af::shared<int> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_panel_number();
     }
     return result;
   }
   
-  flex_int6 reflection_list_get_bounding_box(const ReflectionList &r) {
-    flex_int6 result(r.size());
+  af::shared<int6> reflection_list_get_bounding_box(const af::const_ref<Reflection> &r) {
+    af::shared<int6> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_bounding_box();
     }
     return result;
   }
   
-  flex_vec3_double reflection_list_get_centroid_position(const ReflectionList &r) {
-    flex_vec3_double result(r.size());
+  af::shared< vec3<double> > reflection_list_get_centroid_position(const af::const_ref<Reflection> &r) {
+    af::shared< vec3<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_centroid_position();
     }
     return result;
   }
   
-  flex_vec3_double reflection_list_get_centroid_variance(const ReflectionList &r) {
-    flex_vec3_double result(r.size());
+  af::shared< vec3<double> > reflection_list_get_centroid_variance(const af::const_ref<Reflection> &r) {
+    af::shared< vec3<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_centroid_variance();
     }
     return result;
   }
   
-  flex_vec3_double reflection_list_get_centroid_sq_width(const ReflectionList &r) {
-    flex_vec3_double result(r.size());
+  af::shared< vec3<double> > reflection_list_get_centroid_sq_width(const af::const_ref<Reflection> &r) {
+    af::shared< vec3<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_centroid_sq_width();
     }
     return result;
   }
   
-  flex_double reflection_list_get_intensity(const ReflectionList &r) {
-    flex_double result(r.size());
+  af::shared<double> reflection_list_get_intensity(const af::const_ref<Reflection> &r) {
+    af::shared<double> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_intensity();
     }
     return result;
   }
   
-  flex_double reflection_list_get_intensity_variance(const ReflectionList &r) {
-    flex_double result(r.size());
+  af::shared<double> reflection_list_get_intensity_variance(const af::const_ref<Reflection> &r) {
+    af::shared<double> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_intensity_variance();
     }
     return result;
   }  
   
-  flex_double reflection_list_get_corrected_intensity(const ReflectionList &r) {
-    flex_double result(r.size());
+  af::shared<double> reflection_list_get_corrected_intensity(const af::const_ref<Reflection> &r) {
+    af::shared<double> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_corrected_intensity();
     }
     return result;
   }  
  
-  flex_double reflection_list_get_corrected_intensity_variance(
-      const ReflectionList &r) {
-    flex_double result(r.size());
+  af::shared<double> reflection_list_get_corrected_intensity_variance(
+      const af::const_ref<Reflection> &r) {
+    af::shared<double> result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = r[i].get_corrected_intensity_variance();
     }
     return result;
   }   
  
-  flex_double reflection_list_get_shoebox(const ReflectionList &r) {
+  af::shared<double> reflection_list_get_shoebox(const af::const_ref<Reflection> &r) {
     std::size_t result_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       result_size += r[i].get_shoebox().size();
     }
-    flex_double result(result_size);
+    af::shared<double> result(result_size);
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
-      flex_double s = r[i].get_shoebox();
+      af::versa< double, af::c_grid<3> > s = r[i].get_shoebox();
       for (std::size_t j = 0; j < s.size(); ++j) {
         result[k++] = s[j];
       }
@@ -191,14 +187,14 @@ namespace dials { namespace model { namespace boost_python {
     return result;
   }
   
-  flex_int reflection_list_get_shoebox_mask(const ReflectionList &r) {
+  af::shared<int> reflection_list_get_shoebox_mask(const af::const_ref<Reflection> &r) {
     std::size_t result_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       result_size += r[i].get_shoebox_mask().size();
     }
-    flex_int result(result_size);
+    af::shared<int> result(result_size);
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
-      flex_int s = r[i].get_shoebox_mask();
+      af::versa<int, af::c_grid<3> > s = r[i].get_shoebox_mask();
       for (std::size_t j = 0; j < s.size(); ++j) {
         result[k++] = s[j];
       }
@@ -206,14 +202,14 @@ namespace dials { namespace model { namespace boost_python {
     return result;
   }
   
-  flex_double reflection_list_get_shoebox_background(const ReflectionList &r) {
+  af::shared<double> reflection_list_get_shoebox_background(const af::const_ref<Reflection> &r) {
     std::size_t result_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       result_size += r[i].get_shoebox_background().size();
     }
-    flex_double result(result_size);
+    af::shared<double> result(result_size);
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
-      flex_double s = r[i].get_shoebox_background();
+      af::versa< double, af::c_grid<3> > s = r[i].get_shoebox_background();
       for (std::size_t j = 0; j < s.size(); ++j) {
         result[k++] = s[j];
       }
@@ -221,14 +217,14 @@ namespace dials { namespace model { namespace boost_python {
     return result;
   }
   
-  flex_double reflection_list_get_transformed_shoebox(const ReflectionList &r) {
+  af::shared<double> reflection_list_get_transformed_shoebox(const af::const_ref<Reflection> &r) {
     std::size_t result_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       result_size += r[i].get_transformed_shoebox().size();
     }
-    flex_double result(result_size);
+    af::shared<double> result(result_size);
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
-      flex_double s = r[i].get_transformed_shoebox();
+      af::versa< double, af::c_grid<3> > s = r[i].get_transformed_shoebox();
       for (std::size_t j = 0; j < s.size(); ++j) {
         result[k++] = s[j];
       }
@@ -237,24 +233,24 @@ namespace dials { namespace model { namespace boost_python {
   }
   
   
-  void reflection_list_set_miller_index(ReflectionList &r, 
-      const flex_miller_index &input) {
+  void reflection_list_set_miller_index(af::ref<Reflection> r, 
+      const af::const_ref<miller_index> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_miller_index(input[i]);
     }
   }
 
-  void reflection_list_set_status(ReflectionList &r, 
-      const flex_int &input) {
+  void reflection_list_set_status(af::ref<Reflection> r, 
+      const af::const_ref<int> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_status(input[i]);
     }
   }
 
-  void reflection_list_set_entering(ReflectionList &r, 
-      const flex_bool &input) {
+  void reflection_list_set_entering(af::ref<Reflection> r, 
+      const af::const_ref<bool> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_entering(input[i]);
@@ -262,120 +258,120 @@ namespace dials { namespace model { namespace boost_python {
   }
 
 
-  void reflection_list_set_rotation_angle(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_rotation_angle(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_rotation_angle(input[i]);
     }
   }
 
-  void reflection_list_set_beam_vector(ReflectionList &r, 
-      const flex_vec3_double &input) {
+  void reflection_list_set_beam_vector(af::ref<Reflection> r, 
+      const af::const_ref< vec3<double> > &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_beam_vector(input[i]);
     }
   }
 
-  void reflection_list_set_image_coord_mm(ReflectionList &r, 
-      const flex_vec2_double &input) {
+  void reflection_list_set_image_coord_mm(af::ref<Reflection> r, 
+      const af::const_ref< vec2<double> > &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_image_coord_mm(input[i]);
     }
   }
 
-  void reflection_list_set_image_coord_px(ReflectionList &r, 
-      const flex_vec2_double &input) {
+  void reflection_list_set_image_coord_px(af::ref<Reflection> r, 
+      const af::const_ref< vec2<double> > &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_image_coord_px(input[i]);
     }
   }
   
-  void reflection_list_set_frame_number(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_frame_number(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_frame_number(input[i]);
     }
   }
 
-  void reflection_list_set_panel_number(ReflectionList &r, 
-      const flex_int &input) {
+  void reflection_list_set_panel_number(af::ref<Reflection> r, 
+      const af::const_ref<int> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_panel_number(input[i]);
     }
   }
 
-  void reflection_list_set_bounding_box(ReflectionList &r, 
-      const flex_int6 &input) {
+  void reflection_list_set_bounding_box(af::ref<Reflection> r, 
+      const af::const_ref<int6> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_bounding_box(input[i]);
     }
   }
   
-  void reflection_list_set_centroid_position(ReflectionList &r, 
-      const flex_vec3_double &input) {
+  void reflection_list_set_centroid_position(af::ref<Reflection> r, 
+      const af::const_ref< vec3<double> > &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_centroid_position(input[i]);
     }
   }
   
-  void reflection_list_set_centroid_variance(ReflectionList &r, 
-      const flex_vec3_double &input) {
+  void reflection_list_set_centroid_variance(af::ref<Reflection> r, 
+      const af::const_ref< vec3<double> > &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_centroid_variance(input[i]);
     }
   }
 
-  void reflection_list_set_centroid_sq_width(ReflectionList &r, 
-      const flex_vec3_double &input) {
+  void reflection_list_set_centroid_sq_width(af::ref<Reflection> r, 
+      const af::const_ref< vec3<double> > &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_centroid_sq_width(input[i]);
     }
   }
   
-  void reflection_list_set_intensity(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_intensity(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_intensity(input[i]);
     }
   }
 
-  void reflection_list_set_intensity_variance(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_intensity_variance(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     DIALS_ASSERT(input.size() == r.size());      
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_intensity_variance(input[i]);
     }
   }
   
-  void reflection_list_set_corrected_intensity(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_corrected_intensity(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_corrected_intensity(input[i]);
     }
   }  
   
-  void reflection_list_set_corrected_intensity_variance(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_corrected_intensity_variance(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     DIALS_ASSERT(input.size() == r.size());        
     for (std::size_t i = 0; i < input.size(); ++i) {
       r[i].set_corrected_intensity_variance(input[i]);
     }
   }  
     
-  void reflection_list_set_shoebox(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_shoebox(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     std::size_t total_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       int6 bbox = r[i].get_bounding_box();
@@ -387,7 +383,7 @@ namespace dials { namespace model { namespace boost_python {
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
       int6 bbox = r[i].get_bounding_box();
       vec3<int> shape(bbox[5] - bbox[4], bbox[3] - bbox[2], bbox[1] - bbox[0]);    
-      flex_double s(flex_grid<>(shape[0], shape[1], shape[2]));
+      af::versa< double, af::c_grid<3> > s(af::c_grid<3>(shape[0], shape[1], shape[2]));
       for (std::size_t j = 0; j < s.size(); ++j) {
         s[j] = input[k++];
       }
@@ -395,8 +391,8 @@ namespace dials { namespace model { namespace boost_python {
     }
   }  
 
-  void reflection_list_set_shoebox_mask(ReflectionList &r, 
-      const flex_int &input) {
+  void reflection_list_set_shoebox_mask(af::ref<Reflection> r, 
+      const af::const_ref<int> &input) {
     std::size_t total_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       int6 bbox = r[i].get_bounding_box();
@@ -408,7 +404,7 @@ namespace dials { namespace model { namespace boost_python {
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
       int6 bbox = r[i].get_bounding_box();
       vec3<int> shape(bbox[5] - bbox[4], bbox[3] - bbox[2], bbox[1] - bbox[0]);    
-      flex_int s(flex_grid<>(shape[0], shape[1], shape[2]));
+      af::versa< int, af::c_grid<3> > s(af::c_grid<3>(shape[0], shape[1], shape[2]));
       for (std::size_t j = 0; j < s.size(); ++j) {
         s[j] = input[k++];
       }
@@ -416,8 +412,8 @@ namespace dials { namespace model { namespace boost_python {
     }  
   }  
   
-  void reflection_list_set_shoebox_background(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_shoebox_background(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     std::size_t total_size = 0;
     for (std::size_t i = 0; i < r.size(); ++i) {
       int6 bbox = r[i].get_bounding_box();
@@ -429,7 +425,7 @@ namespace dials { namespace model { namespace boost_python {
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
       int6 bbox = r[i].get_bounding_box();
       vec3<int> shape(bbox[5] - bbox[4], bbox[3] - bbox[2], bbox[1] - bbox[0]);    
-      flex_double s(flex_grid<>(shape[0], shape[1], shape[2]));
+      af::versa< double, af::c_grid<3> > s(af::c_grid<3>(shape[0], shape[1], shape[2]));
       for (std::size_t j = 0; j < s.size(); ++j) {
         s[j] = input[k++];
       }
@@ -437,8 +433,8 @@ namespace dials { namespace model { namespace boost_python {
     }   
   } 
    
-  void reflection_list_set_transformed_shoebox(ReflectionList &r, 
-      const flex_double &input) {
+  void reflection_list_set_transformed_shoebox(af::ref<Reflection> r, 
+      const af::const_ref<double> &input) {
     if (input.size() == 0) {
       return;
     }
@@ -447,7 +443,7 @@ namespace dials { namespace model { namespace boost_python {
       std::log(input.size() / r.size()) / 3.0) + 0.5);
     DIALS_ASSERT(r.size() * sz * sz * sz == input.size());    
     for (std::size_t i = 0, k = 0; i < r.size(); ++i) {
-      flex_double s(flex_grid<>(sz, sz, sz));
+      af::versa< double, af::c_grid<3> > s(af::c_grid<3>(sz, sz, sz));
       for (std::size_t j = 0; j < s.size(); ++j) {
         s[j] = input[k++];
       }
@@ -455,6 +451,70 @@ namespace dials { namespace model { namespace boost_python {
     }    
   }  
   
+  static
+  void set_shoebox(Reflection &obj, flex_double &data) {
+    DIALS_ASSERT(data.accessor().all().size() == 3);
+    obj.set_shoebox(af::versa<double, af::c_grid<3> >(
+      data.handle(), af::c_grid<3>(data.accessor())));
+  }
+
+//  static
+//  flex_double get_shoebox(Reflection &obj) {
+//    return flex_double(obj.get_shoebox().handle(), 
+//      obj.get_shoebox().accessor().as_flex_grid());
+//  }
+  
+  static
+  void set_shoebox_mask(Reflection &obj, flex_int &data) {
+    DIALS_ASSERT(data.accessor().all().size() == 3);
+    obj.set_shoebox_mask(af::versa<int, af::c_grid<3> >(
+      data.handle(), af::c_grid<3>(data.accessor())));
+  }
+
+//  static
+//  flex_int get_shoebox_mask(Reflection &obj) {
+//    return flex_int(obj.get_shoebox_mask().handle(), 
+//      obj.get_shoebox_mask().accessor().as_flex_grid());
+//  }
+  
+  static
+  void set_shoebox_background(Reflection &obj, flex_double &data) {
+    DIALS_ASSERT(data.accessor().all().size() == 3);
+    obj.set_shoebox_background(af::versa<double, af::c_grid<3> >(
+      data.handle(), af::c_grid<3>(data.accessor())));
+  }
+
+//  static
+//  flex_double get_shoebox_background(Reflection &obj) {
+//    return flex_double(obj.get_shoebox_background().handle(), 
+//      obj.get_shoebox_background().accessor().as_flex_grid());
+//  }
+  
+  static
+  void set_transformed_shoebox(Reflection &obj, flex_double &data) {
+    DIALS_ASSERT(data.accessor().all().size() == 3);
+    obj.set_transformed_shoebox(af::versa<double, af::c_grid<3> >(
+      data.handle(), af::c_grid<3>(data.accessor())));
+  }
+
+//  static
+//  flex_double get_transformed_shoebox(Reflection &obj) {
+//    return flex_double(obj.get_transformed_shoebox().handle(), 
+//      obj.get_transformed_shoebox().accessor().as_flex_grid());
+//  }
+  
+  static
+  void set_transformed_shoebox_background(Reflection &obj, flex_double &data) {
+    DIALS_ASSERT(data.accessor().all().size() == 3);
+    obj.set_transformed_shoebox_background(af::versa<double, af::c_grid<3> >(
+      data.handle(), af::c_grid<3>(data.accessor())));
+  }
+
+//  static
+//  flex_double get_transformed_shoebox_background(Reflection &obj) {
+//    return flex_double(obj.get_transformed_shoebox_background().handle(), 
+//      obj.get_transformed_shoebox_background().accessor().as_flex_grid());
+//  }
   
   void export_reflection()
   {
@@ -503,21 +563,31 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("bounding_box",
         &Reflection::get_bounding_box,
         &Reflection::set_bounding_box)  
+//      .def("shoebox", &get_shoebox)
+//      .def("shoebox", &set_shoebox)
+//      .def("shoebox_mask", &get_shoebox_mask)
+//      .def("shoebox_mask", &set_shoebox_mask)
+//      .def("shoebox_background", &get_shoebox_background)
+//      .def("shoebox_background", &set_shoebox_background)      
+//      .def("transformed_shoebox", &get_transformed_shoebox)
+//      .def("transformed_shoebox", &set_transformed_shoebox)   
+//      .def("transformed_shoebox_background", &get_transformed_shoebox_background)
+//      .def("transformed_shoebox_background", &set_transformed_shoebox_background)      
       .add_property("shoebox",
         &Reflection::get_shoebox,
-        &Reflection::set_shoebox)
+        &set_shoebox)
       .add_property("shoebox_mask",
         &Reflection::get_shoebox_mask,
-        &Reflection::set_shoebox_mask)
+        &set_shoebox_mask)
       .add_property("shoebox_background",
         &Reflection::get_shoebox_background,
-        &Reflection::set_shoebox_background)        
+        &set_shoebox_background)        
       .add_property("transformed_shoebox",
         &Reflection::get_transformed_shoebox,
-        &Reflection::set_transformed_shoebox)
+        &set_transformed_shoebox)
       .add_property("transformed_shoebox_background",
         &Reflection::get_transformed_shoebox_background,
-        &Reflection::set_transformed_shoebox_background)        
+        &set_transformed_shoebox_background)        
       .add_property("centroid_position",
         &Reflection::get_centroid_position,
         &Reflection::set_centroid_position)
@@ -592,7 +662,7 @@ namespace dials { namespace model { namespace boost_python {
         .def("shoebox_background", &reflection_list_get_shoebox_background)
         .def("shoebox_background", &reflection_list_set_shoebox_background)
         .def("transformed_shoebox", &reflection_list_get_transformed_shoebox)
-        .def("transformed_shoebox", &reflection_list_set_transformed_shoebox);    
+        .def("transformed_shoebox", &reflection_list_set_transformed_shoebox);
   }
 
 }}} // namespace dials::model::boost_python

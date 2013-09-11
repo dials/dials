@@ -11,24 +11,23 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_HELPERS_H
 #define DIALS_ALGORITHMS_BACKGROUND_HELPERS_H
 
-#include <scitbx/array_family/flex_types.h>
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
-  using scitbx::af::flex_double;
   using dials::model::Reflection;
-  using dials::model::ReflectionList;
 
   /**
    * Set the shoebox background value.
    * @param reflections The reflection list
    * @param value The value to set the background pixels to
    */
-  void set_shoebox_background_value(ReflectionList &reflections, double value) {
+  void set_shoebox_background_value(
+      af::ref<Reflection> reflections, double value) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      flex_double background = reflections[i].get_shoebox_background();
+      af::ref< double, af::c_grid<3> > background =
+        reflections[i].get_shoebox_background().ref();
       for (std::size_t j = 0; j < background.size(); ++j) {
         background[j] = value;
       }

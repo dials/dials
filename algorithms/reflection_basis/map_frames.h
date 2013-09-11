@@ -17,7 +17,6 @@
 #include <scitbx/constants.h>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
@@ -30,8 +29,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using boost::math::erf;
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_grid;
 
   /**
    * A class to calculate calculate the fraction of counts contributed by each
@@ -60,7 +57,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_size_e3_(grid_size_e3),
         step_size_e3_(2.0 * delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
 
-    flex_double operator()(vec2 <int> frames, double phi, double zeta) const;
+    af::versa< double, af::c_grid<2> > operator()(vec2 <int> frames,
+      double phi, double zeta) const;
 
   private:
 
@@ -96,7 +94,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *
    * @throws std::runtime_error if the supplied values are bad
    */
-  flex_double MapFramesForward::operator()(
+  af::versa< double, af::c_grid<2> > MapFramesForward::operator()(
       vec2 <int> frames, double phi, double zeta) const
   {
     // Check the value of zeta
@@ -110,7 +108,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     int v31 = + (int)grid_size_e3_ + 1;
 
     // Create an array to contain the intensity fractions
-    flex_double fraction(flex_grid<>(j1 - j0, (2 * grid_size_e3_ + 1)));
+    af::versa< double, af::c_grid<2> > fraction(af::c_grid<2>(
+      j1 - j0, (2 * grid_size_e3_ + 1)));
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
@@ -197,7 +196,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_size_e3_(grid_size_e3),
         step_size_e3_(2.0 * delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
 
-    flex_double operator()(vec2 <int> bbox_z, double phi, double zeta) const;
+    af::versa< double, af::c_grid<2> > operator()(vec2 <int> bbox_z,
+      double phi, double zeta) const;
 
   private:
 
@@ -232,7 +232,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *
    * @throws std::runtime_error if the supplied values are bad
    */
-  flex_double MapFramesReverse::operator()(
+  af::versa< double, af::c_grid<2> > MapFramesReverse::operator()(
       vec2 <int> frames, double phi, double zeta) const
   {
     // Check the value of zeta
@@ -246,7 +246,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     int v31 = + (int)grid_size_e3_ + 1;
 
     // Create an array to contain the intensity fractions
-    flex_double fraction(flex_grid<>((2 * grid_size_e3_ + 1), j1 - j0));
+    af::versa< double, af::c_grid<2> > fraction(af::c_grid<2>(
+      (2 * grid_size_e3_ + 1), j1 - j0));
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));

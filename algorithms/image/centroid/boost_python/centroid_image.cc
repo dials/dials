@@ -20,11 +20,11 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     class_<CentroidImage2d, bases<CentroidPoints <vec2<double> > > >(
         "CentroidImage2d", no_init)
-      .def(init<const flex_double&>((arg("image"))));
+      .def(init<const af::const_ref<double, af::c_grid<2> >&>((arg("image"))));
 
     class_<CentroidImage3d, bases<CentroidPoints <vec3<double> > > >(
         "CentroidImage3d", no_init)
-      .def(init<const flex_double&>((arg("image"))));
+      .def(init<const af::const_ref<double, af::c_grid<3> >&>((arg("image"))));
   }
 
 }}} // namespace = dials::algorithms::boost_python

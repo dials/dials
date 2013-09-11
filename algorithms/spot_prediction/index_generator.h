@@ -14,6 +14,7 @@
 #include <cctbx/uctbx.h>
 #include <cctbx/sgtbx/space_group_type.h>
 #include <scitbx/array_family/loops.h>
+#include <dials/array_family/import_scitbx_af.h>
 
 namespace dials { namespace algorithms {
 
@@ -69,8 +70,8 @@ namespace dials { namespace algorithms {
      * Create an array of miller indices by calling next until (000) is reached.
      * @returns The array of valid miller indices
      */
-    scitbx::af::shared <cctbx::miller::index <> > to_array() {
-      scitbx::af::shared <cctbx::miller::index <> > result;
+    af::shared <cctbx::miller::index <> > to_array() {
+      af::shared <cctbx::miller::index <> > result;
       for (;;) {
         cctbx::miller::index <> h = this->next();
         if (h.is_zero()) {
@@ -88,9 +89,9 @@ namespace dials { namespace algorithms {
      * @param reference_h_max The maximum miller indices
      * @returns The loop structure
      */
-    scitbx::af::nested_loop <cctbx::miller::index <> > initialise_loop(
+    af::nested_loop <cctbx::miller::index <> > initialise_loop(
         cctbx::miller::index <> const& reference_h_max) const {
-      return scitbx::af::nested_loop <cctbx::miller::index <> >(
+      return af::nested_loop <cctbx::miller::index <> >(
         -reference_h_max, reference_h_max + 1);
     }
 
@@ -99,7 +100,7 @@ namespace dials { namespace algorithms {
     cctbx::uctbx::unit_cell unit_cell_;
     cctbx::sgtbx::space_group_type space_group_type_;
     double d_min_;
-    scitbx::af::nested_loop <cctbx::miller::index <> > loop_;
+    af::nested_loop <cctbx::miller::index <> > loop_;
   };
 
 }} // namespace dials::algorithms

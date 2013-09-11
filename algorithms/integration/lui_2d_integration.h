@@ -12,22 +12,23 @@
 #define DIALS_ALGORITHMS_LUI_INTEGRATION_2D_H
 
 #include <iostream>
-#include <scitbx/array_family/flex_types.h>
 #include <scitbx/vec2.h>
 #include <math.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
+
 namespace dials { namespace algorithms {
 
-  using scitbx::af::flex_double;
-  using scitbx::af::flex_int;
   using scitbx::vec2;
 
-  vec2<double> raw_2d_cut(flex_double & data2d, flex_int & mask2d,
-        flex_double & background2d) {
+  vec2<double> raw_2d_cut(
+      const af::const_ref< double, af::c_grid<2> > &data2d,
+      const af::const_ref< int, af::c_grid<2> > &mask2d,
+      const af::const_ref< double, af::c_grid<2> > &background2d) {
         double i_tot = 0, tot_bkgr = 0;
         int npix_bkgr = 0, npix_mask = 0, cont = 0;
         double bkgr, sig;
-        std::size_t ncol=data2d.accessor().all()[1];
-        std::size_t nrow=data2d.accessor().all()[0];
+        std::size_t ncol=data2d.accessor()[1];
+        std::size_t nrow=data2d.accessor()[0];
         vec2<double> integr_data(0,1);
 
         for (int row = 0; row<=nrow-1;row++) {
