@@ -46,7 +46,7 @@ class Target(object):
 
         self._reflection_predictor = reflection_predictor
         self._detector = detector
-        self._H = ref_manager
+        self._reflection_manager = ref_manager
         self._prediction_parameterisation = prediction_parameterisation
 
     def predict(self):
@@ -58,13 +58,13 @@ class Target(object):
         self._prediction_parameterisation.prepare()
 
         # reset the 'use' flag for all observations
-        self._H.reset_accepted_reflections()
+        self._reflection_manager.reset_accepted_reflections()
 
         # loop over all reflections in the manager
-        for h in self._H.get_indices():
+        for h in self._reflection_manager.get_indices():
 
             # loop over observations of this hkl
-            for obs in self._H.get_obs(h):
+            for obs in self._reflection_manager.get_obs(h):
 
                 # get the observation image number
                 frame = obs.frame_o
@@ -115,13 +115,13 @@ class Target(object):
                 # store all this information in the matched obs-pred pair
                 obs.update_prediction(Xc, Yc, Phic, Sc, grads)
 
-        if self._H.first_update:
+        if self._reflection_manager.first_update:
 
             # delete all obs-pred pairs from the manager that do not
             # have a prediction
-            self._H.strip_unmatched_observations()
+            self._reflection_manager.strip_unmatched_observations()
 
-            self._H.first_update = False
+            self._reflection_manager.first_update = False
 
         return
 
@@ -129,7 +129,7 @@ class Target(object):
         '''return the number of reflections currently used in the calculation'''
 
         # delegate to the reflection manager
-        return self._H.get_accepted_reflection_count()
+        return self._reflection_manager.get_accepted_reflection_count()
 
     def compute_functional_and_gradients(self):
         '''calculate the target function value and its gradients'''
@@ -163,7 +163,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         '''return the vector of residuals plus their gradients
         and weights for non-linear least squares methods'''
 
-        self._matches = self._H.get_matches()
+        self._matches = self._reflection_manager.get_matches()
 
         # return residuals and weights as 1d flex.double vectors
         nelem = len(self._matches) * 3
@@ -204,7 +204,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     def compute_functional_and_gradients(self):
         '''calculate the value of the target function and its gradients'''
 
-        self._matches = self._H.get_matches()
+        self._matches = self._reflection_manager.get_matches()
         self._nref = self.get_num_reflections()
 
         # This is a hack for the case where nref=0. This should not be necessary
@@ -262,7 +262,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     def rmsds(self):
         '''calculate unweighted RMSDs'''
 
-        n = self._H.get_accepted_reflection_count()
+        n = self._reflection_manager.get_accepted_reflection_count()
 
         resid_x = sum((m.Xresid2 for m in self._matches))
         resid_y = sum((m.Yresid2 for m in self._matches))
@@ -465,16 +465,16 @@ class ReflectionManager(object):
 
         # store observation information in a dict of observation-prediction
         # pairs (prediction information will go in here later)
-        self._H = {}
+        self._obs_pred_pairs = {}
         for i, h in enumerate(Ho):
             entering = So[i].dot(self._vecn) < 0.
-            if h not in self._H:
-                self._H[h] = ObservationPrediction(h, entering, Frameo[i],
+            if h not in self._obs_pred_pairs:
+                self._obs_pred_pairs[h] = ObservationPrediction(h, entering, Frameo[i],
                                         Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2)
             else:
-                self._H[h].add_observation(entering, Frameo[i],
+                self._obs_pred_pairs[h].add_observation(entering, Frameo[i],
                                         Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2)
@@ -539,7 +539,7 @@ class ReflectionManager(object):
     def get_matches(self):
         '''For every observation matched with a prediction return all data'''
 
-        l = [obs for v in self._H.values() for obs in v.obs if obs.is_matched]
+        l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 
         if self._verbosity > 2 and len(l) > 20:
             print "Listing predictions matched with observations for the first 20 reflections:"
@@ -562,33 +562,33 @@ class ReflectionManager(object):
         predictions.
         '''
 
-        for k, v in self._H.items():
+        for k, v in self._obs_pred_pairs.items():
 
             v.remove_unmatched_obs()
 
             # if no observations left, delete the hkl from the dict
             if len(v) == 0:
-                del self._H[k]
+                del self._obs_pred_pairs[k]
 
         return
 
     def get_indices(self):
         '''Get the unique indices of all observations in the manager'''
 
-        return flex.miller_index(self._H.keys())
+        return flex.miller_index(self._obs_pred_pairs.keys())
 
     def get_obs(self, h):
         '''Get the observations of a particular hkl'''
 
-        return self._H[h]
+        return self._obs_pred_pairs[h]
 
     def get_accepted_reflection_count(self):
         '''Get the number of reflections currently to be used for refinement'''
 
-        return sum(v.get_num_pairs() for v in self._H.values())
+        return sum(v.get_num_pairs() for v in self._obs_pred_pairs.values())
 
     def reset_accepted_reflections(self):
         '''Reset all observations to use=False in preparation for a new set of
         predictions'''
 
-        for v in self._H.values(): v.reset_predictions()
+        for v in self._obs_pred_pairs.values(): v.reset_predictions()

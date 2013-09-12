@@ -52,7 +52,7 @@ class Target(object):
                  ref_manager,
                  prediction_parameterisation):
 
-        self._H = ref_manager
+        self._reflection_manager = ref_manager
         self._prediction_parameterisation = prediction_parameterisation
 
     def predict(self):
@@ -72,13 +72,13 @@ class Target(object):
         # ReflectionManager and other classes too.
 
         # Delegate to the reflection_manager for this
-        self._H.predict()
+        self._reflection_manager.predict()
 
     def get_num_reflections(self):
         '''return the number of reflections currently used in the calculation'''
 
         # delegate to the reflection manager
-        return self._H.get_accepted_reflection_count()
+        return self._reflection_manager.get_accepted_reflection_count()
 
     def compute_functional_and_gradients(self):
         '''calculate the target function value and its gradients'''
@@ -110,7 +110,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         '''return the vector of residuals plus their gradients
         and weights for non-linear least squares methods'''
 
-        self._matches = self._H.get_matches()
+        self._matches = self._reflection_manager.get_matches()
 
         self._gradients = self._prediction_parameterisation.get_multi_gradients(self._matches)
 
@@ -157,7 +157,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     def compute_functional_and_gradients(self):
         '''calculate the value of the target function and its gradients'''
 
-        self._matches = self._H.get_matches()
+        self._matches = self._reflection_manager.get_matches()
         self._nref = self.get_num_reflections()
 
         # This is a hack for the case where nref=0. This should not be necessary
@@ -219,7 +219,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     def rmsds(self):
         '''calculate unweighted RMSDs'''
 
-        n = self._H.get_accepted_reflection_count()
+        n = self._reflection_manager.get_accepted_reflection_count()
 
         resid_x = sum((m.Xresid2 for m in self._matches))
         resid_y = sum((m.Yresid2 for m in self._matches))
@@ -419,17 +419,17 @@ class ReflectionManager(object):
 
         # store observation information in a dict of observation-prediction
         # pairs (prediction information will go in here later)
-        self._H = {}
+        self._obs_pred_pairs = {}
         for i, h in enumerate(Ho):
             entering = So[i].dot(self._vecn) < 0.
-            if h not in self._H:
-                self._H[h] = ObservationPrediction(h,
+            if h not in self._obs_pred_pairs:
+                self._obs_pred_pairs[h] = ObservationPrediction(h,
                                         Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2,
                                         entering)
             else:
-                self._H[h].add_observation(Xo[i], sigXo[i], 1./sigXo[i]**2,
+                self._obs_pred_pairs[h].add_observation(Xo[i], sigXo[i], 1./sigXo[i]**2,
                                         Yo[i], sigYo[i], 1./sigYo[i]**2,
                                         Phio[i], sigPhio[i], 1./sigPhio[i]**2,
                                         entering)
@@ -475,7 +475,7 @@ class ReflectionManager(object):
         '''For every observation matched with a prediction return all data'''
 
         l = []
-        for hkl, v in self._H.items():
+        for hkl, v in self._obs_pred_pairs.items():
 
             for i, u in enumerate(v.use):
 
@@ -502,12 +502,12 @@ class ReflectionManager(object):
     def get_indices(self):
         '''Get the unique indices of all observations in the manager'''
 
-        return flex.miller_index(self._H.keys())
+        return flex.miller_index(self._obs_pred_pairs.keys())
 
     def get_accepted_reflection_count(self):
         '''Get the number of reflections currently to be used for refinement'''
 
-        return sum(v.get_num_pairs() for v in self._H.values())
+        return sum(v.get_num_pairs() for v in self._obs_pred_pairs.values())
 
     def predict(self):
 
@@ -532,13 +532,13 @@ class ReflectionManager(object):
         removed from calculation of residual and gradients.'''
 
         # Remove all existing predictions (i.e. set use flags to False)
-        #for v in self._H.values():
+        #for v in self._obs_pred_pairs.values():
         #    v.reset_predictions()
 
         # Loop over new predictions, updating matches
         for ref in predictions:
 
-            if ref.miller_index in self._H: # found an observation for this prediction
+            if ref.miller_index in self._obs_pred_pairs: # found an observation for this prediction
 
                 h = ref.miller_index
                 s = matrix.col(ref.beam_vector)
@@ -549,7 +549,7 @@ class ReflectionManager(object):
                 if not self._inclusion_test(
                         h, s, self._vecn): continue
 
-                self._H[h].update_prediction(ref,
+                self._obs_pred_pairs[h].update_prediction(ref,
                     first_update = self._first_update)
         self._first_update = False
 

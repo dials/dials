@@ -98,7 +98,7 @@ refman.update_predictions(hkls, svecs, d1s, d2s, angles)
 
 s0 = matrix.col(mybeam.get_s0())
 spindle = matrix.col(mygonio.get_rotation_axis())
-for hkl, v in refman._H.items():
+for hkl, v in refman._obs_pred_pairs.items():
 
     for i, e in enumerate(v.exiting):
 
