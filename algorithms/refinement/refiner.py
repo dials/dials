@@ -236,8 +236,10 @@ class Refiner(object):
             UB = self.crystal.get_U() * self.crystal.get_B()
             dphi = self.scan.get_oscillation_range(deg=False)
             predict_rays = RayPredictor(s0, m2, dphi)
+            miller_indices = flex.miller_index(
+                [r.miller_index for r in self._saved_reflections])
             self._new_reflections = reflection_frames(self.scan, ray_intersection(
-                self.detector, predict_rays(self.miller_indices, UB)))
+                self.detector, predict_rays(miller_indices, UB)))
 
         self.sigma_divergence = self.beam.get_sigma_divergence()
         self.sigma_mosaicity = self.crystal.get_mosaicity()
