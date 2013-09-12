@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # Let's do some basic tests. First, can we change parameter values and
     # update the modelled vector s0?
     s0_old = matrix.col(s0.get_s0())
-    s0p.set_p([1000*0.1, 1000*0.1])
+    s0p.set_param_vals([1000*0.1, 1000*0.1])
     assert(approx_equal(matrix.col(s0.get_s0()).angle(s0_old), 0.1413033))
 
     # random initial orientations with a random parameter shift at each
@@ -130,9 +130,9 @@ if __name__ == '__main__':
         s0p = BeamParameterisationOrientation(s0)
 
         # apply a random parameter shift
-        p_vals = s0p.get_p()
+        p_vals = s0p.get_param_vals()
         p_vals = random_param_shift(p_vals, [1000*pi/9, 1000*pi/9])
-        s0p.set_p(p_vals)
+        s0p.set_param_vals(p_vals)
 
         # compare analytical and finite difference derivatives
         an_ds_dp = s0p.get_ds_dp()

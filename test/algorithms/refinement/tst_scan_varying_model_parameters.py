@@ -177,20 +177,20 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
         num_param = xl_op.num_free()
 
         # shift the parameters away from zero
-        p_vals = xl_op.get_p()
+        p_vals = xl_op.get_param_vals()
         sigmas = [1.0] * len(p_vals)
         new_vals = random_param_shift(p_vals, sigmas)
-        xl_op.set_p(new_vals)
+        xl_op.set_param_vals(new_vals)
 
         # recalc state and gradients at image 50
         xl_op.compose()
-        p_vals = xl_op.get_p()
+        p_vals = xl_op.get_param_vals()
         #print "Shifted parameter vals", p_vals
 
         # compare analytical and finite difference derivatives at image 50
         an_ds_dp = xl_op.get_ds_dp()
         fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
-        pnames = xl_op.get_pnames()
+        param_names = xl_op.get_param_names()
 
         null_mat = matrix.sqr((0., 0., 0., 0., 0., 0., 0., 0., 0.))
         for e, f in zip(an_ds_dp, fd_ds_dp):
@@ -218,7 +218,7 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
             fd_ds_dp = get_fd_gradients(xl_op, [1.e-6 * pi/180] * num_param)
             #print t
             #print "Gradients:"
-            #for s, a, f in zip(pnames, an_ds_dp, fd_ds_dp):
+            #for s, a, f in zip(param_names, an_ds_dp, fd_ds_dp):
             #    print s
             #    print a
             #    print f
@@ -285,10 +285,10 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
 
             # apply random parameter shifts to the orientation (2.0 mrad each
             # checkpoint)
-            p_vals = xl_op.get_p()
+            p_vals = xl_op.get_param_vals()
             sigmas = [2.0] * len(p_vals)
             new_vals = random_param_shift(p_vals, sigmas)
-            xl_op.set_p(new_vals)
+            xl_op.set_param_vals(new_vals)
 
             # select random time point at which to make comparisons
             t = random.uniform(*self.image_range)
@@ -341,10 +341,10 @@ class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParam
 
         # apply a random parameter shift to the unit cell, on order of 2% of
         # the initial metrical matrix parameters
-        p_vals = xl_ucp.get_p()
+        p_vals = xl_ucp.get_param_vals()
         sigmas = [0.02  * p for p in p_vals]
         new_vals = random_param_shift(p_vals, sigmas)
-        xl_ucp.set_p(new_vals)
+        xl_ucp.set_param_vals(new_vals)
 
         # calculate state and gradients at image 50
         xl_ucp.compose()
@@ -357,7 +357,7 @@ class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParam
         # compare analytical and finite difference derivatives at image 50
         an_ds_dp = xl_ucp.get_ds_dp()
         fd_ds_dp = get_fd_gradients(xl_ucp, [1.e-7] * num_param)
-        pnames = xl_ucp.get_pnames()
+        param_names = xl_ucp.get_param_names()
 
         for e, f in zip(an_ds_dp, fd_ds_dp):
             assert(approx_equal((e - f), null_mat, eps = 1.e-6))

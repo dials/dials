@@ -85,7 +85,7 @@ def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
     xl = pred_param._crystal
     rp = reflection_predictor
 
-    p_vals = pred_param.get_p()
+    p_vals = pred_param.get_param_vals()
     assert len(deltas) == len(p_vals)
     fd_grad = []
 
@@ -94,7 +94,7 @@ def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
         val = p_vals[i]
 
         p_vals[i] -= deltas[i] / 2.
-        pred_param.set_p(p_vals)
+        pred_param.set_param_vals(p_vals)
 
         # get UB for the current frame
         xlo_param.compose(frame)
@@ -106,7 +106,7 @@ def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
         rev_state = get_state(det, hkl, UB, phi, rp)
 
         p_vals[i] += deltas[i]
-        pred_param.set_p(p_vals)
+        pred_param.set_param_vals(p_vals)
 
         # get UB for the current frame
         xlo_param.compose(frame)
@@ -121,7 +121,7 @@ def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
         p_vals[i] = val
 
     # return to the initial state
-    pred_param.set_p(p_vals)
+    pred_param.set_param_vals(p_vals)
 
     return fd_grad
 
@@ -165,17 +165,17 @@ xluc_param = ScanVaryingCrystalUnitCellParameterisation(
 #### Cause the crystal U and B to vary over the scan
 
 # Vary orientation angles by ~1.0 mrad each checkpoint
-p_vals = xlo_param.get_p()
+p_vals = xlo_param.get_param_vals()
 sigmas = [1.0] * len(p_vals)
 new_vals = random_param_shift(p_vals, sigmas)
-xlo_param.set_p(new_vals)
+xlo_param.set_param_vals(new_vals)
 
 # Vary unit cell parameters, on order of 1% of the initial metrical
 # matrix parameters
-p_vals = xluc_param.get_p()
+p_vals = xluc_param.get_param_vals()
 sigmas = [0.01 * p for p in p_vals]
 new_vals = random_param_shift(p_vals, sigmas)
-xluc_param.set_p(new_vals)
+xluc_param.set_param_vals(new_vals)
 
 #### Unit tests
 

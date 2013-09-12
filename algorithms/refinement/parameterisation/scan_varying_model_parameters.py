@@ -235,7 +235,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
         raise RuntimeError, 'implement me'
 
-    def get_p(self, only_free = True):
+    def get_param_vals(self, only_free = True):
         '''export the values of the internal list of parameters as a
         sequence of floats.
 
@@ -249,14 +249,14 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         else:
             return [x for e in self._param for x in e.value]
 
-    def get_pnames(self, only_free = True):
+    def get_param_names(self, only_free = True):
         '''export the names of the internal list of parameters
 
         If only_free, the names of fixed parameters are filtered from the
         returned list. Otherwise all parameter names are returned'''
 
-        # FIXME combine functionality with get_p by returning a named, ordered
-        # list
+        # FIXME combine functionality with get_param_vals by returning a named, ordered
+        # list?
         if only_free:
             return [x for e in self._param \
                     if not e.get_fixed() for x in e.name]
@@ -264,7 +264,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         else:
             return [x for e in self._param for x in e.name]
 
-    def set_p(self, vals):
+    def set_param_vals(self, vals):
         '''set the values of the internal list of parameters from a
         sequence of floats.
 

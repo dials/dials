@@ -133,74 +133,74 @@ class PredictionParameterisation(object):
     def __len__(self):
         return self._length
 
-    def get_p(self):
+    def get_param_vals(self):
         '''return a concatenated list of parameters from each of the components
         in the global model'''
 
         global_p_list = []
         if self._detector_parameterisations:
-            det_plists = [x.get_p() for x in self._detector_parameterisations]
+            det_plists = [x.get_param_vals() for x in self._detector_parameterisations]
             params = [x for l in det_plists for x in l]
             global_p_list.extend(params)
 
         if self._beam_parameterisations:
-            src_plists = [x.get_p() for x in self._beam_parameterisations]
+            src_plists = [x.get_param_vals() for x in self._beam_parameterisations]
             params = [x for l in src_plists for x in l]
             global_p_list.extend(params)
 
         if self._xl_orientation_parameterisations:
-            xlo_plists = [x.get_p() for x
+            xlo_plists = [x.get_param_vals() for x
                           in self._xl_orientation_parameterisations]
             params = [x for l in xlo_plists for x in l]
             global_p_list.extend(params)
 
         if self._xl_unit_cell_parameterisations:
-            xluc_plists = [x.get_p() for x
+            xluc_plists = [x.get_param_vals() for x
                            in self._xl_unit_cell_parameterisations]
             params = [x for l in xluc_plists for x in l]
             global_p_list.extend(params)
 
         return global_p_list
 
-    def get_p_names(self):
+    def get_param_names(self):
         '''Return a list of the names of parameters in the order they are
         concatenated. Useful for output to log files and debugging.'''
-        pnames = []
+        param_names = []
         if self._detector_parameterisations:
-            det_pname_lists = [x.get_pnames() for x in \
+            det_param_name_lists = [x.get_param_names() for x in \
                                self._detector_parameterisations]
             names = ["Detector%d" % i + x for i, l \
-                     in enumerate(det_pname_lists) for x in l]
-            pnames.extend(names)
+                     in enumerate(det_param_name_lists) for x in l]
+            param_names.extend(names)
 
         if self._beam_parameterisations:
-            src_pname_lists = [x.get_pnames() for x in \
+            src_param_name_lists = [x.get_param_names() for x in \
                                self._beam_parameterisations]
             params = ["Source%d" % i + x for i, l \
-                      in enumerate(src_pname_lists) for x in l]
-            pnames.extend(params)
+                      in enumerate(src_param_name_lists) for x in l]
+            param_names.extend(params)
 
         if self._xl_orientation_parameterisations:
-            xlo_pname_lists = [x.get_pnames() for x
+            xlo_param_name_lists = [x.get_param_names() for x
                           in self._xl_orientation_parameterisations]
             params = ["Crystal%d" % i + x for i, l \
-                      in enumerate(xlo_pname_lists) for x in l]
-            pnames.extend(params)
+                      in enumerate(xlo_param_name_lists) for x in l]
+            param_names.extend(params)
 
         if self._xl_unit_cell_parameterisations:
-            xluc_pname_lists = [x.get_pnames() for x
+            xluc_param_name_lists = [x.get_param_names() for x
                            in self._xl_unit_cell_parameterisations]
             params = ["Crystal%d" % i + x for i, l \
-                      in enumerate(xluc_pname_lists) for x in l]
-            pnames.extend(params)
+                      in enumerate(xluc_param_name_lists) for x in l]
+            param_names.extend(params)
 
-        return pnames
+        return param_names
 
-    def set_p(self, vals):
+    def set_param_vals(self, vals):
         '''Set the parameter values of the contained models to the values in
-        vals. This list must be of the same length as the result of get_p and
-        must contain the parameter values in the same order! This order is to
-        be maintained by any sensible refinement engine.'''
+        vals. This list must be of the same length as the result of
+        get_param_vals and must contain the parameter values in the same order!
+        This order is to be maintained by any sensible refinement engine.'''
 
         assert len(vals) == len(self)
         it = iter(vals)
@@ -208,22 +208,22 @@ class PredictionParameterisation(object):
         if self._detector_parameterisations:
             for model in self._detector_parameterisations:
                 tmp = [it.next() for i in range(model.num_free())]
-                model.set_p(tmp)
+                model.set_param_vals(tmp)
 
         if self._beam_parameterisations:
             for model in self._beam_parameterisations:
                 tmp = [it.next() for i in range(model.num_free())]
-                model.set_p(tmp)
+                model.set_param_vals(tmp)
 
         if self._xl_orientation_parameterisations:
             for model in self._xl_orientation_parameterisations:
                 tmp = [it.next() for i in range(model.num_free())]
-                model.set_p(tmp)
+                model.set_param_vals(tmp)
 
         if self._xl_unit_cell_parameterisations:
             for model in self._xl_unit_cell_parameterisations:
                 tmp = [it.next() for i in range(model.num_free())]
-                model.set_p(tmp)
+                model.set_param_vals(tmp)
 
     def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''

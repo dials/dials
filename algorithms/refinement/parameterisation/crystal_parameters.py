@@ -209,10 +209,10 @@ if __name__ == '__main__':
         xl_uc = CrystalUnitCellParameterisation(xl)
 
         # apply a random parameter shift to the orientation
-        p_vals = xl_op.get_p()
+        p_vals = xl_op.get_param_vals()
         p_vals = random_param_shift(p_vals, [1000*pi/9, 1000*pi/9,
                                              1000*pi/9])
-        xl_op.set_p(p_vals)
+        xl_op.set_param_vals(p_vals)
 
         # compare analytical and finite difference derivatives
         xl_op_an_ds_dp = xl_op.get_ds_dp()
@@ -222,7 +222,7 @@ if __name__ == '__main__':
 
         print "\nCYCLE", i, "\n"
         print "apply random parameter shift"
-        p_vals = xl_uc.get_p()
+        p_vals = xl_uc.get_param_vals()
         cell_params = xl.get_unit_cell().parameters()
         print "old unit cell",cell_params
         cell_params = random_param_shift(cell_params, [1.] * 6)
@@ -235,7 +235,7 @@ if __name__ == '__main__':
         print "old p_vals", p_vals
         print "new p_vals", X, "\n"
         print "set these parameters in the model parameterisation"
-        xl_uc.set_p(X)
+        xl_uc.set_param_vals(X)
 
         xl_uc_an_ds_dp = xl_ucp.get_ds_dp()
         print "\nnow doing finite differences about each parameter in turn"

@@ -49,7 +49,7 @@ class Refinery(object):
         self._target = target
 
         # initial parameter values
-        self.x = flex.double(self._parameters.get_p())
+        self.x = flex.double(self._parameters.get_param_vals())
 
         # undefined initial functional and gradients values
         self._f = None
@@ -85,7 +85,7 @@ class Refinery(object):
         '''Update the parameterisation and prepare the target function'''
 
         # set current parameter values
-        self._parameters.set_p(self.x)
+        self._parameters.set_param_vals(self.x)
 
         # do reflection prediction
         self._target.predict()
@@ -97,7 +97,7 @@ class Refinery(object):
         self.history._step += 1
         self.history.num_reflections.append(self._target.get_num_reflections())
         self.history.rmsd.append(self._target.rmsds())
-        self.history.parameter_vector.append(self._parameters.get_p())
+        self.history.parameter_vector.append(self._parameters.get_param_vals())
         self.history.objective.append(self._f)
         if self.history.gradient is not None:
             self.history.gradient.append(self._g)
@@ -131,7 +131,7 @@ class Refinery(object):
 
         print "Function evaluation"
         msg = "  Params: " + "%.5f " * len(self._parameters)
-        print msg % tuple(self._parameters.get_p())
+        print msg % tuple(self._parameters.get_param_vals())
         print "  L: %.5f" % self._f
         msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
         print msg % tuple(self._g)

@@ -99,21 +99,21 @@ pred_param = DetectorSpacePredictionParameterisation(
 ################################
 
 # shift detector by 0.2 mm each translation and 2 mrad each rotation
-det_p_vals = det_param.get_p()
+det_p_vals = det_param.get_param_vals()
 p_vals = [a + b for a, b in zip(det_p_vals,
                                  [2.0, 2.0, 2.0, 2.0, 2.0, 2.0])]
-det_param.set_p(p_vals)
+det_param.set_param_vals(p_vals)
 
 # shift beam by 2 mrad in one axis
-s0_p_vals = s0_param.get_p()
+s0_p_vals = s0_param.get_param_vals()
 p_vals = list(s0_p_vals)
 p_vals[1] += 2.0
-s0_param.set_p(p_vals)
+s0_param.set_param_vals(p_vals)
 
 # rotate crystal a bit (=2 mrad each rotation)
-xlo_p_vals = xlo_param.get_p()
+xlo_p_vals = xlo_param.get_param_vals()
 p_vals = [a + b for a, b in zip(xlo_p_vals, [2.0, 2.0, 2.0])]
-xlo_param.set_p(p_vals)
+xlo_param.set_param_vals(p_vals)
 
 print "Offsetting initial model"
 print "========================"
@@ -164,15 +164,15 @@ sigangles = [im_width / 2.] * len(hkls)
 # Undo known parameter shifts #
 ###############################
 
-s0_param.set_p(s0_p_vals)
-det_param.set_p(det_p_vals)
-xlo_param.set_p(xlo_p_vals)
+s0_param.set_param_vals(s0_p_vals)
+det_param.set_param_vals(det_p_vals)
+xlo_param.set_param_vals(xlo_p_vals)
 
 print "Resetting to initial model"
 print "=========================="
 print "Initial values of parameters are"
 msg = "Parameters: " + "%.5f " * len(pred_param)
-print msg % tuple(pred_param.get_p()), "\n"
+print msg % tuple(pred_param.get_param_vals()), "\n"
 
 #####################################
 # Select reflections for refinement #
@@ -222,7 +222,7 @@ def get_fd_gradients(target, pred_param, deltas):
     contains the step size for the difference calculations for each parameter.
     '''
 
-    p_vals = pred_param.get_p()
+    p_vals = pred_param.get_param_vals()
     assert len(deltas) == len(p_vals)
     fd_grad = []
     fd_curvs = []
@@ -238,13 +238,13 @@ def get_fd_gradients(target, pred_param, deltas):
 
         print i,
         p_vals[i] -= deltas[i] / 2.
-        pred_param.set_p(p_vals)
+        pred_param.set_param_vals(p_vals)
         target.predict()
 
         rev_state = target.compute_functional_and_gradients()
 
         p_vals[i] += deltas[i]
-        pred_param.set_p(p_vals)
+        pred_param.set_param_vals(p_vals)
 
         target.predict()
 
@@ -264,7 +264,7 @@ def get_fd_gradients(target, pred_param, deltas):
     print "\n"
 
     # return to the initial state
-    pred_param.set_p(p_vals)
+    pred_param.set_param_vals(p_vals)
 
     return fd_grad, fd_curvs
 

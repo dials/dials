@@ -49,9 +49,9 @@ if __name__ == '__main__':
     vis(dp)
     print
 
-    p_vals = dp.get_p()
+    p_vals = dp.get_param_vals()
     p_vals[4:6] = [pi/12, pi/12]
-    dp.set_p(dic)
+    dp.set_param_vals(dic)
     dp.compose()
 
     print "#rotation about d1 and d2 by 15 degrees"
@@ -59,7 +59,7 @@ if __name__ == '__main__':
     print
 
     p_vals = [110., 10., 10., pi/12, pi/12, pi/12]
-    dp.set_p(p_vals)
+    dp.set_param_vals(p_vals)
     dp.compose()
 
     print "#shifts by +10 and all rotations by +15 degrees"

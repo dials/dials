@@ -428,9 +428,9 @@ if __name__ == '__main__':
     # initial normal is along -z, we expect the frame to intercept the
     # z-axis at -100.
 
-    p_vals = dp.get_p()
+    p_vals = dp.get_param_vals()
     p_vals[0:3] = [100., 0., 0.]
-    dp.set_p(p_vals)
+    dp.set_param_vals(p_vals)
     panel = dp._models[0]
     v1 = matrix.col(panel.get_origin())
     v2 = matrix.col((0., 0., 1.))
@@ -443,7 +443,7 @@ if __name__ == '__main__':
     # direction d1
 
     p_vals[3] = 1000. * pi/2 # set tau1 value
-    dp.set_p(p_vals)
+    dp.set_param_vals(p_vals)
 
     panel = dp._models[0]
     assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(dp._initial_state['d1']), 0.))
@@ -457,7 +457,7 @@ if __name__ == '__main__':
     p_vals[3] = 0.    # tau1
     p_vals[4] = 1000. * pi/18 # tau2
     p_vals[5] = 1000. * pi/18 # tau3
-    dp.set_p(p_vals)
+    dp.set_param_vals(p_vals)
 
     # Debugging - left here commented out as an example
     #print "initial state"
@@ -481,23 +481,23 @@ if __name__ == '__main__':
 
     # 4. Test fixing and unfixing of parameters
     p_vals = [100., 0., 0., 1000.*pi/18, 1000.*pi/18, 1000.*pi/18]
-    dp.set_p(p_vals)
+    dp.set_param_vals(p_vals)
     f = dp.get_fixed()
     f[0:3] = [True] * 3
     dp.set_fixed(f)
     p_vals2 = [0., 0., 0.]
-    dp.set_p(p_vals2)
-    assert(dp.get_p(only_free = False) == [100., 0., 0., 0., 0., 0.])
+    dp.set_param_vals(p_vals2)
+    assert(dp.get_param_vals(only_free = False) == [100., 0., 0., 0., 0., 0.])
 
     an_ds_dp = dp.get_ds_dp()
     assert(len(an_ds_dp) == 3)
 
     f[0:3] = [False] * 3
     dp.set_fixed(f)
-    p_vals = dp.get_p()
+    p_vals = dp.get_param_vals()
     p_vals2 = [a + b for a, b in zip(p_vals, [-10., 1., 1., 0., 0., 0.])]
-    dp.set_p(p_vals2)
-    assert(dp.get_p() == [90., 1., 1., 0., 0., 0.])
+    dp.set_param_vals(p_vals2)
+    assert(dp.get_param_vals() == [90., 1., 1., 0., 0., 0.])
 
     # 5. Tests of the calculation of derivatives
 
@@ -515,7 +515,7 @@ if __name__ == '__main__':
         # apply a random parameter shift
         p_vals = random_param_shift(p_vals, [10, 10, 10, 1000.*pi/18,
                                              1000.*pi/18, 1000.*pi/18])
-        dp.set_p(p_vals)
+        dp.set_param_vals(p_vals)
 
         # obtain current sensor state
         #state = dp.get_state()

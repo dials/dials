@@ -61,7 +61,7 @@ def get_fd_gradients(mp, deltas):
 
     #state = matrix.sqr(mp._models[0].d)
 
-    p_vals = mp.get_p()
+    p_vals = mp.get_param_vals()
     assert len(deltas) == len(p_vals)
     fd_grad = []
 
@@ -70,11 +70,11 @@ def get_fd_gradients(mp, deltas):
         val = p_vals[i]
 
         p_vals[i] -= deltas[i] / 2.
-        mp.set_p(p_vals)
+        mp.set_param_vals(p_vals)
         rev_state = mp.get_state()
 
         p_vals[i] += deltas[i]
-        mp.set_p(p_vals)
+        mp.set_param_vals(p_vals)
         fwd_state = mp.get_state()
 
         fd_grad.append((fwd_state - rev_state) / deltas[i])
@@ -82,7 +82,7 @@ def get_fd_gradients(mp, deltas):
         p_vals[i] = val
 
     # return to the initial state
-    mp.set_p(p_vals)
+    mp.set_param_vals(p_vals)
 
     return fd_grad
 
@@ -195,7 +195,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     if verbosity > 1:
         print "Prediction equation parameterisation built\n"
         print "Parameter order : name mapping"
-        for i, e in enumerate(pred_param.get_p_names()):
+        for i, e in enumerate(pred_param.get_param_names()):
             print "Parameter %03d : " % i + e
         print
 
@@ -326,7 +326,7 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
     if verbosity > 1:
         print "Prediction equation parameterisation built\n"
         print "Parameter order:name mapping"
-        for i, e in enumerate(pred_param.get_p_names()):
+        for i, e in enumerate(pred_param.get_param_names()):
             print "Parameter %03d : " % i + e
         print
 

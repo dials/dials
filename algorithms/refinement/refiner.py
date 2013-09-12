@@ -97,7 +97,7 @@ class Refiner(object):
         if self._verbosity > 1:
             print "Prediction equation parameterisation built\n"
             print "Parameter order : name mapping"
-            for i, e in enumerate(self.pred_param.get_p_names()):
+            for i, e in enumerate(self.pred_param.get_param_names()):
                 print "Parameter %03d : " % i + e
             print
 

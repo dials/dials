@@ -101,7 +101,7 @@ def setup_models(seed):
     print_model_geometry(mybeam, mydetector, mycrystal)
     print "\nInitial values of parameters are"
     msg = "Parameters: " + "%.5f " * len(pred_param)
-    print msg % tuple(pred_param.get_p())
+    print msg % tuple(pred_param.get_param_vals())
     print
 
     return(mydetector, mygonio, mycrystal, mybeam,
@@ -117,23 +117,23 @@ def run(mydetector, mygonio, mycrystal, mybeam,
 
     # shift detector by normal deviate of sd 2.0 mm each translation and 4 mrad
     # each rotation
-    det_p = det_param.get_p()
+    det_p = det_param.get_param_vals()
     shift_det_p = random_param_shift(det_p, [2.0, 2.0, 2.0, 4.0, 4.0, 4.0])
-    det_param.set_p(shift_det_p)
+    det_param.set_param_vals(shift_det_p)
 
     # rotate beam by normal deviate with sd 4 mrad. There is only one free axis!
-    s0_p = s0_param.get_p()
+    s0_p = s0_param.get_param_vals()
     shift_s0_p = random_param_shift(s0_p, [4.0])
-    s0_param.set_p(shift_s0_p)
+    s0_param.set_param_vals(shift_s0_p)
 
     # rotate crystal by normal deviates with sd 4 mrad for each rotation.
-    xlo_p = xlo_param.get_p()
+    xlo_p = xlo_param.get_param_vals()
     shift_xlo_p = random_param_shift(xlo_p, [4.0, 4.0, 4.0])
-    xlo_param.set_p(shift_xlo_p)
+    xlo_param.set_param_vals(shift_xlo_p)
 
     # change unit cell a bit (by normal deviates of 0.5 Angstrom length
     # upsets, 0.5 degree of gamma angle only)
-    xluc_p_vals = xluc_param.get_p()
+    xluc_p_vals = xluc_param.get_param_vals()
     cell_params = mycrystal.get_unit_cell().parameters()
     shift_cell = random_param_shift(cell_params, [0.5, 0.5, 0.5,
                                                   0.0, 0.0, 0.5])
@@ -142,9 +142,9 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     S = symmetrize_reduce_enlarge(mycrystal.get_space_group())
     S.set_orientation(orientation=newB)
     X = S.forward_independent_parameters()
-    xluc_param.set_p(X)
+    xluc_param.set_param_vals(X)
 
-    target_param_values = tuple(pred_param.get_p())
+    target_param_values = tuple(pred_param.get_param_vals())
 
     #############################
     # Generate some reflections #
@@ -184,9 +184,9 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Undo known parameter shifts #
     ###############################
 
-    s0_param.set_p(s0_p)
-    det_param.set_p(det_p)
-    xlo_param.set_p(xlo_p)
+    s0_param.set_param_vals(s0_p)
+    det_param.set_param_vals(det_p)
+    xlo_param.set_param_vals(xlo_p)
 
     #####################################
     # Select reflections for refinement #
@@ -223,9 +223,9 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Reset parameter values #
     ##########################
 
-    s0_param.set_p(s0_p)
-    det_param.set_p(det_p)
-    xlo_param.set_p(xlo_p)
+    s0_param.set_param_vals(s0_p)
+    det_param.set_param_vals(det_p)
+    xlo_param.set_param_vals(xlo_p)
 
     return refiner
 

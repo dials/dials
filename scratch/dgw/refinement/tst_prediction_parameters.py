@@ -80,7 +80,7 @@ def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
     xl = pred_param._crystal
     rp = reflection_predictor
 
-    p_vals = pred_param.get_p()
+    p_vals = pred_param.get_param_vals()
     assert len(deltas) == len(p_vals)
     fd_grad = []
 
@@ -89,18 +89,18 @@ def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
         val = p_vals[i]
 
         p_vals[i] -= deltas[i] / 2.
-        pred_param.set_p(p_vals)
+        pred_param.set_param_vals(p_vals)
         rev_state = get_state(det, hkl, phi, rp)
 
         p_vals[i] += deltas[i]
-        pred_param.set_p(p_vals)
+        pred_param.set_param_vals(p_vals)
         fwd_state = get_state(det, hkl, phi, rp)
 
         fd_grad.append((fwd_state - rev_state) / deltas[i])
         p_vals[i] = val
 
     # return to the initial state
-    pred_param.set_p(p_vals)
+    pred_param.set_param_vals(p_vals)
 
     return fd_grad
 
@@ -141,11 +141,11 @@ pred_param = DetectorSpacePredictionParameterisation(mydetector,
 
 # Check the accessors
 assert len(pred_param) == 6
-for (a, b) in zip(pred_param.get_p(), det_param.get_p()):
+for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
     assert a==b
 
-pred_param.set_p([100., 1.0, 1.0, 0., 0., 0.])
-for (a, b) in zip(pred_param.get_p(), det_param.get_p()):
+pred_param.set_param_vals([100., 1.0, 1.0, 0., 0., 0.])
+for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
     assert a==b
 
 # Build a full global parameterisation
