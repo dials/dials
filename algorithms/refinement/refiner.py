@@ -232,6 +232,7 @@ class Refiner(object):
 
         except AttributeError: # prediction seems to be scan-static
             from dials.algorithms.spot_prediction import RayPredictor
+            from cctbx.array_family import flex
             m2 = self.gonio.get_rotation_axis()
             UB = self.crystal.get_U() * self.crystal.get_B()
             dphi = self.scan.get_oscillation_range(deg=False)
