@@ -571,6 +571,7 @@ util/image.py -text
 util/ioutil.py -text
 util/nexus.py -text
 util/options.py -text
+util/picklez.py -text
 util/pycbf_extra.py -text
 util/script.py -text
 util/spotfinder_frame.py -text
