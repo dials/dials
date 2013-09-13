@@ -258,6 +258,7 @@ command_line/match_observed_w_predicted.py -text
 command_line/parameters.py -text
 command_line/predict_spots.py -text
 command_line/print_reflection_stats.py -text
+command_line/process.py -text
 command_line/reference_profiles.py -text
 command_line/refine.py -text
 command_line/refine2.py -text
@@ -365,6 +366,7 @@ model/serialize/dump.py -text
 model/serialize/load.py -text
 model/serialize/test_encode.py -text
 model/serialize/xds.py -text
+/process.py -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/dgw/__init__.py -text
