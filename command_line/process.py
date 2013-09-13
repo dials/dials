@@ -62,7 +62,7 @@ class Script(ScriptRunner):
         # Add a verbosity option
         self.config().add_option(
             "-v", "--verbosity",
-            action="count", default=0,
+            action="count", default=1,
             help="set verbosity level; -vv gives verbosity level 2")
 
 

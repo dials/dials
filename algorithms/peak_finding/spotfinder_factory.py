@@ -99,8 +99,8 @@ class SpotFinder(object):
                 centroid_var.append(centroid.unbiased_variance())
                 centroid_err.append(centroid.unbiased_standard_error_sq())
             except RuntimeError:
-                centroid_var.append((0.0, 0.0, 0.0))
-                centroid_err.append((0.0, 0.0, 0.0))
+                centroid_var.append((0.5, 0.5, 0.5))
+                centroid_err.append((0.5, 0.5, 0.5))
 
         # Return the centroid and variance
         return centroid_pos, centroid_var, centroid_err, centroid_tot

@@ -157,6 +157,10 @@ class ProcessFactory(object):
         from dials.algorithms.integration import ReferenceProfileFactory
         from dials.algorithms.integration import IntegratorFactory
 
+        print '\n' + '=' * 80
+        print 'Configuring algorithms'
+        print '=' * 80 + '\n'
+
         # Get the spot finder from the input parameters
         print 'Configuring spot finder from input parameters'
         find_spots = SpotFinderFactory.from_parameters(params)
@@ -170,7 +174,7 @@ class ProcessFactory(object):
         create_reference = ReferenceProfileFactory.from_parameters(params)
 
         # Get the integrator from the input parameters
-        print 'Configurating integrator from input parameters'
+        print 'Configuring integrator from input parameters'
         integrate = IntegratorFactory.from_parameters(params)
 
         # Construct and return the pipeline
