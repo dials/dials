@@ -142,6 +142,46 @@ class Process(object):
         self.integrated = self.integrate(sweep, crystal)
 
 
+class RefinementWrapper(object):
+    ''' A temporary refinement wrapper. '''
+
+    def __init__(self, first_round, second_round=None):
+        ''' Initialise with the rounds of refinement. '''
+        self.first_round = first_round
+        self.second_round = second_round
+
+    def __call__(self, sweep, crystal, reflections):
+        ''' Call the first round, predict the reflection then call the
+        second round.
+
+        '''
+        from dials.util.command_line import Command
+
+        # Do the first round of refinement
+        result = self.first_round(sweep, crystal, reflections)
+
+        # If a second round is set then predict a load of reflections
+        # and do the second round of refinement.
+        if self.second_round:
+
+            Command.start('Predicting reflections')
+            reflections = self.first_round.predict_reflections()
+            Command.end('Predicted {0} reflections'.format(len(reflections)))
+
+            print "Performing scan varying refinement"
+            result = self.second_round(sweep, crystal, reflections)
+
+        # Return the result
+        return result
+
+    def predict_reflections(self):
+        ''' Predict the reflections from refinement. '''
+        if self.second_round:
+            return self.second_round.predict_reflections()
+        else:
+            return self.first_round.predict_reflections()
+
+
 class ProcessFactory(object):
     ''' A factory to create the processing pipeline '''
 
@@ -173,7 +213,17 @@ class ProcessFactory(object):
 
         # Get the refiner from the input parameters
         print 'Configuring refiner from input parameters'
-        refine_geometry = RefinerFactory.from_parameters(params, verbosity)
+        if params.refinement.parameterisation.crystal.scan_varying:
+            params.refinement.parameterisation.crystal.scan_varying = False
+            first_round = RefinerFactory.from_parameters(params, verbosity)
+            params.refinement.parameterisation.crystal.scan_varying = True
+            second_round = RefinerFactory.from_parameters(params, verbosity)
+            refine_geometry = RefinementWrapper(first_round, second_round)
+        else:
+            first_round = RefinerFactory.from_parameters(params, verbosity)
+            refine_geometry = RefinementWrapper(first_round)
+
+        #refine_geometry = RefinerFactory.from_parameters(params, verbosity)
 
         # Get the reference profile creator from the input parameters
         print 'Configuring reference profile creator from input parameters'
