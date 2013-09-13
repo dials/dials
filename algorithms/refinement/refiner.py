@@ -239,6 +239,7 @@ class Refiner(object):
             predict_rays = RayPredictor(s0, m2, dphi)
             miller_indices = flex.miller_index(
                 [r.miller_index for r in self._saved_reflections])
+            print "N indices", len(miller_indices)
             self._new_reflections = reflection_frames(self.scan, ray_intersection(
                 self.detector, predict_rays(miller_indices, UB)))
 

@@ -32,7 +32,7 @@ class Integrator(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal, reflections = None, reference = None):
+    def __call__(self, sweep, crystal, reflections=None, reference=None):
         ''' Call to integrate.
 
         Params:
@@ -45,9 +45,9 @@ class Integrator(object):
             A reflection list
 
         '''
+
         # Extract the reflections from the sweep
-        if reflections == None:
-            reflections = self.compute_spots(sweep, crystal)
+        reflections = self.compute_spots(sweep, crystal, reflections)
 
         # Process the reflections in the following way:
         #  - First calculate the background

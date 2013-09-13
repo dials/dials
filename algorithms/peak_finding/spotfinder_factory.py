@@ -134,6 +134,7 @@ class SpotFinder(object):
         for i in range(len(spots)):
 
             # Set the shoebox info
+            rlist[i].set_valid(True)
             rlist[i].bounding_box = spots[i].bbox
             rlist[i].shoebox = spots[i].data
             rlist[i].shoebox_mask = spots[i].mask

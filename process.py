@@ -83,6 +83,7 @@ class Process(object):
 
     def refine_geometry(self, sweep, crystal):
         ''' A wrapper around the refine geometry function '''
+        from dials.util.command_line import Command
         print '\n' + '=' * 80
         print 'Refine Geometry'
         print '=' * 80 + '\n'
@@ -96,21 +97,26 @@ class Process(object):
         self.refine_geometry_internal(sweep, crystal, observed)
 
         # Predict some new spots
-        return self.refine_geometry_internal.predict_reflections()
+        Command.start('Predicting reflections')
+        predicted = self.refine_geometry_internal.predict_reflections()
+        Command.end('Predicted {0} reflections'.format(len(predicted)))
+        return predicted
 
     def create_reference(self, sweep, crystal):
         ''' A wrapper around the refernece profiles function '''
         print '\n' + '=' * 80
         print 'Creating reference profiles'
         print '=' * 80 + '\n'
-        return self.create_reference_internal(sweep, crystal, self.observed)
+        return self.create_reference_internal(sweep, crystal,
+            self.observed, self.predicted)
 
     def integrate(self, sweep, crystal):
         ''' A wrapper around the integrate function '''
         print '\n' + '=' * 80
         print 'Integrating Reflections'
         print '=' * 80 + '\n'
-        return self.integrate_internal(sweep, crystal, reference=self.reference)
+        return self.integrate_internal(sweep, crystal,
+            self.predicted, self.reference)
 
     def run(self, sweep, crystal):
         ''' Perform all the processing.

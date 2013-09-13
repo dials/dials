@@ -148,12 +148,13 @@ class ReflectionExtractor(object):
         # Initialise the predictor
         self.predict = ReflectionPredictor()
 
-    def __call__(self, sweep, crystal):
+    def __call__(self, sweep, crystal, reflections=None):
         ''' Extract the basic reflection properties from the sweep
 
         Params:
             sweep The sweep to process
             crystal The crystal model to use
+            reflections The reflections to use
 
         Returns:
             A list of reflections
@@ -163,7 +164,8 @@ class ReflectionExtractor(object):
         self.initialise(sweep, crystal)
 
         # Predict the reflections
-        reflections = self.predict(sweep, crystal)
+        if reflections == None:
+            reflections = self.predict(sweep, crystal)
 
         # Extract the reflections
         return self.extract(sweep, crystal, reflections)

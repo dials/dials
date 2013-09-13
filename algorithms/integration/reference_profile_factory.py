@@ -33,20 +33,22 @@ class ReferenceProfileCreator(object):
         # Set the learning strategy
         self.learn = learn
 
-    def __call__(self, sweep, crystal, strong):
+    def __call__(self, sweep, crystal, strong, predicted=None):
         ''' Learn the reference profiles
 
         Params:
             sweep The sweep to process
             crystal The crystal to process
             strong The strong spots
+            predicted The predicted spots
 
         Returns:
             The reference profile locator
 
         '''
         # Predict the reflections
-        predicted = self.predict(sweep, crystal)
+        if predicted == None:
+            predicted = self.predict(sweep, crystal)
 
         # Match the predictions with the strong spots
         matches = self.match(strong, predicted)
