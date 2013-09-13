@@ -30,7 +30,7 @@ class PredictAndMatch(object):
         # Create the spot matcher
         self.match = SpotMatcher()
 
-    def __call__(self, sweep, crystal, observed):
+    def __call__(self, sweep, crystal, observed, predicted=None):
         ''' Learn the reference profiles
 
         Params:
@@ -43,7 +43,8 @@ class PredictAndMatch(object):
 
         '''
         # Predict the reflections
-        predicted = self.predict(sweep, crystal)
+        if predicted == None:
+            predicted = self.predict(sweep, crystal)
 
         # Match the predictions with the strong spots
         return self.match(observed, predicted)
@@ -88,19 +89,9 @@ class Process(object):
         print 'Refine Geometry'
         print '=' * 80 + '\n'
 
-        # Do the initial prediction and match with observations
-        match_observations = PredictAndMatch()
-        observed = match_observations(sweep, crystal, self.observed)
-
-        # Do the finement
+        # Do the refinement and return predictions
         print "\nPerforming Refinement\n"
-        self.refine_geometry_internal(sweep, crystal, observed)
-
-        # Predict some new spots
-        Command.start('Predicting reflections')
-        predicted = self.refine_geometry_internal.predict_reflections()
-        Command.end('Predicted {0} reflections'.format(len(predicted)))
-        return predicted
+        return self.refine_geometry_internal(sweep, crystal, self.observed)
 
     def create_reference(self, sweep, crystal):
         ''' A wrapper around the refernece profiles function '''
@@ -150,36 +141,45 @@ class RefinementWrapper(object):
         self.first_round = first_round
         self.second_round = second_round
 
-    def __call__(self, sweep, crystal, reflections):
+    def __call__(self, sweep, crystal, observed):
         ''' Call the first round, predict the reflection then call the
         second round.
 
         '''
         from dials.util.command_line import Command
 
+        # Do the initial prediction and match with observations
+        match_observations = PredictAndMatch()
+        matched = match_observations(sweep, crystal, observed)
+
         # Do the first round of refinement
-        result = self.first_round(sweep, crystal, reflections)
+        print "\nPerforming scan-static refinement"
+        result = self.first_round(sweep, crystal, matched)
+
+        # Predict the rays
+        print "\n"
+        Command.start('Predicting reflections')
+        predicted = self.first_round.predict_reflections()
+        Command.end('Predicted {0} reflections'.format(len(predicted)))
 
         # If a second round is set then predict a load of reflections
         # and do the second round of refinement.
         if self.second_round:
 
-            Command.start('Predicting reflections')
-            reflections = self.first_round.predict_reflections()
-            Command.end('Predicted {0} reflections'.format(len(reflections)))
+            matched = match_observations(sweep, crystal, observed, predicted)
 
-            print "Performing scan varying refinement"
-            result = self.second_round(sweep, crystal, reflections)
+            # Perform second round of refinement
+            print "\nPerforming scan-varying refinement"
+            result = self.second_round(sweep, crystal, matched)
+
+            # Predict some new spots
+            print "\n"
+            Command.start('Predicting reflections')
+            predicted = self.second_round.predict_reflections()
+            Command.end('Predicted {0} reflections'.format(len(predicted)))
 
         # Return the result
-        return result
-
-    def predict_reflections(self):
-        ''' Predict the reflections from refinement. '''
-        if self.second_round:
-            return self.second_round.predict_reflections()
-        else:
-            return self.first_round.predict_reflections()
+        return predicted
 
 
 class ProcessFactory(object):

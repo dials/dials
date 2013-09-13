@@ -55,6 +55,7 @@ class Refiner(object):
         if self._verbosity > 1: print "Random seed set to 42\n"
 
         # Get the models from the sweep
+        self.sweep = sweep
         self.beam = sweep.get_beam()
         self.detector = sweep.get_detector()
         self.gonio = sweep.get_goniometer()
@@ -209,12 +210,9 @@ class Refiner(object):
     def predict_reflections(self):
         '''Predict all reflection positions after refinement and make the
         bounding boxes.'''
-
-        from dials.algorithms.spot_prediction import IndexGenerator
-
+        from dials.algorithms.integration import ReflectionPredictor
         from dials.algorithms.spot_prediction import ray_intersection
-        from dials.algorithms.spot_prediction import reflection_frames
-        from dials.algorithms.shoebox import BBoxCalculator
+        from dials.model.data import ReflectionList
         from math import pi
         from dials.algorithms.refinement.prediction.predictors import \
                 ScanVaryingReflectionListGenerator
@@ -227,21 +225,12 @@ class Refiner(object):
 
         # Duck typing to determine whether prediction is scan-varying or not
         try:
-            refs = sv_predictor()
+            refs = ReflectionList(sv_predictor())
             self._new_reflections = ray_intersection(self.detector, refs)
 
         except AttributeError: # prediction seems to be scan-static
-            from dials.algorithms.spot_prediction import RayPredictor
-            from cctbx.array_family import flex
-            m2 = self.gonio.get_rotation_axis()
-            UB = self.crystal.get_U() * self.crystal.get_B()
-            dphi = self.scan.get_oscillation_range(deg=False)
-            predict_rays = RayPredictor(s0, m2, dphi)
-            miller_indices = flex.miller_index(
-                [r.miller_index for r in self._saved_reflections])
-            print "N indices", len(miller_indices)
-            self._new_reflections = reflection_frames(self.scan, ray_intersection(
-                self.detector, predict_rays(miller_indices, UB)))
+            predict = ReflectionPredictor()
+            self._new_reflections = predict(self.sweep, self.crystal)
 
         self.sigma_divergence = self.beam.get_sigma_divergence()
         self.sigma_mosaicity = self.crystal.get_mosaicity()

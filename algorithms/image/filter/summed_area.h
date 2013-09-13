@@ -34,24 +34,25 @@ namespace dials { namespace algorithms {
       const af::const_ref< T, af::c_grid<2> > &image) {
 
     // Allocate the table
-    af::versa< T, af::c_grid<2> > table(image.accessor());
+    af::versa< T, af::c_grid<2> > table_arr(image.accessor());
+    af::ref< T, af::c_grid<2> > table = table_arr.ref();
 
     // Get the size of the image
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
 
     // Create the summed area table
-    for (std::size_t j = 0; j < ysize; ++j) {
-      for (std::size_t i = 0; i < xsize; ++i) {
-        T I10 = j > 0 ? table(j - 1, i) : 0;
-        T I01 = i > 0 ? table(j, i - 1) : 0;
-        T I11 = j > 0 && i > 0 ? table(j - 1, i - 1) : 0;
-        table(j, i) = image(j, i) + I10 + I01 - I11;
+    for (std::size_t j = 0, k = 0; j < ysize; ++j) {
+      for (std::size_t i = 0; i < xsize; ++i, ++k) {
+        T I10 = j > 0 ? table[k-xsize] : 0;
+        T I01 = i > 0 ? table[k-1] : 0;
+        T I11 = j > 0 && i > 0 ? table[k-xsize-1] : 0;
+        table[k] = image[k] + I10 + I01 - I11;
       }
     }
 
     // Return the summed area table
-    return table;
+    return table_arr;
   }
 
   /**
@@ -67,10 +68,12 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(size.all_gt(0));
 
     // Calculate the summed area table
-    af::versa< T, af::c_grid<2> > I = summed_area_table<T>(image);
+    af::versa< T, af::c_grid<2> > I_arr = summed_area_table<T>(image);
+    af::const_ref< T, af::c_grid<2> > I = I_arr.const_ref();
 
     // Allocate the filtered image
-    af::versa< T, af::c_grid<2> > sum(image.accessor());
+    af::versa< T, af::c_grid<2> > sum_arr(image.accessor());
+    af::ref< T, af::c_grid<2> > sum = sum_arr.ref();
 
     // Get the size of the image
     std::size_t ysize = image.accessor()[0];
@@ -102,7 +105,7 @@ namespace dials { namespace algorithms {
     }
 
     // Return the summed area image
-    return sum;
+    return sum_arr;
   }
 
 }} // namespace dials::algorithms
