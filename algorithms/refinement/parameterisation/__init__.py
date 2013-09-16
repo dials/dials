@@ -5,3 +5,4 @@ from detector_parameters import *
 from prediction_parameters import *
 from scan_varying_crystal_parameters import *
 from scan_varying_prediction_parameters import *
+from parameter_report import *

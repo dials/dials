@@ -91,7 +91,7 @@ class Refiner(object):
         ###########################
 
         (self.beam_param, self.xl_ori_param, self.xl_uc_param, self.det_param,
-         self.pred_param) = \
+         self.pred_param, self.param_report) = \
             self.create_param(self.beam, self.crystal, self.gonio,
                               self.detector, self.scan)
 
@@ -105,6 +105,10 @@ class Refiner(object):
             print "Prior to refinement the experimental model is:"
             print_model_geometry(self.beam, self.detector, self.crystal)
             print
+
+            print self.param_report
+            print
+        
 
         #####################################
         # Select reflections for refinement #
@@ -392,6 +396,9 @@ class ParameterisationFactory(object):
 
         self.prediction_par = pep
 
+        # Parameter reporting
+        self.param_reporter = par.ParameterReporter
+
     def __call__(self, beam, crystal, goniometer, detector, scan):
 
         beam_param = self._beam_par(beam, goniometer)
@@ -423,7 +430,11 @@ class ParameterisationFactory(object):
         pred_param = self.prediction_par(detector, beam, crystal, goniometer,
                 [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
 
-        return (beam_param, xl_ori_param, xl_uc_param, det_param, pred_param)
+        param_reporter = self.param_reporter([det_param], [beam_param],
+            [xl_ori_param], [xl_uc_param])
+
+        return (beam_param, xl_ori_param, xl_uc_param, det_param, pred_param,
+                param_reporter)
 
 class RefineryFactory(object):
 

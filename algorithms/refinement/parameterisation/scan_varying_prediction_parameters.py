@@ -205,7 +205,6 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
         return
 
-
     def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, der):
         '''helper function to calculate positional derivatives from dpv_dp using
         the quotient rule'''
