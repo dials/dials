@@ -62,7 +62,7 @@ class ScanVaryingParameterSet(Parameter):
         try:
             msg += "    Type: " + self.param_type + "\n"
         except TypeError:
-            msg += "    Type: " + str(self.param_type) + "\n"        
+            msg += "    Type: " + str(self.param_type) + "\n"
         try:
             msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
         except TypeError:
@@ -345,7 +345,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         using the smoother.'''
 
         return self._smoother.value_weight(t, pset)[0]
-    
+
     #def get_name_stems_of_parameter_sets(self, only_free = True):
     #    '''export the names of the internal list of parameter sets, which are
     #    the name stems of the individual parameter names

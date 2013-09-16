@@ -77,9 +77,109 @@ class ParameterReporter(object):
     def __len__(self):
         return self._length
 
-    def __str__(self):
-        return "DEBUG: THIS IS A REPORT"
+    def _indent(self, string):
+        return "\n".join(["    " + e for e in str(string).split("\n")])
 
+    def __str__(self):
+
+        s =  "Parameter Report\n"
+        s += "----------------\n"
+        if self._detector_parameterisations:
+            s += "Detector parameters:\n"
+            det_plists = [x.get_params() for x in self._detector_parameterisations]
+            params = [x for l in det_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
+
+        if self._beam_parameterisations:
+            s += "Beam parameters:\n"
+            beam_plists = [x.get_params() for x in self._beam_parameterisations]
+            params = [x for l in beam_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
+
+        if self._xl_orientation_parameterisations:
+            s += "Crystal orientation parameters:\n"
+            xlo_plists = [x.get_params() for x in self._xl_orientation_parameterisations]
+            params = [x for l in xlo_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
+
+        if self._xl_unit_cell_parameterisations:
+            s += "Crystal unit cell parameters:\n"
+            xluc_plists = [x.get_params() for x in self._xl_unit_cell_parameterisations]
+            params = [x for l in xluc_plists for x in l]
+            for p in params:
+                tmp = self._indent(p)
+                s += tmp + "\n"
+
+        return s
+
+    def varying_params_vs_image_number(self, image_range):
+        '''Write a table of scan-varying parameter values vs image number to
+        disk, if scan-varying parameters are present. Return boolean, whether
+        this table was written or not'''
+
+        image_numbers = range(image_range[0], image_range[1] + 1)
+        columns = [TableColumn("Image", image_numbers)]
+
+        if self._detector_parameterisations:
+            for parameterisation in self._detector_parameterisations:
+                for p in parameterisation.get_params():
+                    try:
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                                for i in image_numbers]
+                        columns.append(TableColumn(p.name_stem, vals))
+                    except AttributeError:
+                        continue
+
+        if self._beam_parameterisations:
+            for parameterisation in self._beam_parameterisations:
+                for p in parameterisation.get_params():
+                    try:
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                                for i in image_numbers]
+                        columns.append(TableColumn(p.name_stem, vals))
+                    except AttributeError:
+                        continue
+
+        if self._xl_orientation_parameterisations:
+            for parameterisation in self._xl_orientation_parameterisations:
+                for p in parameterisation.get_params():
+                    try:
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                                for i in image_numbers]
+                        columns.append(TableColumn(p.name_stem, vals))
+                    except AttributeError:
+                        continue
+
+        if self._xl_unit_cell_parameterisations:
+            for parameterisation in self._xl_unit_cell_parameterisations:
+                for p in parameterisation.get_params():
+                    try:
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                                for i in image_numbers]
+                        columns.append(TableColumn(p.name_stem, vals))
+                    except AttributeError:
+                        continue
+
+        if len(columns) > 1:
+            f = open("varying_params.dat","w")
+            header = "\t".join([e.title for e in columns])
+            f.write(header + "\n")
+            for i in range(len(columns[0])):
+                vals = "\t".join(["%.6f" % e.values[i] for e in columns])
+                f.write(vals + "\n")
+            f.close()
+            return True
+
+        else:
+            return False
+
+    # FIXME Don't need this?
     def get_params(self):
         '''return a concatenated list of parameters from each of the components
         in the global model'''
@@ -109,6 +209,7 @@ class ParameterReporter(object):
 
         return global_p_list
 
+    # FIXME Don't need this?
     def get_param_names(self):
         '''Return a list of the names of parameters in the order they are
         concatenated. Useful for output to log files and debugging.'''
@@ -142,3 +243,22 @@ class ParameterReporter(object):
             param_names.extend(params)
 
         return param_names
+
+class TableColumn(object):
+    '''Bucket to store data to be used for constructing tables to print.'''
+
+    def __init__(self, title, values):
+
+        self._title = title
+        self._values = values
+
+    def __len__(self):
+        return len(self._values)
+
+    @property
+    def title(self):
+        return self._title
+
+    @property
+    def values(self):
+        return self._values
