@@ -57,6 +57,10 @@ class Parameter(object):
         self._esd = esd
 
     @property
+    def param_type(self):
+        return self._ptype
+
+    @property
     def axis(self):
         return self._axis
 
@@ -107,6 +111,21 @@ class ModelParameterisation(object):
         parameters are updated, e.g. at the end of each refinement cycle'''
 
         raise RuntimeError, 'implement me'
+
+    def get_params(self, only_free = True):
+        '''Return the internal list of parameters. It is intended that this
+        function be used for reporting parameter attributes, not for modifying
+        them.
+
+        If only_free, any fixed parameters are filtered from the returned list.
+        Otherwise all parameters are returned'''
+
+        if only_free:
+
+            return [x for x in self._param if not x.get_fixed()]
+
+        else:
+            return [x for x in self._param]
 
     def get_param_vals(self, only_free = True):
         '''export the values of the internal list of parameters as a

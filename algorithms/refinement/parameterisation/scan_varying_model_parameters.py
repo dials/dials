@@ -53,10 +53,6 @@ class ScanVaryingParameterSet(Parameter):
         self._esd = [None] * len(self)
 
     @property
-    def axis(self):
-        return self._axis
-
-    @property
     def name_stem(self):
         return self._name_stem
 
@@ -324,29 +320,29 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
                     for row, p in zip(self._dstate_dp, self._param) \
                     for ds_dp in row]
 
-    def get_smoothed_parameter_values(self, t, only_free = True):
-        '''export the values of the internal list of parameter sets as a
-        sequence of floats, for image number 't'.
-
-        If only_free, the values of fixed parameter sets are filtered from the
-        returned list. Otherwise all parameter set values are returned'''
-
-        if only_free:
-            return [self._smoother.value_weight(t, e) for e in self._param \
-                    if not e.get_fixed()]
-
-        else:
-            return [self._smoother.value_weight(t, e) for e in self._param]
-
-    def get_name_stems_of_parameter_sets(self, only_free = True):
-        '''export the names of the internal list of parameter sets, which are
-        the name stems of the individual parameter names
-
-        If only_free, the names of fixed parameter sets are filtered from the
-        returned list. Otherwise all parameter set names are returned'''
-
-        if only_free:
-            return [x.name_stem for e in self._param if not e.get_fixed()]
-
-        else:
-            return [x.name_stem for e in self._param]
+    #def get_smoothed_parameter_values(self, t, only_free = True):
+    #    '''export the values of the internal list of parameter sets as a
+    #    sequence of floats, for image number 't'.
+    #
+    #    If only_free, the values of fixed parameter sets are filtered from the
+    #    returned list. Otherwise all parameter set values are returned'''
+    #
+    #    if only_free:
+    #        return [self._smoother.value_weight(t, e) for e in self._param \
+    #                if not e.get_fixed()]
+    #
+    #    else:
+    #        return [self._smoother.value_weight(t, e) for e in self._param]
+    #
+    #def get_name_stems_of_parameter_sets(self, only_free = True):
+    #    '''export the names of the internal list of parameter sets, which are
+    #    the name stems of the individual parameter names
+    #
+    #    If only_free, the names of fixed parameter sets are filtered from the
+    #    returned list. Otherwise all parameter set names are returned'''
+    #
+    #    if only_free:
+    #        return [x.name_stem for e in self._param if not e.get_fixed()]
+    #
+    #    else:
+    #        return [x.name_stem for e in self._param]
