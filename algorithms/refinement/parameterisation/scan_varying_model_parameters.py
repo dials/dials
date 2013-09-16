@@ -324,7 +324,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
                     for row, p in zip(self._dstate_dp, self._param) \
                     for ds_dp in row]
 
-    def get_parameter_set_values(self, t, only_free = True):
+    def get_smoothed_parameter_values(self, t, only_free = True):
         '''export the values of the internal list of parameter sets as a
         sequence of floats, for image number 't'.
 
@@ -338,7 +338,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         else:
             return [self._smoother.value_weight(t, e) for e in self._param]
 
-    def get_parameter_set_names(self, only_free = True):
+    def get_name_stems_of_parameter_sets(self, only_free = True):
         '''export the names of the internal list of parameter sets, which are
         the name stems of the individual parameter names
 
