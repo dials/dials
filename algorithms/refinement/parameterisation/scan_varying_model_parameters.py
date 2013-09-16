@@ -56,6 +56,26 @@ class ScanVaryingParameterSet(Parameter):
     def name_stem(self):
         return self._name_stem
 
+    def __str__(self):
+
+        msg = "ScanVaryingParameterSet " + self.name_stem + ":\n"
+        try:
+            msg += "    Type: " + self.param_type + "\n"
+        except TypeError:
+            msg += "    Type: " + str(self.param_type) + "\n"        
+        try:
+            msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
+        except TypeError:
+            msg += "    Axis: " + str(self.axis) + "\n"
+        vals = ", ".join(["%5.3f"] * len(self)) % tuple(self.value)
+        msg += "    Values: " + vals + "\n"
+        try:
+            sigs = ", ".join(["%5.3f"] * len(self)) % tuple(self.esd)
+        except TypeError:
+            sigs = ", ".join([str(e) for e in self.esd])
+        msg += "    Sigmas: (" + sigs +") \n"
+
+        return msg
 
 class GaussianSmoother(object):
     '''A Gaussian smoother for ScanVaryingModelParameterisations'''
@@ -320,20 +340,12 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
                     for row, p in zip(self._dstate_dp, self._param) \
                     for ds_dp in row]
 
-    #def get_smoothed_parameter_values(self, t, only_free = True):
-    #    '''export the values of the internal list of parameter sets as a
-    #    sequence of floats, for image number 't'.
-    #
-    #    If only_free, the values of fixed parameter sets are filtered from the
-    #    returned list. Otherwise all parameter set values are returned'''
-    #
-    #    if only_free:
-    #        return [self._smoother.value_weight(t, e) for e in self._param \
-    #                if not e.get_fixed()]
-    #
-    #    else:
-    #        return [self._smoother.value_weight(t, e) for e in self._param]
-    #
+    def get_smoothed_parameter_value(self, t, pset):
+        '''export the smoothed value of a parameter set at image number 't'
+        using the smoother.'''
+
+        return self._smoother.value_weight(t, pset)[0]
+    
     #def get_name_stems_of_parameter_sets(self, only_free = True):
     #    '''export the names of the internal list of parameter sets, which are
     #    the name stems of the individual parameter names

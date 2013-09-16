@@ -73,6 +73,25 @@ class Parameter(object):
     def unfix(self):
         self._fixed = False
 
+    def __str__(self):
+
+        msg = "Parameter " + self.name + ":\n"
+        try:
+            msg += "    Type: " + self.param_type + "\n"
+        except TypeError:
+            msg += "    Type: " + str(self.param_type) + "\n"
+        try:
+            msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
+        except TypeError:
+            msg += "    Axis: " + str(self.axis) + "\n"
+        msg += "    Value: %5.3f" % self.value + "\n"
+        try:
+            msg += "    Sigma: %5.3f" % self.esd + "\n"
+        except TypeError:
+            msg += "    Sigma: " + str(self.esd) + "\n"
+
+        return msg
+
 
 
 class ModelParameterisation(object):
