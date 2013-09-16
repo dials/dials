@@ -315,6 +315,14 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         # (e X r).s0, where e is the rotation axis. Calculate this once, here.
         e_X_r = self._axis.cross(r)
         e_r_s0 = (e_X_r).dot(self._s0)
+        
+        # Note relationship between e_r_s0 and zeta_factor. Uncommenting the
+        # code below shows that s0.(e X r) = zeta * |s X s0|
+        #from dials.algorithms.reflection_basis import zeta_factor
+        #from libtbx.test_utils import approx_equal
+        #z = zeta_factor(self._axis, self._s0, s)
+        #ss0 = (s.cross(self._s0)).length()
+        #assert approx_equal(e_r_s0, z * ss0)
 
         try:
             assert abs(e_r_s0) > 1.e-6
