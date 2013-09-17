@@ -99,17 +99,17 @@ class CentroidTest(object):
         # Generate a 3d array of pixels and points
         self.points3d = flex.vec3_double(flex.grid(5, 5, 5))
         self.pixels3d = flex.double(flex.grid(5, 5, 5))
-        self.mask3d = flex.int(flex.grid(5, 5, 5))
+        self.mask3d = flex.bool(flex.grid(5, 5, 5))
         for k in range(0, 5):
             for j in range(0, 5):
                 for i in range(0, 5):
                     self.points3d[k,j,i] = (i + 0.5, j + 0.5, k + 0.5)
                     self.pixels3d[k,j,i] = random()
-                    self.mask3d[k,j,i] = randint(0, 1)
+                    self.mask3d[k,j,i] = bool(randint(0, 1))
 
         self.points2d = flex.vec2_double(flex.grid(5, 5))
         self.pixels2d = flex.double(flex.grid(5, 5))
-        self.mask2d = flex.int(flex.grid(5, 5))
+        self.mask2d = flex.bool(flex.grid(5, 5))
         for j in range(0, 5):
             for i in range(0, 5):
                 self.points2d[j,i] = self.points3d[0, j, i][0:2]
