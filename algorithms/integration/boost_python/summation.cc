@@ -16,6 +16,46 @@ using namespace boost::python;
 
 namespace dials { namespace algorithms { namespace boost_python {
 
+  /**
+   * Integrate a reflection
+   * @param r The reflection container
+   */
+  void summation3d(Reflection &r) {
+
+    af::const_ref< int, af::c_grid<3> > shoebox_mask =
+      r.get_shoebox_mask().const_ref();
+    af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor());
+    for (std::size_t i = 0; i < mask.size(); ++i) {
+      mask[i] = (shoebox_mask[i] & shoebox::Valid) ? true : false;
+    }
+
+    // Integrate the reflection
+    Summation result(r.get_shoebox().const_ref(),
+                     r.get_shoebox_background().const_ref(),
+                     mask.const_ref());
+
+    // Set the intensity and variance
+    r.set_intensity(result.intensity());
+    r.set_intensity_variance(result.variance());
+  }
+
+  /**
+   * Integrate a list of reflections
+   * @param reflections The reflection list
+   */
+  void summation3d(af::ref<Reflection> reflections) {
+    #pragma omp parallel for
+    for (std::size_t i = 0; i < reflections.size(); ++i) {
+      try {
+        if (reflections[i].is_valid()) {
+          summation3d(reflections[i]);
+        }
+      } catch (dials::error) {
+        reflections[i].set_valid(false);
+      }
+    }
+  }
+
   void export_summation()
   {
     class_ <Summation> ("Summation", no_init)
@@ -60,15 +100,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("background_standard_deviation", 
         &Summation::background_standard_deviation);
         
-    void (Summation3d::*call_w_reflection)(Reflection &r) const = 
-      &Summation3d::operator();
-    void (Summation3d::*call_w_reflection_list)(
-        af::ref<Reflection> reflections) const = 
-      &Summation3d::operator();         
-        
-    class_<Summation3d>("Summation3dAlgorithm")
-      .def("__call__", call_w_reflection)
-      .def("__call__", call_w_reflection_list);
+    def("summation3d", (void(*)(Reflection&))&summation3d);
+    def("summation3d", (void(*)(af::ref<Reflection>))&summation3d);
   }
 
 }}} // namespace = dials::algorithms::boost_python

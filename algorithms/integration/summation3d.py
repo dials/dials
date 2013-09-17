@@ -15,8 +15,7 @@ class Summation3d(IntegrationInterface):
 
     def __init__(self, **kwargs):
         '''Initialise algorithm.'''
-        from dials.algorithms.integration import Summation3dAlgorithm
-        self._integrator = Summation3dAlgorithm()
+        pass
 
     def __call__(self, sweep, crystal, reflections, reference=None):
         '''Process the reflections.
@@ -30,11 +29,12 @@ class Summation3d(IntegrationInterface):
             The list of integrated reflections
 
         '''
+        from dials.algorithms.integration import summation3d
         from dials.util.command_line import Command
 
         # Integrate and return the reflections
         Command.start('Integrating reflections')
-        self._integrator(reflections)
+        summation3d(reflections)
         Command.end('Integrated {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
         return reflections

@@ -16,9 +16,6 @@
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/tiny_algebra.h>
 #include <dials/model/data/reflection.h>
-#include <dials/algorithms/image/centroid/centroid_image.h>
-#include <dials/algorithms/image/centroid/centroid_masked_image.h>
-#include <dials/algorithms/image/centroid/centroid_points.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 
 namespace dials { namespace algorithms {
@@ -222,60 +219,6 @@ namespace dials { namespace algorithms {
     double signal_variance_;
     double background_intensity_;
     double background_variance_;
-  };
-
-
-  /**
-   * A class to do 3D summation integration
-   */
-  class Summation3d {
-  public:
-
-    typedef Summation integrator;
-
-    /** Init the algorithm. */
-    Summation3d() {}
-
-    /**
-     * Integrate a reflection
-     * @param r The reflection container
-     */
-    void operator()(Reflection &r) const {
-
-      af::const_ref< int, af::c_grid<3> > shoebox_mask =
-        r.get_shoebox_mask().const_ref();
-      af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor());
-      for (std::size_t i = 0; i < mask.size(); ++i) {
-        mask[i] = (shoebox_mask[i] & shoebox::Valid) ? true : false;
-      }
-
-      // Integrate the reflection
-      integrator result = integrator(
-        r.get_shoebox().const_ref(),
-        r.get_shoebox_background().const_ref(),
-        mask.const_ref());
-
-      // Set the intensity and variance
-      r.set_intensity(result.intensity());
-      r.set_intensity_variance(result.variance());
-    }
-
-    /**
-     * Integrate a list of reflections
-     * @param reflections The reflection list
-     */
-    void operator()(af::ref<Reflection> reflections) const {
-      #pragma omp parallel for
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
-        try {
-          if (reflections[i].is_valid()) {
-            this->operator()(reflections[i]);
-          }
-        } catch (dials::error) {
-          reflections[i].set_valid(false);
-        }
-      }
-    }
   };
 
 }}

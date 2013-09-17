@@ -23,6 +23,7 @@ namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
   using scitbx::af::mean;
+  using scitbx::vec3;
   using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
