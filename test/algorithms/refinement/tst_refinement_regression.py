@@ -239,12 +239,15 @@ refiner = setup_minimiser.Extract(master_phil,
                                   local_overrides = overrides).refiner
 
 refiner.run()
+
 assert mytarget.achieved()
 assert refiner.get_num_steps() == 1
-assert approx_equal(mytarget.rmsds(), (0.00719838104970212,
-                                       0.00493244963001761,
-                                       8.897370054409989e-05))
+print refiner.get_num_steps()
+assert approx_equal(mytarget.rmsds(), (0.005082333635071939,
+                                       0.004212919308923247,
+                                       8.976084121839415e-05))
 print "OK"
+
 ###############################
 # Undo known parameter shifts #
 ###############################
@@ -269,8 +272,8 @@ refiner = setup_minimiser.Extract(master_phil,
 refiner.run()
 
 assert mytarget.achieved()
-assert refiner.get_num_steps() == 11
-assert approx_equal(mytarget.rmsds(), (0.03623367686251676,
-                                       0.0522585476649568,
-                                       0.0003256229980171092))
+assert refiner.get_num_steps() == 9
+assert approx_equal(mytarget.rmsds(), (0.0564093680961448,
+                                       0.03432636086464995,
+                                       0.0003569908632122291))
 print "OK"

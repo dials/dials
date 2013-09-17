@@ -550,7 +550,7 @@ class ReflectionManager(object):
         # reflections are by definition close to the spindle-beam plane
         # and are troublesome to integrate anyway.
 
-        test = axis.dot(matrix.col(s).cross(s0)) > 0.1
+        test = abs(axis.dot(matrix.col(s).cross(s0))) > 0.1
 
         return test
 
