@@ -29,6 +29,26 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("signal"),
           arg("background"),
           arg("mask"))))
+      .def(init <const af::const_ref< double, af::c_grid<2> >&,
+                 const af::const_ref< double, af::c_grid<2> >&>((
+          arg("signal"),
+          arg("background"))))
+      .def(init <const af::const_ref< double, af::c_grid<2> >&,
+                 const af::const_ref< double, af::c_grid<2> >&,
+                 const af::const_ref< bool, af::c_grid<2> >&>((
+          arg("signal"),
+          arg("background"),
+          arg("mask"))))
+      .def(init <const af::const_ref< double, af::c_grid<3> >&,
+                 const af::const_ref< double, af::c_grid<3> >&>((
+          arg("signal"),
+          arg("background"))))
+      .def(init <const af::const_ref< double, af::c_grid<3> >&,
+                 const af::const_ref< double, af::c_grid<3> >&,
+                 const af::const_ref< bool, af::c_grid<3> >&>((
+          arg("signal"),
+          arg("background"),
+          arg("mask"))))
       .def("intensity", &Summation::intensity)
       .def("variance", &Summation::variance)
       .def("standard_deviation", &Summation::standard_deviation)
@@ -37,7 +57,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("signal_standard_deviation", &Summation::signal_standard_deviation)
       .def("background_intensity", &Summation::background_intensity)
       .def("background_variance", &Summation::background_variance)
-      .def("background_standard_deviation", &Summation::background_standard_deviation);
+      .def("background_standard_deviation", 
+        &Summation::background_standard_deviation);
         
     Summation3d::integrator (Summation3d::*call_w_pixels)(
         const af::const_ref<double, af::c_grid<3> > &pixels, 

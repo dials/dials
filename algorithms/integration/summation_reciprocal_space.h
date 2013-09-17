@@ -60,7 +60,7 @@ namespace dials { namespace algorithms {
         r.get_shoebox_background().const_ref()));
 
       // Integrate the reflection
-      integrator result = integrator(c.as_1d(), b.const_ref().as_1d());
+      integrator result = integrator(c, b.const_ref());
 
       // Set intensity data in reflection container
       r.set_intensity(result.intensity());

@@ -35,55 +35,69 @@ namespace dials { namespace algorithms {
   public:
 
     /**
-     * Integrate the intensity
-     * @param signal The signal to integrate
-     * @param background The background to the signal
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
      */
     Summation(const af::const_ref<double> &signal,
-               const af::const_ref<double> &background)
-    {
-      // Check both arrays are the same size
-      DIALS_ASSERT(signal.size() == background.size());
-
-      // Calculate the signal and background intensity
-      signal_intensity_ = 0.0;
-      background_intensity_ = 0.0;
-      for (std::size_t i = 0; i < signal.size(); ++i) {
-        signal_intensity_ += signal[i];
-        background_intensity_ += background[i];
-      }
-
-      // Set the signal and background variance
-      signal_variance_ = signal_intensity_;
-      background_variance_ = background_intensity_;
+              const af::const_ref<double> &background) {
+      init(signal, background);
     }
 
     /**
-     * Integrate the intensity
-     * @param signal The signal to integrate
-     * @param background The background to the signal
-     * @param mask The mask to the signal
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     * @param mask The mask array
      */
     Summation(const af::const_ref<double> &signal,
-               const af::const_ref<double> &background,
-               const af::const_ref<bool> &mask)
-    {
-      // Check both arrays are the same size
-      DIALS_ASSERT(signal.size() == background.size());
+              const af::const_ref<double> &background,
+              const af::const_ref<bool> &mask) {
+      init(signal, background, mask);
+    }
 
-      // Calculate the signal and background intensity
-      signal_intensity_ = 0.0;
-      background_intensity_ = 0.0;
-      for (std::size_t i = 0; i < signal.size(); ++i) {
-        if (mask[i]) {
-          signal_intensity_ += signal[i];
-          background_intensity_ += background[i];
-        }
-      }
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     */
+    Summation(const af::const_ref< double, af::c_grid<2> > &signal,
+              const af::const_ref< double, af::c_grid<2> > &background) {
+      init(signal.as_1d(), background.as_1d());
+    }
 
-      // Set the signal and background variance
-      signal_variance_ = signal_intensity_;
-      background_variance_ = background_intensity_;
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     * @param mask The mask array
+     */
+    Summation(const af::const_ref< double, af::c_grid<2> > &signal,
+              const af::const_ref< double, af::c_grid<2> > &background,
+              const af::const_ref< bool, af::c_grid<2> > &mask) {
+      init(signal.as_1d(), background.as_1d(), mask.as_1d());
+    }
+
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     */
+    Summation(const af::const_ref< double, af::c_grid<3> > &signal,
+              const af::const_ref< double, af::c_grid<3> > &background) {
+      init(signal.as_1d(), background.as_1d());
+    }
+
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     * @param mask The mask array
+     */
+    Summation(const af::const_ref< double, af::c_grid<3> > &signal,
+              const af::const_ref< double, af::c_grid<3> > &background,
+              const af::const_ref< bool, af::c_grid<3> > &mask) {
+      init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
 
     /**
@@ -151,6 +165,59 @@ namespace dials { namespace algorithms {
 
   private:
 
+    /**
+     * Integrate the intensity
+     * @param signal The signal to integrate
+     * @param background The background to the signal
+     */
+    void init(const af::const_ref<double> &signal,
+              const af::const_ref<double> &background)
+    {
+      // Check both arrays are the same size
+      DIALS_ASSERT(signal.size() == background.size());
+
+      // Calculate the signal and background intensity
+      signal_intensity_ = 0.0;
+      background_intensity_ = 0.0;
+      for (std::size_t i = 0; i < signal.size(); ++i) {
+        signal_intensity_ += signal[i];
+        background_intensity_ += background[i];
+      }
+
+      // Set the signal and background variance
+      signal_variance_ = signal_intensity_;
+      background_variance_ = background_intensity_;
+    }
+
+    /**
+     * Integrate the intensity
+     * @param signal The signal to integrate
+     * @param background The background to the signal
+     * @param mask The mask to the signal
+     */
+    void init(const af::const_ref<double> &signal,
+              const af::const_ref<double> &background,
+              const af::const_ref<bool> &mask)
+    {
+      // Check both arrays are the same size
+      DIALS_ASSERT(signal.size() == background.size());
+      DIALS_ASSERT(signal.size() == mask.size());
+
+      // Calculate the signal and background intensity
+      signal_intensity_ = 0.0;
+      background_intensity_ = 0.0;
+      for (std::size_t i = 0; i < signal.size(); ++i) {
+        if (mask[i]) {
+          signal_intensity_ += signal[i];
+          background_intensity_ += background[i];
+        }
+      }
+
+      // Set the signal and background variance
+      signal_variance_ = signal_intensity_;
+      background_variance_ = background_intensity_;
+    }
+
     double signal_intensity_;
     double signal_variance_;
     double background_intensity_;
@@ -180,7 +247,7 @@ namespace dials { namespace algorithms {
         const af::const_ref< double, af::c_grid<3> > &pixels,
         const af::const_ref< double, af::c_grid<3> > &background,
         const af::const_ref< bool, af::c_grid<3> > &mask) const {
-      return integrator(pixels.as_1d(), background.as_1d(), mask.as_1d());
+      return integrator(pixels, background, mask);
     }
 
     /**
