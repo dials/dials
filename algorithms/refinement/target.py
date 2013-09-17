@@ -533,22 +533,24 @@ class ReflectionManager(object):
         # TODO Add outlier rejection. Should use robust statistics.
         # See notes on M-estimators from Garib (when I have them)
 
+        axis = matrix.col(self._gonio.get_rotation_axis())
+        s0 = matrix.col(self._beam.get_s0())
+
         inc = [(h, s, x, sx, y, sy, p, sp) for
                (h, s, x, sx, y, sy, p, sp) in obs_data if
-               self._inclusion_test(h, s, self._vecn)]
+               self._inclusion_test(s, axis, s0)]
 
         return tuple(inc)
 
-    def _inclusion_test(self, h, s, vecn):
-        '''Test observation h for inclusion'''
+    def _inclusion_test(self, s, axis, s0):
+        '''Test scattering vector s for inclusion'''
 
-        # At the moment we use a simple catch-all for 'dodgy' observations,
-        # removing any that form too small an angle with the spindle_beam plane
-        # of the Ewald sphere. This is currently hard-coded. A better test
-        # would be adaptive, but to what?
+        # reject reflections for which the parallelepiped formed between
+        # the gonio axis, s0 and s has a volume of less than 0.1. Those
+        # reflections are by definition close to the spindle-beam plane
+        # and are troublesome to integrate anyway.
 
-        # reject reflections closer than 6 degrees to the spindle-beam plane
-        test = s.accute_angle(vecn) < 1.466077
+        test = axis.dot(matrix.col(s).cross(s0)) > 0.1
 
         return test
 
