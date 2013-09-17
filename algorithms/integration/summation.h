@@ -31,7 +31,7 @@ namespace dials { namespace algorithms {
   /**
    * Class to sum the intensity in 3D
    */
-  class SumIntensity3d {
+  class Summation {
   public:
 
     /**
@@ -39,8 +39,8 @@ namespace dials { namespace algorithms {
      * @param signal The signal to integrate
      * @param background The background to the signal
      */
-    SumIntensity3d(const af::const_ref< double, af::c_grid<3> > &signal,
-                   const af::const_ref< double, af::c_grid<3> > &background)
+    Summation(const af::const_ref<double> &signal,
+               const af::const_ref<double> &background)
     {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
@@ -64,9 +64,9 @@ namespace dials { namespace algorithms {
      * @param background The background to the signal
      * @param mask The mask to the signal
      */
-    SumIntensity3d(const af::const_ref< double, af::c_grid<3> > &signal,
-                   const af::const_ref< double, af::c_grid<3> > &background,
-                   const af::const_ref< bool, af::c_grid<3> > &mask)
+    Summation(const af::const_ref<double> &signal,
+               const af::const_ref<double> &background,
+               const af::const_ref<bool> &mask)
     {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
@@ -94,24 +94,24 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * @returns the signal intensity
-     */
-    double signal_intensity() const {
-      return signal_intensity_;
-    }
-
-    /**
-     * @returns the background intensity
-     */
-    double background_intensity() const {
-      return background_intensity_;
-    }
-
-    /**
      * @returns the variance on the integrated intensity
      */
     double variance() const {
       return signal_variance() + background_variance();
+    }
+
+    /**
+     * @returns the standard deviation on the intensity
+     */
+    double standard_deviation() const {
+      return std::sqrt(variance());
+    }
+
+    /**
+     * @returns the signal intensity
+     */
+    double signal_intensity() const {
+      return signal_intensity_;
     }
 
     /**
@@ -122,10 +122,31 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * @returns the standard deviation on the signal intensity
+     */
+    double signal_standard_deviation() const {
+      return std::sqrt(signal_variance());
+    }
+
+    /**
+     * @returns the background intensity
+     */
+    double background_intensity() const {
+      return background_intensity_;
+    }
+
+    /**
      * @returns the variance on the background intensity
      */
     double background_variance() const {
       return background_variance_;
+    }
+
+    /**
+     * @returns the standard deviation on the background intensity
+     */
+    double background_standard_deviation() const {
+      return std::sqrt(background_variance());
     }
 
   private:
@@ -136,65 +157,6 @@ namespace dials { namespace algorithms {
     double background_variance_;
   };
 
-  /**
-   * Class to perform summation integration.
-   */
-  class IntegrateBySummation {
-  public:
-
-    /**
-     * Perform the integration on a 3D image.
-     * @param pixels The 3D image.
-     * @param background The background
-     */
-    IntegrateBySummation(
-        const af::const_ref< double, af::c_grid<3> > &pixels,
-        const af::const_ref< double, af::c_grid<3> > &background) {
-
-      // Calculate the itensity and sigma
-      SumIntensity3d isum(pixels, background);
-      intensity_ = isum.intensity();
-      ivariance_ = isum.variance();
-    }
-
-    /**
-     * Perform the integration on a 3D image with a mask.
-     * @param pixels The 3D image.
-     * @param background The pixel background
-     * @param mask The corresponding mask
-     */
-    IntegrateBySummation(
-        const af::const_ref< double, af::c_grid<3> > &pixels,
-        const af::const_ref< double, af::c_grid<3> > &background,
-        const af::const_ref< bool, af::c_grid<3> > &mask) {
-
-      // Calculate the itensity and sigma
-      SumIntensity3d isum(pixels, background, mask);
-      intensity_ = isum.intensity();
-      ivariance_ = isum.variance();
-    }
-
-    /** @return The integrated intensity. */
-    double intensity() const {
-      return intensity_;
-    }
-
-    /** @return The variance on the intensity */
-    double variance() const {
-      return ivariance_;
-    }
-
-    /** @return the standard deviation on the intensity */
-    double standard_deviation() const {
-      return std::sqrt(variance());
-    }
-
-  private:
-
-    double intensity_;
-    double ivariance_;
-  };
-
 
   /**
    * A class to do 3D summation integration
@@ -202,7 +164,7 @@ namespace dials { namespace algorithms {
   class Summation3d {
   public:
 
-    typedef IntegrateBySummation integrator;
+    typedef Summation integrator;
 
     /** Init the algorithm. */
     Summation3d() {}
@@ -218,7 +180,7 @@ namespace dials { namespace algorithms {
         const af::const_ref< double, af::c_grid<3> > &pixels,
         const af::const_ref< double, af::c_grid<3> > &background,
         const af::const_ref< bool, af::c_grid<3> > &mask) const {
-      return integrator(pixels, background, mask);
+      return integrator(pixels.as_1d(), background.as_1d(), mask.as_1d());
     }
 
     /**

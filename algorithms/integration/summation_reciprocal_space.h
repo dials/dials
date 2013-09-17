@@ -34,7 +34,7 @@ namespace dials { namespace algorithms {
   class SummationReciprocalSpace {
   public:
 
-    typedef IntegrateBySummation integrator;
+    typedef Summation integrator;
 
     /** Init the algorithm. */
     SummationReciprocalSpace(const shared_ptr<Beam> &beam,
@@ -60,7 +60,7 @@ namespace dials { namespace algorithms {
         r.get_shoebox_background().const_ref()));
 
       // Integrate the reflection
-      integrator result = integrator(c, b.const_ref());
+      integrator result = integrator(c.as_1d(), b.const_ref().as_1d());
 
       // Set intensity data in reflection container
       r.set_intensity(result.intensity());

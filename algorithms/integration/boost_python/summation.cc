@@ -18,41 +18,26 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_summation()
   {
-    class_ <SumIntensity3d> ("SumIntensity3d", no_init)
-      .def(init <const af::const_ref<double, af::c_grid<3> >&,
-                 const af::const_ref<double, af::c_grid<3> >&>((
+    class_ <Summation> ("Summation", no_init)
+      .def(init <const af::const_ref<double>&,
+                 const af::const_ref<double>&>((
           arg("signal"),
           arg("background"))))
-      .def(init <const af::const_ref<double, af::c_grid<3> >&,
-                 const af::const_ref<double, af::c_grid<3> >&,
-                 const af::const_ref<bool, af::c_grid<3> >&>((
+      .def(init <const af::const_ref<double>&,
+                 const af::const_ref<double>&,
+                 const af::const_ref<bool>&>((
           arg("signal"),
           arg("background"),
           arg("mask"))))
-      .def("intensity", &SumIntensity3d::intensity)
-      .def("variance", &SumIntensity3d::variance)
-      .def("signal_intensity", &SumIntensity3d::signal_intensity)
-      .def("signal_variance", &SumIntensity3d::signal_variance)
-      .def("background_intensity", &SumIntensity3d::background_intensity)
-      .def("background_variance", &SumIntensity3d::background_variance);
-      
-    class_ <IntegrateBySummation> ("IntegrateBySummation", no_init)
-      .def(init <const af::const_ref<double, af::c_grid<3> >&, 
-                 const af::const_ref<double, af::c_grid<3> >&> ((
-          arg("pixels"),
-          arg("background"))))
-      .def(init <const af::const_ref<double, af::c_grid<3> >&, 
-                 const af::const_ref<double, af::c_grid<3> >&,
-                 const af::const_ref<bool, af::c_grid<3> >&> ((
-          arg("pixels"),
-          arg("mask"),
-          arg("background"))))
-      .def("intensity", 
-        &IntegrateBySummation::intensity)
-      .def("variance",
-        &IntegrateBySummation::variance)
-      .def("standard_deviation",
-        &IntegrateBySummation::standard_deviation);
+      .def("intensity", &Summation::intensity)
+      .def("variance", &Summation::variance)
+      .def("standard_deviation", &Summation::standard_deviation)
+      .def("signal_intensity", &Summation::signal_intensity)
+      .def("signal_variance", &Summation::signal_variance)
+      .def("signal_standard_deviation", &Summation::signal_standard_deviation)
+      .def("background_intensity", &Summation::background_intensity)
+      .def("background_variance", &Summation::background_variance)
+      .def("background_standard_deviation", &Summation::background_standard_deviation);
         
     Summation3d::integrator (Summation3d::*call_w_pixels)(
         const af::const_ref<double, af::c_grid<3> > &pixels, 
