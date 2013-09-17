@@ -27,6 +27,7 @@ namespace dials { namespace af { namespace boost_python {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
   using dials::model::Observation;
@@ -244,11 +245,21 @@ namespace dials { namespace af { namespace boost_python {
   }
   
   /** Update the millimeter centroid positions of all observations */
-  void observation_update_centroid_mm(ref<Observation> &obj, 
+  void observation_update_centroid_mm(af::ref<Observation> &obj, 
       const Detector &d, const Scan &s) {
     for (std::size_t i = 0; i < obj.size(); ++i) {
       obj[i].update_centroid_mm(d, s);
     }
+  }
+  
+  /** @returns The resolution of each observation */
+  af::shared<double> observation_resolution(af::ref<Observation> &obj,
+      const Beam &b, const Detector &d) {
+    af::shared<double> result(obj.size());
+    for (std::size_t i = 0; i < obj.size(); ++i) {
+      result[i] = obj[i].resolution(b, d);
+    }   
+    return result;
   }
   
   /** 
@@ -374,6 +385,10 @@ namespace dials { namespace af { namespace boost_python {
         &observation_update_centroid_mm, (
           boost::python::arg("detector"),
           boost::python::arg("scan")))
+      .def("resolution",
+        &observation_resolution, (
+          boost::python::arg("beam"),
+          boost::python::arg("detector")))
       .def_pickle(flex_pickle_double_buffered<Observation, 
         observation_to_string, observation_from_string>());
   }

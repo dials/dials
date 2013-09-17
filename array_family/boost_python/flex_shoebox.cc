@@ -30,6 +30,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::Shoebox;
   using dials::model::Centroid;
   using dials::model::Intensity;
+  using dials::model::Observation;
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::algorithms::LabelImageStack;
@@ -142,6 +143,14 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
+  
+  shared< vec3<int> > individual_max_index(const const_ref<Shoebox> &a) {
+    shared< vec3<int> > result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = af::max(a[i].data.const_ref());
+    }
+    return result;
+  }
 
   /**
    * Get the bounding boxes
@@ -154,28 +163,6 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
   
-  /**
-   * Get the simple centroid of the shoebox
-   */
-  shared<Centroid> simple_centroid(const const_ref<Shoebox> &a) {
-    shared<Centroid> result(a.size());
-    for (std::size_t i = 0; i < a.size(); ++i) {
-//      result[i] = simple_centroid(a[i]);
-    }
-    return result;
-  }
-
-  /**
-   * Get the summed intensity from the shoebox
-   */
-  shared<Intensity> summed_intensity(const const_ref<Shoebox> &a) {
-    shared<Intensity> result(a.size());
-    for (std::size_t i = 0; i < a.size(); ++i) {
-//      result[i] = summed_intensity(a[i]);
-    }
-    return result;
-  }
-
   /**
    * A class to convert the shoebox class to a string for pickling
    */
@@ -280,8 +267,7 @@ namespace dials { namespace af { namespace boost_python {
         boost::python::arg("scan_range")))
       .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
         boost::python::arg("mask")))
-      .def("simple_centroid", &simple_centroid)
-      .def("summed_intensity", &summed_intensity)
+      .def("individual_max_index", &individual_max_index)
       .def_pickle(flex_pickle_double_buffered<Shoebox, 
         shoebox_to_string, shoebox_from_string>());
   }

@@ -168,6 +168,17 @@ namespace dials { namespace model { namespace boost_python {
           arg("panel"),
           arg("detector"),
           arg("scan")))
+      .def("resolution", 
+        (double(Centroid::*)(const Beam &, const Detector&))
+        &Centroid::resolution, (
+          arg("beam"),
+          arg("detector")))
+      .def("resolution", 
+        (double(Centroid::*)(std::size_t,const Beam&,const Detector&))
+        &Centroid::resolution, (
+          arg("panel"),
+          arg("beam"),
+          arg("detector")))
       .def("__eq__", &Centroid::operator==)
       .def("__ne__", &Centroid::operator!=);
     
@@ -199,6 +210,10 @@ namespace dials { namespace model { namespace boost_python {
         &Observation::update_centroid_mm, (
           arg("detector"),
           arg("scan")))
+      .def("resolution", 
+        &Observation::resolution, (
+          arg("beam"),
+          arg("detector")))
       .def("__eq__", &Observation::operator==)
       .def("__ne__", &Observation::operator!=);
   }

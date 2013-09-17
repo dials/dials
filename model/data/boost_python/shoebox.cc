@@ -35,20 +35,33 @@ namespace dials { namespace model { namespace boost_python {
       mask.handle(), af::c_grid<3>(mask.accessor()));
   }
 
+  /** Set the bgrd array as a flex array */
+  static
+  void set_bgrd(Shoebox &obj, flex_double &bgrd) {
+    DIALS_ASSERT(bgrd.accessor().all().size() == 3);
+    obj.bgrd = af::versa<double, af::c_grid<3> >(
+      bgrd.handle(), af::c_grid<3>(bgrd.accessor()));
+  }
+
   void export_shoebox()
   {
     class_<Shoebox>("Shoebox")
       .def(init<const Shoebox&>())
+      .def(init<std::size_t, const int6&>())
       .def(init<const int6&>())
       .add_property("data", 
         make_getter(&Shoebox::data, return_value_policy<return_by_value>()),
         &set_data)        
       .add_property("mask", 
         make_getter(&Shoebox::mask, return_value_policy<return_by_value>()),
-        &set_mask)        
+        &set_mask)  
+      .add_property("bgrd", 
+        make_getter(&Shoebox::bgrd, return_value_policy<return_by_value>()),
+        &set_bgrd)        
       .add_property("bbox", 
         make_getter(&Shoebox::bbox, return_value_policy<return_by_value>()),
-        make_setter(&Shoebox::bbox, return_value_policy<return_by_value>()))        
+        make_setter(&Shoebox::bbox, return_value_policy<return_by_value>())) 
+      .def_readwrite("panel", &Shoebox::panel)       
       .def("allocate", &Shoebox::allocate)
       .def("deallocate", &Shoebox::deallocate)
       .def("xoffset", &Shoebox::xoffset)

@@ -13,6 +13,7 @@
 
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
+#include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
 #include <dials/error.h>
@@ -21,6 +22,7 @@ namespace dials { namespace model {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
 
@@ -259,6 +261,27 @@ namespace dials { namespace model {
     void update_mm(const Detector &d, const Scan &s) {
       update_mm(0, d, s);
     }
+
+    /**
+     * Calculate the resolution of the observed reflection
+     * @param panel The panel number
+     * @param d The detector model
+     * @returns The resolution
+     */
+    double resolution(std::size_t panel, const Beam &b, const Detector &d) {
+      return d[panel].get_resolution_at_pixel(
+        b.get_s0(), b.get_wavelength(),
+        vec2<double>(px.position[0], px.position[1]));
+    }
+
+    /**
+     * Calculate the resolution of the observed reflection
+     * @param d The detector model
+     * @returns The resolution
+     */
+    double resolution(const Beam &b, const Detector &d) {
+      return resolution(0, b, d);
+    }
   };
 
   /**
@@ -318,7 +341,16 @@ namespace dials { namespace model {
      * @param s The scan model
      */
     void update_centroid_mm(const Detector &d, const Scan &s) {
-      centroid.update_mm(d, s);
+      centroid.update_mm(panel, d, s);
+    }
+
+    /**
+     * Calculate the resolution of the observed reflection
+     * @param d The detector model
+     * @returns The resolution
+     */
+    double resolution(const Beam &b, const Detector &d) {
+      return centroid.resolution(panel, b, d);
     }
 
     /**

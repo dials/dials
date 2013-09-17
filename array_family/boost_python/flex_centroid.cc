@@ -27,6 +27,7 @@ namespace dials { namespace af { namespace boost_python {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using dxtbx::model::Beam;
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
   using dials::model::Centroid;
@@ -151,6 +152,16 @@ namespace dials { namespace af { namespace boost_python {
     }
   }
   
+  /** @returns The resolution of each observation */
+  af::shared<double> centroid_resolution(af::ref<Centroid> &obj,
+      std::size_t panel, const Beam &b, const Detector &d) {
+    af::shared<double> result(obj.size());
+    for (std::size_t i = 0; i < obj.size(); ++i) {
+      result[i] = obj[i].resolution(panel, b, d);
+    }   
+    return result;
+  }
+  
   void export_flex_centroid()
   {
     scitbx::af::boost_python::flex_wrapper <
@@ -178,7 +189,12 @@ namespace dials { namespace af { namespace boost_python {
       .def("update_mm", 
         &centroid_update_mm, (
           boost::python::arg("detector"),
-          boost::python::arg("scan")));
+          boost::python::arg("scan")))
+      .def("resolution",
+        &centroid_resolution, (
+          boost::python::arg("panel"),
+          boost::python::arg("beam"),
+          boost::python::arg("detector")));
   }
 
 }}} // namespace dials::af::boost_python

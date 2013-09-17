@@ -44,26 +44,44 @@ namespace dials { namespace model {
    */
   struct Shoebox {
 
+    std::size_t panel;                          ///< The detector panel
     int6 bbox;                                  ///< The bounding box
     af::versa< double, af::c_grid<3> > data;    ///< The shoebox data
     af::versa< int, af::c_grid<3> > mask;       ///< The shoebox mask
+    af::versa< double, af::c_grid<3> > bgrd;    ///< The shoebox background
 
     /**
      * Initialise the shoebox
      */
     Shoebox()
-      : bbox(0, 0, 0, 0, 0, 0),
+      : panel(0),
+        bbox(0, 0, 0, 0, 0, 0),
         data(af::c_grid<3>(0, 0, 0)),
-        mask(af::c_grid<3>(0, 0, 0)) {}
+        mask(af::c_grid<3>(0, 0, 0)),
+        bgrd(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Initialise the shoebox
      * @param bbox_ The bounding box to initialise with
      */
     Shoebox(const int6 &bbox_)
-      : bbox(bbox_),
+      : panel(0),
+        bbox(bbox_),
         data(af::c_grid<3>(0, 0, 0)),
-        mask(af::c_grid<3>(0, 0, 0)) {}
+        mask(af::c_grid<3>(0, 0, 0)),
+        bgrd(af::c_grid<3>(0, 0, 0)) {}
+
+    /**
+     * Initialise the shoebox
+     * @param panel_ The panel number
+     * @param bbox_ The bounding box to initialise with
+     */
+    Shoebox(std::size_t panel_, const int6 &bbox_)
+      : panel(panel_),
+        bbox(bbox_),
+        data(af::c_grid<3>(0, 0, 0)),
+        mask(af::c_grid<3>(0, 0, 0)),
+        bgrd(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Allocate the mask and data from the bounding box
@@ -72,6 +90,7 @@ namespace dials { namespace model {
       af::c_grid<3> accessor(zsize(), ysize(), xsize());
       data = af::versa< double, af::c_grid<3> >(accessor);
       mask = af::versa< int, af::c_grid<3> >(accessor);
+      bgrd = af::versa< double, af::c_grid<3> >(accessor);
     }
 
     /**
@@ -81,6 +100,7 @@ namespace dials { namespace model {
       af::c_grid<3> accessor(0, 0, 0);
       data = af::versa< double, af::c_grid<3> >(accessor);
       mask = af::versa< int, af::c_grid<3> >(accessor);
+      bgrd = af::versa< double, af::c_grid<3> >(accessor);
     }
 
     /** @returns The x offset */
@@ -151,7 +171,6 @@ namespace dials { namespace model {
      * @param mask The mask array
      * @returns True/False
      */
-    inline
     bool does_bbox_contain_bad_pixels(
         const af::const_ref< bool, af::c_grid<2> > &mask) const {
       std::size_t ysize = mask.accessor()[0];
