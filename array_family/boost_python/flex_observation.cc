@@ -30,10 +30,156 @@ namespace dials { namespace af { namespace boost_python {
   using dxtbx::model::Detector;
   using dxtbx::model::Scan;
   using dials::model::Observation;
+  using dials::model::Centroid;
+  using dials::model::Intensity;
+
+  /** Initialise an observation list from panels */
+  static 
+  af::flex<Observation>::type* init_from_panel(
+      const af::const_ref<std::size_t> &panel) {
+    af::shared<Observation> result(panel.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from centroids */
+  static 
+  af::flex<Observation>::type* init_from_centroid(
+      const af::const_ref<Centroid> &centroid) {
+    af::shared<Observation> result(centroid.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].centroid = centroid[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from intensities */
+  static 
+  af::flex<Observation>::type* init_from_intensity(
+      const af::const_ref<Intensity> &intensity) {
+    af::shared<Observation> result(intensity.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].intensity = intensity[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from centroids and intensities */
+  static 
+  af::flex<Observation>::type* init_from_centroid_and_intensity(
+      const af::const_ref<Centroid> &centroid,
+      const af::const_ref<Intensity> &intensity) {
+    DIALS_ASSERT(centroid.size() == intensity.size());
+    af::shared<Observation> result(intensity.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].centroid = centroid[i];
+      result[i].intensity = intensity[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from panels and centroids */
+  static 
+  af::flex<Observation>::type* init_from_panel_and_centroid(
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<Centroid> &centroid) {
+    DIALS_ASSERT(panel.size() == centroid.size());
+    af::shared<Observation> result(centroid.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel[i];
+      result[i].centroid = centroid[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from panels and intensities */
+  static 
+  af::flex<Observation>::type* init_from_panel_and_intensity(
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<Intensity> &intensity) {
+    DIALS_ASSERT(panel.size() == intensity.size());
+    af::shared<Observation> result(intensity.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel[i];
+      result[i].intensity = intensity[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from panels, centroids and intensities */
+  static 
+  af::flex<Observation>::type* init_from_panel_centroid_and_intensity(
+      const af::const_ref<std::size_t> &panel,
+      const af::const_ref<Centroid> &centroid,
+      const af::const_ref<Intensity> &intensity) {
+    DIALS_ASSERT(centroid.size() == intensity.size());
+    DIALS_ASSERT(panel.size() == intensity.size());
+    af::shared<Observation> result(intensity.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel[i];
+      result[i].centroid = centroid[i];
+      result[i].intensity = intensity[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from panel and centroids */
+  static 
+  af::flex<Observation>::type* init_from_single_panel_and_centroid(
+      std::size_t panel,
+      const af::const_ref<Centroid> &centroid) {
+    af::shared<Observation> result(centroid.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel;
+      result[i].centroid = centroid[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from panel and intensities */
+  static 
+  af::flex<Observation>::type* init_from_single_panel_and_intensity(
+      std::size_t panel,
+      const af::const_ref<Intensity> &intensity) {
+    af::shared<Observation> result(intensity.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel;
+      result[i].intensity = intensity[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /** Initialise an observation list from panel, centroids and intensities */
+  static 
+  af::flex<Observation>::type* init_from_single_panel_centroid_and_intensity(
+      std::size_t panel,
+      const af::const_ref<Centroid> &centroid,
+      const af::const_ref<Intensity> &intensity) {
+    DIALS_ASSERT(centroid.size() == intensity.size());
+    af::shared<Observation> result(intensity.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel;
+      result[i].centroid = centroid[i];
+      result[i].intensity = intensity[i];
+    }
+    return new af::flex<Observation>::type(
+      result, af::flex_grid<>(result.size()));
+  }
 
   /** @returns An array of panel numbers */
   static
-  af::shared<std::size_t> observation_panel(
+  af::shared<std::size_t> observation_get_panels(
       const af::const_ref<Observation> &obj) {
     af::shared<std::size_t> result(obj.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -41,161 +187,60 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-
-  /** @returns An array of pixel positions */
+  
+  /** @returns An array of centroids */
   static
-  af::shared< vec3<double> > observation_centroid_px_position(
+  af::shared<Centroid> observation_get_centroids(
       const af::const_ref<Observation> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared<Centroid> result(obj.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.px.position;
+      result[i] = obj[i].centroid;
     }
     return result;
   }
-
-  /** @returns An array of pixel variances */
+  
+  /** @returns An array of intensities */
   static
-  af::shared< vec3<double> > observation_centroid_px_variance(
+  af::shared<Intensity> observation_get_intensities(
       const af::const_ref<Observation> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared<Intensity> result(obj.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.px.variance;
+      result[i] = obj[i].intensity;
     }
     return result;
   }
-
-  /** @returns An array of pixel standard error squareds */
+  
+  /** @returns An array of panel numbers */
   static
-  af::shared< vec3<double> > observation_centroid_px_std_err_sq(
-      const af::const_ref<Observation> &obj) {
-    af::shared< vec3<double> > result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.px.std_err_sq;
+  void observation_set_panels(
+      af::ref<Observation> obj,
+      const af::const_ref<std::size_t> &panel) {
+    DIALS_ASSERT(obj.size() == panel.size());
+    for (std::size_t i = 0; i < obj.size(); ++i) {
+      obj[i].panel = panel[i];
     }
-    return result;
   }
-
-  /** @returns An array of millimeter positions */
+  
+  /** @returns An array of centroids */
   static
-  af::shared< vec3<double> > observation_centroid_mm_position(
-      const af::const_ref<Observation> &obj) {
-    af::shared< vec3<double> > result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.mm.position;
+  void observation_set_centroids(
+      af::ref<Observation> obj,
+      const af::const_ref<Centroid> &centroid) {
+    DIALS_ASSERT(obj.size() == centroid.size());      
+    for (std::size_t i = 0; i < obj.size(); ++i) {
+      obj[i].centroid = centroid[i];
     }
-    return result;
   }
-
-  /** @returns An array of millimeter variances */
+  
+  /** @returns An array of intensities */
   static
-  af::shared< vec3<double> > observation_centroid_mm_variance(
-      const af::const_ref<Observation> &obj) {
-    af::shared< vec3<double> > result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.mm.variance;
+  void observation_set_intensities(
+      af::ref<Observation> obj,
+      const af::const_ref<Intensity> &intensity) {
+    DIALS_ASSERT(obj.size() == intensity.size());
+    for (std::size_t i = 0; i < obj.size(); ++i) {
+      obj[i].intensity = intensity[i];
     }
-    return result;
-  }
-
-  /** @returns An array of millimeter standard error squareds */
-  static
-  af::shared< vec3<double> > observation_centroid_mm_std_err_sq(
-      const af::const_ref<Observation> &obj) {
-    af::shared< vec3<double> > result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.mm.std_err_sq;
-    }
-    return result;
-  }
-
-  /** @returns An array of pixel xy positions */
-  static
-  af::shared< vec2<double> > observation_centroid_px_position_xy(
-      const af::const_ref<Observation> &obj) {
-    af::shared<vec2<double> > result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = vec2<double>(obj[i].centroid.px.position[0], 
-                               obj[i].centroid.px.position[1]);
-    }
-    return result;
-  }
-
-  /** @returns An array of frames */
-  static
-  af::shared<double> observation_centroid_position_frame(
-      const af::const_ref<Observation> &obj) {
-    af::shared<double> result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.px.position[2];
-    }
-    return result;
-  }
-
-  /** @returns An array of millimeter xy positions */
-  static
-  af::shared< vec2<double> > observation_centroid_mm_position_xy(
-      const af::const_ref<Observation> &obj) {
-    af::shared<vec2<double> > result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = vec2<double>(obj[i].centroid.mm.position[0], 
-                               obj[i].centroid.mm.position[1]);
-    }
-    return result;
-  }
-
-  /** @returns An array of angles */
-  static
-  af::shared<double> observation_centroid_position_angle(
-      const af::const_ref<Observation> &obj) {
-    af::shared<double> result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].centroid.mm.position[2];
-    }
-    return result;
-  }
-
-  /** @returns An array of observed intensity values */
-  static
-  af::shared<double> observation_intensity_observed_value(
-      const af::const_ref<Observation> &obj) {
-    af::shared<double> result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].intensity.observed.value;
-    }
-    return result;
-  }
-
-  /** @returns An array of observed intensity variances */
-  static
-  af::shared<double> observation_intensity_observed_variance(
-      const af::const_ref<Observation> &obj) {
-    af::shared<double> result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].intensity.observed.variance;
-    }
-    return result;
-  }
-
-  /** @returns An array of corrected intensity values */
-  static
-  af::shared<double> observation_intensity_corrected_value(
-      const af::const_ref<Observation> &obj) {
-    af::shared<double> result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].intensity.corrected.value;
-    }
-    return result;
-  }
-
-  /** @returns An array of corrected intensity variances */
-  static
-  af::shared<double> observation_intensity_corrected_variance(
-      const af::const_ref<Observation> &obj) {
-    af::shared<double> result(obj.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = obj[i].intensity.corrected.variance;
-    }
-    return result;
   }
   
   /** Update the millimeter centroid positions of all observations */
@@ -299,36 +344,32 @@ namespace dials { namespace af { namespace boost_python {
   {
     scitbx::af::boost_python::flex_wrapper <
         Observation, return_internal_reference<> >::plain("observation")
-      .def("panel",
-        &observation_panel)
-      .def("centroid_px_position",
-        &observation_centroid_px_position)
-      .def("centroid_px_variance",
-        &observation_centroid_px_variance)
-      .def("centroid_px_std_err_eq",
-        &observation_centroid_px_std_err_sq)
-      .def("centroid_mm_position",
-        &observation_centroid_mm_position)
-      .def("centroid_mm_variance",
-        &observation_centroid_mm_variance)
-      .def("centroid_mm_std_err_eq",
-        &observation_centroid_mm_std_err_sq)
-      .def("centroid_px_position_xy",
-        &observation_centroid_px_position_xy)
-      .def("centroid_position_frame",
-        &observation_centroid_position_frame)
-      .def("centroid_mm_position_xy",
-        &observation_centroid_mm_position_xy)
-      .def("centroid_position_angle",
-        &observation_centroid_position_angle)
-      .def("intensity_observed_value",
-        &observation_intensity_observed_value)
-      .def("intensity_observed_variance",
-        &observation_intensity_observed_variance)
-      .def("intensity_corrected_value",
-        &observation_intensity_corrected_value)
-      .def("intensity_corrected_variance",
-        &observation_intensity_corrected_variance)
+      .def("__init__", 
+        make_constructor(&init_from_panel))
+      .def("__init__", 
+        make_constructor(&init_from_centroid))
+      .def("__init__", 
+        make_constructor(&init_from_intensity))
+      .def("__init__", 
+        make_constructor(&init_from_centroid_and_intensity))
+      .def("__init__", 
+        make_constructor(&init_from_panel_and_centroid))
+      .def("__init__", 
+        make_constructor(&init_from_panel_and_intensity))
+      .def("__init__", 
+        make_constructor(&init_from_panel_centroid_and_intensity))
+      .def("__init__", 
+        make_constructor(&init_from_single_panel_and_centroid))
+      .def("__init__", 
+        make_constructor(&init_from_single_panel_and_intensity))
+      .def("__init__", 
+        make_constructor(&init_from_single_panel_centroid_and_intensity))
+      .def("panels", &observation_get_panels)
+      .def("panels", &observation_set_panels)
+      .def("centroids", &observation_get_centroids)
+      .def("centroids", &observation_set_centroids)
+      .def("intensities", &observation_get_intensities)
+      .def("intensities", &observation_set_intensities)
       .def("update_centroid_mm", 
         &observation_update_centroid_mm, (
           boost::python::arg("detector"),

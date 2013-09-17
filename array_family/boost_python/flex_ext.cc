@@ -18,12 +18,16 @@ namespace dials { namespace af { namespace boost_python {
   using namespace boost::python;
 
   void export_flex_shoebox();
+  void export_flex_centroid();
+  void export_flex_intensity();
   void export_flex_observation();
   void export_flex_prediction();
 
   BOOST_PYTHON_MODULE(dials_array_family_flex_ext)
   {
     export_flex_shoebox();
+    export_flex_centroid();
+    export_flex_intensity();
     export_flex_observation();
     export_flex_prediction();
     
