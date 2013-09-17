@@ -20,6 +20,7 @@ namespace dials { namespace algorithms {
 
   using scitbx::af::int6;
   using dials::model::Reflection;
+  using dials::algorithms::CentroidMaskedImage3d;
 
   /**
    * Class to calculate centroid for reflections
@@ -59,11 +60,11 @@ namespace dials { namespace algorithms {
         reflection.get_shoebox_mask().const_ref();
 
       // Create the mask from the shoebox mask
-      af::versa<int, af::c_grid<3> > mask(shoebox_mask.accessor(), 0);
+      af::versa<bool, af::c_grid<3> > mask(shoebox_mask.accessor(), false);
       if (reflection.is_strong()) {
         for (std::size_t i = 0; i < mask.size(); ++i) {
           if (shoebox_mask[i] & shoebox::Strong) {
-            mask[i] = 1;
+            mask[i] = true;
           }
         }
       } else {
