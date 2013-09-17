@@ -481,6 +481,8 @@ class RefmanFactory(object):
 
         self._min_num_obs = options.minimum_number_of_reflections
 
+        self._inclusion_cutoff = options.inclusion_cutoff
+
         from target import ReflectionManager as refman
         self._refman = refman
 
@@ -521,7 +523,8 @@ class RefmanFactory(object):
                             scan=scan,
                             verbosity=verbosity,
                             nref_per_degree=self._ref_per_degree,
-                            min_num_obs=self._min_num_obs)
+                            min_num_obs=self._min_num_obs,
+                            inclusion_cutoff=self._inclusion_cutoff)
 
 class TargetFactory(object):
 

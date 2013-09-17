@@ -242,7 +242,6 @@ refiner.run()
 
 assert mytarget.achieved()
 assert refiner.get_num_steps() == 1
-print refiner.get_num_steps()
 assert approx_equal(mytarget.rmsds(), (0.005082333635071939,
                                        0.004212919308923247,
                                        8.976084121839415e-05))

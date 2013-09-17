@@ -440,7 +440,8 @@ class ReflectionManager(object):
                        beam, gonio, scan,
                        verbosity=0,
                        nref_per_degree = None,
-                       min_num_obs = 20):
+                       min_num_obs=20,
+                       inclusion_cutoff=0.1):
 
         # check the observed values
         h_obs = list(h_obs)
@@ -477,6 +478,9 @@ class ReflectionManager(object):
 
         # find vector normal to the spindle-beam plane for the initial model
         self._vecn = self._spindle_beam_plane_normal()
+
+        # set up the reflection inclusion cutoff
+        self._inclusion_cutoff = inclusion_cutoff
 
         # exclude reflections that fail inclusion criteria
         obs_data = zip(h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs,
@@ -550,7 +554,8 @@ class ReflectionManager(object):
         # reflections are by definition close to the spindle-beam plane
         # and are troublesome to integrate anyway.
 
-        test = abs(axis.dot(matrix.col(s).cross(s0))) > 0.1
+        test = abs(axis.dot(matrix.col(s).cross(s0))) > \
+            self._inclusion_cutoff
 
         return test
 

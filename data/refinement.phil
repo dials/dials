@@ -115,5 +115,14 @@ refinement
       .help = "The minimum number of input observations to allow a reflection"
               "manager to be constructed for."
       .type = int(value_min=1)
+
+    inclusion_cutoff = 0.1
+      .help = "The inclusion criterion currently uses the volume of the"
+              "parallelepiped formed by the spindle axis, the incident"
+              "beam and the scattered beam. If this is lower than some"
+              "value then the reflection is excluded from refinement."
+              "In detector space, these are the reflections located close"
+              "to the rotation axis."
+      .type = float(value_min = 0)
   }
 }
