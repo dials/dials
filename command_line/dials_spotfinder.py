@@ -11,8 +11,6 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 # LIBTBX_SET_DISPATCHER_NAME dials.spotfinder
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export PHENIX_GUI_ENVIRONMENT=1
-# LIBTBX_PRE_DISPATCHER_INCLUDE_SH export BOOST_ADAPTBX_FPE_DEFAULT=1
 
 class Script(ScriptRunner):
     '''A class for running the script.'''
@@ -36,7 +34,7 @@ class Script(ScriptRunner):
     def main(self, params, options, args):
         '''Execute the script.'''
         from dials.algorithms.peak_finding.spotfinder_factory \
-            import SpotFinderFactoryOld
+            import SpotFinderFactory
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
@@ -61,19 +59,12 @@ class Script(ScriptRunner):
                                "more than one image.")
 
         # Get the integrator from the input parameters
-        print 'Configurating spot finder from input parameters'
-        find_spots = SpotFinderFactoryOld.from_parameters(params)
+        print 'Configuringspot finder from input parameters'
+        find_spots = SpotFinderFactory.from_parameters(params)
 
         # Find the strong spots in the sweep
         print 'Finding strong spots'
         reflections = find_spots(sweep)
-
-        # View the spots if you like
-        if params.spotfinder.image_viewer:
-            from dials.util.spotfinder_wrap import spot_wrapper
-            spot_wrapper(working_phil=params).display(
-                sweep_filenames=sweep.paths(),
-                reflections=reflections)
 
         # Save the reflections to file
         Command.start('Saving {0} reflections to {1}'.format(
