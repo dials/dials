@@ -42,7 +42,7 @@ namespace dials { namespace algorithms {
      * @param image The image pixels
      */
     CentroidMaskedImage2d(const af::const_ref< double, af::c_grid<2> > &image,
-                          const af::const_ref< int, af::c_grid<2> > &mask)
+                          const af::const_ref< bool, af::c_grid<2> > &mask)
       : centroid_algorithm_type(
           select_pixels(image, mask).const_ref(),
           generate_coords(image, mask).const_ref()) {}
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
      */
     af::shared<double> select_pixels(
         const af::const_ref<double, af::c_grid<2> > &image,
-        const af::const_ref<int, af::c_grid<2> > &mask) {
+        const af::const_ref<bool, af::c_grid<2> > &mask) {
 
       // Check the sizes
       DIALS_ASSERT(mask.accessor().all_eq(image.accessor()));
@@ -81,7 +81,7 @@ namespace dials { namespace algorithms {
      */
     af::shared<coord_type> generate_coords(
         const af::const_ref<double, af::c_grid<2> > &image,
-        const af::const_ref<int, af::c_grid<2> > &mask) {
+        const af::const_ref<bool, af::c_grid<2> > &mask) {
 
       // Check the sizes
       DIALS_ASSERT(mask.accessor().all_eq(image.accessor()));
@@ -121,7 +121,7 @@ namespace dials { namespace algorithms {
      * @param image The image pixels
      */
     CentroidMaskedImage3d(const af::const_ref<double, af::c_grid<3> > &image,
-                          const af::const_ref<int, af::c_grid<3> > &mask)
+                          const af::const_ref<bool, af::c_grid<3> > &mask)
       : centroid_algorithm_type(
           select_pixels(image, mask).const_ref(),
           generate_coords(image, mask).const_ref()) {}
@@ -134,7 +134,7 @@ namespace dials { namespace algorithms {
      */
     af::shared<double> select_pixels(
         const af::const_ref< double, af::c_grid<3> > &image,
-        const af::const_ref< int, af::c_grid<3> > &mask) {
+        const af::const_ref< bool, af::c_grid<3> > &mask) {
 
       // Check the sizes
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
@@ -160,7 +160,7 @@ namespace dials { namespace algorithms {
      */
     af::shared<coord_type> generate_coords(
         const af::const_ref<double, af::c_grid<3> > &image,
-        const af::const_ref<int, af::c_grid<3> > &mask) {
+        const af::const_ref<bool, af::c_grid<3> > &mask) {
 
       // Check the sizes
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));

@@ -163,6 +163,181 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
   
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_all(const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_all();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_masked(const const_ref<Shoebox> &a, int code) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_masked(code);
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_valid(const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_valid();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_foreground(const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_foreground();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_strong(const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_strong();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_all_minus_background(
+      const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_all_minus_background();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_masked_minus_background(
+      const const_ref<Shoebox> &a, int code) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_masked_minus_background(code);
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_valid_minus_background(
+      const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_valid_minus_background();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_foreground_minus_background(
+      const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_foreground_minus_background();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of centroid
+   */
+  af::shared<Centroid> centroid_strong_minus_background(
+      const const_ref<Shoebox> &a) {
+    af::shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].centroid_strong_minus_background();
+    }
+    return result;
+  }
+
+  /** 
+   * Get a list of intensities
+   */
+  af::shared<Intensity> summed_intensity_all(
+      const const_ref<Shoebox> &a) {
+    af::shared<Intensity> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].summed_intensity_all();
+    }
+    return result;
+  }
+  
+  /** 
+   * Get a list of intensities
+   */
+  af::shared<Intensity> summed_intensity_masked(
+      const const_ref<Shoebox> &a, int code) {
+    af::shared<Intensity> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].summed_intensity_masked(code);
+    }
+    return result;
+  }
+  
+  /** 
+   * Get a list of intensities
+   */
+  af::shared<Intensity> summed_intensity_valid(
+      const const_ref<Shoebox> &a) {
+    af::shared<Intensity> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].summed_intensity_valid();
+    }
+    return result;
+  }
+  
+  /** 
+   * Get a list of intensities
+   */
+  af::shared<Intensity> summed_intensity_foreground(
+      const const_ref<Shoebox> &a) {
+    af::shared<Intensity> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].summed_intensity_foreground();
+    }
+    return result;
+  }
+  
+    /** 
+   * Get a list of intensities
+   */
+  af::shared<Intensity> summed_intensity_strong(
+      const const_ref<Shoebox> &a) {
+    af::shared<Intensity> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = a[i].summed_intensity_strong();
+    }
+    return result;
+  }
+ 
   /**
    * A class to convert the shoebox class to a string for pickling
    */
@@ -268,6 +443,36 @@ namespace dials { namespace af { namespace boost_python {
       .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
         boost::python::arg("mask")))
       .def("individual_max_index", &individual_max_index)
+     .def("centroid_all",
+        &centroid_all)
+      .def("centroid_masked", 
+        &centroid_masked)
+      .def("centroid_valid", 
+        &centroid_valid)
+      .def("centroid_foreground", 
+        &centroid_foreground)
+      .def("centroid_strong", 
+        &centroid_strong)
+      .def("centroid_all_minus_background", 
+        &centroid_all_minus_background)
+      .def("centroid_masked_minus_background", 
+        &centroid_masked_minus_background)
+      .def("centroid_valid_minus_background", 
+        &centroid_valid_minus_background)
+      .def("centroid_foreground_minus_background", 
+        &centroid_foreground_minus_background)
+      .def("centroid_strong_minus_background", 
+        &centroid_strong_minus_background)
+      .def("summed_intensity_all",
+        &summed_intensity_all)
+      .def("summed_intensity_masked",
+        &summed_intensity_masked)
+      .def("summed_intensity_valid",
+        &summed_intensity_valid)
+      .def("summed_intensity_foreground",
+        &summed_intensity_foreground)
+      .def("summed_intensity_strong",
+        &summed_intensity_strong)      
       .def_pickle(flex_pickle_double_buffered<Shoebox, 
         shoebox_to_string, shoebox_from_string>());
   }

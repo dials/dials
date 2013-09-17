@@ -14,6 +14,10 @@
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/small.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/model/data/observation.h>
+#include <dials/algorithms/image/centroid/centroid_image.h>
+#include <dials/algorithms/image/centroid/centroid_masked_image.h>
+#include <dials/algorithms/integration/summation.h>
 #include <dials/error.h>
 
 namespace dials { namespace model {
@@ -22,6 +26,11 @@ namespace dials { namespace model {
   using scitbx::af::int3;
   using scitbx::af::int6;
   using scitbx::af::small;
+  using dials::model::Centroid;
+  using dials::model::Intensity;
+  using dials::algorithms::CentroidImage3d;
+  using dials::algorithms::CentroidMaskedImage3d;
+  using dials::algorithms::Summation;
 
   /**
    * An enumeration of shoebox mask codes. If a pixel is labelled as:
@@ -202,6 +211,201 @@ namespace dials { namespace model {
         }
       }
       return count;
+    }
+
+    /**
+     * Perform a centroid of all pixels
+     * @returns The centroid
+     */
+    Centroid centroid_all() const {
+      CentroidImage3d centroid(data.const_ref());
+      Centroid result;
+      result.px.position = centroid.mean();
+      result.px.variance = centroid.unbiased_variance();
+      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
+      return result;
+    }
+
+    /**
+     * Perform a centroid of masked pixels
+     * @param code The mask code
+     * @returns The centroid
+     */
+    Centroid centroid_masked(int code) const {
+
+      // Calculate the foreground mask
+      af::versa< bool, af::c_grid<3> > fg_mask_arr(mask.accessor());
+      af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        foreground_mask[i] = mask[i] & code;
+      }
+
+      // Calculate the centroid
+      CentroidMaskedImage3d centroid(data.const_ref(), foreground_mask);
+      Centroid result;
+      result.px.position = centroid.mean();
+      result.px.variance = centroid.unbiased_variance();
+      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
+      return result;
+    }
+
+    /**
+     * Perform a centroid of valid pixels
+     * @returns The centroid
+     */
+    Centroid centroid_valid() const {
+      return centroid_masked(Valid);
+    }
+
+    /**
+     * Perform a centroid of foreground pixels
+     * @returns The centroid
+     */
+    Centroid centroid_foreground() const {
+      return centroid_masked(Foreground);
+    }
+
+    /**
+     * Perform a centroid of strong pixels
+     * @returns The centroid
+     */
+    Centroid centroid_strong() const {
+      return centroid_masked(Strong);
+    }
+
+    /**
+     * Perform a centroid minus the background
+     * @return The centroid
+     */
+    Centroid centroid_all_minus_background() const {
+      // Calculate the foreground mask and data
+      DIALS_ASSERT(data.size() == bgrd.size());
+      af::versa< double, af::c_grid<3> > fg_data_arr(data.accessor());
+      af::ref< double, af::c_grid<3> > foreground_data = fg_data_arr.ref();
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        foreground_data[i] = data[i] - bgrd[i];
+      }
+
+      // Calculate the centroid
+      CentroidImage3d centroid(foreground_data);
+      Centroid result;
+      result.px.position = centroid.mean();
+      result.px.variance = centroid.unbiased_variance();
+      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
+      return result;
+    }
+
+    /**
+     * Perform a centroid minus the background
+     * @return The centroid
+     */
+    Centroid centroid_masked_minus_background(int code) const {
+      // Calculate the foreground mask and data
+      DIALS_ASSERT(data.size() == mask.size());
+      DIALS_ASSERT(data.size() == bgrd.size());
+      af::versa< bool, af::c_grid<3> > fg_mask_arr(mask.accessor());
+      af::versa< double, af::c_grid<3> > fg_data_arr(data.accessor());
+      af::ref< double, af::c_grid<3> > foreground_data = fg_data_arr.ref();
+      af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        foreground_mask[i] = mask[i] & code;
+        foreground_data[i] = data[i] - bgrd[i];
+      }
+
+      // Calculate the centroid
+      CentroidMaskedImage3d centroid(foreground_data, foreground_mask);
+      Centroid result;
+      result.px.position = centroid.mean();
+      result.px.variance = centroid.unbiased_variance();
+      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
+      return result;
+    }
+
+    /**
+     * Perform a centroid minus the background
+     * @return The centroid
+     */
+    Centroid centroid_valid_minus_background() const {
+      return centroid_masked_minus_background(Valid);
+    }
+
+    /**
+     * Perform a centroid minus the background
+     * @return The centroid
+     */
+    Centroid centroid_foreground_minus_background() const {
+      return centroid_masked_minus_background(Foreground);
+    }
+
+    /**
+     * Perform a centroid minus the background
+     * @return The centroid
+     */
+    Centroid centroid_strong_minus_background() const {
+      return centroid_masked_minus_background(Strong);
+    }
+
+    /**
+     * Get the summed intensity of all pixels
+     * @returns The intensity
+     */
+    Intensity summed_intensity_all() const {
+
+      // Do the intengration
+      Summation summation(data.const_ref(), bgrd.const_ref());
+
+      // Return the intensity struct
+      Intensity result;
+      result.observed.value = summation.intensity();
+      result.observed.variance = summation.variance();
+      return result;
+    }
+
+    /**
+     * Get the summed intensity of all pixels in the mask
+     * @returns The intensity
+     */
+    Intensity summed_intensity_masked(int code) const {
+
+      // Create a boolean mask
+      af::versa< bool, af::c_grid<3> > temp_arr(mask.accessor());
+      af::ref< bool, af::c_grid<3> > temp = temp_arr.ref();
+      for (std::size_t i = 0; i < temp.size(); ++i) {
+        temp[i] = mask[i] & code;
+      }
+
+      // Do the intengration
+      Summation summation(data.const_ref(), bgrd.const_ref(), temp);
+
+      // Return the intensity struct
+      Intensity result;
+      result.observed.value = summation.intensity();
+      result.observed.variance = summation.variance();
+      return result;
+    }
+
+    /**
+     * Get the summed intensity of all valid pixels
+     * @returns The intensity
+     */
+    Intensity summed_intensity_valid() const {
+      return summed_intensity_masked(Valid);
+    }
+
+    /**
+     * Get the summed intensity of all foreground pixels
+     * @returns The intensity
+     */
+    Intensity summed_intensity_foreground() const {
+      return summed_intensity_masked(Foreground);
+    }
+
+    /**
+     * Get the summed intensity of all strong pixels
+     * @returns The intensity
+     */
+    Intensity summed_intensity_strong() const {
+      return summed_intensity_masked(Strong);
     }
 
     /**

@@ -67,7 +67,7 @@ namespace dials { namespace algorithms {
 
     // Estimate the standard deviation of the variance
     std::size_t n = data.size();
-    double sdev = sqrt((m4 - m2 * m2 * (n - 3) / (n - 1)) / n);
+    double sdev = std::sqrt((m4 - m2 * m2 * (n - 3) / (n - 1)) / n);
 
     // Return True/False
     return abs(m2 - m1) <= n_sigma * sdev;

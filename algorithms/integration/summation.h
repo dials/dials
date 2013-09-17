@@ -15,15 +15,14 @@
 #include <algorithm>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/tiny_algebra.h>
-#include <dials/model/data/reflection.h>
-#include <dials/algorithms/shoebox/mask_code.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::af::int3;
   using scitbx::af::int6;
   using scitbx::af::sqrt;
-  using dials::model::Reflection;
 
   /**
    * Class to sum the intensity in 3D

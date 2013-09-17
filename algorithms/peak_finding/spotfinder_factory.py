@@ -16,15 +16,10 @@ class SpotFinder(object):
     def __init__(self, find_spots=None, filter_spots=None, scan_range=None):
         ''' Initialise the class. '''
 
-        # Set the spot finding function
-        assert(find_spots != None)
+        # Set the spot finding and filter functions
+        assert(find_spots != None and filter_spots != None)
         self.find_spots = find_spots
-
-        # Set the filter function
-        if filter_spots == None:
-            self.filter_spots = lambda x: x
-        else:
-            self.filter_spots = filter_spots
+        self.filter_spots = filter_spots
 
         # Set the scan range
         self.scan_range = scan_range
@@ -32,6 +27,7 @@ class SpotFinder(object):
     def __call__(self, sweep):
         ''' Do the spot finding '''
         from dials.model.data import ReflectionList
+        from dials.array_family import flex
         from dials.util.command_line import Command
 
         # Get list of scan ranges
@@ -50,22 +46,32 @@ class SpotFinder(object):
             # Find the spots
             spots = self.find_spots(sweep[j0:j1])
 
-            # Filter the spots
-            spots = self.filter_spots(spots)
-
             # Add the spots to the list
             spots_all.extend(spots)
 
-        # Calculate the centroids
-        Command.start('Calculating {0} centroids'.format(len(spots_all)))
-        cpos, cvar, cerr, ctot = self.centroid(spots_all)
-        Command.end('Calculated {0} centroids'.format(len(spots_all)))
+        # Extract the observations from the shoeboxes
+        centroid = spots_all.centroid_valid();
+        intensity = spots_all.summed_intensity_valid();
+        observed = flex.observation(spots_all.panels(), centroid, intensity)
 
-        # Return the spots in a reflection list
-        Command.start('Creating reflection list')
-        rlist = self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
-        Command.end('Created list of {0} reflections'.format(len(rlist)))
-        return rlist
+        # Filter the reflections and select only the desired spots
+        flags = self.filter_spots(observations=observed, shoeboxes=spots_all)
+        observed = observed.select(flags)
+        spots_all = spots_all.select(flags)
+
+        # Return as a reflection list
+        return ReflectionList(observed, spots_all)
+
+#        # Calculate the centroids
+#        Command.start('Calculating {0} centroids'.format(len(spots_all)))
+#        cpos, cvar, cerr, ctot = self.centroid(spots_all)
+#        Command.end('Calculated {0} centroids'.format(len(spots_all)))
+
+#        # Return the spots in a reflection list
+#        Command.start('Creating reflection list')
+#        rlist = self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
+#        Command.end('Created list of {0} reflections'.format(len(rlist)))
+#        return rlist
 
     def centroid(self, spots):
         '''Calculate the spot centroids.

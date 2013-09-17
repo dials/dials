@@ -38,7 +38,7 @@ namespace dials { namespace algorithms {
    */
   inline
   double normal_expected_n_sigma(int n_obs) {
-    return sqrt(2.0) * erf_inv(1.0 - (1.0 / n_obs));
+    return std::sqrt(2.0) * erf_inv(1.0 - (1.0 / n_obs));
   }
 
   /**

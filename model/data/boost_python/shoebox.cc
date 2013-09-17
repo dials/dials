@@ -81,6 +81,36 @@ namespace dials { namespace model { namespace boost_python {
           arg("mask")))
       .def("count_mask_values",
         &Shoebox::count_mask_values)
+      .def("centroid_all",
+        &Shoebox::centroid_all)
+      .def("centroid_masked", 
+        &Shoebox::centroid_masked)
+      .def("centroid_valid", 
+        &Shoebox::centroid_valid)
+      .def("centroid_foreground", 
+        &Shoebox::centroid_foreground)
+      .def("centroid_strong", 
+        &Shoebox::centroid_strong)
+      .def("centroid_all_minus_background", 
+        &Shoebox::centroid_all_minus_background)
+      .def("centroid_masked_minus_background", 
+        &Shoebox::centroid_masked_minus_background)
+      .def("centroid_valid_minus_background", 
+        &Shoebox::centroid_valid_minus_background)
+      .def("centroid_foreground_minus_background", 
+        &Shoebox::centroid_foreground_minus_background)
+      .def("centroid_strong_minus_background", 
+        &Shoebox::centroid_strong_minus_background)
+      .def("summed_intensity_all",
+        &Shoebox::summed_intensity_all)
+      .def("summed_intensity_masked",
+        &Shoebox::summed_intensity_masked)
+      .def("summed_intensity_valid",
+        &Shoebox::summed_intensity_valid)
+      .def("summed_intensity_foreground",
+        &Shoebox::summed_intensity_foreground)
+      .def("summed_intensity_strong",
+        &Shoebox::summed_intensity_strong)
       .def("__eq__", &Shoebox::operator==)
       .def("__ne__", &Shoebox::operator!=);
   }

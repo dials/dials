@@ -11,10 +11,14 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/summation.h>
+#include <dials/model/data/reflection.h>
+#include <dials/algorithms/shoebox/mask_code.h>
 
 using namespace boost::python;
 
 namespace dials { namespace algorithms { namespace boost_python {
+
+  using dials::model::Reflection;
 
   /**
    * Integrate a reflection
