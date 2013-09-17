@@ -245,7 +245,7 @@ namespace dials { namespace af { namespace boost_python {
   }
   
   /** Update the millimeter centroid positions of all observations */
-  void observation_update_centroid_mm(af::ref<Observation> &obj, 
+  void observation_update_centroid_mm(af::ref<Observation> obj, 
       const Detector &d, const Scan &s) {
     for (std::size_t i = 0; i < obj.size(); ++i) {
       obj[i].update_centroid_mm(d, s);
@@ -253,7 +253,8 @@ namespace dials { namespace af { namespace boost_python {
   }
   
   /** @returns The resolution of each observation */
-  af::shared<double> observation_resolution(af::ref<Observation> &obj,
+  af::shared<double> observation_resolution(
+      const af::const_ref<Observation> &obj,
       const Beam &b, const Detector &d) {
     af::shared<double> result(obj.size());
     for (std::size_t i = 0; i < obj.size(); ++i) {

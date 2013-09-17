@@ -394,7 +394,7 @@ class SpotFinderOld(SpotFinderInterface):
             if not selection[si]: continue
             im = flex.max_index(flex.int([values[i] for i in s]))
             xc = matrix.col(c)
-            xm = matrix.col(coords[s[im]])
+            xm = matrix.col(coords[s[im]]) + matrix.col((0.5, 0.5, 0.5))
             if (xc - xm).length() > self._max_separation:
                 selection[si] = False
 

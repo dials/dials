@@ -154,10 +154,15 @@ namespace dials { namespace af { namespace boost_python {
    * Get the maximum index of each shoebox
    */
   static
-  shared< vec3<int> > individual_max_index(const const_ref<Shoebox> &a) {
-    shared< vec3<int> > result(a.size());
+  shared< vec3<double> > peak_coordinates(ref<Shoebox> a) {
+    shared< vec3<double> > result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
-      result[i] = af::max(a[i].data.const_ref());
+      std::size_t index = af::max_index(a[i].data.const_ref());
+      af::c_grid<3> accessor = a[i].data.accessor();
+      tiny<int, 3> coord = accessor.index_nd(index);
+      result[i][0] = a[i].bbox[0] + coord[2] + 0.5;
+      result[i][1] = a[i].bbox[2] + coord[1] + 0.5;
+      result[i][2] = a[i].bbox[4] + coord[0] + 0.5;
     }
     return result;
   }
@@ -496,7 +501,7 @@ namespace dials { namespace af { namespace boost_python {
         boost::python::arg("scan_range")))
       .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
         boost::python::arg("mask")))
-      .def("individual_max_index", &individual_max_index)
+      .def("peak_coordinates", &peak_coordinates)
      .def("centroid_all",
         &centroid_all)
       .def("centroid_masked", 

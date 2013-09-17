@@ -268,7 +268,8 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(std::size_t panel, const Beam &b, const Detector &d) {
+    double resolution(std::size_t panel,
+        const Beam &b, const Detector &d) const {
       return d[panel].get_resolution_at_pixel(
         b.get_s0(), b.get_wavelength(),
         vec2<double>(px.position[0], px.position[1]));
@@ -279,7 +280,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(const Beam &b, const Detector &d) {
+    double resolution(const Beam &b, const Detector &d) const {
       return resolution(0, b, d);
     }
   };
@@ -349,7 +350,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(const Beam &b, const Detector &d) {
+    double resolution(const Beam &b, const Detector &d) const {
       return centroid.resolution(panel, b, d);
     }
 

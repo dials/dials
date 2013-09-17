@@ -66,7 +66,10 @@ class SpotFinder(object):
         observed = flex.observation(shoeboxes.panels(), centroid, intensity)
 
         # Filter the reflections and select only the desired spots
-        flags = self.filter_spots(observations=observed, shoeboxes=shoeboxes)
+        flags = self.filter_spots(None,
+            sweep=sweep,
+            observations=observed,
+            shoeboxes=shoeboxes)
         observed = observed.select(flags)
         shoeboxes = shoeboxes.select(flags)
 
@@ -74,87 +77,157 @@ class SpotFinder(object):
         return ReflectionList(observed, shoeboxes)
 
 
-class Filter(object):
+class FilterRunner(object):
+    ''' A class to run multiple filters in succession. '''
+
+    def __init__(self, filters=None):
+        ''' Initialise with a list of filters. '''
+        if filters is None:
+            self.filters=[]
+        else:
+            self.filters=filters
 
     def __call__(self, flags, **kwargs):
-        return self.run(self.check_flags(flags, **kwargs), **kwargs)
+        ''' Call the filters one by one. '''
+        flags = self.check_flags(flags, **kwargs)
+        for f in self.filters:
+            flags = f(flags, **kwargs)
+        return flags
 
     def check_flags(self, flags, predictions=None, observations=None,
                     shoeboxes=None, **kwargs):
+        ''' Check the flags are set, if they're not then create a list
+        of Trues equal to the number of items given. '''
         from scitbx.array_family import flex
 
         # If flags are not set then create a list of Trues
         if flags == None:
-          length = 0
-          if predictions:
-              length = len(predictions)
-          if observations:
-              if length > 0:
-                  assert(length == len(observations))
-              else:
-                  length = len(observations)
-          if shoeboxes:
-              if length > 0:
-                  assert(length == len(observations))
-              else:
-                  length = len(shoeboxes)
+            length = 0
+            if predictions:
+                length = len(predictions)
+            if observations:
+                if length > 0:
+                    assert(length == len(observations))
+                else:
+                    length = len(observations)
+            if shoeboxes:
+                if length > 0:
+                    assert(length == len(observations))
+                else:
+                    length = len(shoeboxes)
 
-          # Create an array of flags
-          flags = flex.bool(length, True)
+            # Create an array of flags
+            flags = flex.bool(length, True)
 
-      # Return the flags
-      return flags
-
-
-class NullFilter(Filter):
-
-    def run(self, flags, **kwargs):
+        # Return the flags
         return flags
 
 
-class MinPixelsFilter(Filter):
+class MinPixelsFilter(object):
+    ''' Filter the reflections by the number of pixels in the shoeboxes. '''
 
     def __init__(self, num, code):
+        ''' Initialise
+
+        Params:
+            num The minimum number of pixels allowed
+            code The mask code to use for comparison
+
+        '''
         self.code = code
         self.num = num
 
     def run(self, flags, observations=None, shoeboxes=None, **kwargs):
+        ''' Run the filtering. '''
 
         # Get the number of mask values matching the code
         count = shoeboxes.count_mask_values(self.code)
 
         # Return the flags of those > the given number
-        return flags.__and__(count > self.num)
+        return flags.__and__(count >= self.num)
+
+    def __call__(self, flags, **kwargs):
+        ''' Call the filter and print information. '''
+        from dials.util.command_line import Command
+        Command.start('Filtering {0} spots by number of pixels'.format(
+            flags.count(True)))
+        flags = self.run(flags, **kwargs)
+        Command.end('Filtered {0} spots by number of pixels'.format(
+            flags.count(True)))
+        return flags
 
 
-class PeakCentroidDistanceFilter(Filter):
+class PeakCentroidDistanceFilter(object):
 
     def __init__(self, maxd):
+        ''' Initialise
+
+        Params:
+            maxd The maximum distance allowed
+
+        '''
         self.maxd = maxd
 
     def run(self, flags, observations=None, shoeboxes=None, **kwargs):
+        ''' Run the filtering. '''
 
         # Get the peak locations and the centroids
-        peak = shoeboxes.individual_peak_indices()
-        cent = observations.centroids().px_positions()
+        peak = shoeboxes.peak_coordinates()
+        cent = observations.centroids().px_position()
+        norms = (peak - cent).norms()
 
         # Return the flags of those closer than the min distance
-        return flags.__and__((peak - cent).norms() < self.max_d)
+        return flags.__and__((peak - cent).norms() <= self.maxd)
+
+    def __call__(self, flags, **kwargs):
+        ''' Call the filter and print information. '''
+        from dials.util.command_line import Command
+        Command.start('Filtering {0} spots by peak-centroid distance'.format(
+            flags.count(True)))
+        flags = self.run(flags, **kwargs)
+        Command.end('Filtered {0} spots by peak-centroid distance'.format(
+            flags.count(True)))
+        return flags
 
 
-class CentroidResolutionFilter(Filter):
+class CentroidResolutionFilter(object):
 
     def __init__(self, d_min, d_max):
-        self.d_min = d_min
-        self.d_max = d_max
+        ''' Initialise
+
+        Params:
+            dmin The maximum resolution
+            dmax The minimum resolution
+
+        '''
+        if d_min == None:
+            self.d_min = 0.0
+        else:
+            self.d_min = d_min
+
+        if d_max == None:
+            self.d_max = 1000.0
+        else:
+            self.d_max = d_max
 
     def run(self, flags, sweep=None, observations=None, **kwargs):
+        ''' Run the filtering. '''
 
         # Get all the observation resolutions
-        d = observations.resolutions(sweep.get_beam(), sweep.get_detector())
+        d = observations.resolution(sweep.get_beam(), sweep.get_detector())
 
         # Return the flags of those in range
-        return flags.__and__(d > self.d_min).__and__(d < self.d_max)
+        return (flags.__and__(d >= self.d_min)).__and__(d <= self.d_max)
+
+    def __call__(self, flags, **kwargs):
+        ''' Call the filter and print information. '''
+        from dials.util.command_line import Command
+        Command.start('Filtering {0} spots by resolution'.format(
+            flags.count(True)))
+        flags = self.run(flags, **kwargs)
+        Command.end('Filtered {0} spots by resolution'.format(
+            flags.count(True)))
+        return flags
 
 
 class SpotFinderFactory(object):
@@ -173,9 +246,10 @@ class SpotFinderFactory(object):
         '''
         # Configure the algorithm and wrap it up
         find_spots = SpotFinderFactory.configure_algorithm(params)
+        filter_spots = SpotFinderFactory.configure_filter(params)
         return SpotFinder(
             find_spots=find_spots,
-            filter_spots=NullFilter(),
+            filter_spots=filter_spots,
             scan_range=params.spotfinder.scan_range)
 
     @staticmethod
@@ -204,7 +278,7 @@ class SpotFinderFactory(object):
 
     @staticmethod
     def configure_threshold(params, gain_map):
-        '''Get the threshold strategy'''
+        ''' Get the threshold strategy'''
         from dials.algorithms.peak_finding.threshold \
             import UnimodalThresholdStrategy, XDSThresholdStrategy
 
@@ -221,6 +295,35 @@ class SpotFinderFactory(object):
 
         else:
             raise RuntimeError('Unknown threshold strategy')
+
+    @staticmethod
+    def configure_filter(params):
+        ''' Get the filter strategy. '''
+        from dials.algorithms import shoebox
+
+        # Initialise an empty list of filters
+        filters = []
+
+        # Add a min number of pixels filter
+        if params.spotfinder.filter.min_spot_size is not None:
+            filters.append(MinPixelsFilter(
+                params.spotfinder.filter.min_spot_size,
+                shoebox.MaskCode.Valid))
+
+        # Add a peak-centroid distance filter
+        if params.spotfinder.filter.max_separation is not None:
+            filters.append(PeakCentroidDistanceFilter(
+              params.spotfinder.filter.max_separation))
+
+        # Add a centroid resolution filter
+        if (params.spotfinder.filter.d_min is not None and
+            params.spotfinder.filter.d_min is not None):
+            filters.append(CentroidResolutionFilter(
+                params.spotfinder.filter.d_min,
+                params.spotfinder.filter.d_max))
+
+        # Return the filter runner with the list of filters
+        return FilterRunner(filters)
 
     @staticmethod
     def load_image(filename):
