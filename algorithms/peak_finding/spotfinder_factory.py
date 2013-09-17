@@ -49,110 +49,112 @@ class SpotFinder(object):
             # Add the spots to the list
             spots_all.extend(spots)
 
-        # Extract the observations from the shoeboxes
-        centroid = spots_all.centroid_valid();
-        intensity = spots_all.summed_intensity_valid();
-        observed = flex.observation(spots_all.panels(), centroid, intensity)
+        # Get the list of shoeboxes
+        shoeboxes = flex.shoebox(spots_all)
+
+        # Calculate the spot centroids
+        Command.start('Calculating {0} spot centroids'.format(len(shoeboxes)))
+        centroid = shoeboxes.centroid_valid();
+        Command.end('Calculated {0} spot centroids'.format(len(shoeboxes)))
+
+        # Calculate the spot intensities
+        Command.start('Calculating {0} spot intensities'.format(len(shoeboxes)))
+        intensity = shoeboxes.summed_intensity_valid();
+        Command.end('Calculated {0} spot intensities'.format(len(shoeboxes)))
+
+        # Create the observations
+        observed = flex.observation(shoeboxes.panels(), centroid, intensity)
 
         # Filter the reflections and select only the desired spots
-        flags = self.filter_spots(observations=observed, shoeboxes=spots_all)
+        flags = self.filter_spots(observations=observed, shoeboxes=shoeboxes)
         observed = observed.select(flags)
-        spots_all = spots_all.select(flags)
+        shoeboxes = shoeboxes.select(flags)
 
         # Return as a reflection list
-        return ReflectionList(observed, spots_all)
+        return ReflectionList(observed, shoeboxes)
 
-#        # Calculate the centroids
-#        Command.start('Calculating {0} centroids'.format(len(spots_all)))
-#        cpos, cvar, cerr, ctot = self.centroid(spots_all)
-#        Command.end('Calculated {0} centroids'.format(len(spots_all)))
 
-#        # Return the spots in a reflection list
-#        Command.start('Creating reflection list')
-#        rlist = self.reflection_list(spots_all, cpos, cvar, cerr, ctot)
-#        Command.end('Created list of {0} reflections'.format(len(rlist)))
-#        return rlist
+class Filter(object):
 
-    def centroid(self, spots):
-        '''Calculate the spot centroids.
+    def __call__(self, flags, **kwargs):
+        return self.run(self.check_flags(flags, **kwargs), **kwargs)
 
-        Params:
-            spots The list of spots
-
-        Returns:
-            (centroid position, centroid variance)
-
-        '''
-        from dials.algorithms.image.centroid import CentroidMaskedImage3d
+    def check_flags(self, flags, predictions=None, observations=None,
+                    shoeboxes=None, **kwargs):
         from scitbx.array_family import flex
 
-        # Initialise arrays
-        centroid_pos = flex.vec3_double()
-        centroid_var = flex.vec3_double()
-        centroid_err = flex.vec3_double()
-        centroid_tot = flex.double()
+        # If flags are not set then create a list of Trues
+        if flags == None:
+          length = 0
+          if predictions:
+              length = len(predictions)
+          if observations:
+              if length > 0:
+                  assert(length == len(observations))
+              else:
+                  length = len(observations)
+          if shoeboxes:
+              if length > 0:
+                  assert(length == len(observations))
+              else:
+                  length = len(shoeboxes)
 
-        # Loop through each spot
-        for s in spots:
+          # Create an array of flags
+          flags = flex.bool(length, True)
 
-            # Find the spot centroid
-            centroid = CentroidMaskedImage3d(s.data, s.mask)
-            pos = centroid.mean()
-            pos = pos[0] + s.bbox[0], pos[1] + s.bbox[2], pos[2] + s.bbox[4]
-            centroid_pos.append(pos)
-            centroid_tot.append(centroid.sum_pixels())
-            try:
-                centroid_var.append(centroid.unbiased_variance())
-                centroid_err.append(centroid.unbiased_standard_error_sq())
-            except RuntimeError:
-                centroid_var.append((0.5, 0.5, 0.5))
-                centroid_err.append((0.5, 0.5, 0.5))
+      # Return the flags
+      return flags
 
-        # Return the centroid and variance
-        return centroid_pos, centroid_var, centroid_err, centroid_tot
 
-    def reflection_list(self, spots, cpos, cvar, cerr, ctot):
-        '''Create a reflection list from the spot data.
+class NullFilter(Filter):
 
-        Params:
-            spots The spot list
-            cpos The centroid position
-            cvar The centroid variance
-            cerr The centroid error
-            ctot The centroid total counts
+    def run(self, flags, **kwargs):
+        return flags
 
-        Returns:
-            A list of reflections
 
-        '''
-        from dials.model.data import Reflection, ReflectionList
-        from dials.algorithms import shoebox
+class MinPixelsFilter(Filter):
 
-        # Ensure the lengths are ok
-        assert(len(spots) > 0)
-        assert(len(spots) == len(cpos))
-        assert(len(spots) == len(cvar))
-        assert(len(spots) == len(cerr))
-        assert(len(spots) == len(ctot))
+    def __init__(self, num, code):
+        self.code = code
+        self.num = num
 
-        # Create the reflection list
-        rlist = ReflectionList(len(spots))
-        for i in range(len(spots)):
+    def run(self, flags, observations=None, shoeboxes=None, **kwargs):
 
-            # Set the shoebox info
-            rlist[i].set_valid(True)
-            rlist[i].bounding_box = spots[i].bbox
-            rlist[i].shoebox = spots[i].data
-            rlist[i].shoebox_mask = spots[i].mask
+        # Get the number of mask values matching the code
+        count = shoeboxes.count_mask_values(self.code)
 
-            # Set the centroid and intensity info
-            rlist[i].centroid_position = cpos[i]
-            rlist[i].centroid_variance = cerr[i]
-            rlist[i].centroid_sq_width = cvar[i]
-            rlist[i].intensity = ctot[i]
+        # Return the flags of those > the given number
+        return flags.__and__(count > self.num)
 
-        # Return the reflection list
-        return rlist
+
+class PeakCentroidDistanceFilter(Filter):
+
+    def __init__(self, maxd):
+        self.maxd = maxd
+
+    def run(self, flags, observations=None, shoeboxes=None, **kwargs):
+
+        # Get the peak locations and the centroids
+        peak = shoeboxes.individual_peak_indices()
+        cent = observations.centroids().px_positions()
+
+        # Return the flags of those closer than the min distance
+        return flags.__and__((peak - cent).norms() < self.max_d)
+
+
+class CentroidResolutionFilter(Filter):
+
+    def __init__(self, d_min, d_max):
+        self.d_min = d_min
+        self.d_max = d_max
+
+    def run(self, flags, sweep=None, observations=None, **kwargs):
+
+        # Get all the observation resolutions
+        d = observations.resolutions(sweep.get_beam(), sweep.get_detector())
+
+        # Return the flags of those in range
+        return flags.__and__(d > self.d_min).__and__(d < self.d_max)
 
 
 class SpotFinderFactory(object):
@@ -171,8 +173,10 @@ class SpotFinderFactory(object):
         '''
         # Configure the algorithm and wrap it up
         find_spots = SpotFinderFactory.configure_algorithm(params)
-        return SpotFinder(find_spots=find_spots,
-                          scan_range=params.spotfinder.scan_range)
+        return SpotFinder(
+            find_spots=find_spots,
+            filter_spots=NullFilter(),
+            scan_range=params.spotfinder.scan_range)
 
     @staticmethod
     def configure_algorithm(params):

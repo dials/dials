@@ -19,6 +19,8 @@
 #include <dials/model/data/reflection.h>
 #include <dials/error.h>
 #include <dials/model/data/boost_python/pickle.h>
+#include <dials/model/data/observation.h>
+#include <dials/model/data/shoebox.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 
 namespace dials { namespace model { namespace boost_python {
@@ -33,6 +35,36 @@ namespace dials { namespace model { namespace boost_python {
     std::stringstream ss;
     ss << reflection;
     return ss.str();
+  }
+
+  af::flex<Reflection>::type* init_from_observation_and_shoebox(
+      const af::const_ref<Observation> &o, 
+      const af::const_ref<Shoebox> &s) {
+    DIALS_ASSERT(o.size() == s.size());
+    af::shared<Reflection> result(o.size());   
+    for (std::size_t i = 0; i < result.size(); ++i) {
+
+      // Check panel numbers
+      DIALS_ASSERT(o[i].panel == s[i].panel);
+      result[i].panel_number_ = o[i].panel;
+
+      // Copy observation info
+      result[i].centroid_position_ = o[i].centroid.px.position;
+      result[i].centroid_variance_ = o[i].centroid.px.std_err_sq;
+      result[i].centroid_sq_width_ = o[i].centroid.px.variance;
+      result[i].intensity_ = o[i].intensity.observed.value;
+      result[i].intensity_variance_ = o[i].intensity.observed.variance;
+      result[i].corrected_intensity_ = o[i].intensity.corrected.value;
+      result[i].corrected_intensity_variance_ = o[i].intensity.corrected.variance;
+      
+      // Copy shoebox info
+      result[i].bounding_box_ = s[i].bbox;
+      result[i].shoebox_ = s[i].data;
+      result[i].shoebox_mask_ = s[i].mask;
+      result[i].shoebox_background_ = s[i].background;
+    }
+    
+    return new af::flex<Reflection>::type(result, af::flex_grid<>(result.size()));
   }
   
   af::shared<miller_index> reflection_list_get_miller_index(const af::const_ref<Reflection> &r) {
@@ -617,6 +649,7 @@ namespace dials { namespace model { namespace boost_python {
 
     scitbx::af::boost_python::flex_wrapper 
       <Reflection, return_internal_reference<> >::plain("ReflectionList")
+        .def("__init__", make_constructor(&init_from_observation_and_shoebox))
         .def_pickle(scitbx::af::boost_python::flex_pickle_double_buffered<
           Reflection, reflection::to_string, reflection::from_string>())      
         .def("miller_index", &reflection_list_get_miller_index)

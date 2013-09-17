@@ -37,10 +37,10 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Set the bgrd array as a flex array */
   static
-  void set_bgrd(Shoebox &obj, flex_double &bgrd) {
-    DIALS_ASSERT(bgrd.accessor().all().size() == 3);
-    obj.bgrd = af::versa<double, af::c_grid<3> >(
-      bgrd.handle(), af::c_grid<3>(bgrd.accessor()));
+  void set_background(Shoebox &obj, flex_double &background) {
+    DIALS_ASSERT(background.accessor().all().size() == 3);
+    obj.background = af::versa<double, af::c_grid<3> >(
+      background.handle(), af::c_grid<3>(background.accessor()));
   }
 
   void export_shoebox()
@@ -55,9 +55,10 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("mask", 
         make_getter(&Shoebox::mask, return_value_policy<return_by_value>()),
         &set_mask)  
-      .add_property("bgrd", 
-        make_getter(&Shoebox::bgrd, return_value_policy<return_by_value>()),
-        &set_bgrd)        
+      .add_property("background", 
+        make_getter(&Shoebox::background, 
+          return_value_policy<return_by_value>()),
+        &set_background)        
       .add_property("bbox", 
         make_getter(&Shoebox::bbox, return_value_policy<return_by_value>()),
         make_setter(&Shoebox::bbox, return_value_policy<return_by_value>())) 

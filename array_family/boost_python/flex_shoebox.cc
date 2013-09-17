@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <omptbx/omp_or_stubs.h>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
@@ -38,6 +39,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Construct an array of shoebxoes from a spot labelling class
    */
+  static
   af::flex<Shoebox>::type* from_labels(const LabelImageStack &label) {
 
     // Get the stuff from the label struct
@@ -100,6 +102,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Check if the arrays are consistent
    */
+  static
   shared<bool> is_consistent(const const_ref<Shoebox> &a) {
     shared<bool> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -111,6 +114,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Check if the bounding box has points outside the image range.
    */
+  static
   shared<bool> is_bbox_within_image_volume(const const_ref<Shoebox> &a,
       int2 image_size, int2 scan_range) {
     shared<bool> result(a.size());
@@ -123,6 +127,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Check if the bounding box has points that cover bad pixels
    */
+  static
   shared<bool> does_bbox_contain_bad_pixels(
       const const_ref<Shoebox> &a, 
       const const_ref<bool, c_grid<2> > &mask) {
@@ -136,6 +141,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Count the number of mask pixels with the given code
    */
+  static
   shared<int> count_mask_values(const const_ref<Shoebox> &a, int code) {
     shared<int> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -144,6 +150,10 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
   
+  /** 
+   * Get the maximum index of each shoebox
+   */
+  static
   shared< vec3<int> > individual_max_index(const const_ref<Shoebox> &a) {
     shared< vec3<int> > result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -155,6 +165,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Get the bounding boxes
    */
+  static
   shared<int6> bounding_boxes(const const_ref<Shoebox> &a) {
     shared<int6> result(a.size());
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -163,11 +174,25 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
   
+  /**
+   * Get the panel numbers
+   */
+  static
+  shared<std::size_t> panels(const const_ref<Shoebox> &a) {
+    shared<std::size_t> result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].panel;
+    }
+    return result;
+  }
+  
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_all(const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_all();
     }
@@ -177,8 +202,10 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_masked(const const_ref<Shoebox> &a, int code) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_masked(code);
     }
@@ -188,8 +215,10 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_valid(const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_valid();
     }
@@ -199,8 +228,10 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_foreground(const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_foreground();
     }
@@ -210,8 +241,10 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_strong(const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_strong();
     }
@@ -221,9 +254,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_all_minus_background(
       const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_all_minus_background();
     }
@@ -233,9 +268,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_masked_minus_background(
       const const_ref<Shoebox> &a, int code) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_masked_minus_background(code);
     }
@@ -245,9 +282,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_valid_minus_background(
       const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_valid_minus_background();
     }
@@ -257,9 +296,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_foreground_minus_background(
       const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_foreground_minus_background();
     }
@@ -269,9 +310,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of centroid
    */
+  static
   af::shared<Centroid> centroid_strong_minus_background(
       const const_ref<Shoebox> &a) {
     af::shared<Centroid> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].centroid_strong_minus_background();
     }
@@ -281,9 +324,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of intensities
    */
+  static
   af::shared<Intensity> summed_intensity_all(
       const const_ref<Shoebox> &a) {
     af::shared<Intensity> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_all();
     }
@@ -293,9 +338,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of intensities
    */
+  static
   af::shared<Intensity> summed_intensity_masked(
       const const_ref<Shoebox> &a, int code) {
     af::shared<Intensity> result(a.size());
+    #pragma omp parallel for   
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_masked(code);
     }
@@ -305,9 +352,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of intensities
    */
+  static
   af::shared<Intensity> summed_intensity_valid(
       const const_ref<Shoebox> &a) {
     af::shared<Intensity> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_valid();
     }
@@ -317,9 +366,11 @@ namespace dials { namespace af { namespace boost_python {
   /** 
    * Get a list of intensities
    */
+  static
   af::shared<Intensity> summed_intensity_foreground(
       const const_ref<Shoebox> &a) {
     af::shared<Intensity> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_foreground();
     }
@@ -329,9 +380,11 @@ namespace dials { namespace af { namespace boost_python {
     /** 
    * Get a list of intensities
    */
+  static
   af::shared<Intensity> summed_intensity_strong(
       const const_ref<Shoebox> &a) {
     af::shared<Intensity> result(a.size());
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_strong();
     }
@@ -435,6 +488,7 @@ namespace dials { namespace af { namespace boost_python {
         Shoebox, return_internal_reference<> >::plain("shoebox")
       .def("__init__", make_constructor(from_labels))
       .def("is_consistent", &is_consistent)
+      .def("panels", &panels)
       .def("bounding_boxes", &bounding_boxes)
       .def("count_mask_values", &count_mask_values)
       .def("is_bbox_within_image_volume", &is_bbox_within_image_volume, (

@@ -33,6 +33,27 @@ namespace dials { namespace model {
   using dials::algorithms::Summation;
 
   /**
+   * Helper function to take an image centroid and create something we
+   * can return as the centroid
+   */
+  template <typename AlgorithmType>
+  Centroid extract_centroid_object(
+      const AlgorithmType &algorithm,
+      const vec3<double> &ioffset) {
+    // Try to get the variance and add 0.5 to the standard error
+    Centroid result;
+    result.px.position = algorithm.mean() + ioffset;
+    try {
+      result.px.variance = algorithm.unbiased_variance();
+      result.px.std_err_sq = algorithm.unbiased_standard_error_sq() + 0.25;
+    } catch(dials::error) {
+      result.px.variance = vec3<double>(0.0, 0.0, 0.0);
+      result.px.std_err_sq = vec3<double>(0.25, 0.25, 0.25);
+    }
+    return result;
+  }
+
+  /**
    * An enumeration of shoebox mask codes. If a pixel is labelled as:
    *  a) Valid. This means that the pixel belongs to this reflection and
    *     is not a bad pixel etc.
@@ -53,11 +74,11 @@ namespace dials { namespace model {
    */
   struct Shoebox {
 
-    std::size_t panel;                          ///< The detector panel
-    int6 bbox;                                  ///< The bounding box
-    af::versa< double, af::c_grid<3> > data;    ///< The shoebox data
-    af::versa< int, af::c_grid<3> > mask;       ///< The shoebox mask
-    af::versa< double, af::c_grid<3> > bgrd;    ///< The shoebox background
+    std::size_t panel;                              ///< The detector panel
+    int6 bbox;                                      ///< The bounding box
+    af::versa< double, af::c_grid<3> > data;        ///< The shoebox data
+    af::versa< int, af::c_grid<3> > mask;           ///< The shoebox mask
+    af::versa< double, af::c_grid<3> > background;  ///< The shoebox background
 
     /**
      * Initialise the shoebox
@@ -67,7 +88,7 @@ namespace dials { namespace model {
         bbox(0, 0, 0, 0, 0, 0),
         data(af::c_grid<3>(0, 0, 0)),
         mask(af::c_grid<3>(0, 0, 0)),
-        bgrd(af::c_grid<3>(0, 0, 0)) {}
+        background(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Initialise the shoebox
@@ -78,7 +99,7 @@ namespace dials { namespace model {
         bbox(bbox_),
         data(af::c_grid<3>(0, 0, 0)),
         mask(af::c_grid<3>(0, 0, 0)),
-        bgrd(af::c_grid<3>(0, 0, 0)) {}
+        background(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Initialise the shoebox
@@ -90,7 +111,7 @@ namespace dials { namespace model {
         bbox(bbox_),
         data(af::c_grid<3>(0, 0, 0)),
         mask(af::c_grid<3>(0, 0, 0)),
-        bgrd(af::c_grid<3>(0, 0, 0)) {}
+        background(af::c_grid<3>(0, 0, 0)) {}
 
     /**
      * Allocate the mask and data from the bounding box
@@ -99,7 +120,7 @@ namespace dials { namespace model {
       af::c_grid<3> accessor(zsize(), ysize(), xsize());
       data = af::versa< double, af::c_grid<3> >(accessor);
       mask = af::versa< int, af::c_grid<3> >(accessor);
-      bgrd = af::versa< double, af::c_grid<3> >(accessor);
+      background = af::versa< double, af::c_grid<3> >(accessor);
     }
 
     /**
@@ -109,7 +130,7 @@ namespace dials { namespace model {
       af::c_grid<3> accessor(0, 0, 0);
       data = af::versa< double, af::c_grid<3> >(accessor);
       mask = af::versa< int, af::c_grid<3> >(accessor);
-      bgrd = af::versa< double, af::c_grid<3> >(accessor);
+      background = af::versa< double, af::c_grid<3> >(accessor);
     }
 
     /** @returns The x offset */
@@ -160,6 +181,7 @@ namespace dials { namespace model {
       bool result = true;
       result = result && (data.accessor().all_eq(size()));
       result = result && (mask.accessor().all_eq(size()));
+      result = result && (background.accessor().all_eq(size()));
       return result;
     }
 
@@ -219,11 +241,8 @@ namespace dials { namespace model {
      */
     Centroid centroid_all() const {
       CentroidImage3d centroid(data.const_ref());
-      Centroid result;
-      result.px.position = centroid.mean();
-      result.px.variance = centroid.unbiased_variance();
-      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
-      return result;
+      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      return extract_centroid_object(centroid, offset);
     }
 
     /**
@@ -242,11 +261,8 @@ namespace dials { namespace model {
 
       // Calculate the centroid
       CentroidMaskedImage3d centroid(data.const_ref(), foreground_mask);
-      Centroid result;
-      result.px.position = centroid.mean();
-      result.px.variance = centroid.unbiased_variance();
-      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
-      return result;
+      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      return extract_centroid_object(centroid, offset);
     }
 
     /**
@@ -279,20 +295,17 @@ namespace dials { namespace model {
      */
     Centroid centroid_all_minus_background() const {
       // Calculate the foreground mask and data
-      DIALS_ASSERT(data.size() == bgrd.size());
+      DIALS_ASSERT(data.size() == background.size());
       af::versa< double, af::c_grid<3> > fg_data_arr(data.accessor());
       af::ref< double, af::c_grid<3> > foreground_data = fg_data_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        foreground_data[i] = data[i] - bgrd[i];
+        foreground_data[i] = data[i] - background[i];
       }
 
       // Calculate the centroid
       CentroidImage3d centroid(foreground_data);
-      Centroid result;
-      result.px.position = centroid.mean();
-      result.px.variance = centroid.unbiased_variance();
-      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
-      return result;
+      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      return extract_centroid_object(centroid, offset);
     }
 
     /**
@@ -302,23 +315,20 @@ namespace dials { namespace model {
     Centroid centroid_masked_minus_background(int code) const {
       // Calculate the foreground mask and data
       DIALS_ASSERT(data.size() == mask.size());
-      DIALS_ASSERT(data.size() == bgrd.size());
+      DIALS_ASSERT(data.size() == background.size());
       af::versa< bool, af::c_grid<3> > fg_mask_arr(mask.accessor());
       af::versa< double, af::c_grid<3> > fg_data_arr(data.accessor());
       af::ref< double, af::c_grid<3> > foreground_data = fg_data_arr.ref();
       af::ref< bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
         foreground_mask[i] = mask[i] & code;
-        foreground_data[i] = data[i] - bgrd[i];
+        foreground_data[i] = data[i] - background[i];
       }
 
       // Calculate the centroid
       CentroidMaskedImage3d centroid(foreground_data, foreground_mask);
-      Centroid result;
-      result.px.position = centroid.mean();
-      result.px.variance = centroid.unbiased_variance();
-      result.px.std_err_sq = centroid.unbiased_standard_error_sq();
-      return result;
+      vec3<double> offset(bbox[0], bbox[2], bbox[4]);
+      return extract_centroid_object(centroid, offset);
     }
 
     /**
@@ -352,7 +362,7 @@ namespace dials { namespace model {
     Intensity summed_intensity_all() const {
 
       // Do the intengration
-      Summation summation(data.const_ref(), bgrd.const_ref());
+      Summation summation(data.const_ref(), background.const_ref());
 
       // Return the intensity struct
       Intensity result;
@@ -375,7 +385,7 @@ namespace dials { namespace model {
       }
 
       // Do the intengration
-      Summation summation(data.const_ref(), bgrd.const_ref(), temp);
+      Summation summation(data.const_ref(), background.const_ref(), temp);
 
       // Return the intensity struct
       Intensity result;

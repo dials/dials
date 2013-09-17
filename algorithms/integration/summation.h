@@ -11,7 +11,6 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 #define DIALS_ALGORITHMS_INTEGRATION_SUMMATION_H
 
-#include <omptbx/omp_or_stubs.h>
 #include <algorithm>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/tiny_algebra.h>

@@ -131,12 +131,12 @@ namespace dials { namespace algorithms {
 
     /** @returns The biased standard error on the mean squared. */
     coord_type standard_error_sq() const {
-      return variance() / sum_pixels_ + 1.0;
+      return variance() / sum_pixels_;
     }
 
     /** @returns The unbiased standard error on the mean squared. */
     coord_type unbiased_standard_error_sq() const {
-      return unbiased_variance() / sum_pixels_ + 1.0;
+      return unbiased_variance() / sum_pixels_;
     }
 
     /** @returns The covariance matrix. */
