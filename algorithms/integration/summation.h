@@ -237,20 +237,6 @@ namespace dials { namespace algorithms {
     Summation3d() {}
 
     /**
-     * Integrate a set of pixels with a mask
-     * @param pixels The array of pixels
-     * @param background The background pixels
-     * @param mask The mask
-     * @returns The integrator struct
-     */
-    integrator operator()(
-        const af::const_ref< double, af::c_grid<3> > &pixels,
-        const af::const_ref< double, af::c_grid<3> > &background,
-        const af::const_ref< bool, af::c_grid<3> > &mask) const {
-      return integrator(pixels, background, mask);
-    }
-
-    /**
      * Integrate a reflection
      * @param r The reflection container
      */
@@ -264,11 +250,12 @@ namespace dials { namespace algorithms {
       }
 
       // Integrate the reflection
-      integrator result = this->operator()(
+      integrator result = integrator(
         r.get_shoebox().const_ref(),
         r.get_shoebox_background().const_ref(),
         mask.const_ref());
 
+      // Set the intensity and variance
       r.set_intensity(result.intensity());
       r.set_intensity_variance(result.variance());
     }

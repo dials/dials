@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_fitting()
   {
-    class_<ProfileFitting2>("ProfileFitting", no_init)
+    class_<ProfileFitting>("ProfileFitting", no_init)
       .def(init<const af::const_ref<double, af::c_grid<3> >&,
                 const af::const_ref<double, af::c_grid<3> >&,
                 const af::const_ref<double, af::c_grid<3> >&,
@@ -30,10 +30,10 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("background"),
         arg("bits") = 1e-3,
         arg("max_iter") = 10)))
-      .def("intensity", &ProfileFitting2::intensity)
-      .def("variance", &ProfileFitting2::variance)
-      .def("niter", &ProfileFitting2::niter)
-      .def("error", &ProfileFitting2::error);
+      .def("intensity", &ProfileFitting::intensity)
+      .def("variance", &ProfileFitting::variance)
+      .def("niter", &ProfileFitting::niter)
+      .def("error", &ProfileFitting::error);
   }
 
 }}} // namespace = dials::algorithms::boost_python

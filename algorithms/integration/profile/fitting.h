@@ -23,7 +23,7 @@ namespace dials { namespace algorithms {
   /**
    * Class to fix the observed with the reference profile
    */
-  class ProfileFitting2 {
+  class ProfileFitting {
   public:
 
     /**
@@ -32,11 +32,11 @@ namespace dials { namespace algorithms {
      * @param c The contents of the pixels
      * @param b The background of the pixels
      */
-    ProfileFitting2(const af::const_ref<double, af::c_grid<3> > &p,
-                    const af::const_ref<double, af::c_grid<3> > &c,
-                    const af::const_ref<double, af::c_grid<3> > &b,
-                    double eps = 1e-3,
-                    std::size_t max_iter = 10)
+    ProfileFitting(const af::const_ref<double, af::c_grid<3> > &p,
+                   const af::const_ref<double, af::c_grid<3> > &c,
+                   const af::const_ref<double, af::c_grid<3> > &b,
+                   double eps = 1e-3,
+                   std::size_t max_iter = 10)
     {
       // Check the input
       DIALS_ASSERT(p.size() == c.size());

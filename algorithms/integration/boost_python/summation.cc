@@ -60,11 +60,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("background_standard_deviation", 
         &Summation::background_standard_deviation);
         
-    Summation3d::integrator (Summation3d::*call_w_pixels)(
-        const af::const_ref<double, af::c_grid<3> > &pixels, 
-        const af::const_ref<double, af::c_grid<3> > &background,
-        const af::const_ref<bool, af::c_grid<3> > &mask) const = 
-      &Summation3d::operator();
     void (Summation3d::*call_w_reflection)(Reflection &r) const = 
       &Summation3d::operator();
     void (Summation3d::*call_w_reflection_list)(
@@ -72,7 +67,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       &Summation3d::operator();         
         
     class_<Summation3d>("Summation3dAlgorithm")
-      .def("__call__", call_w_pixels)
       .def("__call__", call_w_reflection)
       .def("__call__", call_w_reflection_list);
   }

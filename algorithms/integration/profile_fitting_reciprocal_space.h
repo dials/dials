@@ -80,7 +80,7 @@ namespace dials { namespace algorithms {
       af::versa<double, af::c_grid<3> > p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance
-      ProfileFitting2 fit(p.const_ref(), c, b.const_ref());
+      ProfileFitting fit(p.const_ref(), c, b.const_ref());
       reflection.set_intensity(fit.intensity());
       reflection.set_intensity_variance(fit.variance());
     }
