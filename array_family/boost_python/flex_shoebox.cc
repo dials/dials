@@ -15,6 +15,7 @@
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/model/data/observation.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>
 
 namespace dials { namespace af { namespace boost_python {
@@ -27,6 +28,8 @@ namespace dials { namespace af { namespace boost_python {
   using af::small;
   using scitbx::vec3;
   using dials::model::Shoebox;
+  using dials::model::Centroid;
+  using dials::model::Intensity;
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::algorithms::LabelImageStack;
@@ -150,6 +153,28 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
+  
+  /**
+   * Get the simple centroid of the shoebox
+   */
+  shared<Centroid> simple_centroid(const const_ref<Shoebox> &a) {
+    shared<Centroid> result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+//      result[i] = simple_centroid(a[i]);
+    }
+    return result;
+  }
+
+  /**
+   * Get the summed intensity from the shoebox
+   */
+  shared<Intensity> summed_intensity(const const_ref<Shoebox> &a) {
+    shared<Intensity> result(a.size());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+//      result[i] = summed_intensity(a[i]);
+    }
+    return result;
+  }
 
   /**
    * A class to convert the shoebox class to a string for pickling
@@ -255,6 +280,8 @@ namespace dials { namespace af { namespace boost_python {
         boost::python::arg("scan_range")))
       .def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels, (
         boost::python::arg("mask")))
+      .def("simple_centroid", &simple_centroid)
+      .def("summed_intensity", &summed_intensity)
       .def_pickle(flex_pickle_double_buffered<Shoebox, 
         shoebox_to_string, shoebox_from_string>());
   }
