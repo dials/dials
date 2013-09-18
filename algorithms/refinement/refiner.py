@@ -106,9 +106,6 @@ class Refiner(object):
             print_model_geometry(self.beam, self.detector, self.crystal)
             print
 
-            print self.param_report
-
-
         #####################################
         # Select reflections for refinement #
         #####################################
@@ -177,7 +174,10 @@ class Refiner(object):
 
             if self.param_report.varying_params_vs_image_number(
                 self.scan.get_image_range()):
-                print "Writing scan-varying parameter table"
+                print "Writing scan-varying parameter table to file"
+
+            print "Reporting on the refined parameters:"
+            print self.param_report
 
         # Do a test of new reflection pos
         #self._update_reflections_test()
