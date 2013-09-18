@@ -40,7 +40,8 @@ namespace dials { namespace af { namespace boost_python {
    * Construct an array of shoebxoes from a spot labelling class
    */
   static
-  af::flex<Shoebox>::type* from_labels(const LabelImageStack &label) {
+  af::flex<Shoebox>::type* from_labels(const LabelImageStack &label, 
+      std::size_t panel) {
 
     // Get the stuff from the label struct
     af::shared<int> labels = label.labels();
@@ -56,6 +57,7 @@ namespace dials { namespace af { namespace boost_python {
     int ysize = label.size()[0];
     int zsize = label.num_images();
     for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel;
       result[i].bbox[0] = xsize; result[i].bbox[1] = 0;
       result[i].bbox[2] = ysize; result[i].bbox[3] = 0;
       result[i].bbox[4] = zsize; result[i].bbox[5] = 0;
@@ -490,7 +492,11 @@ namespace dials { namespace af { namespace boost_python {
   {
     scitbx::af::boost_python::flex_wrapper <
         Shoebox, return_internal_reference<> >::plain("shoebox")
-      .def("__init__", make_constructor(from_labels))
+      .def("__init__", make_constructor(
+        from_labels, 
+        default_call_policies(), (
+          boost::python::arg("labels"), 
+          boost::python::arg("panel") = 0)))
       .def("is_consistent", &is_consistent)
       .def("panels", &panels)
       .def("bounding_boxes", &bounding_boxes)

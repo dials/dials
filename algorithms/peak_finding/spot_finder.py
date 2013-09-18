@@ -41,7 +41,8 @@ class ExtractSpots(object):
         from dials.array_family import flex
 
         # Construct the pixel labeller
-        label = LabelImageStack(sweep.get_image_size()[::-1])
+        label = [LabelImageStack(panel.get_image_size()[::-1])
+            for panel in sweep.get_detector()]
 
         # Loop through all the images in the sweep and extract the pixels
         # from each of the images
@@ -49,19 +50,27 @@ class ExtractSpots(object):
         start = sweep.get_array_range()[0]
         for frame, image in enumerate(sweep):
 
+            # Ensure image is a tuple of images
+            if not isinstance(image, tuple):
+                image = (image,)
+
             # Create the mask by thresholding the image. Then add the mask
             # and the image to the pixel labeller
-            mask = self.threshold_image(image)
-            label.add_image(image, mask)
+            for lb, im in zip(label, image):
+                lb.add_image(im, self.threshold_image(im))
+
+            # Update progress bar
             progress.update(100.0 * float(frame + 1) / len(sweep))
 
         # Finish the progess bar
         progress.finished('Extracted {0} strong pixels'.format(
-            len(label.values())))
+          sum([len(lb.values()) for lb in label])))
 
         # Extract the shoeboxes
         Command.start('Extracting spots from pixels')
-        shoeboxes = flex.shoebox(label)
+        shoeboxes = flex.shoebox()
+        for i, lb in enumerate(label):
+            shoeboxes.extend(flex.shoebox(lb, i))
         Command.end('Extracted {0} spots from pixels'.format(len(shoeboxes)))
 
         # Return the shoeboxes
