@@ -469,15 +469,14 @@ namespace dials { namespace af { namespace boost_python {
     /** Get a profile from a string */
     template <typename ProfileType>
     ProfileType profile_from_string() {
-      typedef typename ProfileType::accessor_type accessor_type;
-      typename ProfileType::accessor_type::index_type shape;
+      typename ProfileType::accessor_type accessor;
       typename ProfileType::size_type n_dim;
       *this >> n_dim;
-      DIALS_ASSERT(n_dim == shape.size());
+      DIALS_ASSERT(n_dim == accessor.size());
       for (std::size_t i = 0; i < n_dim; ++i) {
-        *this >> shape[i];
+        *this >> accessor[i];
       }
-      ProfileType p = ProfileType(accessor_type(shape));
+      ProfileType p = ProfileType(accessor);
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this >> p[i];
       }

@@ -102,22 +102,19 @@ namespace dials { namespace model { namespace boost_python {
 
     template <typename ProfileType>
     ProfileType profile_from_string() {
-      typedef typename ProfileType::accessor_type accessor_type;
-      typename ProfileType::index_type shape;
+      typename ProfileType::accessor_type accessor;
       typename ProfileType::size_type n_dim;
       *this >> n_dim;
       if (n_dim == 0) {
-        for (std::size_t i = 0; i < shape.size(); ++i) {
-          shape[i] = 0;
-        }
-      } else if (n_dim == shape.size()) {
-        for (std::size_t i = 0; i < shape.size(); ++i) {
-          *this >> shape[i];
+        // Do nothing
+      } else if (n_dim == accessor.size()) {
+        for (std::size_t i = 0; i < accessor.size(); ++i) {
+          *this >> accessor[i];
         }
       } else {
-        DIALS_ERROR("n_dim != shape.size()");
+        DIALS_ERROR("n_dim != accessor.size()");
       }
-      ProfileType p = ProfileType(accessor_type(shape));
+      ProfileType p = ProfileType(accessor);
       for (std::size_t i = 0; i < p.size(); ++i) {
         *this >> p[i];
       }
