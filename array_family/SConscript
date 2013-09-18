@@ -1,5 +1,9 @@
 
-Import('env')
+Import('env', 'env_etc')
+
+if env_etc.clang_version:
+  wd = ["-Wno-unused-variable"]
+  env.Append(CCFLAGS=wd)
 
 sources = [
     'boost_python/flex_shoebox.cc',
