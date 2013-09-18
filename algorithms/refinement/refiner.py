@@ -179,12 +179,32 @@ class Refiner(object):
             print "Reporting on the refined parameters:"
             print self.param_report
 
+            print "Writing residuals to file"
+            self.write_residuals_table()
+
         # Do a test of new reflection pos
         #self._update_reflections_test()
 
         # Return the refinery, containing useful information such as the
         # refinement history. The refined models are set by side-effect
         return self.refinery
+
+    def write_residuals_table(self):
+
+        matches = self.refman.get_matches()
+
+        f = open("residuals.dat","w")
+        header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
+            "Y_calc\tPhi_calc\n")
+        f.write(header)
+
+        for m in matches:
+            msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
+                  "%5.3f\n")
+            msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
+                         m.Phio, m.Xc, m.Yc, m.Phic)
+            f.write(msg)
+        f.close()
 
     def _update_reflections_test(self):
         from cctbx.array_family import flex

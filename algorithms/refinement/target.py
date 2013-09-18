@@ -550,9 +550,10 @@ class ReflectionManager(object):
         '''Test scattering vector s for inclusion'''
 
         # reject reflections for which the parallelepiped formed between
-        # the gonio axis, s0 and s has a volume of less than 0.1. Those
-        # reflections are by definition close to the spindle-beam plane
-        # and are troublesome to integrate anyway.
+        # the gonio axis, s0 and s has a volume of less than the cutoff.
+        # Those reflections are by definition closer to the spindle-beam
+        # plane and for low values of the cutoff are troublesome to
+        # integrate anyway.
 
         test = abs(axis.dot(matrix.col(s).cross(s0))) > \
             self._inclusion_cutoff
