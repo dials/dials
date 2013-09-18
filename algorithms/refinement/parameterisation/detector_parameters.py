@@ -75,21 +75,21 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
         # distance from lab origin to detector model plane along its
         # normal, in initial orientation
         distance = panel.get_distance()
-        dist = Parameter(distance, dn, 'length', 'Dist')
+        dist = Parameter(distance, dn, 'length (mm)', 'Dist')
 
         # shift in the detector model plane to locate dorg, in initial
         # orientation
         shift = dorg - dn * distance
-        shift1 = Parameter(shift.dot(d1), d1, 'length', 'Shift1')
-        shift2 = Parameter(shift.dot(d2), d2, 'length', 'Shift2')
+        shift1 = Parameter(shift.dot(d1), d1, 'length (mm)', 'Shift1')
+        shift2 = Parameter(shift.dot(d2), d2, 'length (mm)', 'Shift2')
 
         # rotations of the plane through its origin about:
         # 1) axis normal to initial orientation
         # 2) d1 axis of initial orientation
         # 3) d2 axis of initial orientation
-        tau1 = Parameter(0, dn, 'angle', 'Tau1')
-        tau2 = Parameter(0, d1, 'angle', 'Tau2')
-        tau3 = Parameter(0, d2, 'angle', 'Tau3')
+        tau1 = Parameter(0, dn, 'angle (mrad)', 'Tau1')
+        tau2 = Parameter(0, d1, 'angle (mrad)', 'Tau2')
+        tau3 = Parameter(0, d2, 'angle (mrad)', 'Tau3')
 
         # build the parameter list in a specific,  maintained order
         p_list = [dist, shift1, shift2, tau1, tau2, tau3]

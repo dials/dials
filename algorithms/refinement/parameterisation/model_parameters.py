@@ -28,7 +28,6 @@ class Parameter(object):
         self._value = value
         self._esd = None
         self._axis = axis
-        #assert ptype in ['length', 'angle']
         self._ptype = ptype
         self._name = name
         self._fixed = False

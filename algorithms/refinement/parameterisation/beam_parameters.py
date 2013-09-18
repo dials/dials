@@ -40,9 +40,9 @@ class BeamParameterisationOrientation(ModelParameterisation):
             s0_plane_dir2 = s0.cross(s0_plane_dir1).normalize()
 
         # rotation around s0_plane_dir1
-        mu1 = Parameter(.0, s0_plane_dir1, 'angle', 'Mu1')
+        mu1 = Parameter(.0, s0_plane_dir1, 'angle (mrad)', 'Mu1')
         # rotation around s0_plane_dir2
-        mu2 = Parameter(.0, s0_plane_dir2, 'angle', 'Mu2')
+        mu2 = Parameter(.0, s0_plane_dir2, 'angle (mrad)', 'Mu2')
 
         # build the parameter list in a specific,  maintained order
         p_list = [mu1, mu2]

@@ -46,11 +46,11 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
         # Set up the parameters
         phi1 = ScanVaryingParameterSet(0.0, nv,
-                            matrix.col((1., 0., 0.)), 'angle', 'Phi1')
+                            matrix.col((1., 0., 0.)), 'angle (mrad)', 'Phi1')
         phi2 = ScanVaryingParameterSet(0.0, nv,
-                            matrix.col((0., 1., 0.)), 'angle', 'Phi2')
+                            matrix.col((0., 1., 0.)), 'angle (mrad)', 'Phi2')
         phi3 = ScanVaryingParameterSet(0.0, nv,
-                            matrix.col((0., 0., 1.)), 'angle', 'Phi3')
+                            matrix.col((0., 0., 1.)), 'angle (mrad)', 'Phi3')
 
         # Build the list of parameter sets in a specific, maintained order
         p_list = [phi1, phi2, phi3]
