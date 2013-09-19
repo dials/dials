@@ -168,6 +168,7 @@ frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False), angles)
 
 # Project positions on camera
 # currently assume all reflections intersect panel 0
+panels = [0] * len(hkls)
 impacts = [mydetector[0].get_ray_intersection(
                         ref.beam_vector) for ref in obs_refs]
 d1s, d2s = zip(*impacts)
@@ -199,7 +200,7 @@ print msg % tuple(pred_param.get_param_vals()), "\n"
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(hkls, entering_flags, frames, svecs,
+refman = ReflectionManager(hkls, entering_flags, frames, svecs, panels,
                            d1s, sigd1s,
                            d2s, sigd2s,
                            angles, sigangles,

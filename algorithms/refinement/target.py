@@ -311,12 +311,14 @@ class ObsPredMatch:
     '''
 
     # initialise with an observation
-    def __init__(self, hkl, entering, frame, Xo, sigXo, weightXo,
+    def __init__(self, hkl, entering, frame, panel,
+                            Xo, sigXo, weightXo,
                             Yo, sigYo, weightYo,
                             Phio, sigPhio, weightPhio):
         self.H = hkl
         self.entering = entering
         self.frame_o = frame
+        self.panel = panel
         self.Xo = Xo
         self.sigXo = sigXo
         self.weightXo = weightXo
@@ -381,7 +383,7 @@ class ObservationPrediction(object):
     calculated by the reflection manager and passed in, and used here to
     identify which observations to update with a new prediction'''
 
-    def __init__(self, H, entering, frame,
+    def __init__(self, H, entering, frame, panel,
                        Xo, sigXo, weightXo,
                        Yo, sigYo, weightYo,
                        Phio, sigPhio, weightPhio):
@@ -389,7 +391,7 @@ class ObservationPrediction(object):
         assert isinstance(entering, bool)
         self.H = H
 
-        self.obs = [ObsPredMatch(H, entering, frame,
+        self.obs = [ObsPredMatch(H, entering, frame, panel,
                                  Xo, sigXo, weightXo,
                                  Yo, sigYo, weightYo,
                                  Phio, sigPhio, weightPhio)]
@@ -419,12 +421,13 @@ class ObservationPrediction(object):
 
         self.obs = [x for x in self.obs if x.is_matched]
 
-    def add_observation(self, entering, frame, Xo, sigXo, weightXo,
+    def add_observation(self, entering, frame, panel,
+                              Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
                               Phio, sigPhio, weightPhio):
         '''Add another observation of this reflection'''
 
-        self.obs.append(ObsPredMatch(self.H, entering, frame,
+        self.obs.append(ObsPredMatch(self.H, entering, frame, panel,
                                      Xo, sigXo, weightXo,
                                      Yo, sigYo, weightYo,
                                      Phio, sigPhio, weightPhio))
@@ -434,6 +437,7 @@ class ReflectionManager(object):
     reflections for refinement.'''
 
     def __init__(self, h_obs, entering_obs, frame_obs, svec_obs,
+                       panel_obs,
                        x_obs, sigx_obs,
                        y_obs, sigy_obs,
                        phi_obs, sigphi_obs,
@@ -446,6 +450,7 @@ class ReflectionManager(object):
         # check the observed values
         h_obs = list(h_obs)
         svec_obs = list(svec_obs)
+        panel_obs = list(panel_obs)
         x_obs = list(x_obs)
         sigx_obs = list(sigx_obs)
         y_obs = list(y_obs)
@@ -455,6 +460,7 @@ class ReflectionManager(object):
         frame_obs = list(frame_obs)
         entering_obs = list(entering_obs)
         assert(len(svec_obs) == \
+               len(panel_obs) == \
                len(x_obs) == \
                len(sigx_obs) == \
                len(y_obs) == \
@@ -483,16 +489,14 @@ class ReflectionManager(object):
         self._inclusion_cutoff = inclusion_cutoff
 
         # exclude reflections that fail inclusion criteria
-        obs_data = zip(h_obs, svec_obs, x_obs, sigx_obs, y_obs, sigy_obs,
-                       phi_obs, sigphi_obs)
+        obs_data = zip(h_obs, svec_obs, panel_obs, x_obs, sigx_obs,
+                       y_obs, sigy_obs, phi_obs, sigphi_obs)
         self._obs_data = self._remove_excluded_obs(obs_data)
         self._sample_size = len(self._obs_data)
 
         # choose a random subset of data for refinement
-        (h_obs, svec_obs,
-         x_obs, sigx_obs,
-         y_obs, sigy_obs,
-         phi_obs, sigphi_obs) = \
+        (h_obs, svec_obs, panel_obs, x_obs, sigx_obs, y_obs, sigy_obs,
+            phi_obs, sigphi_obs) = \
                 zip(*self._create_working_set(nref_per_degree))
 
         # store observation information in a dict of observation-prediction
@@ -501,15 +505,17 @@ class ReflectionManager(object):
         for i, h in enumerate(h_obs):
             entering = svec_obs[i].dot(self._vecn) < 0.
             if h not in self._obs_pred_pairs:
-                self._obs_pred_pairs[h] = ObservationPrediction(h, entering, frame_obs[i],
-                                x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
-                                y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
-                                phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
+                self._obs_pred_pairs[h] = ObservationPrediction(
+                    h, entering, frame_obs[i], panel_obs[i],
+                    x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
+                    y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
+                    phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
             else:
-                self._obs_pred_pairs[h].add_observation(entering, frame_obs[i],
-                                x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
-                                y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
-                                phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
+                self._obs_pred_pairs[h].add_observation(
+                    entering, frame_obs[i], panel_obs[i],
+                    x_obs[i], sigx_obs[i], 1./sigx_obs[i]**2,
+                    y_obs[i], sigy_obs[i], 1./sigy_obs[i]**2,
+                    phi_obs[i], sigphi_obs[i], 1./sigphi_obs[i]**2)
 
         # fail if there are too few reflections in the manager
         self._min_num_obs = min_num_obs
@@ -540,8 +546,8 @@ class ReflectionManager(object):
         axis = matrix.col(self._gonio.get_rotation_axis())
         s0 = matrix.col(self._beam.get_s0())
 
-        inc = [(h, s, x, sx, y, sy, p, sp) for
-               (h, s, x, sx, y, sy, p, sp) in obs_data if
+        inc = [(h, s, panel, x, sx, y, sy, p, sp) for
+               (h, s, panel, x, sx, y, sy, p, sp) in obs_data if
                self._inclusion_test(s, axis, s0)]
 
         return tuple(inc)

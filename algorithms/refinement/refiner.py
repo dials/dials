@@ -514,10 +514,11 @@ class RefmanFactory(object):
         # pull out data needed for refinement
         temp = [(ref.miller_index, ref.entering, ref.frame_number,
                  ref.rotation_angle, matrix.col(ref.beam_vector),
-                 ref.image_coord_mm, ref.centroid_variance) \
+                 ref.panel_number, ref.image_coord_mm,
+                 ref.centroid_variance) \
                     for ref in reflections]
         (hkls, enterings, frames, angles,
-         svecs, intersects, variances) = zip(*temp)
+         svecs, panels, intersects, variances) = zip(*temp)
 
         # tease apart tuples to separate lists
         d1s, d2s = zip(*intersects)
@@ -535,6 +536,7 @@ class RefmanFactory(object):
                             entering_obs=enterings,
                             frame_obs=frames,
                             svec_obs=svecs,
+                            panel_obs=panels,
                             x_obs=d1s, sigx_obs=sig_d1s,
                             y_obs=d2s, sigy_obs=sig_d2s,
                             phi_obs=angles, sigphi_obs=sig_angles,

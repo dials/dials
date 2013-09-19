@@ -215,7 +215,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     refiner.run()
 
     msg = "%d %s " + "%.5f " * len(pred_param)
-    subs = ((refiner._step, str(refiner._target_achieved)) +
+    subs = ((refiner.get_num_steps(), str(refiner._target_achieved)) +
             target_param_values)
     print msg % subs
 

@@ -188,6 +188,7 @@ hkls, angles, frames, enterings, svecs = zip(*temp)
 
 # Project positions on camera
 # currently assume all reflections intersect panel 0
+panels = [0] * len(hkls)
 impacts = [ref.image_coord_mm for ref in obs_refs]
 d1s, d2s = zip(*impacts)
 
@@ -226,7 +227,7 @@ refman = ReflectionManager(ref_predictor, mydetector,
                         mybeam, mygonio)
 
 newrefman = NewReflectionManager(hkls, enterings, frames,
-                        svecs,
+                        svecs, panels,
                         d1s, sigd1s,
                         d2s, sigd2s,
                         angles, sigangles,

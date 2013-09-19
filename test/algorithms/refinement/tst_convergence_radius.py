@@ -187,6 +187,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
 
     # Project positions on camera
     # currently assume all reflections intersect panel 0
+    panels = [0] * len(hkls)
     impacts = [mydetector[0].get_ray_intersection(
                             ref.beam_vector) for ref in obs_refs]
     d1s, d2s = zip(*impacts)
@@ -211,6 +212,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     #####################################
 
     refman = ReflectionManager(hkls, entering_flags, frames, svecs,
+                               panels,
                                d1s, sigd1s,
                                d2s, sigd2s,
                                angles, sigangles,
@@ -233,7 +235,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     refiner.run()
 
     msg = "%d %s " + "%.5f " * len(pred_param)
-    subs = ((refiner._step, str(refiner._target_achieved)) +
+    subs = ((refiner.get_num_steps(), str(refiner._target_achieved)) +
             target_param_values)
     print msg % subs
 

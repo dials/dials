@@ -18,6 +18,7 @@ import sys
 from math import pi
 from libtbx.phil import parse
 from scitbx import matrix
+from libtbx.test_utils import approx_equal
 
 # Get class to build experimental models
 from setup_geometry import Extract
@@ -30,6 +31,9 @@ from dials.algorithms.spot_prediction import ray_intersection
 
 # Imports for the target function
 from dials.algorithms.refinement.target import ReflectionManager
+
+# We will set up a mock scan
+from dxtbx.model.scan import scan_factory
 
 args = sys.argv[1:]
 
@@ -71,9 +75,28 @@ obs_refs = ref_predictor.predict(indices)
 impacts = ray_intersection(mydetector, obs_refs, panel=0)
 
 # Pull out reflection data as lists
-temp = [(ref.miller_index, ref.rotation_angle,
+temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
+         ref.panel_number,
          matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, svecs = zip(*temp)
+hkls, entering_flags, angles, panels, svecs = zip(*temp)
+
+# Build a mock scan for a 30 degree sweep
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,300),
+                      exposure_time = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(300),
+                      deg = True)
+sweep_range = myscan.get_oscillation_range(deg=False)
+temp = myscan.get_oscillation(deg=False)
+im_width = temp[1] - temp[0]
+print sweep_range
+assert approx_equal(sweep_range, (0., pi / 6.))
+assert approx_equal(im_width, 0.1 * pi / 180.)
+
+# convert angles to image number
+frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False),
+             angles)
 
 # Pull out impact positions as lists
 temp = [ref.image_coord_mm for ref in impacts]
@@ -88,34 +111,33 @@ sigangles = [im_width / 2.] * len(hkls)
 
 # Build list of observations in the reflection manager. This classifies each
 # reflection as passing into or out of the Ewald sphere
-refman = ReflectionManager(ref_predictor, mydetector,
-                        hkls, svecs,
-                        d1s, sigd1s,
-                        d2s, sigd2s,
-                        angles, sigangles,
-                        mybeam, mygonio)
+refman = ReflectionManager(hkls, entering_flags, frames, svecs,
+                           panels,
+                           d1s, sigd1s,
+                           d2s, sigd2s,
+                           angles, sigangles,
+                           mybeam, mygonio, myscan)
 
-# Also update the reflection manager with the observation data as perfect
-# predictions. We do this as the scattering vectors are only stored for
-# the predicted reflections
-refman.update_predictions(impacts)
+mypanel = mydetector[0]
+s0 = matrix.col(mybeam.get_s0())
+spindle = matrix.col(mygonio.get_rotation_axis())
 
 # for each reflection, reconstitute its relp vector and rotate it back by 1
 # degree, so that it matches the originally generated reflection. Now test
 # whether this vector lies inside or outside the Ewald sphere. If outside then
 # the reflection is entering. If inside then the reflection is exiting.
+for h in refman.get_indices():
+    for obs in refman.get_obs(h):
 
-s0 = matrix.col(mybeam.get_s0())
-spindle = matrix.col(mygonio.get_rotation_axis())
-for hkl, v in refman._obs_pred_pairs.items():
+        # get the s vector of this reflection
+        tmp = matrix.col(mypanel.get_lab_coord((obs.Xo, obs.Yo))).normalize()
+        s = tmp / mybeam.get_wavelength()
 
-    for i, e in enumerate(v.entering):
-
-        r = v.Sc[i] - s0
+        r = s - s0
         r_orig = r.rotate(spindle, -1., deg=True)
 
         # is it outside the Ewald sphere (i.e. entering)?
         test = (s0 + r_orig).length() > s0.length()
-        assert(e == test)
+        assert(obs.entering == test)
 
 print "OK"

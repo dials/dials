@@ -141,9 +141,11 @@ def refine(beam, goniometer, crystal, detector, scan,
     # pull out data needed for refinement
     temp = [(ref.miller_index, ref.entering, ref.frame_number,
              ref.rotation_angle, matrix.col(ref.beam_vector),
-             ref.image_coord_mm, ref.centroid_variance) \
+             ref.panel_number, ref.image_coord_mm,
+             ref.centroid_variance) \
                 for ref in reflections]
-    hkls, enterings, frames, angles, svecs, intersects, variances = zip(*temp)
+    (hkls, enterings, frames, angles, svecs, panels, intersects,
+        variances) = zip(*temp)
 
     # tease apart tuples to separate lists
     d1s, d2s = zip(*intersects)
@@ -203,7 +205,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(hkls, enterings, frames, svecs,
+    refman = ReflectionManager(hkls, enterings, frames, svecs, panels,
                                d1s, sig_d1s,
                                d2s, sig_d2s,
                                angles, sig_angles,
@@ -241,21 +243,29 @@ def refine(beam, goniometer, crystal, detector, scan,
     #############################################################
 
     if scan_varying:
-        return scan_varying_refine(beam, goniometer, crystal,
-           detector, image_width, scan,
-           hkls, enterings, frames,
-           svecs, d1s, sig_d1s, d2s, sig_d2s, angles, sig_angles,
-           verbosity, fix_cell = fix_cell, nref_per_degree = nref_per_degree)
+        return scan_varying_refine(
+            beam, goniometer, crystal, detector,
+            image_width, scan,
+            hkls, enterings, frames,
+            svecs, panels,
+            d1s, sig_d1s, d2s, sig_d2s, angles, sig_angles,
+            verbosity,
+            fix_cell,
+            nref_per_degree)
 
     # Return models (crystal not updated with scan-varying U, B)
     else:
         return (beam, goniometer, crystal, detector)
 
-def scan_varying_refine(beam, goniometer, crystal, detector,
-           image_width, scan,
-           hkls,  enterings, frames,
-           svecs, d1s, sigd1s, d2s, sigd2s, angles, sigangles,
-           verbosity = 0, fix_cell = False, nref_per_degree = None):
+def scan_varying_refine(
+            beam, goniometer, crystal, detector,
+            image_width, scan,
+            hkls, enterings, frames,
+            svecs, panels,
+            d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+            verbosity = 0,
+            fix_cell = False,
+            nref_per_degree = None):
 
     """experimental refinement function for scan-varying refinement"""
 
@@ -336,10 +346,12 @@ def scan_varying_refine(beam, goniometer, crystal, detector,
 
     refman = ReflectionManager(hkls, enterings, frames,
                             svecs,
+                            panels,
                             d1s, sigd1s,
                             d2s, sigd2s,
                             angles, sigangles,
-                            beam, goniometer, scan, verbosity,
+                            beam, goniometer, scan,
+                            verbosity,
                             nref_per_degree)
 
     if verbosity > 1:
