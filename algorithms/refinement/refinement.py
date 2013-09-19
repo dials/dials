@@ -139,25 +139,25 @@ def refine(beam, goniometer, crystal, detector, scan,
     from dials.algorithms.refinement.engine import GaussNewtonIterations
 
     # pull out data needed for refinement
-    temp = [(ref.miller_index, ref.entering, ref.frame_number,
-             ref.rotation_angle, matrix.col(ref.beam_vector),
-             ref.panel_number, ref.image_coord_mm,
-             ref.centroid_variance) \
-                for ref in reflections]
-    (hkls, enterings, frames, angles, svecs, panels, intersects,
-        variances) = zip(*temp)
+    #temp = [(ref.miller_index, ref.entering, ref.frame_number,
+    #         ref.rotation_angle, matrix.col(ref.beam_vector),
+    #         ref.panel_number, ref.image_coord_mm,
+    #         ref.centroid_variance) \
+    #            for ref in reflections]
+    #(hkls, enterings, frames, angles, svecs, panels, intersects,
+    #    variances) = zip(*temp)
 
     # tease apart tuples to separate lists
-    d1s, d2s = zip(*intersects)
-    var_d1s, var_d2s, var_angles = zip(*variances)
+    #d1s, d2s = zip(*intersects)
+    #var_d1s, var_d2s, var_angles = zip(*variances)
 
     # change variances to sigmas
-    sig_d1s = [sqrt(e) for e in var_d1s]
-    sig_d2s = [sqrt(e) for e in var_d2s]
-    sig_angles = [sqrt(e) for e in var_angles]
+    #sig_d1s = [sqrt(e) for e in var_d1s]
+    #sig_d2s = [sqrt(e) for e in var_d2s]
+    #sig_angles = [sqrt(e) for e in var_angles]
 
-    assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
-           len(sig_d2s) == len(angles) == len(sig_angles)
+    #assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
+    #       len(sig_d2s) == len(angles) == len(sig_angles)
 
     image_width = scan.get_oscillation(deg=False)[1]
     sweep_range = scan.get_oscillation_range(deg=False)
@@ -205,10 +205,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(hkls, enterings, frames, svecs, panels,
-                               d1s, sig_d1s,
-                               d2s, sig_d2s,
-                               angles, sig_angles,
+    refman = ReflectionManager(reflections,
                                beam, goniometer, scan, verbosity,
                                nref_per_degree)
 
@@ -246,9 +243,7 @@ def refine(beam, goniometer, crystal, detector, scan,
         return scan_varying_refine(
             beam, goniometer, crystal, detector,
             image_width, scan,
-            hkls, enterings, frames,
-            svecs, panels,
-            d1s, sig_d1s, d2s, sig_d2s, angles, sig_angles,
+            reflections,
             verbosity,
             fix_cell,
             nref_per_degree)
@@ -260,9 +255,7 @@ def refine(beam, goniometer, crystal, detector, scan,
 def scan_varying_refine(
             beam, goniometer, crystal, detector,
             image_width, scan,
-            hkls, enterings, frames,
-            svecs, panels,
-            d1s, sigd1s, d2s, sigd2s, angles, sigangles,
+            reflections,
             verbosity = 0,
             fix_cell = False,
             nref_per_degree = None):
@@ -295,10 +288,8 @@ def scan_varying_refine(
             import VaryingCrystalPredictionParameterisation
 
     # Imports for the target function
-    from dials.scratch.dgw.refinement.scan_varying_target import \
-        LeastSquaresPositionalResidualWithRmsdCutoff
-    from dials.scratch.dgw.refinement.scan_varying_target import \
-        ReflectionManager
+    from dials.algorithms.refinement.target import \
+        LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
     # Import the refinement engine
     from dials.algorithms.refinement.engine import GaussNewtonIterations
@@ -344,12 +335,7 @@ def scan_varying_refine(
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(hkls, enterings, frames,
-                            svecs,
-                            panels,
-                            d1s, sigd1s,
-                            d2s, sigd2s,
-                            angles, sigangles,
+    refman = ReflectionManager(reflections,
                             beam, goniometer, scan,
                             verbosity,
                             nref_per_degree)

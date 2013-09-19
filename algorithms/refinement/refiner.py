@@ -508,38 +508,7 @@ class RefmanFactory(object):
 
     def __call__(self, reflections, beam, goniometer, scan, verbosity):
 
-        from scitbx import matrix
-        from math import sqrt
-
-        # pull out data needed for refinement
-        temp = [(ref.miller_index, ref.entering, ref.frame_number,
-                 ref.rotation_angle, matrix.col(ref.beam_vector),
-                 ref.panel_number, ref.image_coord_mm,
-                 ref.centroid_variance) \
-                    for ref in reflections]
-        (hkls, enterings, frames, angles,
-         svecs, panels, intersects, variances) = zip(*temp)
-
-        # tease apart tuples to separate lists
-        d1s, d2s = zip(*intersects)
-        var_d1s, var_d2s, var_angles = zip(*variances)
-
-        # change variances to sigmas
-        sig_d1s = [sqrt(e) for e in var_d1s]
-        sig_d2s = [sqrt(e) for e in var_d2s]
-        sig_angles = [sqrt(e) for e in var_angles]
-
-        assert len(hkls) == len(svecs) == len(d1s) == len(d2s) == \
-               len(sig_d2s) == len(angles) == len(sig_angles)
-
-        return self._refman(h_obs=hkls,
-                            entering_obs=enterings,
-                            frame_obs=frames,
-                            svec_obs=svecs,
-                            panel_obs=panels,
-                            x_obs=d1s, sigx_obs=sig_d1s,
-                            y_obs=d2s, sigy_obs=sig_d2s,
-                            phi_obs=angles, sigphi_obs=sig_angles,
+        return self._refman(reflections=reflections,
                             beam=beam,
                             gonio=goniometer,
                             scan=scan,

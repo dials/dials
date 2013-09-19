@@ -158,29 +158,28 @@ print "Generating reflections"
 print "======================"
 print "Total number of reflections excited", len(obs_refs)
 
-# Pull out reflection data as lists
-temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
-         matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, entering_flags, angles, svecs = zip(*temp)
-
-# convert angles to image number
-frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False), angles)
-
-# Project positions on camera
-# currently assume all reflections intersect panel 0
-panels = [0] * len(hkls)
-impacts = [mydetector[0].get_ray_intersection(
-                        ref.beam_vector) for ref in obs_refs]
-d1s, d2s = zip(*impacts)
-
-print "Total number of observations made", len(hkls), "\n"
-
-# Invent some uncertainties
+# Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
 px_size = mydetector.get_pixel_size()
-sigd1s = [px_size[0] / 2.] * len(hkls)
-sigd2s = [px_size[1] / 2.] * len(hkls)
-sigangles = [im_width / 2.] * len(hkls)
+var_x = (px_size[0] / 2.)**2
+var_y = (px_size[1] / 2.)**2
+var_phi = (im_width / 2.)**2
+
+for ref in obs_refs:
+
+    # calc and set the impact position, assuming all reflections
+    # intersect panel 0.
+    impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
+    ref.image_coord_mm = impacts
+
+    # set the centroid variance
+    ref.centroid_variance = (var_x, var_y ,var_phi)
+
+    # set the frame number, calculated from rotation angle
+    ref.frame_number = myscan.get_image_index_from_angle(
+        ref.rotation_angle, deg=False)
+
+print "Total number of observations made", len(obs_refs), "\n"
 
 ###############################
 # Undo known parameter shifts #
@@ -200,11 +199,7 @@ print msg % tuple(pred_param.get_param_vals()), "\n"
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(hkls, entering_flags, frames, svecs, panels,
-                           d1s, sigd1s,
-                           d2s, sigd2s,
-                           angles, sigangles,
-                           mybeam, mygonio, myscan)
+refman = ReflectionManager(obs_refs, mybeam, mygonio, myscan)
 
 ##############################
 # Set up the target function #

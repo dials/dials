@@ -176,15 +176,6 @@ excited_refs = ref_predictor.predict(indices)
 
 print "Total number of reflections excited", len(excited_refs)
 
-# Pull out reflection data as lists
-temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
-         matrix.col(ref.beam_vector)) for ref in excited_refs]
-hkls, entering_flags, angles, svecs = zip(*temp)
-
-# convert angles to image number
-frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False),
-             angles)
-
 # Project positions on camera (assume panel 0) and set made up
 # centroid variances and frame numbers
 px_size = mydetector.get_pixel_size()
@@ -226,12 +217,8 @@ print
 print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
-#print "FIXME. This is currently broken, as refine now needs a scan " + \
-#      "object instead of sweep_range and takes a list of reflections" + \
-#      "rather than separate arguments for each attribute"
-
 refine(mybeam, mygonio, mycrystal, mydetector, myscan, obs_refs,
-       verbosity = 1, fix_cell = False, scan_varying=False)
+       verbosity=1, fix_cell=False, scan_varying=False)
 
 print
 print "Refinement has completed with the following geometry:"
