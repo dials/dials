@@ -26,7 +26,7 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
     _obs_image_number = None
 
-    def prepare(self):
+    def prepare(self, panel_id=0):
         '''Cache required quantities that are not dependent on hkl'''
 
         # Same as prepare for the parent class except we don't get
@@ -56,13 +56,13 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
              self._xl_unit_cell_parameterisations[0].get_state()
         return UB
 
-    def get_gradients(self, h, s, phi, obs_image_number):
+    def get_gradients(self, h, s, phi, panel_id, obs_image_number):
 
         #self.prepare()
         if obs_image_number != self._obs_image_number:
             self.compose(obs_image_number)
 
-        return self._get_gradients_core(h, s, phi)
+        return self._get_gradients_core(h, s, phi, panel_id)
 
     #def get_multi_gradients(self, match_list):
     #    '''
@@ -76,13 +76,14 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
     #    # the following line will not work...
     #    return [self._get_gradients_core(m.H, m.Sc, m.Phic, m.image) for m in match_list]
 
-    def _get_gradients_core(self, h, s, phi):
+    def _get_gradients_core(self, h, s, phi, panel_id):
 
-        '''Calculate gradients of the prediction formula with respect to each
-        of the parameters of the contained models, for reflection h with
-        scattering vector s that reflects at rotation angle phi. That is,
-        calculate dX/dp, dY/dp and dphi/dp. Scan-varying parameters (for
-        the crystal) are evaluated at obs_image_number'''
+        '''Calculate gradients of the prediction formula with respect to
+        each of the parameters of the contained models, for reflection h
+        that reflects at rotation angle phi with scattering vector s
+        that intersects panel panel_id. That is, calculate dX/dp, dY/dp
+        and dphi/dp. Scan-varying parameters (for the crystal) are
+        evaluated at obs_image_number'''
 
         # NB prepare and compose must be called first
 
@@ -139,7 +140,7 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         # parameterisation only. All derivatives of phi are zero for detector
         # parameters
         if self._detector_parameterisations:
-            self._detector_derivatives(dpv_dp, dphi_dp, pv)
+            self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id)
 
         # Calc derivatives of pv and phi wrt each parameter of each beam
         # parameterisation that is present.

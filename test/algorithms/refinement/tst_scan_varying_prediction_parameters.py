@@ -208,7 +208,8 @@ print max(frames), min(frames), sum(frames) / len(frames)
 
 # Project positions on camera. Currently assuming all reflections
 # intersect panel 0
-impacts = [mydetector[0].get_ray_intersection(
+panel_id = 0
+impacts = [mydetector[panel_id].get_ray_intersection(
                         ref.beam_vector) for ref in ref_list]
 d1s, d2s = zip(*impacts)
 
@@ -259,7 +260,7 @@ for iref in selection:
         raise RuntimeError("Predicted more than two angles for a single hkl")
 
     # get analytical gradients
-    an_grads = pred_param.get_gradients(hkl, s, angle, frame)
+    an_grads = pred_param.get_gradients(hkl, s, angle, panel_id, frame)
 
 # NB, reflections that just touch the Ewald sphere have large
 # derivatives of phi wrt some parameters (asymptotically approching

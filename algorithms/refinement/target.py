@@ -66,8 +66,9 @@ class Target(object):
             # loop over observations of this hkl
             for obs in self._reflection_manager.get_obs(h):
 
-                # get the observation image number
+                # get the observation image and panel numbers
                 frame = obs.frame_o
+                panel = obs.panel
 
                 # duck-typing for scan varying version of
                 # prediction_parameterisation
@@ -88,9 +89,9 @@ class Target(object):
                     # predict for this hkl
                     predictions = self._reflection_predictor.predict(h)
 
-                # obtain the impact positions, currently assuming reflections
-                # only intersect panel 0
-                impacts = ray_intersection(self._detector, predictions, panel=0)
+                # obtain the impact positions
+                impacts = ray_intersection(self._detector, predictions,
+                                           panel=panel)
 
                 # find the prediction with the right 'entering' flag
                 try:
@@ -111,7 +112,7 @@ class Target(object):
 
                 # calculate gradients for this reflection
                 grads = self._prediction_parameterisation.get_gradients(
-                                                h, Sc, Phic, frame)
+                                            h, Sc, Phic, panel, frame)
 
                 # store all this information in the matched obs-pred pair
                 obs.update_prediction(Xc, Yc, Phic, Sc, grads)

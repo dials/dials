@@ -241,20 +241,17 @@ class PredictionParameterisation(object):
         # the first entry in self._detector_parameterisations.
 
         ### Obtain various quantities of interest from the experimental model
-
-        # Here we irrevocably choose the Panel that this reflection intersects,
-        # currently hard-coding it to the first (only) Panel.
-        self._D = matrix.sqr(self._detector[0].get_D_matrix())
+        self._D_mats = [matrix.sqr(p.get_D_matrix()) for p in self._detector]
         self._s0 = matrix.col(self._beam.get_s0())
         self._U = self._crystal.get_U()
         self._B = self._crystal.get_B()
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
-    def get_gradients(self, h, s, phi, obs_image_number = None):
+    def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
         '''
         Calculate gradients of the prediction formula with respect to each
         of the parameters of the contained models, for the reflection with
-        scattering vector s.
+        scattering vector s that intersects panel with panel_id.
 
         To be implemented by a derived class, which determines the space of the
         prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
@@ -265,24 +262,25 @@ class PredictionParameterisation(object):
         varying version of the class
         '''
 
-        self.prepare()
+        # extract the right panel matrix
+        self._D = self._D_mats[panel_id]
 
-        return self._get_gradients_core(h, s, phi)
+        return self._get_gradients_core(h, s, phi, panel_id)
 
-    def get_multi_gradients(self, match_list):
-        '''
-        perform the functionality of get_gradients but for a list of many
-        reflections in one call in the form of a list of ObsPredMatch objects
-        (see target.py). The advantage of this is that prepare needs only be
-        called once.
-        '''
-
-        # This is effectively calculating the Jacobian and perhaps should be
-        # renamed as such (and returned as a matrix not a list of lists)
-
-        self.prepare()
-
-        return [self._get_gradients_core(m.H, m.Sc, m.Phic) for m in match_list]
+    #def get_multi_gradients(self, match_list):
+    #    '''
+    #    perform the functionality of get_gradients but for a list of many
+    #    reflections in one call in the form of a list of ObsPredMatch objects
+    #    (see target.py). The advantage of this is that prepare needs only be
+    #    called once.
+    #    '''
+    #
+    #    # This is effectively calculating the Jacobian and perhaps should be
+    #    # renamed as such (and returned as a matrix not a list of lists)
+    #
+    #    self.prepare()
+    #
+    #    return [self._get_gradients_core(m.H, m.Sc, m.Phic) for m in match_list]
 
 
 class DetectorSpacePredictionParameterisation(PredictionParameterisation):
@@ -291,15 +289,16 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
     PredictionParameterisation parent class and provides a detector space
     implementation of the get_gradients function.
 
-    Not yet safe for multiple sensor detectors.
+    Untested for multiple sensor detectors.
     '''
 
-    def _get_gradients_core(self, h, s, phi):
+    def _get_gradients_core(self, h, s, phi, panel_id):
 
-        '''Calculate gradients of the prediction formula with respect to each
-        of the parameters of the contained models, for reflection h with
-        scattering vector s that reflects at rotation angle phi. That is,
-        calculate dX/dp, dY/dp and dphi/dp'''
+        '''Calculate gradients of the prediction formula with respect to
+        each of the parameters of the contained models, for reflection h
+        that reflects at rotation angle phi with scattering vector s that
+        intersects panel panel_id. That is, calculate dX/dp, dY/dp and
+        dphi/dp'''
 
         ### Calculate various quantities of interest for this reflection
 
@@ -338,11 +337,9 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             vecn = self._s0.cross(self._axis).normalize()
             print s.accute_angle(vecn)
             raise e
-        # FIXME This is potentially dangerous! e_r_s0 -> 0 when the rotation
+        # This is potentially dangerous! e_r_s0 -> 0 when the rotation
         # axis, beam vector and relp are coplanar. This occurs when a reflection
-        # just touches the Ewald sphere. The derivatives of phi go to infinity
-        # because any change moves it off this one position of grazing
-        # incidence. How best to deal with this?
+        # just touches the Ewald sphere.
 
         ### Work through the parameterisations, calculating their contributions
         ### to derivatives d[pv]/dp and d[phi]/dp
@@ -355,7 +352,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         # parameterisation only. All derivatives of phi are zero for detector
         # parameters
         if self._detector_parameterisations:
-            self._detector_derivatives(dpv_dp, dphi_dp, pv)
+            self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id)
 
         # Calc derivatives of pv and phi wrt each parameter of each beam
         # parameterisation that is present.
@@ -380,7 +377,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
 
         return zip(dX_dp, dY_dp, dphi_dp)
 
-    def _detector_derivatives(self, dpv_dp, dphi_dp, pv):
+    def _detector_derivatives(self, dpv_dp, dphi_dp, pv, panel_id):
 
         '''helper function to extend the derivatives lists by
         derivatives of the detector parameterisations'''
@@ -388,7 +385,9 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
 
             # Only work for the first detector parameterisation
             if idet == 0:
-                dd_ddet_p = det.get_ds_dp()
+                # select the panel_id of interest (which is ignored if
+                # the parameterisation is for a single panel)
+                dd_ddet_p = det.get_ds_dp(multi_state_elt=panel_id)
 
                 # Copy to a flex array of 3*3 matrices
                 dd_ddet_p_temp = flex_mat3_double(len(dd_ddet_p))

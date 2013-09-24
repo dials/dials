@@ -376,6 +376,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
         return
 
     def get_state(self):
+
         # only a single panel
         panel = (self._models[0])[0]
         return matrix.sqr(panel.get_d_matrix())

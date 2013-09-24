@@ -97,10 +97,17 @@ class ModelParameterisation(object):
     '''An abstract interface that model elements, such as the detector
     model, the source model, etc. should adhere to in order to compose
     their state from their parameters, access their parameters, and
-    derivatives of their state wrt their parameters, taking into account whether
-    particular parameters are fixed or free.'''
+    derivatives of their state wrt their parameters, taking into account
+    whether particular parameters are fixed or free.
 
-    def __init__(self, models, initial_state, param_list):
+    It is possible to parameterise a model with multiple states. The
+    most obvious example is a detector with multiple panels. Each panel
+    has its own matrix describing its geometrical 'state'. One set of
+    parameters is used to compose all states and calculate all
+    derivatives of these states.'''
+
+    def __init__(self, models, initial_state, param_list,
+                 is_multi_state=False):
         assert(isinstance(param_list, list))
         self._initial_state = initial_state
         self._models = models
@@ -108,6 +115,7 @@ class ModelParameterisation(object):
         self._total_len = len(self._param)
         self._dstate_dp = [None] * len(param_list)
 
+        self._is_multi_state = is_multi_state
         return
 
     #def __len__(self):
@@ -211,10 +219,13 @@ class ModelParameterisation(object):
 
         return
 
-    def get_state(self):
-        '''return the current state of the model under parameterisation. This is
-        required, for example, by the calculation of finite difference
-        gradients.'''
+    def get_state(self, multi_state_elt=None):
+        '''return the current state of the model under parameterisation.
+        This is required, for example, by the calculation of finite
+        difference gradients.
+
+        For a multi-state parameterisation, the requested state is
+        selected passing an integer array index in multi_state_elt'''
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state. The
@@ -222,18 +233,26 @@ class ModelParameterisation(object):
         # value of get_ds_dp.
         raise RuntimeError, 'implement me'
 
-    def get_ds_dp(self, only_free = True):
+    def get_ds_dp(self, only_free = True, multi_state_elt=None):
         '''get a list of derivatives of the state wrt each parameter, as
         a list in the same order as the internal list of parameters.
 
-        If only_free, the derivatives with respect to fixed parameters are
-        omitted from the returned list. Otherwise a list for all parameters is
-        returned, with values of 0.0 for the fixed parameters'''
+        If only_free, the derivatives with respect to fixed parameters
+        are omitted from the returned list. Otherwise a list for all
+        parameters is returned, with values of 0.0 for the fixed
+        parameters.
+
+        For a multi-state parameterisation, the requested state is
+        selected passing an integer array index in multi_state_elt'''
 
         if only_free:
-            return [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) \
+            grads = [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) \
                     if not p.get_fixed()]
-
         else:
-            return [0. * ds_dp if p.get_fixed() else ds_dp \
+            grads = [0. * ds_dp if p.get_fixed() else ds_dp \
                         for ds_dp, p in zip(self._dstate_dp, self._param)]
+
+        if multi_state_elt and self._is_multi_state:
+            return [e[multi_state_elt] for e in grads]
+        else:
+            return grads

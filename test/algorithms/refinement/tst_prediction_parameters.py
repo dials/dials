@@ -178,7 +178,8 @@ hkls, angles, s_vecs = zip(*temp)
 
 # Project positions on camera. Currently assuming all reflections
 # intersect panel 0
-impacts = [mydetector[0].get_ray_intersection(
+panel_id = 0
+impacts = [mydetector[panel_id].get_ray_intersection(
                         ref.beam_vector) for ref in ref_list]
 d1s, d2s = zip(*impacts)
 
@@ -193,12 +194,16 @@ selection = random.sample(xrange(len(hkls)), min(len(hkls), 50))
 uc = mycrystal.get_unit_cell()
 exclusion_limit = max(uc.reciprocal_parameters()[0:3])
 
+# prepare the prediction parameterisation by caching quantities not
+# dependent on hkl
+pred_param.prepare()
+
 verbose = False
 for iref in selection:
     hkl, s, angle = hkls[iref], s_vecs[iref], angles[iref]
 
     # get analytical gradients
-    an_grads = pred_param.get_gradients(hkl, s, angle)
+    an_grads = pred_param.get_gradients(hkl, s, angle, panel_id)
 
 # NB, reflections that just touch the Ewald sphere have large
 # derivatives of phi wrt some parameters (asymptotically approching
