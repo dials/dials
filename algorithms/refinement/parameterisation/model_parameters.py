@@ -252,7 +252,7 @@ class ModelParameterisation(object):
             grads = [0. * ds_dp if p.get_fixed() else ds_dp \
                         for ds_dp, p in zip(self._dstate_dp, self._param)]
 
-        if multi_state_elt and self._is_multi_state:
+        if multi_state_elt is not None and self._is_multi_state:
             return [e[multi_state_elt] for e in grads]
         else:
             return grads

@@ -211,7 +211,7 @@ lim = (0,50)
 my_panel = sensor(origin, fast, slow, lim, lim)
 
 # equivalent using the dials Panel
-dials_panel = Panel("PAD", fast, slow, origin,
+dials_panel = Panel("PAD", "Panel", fast, slow, origin,
             (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20))
 
 # The sensor model uses Python properties instead of getters.
