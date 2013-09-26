@@ -111,12 +111,16 @@ def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     n_row = numpy.size(data3d[0:1, :, 0:1])
     n_col = numpy.size(data3d[0:1, 0:1, :])
 
-    print n_frm
-    '''
-    dif3d = numpy.zeros_like(data3d)
+    #print n_frm
+    if dimensions != "2d" or n_frm != 1:
+        exit("no 2D parameter")
+    reflection_list = 1
+
+    dif2d = numpy.zeros_like(data3d[0:1, :, :])
 
     col_block_size = n_col / n_blocks_x
     row_block_size = n_row / n_blocks_y
+
 
     for tmp_block_x_pos in range(n_blocks_x):
         for tmp_block_y_pos in range(n_blocks_y):
@@ -125,17 +129,15 @@ def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
             row_from = int(tmp_block_y_pos * row_block_size)
             row_to = int((tmp_block_y_pos + 1) * row_block_size)
 
-            tmp_dat3d = numpy.copy(data3d[:, row_from:row_to, col_from:col_to])
+            tmp_dat2d = numpy.copy(data3d[0, row_from:row_to, col_from:col_to])
             if dimensions == '2d':
-                for frm_tmp in range(n_frm):
-                    tmp_dat2d = numpy.copy(tmp_dat3d[frm_tmp, :, :])
-                    tmp_dif = find_mask_2d(tmp_dat2d, times, shift)
-                    dif3d[frm_tmp, row_from:row_to, col_from:col_to] = tmp_dif
-            else:
-                dif3d = find_mask_3d(tmp_dat3d, times, shift)
+                tmp_dat2d = numpy.copy(tmp_dat2d[:, :])
+                tmp_dif = find_mask_2d(tmp_dat2d, times, shift)
+                dif2d[0:1, row_from:row_to, col_from:col_to] = tmp_dif
 
-    dif_3d_ext = find_ext_mask_3d(dif3d)
-    x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_3d_ext)
+    '''
+    dif_2d_ext = find_ext_mask_3d(dif2d)
+    x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst = find_bound_3d(dif_2d_ext)
     reflection_list = _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst)
 
     for i, rf_lst in enumerate(reflection_list):
@@ -143,7 +145,7 @@ def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
                                   z_from_lst[i]: z_to_lst[i], \
                                   y_from_lst[i]: y_to_lst[i], \
                                   x_from_lst[i]: x_to_lst[i] ]))
-        rf_lst.shoebox_mask = flex.int(numpy.copy(dif_3d_ext[ \
+        rf_lst.shoebox_mask = flex.int(numpy.copy(dif_2d_ext[ \
                                   z_from_lst[i]: z_to_lst[i], \
                                   y_from_lst[i]: y_to_lst[i], \
                                   x_from_lst[i]: x_to_lst[i] ]))
@@ -151,6 +153,8 @@ def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     centroid = toy_centroid_lui(reflection_list)
     reflection_list = centroid.get_reflections()
     '''
+
+
     return reflection_list
 
 

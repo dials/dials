@@ -3,11 +3,13 @@ import numpy
 from iotbx.detectors import ImageFactory
 from matplotlib import pyplot as plt
 
-
+'''
 f_names = ["/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0015.cbf", \
            "/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0016.cbf", \
            "/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0017.cbf"]
 
+'''
+f_names = ["/dls/i04/data/2013/mx8547-36/Javier/R3_NTD/8_2_collection/8_2_M1S2_2_0015.cbf"]
 
 from dxtbx.sweep import SweepFactory
 sweep = SweepFactory.sweep(f_names)
@@ -22,9 +24,15 @@ data2d = numpy.zeros(n_row * n_col, dtype = numpy.float64).reshape(n_row, n_col)
 data2d[:, :] = data3d[0:1, :, :]
 
 
+from dials.algorithms.peak_finding.spot_finder_lui import do_all_2d
 
+times = 5
+shift = 4
+n_blocks_x = 12
+n_blocks_y = 10
+dimensions = "2d"
 
-
+rlist = do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions)
 
 
 

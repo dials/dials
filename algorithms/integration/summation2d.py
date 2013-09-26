@@ -17,37 +17,14 @@ class Summation2d(IntegrationInterface):
     def __init__(self, **kwargs):
         '''Initialise algorithm.'''
         pass
-    def __call__(self, sweep, crystal, reflections, reference=None):
+    def __call__(self, sweep, crystal, reflections, reference = None):
         '''Process the reflections.'''
         self.integrate(reflections)
         return reflections
 
     def integrate(self, reflections):
-        #tmp_numpy_layering_n_integrating(reflections)
         flex_2d_layering_n_integrating(reflections)
 
-def tmp_numpy_layering_n_integrating(reflections):
-    print "hi there translating and layering 01 "
-
-    from dials.algorithms.integration.summation_2d import raw_2d_integration
-    for ref in reflections:
-        if ref.is_valid():
-            shoebox = ref.shoebox.as_numpy_array()
-            mask = ref.shoebox_mask.as_numpy_array()
-            backgound = ref.shoebox_background.as_numpy_array()
-            ref.intensity = 0.0
-            ref.intensity_variance = 0.0
-            for i in range(shoebox.shape[0]):
-                data2d = shoebox[i]
-                mask2d = mask[i]
-                backgound2d = backgound[i]
-                itns, sigma = raw_2d_integration(data2d, mask2d, backgound2d)
-                ref.intensity += float(itns)
-                ref.intensity_variance += float(sigma * sigma)
-                #ref.intensity_variance += float(sigma)
-            #ref.intensity_variance = ref.intensity_variance * ref.intensity_variance
-
-    print "hi there translating and layering 02 "
 def flex_2d_layering_n_integrating(reflections):
     from scitbx.array_family import flex
     from dials.algorithms.integration import raw_2d_cut
