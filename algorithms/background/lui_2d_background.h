@@ -46,7 +46,7 @@ namespace dials { namespace algorithms {
 
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {
-            if ( mask2d(row,col) == 1 ){
+            if ( mask2d(row,col) == 5 ){
               loc_bkgr_tot = 0.0;
               loc_bkgr_cont = 0.0;
               if ( mask2d(nrow - 1, col) == 0 ){

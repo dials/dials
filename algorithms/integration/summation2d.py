@@ -42,7 +42,7 @@ def flex_2d_layering_n_integrating(reflections):
                 mask2d = mask[i:i + 1, :, :]
                 background2d = background[i:i + 1, :, :]
 
-                data2d.reshape(flex.grid(shoebox.all()[1:]))
+                data2d.reshape(flex.grid(shoebox.all()[1:])) # ask James if this needs to be changed
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
                 background2d.reshape(flex.grid(shoebox.all()[1:]))
 
@@ -50,6 +50,18 @@ def flex_2d_layering_n_integrating(reflections):
 
                 ref.intensity += reslt[0]
                 ref.intensity_variance += reslt[1] * reslt[1]
+                ## testing code
+                #from dials.scratch.luiso_s import write_2d
+                #print "data2d ="
+                #write_2d(data2d)
+                #print "background2d ="
+                #write_2d(background2d)
+                #
+                #mask_to_wrt = mask2d.as_numpy_array()
+                #print mask_to_wrt
+
+
+
 
     print "flex array version of summation integration ends"
 

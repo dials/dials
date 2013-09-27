@@ -34,7 +34,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
 
             from matplotlib import pyplot as plt
             data2d = profile.as_numpy_array()
-            plt.imshow(data2d, interpolation = "nearest")
+            plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
             plt.show()
 
             arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], profile, tr_hold)

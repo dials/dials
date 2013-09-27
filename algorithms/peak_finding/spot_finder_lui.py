@@ -104,13 +104,23 @@ def do_all_3d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
 
 def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     from scitbx.array_family import flex
+
+
+    ################################################# starts big block to be replaced
     import numpy
     array_3d = sweep.to_array()
     data3d = array_3d.as_numpy_array()
-    n_frm = numpy.size(data3d[:, 0:1, 0:1])
+    print data3d.shape
     n_row = numpy.size(data3d[0:1, :, 0:1])
     n_col = numpy.size(data3d[0:1, 0:1, :])
+    img_2d = numpy.copy(data3d[0, :, :])
+    print img_2d.shape
 
+    ################################################# ends big block to be replaced
+
+
+
+    '''
     #print n_frm
     if dimensions != "2d" or n_frm != 1:
         exit("no 2D parameter")
@@ -134,6 +144,8 @@ def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
                 tmp_dat2d = numpy.copy(tmp_dat2d[:, :])
                 tmp_dif = find_mask_2d(tmp_dat2d, times, shift)
                 dif2d[0:1, row_from:row_to, col_from:col_to] = tmp_dif
+    '''
+    #this part was commentes before
 
     '''
     dif_2d_ext = find_ext_mask_3d(dif2d)
@@ -155,7 +167,7 @@ def do_all_2d(sweep, times, shift, n_blocks_x, n_blocks_y, dimensions):
     '''
 
 
-    return reflection_list
+    #return reflection_list
 
 
 def _create_reflection_list(x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst):

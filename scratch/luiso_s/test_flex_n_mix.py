@@ -54,7 +54,7 @@ data2dsmoth_2t = numpy.float64(data2dsmoth_2t_tmp)
 #n = write_2d(flex.double(data2dsmoth))
 
 print "Plotting data2dsmoth"
-plt.imshow(data2dsmoth, interpolation = "nearest")
+plt.imshow(data2dsmoth, interpolation = "nearest", cmap = pylab.gray())
 plt.show()
 
 
