@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env python
 #
 # beam_divergence_and_mosaicity.py
@@ -9,6 +8,8 @@ from __future__ import division
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import division
 
 class ScriptRunner(object):
     '''Class to run the beam divergence and mosaicity script.'''

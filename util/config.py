@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env python
 #
 # config.py
@@ -9,6 +8,8 @@ from __future__ import division
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import division
 
 class CompletionGenerator(object):
     '''A class to auto-generate bash-completion scripts for dials'''

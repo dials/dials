@@ -1,4 +1,3 @@
-from __future__ import division
 #
 # centroid_px_to_mm.py
 #
@@ -8,6 +7,9 @@ from __future__ import division
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import division
+
 def centroid_px_to_mm(detector, scan, position, variance, sd_error):
     '''Convenience function to calculate centroid in mm/rad from px'''
     from operator import mul

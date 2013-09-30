@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env cctbx.python
 # cctbx_introduction_1.py
 #
@@ -6,6 +5,8 @@ from __future__ import division
 # the pycbf API now included in cctbx. N.B. this should work with the files
 # from a Pilatus 300K instrument collected during commissioning on I19 as
 # ximg2701_00001.cbf (included).
+
+from __future__ import division
 
 import sys
 import exceptions

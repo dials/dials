@@ -1,4 +1,3 @@
-from __future__ import division
 #
 # Background Subtraction 2D lower level numpy version
 #
@@ -8,6 +7,9 @@ from __future__ import division
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import division
+
 def curved_background_subtraction_2d(data2d, mask2d):
 
     import numpy

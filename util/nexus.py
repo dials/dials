@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env python
 #
 # nexus.py
@@ -10,6 +9,8 @@ from __future__ import division
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 #
+
+from __future__ import division
 
 class H5PYEncoder(object):
     '''Encoder base class.'''

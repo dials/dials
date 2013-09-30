@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env python
 #
 # dials.model.serialize.load.py
@@ -9,6 +8,8 @@ from __future__ import division
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import division
 
 # Import to give access from here
 from dxtbx.serialize.load import imageset as sweep

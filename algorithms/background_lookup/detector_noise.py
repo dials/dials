@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env python
 #
 # detector_noise.py
@@ -9,6 +8,8 @@ from __future__ import division
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+
+from __future__ import division
 
 class ComputeDetectorNoise(object):
     '''Calculate the detector noise. Estimate this by calculating the mean

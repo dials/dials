@@ -1,4 +1,3 @@
-from __future__ import division
 #!/usr/bin/env python
 #
 # picklez.py
@@ -15,6 +14,7 @@ from __future__ import division
 # major use case: list of many (objects) which we want to store; to be pushed
 #                 into one file as pickled strings of chunks of the list.
 
+from __future__ import division
 
 def chunkify_list(lst, chunk_size):
     '''Return as an iterator chunks of the list, of length chunk_size (as
