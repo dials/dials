@@ -38,7 +38,7 @@ class toy_centroid(centroid_interface):
                         points.append((f + 0.5, r + 0.5, c + 0.5))
                         pixels.append(shoebox[f, r, c])
 
-        except IndexError, e:
+        except IndexError:
             raise CentroidException, 'data outside range'
 
         centroid = centroid_points(pixels, points)

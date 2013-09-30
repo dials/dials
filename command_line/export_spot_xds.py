@@ -30,7 +30,6 @@ class ScriptRunner(object):
 
         # Read the pickle file
         Command.start('Reading reflection file.')
-        import cPickle as pickle
         with open(self.reflections_filename, 'rb') as f:
             reflections = pickle.load(f)
 

@@ -8,7 +8,6 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
-from scitbx.array_family import flex
 from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
@@ -47,7 +46,6 @@ class ExtractSpots(object):
         # Loop through all the images in the sweep and extract the pixels
         # from each of the images
         progress = ProgressBar(title='Extracting pixels from sweep')
-        start = sweep.get_array_range()[0]
         for frame, image in enumerate(sweep):
 
             # Ensure image is a tuple of images

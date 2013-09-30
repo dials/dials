@@ -82,9 +82,7 @@ class ReflectionPredictor(object):
         from math import sqrt
 
         # Get models from the sweep
-        beam = sweep.get_beam()
         detector = sweep.get_detector()
-        gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
 
         # Generate Indices
@@ -225,7 +223,6 @@ class ReflectionExtractor(object):
 
         # Get models from the sweep
         beam = sweep.get_beam()
-        detector = sweep.get_detector()
         gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
 

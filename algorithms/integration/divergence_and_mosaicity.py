@@ -370,7 +370,7 @@ class FractionOfObservedIntensityPerFrame(object):
             A list of fractions of length n
 
         '''
-        from math import sqrt, erf
+        from math import sqrt, erf, exp
         from scitbx.array_family import flex
         import numpy
 

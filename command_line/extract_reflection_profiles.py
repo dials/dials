@@ -221,7 +221,7 @@ def run(xparm_path, integrate_path, image_frames, interactive, output_file):
     if output_file:
         import cPickle as pickle
         print "\nPickling the reflection list."
-        pickle.dump(reflections, open(output_file, 'wb'), HIGHEST_PROTOCOL)
+        pickle.dump(reflections, open(output_file, 'wb'), pickle.HIGHEST_PROTOCOL)
 #        from dials.util.nexus import NexusFile
 #        handle = NexusFile(output_file, 'w')
 #        handle.set_reflections(reflections)

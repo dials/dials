@@ -2,7 +2,6 @@ from __future__ import division
 
 def print_profile(r):
     s = r.shoebox
-    b = r.bounding_box
     _i, _j, _k = s.all()
     for i in range(_i):
         for j in range(_j):

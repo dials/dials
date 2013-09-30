@@ -105,12 +105,10 @@ class PeakCentroidDistanceFilter(object):
     def run(self, flags, observations=None, shoeboxes=None, **kwargs):
         ''' Run the filtering. '''
 
-        # Get the peak locations and the centroids
+        # Get the peak locations and the centroids and return the flags of
+        # those closer than the min distance
         peak = shoeboxes.peak_coordinates()
         cent = observations.centroids().px_position()
-        norms = (peak - cent).norms()
-
-        # Return the flags of those closer than the min distance
         return flags.__and__((peak - cent).norms() <= self.maxd)
 
     def __call__(self, flags, **kwargs):
