@@ -13,7 +13,6 @@ from __future__ import division
 
 # Import to give access from here
 from dxtbx.serialize.load import imageset as sweep
-from dxtbx.serialize.load import imageset_from_string as sweep_from_string
 
 def crystal_from_string(string):
     ''' Load the string and return the models.

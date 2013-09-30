@@ -357,6 +357,7 @@ model/experiment/crystal_model/crystal.py -text
 model/serialize/__init__.py -text
 model/serialize/crystal.py -text
 model/serialize/dump.py -text
+model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/test_encode.py -text
 model/serialize/xds.py -text
@@ -560,6 +561,7 @@ test/model/data/tst_shoebox.py -text
 test/model/experiment/tst_crystal_model.py -text
 test/model/serialize/tst_serialize.py -text
 test/tst_spots_xds.py -text
+test/util/tst_command_line.py -text
 util/__init__.py -text
 util/command_line.py -text
 util/config.py -text

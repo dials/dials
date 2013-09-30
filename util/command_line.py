@@ -250,6 +250,102 @@ class Command(object):
         stdout.flush()
 
 
+class Importer(object):
+    ''' A class to import the command line arguments.
+
+    The class is used as follows:
+        importer = Importer(args)
+        importer.imagesets
+        importer.crystals
+        importer.reflections
+
+    '''
+
+    def __init__(self, args):
+        ''' Parse the arguments. '''
+        from dials.model.data import ReflectionList
+
+        # Initialise output
+        self.imagesets = []
+        self.crystals = []
+        self.reflections = ReflectionList()
+
+        # First try to load known serialized formats. Then try to load
+        # the remaining arguments as an imageset. If this fails save
+        # the remaining arguments as a list of unhandled arguments
+        unhandled = self.try_serialized_formats(args)
+        unhandled = self.try_as_imageset(unhandled)
+        self.unhandled_arguments = unhandled
+
+    def try_serialized_formats(self, args):
+        ''' Parse known serialized formats. '''
+        unhandled = []
+        for argument in args:
+            if not self.try_serialized_format_with_file(argument):
+                unhandled.append(argument)
+
+        return unhandled
+
+    def try_serialized_format_with_file(self, argument):
+        ''' Try as a pickle file, then as a json file. '''
+        result = False
+        if not result: result = self.try_pickle(argument)
+        if not result: result = self.try_json(argument)
+        return result
+
+    def try_pickle(self, argument):
+        ''' Try as a pickle file. '''
+        from dials.model.data import ReflectionList
+        import cPickle as pickle
+        try:
+            with open(argument, 'rb') as inputfile:
+                obj = pickle.load(inputfile)
+                if isinstance(obj, ReflectionList):
+                    self.reflections.extend(obj)
+                    return True
+        except Exception:
+            pass
+        return False
+
+    def try_json(self, argument):
+        ''' Try as a json file. '''
+        from dials.model.serialize.imageset import imageset_from_dict
+        from dials.model.serialize.crystal import crystal_from_dict
+        import json
+        try:
+            with open(argument, 'r') as inputfile:
+                obj = json.loads(inputfile.read())
+                try:
+                    self.imagesets.append(imageset_from_dict(obj))
+                    return True
+                except Exception:
+                    pass
+                try:
+                    self.crystals.append(crystal_from_dict(obj))
+                    return True
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return False
+
+    def try_as_imageset(self, args):
+        ''' Try the remaining arguments as a list of filenames '''
+        from dxtbx.imageset import ImageSetFactory
+        try:
+            imagesets = ImageSetFactory.new(args, ignore_unknown=True)
+            unhandled = []
+            for imageset in imagesets:
+                for argument in args:
+                    if argument not in imageset.paths():
+                        unhandled.append(argument)
+            self.imagesets.extend(imagesets)
+            return unhandled
+        except Exception:
+            pass
+        return args
+
+
 if __name__ == '__main__':
     import time
 
