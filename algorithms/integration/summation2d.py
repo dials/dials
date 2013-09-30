@@ -28,7 +28,7 @@ class Summation2d(IntegrationInterface):
 def flex_2d_layering_n_integrating(reflections):
     from scitbx.array_family import flex
     from dials.algorithms.integration import raw_2d_cut
-    print "starts flex array version of summation integration "
+    print "performing summation integration .... "
 
     for ref in reflections:
         if ref.is_valid():
@@ -50,19 +50,8 @@ def flex_2d_layering_n_integrating(reflections):
 
                 ref.intensity += reslt[0]
                 ref.intensity_variance += reslt[1] * reslt[1]
-                ## testing code
-                #from dials.scratch.luiso_s import write_2d
-                #print "data2d ="
-                #write_2d(data2d)
-                #print "background2d ="
-                #write_2d(background2d)
-                #
-                #mask_to_wrt = mask2d.as_numpy_array()
-                #print mask_to_wrt
 
 
-
-
-    print "flex array version of summation integration ends"
+    print "summation integration .... done"
 
     return reflections

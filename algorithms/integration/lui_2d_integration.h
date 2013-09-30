@@ -13,13 +13,16 @@
 
 #include <iostream>
 #include <scitbx/vec2.h>
-#include <math.h>
+#include <cmath>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/model/data/shoebox.h>
 
 namespace dials { namespace algorithms {
 
   using scitbx::vec2;
-
+  // using dials::model::Valid;
+  using dials::model::Foreground;
+  using dials::model::Background;
   vec2<double> raw_2d_cut(
       const af::const_ref< double, af::c_grid<2> > &data2d,
       const af::const_ref< int, af::c_grid<2> > &mask2d,
@@ -33,12 +36,13 @@ namespace dials { namespace algorithms {
 
         for (int row = 0; row<=nrow-1;row++) {
           for (int col = 0; col<=ncol-1;col++) {
-            if ( mask2d(row,col)==5 ){
+            if ( mask2d(row,col) & Foreground ){
               i_tot = i_tot + data2d(row,col) - background2d(row,col);
               npix_mask++;
-            } else {
+            } else if(mask2d(row,col) & Background) {
               npix_bkgr++;
             }
+
             cont++;
             tot_bkgr+=background2d(row,col);
 
@@ -46,11 +50,11 @@ namespace dials { namespace algorithms {
         }
         if( tot_bkgr>0 && cont>0 && npix_mask>0 && npix_bkgr>0 ){
           bkgr = tot_bkgr / cont;
-          sig = sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
+          sig = std::sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
 
         } else {
           bkgr = 0;
-          sig = sqrt(i_tot);
+          sig = std::sqrt(i_tot);
         }
 
         integr_data[0]=i_tot;        // intensity

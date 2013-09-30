@@ -25,7 +25,9 @@ data2d[2:3, 2:3] = 50
 print data2d
 
 mask2d = numpy.zeros((5, 5), dtype = numpy.int32)
-mask2d[1:4, 1:4] = 1
+mask2d[:, :] = 3
+mask2d[1:4, 1:4] = 5
+
 print mask2d
 
 background2d = numpy.copy(data2d)

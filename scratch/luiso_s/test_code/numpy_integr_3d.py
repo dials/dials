@@ -48,7 +48,8 @@ data[2, 2:3, 2:3] = 35
 print data
 
 mask = numpy.zeros((3, 5, 5), dtype = numpy.int32)
-mask[:, 1:4, 1:4] = 1
+mask[:, :, :] = 3
+mask[:, 1:4, 1:4] = 5
 print mask
 
 background = numpy.copy(data)
