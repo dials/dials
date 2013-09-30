@@ -123,9 +123,9 @@ if __name__ == '__main__':
     from optparse import OptionParser
 
     # Specify the command line options
-    usage  = "usage: %prog [options] "
-    usage += "/path/to/SPOT.XDS "
-    usage += "/path/to/XPARM.XDS"
+    usage  = "usage: %prog [options] " \
+             "/path/to/SPOT.XDS " \
+             "/path/to/XPARM.XDS"
 
     # Create an option parser
     parser = OptionParser(usage)

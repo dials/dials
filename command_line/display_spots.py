@@ -49,9 +49,9 @@ if __name__ == '__main__':
     from optparse import OptionParser
 
     # Specify the command line options
-    usage  = "usage: %prog [options] "
-    usage += "/path/to/reflections.pickle "
-    usage += "/path/to/image/files "
+    usage  = "usage: %prog [options] " \
+             "/path/to/reflections.pickle " \
+             "/path/to/image/files "
 
     # Create an option parser
     parser = OptionParser(usage)

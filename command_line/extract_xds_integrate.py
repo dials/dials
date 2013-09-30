@@ -150,10 +150,10 @@ if __name__ == '__main__':
     from optparse import OptionParser
 
     # Specify the command line options
-    usage  = "usage: %prog [options] "
-    usage += "/path/to/XPARM.XDS "
-    usage += "/path/to/INTEGRATE.HKL "
-    usage += "/path/to/image/files.cbf"
+    usage  = "usage: %prog [options] " \
+             "/path/to/XPARM.XDS " \
+             "/path/to/INTEGRATE.HKL " \
+             "/path/to/image/files.cbf"
 
     # Create an option parser
     parser = OptionParser(usage)

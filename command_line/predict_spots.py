@@ -240,8 +240,8 @@ if __name__ == '__main__':
     from optparse import OptionParser
 
     # Specify the command line options
-    usage  = "usage: %prog [options] /path/to/GXPARM.XDS "
-    usage += "[/path.to.INTEGRATE.HKL [/path/to/image.cbf]]"
+    usage  = "usage: %prog [options] /path/to/GXPARM.XDS " \
+             "[/path.to.INTEGRATE.HKL [/path/to/image.cbf]]"
     parser = OptionParser(usage)
 
     # Add a verbose option (False by default)

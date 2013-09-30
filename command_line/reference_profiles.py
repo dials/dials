@@ -19,8 +19,8 @@ class Script(ScriptRunner):
         '''Initialise the script.'''
 
         # The script usage
-        usage  = "usage: %prog [options] [param.phil] "
-        usage += "sweep.json crystal.json strong.pickle"
+        usage  = "usage: %prog [options] [param.phil] " \
+                 "sweep.json crystal.json strong.pickle"
 
         # Initialise the base class
         ScriptRunner.__init__(self, usage=usage)
