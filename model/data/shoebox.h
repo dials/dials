@@ -118,9 +118,9 @@ namespace dials { namespace model {
      */
     void allocate() {
       af::c_grid<3> accessor(zsize(), ysize(), xsize());
-      data = af::versa< double, af::c_grid<3> >(accessor);
-      mask = af::versa< int, af::c_grid<3> >(accessor);
-      background = af::versa< double, af::c_grid<3> >(accessor);
+      data = af::versa< double, af::c_grid<3> >(accessor, 0.0);
+      mask = af::versa< int, af::c_grid<3> >(accessor, 0);
+      background = af::versa< double, af::c_grid<3> >(accessor, 0.0);
     }
 
     /**
