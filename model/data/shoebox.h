@@ -426,7 +426,8 @@ namespace dials { namespace model {
     bool operator==(const Shoebox &rhs) const {
       return ((bbox.all_eq(rhs.bbox)) &&
               (data.all_eq(rhs.data)) &&
-              (mask.all_eq(rhs.mask)));
+              (mask.all_eq(rhs.mask)) &&
+              (background.all_eq(rhs.background)));
     }
 
     /**

@@ -13,6 +13,10 @@ class Test(object):
         self.tst_is_bbox_within_image_volume()
         self.tst_does_bbox_contain_bad_pixels()
         self.tst_count_mask_values()
+        self.tst_centroid_all()
+        self.tst_centroid_masked()
+        self.tst_summed_intensity_all()
+        self.tst_summed_intensity_masked()
 
     def tst_allocate(self):
         from random import randint
@@ -196,6 +200,127 @@ class Test(object):
 
         # Test passed
         print 'OK'
+
+    def tst_centroid_all(self):
+        from scitbx import matrix
+        for shoebox, (XC, I) in self.random_shoeboxes(10):
+            centroid = shoebox.centroid_all()
+            assert(shoebox.is_consistent())
+            assert(abs(matrix.col(centroid.px.position) - matrix.col(XC)) < 1.0)
+
+        print 'OK'
+
+    def tst_centroid_masked(self):
+        from scitbx import matrix
+        for shoebox, (XC, I) in self.random_shoeboxes(10):
+            centroid = shoebox.centroid_masked((1 << 0))
+            assert(shoebox.is_consistent())
+            assert(abs(matrix.col(centroid.px.position) - matrix.col(XC)) < 1.0)
+
+        print 'OK'
+
+    def tst_summed_intensity_all(self):
+
+        for shoebox, (XC, I) in self.random_shoeboxes(10):
+            intensity = shoebox.summed_intensity_all()
+            assert(shoebox.is_consistent())
+            assert(abs(intensity.observed.value - I) < 1e-7)
+
+        print 'OK'
+
+    def tst_summed_intensity_masked(self):
+        for shoebox, (XC, I) in self.random_shoeboxes(10, mask=True):
+            intensity = shoebox.summed_intensity_masked((1 << 0))
+            assert(shoebox.is_consistent())
+            assert(abs(intensity.observed.value - I) < 1e-7)
+
+        print 'OK'
+
+    def random_shoeboxes(self, num, mask=False):
+        from random import randint, uniform
+        for i in range(num):
+            x0 = randint(0, 100)
+            y0 = randint(0, 100)
+            z0 = randint(0, 100)
+            x1 = randint(x0 + 5, x0 + 20)
+            y1 = randint(y0 + 5, y0 + 20)
+            z1 = randint(z0 + 5, z0 + 20)
+            bbox = (x0, x1, y0, y1, z0, z1)
+            xc0 = (x1 + x0) / 2.0
+            yc0 = (y1 + y0) / 2.0
+            zc0 = (z1 + z0) / 2.0
+            xc = uniform(xc0 - 1, xc0 + 1)
+            yc = uniform(yc0 - 1, yc0 + 1)
+            zc = uniform(zc0 - 1, zc0 + 1)
+            centre = (xc, yc, zc)
+            intensity = randint(0, 10000)
+            shoebox = self.generate_shoebox(bbox, centre, intensity, mask=mask)
+            yield (shoebox, (centre, intensity))
+
+    def generate_shoebox(self, bbox, centre, intensity, mask=False):
+        from dials.model.data import Shoebox
+        from scitbx.array_family import flex
+        shoebox = Shoebox()
+        shoebox.bbox = bbox
+        shoebox.allocate()
+        for i in range(len(shoebox.mask)):
+            shoebox.mask[i] = 1
+        shoebox.data = self.gaussian(
+            shoebox.size(), 1.0,
+            [c - o for c, o in zip(centre[::-1], shoebox.offset())],
+            [s / 8.0 for s in shoebox.size()])
+        if mask:
+            shoebox.mask = self.create_mask(
+                shoebox.size(),
+                [c - o for c, o in zip(centre[::-1], shoebox.offset())],
+                (1 << 0))
+        tot = flex.sum(shoebox.data * shoebox.mask.as_double())
+        if tot > 0:
+            shoebox.data *= intensity / tot
+        return shoebox
+
+    def create_mask(self, size, x0, value):
+        from scitbx.array_family import flex
+        from math import sqrt
+        mask = flex.int(flex.grid(size), 0)
+        rad = min(s - c for s, c in zip(size, x0))
+        for k in range(size[0]):
+            for j in range(size[1]):
+                for i in range(size[2]):
+                    d = sqrt((k - x0[0])**2 + (j - x0[1])**2 + (i - x0[2])**2)
+                    if d < rad:
+                        mask[k,j,i] = value
+        return mask
+
+    def evaluate_gaussian(self, x, a, x0, sx):
+
+        from math import exp
+
+        assert(len(x) == len(x0))
+        assert(len(x) == len(sx))
+
+        g = 0.0
+        for xi, x0i, sxi in zip(x, x0, sx):
+            g += (xi - x0i)**2 / (2.0 * sxi**2)
+
+        return a * exp(-g)
+
+    def gaussian(self, size, a, x0, sx):
+
+        from scitbx.array_family import flex
+
+        result = flex.double(flex.grid(size))
+
+        index = [0] * len(size)
+        while True:
+            result[index] = self.evaluate_gaussian(index, a, x0, sx)
+            for j in range(len(size)):
+                index[j] += 1
+                if index[j] < size[j]:
+                    break
+                index[j] = 0
+                if j == len(size) - 1:
+                    return result
 
 
 if __name__ == '__main__':
