@@ -58,13 +58,6 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * @returns The filter mask
-     */
-    af::versa< int, af::c_grid<2> > mask() const {
-      return mask_;
-    }
-
-    /**
      * @returns The filtered image
      */
     af::versa< double, af::c_grid<2> > fano() const {
@@ -86,7 +79,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    af::versa< int, af::c_grid<2> > mask_;
     af::versa< double, af::c_grid<2> > fano_;
     af::versa< double, af::c_grid<2> > mean_;
     af::versa< double, af::c_grid<2> > var_;

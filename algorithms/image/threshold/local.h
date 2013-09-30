@@ -73,7 +73,7 @@ namespace dials { namespace algorithms {
       const af::const_ref< double, af::c_grid<2> > &image,
       int2 size, double k, double r) {
     // Check the input
-    DIALS_ASSERT(k >= 0 && r >= 0);
+    DIALS_ASSERT(k >= 0 && r > 1);
 
     // Calculate the mean and variance filtered images
     MeanAndVarianceFilter filter(image, size);
@@ -114,17 +114,17 @@ namespace dials { namespace algorithms {
     // Calculate the fano filtered image
     FanoFilter filter(image, size);
     af::versa< double, af::c_grid<2> > fano_image = filter.fano();
-    af::versa< int, af::c_grid<2> >    fano_mask  = filter.mask();
 
     // Calculate the bound
     std::size_t n = (2 * size[0] + 1) * (2 * size[1] + 1);
+    DIALS_ASSERT(n > 1);
     double bound = 1.0 + n_sigma * sqrt(2.0 / (n - 1));
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor());
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
-      result[i] = (fano_mask[i] && fano_image[i]) > bound ? 1 : 0;
+      result[i] = (fano_image[i] > bound) ? 1 : 0;
     }
 
     // Return thresholded image
@@ -151,6 +151,7 @@ namespace dials { namespace algorithms {
 
     // Check the input
     DIALS_ASSERT(n_sigma >= 0);
+    DIALS_ASSERT(min_count > 1);
 
     // Copy the mask into a temp variable
     af::versa< int, af::c_grid<2> > temp(mask.accessor());
@@ -201,6 +202,7 @@ namespace dials { namespace algorithms {
 
     // Check the input
     DIALS_ASSERT(n_sigma >= 0);
+    DIALS_ASSERT(min_count > 1);
 
     // Copy the mask into a temp variable
     af::versa< int, af::c_grid<2> > temp(mask.accessor());

@@ -24,8 +24,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("size"))))
       .def("fano", &FanoFilter::fano)
       .def("mean", &FanoFilter::mean)
-      .def("sample_variance", &FanoFilter::sample_variance)
-      .def("mask", &FanoFilter::mask);
+      .def("sample_variance", &FanoFilter::sample_variance);
 
     class_<FanoFilterMasked>("FanoFilterMasked", no_init)
       .def(init<const af::const_ref< double, af::c_grid<2> >&, 

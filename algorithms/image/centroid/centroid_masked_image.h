@@ -93,7 +93,7 @@ namespace dials { namespace algorithms {
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
           if (mask(j, i)) {
-            coords[count++] = vec2<double>(i + 0.5, j + 0.5);
+            coords[count++] = coord_type(i + 0.5, j + 0.5);
           }
         }
       }
@@ -173,11 +173,12 @@ namespace dials { namespace algorithms {
         for (std::size_t j = 0; j < image.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < image.accessor()[2]; ++i) {
             if (mask(k, j, i)) {
-              coords[count++] = vec3<double>(i + 0.5, j + 0.5, k + 0.5);
+              coords[count++] = coord_type(i + 0.5, j + 0.5, k + 0.5);
             }
           }
         }
       }
+
       coords.resize(count);
 
       // Return the array
