@@ -52,8 +52,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     void (NormalDiscriminator::*call_reflection)(Reflection &) const =
       &NormalDiscriminator::operator();  
   
-    class_<NormalDiscriminator>(
-        "NormalDiscriminator")
+    class_<NormalDiscriminator>("NormalDiscriminator", no_init)
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
         arg("n_sigma") = 3.0)))

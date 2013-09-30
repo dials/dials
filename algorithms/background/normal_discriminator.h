@@ -32,7 +32,8 @@ namespace dials { namespace algorithms {
 
   /**
    * Get the expected number of standard deviations based on the number of
-   * observations. Given by erf(x / sqrt(2)) = 1 - 1 / N
+   * observations. Given by erf(n_sdev / sqrt(2)) = 1 - 1 / n_obs.
+   * This function returns the value of sqrt(2) * erf-1(1 - 1 / n_obs)
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
@@ -59,14 +60,8 @@ namespace dials { namespace algorithms {
       return 0.0;
     }
 
-    // Calculate the min/max of the data
-    double mind = min(data);
-
-    // Calculate t-statistic of min/max
-    double min_n_sigma = (mind - mean) / sdev;
-
-    // return the maximum number of sigma
-    return min_n_sigma;
+    // Calculate t-statistic of the min of the data
+    return (min(data) - mean) / sdev;
   }
 
   /**
@@ -87,14 +82,8 @@ namespace dials { namespace algorithms {
       return 0.0;
     }
 
-    // Calculate the min/max of the data
-    double maxd = max(data);
-
-    // Calculate t-statistic of min/max
-    double max_n_sigma = (maxd - mean) / sdev;
-
-    // return the maximum number of sigma
-    return max_n_sigma;
+    // Calculate t-statistic of the max of the data
+    return (max(data) - mean) / sdev;
   }
 
   /**
@@ -115,17 +104,9 @@ namespace dials { namespace algorithms {
       return 0.0;
     }
 
-    // Calculate the min/max of the data
-    double mind = min(data);
-    double maxd = max(data);
-
     // Calculate t-statistic of min/max
-    double min_n_sigma = (mean - mind) / sdev;
-    double max_n_sigma = (maxd - mean) / sdev;
-
-    //std::cout << min_n_sigma << " " << max_n_sigma << std::endl;
-
-    // return the maximum number of sigma
+    double min_n_sigma = (mean - min(data)) / sdev;
+    double max_n_sigma = (max(data) - mean) / sdev;
     return max_n_sigma > min_n_sigma ? max_n_sigma : min_n_sigma;
   }
 
@@ -136,16 +117,12 @@ namespace dials { namespace algorithms {
    * between the given n_sigma.
    *
    * @param data The array of pixel values
+   * @param n_sigma The number of standard deviations you expect
    * @returns True/False
    */
   inline
   bool is_normally_distributed(const af::const_ref<double> &data, double n_sigma) {
-
-    // Get the maximum n sigma
-    double max_n_sigma = absolute_maximum_n_sigma(data);
-
-    // return whether within required sigma
-    return max_n_sigma < n_sigma;
+    return absolute_maximum_n_sigma(data) < n_sigma;
   }
 
   /**
@@ -159,12 +136,7 @@ namespace dials { namespace algorithms {
    */
   inline
   bool is_normally_distributed(const af::const_ref<double> &data) {
-
-    // Calculate expected sigma from number of points
-    double n_sigma = normal_expected_n_sigma(data.size());
-
-    // Check if data is normally distributed using sigma value
-    return is_normally_distributed(data, n_sigma);
+    return is_normally_distributed(data, normal_expected_n_sigma(data.size()));
   }
 
 
@@ -175,12 +147,10 @@ namespace dials { namespace algorithms {
   class NormalDiscriminator {
   public:
 
-    /** Initialise the class. */
-    NormalDiscriminator()
-      : min_data_(10),
-        n_sigma_(3.0) {}
-
-    /** Initialise the class with parameters. */
+    /**
+     * @param min_data The minimum number of data points to use.
+     * @param n_sigma The number of standard deviations to check for
+     */
     NormalDiscriminator(std::size_t min_data, double n_sigma)
       : min_data_(min_data),
         n_sigma_(n_sigma) {
@@ -195,9 +165,13 @@ namespace dials { namespace algorithms {
      * Sort the pixels in order of ascending intensity. Then check if the
      * intensities are normally distributed. If not then remove the pixel
      * with the highest intensity from the list and check again. Keep going
-     * untill the list of pixels is normally distributed, or the maximum
-     * number of iterations is reached. The remaining pixels are classes
+     * until the list of pixels is normally distributed, or the maximum
+     * number of iterations is reached. The remaining pixels are classed
      * as background, the rest are peak.
+     *
+     * The mask is used in both input and output. On input the mask is checked
+     * for valid pixels. The discriminated peak/background pixels are then
+     * written into the mask.
      *
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
