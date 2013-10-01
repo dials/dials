@@ -20,7 +20,8 @@ class Script(ScriptRunner):
         '''Initialise the script.'''
 
         # The script usage
-        usage = "usage: %prog [options] [param.phil] sweep.json"
+        usage = "usage: %prog [options] [param.phil] "\
+                "{sweep.json | image1.file [image2.file ...]}"
 
         # Initialise the base class
         ScriptRunner.__init__(self, usage=usage)
@@ -40,24 +41,16 @@ class Script(ScriptRunner):
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
         from dxtbx.imageset import ImageSetFactory
+        from dials.util.command_line import Importer
 
-        # Check the number of arguments is correct
-        if len(args) == 1:
-            print 'Loading initial models from {0}'.format(args[0])
-            sweep = load.sweep(args[0])
-        elif len(args) > 1:
-            print 'Loading initial models from {0}'.format(args[0])
-            sweep_list = ImageSetFactory.new(args)
-            assert(len(sweep_list) == 1)
-            sweep = sweep_list[0]
-        else:
+        # Try importing the command line arguments
+        importer = Importer(args)
+        if len(importer.imagesets) == 0:
             self.config().print_help()
             return
-
-        # Check length of sweep
-        if len(sweep) == 1:
-            raise RuntimeError("spotfinding currently requires "
-                               "more than one image.")
+        elif len(importer.imagesets) > 1:
+            raise RuntimeError("Only one imageset can be processed at a time")
+        sweep = importer.imagesets[0]
 
         # Get the integrator from the input parameters
         print 'Configuring spot finder from input parameters'
