@@ -52,6 +52,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
@@ -184,12 +185,8 @@ var_x = (px_size[0] / 2.)**2
 var_y = (px_size[1] / 2.)**2
 var_phi = (im_width / 2.)**2
 
+obs_refs = ray_intersection(mydetector, obs_refs)
 for ref in obs_refs:
-
-    # calc and set the impact position, assuming all reflections
-    # intersect panel 0.
-    impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
-    ref.image_coord_mm = impacts
 
     # set the centroid variance
     ref.centroid_variance = (var_x, var_y ,var_phi)
