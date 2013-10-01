@@ -60,7 +60,7 @@ class Script(ScriptRunner):
                                "more than one image.")
 
         # Get the integrator from the input parameters
-        print 'Configuringspot finder from input parameters'
+        print 'Configuring spot finder from input parameters'
         find_spots = SpotFinderFactory.from_parameters(params)
 
         # Find the strong spots in the sweep
