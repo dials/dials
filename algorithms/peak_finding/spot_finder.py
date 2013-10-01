@@ -37,19 +37,25 @@ class ExtractSpots(object):
 
         '''
         from dials.util.command_line import ProgressBar, Command
-        from dials.algorithms.image.connected_components import LabelImageStack
+        from dials.algorithms.image.connected_components import LabelImageStack2d
+        from dials.algorithms.image.connected_components import LabelImageStack3d
         from dials.array_family import flex
+        from dxtbx.imageset import ImageSweep
 
-        # Construct the pixel labeller
-        label = [LabelImageStack(panel.get_image_size()[::-1])
-            for panel in sweep.get_detector()]
+        # Construct the pixel labeller for either 2D or 3D
+        if not isinstance(sweep, ImageSweep):
+            Label = LabelImageStack2d
+        else:
+            Label = LabelImageStack3d
+        label = [Label(p.get_image_size()[::-1]) for p in sweep.get_detector()]
+
 
         # Loop through all the images in the sweep and extract the pixels
         # from each of the images
         progress = ProgressBar(title='Extracting pixels from sweep')
         for frame, image in enumerate(sweep):
 
-            # Ensure image is a tuple of images
+            # Ensure image is a tuple of images (for multi-panel support)
             if not isinstance(image, tuple):
                 image = (image,)
 
@@ -95,9 +101,10 @@ class SpotFinder(object):
         from dials.model.data import ReflectionList
         from dials.array_family import flex
         from dials.util.command_line import Command
+        from dxtbx.imageset import ImageSweep
 
         # Get list of scan ranges
-        if not self.scan_range:
+        if not self.scan_range or not isinstance(sweep, ImageSweep):
             scan_range = [(0, len(sweep))]
         else:
             scan_range = self.scan_range
@@ -108,24 +115,19 @@ class SpotFinder(object):
             j0, j1 = scan
             assert(j1 > j0 and j0 >= 0 and j1 <= len(sweep))
             print '\nFinding spots in image {0} to {1}...'.format(j0, j1)
-
-            # Find the spots
-            spots = self.find_spots(sweep[j0:j1])
-
-            # Add the spots to the list
-            spots_all.extend(spots)
+            spots_all.extend(self.find_spots(sweep[j0:j1]))
 
         # Get the list of shoeboxes
         shoeboxes = flex.shoebox(spots_all)
 
         # Calculate the spot centroids
         Command.start('Calculating {0} spot centroids'.format(len(shoeboxes)))
-        centroid = shoeboxes.centroid_valid();
+        centroid = shoeboxes.centroid_valid()
         Command.end('Calculated {0} spot centroids'.format(len(shoeboxes)))
 
         # Calculate the spot intensities
         Command.start('Calculating {0} spot intensities'.format(len(shoeboxes)))
-        intensity = shoeboxes.summed_intensity_valid();
+        intensity = shoeboxes.summed_intensity_valid()
         Command.end('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
         # Create the observations

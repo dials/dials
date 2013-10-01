@@ -16,17 +16,24 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  template <std::size_t DIM>
+  void label_image_stack_wrapper(const char *name) {
+    typedef LabelImageStack<DIM> label_type;
+    class_<label_type>(name, no_init)
+      .def(init<int2>((arg("size"))))
+      .def("size", &label_type::size)
+      .def("num_images", &label_type::num_images)
+      .def("add_image", &label_type::add_image, (
+        arg("image"), arg("mask")))
+      .def("labels", &label_type::labels)
+      .def("coords", &label_type::coords)
+      .def("values", &label_type::values);
+  }
+
   void export_connected_components()
   {
-    class_<LabelImageStack>("LabelImageStack", no_init)
-      .def(init<int2>((arg("size"))))
-      .def("size", &LabelImageStack::size)
-      .def("num_images", &LabelImageStack::num_images)
-      .def("add_image", &LabelImageStack::add_image, (
-        arg("image"), arg("mask")))
-      .def("labels", &LabelImageStack::labels)
-      .def("coords", &LabelImageStack::coords)
-      .def("values", &LabelImageStack::values);
+    label_image_stack_wrapper<2>("LabelImageStack2d");
+    label_image_stack_wrapper<3>("LabelImageStack3d");
   }
   
   BOOST_PYTHON_MODULE(dials_algorithms_image_connected_components_ext)
