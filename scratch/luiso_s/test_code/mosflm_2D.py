@@ -20,24 +20,13 @@ def calc_background_n_make_2d_profile(reflections):
 
     print "max_i_01 =", max_i_01
 
-    ##old model
-    #max_i = 0.0
-    #for ref in reflections:
-    #    if ref.is_valid():
-    #        if ref.intensity > max_i and ref.intensity < max_i_01 * 0.99:
-    #            max_i = ref.intensity
-
-    tot = 0.0
-    count = 0
+    max_i = 0.0
     for ref in reflections:
         if ref.is_valid():
-            if ref.intensity > 0 and ref.intensity < max_i_01 * 0.99:
-                tot += ref.intensity
-                count += 1
-    avrg = tot / float(count)
-    print "avrg =", avrg
-    thold = avrg
-    # thold = 0.05 * max_i #old model
+            if ref.intensity > max_i and ref.intensity < max_i_01 * 0.99:
+                max_i = ref.intensity
+
+    thold = 0.4 * max_i
 
     for ref in reflections:
         if ref.is_valid() and ref.intensity > thold:

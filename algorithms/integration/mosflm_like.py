@@ -7,7 +7,7 @@ class MosflmProfileFitting:
         from dials.scratch.luiso_s.test_code.call_mosflm_2d import mosflm_caller
 
         from dials.algorithms.background.curved_background_subtractor \
-         import tmp_numpy_layering_n_bkgr_modl, layering_and_background_modl
+         import  layering_and_background_modl
 
         layering_and_background_modl(rlist)
         flex_2d_layering_n_integrating(rlist)
