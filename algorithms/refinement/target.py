@@ -160,8 +160,12 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
         # Set up the RMSD achieved criterion
         if not absolute_cutoffs:
-            self._binsize_cutoffs = [e * frac_binsize_cutoff for e in \
-                                    detector.get_pixel_size() + (image_width,)]
+            pixel_sizes = [p.get_pixel_size() for p in detector]
+            min_px_size_x = min(e[0] for e in pixel_sizes)
+            min_px_size_y = min(e[1] for e in pixel_sizes)
+            self._binsize_cutoffs = [min_px_size_x * frac_binsize_cutoff,
+                                     min_px_size_y * frac_binsize_cutoff,
+                                     image_width * frac_binsize_cutoff]
         else:
             assert len(absolute_cutoffs) == 3
             self._binsize_cutoffs = absolute_cutoffs
