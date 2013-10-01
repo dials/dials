@@ -88,6 +88,9 @@ def get_fd_gradients(mp, deltas):
 
 def print_model_geometry(beam = None, detector = None, crystal = None):
 
+    # FIXME This function is essentially deprecated by the __str__ methods of
+    # each of the experimental models.
+
     if beam:
         print "beam s0 = (%.4f, %.4f, %.4f)" % beam.get_s0()
     if detector:

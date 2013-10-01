@@ -12,7 +12,7 @@
 """
 Using code copied from tst_orientation_refinement.py, test refinement of beam,
 detector and crystal orientation parameters using generated reflection positions
-from ideal geometry, repeating tests with both a single panel detector, and a 
+from ideal geometry, repeating tests with both a single panel detector, and a
 geometrically identical 3x3 panel detector, ensuring the results are the same.
 
 Control of the experimental model and choice of minimiser is done via
@@ -233,6 +233,10 @@ for r1, r2 in zip(obs_refs, obs_refs2):
 
 print "Total number of reflections excited", len(obs_refs)
 
+# get the panel intersections
+obs_refs = ray_intersection(single_panel_detector, obs_refs)
+obs_refs2 = ray_intersection(multi_panel_detector, obs_refs2)
+
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
 px_size = single_panel_detector.get_pixel_size()
@@ -240,41 +244,19 @@ var_x = (px_size[0] / 2.)**2
 var_y = (px_size[1] / 2.)**2
 var_phi = (im_width / 2.)**2
 
-obs_refs = ray_intersection(single_panel_detector, obs_refs)
-print "Total number of reflections observed", len(obs_refs)
-for ref in obs_refs:
-
-    print ref
-    
-    print ray_intersection(single_panel_detector, ref)
-    print single_panel_detector[0].get_ray_intersection(ref.beam_vector)
-    1/0
-    # calc and set the impact position on the single panel detector
-    impacts = single_panel_detector[0].get_ray_intersection(ref.beam_vector)
-    ref.image_coord_mm = impacts
+# set the variances and frame numbers
+assert len(obs_refs) == len(obs_refs2)
+for ref, ref2 in zip(obs_refs, obs_refs2):
 
     # set the centroid variance
     ref.centroid_variance = (var_x, var_y, var_phi)
+    ref2.centroid_variance = (var_x, var_y, var_phi)
 
     # set the frame number, calculated from rotation angle
     ref.frame_number = myscan.get_image_index_from_angle(
         ref.rotation_angle, deg=False)
-
-for ref in obs_refs2:
-
-    # calc and set the impact position on the multi panel detector
-    print ref
-    print ray_intersection(multi_panel_detector, ref)
-    1/0
-    impacts = multi_panel_detector.get_ray_intersection(ref.beam_vector)
-    ref.image_coord_mm = impacts
-
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y, var_phi)
-
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = myscan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
+    ref2.frame_number = myscan.get_image_index_from_angle(
+        ref2.rotation_angle, deg=False)
 
 print "Total number of observations made", len(obs_refs)
 
@@ -284,44 +266,72 @@ print "Total number of observations made", len(obs_refs)
 
 s0_param.set_param_vals(s0_p_vals)
 det_param.set_param_vals(det_p_vals)
+multi_det_param.set_param_vals(det_p_vals)
 xlo_param.set_param_vals(xlo_p_vals)
 xluc_param.set_param_vals(xluc_p_vals)
-
-print "Initial values of parameters are"
-msg = "Parameters: " + "%.5f " * len(pred_param)
-print msg % tuple(pred_param.get_param_vals())
-print
 
 #####################################
 # Select reflections for refinement #
 #####################################
 
 refman = ReflectionManager(obs_refs, mybeam, mygonio, myscan)
+refman2 = ReflectionManager(obs_refs2, mybeam, mygonio, myscan)
 
-##############################
-# Set up the target function #
-##############################
-
-# The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
-# 1/3 the image width in radians. For the simulated data, these are just made up
+###############################
+# Set up the target functions #
+###############################
 
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
-    mydetector, refman, pred_param, im_width)
+    single_panel_detector, refman, pred_param, im_width)
+mytarget2 = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
+    multi_panel_detector, refman2, pred_param2, im_width)
 
-################################
-# Set up the refinement engine #
-################################
+#################################
+# Set up the refinement engines #
+#################################
 
 refiner = setup_minimiser.Extract(master_phil,
                                   mytarget,
                                   pred_param,
                                   cmdline_args = args).refiner
+refiner2 = setup_minimiser.Extract(master_phil,
+                                  mytarget2,
+                                  pred_param2,
+                                  cmdline_args = args).refiner
 
-print "Prior to refinement the experimental model is:"
-print_model_geometry(mybeam, mydetector, mycrystal)
+
+print "\nRefining using the single panel detector"
+print   "----------------------------------------\n"
 
 refiner.run()
 
-print
-print "Refinement has completed with the following geometry:"
-print_model_geometry(mybeam, mydetector, mycrystal)
+# reset parameters and run refinement with the multi panel detector
+s0_param.set_param_vals(s0_p_vals)
+multi_det_param.set_param_vals(det_p_vals)
+xlo_param.set_param_vals(xlo_p_vals)
+xluc_param.set_param_vals(xluc_p_vals)
+
+
+print "\nRe-running refinement with the multi panel detector"
+print   "---------------------------------------------------\n"
+
+refiner2.run()
+
+# Check that the two refinement runs were the same
+print "\nChecking that the refinement runs were identical"
+print   "------------------------------------------------\n"
+
+# same number of steps
+assert refiner.get_num_steps() == refiner2.get_num_steps()
+
+# same rmsds
+for rmsd, rmsd2 in zip(refiner.history.rmsd, refiner2.history.rmsd):
+    assert approx_equal(rmsd, rmsd2)
+
+# same parameter values each step
+for params, params2 in zip(refiner.history.parameter_vector,
+                           refiner.history.parameter_vector):
+    assert approx_equal(params, params2)
+
+# if we got this far...
+print "OK"
