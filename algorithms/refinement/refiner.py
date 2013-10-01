@@ -401,15 +401,11 @@ class ParameterisationFactory(object):
         self._crystal_ori_par = cop
         self._crystal_uc_par = cucp
 
-        # Detector
-        if detector_options.panels == "single":
-            dp = par.DetectorParameterisationSinglePanel
-        elif detector_options.panels == "multiple":
-            raise RuntimeError, "multiple panel detector parameterisation is not yet implemented"
-        else:
+        # Detector.
+        if detector_options.panels not in ["automatic", "single", "multiple"]:
             raise RuntimeError, "detector parameterisation type not recognised"
 
-        self.detector_par = dp
+        self.detector_par_options = detector_options.panels
         self._fix_detector = detector_options.fix_detector
 
         # Prediction equation parameterisation
@@ -447,7 +443,20 @@ class ParameterisationFactory(object):
         if self._crystal_fix_cell:
             xl_uc_param.set_fixed([True] * xl_uc_param.num_free())
 
-        det_param = self.detector_par(detector)
+        from dials.algorithms.refinement.parameterisation.detector_parameters \
+            import DetectorParameterisationSinglePanel, \
+                DetectorParameterisationMultiPanel
+
+        if self.detector_par_options == "automatic":
+            if len(detector) > 1:
+                det_param = DetectorParameterisationMultiPanel(detector, beam)
+            else:
+                det_param = DetectorParameterisationSinglePanel(detector)
+        if self.detector_par_options == "single":
+            det_param = DetectorParameterisationSinglePanel(detector)
+        if self.detector_par_options == "multiple":
+            det_param = DetectorParameterisationMultiPanel(detector, beam)
+
         if self._fix_detector:
             det_param.set_fixed([True] * det_param.num_free())
 

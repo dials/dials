@@ -39,8 +39,11 @@ refinement
     detector
       .help = "detector parameters"
     {
-      panels = *single multiple
-        .help = "Parameterise a single or multiple panel detector"
+      panels = *automatic single multiple
+        .help = "Select appropriate detector parameterisation. Currently the"
+                "choice is between a single or multiple panel detector, in"
+                "either case treated as a rigid body. The default choice"
+                "automatically chooses multiple if the number of panels > 1"
         .type = choice
       fix_detector = False
         .help = "Fix all detector parameters"
