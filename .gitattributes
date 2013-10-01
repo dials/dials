@@ -530,6 +530,7 @@ test/algorithms/refinement/setup_geometry.py -text
 test/algorithms/refinement/setup_minimiser.py -text
 test/algorithms/refinement/tst_convergence_radius.py -text
 test/algorithms/refinement/tst_finite_diffs.py -text
+test/algorithms/refinement/tst_multi_panel_detector_parameterisation.py -text
 test/algorithms/refinement/tst_orientation_refinement.py -text
 test/algorithms/refinement/tst_prediction_parameters.py -text
 test/algorithms/refinement/tst_ref_passage_categorisation.py -text
