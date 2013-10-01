@@ -104,8 +104,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("background_standard_deviation", 
         &Summation::background_standard_deviation);
         
-    def("summation3d", (void(*)(Reflection&))&summation3d);
-    def("summation3d", (void(*)(af::ref<Reflection>))&summation3d);
+    def("summation_integration3d", (void(*)(Reflection&))&summation3d);
+    def("summation_integration3d", (void(*)(af::ref<Reflection>))&summation3d);
   }
 
 }}} // namespace = dials::algorithms::boost_python

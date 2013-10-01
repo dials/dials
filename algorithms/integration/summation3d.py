@@ -30,12 +30,12 @@ class Summation3d(IntegrationInterface):
             The list of integrated reflections
 
         '''
-        from dials.algorithms.integration import summation3d
+        from dials.algorithms.integration import summation_integration3d
         from dials.util.command_line import Command
 
         # Integrate and return the reflections
         Command.start('Integrating reflections')
-        summation3d(reflections)
+        summation_integration3d(reflections)
         Command.end('Integrated {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
         return reflections
