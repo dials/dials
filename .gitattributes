@@ -442,14 +442,6 @@ scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/luiso_s_scratch_ext.cc -text svneol=unset#text/plain
-scratch/luiso_s/contrib/X4_wide_M1S4_1_0045.cbf -text svneol=unset#unset
-scratch/luiso_s/contrib/X4_wide_M1S4_2_0078.cbf -text svneol=unset#unset
-scratch/luiso_s/contrib/borrowed_predict_spots.py -text svneol=unset#text/plain
-scratch/luiso_s/contrib/cctbx_introduction_1.png -text
-scratch/luiso_s/contrib/my_to_xds.py -text svneol=unset#text/plain
-scratch/luiso_s/contrib/thaumatin_die_M1S5_1_0001.img -text
-scratch/luiso_s/contrib/tst_w_predict_spots.py -text svneol=unset#text/plain
-scratch/luiso_s/contrib/ximg2701_00001.cbf -text svneol=unset#unset
 scratch/luiso_s/example_mix.py -text svneol=unset#text/plain
 scratch/luiso_s/lui_example_helper.h -text svneol=unset#text/plain
 scratch/luiso_s/old_style_code/My_new_test_Inst.inf -text
