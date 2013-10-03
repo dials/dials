@@ -19,7 +19,17 @@ namespace dials { namespace algorithms { namespace shoebox {
                     << "nc="  << nc  <<"\n";
 
     af::versa< int, af::c_grid<2> > mask(af::c_grid<2>(ny, nx),3);
-
+    for(int row = 0; row < ny; row++){
+      for( int col = 0; col < nx; col++ ){
+          if( row + col >= nc and row < col + ny - nc and
+           row > col - nx + nc and (ny-row)+(nx-col) > nc + 1  and
+            row >= nry and row  < (ny - nry) and
+            col >= nrx and col  < (nx - nrx) )
+          {
+          mask(row,col) = 5;
+        }
+      }
+    }
     return mask;
 
   }
