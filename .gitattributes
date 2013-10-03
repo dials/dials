@@ -187,6 +187,7 @@ algorithms/shoebox/boost_python/bbox_calculator.cc -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/helpers.cc -text
 algorithms/shoebox/boost_python/mask_bad_pixels.cc -text
+algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
 algorithms/shoebox/boost_python/mask_code.cc -text
 algorithms/shoebox/boost_python/mask_foreground.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
@@ -195,6 +196,7 @@ algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/helpers.h -text
 algorithms/shoebox/mask_bad_pixels.h -text
+algorithms/shoebox/mask_builder.h -text svneol=unset#text/plain
 algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/mask_overlapping.h -text
@@ -461,6 +463,7 @@ scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plai
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_helper.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/low_level_mosflm_2D_test.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/mask_test.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matplotlib_cut.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain

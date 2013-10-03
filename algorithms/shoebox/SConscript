@@ -8,6 +8,7 @@ sources = [
     'boost_python/mask_foreground.cc',
     'boost_python/mask_bad_pixels.cc',
     'boost_python/mask_overlapping.cc',
+    'boost_python/mask_builder.cc',
     'boost_python/populator.cc',
     'boost_python/helpers.cc',
     'boost_python/shoebox_ext.cc']
