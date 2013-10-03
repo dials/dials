@@ -385,7 +385,8 @@ namespace dials { namespace algorithms { namespace filter {
    */
   inline
   void by_bbox_volume(af::ref<Reflection> reflections) {
-    std::size_t num = std::exp((1.0/3.0) * std::log(reflections.size()));
+    std::size_t num = (std::size_t)(std::exp((1.0/3.0) * 
+      std::log(reflections.size())));
     return by_bbox_volume(reflections, num);
   }
 

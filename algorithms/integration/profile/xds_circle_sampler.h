@@ -46,7 +46,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(num_z > 0);
       r0_ = min(centre_.const_ref());
       r1_ = r0_ / 3.0;
-      r2_ = r1_ * sqrt(5.0);
+      r2_ = r1_ * std::sqrt(5.0);
       step_size_ = (double)volume_size_[2] / (double)num_z_;
     }
 
@@ -150,7 +150,7 @@ namespace dials { namespace algorithms {
       // Get the radius and angle at the point
       double xmc = xy[0] - centre_[0];
       double ymc = xy[1] - centre_[1];
-      double r = sqrt(xmc*xmc + ymc*ymc);
+      double r = std::sqrt(xmc*xmc + ymc*ymc);
       double t = atan2(ymc, xmc);
 
       // If radius is less than the inner radius return 0

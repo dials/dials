@@ -23,6 +23,8 @@
 
 namespace dials { namespace algorithms {
 
+  using std::sqrt;
+
   /**
    * Threshold the image using the niblack method.
    *

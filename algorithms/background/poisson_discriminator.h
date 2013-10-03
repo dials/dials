@@ -70,7 +70,7 @@ namespace dials { namespace algorithms {
     double sdev = std::sqrt((m4 - m2 * m2 * (n - 3) / (n - 1)) / n);
 
     // Return True/False
-    return abs(m2 - m1) <= n_sigma * sdev;
+    return std::abs(m2 - m1) <= n_sigma * sdev;
   }
 
   /**

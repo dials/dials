@@ -134,7 +134,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     /** @returns the increase in the length of the shortest path */
     double path_length_increase() const {
       DIALS_ASSERT(zeta_ != 0.0);
-      return abs(1.0 / zeta_);
+      return std::abs(1.0 / zeta_);
     }
 
     /**
