@@ -184,6 +184,7 @@ algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/bbox_calculator.h -text
 algorithms/shoebox/boost_python/bbox_calculator.cc -text
+algorithms/shoebox/boost_python/extractor.cc -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/helpers.cc -text
 algorithms/shoebox/boost_python/mask_bad_pixels.cc -text
@@ -193,6 +194,7 @@ algorithms/shoebox/boost_python/mask_foreground.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
 algorithms/shoebox/boost_python/populator.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
+algorithms/shoebox/extractor.h -text
 algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/helpers.h -text
 algorithms/shoebox/mask_bad_pixels.h -text
