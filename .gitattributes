@@ -542,6 +542,7 @@ test/algorithms/reflection_basis/tst_map_frames.py -text
 test/algorithms/reflection_basis/tst_rebin_pixels.py -text
 test/algorithms/reflection_basis/tst_transform.py -text
 test/algorithms/shoebox/tst_bbox_calculator.py -text
+test/algorithms/shoebox/tst_extractor.py -text
 test/algorithms/shoebox/tst_helpers.py -text
 test/algorithms/shoebox/tst_mask_bad_pixels.py -text
 test/algorithms/shoebox/tst_mask_foreground.py -text

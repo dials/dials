@@ -17,6 +17,9 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   using namespace boost::python;
 
+  /**
+   * A constructor for multiple panels
+   */
   static
   Extractor* make_for_multi_panel(
       const af::const_ref<std::size_t> &panels,
@@ -71,6 +74,9 @@ namespace dials { namespace algorithms { namespace shoebox {
     return new Extractor(panels, bboxes, mask_1d, gain_1d, dark_1d, shape);
   }
 
+  /**
+   * A constructor for single panels
+   */
   static
   Extractor* make_for_single_panel(
       const af::const_ref<int6> bboxes, 

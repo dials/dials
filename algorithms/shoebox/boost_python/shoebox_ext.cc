@@ -39,7 +39,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     export_populator();
     export_extractor();
     export_helpers();
-
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

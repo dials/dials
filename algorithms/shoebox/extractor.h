@@ -1,5 +1,5 @@
 /*
- * populator.h
+ * extractor.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -25,9 +25,25 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dials::model::Shoebox;
   using dials::model::Valid;
 
+  /**
+   * A class to extract shoeboxes from a sweep
+   */
   class Extractor {
   public:
 
+    /**
+     * Initialise the shoeboxes with the given input panels and bounding boxes
+     * Setup the shoebox indices and the mask with the given detector mask.
+     * This constructor is for multiple panels. In order to specify lookup
+     * arrays for each panel, the data is input as a single 1D array for each
+     * lookup and the size for each panel is determined from the shape array.
+     * @param panels The list of panel numbers for the shoeboxes
+     * @param bboxes The list of bounding boxes for the shoeboxes
+     * @param mask The detector mask lookup
+     * @param gain The detector gain lookup
+     * @param dark The detector dark lookup
+     * @param shape The size of each detector panel
+     */
     Extractor(const af::const_ref<std::size_t> &panels,
               const af::const_ref<int6> &bboxes,
               const af::shared<bool> &mask,
@@ -40,14 +56,15 @@ namespace dials { namespace algorithms { namespace shoebox {
         shape_(shape),
         offset_(shape.size()),
         npanels_(shape.size()) {
+      DIALS_ASSERT(bboxes.size() > 0);
       DIALS_ASSERT(panels.size() == bboxes.size());
+      DIALS_ASSERT(shape_.size() > 0);
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
         shoeboxes_[i] = Shoebox(panels[i], bboxes[i]);
         shoeboxes_[i].allocate();
       }
-      DIALS_ASSERT(shape_.size() > 0);
       offset_[0] = 0;
-      for (std::size_t i = 0; i < shape_.size(); ++i) {
+      for (std::size_t i = 0; i < shape_.size()-1; ++i) {
         DIALS_ASSERT(shape_[i].all_gt(0));
         offset_[i+1] = offset_[i] + af::product(shape_[i]);
       }
@@ -57,6 +74,15 @@ namespace dials { namespace algorithms { namespace shoebox {
       initialise(mask.const_ref());
     }
 
+    /**
+     * Initialise the shoeboxes with the given input bounding boxes
+     * Setup the shoebox indices and the mask with the given detector mask.
+     * This constructor is for single panels.
+     * @param bboxes The list of bounding boxes for the shoeboxes
+     * @param mask The detector mask lookup
+     * @param gain The detector gain lookup
+     * @param dark The detector dark lookup
+     */
     Extractor(const af::const_ref<int6> &bboxes,
               af::versa<bool, af::c_grid<2> > mask,
               af::versa<double, af::c_grid<2> > gain,
@@ -67,17 +93,24 @@ namespace dials { namespace algorithms { namespace shoebox {
         shape_(1, mask.accessor()),
         offset_(1, 0),
         npanels_(1) {
+      DIALS_ASSERT(bboxes.size() > 0);
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
         shoeboxes_[i] = Shoebox(bboxes[i]);
         shoeboxes_[i].allocate();
       }
       DIALS_ASSERT(mask.accessor().all_gt(0));
-      DIALS_ASSERT(mask.accessor().all_eq(gain.size()));
-      DIALS_ASSERT(mask.accessor().all_eq(dark.size()));
+      DIALS_ASSERT(mask.accessor().all_eq(gain.accessor()));
+      DIALS_ASSERT(mask.accessor().all_eq(dark.accessor()));
       initialise(mask.const_ref().as_1d());
     }
 
-    void add_image(std::size_t panel, std::size_t frame,
+    /**
+     * Add the data from a single image.
+     * @param panel The panel number
+     * @param frame The frame number
+     * @param image The image pixels
+     */
+    void add_image(std::size_t panel, int frame,
       const af::const_ref< int, af::c_grid<2> > &image) {
 
       // Get the image size
@@ -86,7 +119,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       DIALS_ASSERT(image_size.all_eq(shape_[panel]));
 
       // Get the indices for this frame
-      af::shared<int> ind = indices(panel, frame);
+      af::const_ref<int> ind = indices_internal(panel, frame).const_ref();
 
       // Loop through all the indices for this frame
       for (std::size_t i = 0; i < ind.size(); ++i) {
@@ -96,7 +129,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         int6 bbox = shoebox.bbox;
         int i0 = bbox[0], i1 = bbox[1];
         int j0 = bbox[2], j1 = bbox[3];
-        int k0 = bbox[4], k1 = bbox[5];
+        int k0 = bbox[4];
         int k = frame - k0;
 
         // Readjust the area to loop over to ensure we're within image bounds
@@ -105,13 +138,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         int jj1 = j1 <= image_size[0] ? j1 : image_size[0];
         int ii1 = i1 <= image_size[1] ? i1 : image_size[1];
 
-        // Get the reflection profile
-        af::ref< double, af::c_grid<3> > profile = shoebox.data.ref();
-        DIALS_ASSERT(profile.accessor()[0] == (k1 - k0));
-        DIALS_ASSERT(profile.accessor()[1] == (j1 - j0));
-        DIALS_ASSERT(profile.accessor()[2] == (i1 - i0));
-
         // Copy the image pixels
+        af::ref< double, af::c_grid<3> > profile = shoebox.data.ref();
         for (int jj = jj0; jj < jj1; ++jj) {
           for (int ii = ii0; ii < ii1; ++ii) {
             int j = jj - j0;
@@ -123,23 +151,53 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /** @returns The list of shoeboxes */
     af::shared<Shoebox> shoeboxes() {
-      return shoeboxes_;
+      af::shared<Shoebox> result(shoeboxes_.size());
+      for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
+        result[i] = shoeboxes_[i];
+      }
+      return result;
     }
 
-    af::shared<int> indices(std::size_t panel, std::size_t frame) {
-      DIALS_ASSERT(panel >= 0 && panel < npanels_);
-      return indices_[panel + frame * npanels_];
+    /**
+     * @param panel The panel number
+     * @param frame The frame number
+     * @returns The shoebox indices for the given panel and frame
+     */
+    af::shared<int> indices(std::size_t panel, int frame) {
+      af::const_ref<int> ind = indices_internal(panel, frame).const_ref();
+      af::shared<int> result(ind.size());
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = ind[i];
+      }
+      return result;
     }
 
   private:
 
+    /**
+     * @param panel The panel number
+     * @param frame The frame number
+     * @returns The shoebox indices for the given panel and frame
+     */
+    af::shared<int> indices_internal(std::size_t panel, int frame) {
+      DIALS_ASSERT(panel >= 0 && panel < npanels_);
+      return indices_[panel + frame * npanels_];
+    }
 
+    /**
+     * Initialise from the given input
+     * @param detector_mask The detector mask
+     */
     void initialise(const af::const_ref<bool> &detector_mask) {
       initialise_indices();
       initialise_mask(detector_mask);
     }
 
+    /**
+     * Initialise the indices of the shoeboxes on each frame
+     */
     void initialise_indices() {
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
         Shoebox& shoebox = shoeboxes_[i];
@@ -150,6 +208,10 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /**
+     * Initialise the shoebox masks from the given detector mask
+     * @param detector_mask The detector mask
+     */
     void initialise_mask(const af::const_ref<bool> &detector_mask) {
 
       // Loop through the shoeboxes
