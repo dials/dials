@@ -28,7 +28,7 @@ class XdsPlugin(Integrator):
         print "  ", params.integration.xds.param2
         print "  ", params.lookup.gain
 
-    def __call__(self):
+    def integrate(self):
         print "Call XDS"
 
 
@@ -40,12 +40,12 @@ class MosflmPlugin(Integrator):
     def __init__(self, sweep, crystal, params):
         print "Init Mosflm"
 
-    def __call__(self):
+    def integrate(self):
         print "Call Mosflm"
 
 
 
-extensions = plugin.extensions()
+extensions = plugin.registry
 print extensions
 print extensions.plugins()
 print extensions.configuration()
@@ -64,8 +64,8 @@ params.lookup = params()
 params.lookup.gain = "A Gain Map"
 
 
-calculate_intensity = Integrator.factory(params.integration.algorithm, None, None, params)
-calculate_intensity()
+integrator = Integrator.factory(params.integration.algorithm, None, None, params)
+integrator.integrate()
 
-calculate_intensity = Integrator.factory("mosflm", None, None, params)
-calculate_intensity()
+integrator = Integrator.factory("mosflm", None, None, params)
+integrator.integrate()

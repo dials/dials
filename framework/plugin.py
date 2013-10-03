@@ -33,7 +33,7 @@ class PhilGenerator(object):
               parameters.append(self.param_template.format(
                  name = name,
                  help = plugin.__doc__,
-                 parameters=  plugin.config))
+                 parameters = plugin.config))
           except Exception:
               pass
 
@@ -55,7 +55,14 @@ class PhilGenerator(object):
       return phil
 
 
-class Registry(list):
+def singleton(cls):
+    instance = cls()
+    instance.__call__ = lambda: instance
+    return instance
+
+
+@singleton
+class registry(list):
 
     def plugins(self):
         plugins = []
@@ -71,24 +78,12 @@ class Registry(list):
         return ' '.join(phil)
 
 
-def localstatic(name, value):
-  def decorate(func):
-      setattr(func, name, value)
-      return func
-  return decorate
-
-
-@localstatic("data", Registry())
-def extensions():
-    return extensions.data
-
-
 class Extension(type):
 
     def __init__(self, name, bases, attrs):
         super(Extension, self).__init__(name, bases, attrs)
         if not hasattr(self, "_plugins"):
-            extensions().append(self)
+            registry.append(self)
             self._plugins = dict()
         else:
             self._plugins[self.name] = self
@@ -101,3 +96,4 @@ class Extension(type):
 
     def factory(self, name, *args, **kwargs):
         return self._plugins[name](*args, **kwargs)
+
