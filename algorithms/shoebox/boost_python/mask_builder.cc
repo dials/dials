@@ -1,4 +1,3 @@
-//++ b/trunk/scratch/luiso_s/boost_python/lui_example_helper.cc
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/shoebox/mask_builder.h>
