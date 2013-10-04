@@ -38,7 +38,7 @@ namespace dials { namespace af { namespace boost_python {
   static 
   af::flex<Observation>::type* init_from_panel(
       const af::const_ref<std::size_t> &panel) {
-    af::shared<Observation> result(panel.size());
+    af::shared<Observation> result(panel.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel[i];
     }
@@ -50,7 +50,7 @@ namespace dials { namespace af { namespace boost_python {
   static 
   af::flex<Observation>::type* init_from_centroid(
       const af::const_ref<Centroid> &centroid) {
-    af::shared<Observation> result(centroid.size());
+    af::shared<Observation> result(centroid.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].centroid = centroid[i];
     }
@@ -62,7 +62,7 @@ namespace dials { namespace af { namespace boost_python {
   static 
   af::flex<Observation>::type* init_from_intensity(
       const af::const_ref<Intensity> &intensity) {
-    af::shared<Observation> result(intensity.size());
+    af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].intensity = intensity[i];
     }
@@ -76,7 +76,7 @@ namespace dials { namespace af { namespace boost_python {
       const af::const_ref<Centroid> &centroid,
       const af::const_ref<Intensity> &intensity) {
     DIALS_ASSERT(centroid.size() == intensity.size());
-    af::shared<Observation> result(intensity.size());
+    af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].centroid = centroid[i];
       result[i].intensity = intensity[i];
@@ -91,7 +91,7 @@ namespace dials { namespace af { namespace boost_python {
       const af::const_ref<std::size_t> &panel,
       const af::const_ref<Centroid> &centroid) {
     DIALS_ASSERT(panel.size() == centroid.size());
-    af::shared<Observation> result(centroid.size());
+    af::shared<Observation> result(centroid.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel[i];
       result[i].centroid = centroid[i];
@@ -106,7 +106,7 @@ namespace dials { namespace af { namespace boost_python {
       const af::const_ref<std::size_t> &panel,
       const af::const_ref<Intensity> &intensity) {
     DIALS_ASSERT(panel.size() == intensity.size());
-    af::shared<Observation> result(intensity.size());
+    af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel[i];
       result[i].intensity = intensity[i];
@@ -123,7 +123,7 @@ namespace dials { namespace af { namespace boost_python {
       const af::const_ref<Intensity> &intensity) {
     DIALS_ASSERT(centroid.size() == intensity.size());
     DIALS_ASSERT(panel.size() == intensity.size());
-    af::shared<Observation> result(intensity.size());
+    af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel[i];
       result[i].centroid = centroid[i];
@@ -138,7 +138,7 @@ namespace dials { namespace af { namespace boost_python {
   af::flex<Observation>::type* init_from_single_panel_and_centroid(
       std::size_t panel,
       const af::const_ref<Centroid> &centroid) {
-    af::shared<Observation> result(centroid.size());
+    af::shared<Observation> result(centroid.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel;
       result[i].centroid = centroid[i];
@@ -152,7 +152,7 @@ namespace dials { namespace af { namespace boost_python {
   af::flex<Observation>::type* init_from_single_panel_and_intensity(
       std::size_t panel,
       const af::const_ref<Intensity> &intensity) {
-    af::shared<Observation> result(intensity.size());
+    af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel;
       result[i].intensity = intensity[i];
@@ -168,7 +168,7 @@ namespace dials { namespace af { namespace boost_python {
       const af::const_ref<Centroid> &centroid,
       const af::const_ref<Intensity> &intensity) {
     DIALS_ASSERT(centroid.size() == intensity.size());
-    af::shared<Observation> result(intensity.size());
+    af::shared<Observation> result(intensity.size(), Observation());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].panel = panel;
       result[i].centroid = centroid[i];
@@ -182,7 +182,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<std::size_t> observation_get_panels(
       const af::const_ref<Observation> &obj) {
-    af::shared<std::size_t> result(obj.size());
+    af::shared<std::size_t> result(obj.size(), 
+      af::init_functor_null<std::size_t>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].panel;
     }
@@ -193,7 +194,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<Centroid> observation_get_centroids(
       const af::const_ref<Observation> &obj) {
-    af::shared<Centroid> result(obj.size());
+    af::shared<Centroid> result(obj.size(), Centroid());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].centroid;
     }
@@ -204,7 +205,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<Intensity> observation_get_intensities(
       const af::const_ref<Observation> &obj) {
-    af::shared<Intensity> result(obj.size());
+    af::shared<Intensity> result(obj.size(), Intensity());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].intensity;
     }
@@ -256,7 +257,7 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<double> observation_resolution(
       const af::const_ref<Observation> &obj,
       const Beam &b, const Detector &d) {
-    af::shared<double> result(obj.size());
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       result[i] = obj[i].resolution(b, d);
     }   

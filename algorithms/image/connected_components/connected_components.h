@@ -44,7 +44,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the images
      */
     LabelImageStack(int2 size)
-      : buffer_(size[1]),
+      : buffer_(size[1], af::init_functor_null<std::size_t>()),
         size_(size),
         k_(0) {}
 
@@ -124,7 +124,8 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      af::shared<int> labels(num_vertices(graph_));
+      af::shared<int> labels(num_vertices(graph_),
+        af::init_functor_null<int>());
       int num = boost::connected_components(graph_, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;
@@ -159,7 +160,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the images
      */
     LabelImageStack(int2 size)
-      : buffer_(af::c_grid<2>(size)),
+      : buffer_(af::c_grid<2>(size), af::init_functor_null<std::size_t>()),
         size_(size),
         k_(0) {}
 
@@ -243,7 +244,8 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      af::shared<int> labels(num_vertices(graph_));
+      af::shared<int> labels(num_vertices(graph_),
+        af::init_functor_null<int>());
       int num = boost::connected_components(graph_, &labels[0]);
       DIALS_ASSERT(num <= labels.size());
       return labels;

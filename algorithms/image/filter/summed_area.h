@@ -34,7 +34,8 @@ namespace dials { namespace algorithms {
       const af::const_ref< T, af::c_grid<2> > &image) {
 
     // Allocate the table
-    af::versa< T, af::c_grid<2> > table_arr(image.accessor());
+    af::versa< T, af::c_grid<2> > table_arr(image.accessor(),
+      af::init_functor_null<T>());
     af::ref< T, af::c_grid<2> > table = table_arr.ref();
 
     // Get the size of the image
@@ -72,7 +73,8 @@ namespace dials { namespace algorithms {
     af::const_ref< T, af::c_grid<2> > I = I_arr.const_ref();
 
     // Allocate the filtered image
-    af::versa< T, af::c_grid<2> > sum_arr(image.accessor());
+    af::versa< T, af::c_grid<2> > sum_arr(image.accessor(),
+      af::init_functor_null<T>());
     af::ref< T, af::c_grid<2> > sum = sum_arr.ref();
 
     // Get the size of the image

@@ -109,7 +109,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     // Create an array to contain the intensity fractions
     af::versa< double, af::c_grid<2> > fraction(af::c_grid<2>(
-      j1 - j0, (2 * grid_size_e3_ + 1)));
+      j1 - j0, (2 * grid_size_e3_ + 1)),
+      af::init_functor_null<double>());
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
@@ -247,7 +248,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     // Create an array to contain the intensity fractions
     af::versa< double, af::c_grid<2> > fraction(af::c_grid<2>(
-      (2 * grid_size_e3_ + 1), j1 - j0));
+      (2 * grid_size_e3_ + 1), j1 - j0),
+      af::init_functor_null<double>());
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));

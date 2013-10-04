@@ -60,7 +60,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     // Create the necessary arrays
     af::versa< vec3<double>, af::c_grid<2> > detector_s1(
-      af::c_grid<2>(y_size, x_size));
+      af::c_grid<2>(y_size, x_size), af::init_functor_null< vec3<double> >());
 
     // Add an offset if not corners
     double offset = 0.0;

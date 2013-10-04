@@ -50,11 +50,12 @@ namespace dials { namespace algorithms { namespace shoebox {
               const af::shared<double> &gain,
               const af::shared<double> &dark,
               const af::shared<int2> &shape)
-      : shoeboxes_(panels.size()),
+      : shoeboxes_(panels.size(), Shoebox()),
         gain_(gain),
         dark_(dark),
         shape_(shape),
-        offset_(shape.size()),
+        offset_(shape.size(),
+          af::init_functor_null<int>()),
         npanels_(shape.size()) {
       DIALS_ASSERT(bboxes.size() > 0);
       DIALS_ASSERT(panels.size() == bboxes.size());
@@ -87,7 +88,7 @@ namespace dials { namespace algorithms { namespace shoebox {
               af::versa<bool, af::c_grid<2> > mask,
               af::versa<double, af::c_grid<2> > gain,
               af::versa<double, af::c_grid<2> > dark)
-      : shoeboxes_(bboxes.size()),
+      : shoeboxes_(bboxes.size(), Shoebox()),
         gain_(gain.as_1d()),
         dark_(dark.as_1d()),
         shape_(1, mask.accessor()),
@@ -153,7 +154,7 @@ namespace dials { namespace algorithms { namespace shoebox {
 
     /** @returns The list of shoeboxes */
     af::shared<Shoebox> shoeboxes() {
-      af::shared<Shoebox> result(shoeboxes_.size());
+      af::shared<Shoebox> result(shoeboxes_.size(), Shoebox());
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
         result[i] = shoeboxes_[i];
       }
@@ -167,7 +168,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      */
     af::shared<int> indices(std::size_t panel, int frame) {
       af::const_ref<int> ind = indices_internal(panel, frame).const_ref();
-      af::shared<int> result(ind.size());
+      af::shared<int> result(ind.size(), af::init_functor_null<int>());
       for (std::size_t i = 0; i < result.size(); ++i) {
         result[i] = ind[i];
       }

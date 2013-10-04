@@ -66,7 +66,8 @@ namespace {
   {
     SCITBX_ASSERT(x.size() % 9 == 0);
     std::size_t result_size = x.size() / 9;
-    scitbx::af::shared<scitbx::mat3<double> > result(result_size);
+    scitbx::af::shared<scitbx::mat3<double> > result(result_size, 
+      scitbx::af::init_functor_null< scitbx::mat3<double> >());
     const double* d = x.begin();
     for(std::size_t i=0;i<result_size;i++) {
       for (std::size_t j=0;j<9;++j) {

@@ -86,8 +86,7 @@ namespace dials { namespace algorithms {
   inline
   af::shared<Reflection> ray_intersection(const Detector &detector,
       const af::const_ref<Reflection> &reflections) {
-    af::shared<Reflection> reflections_new;
-    reflections_new.reserve(reflections.size());
+    af::shared<Reflection> reflections_new(af::reserve(reflections.size()));
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       try {
         reflections_new.push_back(ray_intersection(detector, reflections[i]));
@@ -111,8 +110,7 @@ namespace dials { namespace algorithms {
   inline
   af::shared<Reflection> ray_intersection(const Detector &detector,
       const af::const_ref<Reflection> &reflections, std::size_t panel) {
-    af::shared<Reflection> reflections_new;
-    reflections_new.reserve(reflections.size());
+    af::shared<Reflection> reflections_new(af::reserve(reflections.size()));
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       try {
         reflections_new.push_back(ray_intersection(

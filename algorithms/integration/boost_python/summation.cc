@@ -28,7 +28,8 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     af::const_ref< int, af::c_grid<3> > shoebox_mask =
       r.get_shoebox_mask().const_ref();
-    af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor());
+    af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor(),
+      af::init_functor_null<bool>());
     for (std::size_t i = 0; i < mask.size(); ++i) {
       mask[i] = (shoebox_mask[i] & shoebox::Valid) ? true : false;
     }

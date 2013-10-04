@@ -132,7 +132,7 @@ namespace dials { namespace algorithms {
 
       // Sort the pixels into ascending intensity order
       sort_index(indices.begin(), indices.end(), shoebox.begin());
-      af::shared<double> pixels(indices.size());
+      af::shared<double> pixels(indices.size(), af::init_functor_null<double>());
       for (std::size_t i = 0; i < indices.size(); ++i) {
         pixels[i] = (double)shoebox[indices[i]];
       }

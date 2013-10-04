@@ -90,7 +90,8 @@ namespace dials { namespace algorithms {
     af::versa< int, af::c_grid<2> > summed_mask = summed_area<int>(mask, size);
 
     // Ensure that all masked pixels are zero in the image and update the mask
-    af::versa< double, af::c_grid<2> > temp(image.accessor());
+    af::versa< double, af::c_grid<2> > temp(image.accessor(),
+      af::init_functor_null<double>());
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       temp[i] = image[i] * (mask[i] != 0);
@@ -135,7 +136,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Calculate the squared image
-      af::versa< double, af::c_grid<2> > image_sq(image.accessor());
+      af::versa< double, af::c_grid<2> > image_sq(image.accessor(),
+        af::init_functor_null<double>());
       #pragma omp parallel for
       for (std::size_t i = 0; i < image.size(); ++i) {
         image_sq[i] = image[i] * image[i];
@@ -156,7 +158,8 @@ namespace dials { namespace algorithms {
      * @returns The mean filtered image.
      */
     af::versa< double, af::c_grid<2> > mean() const {
-      af::versa< double, af::c_grid<2> > m(sum_.accessor());
+      af::versa< double, af::c_grid<2> > m(sum_.accessor(),
+        af::init_functor_null<double>());
       #pragma omp parallel for
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         m[i] = sum_[i] * inv_count_;
@@ -169,7 +172,8 @@ namespace dials { namespace algorithms {
      * @returns The variance filtered image
      */
     af::versa< double, af::c_grid<2> > variance() const {
-      af::versa< double, af::c_grid<2> > v(sum_.accessor());
+      af::versa< double, af::c_grid<2> > v(sum_.accessor(),
+        af::init_functor_null<double>());
       #pragma omp parallel for
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_count_);
@@ -182,7 +186,8 @@ namespace dials { namespace algorithms {
      * @returns The sample variance filtered image
      */
     af::versa< double, af::c_grid<2> > sample_variance() const {
-      af::versa< double, af::c_grid<2> > v(sum_.accessor());
+      af::versa< double, af::c_grid<2> > v(sum_.accessor(),
+        af::init_functor_null<double>());
       #pragma omp parallel for
       for (std::size_t i = 0; i < sum_.size(); ++i) {
         v[i] = (sq_sum_[i] - (sum_[i] * sum_[i] * inv_count_)) * (inv_countm1_);
@@ -249,8 +254,10 @@ namespace dials { namespace algorithms {
       summed_mask_ = summed_area<int>(mask, size);
 
       // Ensure that all masked pixels are zero in the image and update the mask
-      af::versa< double, af::c_grid<2> > temp(image.accessor());
-      af::versa< double, af::c_grid<2> > image_sq(image.accessor());
+      af::versa< double, af::c_grid<2> > temp(image.accessor(),
+        af::init_functor_null<double>());
+      af::versa< double, af::c_grid<2> > image_sq(image.accessor(),
+        af::init_functor_null<double>());
       #pragma omp parallel for
       for (std::size_t i = 0; i < image.size(); ++i) {
         temp[i] = image[i] * (mask[i] != 0);

@@ -81,8 +81,9 @@ namespace dials { namespace algorithms {
 
       // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
-      af::versa< double, af::c_grid<3> > result(af::c_grid<3>(profile_size[1],
-        profile_size[2], profile_size[2]));
+      af::versa< double, af::c_grid<3> > result(
+        af::c_grid<3>(profile_size[1], profile_size[2], profile_size[2]),
+        af::init_functor_null<double>());
       std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
       for (std::size_t i = 0; i < result.size(); ++i) {
         result[i] = profiles_[j + i];

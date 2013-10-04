@@ -62,7 +62,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(mask.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<double> pixels(image.size(), 0.0);
+      af::shared<double> pixels(image.size(),
+        af::init_functor_null<double>());
       std::size_t count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -88,7 +89,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(mask.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<coord_type> coords(image.size(), coord_type(0, 0));
+      af::shared<coord_type> coords(image.size(),
+        af::init_functor_null<coord_type>());
       std::size_t count = 0;
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
@@ -141,7 +143,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<double> pixels(image.size(), 0.0);
+      af::shared<double> pixels(image.size(),
+        af::init_functor_null<double>());
       std::size_t count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -167,7 +170,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<coord_type> coords(image.size(), coord_type(0, 0, 0));
+      af::shared<coord_type> coords(image.size(),
+        af::init_functor_null<coord_type>());
       std::size_t count = 0;
       for (std::size_t k = 0; k < image.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < image.accessor()[1]; ++j) {

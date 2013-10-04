@@ -151,7 +151,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     af::shared<int6> operator()(const af::const_ref< vec3<double> > &s1,
         const af::const_ref<double> &phi, std::size_t panel) const {
       DIALS_ASSERT(s1.size() == phi.size());
-      af::shared<int6> result(s1.size());
+      af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
       for (std::size_t i = 0; i < s1.size(); ++i) {
         result[i] = operator()(s1[i], phi[i], panel);
       }

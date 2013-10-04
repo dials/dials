@@ -33,7 +33,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   af::versa< double, af::c_grid<2> > rebin_pixels_wrapper(
       const af::const_ref< double, af::c_grid<2> > &input,
       const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy, int2 size) {
-    af::versa< double, af::c_grid<2> > output(af::c_grid<2>(size[0], size[1]));
+    af::versa< double, af::c_grid<2> > output(af::c_grid<2>(size[0], size[1]), 
+      af::init_functor_null<double>());
     af::ref< double, af::c_grid<2> > output_ref = output.ref();
     rebin_pixels(output_ref, input, inputxy);
     return output;
@@ -218,7 +219,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       if (rlist[i].is_valid()) {
         try {
           af::versa< int, af::c_grid<3> > shoebox_mask = rlist[i].get_shoebox_mask();
-          af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor());
+          af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor(), 
+            af::init_functor_null<bool>());
           for (std::size_t j = 0; j < mask.size(); ++j) {
             mask[j] = (shoebox_mask[j] & shoebox::Foreground);
           }

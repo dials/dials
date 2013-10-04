@@ -29,7 +29,8 @@ namespace dials { namespace refinement {
    */
   af::shared< vec3<double> > detector_pv_derivative(mat3 <double> D,
       const af::const_ref< mat3<double> > &dd_ddet_p, vec3 <double> pv) {
-    af::shared< vec3<double> > dpv_ddet_p(dd_ddet_p.size());
+    af::shared< vec3<double> > dpv_ddet_p(dd_ddet_p.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < dd_ddet_p.size(); ++i) {
       dpv_ddet_p[i] = detector_pv_derivative(D, dd_ddet_p[i], pv);
     }
@@ -51,7 +52,8 @@ namespace dials { namespace refinement {
    */
   af::shared<double> beam_phi_derivative(vec3 <double> r,
       const af::const_ref< vec3<double> > &ds0_dsrc_p, double e_r_s0) {
-    af::shared<double> dphi_dsrc_p(ds0_dsrc_p.size());
+    af::shared<double> dphi_dsrc_p(ds0_dsrc_p.size(),
+      af::init_functor_null<double>());
     for (std::size_t i = 0; i < ds0_dsrc_p.size(); ++i) {
       dphi_dsrc_p[i] = beam_phi_derivative(r, ds0_dsrc_p[i], e_r_s0);
     }
@@ -75,7 +77,8 @@ namespace dials { namespace refinement {
       vec3 <double> e_X_r, const af::const_ref<double> &dphi_dsrc_p,
       const af::const_ref< vec3<double> > &ds0_dsrc_p) {
     SCITBX_ASSERT(ds0_dsrc_p.size() == dphi_dsrc_p.size());
-    af::shared< vec3<double> > dpv_dsrc_p(ds0_dsrc_p.size());
+    af::shared< vec3<double> > dpv_dsrc_p(ds0_dsrc_p.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < ds0_dsrc_p.size(); ++i) {
       dpv_dsrc_p[i] = beam_pv_derivative(
           D, e_X_r, dphi_dsrc_p[i], ds0_dsrc_p[i]);
@@ -100,7 +103,8 @@ namespace dials { namespace refinement {
   af::shared< vec3<double> > crystal_orientation_r_derivative(
       mat3 <double> R, const af::const_ref< mat3<double> > &dU_dxlo_p,
       mat3 <double> B, miller_index h) {
-    af::shared< vec3<double> > dr_dxlo_p(dU_dxlo_p.size());
+    af::shared< vec3<double> > dr_dxlo_p(dU_dxlo_p.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < dU_dxlo_p.size(); ++i) {
       dr_dxlo_p[i] = crystal_orientation_r_derivative(
           R, dU_dxlo_p[i], B, h);
@@ -124,7 +128,8 @@ namespace dials { namespace refinement {
   af::shared<double> crystal_orientation_phi_derivative(
       const af::const_ref< vec3<double> > &dr_dxlo_p,
       vec3 <double> s, double e_r_s0) {
-    af::shared<double> dphi_dxlo_p(dr_dxlo_p.size());
+    af::shared<double> dphi_dxlo_p(dr_dxlo_p.size(),
+      af::init_functor_null<double>());
     for (std::size_t i = 0; i < dr_dxlo_p.size(); ++i) {
       dphi_dxlo_p[i] = crystal_orientation_phi_derivative(
           dr_dxlo_p[i], s, e_r_s0);
@@ -150,7 +155,8 @@ namespace dials { namespace refinement {
       mat3 <double> D, const af::const_ref< vec3<double> > &dr_dxlo_p,
       vec3 <double> e_X_r, const af::const_ref<double> &dphi_dxlo_p) {
     SCITBX_ASSERT(dr_dxlo_p.size() == dphi_dxlo_p.size());
-    af::shared< vec3<double> > dpv_dxlo_p(dr_dxlo_p.size());
+    af::shared< vec3<double> > dpv_dxlo_p(dr_dxlo_p.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < dr_dxlo_p.size(); ++i) {
       dpv_dxlo_p[i] = crystal_orientation_pv_derivative(
           D, dr_dxlo_p[i], e_X_r, dphi_dxlo_p[i]);
@@ -175,7 +181,8 @@ namespace dials { namespace refinement {
   af::shared< vec3<double> > crystal_cell_r_derivative(
       mat3 <double> R, mat3 <double> U,
       const af::const_ref< mat3<double> > &dB_dxluc_p, miller_index h) {
-    af::shared< vec3<double> > dr_dxluc_p(dB_dxluc_p.size());
+    af::shared< vec3<double> > dr_dxluc_p(dB_dxluc_p.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < dB_dxluc_p.size(); ++i) {
       dr_dxluc_p[i] = crystal_cell_r_derivative(R, U, dB_dxluc_p[i], h);
     }
@@ -198,7 +205,8 @@ namespace dials { namespace refinement {
   af::shared<double> crystal_cell_phi_derivative(
       const af::const_ref< vec3<double> > &dr_dxluc_p,
       vec3 <double> s, double e_r_s0) {
-    af::shared<double> dphi_dxluc_p(dr_dxluc_p.size());
+    af::shared<double> dphi_dxluc_p(dr_dxluc_p.size(),
+      af::init_functor_null<double>());
     for (std::size_t i = 0; i < dr_dxluc_p.size(); ++i) {
       dphi_dxluc_p[i] = crystal_cell_phi_derivative(dr_dxluc_p[i], s, e_r_s0);
     }
@@ -223,7 +231,8 @@ namespace dials { namespace refinement {
       mat3 <double> D, const af::const_ref< vec3<double> > &dr_dxluc_p,
       vec3 <double> e_X_r, const af::const_ref<double> &dphi_dxluc_p) {
     SCITBX_ASSERT(dr_dxluc_p.size() == dphi_dxluc_p.size());
-    af::shared< vec3<double> > dpv_dxluc_p(dr_dxluc_p.size());
+    af::shared< vec3<double> > dpv_dxluc_p(dr_dxluc_p.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < dr_dxluc_p.size(); ++i) {
       dpv_dxluc_p[i] = crystal_cell_pv_derivative(
           D, dr_dxluc_p[i], e_X_r, dphi_dxluc_p[i]);

@@ -346,7 +346,7 @@ namespace dials { namespace algorithms { namespace filter {
 
     // Calculate the bounding box volume for all reflections and then
     // find the minimum and maximum volumes
-    af::shared<int> volume(reflections.size());
+    af::shared<int> volume(reflections.size(), af::init_functor_null<int>());
     int min_volume = std::numeric_limits<int>::max(), max_volume = 0;
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       int6 bbox = reflections[i].get_bounding_box();
@@ -359,7 +359,7 @@ namespace dials { namespace algorithms { namespace filter {
     DIALS_ASSERT(max_volume > min_volume && min_volume > 0 && max_volume > 0);
 
     // Create the volume histogram
-    af::shared<double> histo(num_bins);
+    af::shared<double> histo(num_bins, af::init_functor_null<double>());
     double bin_size = (float)(max_volume - min_volume) / (float)(num_bins - 1);
     for (std::size_t i = 0; i < volume.size(); ++i) {
       int index = (int)((volume[i] - min_volume) / bin_size);

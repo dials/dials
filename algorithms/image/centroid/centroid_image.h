@@ -56,7 +56,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(size.all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<coord_type> coords(product(size.const_ref()), coord_type(0, 0));
+      af::shared<coord_type> coords(product(size.const_ref()),
+        af::init_functor_null<coord_type>());
       for (std::size_t j = 0, k = 0; j < size[0]; ++j) {
         for (std::size_t i = 0; i < size[1]; ++i, ++k) {
           coords[k] = vec2<double>(i + 0.5, j + 0.5);
@@ -100,7 +101,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(size.all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<coord_type> coords(product(size.const_ref()), coord_type(0, 0, 0));
+      af::shared<coord_type> coords(product(size.const_ref()),
+        af::init_functor_null<coord_type>());
       for (std::size_t k = 0, l = 0; k < size[0]; ++k) {
         for (std::size_t j = 0; j < size[1]; ++j) {
           for (std::size_t i = 0; i < size[2]; ++i, ++l) {

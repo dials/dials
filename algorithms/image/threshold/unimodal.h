@@ -77,7 +77,7 @@ namespace dials { namespace algorithms {
     int maxh = min(int2(maxi, range[1]).const_ref());
 
     // Histogram the image
-    af::shared<double> p(maxh - minh + 1);
+    af::shared<double> p(maxh - minh + 1, af::init_functor_null<double>());
     std::size_t count = 0;
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (minh <= image[i] && image[i] <= maxh) {

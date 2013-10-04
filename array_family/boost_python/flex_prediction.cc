@@ -33,7 +33,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<MillerIndex> prediction_miller_index(
       const af::const_ref<Prediction> &obj) {
-    af::shared<MillerIndex> result(obj.size());
+    af::shared<MillerIndex> result(obj.size(), 
+      af::init_functor_null<MillerIndex>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].miller_index;
     }
@@ -44,7 +45,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > prediction_beam_vector(
       const af::const_ref<Prediction> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(), 
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].beam_vector;
     }
@@ -55,7 +57,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<int> prediction_panel(
       const af::const_ref<Prediction> &obj) {
-    af::shared<int> result(obj.size());
+    af::shared<int> result(obj.size(), af::init_functor_null<int>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].panel;
     }
@@ -66,7 +68,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<bool> prediction_entering(
       const af::const_ref<Prediction> &obj) {
-    af::shared<bool> result(obj.size());
+    af::shared<bool> result(obj.size(), af::init_functor_null<bool>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].entering;
     }
@@ -77,7 +79,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > prediction_position_px(
       const af::const_ref<Prediction> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(), 
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.px;
     }
@@ -88,7 +91,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec2<double> > prediction_position_px_xy(
       const af::const_ref<Prediction> &obj) {
-    af::shared< vec2<double> > result(obj.size());
+    af::shared< vec2<double> > result(obj.size(), 
+      af::init_functor_null< vec2<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = vec2<double>(obj[i].position.px[0], obj[i].position.px[1]);
     }
@@ -99,7 +103,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<double> prediction_position_frame(
       const af::const_ref<Prediction> &obj) {
-    af::shared<double> result(obj.size());
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.px[2];
     }
@@ -110,7 +114,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > prediction_position_mm(
       const af::const_ref<Prediction> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.mm;
     }
@@ -121,7 +126,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec2<double> > prediction_position_mm_xy(
       const af::const_ref<Prediction> &obj) {
-    af::shared< vec2<double> > result(obj.size());
+    af::shared< vec2<double> > result(obj.size(),
+      af::init_functor_null< vec2<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = vec2<double>(obj[i].position.mm[0], obj[i].position.mm[1]);
     }
@@ -132,7 +138,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<double> prediction_position_angle(
       const af::const_ref<Prediction> &obj) {
-    af::shared<double> result(obj.size());
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].position.mm[2];
     }

@@ -39,7 +39,7 @@ namespace dials { namespace algorithms { namespace shoebox {
 
     // Get the shape of all the panels into an array and check the size of
     // each is consistent. Get the total array size needed
-    af::shared<int2> shape(npanels);
+    af::shared<int2> shape(npanels, af::init_functor_null<int2>());
     std::size_t size = 0;
     for (std::size_t i = 0; i < npanels; ++i) {
       versa_bool2 m = boost::python::extract<versa_bool2>(mask[i]);
@@ -55,9 +55,9 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
     
     // Construct the 1D arrays
-    af::shared<bool> mask_1d(size);
-    af::shared<double> gain_1d(size);
-    af::shared<double> dark_1d(size);
+    af::shared<bool> mask_1d(size, af::init_functor_null<bool>());
+    af::shared<double> gain_1d(size, af::init_functor_null<double>());
+    af::shared<double> dark_1d(size, af::init_functor_null<double>());
     std::size_t k = 0;
     for (std::size_t i = 0; i < npanels; ++i) {
       versa_bool2 m = boost::python::extract<versa_bool2>(mask[i]);

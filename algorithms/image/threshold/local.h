@@ -49,7 +49,8 @@ namespace dials { namespace algorithms {
     af::versa< double, af::c_grid<2> > var = filter.sample_variance();
 
     // Assign the pixels to object and background
-    af::versa< bool, af::c_grid<2> > result(image.accessor());
+    af::versa< bool, af::c_grid<2> > result(image.accessor(),
+      af::init_functor_null<bool>());
     #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] + n_sigma * sqrt(var[i]) ? 1 : 0;
@@ -83,7 +84,8 @@ namespace dials { namespace algorithms {
     af::versa< double, af::c_grid<2> > var = filter.sample_variance();
 
     // Assign the pixels to object and background
-    af::versa< bool, af::c_grid<2> > result(image.accessor());
+    af::versa< bool, af::c_grid<2> > result(image.accessor(),
+      af::init_functor_null<bool>());
     #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] * (
@@ -123,7 +125,8 @@ namespace dials { namespace algorithms {
     double bound = 1.0 + n_sigma * sqrt(2.0 / (n - 1));
 
     // Assign pixels to object or background
-    af::versa< bool, af::c_grid<2> > result(image.accessor());
+    af::versa< bool, af::c_grid<2> > result(image.accessor(),
+      af::init_functor_null<bool>());
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       result[i] = (fano_image[i] > bound) ? 1 : 0;
@@ -270,7 +273,7 @@ namespace dials { namespace algorithms {
     temp                                          = filter.mask();
 
     // Assign pixels to object or background
-    af::versa< bool, af::c_grid<2> > result(image.accessor(), 0);
+    af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
@@ -323,7 +326,7 @@ namespace dials { namespace algorithms {
     temp                                          = filter.mask();
 
     // Assign pixels to object or background
-    af::versa< bool, af::c_grid<2> > result(image.accessor(), 0);
+    af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {

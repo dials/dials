@@ -36,7 +36,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > centroid_px_position(
       const af::const_ref<Centroid> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(), 
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].px.position;
     }
@@ -47,7 +48,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > centroid_px_variance(
       const af::const_ref<Centroid> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].px.variance;
     }
@@ -58,7 +60,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > centroid_px_std_err_sq(
       const af::const_ref<Centroid> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(),
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].px.std_err_sq;
     }
@@ -69,7 +72,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > centroid_mm_position(
       const af::const_ref<Centroid> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(), 
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].mm.position;
     }
@@ -80,7 +84,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > centroid_mm_variance(
       const af::const_ref<Centroid> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(), 
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].mm.variance;
     }
@@ -91,7 +96,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec3<double> > centroid_mm_std_err_sq(
       const af::const_ref<Centroid> &obj) {
-    af::shared< vec3<double> > result(obj.size());
+    af::shared< vec3<double> > result(obj.size(), 
+      af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].mm.std_err_sq;
     }
@@ -102,7 +108,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec2<double> > centroid_px_position_xy(
       const af::const_ref<Centroid> &obj) {
-    af::shared<vec2<double> > result(obj.size());
+    af::shared<vec2<double> > result(obj.size(), 
+      af::init_functor_null< vec2<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = vec2<double>(obj[i].px.position[0], 
                                obj[i].px.position[1]);
@@ -114,7 +121,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<double> centroid_position_frame(
       const af::const_ref<Centroid> &obj) {
-    af::shared<double> result(obj.size());
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].px.position[2];
     }
@@ -125,7 +132,8 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared< vec2<double> > centroid_mm_position_xy(
       const af::const_ref<Centroid> &obj) {
-    af::shared<vec2<double> > result(obj.size());
+    af::shared<vec2<double> > result(obj.size(), 
+      af::init_functor_null< vec2<double> >());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = vec2<double>(obj[i].mm.position[0], 
                                obj[i].mm.position[1]);
@@ -137,7 +145,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<double> centroid_position_angle(
       const af::const_ref<Centroid> &obj) {
-    af::shared<double> result(obj.size());
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].mm.position[2];
     }
@@ -155,7 +163,7 @@ namespace dials { namespace af { namespace boost_python {
   /** @returns The resolution of each observation */
   af::shared<double> centroid_resolution(af::ref<Centroid> &obj,
       std::size_t panel, const Beam &b, const Detector &d) {
-    af::shared<double> result(obj.size());
+    af::shared<double> result(obj.size(), af::init_functor_null<double>());
     for (std::size_t i = 0; i < obj.size(); ++i) {
       result[i] = obj[i].resolution(panel, b, d);
     }   

@@ -45,7 +45,8 @@ namespace dials { namespace algorithms {
     int2 mid(ksz[0] / 2, ksz[1] / 2);
 
     // Create the output
-    af::versa< double, af::c_grid<2> > result(image.accessor());
+    af::versa< double, af::c_grid<2> > result(image.accessor(),
+      af::init_functor_null<double>());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -89,7 +90,8 @@ namespace dials { namespace algorithms {
     std::size_t mid = ksz / 2;
 
     // Create the output
-    af::versa< double, af::c_grid<2> > result(image.accessor());
+    af::versa< double, af::c_grid<2> > result(image.accessor(),
+      af::init_functor_null<double>());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
@@ -128,7 +130,8 @@ namespace dials { namespace algorithms {
     std::size_t mid = ksz / 2;
 
     // Create the output
-    af::versa< double, af::c_grid<2> > result(image.accessor());
+    af::versa< double, af::c_grid<2> > result(image.accessor(),
+      af::init_functor_null<double>());
 
     // Convolve the image with the kernel
     for (int j = 0; j < isz[0]; ++j) {
