@@ -27,6 +27,33 @@ namespace dials { namespace algorithms { namespace shoebox {
     // with all pixels assigned to valid but not in peak area (= 3)
     af::versa< int, af::c_grid<2> > mask(af::c_grid<2>(ny, nx),3);
 
+
+
+    /*
+
+            <------------------ NX = 23 --------------->
+
+       ^    - - - - - - - - - - - - - - - - - - - - - - -  ^
+       !    - - - - - - - - - - - - - - - - - - - - - - -    NRY =2
+       !    - - - - - -                       - - - - - -  ^
+       !    - - - - -                           - - - - -
+       !    - - - -                               - - - -
+       !    - - -                                   - - -
+       !    - - -                                   \ - -
+       !    - - -                                   - \ -
+    NY  =17 - - -                                   - - \___
+       !    - - -                                   - - /   ^
+       !    - - -                                   - / -   !
+       !    - - -                                   / - -   !
+       !    - - - -                               - - - -   !
+       !    - - - - -                           - - - - -   NC =8
+       !    - - - - - -                       - - - - - -   !
+       !    - - - - - - - - - - - - - - - - - - - - - - -   !
+       ^    - - - - - - - - - - - - - - - - - - - - - - -   ^
+            <NRX> = 3
+
+    */
+
     // looping through pixels and filtering conditions saved
     // in the parameters nc, nrx and nry
     for(int row = 0; row < ny; row++){
@@ -38,7 +65,9 @@ namespace dials { namespace algorithms { namespace shoebox {
             row >= nry and row  < (ny - nry) and
              col >= nrx and col  < (nx - nrx) )
           {
-               mask(row,col) = 5;
+              // when [ pixel mask ] = 5 both bits are set:
+              // is valid and is in peak area
+              mask(row,col) = 5;
           }
       }
     }
