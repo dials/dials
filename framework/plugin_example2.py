@@ -1,10 +1,44 @@
-from dials.framework import plugin
+
+def singleton(cls):
+    instance = cls()
+    instance.__call__ = lambda: instance
+    return instance
+
+
+class Factory(object):
+
+    def __init__(self, plugins):
+        self._plugins = plugins
+
+    def create(self, name, *args, **kwargs):
+        return self._plugins[name](*args, **kwargs)
+
+
+@singleton
+class Registry(object):
+
+    def __init__(self):
+        from collections import defaultdict
+        self._plugins = defaultdict(dict)
+
+    def append(self, mount, plugin):
+        self._plugins[mount.name][plugin.name] = plugin
+
+    def factory(self, mount_name):
+        return Factory(self._plugins[mount_name])
+
+
+class Extension(type):
+
+    def __init__(self, name, bases, attrs):
+        super(Extension, self).__init__(name, bases, attrs)
+
+
 
 class Integrator(object):
-    '''The intensity calculation algorithm.'''
-    __metaclass__ = plugin.Extension
+    __metaclass__ = Extension
 
-    name = "integration"
+    name = 'integrator'
 
 
 class XdsPlugin(Integrator):
@@ -44,14 +78,6 @@ class MosflmPlugin(Integrator):
         print "Call Mosflm"
 
 
-
-extensions = plugin.registry
-print extensions
-print extensions.plugins()
-print extensions.configuration()
-print Integrator.plugins()
-print Integrator.configuration()
-
 class params:
     pass
 
@@ -63,10 +89,10 @@ params.integration.xds.param2 = 20.5
 params.lookup = params()
 params.lookup.gain = "A Gain Map"
 
+factory = Registry.factory('integrator')
 
-integrator = Integrator.factory(params.integration.algorithm, None, None, params)
+integrator = factory.create(params.integration.algorithm, None, None, params)
 integrator.integrate()
 
-integrator = Integrator.factory("mosflm", None, None, params)
+integrator = factory.create('mosflm', None, None, params)
 integrator.integrate()
-
