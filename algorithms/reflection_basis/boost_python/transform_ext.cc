@@ -33,8 +33,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   af::versa< double, af::c_grid<2> > rebin_pixels_wrapper(
       const af::const_ref< double, af::c_grid<2> > &input,
       const af::const_ref< vec2<double>, af::c_grid<2> > &inputxy, int2 size) {
-    af::versa< double, af::c_grid<2> > output(af::c_grid<2>(size[0], size[1]), 
-      af::init_functor_null<double>());
+    af::versa< double, af::c_grid<2> > output(af::c_grid<2>(size[0], size[1]), 0);
     af::ref< double, af::c_grid<2> > output_ref = output.ref();
     rebin_pixels(output_ref, input, inputxy);
     return output;
