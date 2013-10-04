@@ -20,8 +20,10 @@ namespace dials { namespace algorithms { namespace shoebox {
   af::versa< int, af::c_grid<2> > build_mask(int nx, int ny, int nrx,
                                                  int nry, int nc) {
 
+    /*
     std::cout << "\n" << "nx=" << nx <<"\n" << "ny=" << ny <<"\n"
     << "nrx=" << nrx <<"\n" << "nry=" << nry <<"\n" << "nc=" << nc <<"\n";
+    */
 
     // creating a versa array the size of the entered parameters
     // with all pixels assigned to valid but not in peak area (= 3)

@@ -48,6 +48,9 @@ def tmp_numpy_layering_n_bkgr_modl(reflections):
 def layering_and_background_modl(reflections):
     from dials.algorithms.background import curved_background_flex_2d
     from scitbx.array_family import flex
+
+    print "performing background calculation ...."
+
     for ref in reflections:
         if ref.is_valid():
             shoebox = ref.shoebox
@@ -61,7 +64,7 @@ def layering_and_background_modl(reflections):
                 background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
-
+    print "background calculation .... done"
 
     return reflections
 
