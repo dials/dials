@@ -13,22 +13,17 @@ from __future__ import division
 class Masker(object):
     '''A class to perform all the shoebox masking.'''
 
-    def __init__(self, sweep, detector_mask, delta_d, delta_m):
+    def __init__(self, sweep, delta_d, delta_m):
         ''' Initialise the masking algorithms
 
         Params:
             sweep The sweep object
-            detector_mask The detector mask
             delta_d The extent of the reflection in reciprocal space
             delta_m The extent of the reflection in reciprocal space
 
         '''
-        from dials.algorithms.shoebox import MaskBadPixels
         from dials.algorithms.shoebox import MaskOverlapping
         from dials.algorithms.shoebox import MaskForeground
-
-        # Construct the bad pixel mask
-        self.mask_bad_pixels = MaskBadPixels(detector_mask)
 
         # Construct the overlapping reflection mask
         self.mask_overlapping = MaskOverlapping()
@@ -51,12 +46,6 @@ class Masker(object):
 
         '''
         from dials.util.command_line import Command
-
-        # Mask the bad pixels
-        Command.start('Masking bad pixels')
-        self.mask_bad_pixels(reflections)
-        Command.end('Masked bad pixels for {0} reflections'.format(
-            len([r for r in reflections if r.is_valid()])))
 
         # Mask the overlaps if an adjacency list is given
         if adjacency_list:

@@ -13,17 +13,15 @@ from __future__ import division
 class ProfileExtractor(object):
     ''' A class to extract the profiles from the sweep '''
 
-    def __init__(self, sweep, crystal, mask=None, gain_map=None, dark_map=None,
-                 **kwargs):
+    def __init__(self, sweep, crystal, mask=None, gain=None, dark=None):
         ''' Initialise the class with the sweep etc
 
         Params:
             sweep The sweep to process
             crystal The crystal to process
             mask The detector mask
-            gain_map The gain map
-            dark_map The dark map
-            **kwargs Other keyword arguments
+            gain The gain map
+            dark The dark map
 
         '''
         from dials.algorithms import shoebox
@@ -32,96 +30,75 @@ class ProfileExtractor(object):
         # Save the sweep
         self.sweep = sweep
 
-        # Set the detector mask
-        image_size = sweep.get_image_size()[::-1]
-        if not mask:
-            self.mask = sweep[0] >= 0
+        # Ensure image is a tuple
+        image = sweep[0]
+        if not isinstance(image, tuple):
+            image = (image,)
+
+        # Get the mask in tuple of masks form
+        if mask:
+            if not isinstance(mask, tuple):
+                mask = (mask,)
         else:
-            self.mask = mask
+            mask = tuple([im >= 0 for im in image])
 
-        # Set the gain map
-        if not gain_map:
-            self.gain_map = flex.double(flex.grid(*image_size), 1)
+        # Get the gain in tuple of gains form
+        if gain:
+            if not isinstance(gain, tuple):
+                gain = (gain,)
         else:
-            self.gain_map = gain_map
+            gain = tuple([flex.double(flex.grid(im.all()), 1) for im in image])
 
-        # Set the dark map
-        if not dark_map:
-            self.dark_map = flex.double(flex.grid(*image_size), 0)
+        # Get the dark in tuple of darks form
+        if dark:
+            if not isinstance(dark, tuple):
+                dark = (dark,)
         else:
-            self.dark_map = dark_map
+            dark = tuple([flex.double(flex.grid(im.all()), 0) for im in image])
 
-        # Get the parameters
-        n_sigma = kwargs['bbox_nsigma']
-        delta_d = n_sigma * sweep.get_beam().get_sigma_divergence(deg=False)
-        delta_m = n_sigma * crystal.get_mosaicity(deg=False)
+        # Set the mask, gain and dark maps
+        self.mask = mask
+        self.gain = gain
+        self.dark = dark
 
-        # Create the function to mask the shoebox profiles
-        self.mask_profiles = shoebox.Masker(sweep, mask, delta_d, delta_m)
-
-    def __call__(self, reflections, adjacency_list=None):
+    def __call__(self, panels, bboxes):
         ''' Extract the profiles from the sweep
 
         Params:
-            reflections The reflections to extract
-            adjacency_list The list of overlapping reflections
-
-        Returns:
-            The reflection list
-
-        '''
-        from dials.algorithms import shoebox
-        from dials.util.command_line import Command
-
-        # Allocate memory for reflection profiles
-        Command.start("Allocating reflection profiles")
-        shoebox.allocate(reflections)
-        Command.end("Allocated {0} reflection profiles".format(
-            len([r for r in reflections if r.is_valid()])))
-
-        # Mask the shoebox profiles
-        self.mask_profiles(reflections, adjacency_list)
-
-        # Extract the data from the sweep
-        return self.extract_sweep_data(reflections)
-
-    def extract_sweep_data(self, reflections):
-        ''' Extract the profiles from the sweep
-
-        Params:
-            reflections The reflections to extract
+            panels The panel numbers
+            bboxes The bounding boxes
 
         Returns:
             The reflection list
 
         '''
         from dials.util.command_line import ProgressBar
-        from scitbx.array_family import flex
-        from dials.algorithms import shoebox
+        from dials.algorithms.shoebox import Extractor
 
         # Create the class to set all the shoebox pixels
-        populate = shoebox.Populator(reflections, self.mask,
-            self.gain_map, self.dark_map)
-
-        # Create a progress bar
-        progress = ProgressBar(title = "Extracting reflections")
+        extractor = Extractor(panels, bboxes, self.mask, self.gain, self.dark)
 
         # For each image in the sweep, get the reflections predicted to have
         # been recorded on the image and copy the pixels from the image to
         # the reflection profile image. Update a progress bar as we go along
+        progress = ProgressBar(title = "Extracting reflections")
         first_array_index = self.sweep.get_array_range()[0]
-        for index, image in enumerate(self.sweep):
+        for index, image in enumerate(self.sweep, start=first_array_index):
 
-            # Copy the image pixels from the image to the shoeboxes
-            populate.add_image(image, index + first_array_index)
+            # Ensure the image is a tuple
+            if not isinstance(image, tuple):
+                image = (image,)
+
+            # Loop through all the images and add to the extractor
+            for panel, im in enumerate(image):
+                extractor.add_image(panel, index, im)
 
             # Update the progress bar
             progress.update(100 * (index + 1) / len(self.sweep))
 
-        # Progress bar finished
-        progress.finished(
-            "Extracted {0} reflections".format(
-                len([r for r in reflections if r.is_valid()])))
+        # Get the shoeboxes from the extractor
+        shoeboxes = extractor.shoeboxes()
 
-        # Return the reflections
-        return reflections
+        # Finish the progress bar and return the profiles
+        progress.finished("Extracted {0} profiles".format(len(shoeboxes)))
+        return shoeboxes

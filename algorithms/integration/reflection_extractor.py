@@ -183,6 +183,7 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import RayPredictor
         from dials.algorithms.shoebox import BBoxCalculator
         from dials.algorithms.integration import ProfileExtractor
+        from dials.algorithms import shoebox
 
         # Get models from the sweep
         beam = sweep.get_beam()
@@ -200,8 +201,14 @@ class ReflectionExtractor(object):
 
         # Create the class to extract the profiles
         self.extract_profiles = ProfileExtractor(
-            sweep, crystal, self.detector_mask, self.gain_map, self.dark_map,
-            bbox_nsigma=self.bbox_nsigma)
+            sweep, crystal, self.detector_mask, self.gain_map, self.dark_map)
+
+        # Get the parameters
+        delta_d = self.bbox_nsigma * sweep.get_beam().get_sigma_divergence(deg=False)
+        delta_m = self.bbox_nsigma * crystal.get_mosaicity(deg=False)
+
+        # Create the function to mask the shoebox profiles
+        self.mask_profiles = shoebox.Masker(sweep, delta_d, delta_m)
 
     def extract(self, sweep, crystal, reflections):
         ''' Extract the reflections from the sweep.
@@ -220,6 +227,8 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
         from dials.algorithms import filtering
+        from dials.model.data import flex_int6
+        from dials.array_family import flex
         from math import sqrt
 
         # Get models from the sweep
@@ -277,7 +286,18 @@ class ReflectionExtractor(object):
                 len([r for r in reflections if r.is_valid()])))
 
         # Extract the reflection profiles
-        self.extract_profiles(reflections, overlaps)
+        panels = flex.size_t([r.panel_number for r in reflections if r.is_valid()])
+        bboxes = flex_int6([r.bounding_box for r in reflections if r.is_valid()])
+        shoeboxes = self.extract_profiles(panels, bboxes)
+        assert(len(shoeboxes) == len([r for r in reflections if r.is_valid()]))
+        for s, r in zip(shoeboxes, [r for r in reflections if r.is_valid()]):
+            assert(r.panel_number == s.panel)
+            r.shoebox = s.data
+            r.shoebox_mask = s.mask
+            r.shoebox_background = s.background
+
+        # Mask the shoebox profiles
+        self.mask_profiles(reflections, overlaps)
 
         # Return the list of reflections
         return reflections
