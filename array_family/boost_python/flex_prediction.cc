@@ -33,8 +33,7 @@ namespace dials { namespace af { namespace boost_python {
   static
   af::shared<MillerIndex> prediction_miller_index(
       const af::const_ref<Prediction> &obj) {
-    af::shared<MillerIndex> result(obj.size(), 
-      af::init_functor_null<MillerIndex>());
+    af::shared<MillerIndex> result(obj.size(), MillerIndex()); 
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = obj[i].miller_index;
     }
