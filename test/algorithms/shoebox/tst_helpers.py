@@ -33,7 +33,7 @@ class Test(object):
         ''' test the delallocate function deletes all the shoeboxes'''
         from dials.algorithms import shoebox
 
-        # Create the populator and deallocate shoeboxes
+        # Allocate and deallocate the shoeboxes
         shoebox.allocate(self.reflections)
         shoebox.deallocate(self.reflections)
 
@@ -50,7 +50,7 @@ class Test(object):
         ''' Test that shoeboxes are all the right size.'''
         from dials.algorithms import shoebox
 
-        # Create the populator and deallocate shoeboxes
+        # Allocate the shoeboxes
         shoebox.allocate(self.reflections)
 
         # Check all reflection shoeboxes are the right size

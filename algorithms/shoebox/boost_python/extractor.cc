@@ -1,5 +1,5 @@
 /*
- * populator.cc
+ * extractor.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *

@@ -187,23 +187,19 @@ algorithms/shoebox/boost_python/bbox_calculator.cc -text
 algorithms/shoebox/boost_python/extractor.cc -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/helpers.cc -text
-algorithms/shoebox/boost_python/mask_bad_pixels.cc -text
 algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
 algorithms/shoebox/boost_python/mask_code.cc -text
 algorithms/shoebox/boost_python/mask_foreground.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
-algorithms/shoebox/boost_python/populator.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/extractor.h -text
 algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/helpers.h -text
-algorithms/shoebox/mask_bad_pixels.h -text
 algorithms/shoebox/mask_builder.h -text svneol=unset#text/plain
 algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
-algorithms/shoebox/populator.h -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
 algorithms/spatial_indexing/boost_python/octree.cc -text
@@ -546,10 +542,8 @@ test/algorithms/reflection_basis/tst_transform.py -text
 test/algorithms/shoebox/tst_bbox_calculator.py -text
 test/algorithms/shoebox/tst_extractor.py -text
 test/algorithms/shoebox/tst_helpers.py -text
-test/algorithms/shoebox/tst_mask_bad_pixels.py -text
 test/algorithms/shoebox/tst_mask_foreground.py -text
 test/algorithms/shoebox/tst_mask_overlapping.py -text
-test/algorithms/shoebox/tst_populator.py -text
 test/algorithms/spatial_indexing/tst_collision_detection.cc -text
 test/algorithms/spatial_indexing/tst_octree.cc -text
 test/algorithms/spatial_indexing/tst_quadtree.cc -text
