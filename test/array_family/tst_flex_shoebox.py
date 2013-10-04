@@ -144,10 +144,9 @@ class Test(object):
         from dials.model.data import Shoebox
         from random import randint, sample
         from dials.array_family import flex
-        from dials.model.data import flex_int6
 
         shoebox = flex.shoebox(10)
-        bbox = flex_int6(10)
+        bbox = flex.int6(10)
         for i in range(10):
             x0 = randint(0, 90)
             y0 = randint(0, 90)

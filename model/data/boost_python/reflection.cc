@@ -645,9 +645,6 @@ namespace dials { namespace model { namespace boost_python {
       .def_pickle(reflection::ReflectionPickleSuite());          
 
     scitbx::af::boost_python::flex_wrapper 
-        <int6>::plain("flex_int6");
-
-    scitbx::af::boost_python::flex_wrapper 
       <Reflection, return_internal_reference<> >::plain("ReflectionList")
         .def("__init__", make_constructor(&init_from_observation_and_shoebox))
         .def_pickle(scitbx::af::boost_python::flex_pickle_double_buffered<

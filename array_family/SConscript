@@ -6,6 +6,8 @@ if env_etc.clang_version:
   env.Append(CCFLAGS=wd)
 
 sources = [
+    'boost_python/flex_int6.cc',
+    'boost_python/flex_mat3_double.cc',
     'boost_python/flex_shoebox.cc',
     'boost_python/flex_centroid.cc',
     'boost_python/flex_intensity.cc',

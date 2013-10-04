@@ -227,7 +227,6 @@ class ReflectionExtractor(object):
         from dials.algorithms.spot_prediction import reflection_frames
         from dials.algorithms import shoebox
         from dials.algorithms import filtering
-        from dials.model.data import flex_int6
         from dials.array_family import flex
         from math import sqrt
 
@@ -287,7 +286,7 @@ class ReflectionExtractor(object):
 
         # Extract the reflection profiles
         panels = flex.size_t([r.panel_number for r in reflections if r.is_valid()])
-        bboxes = flex_int6([r.bounding_box for r in reflections if r.is_valid()])
+        bboxes = flex.int6([r.bounding_box for r in reflections if r.is_valid()])
         shoeboxes = self.extract_profiles(panels, bboxes)
         assert(len(shoeboxes) == len([r for r in reflections if r.is_valid()]))
         for s, r in zip(shoeboxes, [r for r in reflections if r.is_valid()]):
