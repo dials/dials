@@ -107,8 +107,9 @@ class IntegratorFactory(object):
         from dials.algorithms.integration import ReflectionExtractor
 
         # Load some lookup maps
-        gain_map = IntegratorFactory.load_image(params.lookup.gain_map)
-        dark_map = IntegratorFactory.load_image(params.lookup.dark_map)
+        mask = IntegratorFactory.load_image(params.lookup.mask)
+        gain = IntegratorFactory.load_image(params.lookup.gain_map)
+        dark = IntegratorFactory.load_image(params.lookup.dark_map)
 
         # Shorten parameter path
         integration = params.integration
@@ -120,8 +121,9 @@ class IntegratorFactory(object):
             filter_by_zeta = integration.filter.by_zeta,
             filter_by_xds_small_angle = integration.filter.by_xds_small_angle,
             filter_by_xds_angle = integration.filter.by_xds_angle,
-            gain_map = gain_map,
-            dark_map = dark_map,
+            mask = mask,
+            gain = gain,
+            dark = dark,
             kernel_size = integration.shoebox.kernel_size,
             n_sigma_b = integration.shoebox.sigma_background,
             n_sigma_s = integration.shoebox.sigma_strong)

@@ -115,7 +115,7 @@ class ReflectionExtractor(object):
 
     def __init__(self, bbox_nsigma, filter_by_bbox=False, filter_by_zeta=0.0,
                  filter_by_xds_small_angle=False, filter_by_xds_angle=False,
-                 gain_map=None, dark_map=None, kernel_size=None,
+                 mask=None, gain=None, dark=None, kernel_size=None,
                  n_sigma_b=None, n_sigma_s=None):
         ''' Initialise the extractor
 
@@ -138,8 +138,9 @@ class ReflectionExtractor(object):
         self.filter_by_zeta = filter_by_zeta
         self.filter_by_xds_small_angle = filter_by_xds_small_angle
         self.filter_by_xds_angle = filter_by_xds_angle
-        self.gain_map = gain_map
-        self.dark_map = dark_map
+        self.mask = mask
+        self.gain = gain
+        self.dark = dark
         self.kernel_size = kernel_size
         self.n_sigma_b = n_sigma_b
         self.n_sigma_s = n_sigma_s
@@ -191,7 +192,17 @@ class ReflectionExtractor(object):
         gonio = sweep.get_goniometer()
         scan = sweep.get_scan()
 
-        self.detector_mask = sweep[0] >= 0
+        # Ensure image is a tuple
+        image = sweep[0]
+        if not isinstance(image, tuple):
+            image = (image,)
+
+        # Get the mask in tuple of masks form
+        if self.mask:
+            if not isinstance(self.mask, tuple):
+                self.mask = (self.mask,)
+        else:
+            self.mask = tuple([im >= 0 for im in image])
 
         # Create the bbox calculator
         self.compute_bbox = BBoxCalculator(
@@ -201,7 +212,7 @@ class ReflectionExtractor(object):
 
         # Create the class to extract the profiles
         self.extract_profiles = ProfileExtractor(
-            sweep, crystal, self.detector_mask, self.gain_map, self.dark_map)
+            sweep, crystal, self.mask, self.gain, self.dark)
 
         # Get the parameters
         delta_d = self.bbox_nsigma * sweep.get_beam().get_sigma_divergence(deg=False)
@@ -248,7 +259,7 @@ class ReflectionExtractor(object):
         # Set all reflections which overlap bad pixels to zero
         Command.start('Filtering reflections by detector mask')
         array_range = scan.get_array_range()
-        filtering.by_detector_mask(reflections, self.detector_mask, array_range)
+        filtering.by_detector_mask(reflections, self.mask[0], array_range)
         Command.end('Filtered {0} reflections by detector mask'.format(
             len([r for r in reflections if r.is_valid()])))
 
