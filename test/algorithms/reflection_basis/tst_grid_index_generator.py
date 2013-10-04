@@ -76,6 +76,11 @@ class Test(object):
         for j in range(0, 20):
             for i in range(0, 20):
 
+                xx = self.x0 + i
+                yy = self.y0 + j
+                if xx < 0 or yy < 0 or xx >= self.image_size[0] or yy >= self.image_size[0]:
+                    continue
+
                 # Get the grid indices
                 gi_1, gj_1 = self.generate_indices(j, i)
 
@@ -89,8 +94,12 @@ class Test(object):
 
                 # Check both are the same
                 eps = 1e-7
-                assert(abs(gj_1 - gj_2) <= eps)
-                assert(abs(gi_1 - gi_2) <= eps)
+                try:
+                    assert(abs(gj_1 - gj_2) <= eps)
+                    assert(abs(gi_1 - gi_2) <= eps)
+                except Exception, e:
+                    print gi_1, gi_2, gj_1, gj_2
+                    raise e
 
         # Test passed
         print 'OK'

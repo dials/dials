@@ -55,6 +55,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     vec2<double> operator()(int j, int i) const {
       int xx = x0_ + i;
       int yy = y0_ + j;
+      DIALS_ASSERT(yy >= 0 && xx >= 0);
+      DIALS_ASSERT(yy < s1_map_.accessor()[0] && xx < s1_map_.accessor()[1]);
       vec3<double> ds = s1_map_(yy, xx) - s1_;
       double c1 = e1_ * ds;
       double c2 = e2_ * ds;
