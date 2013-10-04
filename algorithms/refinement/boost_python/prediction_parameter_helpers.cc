@@ -10,8 +10,6 @@ namespace dials { namespace refinement { namespace boost_python {
 
   void export_prediction_parameter_helpers()
   {
-    scitbx::af::boost_python::flex_wrapper <mat3 <double> >::plain("flex_mat3_double");
-
     vec3 <double> (*detector_pv_derivative_single)(
       mat3 <double>, mat3 <double>, vec3 <double>) =
         &detector_pv_derivative;

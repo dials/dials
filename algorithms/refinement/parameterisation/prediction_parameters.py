@@ -20,7 +20,7 @@ from scitbx import matrix
 #    BeamParameterisationOrientation
 #from dials.algorithms.refinement.parameterisation.crystal_parameters import \
 #    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
-from cctbx.array_family import flex
+from dials.array_family import flex
 from dials_refinement_helpers_ext import *
 
 class PredictionParameterisation(object):
@@ -390,7 +390,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
                 dd_ddet_p = det.get_ds_dp(multi_state_elt=panel_id)
 
                 # Copy to a flex array of 3*3 matrices
-                dd_ddet_p_temp = flex_mat3_double(len(dd_ddet_p))
+                dd_ddet_p_temp = flex.mat3_double(len(dd_ddet_p))
                 for i, dd in enumerate(dd_ddet_p):
                     dd_ddet_p_temp[i] = dd.elems
                 dd_ddet_p = dd_ddet_p_temp
@@ -446,7 +446,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             # Calc derivatives of r wrt crystal orientation params
             h2 = (int(h[0]), int(h[1]), int(h[2]))
             dr_dxlo_p = crystal_orientation_r_derivative(
-                            R.elems, flex_mat3_double(dU_dxlo_p),
+                            R.elems, flex.mat3_double(dU_dxlo_p),
                             self._B.elems, h2)
 
             # Calc derivatives of phi wrt crystal orientation params
@@ -474,7 +474,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             h2 = (int(h[0]), int(h[1]), int(h[2]))
             dr_dxluc_p = crystal_cell_r_derivative(
                             R.elems, self._U.elems,
-                            flex_mat3_double(dB_dxluc_p), h2)
+                            flex.mat3_double(dB_dxluc_p), h2)
 
             # Calc derivatives of phi wrt crystal unit cell params
             dphi_dxluc_p = crystal_cell_phi_derivative(

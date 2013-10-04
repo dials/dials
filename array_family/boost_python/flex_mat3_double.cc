@@ -102,7 +102,7 @@ namespace boost_python {
     using namespace boost::python;
     using boost::python::arg;
     typedef scitbx::af::boost_python::flex_wrapper<scitbx::mat3<double> > f_w;
-    f_w::plain("mat3<double>")
+    f_w::plain("mat3_double")
       .def_pickle(scitbx::af::boost_python::flex_pickle_single_buffered<
         scitbx::mat3<double>,
         9*scitbx::af::boost_python::pickle_size_per_element<double>::value>())
