@@ -321,7 +321,6 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tif
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 /error.h -text
 framework/__init__.py -text
-framework/abstract_base.py -text
 framework/dftbx/SConscript -text
 framework/dftbx/__init__.py -text
 framework/dftbx/dftbx.cpp -text
@@ -330,7 +329,8 @@ framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 framework/plugin.py -text
 framework/plugin_example.py -text
-framework/plugin_example2.py -text
+framework/toplevel.py -text
+framework/toplevel_example.py -text
 interfaces/__init__.py -text
 interfaces/background/__init__.py -text
 interfaces/centroid/__init__.py -text

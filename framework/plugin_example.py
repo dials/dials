@@ -1,56 +1,51 @@
-from dials.framework import plugin
+from dials.framework.plugin import Interface, Registry, abstractmethod
 
 class Integrator(object):
-    '''The intensity calculation algorithm.'''
-    __metaclass__ = plugin.Extension
+    ''' The integration algorithm. '''
 
-    name = "integration"
+    __metaclass__ = Interface
+
+    name = 'integrator'
+
+    @abstractmethod
+    def integrate(self):
+        pass
 
 
-class XdsPlugin(Integrator):
+class XdsIntegrator(Integrator):
     '''The XDS intensity calculation algorithm.'''
 
     name = "xds"
 
-    config = '''
-        param1 = 10
-          .type = int
-          .help = "This is a parameter"
-        param2 = 20.5
-          .type = float
-          .help = "This is another parameter"
+    phil = '''
+      param1 = 10
+        .type = int
+        .help = 'a parameter'
     '''
 
     def __init__(self, sweep, crystal, params):
+        super(XdsIntegrator, self).__init__()
         print "Init XDS:"
-        print "  ", sweep, crystal
-        print "  ", params.integration.xds.param1
-        print "  ", params.integration.xds.param2
-        print "  ", params.lookup.gain
 
     def integrate(self):
-        print "Call XDS"
+        print "Integrate"
 
 
-class MosflmPlugin(Integrator):
+
+class MosflmIntegrator(Integrator):
     '''The XDS intensity calculation algorithm.'''
 
     name = "mosflm"
 
     def __init__(self, sweep, crystal, params):
-        print "Init Mosflm"
+        super(MosflmIntegrator, self).__init__()
+        print "Init Mosflm:"
 
     def integrate(self):
-        print "Call Mosflm"
+        print "Integrate"
 
 
 
-extensions = plugin.registry
-print extensions
-print extensions.plugins()
-print extensions.configuration()
-print Integrator.plugins()
-print Integrator.configuration()
 
 class params:
     pass
@@ -63,10 +58,15 @@ params.integration.xds.param2 = 20.5
 params.lookup = params()
 params.lookup.gain = "A Gain Map"
 
+print list(Registry.extensions(Integrator))
 
-integrator = Integrator.factory(params.integration.algorithm, None, None, params)
-integrator.integrate()
+factory = Registry.factory(Integrator)
 
-integrator = Integrator.factory("mosflm", None, None, params)
-integrator.integrate()
+integrator = factory.create(params.integration.algorithm, None, None, params)
+print integrator.integrate()
 
+
+integrator = factory.create('mosflm', None, None, params)
+print integrator.integrate()
+
+print Registry.global_phil().as_str()
