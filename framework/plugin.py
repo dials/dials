@@ -162,8 +162,10 @@ class Registry:
 class Interface(ABCMeta):
     def __init__(self, name, bases, attrs):
         super(Interface, self).__init__(name, bases, attrs)
+
+        if 'name' not in self.__dict__:
+            raise RuntimeError("%s has no member 'name'" % name)
+
         if not hasattr(self, '__registered__'):
             self.__registered__ = True
             Registry.add(self)
-        if 'name' not in self.__dict__:
-            raise RuntimeError("%s has no member 'name'" % name)
