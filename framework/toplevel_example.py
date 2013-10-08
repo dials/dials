@@ -26,4 +26,4 @@ class HighLevelIntegrator(Interface):
 
 
 integrator = HighLevelIntegrator()
-integrator()
+integrator.run()

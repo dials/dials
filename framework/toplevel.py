@@ -1,5 +1,15 @@
-from abc import ABCMeta, abstractmethod
+#!/usr/bin/env python
+#
+# toplevel.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
 
+from abc import ABCMeta, abstractmethod
 
 class Interface(object):
 
@@ -11,7 +21,7 @@ class Interface(object):
         self._finished = False
         self._maxiter = maxiter
 
-    def __call__(self):
+    def run(self):
         count1 = 0
         while not self.finished:
             count2 = 0

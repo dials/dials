@@ -1,3 +1,14 @@
+#!/usr/bin/env python
+#
+# plugin.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+
 from abc import ABCMeta, abstractmethod
 
 def generate_phil_string(interface, extensions):
