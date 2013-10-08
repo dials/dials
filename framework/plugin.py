@@ -14,14 +14,14 @@ from abc import ABCMeta, abstractmethod
 def generate_phil_string(interface, extensions):
 
     choice_template = '''
-    {name}
-      .help = "{help}"
-    {{
-      algorithm = *{choices}
-        .type = choice(multi={multi})
-        .help = "Select the algorithm to use."
-      {parameters}
-    }}
+      {name}
+        .help = "{help}"
+      {{
+        algorithm = *{choices}
+          .type = choice(multi={multi})
+          .help = "Select the algorithm to use."
+        {parameters}
+      }}
     '''
 
     param_template = '''
@@ -162,6 +162,8 @@ class Registry:
 class Interface(ABCMeta):
     def __init__(self, name, bases, attrs):
         super(Interface, self).__init__(name, bases, attrs)
-        if not hasattr(self, '_registered'):
-            self._registered = True
+        if not hasattr(self, '__registered__'):
+            self.__registered__ = True
             Registry.add(self)
+        if 'name' not in self.__dict__:
+            raise RuntimeError("%s has no member 'name'" % name)
