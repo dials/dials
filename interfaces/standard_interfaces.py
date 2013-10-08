@@ -29,6 +29,7 @@ class SpotFinderFilter(object):
     __metaclass__ = plugin.Interface
 
     name = 'filter'
+    multi = True
 
     @plugin.abstractmethod
     def __call__(self, flags, **kwargs):

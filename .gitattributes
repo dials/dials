@@ -336,6 +336,7 @@ interfaces/background/__init__.py -text
 interfaces/centroid/__init__.py -text
 interfaces/centroid/centroid_interface_prototype.py -text
 interfaces/integration/__init__.py -text
+interfaces/integrator_temp.py -text
 interfaces/peak_finding/__init__.py -text
 interfaces/spotfinder_temp.py -text
 interfaces/standard_interfaces.py -text
