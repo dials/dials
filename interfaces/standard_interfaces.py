@@ -23,7 +23,7 @@ class SpotFinderThreshold(object):
         pass
 
 
-def SpotFinderFilter(object)
+class SpotFinderFilter(object):
     '''The filtering for the spotfinding algorithm.'''
 
     __metaclass__ = plugin.Interface
@@ -35,13 +35,15 @@ def SpotFinderFilter(object)
         pass
 
 
-def RefinementParameterisation(object):
+class RefinementParameterisation(object):
     '''The refinement parameterisation.'''
+
+    __metaclass__ = plugin.Interface
 
     name = 'parameterisation'
 
 
-def IntegrationBoundingBox(object):
+class IntegrationBoundingBox(object):
     '''The bounding box algorithm.'''
 
     __metaclass__ = plugin.Interface
@@ -53,7 +55,7 @@ def IntegrationBoundingBox(object):
         pass
 
 
-def IntegrationCentroids(object):
+class IntegrationCentroids(object):
     '''The centroid algorithm.'''
 
     __metaclass__ = plugin.Interface
@@ -61,11 +63,11 @@ def IntegrationCentroids(object):
     name = 'centroid'
 
     @plugin.abstractmethod
-    def __call__(self)
+    def __call__(self):
         pass
 
 
-def IntegrationBackground(object):
+class IntegrationBackground(object):
     '''The background modelling algorithm.'''
 
     __metaclass__ = plugin.Interface
@@ -77,7 +79,7 @@ def IntegrationBackground(object):
         pass
 
 
-def IntegrationIntensity(object):
+class IntegrationIntensity(object):
     '''The intensity algorithm.'''
 
     __metaclass__ = plugin.Interface

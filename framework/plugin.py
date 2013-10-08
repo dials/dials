@@ -72,6 +72,29 @@ def generate_phil(interfaces):
     return phil.parse(text)
 
 
+def find_extensions(paths, recursive=False):
+    from os import listdir
+    from os.path import isfile, join, walk, split, splitext
+    import sys
+    import imp
+    import fnmatch
+
+    def load_extensions(arg, dirname, names):
+        names = [splitext(n)[0] for n in fnmatch.filter(names, '*.py')]
+        for name in names:
+            stream, path, desc = imp.find_module(name, [dirname])
+            try:
+                module = imp.load_module(name, stream, path, desc)
+            finally:
+                stream.close()
+
+    if recursive:
+        for path in paths:
+            walk(path, load_extensions, None)
+    else:
+        for path in paths:
+            names = [f for f in listdir(path) if isfile(join(path, f))]
+            load_extensions(None, path, names)
 
 
 class Factory(object):
