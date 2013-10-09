@@ -535,6 +535,7 @@ test/algorithms/refinement/tst_crystal_parameters.py -text
 test/algorithms/refinement/tst_detector_parameters.py -text
 test/algorithms/refinement/tst_dials_models.py -text
 test/algorithms/refinement/tst_finite_diffs.py -text
+test/algorithms/refinement/tst_finite_diffs_output_20131009.txt -text
 test/algorithms/refinement/tst_multi_panel_detector_parameterisation.py -text
 test/algorithms/refinement/tst_orientation_refinement.py -text
 test/algorithms/refinement/tst_prediction_parameters.py -text

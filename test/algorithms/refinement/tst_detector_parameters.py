@@ -73,7 +73,7 @@ def make_multi_panel(single_panel_detector):
 
         # perturb origin vector
         o_multiplier = random.gauss(1.0, 0.01)
-        new_origin = random_vector_close_to(p.get_origin(), sd=0.5)
+        new_origin = random_vector_close_to(p.get_origin(), sd=0.1)
         new_origin *= o_multiplier
 
         # perturb fast direction vector
@@ -92,6 +92,9 @@ def make_multi_panel(single_panel_detector):
     return multi_panel_detector
 
 if __name__ == '__main__':
+
+    # set the random seed to make the test reproducible
+    random.seed(1337)
 
     # set up a simple detector frame with directions aligned with
     # principal axes and sensor origin located on the z-axis at -110
@@ -148,16 +151,6 @@ if __name__ == '__main__':
     p_vals[4] = 1000. * pi/18 # tau2
     p_vals[5] = 1000. * pi/18 # tau3
     dp.set_param_vals(p_vals)
-
-    # Debugging - left here commented out as an example
-    #print "initial state"
-    #print "d1 = (%.3f, %.3f, %.3f)" % dp._initial_state['d1'].elems
-    #print "d2 = (%.3f, %.3f, %.3f)" % dp._initial_state['d2'].elems
-    #print "dn = (%.3f, %.3f, %.3f)" % dp._initial_state['dn'].elems
-    #print "composed state"
-    #print "dir1 = (%.3f, %.3f, %.3f)" % dp._models[0].dir1
-    #print "d2 = (%.9f, %.9f, %.9f)" % dp._models[0].dir2
-    #print "dn = (%.3f, %.3f, %.3f)" % dp._models[0].normal
 
     # paper calculation values
     v1 = matrix.col((cos(pi/18), 0, sin(pi/18)))
@@ -222,7 +215,7 @@ if __name__ == '__main__':
                         matrix.sqr((0., 0., 0.,
                                     0., 0., 0.,
                                     0., 0., 0.)), eps = 1.e-6))
-            except Exception:
+            except AssertionError:
                 failures += 1
                 print "for try", i
                 print "failure for parameter number", j
@@ -237,12 +230,11 @@ if __name__ == '__main__':
 
     # 5. Test a multi-panel detector with non-coplanar panels.
 
-    # place a beam somewhere near the centre of the single panel
-    # detector (need a beam to initialise the multi-panel detector
-    # parameterisation)
+    # place a beam at the centre of the single panel detector (need a
+    # beam to initialise the multi-panel detector parameterisation)
     lim = det[0].get_image_size_mm()
-    shift1 = lim[0] / 2. + random.gauss(0.5, 0.01)
-    shift2 = lim[1] / 2. + random.gauss(0.5, 0.01)
+    shift1 = lim[0] / 2.
+    shift2 = lim[1] / 2.
     beam_centre = matrix.col(det[0].get_origin()) + \
                   shift1 * matrix.col(det[0].get_fast_axis()) + \
                   shift2 * matrix.col(det[0].get_slow_axis())
@@ -290,7 +282,7 @@ if __name__ == '__main__':
     for a, b in zip(dir2s_before_shift, dir2s_after_shift):
         assert(approx_equal(a, b, eps=1.e-10))
 
-    attempts = 20
+    attempts = 5
     failures = 0
     for i in range(attempts):
 
@@ -328,7 +320,7 @@ if __name__ == '__main__':
                                         0., 0., 0.)),
                                         eps = 1.e-5,
                                         out = None))
-                except Exception:
+                except AssertionError:
                     failures += 1
                     print "for try", i
                     print "for panel number", j
