@@ -529,6 +529,7 @@ test/algorithms/refinement/__init__.py -text
 test/algorithms/refinement/params.py -text
 test/algorithms/refinement/setup_geometry.py -text
 test/algorithms/refinement/setup_minimiser.py -text
+test/algorithms/refinement/tst_beam_parameters.py -text
 test/algorithms/refinement/tst_convergence_radius.py -text
 test/algorithms/refinement/tst_crystal_parameters.py -text
 test/algorithms/refinement/tst_dials_models.py -text
