@@ -94,7 +94,7 @@ integration
       .help = "The oscillation at which to learn new reference profiles"
       .type = int
     
-    reference_signal_threshold = 0.2
+    reference_signal_threshold = 0.02
       .help = "The threshold to use in reference profile"
       .type = float
   }

@@ -116,8 +116,10 @@ namespace dials { namespace algorithms {
       // Get the reference profile
       af::ref<double> reference = reference_profile(index);
 
-      // Calculate the weighting by distance
-      double weight = 1.0 / (coord - coord_b).length();
+      // Calculate the weighting by distance, ensure we don't get silly weights
+      // for really close reflections by setting minimum distance to 1.
+      double distance = (coord - coord_b).length();
+      double weight = 1.0 / (distance < 1.0 ? 1.0 : distance);
 
       // Calculate the sum of intensity to normalize the reflection profile
       double sum_profile = 0.0;
@@ -161,6 +163,8 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < reference.size(); ++i) {
         if (reference[i] >= threshold) {
           signal_sum += reference[i];
+        } else {
+          reference[i] = 0.0;
         }
       }
 
