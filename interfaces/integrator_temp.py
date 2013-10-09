@@ -40,12 +40,16 @@ class Integrator(toplevel.Interface):
         self.prepared = True
 
     def process(self):
-        self.shoeboxes.compute_background()
-        centroids = self.shoeboxes.compute_centroid()
-        intensity = self.shoeboxes.compute_intensity()
+
+        self.compute_background(self.shoeboxes, self.predictions)
         self.observations = flex.observation(
             self.shoeboxes.panel(),
-            centroids, intensity)
+            self.compute_centroid(self.shoeboxes, self.predictions),
+            self.compute_intensity(self.shoeboxes, self.predictions))
+
+        self.reflections.compute_background()
+        self.reflections.compute_centroid()
+        self.reflections.compute_intensity()
 
         self.processed = True
 

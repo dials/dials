@@ -275,7 +275,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param The reciprocal space coordinate
      * @returns a pair of the beam vector and rotation angle
      */
-    std::pair< vec3<double>, double> to_beam_vector_and_rotation_angle(
+    std::pair<vec3<double>, double> to_beam_vector_and_rotation_angle(
         vec3<double> c) const {
       return std::make_pair(
         to_beam_vector(vec2<double>(c[0], c[1])),
