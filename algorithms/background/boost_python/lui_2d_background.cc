@@ -9,6 +9,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_lui_2d_background() {
     def("flat_background_flex_2d", &flat_background_flex_2d, (arg("data2d"), arg("mask2d") ));
     def("curved_background_flex_2d", &curved_background_flex_2d, (arg("data2d"), arg("mask2d") ));
+    def("plane_background_flex_2d", &plane_background_flex_2d, (arg("data2d"), arg("mask2d") ));
+
   }
 
 }}} // namespace = dials::algorithms::boost_python
