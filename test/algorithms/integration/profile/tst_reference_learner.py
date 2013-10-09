@@ -13,7 +13,7 @@ class Test(object):
         self.sampler = XdsCircleSampler((width, height, depth), nz)
 
         self.grid_size = (9, 9, 9)
-        self.threshold = 0.2
+        self.threshold = 0.02
 
     def run(self):
 
@@ -23,6 +23,7 @@ class Test(object):
     def tst_with_identical_non_negative_profiles(self):
 
         from dials.algorithms.integration.profile import XdsCircleReferenceLearner
+        from scitbx.array_family import flex
 
         # Generate identical non-negative profiles
         reflections, profile = self.generate_identical_non_negative_profiles()
@@ -48,6 +49,7 @@ class Test(object):
                 for j in range(self.grid_size[1]):
                     for i in range(self.grid_size[0]):
                         assert(abs(reference[k,j,i] - profile[k,j,i]) <= eps)
+            assert(abs(flex.sum(reference) - 1.0) <= eps)
 
         print 'OK'
 
@@ -57,6 +59,7 @@ class Test(object):
         from dials.algorithms.image.centroid import CentroidImage3d
         from scitbx import matrix
         from math import sqrt, pi, cos
+        from scitbx.array_family import flex
 
         # Generate identical non-negative profiles
         reflections = self.generate_systematically_offset_profiles()
@@ -82,6 +85,8 @@ class Test(object):
             x1.append(coord[0])
             x2.append(centroid.mean()[0])
 
+            assert(abs(flex.sum(reference) - 1.0) < 1e-7)
+
         Y = matrix.col((
             sum(x2),
             sum([x * y for x, y in zip(x1, x2)])))
@@ -103,6 +108,8 @@ class Test(object):
         for i in range(len(profile)):
             if profile[i] > threshold:
                 sum_profile += profile[i]
+            else:
+                profile[i] = 0.0
 
         result = flex.double(flex.grid(profile.all()))
         for i in range(len(profile)):
