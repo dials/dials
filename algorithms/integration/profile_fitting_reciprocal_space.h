@@ -38,8 +38,13 @@ namespace dials { namespace algorithms {
      * Initialise the class. Set the reference profile locator.
      * @param locate The locator function
      */
-    ProfileFittingReciprocalSpace(shared_ptr<locator_type> locate)
-     : locate_(locate) {}
+    ProfileFittingReciprocalSpace(
+        shared_ptr<locator_type> locate,
+        std::size_t max_iter)
+     : locate_(locate),
+       max_iter_(max_iter) {
+      DIALS_ASSERT(max_iter_ > 0);
+    }
 
     /**
      * Perform the profile fitting on all the reflections
@@ -70,8 +75,8 @@ namespace dials { namespace algorithms {
 
       // Get the transformed background
       // HACK ALERT! Should fix: setting to mean of shoebox background
-      af::versa<double, af::c_grid<3> > b(c.accessor(), mean(
-        reflection.get_shoebox_background().const_ref()));
+      af::versa<double, af::c_grid<3> > b(c.accessor(), 0.0);//mean(
+//        reflection.get_shoebox_background().const_ref()));
 
       // Get the reference profile at the reflection coordinate
       double3 coord(reflection.get_image_coord_px()[0],
@@ -80,13 +85,15 @@ namespace dials { namespace algorithms {
       af::versa<double, af::c_grid<3> > p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance
-      ProfileFitting fit(p.const_ref(), c, b.const_ref());
+      ProfileFitting fit(p.const_ref(), c, b.const_ref(), max_iter_);
+      DIALS_ASSERT(fit.niter() < max_iter_);
       reflection.set_intensity(fit.intensity());
       reflection.set_intensity_variance(fit.variance());
     }
 
   private:
     shared_ptr<locator_type> locate_;
+    std::size_t max_iter_;
   };
 
 }} // namespace dials::algorithms
