@@ -271,13 +271,13 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
         ddn_dshift2 = matrix.col((0., 0., 0.))
 
         # derivative wrt tau1. Product rule for cross product applies
-        ddn_dtau1 = dd1_dtau1.cross(d2) + dd2_dtau1.cross(d1)
+        ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
 
         # derivative wrt tau2
-        ddn_dtau2 = dd1_dtau2.cross(d2) + dd2_dtau2.cross(d1)
+        ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
 
         # derivative wrt tau3
-        ddn_dtau3 = dd1_dtau3.cross(d2) + dd2_dtau3.cross(d1)
+        ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
 
         # calculate derivatives of the attached sensor matrix
         # ===================================================
@@ -665,13 +665,13 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
         ddn_dshift2 = matrix.col((0., 0., 0.))
 
         # derivative wrt tau1. Product rule for cross product applies
-        ddn_dtau1 = dd1_dtau1.cross(d2) + dd2_dtau1.cross(d1)
+        ddn_dtau1 = dd1_dtau1.cross(d2) + d1.cross(dd2_dtau1)
 
         # derivative wrt tau2
-        ddn_dtau2 = dd1_dtau2.cross(d2) + dd2_dtau2.cross(d1)
+        ddn_dtau2 = dd1_dtau2.cross(d2) + d1.cross(dd2_dtau2)
 
         # derivative wrt tau3
-        ddn_dtau3 = dd1_dtau3.cross(d2) + dd2_dtau3.cross(d1)
+        ddn_dtau3 = dd1_dtau3.cross(d2) + d1.cross(dd2_dtau3)
 
         # reset stored derivatives
         for i in range(len(self._dstate_dp)):
@@ -785,7 +785,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
                           dir2_new_basis[1] * dd2_dtau3 + \
                           dir2_new_basis[2] * ddn_dtau3
 
-            # combine these vectors together into derivatives of the sensor
+            # combine these vectors together into derivatives of the panel
             # matrix d and store them, converting angles back to mrad
 
             # derivative wrt dist
@@ -963,6 +963,7 @@ if __name__ == '__main__':
         dp = DetectorParameterisationSinglePanel(det)
 
         # apply a random parameter shift
+        p_vals = dp.get_param_vals()
         p_vals = random_param_shift(p_vals, [10, 10, 10, 1000.*pi/18,
                                              1000.*pi/18, 1000.*pi/18])
         dp.set_param_vals(p_vals)
@@ -1000,40 +1001,36 @@ if __name__ == '__main__':
     # detector (need a beam to initialise the multi-panel detector
     # parameterisation)
     lim = det[0].get_image_size_mm()
-    shift1 = random.uniform(0, lim[0])
-    shift2 = random.uniform(0, lim[1])
+    shift1 = lim[0] / 2. + random.gauss(0.5, 0.01)
+    shift2 = lim[1] / 2. + random.gauss(0.5, 0.01)
     beam_centre = matrix.col(det[0].get_origin()) + \
                   shift1 * matrix.col(det[0].get_fast_axis()) + \
                   shift2 * matrix.col(det[0].get_slow_axis())
     beam = beam_factory().make_beam(sample_to_source=-1.*beam_centre,
                                     wavelength=1.0)
 
-    # imports required to make a 3x3 multi-panel detector
-    from dials.test.algorithms.refinement.tst_multi_panel_detector_parameterisation \
-        import make_panel_in_array
-    from dials.model.experiment import Panel, Detector
+    # local function required to make a 3x3 multi-panel detector
+    def make_multi_panel(single_panel_detector):
+        """Create a 3x3 multi-panel detector filling the same space as
+        a supplied single panel detector"""
 
-    # import req to apply small random shifts & rotations to each panel
-    from dials.test.algorithms.refinement.setup_geometry import \
-        random_vector_close_to
+        from dials.test.algorithms.refinement.tst_multi_panel_detector_parameterisation \
+            import make_panel_in_array
+        from dials.test.algorithms.refinement.setup_geometry import \
+            random_vector_close_to
 
-    attempts = 100
-    failures = 0
-    for i in range(attempts):
-
-        # make a 3x3 multi-panel detector filling the same space as the
-        # single panel detector
         multi_panel_detector = Detector()
         for x in range(3):
             for y in range(3):
-                new_panel = make_panel_in_array((x, y), det[0])
+                new_panel = make_panel_in_array(
+                                (x, y), single_panel_detector[0])
                 multi_panel_detector.add_panel(new_panel)
 
         # apply small random shifts & rotations to each panel
         for p in multi_panel_detector:
 
             # perturb origin vector
-            o_multiplier = random.gauss(1.0, 0.1)
+            o_multiplier = random.gauss(1.0, 0.01)
             new_origin = random_vector_close_to(p.get_origin(), sd=0.5)
             new_origin *= o_multiplier
 
@@ -1050,8 +1047,59 @@ if __name__ == '__main__':
             # set panel frame
             p.set_frame(new_dir1, new_dir2, new_origin)
 
+        return multi_panel_detector
+
+    multi_panel_detector = make_multi_panel(det)
+
+    # parameterise this detector
+    dp = DetectorParameterisationMultiPanel(multi_panel_detector,
+                                            beam)
+
+    # ensure the beam still intersects the central panel
+    intersection = multi_panel_detector.get_ray_intersection(
+                                                        beam.get_s0())
+    assert intersection[0] == 4
+
+    # record the offsets and dir1s, dir2s
+    offsets_before_shift = dp._offsets
+    dir1s_before_shift = dp._dir1s
+    dir2s_before_shift = dp._dir2s
+
+    # apply a random parameter shift (~10 mm distances, ~50 mrad angles)
+    p_vals = dp.get_param_vals()
+    p_vals = random_param_shift(p_vals, [10, 10, 10, 50,
+                                         50, 50])
+
+    # reparameterise the detector
+    dp = DetectorParameterisationMultiPanel(multi_panel_detector,
+                                            beam)
+
+    # record the offsets and dir1s, dir2s
+    offsets_after_shift = dp._offsets
+    dir1s_after_shift = dp._dir1s
+    dir2s_after_shift = dp._dir2s
+
+    # ensure the offsets, dir1s and dir2s are the same. This means that
+    # each panel in the detector moved with the others as a rigid body
+    for a, b in zip(offsets_before_shift, offsets_after_shift):
+        assert(approx_equal(a, b, eps=1.e-10))
+
+    for a, b in zip(dir1s_before_shift, dir1s_after_shift):
+        assert(approx_equal(a, b, eps=1.e-10))
+
+    for a, b in zip(dir2s_before_shift, dir2s_after_shift):
+        assert(approx_equal(a, b, eps=1.e-10))
+
+    attempts = 50
+    failures = 0
+    for i in range(attempts):
+
+        multi_panel_detector = make_multi_panel(det)
+
+        # parameterise this detector
         dp = DetectorParameterisationMultiPanel(multi_panel_detector,
                                                 beam)
+        p_vals = dp.get_param_vals()
 
         # apply a random parameter shift
         p_vals = random_param_shift(p_vals, [10, 10, 10, 1000.*pi/18,
@@ -1065,24 +1113,31 @@ if __name__ == '__main__':
         # get_fd_gradients will implicitly only get gradients for the
         # 1st panel in the detector, so explicitly get the same for the
         # analytical gradients
-        an_ds_dp = dp.get_ds_dp(multi_state_elt=0)
-        fd_ds_dp = get_fd_gradients(dp, [1.e-7] * dp.num_free())
 
-        for j in range(6):
-            try:
-                assert(approx_equal((fd_ds_dp[j] - an_ds_dp[j]),
-                        matrix.sqr((0., 0., 0.,
-                                    0., 0., 0.,
-                                    0., 0., 0.)), eps = 1.e-6))
-            except Exception:
-                failures += 1
-                print "for try", i
-                print "failure for parameter number", j
-                print "with fd_ds_dp = "
-                print fd_ds_dp[j]
-                print "and an_ds_dp = "
-                print an_ds_dp[j]
-                print "so that difference fd_ds_dp - an_ds_dp ="
-                print fd_ds_dp[j] - an_ds_dp[j]
+        for j in range(9):
+
+            an_ds_dp = dp.get_ds_dp(multi_state_elt=j)
+            fd_ds_dp = get_fd_gradients(dp, [1.e-7] * dp.num_free(),
+                                        multi_state_elt=j)
+
+            for k in range(6):
+                try:
+                    assert(approx_equal((fd_ds_dp[k] - an_ds_dp[k]),
+                            matrix.sqr((0., 0., 0.,
+                                        0., 0., 0.,
+                                        0., 0., 0.)),
+                                        eps = 1.e-5,
+                                        out = None))
+                except Exception:
+                    failures += 1
+                    print "for try", i
+                    print "for panel number", j
+                    print "failure for parameter number", k
+                    print "with fd_ds_dp = "
+                    print fd_ds_dp[k]
+                    print "and an_ds_dp = "
+                    print an_ds_dp[k]
+                    print "so that difference fd_ds_dp - an_ds_dp ="
+                    print fd_ds_dp[k] - an_ds_dp[k]
 
     if failures == 0: print "OK"
