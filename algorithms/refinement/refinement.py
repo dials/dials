@@ -73,7 +73,7 @@ def get_fd_gradients(mp, deltas, multi_state_elt=None):
         p_vals[i] -= deltas[i] / 2.
         mp.set_param_vals(p_vals)
         if multi_state_elt is None:
-            rev_state = mp.get_state() 
+            rev_state = mp.get_state()
         else:
             rev_state = mp.get_state(multi_state_elt=multi_state_elt)
 

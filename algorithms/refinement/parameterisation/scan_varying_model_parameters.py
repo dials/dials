@@ -307,16 +307,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
     #def set_fixed(self, fix): inherited unchanged from ModelParameterisation
 
-    def get_state(self, t):
-        '''return the current state of the model under parameterisation
-        at image number t. This is required, for example, by the calculation
-        of finite difference gradients.'''
-
-        # To be implemented by the derived class, where it is clear what aspect
-        # of the model under parameterisation is considered its state. The
-        # type of this result should match the type of one element of the return
-        # value of get_ds_dp.
-        raise RuntimeError, 'implement me'
+    #def get_state(self): inherited unchanged from ModelParameterisation
 
     def get_ds_dp(self, only_free = True):
         '''get a list of derivatives of the state wrt each parameter, as
