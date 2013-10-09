@@ -27,8 +27,8 @@ from dials.model.experiment import detector_factory
 from dials.model.experiment.crystal_model import Crystal
 
 # Local functions
-def random_direction_close_to(vector, sd = 0.5):
-    return vector.rotate_around_origin(matrix.col(
+def random_vector_close_to(vector, sd = 0.5):
+    return matrix.col(vector).rotate_around_origin(matrix.col(
                 (random.random(),
                  random.random(),
                  random.random())).normalize(),
@@ -110,8 +110,7 @@ class Extract(object):
         elif self._params.beam.direction.method == 'close_to':
 
             temp = self._params.beam.direction.close_to.direction
-            beam_dir = random_direction_close_to(
-                        matrix.col(temp),
+            beam_dir = random_vector_close_to(temp,
                         sd = self._params.beam.direction.close_to.sd)
 
         elif self._params.beam.direction.method == 'exactly':
@@ -129,14 +128,12 @@ class Extract(object):
         if self._params.detector.directions.method == 'close_to':
 
             temp = self._params.detector.directions.close_to.dir1
-            dir1 = random_direction_close_to(
-                    matrix.col(temp),
+            dir1 = random_vector_close_to(temp,
                     sd = self._params.detector.directions.close_to.sd)
 
-            n = random_direction_close_to(
-                matrix.col(
-                    self._params.detector.directions.close_to.norm),
-                sd = self._params.detector.directions.close_to.sd)
+            n = random_vector_close_to(
+                    self._params.detector.directions.close_to.norm,
+                    sd=self._params.detector.directions.close_to.sd)
 
         elif self._params.detector.directions.method == 'exactly':
 
@@ -153,8 +150,8 @@ class Extract(object):
 
         if self._params.detector.centre.method == 'close_to':
 
-            centre = random_direction_close_to(
-                matrix.col(self._params.detector.centre.close_to.value),
+            centre = random_vector_close_to(
+                self._params.detector.centre.close_to.value,
                 sd = self._params.detector.centre.close_to.sd)
 
         elif self._params.detector.centre.method == 'exactly':
@@ -184,8 +181,8 @@ class Extract(object):
 
         if vec.direction.method == 'close_to':
 
-            x = random_direction_close_to(
-                    matrix.col(vec.direction.close_to.direction),
+            x = random_vector_close_to(
+                    vec.direction.close_to.direction,
                     sd = vec.direction.close_to.sd)
 
         elif vec.direction.method == 'exactly':

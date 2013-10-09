@@ -59,8 +59,6 @@ def get_fd_gradients(mp, deltas):
     contains the step size for the difference calculations for each parameter.
     '''
 
-    #state = matrix.sqr(mp._models[0].d)
-
     p_vals = mp.get_param_vals()
     assert len(deltas) == len(p_vals)
     fd_grad = []
