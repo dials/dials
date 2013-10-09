@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
       const af::const_ref< double, af::c_grid<2> > &background2d) {
         double i_tot = 0, tot_bkgr = 0;
         int npix_bkgr = 0, npix_mask = 0, cont = 0;
-        double bkgr, sig;
+        double bkgr, sig_i;
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
         vec2<double> integr_data(0,1);
@@ -50,15 +50,15 @@ namespace dials { namespace algorithms {
         }
         if( tot_bkgr>0 && cont>0 && npix_mask>0 && npix_bkgr>0 ){
           bkgr = tot_bkgr / cont;
-          sig = std::sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
+          sig_i = std::sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
 
         } else {
           bkgr = 0;
-          sig = std::sqrt(i_tot);
+          sig_i = std::sqrt(i_tot);
         }
 
         integr_data[0]=i_tot;        // intensity
-        integr_data[1]=sig;          // intensity sigma
+        integr_data[1]=sig_i;          // intensity sigma
 
         return integr_data;
 

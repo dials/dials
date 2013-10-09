@@ -67,6 +67,7 @@ def calc_background_n_make_2d_profile(reflections):
         data2d = shoebox[0:1, :, :]
         mask2d = mask[0:1, :, :]
         background2d = background[0:1, :, :]
+
         data2d.reshape(flex.grid(shoebox.all()[1:]))
         mask2d.reshape(flex.grid(shoebox.all()[1:]))
         background2d.reshape(flex.grid(shoebox.all()[1:]))
@@ -95,6 +96,14 @@ def fit_profile_2d(reflections, average, thold):
             data2d = shoebox[0:1, :, :]
             mask2d = mask[0:1, :, :]
             background2d = background[0:1, :, :]
+
+            try:
+                data2d.reshape(flex.grid(shoebox.all()[1:]))
+                mask2d.reshape(flex.grid(shoebox.all()[1:]))
+            except:
+                print "error reshaping flex-array"
+                print "ref.bounding_box", ref.bounding_box
+                break
 
             data2d.reshape(flex.grid(shoebox.all()[1:]))
             mask2d.reshape(flex.grid(shoebox.all()[1:]))

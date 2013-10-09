@@ -68,5 +68,26 @@ def layering_and_background_modl(reflections):
 
     return reflections
 
-#
 
+def layering_and_background_plane(reflections):
+    from dials.algorithms.background import curved_background_flex_2d
+    from scitbx.array_family import flex
+
+    print "performing background calculation ...."
+
+    for ref in reflections:
+        if ref.is_valid():
+            shoebox = ref.shoebox
+            mask = ref.shoebox_mask
+            background = ref.shoebox_background
+            for i in range(shoebox.all()[0]):
+                data2d = shoebox[i:i + 1, :, :]
+                mask2d = mask[i:i + 1, :, :]
+                data2d.reshape(flex.grid(shoebox.all()[1:]))
+                mask2d.reshape(flex.grid(shoebox.all()[1:]))
+                background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
+                background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
+                background[i:i + 1, :, :] = background2d.as_double()
+    print "background calculation .... done"
+
+    return reflections
