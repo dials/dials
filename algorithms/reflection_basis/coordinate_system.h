@@ -166,261 +166,75 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         m2e3_m2ps + std::sqrt(r));
     }
 
-  private:
-
-    vec3<double> m2_;
-    vec3<double> s0_;
-    vec3<double> s1_;
-    double phi_;
-    vec3<double> p_star_;
-    vec3<double> e1_;
-    vec3<double> e2_;
-    vec3<double> e3_;
-    double zeta_;
-  };
-
-  /**
-   * Class to represent a geometry transform from beam vector to the local
-   * reciprocal space coordinate system (e1 and e2).
-   */
-  class FromBeamVector {
-
-  public:
-
     /**
-     * Initialise the transform using the XDS coordinate system.
-     * @param cs The XDS coordinate system
-     * @param s1 The diffracted beam vector
+     * Transform the beam vector to the reciprocal space coordinate system.
+     * @param s_dash The beam vector
+     * @returns The e1, e2 coordinates
      */
-    FromBeamVector(const CoordinateSystem &cs)
-      : s1_(cs.s1()),
-        scaled_e1_(cs.e1_axis() / s1_.length()),
-        scaled_e2_(cs.e2_axis() / s1_.length()) {}
-
-    /**
-     * Apply the transform to a beam vector
-     * @param s_dash The diffracted beam vector to transform
-     * @returns The point in XDS coordinates
-     */
-    vec2 <double> operator()(vec3<double> s_dash) const {
+    vec2<double> from_beam_vector(const vec3<double> &s_dash) const {
+      double s1_length = s1_.length();
+      DIALS_ASSERT(s1_length > 0);
+      vec3<double> scaled_e1 = e1_ / s1_length;
+      vec3<double> scaled_e2 = e2_ / s1_length;
       return vec2 <double> (
-        scaled_e1_ * (s_dash - s1_),
-        scaled_e2_ * (s_dash - s1_));
+        scaled_e1 * (s_dash - s1_),
+        scaled_e2 * (s_dash - s1_));
     }
 
-  private:
-
-    vec3<double> s1_;
-    vec3<double> scaled_e1_;
-    vec3<double> scaled_e2_;
-  };
-
-
-  /**
-   * Class to transform from rotation angle to the e3 coordinate of the
-   * local reflection coordinate system.
-   */
-  class FromRotationAngleFast {
-  public:
-
     /**
-     * Initialise the transform
-     * @param cs The coordinate system.
-     * @param m2 The rotation axis.
-     * @param phi The rotation angle.
+     * Transform the rotation angle to the reciprocal space coordinate system
+     * @param phi_dash The rotation angle
+     * @returns The e3 coordinate.
      */
-    FromRotationAngleFast(const CoordinateSystem &cs)
-      : phi_(cs.phi()),
-        zeta_(cs.zeta()) {}
-
-    /**
-     * Map the rotation angle to the e3 coordinate of the local basis
-     * @param phi The angle.
-     * @returns The e3 angle.
-     */
-    double operator()(double phi_dash) const {
-      return zeta_ * (phi_dash - phi_);
-    }
-
-  private:
-    double phi_;
-    double zeta_;
-  };
-
-
-  /**
-   * Class to transform the rotation angle to the e3 coordinate using
-   * a more accurate method.
-   */
-  class FromRotationAngleAccurate {
-  public:
-
-    /**
-     * Initialise the class using the coordinate system
-     * @param cs The reflection coordinate system
-     */
-    FromRotationAngleAccurate(const CoordinateSystem &cs)
-      : m2_(cs.m2().normalize()),
-        scaled_e3_(cs.e3_axis() / cs.p_star().length()),
-        p_star_(cs.p_star()),
-        phi_(cs.phi()) {}
-
-    /**
-     * Map the rotation angle to the e3 coordinate of the local basis
-     * @param phi The angle.
-     * @returns The e3 angle.
-     */
-    double operator()(double phi_dash) const {
-      return scaled_e3_ * (p_star_.unit_rotate_around_origin(
+    double from_rotation_angle(double phi_dash) const {
+      double p_star_length = p_star_.length();
+      DIALS_ASSERT(p_star_length > 0);
+      vec3<double> scaled_e3 = e3_ / p_star_length;
+      return scaled_e3 * (p_star_.unit_rotate_around_origin(
         m2_, phi_dash - phi_) - p_star_);
     }
 
-  private:
-
-    vec3<double> m2_;
-    vec3<double> scaled_e3_;
-    vec3<double> p_star_;
-    double phi_;
-  };
-
-
-  /**
-   * Class to transform a beam vector and rotation angle to the reciprocal
-   * space coordinate system.
-   */
-  class FromBeamVectorAndRotationAngle {
-  public:
-
     /**
-     * Initialise the transform with the coordinate system
-     * @param cs The coordinate system
-     */
-    FromBeamVectorAndRotationAngle(const CoordinateSystem &cs)
-      : from_beam_vector_(cs),
-        from_rotation_angle_(cs) {}
-
-    /**
-     * Map the rotation angle to the e3 coordinate of the local basis
-     * @param phi The angle.
-     * @returns The e3 angle.
-     */
-    double operator()(double phi_dash) const {
-      return from_rotation_angle_(phi_dash);
-    }
-
-    /**
-     * Apply the transform to a beam vector
-     * @param s_dash The diffracted beam vector to transform
-     * @returns The point in XDS coordinates
-     */
-    vec2 <double> operator()(vec3<double> s_dash) const {
-      return from_beam_vector_(s_dash);
-    }
-
-    /**
-     * Map the rotation angle and beam vector to the coordinate system
-     * @param s_dash The beam vector
+     * Transform the rotation to the reciprocal space coordinate system using
+     * a fast approximate method.
      * @param phi_dash The rotation angle
+     * @retuns The e3 coordinate
      */
-    vec3<double> operator()(vec3<double> s_dash, double phi_dash) const {
-      vec2<double> e12 = from_beam_vector_(s_dash);
-      return vec3<double>(e12[0], e12[1], from_rotation_angle_(phi_dash));
+    double from_rotation_angle_fast(double phi_dash) const {
+      return zeta_ * (phi_dash - phi_);
     }
 
-  private:
-    FromBeamVector from_beam_vector_;
-    FromRotationAngleFast from_rotation_angle_;
-  };
-
-
-  /**
-   * A class to perform a transform from XDS coordinate frame to beam vector
-   */
-  class ToBeamVector {
-  public:
-
     /**
-     * Initialise the transform
-     * @param cs The XDS coordinate system
+     * Transform the beam vector and rotation angle to get the full
+     * reciprocal space coordinate
+     * @param s1_dash The beam vector
+     * @param phi_dash The rotation angle
+     * @returns The reciprocal space coordinate
      */
-    ToBeamVector(const CoordinateSystem &cs)
-      : radius_(cs.s1().length()),
-        scaled_e1_(cs.e1_axis() * radius_),
-        scaled_e2_(cs.e2_axis() * radius_),
-        normalized_s1_(cs.s1() / radius_) {}
+    vec3<double> from_beam_vector_and_rotation_angle(
+        vec3<double> s1_dash, double phi_dash) const {
+      vec2<double> c12 = from_beam_vector(s1_dash);
+      return vec3<double>(c12[0], c12[1], from_rotation_angle_fast(phi_dash));
+    }
 
     /**
-     * Apply the transform to the xds point. The transform is done by
-     * calculating the coordinate of point in the sphere tangent plane at the
-     * location of the exit point of the beam vector, s1. The beam vector, s',
-     * is then calculated by finding the intersection of line defined by the
-     * plane normal (i.e. s1 vector) with origin at the calculated tangent plane
-     * point point and the ewald sphere.
-     *
-     * @param e12 The XDS coordinate
+     * Transform the reciprocal space coordinate to get the beam vector.
+     * @param c12 The e1 and e2 coordinates.
      * @returns The beam vector
      */
-    vec3<double> operator()(vec2<double> e12) const {
-      vec3 <double> p = e12[0] * scaled_e1_ + e12[1] * scaled_e2_;
-      double b = radius_ * radius_ - p.length_sq();
+    vec3<double> to_beam_vector(const vec2<double> &c12) const {
+      double radius = s1_.length();
+      DIALS_ASSERT(radius > 0);
+      vec3<double> scaled_e1 = e1_ * radius;
+      vec3<double> scaled_e2 = e2_ * radius;
+      vec3<double> normalized_s1 = s1_ / radius;
+
+      vec3 <double> p = c12[0] * scaled_e1 + c12[1] * scaled_e2;
+      double b = radius * radius - p.length_sq();
       DIALS_ASSERT(b >= 0);
-      double d = -(normalized_s1_ * p) + std::sqrt(b);
-      return p + d * normalized_s1_;
+      double d = -(normalized_s1 * p) + std::sqrt(b);
+      return p + d * normalized_s1;
     }
-
-  private:
-    double radius_;
-    vec3 <double> scaled_e1_;
-    vec3 <double> scaled_e2_;
-    vec3 <double> normalized_s1_;
-  };
-
-
-  /**
-   * A class to transform from XDS e3 coord to the rotation angle, phi
-   */
-  class ToRotationAngleFast {
-  public:
-
-    /**
-     * Initialise the class
-     * @param cs The coordinate system
-     */
-    ToRotationAngleFast(const CoordinateSystem &cs)
-     : zeta_(cs.zeta()),
-       phi_(cs.phi()) {}
-
-    /**
-     * Apply the transform
-     * @param e3 The XDS e3 coordinate
-     * @returns The rotation angle phi'
-     */
-    double operator()(double e3) const {
-      return e3 / zeta_ + phi_;
-    }
-
-  private:
-    double zeta_;
-    double phi_;
-  };
-
-
-  /**
-   * Class to do a more accurate mapping from e3 to phi.
-   */
-  class ToRotationAngleAccurate {
-  public:
-
-    /**
-     * Initialise the class
-     * @param cs The coordinate system
-     */
-    ToRotationAngleAccurate(const CoordinateSystem &cs)
-      : phi_(cs.phi()),
-        m2e1_(cs.m2() * cs.e1_axis()),
-        m2e1_m2e1_(m2e1_ * m2e1_),
-        m2e3_m2ps_(2.0 * (cs.m2() * cs.e3_axis()) *
-          (cs.m2() * cs.p_star().normalize())) {}
 
     /**
      * Apply the transform by solving the following equation for t
@@ -432,168 +246,53 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param c3 The XDS e3 coordinate
      * @returns The rotation angle phi'
      */
-    double operator()(double c3) const {
-      double l = m2e1_m2e1_ + c3 * m2e3_m2ps_ - c3*c3;
+    double to_rotation_angle(double c3) const {
+      double m2e1 = m2_ * e1_;
+      double m2e1_m2e1 = (m2e1 * m2e1);
+      double m2e3_m2ps = (2.0 * (m2_ * e3_) * (m2_ * p_star_.normalize()));
+
+      double l = m2e1_m2e1 + c3 * m2e3_m2ps - c3*c3;
       DIALS_ASSERT(l >= 0.0);
-      double y = std::sqrt(l) + m2e1_;
-      double x = c3 - m2e3_m2ps_;
+      double y = std::sqrt(l) + m2e1;
+      double x = c3 - m2e3_m2ps;
       DIALS_ASSERT(x != 0.0);
       return phi_ + 2.0*atan(y / x);
     }
 
+    /**
+     * Transform the e3 coordinate to get the rotation angle using a
+     * fast approximate method.
+     * @param c3 The e3 coordinate
+     * @returns The rotation angle.
+     */
+    double to_rotation_angle_fast(double c3) const {
+      return c3 / zeta_ + phi_;
+    }
+
+    /**
+     * Transform the reciprocal space coordinate back to real space to
+     * get the beam vector and rotation angle.
+     * @param The reciprocal space coordinate
+     * @returns a pair of the beam vector and rotation angle
+     */
+    std::pair< vec3<double>, double> to_beam_vector_and_rotation_angle(
+        vec3<double> c) const {
+      return std::make_pair(
+        to_beam_vector(vec2<double>(c[0], c[1])),
+        to_rotation_angle_fast(c[3]));
+    }
+
   private:
+
+    vec3<double> m2_;
+    vec3<double> s0_;
+    vec3<double> s1_;
     double phi_;
-    double m2e1_;
-    double m2e1_m2e1_;
-    double m2e3_m2ps_;
-  };
-
-
-  /**
-   * Class to transform a the reciprocal space coordinate system point to
-   * a beam vector and rotation angle
-   */
-  class ToBeamVectorAndRotationAngle {
-  public:
-
-    /**
-     * Initialise the transform with the coordinate system
-     * @param cs The coordinate system
-     */
-    ToBeamVectorAndRotationAngle(const CoordinateSystem &cs)
-      : to_beam_vector_(cs),
-        to_rotation_angle_(cs) {}
-
-    /**
-     * Apply the transform by projecting the point onto the arc of rotation
-     * of the reciprocal space vector p. Then calculate the angle
-     * @param e3 The XDS e3 coordinate
-     * @returns The rotation angle phi'
-     */
-    double operator()(double e3) const {
-      return to_rotation_angle_(e3);
-    }
-
-    /**
-     * Apply the transform to the xds point. The transform is done by
-     * calculating the coordinate of point in the sphere tangent plane at the
-     * location of the exit point of the beam vector, s1. The beam vector, s',
-     * is then calculated by finding the intersection of line defined by the
-     * plane normal (i.e. s1 vector) with origin at the calculated tangent plane
-     * point point and the ewald sphere.
-     *
-     * @param e12 The XDS coordinate
-     * @returns The beam vector
-     */
-    vec3<double> operator()(vec2<double> e12) const {
-      return to_beam_vector_(e12);
-    }
-
-    /**
-     * Map the point to rotation angle and beam vector
-     * @param e The point
-     * @returns The beam vector and rotation angle
-     */
-    std::pair<vec3<double>, double> operator()(vec3<double> e) const {
-      return std::make_pair(
-        to_beam_vector_(vec2<double>(e[0], e[1])),
-        to_rotation_angle_(e[2]));
-    }
-
-  private:
-    ToBeamVector to_beam_vector_;
-    ToRotationAngleFast to_rotation_angle_;
-  };
-
-
-  /**
-   * Class to map detector millimeter coordinates to the reciprocal space
-   * coordinate system.
-   */
-  class FromDetector {
-  public:
-
-    /**
-     * Initialise the transform with the coordinate system and the
-     * detector d matrix
-     * @param cs The coordinate system
-     * @param d The detector d matrix
-     */
-    FromDetector(const CoordinateSystem &cs, mat3<double> d)
-      : from_s1_phi_(cs),
-        d_(d),
-        s1_length_(cs.s1().length()) {}
-
-    /**
-     * Map the detector millimeter coordinate to the e1/e2 coordinate.
-     * @param xy The detector millimeter coordinate
-     * @returns The e1/e2 coordinate in reciprocal space
-     */
-    vec2<double> operator()(vec2<double> xy) const {
-      vec3<double> s1 = plane_world_coordinate(d_, xy).normalize() * s1_length_;
-      return from_s1_phi_(s1);
-    }
-
-    /**
-     * Map the detector coordinate and rotation angle to the coordinate system.
-     * @param xy The detector millimeter coordinate
-     * @param phi The rotation angle
-     * @returns The local reciprocal space coordinate
-     */
-    vec3<double> operator()(vec2<double> xy, double phi) const {
-      vec3<double> s1 = plane_world_coordinate(d_, xy).normalize() * s1_length_;
-      return from_s1_phi_(s1, phi);
-    }
-
-  private:
-    FromBeamVectorAndRotationAngle from_s1_phi_;
-    mat3<double> d_;
-    double s1_length_;
-  };
-
-
-  /**
-   * Class to map the reciprocal space coordinate system to detector
-   * millimeter coordinates.
-   */
-  class ToDetector {
-  public:
-
-    /**
-     * Initialise the transform with the coordinate system and the
-     * detector D matrix
-     * @param cs The coordinate system
-     * @param D The detector D matrix
-     */
-    ToDetector(const CoordinateSystem &cs, mat3<double> D)
-      : to_s1_phi_(cs),
-        D_(D) {}
-
-    /**
-     * Map the local reciprocal space e1/e2 coordinate to detector mm.
-     * @param e The e1/e2 coordinate
-     * @returns The detector mm coordinate.
-     */
-    vec2<double> operator()(vec2<double> e) const {
-      return plane_ray_intersection(D_, to_s1_phi_(e));
-    }
-
-    /**
-     * Map the local reciprocal space coordinate to the detector millimeter
-     * and rotation angle.
-     * @param e The local reciprocal space coordinate
-     * @returns The mm/rad detector, rotation angle.
-     */
-    std::pair<vec2<double>, double> operator()(vec3<double> e) const {
-      std::pair<vec3<double>, double> s1_phi = to_s1_phi_(e);
-      return std::make_pair(
-        plane_ray_intersection(D_, s1_phi.first),
-        s1_phi.second);
-    }
-
-  private:
-    ToBeamVectorAndRotationAngle to_s1_phi_;
-    mat3<double> D_;
+    vec3<double> p_star_;
+    vec3<double> e1_;
+    vec3<double> e2_;
+    vec3<double> e3_;
+    double zeta_;
   };
 
 }}} // namespace = dials::algorithms::reflection_basis

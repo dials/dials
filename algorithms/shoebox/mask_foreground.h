@@ -35,7 +35,6 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dxtbx::model::Scan;
   using dials::model::Reflection;
   using dials::algorithms::reflection_basis::CoordinateSystem;
-  using dials::algorithms::reflection_basis::FromRotationAngleFast;
   using dials::algorithms::reflection_basis::transform::CoordinateGenerator;
   using dials::algorithms::reflection_basis::transform::beam_vector_map;
 

@@ -42,7 +42,6 @@ class Test(object):
     def run(self):
         from scitbx import matrix
         from dials.algorithms import shoebox
-        from dials.algorithms.reflection_basis import FromBeamVector
         from dials.algorithms.reflection_basis import CoordinateSystem
 
         s0 = self.beam.get_s0()
@@ -63,14 +62,13 @@ class Test(object):
             s1 = r.beam_vector
             phi = r.rotation_angle
             cs = CoordinateSystem(m2, s0, s1, phi)
-            from_beam_vector = FromBeamVector(cs)
             for j in range(y1 - y0):
                 for i in range(x1 - x0):
                     value1 = mask[0, j, i]
                     s1 = self.detector.get_pixel_lab_coord(
                         (x0 + i + 0.5, y0 + j + 0.5))
                     s1 = matrix.col(s1).normalize() * s0_length
-                    e1, e2 = from_beam_vector(s1)
+                    e1, e2 = cs.from_beam_vector(s1)
                     aa = (e1 / self.delta_d)**2
                     bb = (e2 / self.delta_d)**2
                     if (x0 + i < 0 or y0 + j < 0 or

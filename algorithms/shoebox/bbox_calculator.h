@@ -98,22 +98,16 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Create the coordinate system for the reflection
       reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
 
-      // Create the transformer from the xds coordinate system to the detector
-      reflection_basis::ToBeamVector calculate_beam_vector(xcs);
-
-      // Create the transformer from Xds E3 to rotation angle
-      reflection_basis::ToRotationAngleFast calculate_rotation_angle(xcs);
-
       // Calculate the beam vectors at the following xds coordinates:
       //   (-delta_d, -delta_d, 0)
       //   (+delta_d, -delta_d, 0)
       //   (-delta_d, +delta_d, 0)
       //   (+delta_d, +delta_d, 0)
       double point = delta_divergence_;
-      double3 sdash1 = calculate_beam_vector(double2(-point, -point));
-      double3 sdash2 = calculate_beam_vector(double2(+point, -point));
-      double3 sdash3 = calculate_beam_vector(double2(-point, +point));
-      double3 sdash4 = calculate_beam_vector(double2(+point, +point));
+      double3 sdash1 = xcs.to_beam_vector(double2(-point, -point));
+      double3 sdash2 = xcs.to_beam_vector(double2(+point, -point));
+      double3 sdash3 = xcs.to_beam_vector(double2(-point, +point));
+      double3 sdash4 = xcs.to_beam_vector(double2(+point, +point));
 
       // Get the detector coordinates (px) at the ray intersections
       double2 xy1 = detector_[panel].get_ray_intersection_px(sdash1);
@@ -123,8 +117,8 @@ namespace dials { namespace algorithms { namespace shoebox {
 
       /// Calculate the rotation angles at the following XDS
       // e3 coordinates: -delta_m, +delta_m
-      double phi1 = calculate_rotation_angle(-delta_mosaicity_);
-      double phi2 = calculate_rotation_angle(+delta_mosaicity_);
+      double phi1 = xcs.to_rotation_angle_fast(-delta_mosaicity_);
+      double phi2 = xcs.to_rotation_angle_fast(+delta_mosaicity_);
 
       // Get the array indices at the rotation angles
       double z1 = scan_.get_array_index_from_angle(phi1);

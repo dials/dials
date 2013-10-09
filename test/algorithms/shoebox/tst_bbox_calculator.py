@@ -81,9 +81,8 @@ class Test(object):
             xcs = rb.CoordinateSystem(m2, s0, s1, phi)
 
             # Calculate reciprocal space coordinates at each point
-            to_reciprocal_space = rb.FromBeamVectorAndRotationAngle(xcs)
-            e11, e21, e31 = to_reciprocal_space(s1, phi_dash1)
-            e12, e22, e32 = to_reciprocal_space(s1, phi_dash2)
+            e11, e21, e31 = xcs.from_beam_vector_and_rotation_angle(s1, phi_dash1)
+            e12, e22, e32 = xcs.from_beam_vector_and_rotation_angle(s1, phi_dash2)
 
             # Check vertical edges
             for j in range(bbox[2], bbox[3] + 1):
@@ -91,8 +90,8 @@ class Test(object):
                 xyz2 = self.detector.get_pixel_lab_coord((bbox[1] + 1, j))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
-                e11, e21, e3 = to_reciprocal_space(sdash1, phi)
-                e12, e22, e3 = to_reciprocal_space(sdash2, phi)
+                e11, e21, e3 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
+                e12, e22, e3 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
                 assert(abs(e11) >= self.delta_divergence or
                        abs(e21) >= self.delta_divergence)
                 assert(abs(e12) >= self.delta_divergence or
@@ -104,8 +103,8 @@ class Test(object):
                 xyz2 = self.detector.get_pixel_lab_coord((i, bbox[3] + 1))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
-                e11, e21, e3 = to_reciprocal_space(sdash1, phi)
-                e12, e22, e3 = to_reciprocal_space(sdash2, phi)
+                e11, e21, e3 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
+                e12, e22, e3 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
                 assert(abs(e11) >= self.delta_divergence or
                        abs(e21) >= self.delta_divergence)
                 assert(abs(e12) >= self.delta_divergence or
@@ -156,17 +155,14 @@ class Test(object):
             # Create the XDS coordinate system
             xcs = rb.CoordinateSystem(m2, s0, s1, phi)
 
-            # Calculate reciprocal space coordinates at each point
-            to_reciprocal_space = rb.FromBeamVectorAndRotationAngle(xcs)
-
             # Check vertical edges
             for j in range(bbox[2], bbox[3] + 1):
                 xyz1 = self.detector.get_pixel_lab_coord((bbox[0], j))
                 xyz2 = self.detector.get_pixel_lab_coord((bbox[1] + 1, j))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
-                e11, e21, e31 = to_reciprocal_space(sdash1, phi)
-                e12, e22, e31 = to_reciprocal_space(sdash2, phi)
+                e11, e21, e31 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
+                e12, e22, e31 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
                 assert(sqrt(e11**2 + e21**2) >= radius12)
                 assert(sqrt(e12**2 + e22**2) >= radius12)
 
@@ -176,8 +172,8 @@ class Test(object):
                 xyz2 = self.detector.get_pixel_lab_coord((i, bbox[3] + 1))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
-                e11, e21, e32 = to_reciprocal_space(sdash1, phi)
-                e12, e22, e32 = to_reciprocal_space(sdash2, phi)
+                e11, e21, e32 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
+                e12, e22, e32 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
                 assert(sqrt(e11**2 + e21**2) >= radius12)
                 assert(sqrt(e12**2 + e22**2) >= radius12)
 

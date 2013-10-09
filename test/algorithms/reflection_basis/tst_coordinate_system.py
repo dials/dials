@@ -133,7 +133,6 @@ class TestFromBeamVector(object):
         self.phi = 5.83575672475 * pi / 180
 
         self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
-        self.from_beam_vector = FromBeamVector(self.cs)
 
     def test_coordinate_of_s1(self):
         """Ensure that the coordinate of s1 is (0, 0, 0)"""
@@ -142,7 +141,7 @@ class TestFromBeamVector(object):
 
         # Get the coordinate at s1
         s_dash = self.s1
-        c1, c2 = self.from_beam_vector(s_dash)
+        c1, c2 = self.cs.from_beam_vector(s_dash)
 
         # Ensure that it is at the origin
         assert(abs(c1 - 0.0) <= eps)
@@ -170,7 +169,7 @@ class TestFromBeamVector(object):
         s_dash = s_dash.rotate(matrix.col(self.s1), uniform(0, 360), deg=True)
 
         # Get the c1, c2 coordinate
-        c1, c2 = self.from_beam_vector(s_dash)
+        c1, c2 = self.cs.from_beam_vector(s_dash)
 
         # Check the point is equal to the limit in rs
         assert(abs(sqrt(c1**2 + c2**2) - abs(self.cs.limits()[0])) <= eps)
@@ -206,9 +205,6 @@ class TestFromRotationAngle(object):
 
         self.p_star = self.cs.p_star()
 
-        self.from_rotation_angle_fast = FromRotationAngleFast(self.cs)
-        self.from_rotation_angle = FromRotationAngleAccurate(self.cs)
-
     def test_coordinate_of_phi(self):
         """Ensure that the coordinate of s1 is (0, 0, 0)"""
 
@@ -216,7 +212,7 @@ class TestFromRotationAngle(object):
 
         # Get the coordinate at phi
         phi_dash = self.phi
-        c3 = self.from_rotation_angle(phi_dash)
+        c3 = self.cs.from_rotation_angle(phi_dash)
 
         # Ensure that it is at the origin
         assert(abs(c3 - 0.0) <= eps)
@@ -238,8 +234,8 @@ class TestFromRotationAngle(object):
 
         # Calculate the XDS coordinate, this class uses an approximation
         # for c3 = zeta * (phi' - phi)
-        c3 = self.from_rotation_angle(phi_dash)
-        c3_2 = self.from_rotation_angle_fast(phi_dash)
+        c3 = self.cs.from_rotation_angle(phi_dash)
+        c3_2 = self.cs.from_rotation_angle_fast(phi_dash)
 
         # Check the true and approximate value are almost equal to 4dp
         assert(abs(c3 - c3_2) < eps)
@@ -271,14 +267,12 @@ class TestToBeamVector(object):
         self.phi = 5.83575672475 * pi / 180
 
         self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
-        self.from_beam_vector = FromBeamVector(self.cs)
-        self.to_beam_vector = ToBeamVector(self.cs)
 
     def test_xds_origin(self):
         """Test the beam vector at the XDS origin is equal to s1."""
         from scitbx import matrix
         eps = 1e-7
-        s_dash = self.to_beam_vector((0, 0))
+        s_dash = self.cs.to_beam_vector((0, 0))
         assert(abs(matrix.col(s_dash) - matrix.col(self.s1)) <= eps)
 
         print "OK"
@@ -296,12 +290,12 @@ class TestToBeamVector(object):
 
         # A large value which is still valid
         c1 = 1.0 - eps
-        s_dash = self.to_beam_vector((c1, c2))
+        s_dash = self.cs.to_beam_vector((c1, c2))
 
         # A large value which is raises an exception
         try:
             c1 = 1.0 + eps
-            s_dash = self.to_beam_vector((c1, c2))
+            s_dash = self.cs.to_beam_vector((c1, c2))
             assert(False)
         except RuntimeError:
 
@@ -314,12 +308,12 @@ class TestToBeamVector(object):
 
         # A large value which is still valid
         c2 = 1.0 - eps
-        s_dash = self.to_beam_vector((c1, c2))
+        s_dash = self.cs.to_beam_vector((c1, c2))
 
         # A large value which is raises an exception
         try:
             c2 = 1.0 + eps
-            s_dash = self.to_beam_vector((c1, c2))
+            s_dash = self.cs.to_beam_vector((c1, c2))
             assert(False)
         except RuntimeError:
 
@@ -353,10 +347,10 @@ class TestToBeamVector(object):
             s_dash = s_dash.normalize() * matrix.col(self.s1).length()
 
             # Calculate the XDS coordinate of the vector
-            c1, c2 = self.from_beam_vector(s_dash)
+            c1, c2 = self.cs.from_beam_vector(s_dash)
 
             # Calculate the beam vector from the XDS coordinate
-            s_dash_2 = self.to_beam_vector((c1, c2))
+            s_dash_2 = self.cs.to_beam_vector((c1, c2))
 
             # Check the vectors are almost equal
             assert(abs(matrix.col(s_dash) - matrix.col(s_dash_2)) <= eps)
@@ -389,9 +383,6 @@ class TestToRotationAngle(object):
         self.phi = 5.83575672475 * pi / 180
 
         self.cs = CoordinateSystem(self.m2, self.s0, self.s1, self.phi)
-        self.to_rotation_angle = ToRotationAngleAccurate(self.cs)
-        self.to_rotation_angle_fast = ToRotationAngleFast(self.cs)
-        self.from_rotation_angle = FromRotationAngleAccurate(self.cs)
 
     def test_forward_and_backward(self):
 
@@ -414,10 +405,10 @@ class TestToRotationAngle(object):
             phi_dash = self.phi + random_shift()
 
             # Calculate the XDS coordinate of the vector
-            c3 = self.from_rotation_angle(phi_dash)
+            c3 = self.cs.from_rotation_angle(phi_dash)
 
             # Calculate the beam vector from the XDS coordinate
-            phi_dash_2 = self.to_rotation_angle(c3)
+            phi_dash_2 = self.cs.to_rotation_angle(c3)
 
             # Check the vectors are almost equal
             assert(abs(phi_dash_2 - phi_dash) <= eps)
@@ -427,7 +418,7 @@ class TestToRotationAngle(object):
 
     def test_origin(self):
         eps = 1e-7
-        phi_dash = self.to_rotation_angle(0.0)
+        phi_dash = self.cs.to_rotation_angle(0.0)
         assert(abs(phi_dash - self.phi) <= eps)
         print 'OK'
 
@@ -448,18 +439,18 @@ class TestToRotationAngle(object):
         c3 = lim0 - eps
 
         # A large value which is still valid
-        phi_dash = self.to_rotation_angle(c3)
+        phi_dash = self.cs.to_rotation_angle(c3)
 
         # Setting c2 and c3 to zero
         c3 = lim1 + eps
 
         # A large value which is still valid
-        phi_dash = self.to_rotation_angle(c3)
+        phi_dash = self.cs.to_rotation_angle(c3)
 
         # A large value which is raises an exception
         try:
             c3 = lim0 + eps
-            phi_dash = self.to_rotation_angle(c3)
+            phi_dash = self.cs.to_rotation_angle(c3)
             print phi_dash
             assert(False)
         except RuntimeError:
@@ -467,7 +458,7 @@ class TestToRotationAngle(object):
 
         try:
             c3 = lim1 - eps
-            phi_dash = self.to_rotation_angle(c3)
+            phi_dash = self.cs.to_rotation_angle(c3)
             assert(False)
         except RuntimeError:
             pass
@@ -488,8 +479,8 @@ class TestToRotationAngle(object):
 
         # Calculate the XDS coordinate, this class uses an approximation
         # for c3 = zeta * (phi' - phi)
-        c3 = self.from_rotation_angle(phi_dash)
-        phi_dash_2 = self.to_rotation_angle_fast(c3)
+        c3 = self.cs.from_rotation_angle(phi_dash)
+        phi_dash_2 = self.cs.to_rotation_angle_fast(c3)
 
         # Check the true and approximate value are almost equal to 4dp
         assert(abs(phi_dash - phi_dash_2) < eps)
