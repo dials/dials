@@ -38,7 +38,7 @@ class Extract(object):
     '''Parse and extract geometry model from PHIL'''
 
     def __init__(self, master_phil, local_overrides = "",
-                 cmdline_args = None, verbose=True):
+                 cmdline_args = None, verbose=False):
 
         self._verbose = verbose
 

@@ -244,7 +244,7 @@ for iref in selection:
                 raise
 
 finish_time = time()
-print "Time Taken: ",finish_time - start_time
+#print "Time Taken: ",finish_time - start_time
 
 # if we got this far,
 print "OK"

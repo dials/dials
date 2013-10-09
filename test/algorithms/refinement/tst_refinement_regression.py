@@ -211,7 +211,8 @@ for ref in obs_refs:
     ref.frame_number = myscan.get_image_index_from_angle(
         ref.rotation_angle, deg=False)
 
-print "Total number of observations made", len(obs_refs)
+# The total number of observations should be 1128
+assert len(obs_refs) = 1128
 
 ###############################
 # Undo known parameter shifts #
