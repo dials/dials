@@ -65,10 +65,12 @@ algorithms/image/filter/boost_python/convolve.cc -text
 algorithms/image/filter/boost_python/fano_filter.cc -text
 algorithms/image/filter/boost_python/filter_ext.cc -text
 algorithms/image/filter/boost_python/mean_and_variance.cc -text
+algorithms/image/filter/boost_python/median.cc -text
 algorithms/image/filter/boost_python/summed_area.cc -text
 algorithms/image/filter/convolve.h -text
 algorithms/image/filter/fano_filter.h -text
 algorithms/image/filter/mean_and_variance.h -text
+algorithms/image/filter/median.h -text
 algorithms/image/filter/summed_area.h -text
 algorithms/image/threshold/SConscript -text
 algorithms/image/threshold/__init__.py -text

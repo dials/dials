@@ -6,6 +6,7 @@ sources = [
     'boost_python/mean_and_variance.cc',
     'boost_python/fano_filter.cc',
     'boost_python/convolve.cc',
+    'boost_python/median.cc',
     'boost_python/filter_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_image_filter_ext', 

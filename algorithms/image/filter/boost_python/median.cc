@@ -1,5 +1,5 @@
 /*
- * filter_ext.cc
+ * median.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,24 +10,21 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/image/filter/median.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_summed_area();
-  void export_mean_and_variance();
-  void export_fano_filter();
-  void export_convolve();
-  void export_median();
-
-  BOOST_PYTHON_MODULE(dials_algorithms_image_filter_ext)
+  void export_median() 
   {
-    export_summed_area();
-    export_mean_and_variance();
-    export_fano_filter();
-    export_convolve();
-    export_median();
+    def("median_filter", &median_filter, (
+      arg("image"),
+      arg("kernel")));
+    def("median_filter_masked", &median_filter_masked, (
+      arg("image"),
+      arg("mask"),
+      arg("kernel")));
   }
 
 }}} // namespace = dials::algorithms::boost_python
