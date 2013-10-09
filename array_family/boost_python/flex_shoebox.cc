@@ -41,7 +41,7 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <std::size_t DIM>
   af::flex<Shoebox>::type* from_labels(const LabelImageStack<DIM> &label, 
-      std::size_t panel) {
+      std::size_t panel, std::size_t zstart) {
 
     // Get the stuff from the label struct
     af::shared<int> labels = label.labels();
@@ -74,7 +74,7 @@ namespace dials { namespace af { namespace boost_python {
       if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
       if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
     }
-
+    
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].allocate();
@@ -95,6 +95,12 @@ namespace dials { namespace af { namespace boost_python {
       result[l].data(kk,jj,ii) = (double)v;
       result[l].mask(kk,jj,ii) = Valid | Foreground;
     }  
+
+    // Shift bbox z start position
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].bbox[4] += zstart;
+      result[i].bbox[5] += zstart;
+    }
 
     // Return the array
     return new af::flex<Shoebox>::type(
@@ -497,7 +503,8 @@ namespace dials { namespace af { namespace boost_python {
         from_labels<2>, 
         default_call_policies(), (
           boost::python::arg("labels"), 
-          boost::python::arg("panel") = 0)))
+          boost::python::arg("panel") = 0,
+          boost::python::arg("zstart") = 0)))
       .def("__init__", make_constructor(
         from_labels<3>, 
         default_call_policies(), (

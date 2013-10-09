@@ -49,7 +49,6 @@ class ExtractSpots(object):
             Label = LabelImageStack3d
         label = [Label(p.get_image_size()[::-1]) for p in sweep.get_detector()]
 
-
         # Loop through all the images in the sweep and extract the pixels
         # from each of the images
         progress = ProgressBar(title='Extracting pixels from sweep')
@@ -75,7 +74,7 @@ class ExtractSpots(object):
         Command.start('Extracting spots from pixels')
         shoeboxes = flex.shoebox()
         for i, lb in enumerate(label):
-            shoeboxes.extend(flex.shoebox(lb, i))
+            shoeboxes.extend(flex.shoebox(lb, i, sweep.get_array_range()[0]))
         Command.end('Extracted {0} spots from pixels'.format(len(shoeboxes)))
 
         # Return the shoeboxes
@@ -105,7 +104,7 @@ class SpotFinder(object):
 
         # Get list of scan ranges
         if not self.scan_range or not isinstance(sweep, ImageSweep):
-            scan_range = [(0, len(sweep))]
+            scan_range = [sweep.get_array_range()]
         else:
             scan_range = self.scan_range
 
