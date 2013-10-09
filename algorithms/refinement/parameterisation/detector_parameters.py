@@ -869,7 +869,6 @@ if __name__ == '__main__':
     beam = beam_factory().make_beam(
             sample_to_source=-1*(matrix.col((0, 0, -110)) + 10 * d1 + 10 * d2),
             wavelength=1.0)
-    dp = DetectorParameterisationMultiPanel(detector, beam)
 
     # Test change of parameters
     # =========================
@@ -961,31 +960,113 @@ if __name__ == '__main__':
 
         # create random initial position
         det = Detector(random_panel())
-        dp_single = DetectorParameterisationSinglePanel(det)
-        # place beam somewhere on the random panel
-        lim = det[0].get_image_size_mm()
-        shift1 = random.uniform(0, lim[0])
-        shift2 = random.uniform(0, lim[1])
-        beam_centre = matrix.col(det[0].get_origin()) + \
-                      shift1 * matrix.col(det[0].get_fast_axis()) + \
-                      shift2 * matrix.col(det[0].get_slow_axis())
-        beam = beam_factory().make_beam(sample_to_source=-1.*beam_centre,
-                                        wavelength=1.0)
-        dp = DetectorParameterisationMultiPanel(det, beam)
+        dp = DetectorParameterisationSinglePanel(det)
 
         # apply a random parameter shift
         p_vals = random_param_shift(p_vals, [10, 10, 10, 1000.*pi/18,
                                              1000.*pi/18, 1000.*pi/18])
         dp.set_param_vals(p_vals)
-        dp_single.set_param_vals(p_vals)
 
         # obtain current sensor state
         #state = dp.get_state()
 
-        # compare analytical and finite difference derivatives
+        # compare analytical and finite difference derivatives.
         an_ds_dp = dp.get_ds_dp(multi_state_elt=0)
-        an_ds_dp_single = dp_single.get_ds_dp(multi_state_elt=0)
-        fd_ds_dp = get_fd_gradients(dp, [1.e-6] * 3 + [1.e-4 * pi/180] * 3)
+        fd_ds_dp = get_fd_gradients(dp,
+                        [1.e-6] * 3 + [1.e-4 * pi/180] * 3)
+
+        for j in range(6):
+            try:
+                assert(approx_equal((fd_ds_dp[j] - an_ds_dp[j]),
+                        matrix.sqr((0., 0., 0.,
+                                    0., 0., 0.,
+                                    0., 0., 0.)), eps = 1.e-6))
+            except Exception:
+                failures += 1
+                print "for try", i
+                print "failure for parameter number", j
+                print "with fd_ds_dp = "
+                print fd_ds_dp[j]
+                print "and an_ds_dp = "
+                print an_ds_dp[j]
+                print "so that difference fd_ds_dp - an_ds_dp ="
+                print fd_ds_dp[j] - an_ds_dp[j]
+
+    if failures == 0: print "OK"
+
+    # 5. Test a multi-panel detector with non-coplanar panels.
+
+    # place a beam somewhere near the centre of the single panel
+    # detector (need a beam to initialise the multi-panel detector
+    # parameterisation)
+    lim = det[0].get_image_size_mm()
+    shift1 = random.uniform(0, lim[0])
+    shift2 = random.uniform(0, lim[1])
+    beam_centre = matrix.col(det[0].get_origin()) + \
+                  shift1 * matrix.col(det[0].get_fast_axis()) + \
+                  shift2 * matrix.col(det[0].get_slow_axis())
+    beam = beam_factory().make_beam(sample_to_source=-1.*beam_centre,
+                                    wavelength=1.0)
+
+    # imports required to make a 3x3 multi-panel detector
+    from dials.test.algorithms.refinement.tst_multi_panel_detector_parameterisation \
+        import make_panel_in_array
+    from dials.model.experiment import Panel, Detector
+
+    # import req to apply small random shifts & rotations to each panel
+    from dials.test.algorithms.refinement.setup_geometry import \
+        random_vector_close_to
+
+    attempts = 100
+    failures = 0
+    for i in range(attempts):
+
+        # make a 3x3 multi-panel detector filling the same space as the
+        # single panel detector
+        multi_panel_detector = Detector()
+        for x in range(3):
+            for y in range(3):
+                new_panel = make_panel_in_array((x, y), det[0])
+                multi_panel_detector.add_panel(new_panel)
+
+        # apply small random shifts & rotations to each panel
+        for p in multi_panel_detector:
+
+            # perturb origin vector
+            o_multiplier = random.gauss(1.0, 0.1)
+            new_origin = random_vector_close_to(p.get_origin(), sd=0.5)
+            new_origin *= o_multiplier
+
+            # perturb fast direction vector
+            new_dir1 = random_vector_close_to(p.get_fast_axis(), sd=0.5)
+
+            # create vector in the plane of dir1-dir2
+            dir1_dir2 = random_vector_close_to(p.get_slow_axis(), sd=0.5)
+
+            # find normal to panel plane and thus new slow direction vector
+            dn = new_dir1.cross(dir1_dir2)
+            new_dir2 = dn.cross(new_dir1)
+
+            # set panel frame
+            p.set_frame(new_dir1, new_dir2, new_origin)
+
+        dp = DetectorParameterisationMultiPanel(multi_panel_detector,
+                                                beam)
+
+        # apply a random parameter shift
+        p_vals = random_param_shift(p_vals, [10, 10, 10, 1000.*pi/18,
+                                             1000.*pi/18, 1000.*pi/18])
+        dp.set_param_vals(p_vals)
+
+        # obtain current state of the 1st panel
+        state = dp.get_state()
+
+        # compare analytical and finite difference derivatives
+        # get_fd_gradients will implicitly only get gradients for the
+        # 1st panel in the detector, so explicitly get the same for the
+        # analytical gradients
+        an_ds_dp = dp.get_ds_dp(multi_state_elt=0)
+        fd_ds_dp = get_fd_gradients(dp, [1.e-7] * dp.num_free())
 
         for j in range(6):
             try:
