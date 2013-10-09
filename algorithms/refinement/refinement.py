@@ -51,12 +51,15 @@ def random_param_shift(vals, sigmas):
 
     return newvals
 
-def get_fd_gradients(mp, deltas):
+def get_fd_gradients(mp, deltas, multi_state_elt=None):
     '''Calculate centered finite difference gradients for each of the
     parameters of the model parameterisation mp.
 
     "deltas" must be a sequence of the same length as the parameter list, and
     contains the step size for the difference calculations for each parameter.
+
+    "multi_state_elt" selects a particular state for use when mp is a multi-
+    state parameterisation.
     '''
 
     p_vals = mp.get_param_vals()
@@ -69,11 +72,17 @@ def get_fd_gradients(mp, deltas):
 
         p_vals[i] -= deltas[i] / 2.
         mp.set_param_vals(p_vals)
-        rev_state = mp.get_state()
+        if multi_state_elt is None:
+            rev_state = mp.get_state() 
+        else:
+            rev_state = mp.get_state(multi_state_elt=multi_state_elt)
 
         p_vals[i] += deltas[i]
         mp.set_param_vals(p_vals)
-        fwd_state = mp.get_state()
+        if multi_state_elt is None:
+            fwd_state = mp.get_state()
+        else:
+            fwd_state = mp.get_state(multi_state_elt=multi_state_elt)
 
         fd_grad.append((fwd_state - rev_state) / deltas[i])
 
