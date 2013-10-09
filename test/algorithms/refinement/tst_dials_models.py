@@ -16,7 +16,7 @@ from dials.model.experiment import Panel
 #from dials.model.experiment import Detector
 #from dials.model.experiment import Goniometer
 
-# but use the factories instead for ease of use
+# but mostly use the factories instead for ease of use
 from dials.model.experiment import beam_factory, detector_factory, \
     goniometer_factory, scan_factory
 
@@ -24,12 +24,11 @@ from dials.model.experiment import beam_factory, detector_factory, \
 from rstbx.bpcx.detector_model.instrument_specifics import pilatus
 from rstbx.bpcx import sensor
 from dials.scratch.dgw.source_model import source
-#from dials.scratch.dgw.crystal_model import Crystal
 from dials.scratch.dgw.goniometer_model import goniometer
 
-#############################
-# Instances of each version #
-#############################
+#####################################
+# Compare instances of each version #
+#####################################
 
 # beam
 beam_direction = matrix.col((0., 0., 1.))
@@ -77,13 +76,11 @@ dials_gonio = gf.make_goniometer(spindle_axis,
 
 # my_beam has 'get_beam', 'get_s0', 'get_wavelength', 'set_s0' as its
 # public interface.
-# dials_beam has 'get_direction', 'get_s0', 'get_wavelength', 'get_unit_s0'
-# 'set_unit_s0', 'set_direction', 'set_s0', 'set_wavelength'
+# dials_beam has 'get_direction', 'get_s0', 'get_wavelength',
+# 'get_unit_s0', 'set_unit_s0', 'set_direction', 'set_s0',
+# 'set_wavelength'
 
 # the analogue of my_beam.get_beam() is
-print my_beam.get_beam()
-print dials_beam.get_wavelength() * matrix.col(dials_beam.get_unit_s0())
-
 assert my_beam.get_beam() == dials_beam.get_wavelength() * \
                              matrix.col(dials_beam.get_unit_s0())
 
@@ -109,23 +106,7 @@ my_s0.set_s0(random_vec)
 dials_s0.set_unit_s0(random_vec)
 assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 
-# To change to DIALS models, I must modify these modules:
-## prediction/tst
-## prediction/predictors
-## beam_parameters
-## prediction_parameters
-## tst_prediction_parameters
-## setup_geometry
-## refinement
-## target
-## plot_derivatives
-## tst_finite_diffs
-## tst_orientation_refinement
-## tst_convergence_radius
-## tst_convergence_radius_one_parameter
-## tst_ref_passage_categorisation
-
-# source_model is then retired, and probably should be removed
+print "OK"
 
 ##############################
 # Compare goniometer methods #
@@ -136,69 +117,11 @@ assert approx_equal(my_s0.get_s0(), matrix.col(dials_s0.get_s0()))
 
 assert my_gonio.get_axis() == matrix.col(dials_gonio.get_rotation_axis())
 
-# To change to DIALS models, I must modify these modules:
-## prediction/tst
-## prediction/predictors
-## prediction_parameters
-## tst_prediction_parameters
-## setup_geometry
-## target
-## plot_derivatives
-
-# tst_ref_passage_categorisation
+print "OK"
 
 ############################
 # Compare detector methods #
 ############################
-
-# To change to DIALS models, I must modify these modules:
-
-# prediction/predictors: change ImpactPredictor to use the prediction
-# method built into the Panel object, that is get_ray_intersection(ray).
-# Okay, in fact the whole prediction module should be replaced with
-# DIALS code. There is already dials.algorithms.spot_prediction. I
-# should look into this before continuing.
-
-# Tests are written into prediction/tsts.py.
-# It appears to behave as I want, so go ahead and use it. First convert
-# tst_orientation refinement (fix the other tests another day).
-
-# Now in my predictors.py I made a ReflectionPredictor class. This wraps
-# DIALS RayPredictor, instantiating a new one when requested with
-# updated experimental geometry. Use this class in Target to generate
-# new predictions, and in tst_orientation_refinement to generate the
-# 'observations'
-
-# Next change detector_parameters then prediction_parameters to use
-# DIALS classes, and test with tst_prediction_parameters.
-
-# Changing tst_prediction_parameters requires changes to setup_geometry
-# and conversion of the get_state function to use ReflectionPredictor
-# rather than rstbx's reflection_prediction.
-
-# Target also now needs to take a Detector, not an ImpactPredictor. So
-# tst_orientation_refinement now will not work, until it also
-# understands Detectors. Things to do:
-
-# 1. fix setup_geometry to return a Detector
-# 2. fix tst_prediction_parameters so that get_state uses
-#   ReflectionPredictor from predictors and a Detector to calculate the
-#   impacts. Also remove AnglePredictor_rstbx and replace with
-#   ReflectionPredictor
-# 3. change tst_orientation_refinement to use ReflectionPredictor too
-
-# Orientation refinement now proceeds with DIALS classes.
-
-# Next tidy up. I expect the following to be broken and require change:
-# tst_finite_diffs FIXED
-# tst_convergence_radius FIXED
-# tst_convergence_radius_one_parameter FIXED
-# tst_ref_passage_categorisation FIXED
-# plot_derivatives
-
-# FIXME the current detector parameterisation is initialised with a
-# sensor, not a detector! This should be changed now, after I move to
-# the DIALS models.
 
 # I get a sensor out of my detector model like this
 my_sensor = my_det.sensors()[0]
@@ -215,19 +138,18 @@ dials_panel = Panel("PAD", "Panel", fast, slow, origin,
             (lim[1]/200, lim[1]/200), (200, 200), (0, 2e20))
 
 # The sensor model uses Python properties instead of getters.
-my_panel.origin == dials_panel.get_origin()
-my_panel.dir1 == dials_panel.get_fast_axis()
-my_panel.dir2 == dials_panel.get_slow_axis()
-my_panel.normal == dials_panel.get_normal()
-my_panel.distance == dials_panel.get_distance()
-my_panel.D == dials_panel.get_D_matrix()
+assert my_panel.origin == dials_panel.get_origin()
+assert my_panel.dir1 == dials_panel.get_fast_axis()
+assert my_panel.dir2 == dials_panel.get_slow_axis()
+assert my_panel.normal == dials_panel.get_normal()
+assert my_panel.distance == dials_panel.get_distance()
+assert my_panel.D == dials_panel.get_D_matrix()
 
 # the frame limits are handled differently. The dials panel implicitly
 # has a limit at the origin, whereas my sensor has an arbitrary letterbox
 dp_lim = dials_panel.get_image_size_mm()
-my_panel.lim1 == (0, dp_lim[0])
-my_panel.lim2 == (0, dp_lim[1])
-
+assert my_panel.lim1 == (0, dp_lim[0])
+assert my_panel.lim2 == (0, dp_lim[1])
 
 # use of the sensor/Panel setter
 my_panel.set_frame(origin, fast, slow)
