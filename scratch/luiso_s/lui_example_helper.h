@@ -3,10 +3,17 @@
 #include <iostream>
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/flex_types.h>
+
+//#include <scitbx/array_family/ref_algebra.h>
+//#include <scitbx/array_family/accessors/mat_grid.h>
+#include <scitbx/array_family/versa_matrix.h>
+//#include <scitbx/matrix/norms.h>
+//#include <scitbx/matrix/packed.h>
+
 #include <cmath>
 #include <stdio.h>
 #include <cstdlib>
-
+#include <dials/array_family/scitbx_shared_and_versa.h>
 const float pi=3.14159265358;
 
 namespace dials { namespace scratch {
@@ -19,6 +26,30 @@ namespace dials { namespace scratch {
     int a=5;
     return a;
   }
+
+
+
+  af::versa< double, af::c_grid<2> >  tst_prod(
+         af::const_ref<double, af::c_grid<2> > matr01,
+         af::const_ref<double, af::c_grid<2> > matr02)
+  {
+    std::cout << "Hello from prod_tst \n";
+    af::versa< double, af::c_grid<2> > prod(matr01.accessor());
+
+
+
+    prod = af::matrix_multiply(matr01, matr02);
+
+    return prod;
+  }
+
+  /*
+    // example code that adds the contents of two versa arrays
+    for (std::size_t i = 0; i < prod.size(); ++i) {
+      prod[i] = matr01[i] + matr02[i];
+    }
+   */
+
 
 
   int write_2d(flex_double & data2d) {
