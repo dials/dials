@@ -90,6 +90,67 @@ namespace dials { namespace algorithms {
         double loc_bkgr_cont, loc_bkgr_tot;
         double loc_bkgr = 0;
 
+        /////////////////////////////////////////////////////////////
+
+
+        // Counting how many pixels are in Background area
+        int counter = 0;
+        for (int row = 0; row<nrow;row++) {
+          for (int col = 0; col<ncol;col++) {
+            if ( mask2d(row, col) & Background ) {
+              counter++ ;
+            }
+          }
+        }
+
+        // Building a set of 1D lists with the useful pixels
+
+
+        double x_lst[counter];
+        double y_lst[counter];
+        double z_lst[counter];
+        counter = 0;
+        for (int row = 0; row<nrow; row++) {
+          for (int col = 0; col<ncol; col++) {
+            if ( mask2d(row, col) & Background ) {
+
+              x_lst[counter] = col + 0.5;
+              y_lst[counter] = row + 0.5;
+              z_lst[counter] = data2d(row, col);
+              counter++ ;
+            }
+          }
+        }
+        //elements of the matrix
+
+        double sum_x_sqr = 0.0;
+        double sum_x_y   = 0.0;
+        double sum_x     = 0.0;
+        double sum_y_sqr = 0.0;
+        double sum_y     = 0.0;
+        double sum_one   = 0.0;
+
+        double sum_x_z   = 0.0;
+        double sum_y_z   = 0.0;
+        double sum_z     = 0.0;
+
+        //looping trough lists and building the elements of the matrix to solve
+        for (int ipos = 0; ipos<counter; ipos++) {
+          std::cout <<"\n"<<ipos<<"  x ="<< x_lst[ipos] << "  y =" << y_lst[ipos] << "  z =" << z_lst[ipos];
+
+          sum_x_sqr += x_lst[ipos] * x_lst[ipos];
+          sum_x_y   += x_lst[ipos] * y_lst[ipos];
+          sum_x     += x_lst[ipos];
+          sum_y_sqr += y_lst[ipos] * y_lst[ipos];
+          sum_y     += y_lst[ipos];
+          sum_one   += y_lst[ipos];
+          sum_x_z   += x_lst[ipos] * z_lst[ipos];
+          sum_y_z   += y_lst[ipos] * z_lst[ipos];
+          sum_z     += z_lst[ipos];
+        }
+        std::cout <<"\n";
+
+        ///////////////////////////////////////////////////////////////
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {
             if ( mask2d(row,col) & Foreground ){

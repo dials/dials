@@ -6,9 +6,11 @@
 
 //#include <scitbx/array_family/ref_algebra.h>
 //#include <scitbx/array_family/accessors/mat_grid.h>
-#include <scitbx/array_family/versa_matrix.h>
 //#include <scitbx/matrix/norms.h>
 //#include <scitbx/matrix/packed.h>
+#include <scitbx/array_family/versa_matrix.h>
+
+
 
 #include <cmath>
 #include <stdio.h>
@@ -36,21 +38,20 @@ namespace dials { namespace scratch {
     std::cout << "Hello from prod_tst \n";
     af::versa< double, af::c_grid<2> > prod(matr01.accessor());
 
+    //af::matrix_inversion_in_place(prod);
 
 
     prod = af::matrix_multiply(matr01, matr02);
 
     return prod;
   }
-
-  /*
+/*
     // example code that adds the contents of two versa arrays
     for (std::size_t i = 0; i < prod.size(); ++i) {
       prod[i] = matr01[i] + matr02[i];
     }
-   */
 
-
+*/
 
   int write_2d(flex_double & data2d) {
     int ncol=data2d.accessor().all()[1];
