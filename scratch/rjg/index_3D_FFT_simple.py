@@ -58,6 +58,9 @@ known_symmetry {
 }
 debug = False
   .type = bool
+debug_plots = False
+  .type = bool
+  .help = "Requires matplotlib"
 include file %s/data/refinement.phil
 refinement_protocol {
   n_macro_cycles = 3
@@ -74,6 +77,24 @@ refinement_protocol {
 export_xds_files = False
   .type = bool
   .help = "Export results as XDS.INP, XPARM.XDS for integration with XDS."
+multiple_lattice_search = False
+  .type = bool
+cluster_analysis {
+  linkage {
+    method = *ward
+      .type = choice
+    metric = *euclidean
+      .type = choice
+  }
+  cutoff = 15
+    .type = float(value_min=0)
+  cutoff_criterion = *distance inconsistent
+    .type = choice
+  min_cluster_size = 20
+    .type = int(value_min=0)
+  intersection_union_ratio_cutoff = 0.4
+    .type = float(value_min=0.0, value_max=1.0)
+}
 """ %dials_path, process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
@@ -152,7 +173,7 @@ class indexer(object):
         unit_cell=self.params.known_symmetry.unit_cell,
         space_group=space_group_primitive,
         assert_is_compatible_unit_cell=False)
-      if is_centred:
+      if is_centred and self.params.known_symmetry.unit_cell is not None:
         self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
           self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
       if self.params.known_symmetry.unit_cell is not None:
@@ -175,36 +196,56 @@ class indexer(object):
       self.debug_write_reciprocal_lattice_points_as_pdb()
       self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
     self.find_peaks()
-    self.find_candidate_basis_vectors()
-    if self.params.debug:
-      self.debug_show_candidate_basis_vectors()
-    self.find_candidate_orientation_matrices()
-    crystal_model = self.candidate_crystal_models[0]
-    self.d_min = self.params.reciprocal_space_grid.d_min
-    self.index_reflections_given_orientation_matix(
-      crystal_model)
-    if self.target_symmetry_primitive is not None:
-      symmetrized_model = self.apply_symmetry(
-        crystal_model, self.target_symmetry_primitive)
-      self.index_reflections_given_orientation_matix(symmetrized_model)
-      crystal_model = symmetrized_model
-    for i in range(self.params.refinement_protocol.n_macro_cycles):
-      print "Starting refinement (macro-cycle %i)" %(i+1)
-      print
-      self.refine(crystal_model)
-      self.d_min -= self.params.refinement_protocol.d_min_step
-      self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
-      print "Increasing resolution to %.1f Angstrom" %self.d_min
-      n_indexed_last_cycle = self.indexed_reflections.size()
-      self.index_reflections_given_orientation_matix(crystal_model)
-      if self.indexed_reflections.size() == n_indexed_last_cycle:
-        print "No more reflections indexed this cycle - finished with refinement"
-        break
-      elif self.d_min == self.params.refinement_protocol.d_min_final:
-        print "Target d_min_final reached: finished with refinement"
-        break
+    if self.params.multiple_lattice_search:
+      self.find_basis_vector_combinations_cluster_analysis()
+      if self.params.debug:
+        self.debug_show_candidate_basis_vectors()
+      crystal_models = self.candidate_crystal_models
+    else:
+      self.find_candidate_basis_vectors()
+      if self.params.debug:
+        self.debug_show_candidate_basis_vectors()
+      self.find_candidate_orientation_matrices()
+      crystal_models = self.candidate_crystal_models[:1]
 
-    self.candidate_crystal_models.insert(0, crystal_model)
+    self.refined_crystal_models = []
+    for i, crystal_model in enumerate(crystal_models):
+      print
+      print "#" * 80
+      print "Starting refinement of crystal model %i" %(i+1)
+      print "Starting crystal model:"
+      print crystal_model
+      print "#" * 80
+
+      self.d_min = self.params.reciprocal_space_grid.d_min
+      self.index_reflections_given_orientation_matix(
+        crystal_model, verbose=1)
+      if self.target_symmetry_primitive is not None:
+        symmetrized_model = self.apply_symmetry(
+          crystal_model, self.target_symmetry_primitive)
+        self.index_reflections_given_orientation_matix(symmetrized_model, verbose=1)
+        crystal_model = symmetrized_model
+      for i in range(self.params.refinement_protocol.n_macro_cycles):
+        print "Starting refinement (macro-cycle %i)" %(i+1)
+        print
+        self.refine(crystal_model)
+
+        self.d_min -= self.params.refinement_protocol.d_min_step
+        self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
+        print "Increasing resolution to %.1f Angstrom" %self.d_min
+        n_indexed_last_cycle = self.indexed_reflections.size()
+        self.index_reflections_given_orientation_matix(crystal_model, verbose=1)
+        if self.indexed_reflections.size() == n_indexed_last_cycle:
+          print "No more reflections indexed this cycle - finished with refinement"
+          break
+        elif self.d_min == self.params.refinement_protocol.d_min_final:
+          print "Target d_min_final reached: finished with refinement"
+          break
+
+      print "Final crystal model:"
+      print crystal_model
+
+      self.refined_crystal_models.append(crystal_model)
 
     self.export_as_json()
     self.export_reflections(indexed_only=False)
@@ -213,6 +254,12 @@ class indexer(object):
       self.export_predicted_reflections()
     if self.params.export_xds_files:
       self.export_xds_files()
+
+    print "Final refined crystal models:"
+    for i, crystal_model in enumerate(self.refined_crystal_models):
+      print "model %i:" %(i+1)
+      print crystal_model
+
 
   def prepare_reflections(self):
     """Reflections that come from dials.spotfinder only have the centroid
@@ -316,7 +363,9 @@ class indexer(object):
       reals=self.reciprocal_space_grid,
       imags=flex.double(self.reciprocal_space_grid.size(), 0))
     self.grid_transformed = fft.forward(grid_complex)
-    self.grid_real = flex.pow2(flex.abs(self.grid_transformed))
+    #self.grid_real = flex.pow2(flex.abs(self.grid_transformed))
+    self.grid_real = flex.pow2(flex.real(self.grid_transformed))
+    #self.grid_real = flex.pow2(flex.imag(self.grid_transformed))
 
   def find_peaks(self):
     grid_real = self.grid_real.deep_copy()
@@ -331,7 +380,14 @@ class indexer(object):
     # the peak at the origin might have a significantly larger volume than the
     # rest so exclude this peak from determining maximum volume
     isel = (flood_fill.grid_points_per_void() > int(
-        0.3 * flex.max(flood_fill.grid_points_per_void()[1:]))).iselection()
+        0.2 * flex.max(flood_fill.grid_points_per_void()[1:]))).iselection()
+    #sites = flex.double()
+    #for i in isel:
+      #sel = grid_real_binary == (i+2)
+      #max_value = flex.max(grid_real.as_1d().select(sel.as_1d()))
+      #idx = flex.first_index(grid_real, max_value)
+      #sites.append(
+
     self.sites = flood_fill.centres_of_mass_frac().select(isel)
 
   def find_candidate_basis_vectors(self):
@@ -426,6 +482,165 @@ class indexer(object):
 
     self.candidate_basis_vectors = vectors
 
+  def find_basis_vector_combinations_cluster_analysis(self):
+    # hijack the xray.structure class to facilitate calculation of distances
+    xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
+    for i, site in enumerate(self.sites):
+      xs.add_scatterer(xray.scatterer("C%i" %i, site=site))
+
+    xs = xs.sites_mod_short()
+    sites_cart = xs.sites_cart()
+    lengths = flex.double([matrix.col(sc).length() for sc in sites_cart])
+    xs = xs.select(flex.sort_permutation(lengths))
+    with open('peaks.pdb', 'wb') as f:
+      print >> f, xs.as_pdb_file()
+
+    vector_heights = flex.double()
+
+    sites_frac = xs.sites_frac()
+    pair_asu_table = xs.pair_asu_table(distance_cutoff=self.params.max_cell)
+    asu_mappings = pair_asu_table.asu_mappings()
+    distances = crystal.calculate_distances(pair_asu_table, sites_frac)
+    vectors = []
+    difference_vectors = []
+    pairs = []
+    for di in distances:
+      if di.distance < self.params.min_cell: continue
+      i_seq, j_seq = di.i_seq, di.j_seq
+      if i_seq > j_seq: continue
+      pairs.append((i_seq, j_seq))
+      rt_mx_ji = di.rt_mx_ji
+      site_frac_ji = rt_mx_ji * sites_frac[j_seq]
+      site_cart_ji = self.unit_cell.orthogonalize(site_frac_ji)
+      site_cart_i = self.unit_cell.orthogonalize(sites_frac[i_seq])
+      vectors.append(matrix.col(site_cart_ji))
+      diff_vec = matrix.col(site_cart_i) - matrix.col(site_cart_ji)
+      if diff_vec[0] < 0:
+        # only one hemisphere of difference vector space
+        diff_vec = -diff_vec
+      difference_vectors.append(diff_vec)
+      #vector_heights.append(heights[j_seq])
+
+    from hcluster import pdist, linkage, dendrogram, fcluster
+
+    import numpy
+    X = numpy.array(difference_vectors)
+    linkage_method = self.params.cluster_analysis.linkage.method
+    linkage_metric = self.params.cluster_analysis.linkage.metric
+    criterion = self.params.cluster_analysis.cutoff_criterion
+    Z = linkage(X, method=linkage_method, metric=linkage_metric)
+    cutoff = self.params.cluster_analysis.cutoff
+    i_cluster = fcluster(Z, cutoff, criterion=criterion)
+
+    i_cluster = flex.int(i_cluster)
+    clusters = []
+    min_cluster_size = self.params.cluster_analysis.min_cluster_size
+    for i in range(max(i_cluster)):
+      isel = (i_cluster == (i+1)).iselection()
+      if len(isel) < min_cluster_size:
+        continue
+      clusters.append(isel)
+
+    cluster_point_sets = []
+    centroids = []
+
+    difference_vectors = flex.vec3_double(difference_vectors)
+
+    from libtbx.utils import flat_list
+    for cluster in clusters:
+      points = flat_list([pairs[i] for i in cluster])
+      cluster_point_sets.append(set(points))
+      centroids.append(difference_vectors.select(cluster).mean())
+
+    #for i in range(len(centroids)):
+      #print i, centroids[i], matrix.col(centroids[i]).length()
+
+    combinations = flex.vec3_int()
+    unions = []
+    intersections = []
+    n_common_points = flex.int()
+    fraction_common_points = flex.double()
+
+    for i in range(len(cluster_point_sets)):
+      for j in range(i+1, len(cluster_point_sets)):
+        for k in range(j+1, len(cluster_point_sets)):
+          intersection = cluster_point_sets[i].intersection(
+            cluster_point_sets[j]).intersection(cluster_point_sets[k])
+          union = cluster_point_sets[i].union(
+            cluster_point_sets[j]).union(cluster_point_sets[k])
+          combinations.append((i,j,k))
+          n_common_points.append(len(intersection))
+          fraction_common_points.append(len(intersection)/len(union))
+          #print combinations[-1], n_common_points[-1], fraction_common_points[-1]
+
+    self.candidate_basis_vectors = []
+    self.candidate_crystal_models = []
+    perm = flex.sort_permutation(n_common_points, reverse=True)
+    cutoff_fract = self.params.cluster_analysis.intersection_union_ratio_cutoff
+    for p in perm:
+      i, j, k = combinations[p]
+      real_space_a = centroids[i]
+      real_space_b = centroids[k]
+      real_space_c = centroids[j]
+      crystal_model = Crystal(real_space_a, real_space_b, real_space_c,
+                              space_group_symbol="P1")
+      if fraction_common_points[p] < cutoff_fract:
+        continue
+      self.candidate_basis_vectors.extend(
+        crystal_model.get_real_space_vectors())
+      self.candidate_crystal_models.append(crystal_model)
+      print crystal_model
+
+
+    if self.params.debug_plots:
+
+      #matplotlib colours:
+      #b: blue
+      #g: green
+      #r: red
+      #c: cyan
+      #m: magenta
+      #y: yellow
+      #k: black
+      #w: white
+
+      from mpl_toolkits.mplot3d import Axes3D
+      import matplotlib.pyplot as plt
+      fig = plt.figure()
+      ax = fig.add_subplot(111, projection='3d')
+      n = 100
+      colours = ['b', 'g', 'r', 'c', 'm', 'y', 'k'] * 10
+      m = '+'
+      i_colour = 0
+      for i in range(max(i_cluster)):
+        selection = (i_cluster == (i+1)).iselection().as_numpy_array()
+        cluster_size = selection.size
+        print len(selection)
+        if cluster_size < min_cluster_size: continue
+        xs = X[:,0][selection]
+        ys = X[:,1][selection]
+        zs = X[:,2][selection]
+        c = colours[i_colour]
+        i_colour += 1
+        ax.scatter(xs, ys, zs, c=c, marker=m, s=5)
+      plt.show()
+
+      dendrogram(Z, p=30, truncate_mode='lastp')
+      plt.show()
+
+    if self.params.debug:
+      file_name = "vectors.pdb"
+      a = self.params.max_cell
+      cs = crystal.symmetry(unit_cell=(a,a,a,90,90,90), space_group="P1")
+      xs = xray.structure(crystal_symmetry=cs)
+      for v in difference_vectors:
+        v = matrix.col(v)
+        xs.add_scatterer(xray.scatterer("C", site=v/(a/10)))
+      xs.sites_mod_short()
+      with open(file_name, 'wb') as f:
+        print >> f, xs.as_pdb_file()
+
+
   def find_candidate_orientation_matrices(self):
     self.candidate_crystal_models = []
     vectors = self.candidate_basis_vectors
@@ -465,7 +680,15 @@ class indexer(object):
             symmetrized_model = self.apply_symmetry(
               model, self.target_symmetry_primitive)
             if symmetrized_model is None:
-              continue
+              if self.target_symmetry_centred is not None:
+                symmetrized_model = self.apply_symmetry(
+                model, self.target_symmetry_centred,
+                return_primitive_setting=True)
+                if symmetrized_model is not None:
+                  model = symmetrized_model
+                  uc = model.get_unit_cell()
+              if symmetrized_model is None:
+                continue
 
           params = uc.parameters()
           if uc.volume() > (params[0]*params[1]*params[2]/100):
@@ -473,55 +696,27 @@ class indexer(object):
             self.candidate_crystal_models.append(model)
 
   def predict_reflections(self, crystal_model):
-    from dials.algorithms.spot_prediction import IndexGenerator
-    from dials.algorithms.spot_prediction import ray_intersection
-    from dials.algorithms.spot_prediction import reflection_frames
-    from dials.algorithms.shoebox import BBoxCalculator
-    from dials.algorithms.spot_prediction import RayPredictor
-    from math import pi
-
-    s0 = self.beam.get_s0()
-    m2 = self.goniometer.get_rotation_axis()
-    UB = crystal_model.get_U() * crystal_model.get_B()
-    dphi = self.scan.get_oscillation_range(deg=False)
-
-    d_min = self.detector.get_max_resolution_at_corners(
-      s0, self.beam.get_wavelength())
-
-    index_generator = IndexGenerator(
-      crystal_model.get_unit_cell(),
-      sgtbx.space_group("P 1").type(), d_min)
-    miller_indices = index_generator.to_array()
-
-    predict_rays = RayPredictor(s0, m2, dphi)
-    self.predicted_reflections = reflection_frames(self.scan, ray_intersection(
-        self.detector, predict_rays(miller_indices, UB)))
+    from dials.algorithms.integration import ReflectionPredictor
+    predictor = ReflectionPredictor()
 
     sigma_divergence = self.beam.get_sigma_divergence()
     mosaicity = crystal_model.get_mosaicity()
 
     if sigma_divergence == 0.0:
-      sigma_divergence = 0.02 # degrees
+      self.beam.set_sigma_divergence(0.02) # degrees
     if mosaicity == 0.0:
-      mosaicity = 0.1 # degrees
+      crystal_model.set_mosaicity(0.139) # degrees
 
-    # Set the divergence and mosaicity
-    n_sigma = 5.0
-    delta_divergence = n_sigma * sigma_divergence * pi / 180.0
-    delta_mosaicity = n_sigma * mosaicity * pi / 180.0
-
-    # Create the bounding box calculator
-    calculate_bbox = BBoxCalculator(self.beam, self.detector, self.goniometer,
-        self.scan, delta_divergence, delta_mosaicity)
-
-    # Calculate the frame numbers of all the reflections
-    calculate_bbox(self.predicted_reflections)
+    reflections = predictor(self.sweep, crystal_model)
+    self.predicted_reflections = reflections
+    return self.predicted_reflections
 
   def export_predicted_reflections(self, file_name='predictions.pickle'):
     from dials.model.serialize import dump
     dump.reflections(self.predicted_reflections, file_name)
 
-  def apply_symmetry(self, crystal_model, target_symmetry):
+  def apply_symmetry(self, crystal_model, target_symmetry,
+                     return_primitive_setting=False):
     unit_cell = crystal_model.get_unit_cell()
     target_unit_cell = target_symmetry.unit_cell()
     target_space_group = target_symmetry.space_group()
@@ -568,11 +763,21 @@ class indexer(object):
       basis_vectors[best_perm[1]],
       basis_vectors[best_perm[2]],
       space_group=target_space_group)
+    model = crystal_model
+    #cb_op_target_ref = symm_target_sg.space_group_info().type().cb_op()
+    #symm_target_sg_ref = symm_target_sg.change_basis(cb_op_target_ref)
     from rstbx.symmetry.constraints import parameter_reduction
     s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
     s.set_orientation(crystal_model.get_A())
-    s.symmetrize()
-    direct_matrix = s.orientation.direct_matrix()
+    #s.symmetrize()
+    #direct_matrix = s.orientation.change_basis(cb_op_target_ref).direct_matrix()
+    if return_primitive_setting:
+      sgi = sgtbx.space_group_info(group=target_space_group)
+      cb_op_to_primitive = sgi.change_of_basis_op_to_primitive_setting()
+      direct_matrix = s.orientation.change_basis(
+        cb_op_to_primitive).direct_matrix()
+    else:
+      direct_matrix = s.orientation.direct_matrix()
     a = matrix.col(direct_matrix[:3])
     b = matrix.col(direct_matrix[3:6])
     c = matrix.col(direct_matrix[6:9])
@@ -583,9 +788,11 @@ class indexer(object):
     return model
 
   def index_reflections_given_orientation_matix(
-      self, crystal_model, tolerance=0.3):
-    print "Candidate crystal model:"
-    print crystal_model
+      self, crystal_model, tolerance=0.2, verbose=0, plot_differences=False):
+
+    if verbose > 1:
+      print "Candidate crystal model:"
+      print crystal_model
 
     n_rejects = 0
 
@@ -594,6 +801,10 @@ class indexer(object):
 
     A = crystal_model.get_A()
     A_inv = A.inverse()
+
+    diff_h = flex.double()
+    diff_k = flex.double()
+    diff_l = flex.double()
 
     for i_ref in self.reflections_in_scan_range:
       i_rlp = flex.first_index(self.reflections_in_scan_range, i_ref)
@@ -605,6 +816,11 @@ class indexer(object):
       refl = self.reflections[i_ref]
       hkl_float = A_inv * rlp
       hkl_int = [int(round(h)) for h in hkl_float]
+      if plot_differences:
+        diff = matrix.col(hkl_int) - hkl_float
+        diff_h.append(diff[0])
+        diff_k.append(diff[1])
+        diff_l.append(diff[2])
       max_difference = max([abs(hkl_float[i] - hkl_int[i]) for i in range(3)])
       if max_difference> tolerance:
         n_rejects += 1
@@ -613,8 +829,21 @@ class indexer(object):
       refl.miller_index = hkl_int
       self.indexed_reflections.append(i_ref)
 
-    print "%i reflections indexed successfully (%i rejects)" %(
-      self.indexed_reflections.size(), n_rejects)
+    self.n_rejects = n_rejects
+    if verbose > 0:
+      print "%i reflections indexed successfully (%i rejects)" %(
+        self.indexed_reflections.size(), n_rejects)
+
+    if plot_differences:
+      from matplotlib import pyplot
+      n_slots = 50
+      hist_h = flex.histogram(diff_h, n_slots=n_slots)
+      hist_k = flex.histogram(diff_k, n_slots=n_slots)
+      hist_l = flex.histogram(diff_l, n_slots=n_slots)
+      pyplot.plot(hist_h.slot_centers(), hist_h.slots())
+      pyplot.plot(hist_k.slot_centers(), hist_k.slots())
+      pyplot.plot(hist_l.slot_centers(), hist_l.slots())
+      pyplot.show()
 
   def refine(self, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
@@ -692,12 +921,19 @@ class indexer(object):
       map_data=map_data,
       labels=flex.std_string(labels))
 
-  def export_as_json(self, compact=False):
+  def export_as_json(self, suffix=None, compact=False):
     from dials.model.serialize.dump import crystal as dump_crystal
     from dxtbx.serialize import dump
-    with open('crystal.json', 'wb') as f:
-      dump_crystal(self.candidate_crystal_models[0], f, compact=compact)
-    with open('sweep.json', 'wb') as f:
+    if suffix is None:
+      suffix = ''
+    for i, crystal_model in enumerate(self.refined_crystal_models):
+      if len(self.refined_crystal_models) > 1:
+        _suffix = "_".join((suffix, "%i" %(i+1)))
+      else:
+        _suffix = suffix
+      with open('crystal%s.json' %_suffix, 'wb') as f:
+        dump_crystal(crystal_model, f, compact=compact)
+    with open('sweep%s.json' %suffix, 'wb') as f:
       dump.imageset(self.sweep, f, compact=compact)
 
   def export_reflections(self, file_name="indexed.pickle", indexed_only=False):
@@ -710,6 +946,8 @@ class indexer(object):
   def export_xds_files(self):
     from dxtbx.serialize import xds
     crystal_model = self.candidate_crystal_models[0]
+    crystal_model = crystal_model.change_basis(
+      crystal_model.get_space_group().info().change_of_basis_op_to_reference_setting())
     A = crystal_model.get_A()
     A_inv = A.inverse()
     real_space_a = A_inv.elems[:3]
@@ -730,17 +968,19 @@ def run(args):
   from dxtbx.imageset import ImageSetFactory
 
   args = sys.argv[1:]
+  sweeps = ImageSetFactory.new(args, ignore_unknown=True)
+  assert len(sweeps) == 1
+  sweep = sweeps[0]
+  sweep_filenames = sweep.paths()
+  args = [arg for arg in args if arg not in sweep_filenames]
+
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil, args = cmd_line.process_and_fetch(
       args=args, custom_processor="collect_remaining")
   working_phil.show()
 
   reflections_filename = args[0]
-  sweep_filenames = args[1:]
 
-  sweeps = ImageSetFactory.new(sweep_filenames)
-  assert len(sweeps) == 1
-  sweep = sweeps[0]
   gonio = sweep.get_goniometer()
   detector = sweep.get_detector()
   scan = sweep.get_scan()
