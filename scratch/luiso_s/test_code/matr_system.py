@@ -42,4 +42,5 @@ x_mat = a_mat.inverse() * b_mat
 print "x = A ** (-1) * B"
 x = x_mat.as_flex_double_matrix()
 write_2d(x)
-
+print "x(as flex)"
+flex.show(x)

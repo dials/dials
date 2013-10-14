@@ -29,7 +29,21 @@ namespace dials { namespace scratch {
     return a;
   }
 
+  af::versa< double, af::c_grid<2> >  tst_ref_prod(
+         af::const_ref<double, af::c_grid<2> > matr01,
+         af::ref<double, af::c_grid<2> > matr02)
+  {
+    af::versa< double, af::c_grid<2> > prod(matr01.accessor());
+    std::cout << "Hello from  tst_ref_prod\n";
 
+    matr02(0,0) = 555;
+    matr02(1,1) = 666;
+    matr02(2,2) = 777;
+
+    prod = af::matrix_multiply(matr01, matr02);
+
+    return prod;
+  }
 
   af::versa< double, af::c_grid<2> >  tst_prod(
          af::const_ref<double, af::c_grid<2> > matr01,
