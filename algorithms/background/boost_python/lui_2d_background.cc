@@ -7,9 +7,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_lui_2d_background() {
-    def("flat_background_flex_2d", &flat_background_flex_2d, (arg("data2d"), arg("mask2d") ));
-    def("curved_background_flex_2d", &curved_background_flex_2d, (arg("data2d"), arg("mask2d") ));
-    def("plane_background_flex_2d", &plane_background_flex_2d, (arg("data2d"), arg("mask2d") ));
+    def("flat_background_flex_2d", &flat_background_flex_2d,
+        (arg("data2d"), arg("mask2d") ));
+    def("curved_background_flex_2d", &curved_background_flex_2d,
+        (arg("data2d"), arg("mask2d") ));
+    def("get_plane_background_syml_sys_2d", &get_plane_background_syml_sys_2d,
+        (arg("data2d"), arg("mask2d"), arg("mat_a"), arg("vec_b") ));
 
   }
 

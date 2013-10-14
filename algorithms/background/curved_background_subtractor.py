@@ -61,7 +61,8 @@ def layering_and_background_modl(reflections):
                 mask2d = mask[i:i + 1, :, :]
                 data2d.reshape(flex.grid(shoebox.all()[1:]))
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
-                background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
+                #background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
+                background2d = curved_background_flex_2d(data2d, mask2d)
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
     print "curved background calculation .... done"
@@ -70,7 +71,7 @@ def layering_and_background_modl(reflections):
 
 
 def layering_and_background_plane(reflections):
-    from dials.algorithms.background import plane_background_flex_2d
+    from dials.algorithms.background import get_plane_background_syml_sys_2d
     from scitbx.array_family import flex
 
     print "performing background plane calculation ...."
@@ -85,7 +86,23 @@ def layering_and_background_plane(reflections):
                 mask2d = mask[i:i + 1, :, :]
                 data2d.reshape(flex.grid(shoebox.all()[1:]))
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
-                background2d = plane_background_flex_2d(data2d.as_double(), mask2d)
+
+                a_mat = flex.double(flex.grid(3, 3))
+                b_vec = flex.double(flex.grid(3, 1))
+                ok_logic = get_plane_background_syml_sys_2d(data2d, mask2d, a_mat, b_vec)
+
+                print
+                print "mat [A] = "
+                flex.show(a_mat)
+                print
+                print "vec [B] = "
+                flex.show(b_vec)
+                print
+
+
+
+
+                print "ok_logic =", ok_logic
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
     print "background plane calculation .... done"
