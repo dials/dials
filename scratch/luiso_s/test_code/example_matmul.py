@@ -22,16 +22,18 @@ write_2d(b)
 
 from scitbx import matrix
 a_mat = a.as_scitbx_matrix()
-x_mat = a_mat.inverse()
+b_mat = b.as_scitbx_matrix()
+
+x_mat = a_mat * b_mat
+
 x = x_mat.as_flex_double_matrix()
-
-
 
 print "x = a * b ="
 x_np = x.as_numpy_array()
 print x_np
 print "= as_flex"
 write_2d(x)
+
 
 
 
