@@ -80,16 +80,26 @@ export_xds_files = False
 multiple_lattice_search = False
   .type = bool
 cluster_analysis {
-  linkage {
-    method = *ward
-      .type = choice
-    metric = *euclidean
+  method = *dbscan hcluster
+    .type = choice
+  hcluster {
+    linkage {
+      method = *ward
+        .type = choice
+      metric = *euclidean
+        .type = choice
+    }
+    cutoff = 15
+      .type = float(value_min=0)
+    cutoff_criterion = *distance inconsistent
       .type = choice
   }
-  cutoff = 15
-    .type = float(value_min=0)
-  cutoff_criterion = *distance inconsistent
-    .type = choice
+  dbscan {
+    eps = 0.1
+      .type = float(value_min=0.0)
+    min_samples = 30
+      .type = int(value_min=1)
+  }
   min_cluster_size = 20
     .type = int(value_min=0)
   intersection_union_ratio_cutoff = 0.4
@@ -205,7 +215,8 @@ class indexer(object):
       self.find_candidate_basis_vectors()
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
-      self.find_candidate_orientation_matrices()
+      self.candidate_crystal_models = self.find_candidate_orientation_matrices(
+        self.candidate_basis_vectors)
       crystal_models = self.candidate_crystal_models[:1]
 
     self.refined_crystal_models = []
@@ -519,24 +530,17 @@ class indexer(object):
         # only one hemisphere of difference vector space
         diff_vec = -diff_vec
       difference_vectors.append(diff_vec)
-      #vector_heights.append(heights[j_seq])
 
-    from hcluster import pdist, linkage, dendrogram, fcluster
+    if self.params.cluster_analysis.method == 'dbscan':
+      i_cluster = self.cluster_analysis_dbscan(difference_vectors)
+    elif self.params.cluster_analysis.method == 'hcluster':
+      i_cluster = self.cluster_analysis_hcluster(difference_vectors)
+      i_cluster -= 1
 
-    import numpy
-    X = numpy.array(difference_vectors)
-    linkage_method = self.params.cluster_analysis.linkage.method
-    linkage_metric = self.params.cluster_analysis.linkage.metric
-    criterion = self.params.cluster_analysis.cutoff_criterion
-    Z = linkage(X, method=linkage_method, metric=linkage_metric)
-    cutoff = self.params.cluster_analysis.cutoff
-    i_cluster = fcluster(Z, cutoff, criterion=criterion)
-
-    i_cluster = flex.int(i_cluster)
     clusters = []
     min_cluster_size = self.params.cluster_analysis.min_cluster_size
-    for i in range(max(i_cluster)):
-      isel = (i_cluster == (i+1)).iselection()
+    for i in range(max(i_cluster)+1):
+      isel = (i_cluster == i).iselection()
       if len(isel) < min_cluster_size:
         continue
       clusters.append(isel)
@@ -552,48 +556,118 @@ class indexer(object):
       cluster_point_sets.append(set(points))
       centroids.append(difference_vectors.select(cluster).mean())
 
-    #for i in range(len(centroids)):
-      #print i, centroids[i], matrix.col(centroids[i]).length()
-
     combinations = flex.vec3_int()
     unions = []
     intersections = []
     n_common_points = flex.int()
     fraction_common_points = flex.double()
 
+    # build a graph where each node is a centroid from the difference vector
+    # cluster analysis above, and an edge is defined when there is a
+    # significant overlap between the sets of peaks in the FFT map that
+    # contributed to the difference vectors in two clusters
+    import networkx as nx
+    G = nx.Graph()
+    G.add_nodes_from(range(len(cluster_point_sets)))
+
+    cutoff_frac = 0.25
     for i in range(len(cluster_point_sets)):
       for j in range(i+1, len(cluster_point_sets)):
+        intersection_ij = cluster_point_sets[i].intersection(
+            cluster_point_sets[j])
+        union_ij = cluster_point_sets[i].union(cluster_point_sets[j])
+        frac_connected = len(intersection_ij)/len(union_ij)
+        print (i, j), frac_connected
+        if frac_connected > cutoff_frac:
+          G.add_edge(i, j)
         for k in range(j+1, len(cluster_point_sets)):
-          intersection = cluster_point_sets[i].intersection(
-            cluster_point_sets[j]).intersection(cluster_point_sets[k])
-          union = cluster_point_sets[i].union(
-            cluster_point_sets[j]).union(cluster_point_sets[k])
+          intersection_ijk = intersection_ij.intersection(
+            cluster_point_sets[k])
+          union_ijk = union_ij.union(cluster_point_sets[k])
           combinations.append((i,j,k))
-          n_common_points.append(len(intersection))
-          fraction_common_points.append(len(intersection)/len(union))
+          n_common_points.append(len(intersection_ijk))
+          fraction_common_points.append(len(intersection_ijk)/len(union_ijk))
           #print combinations[-1], n_common_points[-1], fraction_common_points[-1]
+
+    # iteratively find the maximum cliques in the graph, each time removing
+    # from the graph those nodes that where in the previous maximum clique
+    # break from the loop if there are no cliques remaining or there are
+    # fewer than 3 vectors in the remaining maximum clique
+    # XXX what about if the two lattices share one basis vectors (e.g. two
+    # plate crystals exactly aligned in one direction, but not in the other two)?
+    distinct_cliques = []
+    while True:
+      cliques = list(nx.find_cliques(G))
+      if len(cliques) == 0: break
+      max_clique_size = nx.graph_clique_number(G, cliques=cliques)
+      for clique in cliques:
+        if len(clique) == max_clique_size:
+          break
+      if len(clique) < 3:
+        break
+      distinct_cliques.append(clique)
+      G.remove_nodes_from(clique)
+    assert len(distinct_cliques) > 0
+
+    print "Estimated number of lattices: %i" %len(distinct_cliques)
 
     self.candidate_basis_vectors = []
     self.candidate_crystal_models = []
-    perm = flex.sort_permutation(n_common_points, reverse=True)
-    cutoff_fract = self.params.cluster_analysis.intersection_union_ratio_cutoff
-    for p in perm:
-      i, j, k = combinations[p]
-      real_space_a = centroids[i]
-      real_space_b = centroids[k]
-      real_space_c = centroids[j]
-      crystal_model = Crystal(real_space_a, real_space_b, real_space_c,
-                              space_group_symbol="P1")
-      if fraction_common_points[p] < cutoff_fract:
-        continue
-      self.candidate_basis_vectors.extend(
-        crystal_model.get_real_space_vectors())
-      self.candidate_crystal_models.append(crystal_model)
-      print crystal_model
 
+    for clique in distinct_cliques:
+      vectors = flex.vec3_double(centroids).select(flex.size_t(clique))
+      perm = flex.sort_permutation(vectors.norms())
+      vectors = [matrix.col(vectors[p]) for p in perm]
+      self.candidate_basis_vectors.extend(vectors)
+      candidate_orientation_matrices \
+        = self.find_candidate_orientation_matrices(vectors)
+      # only take the first one
+      crystal_model = candidate_orientation_matrices[0]
+      # map to minimum reduced cell
+
+      from cctbx.crystal_orientation import crystal_orientation
+      orientation = crystal_orientation(crystal_model.get_A().elems, True)
+      orientation = orientation.reduced_cell()
+      direct_matrix = matrix.sqr(orientation.direct_matrix())
+      real_space_a = direct_matrix[:3]
+      real_space_b = direct_matrix[3:6]
+      real_space_c = direct_matrix[6:9]
+      crystal_model = Crystal(real_space_a,
+                              real_space_b,
+                              real_space_c,
+                              space_group=crystal_model.get_space_group(),
+                              mosaicity=crystal_model.get_mosaicity())
+
+      self.candidate_crystal_models.append(crystal_model)
+
+    if self.params.debug:
+      file_name = "vectors.pdb"
+      a = self.params.max_cell
+      cs = crystal.symmetry(unit_cell=(a,a,a,90,90,90), space_group="P1")
+      xs = xray.structure(crystal_symmetry=cs)
+      for v in difference_vectors:
+        v = matrix.col(v)
+        xs.add_scatterer(xray.scatterer("C", site=v/(a/10)))
+      xs.sites_mod_short()
+      with open(file_name, 'wb') as f:
+        print >> f, xs.as_pdb_file()
+
+  def cluster_analysis_hcluster(self, vectors):
+    from hcluster import pdist, linkage, dendrogram, fcluster
+    import numpy
+
+    params = self.params.cluster_analysis.hcluster
+    X = numpy.array(vectors)
+    linkage_method = params.linkage.method
+    linkage_metric = params.linkage.metric
+    criterion = params.cutoff_criterion
+    Z = linkage(X, method=linkage_method, metric=linkage_metric)
+    cutoff = params.cutoff
+    i_cluster = fcluster(Z, cutoff, criterion=criterion)
+
+    i_cluster = flex.int(i_cluster.astype(numpy.int32))
 
     if self.params.debug_plots:
-
       #matplotlib colours:
       #b: blue
       #g: green
@@ -612,6 +686,7 @@ class indexer(object):
       colours = ['b', 'g', 'r', 'c', 'm', 'y', 'k'] * 10
       m = '+'
       i_colour = 0
+      min_cluster_size = self.params.cluster_analysis.min_cluster_size
       for i in range(max(i_cluster)):
         selection = (i_cluster == (i+1)).iselection().as_numpy_array()
         cluster_size = selection.size
@@ -620,30 +695,80 @@ class indexer(object):
         xs = X[:,0][selection]
         ys = X[:,1][selection]
         zs = X[:,2][selection]
+        # plot whole sphere for visual effect
+        xs = numpy.concatenate((xs, -xs))
+        ys = numpy.concatenate((ys, -ys))
+        zs = numpy.concatenate((zs, -zs))
         c = colours[i_colour]
         i_colour += 1
         ax.scatter(xs, ys, zs, c=c, marker=m, s=5)
       plt.show()
 
-      dendrogram(Z, p=30, truncate_mode='lastp')
+      dendrogram(Z, p=50, truncate_mode='lastp')
       plt.show()
 
-    if self.params.debug:
-      file_name = "vectors.pdb"
-      a = self.params.max_cell
-      cs = crystal.symmetry(unit_cell=(a,a,a,90,90,90), space_group="P1")
-      xs = xray.structure(crystal_symmetry=cs)
-      for v in difference_vectors:
-        v = matrix.col(v)
-        xs.add_scatterer(xray.scatterer("C", site=v/(a/10)))
-      xs.sites_mod_short()
-      with open(file_name, 'wb') as f:
-        print >> f, xs.as_pdb_file()
+    return i_cluster
+
+  def cluster_analysis_dbscan(self, vectors):
+    import numpy as np
+
+    from sklearn.cluster import DBSCAN
+    from sklearn import metrics
+    from sklearn.datasets.samples_generator import make_blobs
+    from sklearn.preprocessing import StandardScaler
+
+    X = np.array(vectors)
+    # scale the data - is this necessary/does it help or hinder?
+    X = StandardScaler().fit_transform(X)
+
+    # Compute DBSCAN
+    params = self.params.cluster_analysis.dbscan
+    db = DBSCAN(eps=params.eps, min_samples=params.min_samples).fit(X)
+    core_samples = db.core_sample_indices_
+    labels = db.labels_
+
+    # Number of clusters in labels, ignoring noise if present.
+    n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
+
+    print('Estimated number of clusters: %d' % n_clusters_)
+
+    if self.params.debug_plots:
+      # Plot result
+      import pylab as pl
+      from mpl_toolkits.mplot3d import Axes3D
+
+      # Black removed and is used for noise instead.
+      fig = pl.figure()
+      ax = fig.add_subplot(111, projection='3d')
+      unique_labels = set(labels)
+      colors = pl.cm.Spectral(np.linspace(0, 1, len(unique_labels)))
+      for k, col in zip(unique_labels, colors):
+          if k == -1:
+              # Black used for noise.
+              col = 'k'
+              markersize = 6
+              continue
+          class_members = [index[0] for index in np.argwhere(labels == k)]
+          cluster_core_samples = [index for index in core_samples
+                                  if labels[index] == k]
+          for index in class_members:
+              x = X[index]
+              if index in core_samples and k != -1:
+                  markersize = 14
+              else:
+                  markersize = 6
+              ax.plot([x[0]], [x[1]], [x[2]], 'o', markerfacecolor=col,
+                         markeredgecolor='k', markersize=markersize)
+
+      pl.title('Estimated number of clusters: %d' % n_clusters_)
+      pl.show()
+
+    return flex.int(labels.astype(np.int32))
 
 
-  def find_candidate_orientation_matrices(self):
-    self.candidate_crystal_models = []
-    vectors = self.candidate_basis_vectors
+  def find_candidate_orientation_matrices(self, candidate_basis_vectors):
+    candidate_crystal_models = []
+    vectors = candidate_basis_vectors
 
     min_angle = 20 # degrees, aritrary cutoff
     for i in range(len(vectors)):
@@ -693,7 +818,8 @@ class indexer(object):
           params = uc.parameters()
           if uc.volume() > (params[0]*params[1]*params[2]/100):
             # unit cell volume cutoff from labelit 2004 paper
-            self.candidate_crystal_models.append(model)
+            candidate_crystal_models.append(model)
+    return candidate_crystal_models
 
   def predict_reflections(self, crystal_model):
     from dials.algorithms.integration import ReflectionPredictor
