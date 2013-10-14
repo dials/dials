@@ -9,7 +9,7 @@
 //#include <scitbx/matrix/norms.h>
 //#include <scitbx/matrix/packed.h>
 #include <scitbx/array_family/versa_matrix.h>
-
+#include <scitbx/matrix/inversion.h>
 
 
 #include <cmath>
@@ -35,10 +35,10 @@ namespace dials { namespace scratch {
          af::const_ref<double, af::c_grid<2> > matr01,
          af::const_ref<double, af::c_grid<2> > matr02)
   {
-    std::cout << "Hello from prod_tst \n";
     af::versa< double, af::c_grid<2> > prod(matr01.accessor());
-
-    //af::matrix_inversion_in_place(prod);
+    std::cout << "Hello from prod_tst \n";
+//    af::versa< double, af::c_grid<2> > prod(matr01.accessor());
+  //  af::versa< double, af::c_grid<2> > dat_in(matr01.accessor());
 
 
     prod = af::matrix_multiply(matr01, matr02);
@@ -50,6 +50,32 @@ namespace dials { namespace scratch {
     for (std::size_t i = 0; i < prod.size(); ++i) {
       prod[i] = matr01[i] + matr02[i];
     }
+
+    // attempt to do inversion of matrix, this is not working
+
+      af::versa< double, af::c_grid<2> >  tst_prod(
+         af::const_ref<double, af::c_grid<2> > matr01,
+         af::const_ref<double, af::c_grid<2> > matr02)
+  {
+    std::cout << "Hello from prod_tst \n";
+    af::versa< double, af::c_grid<2> > prod(matr01.accessor());
+    af::versa< double, af::c_grid<2> > dat_in(matr01.accessor());
+    // copying the content of a versa array
+        for (std::size_t i = 0; i < dat_in.size(); ++i) {
+          dat_in[i] = matr01[i];
+        }
+
+    af::ref<double, af::c_grid<2> > b(0, af::c_grid<2>(0,0));
+    scitbx::matrix::inversion_in_place(
+        dat_in.ref().begin(),
+        static_cast<std::size_t>(dat_in.accessor()[0]),
+        b.begin(),
+        static_cast<std::size_t>(b.accessor()[0]));
+
+    //prod = af::matrix_multiply(matr01, matr02);
+
+    return prod;
+  }
 
 */
 

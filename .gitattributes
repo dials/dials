@@ -472,6 +472,7 @@ scratch/luiso_s/test_code/integrate_helper.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/low_level_mosflm_2D_test.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/mask_test.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matplotlib_cut.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/matr_opr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
