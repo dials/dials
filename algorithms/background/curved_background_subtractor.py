@@ -87,20 +87,28 @@ def layering_and_background_plane(reflections):
                 data2d.reshape(flex.grid(shoebox.all()[1:]))
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
 
-                a_mat = flex.double(flex.grid(3, 3))
-                b_vec = flex.double(flex.grid(3, 1))
-                ok_logic = get_plane_background_syml_sys_2d(data2d, mask2d, a_mat, b_vec)
+                a_mat_flx = flex.double(flex.grid(3, 3))
+                b_vec_flx = flex.double(flex.grid(3, 1))
+                ok_logic = get_plane_background_syml_sys_2d(data2d, mask2d, a_mat_flx, b_vec_flx)
 
                 print
                 print "mat [A] = "
-                flex.show(a_mat)
+                flex.show(a_mat_flx)
                 print
                 print "vec [B] = "
-                flex.show(b_vec)
+                flex.show(b_vec_flx)
                 print
 
+                a_mat = a_mat_flx.as_scitbx_matrix()
+                b_mat = b_vec_flx.as_scitbx_matrix()
 
+                x_mat = a_mat.inverse() * b_mat
+                x_plane = x_mat.as_flex_double_matrix()
 
+                print "vec [x] = "
+                flex.show(x_plane)
+
+                #background2d = curved_background_flex_2d(data2d, mask2d)
 
                 print "ok_logic =", ok_logic
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))

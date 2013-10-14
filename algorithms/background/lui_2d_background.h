@@ -92,8 +92,6 @@ namespace dials { namespace algorithms {
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
         af::versa< double, af::c_grid<2> > background2d(data2d.accessor(),0);
-        double loc_bkgr_cont, loc_bkgr_tot;
-        double loc_bkgr = 0;
 
         /////////////////////////////////////////////////////////////
 
@@ -141,7 +139,7 @@ namespace dials { namespace algorithms {
 
         //looping trough lists and building the elements of the matrix to solve
         for (int ipos = 0; ipos<counter; ipos++) {
-          std::cout <<"\n"<<ipos<<"  x ="<< x_lst[ipos] << "  y =" << y_lst[ipos] << "  z =" << z_lst[ipos];
+          //std::cout <<"\n"<<ipos<<"  x ="<< x_lst[ipos] << "  y =" << y_lst[ipos] << "  z =" << z_lst[ipos];
 
           sum_x_sqr += x_lst[ipos] * x_lst[ipos];
           sum_x_y   += x_lst[ipos] * y_lst[ipos];
@@ -153,7 +151,7 @@ namespace dials { namespace algorithms {
           sum_y_z   += y_lst[ipos] * z_lst[ipos];
           sum_z     += z_lst[ipos];
         }
-        std::cout <<"\n";
+        //std::cout <<"\n";
 
         mat_a(0,0) = sum_x_sqr;
         mat_a(0,1) = sum_x_y;
