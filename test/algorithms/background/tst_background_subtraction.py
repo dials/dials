@@ -7,7 +7,7 @@ class TestForStrong:
         import os
 
         # Number to select
-        n_select = 5
+        n_select = 20
 
         # Load the sweep
         sweep = load.sweep(os.path.join(path, 'sweep.json'))
@@ -25,7 +25,6 @@ class TestForStrong:
         self.profiles = []
         data = sweep.to_array()
         for i in index[0:n_select]:
-            print iobs[i], sigma[i], ios[i], reader.xyzcal[i]
             x, y, z = reader.xyzcal[i]
             x0, x1 = int(x) - 5, int(x) + 5
             y0, y1 = int(y) - 5, int(y) + 5
@@ -47,19 +46,25 @@ class TestForStrong:
             #prof1 = self.profiles[0]
             mask = flex.int(flex.grid(prof1.all()), MaskCode.Background | MaskCode.Valid)
             background = create_background(prof1.as_double(), mask)
+            print background
 
-
-    #        from matplotlib import pylab
-    #        from scitbx.array_family import flex
-    #        vmin, vmax = flex.min(self.profiles[0]), flex.max(self.profiles[0])
-            for i in range(prof1.all()[0]):
-                im = flex.int(prof1.as_numpy_array()[i])
-                ma = mask.as_numpy_array()[i]
-
-                ma = flex.int(ma)
-                for j in range(len(ma)):
-                    if ma[j] & MaskCode.Foreground:
-                        im[j] = int(background)
+#            from matplotlib import pylab
+#            from scitbx.array_family import flex
+#    #        vmin, vmax = flex.min(self.profiles[0]), flex.max(self.profiles[0])
+#
+#            p = prof1.as_numpy_array()
+#            m = mask.as_numpy_array()
+#            v = p * (m == 3)
+#            print flex.mean(flex.int(v).as_double())
+#            print flex.mean((prof1 * (mask == 3).as_int()).as_double())
+#            for i in range(prof1.all()[0]):
+#                im = flex.int(prof1.as_numpy_array()[i])
+#                ma = mask.as_numpy_array()[i]
+#                print ma
+#                ma = flex.int(ma)
+#                for j in range(len(ma)):
+#                    if ma[j] & MaskCode.Foreground:
+#                        im[j] = int(background)
 
     #            print im.as_numpy_array()
     #            print ma.as_numpy_array()

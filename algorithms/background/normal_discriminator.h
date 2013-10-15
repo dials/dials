@@ -217,7 +217,6 @@ namespace dials { namespace algorithms {
       }
       for (std::size_t i = num_data; i < indices.size(); ++i) {
         mask[indices[i]] &= ~shoebox::Background;
-        mask[indices[i]] |= shoebox::Foreground;
       }
     }
 
