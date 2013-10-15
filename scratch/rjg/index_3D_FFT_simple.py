@@ -584,17 +584,8 @@ class indexer(object):
             cluster_point_sets[j])
         union_ij = cluster_point_sets[i].union(cluster_point_sets[j])
         frac_connected = len(intersection_ij)/len(union_ij)
-        print (i, j), frac_connected
         if frac_connected > cutoff_frac:
           G.add_edge(i, j)
-        for k in range(j+1, len(cluster_point_sets)):
-          intersection_ijk = intersection_ij.intersection(
-            cluster_point_sets[k])
-          union_ijk = union_ij.union(cluster_point_sets[k])
-          combinations.append((i,j,k))
-          n_common_points.append(len(intersection_ijk))
-          fraction_common_points.append(len(intersection_ijk)/len(union_ijk))
-          #print combinations[-1], n_common_points[-1], fraction_common_points[-1]
 
     # iteratively find the maximum cliques in the graph, each time removing
     # from the graph those nodes that where in the previous maximum clique
