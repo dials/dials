@@ -533,9 +533,16 @@ class indexer(object):
 
     if self.params.cluster_analysis.method == 'dbscan':
       i_cluster = self.cluster_analysis_dbscan(difference_vectors)
+      min_cluster_size = 1
     elif self.params.cluster_analysis.method == 'hcluster':
       i_cluster = self.cluster_analysis_hcluster(difference_vectors)
-      i_cluster -= 1
+      i_cluster -= 1 # hcluster starts counting at 1
+      min_cluster_size = self.params.cluster_analysis.min_cluster_size
+
+    if self.params.debug_plots:
+      self.debug_plot_clusters(
+        difference_vectors, i_cluster, min_cluster_size=min_cluster_size)
+
 
     clusters = []
     min_cluster_size = self.params.cluster_analysis.min_cluster_size
@@ -664,49 +671,7 @@ class indexer(object):
     Z = linkage(X, method=linkage_method, metric=linkage_metric)
     cutoff = params.cutoff
     i_cluster = fcluster(Z, cutoff, criterion=criterion)
-
     i_cluster = flex.int(i_cluster.astype(numpy.int32))
-
-    if self.params.debug_plots:
-      #matplotlib colours:
-      #b: blue
-      #g: green
-      #r: red
-      #c: cyan
-      #m: magenta
-      #y: yellow
-      #k: black
-      #w: white
-
-      from mpl_toolkits.mplot3d import Axes3D
-      import matplotlib.pyplot as plt
-      fig = plt.figure()
-      ax = fig.add_subplot(111, projection='3d')
-      n = 100
-      colours = ['b', 'g', 'r', 'c', 'm', 'y', 'k'] * 10
-      m = '+'
-      i_colour = 0
-      min_cluster_size = self.params.cluster_analysis.min_cluster_size
-      for i in range(max(i_cluster)):
-        selection = (i_cluster == (i+1)).iselection().as_numpy_array()
-        cluster_size = selection.size
-        print len(selection)
-        if cluster_size < min_cluster_size: continue
-        xs = X[:,0][selection]
-        ys = X[:,1][selection]
-        zs = X[:,2][selection]
-        # plot whole sphere for visual effect
-        xs = numpy.concatenate((xs, -xs))
-        ys = numpy.concatenate((ys, -ys))
-        zs = numpy.concatenate((zs, -zs))
-        c = colours[i_colour]
-        i_colour += 1
-        ax.scatter(xs, ys, zs, c=c, marker=m, s=5)
-      plt.show()
-
-      dendrogram(Z, p=50, truncate_mode='lastp')
-      plt.show()
-
     return i_cluster
 
   def cluster_analysis_dbscan(self, vectors):
@@ -725,46 +690,67 @@ class indexer(object):
     params = self.params.cluster_analysis.dbscan
     db = DBSCAN(eps=params.eps, min_samples=params.min_samples).fit(X)
     core_samples = db.core_sample_indices_
-    labels = db.labels_
+    # core_samples is a list of numpy.int64 objects
+    core_samples = flex.int([int(i) for i in core_samples])
+    labels = flex.int(db.labels_.astype(np.int32))
 
     # Number of clusters in labels, ignoring noise if present.
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
 
     print('Estimated number of clusters: %d' % n_clusters_)
 
-    if self.params.debug_plots:
-      # Plot result
-      import pylab as pl
-      from mpl_toolkits.mplot3d import Axes3D
+    return labels
 
-      # Black removed and is used for noise instead.
-      fig = pl.figure()
-      ax = fig.add_subplot(111, projection='3d')
-      unique_labels = set(labels)
-      colors = pl.cm.Spectral(np.linspace(0, 1, len(unique_labels)))
-      for k, col in zip(unique_labels, colors):
-          if k == -1:
-              # Black used for noise.
-              col = 'k'
-              markersize = 6
-              continue
-          class_members = [index[0] for index in np.argwhere(labels == k)]
-          cluster_core_samples = [index for index in core_samples
-                                  if labels[index] == k]
-          for index in class_members:
-              x = X[index]
-              if index in core_samples and k != -1:
-                  markersize = 14
-              else:
-                  markersize = 6
-              ax.plot([x[0]], [x[1]], [x[2]], 'o', markerfacecolor=col,
-                         markeredgecolor='k', markersize=markersize)
+  def debug_plot_clusters(self, vectors, labels, min_cluster_size=1):
+    assert len(vectors) == len(labels)
+    from matplotlib import pyplot
+    from mpl_toolkits.mplot3d import Axes3D
+    import numpy
 
-      pl.title('Estimated number of clusters: %d' % n_clusters_)
-      pl.show()
+    # Black removed and is used for noise instead.
+    fig = pyplot.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    # label clusters smaller than min_cluster_size as noise
+    unique_labels = set(labels)
+    for k in unique_labels:
+      sel_k = labels == k
+      if (sel_k).count(True) < min_cluster_size:
+        labels = labels.set_selected(sel_k, -1)
+    unique_labels = set(labels)
+    n_clusters = len(unique_labels) - (1 if -1 in unique_labels else 0)
+    colours = pyplot.cm.Spectral(numpy.linspace(0, 1, len(unique_labels)))
+    #vectors = flex.vec3_double(vectors)
+    ax.scatter([0],[0],[0], c='k', marker='+', s=50)
+    for k, col in zip(unique_labels, colours):
+        class_members = (labels == k).iselection()
+        if k == -1:# or len(class_members) < min_cluster_size:
+          # Black used for noise.
+          col = 'k'
+          col = '0.25' # mid-grey
+          markersize = 1
+          marker = '+'
+          #continue
+        else:
+          markersize = 10
+          marker = 'o'
+        if not isinstance(col, basestring) and len(col) == 4:
+          # darken the edges
+          frac = 0.75
+          edgecolor = [col[0]*frac, col[1]*frac, col[2]*frac, col[3]]
+        else:
+          edgecolor = col
+        vs = numpy.array([vectors[i] for i in class_members])
+        xs = vs[:,0]
+        ys = vs[:,1]
+        zs = vs[:,2]
+        # plot whole sphere for visual effect
+        xs = numpy.concatenate((xs, -xs))
+        ys = numpy.concatenate((ys, -ys))
+        zs = numpy.concatenate((zs, -zs))
+        ax.scatter(xs, ys, zs, c=col, marker=marker, s=markersize, edgecolor=edgecolor)
 
-    return flex.int(labels.astype(np.int32))
-
+    pyplot.title('Estimated number of clusters: %d' % n_clusters)
+    pyplot.show()
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors):
     candidate_crystal_models = []
