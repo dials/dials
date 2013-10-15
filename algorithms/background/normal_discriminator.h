@@ -184,7 +184,7 @@ namespace dials { namespace algorithms {
       // Copy valid pixels and indices into list
       af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if (mask[i] & shoebox::Valid) {
+        if (mask[i] & shoebox::Valid && mask[i] & shoebox::Background) {
           indices.push_back(i);
         }
       }

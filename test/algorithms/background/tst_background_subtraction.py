@@ -22,6 +22,7 @@ class TestForStrong:
         ios = [ i / s for i, s in zip(iobs, sigma) ]
         index = sorted(list(range(len(iobs))), key=lambda i: ios[i], reverse=True)
 
+        # Get the profiles of the top n reflections
         self.profiles = []
         data = sweep.to_array()
         for i in index[0:n_select]:
