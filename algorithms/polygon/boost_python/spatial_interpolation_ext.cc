@@ -1,5 +1,5 @@
 /*
- * areal_interpolation_ext.cc
+ * spatial_interpolation_ext.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -11,15 +11,15 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <scitbx/vec2.h>
-#include <dials/algorithms/polygon/areal_interpolation.h>
+#include <dials/algorithms/polygon/spatial_interpolation.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms { namespace polygon {
-  namespace areal_interpolation { namespace boost_python {
+  namespace spatial_interpolation { namespace boost_python {
 
   using namespace boost::python;
   
-  void export_areal_interpolation() 
+  void export_spatial_interpolation() 
   {
     class_<Match>("Match")
       .def(init<int, int, double>())
@@ -34,9 +34,9 @@ namespace dials { namespace algorithms { namespace polygon {
     def("regrid_grid_to_irregular_grid", &regrid_grid_to_irregular_grid);
   }
 
-  BOOST_PYTHON_MODULE(dials_algorithms_polygon_areal_interpolation_ext)
+  BOOST_PYTHON_MODULE(dials_algorithms_polygon_spatial_interpolation_ext)
   {
-    export_areal_interpolation();
+    export_spatial_interpolation();
   }
 
 }}}}}

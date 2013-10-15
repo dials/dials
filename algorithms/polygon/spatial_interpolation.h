@@ -1,5 +1,5 @@
 /*
- * areal_interpolation.h
+ * spatial_interpolation.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_ALGORITHMS_POLYGON_AREAL_INTERPOLATION_H
-#define DIALS_ALGORITHMS_POLYGON_AREAL_INTERPOLATION_H
+#ifndef DIALS_ALGORITHMS_POLYGON_SPATIAL_INTERPOLATION_H
+#define DIALS_ALGORITHMS_POLYGON_SPATIAL_INTERPOLATION_H
 
 #include <cmath>
 #include <scitbx/vec2.h>
@@ -21,7 +21,7 @@
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace polygon {
-    namespace areal_interpolation {
+    namespace spatial_interpolation {
 
   using std::floor;
   using std::ceil;
@@ -253,6 +253,6 @@ namespace dials { namespace algorithms { namespace polygon {
   }
 
 
-}}}} // namespace dials::algorithms::polygon::areal_interpolation
+}}}} // namespace dials::algorithms::polygon::spatial_interpolation
 
-#endif /* DIALS_ALGORITHMS_POLYGON_AREAL_INTERPOLATION_H */
+#endif /* DIALS_ALGORITHMS_POLYGON_SPATIAL_INTERPOLATION_H */

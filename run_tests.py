@@ -39,6 +39,7 @@ tst_list = (
     "$D/test/algorithms/image/threshold/tst_local.py",
     "$D/test/algorithms/image/connected_components/tst_connected_components.py",
     "$D/test/algorithms/polygon/clip/tst_clipping.py",
+    "$D/test/algorithms/polygon/tst_spatial_interpolation.py",
     "$D/test/algorithms/reflection_basis/tst_coordinate_system.py",
     "$D/test/algorithms/reflection_basis/tst_map_frames.py",
     "$D/test/algorithms/reflection_basis/tst_rebin_pixels.py",
