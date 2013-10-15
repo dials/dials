@@ -447,6 +447,7 @@ scratch/jmp/misc/line_clip.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
+scratch/jmp/misc/strip_integrate_hkl.py -text
 scratch/jmp/misc/test_area.py -text
 scratch/jmp/misc/test_exclude.py -text
 scratch/jmp/misc/test_overlapping.py -text
@@ -513,6 +514,7 @@ test/__init__.py -text
 test/algorithms/__init__.py -text
 test/algorithms/background/real.py -text
 test/algorithms/background/simulate.py -text
+test/algorithms/background/tst_background_subtraction.py -text
 test/algorithms/background/tst_normal_discriminator.py -text
 test/algorithms/centroid/tst_filtered_centroid.py -text
 test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
