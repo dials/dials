@@ -554,10 +554,12 @@ test/algorithms/refinement/tst_refine_fn.py -text
 test/algorithms/refinement/tst_refinement_regression.py -text
 test/algorithms/refinement/tst_scan_varying_model_parameters.py -text
 test/algorithms/refinement/tst_scan_varying_prediction_parameters.py -text
+test/algorithms/reflection_basis/expected.p -text
 test/algorithms/reflection_basis/tst_beam_vector_map.py -text
 test/algorithms/reflection_basis/tst_coordinate_system.py -text
 test/algorithms/reflection_basis/tst_grid_index_generator.py -text
 test/algorithms/reflection_basis/tst_map_frames.py -text
+test/algorithms/reflection_basis/tst_map_pixels.py -text
 test/algorithms/reflection_basis/tst_rebin_pixels.py -text
 test/algorithms/reflection_basis/tst_transform.py -text
 test/algorithms/shoebox/tst_bbox_calculator.py -text
