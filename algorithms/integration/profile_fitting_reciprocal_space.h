@@ -75,16 +75,17 @@ namespace dials { namespace algorithms {
 
       // Get the transformed background
       // HACK ALERT! Should fix: setting to mean of shoebox background
-      double background = scitbx::af::mean(reflection.get_shoebox_background().const_ref());
-//      double scale = 1.0 / c.size();
-      double scale = 0.0;
-      for (std::size_t i = 0; i < reflection.get_shoebox().size(); ++i) {
-        scale += reflection.get_shoebox()[i] * (
-          reflection.get_shoebox_mask()[i] & shoebox::Valid &&
-          reflection.get_shoebox_mask()[i] & shoebox::Foreground);
-      }
-      scale = scitbx::af::sum(c) / scale;
-      background *= scale;
+      double background = 0.0;
+//      double background = scitbx::af::mean(reflection.get_shoebox_background().const_ref());
+////      double scale = 1.0 / c.size();
+//      double scale = 0.0;
+//      for (std::size_t i = 0; i < reflection.get_shoebox().size(); ++i) {
+//        scale += reflection.get_shoebox()[i] * (
+//          reflection.get_shoebox_mask()[i] & shoebox::Valid &&
+//          reflection.get_shoebox_mask()[i] & shoebox::Foreground);
+//      }
+//      scale = scitbx::af::sum(c) / scale;
+//      background *= scale;
       af::versa<double, af::c_grid<3> > b(c.accessor(), background);//mean(
 //        reflection.get_shoebox_background().const_ref()));
 

@@ -269,6 +269,7 @@ class Importer(object):
         self.imagesets = []
         self.crystals = []
         self.reflections = ReflectionList()
+        self.reference = None
 
         # First try to load known serialized formats. Then try to load
         # the remaining arguments as an imageset. If this fails save
@@ -296,12 +297,16 @@ class Importer(object):
     def try_pickle(self, argument):
         ''' Try as a pickle file. '''
         from dials.model.data import ReflectionList
+        from dials.algorithms.integration.profile import *
         import cPickle as pickle
         try:
             with open(argument, 'rb') as inputfile:
                 obj = pickle.load(inputfile)
                 if isinstance(obj, ReflectionList):
                     self.reflections.extend(obj)
+                    return True
+                elif isinstance(obj, XdsCircleReferenceLocator):
+                    self.reference = obj
                     return True
         except Exception:
             pass
