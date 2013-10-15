@@ -177,27 +177,25 @@ namespace dials { namespace algorithms {
 
   af::versa< double, af::c_grid<2> > inclined_plane_background_flex_2d(
     const af::const_ref< double, af::c_grid<2> > &data2d,
-    const af::const_ref< int, af::c_grid<2> > &mask2d) {
+    const af::const_ref< int, af::c_grid<2> > &mask2d,
+    const af::const_ref< double, af::c_grid<2> > &abc_plane){
+
+
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
         af::versa< double, af::c_grid<2> > background2d(data2d.accessor(),0);
-        double cont=0.0, tot_bkgr = 0.0;
-        double avg_bkgr = 0;
-        for (int row = 0; row<nrow;row++) {
-          for (int col = 0; col<ncol;col++) {
-            if ( mask2d(row,col) & Background ){
-              tot_bkgr += data2d(row,col);
-              cont++;
-            }
-            if ( tot_bkgr > 0 and cont > 0) {
-              avg_bkgr = tot_bkgr / cont;
-            }
-          }
-        }
+        double a = abc_plane(0,0);
+        double b = abc_plane(0,1);
+        double c = abc_plane(0,2);
+        double x, y;
+        std::cout << "\n" << " a = " << a << ", b =" << b <<", c =" << c << "\n";
+
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {
             if ( mask2d(row,col) & Foreground ){
-              background2d(row,col) = avg_bkgr;
+              x = col + 0.5;
+              y = row + 0.5;
+              background2d(row,col) = a * x + b * y + c;
             } else {
               background2d(row,col) = data2d(row,col);
             }

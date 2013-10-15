@@ -104,12 +104,12 @@ def layering_and_background_plane(reflections):
                 b_mat = b_vec_flx.as_scitbx_matrix()
 
                 x_mat = a_mat.inverse() * b_mat
-                x_plane = x_mat.as_flex_double_matrix()
+                abc_plane = x_mat.as_flex_double_matrix()
 
                 print "vec [x] = "
-                flex.show(x_plane)
+                flex.show(abc_plane)
 
-                background2d = inclined_plane_background_flex_2d(data2d, mask2d)
+                background2d = inclined_plane_background_flex_2d(data2d, mask2d, abc_plane)
 
                 print "ok_logic =", ok_logic
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
