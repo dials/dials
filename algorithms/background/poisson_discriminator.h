@@ -108,6 +108,11 @@ namespace dials { namespace algorithms {
      * the sample variance and the mean is less than a certain number of
      * standard deviations of the variance.
      *
+     * The mask is used in both input and output. On input the mask is checked
+     * for valid pixels. The discriminated peak/background pixels are then
+     * written into the mask. The pixel values to include in the discrimination
+     * procedure must be set to Valid | Background.
+     *
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
@@ -123,9 +128,6 @@ namespace dials { namespace algorithms {
           indices.push_back(i);
         }
       }
-
-      // Check we have enough data
-      DIALS_ASSERT(indices.size() >= min_data_);
 
       // Check we have enough data
       DIALS_ASSERT(indices.size() >= min_data_);
@@ -148,11 +150,7 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Set all the rejected pixels as peak pixels and all the accepted
-      // pixels as background pixels
-      for (std::size_t i = 0; i < num_data; ++i) {
-        mask[indices[i]] |= shoebox::Background;
-      }
+      // Set rejected pixels as 'not background'
       for (std::size_t i = num_data; i < indices.size(); ++i) {
         mask[indices[i]] &= ~shoebox::Background;
       }
