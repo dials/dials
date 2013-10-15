@@ -2,20 +2,20 @@ from __future__ import division
 example = '''
 >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  from Graeme
 
->>> from scitbx import matrix                                         
->>> import random                                                     
->>> m = matrix.sqr([random.random() for j in range(9)])               
->>> m                                                                 
-matrix.rec(elems=(0.647908750543, ..., 0.874819390125), n=(3,3))      
->>> m.inverse()                                                       
-matrix.rec(elems=(4.57721132912, ..., 1.55733448049), n=(3,3))        
->>> _ * m                                                             
-matrix.rec(elems=(1.0, ..., 1.0), n=(3,3))                            
->>> i = m.inverse()                                                   
->>> m * i                                                             
-matrix.rec(elems=(1.0, ..., 1.0), n=(3,3))                            
->>> i * m                                                             
-matrix.rec(elems=(1.0, ..., 1.0), n=(3,3))                            
+>>> from scitbx import matrix
+>>> import random
+>>> m = matrix.sqr([random.random() for j in range(9)])
+>>> m
+matrix.rec(elems=(0.647908750543, ..., 0.874819390125), n=(3,3))
+>>> m.inverse()
+matrix.rec(elems=(4.57721132912, ..., 1.55733448049), n=(3,3))
+>>> _ * m
+matrix.rec(elems=(1.0, ..., 1.0), n=(3,3))
+>>> i = m.inverse()
+>>> m * i
+matrix.rec(elems=(1.0, ..., 1.0), n=(3,3))
+>>> i * m
+matrix.rec(elems=(1.0, ..., 1.0), n=(3,3))
 >>>
 
 
@@ -49,14 +49,14 @@ write_2d(x)
 
 
 from scitbx import matrix
- 
+
 a = matrix.sqr((0, 0, 0, 0))
- 
+
 a.as_flex_double_matrix()
 Out[47]: <scitbx_array_family_flex_ext.double at 0x455bfc8>
- 
+
 b = a.as_flex_double_matrix()
- 
+
 b.as_scitbx_matrix()
 Out[50]: matrix.rec(elems=(0.0, ..., 0.0), n=(2,2))
 

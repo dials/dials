@@ -7,7 +7,7 @@ A * x = B
 [A] = matriz
 [x] = vector columna
 [B] = vextor columna
-A ** (-1) * (A * x) =A ** (-1) * B 
+A ** (-1) * (A * x) =A ** (-1) * B
 
 x = A ** (-1) * B
 
