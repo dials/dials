@@ -3,6 +3,14 @@ import sys
 import cPickle as pickle
 import math
 
+try:
+  # try importing scipy.linalg before any cctbx modules, otherwise we
+  # sometimes get a segmentation fault/core dump if it is imported after
+  # scipy.linalg is a dependency of sklearn.cluster.DBSCAN
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+
 import iotbx.phil
 from scitbx import matrix
 from scitbx import fftpack
