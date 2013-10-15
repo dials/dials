@@ -6,9 +6,6 @@ class TestForStrong:
         from dials.model.serialize import load
         import os
 
-        # Number to select
-        n_select = 20
-
         # Load the sweep
         sweep = load.sweep(os.path.join(path, 'sweep.json'))
 
@@ -21,6 +18,9 @@ class TestForStrong:
         sigma = reader.sigma
         ios = [ i / s for i, s in zip(iobs, sigma) ]
         index = sorted(list(range(len(iobs))), key=lambda i: ios[i], reverse=True)
+
+        # Number to select
+        n_select = len(index)
 
         # Get the profiles of the top n reflections
         self.profiles = []
