@@ -20,6 +20,12 @@ namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
 
+  /**
+   * Apply a median filter to an image
+   * @param image The image to filter
+   * @param size The size of the filter kernel
+   * @returns The filtered image
+   */
   template <typename T>
   af::versa< T, af::c_grid<2> > median_filter(
       const af::const_ref< T, af::c_grid<2> > &image,
@@ -60,7 +66,13 @@ namespace dials { namespace algorithms {
     return median;
   }
 
-
+  /**
+   * Apply a median filter to an image with a mask
+   * @param image The image to filter
+   * @param mask The image mask
+   * @param size The size of the filter kernel
+   * @returns The filtered image
+   */
   template <typename T>
   af::versa< T, af::c_grid<2> > median_filter_masked(
       const af::const_ref< T, af::c_grid<2> > &image,
