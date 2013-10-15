@@ -71,7 +71,8 @@ def layering_and_background_modl(reflections):
 
 
 def layering_and_background_plane(reflections):
-    from dials.algorithms.background import get_plane_background_syml_sys_2d
+    from dials.algorithms.background \
+     import get_plane_background_syml_sys_2d, inclined_plane_background_flex_2d
     from scitbx.array_family import flex
 
     print "performing background plane calculation ...."
@@ -108,7 +109,7 @@ def layering_and_background_plane(reflections):
                 print "vec [x] = "
                 flex.show(x_plane)
 
-                #background2d = curved_background_flex_2d(data2d, mask2d)
+                background2d = inclined_plane_background_flex_2d(data2d, mask2d)
 
                 print "ok_logic =", ok_logic
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
