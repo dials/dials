@@ -30,23 +30,21 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
-    af::versa< double, af::c_grid<2> > median(image.accessor(),
-      af::init_functor_null<double>());
+    af::versa< double, af::c_grid<2> > median(image.accessor(), 0.0);
 
     // Create the array to sort to get the median
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
-    af::shared<double> pixels_array(size[0] * size[1],
-      af::init_functor_null<double>());
+    af::shared<double> pixels_array((2*size[0]+1)*(2*size[1]+1), 0.0);
     af::ref<double> pixels = pixels_array.ref();
 
     // For each pixel obtain the median value
     for (std::size_t j = 0; j < ysize; ++j) {
       for (std::size_t i = 0; i < xsize; ++i) {
         std::size_t npix = 0;
-        for (int jj = j - size[0]; jj <= j + size[1]; ++jj) {
-          for (int ii = i - size[0]; ii <= i + size[1]; ++ii) {
-            if (jj >= 0 && ii >= 0 && jj < ysize && ii >= xsize) {
+        for (int jj = j - size[0]; jj <= j + size[0]; ++jj) {
+          for (int ii = i - size[1]; ii <= i + size[1]; ++ii) {
+            if (jj >= 0 && ii >= 0 && jj < ysize && ii < xsize) {
               pixels[npix++] = image(jj, ii);
             }
           }
@@ -74,14 +72,12 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
-    af::versa< double, af::c_grid<2> > median(image.accessor(),
-      af::init_functor_null<double>());
+    af::versa< double, af::c_grid<2> > median(image.accessor(), 0.0);
 
     // Create the array to sort to get the median
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
-    af::shared<double> pixels_array(size[0] * size[1],
-      af::init_functor_null<double>());
+    af::shared<double> pixels_array((2*size[0]+1)*(2*size[1]+1), 0.0);
     af::ref<double> pixels = pixels_array.ref();
 
     // For each pixel obtain the median value
@@ -89,9 +85,9 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < xsize; ++i) {
         if (mask(j, i)) {
           std::size_t npix = 0;
-          for (int jj = j - size[0]; jj <= j + size[1]; ++jj) {
-            for (int ii = i - size[0]; ii <= i + size[1]; ++ii) {
-              if (jj >= 0 && ii >= 0 && jj < ysize && ii >= xsize) {
+          for (int jj = j - size[0]; jj <= j + size[0]; ++jj) {
+            for (int ii = i - size[1]; ii <= i + size[1]; ++ii) {
+              if (jj >= 0 && ii >= 0 && jj < ysize && ii < xsize) {
                 if (mask(jj, ii)) {
                   pixels[npix++] = image(jj, ii);
                 }
@@ -102,8 +98,6 @@ namespace dials { namespace algorithms {
           std::nth_element(pixels.begin(),
             pixels.begin()+n, pixels.begin()+npix);
           median(j, i) = pixels[n];
-        } else {
-          median(j, i) = 0.0;
         }
       }
     }

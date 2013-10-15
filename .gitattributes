@@ -518,6 +518,7 @@ test/algorithms/centroid/tst_toy_centroid_helpers.py -text
 test/algorithms/image/connected_components/tst_connected_components.py -text
 test/algorithms/image/filter/tst_fano.py -text
 test/algorithms/image/filter/tst_mean_and_variance.py -text
+test/algorithms/image/filter/tst_median.py -text
 test/algorithms/image/filter/tst_summed_area.py -text
 test/algorithms/image/threshold/tst_local.py -text
 test/algorithms/image/tst_centroid.py -text
