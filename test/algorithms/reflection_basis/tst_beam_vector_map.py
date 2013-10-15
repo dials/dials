@@ -40,6 +40,9 @@ class Test(object):
 
         # The detector beam vectors
         ds1 = beam_vector_map(self.detector, self.beam, True)
+        expected_size = self.detector.get_image_size()[::-1]
+        expected_size = tuple([e + 1 for e in expected_size])
+        assert(ds1.all() == expected_size)
 
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
@@ -69,6 +72,9 @@ class Test(object):
 
         # The detector beam vectors
         ds1 = beam_vector_map(self.detector, self.beam, self.n_div, True)
+        expected_size = self.detector.get_image_size()[::-1]
+        expected_size = tuple([e * self.n_div + 1 for e in expected_size])
+        assert(ds1.all() == expected_size)
 
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
@@ -98,6 +104,9 @@ class Test(object):
 
         # The detector beam vectors
         ds1 = beam_vector_map(self.detector, self.beam, self.n_div, False)
+        expected_size = self.detector.get_image_size()[::-1]
+        expected_size = tuple([e * self.n_div for e in expected_size])
+        assert(ds1.all() == expected_size)
 
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
