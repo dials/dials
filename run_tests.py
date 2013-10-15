@@ -34,6 +34,7 @@ tst_list = (
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",
     "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
+    "$D/test/algorithms/image/filter/tst_median.py",
     "$D/test/algorithms/image/filter/tst_fano.py",
     "$D/test/algorithms/image/threshold/tst_local.py",
     "$D/test/algorithms/image/connected_components/tst_connected_components.py",

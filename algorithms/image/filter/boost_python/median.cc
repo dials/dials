@@ -18,10 +18,17 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_median() 
   {
-    def("median_filter", &median_filter, (
+    def("median_filter", &median_filter<int>, (
       arg("image"),
       arg("kernel")));
-    def("median_filter_masked", &median_filter_masked, (
+    def("median_filter", &median_filter<double>, (
+      arg("image"),
+      arg("kernel")));
+    def("median_filter_masked", &median_filter_masked<int>, (
+      arg("image"),
+      arg("mask"),
+      arg("kernel")));
+    def("median_filter_masked", &median_filter_masked<double>, (
       arg("image"),
       arg("mask"),
       arg("kernel")));

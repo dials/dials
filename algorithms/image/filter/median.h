@@ -20,9 +20,9 @@ namespace dials { namespace algorithms {
 
   using scitbx::af::int2;
 
-  inline
-  af::versa< double, af::c_grid<2> > median_filter(
-      const af::const_ref< double, af::c_grid<2> > &image,
+  template <typename T>
+  af::versa< T, af::c_grid<2> > median_filter(
+      const af::const_ref< T, af::c_grid<2> > &image,
       int2 size) {
 
     // Check the input is valid
@@ -30,13 +30,13 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
-    af::versa< double, af::c_grid<2> > median(image.accessor(), 0.0);
+    af::versa< T, af::c_grid<2> > median(image.accessor(), T(0));
 
     // Create the array to sort to get the median
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
-    af::shared<double> pixels_array((2*size[0]+1)*(2*size[1]+1), 0.0);
-    af::ref<double> pixels = pixels_array.ref();
+    af::shared<T> pixels_array((2*size[0]+1)*(2*size[1]+1), T(0));
+    af::ref<T> pixels = pixels_array.ref();
 
     // For each pixel obtain the median value
     for (std::size_t j = 0; j < ysize; ++j) {
@@ -61,9 +61,9 @@ namespace dials { namespace algorithms {
   }
 
 
-  inline
-  af::versa< double, af::c_grid<2> > median_filter_masked(
-      const af::const_ref< double, af::c_grid<2> > &image,
+  template <typename T>
+  af::versa< T, af::c_grid<2> > median_filter_masked(
+      const af::const_ref< T, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       int2 size) {
 
@@ -72,13 +72,13 @@ namespace dials { namespace algorithms {
     DIALS_ASSERT(image.accessor().all_gt(0));
 
     // The array for output
-    af::versa< double, af::c_grid<2> > median(image.accessor(), 0.0);
+    af::versa< T, af::c_grid<2> > median(image.accessor(), T(0));
 
     // Create the array to sort to get the median
     std::size_t ysize = image.accessor()[0];
     std::size_t xsize = image.accessor()[1];
-    af::shared<double> pixels_array((2*size[0]+1)*(2*size[1]+1), 0.0);
-    af::ref<double> pixels = pixels_array.ref();
+    af::shared<T> pixels_array((2*size[0]+1)*(2*size[1]+1), T(0));
+    af::ref<T> pixels = pixels_array.ref();
 
     // For each pixel obtain the median value
     for (std::size_t j = 0; j < ysize; ++j) {
