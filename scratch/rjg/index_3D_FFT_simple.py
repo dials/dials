@@ -630,20 +630,11 @@ class indexer(object):
       # only take the first one
       crystal_model = candidate_orientation_matrices[0]
       # map to minimum reduced cell
-
-      from cctbx.crystal_orientation import crystal_orientation
-      orientation = crystal_orientation(crystal_model.get_A().elems, True)
-      orientation = orientation.reduced_cell()
-      direct_matrix = matrix.sqr(orientation.direct_matrix())
-      real_space_a = direct_matrix[:3]
-      real_space_b = direct_matrix[3:6]
-      real_space_c = direct_matrix[6:9]
-      crystal_model = Crystal(real_space_a,
-                              real_space_b,
-                              real_space_c,
-                              space_group=crystal_model.get_space_group(),
-                              mosaicity=crystal_model.get_mosaicity())
-
+      crystal_symmetry = crystal.symmetry(
+        unit_cell=crystal_model.get_unit_cell(),
+        space_group=crystal_model.get_space_group())
+      cb_op = crystal_symmetry.change_of_basis_op_to_minimum_cell()
+      crystal_model = crystal_model.change_basis(cb_op)
       self.candidate_crystal_models.append(crystal_model)
 
     if self.params.debug:
