@@ -152,12 +152,13 @@ class Crystal(object):
                 matrix.col(A_inv[6:9]))
 
     def change_basis(self, change_of_basis_op):
-        orientation = crystal_orientation(self.get_A().elems, True)
-        orientation = orientation.change_basis(change_of_basis_op)
-        direct_matrix = matrix.sqr(orientation.direct_matrix())
-        real_space_a = direct_matrix[:3]
-        real_space_b = direct_matrix[3:6]
-        real_space_c = direct_matrix[6:9]
+        direct_matrix = self.get_A().inverse()
+        M = matrix.sqr(change_of_basis_op.c_inv().r().transpose().as_double())
+        # equation 2.19 of Giacovazzo
+        new_direct_matrix = M * direct_matrix
+        real_space_a = new_direct_matrix[:3]
+        real_space_b = new_direct_matrix[3:6]
+        real_space_c = new_direct_matrix[6:9]
         other = Crystal(real_space_a,
                         real_space_b,
                         real_space_c,

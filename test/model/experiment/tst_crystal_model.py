@@ -3,8 +3,13 @@ import math
 from cStringIO import StringIO
 from libtbx.test_utils import approx_equal, show_diff
 from scitbx import matrix
-from cctbx import sgtbx, uctbx
+from cctbx import crystal, sgtbx, uctbx
 from dials.model.experiment.crystal_model import Crystal
+
+def random_rotation():
+  import random
+  from scitbx.math import euler_angles_as_matrix
+  return euler_angles_as_matrix([random.uniform(0,360) for i in xrange(3)])
 
 def exercise_crystal_model():
 
@@ -135,6 +140,23 @@ Crystal:
   assert approx_equal(model_ref.get_unit_cell().parameters(),
                       model_ref_recycled.get_unit_cell().parameters())
   assert model_ref == model_ref_recycled
+  #
+  uc = uctbx.unit_cell((58.2567, 58.1264, 39.7093, 46.9077, 46.8612, 62.1055))
+  sg = sgtbx.space_group_info(symbol="P1").group()
+  cs = crystal.symmetry(unit_cell=uc, space_group=sg)
+  cb_op_to_minimum = cs.change_of_basis_op_to_minimum_cell()
+  # the reciprocal matrix
+  B = matrix.sqr(uc.fractionalization_matrix()).transpose()
+  U = random_rotation()
+  direct_matrix = (U * B).inverse()
+  model = Crystal(direct_matrix[:3],
+                  direct_matrix[3:6],
+                  direct_matrix[6:9],
+                  space_group=sg)
+  assert uc.is_similar_to(model.get_unit_cell())
+  uc_minimum = uc.change_basis(cb_op_to_minimum)
+  model_minimum = model.change_basis(cb_op_to_minimum)
+  assert uc_minimum.is_similar_to(model_minimum.get_unit_cell())
 
 
 def run():
