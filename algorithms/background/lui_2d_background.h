@@ -175,7 +175,7 @@ namespace dials { namespace algorithms {
   }
 
 
-  double inclined_plane_background_flex_2d(
+  double variance_n_background_from_plane(
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< int, af::c_grid<2> > &mask2d,
     const af::const_ref< double, af::c_grid<2> > &abc_plane,
@@ -187,23 +187,29 @@ namespace dials { namespace algorithms {
         double a = abc_plane(0,0);
         double b = abc_plane(0,1);
         double c = abc_plane(0,2);
-        double x, y;
-        float sigma;
+        double x, y, z, z_dif, r = 0.0;
+
+        double variance, m = 0, n = 0;
         std::cout << "\n" << " a = " << a << ", b =" << b <<", c =" << c << "\n";
 
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {
+            x = col + 0.5;
+            y = row + 0.5;
+            z = a * x + b * y + c;
             if ( mask2d(row,col) & Foreground ){
-              x = col + 0.5;
-              y = row + 0.5;
-              background2d(row,col) = a * x + b * y + c;
-            } else {
+              background2d(row,col) = z;
+              m++;
+            } else if ( mask2d(row,col) & Background ){
               background2d(row,col) = data2d(row,col);
+              z_dif = z - data2d(row,col);
+              r += z_dif * z_dif;
+              n++;
             }
           }
         }
-        sigma = 5.0;
-    return sigma;
+        variance = (m / (n-3)) * r;
+    return variance;
   }
   /*
    * Illustrative example done by James

@@ -72,7 +72,7 @@ def layering_and_background_modl(reflections):
 
 def layering_and_background_plane(reflections):
     from dials.algorithms.background \
-     import get_plane_background_syml_sys_2d, inclined_plane_background_flex_2d
+     import get_plane_background_syml_sys_2d, variance_n_background_from_plane
     from scitbx.array_family import flex
 
     print "performing background plane calculation ...."
@@ -82,6 +82,7 @@ def layering_and_background_plane(reflections):
             shoebox = ref.shoebox
             mask = ref.shoebox_mask
             background = ref.shoebox_background
+            tot_sigma = 0.0
             for i in range(shoebox.all()[0]):
                 data2d = shoebox[i:i + 1, :, :]
                 mask2d = mask[i:i + 1, :, :]
@@ -111,12 +112,13 @@ def layering_and_background_plane(reflections):
 
                 print "vec [x] = "
                 flex.show(abc_plane)
-                #background2d = inclined_plane_background_flex_2d(data2d, mask2d, abc_plane)
-                sigma = inclined_plane_background_flex_2d(data2d, mask2d, abc_plane, background2d)
-                print "sigma = ", sigma
+                variance = variance_n_background_from_plane(data2d, mask2d, abc_plane, background2d)
+                print "variance = ", variance
                 print "ok_logic =", ok_logic
+                tot_sigma += variance
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()
-    print "background plane calculation .... done"
+            ref.intensity_variance = tot_sigma
+    print "background plane calculation ..... done"
 
     return reflections

@@ -36,22 +36,23 @@ def flex_2d_layering_n_integrating(reflections):
             mask = ref.shoebox_mask
             background = ref.shoebox_background
             ref.intensity = 0.0
-            ref.intensity_variance = 0.0
+            #ref.intensity_variance = 0.0
             for i in range(shoebox.all()[0]):
                 data2d = shoebox[i:i + 1, :, :]
                 mask2d = mask[i:i + 1, :, :]
                 background2d = background[i:i + 1, :, :]
 
-                data2d.reshape(flex.grid(shoebox.all()[1:])) # ask James if this needs to be changed
+                data2d.reshape(flex.grid(shoebox.all()[1:]))
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
                 background2d.reshape(flex.grid(shoebox.all()[1:]))
 
                 reslt = raw_2d_cut(data2d, mask2d, background2d)
 
                 ref.intensity += reslt[0]
-                ref.intensity_variance += reslt[1] * reslt[1]
+                print "intensity_variance(vefore) =", ref.intensity_variance
+                #ref.intensity_variance += reslt[1] * reslt[1]
 
 
-    print "summation integration .... done"
+    print "summation integration ..... done"
 
     return reflections
