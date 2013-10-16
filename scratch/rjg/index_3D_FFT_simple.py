@@ -608,24 +608,27 @@ class indexer(object):
         if frac_connected > cutoff_frac:
           G.add_edge(i, j)
 
-    # iteratively find the maximum cliques in the graph, each time removing
-    # from the graph those nodes that where in the previous maximum clique
+    # iteratively find the maximum cliques in the graph
     # break from the loop if there are no cliques remaining or there are
     # fewer than 3 vectors in the remaining maximum clique
-    # XXX what about if the two lattices share one basis vectors (e.g. two
-    # plate crystals exactly aligned in one direction, but not in the other two)?
+    # Allow 1 basis vector to be shared between two cliques, to allow for
+    # cases where two lattices share one basis vectors (e.g. two plate
+    # crystals exactly aligned in one direction, but not in the other two)
     distinct_cliques = []
-    while True:
-      cliques = list(nx.find_cliques(G))
-      if len(cliques) == 0: break
-      max_clique_size = nx.graph_clique_number(G, cliques=cliques)
-      for clique in cliques:
-        if len(clique) == max_clique_size:
-          break
+    cliques = list(nx.find_cliques(G))
+    cliques = sorted(cliques, key=len, reverse=True)
+    for clique in cliques:
+      clique = set(clique)
       if len(clique) < 3:
         break
-      distinct_cliques.append(clique)
-      G.remove_nodes_from(clique)
+      is_distinct = True
+      for c in distinct_cliques:
+        if len(c.intersection(clique)) > 1:
+          is_distinct = False
+          break
+      if is_distinct:
+        distinct_cliques.append(clique)
+
     assert len(distinct_cliques) > 0
 
     print "Estimated number of lattices: %i" %len(distinct_cliques)
@@ -634,7 +637,7 @@ class indexer(object):
     self.candidate_crystal_models = []
 
     for clique in distinct_cliques:
-      vectors = flex.vec3_double(centroids).select(flex.size_t(clique))
+      vectors = flex.vec3_double(centroids).select(flex.size_t(list(clique)))
       perm = flex.sort_permutation(vectors.norms())
       vectors = [matrix.col(vectors[p]) for p in perm]
       self.candidate_basis_vectors.extend(vectors)
