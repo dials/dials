@@ -289,7 +289,8 @@ class indexer(object):
 
     print "Final refined crystal models:"
     for i, crystal_model in enumerate(self.refined_crystal_models):
-      print "model %i:" %(i+1)
+      print "model %i (%i reflections):" %(
+        i+1, (self.reflections_i_lattice == i).count(True))
       print crystal_model
 
   def prepare_reflections(self):
