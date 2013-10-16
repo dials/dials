@@ -7,6 +7,7 @@ class Test(object):
 
     def run(self):
         self.tst_getters()
+        self.tst_detector_area()
         self.tst_indexing()
         self.tst_nearest()
         self.tst_self_consistent()
@@ -38,6 +39,35 @@ class Test(object):
         assert(r2 == r1 * sqrt(5.0))
         assert(9 * nz == size)
         print 'OK'
+
+    def tst_detector_area(self):
+        from dials.algorithms.integration.profile import XdsCircleSampler
+        from math import sin, cos, pi
+        from scitbx.array_family import flex
+        width = 1000
+        height = 1000
+        depth = 10
+        nz = 2
+        sampler = XdsCircleSampler((width, height, depth), nz)
+        im = flex.int(flex.grid(height, width))
+        for j in range(height):
+            for i in range(width):
+                im[j,i] = sampler.nearest((i, j, 0))
+
+        assert(im[height//2, width//2] == 0)
+        assert(im[height//2, width-1] == 1)
+        assert(im[height-1, width-1] == 2)
+        assert(im[height-1, width//2] == 3)
+        assert(im[height-1, 0] == 4)
+        assert(im[height//2, 0] == 5)
+        assert(im[0, 0] == 6)
+        assert(im[0, width//2] == 7)
+        assert(im[0, width-1] == 8)
+
+#        from matplotlib import pylab
+#        pylab.imshow(im.as_numpy_array())
+#        pylab.show()
+
 
     def tst_indexing(self):
         from dials.algorithms.integration.profile import XdsCircleSampler
