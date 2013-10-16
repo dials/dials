@@ -126,6 +126,7 @@ def display_reference_correlation(reference):
 
     # Calculate the correllations between profiles on the same frame
     cc = flex.double(flex.grid(height, width))
+    cc2 = flex.double(flex.grid(height, width))
     for j in range(height):
         for i in range(width):
             prof_a = reference.profile(j * width)
@@ -141,13 +142,31 @@ def display_reference_correlation(reference):
             R = (1.0/(n-1.0)) * flex.sum((prof_a-ma) * (prof_b-mb) / (sa*sb))
             cc[j,i] = R
 
+            prof_a = reference.profile(i)
+            prof_b = reference.profile(j * width + i)
+            assert(len(prof_a) == len(prof_b))
+
+            # Calculate the correlation
+            n = len(prof_a)
+            mv_a = flex.mean_and_variance(prof_a.as_1d())
+            mv_b = flex.mean_and_variance(prof_b.as_1d())
+            ma, sa = mv_a.mean(), mv_a.unweighted_sample_standard_deviation()
+            mb, sb = mv_b.mean(), mv_b.unweighted_sample_standard_deviation()
+            R = (1.0/(n-1.0)) * flex.sum((prof_a-ma) * (prof_b-mb) / (sa*sb))
+            cc2[j,i] = R
+
+
     # Plot the correlations
     y = [k // width for k in range(len(reference))]
     x = [k % width for k in range(len(reference))]
-    pylab.title('Correlation coefficients between reference profiles')
-    pylab.xlabel('Frame')
-    pylab.ylabel('Profiles')
+
+    pylab.suptitle('Correlation coefficients between reference profiles')
+    pylab.subplot(1, 2, 1)
     im = pylab.imshow(cc.as_numpy_array().transpose(),
+        vmin=0.0, vmax=1.0, interpolation='none')
+    pylab.colorbar(im)
+    pylab.subplot(1, 2, 2)
+    im = pylab.imshow(cc2.as_numpy_array().transpose(),
         vmin=0.0, vmax=1.0, interpolation='none')
     pylab.colorbar(im)
     pylab.show()
@@ -182,12 +201,47 @@ def display_spots_per_frame(refl, index):
     pylab.show()
 
 
+def display_spot_sizes(refl, index):
+    ''' Display the spot sizes. '''
+    from matplotlib import pylab
+
+    bbox = [refl[i].bounding_box for i in index]
+    all_sizes = [(b[1]-b[0])*(b[3]-b[2])*(b[5]-b[4]) for b in bbox]
+    sizes = sorted(all_sizes)[0:int(0.9*len(all_sizes))]
+    counts = [0 for i in range(max(sizes)+1)]
+    for s in sizes:
+        counts[s] += 1
+    pylab.title('Spot sizes (excluding top 10%)')
+    pylab.hist(sizes, bins=20)
+    pylab.plot(counts, color='black', linewidth=2)
+    pylab.show()
+
+
+def display_reference_profiles(reference, index):
+    from matplotlib import pylab
+    from math import sqrt, ceil
+    from scitbx.array_family import flex
+    for i in index:
+        profile = reference.profile(i)
+        vmin = flex.min(profile)
+        vmax = flex.max(profile)
+        size = profile.all()
+        nimage = size[2]
+        nrow = int(sqrt(nimage))
+        ncol = int(ceil(nimage / nrow))
+        for j in range(size[2]):
+            pylab.subplot(nrow, ncol, j)
+            pylab.imshow(profile.as_numpy_array()[j], vmin=vmin, vmax=vmax,
+                interpolation='none')
+        pylab.show()
+
 
 class Script(ScriptRunner):
     '''A class for running the script.'''
 
     def __init__(self):
         '''Initialise the script.'''
+        from dials.util.command_line import parse_range_list_string
 
         # The script usage
         usage = "usage: %prog [options] [param.phil] "\
@@ -219,6 +273,22 @@ class Script(ScriptRunner):
             dest = 'spots_per_frame',
             action = 'store_true', default = False,
             help = 'Display a graph of spots per frame')
+
+        self.config().add_option(
+            '--spot-sizes',
+            dest = 'spot_sizes',
+            action = 'store_true', default = False,
+            help = 'Display a graph of spots sizes')
+
+        def range_callback(option, opt_str, value, parser, args=None, kwargs=None):
+            setattr(parser.values, option.dest, parse_range_list_string(value))
+
+        self.config().add_option(
+            '--reference-profiles',
+            dest = 'reference_profiles',
+            type = 'string', action = 'callback',
+            callback = range_callback,
+            help = 'Display a set of reference profiles')
 
         self.config().add_option(
             '--min-i-over-sigma',
@@ -257,6 +327,15 @@ class Script(ScriptRunner):
             display_spots_per_frame(refl,
               filter_indices_by_valid(refl))
 
+        # Display the spot sizes
+        if options.spot_sizes:
+            refl = importer.reflections
+            display_spot_sizes(refl, filter_indices_by_valid(refl))
+
+        # Display the reference profiles
+        if options.reference_profiles:
+            reference = importer.reference
+            display_reference_profiles(reference, options.reference_profiles)
 
 if __name__ == '__main__':
     script = Script()
