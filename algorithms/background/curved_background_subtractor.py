@@ -85,8 +85,11 @@ def layering_and_background_plane(reflections):
             for i in range(shoebox.all()[0]):
                 data2d = shoebox[i:i + 1, :, :]
                 mask2d = mask[i:i + 1, :, :]
+                background2d = background[i:i + 1, :, :]
+
                 data2d.reshape(flex.grid(shoebox.all()[1:]))
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
+                background2d.reshape(flex.grid(background2d.all()[1:]))
 
                 a_mat_flx = flex.double(flex.grid(3, 3))
                 b_vec_flx = flex.double(flex.grid(3, 1))
@@ -108,9 +111,9 @@ def layering_and_background_plane(reflections):
 
                 print "vec [x] = "
                 flex.show(abc_plane)
-
-                background2d = inclined_plane_background_flex_2d(data2d, mask2d, abc_plane)
-
+                #background2d = inclined_plane_background_flex_2d(data2d, mask2d, abc_plane)
+                sigma = inclined_plane_background_flex_2d(data2d, mask2d, abc_plane, background2d)
+                print "sigma = ", sigma
                 print "ok_logic =", ok_logic
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()

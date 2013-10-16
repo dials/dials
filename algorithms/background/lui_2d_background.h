@@ -175,19 +175,20 @@ namespace dials { namespace algorithms {
   }
 
 
-  af::versa< double, af::c_grid<2> > inclined_plane_background_flex_2d(
+  double inclined_plane_background_flex_2d(
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< int, af::c_grid<2> > &mask2d,
-    const af::const_ref< double, af::c_grid<2> > &abc_plane){
-
-
+    const af::const_ref< double, af::c_grid<2> > &abc_plane,
+    af::ref< double, af::c_grid<2> > background2d){
+    //af::versa< double, af::c_grid<2> > background2d(data2d.accessor(),0);
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
-        af::versa< double, af::c_grid<2> > background2d(data2d.accessor(),0);
+
         double a = abc_plane(0,0);
         double b = abc_plane(0,1);
         double c = abc_plane(0,2);
         double x, y;
+        float sigma;
         std::cout << "\n" << " a = " << a << ", b =" << b <<", c =" << c << "\n";
 
         for (int row = 0; row<nrow;row++) {
@@ -201,9 +202,33 @@ namespace dials { namespace algorithms {
             }
           }
         }
-    return background2d;
+        sigma = 5.0;
+    return sigma;
   }
-
+  /*
+   * Illustrative example done by James
+   *
+   * class InclinedPlaneBackgroundFlex2d {
+   * public:
+   *   InclinedPlaneBackgroundFlex2d(
+   *       const af::const_ref< double, af::c_grid<2> > &data2d,
+   *       const af::const_ref< int, af::c_grid<2> > &mask2d,
+   *       const af::const_ref< double, af::c_grid<2> > &abc_plane,
+   *       af::ref< double, af::c_grid<2> > background2d) {
+   *
+   *   }
+   *
+   *   flex_double result() const {
+   *     return result_;
+   *
+   *   }
+   *
+   *   double sigma() const {
+   *     return sigma_;
+   *   }
+   *
+   * };
+   */
 
 }}
 

@@ -12,18 +12,19 @@ import numpy
 
 data2d = numpy.zeros((5, 5), dtype = numpy.float64)
 
-data2d[0, 1:5] = data2d[1:5, 0] = 5
-data2d[4, 1:4] = data2d[1:4, 4] = 5
-data2d[0, 0] = data2d[4, 4] = 5
+data2d[0, 1:5] = data2d[1:5, 0] = 15
+data2d[4, 1:4] = data2d[1:4, 4] = 15
+data2d[0, 0] = data2d[4, 4] = 15
 
 data2d[1:4, 1:4] = 10
 data2d[2, 2] = 50
 
 for row in range(5):
     for col in range(5):
-        data2d[row, col] += (row + col)
-
-
+        data2d[row, col] -= row * 2
+        data2d[row, col] += col * 2
+data2d[4, 2] = 1.0
+data2d[2, 4] = 1.0
 print data2d
 
 mask2d = numpy.zeros((5, 5), dtype = numpy.int32)

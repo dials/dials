@@ -100,6 +100,7 @@ def fit_profile_2d(reflections, average, thold):
             try:
                 data2d.reshape(flex.grid(shoebox.all()[1:]))
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
+
             except:
                 print "error reshaping flex-array"
                 print "ref.bounding_box", ref.bounding_box
