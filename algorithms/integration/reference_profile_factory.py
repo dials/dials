@@ -29,7 +29,7 @@ class ReferenceProfileCreator(object):
         self.predict = ReflectionPredictor()
 
         # Create the spot matcher
-        self.match = SpotMatcher()
+        self.match = SpotMatcher(max_separation=1)
 
         # Set the learning strategy
         self.learn = learn

@@ -53,10 +53,13 @@ def display_centroid_deviations(refl, index):
     pylab.subplot(3, 1, 1)
     pylab.title('Difference between predicted-observed position in x, y, z')
     pylab.scatter(x, xd)
+    pylab.axhline(sum(xd) / len(xd))
     pylab.subplot(3, 1, 2)
     pylab.scatter(y, yd)
+    pylab.axhline(sum(yd) / len(yd))
     pylab.subplot(3, 1, 3)
     pylab.scatter(z, zd)
+    pylab.axhline(sum(zd) / len(zd))
     pylab.show()
 
 
