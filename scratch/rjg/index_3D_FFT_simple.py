@@ -166,6 +166,9 @@ class indexer(object):
 
   def __init__(self, reflections, sweep, params=None):
     self.reflections = reflections
+    # the lattice a given reflection belongs to: a value of -1 indicates
+    # that a reflection doesn't belong to any lattice so far
+    self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
     self.sweep = sweep
     self.goniometer = sweep.get_goniometer()
     self.detector = sweep.get_detector()
@@ -228,24 +231,27 @@ class indexer(object):
       crystal_models = self.candidate_crystal_models[:1]
 
     self.refined_crystal_models = []
-    for i, crystal_model in enumerate(crystal_models):
+    for i_lattice, crystal_model in enumerate(crystal_models):
+      self.i_lattice = i_lattice
+
       print
       print "#" * 80
-      print "Starting refinement of crystal model %i" %(i+1)
+      print "Starting refinement of crystal model %i" %(i_lattice+1)
       print "Starting crystal model:"
       print crystal_model
       print "#" * 80
 
       self.d_min = self.params.reciprocal_space_grid.d_min
-      self.index_reflections_given_orientation_matix(
+      self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
         crystal_model, verbose=1)
       if self.target_symmetry_primitive is not None:
         symmetrized_model = self.apply_symmetry(
           crystal_model, self.target_symmetry_primitive)
-        self.index_reflections_given_orientation_matix(symmetrized_model, verbose=1)
+        self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
+          symmetrized_model, verbose=1)
         crystal_model = symmetrized_model
-      for i in range(self.params.refinement_protocol.n_macro_cycles):
-        print "Starting refinement (macro-cycle %i)" %(i+1)
+      for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
+        print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
         print
         self.refine(crystal_model)
 
@@ -253,7 +259,14 @@ class indexer(object):
         self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
         print "Increasing resolution to %.1f Angstrom" %self.d_min
         n_indexed_last_cycle = self.indexed_reflections.size()
-        self.index_reflections_given_orientation_matix(crystal_model, verbose=1)
+
+        self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
+          crystal_model, verbose=1)
+        # reset in case some reflections are no longer indexed by this lattice
+        self.reflections_i_lattice.set_selected(
+          self.reflections_i_lattice == i_lattice, -1)
+        self.reflections_i_lattice.set_selected(
+          self.indexed_reflections, i_lattice)
         if self.indexed_reflections.size() == n_indexed_last_cycle:
           print "No more reflections indexed this cycle - finished with refinement"
           break
@@ -278,7 +291,6 @@ class indexer(object):
     for i, crystal_model in enumerate(self.refined_crystal_models):
       print "model %i:" %(i+1)
       print crystal_model
-
 
   def prepare_reflections(self):
     """Reflections that come from dials.spotfinder only have the centroid
@@ -626,7 +638,7 @@ class indexer(object):
       vectors = [matrix.col(vectors[p]) for p in perm]
       self.candidate_basis_vectors.extend(vectors)
       candidate_orientation_matrices \
-        = self.find_candidate_orientation_matrices(vectors)
+        = self.find_candidate_orientation_matrices(vectors, return_first=True)
       # only take the first one
       crystal_model = candidate_orientation_matrices[0]
       # map to minimum reduced cell
@@ -740,7 +752,8 @@ class indexer(object):
     pyplot.title('Estimated number of clusters: %d' % n_clusters)
     pyplot.show()
 
-  def find_candidate_orientation_matrices(self, candidate_basis_vectors):
+  def find_candidate_orientation_matrices(self, candidate_basis_vectors,
+                                          return_first=False):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
 
@@ -793,6 +806,8 @@ class indexer(object):
           if uc.volume() > (params[0]*params[1]*params[2]/100):
             # unit cell volume cutoff from labelit 2004 paper
             candidate_crystal_models.append(model)
+            if return_first:
+              return candidate_crystal_models
     return candidate_crystal_models
 
   def predict_reflections(self, crystal_model):
@@ -897,7 +912,7 @@ class indexer(object):
     n_rejects = 0
 
     miller_indices = flex.miller_index()
-    self.indexed_reflections = flex.size_t()
+    indexed_reflections = flex.size_t()
 
     A = crystal_model.get_A()
     A_inv = A.inverse()
@@ -907,6 +922,9 @@ class indexer(object):
     diff_l = flex.double()
 
     for i_ref in self.reflections_in_scan_range:
+      if self.reflections_i_lattice[i_ref] > -1:
+        # this reflection has already been indexed by a previous lattice
+        continue
       i_rlp = flex.first_index(self.reflections_in_scan_range, i_ref)
       rlp = self.reciprocal_space_points[i_rlp]
       rlp = matrix.col(rlp)
@@ -922,17 +940,17 @@ class indexer(object):
         diff_k.append(diff[1])
         diff_l.append(diff[2])
       max_difference = max([abs(hkl_float[i] - hkl_int[i]) for i in range(3)])
-      if max_difference> tolerance:
+      if max_difference > tolerance:
         n_rejects += 1
         continue
       miller_indices.append(hkl_int)
       refl.miller_index = hkl_int
-      self.indexed_reflections.append(i_ref)
+      indexed_reflections.append(i_ref)
 
-    self.n_rejects = n_rejects
+    #n_rejects = n_rejects
     if verbose > 0:
       print "%i reflections indexed successfully (%i rejects)" %(
-        self.indexed_reflections.size(), n_rejects)
+      indexed_reflections.size(), n_rejects)
 
     if plot_differences:
       from matplotlib import pyplot
@@ -944,6 +962,8 @@ class indexer(object):
       pyplot.plot(hist_k.slot_centers(), hist_k.slots())
       pyplot.plot(hist_l.slot_centers(), hist_l.slots())
       pyplot.show()
+
+    return indexed_reflections, miller_indices
 
   def refine(self, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
