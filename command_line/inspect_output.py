@@ -13,6 +13,14 @@ from __future__ import division
 from dials.util.script import ScriptRunner
 
 
+def filter_indices_by_valid(refl):
+    from math import sqrt
+    index = []
+    for i, r in enumerate(refl):
+        if r.is_valid():
+            index.append(i)
+    return index
+
 def filter_indices_by_i_over_sigma(refl, min_i_over_sigma):
     from math import sqrt
     index = []
@@ -43,6 +51,7 @@ def display_centroid_deviations(refl, index):
 
     # Plot the output
     pylab.subplot(3, 1, 1)
+    pylab.title('Difference between predicted-observed position in x, y, z')
     pylab.scatter(x, xd)
     pylab.subplot(3, 1, 2)
     pylab.scatter(y, yd)
@@ -97,6 +106,7 @@ def display_profile_correlation(refl, reference, index):
 
     # Plot correllation coeffcient vs I/sig(I)
     pylab.subplot(2, 1, 1)
+    pylab.title('Correlation coefficients between profile and reference vs I/sig(I)')
     pylab.ylim([0.0, 1.0])
     pylab.scatter(ios, cc)
     pylab.subplot(2, 1, 2)
@@ -104,6 +114,73 @@ def display_profile_correlation(refl, reference, index):
     pylab.scatter(binned_ios, meancc)
     pylab.errorbar(binned_ios, meancc, yerr=sdevcc)
     pylab.show()
+
+
+def display_reference_correlation(reference):
+    ''' Display correlations between reference profiles '''
+    from scitbx.array_family import flex
+    from matplotlib import pylab
+    width = 9
+    height = len(reference) // 9
+    assert(width * height == len(reference))
+
+    # Calculate the correllations between profiles on the same frame
+    cc = flex.double(flex.grid(height, width))
+    for j in range(height):
+        for i in range(width):
+            prof_a = reference.profile(j * width)
+            prof_b = reference.profile(j * width + i)
+            assert(len(prof_a) == len(prof_b))
+
+            # Calculate the correlation
+            n = len(prof_a)
+            mv_a = flex.mean_and_variance(prof_a.as_1d())
+            mv_b = flex.mean_and_variance(prof_b.as_1d())
+            ma, sa = mv_a.mean(), mv_a.unweighted_sample_standard_deviation()
+            mb, sb = mv_b.mean(), mv_b.unweighted_sample_standard_deviation()
+            R = (1.0/(n-1.0)) * flex.sum((prof_a-ma) * (prof_b-mb) / (sa*sb))
+            cc[j,i] = R
+
+    # Plot the correlations
+    y = [k // width for k in range(len(reference))]
+    x = [k % width for k in range(len(reference))]
+    pylab.title('Correlation coefficients between reference profiles')
+    pylab.xlabel('Frame')
+    pylab.ylabel('Profiles')
+    im = pylab.imshow(cc.as_numpy_array().transpose(),
+        vmin=0.0, vmax=1.0, interpolation='none')
+    pylab.colorbar(im)
+    pylab.show()
+
+
+def display_spots_per_frame(refl, index):
+    ''' Display the number of spots per frame. '''
+
+    from matplotlib import pylab
+
+    x, y, z = zip(*[refl[i].centroid_position for i in index])
+    count = [0 for i in range(int(max(z)) + 1)]
+    for zz in z:
+        zz = int(zz)
+        count[zz] += 1
+
+    x0, y0, y0, y1, z0, z1 = zip(*[refl[i].bounding_box for i in index])
+    count2 = [0 for i in range(int(max(z1)))]
+    for zz0, zz1 in zip(z0, z1):
+        zz0 = int(zz0)
+        zz1 = int(zz1)
+        for zzz in range(zz0, zz1):
+            count2[zzz] += 1
+
+    pylab.subplot(2, 1, 1)
+    pylab.title('Spot centroids per frame')
+    pylab.scatter(range(len(count)), count)
+
+    pylab.subplot(2, 1, 2)
+    pylab.title('Spots recorded per frame')
+    pylab.scatter(range(len(count2)), count2)
+    pylab.show()
+
 
 
 class Script(ScriptRunner):
@@ -120,16 +197,28 @@ class Script(ScriptRunner):
         ScriptRunner.__init__(self, usage=usage)
 
         self.config().add_option(
-            '--show-centroid-deviations',
-            dest = 'show_centroid_deviations',
+            '--centroid-deviations',
+            dest = 'centroid_deviations',
             action = 'store_true', default = False,
             help = 'Display a graph of position-centroid deviations')
 
         self.config().add_option(
-            '--show-profile-cross-correlation',
-            dest = 'show_profile_correlation',
+            '--profile-correlations',
+            dest = 'profile_correlations',
             action = 'store_true', default = False,
             help = 'Display a graph of correlation coefficients')
+
+        self.config().add_option(
+            '--reference-correlations',
+            dest = 'reference_correlations',
+            action = 'store_true', default = False,
+            help = 'Display a graph of correlation coefficients')
+
+        self.config().add_option(
+            '--spots-per-frame',
+            dest = 'spots_per_frame',
+            action = 'store_true', default = False,
+            help = 'Display a graph of spots per frame')
 
         self.config().add_option(
             '--min-i-over-sigma',
@@ -145,17 +234,28 @@ class Script(ScriptRunner):
         importer = Importer(args)
 
         # Display centroid deviations
-        if options.show_centroid_deviations:
+        if options.centroid_deviations:
             refl = importer.reflections
             display_centroid_deviations(refl,
               filter_indices_by_i_over_sigma(refl, options.min_i_over_sigma))
 
         # Display profile correlation coefficients
-        if options.show_profile_correlation:
+        if options.profile_correlations:
             refl = importer.reflections
             reference = importer.reference
             display_profile_correlation(refl, reference,
               filter_indices_by_i_over_sigma(refl, options.min_i_over_sigma))
+
+        # Display the reference correlation
+        if options.reference_correlations:
+            reference = importer.reference
+            display_reference_correlation(reference)
+
+        # Display the spots per frame
+        if options.spots_per_frame:
+            refl = importer.reflections
+            display_spots_per_frame(refl,
+              filter_indices_by_valid(refl))
 
 
 if __name__ == '__main__':
