@@ -96,7 +96,7 @@ def layering_and_background_plane(reflections):
                 b_vec_flx = flex.double(flex.grid(3, 1))
                 ok_logic = get_plane_background_syml_sys_2d(data2d, mask2d, a_mat_flx, b_vec_flx)
 
-                print
+                print "___________________________________________________________________________________________________"
                 print "mat [A] = "
                 flex.show(a_mat_flx)
                 print
@@ -107,14 +107,27 @@ def layering_and_background_plane(reflections):
                 a_mat = a_mat_flx.as_scitbx_matrix()
                 b_mat = b_vec_flx.as_scitbx_matrix()
 
-                x_mat = a_mat.inverse() * b_mat
-                abc_plane = x_mat.as_flex_double_matrix()
 
+                try:
+                    x_mat = a_mat.inverse() * b_mat
+                    abc_plane = x_mat.as_flex_double_matrix()
+                except:
+                    abc_plane = flex.double(flex.grid(3, 1))
+                    abc_plane[0, 0] = 0
+                    abc_plane[1, 0] = 0
+                    abc_plane[2, 0] = 0
                 print "vec [x] = "
                 flex.show(abc_plane)
                 variance = variance_n_background_from_plane(data2d, mask2d, abc_plane, background2d)
                 print "variance = ", variance
-                print "ok_logic =", ok_logic
+
+                from dials.scratch.luiso_s import write_2d
+                print "bg ="
+                write_2d(background2d)
+                print "mask ="
+                write_2d(mask2d.as_double())
+                print "___________________________________________________________________________________________________"
+
                 tot_sigma += variance
                 background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
                 background[i:i + 1, :, :] = background2d.as_double()

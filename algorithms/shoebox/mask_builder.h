@@ -17,8 +17,9 @@
 
 namespace dials { namespace algorithms { namespace shoebox {
 
-  af::versa< int, af::c_grid<2> > build_mask(int nx, int ny, int nrx,
-                                                 int nry, int nc) {
+  af::versa< int, af::c_grid<2> > build_mask(
+      int nx, int ny, int nrx, int nry, int nc,
+      const af::const_ref< double, af::c_grid<2> > &data2d) {
 
     /*
     std::cout << "\n" << "nx=" << nx <<"\n" << "ny=" << ny <<"\n"
@@ -71,6 +72,10 @@ namespace dials { namespace algorithms { namespace shoebox {
               // is valid and is in peak area
               mask(row,col) = 5;
           }
+          if(data2d(row,col)<0){
+            mask(row,col) = 0;
+          }
+
       }
     }
     return mask;

@@ -36,7 +36,7 @@ def flex_2d_layering_n_integrating(reflections):
             mask = ref.shoebox_mask
             background = ref.shoebox_background
             ref.intensity = 0.0
-            #ref.intensity_variance = 0.0
+            ref.intensity_variance = 0.0
             for i in range(shoebox.all()[0]):
                 data2d = shoebox[i:i + 1, :, :]
                 mask2d = mask[i:i + 1, :, :]

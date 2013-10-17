@@ -10,51 +10,45 @@ from __future__ import division
 #  included in the root directory of this package.
 import numpy
 
-data = numpy.zeros((3, 5, 5), dtype = numpy.float64)
-
-data[0, 0, 1] = data[0, 1, 0] = 1.5
-data[0, 0, 2] = data[0, 2, 0] = 3.5
-data[0, 0, 3] = data[0, 3, 0] = 2.5
-data[0, 0, 4] = data[0, 4, 0] = 4.5
-data[0, 4, 1] = data[0, 1, 4] = 1.5
-data[0, 4, 2] = data[0, 2, 4] = 3.5
-data[0, 4, 3] = data[0, 3, 4] = 2.5
-data[0, 0, 0] = data[0, 4, 4] = 5.5
-data[0, 1:4, 1:4] = 15
-data[0, 2:3, 2:3] = 40
-
-data[1, 0, 1] = data[1, 1, 0] = 1.7
-data[1, 0, 2] = data[1, 2, 0] = 3.7
-data[1, 0, 3] = data[1, 3, 0] = 2.7
-data[1, 0, 4] = data[1, 4, 0] = 4.7
-data[1, 4, 1] = data[1, 1, 4] = 1.7
-data[1, 4, 2] = data[1, 2, 4] = 3.7
-data[1, 4, 3] = data[1, 3, 4] = 2.7
-data[1, 0, 0] = data[1, 4, 4] = 5.7
-data[1, 1:4, 1:4] = 20
-data[1, 2:3, 2:3] = 70
-
-data[2, 0, 1] = data[2, 1, 0] = 1.4
-data[2, 0, 2] = data[2, 2, 0] = 3.4
-data[2, 0, 3] = data[2, 3, 0] = 4.4
-data[2, 0, 4] = data[2, 4, 0] = 2.4
-data[2, 4, 1] = data[2, 1, 4] = 1.4
-data[2, 4, 2] = data[2, 2, 4] = 3.4
-data[2, 4, 3] = data[2, 3, 4] = 4.4
-data[2, 0, 0] = data[2, 4, 4] = 2.4
-data[2, 1:4, 1:4] = 12
-data[2, 2:3, 2:3] = 35
-
+data = numpy.zeros((4, 4, 4), dtype = numpy.float64)
+data[:, :, :] = 5
+data[1:3, 1:3, 1:3] = 50
 print data
+for frame in range(4):
+    for row in range(4):
+        for col in range(4):
+            data[frame, row, col] += frame + col + row
+'''
+data = numpy.zeros((3, 3, 3), dtype = numpy.float64)
+data[:, :, :] = 5
+data[1:2, 1:2, 1:2] = 50
+print data
+for frame in range(3):
+    for row in range(3):
+        for col in range(3):
+            data[frame, row, col] += frame + col + row
+'''
 
-mask = numpy.zeros((3, 5, 5), dtype = numpy.int32)
+
+mask = numpy.zeros((4, 4, 4), dtype = numpy.int32)
 mask[:, :, :] = 3
-mask[:, 1:4, 1:4] = 5
+mask[1:3, 1:3, 1:3] = 5
 print mask
 
 background = numpy.copy(data)
 background[:, :, :] = 0.0
 
+
+
+'''
+mask = numpy.zeros((3, 3, 3), dtype = numpy.int32)
+mask[:, :, :] = 3
+mask[:, 1:2, 1:2] = 5
+print mask
+
+background = numpy.copy(data)
+background[:, :, :] = 0.0
+'''
 from dials.model.data import Reflection, ReflectionList
 from scitbx.array_family import flex
 r = Reflection()
