@@ -978,11 +978,15 @@ class indexer(object):
     params = self.params.refinement
     from dials.algorithms.refinement import RefinerFactory
     refine = RefinerFactory.from_parameters(self.params, verbosity)
+    scan_range_min = max(
+      int(math.floor(flex.min(self.reflections.select(
+        self.reflections_in_scan_range).frame_number()))),
+      self.sweep.get_array_range()[0])
     scan_range_max = min(
       int(math.ceil(flex.max(self.reflections.select(
         self.reflections_in_scan_range).frame_number()))),
       self.sweep.get_array_range()[1])
-    sweep = self.sweep[:scan_range_max]
+    sweep = self.sweep[scan_range_min:scan_range_max]
     refine.prepare(sweep, crystal_model, reflections_for_refinement)
     #rmsds = refine.rmsds()
     refined = refine()
