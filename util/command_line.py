@@ -297,7 +297,7 @@ class Importer(object):
     def try_pickle(self, argument):
         ''' Try as a pickle file. '''
         from dials.model.data import ReflectionList
-        from dials.algorithms.integration.profile import *
+        from dials.algorithms.integration import profile
         import cPickle as pickle
         try:
             with open(argument, 'rb') as inputfile:
@@ -305,7 +305,7 @@ class Importer(object):
                 if isinstance(obj, ReflectionList):
                     self.reflections.extend(obj)
                     return True
-                elif isinstance(obj, XdsCircleReferenceLocator):
+                elif isinstance(obj, profile.XdsCircleReferenceLocator):
                     self.reference = obj
                     return True
         except Exception:
