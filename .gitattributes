@@ -260,6 +260,7 @@ command_line/extract_xds_integrate.py -text
 command_line/import.py -text
 command_line/inspect_output.py -text
 command_line/integrate.py -text
+command_line/match_observed_with_predicted.py -text
 command_line/parameters.py -text
 command_line/predict_spots.py -text
 command_line/print_reflection_stats.py -text

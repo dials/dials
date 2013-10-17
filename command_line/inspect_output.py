@@ -25,9 +25,12 @@ def filter_indices_by_i_over_sigma(refl, min_i_over_sigma):
     from math import sqrt
     index = []
     for i, r in enumerate(refl):
-        if r.is_valid() and r.corrected_intensity_variance > 0:
-            ios = r.corrected_intensity / sqrt(r.corrected_intensity_variance)
-            if ios > min_i_over_sigma:
+        if r.is_valid():
+            if min_i_over_sigma > 0 and r.corrected_intensity_variance > 0:
+                ios = r.corrected_intensity / sqrt(r.corrected_intensity_variance)
+                if ios > min_i_over_sigma:
+                    index.append(i)
+            else:
                 index.append(i)
     return index
 
@@ -238,6 +241,24 @@ def display_reference_profiles(reference, index):
                 interpolation='none')
         pylab.show()
 
+def display_profiles(reflections, index):
+    from matplotlib import pylab
+    from math import sqrt, ceil
+    from scitbx.array_family import flex
+    for i in index:
+        profile = reflections[i].transformed_shoebox
+        vmin = flex.min(profile)
+        vmax = flex.max(profile)
+        size = profile.all()
+        nimage = size[2]
+        nrow = int(sqrt(nimage))
+        ncol = int(ceil(nimage / nrow))
+        for j in range(size[2]):
+            pylab.subplot(nrow, ncol, j)
+            pylab.imshow(profile.as_numpy_array()[j], vmin=vmin, vmax=vmax,
+                interpolation='none')
+        pylab.show()
+
 
 class Script(ScriptRunner):
     '''A class for running the script.'''
@@ -294,6 +315,13 @@ class Script(ScriptRunner):
             help = 'Display a set of reference profiles')
 
         self.config().add_option(
+            '--profiles',
+            dest = 'profiles',
+            type = 'string', action = 'callback',
+            callback = range_callback,
+            help = 'Display a set of profiles')
+
+        self.config().add_option(
             '--min-i-over-sigma',
             dest = 'min_i_over_sigma',
             type = 'float', default = 0.0,
@@ -339,6 +367,11 @@ class Script(ScriptRunner):
         if options.reference_profiles:
             reference = importer.reference
             display_reference_profiles(reference, options.reference_profiles)
+
+        # Display the profiles
+        if options.profiles:
+            reflections = importer.reflections
+            display_profiles(reflections, options.profiles)
 
 if __name__ == '__main__':
     script = Script()
