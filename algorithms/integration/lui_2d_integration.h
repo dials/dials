@@ -27,39 +27,35 @@ namespace dials { namespace algorithms {
       const af::const_ref< double, af::c_grid<2> > &data2d,
       const af::const_ref< int, af::c_grid<2> > &mask2d,
       const af::const_ref< double, af::c_grid<2> > &background2d) {
-        double i_tot = 0, tot_bkgr = 0;
-        int npix_bkgr = 0, npix_mask = 0, cont = 0;
-        double bkgr, sig_i;
+        double i_s = 0, i_bg = 0, rho_j = 0;
+        int n = 0, m = 0;
+        int cont = 0;
+        double var_i;
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
         vec2<double> integr_data(0,1);
 
         for (int row = 0; row<=nrow-1;row++) {
           for (int col = 0; col<=ncol-1;col++) {
-            if ( mask2d(row,col) & Foreground ){
-              i_tot = i_tot + data2d(row,col) - background2d(row,col);
-              npix_mask++;
+            if ( mask2d(row,col) & Foreground ) {
+              i_s  += data2d(row,col) - background2d(row,col);
+              i_bg += background2d(row,col);
+              m++;
             } else if(mask2d(row,col) & Background) {
-              npix_bkgr++;
+              rho_j += background2d(row,col);
+              n++;
             }
-
             cont++;
-            tot_bkgr+=background2d(row,col);
-
           }
         }
-        if( tot_bkgr>0 && cont>0 && npix_mask>0 && npix_bkgr>0 ){
-          bkgr = tot_bkgr / cont;
-          sig_i = std::sqrt(i_tot + (1.0 + (npix_mask) / (npix_bkgr)) * (npix_mask * bkgr));
-
+        if( i_bg>0 && cont>0 && m>0 && n>0 ){
+          var_i = i_s + i_bg + (m / n) * ( m / n) * rho_j;
         } else {
-          bkgr = 0;
-          sig_i = std::sqrt(i_tot);
+          var_i = i_s;
         }
 
-        integr_data[0]=i_tot;        // intensity
-        integr_data[1]=sig_i;          // intensity sigma
-
+        integr_data[0]=i_s;            // intensity sumation
+        integr_data[1]=var_i;          // intensity variance
         return integr_data;
 
     }
