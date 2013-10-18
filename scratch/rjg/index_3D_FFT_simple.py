@@ -103,7 +103,7 @@ cluster_analysis {
       .type = choice
   }
   dbscan {
-    eps = 0.1
+    eps = 0.05
       .type = float(value_min=0.0)
     min_samples = 30
       .type = int(value_min=1)
