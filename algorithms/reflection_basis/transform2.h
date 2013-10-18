@@ -337,7 +337,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
             for (int k = 0; k < shoebox_size_[0]; ++k) {
               if (mask(k, j, i)) {
                 double ivalue = image(k, j, i) * fraction;
-                double bvalue = image(k, j, i) * fraction;
+                double bvalue = bkgrd(k, j, i) * fraction;
                 for (int kk = 0; kk < grid_size_[0]; ++kk) {
                   double zf = zfraction_(k, kk);
                   profile_(kk, jj, ii) += ivalue * zf;
@@ -459,7 +459,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       if (rlist[i].is_valid()) {
         Forward2 transform(spec, rlist[i]);
         rlist[i].set_transformed_shoebox(transform.profile());
-  //      rlist[i].set_transformed_shoebox_background(transform.background());
+        rlist[i].set_transformed_shoebox_background(transform.background());
       }
     }
   }

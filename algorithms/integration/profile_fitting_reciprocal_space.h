@@ -72,22 +72,8 @@ namespace dials { namespace algorithms {
       // Get the transformed shoebox
       af::const_ref<double, af::c_grid<3> > c =
         reflection.get_transformed_shoebox().const_ref();
-
-      // Get the transformed background
-      // HACK ALERT! Should fix: setting to mean of shoebox background
-      double background = 0.0;
-//      double background = scitbx::af::mean(reflection.get_shoebox_background().const_ref());
-////      double scale = 1.0 / c.size();
-//      double scale = 0.0;
-//      for (std::size_t i = 0; i < reflection.get_shoebox().size(); ++i) {
-//        scale += reflection.get_shoebox()[i] * (
-//          reflection.get_shoebox_mask()[i] & shoebox::Valid &&
-//          reflection.get_shoebox_mask()[i] & shoebox::Foreground);
-//      }
-//      scale = scitbx::af::sum(c) / scale;
-//      background *= scale;
-      af::versa<double, af::c_grid<3> > b(c.accessor(), background);//mean(
-//        reflection.get_shoebox_background().const_ref()));
+      af::const_ref<double, af::c_grid<3> > b =
+        reflection.get_transformed_shoebox_background().const_ref();
 
       // Get the reference profile at the reflection coordinate
       double3 coord(reflection.get_image_coord_px()[0],
@@ -96,7 +82,7 @@ namespace dials { namespace algorithms {
       af::versa<double, af::c_grid<3> > p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance
-      ProfileFitting fit(p.const_ref(), c, b.const_ref(), max_iter_);
+      ProfileFitting fit(p.const_ref(), c, b, max_iter_);
       DIALS_ASSERT(fit.niter() < max_iter_);
       reflection.set_intensity(fit.intensity());
       reflection.set_intensity_variance(fit.variance());

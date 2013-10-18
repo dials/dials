@@ -43,12 +43,18 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = rbt.Forward(sweep, crystal, self.bbox_nsigma, self.grid_size)
+        spec = rbt.TransformSpec(sweep, crystal, self.bbox_nsigma, self.grid_size)
+        #transform = rbt.Forward(sweep, crystal, self.bbox_nsigma, self.grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Transform the reflections to reciprocal space
         Command.start('Transforming reflections to reciprocal space')
-        transform(reflections)
+        rbt.forward_batch(spec, reflections)
+        #transform(reflections)
+#        for r in reflections:
+#            if r.is_valid():
+#                from scitbx.array_family import flex
+#                r.transformed_shoebox_background = flex.double(flex.grid(9, 9, 9), 0.0)
         Command.end('Transformed {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
 
