@@ -19,6 +19,7 @@ algorithms/background/fable_subtractor.py -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
 algorithms/background/flat_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/helpers.h -text
+algorithms/background/inclined_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/normal_discriminator.h -text
 algorithms/background/null_subtractor.py -text

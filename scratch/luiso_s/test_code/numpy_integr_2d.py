@@ -63,7 +63,9 @@ from dials.algorithms.background.flat_background_subtractor \
 
 from dials.algorithms.background.curved_background_subtractor \
  import tmp_numpy_layering_n_bkgr_modl, layering_and_background_modl \
- , layering_and_background_plane
+
+from dials.algorithms.background.inclined_background_subtractor \
+ import layering_and_background_plane
 
 #tmp_numpy_layering_n_bkgr_avg(rlist)
 #tmp_numpy_layering_n_bkgr_modl(rlist)

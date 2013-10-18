@@ -33,7 +33,7 @@ class Integrator(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal, reflections=None, reference=None):
+    def __call__(self, sweep, crystal, reflections = None, reference = None):
         ''' Call to integrate.
 
         Params:
@@ -144,6 +144,7 @@ class IntegratorFactory(object):
         from dials.algorithms.background import FableSubtractor
         from dials.algorithms.background import FlatSubtractor
         from dials.algorithms.background import CurvedSubtractor
+        from dials.algorithms.background import InclinedSubtractor
 
         # Shorten parameter path
         integration = params.integration
@@ -169,11 +170,11 @@ class IntegratorFactory(object):
         elif integration.background.algorithm == 'flat':
             algorithm = FlatSubtractor()
 
-        # Configure the curved subtractor
+        # Configure the inclined plane subtractor
         elif integration.background.algorithm == 'inclined':
-            raise RuntimeError('Not implemented yet')
+            algorithm = InclinedSubtractor()
 
-        # Configure the esmerelda subtractor
+        # Configure the esmerelda curved subtractor
         elif integration.background.algorithm == 'esmeralda':
             algorithm = CurvedSubtractor()
 

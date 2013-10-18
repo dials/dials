@@ -6,3 +6,4 @@ from dials.algorithms.background.xds_subtractor import XdsSubtractor
 from dials.algorithms.background.fable_subtractor import FableSubtractor
 from dials.algorithms.background.flat_background_subtractor import FlatSubtractor
 from dials.algorithms.background.curved_background_subtractor import CurvedSubtractor
+from dials.algorithms.background.inclined_background_subtractor import InclinedSubtractor
