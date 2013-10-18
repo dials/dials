@@ -56,16 +56,18 @@ if __name__ == '__main__':
 
     with open(args[0], 'r') as f: sweep = load.sweep(f)
     detector = sweep.get_detector()
-    
+
     # calculate offsets
     from scitbx import matrix
-    
+
     fast = matrix.col(detector[0].get_fast_axis()).normalize()
     slow = matrix.col(detector[0].get_slow_axis()).normalize()
     panel60_origin = matrix.col(detector[59].get_origin())
 
-    fast_offsets = [(matrix.col(p.get_origin()) - panel60_origin).dot(fast) for p in detector]
-    slow_offsets = [(matrix.col(p.get_origin()) - panel60_origin).dot(slow) for p in detector]
+    fast_offsets = [(matrix.col(p.get_origin()) - panel60_origin).dot(fast) \
+                    for p in detector]
+    slow_offsets = [(matrix.col(p.get_origin()) - panel60_origin).dot(slow) \
+                    for p in detector]
 
     ref_origin = matrix.col((-210.68270819092896,
                               205.69567063383158,
@@ -76,9 +78,9 @@ if __name__ == '__main__':
     ref_slow = matrix.col((-0.0015900007754938183,
                            -0.9999895438652769,
                            -0.004287663425368496))
-    
+
     for f, s, panel in zip(fast_offsets, slow_offsets, detector):
-        
+
         new_origin = ref_origin + f * ref_fast + s * ref_slow
         panel.set_frame(ref_fast, ref_slow, new_origin)
 
@@ -87,4 +89,4 @@ if __name__ == '__main__':
     if options.output_file:
         print 'Saving aligned detector geometry to {0}'.format(
             options.output_file)
-        dump.sweep(sweep, open(options.output_file, 'w'))    
+        dump.sweep(sweep, open(options.output_file, 'w'))

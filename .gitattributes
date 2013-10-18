@@ -396,6 +396,7 @@ scratch/dgw/prediction/tst.py -text
 scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/align_multipanel_detector.py -text
 scratch/dgw/refinement/detector_parameters.py -text
+scratch/dgw/refinement/infer_scattering_vectors.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
 scratch/dgw/refinement/scan_varying_target.py -text
