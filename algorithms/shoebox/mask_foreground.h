@@ -35,7 +35,6 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dxtbx::model::Scan;
   using dials::model::Reflection;
   using dials::algorithms::reflection_basis::CoordinateSystem;
-  using dials::algorithms::reflection_basis::transform::CoordinateGenerator;
   using dials::algorithms::reflection_basis::transform::beam_vector_map;
 
   /**
@@ -96,7 +95,6 @@ namespace dials { namespace algorithms { namespace shoebox {
 
         // Create the coordinate system and generators
         CoordinateSystem cs(m2_, s0_, s1, phi);
-        CoordinateGenerator coordxy(cs, x0, y0, s1_map_);
 
         // Get the size of the image
         std::size_t width = s1_map_.accessor()[1];
@@ -112,7 +110,7 @@ namespace dials { namespace algorithms { namespace shoebox {
           for (int i = 0; i < xsize; ++i) {
             if (x0 + i >= 0 && y0 + j >= 0 &&
                 x0 + i < width && y0 + j < height) {
-              vec2<double> gxy = coordxy(j, i);
+              vec2<double> gxy = cs.from_beam_vector(s1_map_(y0 + j, x0 + i));
               double gxa2 = (gxy[0] * delta_b_r_)*(gxy[0] * delta_b_r_);
               double gyb2 = (gxy[1] * delta_b_r_)*(gxy[1] * delta_b_r_);
               int mask_value = (gxa2 + gyb2 <= 1.0) ? Foreground : Background;
