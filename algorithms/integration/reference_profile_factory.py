@@ -112,12 +112,12 @@ class ProfileLearner(object):
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
-        transform = rbt.Forward(sweep, crystal, self.bbox_nsigma, self.grid_size)
+        spec = rbt.TransformSpec(sweep, crystal, self.bbox_nsigma, self.grid_size)
         Command.end('Initialised reciprocal space transform')
 
         # Transform the reflections to reciprocal space
         Command.start('Transforming reflections to reciprocal space')
-        transform(reflections)
+        rbt.forward_batch(spec, reflections, False)
         Command.end('Transformed {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
 
@@ -128,18 +128,6 @@ class ProfileLearner(object):
         Command.end('Learnt {0} reference profiles from {1} reflections'.format(
             len(learner.locate()),
             len([r for r in reflections if r.is_valid()])))
-
-#        zero_r = []
-#        for r in reflections:
-#            if r.is_valid():
-#                locator = learner.locate()
-#                idx = locator.index(r.image_coord_px + (r.frame_number,))
-#                if idx == 0:
-#                    zero_r.append(r)
-
-#        from dials.model.serialize import dump
-#        from dials.model.data import *
-#        dump.reflections(ReflectionList(zero_r), 'zero_r.pickle')
 
         # Return the reference profile locator
         return learner.locate()
