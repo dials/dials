@@ -451,11 +451,14 @@ scratch/jmp/misc/line_clip.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
+scratch/jmp/misc/show_reference.py -text
 scratch/jmp/misc/strip_integrate_hkl.py -text
 scratch/jmp/misc/test_area.py -text
 scratch/jmp/misc/test_exclude.py -text
 scratch/jmp/misc/test_new_transform.py -text
 scratch/jmp/misc/test_overlapping.py -text
+scratch/jmp/misc/test_problem.py -text
+scratch/jmp/misc/test_reflection -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
