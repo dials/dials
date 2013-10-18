@@ -1,4 +1,9 @@
 from __future__ import division
+try:
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+
 import os
 import libtbx.load_env
 from libtbx import easy_run
