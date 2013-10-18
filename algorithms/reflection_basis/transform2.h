@@ -1,5 +1,5 @@
 /*
- * map_pixels.h
+ * transform.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -38,8 +38,23 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using dials::algorithms::polygon::spatial_interpolation::Match;
   using dials::algorithms::polygon::spatial_interpolation::quad_to_grid;
 
+  /**
+   * A class to construct the specification for the transform. Once instantiated
+   * this object can be reused to transform lots of reflections.
+   */
   class TransformSpec {
   public:
+
+    /**
+     * Initialise the class
+     * @param beam The beam model
+     * @param detector The detector model
+     * @param gonio The goniometer model
+     * @param scan The scan model
+     * @param mosaicity The crystal mosaicity
+     * @param n_sigma The number of standard deviations
+     * @param grid_size The size of the reflection basis grid
+     */
     TransformSpec(const Beam &beam, const Detector &detector,
                   const Goniometer &gonio, const Scan &scan,
                   double mosaicity, double n_sigma, std::size_t grid_size)
@@ -60,34 +75,42 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       DIALS_ASSERT(grid_size_.all_gt(0));
     }
 
+    /** @ returns the rotation angle */
     vec3<double> m2() const {
       return m2_;
     }
 
+    /** @returns the incident beam vector */
     vec3<double> s0() const {
       return s0_;
     }
 
+    /** @returns the image size */
     int2 image_size() const {
       return image_size_;
     }
 
+    /** @returns the grid size */
     int3 grid_size() const {
       return grid_size_;
     }
 
+    /** @returns the grid step size */
     double3 step_size() const {
       return step_size_;
     }
 
+    /** @returns the grid centre */
     double3 grid_centre() const {
       return grid_centre_;
     }
 
+    /** @returns the beam vector lookup map */
     af::versa< vec3<double>, af::c_grid<2> > s1_map() const {
       return s1_map_;
     }
 
+    /** @returns the frame mapping fraction array */
     af::versa< double, af::c_grid<2> > map_frames(
         vec2<int> frames, double phi, double zeta) const {
       return map_frames_(frames, phi, zeta);
@@ -105,6 +128,18 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   };
 
 
+  /**
+   * A class to perform the local coordinate transform for a single reflection.
+   * The class has a number of different constructors to allow the transform
+   * to be done with lots of different inputs.
+   *
+   * Example:
+   *
+   *  from dials.algorithms.reflection_basis import transform
+   *  forward = transform.Forward(spec, reflection)
+   *  print forward.profile()
+   *  print forward.background()
+   */
   class Forward2 {
   public:
 
@@ -156,26 +191,31 @@ namespace dials { namespace algorithms { namespace reflection_basis {
            mask.const_ref());
     }
 
+    /** @returns The transformed profile */
     af::versa< double, af::c_grid<3> > profile() const {
       return profile_;
     }
 
+    /** @returns The transformed background (if set) */
     af::versa< double, af::c_grid<3> > background() const {
       return background_;
     }
 
+    /** @returns The z fraction */
     af::versa< double, af::c_grid<2> > zfraction() const {
       return zfraction_arr_;
     }
 
   private:
 
+    /** Initialise using the beam vector and rotation angle */
     void init(const TransformSpec &spec, const vec3<double> &s1,
               double phi, int6 bbox) {
       CoordinateSystem cs(spec.m2(), spec.s0(), s1, phi);
       init(spec, cs, bbox);
     }
 
+    /** Initialise using a reflection */
     void init(const TransformSpec &spec, const Reflection &r) {
       vec3<double> s1 = r.get_beam_vector();
       double phi = r.get_rotation_angle();
@@ -184,6 +224,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       init(spec, cs, bbox);
     }
 
+    /** Initialise using a coordinate system struct */
     void init(const TransformSpec &spec,
               const CoordinateSystem &cs, int6 bbox) {
 
@@ -212,6 +253,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       zfraction_ = zfraction_arr_.const_ref();
     }
 
+    /**
+     * Map the pixel values from the input image to the output grid.
+     * @param image The image to transform
+     * @param mask The mask accompanying the image
+     */
     void call(const af::const_ref< double, af::c_grid<3> > &image,
               const af::const_ref< bool, af::c_grid<3> > &mask) {
 
@@ -252,6 +298,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       }
     }
 
+    /**
+     * Map the pixel values from the input image to the output grid.
+     * @param image The image to transform
+     * @param bkgrd The background image to transform
+     * @param mask The mask accompanying the image
+     */
     void call(const af::const_ref< double, af::c_grid<3> > &image,
               const af::const_ref< double, af::c_grid<3> > &bkgrd,
               const af::const_ref< bool, af::c_grid<3> > &mask) {
@@ -298,6 +350,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       }
     }
 
+    /**
+     * Get a grid coordinate from an image coordinate
+     * @param j The y index
+     * @param i The x index
+     * @returns The grid (c1, c2) index
+     */
     vec2<double> gc(std::size_t j, std::size_t i) const {
       vec3<double> ds = s1_map_(y0_ + j, x0_ + i) - s1_;
       return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
@@ -319,14 +377,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   };
 
 
-
-
+  /**
+   * A class to transform a batch of images from a reflection list
+   */
   class ForwardBatch {
   public:
 
     typedef af::versa< double, af::c_grid<3> > versa_double3;
     typedef af::versa< double, af::c_grid<4> > versa_double4;
 
+    /** Transform a reflection list */
     ForwardBatch(const TransformSpec &spec,
                  const af::const_ref<Reflection> &rlist)
       : size_(spec.grid_size()),
@@ -344,14 +404,17 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       }
     }
 
+    /** @returns The 4D array of profiles */
     versa_double4 profile() const {
       return profile_;
     }
 
+    /** @returns The 4D array of backgrounds */
     versa_double4 background() const {
       return background_;
     }
 
+    /** @returns The requested profile */
     versa_double3 profile(std::size_t index) const {
       DIALS_ASSERT(index < num_);
       versa_double3 p(af::c_grid<3>(size_[0], size_[1], size_[2]),
@@ -361,6 +424,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       return p;
     }
 
+    /** @returns The requested background */
     versa_double3 background(std::size_t index) const {
       DIALS_ASSERT(index < num_);
       versa_double3 b(af::c_grid<3>(size_[0], size_[1], size_[2]),
@@ -372,6 +436,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   private:
 
+    /** @returns The size of the profile grid */
     af::c_grid<4> init_profile_grid() const {
       af::c_grid<4> grid;
       grid[0] = num_;
@@ -386,11 +451,6 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     versa_double4 profile_;
     versa_double4 background_;
   };
-
-
-
-
-
 
 
   inline

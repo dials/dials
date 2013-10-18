@@ -17,7 +17,7 @@
 #include <dials/algorithms/reflection_basis/map_frames.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/algorithms/reflection_basis/map_pixels.h>
-#include <dials/algorithms/reflection_basis/map_pixels2.h>
+#include <dials/algorithms/reflection_basis/transform2.h>
 #include <dials/algorithms/reflection_basis/transform.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/model/data/reflection.h>

@@ -182,10 +182,10 @@ algorithms/reflection_basis/boost_python/transform_ext.cc -text
 algorithms/reflection_basis/coordinate_system.h -text
 algorithms/reflection_basis/map_frames.h -text
 algorithms/reflection_basis/map_pixels.h -text
-algorithms/reflection_basis/map_pixels2.h -text
 algorithms/reflection_basis/rebin_pixels.h -text
 algorithms/reflection_basis/transform.h -text
 algorithms/reflection_basis/transform.py -text
+algorithms/reflection_basis/transform2.h -text
 algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/bbox_calculator.h -text
