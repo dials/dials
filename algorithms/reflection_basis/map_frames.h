@@ -29,6 +29,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
 
   using boost::math::erf;
+  using scitbx::vec2;
 
   /**
    * A class to calculate calculate the fraction of counts contributed by each

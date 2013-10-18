@@ -19,7 +19,6 @@
 #include <dxtbx/model/scan.h>
 #include <dials/model/data/reflection.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
-#include <dials/algorithms/reflection_basis/map_pixels.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>

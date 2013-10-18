@@ -181,12 +181,10 @@ algorithms/reflection_basis/boost_python/reflection_basis_ext.cc -text
 algorithms/reflection_basis/boost_python/transform_ext.cc -text
 algorithms/reflection_basis/coordinate_system.h -text
 algorithms/reflection_basis/ideal_profile.h -text
+algorithms/reflection_basis/index_generator.h -text
 algorithms/reflection_basis/map_frames.h -text
-algorithms/reflection_basis/map_pixels.h -text
-algorithms/reflection_basis/rebin_pixels.h -text
 algorithms/reflection_basis/transform.h -text
 algorithms/reflection_basis/transform.py -text
-algorithms/reflection_basis/transform2.h -text
 algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/bbox_calculator.h -text
@@ -571,7 +569,6 @@ test/algorithms/reflection_basis/tst_beam_vector_map.py -text
 test/algorithms/reflection_basis/tst_coordinate_system.py -text
 test/algorithms/reflection_basis/tst_grid_index_generator.py -text
 test/algorithms/reflection_basis/tst_map_frames.py -text
-test/algorithms/reflection_basis/tst_map_pixels.py -text
 test/algorithms/reflection_basis/tst_rebin_pixels.py -text
 test/algorithms/reflection_basis/tst_transform.py -text
 test/algorithms/shoebox/tst_bbox_calculator.py -text
