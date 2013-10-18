@@ -66,6 +66,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       reflections[i].set_shoebox_mask(af::versa< int, af::c_grid<3> >());
       reflections[i].set_shoebox_background(af::versa< double, af::c_grid<3> >());
       reflections[i].set_transformed_shoebox(af::versa< double, af::c_grid<3> >());
+      reflections[i].set_transformed_shoebox_background(af::versa< double, af::c_grid<3> >());
     }
   }
 
