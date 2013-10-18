@@ -19,6 +19,7 @@
 #include <dials/algorithms/reflection_basis/map_pixels.h>
 #include <dials/algorithms/reflection_basis/transform2.h>
 #include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/algorithms/reflection_basis/ideal_profile.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/model/data/reflection.h>
 
@@ -416,6 +417,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     def("forward_batch", &forward_batch);
   }
 
+  void export_ideal_profile() {
+    def("ideal_profile", &ideal_profile);
+  }
+
   BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_transform_ext)
   {
     export_rebin_pixels();
@@ -424,6 +429,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     export_map_pixels();
     export_transform();
     export_forward2();
+    export_ideal_profile();
   }
 
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

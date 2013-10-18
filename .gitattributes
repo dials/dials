@@ -180,6 +180,7 @@ algorithms/reflection_basis/beam_vector_map.h -text
 algorithms/reflection_basis/boost_python/reflection_basis_ext.cc -text
 algorithms/reflection_basis/boost_python/transform_ext.cc -text
 algorithms/reflection_basis/coordinate_system.h -text
+algorithms/reflection_basis/ideal_profile.h -text
 algorithms/reflection_basis/map_frames.h -text
 algorithms/reflection_basis/map_pixels.h -text
 algorithms/reflection_basis/rebin_pixels.h -text
