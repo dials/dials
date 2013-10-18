@@ -212,7 +212,7 @@ for ref in obs_refs:
         ref.rotation_angle, deg=False)
 
 # The total number of observations should be 1128
-assert len(obs_refs) = 1128
+assert len(obs_refs) == 1128
 
 ###############################
 # Undo known parameter shifts #
