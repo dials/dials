@@ -278,14 +278,19 @@ class indexer(object):
       print crystal_model
 
       self.refined_crystal_models.append(crystal_model)
+      suffix = ""
+      if len(crystal_models) > 1:
+        suffix = "_%i" %(i_lattice+1)
+      self.export_as_json(crystal_model, self.sweep, suffix=suffix)
+      if self.params.export_xds_files:
+        self.export_xds_files(crystal_model, self.sweep, suffix=suffix)
+      self.export_reflections(file_name='indexed%s.pickle' %suffix,
+                              indexed_only=True)
 
-    self.export_as_json()
-    self.export_reflections(indexed_only=False)
+    #self.export_reflections(indexed_only=False)
     if self.params.debug:
       self.predict_reflections(self.candidate_crystal_models[0])
       self.export_predicted_reflections()
-    if self.params.export_xds_files:
-      self.export_xds_files()
 
     print "Final refined crystal models:"
     for i, crystal_model in enumerate(self.refined_crystal_models):
@@ -1054,20 +1059,15 @@ class indexer(object):
       map_data=map_data,
       labels=flex.std_string(labels))
 
-  def export_as_json(self, suffix=None, compact=False):
+  def export_as_json(self, crystal_model, sweep, suffix=None, compact=False):
     from dials.model.serialize.dump import crystal as dump_crystal
     from dxtbx.serialize import dump
     if suffix is None:
       suffix = ''
-    for i, crystal_model in enumerate(self.refined_crystal_models):
-      if len(self.refined_crystal_models) > 1:
-        _suffix = "_".join((suffix, "%i" %(i+1)))
-      else:
-        _suffix = suffix
-      with open('crystal%s.json' %_suffix, 'wb') as f:
-        dump_crystal(crystal_model, f, compact=compact)
+    with open('crystal%s.json' %suffix, 'wb') as f:
+      dump_crystal(crystal_model, f, compact=compact)
     with open('sweep%s.json' %suffix, 'wb') as f:
-      dump.imageset(self.sweep, f, compact=compact)
+      dump.imageset(sweep, f, compact=compact)
 
   def export_reflections(self, file_name="indexed.pickle", indexed_only=False):
     reflections = self.reflections
@@ -1076,9 +1076,10 @@ class indexer(object):
     with open(file_name, 'wb') as f:
       pickle.dump(reflections, f)
 
-  def export_xds_files(self):
+  def export_xds_files(self, crystal_model, sweep, suffix=None):
     from dxtbx.serialize import xds
-    crystal_model = self.candidate_crystal_models[0]
+    if suffix is None:
+      suffix = ''
     crystal_model = crystal_model.change_basis(
       crystal_model.get_space_group().info().change_of_basis_op_to_reference_setting())
     A = crystal_model.get_A()
@@ -1086,10 +1087,10 @@ class indexer(object):
     real_space_a = A_inv.elems[:3]
     real_space_b = A_inv.elems[3:6]
     real_space_c = A_inv.elems[6:9]
-    to_xds = xds.to_xds(self.sweep)
-    with open('XDS.INP', 'wb') as f:
+    to_xds = xds.to_xds(sweep)
+    with open('XDS%s.INP' %suffix, 'wb') as f:
       to_xds.XDS_INP(out=f, job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
-    with open('XPARM.XDS', 'wb') as f:
+    with open('XPARM%s.XDS' %suffix, 'wb') as f:
       to_xds.xparm_xds(
         real_space_a, real_space_b, real_space_c,
         crystal_model.get_space_group().type().number(),
