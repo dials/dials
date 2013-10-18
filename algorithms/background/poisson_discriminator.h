@@ -162,7 +162,7 @@ namespace dials { namespace algorithms {
      * @return The mask
      */
     af::shared<int> operator()(const af::const_ref<double> &shoebox) const {
-      af::shared<int> mask(shoebox.size(), shoebox::Valid);
+      af::shared<int> mask(shoebox.size(), shoebox::Valid | shoebox::Background);
       af::ref<int> mask_ref = mask.ref();
       this->operator()(shoebox, mask_ref);
       return mask;
