@@ -190,7 +190,6 @@ namespace dials { namespace algorithms {
         double x, y, z, z_dif, r = 0.0;
 
         double variance, m = 0, n = 0;
-        std::cout << "\n" << " a = " << a << ", b =" << b <<", c =" << c << "\n";
 
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {

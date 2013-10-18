@@ -49,7 +49,6 @@ def flex_2d_layering_n_integrating(reflections):
                 reslt = raw_2d_cut(data2d, mask2d, background2d)
 
                 ref.intensity += reslt[0]
-                print "intensity_variance(vefore) =", ref.intensity_variance
                 ref.intensity_variance += reslt[1]
 
 
