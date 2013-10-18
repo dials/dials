@@ -69,7 +69,6 @@ namespace dials { namespace algorithms { namespace polygon {
     if (oy0 < 0) oy0 = 0;
     if (ox1 > output_size[1]) ox1 = output_size[1];
     if (oy1 > output_size[0]) oy1 = output_size[0];
-    DIALS_ASSERT(ox0 < ox1 && oy0 < oy1);
     return int4(ox0, ox1, oy0, oy1);
   }
 
@@ -115,6 +114,7 @@ namespace dials { namespace algorithms { namespace polygon {
   af::shared<Match> quad_to_grid(vert4 input, int2 output_size, int index) {
     af::shared<Match> matches;
     int4 range = quad_grid_range(input, output_size);
+    if (range[0] >= range[1] || range[2] >= range[3]) return matches;
     double target_area = reverse_quad_inplace_if_backward(input);
     for (std::size_t jj = range[2]; jj < range[3]; ++jj) {
       for (std::size_t ii = range[0]; ii < range[1]; ++ii) {
@@ -139,6 +139,7 @@ namespace dials { namespace algorithms { namespace polygon {
   af::shared<Match> grid_to_quad(vert4 output, int2 input_size, int index) {
     af::shared<Match> matches;
     int4 range = quad_grid_range(output, input_size);
+    if (range[0] >= range[1] || range[2] >= range[3]) return matches;
     reverse_quad_inplace_if_backward(output);
     for (std::size_t jj = range[2]; jj < range[3]; ++jj) {
       for (std::size_t ii = range[0]; ii < range[1]; ++ii) {
@@ -167,14 +168,10 @@ namespace dials { namespace algorithms { namespace polygon {
     DIALS_ASSERT(inputxy.accessor().all_gt(0) && output_size.all_gt(0));
     for (std::size_t j = 0, k = 0; j < inputxy.accessor()[0]-1; ++j) {
       for (std::size_t i = 0; i < inputxy.accessor()[1]-1; ++i, ++k) {
-        try {
-          vert4 input(inputxy(j, i), inputxy(j, i+1),
-                      inputxy(j+1, i+1), inputxy(j+1, i));
-          af::shared<Match> temp = quad_to_grid(input, output_size, k);
-          std::copy(temp.begin(), temp.end(), std::back_inserter(matches));
-        } catch (dials::error) {
-          // pass
-        }
+        vert4 input(inputxy(j, i), inputxy(j, i+1),
+                    inputxy(j+1, i+1), inputxy(j+1, i));
+        af::shared<Match> temp = quad_to_grid(input, output_size, k);
+        std::copy(temp.begin(), temp.end(), std::back_inserter(matches));
       }
     }
     return matches;
@@ -195,14 +192,10 @@ namespace dials { namespace algorithms { namespace polygon {
     DIALS_ASSERT(outputxy.accessor().all_gt(0) && input_size.all_gt(0));
     for (std::size_t j = 0, k = 0; j < outputxy.accessor()[0]-1; ++j) {
       for (std::size_t i = 0; i < outputxy.accessor()[1]-1; ++i, ++k) {
-        try {
-          vert4 output(outputxy(j, i), outputxy(j, i+1),
-                       outputxy(j+1, i+1), outputxy(j+1, i));
-          af::shared<Match> temp = grid_to_quad(output, input_size, k);
-          std::copy(temp.begin(), temp.end(), std::back_inserter(matches));
-        } catch (dials::error) {
-          // pass
-        }
+        vert4 output(outputxy(j, i), outputxy(j, i+1),
+                     outputxy(j+1, i+1), outputxy(j+1, i));
+        af::shared<Match> temp = grid_to_quad(output, input_size, k);
+        std::copy(temp.begin(), temp.end(), std::back_inserter(matches));
       }
     }
     return matches;

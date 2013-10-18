@@ -17,6 +17,7 @@
 #include <dials/algorithms/reflection_basis/map_frames.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/algorithms/reflection_basis/map_pixels.h>
+#include <dials/algorithms/reflection_basis/map_pixels2.h>
 #include <dials/algorithms/reflection_basis/transform.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/model/data/reflection.h>
@@ -209,6 +210,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   }
 
   inline
+  boost::shared_ptr<TransformSpec> init_forward_from_sweep_and_crystal(
+      PyObject *sweep, PyObject *crystal,
+      double nsigma, std::size_t grid_size) {
+    return boost::shared_ptr<TransformSpec>(new TransformSpec(
+      call_method<Beam>(sweep, "get_beam"),
+      call_method<Detector>(sweep, "get_detector"),
+      call_method<Goniometer>(sweep, "get_goniometer"),
+      call_method<Scan>(sweep, "get_scan"),
+      call_method<double>(crystal, "get_mosaicity", false),
+      nsigma, grid_size));
+  }
+
+  inline
   void forward_with_reflection_list(const Forward &transform,
       af::ref<Reflection> rlist) {
     // FIXME: Get Python error GC object already tracked. Possibly related to
@@ -358,6 +372,49 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         arg("bbox"),
         arg("grid")));
   }
+  
+  void export_forward2() {
+
+    class_<TransformSpec>("TransformSpec", no_init)
+      .def(init<const Beam &, const Detector &, 
+                const Goniometer &, const Scan &, 
+                double, double, std::size_t>())
+      .def("__init__", make_constructor(&init_forward_from_sweep_and_crystal))
+      .def("m2", &TransformSpec::m2)
+      .def("s0", &TransformSpec::s0)
+      .def("image_size", &TransformSpec::image_size)
+      .def("grid_size", &TransformSpec::grid_size)
+      .def("step_size", &TransformSpec::step_size)
+      .def("grid_centre", &TransformSpec::grid_centre)
+      .def("s1_map", &TransformSpec::s1_map);
+
+    class_<Forward2>("Forward2", no_init)
+      .def(init<const TransformSpec&,
+                const vec3<double>&, double, int6,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< bool, af::c_grid<3> >& >())
+      .def(init<const TransformSpec&,
+                const vec3<double>&, double, int6,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< bool, af::c_grid<3> >& >())
+      .def(init<const TransformSpec&,
+                const CoordinateSystem&, int6,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< bool, af::c_grid<3> >& >())
+      .def(init<const TransformSpec&,
+                const CoordinateSystem&, int6,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< double, af::c_grid<3> >&,
+                const af::const_ref< bool, af::c_grid<3> >& >())
+      .def(init<const TransformSpec&,
+                const Reflection&>())
+      .def("profile", &Forward2::profile)
+      .def("background", &Forward2::background)
+      .def("zfraction", &Forward2::zfraction);
+      
+    def("forward_batch", &forward_batch);
+  }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_transform_ext)
   {
@@ -366,6 +423,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     export_beam_vector_map();
     export_map_pixels();
     export_transform();
+    export_forward2();
   }
 
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python
