@@ -50,6 +50,23 @@ class ScriptRunner(object):
         # get the intersections
         observations = ray_intersection(detector, rlist)
 
+        if len(observations) != len(rlist):
+            print "WARNING: not all reflections intersect the detector"
+
+            # Why is this? Dump out the unique reflections to explore
+            unique = ReflectionList()
+            for r in rlist:
+                try:
+                    obs = ray_intersection(detector, r)
+                except RuntimeError:
+                    unique.append(r)
+
+            unique_filename = "unique.pickle"
+            print 'Those reflections that do not intersect have been saved' \
+                  ' to {0}'.format(unique_filename)
+            pickle.dump(observations, open(unique_filename, 'wb'),
+                pickle.HIGHEST_PROTOCOL)
+
         # update the centroid positions too
         for r in observations:
             r.centroid_position = r.image_coord_mm + (r.rotation_angle, )
