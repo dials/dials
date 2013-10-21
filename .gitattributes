@@ -400,6 +400,7 @@ scratch/dgw/refinement/calculate_intersections.py -text
 scratch/dgw/refinement/detector_parameters.py -text
 scratch/dgw/refinement/infer_scattering_vectors.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
+scratch/dgw/refinement/perturb_reflection_phi.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
 scratch/dgw/refinement/scan_varying_target.py -text
 scratch/dgw/refinement/target_old.py -text
