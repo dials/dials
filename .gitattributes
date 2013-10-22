@@ -402,6 +402,7 @@ scratch/dgw/refinement/__init__.py -text
 scratch/dgw/refinement/align_multipanel_detector.py -text
 scratch/dgw/refinement/calculate_intersections.py -text
 scratch/dgw/refinement/detector_parameters.py -text
+scratch/dgw/refinement/explore_model_quality_vs_nref.py -text
 scratch/dgw/refinement/infer_scattering_vectors.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
 scratch/dgw/refinement/perturb_reflection_phi.py -text

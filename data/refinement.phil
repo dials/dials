@@ -114,6 +114,11 @@ refinement
               "in refinement."
       .type = bool
 
+    random_seed = 42
+      .help = "Random seed to use when sampling to create a working set of"
+              "reflections. May be int or None."
+      .type = int
+
     minimum_number_of_reflections = 20
       .help = "The minimum number of input observations to allow a reflection"
               "manager to be constructed for."

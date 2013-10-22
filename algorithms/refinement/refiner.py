@@ -48,12 +48,6 @@ class Refiner(object):
         '''
         from scitbx import matrix
         from math import sqrt
-        import random
-
-        # While a random subset of reflections is used, continue to
-        # set random.seed to get consistent behaviour
-        random.seed(42)
-        if self._verbosity > 1: print "Random seed set to 42\n"
 
         # Get the models from the sweep
         self.sweep = sweep
@@ -505,6 +499,8 @@ class RefmanFactory(object):
 
         import dials.algorithms.refinement.target as target
 
+        self._random_seed = options.random_seed
+
         self._ref_per_degree = options.reflections_per_degree
         if options.use_all_reflections:
             self._ref_per_degree = None
@@ -517,6 +513,14 @@ class RefmanFactory(object):
         self._refman = refman
 
     def __call__(self, reflections, beam, goniometer, scan, verbosity):
+
+        # While a random subset of reflections is used, continue to
+        # set random.seed to get consistent behaviour
+        if self._random_seed:
+            import random
+            random.seed(self._random_seed)
+            if verbosity > 1:
+                print "Random seed set to %d\n" % self._random_seed
 
         return self._refman(reflections=reflections,
                             beam=beam,
