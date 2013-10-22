@@ -340,7 +340,7 @@ class Importer(object):
         try:
             imagesets = ImageSetFactory.new(args, ignore_unknown=True)
             unhandled = []
-            if len(imageset) == 0:
+            if len(imagesets) == 0:
                 return args
             for imageset in imagesets:
                 for argument in args:
