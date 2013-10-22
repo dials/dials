@@ -274,8 +274,8 @@ class Importer(object):
         # First try to load known serialized formats. Then try to load
         # the remaining arguments as an imageset. If this fails save
         # the remaining arguments as a list of unhandled arguments
-        unhandled = self.try_serialized_formats(args)
-        unhandled = self.try_as_imageset(unhandled)
+        unhandled = self.try_as_imageset(args)
+        unhandled = self.try_serialized_formats(unhandled)
         self.unhandled_arguments = unhandled
 
     def try_serialized_formats(self, args):
