@@ -1096,24 +1096,30 @@ class indexer(object):
         crystal_model.get_space_group().type().number(),
         out=f)
 
+
 def run(args):
   import time
   from libtbx.phil import command_line
-  from dxtbx.imageset import ImageSetFactory
+  from dials.util.command_line import Importer
 
   args = sys.argv[1:]
-  sweeps = ImageSetFactory.new(args, ignore_unknown=True)
-  assert len(sweeps) == 1
-  sweep = sweeps[0]
-  sweep_filenames = sweep.paths()
-  args = [arg for arg in args if arg not in sweep_filenames]
 
+  importer = Importer(args)
+  if len(importer.imagesets) == 0:
+      self.config().print_help()
+      return
+  elif len(importer.imagesets) > 1:
+      raise RuntimeError("Only one imageset can be processed at a time")
+  sweeps = importer.imagesets
+  reflections = importer.reflections
+  assert len(reflections) > 0
+  args = importer.unhandled_arguments
+
+  sweep = sweeps[0]
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil, args = cmd_line.process_and_fetch(
       args=args, custom_processor="collect_remaining")
   working_phil.show()
-
-  reflections_filename = args[0]
 
   gonio = sweep.get_goniometer()
   detector = sweep.get_detector()
@@ -1123,12 +1129,6 @@ def run(args):
   print scan
   print gonio
   print beam
-
-  t1 = time.time()
-  with open(reflections_filename, 'rb') as f:
-    reflections = pickle.load(f)
-  t2 = time.time()
-  print "Time taken loading reflection file: %.3fs" %(t2-t1)
 
   idxr = indexer(reflections, sweep,
                  params=working_phil.extract())
