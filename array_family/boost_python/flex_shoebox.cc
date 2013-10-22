@@ -35,6 +35,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::Valid;
   using dials::model::Foreground;
   using dials::algorithms::LabelImageStack;
+  using dials::algorithms::LabelPixels;
 
   /**
    * Construct an array of shoebxoes from a spot labelling class
@@ -101,6 +102,70 @@ namespace dials { namespace af { namespace boost_python {
       result[i].bbox[4] += zstart;
       result[i].bbox[5] += zstart;
     }
+
+    // Return the array
+    return new af::flex<Shoebox>::type(
+      result, af::flex_grid<>(num));
+  }  
+  
+  /**
+   * Construct an array of shoebxoes from a spot labelling class
+   */
+  af::flex<Shoebox>::type* from_pixel_labeller(const LabelPixels &label, 
+      std::size_t panel) {
+
+    // Get the stuff from the label struct
+    af::shared<int> labels = label.labels();
+    af::shared<int> values = label.values();
+    af::shared< vec3<int> > coords = label.coords();
+
+    // Get the number of labels and allocate the array
+    std::size_t num = af::max(labels.const_ref()) + 1;
+    af::shared<Shoebox> result(num, Shoebox());
+    
+    // Initialise the bboxes
+    int xsize = label.size()[2];
+    int ysize = label.size()[1];
+    int zsize = label.size()[0];
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].panel = panel;
+      result[i].bbox[0] = xsize; result[i].bbox[1] = 0;
+      result[i].bbox[2] = ysize; result[i].bbox[3] = 0;
+      result[i].bbox[4] = zsize; result[i].bbox[5] = 0;
+    }
+
+    // Set the shoeboxes
+    for (std::size_t i = 0; i < labels.size(); ++i) {
+      int l = labels[i];
+      vec3<int> c = coords[i];
+      if (c[2] <  result[l].bbox[0]) result[l].bbox[0] = c[2];
+      if (c[2] >= result[l].bbox[1]) result[l].bbox[1] = c[2] + 1;
+      if (c[1] <  result[l].bbox[2]) result[l].bbox[2] = c[1];
+      if (c[1] >= result[l].bbox[3]) result[l].bbox[3] = c[1] + 1;
+      if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
+      if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
+    }
+    
+    // Allocate all the arrays
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i].allocate();
+    } 
+
+    // Set all the mask and data points
+    for (std::size_t i = 0; i < labels.size(); ++i) {
+      int l = labels[i];
+      double v = values[i];
+      vec3<int> c = coords[i];
+      int ii = c[2] - result[l].bbox[0];
+      int jj = c[1] - result[l].bbox[2];
+      int kk = c[0] - result[l].bbox[4];
+      DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
+      DIALS_ASSERT(ii < result[l].xsize());
+      DIALS_ASSERT(jj < result[l].ysize());
+      DIALS_ASSERT(kk < result[l].zsize());     
+      result[l].data(kk,jj,ii) = (double)v;
+      result[l].mask(kk,jj,ii) = Valid | Foreground;
+    }  
 
     // Return the array
     return new af::flex<Shoebox>::type(
@@ -507,6 +572,11 @@ namespace dials { namespace af { namespace boost_python {
           boost::python::arg("zstart") = 0)))
       .def("__init__", make_constructor(
         from_labels<3>, 
+        default_call_policies(), (
+          boost::python::arg("labels"), 
+          boost::python::arg("panel") = 0)))
+      .def("__init__", make_constructor(
+        from_pixel_labeller, 
         default_call_policies(), (
           boost::python::arg("labels"), 
           boost::python::arg("panel") = 0)))

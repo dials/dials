@@ -122,6 +122,7 @@ algorithms/peak_finding/boost_python/lui_find_peak_smoothing.cc -text svneol=uns
 algorithms/peak_finding/boost_python/lui_find_peak_smothing.cc -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/lui_integrate_helper.cc -text svneol=unset#text/plain
 algorithms/peak_finding/boost_python/peak_finding_ext.cc -text
+algorithms/peak_finding/label_pixels.h -text
 algorithms/peak_finding/lui_find_peak.py -text svneol=unset#text/plain
 algorithms/peak_finding/lui_find_peak_helper.h -text svneol=unset#text/plain
 algorithms/peak_finding/lui_find_peak_smoothing.h -text svneol=unset#text/plain
