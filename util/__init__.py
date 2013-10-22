@@ -52,7 +52,7 @@ def halraiser(e):
     if len(e.args) == 0:
         e.args = (text,)
     elif len(e.args) == 1:
-        e.args = (text + ' ' + e.args[0],)
+        e.args = (text + ' ' + str(e.args[0]),)
     else:
         e.args = (text,) + e.args
 
