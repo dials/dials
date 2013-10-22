@@ -111,7 +111,7 @@ class Script(ScriptRunner):
         from dials.algorithms.image.connected_components import LabelPixels3d
 
         # Try importing the command line arguments
-        importer = Importer(args, combine_reflections=True)
+        importer = Importer(args)
         if len(importer.reflections) == 0:
             self.config().print_help()
             return

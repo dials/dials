@@ -329,6 +329,7 @@ namespace dials { namespace algorithms {
       boost::unordered_map< vec3<int>, int, Vec3IntHash> grid(
         coords_.size(), Vec3IntHash(size_));
       for (std::size_t i = 0; i < coords_.size(); ++i) {
+        DIALS_ASSERT(grid[coords_[i]] == 0);
         grid[coords_[i]] = i + 1;
       }
 
