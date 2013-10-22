@@ -94,7 +94,7 @@ class ProfileExtractor(object):
                 extractor.add_image(panel, index, im)
 
             # Update the progress bar
-            progress.update(100 * (index + 1) / len(self.sweep))
+            progress.update(100*(index-first_array_index+1) / len(self.sweep))
 
         # Get the shoeboxes from the extractor
         shoeboxes = extractor.shoeboxes()
