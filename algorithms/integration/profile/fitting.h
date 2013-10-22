@@ -23,8 +23,11 @@ namespace dials { namespace algorithms {
   /**
    * Class to fix the observed with the reference profile
    */
+  template <typename FloatType = double>
   class ProfileFitting {
   public:
+
+    typedef FloatType float_type;
 
     /**
      * Instantiate the fitting algorithm with the reflection profile
@@ -32,9 +35,9 @@ namespace dials { namespace algorithms {
      * @param c The contents of the pixels
      * @param b The background of the pixels
      */
-    ProfileFitting(const af::const_ref<double, af::c_grid<3> > &p,
-                   const af::const_ref<double, af::c_grid<3> > &c,
-                   const af::const_ref<double, af::c_grid<3> > &b,
+    ProfileFitting(const af::const_ref<FloatType, af::c_grid<3> > &p,
+                   const af::const_ref<FloatType, af::c_grid<3> > &c,
+                   const af::const_ref<FloatType, af::c_grid<3> > &b,
                    double eps = 1e-3,
                    std::size_t max_iter = 10)
     {
@@ -95,9 +98,9 @@ namespace dials { namespace algorithms {
      * Evaluate the next intensity iteration.
      * @ returns The estimate of the intensity
      */
-    double estimate_intensity(const af::const_ref<double, af::c_grid<3> > &p,
-                              const af::const_ref<double, af::c_grid<3> > &c,
-                              const af::const_ref<double, af::c_grid<3> > &b,
+    double estimate_intensity(const af::const_ref<FloatType, af::c_grid<3> > &p,
+                              const af::const_ref<FloatType, af::c_grid<3> > &c,
+                              const af::const_ref<FloatType, af::c_grid<3> > &b,
                               double I0) {
       double s1 = 0.0, s2 = 0.0;
       for (std::size_t i = 0; i < p.size(); ++i) {
@@ -114,8 +117,8 @@ namespace dials { namespace algorithms {
      * Calculate the total variance in the profile.
      * @returns The total variance
      */
-    double estimate_variance(const af::const_ref<double, af::c_grid<3> > &p,
-                             const af::const_ref<double, af::c_grid<3> > &b,
+    double estimate_variance(const af::const_ref<FloatType, af::c_grid<3> > &p,
+                             const af::const_ref<FloatType, af::c_grid<3> > &b,
                              double I) {
       double V = 0.0;
       for (std::size_t i = 0; i < p.size(); ++i) {

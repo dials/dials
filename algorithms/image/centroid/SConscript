@@ -1,11 +1,7 @@
 
 Import('env')
 
-sources = [
-    'boost_python/centroid_points.cc',
-    'boost_python/centroid_image.cc',
-    'boost_python/centroid_masked_image.cc',
-    'boost_python/centroid_ext.cc']
+sources = ['boost_python/centroid_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_image_centroid_ext', 
     source=sources)

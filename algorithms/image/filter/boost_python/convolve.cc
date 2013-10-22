@@ -16,17 +16,24 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_convolve() 
-  {
-    def("convolve", &convolve, (
+  template <typename FloatType>
+  void convolve_suite() {
+    def("convolve", &convolve<FloatType>, (
       arg("image"),
       arg("kernel")));
-    def("convolve_row", &convolve_row, (
+    
+    def("convolve_row", &convolve_row<FloatType>, (
       arg("image"),
       arg("kernel")));
-    def("convolve_col", &convolve_col, (
+    
+    def("convolve_col", &convolve_col<FloatType>, (
       arg("image"),
       arg("kernel")));
+  }
+
+  void export_convolve() {
+    convolve_suite<float>();
+    convolve_suite<double>();
   }
 
 }}} // namespace = dials::algorithms::boost_python

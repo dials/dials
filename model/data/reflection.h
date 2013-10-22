@@ -19,6 +19,7 @@
 #include <scitbx/array_family/simple_tiny_io.h>
 #include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/config.h>
 
 namespace dials { namespace model {
 
@@ -122,11 +123,14 @@ namespace dials { namespace model {
   /**
    * A class for reflections containing some additional data
    */
-  class Reflection : public ReflectionBase {
+  template <typename FloatType = double>
+  class ReflectionBase2 : public ReflectionBase {
   public:
 
+    typedef FloatType float_type;
+
     /** Default initialisation */
-    Reflection()
+    ReflectionBase2()
       : ReflectionBase(),
         rotation_angle_(0.0),
         beam_vector_(0.0, 0.0, 0.0),
@@ -148,7 +152,7 @@ namespace dials { namespace model {
      * Initialise the reflection with the miller index
      * @param miller_index The miller index
      */
-    Reflection(miller_index_type miller_index)
+    ReflectionBase2(miller_index_type miller_index)
       : ReflectionBase(miller_index),
         rotation_angle_(0.0),
         beam_vector_(0.0, 0.0, 0.0),
@@ -173,7 +177,7 @@ namespace dials { namespace model {
      * @param rotation_angle The rotation angle
      * @param beam_vector The beam vector
      */
-    Reflection(miller_index_type miller_index,
+    ReflectionBase2(miller_index_type miller_index,
                double rotation_angle,
                vec3 <double> beam_vector)
       : ReflectionBase(miller_index),
@@ -201,7 +205,7 @@ namespace dials { namespace model {
      * @param beam_vector The beam vector
      * @param entering True if the reflection is entering the Ewald sphere
      */
-    Reflection(miller_index_type miller_index,
+    ReflectionBase2(miller_index_type miller_index,
                double rotation_angle,
                vec3 <double> beam_vector,
                bool entering)
@@ -225,7 +229,7 @@ namespace dials { namespace model {
     }
 
     /** Virtual destructor */
-    virtual ~Reflection() {}
+    virtual ~ReflectionBase2() {}
 
     /** Get the rotation angle */
     double get_rotation_angle() const {
@@ -263,7 +267,7 @@ namespace dials { namespace model {
     }
 
     /** Get the reflection shoebox pixels */
-    af::versa< double, af::c_grid<3> > get_shoebox() const {
+    af::versa< FloatType, af::c_grid<3> > get_shoebox() const {
       return shoebox_;
     }
 
@@ -273,17 +277,17 @@ namespace dials { namespace model {
     }
 
     /** Get the shoebox background */
-    af::versa< double, af::c_grid<3> > get_shoebox_background() const {
+    af::versa< FloatType, af::c_grid<3> > get_shoebox_background() const {
       return shoebox_background_;
     }
 
     /** Get the transformed profile */
-    af::versa< double, af::c_grid<3> > get_transformed_shoebox() const {
+    af::versa< FloatType, af::c_grid<3> > get_transformed_shoebox() const {
       return transformed_shoebox_;
     }
 
     /** Get the transformed profile */
-    af::versa< double, af::c_grid<3> > get_transformed_shoebox_background() const {
+    af::versa< FloatType, af::c_grid<3> > get_transformed_shoebox_background() const {
       return transformed_shoebox_background_;
     }
 
@@ -354,7 +358,7 @@ namespace dials { namespace model {
     }
 
     /** Set the reflection shoebox pixels */
-    void set_shoebox(const af::versa< double, af::c_grid<3> > &shoebox) {
+    void set_shoebox(const af::versa< FloatType, af::c_grid<3> > &shoebox) {
       shoebox_ = shoebox;
     }
 
@@ -365,19 +369,19 @@ namespace dials { namespace model {
 
     /** Set the reflection shoebox background */
     void set_shoebox_background(
-        const af::versa< double, af::c_grid<3> > &shoebox_background) {
+        const af::versa< FloatType, af::c_grid<3> > &shoebox_background) {
       shoebox_background_ = shoebox_background;
     }
 
     /** Set the transformed profile */
     void set_transformed_shoebox(
-        const af::versa< double, af::c_grid<3> > &transformed_shoebox) {
+        const af::versa< FloatType, af::c_grid<3> > &transformed_shoebox) {
       transformed_shoebox_ = transformed_shoebox;
     }
 
     /** Set the transformed profile */
     void set_transformed_shoebox_background(
-        const af::versa< double, af::c_grid<3> > &transformed_shoebox) {
+        const af::versa< FloatType, af::c_grid<3> > &transformed_shoebox) {
       transformed_shoebox_background_ = transformed_shoebox;
     }
 
@@ -431,10 +435,10 @@ namespace dials { namespace model {
     int6 bounding_box_;
 
     af::versa< int, af::c_grid<3> > shoebox_mask_;
-    af::versa< double, af::c_grid<3> > shoebox_;
-    af::versa< double, af::c_grid<3> > shoebox_background_;
-    af::versa< double, af::c_grid<3> > transformed_shoebox_;
-    af::versa< double, af::c_grid<3> > transformed_shoebox_background_;
+    af::versa< FloatType, af::c_grid<3> > shoebox_;
+    af::versa< FloatType, af::c_grid<3> > shoebox_background_;
+    af::versa< FloatType, af::c_grid<3> > transformed_shoebox_;
+    af::versa< FloatType, af::c_grid<3> > transformed_shoebox_background_;
 
     vec3<double> centroid_position_;
     vec3<double> centroid_variance_;
@@ -447,6 +451,8 @@ namespace dials { namespace model {
 
     int crystal_;
   };
+
+  typedef ReflectionBase2<ProfileFloatType> Reflection;
 
   /** Print reflection to std::out */
   inline

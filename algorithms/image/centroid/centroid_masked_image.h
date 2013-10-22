@@ -29,20 +29,25 @@ namespace dials { namespace algorithms {
   /**
    * A class to calculate the centroid of a 2D image.
    */
-  class CentroidMaskedImage2d : public CentroidPoints< vec2<double> > {
+  template <typename FloatType = double,
+            typename CoordType = vec2<double> >
+  class CentroidMaskedImage2d :
+    public CentroidPoints<FloatType, CoordType> {
   public:
 
     // Useful typedefs
-    typedef CentroidPoints< vec2<double> > centroid_algorithm_type;
-    typedef centroid_algorithm_type::coord_type coord_type;
-    typedef centroid_algorithm_type::matrix_type matrix_type;
+    typedef FloatType pixel_type;
+    typedef CentroidPoints< FloatType, CoordType> centroid_algorithm_type;
+    typedef typename centroid_algorithm_type::value_type value_type;
+    typedef typename centroid_algorithm_type::coord_type coord_type;
+    typedef typename centroid_algorithm_type::matrix_type matrix_type;
 
     /**
      * Initialise the algorithm
      * @param image The image pixels
      */
-    CentroidMaskedImage2d(const af::const_ref< double, af::c_grid<2> > &image,
-                          const af::const_ref< bool, af::c_grid<2> > &mask)
+    CentroidMaskedImage2d(const af::const_ref<FloatType, af::c_grid<2> > &image,
+                          const af::const_ref<bool, af::c_grid<2> > &mask)
       : centroid_algorithm_type(
           select_pixels(image, mask).const_ref(),
           generate_coords(image, mask).const_ref()) {}
@@ -53,8 +58,8 @@ namespace dials { namespace algorithms {
      * Get the mask indices.
      * @param size The size of the image
      */
-    af::shared<double> select_pixels(
-        const af::const_ref<double, af::c_grid<2> > &image,
+    af::shared<FloatType> select_pixels(
+        const af::const_ref<FloatType, af::c_grid<2> > &image,
         const af::const_ref<bool, af::c_grid<2> > &mask) {
 
       // Check the sizes
@@ -62,8 +67,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(mask.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<double> pixels(image.size(),
-        af::init_functor_null<double>());
+      af::shared<FloatType> pixels(image.size(),
+        af::init_functor_null<FloatType>());
       std::size_t count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -81,7 +86,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the image
      */
     af::shared<coord_type> generate_coords(
-        const af::const_ref<double, af::c_grid<2> > &image,
+        const af::const_ref<FloatType, af::c_grid<2> > &image,
         const af::const_ref<bool, af::c_grid<2> > &mask) {
 
       // Check the sizes
@@ -110,19 +115,24 @@ namespace dials { namespace algorithms {
   /**
    * A class to calculate the centroid of a 3D image.
    */
-  class CentroidMaskedImage3d : public CentroidPoints< vec3<double> > {
+  template <typename FloatType = double,
+            typename CoordType = vec3<double> >
+  class CentroidMaskedImage3d :
+    public CentroidPoints< FloatType, CoordType> {
   public:
 
     // Useful typedefs
-    typedef CentroidPoints< vec3<double> > centroid_algorithm_type;
-    typedef centroid_algorithm_type::coord_type coord_type;
-    typedef centroid_algorithm_type::matrix_type matrix_type;
+    typedef FloatType pixel_type;
+    typedef CentroidPoints<FloatType, CoordType> centroid_algorithm_type;
+    typedef typename centroid_algorithm_type::value_type value_type;
+    typedef typename centroid_algorithm_type::coord_type coord_type;
+    typedef typename centroid_algorithm_type::matrix_type matrix_type;
 
     /**
      * Initialise the algorithm
      * @param image The image pixels
      */
-    CentroidMaskedImage3d(const af::const_ref<double, af::c_grid<3> > &image,
+    CentroidMaskedImage3d(const af::const_ref<FloatType, af::c_grid<3> > &image,
                           const af::const_ref<bool, af::c_grid<3> > &mask)
       : centroid_algorithm_type(
           select_pixels(image, mask).const_ref(),
@@ -134,8 +144,8 @@ namespace dials { namespace algorithms {
      * Get the mask indices.
      * @param size The size of the image
      */
-    af::shared<double> select_pixels(
-        const af::const_ref< double, af::c_grid<3> > &image,
+    af::shared<FloatType> select_pixels(
+        const af::const_ref< FloatType, af::c_grid<3> > &image,
         const af::const_ref< bool, af::c_grid<3> > &mask) {
 
       // Check the sizes
@@ -143,8 +153,8 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(image.accessor().all_gt(0));
 
       // Put all the image coordinates into the array
-      af::shared<double> pixels(image.size(),
-        af::init_functor_null<double>());
+      af::shared<FloatType> pixels(image.size(),
+        af::init_functor_null<FloatType>());
       std::size_t count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
         if (mask[i]) {
@@ -162,7 +172,7 @@ namespace dials { namespace algorithms {
      * @param size The size of the image
      */
     af::shared<coord_type> generate_coords(
-        const af::const_ref<double, af::c_grid<3> > &image,
+        const af::const_ref<FloatType, af::c_grid<3> > &image,
         const af::const_ref<bool, af::c_grid<3> > &mask) {
 
       // Check the sizes

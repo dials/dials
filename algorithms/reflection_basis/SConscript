@@ -7,4 +7,9 @@ env.SharedLibrary(
     
 env.SharedLibrary(
     target='#/lib/dials_algorithms_reflection_basis_transform_ext', 
-    source=['boost_python/transform_ext.cc'])
+    source=['boost_python/beam_vector_map.cc',
+            'boost_python/map_frames.cc',
+            'boost_python/index_generator.cc',
+            'boost_python/ideal_profile.cc',
+            'boost_python/transform.cc',
+            'boost_python/transform_ext.cc'])

@@ -39,7 +39,7 @@ class Test:
         print 'OK'
 
     def tst_masked_mean_filter(self):
-        from dials.algorithms.image.filter import mean_filter_masked
+        from dials.algorithms.image.filter import mean_filter
         from scitbx.array_family import flex
         from random import randint
 
@@ -51,7 +51,7 @@ class Test:
 
         # Calculate the summed area table
         mask2 = mask.deep_copy()
-        mean = mean_filter_masked(image, mask2, (3, 3), 1)
+        mean = mean_filter(image, mask2, (3, 3), 1)
 
         # For a selection of random points, ensure that the value is the
         # sum of the area under the kernel
@@ -76,7 +76,7 @@ class Test:
         print 'OK'
 
     def tst_mean_and_variance_filter(self):
-        from dials.algorithms.image.filter import MeanAndVarianceFilter
+        from dials.algorithms.image.filter import mean_and_variance_filter
         from scitbx.array_family import flex
         from random import randint
 
@@ -85,7 +85,7 @@ class Test:
         image.reshape(flex.grid(2000, 2000))
 
         # Calculate the summed area table
-        mean_and_variance = MeanAndVarianceFilter(image, (3, 3))
+        mean_and_variance = mean_and_variance_filter(image, (3, 3))
         mean = mean_and_variance.mean()
         variance = mean_and_variance.variance()
         sample_variance = mean_and_variance.sample_variance()
@@ -110,7 +110,7 @@ class Test:
         print 'OK'
 
     def tst_masked_mean_and_variance_filter(self):
-        from dials.algorithms.image.filter import MeanAndVarianceFilterMasked
+        from dials.algorithms.image.filter import mean_and_variance_filter
         from scitbx.array_family import flex
         from random import randint
 
@@ -122,7 +122,7 @@ class Test:
 
         # Calculate the summed area table
         mask2 = mask.deep_copy()
-        mv = MeanAndVarianceFilterMasked(image, mask2, (3, 3), 2)
+        mv = mean_and_variance_filter(image, mask2, (3, 3), 2)
         mean = mv.mean()
         var = mv.sample_variance()
 

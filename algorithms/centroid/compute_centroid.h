@@ -28,6 +28,8 @@ namespace dials { namespace algorithms {
   class ComputeCentroid {
   public:
 
+    typedef Reflection::float_type FloatType;
+
     /** Initialise the class */
     ComputeCentroid() {}
 
@@ -54,7 +56,7 @@ namespace dials { namespace algorithms {
     void operator()(Reflection &reflection) const {
 
       // Get the shoebox and mask
-      af::const_ref<double, af::c_grid<3> > shoebox =
+      af::const_ref<FloatType, af::c_grid<3> > shoebox =
         reflection.get_shoebox().const_ref();
       af::const_ref<int, af::c_grid<3> > shoebox_mask =
         reflection.get_shoebox_mask().const_ref();
@@ -78,8 +80,9 @@ namespace dials { namespace algorithms {
       vec3<double> offset(bbox[0], bbox[2], bbox[4]);
 
       // Compute the centroid and set the stuff
-      CentroidMaskedImage3d centroid(shoebox, mask.const_ref());
-      reflection.set_centroid_position(offset + centroid.mean());
+      CentroidMaskedImage3d<FloatType> centroid(shoebox, mask.const_ref());
+      typedef CentroidMaskedImage3d<FloatType>::coord_type coord_type;
+      reflection.set_centroid_position(centroid.mean() + offset);
       reflection.set_centroid_variance(centroid.standard_error_sq());
       reflection.set_centroid_sq_width(centroid.unbiased_variance());
     }

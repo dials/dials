@@ -1,5 +1,5 @@
 /*
- * transform_ext.cc
+ * ideal_profile.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,25 +10,16 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/algorithms/reflection_basis/ideal_profile.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
   namespace transform { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_map_frames();
-  void export_beam_vector_map();
-  void export_index_generator();
-  void export_ideal_profile();  
-  void export_transform();
-
-  BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_transform_ext)
-  {
-    export_map_frames();
-    export_beam_vector_map();
-    export_index_generator();
-    export_ideal_profile();
-    export_transform();
+  void export_ideal_profile() {
+    def("ideal_profile_float", &ideal_profile<float>);
+    def("ideal_profile_double", &ideal_profile<double>);
   }
-
+  
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

@@ -16,22 +16,24 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  template <typename T>
+  void median_filter_suite() {
+    
+    def("median_filter", &median_filter<T>, (
+      arg("image"),
+      arg("kernel")));
+    
+    def("median_filter", &median_filter_masked<T>, (
+      arg("image"),
+      arg("mask"),
+      arg("kernel")));    
+  }
+
   void export_median() 
   {
-    def("median_filter", &median_filter<int>, (
-      arg("image"),
-      arg("kernel")));
-    def("median_filter", &median_filter<double>, (
-      arg("image"),
-      arg("kernel")));
-    def("median_filter_masked", &median_filter_masked<int>, (
-      arg("image"),
-      arg("mask"),
-      arg("kernel")));
-    def("median_filter_masked", &median_filter_masked<double>, (
-      arg("image"),
-      arg("mask"),
-      arg("kernel")));
+    median_filter_suite<int>();
+    median_filter_suite<float>();
+    median_filter_suite<double>();
   }
 
 }}} // namespace = dials::algorithms::boost_python

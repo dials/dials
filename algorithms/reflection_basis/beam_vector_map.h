@@ -16,6 +16,7 @@
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {

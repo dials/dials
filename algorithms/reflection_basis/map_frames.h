@@ -36,9 +36,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * data frame, j, around the reflection to each grid point, v3 in the profile
    * frame.
    */
+  template <typename FloatType = double>
   class MapFramesForward {
-
   public:
+
+    typedef FloatType float_type;
 
     /**
      * Initialise the fraction calculation class
@@ -58,7 +60,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_size_e3_(grid_size_e3),
         step_size_e3_(2.0 * delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
 
-    af::versa< double, af::c_grid<2> > operator()(vec2 <int> frames,
+    af::versa< FloatType, af::c_grid<2> > operator()(vec2 <int> frames,
       double phi, double zeta) const;
 
   private:
@@ -95,7 +97,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *
    * @throws std::runtime_error if the supplied values are bad
    */
-  af::versa< double, af::c_grid<2> > MapFramesForward::operator()(
+  template <typename FloatType>
+  af::versa< FloatType, af::c_grid<2> > MapFramesForward<FloatType>::operator()(
       vec2 <int> frames, double phi, double zeta) const
   {
     // Check the value of zeta
@@ -109,9 +112,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     int v31 = + (int)grid_size_e3_ + 1;
 
     // Create an array to contain the intensity fractions
-    af::versa< double, af::c_grid<2> > fraction(af::c_grid<2>(
-      j1 - j0, (2 * grid_size_e3_ + 1)),
-      af::init_functor_null<double>());
+    af::versa< FloatType, af::c_grid<2> > fraction(af::c_grid<2>(
+      j1 - j0, (2 * grid_size_e3_ + 1)), af::init_functor_null<FloatType>());
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
@@ -156,10 +158,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           // zero, otherwise calculate it as the ratio of the integral
           // over the intersection or rv3 and rj to the integral over rj
           if (av3j >= bv3j) {
-            fraction[i] = 0;
+            fraction[i] = 0.0;
           } else {
-            fraction[i] = (erf((bv3j - phi) * sigr2) -
-                           erf((av3j - phi) * sigr2)) * integral_j_r;
+            fraction[i] = (FloatType)((erf((bv3j - phi) * sigr2) -
+                           erf((av3j - phi) * sigr2)) * integral_j_r);
           }
 
           // Increment array index
@@ -176,9 +178,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * A class to calculate calculate the fraction of counts contributed by each
    * grid point, v3 to each data frame, j in the profile.
    */
+  template <typename FloatType = double>
   class MapFramesReverse {
-
   public:
+
+    typedef FloatType float_type;
 
     /**
      * Initialise the fraction calculation class
@@ -198,7 +202,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         grid_size_e3_(grid_size_e3),
         step_size_e3_(2.0 * delta_mosaicity_ / (2 * grid_size_e3_ + 1)) {}
 
-    af::versa< double, af::c_grid<2> > operator()(vec2 <int> bbox_z,
+    af::versa< FloatType, af::c_grid<2> > operator()(vec2 <int> bbox_z,
       double phi, double zeta) const;
 
   private:
@@ -234,7 +238,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *
    * @throws std::runtime_error if the supplied values are bad
    */
-  af::versa< double, af::c_grid<2> > MapFramesReverse::operator()(
+  template <typename FloatType>
+  af::versa< FloatType, af::c_grid<2> > MapFramesReverse<FloatType>::operator()(
       vec2 <int> frames, double phi, double zeta) const
   {
     // Check the value of zeta
@@ -248,9 +253,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     int v31 = + (int)grid_size_e3_ + 1;
 
     // Create an array to contain the intensity fractions
-    af::versa< double, af::c_grid<2> > fraction(af::c_grid<2>(
+    af::versa< FloatType, af::c_grid<2> > fraction(af::c_grid<2>(
       (2 * grid_size_e3_ + 1), j1 - j0),
-      af::init_functor_null<double>());
+      af::init_functor_null<FloatType>());
 
     // A constant used in the solution to the integrals below.
     double sigr2 = 1.0 / (std::sqrt(2.0) * (mosaicity_ / std::abs(zeta)));
@@ -296,10 +301,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           // zero, otherwise calculate it as the ratio of the integral
           // over the intersection or rv3 and rj to the integral over rj
           if (av3j >= bv3j) {
-            fraction[i] = 0;
+            fraction[i] = 0.0;
           } else {
-            fraction[i] = (erf((bv3j - phi) * sigr2) -
-                           erf((av3j - phi) * sigr2)) * integral_v3_r;
+            fraction[i] = (FloatType)((erf((bv3j - phi) * sigr2) -
+                           erf((av3j - phi) * sigr2)) * integral_v3_r);
           }
 
           // Increment array index

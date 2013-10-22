@@ -19,10 +19,10 @@ class CentroidTest(object):
         self.tst_centroid_points3d()
 
     def tst_centroid_points2d(self):
-        from dials.algorithms.image.centroid import CentroidPoints2d
+        from dials.algorithms.image.centroid import centroid_points
         from scitbx import matrix
 
-        centroid = CentroidPoints2d(self.pixels2d.as_1d(), self.points2d.as_1d())
+        centroid = centroid_points(self.pixels2d.as_1d(), self.points2d.as_1d())
 
         assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
@@ -30,10 +30,10 @@ class CentroidTest(object):
         print 'OK'
 
     def tst_centroid_points3d(self):
-        from dials.algorithms.image.centroid import CentroidPoints3d
+        from dials.algorithms.image.centroid import centroid_points
         from scitbx import matrix
 
-        centroid = CentroidPoints3d(self.pixels3d.as_1d(), self.points3d.as_1d())
+        centroid = centroid_points(self.pixels3d.as_1d(), self.points3d.as_1d())
 
         assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)
@@ -45,10 +45,10 @@ class CentroidTest(object):
         self.tst_centroid_image3d()
 
     def tst_centroid_image2d(self):
-        from dials.algorithms.image.centroid import CentroidImage2d
+        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
 
-        centroid = CentroidImage2d(self.pixels2d)
+        centroid = centroid_image(self.pixels2d)
 
         assert(abs(self.gold2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold2dvar - matrix.col(centroid.variance())) < self.EPS)
@@ -56,10 +56,10 @@ class CentroidTest(object):
         print 'OK'
 
     def tst_centroid_image3d(self):
-        from dials.algorithms.image.centroid import CentroidImage3d
+        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
 
-        centroid = CentroidImage3d(self.pixels3d)
+        centroid = centroid_image(self.pixels3d)
 
         assert(abs(self.gold3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.gold3dvar - matrix.col(centroid.variance())) < self.EPS)
@@ -71,10 +71,10 @@ class CentroidTest(object):
         self.tst_centroid_masked_image3d()
 
     def tst_centroid_masked_image2d(self):
-        from dials.algorithms.image.centroid import CentroidMaskedImage2d
+        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
 
-        centroid = CentroidMaskedImage2d(self.pixels2d, self.mask2d)
+        centroid = centroid_image(self.pixels2d, self.mask2d)
 
         assert(abs(self.goldmasked2d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.goldmasked2dvar - matrix.col(centroid.variance())) < self.EPS)
@@ -82,10 +82,10 @@ class CentroidTest(object):
         print 'OK'
 
     def tst_centroid_masked_image3d(self):
-        from dials.algorithms.image.centroid import CentroidMaskedImage3d
+        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
 
-        centroid = CentroidMaskedImage3d(self.pixels3d, self.mask3d)
+        centroid = centroid_image(self.pixels3d, self.mask3d)
 
         assert(abs(self.goldmasked3d - matrix.col(centroid.mean())) < self.EPS)
         assert(abs(self.goldmasked3dvar - matrix.col(centroid.variance())) < self.EPS)

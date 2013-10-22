@@ -56,7 +56,7 @@ class Test(object):
     def tst_with_systematically_offset_profiles(self):
         from tst_profile_helpers import gaussian
         from dials.algorithms.integration.profile import XdsCircleReferenceLearner
-        from dials.algorithms.image.centroid import CentroidImage3d
+        from dials.algorithms.image.centroid import centroid_image
         from scitbx import matrix
         from math import sqrt, pi, cos
         from scitbx.array_family import flex
@@ -81,7 +81,7 @@ class Test(object):
         for index in range(locate.size()):
             reference = locate.profile(index)
             coord = locate.coord(index)
-            centroid = CentroidImage3d(reference)
+            centroid = centroid_image(reference)
             x1.append(coord[0])
             x2.append(centroid.mean()[0])
 

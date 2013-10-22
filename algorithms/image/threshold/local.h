@@ -23,8 +23,6 @@
 
 namespace dials { namespace algorithms {
 
-  using std::sqrt;
-
   /**
    * Threshold the image using the niblack method.
    *
@@ -35,25 +33,25 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations
    * @returns The thresholded image
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > niblack(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double n_sigma) {
 
     // Check the input
     DIALS_ASSERT(n_sigma >= 0);
 
     // Calculate the mean and variance filtered images
-    MeanAndVarianceFilter filter(image, size);
-    af::versa< double, af::c_grid<2> > mean = filter.mean();
-    af::versa< double, af::c_grid<2> > var = filter.sample_variance();
+    MeanAndVarianceFilter<FloatType> filter(image, size);
+    af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
+    af::versa< FloatType, af::c_grid<2> > var = filter.sample_variance();
 
     // Assign the pixels to object and background
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
       af::init_functor_null<bool>());
     #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
-      result[i] = image[i] > mean[i] + n_sigma * sqrt(var[i]) ? 1 : 0;
+      result[i] = image[i] > mean[i] + n_sigma * std::sqrt(var[i]) ? 1 : 0;
     }
 
     // Return the thresholded image
@@ -71,17 +69,17 @@ namespace dials { namespace algorithms {
    * @param r A parameter
    * @returns The thresholded image
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > sauvola(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double k, double r) {
     // Check the input
     DIALS_ASSERT(k >= 0 && r > 1);
 
     // Calculate the mean and variance filtered images
-    MeanAndVarianceFilter filter(image, size);
-    af::versa< double, af::c_grid<2> > mean = filter.mean();
-    af::versa< double, af::c_grid<2> > var = filter.sample_variance();
+    MeanAndVarianceFilter<FloatType> filter(image, size);
+    af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
+    af::versa< FloatType, af::c_grid<2> > var = filter.sample_variance();
 
     // Assign the pixels to object and background
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
@@ -89,7 +87,7 @@ namespace dials { namespace algorithms {
     #pragma omp parallel for
     for (std::size_t i = 0; i < var.size(); ++i) {
       result[i] = image[i] > mean[i] * (
-        1.0 + k * (sqrt(var[i]) / r - 1)) ? 1 : 0;
+        1.0 + k * (std::sqrt(var[i]) / r - 1)) ? 1 : 0;
     }
 
     // Return the thresholded image
@@ -107,22 +105,22 @@ namespace dials { namespace algorithms {
    * @param size The size of the local window
    * @param n_sigma The number of standard deviations.
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > fano(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double n_sigma) {
 
     // Check the input
     DIALS_ASSERT(n_sigma >= 0);
 
     // Calculate the fano filtered image
-    FanoFilter filter(image, size);
-    af::versa< double, af::c_grid<2> > fano_image = filter.fano();
+    FanoFilter<FloatType> filter(image, size);
+    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
 
     // Calculate the bound
     std::size_t n = (2 * size[0] + 1) * (2 * size[1] + 1);
     DIALS_ASSERT(n > 1);
-    double bound = 1.0 + n_sigma * sqrt(2.0 / (n - 1));
+    FloatType bound = 1.0 + n_sigma * std::sqrt(2.0 / (n - 1));
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(),
@@ -148,9 +146,9 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum counts for a point to be valid
    * @param n_sigma The number of standard deviations.
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > fano_masked(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       int2 size, int min_count, double n_sigma) {
 
@@ -166,17 +164,17 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the masked fano filtered image
-    FanoFilterMasked filter(image, temp.const_ref(), size, min_count);
-    af::versa< double, af::c_grid<2> > fano_image = filter.fano();
-    af::versa< int, af::c_grid<2> >    count      = filter.count();
-    temp                                          = filter.mask();
+    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
+    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    af::versa< int, af::c_grid<2> > count = filter.count();
+    temp = filter.mask();
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
-        double bound = 1.0 + n_sigma * sqrt(2.0 / (count[i] - 1));
+        FloatType bound = 1.0 + n_sigma * std::sqrt(2.0 / (count[i] - 1));
         result[i] = (fano_image[i] > bound) ? 1 : 0;
       }
     }
@@ -198,12 +196,12 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum counts for a point to be valid
    * @param n_sigma The number of standard deviations.
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > gain(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
-      af::ref< double, af::c_grid<2> > gain, int2 size,
-      int min_count, double n_sigma) {
+      const af::const_ref< FloatType, af::c_grid<2> > &gain,
+      int2 size, int min_count, double n_sigma) {
 
     // Check the input
     DIALS_ASSERT(n_sigma >= 0);
@@ -217,17 +215,18 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the masked fano filtered image
-    FanoFilterMasked filter(image, temp.const_ref(), size, min_count);
-    af::versa< double, af::c_grid<2> > fano_image = filter.fano();
-    af::versa< int, af::c_grid<2> >    count      = filter.count();
-    temp                                          = filter.mask();
+    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
+    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    af::versa< int, af::c_grid<2> > count = filter.count();
+    temp = filter.mask();
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
-        double bound = gain[i] + n_sigma * gain[i] * sqrt(2.0 / (count[i] - 1));
+        FloatType bound = gain[i] + n_sigma * gain[i] *
+          std::sqrt(2.0 / (count[i] - 1));
         result[i] = (fano_image[i] > bound) ? 1 : 0;
       }
     }
@@ -249,9 +248,9 @@ namespace dials { namespace algorithms {
    * @param nsig_b The background threshold.
    * @param nsig_s The strong pixel threshold
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > kabsch(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       int2 size, double nsig_b, double nsig_s) {
 
@@ -266,19 +265,19 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the masked fano filtered image
-    FanoFilterMasked filter(image, temp.const_ref(), size, 0);
-    af::versa< double, af::c_grid<2> > fano_image = filter.fano();
-    af::versa< double, af::c_grid<2> > mean       = filter.mean();
-    af::versa< int, af::c_grid<2> > count         = filter.count();
-    temp                                          = filter.mask();
+    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, 0);
+    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
+    af::versa< int, af::c_grid<2> > count = filter.count();
+    temp = filter.mask();
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
-        double bnd_b = 1.0 + nsig_b * sqrt(2.0 / (count[i] - 1));
-        double bnd_s = mean[i] + nsig_s * sqrt(mean[i]);
+        FloatType bnd_b = 1.0 + nsig_b * std::sqrt(2.0 / (count[i] - 1));
+        FloatType bnd_s = mean[i] + nsig_s * std::sqrt(mean[i]);
         result[i]  = (fano_image[i] > bnd_b && image[i] > bnd_s) ? 1 : 0;
       }
     }
@@ -301,12 +300,12 @@ namespace dials { namespace algorithms {
    * @param nsig_b The background threshold.
    * @param nsig_s The strong pixel threshold
    */
-  inline
+  template <typename FloatType = double>
   af::versa< bool, af::c_grid<2> > kabsch_w_gain(
-      const af::const_ref< double, af::c_grid<2> > &image,
+      const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
-      af::ref< double, af::c_grid<2> > gain, int2 size,
-      double nsig_b, double nsig_s) {
+      const af::const_ref< FloatType, af::c_grid<2> > &gain,
+      int2 size, double nsig_b, double nsig_s) {
 
     // Check the input
     DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
@@ -319,19 +318,20 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the masked fano filtered image
-    FanoFilterMasked filter(image, temp.const_ref(), size, 0);
-    af::versa< double, af::c_grid<2> > fano_image = filter.fano();
-    af::versa< double, af::c_grid<2> > mean       = filter.mean();
-    af::versa< int, af::c_grid<2> > count         = filter.count();
-    temp                                          = filter.mask();
+    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, 0);
+    af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
+    af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
+    af::versa< int, af::c_grid<2> > count = filter.count();
+    temp = filter.mask();
 
     // Assign pixels to object or background
     af::versa< bool, af::c_grid<2> > result(image.accessor(), false);
     #pragma omp parallel for
     for (std::size_t i = 0; i < image.size(); ++i) {
       if (temp[i]) {
-        double bnd_b = gain[i] + nsig_b * gain[i] * sqrt(2.0 / (count[i] - 1));
-        double bnd_s = mean[i] + nsig_s * sqrt(gain[i] * mean[i]);
+        FloatType bnd_b = gain[i] + nsig_b * gain[i] *
+          std::sqrt(2.0 / (count[i] - 1));
+        FloatType bnd_s = mean[i] + nsig_s * std::sqrt(gain[i] * mean[i]);
         result[i]  = (fano_image[i] > bnd_b && image[i] > bnd_s) ? 1 : 0;
       }
     }

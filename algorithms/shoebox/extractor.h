@@ -28,8 +28,12 @@ namespace dials { namespace algorithms { namespace shoebox {
   /**
    * A class to extract shoeboxes from a sweep
    */
+  template <typename FloatType = double>
   class Extractor {
   public:
+
+    typedef FloatType float_type;
+    typedef Shoebox<FloatType> shoebox_type;
 
     /**
      * Initialise the shoeboxes with the given input panels and bounding boxes
@@ -47,10 +51,10 @@ namespace dials { namespace algorithms { namespace shoebox {
     Extractor(const af::const_ref<std::size_t> &panels,
               const af::const_ref<int6> &bboxes,
               const af::shared<bool> &mask,
-              const af::shared<double> &gain,
-              const af::shared<double> &dark,
+              const af::shared<FloatType> &gain,
+              const af::shared<FloatType> &dark,
               const af::shared<int2> &shape)
-      : shoeboxes_(panels.size(), Shoebox()),
+      : shoeboxes_(panels.size(), Shoebox<FloatType>()),
         gain_(gain),
         dark_(dark),
         shape_(shape),
@@ -61,7 +65,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       DIALS_ASSERT(panels.size() == bboxes.size());
       DIALS_ASSERT(shape_.size() > 0);
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
-        shoeboxes_[i] = Shoebox(panels[i], bboxes[i]);
+        shoeboxes_[i] = Shoebox<FloatType>(panels[i], bboxes[i]);
         shoeboxes_[i].allocate();
       }
       offset_[0] = 0;
@@ -86,9 +90,9 @@ namespace dials { namespace algorithms { namespace shoebox {
      */
     Extractor(const af::const_ref<int6> &bboxes,
               af::versa<bool, af::c_grid<2> > mask,
-              af::versa<double, af::c_grid<2> > gain,
-              af::versa<double, af::c_grid<2> > dark)
-      : shoeboxes_(bboxes.size(), Shoebox()),
+              af::versa<FloatType, af::c_grid<2> > gain,
+              af::versa<FloatType, af::c_grid<2> > dark)
+      : shoeboxes_(bboxes.size(), Shoebox<FloatType>()),
         gain_(gain.as_1d()),
         dark_(dark.as_1d()),
         shape_(1, mask.accessor()),
@@ -96,7 +100,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         npanels_(1) {
       DIALS_ASSERT(bboxes.size() > 0);
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
-        shoeboxes_[i] = Shoebox(bboxes[i]);
+        shoeboxes_[i] = Shoebox<FloatType>(bboxes[i]);
         shoeboxes_[i].allocate();
       }
       DIALS_ASSERT(mask.accessor().all_gt(0));
@@ -126,7 +130,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       for (std::size_t i = 0; i < ind.size(); ++i) {
 
         // Get a reference to a reflection
-        Shoebox &shoebox = shoeboxes_[ind[i]];
+        Shoebox<FloatType> &shoebox = shoeboxes_[ind[i]];
         int6 bbox = shoebox.bbox;
         int i0 = bbox[0], i1 = bbox[1];
         int j0 = bbox[2], j1 = bbox[3];
@@ -140,7 +144,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         int ii1 = i1 <= image_size[1] ? i1 : image_size[1];
 
         // Copy the image pixels
-        af::ref< double, af::c_grid<3> > profile = shoebox.data.ref();
+        af::ref< FloatType, af::c_grid<3> > profile = shoebox.data.ref();
         for (int jj = jj0; jj < jj1; ++jj) {
           for (int ii = ii0; ii < ii1; ++ii) {
             int j = jj - j0;
@@ -153,8 +157,9 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     /** @returns The list of shoeboxes */
-    af::shared<Shoebox> shoeboxes() {
-      af::shared<Shoebox> result(shoeboxes_.size(), Shoebox());
+    af::shared< Shoebox<FloatType> > shoeboxes() {
+      af::shared< Shoebox<FloatType> > result(
+        shoeboxes_.size(), Shoebox<FloatType>());
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
         result[i] = shoeboxes_[i];
       }
@@ -201,7 +206,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      */
     void initialise_indices() {
       for (std::size_t i = 0; i < shoeboxes_.size(); ++i) {
-        Shoebox& shoebox = shoeboxes_[i];
+        Shoebox<FloatType>& shoebox = shoeboxes_[i];
         DIALS_ASSERT(shoebox.panel >= 0 && shoebox.panel < npanels_);
         for (int f = shoebox.bbox[4]; f < shoebox.bbox[5]; ++f) {
           indices_[shoebox.panel + f * npanels_].push_back(i);
@@ -241,9 +246,9 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
-    af::shared<Shoebox> shoeboxes_;
-    af::shared<double> gain_;
-    af::shared<double> dark_;
+    af::shared< Shoebox<FloatType> > shoeboxes_;
+    af::shared<FloatType> gain_;
+    af::shared<FloatType> dark_;
     af::shared<int2> shape_;
     af::shared<int> offset_;
     std::size_t npanels_;
@@ -252,4 +257,4 @@ namespace dials { namespace algorithms { namespace shoebox {
 
 }}} // namespace dials::algorithms::shoebox
 
-#endif /* DIALS_ALGORITHMS_SHOEBOX_POPULATOR_H */
+#endif /* DIALS_ALGORITHMS_SHOEBOX_EXTRACTOR_H */

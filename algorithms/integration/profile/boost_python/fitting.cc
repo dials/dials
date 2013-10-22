@@ -17,12 +17,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_fitting()
-  {
-    class_<ProfileFitting>("ProfileFitting", no_init)
-      .def(init<const af::const_ref<double, af::c_grid<3> >&,
-                const af::const_ref<double, af::c_grid<3> >&,
-                const af::const_ref<double, af::c_grid<3> >&,
+  template <typename FloatType>
+  void profile_fitting_wrapper(const char *name) {
+  
+    typedef ProfileFitting<FloatType> ProfileFittingType;
+  
+    class_<ProfileFittingType>(name, no_init)
+      .def(init<const af::const_ref<FloatType, af::c_grid<3> >&,
+                const af::const_ref<FloatType, af::c_grid<3> >&,
+                const af::const_ref<FloatType, af::c_grid<3> >&,
                 double,
                 std::size_t>((
         arg("profile"),
@@ -30,10 +33,36 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("background"),
         arg("bits") = 1e-3,
         arg("max_iter") = 10)))
-      .def("intensity", &ProfileFitting::intensity)
-      .def("variance", &ProfileFitting::variance)
-      .def("niter", &ProfileFitting::niter)
-      .def("error", &ProfileFitting::error);
+      .def("intensity", &ProfileFittingType::intensity)
+      .def("variance", &ProfileFittingType::variance)
+      .def("niter", &ProfileFittingType::niter)
+      .def("error", &ProfileFittingType::error);
+  }
+  
+  template <typename FloatType>
+  ProfileFitting<FloatType> make_profile_fitting(
+      const af::const_ref<FloatType, af::c_grid<3> > &p,
+      const af::const_ref<FloatType, af::c_grid<3> > &c,
+      const af::const_ref<FloatType, af::c_grid<3> > &b,
+      double eps,
+      std::size_t max_iter) {
+    return ProfileFitting<FloatType>(p, c, b, eps, max_iter); 
+  }
+
+  template <typename FloatType>
+  void profile_fitting_suite() {
+    def("fit_profile", &make_profile_fitting<FloatType>, (
+      arg("bits") = 1e-3,
+      arg("max_iter") = 10));
+  }
+
+  void export_fitting()
+  {
+    profile_fitting_wrapper<float>("ProfileFittingFloat");
+    profile_fitting_wrapper<double>("ProfileFittingDouble");
+    
+    profile_fitting_suite<float>();
+    profile_fitting_suite<double>();
   }
 
 }}} // namespace = dials::algorithms::boost_python

@@ -24,9 +24,9 @@ namespace dials { namespace algorithms {
    * @param value The value to set the background pixels to
    */
   void set_shoebox_background_value(
-      af::ref<Reflection> reflections, double value) {
+      af::ref<Reflection> reflections, Reflection::float_type value) {
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      af::ref< double, af::c_grid<3> > background =
+      af::ref< Reflection::float_type, af::c_grid<3> > background =
         reflections[i].get_shoebox_background().ref();
       for (std::size_t j = 0; j < background.size(); ++j) {
         background[j] = value;

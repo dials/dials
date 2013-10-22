@@ -43,10 +43,10 @@ class TestSinglePanel(object):
         ''' Test that the indices of each pixel are the same'''
         from dials.algorithms import shoebox
         from collections import defaultdict
-        from scitbx.array_family import flex
+        from dials.array_family import flex
 
         # Create the extractor
-        bboxes = self.reflections.bounding_box()
+        bboxes = flex.int6([r.bounding_box for r in self.reflections])
         extractor = shoebox.Extractor(bboxes, self.mask,
                                       self.gain_map, self.dark_map)
 
@@ -79,7 +79,7 @@ class TestSinglePanel(object):
         from dials.array_family import flex
 
         # Create the extractor
-        bboxes = self.reflections.bounding_box()
+        bboxes = flex.int6([r.bounding_box for r in self.reflections])
         extractor = shoebox.Extractor(bboxes, self.mask,
                                       self.gain_map, self.dark_map)
 
@@ -179,11 +179,11 @@ class TestMultiPanel(object):
         ''' Test that the indices of each pixel are the same'''
         from dials.algorithms import shoebox
         from collections import defaultdict
-        from scitbx.array_family import flex
+        from dials.array_family import flex
 
         # Create the extractor
-        bboxes = self.reflections.bounding_box()
-        panels = self.reflections.panel_number()
+        bboxes = flex.int6([r.bounding_box for r in self.reflections])
+        panels = flex.int([r.panel_number for r in self.reflections])
         panels2 = flex.size_t(len(panels))
         for i in range(len(panels)):
             panels2[i] = panels[i]
@@ -220,8 +220,8 @@ class TestMultiPanel(object):
         from dials.array_family import flex
 
         # Create the extractor
-        bboxes = self.reflections.bounding_box()
-        panels = self.reflections.panel_number()
+        bboxes = flex.int6([r.bounding_box for r in self.reflections])
+        panels = flex.int([r.panel_number for r in self.reflections])
         panels2 = flex.size_t(len(panels))
         for i in range(len(panels)):
             panels2[i] = panels[i]

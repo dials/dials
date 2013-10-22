@@ -14,39 +14,45 @@
 #include <dials/algorithms/integration/profile/reference_locator.h>
 #include <dials/algorithms/integration/profile/grid_sampler.h>
 #include <dials/algorithms/integration/profile/xds_circle_sampler.h>
+#include <dials/config.h>
 
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  template <typename ImageSampler>
+  template <typename FloatType, typename ImageSampler>
   struct ReferenceLocatorPickleSuite : boost::python::pickle_suite {
+    
+    typedef ReferenceLocator<FloatType, ImageSampler> locator_type;    
+    
     static
-    boost::python::tuple getinitargs(const ReferenceLocator<ImageSampler> &r) {
+    boost::python::tuple getinitargs(const locator_type &r) {
       return boost::python::make_tuple(r.profile(), r.sampler());
     }
   };
 
-  template <typename ImageSampler>
-  ReferenceLocator<ImageSampler>* make_reference_locator(
-      af::versa< double, scitbx::af::flex_grid<> > &profiles, 
+  template <typename FloatType, typename ImageSampler>
+  ReferenceLocator<FloatType, ImageSampler>* make_reference_locator(
+      af::versa< FloatType, scitbx::af::flex_grid<> > &profiles, 
       const ImageSampler &sampler_type) {
-    af::versa< double, af::c_grid<4> > profiles_c_grid(
+    af::versa< FloatType, af::c_grid<4> > profiles_c_grid(
       profiles.handle(), af::c_grid<4>(profiles.accessor()));
-    return new ReferenceLocator<ImageSampler>(profiles_c_grid, sampler_type);
+    return new ReferenceLocator<FloatType, ImageSampler>(
+      profiles_c_grid, sampler_type);
   }
 
-  template <typename ImageSampler>
+  template <typename FloatType, typename ImageSampler>
   void reference_locator_wrapper(const char *name) {
   
+    typedef FloatType float_type;
     typedef ImageSampler sampler_type;
-    typedef ReferenceLocator<ImageSampler> locator_type;
+    typedef ReferenceLocator<FloatType, ImageSampler> locator_type;
   
-    af::versa<double, af::c_grid<4> > (locator_type::*profile_all)() const =
+    af::versa<FloatType, af::c_grid<4> > (locator_type::*profile_all)() const =
       &locator_type::profile;
-    af::versa<double, af::c_grid<3> > (locator_type::*profile_at_index)(
+    af::versa<FloatType, af::c_grid<3> > (locator_type::*profile_at_index)(
       std::size_t) const = &locator_type::profile;
-    af::versa<double, af::c_grid<3> > (locator_type::*profile_at_coord)(
+    af::versa<FloatType, af::c_grid<3> > (locator_type::*profile_at_coord)(
       double3) const = &locator_type::profile;
 
     double3 (locator_type::*coord_at_index)(
@@ -55,7 +61,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       double3) const = &locator_type::coord;
   
     class_<locator_type>(name, no_init)
-      .def("__init__", make_constructor(&make_reference_locator<ImageSampler>))    
+      .def("__init__", make_constructor(
+        &make_reference_locator<FloatType, ImageSampler>))    
       .def("size", &locator_type::size)
       .def("sampler", &locator_type::sampler)
       .def("index", &locator_type::index)
@@ -65,13 +72,15 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("coord", coord_at_index)
       .def("coord", coord_at_coord)
       .def("__len__", &locator_type::size)
-      .def_pickle(ReferenceLocatorPickleSuite<sampler_type>());
+      .def_pickle(ReferenceLocatorPickleSuite<float_type, sampler_type>());
   }
 
   void export_reference_locator()
   {
-    reference_locator_wrapper<GridSampler>("GridReferenceLocator");
-    reference_locator_wrapper<XdsCircleSampler>("XdsCircleReferenceLocator");
+    reference_locator_wrapper<ProfileFloatType, GridSampler>(
+      "GridReferenceLocator");
+    reference_locator_wrapper<ProfileFloatType, XdsCircleSampler>(
+      "XdsCircleReferenceLocator");
   }
 
 }}} // namespace = dials::algorithms::boost_python

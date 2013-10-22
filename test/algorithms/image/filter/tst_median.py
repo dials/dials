@@ -48,14 +48,14 @@ class Test:
     def tst_masked_filter(self):
 
         from numpy import median
-        from dials.algorithms.image.filter import median_filter_masked
+        from dials.algorithms.image.filter import median_filter
 
         xsize = 200
         ysize = 300
 
         image = self.generate_image(xsize, ysize)
         mask = self.generate_mask(xsize, ysize)
-        result = median_filter_masked(image, mask, self.kernel)
+        result = median_filter(image, mask, self.kernel)
         eps = 1e-7
 
         for j in range(self.kernel[0], ysize-self.kernel[0]):

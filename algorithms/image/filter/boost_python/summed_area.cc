@@ -16,13 +16,24 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  template <typename T>
+  void summed_area_suite() {
+    
+    def("summed_area_table", 
+      &summed_area_table<T>, (
+        arg("image")));
+    
+    def("summed_area", 
+      &summed_area<T>, (
+        arg("image"), 
+        arg("size")));  
+  }
+
   void export_summed_area() 
   {
-    def("summed_area_table", &summed_area_table<int>, (arg("image")));
-    def("summed_area_table", &summed_area_table<double>, (arg("image")));
-
-    def("summed_area", &summed_area<int>, (arg("image"), arg("size")));
-    def("summed_area", &summed_area<double>, (arg("image"), arg("size")));
+    summed_area_suite<int>();
+    summed_area_suite<float>();
+    summed_area_suite<double>();
   }
 
 }}} // namespace = dials::algorithms::boost_python

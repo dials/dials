@@ -32,7 +32,7 @@ namespace dials { namespace algorithms {
   /**
    * Class to calculate the centroid of a list of coordinates
    */
-  template <typename CoordType>
+  template <typename FloatType, typename CoordType>
   class CentroidPoints {
   public:
 
@@ -40,18 +40,20 @@ namespace dials { namespace algorithms {
     static const std::size_t DIM = CoordType::fixed_size;
 
     // Useful typedefs
+    typedef FloatType pixel_type;
     typedef CoordType coord_type;
-    typedef tiny<double, DIM*DIM> matrix_type;
+    typedef typename CoordType::value_type value_type;
+    typedef tiny<FloatType, DIM*DIM> matrix_type;
 
     /**
      * Calculate the centroid.
      * @param coord The list of coordinates.
      * @param value The list of values
      */
-    CentroidPoints(const af::const_ref<double> &pixels,
+    CentroidPoints(const af::const_ref<FloatType> &pixels,
                    const af::const_ref<coord_type> &coords)
-      : sum_pixels_(sum(pixels)),
-        sum_pixels_sq_(sum_sq(pixels)),
+      : sum_pixels_((value_type)sum(pixels)),
+        sum_pixels_sq_((value_type)sum_sq(pixels)),
         sum_pixels_coords_(0.0),
         sum_pixels_delta_sq_(0.0),
         sum_pixels_delta_cross_(0.0) {
@@ -64,7 +66,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the sum of pixel * coords
       for (std::size_t i = 0; i < coords.size(); ++i) {
-        sum_pixels_coords_ += pixels[i] * coords[i];
+        sum_pixels_coords_ += (value_type)pixels[i] * coords[i];
       }
 
       // Calculate the centroid position
@@ -72,7 +74,7 @@ namespace dials { namespace algorithms {
 
       // Calculate the sum of pixels * (coord - mean)**2
       for (std::size_t i = 0; i < coords.size(); ++i) {
-        sum_pixels_delta_sq_ += pixels[i] * pow2c(coords[i] - m);
+        sum_pixels_delta_sq_ += (value_type)pixels[i] * pow2c(coords[i] - m);
       }
 
       // Calculate the sum of pixels * (coordA - meanA) * (coordB - meanB)
@@ -80,7 +82,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < coords.size(); ++i) {
         for (std::size_t j = 0, l = 0; j < DIM - 1; ++j) {
           for (std::size_t k = j + 1; k < DIM; ++k, ++l) {
-            sum_pixels_delta_cross_[l] += pixels[i] *
+            sum_pixels_delta_cross_[l] += (value_type)pixels[i] *
               (coords[i][j] - m[j]) * (coords[i][k] - m[k]);
           }
         }
@@ -88,12 +90,12 @@ namespace dials { namespace algorithms {
     }
 
     /** @returns The sum of the pixel counts. */
-    double sum_pixels() const {
+    value_type sum_pixels() const {
       return sum_pixels_;
     }
 
     /** @returns The sum of the pixels squared */
-    double sum_pixels_sq() const {
+    value_type sum_pixels_sq() const {
       return sum_pixels_sq_;
     }
 
@@ -144,7 +146,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(pow2(sum_pixels_) > sum_pixels_sq_);
 
       // Calculate the scaling of covariance terms.
-      double scale = sum_pixels_ / (pow2(sum_pixels_) - sum_pixels_sq_);
+      value_type scale = sum_pixels_ / (pow2(sum_pixels_) - sum_pixels_sq_);
 
       // Calculate the diagonal and cross terms
       coord_type variance = scale * sum_pixels_delta_sq_;
@@ -174,8 +176,8 @@ namespace dials { namespace algorithms {
       return r;
     }
 
-    double sum_pixels_;
-    double sum_pixels_sq_;
+    value_type sum_pixels_;
+    value_type sum_pixels_sq_;
     coord_type sum_pixels_coords_;
     coord_type sum_pixels_delta_sq_;
     coord_type sum_pixels_delta_cross_;

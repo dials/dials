@@ -22,7 +22,6 @@
 namespace dials { namespace algorithms {
 
   using std::sqrt;
-  using std::pow;
   using scitbx::math::mean_and_variance;
   using dials::af::sort_index;
   using dials::model::Reflection;
@@ -34,12 +33,14 @@ namespace dials { namespace algorithms {
    * @param k The number of the moment
    * @return The moment
    */
-  inline
-  double moment(const af::const_ref<double> &data, double c, std::size_t k) {
+  template <typename FloatType = double>
+  FloatType moment(const af::const_ref<FloatType> &data,
+      FloatType c, std::size_t k) {
     std::size_t n = data.size();
-    double m = 0.0;
+    DIALS_ASSERT(n > 0);
+    FloatType m = 0.0;
     for (std::size_t i = 0; i < n; ++i) {
-      m += pow((double)(data[i] - c), (int)k);
+      m += std::pow((FloatType)(data[i] - c), (int)k);
     }
     return m / n;
   }
@@ -54,20 +55,22 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations
    * @returns True/False
    */
-  inline
-  bool is_poisson_distributed(const af::const_ref<double> &data, double n_sigma) {
+  template <typename FloatType = double>
+  bool is_poisson_distributed(const af::const_ref<FloatType> &data,
+      double n_sigma) {
 
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <double> mean_and_variance(data);
-    double m1 = mean_and_variance.mean();
-    double m2 = mean_and_variance.unweighted_sample_variance();
+    mean_and_variance <FloatType> mean_and_variance(data);
+    FloatType m1 = mean_and_variance.mean();
+    FloatType m2 = mean_and_variance.unweighted_sample_variance();
 
     // Estmate the variance of the variance and get the sdev
-    double m4 = moment(data, m1, 4);
+    FloatType m4 = moment(data, m1, 4);
 
     // Estimate the standard deviation of the variance
     std::size_t n = data.size();
-    double sdev = std::sqrt((m4 - m2 * m2 * (n - 3) / (n - 1)) / n);
+    DIALS_ASSERT(n > 1);
+    FloatType sdev = std::sqrt((m4 - m2 * m2 * (n - 3) / (n - 1)) / n);
 
     // Return True/False
     return std::abs(m2 - m1) <= n_sigma * sdev;
@@ -116,7 +119,9 @@ namespace dials { namespace algorithms {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    void operator()(const af::const_ref<double> &shoebox, af::ref<int> mask) const {
+    template <typename FloatType>
+    void operator()(const af::const_ref<FloatType> &shoebox,
+        af::ref<int> mask) const {
 
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
@@ -134,9 +139,10 @@ namespace dials { namespace algorithms {
 
       // Sort the pixels into ascending intensity order
       sort_index(indices.begin(), indices.end(), shoebox.begin());
-      af::shared<double> pixels(indices.size(), af::init_functor_null<double>());
+      af::shared<FloatType> pixels(indices.size(),
+        af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < indices.size(); ++i) {
-        pixels[i] = (double)shoebox[indices[i]];
+        pixels[i] = (FloatType)shoebox[indices[i]];
       }
 
       // Check if the data is poissson distributed. If it is not, then remove
@@ -144,7 +150,7 @@ namespace dials { namespace algorithms {
       // of iterations exceeds the maximum then exit the loop.
       std::size_t num_data = pixels.size();
       for (; num_data > min_data_; --num_data) {
-        if (is_poisson_distributed(af::const_ref<double>(
+        if (is_poisson_distributed(af::const_ref<FloatType>(
             pixels.begin(), num_data), n_sigma_)) {
           break;
         }
@@ -161,21 +167,12 @@ namespace dials { namespace algorithms {
      * @param shoebox The shoebox profile
      * @return The mask
      */
-    af::shared<int> operator()(const af::const_ref<double> &shoebox) const {
+    template <typename FloatType>
+    af::shared<int> operator()(const af::const_ref<FloatType> &shoebox) const {
       af::shared<int> mask(shoebox.size(), shoebox::Valid | shoebox::Background);
       af::ref<int> mask_ref = mask.ref();
       this->operator()(shoebox, mask_ref);
       return mask;
-    }
-
-    /**
-     * Process the reflection
-     * @param reflection The reflection
-     */
-    void operator()(Reflection &reflection) const {
-      af::const_ref<double> shoebox = reflection.get_shoebox().const_ref().as_1d();
-      af::ref<int> mask = reflection.get_shoebox_mask().ref().as_1d();
-      this->operator()(shoebox, mask);
     }
 
   private:

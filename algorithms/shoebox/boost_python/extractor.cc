@@ -11,6 +11,7 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/shoebox/extractor.h>
+#include <dials/config.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
   namespace boost_python {
@@ -20,8 +21,8 @@ namespace dials { namespace algorithms { namespace shoebox {
   /**
    * A constructor for multiple panels
    */
-  static
-  Extractor* make_for_multi_panel(
+  template <typename FloatType>
+  Extractor<FloatType>* make_for_multi_panel(
       const af::const_ref<std::size_t> &panels,
       const af::const_ref<int6> &bboxes,
       const boost::python::tuple &mask,
@@ -29,7 +30,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       const boost::python::tuple &dark) {
 
     typedef af::versa< bool, af::flex_grid<> > versa_bool2;
-    typedef af::versa< double, af::flex_grid<> > versa_double2;
+    typedef af::versa< FloatType, af::flex_grid<> > versa_double2;
 
     // Check the number of panels is consistent
     std::size_t npanels = boost::python::len(mask);
@@ -56,8 +57,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     
     // Construct the 1D arrays
     af::shared<bool> mask_1d(size, af::init_functor_null<bool>());
-    af::shared<double> gain_1d(size, af::init_functor_null<double>());
-    af::shared<double> dark_1d(size, af::init_functor_null<double>());
+    af::shared<FloatType> gain_1d(size, af::init_functor_null<FloatType>());
+    af::shared<FloatType> dark_1d(size, af::init_functor_null<FloatType>());
     std::size_t k = 0;
     for (std::size_t i = 0; i < npanels; ++i) {
       versa_bool2 m = boost::python::extract<versa_bool2>(mask[i]);
@@ -71,34 +72,36 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
     
     // Return the new extractor object
-    return new Extractor(panels, bboxes, mask_1d, gain_1d, dark_1d, shape);
+    return new Extractor<FloatType>(panels, bboxes, mask_1d, 
+      gain_1d, dark_1d, shape);
   }
 
   /**
    * A constructor for single panels
    */
-  static
-  Extractor* make_for_single_panel(
+  template <typename FloatType>
+  Extractor<FloatType>* make_for_single_panel(
       const af::const_ref<int6> bboxes, 
       af::versa< bool, scitbx::af::flex_grid<> > mask,
-      af::versa< double, scitbx::af::flex_grid<> > gain,
-      af::versa< double, scitbx::af::flex_grid<> > dark) {
+      af::versa< FloatType, scitbx::af::flex_grid<> > gain,
+      af::versa< FloatType, scitbx::af::flex_grid<> > dark) {
     af::c_grid<2> accessor(mask.accessor());
-    return new Extractor(
+    return new Extractor<FloatType>(
       bboxes, 
       af::versa< bool, af::c_grid<2> >(mask.handle(), accessor),
-      af::versa< double, af::c_grid<2> >(gain.handle(), accessor),
-      af::versa< double, af::c_grid<2> >(dark.handle(), accessor));
+      af::versa< FloatType, af::c_grid<2> >(gain.handle(), accessor),
+      af::versa< FloatType, af::c_grid<2> >(dark.handle(), accessor));
   }
 
-  void export_extractor()
+  template <typename FloatType>
+  class_< Extractor<FloatType> > extractor_wrapper(const char *name)
   {
-    class_ <Extractor> ("Extractor", no_init)
+    return class_ < Extractor<FloatType> >(name, no_init)
       .def(init<const af::const_ref<std::size_t>&,
                 const af::const_ref<int6>&,
                 const af::shared<bool>&,
-                const af::shared<double>&,
-                const af::shared<double>&,
+                const af::shared<FloatType>&,
+                const af::shared<FloatType>&,
                 const af::shared<int2>&>((
           arg("panels"),
           arg("bboxes"),
@@ -107,7 +110,7 @@ namespace dials { namespace algorithms { namespace shoebox {
           arg("dark"),
           arg("shape"))))
       .def("__init__", make_constructor(
-        &make_for_multi_panel, 
+        &make_for_multi_panel<FloatType>, 
         default_call_policies(), (
           arg("panels"),
           arg("bboxes"),
@@ -115,18 +118,22 @@ namespace dials { namespace algorithms { namespace shoebox {
           arg("gain"),
           arg("dark"))))
       .def("__init__", make_constructor(
-        &make_for_single_panel, 
+        &make_for_single_panel<FloatType>, 
         default_call_policies(), (
           arg("bboxes"),
           arg("mask"),
           arg("gain"),
           arg("dark"))))
-      .def("add_image", &Extractor::add_image, (
+      .def("add_image", &Extractor<FloatType>::add_image, (
         arg("panel"), 
         arg("frame"), 
         arg("image")))
-      .def("indices", &Extractor::indices)
-      .def("shoeboxes", &Extractor::shoeboxes);
+      .def("indices", &Extractor<FloatType>::indices)
+      .def("shoeboxes", &Extractor<FloatType>::shoeboxes);
+  }
+  
+  void export_extractor() {
+    extractor_wrapper<ProfileFloatType>("Extractor");
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

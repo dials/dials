@@ -16,36 +16,62 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  template <typename FloatType>
+  void poisson_discriminator_suite() {
+
+    def("moment", 
+      &moment<FloatType>, (
+        arg("data"), 
+        arg("centre"), 
+        arg("k")));
+  
+    def("is_poisson_distributed", 
+      &is_poisson_distributed<FloatType>, (
+        arg("data"), 
+        arg("n_sigma")));  
+  }
+
+  template <typename FloatType>
+  struct PDOperator {
+    typedef void (PoissonDiscriminator::*with_mask)(
+      const af::const_ref<FloatType>&, af::ref<int>) const;
+    typedef af::shared<int> (PoissonDiscriminator::*without_mask)(
+      const af::const_ref<FloatType>&) const;
+  };
+
   void export_poisson_discriminator()
   {
-    def("moment", &moment, (
-      arg("data"), arg("centre"), arg("k")));
-  
-    // Export normality test
-    def("is_poisson_distributed", &is_poisson_distributed, (
-      arg("data"), arg("n_sigma")));  
+    poisson_discriminator_suite<float>();
+    poisson_discriminator_suite<double>();
     
-    // Overloads for call method
-    void (PoissonDiscriminator::*call_shoebox_and_mask)(
-      const af::const_ref<double>&, af::ref<int>) const = 
-        &PoissonDiscriminator::operator();
-    af::shared<int> (PoissonDiscriminator::*call_shoebox)(
-      const af::const_ref<double>&) const = &PoissonDiscriminator::operator();
-    void (PoissonDiscriminator::*call_reflection)(Reflection &) const =
-      &PoissonDiscriminator::operator();        
-  
+    PDOperator<float>::with_mask call_with_mask_float = 
+      &PoissonDiscriminator::operator()<float>;
+    PDOperator<double>::with_mask call_with_mask_double = 
+      &PoissonDiscriminator::operator()<double>;
+    PDOperator<float>::without_mask call_without_mask_float = 
+      &PoissonDiscriminator::operator()<float>;
+    PDOperator<double>::without_mask call_without_mask_double = 
+      &PoissonDiscriminator::operator()<double>;
+    
     class_<PoissonDiscriminator>(
         "PoissonDiscriminator")
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
         arg("n_sigma") = 3.0)))
-      .def("__call__", call_shoebox_and_mask, (
-        arg("shoebox"),
-        arg("mask")))
-      .def("__call__", call_shoebox, (
-        arg("shoebox")))
-      .def("__call__", call_reflection, (
-        arg("reflection")));        
+      .def("__call__", 
+        call_with_mask_float, (
+          arg("shoebox"),
+          arg("mask")))
+      .def("__call__", 
+        call_with_mask_double, (
+          arg("shoebox"),
+          arg("mask")))
+      .def("__call__", 
+        call_without_mask_float, (
+          arg("shoebox")))
+      .def("__call__", 
+        call_without_mask_double, (
+          arg("shoebox")));       
   }
 
 }}} // namespace = dials::algorithms::boost_python

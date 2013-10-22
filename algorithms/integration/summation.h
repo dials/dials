@@ -26,6 +26,7 @@ namespace dials { namespace algorithms {
   /**
    * Class to sum the intensity in 3D
    */
+  template <typename FloatType = double>
   class Summation {
   public:
 
@@ -34,8 +35,8 @@ namespace dials { namespace algorithms {
      * @param signal The signal array
      * @param background The background array
      */
-    Summation(const af::const_ref<double> &signal,
-              const af::const_ref<double> &background) {
+    Summation(const af::const_ref<FloatType> &signal,
+              const af::const_ref<FloatType> &background) {
       init(signal, background);
     }
 
@@ -45,8 +46,8 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    Summation(const af::const_ref<double> &signal,
-              const af::const_ref<double> &background,
+    Summation(const af::const_ref<FloatType> &signal,
+              const af::const_ref<FloatType> &background,
               const af::const_ref<bool> &mask) {
       init(signal, background, mask);
     }
@@ -56,8 +57,8 @@ namespace dials { namespace algorithms {
      * @param signal The signal array
      * @param background The background array
      */
-    Summation(const af::const_ref< double, af::c_grid<2> > &signal,
-              const af::const_ref< double, af::c_grid<2> > &background) {
+    Summation(const af::const_ref< FloatType, af::c_grid<2> > &signal,
+              const af::const_ref< FloatType, af::c_grid<2> > &background) {
       init(signal.as_1d(), background.as_1d());
     }
 
@@ -67,8 +68,8 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    Summation(const af::const_ref< double, af::c_grid<2> > &signal,
-              const af::const_ref< double, af::c_grid<2> > &background,
+    Summation(const af::const_ref< FloatType, af::c_grid<2> > &signal,
+              const af::const_ref< FloatType, af::c_grid<2> > &background,
               const af::const_ref< bool, af::c_grid<2> > &mask) {
       init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
@@ -78,8 +79,8 @@ namespace dials { namespace algorithms {
      * @param signal The signal array
      * @param background The background array
      */
-    Summation(const af::const_ref< double, af::c_grid<3> > &signal,
-              const af::const_ref< double, af::c_grid<3> > &background) {
+    Summation(const af::const_ref< FloatType, af::c_grid<3> > &signal,
+              const af::const_ref< FloatType, af::c_grid<3> > &background) {
       init(signal.as_1d(), background.as_1d());
     }
 
@@ -89,8 +90,8 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    Summation(const af::const_ref< double, af::c_grid<3> > &signal,
-              const af::const_ref< double, af::c_grid<3> > &background,
+    Summation(const af::const_ref< FloatType, af::c_grid<3> > &signal,
+              const af::const_ref< FloatType, af::c_grid<3> > &background,
               const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
@@ -98,63 +99,63 @@ namespace dials { namespace algorithms {
     /**
      * @returns The reflection intensity
      */
-    double intensity() const {
+    FloatType intensity() const {
       return signal_intensity() - background_intensity();
     }
 
     /**
      * @returns the variance on the integrated intensity
      */
-    double variance() const {
+    FloatType variance() const {
       return signal_variance() + background_variance();
     }
 
     /**
      * @returns the standard deviation on the intensity
      */
-    double standard_deviation() const {
+    FloatType standard_deviation() const {
       return std::sqrt(variance());
     }
 
     /**
      * @returns the signal intensity
      */
-    double signal_intensity() const {
+    FloatType signal_intensity() const {
       return signal_intensity_;
     }
 
     /**
      * @returns the variance on the signal intensity
      */
-    double signal_variance() const {
+    FloatType signal_variance() const {
       return signal_variance_;
     }
 
     /**
      * @returns the standard deviation on the signal intensity
      */
-    double signal_standard_deviation() const {
+    FloatType signal_standard_deviation() const {
       return std::sqrt(signal_variance());
     }
 
     /**
      * @returns the background intensity
      */
-    double background_intensity() const {
+    FloatType background_intensity() const {
       return background_intensity_;
     }
 
     /**
      * @returns the variance on the background intensity
      */
-    double background_variance() const {
+    FloatType background_variance() const {
       return background_variance_;
     }
 
     /**
      * @returns the standard deviation on the background intensity
      */
-    double background_standard_deviation() const {
+    FloatType background_standard_deviation() const {
       return std::sqrt(background_variance());
     }
 
@@ -165,8 +166,8 @@ namespace dials { namespace algorithms {
      * @param signal The signal to integrate
      * @param background The background to the signal
      */
-    void init(const af::const_ref<double> &signal,
-              const af::const_ref<double> &background)
+    void init(const af::const_ref<FloatType> &signal,
+              const af::const_ref<FloatType> &background)
     {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
@@ -190,8 +191,8 @@ namespace dials { namespace algorithms {
      * @param background The background to the signal
      * @param mask The mask to the signal
      */
-    void init(const af::const_ref<double> &signal,
-              const af::const_ref<double> &background,
+    void init(const af::const_ref<FloatType> &signal,
+              const af::const_ref<FloatType> &background,
               const af::const_ref<bool> &mask)
     {
       // Check both arrays are the same size
@@ -213,10 +214,10 @@ namespace dials { namespace algorithms {
       background_variance_ = background_intensity_;
     }
 
-    double signal_intensity_;
-    double signal_variance_;
-    double background_intensity_;
-    double background_variance_;
+    FloatType signal_intensity_;
+    FloatType signal_variance_;
+    FloatType background_intensity_;
+    FloatType background_variance_;
   };
 
 }}

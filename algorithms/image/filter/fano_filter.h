@@ -28,9 +28,11 @@ namespace dials { namespace algorithms {
    * Calculate the fano filtered image. The filtered image is created by
    * calculating the fano factor (variation index var/mean) for each pixel.
    */
+  template <typename FloatType = double>
   class FanoFilter {
   public:
 
+    typedef FloatType value_type;
 
     /**
      * Calculate the fano filtered image. The filtered image is created by
@@ -38,15 +40,17 @@ namespace dials { namespace algorithms {
      * @param image The image to filter
      * @param size Size of the filter kernel (2 * size + 1)
      */
-    FanoFilter(const af::const_ref<double, af::c_grid<2> > &image, int2 size) {
+    FanoFilter(
+        const af::const_ref<FloatType, af::c_grid<2> > &image,
+        int2 size) {
 
       // Get the mean and variance maps
-      MeanAndVarianceFilter filter(image, size);
+      MeanAndVarianceFilter<FloatType> filter(image, size);
       mean_ = filter.mean();
       var_  = filter.sample_variance();
 
       // Calculate the filtered image
-      fano_ = af::versa<double, af::c_grid<2> >(var_.accessor(), 0);
+      fano_ = af::versa<FloatType, af::c_grid<2> >(var_.accessor(), 0);
       #pragma omp parallel for
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mean_[i] > 0) {
@@ -60,28 +64,28 @@ namespace dials { namespace algorithms {
     /**
      * @returns The filtered image
      */
-    af::versa< double, af::c_grid<2> > fano() const {
+    af::versa< FloatType, af::c_grid<2> > fano() const {
       return fano_;
     }
 
     /**
      * @returns The mean filtered image
      */
-    af::versa< double, af::c_grid<2> > mean() const {
+    af::versa< FloatType, af::c_grid<2> > mean() const {
       return mean_;
     }
 
     /**
      * @returns The sample variance filtered image
      */
-    af::versa< double, af::c_grid<2> > sample_variance() const {
+    af::versa< FloatType, af::c_grid<2> > sample_variance() const {
       return var_;
     }
 
   private:
-    af::versa< double, af::c_grid<2> > fano_;
-    af::versa< double, af::c_grid<2> > mean_;
-    af::versa< double, af::c_grid<2> > var_;
+    af::versa< FloatType, af::c_grid<2> > fano_;
+    af::versa< FloatType, af::c_grid<2> > mean_;
+    af::versa< FloatType, af::c_grid<2> > var_;
   };
 
 
@@ -90,9 +94,11 @@ namespace dials { namespace algorithms {
    * calculating the fano factor (variation index var/mean) for each pixel.
    * The mask is updated for those pixels where the filtered image is invalid.
    */
+  template <typename FloatType = double>
   class FanoFilterMasked {
   public:
 
+    typedef FloatType value_type;
 
     /**
      * Calculate the masked fano filtered image. The filtered image is created
@@ -103,19 +109,19 @@ namespace dials { namespace algorithms {
      * @param size Size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts under the filter to include the pixel
      */
-    FanoFilterMasked(const af::const_ref< double, af::c_grid<2> > &image,
+    FanoFilterMasked(const af::const_ref< FloatType, af::c_grid<2> > &image,
                      const af::const_ref< int, af::c_grid<2> > &mask,
                      int2 size, int min_count) {
 
       // Get the mean and variance maps
-      MeanAndVarianceFilterMasked filter(image, mask, size, min_count);
+      MeanAndVarianceFilterMasked<FloatType> filter(image, mask, size, min_count);
       mean_  = filter.mean();
       var_   = filter.sample_variance();
       mask_  = filter.mask();
       count_ = filter.count();
 
       // Calculate the filtered image.
-      fano_ = af::versa< double, af::c_grid<2> >(var_.accessor(), 0);
+      fano_ = af::versa< FloatType, af::c_grid<2> >(var_.accessor(), 0);
       #pragma omp parallel for
       for (std::size_t i = 0; i < var_.size(); ++i) {
         if (mask_[i] && mean_[i] > 0) {
@@ -144,30 +150,30 @@ namespace dials { namespace algorithms {
     /**
      * @returns The filtered image
      */
-    af::versa< double, af::c_grid<2> > fano() const {
+    af::versa< FloatType, af::c_grid<2> > fano() const {
       return fano_;
     }
 
     /**
      * @returns The mean filtered image
      */
-    af::versa< double, af::c_grid<2> > mean() const {
+    af::versa< FloatType, af::c_grid<2> > mean() const {
       return mean_;
     }
 
     /**
      * @returns The sample variance filtered image
      */
-    af::versa< double, af::c_grid<2> > sample_variance() const {
+    af::versa< FloatType, af::c_grid<2> > sample_variance() const {
       return var_;
     }
 
   private:
     af::versa< int, af::c_grid<2> > count_;
     af::versa< int, af::c_grid<2> > mask_;
-    af::versa< double, af::c_grid<2> > fano_;
-    af::versa< double, af::c_grid<2> > mean_;
-    af::versa< double, af::c_grid<2> > var_;
+    af::versa< FloatType, af::c_grid<2> > fano_;
+    af::versa< FloatType, af::c_grid<2> > mean_;
+    af::versa< FloatType, af::c_grid<2> > var_;
   };
 
 }} // namespace dials::algorithms

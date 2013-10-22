@@ -15,6 +15,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {

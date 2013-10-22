@@ -12,108 +12,126 @@
 #include <boost/python/def.hpp>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/config.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
-  using scitbx::af::flex_double;
+  using scitbx::af::flex;
   using scitbx::af::flex_int;
    
   /** Set the data array as a flex array */
-  static
-  void set_data(Shoebox &obj, flex_double &data) {
+  template <typename FloatType>
+  void set_data(Shoebox<FloatType> &obj, 
+      typename flex<FloatType>::type &data) {
     DIALS_ASSERT(data.accessor().all().size() == 3);
-    obj.data = af::versa<double, af::c_grid<3> >(
+    obj.data = af::versa<FloatType, af::c_grid<3> >(
       data.handle(), af::c_grid<3>(data.accessor()));
   }
 
   /** Set the mask array as a flex array */
-  static
-  void set_mask(Shoebox &obj, flex_int &mask) {
+  template <typename FloatType>
+  void set_mask(Shoebox<FloatType> &obj, flex_int &mask) {
     DIALS_ASSERT(mask.accessor().all().size() == 3);
     obj.mask = af::versa<int, af::c_grid<3> >(
       mask.handle(), af::c_grid<3>(mask.accessor()));
   }
 
   /** Set the bgrd array as a flex array */
-  static
-  void set_background(Shoebox &obj, flex_double &background) {
+  template <typename FloatType>
+  void set_background(Shoebox<FloatType> &obj, 
+      typename flex<FloatType>::type &background) {
     DIALS_ASSERT(background.accessor().all().size() == 3);
-    obj.background = af::versa<double, af::c_grid<3> >(
+    obj.background = af::versa<FloatType, af::c_grid<3> >(
       background.handle(), af::c_grid<3>(background.accessor()));
   }
 
-  void export_shoebox()
+  template <typename FloatType>
+  class_< Shoebox<FloatType> > shoebox_wrapper(const char *name)
   {
-    class_<Shoebox>("Shoebox")
-      .def(init<const Shoebox&>())
+    typedef Shoebox<FloatType> shoebox_type;
+  
+    class_<shoebox_type> shoebox(name);
+    shoebox
+      .def(init<const shoebox_type&>())
       .def(init<std::size_t, const int6&>())
       .def(init<const int6&>())
       .add_property("data", 
-        make_getter(&Shoebox::data, return_value_policy<return_by_value>()),
-        &set_data)        
-      .add_property("mask", 
-        make_getter(&Shoebox::mask, return_value_policy<return_by_value>()),
-        &set_mask)  
-      .add_property("background", 
-        make_getter(&Shoebox::background, 
+        make_getter(&shoebox_type::data, 
           return_value_policy<return_by_value>()),
-        &set_background)        
+        &set_data<FloatType>)        
+      .add_property("mask", 
+        make_getter(&shoebox_type::mask, 
+          return_value_policy<return_by_value>()),
+        &set_mask<FloatType>)  
+      .add_property("background", 
+        make_getter(&shoebox_type::background, 
+          return_value_policy<return_by_value>()),
+        &set_background<FloatType>)        
       .add_property("bbox", 
-        make_getter(&Shoebox::bbox, return_value_policy<return_by_value>()),
-        make_setter(&Shoebox::bbox, return_value_policy<return_by_value>())) 
-      .def_readwrite("panel", &Shoebox::panel)       
-      .def("allocate", &Shoebox::allocate)
-      .def("deallocate", &Shoebox::deallocate)
-      .def("xoffset", &Shoebox::xoffset)
-      .def("yoffset", &Shoebox::yoffset)
-      .def("zoffset", &Shoebox::zoffset)
-      .def("offset", &Shoebox::offset)
-      .def("xsize", &Shoebox::xsize)
-      .def("ysize", &Shoebox::ysize)
-      .def("zsize", &Shoebox::zsize)
-      .def("size", &Shoebox::size)
-      .def("is_consistent", &Shoebox::is_consistent)
+        make_getter(&shoebox_type::bbox, 
+          return_value_policy<return_by_value>()),
+        make_setter(&shoebox_type::bbox, 
+          return_value_policy<return_by_value>())) 
+      .def_readwrite("panel", &shoebox_type::panel)       
+      .def("allocate", &shoebox_type::allocate)
+      .def("deallocate", &shoebox_type::deallocate)
+      .def("xoffset", &shoebox_type::xoffset)
+      .def("yoffset", &shoebox_type::yoffset)
+      .def("zoffset", &shoebox_type::zoffset)
+      .def("offset", &shoebox_type::offset)
+      .def("xsize", &shoebox_type::xsize)
+      .def("ysize", &shoebox_type::ysize)
+      .def("zsize", &shoebox_type::zsize)
+      .def("size", &shoebox_type::size)
+      .def("is_consistent", &shoebox_type::is_consistent)
       .def("is_bbox_within_image_volume", 
-        &Shoebox::is_bbox_within_image_volume, (
+        &shoebox_type::is_bbox_within_image_volume, (
           arg("image_size"), arg("scan_range")))
       .def("does_bbox_contain_bad_pixels",
-        &Shoebox::does_bbox_contain_bad_pixels, (
+        &shoebox_type::does_bbox_contain_bad_pixels, (
           arg("mask")))
       .def("count_mask_values",
-        &Shoebox::count_mask_values)
+        &shoebox_type::count_mask_values)
       .def("centroid_all",
-        &Shoebox::centroid_all)
+        &shoebox_type::centroid_all)
       .def("centroid_masked", 
-        &Shoebox::centroid_masked)
+        &shoebox_type::centroid_masked)
       .def("centroid_valid", 
-        &Shoebox::centroid_valid)
+        &shoebox_type::centroid_valid)
       .def("centroid_foreground", 
-        &Shoebox::centroid_foreground)
+        &shoebox_type::centroid_foreground)
       .def("centroid_strong", 
-        &Shoebox::centroid_strong)
+        &shoebox_type::centroid_strong)
       .def("centroid_all_minus_background", 
-        &Shoebox::centroid_all_minus_background)
+        &shoebox_type::centroid_all_minus_background)
       .def("centroid_masked_minus_background", 
-        &Shoebox::centroid_masked_minus_background)
+        &shoebox_type::centroid_masked_minus_background)
       .def("centroid_valid_minus_background", 
-        &Shoebox::centroid_valid_minus_background)
+        &shoebox_type::centroid_valid_minus_background)
       .def("centroid_foreground_minus_background", 
-        &Shoebox::centroid_foreground_minus_background)
+        &shoebox_type::centroid_foreground_minus_background)
       .def("centroid_strong_minus_background", 
-        &Shoebox::centroid_strong_minus_background)
+        &shoebox_type::centroid_strong_minus_background)
       .def("summed_intensity_all",
-        &Shoebox::summed_intensity_all)
+        &shoebox_type::summed_intensity_all)
       .def("summed_intensity_masked",
-        &Shoebox::summed_intensity_masked)
+        &shoebox_type::summed_intensity_masked)
       .def("summed_intensity_valid",
-        &Shoebox::summed_intensity_valid)
+        &shoebox_type::summed_intensity_valid)
       .def("summed_intensity_foreground",
-        &Shoebox::summed_intensity_foreground)
+        &shoebox_type::summed_intensity_foreground)
       .def("summed_intensity_strong",
-        &Shoebox::summed_intensity_strong)
-      .def("__eq__", &Shoebox::operator==)
-      .def("__ne__", &Shoebox::operator!=);
+        &shoebox_type::summed_intensity_strong)
+      .def("__eq__", &shoebox_type::operator==)
+      .def("__ne__", &shoebox_type::operator!=);
+  
+    return shoebox;
+  }
+  
+  void export_shoebox()
+  {
+    shoebox_wrapper<ProfileFloatType>("Shoebox");
   }
 
 }}} // namespace dials::model::boost_python

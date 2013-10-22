@@ -50,9 +50,6 @@ algorithms/image/__init__.py -text
 algorithms/image/centroid/SConscript -text
 algorithms/image/centroid/__init__.py -text
 algorithms/image/centroid/boost_python/centroid_ext.cc -text
-algorithms/image/centroid/boost_python/centroid_image.cc -text
-algorithms/image/centroid/boost_python/centroid_masked_image.cc -text
-algorithms/image/centroid/boost_python/centroid_points.cc -text
 algorithms/image/centroid/centroid_image.h -text
 algorithms/image/centroid/centroid_masked_image.h -text
 algorithms/image/centroid/centroid_points.h -text
@@ -178,7 +175,12 @@ algorithms/refinement/tst_orientation_refinement.log -text
 algorithms/reflection_basis/SConscript -text
 algorithms/reflection_basis/__init__.py -text
 algorithms/reflection_basis/beam_vector_map.h -text
+algorithms/reflection_basis/boost_python/beam_vector_map.cc -text
+algorithms/reflection_basis/boost_python/ideal_profile.cc -text
+algorithms/reflection_basis/boost_python/index_generator.cc -text
+algorithms/reflection_basis/boost_python/map_frames.cc -text
 algorithms/reflection_basis/boost_python/reflection_basis_ext.cc -text
+algorithms/reflection_basis/boost_python/transform.cc -text
 algorithms/reflection_basis/boost_python/transform_ext.cc -text
 algorithms/reflection_basis/coordinate_system.h -text
 algorithms/reflection_basis/ideal_profile.h -text
@@ -272,6 +274,7 @@ command_line/refine.py -text
 command_line/refine2.py -text
 command_line/reflection_stats.py -text
 command_line/show_profiles.py -text
+/config.h -text
 data/completion_template.txt -text
 data/integration.phil -text
 data/logging.phil -text

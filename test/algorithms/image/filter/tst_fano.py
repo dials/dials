@@ -5,7 +5,7 @@ class Test:
         pass
 
     def run(self):
-        from dials.algorithms.image.filter import FanoFilterMasked
+        from dials.algorithms.image.filter import fano_filter
         from scitbx.array_family import flex
         from random import randint
 
@@ -17,7 +17,7 @@ class Test:
 
         # Calculate the summed area table
         mask2 = mask.deep_copy()
-        fano_filter = FanoFilterMasked(image, mask2, (3, 3), 2)
+        fano_filter = fano_filter(image, mask2, (3, 3), 2)
         mean = fano_filter.mean()
         var = fano_filter.sample_variance()
         fano = fano_filter.fano()

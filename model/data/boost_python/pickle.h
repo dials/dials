@@ -29,6 +29,8 @@ namespace dials { namespace model { namespace boost_python {
   {
     using scitbx::af::boost_python::pickle_double_buffered::to_string::operator<<;
 
+    typedef Reflection ReflectionType;
+
     to_string() {
       unsigned int version = 1;
       *this << version;
@@ -45,7 +47,7 @@ namespace dials { namespace model { namespace boost_python {
       }
     }
 
-    to_string& operator<<(const Reflection &val) {
+    to_string& operator<<(const ReflectionType &val) {
       *this << val.get_miller_index()[0]
             << val.get_miller_index()[1]
             << val.get_miller_index()[2]
@@ -95,6 +97,8 @@ namespace dials { namespace model { namespace boost_python {
   {
     using scitbx::af::boost_python::pickle_double_buffered::from_string::operator>>;
 
+    typedef Reflection ReflectionType;
+
     from_string(const char* str_ptr)
     : scitbx::af::boost_python::pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
@@ -122,7 +126,7 @@ namespace dials { namespace model { namespace boost_python {
       return p;
     }
 
-    from_string& operator>>(Reflection& val) {
+    from_string& operator>>(ReflectionType& val) {
       *this >> val.miller_index_[0]
             >> val.miller_index_[1]
             >> val.miller_index_[2]
@@ -159,10 +163,10 @@ namespace dials { namespace model { namespace boost_python {
             >> val.corrected_intensity_variance_
             >> val.crystal_;
 
-      val.shoebox_ = profile_from_string< af::versa< double, af::c_grid<3> > >();
+      val.shoebox_ = profile_from_string< af::versa< Reflection::float_type, af::c_grid<3> > >();
       val.shoebox_mask_ = profile_from_string< af::versa< int, af::c_grid<3> > >();
-      val.shoebox_background_ = profile_from_string< af::versa< double, af::c_grid<3> > >();
-      val.transformed_shoebox_ = profile_from_string< af::versa< double, af::c_grid<3> > >();
+      val.shoebox_background_ = profile_from_string< af::versa< Reflection::float_type, af::c_grid<3> > >();
+      val.transformed_shoebox_ = profile_from_string< af::versa< Reflection::float_type, af::c_grid<3> > >();
       return *this;
     }
 
@@ -171,15 +175,17 @@ namespace dials { namespace model { namespace boost_python {
 
   struct ReflectionPickleSuite : boost::python::pickle_suite {
 
+    typedef Reflection ReflectionType;
+
     static
-    boost::python::tuple getstate(const Reflection &r) {
+    boost::python::tuple getstate(const ReflectionType &r) {
       to_string buf;
       buf << r;
       return boost::python::make_tuple(buf.buffer);
     }
 
     static
-    void setstate(Reflection &r, boost::python::tuple state) {
+    void setstate(ReflectionType &r, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 1);
       PyObject* py_str = boost::python::object(state[0]).ptr();
       from_string buf(PyString_AsString(py_str));

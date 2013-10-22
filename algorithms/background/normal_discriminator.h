@@ -47,13 +47,13 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  inline
-  double minimum_n_sigma(const af::const_ref<double> &data) {
+  template <typename FloatType = double>
+  FloatType minimum_n_sigma(const af::const_ref<FloatType> &data) {
 
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <double> mean_and_variance(data);
-    double mean = mean_and_variance.mean();
-    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+    mean_and_variance <FloatType> mean_and_variance(data);
+    FloatType mean = mean_and_variance.mean();
+    FloatType sdev = mean_and_variance.unweighted_sample_standard_deviation();
 
     // If sdev is zero then the extent of the data is 0 sigma
     if (sdev == 0) {
@@ -69,13 +69,13 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  inline
-  double maximum_n_sigma(const af::const_ref<double> &data) {
+  template <typename FloatType = double>
+  FloatType maximum_n_sigma(const af::const_ref<FloatType> &data) {
 
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <double> mean_and_variance(data);
-    double mean = mean_and_variance.mean();
-    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+    mean_and_variance <FloatType> mean_and_variance(data);
+    FloatType mean = mean_and_variance.mean();
+    FloatType sdev = mean_and_variance.unweighted_sample_standard_deviation();
 
     // If sdev is zero then the extent of the data is 0 sigma
     if (sdev == 0) {
@@ -91,13 +91,13 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  inline
-  double absolute_maximum_n_sigma(const af::const_ref<double> &data) {
+  template <typename FloatType = double>
+  FloatType absolute_maximum_n_sigma(const af::const_ref<FloatType> &data) {
 
     // Calculate the mean and standard deviation of the data
-    mean_and_variance <double> mean_and_variance(data);
-    double mean = mean_and_variance.mean();
-    double sdev = mean_and_variance.unweighted_sample_standard_deviation();
+    mean_and_variance <FloatType> mean_and_variance(data);
+    FloatType mean = mean_and_variance.mean();
+    FloatType sdev = mean_and_variance.unweighted_sample_standard_deviation();
 
     // If sdev is zero then the extent of the data is 0 sigma
     if (sdev == 0) {
@@ -105,8 +105,8 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate t-statistic of min/max
-    double min_n_sigma = (mean - min(data)) / sdev;
-    double max_n_sigma = (max(data) - mean) / sdev;
+    FloatType min_n_sigma = (mean - min(data)) / sdev;
+    FloatType max_n_sigma = (max(data) - mean) / sdev;
     return max_n_sigma > min_n_sigma ? max_n_sigma : min_n_sigma;
   }
 
@@ -120,8 +120,9 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations you expect
    * @returns True/False
    */
-  inline
-  bool is_normally_distributed(const af::const_ref<double> &data, double n_sigma) {
+  template <typename FloatType = double>
+  bool is_normally_distributed(const af::const_ref<FloatType> &data,
+      double n_sigma) {
     return absolute_maximum_n_sigma(data) < n_sigma;
   }
 
@@ -134,9 +135,10 @@ namespace dials { namespace algorithms {
    * @param data The array of pixel values
    * @returns True/False
    */
-  inline
-  bool is_normally_distributed(const af::const_ref<double> &data) {
-    return is_normally_distributed(data, normal_expected_n_sigma(data.size()));
+  template <typename FloatType = double>
+  bool is_normally_distributed(const af::const_ref<FloatType> &data) {
+    return is_normally_distributed<FloatType>(data,
+      normal_expected_n_sigma(data.size()));
   }
 
 
@@ -177,7 +179,10 @@ namespace dials { namespace algorithms {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    void operator()(const af::const_ref<double> &shoebox, af::ref<int> mask) const {
+    template <typename FloatType>
+    void operator()(
+        const af::const_ref<FloatType> &shoebox,
+        af::ref<int> mask) const {
 
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
@@ -195,9 +200,10 @@ namespace dials { namespace algorithms {
 
       // Sort the pixels into ascending intensity order
       sort_index(indices.begin(), indices.end(), shoebox.begin());
-      af::shared<double> pixels(indices.size(), af::init_functor_null<double>());
+      af::shared<FloatType> pixels(indices.size(),
+        af::init_functor_null<FloatType>());
       for (std::size_t i = 0; i < indices.size(); ++i) {
-        pixels[i] = (double)shoebox[indices[i]];
+        pixels[i] = (FloatType)shoebox[indices[i]];
       }
 
       // Check if the data is normally distributed. If it is not, then remove
@@ -205,7 +211,7 @@ namespace dials { namespace algorithms {
       // of iterations exceeds the maximum then exit the loop.
       std::size_t num_data = pixels.size();
       for (; num_data > min_data_; --num_data) {
-        if (is_normally_distributed(af::const_ref<double>(
+        if (is_normally_distributed(af::const_ref<FloatType>(
             pixels.begin(), num_data), n_sigma_)) {
           break;
         }
@@ -222,22 +228,11 @@ namespace dials { namespace algorithms {
      * @param shoebox The shoebox profile
      * @return The mask
      */
-    af::shared<int> operator()(const af::const_ref<double> &shoebox) const {
+    template <typename FloatType>
+    af::shared<int> operator()(const af::const_ref<FloatType> &shoebox) const {
       af::shared<int> mask(shoebox.size(), shoebox::Valid | shoebox::Background);
-      af::ref<int> mask_ref = mask.ref();
-      this->operator()(shoebox, mask_ref);
+      this->operator()(shoebox, mask.ref());
       return mask;
-    }
-
-    /**
-     * Process the reflection
-     * @param reflection The reflection
-     */
-    void operator()(Reflection &reflection) const {
-      af::const_ref<double> shoebox =
-        reflection.get_shoebox().const_ref().as_1d();
-      af::ref<int> mask = reflection.get_shoebox_mask().ref().as_1d();
-      this->operator()(shoebox, mask);
     }
 
   private:

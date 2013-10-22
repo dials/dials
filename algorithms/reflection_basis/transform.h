@@ -14,8 +14,14 @@
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
+#include <dxtbx/model/beam.h>
+#include <dxtbx/model/detector.h>
+#include <dxtbx/model/goniometer.h>
+#include <dxtbx/model/scan.h>
 #include <dials/algorithms/polygon/spatial_interpolation.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
+#include <dials/algorithms/reflection_basis/map_frames.h>
+#include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/reflection.h>
 
@@ -43,8 +49,12 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * A class to construct the specification for the transform. Once instantiated
    * this object can be reused to transform lots of reflections.
    */
+  template <typename FloatType = double>
   class TransformSpec {
   public:
+
+    typedef FloatType float_type;
+    typedef MapFramesForward<FloatType> map_frames_type;
 
     /**
      * Initialise the class
@@ -112,7 +122,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     }
 
     /** @returns the frame mapping fraction array */
-    af::versa< double, af::c_grid<2> > map_frames(
+    af::versa< FloatType, af::c_grid<2> > map_frames(
         vec2<int> frames, double phi, double zeta) const {
       return map_frames_(frames, phi, zeta);
     }
@@ -125,7 +135,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     double3 step_size_;
     double3 grid_centre_;
     af::versa< vec3<double>, af::c_grid<2> > s1_map_;
-    MapFramesForward map_frames_;
+    MapFramesForward<FloatType> map_frames_;
   };
 
 
@@ -141,104 +151,73 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    *  print forward.profile()
    *  print forward.background()
    */
+  template <typename FloatType = double>
   class Forward {
   public:
 
-    Forward(const TransformSpec &spec,
+    typedef FloatType float_type;
+    typedef TransformSpec<FloatType> transform_spec_type;
+
+    Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi, int6 bbox,
-            const af::const_ref< double, af::c_grid<3> > &image,
+            const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, s1, phi, bbox);
       call(image, mask);
     }
 
-    Forward(const TransformSpec &spec,
+    Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi, int6 bbox,
-            const af::const_ref< double, af::c_grid<3> > &image,
-            const af::const_ref< double, af::c_grid<3> > &bkgrd,
+            const af::const_ref< FloatType, af::c_grid<3> > &image,
+            const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, s1, phi, bbox);
       call(image, bkgrd, mask);
     }
 
-    Forward(const TransformSpec &spec,
+    Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs, int6 bbox,
-            const af::const_ref< double, af::c_grid<3> > &image,
+            const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, cs, bbox);
       call(image, mask);
     }
 
-    Forward(const TransformSpec &spec,
+    Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs, int6 bbox,
-            const af::const_ref< double, af::c_grid<3> > &image,
-            const af::const_ref< double, af::c_grid<3> > &bkgrd,
+            const af::const_ref< FloatType, af::c_grid<3> > &image,
+            const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, cs, bbox);
       call(image, bkgrd, mask);
-    }
-
-    Forward(const TransformSpec &spec,
-            const Reflection &reflection,
-            bool with_background) {
-
-      // Initialise
-      init(spec, reflection);
-
-      // Get the mask
-      af::const_ref< int, af::c_grid<3> > shoebox_mask =
-        reflection.get_shoebox_mask().const_ref();
-      af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor(), false);
-      for (std::size_t i = 0; i < mask.size(); ++i) {
-        mask[i] = shoebox_mask[i] & Valid && shoebox_mask[i] & Foreground;
-      }
-
-      // Do the transform
-      if (with_background) {
-        call(reflection.get_shoebox().const_ref(),
-             reflection.get_shoebox_background().const_ref(),
-             mask.const_ref());
-      } else {
-        call(reflection.get_shoebox().const_ref(),
-             mask.const_ref());
-      }
     }
 
     /** @returns The transformed profile */
-    af::versa< double, af::c_grid<3> > profile() const {
+    af::versa< FloatType, af::c_grid<3> > profile() const {
       return profile_;
     }
 
     /** @returns The transformed background (if set) */
-    af::versa< double, af::c_grid<3> > background() const {
+    af::versa< FloatType, af::c_grid<3> > background() const {
       return background_;
     }
 
     /** @returns The z fraction */
-    af::versa< double, af::c_grid<2> > zfraction() const {
+    af::versa< FloatType, af::c_grid<2> > zfraction() const {
       return zfraction_arr_;
     }
 
   private:
 
     /** Initialise using the beam vector and rotation angle */
-    void init(const TransformSpec &spec, const vec3<double> &s1,
-              double phi, int6 bbox) {
-      CoordinateSystem cs(spec.m2(), spec.s0(), s1, phi);
-      init(spec, cs, bbox);
-    }
-
-    /** Initialise using a reflection */
-    void init(const TransformSpec &spec, const Reflection &r) {
-      vec3<double> s1 = r.get_beam_vector();
-      double phi = r.get_rotation_angle();
-      int6 bbox = r.get_bounding_box();
+    void init(const TransformSpec<FloatType> &spec,
+              const vec3<double> &s1, double phi, int6 bbox) {
       CoordinateSystem cs(spec.m2(), spec.s0(), s1, phi);
       init(spec, cs, bbox);
     }
 
     /** Initialise using a coordinate system struct */
-    void init(const TransformSpec &spec,
+    void init(const TransformSpec<FloatType> &spec,
               const CoordinateSystem &cs, int6 bbox) {
 
       // Initialise some stuff
@@ -271,7 +250,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param image The image to transform
      * @param mask The mask accompanying the image
      */
-    void call(const af::const_ref< double, af::c_grid<3> > &image,
+    void call(const af::const_ref< FloatType, af::c_grid<3> > &image,
               const af::const_ref< bool, af::c_grid<3> > &mask) {
 
       // Check the input
@@ -280,7 +259,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
       // Initialise the profile arrays
       af::c_grid<3> accessor(grid_size_);
-      profile_ = af::versa< double, af::c_grid<3> >(accessor, 0.0);
+      profile_ = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
 
       // Loop through all the points in the shoebox. Calculate the polygon
       // formed by the pixel in the local coordinate system. Find the points
@@ -294,13 +273,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           vert4 input(gc(j, i), gc(j, i+1), gc(j+1, i+1), gc(j+1, i));
           af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
           for (int m = 0; m < matches.size(); ++m) {
-            double fraction = matches[m].fraction;
+            FloatType fraction = matches[m].fraction;
             int index = matches[m].out;
             int ii = index % grid_size_[2];
             int jj = index / grid_size_[2];
             for (int k = 0; k < shoebox_size_[0]; ++k) {
               if (mask(k, j, i)) {
-                double value = image(k, j, i) * fraction;
+                FloatType value = image(k, j, i) * fraction;
                 for (int kk = 0; kk < grid_size_[0]; ++kk) {
                   profile_(kk, jj, ii) += value * zfraction_(k, kk);
                 }
@@ -317,8 +296,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param bkgrd The background image to transform
      * @param mask The mask accompanying the image
      */
-    void call(const af::const_ref< double, af::c_grid<3> > &image,
-              const af::const_ref< double, af::c_grid<3> > &bkgrd,
+    void call(const af::const_ref< FloatType, af::c_grid<3> > &image,
+              const af::const_ref< FloatType, af::c_grid<3> > &bkgrd,
               const af::const_ref< bool, af::c_grid<3> > &mask) {
 
       // Check the input
@@ -328,8 +307,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
       // Initialise the profile arrays
       af::c_grid<3> accessor(grid_size_);
-      profile_ = af::versa< double, af::c_grid<3> >(accessor, 0.0);
-      background_ = af::versa< double, af::c_grid<3> >(accessor, 0.0);
+      profile_ = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
+      background_ = af::versa< FloatType, af::c_grid<3> >(accessor, 0.0);
 
       // Loop through all the points in the shoebox. Calculate the polygon
       // formed by the pixel in the local coordinate system. Find the points
@@ -343,16 +322,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           vert4 input(gc(j, i), gc(j, i+1), gc(j+1, i+1), gc(j+1, i));
           af::shared<Match> matches = quad_to_grid(input, grid_size2, 0);
           for (int m = 0; m < matches.size(); ++m) {
-            double fraction = matches[m].fraction;
+            FloatType fraction = matches[m].fraction;
             int index = matches[m].out;
             int jj = index / grid_size_[2];
             int ii = index % grid_size_[2];
             for (int k = 0; k < shoebox_size_[0]; ++k) {
               if (mask(k, j, i)) {
-                double ivalue = image(k, j, i) * fraction;
-                double bvalue = bkgrd(k, j, i) * fraction;
+                FloatType ivalue = image(k, j, i) * fraction;
+                FloatType bvalue = bkgrd(k, j, i) * fraction;
                 for (int kk = 0; kk < grid_size_[0]; ++kk) {
-                  double zf = zfraction_(k, kk);
+                  FloatType zf = zfraction_(k, kk);
                   profile_(kk, jj, ii) += ivalue * zf;
                   background_(kk, jj, ii) += bvalue * zf;
                 }
@@ -383,103 +362,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     vec3<double> s1_, e1_, e2_;
     af::versa< vec3<double>, af::c_grid<2> > s1_map_arr_;
     af::const_ref< vec3<double>, af::c_grid<2> > s1_map_;
-    af::versa< double, af::c_grid<3> > profile_;
-    af::versa< double, af::c_grid<3> > background_;
-    af::versa< double, af::c_grid<2> > zfraction_arr_;
-    af::const_ref< double, af::c_grid<2> > zfraction_;
+    af::versa< FloatType, af::c_grid<3> > profile_;
+    af::versa< FloatType, af::c_grid<3> > background_;
+    af::versa< FloatType, af::c_grid<2> > zfraction_arr_;
+    af::const_ref< FloatType, af::c_grid<2> > zfraction_;
   };
-
-
-  /**
-   * A class to transform a batch of images from a reflection list
-   */
-  class ForwardBatch {
-  public:
-
-    typedef af::versa< double, af::c_grid<3> > versa_double3;
-    typedef af::versa< double, af::c_grid<4> > versa_double4;
-
-    /** Transform a reflection list */
-    ForwardBatch(const TransformSpec &spec,
-                 const af::const_ref<Reflection> &rlist)
-      : size_(spec.grid_size()),
-        num_(rlist.size()),
-        profile_(init_profile_grid(), 0.0),
-        background_(init_profile_grid(), 0.0) {
-      std::size_t offset = 0;
-      for (std::size_t i = 0; i < rlist.size(); ++i) {
-        Forward transform(spec, rlist[i], true);
-        versa_double3 p = transform.profile();
-        versa_double3 b = transform.background();
-        std::copy(p.begin(), p.end(), profile_.begin() + offset);
-        std::copy(b.begin(), b.end(), background_.begin() + offset);
-        offset += p.size();
-      }
-    }
-
-    /** @returns The 4D array of profiles */
-    versa_double4 profile() const {
-      return profile_;
-    }
-
-    /** @returns The 4D array of backgrounds */
-    versa_double4 background() const {
-      return background_;
-    }
-
-    /** @returns The requested profile */
-    versa_double3 profile(std::size_t index) const {
-      DIALS_ASSERT(index < num_);
-      versa_double3 p(af::c_grid<3>(size_[0], size_[1], size_[2]),
-        af::init_functor_null<double>());
-      std::size_t beg = index * p.size(), end = beg + p.size();
-      std::copy(profile_.begin() + beg,  profile_.begin() + end, p.begin());
-      return p;
-    }
-
-    /** @returns The requested background */
-    versa_double3 background(std::size_t index) const {
-      DIALS_ASSERT(index < num_);
-      versa_double3 b(af::c_grid<3>(size_[0], size_[1], size_[2]),
-        af::init_functor_null<double>());
-      std::size_t beg = index * b.size(), end = beg + b.size();
-      std::copy(background_.begin() + beg, background_.begin() + end, b.begin());
-      return b;
-    }
-
-  private:
-
-    /** @returns The size of the profile grid */
-    af::c_grid<4> init_profile_grid() const {
-      af::c_grid<4> grid;
-      grid[0] = num_;
-      grid[1] = size_[0];
-      grid[2] = size_[1];
-      grid[3] = size_[2];
-      return grid;
-    }
-
-    int3 size_;
-    std::size_t num_;
-    versa_double4 profile_;
-    versa_double4 background_;
-  };
-
-
-  inline
-  void forward_batch(const TransformSpec &spec,
-                     af::ref<Reflection> rlist,
-                     bool with_background) {
-    for (std::size_t i = 0; i < rlist.size(); ++i) {
-      if (rlist[i].is_valid()) {
-        Forward transform(spec, rlist[i], with_background);
-        rlist[i].set_transformed_shoebox(transform.profile());
-        if (with_background) {
-          rlist[i].set_transformed_shoebox_background(transform.background());
-        }
-      }
-    }
-  }
 
 }}}} // namespace dials::algorithms::reflection_basis::transform
 

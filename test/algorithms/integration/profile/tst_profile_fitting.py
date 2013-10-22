@@ -13,7 +13,7 @@ class Test(object):
 
     def tst_identical(self):
 
-        from dials.algorithms.integration.profile import ProfileFitting
+        from dials.algorithms.integration.profile import fit_profile
         from scitbx.array_family import flex
         from tst_profile_helpers import gaussian
 
@@ -27,7 +27,7 @@ class Test(object):
         b = flex.double(flex.grid(9, 9, 9), 0)
 
         # Fit
-        fit = ProfileFitting(p, c, b)
+        fit = fit_profile(p, c, b)
         I = fit.intensity()
         V = fit.variance()
 
@@ -40,7 +40,7 @@ class Test(object):
 
     def tst_scaled(self):
 
-        from dials.algorithms.integration.profile import ProfileFitting
+        from dials.algorithms.integration.profile import fit_profile
         from scitbx.array_family import flex
         from tst_profile_helpers import gaussian
 
@@ -54,7 +54,7 @@ class Test(object):
         b = flex.double(flex.grid(9, 9, 9), 0)
 
         # Fit
-        fit = ProfileFitting(p, c, b)
+        fit = fit_profile(p, c, b)
         I = fit.intensity()
         V = fit.variance()
 
@@ -67,7 +67,7 @@ class Test(object):
 
     def tst_with_flat_background(self):
 
-        from dials.algorithms.integration.profile import ProfileFitting
+        from dials.algorithms.integration.profile import fit_profile
         from scitbx.array_family import flex
         from tst_profile_helpers import gaussian
 
@@ -82,7 +82,7 @@ class Test(object):
         c = c0 + b
 
         # Fit
-        fit = ProfileFitting(p, c, b)
+        fit = fit_profile(p, c, b)
         I = fit.intensity()
         V = fit.variance()
 
@@ -95,7 +95,7 @@ class Test(object):
 
     def tst_with_noisy_flat_background(self):
 
-        from dials.algorithms.integration.profile import ProfileFitting
+        from dials.algorithms.integration.profile import fit_profile
         from scitbx.array_family import flex
         from tst_profile_helpers import gaussian
 
@@ -111,7 +111,7 @@ class Test(object):
         c = c0 + b
 
         # Fit
-        fit = ProfileFitting(p, c, b)
+        fit = fit_profile(p, c, b)
         I = fit.intensity()
         V = fit.variance()
 

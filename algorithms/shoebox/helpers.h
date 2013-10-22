@@ -28,6 +28,9 @@ namespace dials { namespace algorithms { namespace shoebox {
    */
   inline
   void allocate(af::ref<Reflection> reflections, int mask_default) {
+
+    typedef Reflection::float_type FloatType;
+
     // Allocate all the reflection profiles
     for (std::size_t i = 0; i < reflections.size(); ++i) {
       Reflection &r = reflections[i];
@@ -38,9 +41,9 @@ namespace dials { namespace algorithms { namespace shoebox {
         int size_x = bbox[1] - bbox[0];
         DIALS_ASSERT(size_z > 0 && size_y > 0 && size_x > 0);
         af::c_grid<3> accessor(size_z, size_y, size_x);
-        r.set_shoebox(af::versa< double, af::c_grid<3> >(accessor, 0.0));
+        r.set_shoebox(af::versa< FloatType, af::c_grid<3> >(accessor, 0.0));
         r.set_shoebox_mask(af::versa< int, af::c_grid<3> >(accessor, mask_default));
-        r.set_shoebox_background(af::versa< double, af::c_grid<3> >(accessor, 0.0));
+        r.set_shoebox_background(af::versa< FloatType, af::c_grid<3> >(accessor, 0.0));
       }
     }
   }
@@ -60,13 +63,16 @@ namespace dials { namespace algorithms { namespace shoebox {
    */
   inline
   void deallocate(af::ref<Reflection> reflections) {
+
+    typedef Reflection::float_type FloatType;
+
     // Delete all the reflection profiles from memory
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      reflections[i].set_shoebox(af::versa< double, af::c_grid<3> >());
+      reflections[i].set_shoebox(af::versa< FloatType, af::c_grid<3> >());
       reflections[i].set_shoebox_mask(af::versa< int, af::c_grid<3> >());
-      reflections[i].set_shoebox_background(af::versa< double, af::c_grid<3> >());
-      reflections[i].set_transformed_shoebox(af::versa< double, af::c_grid<3> >());
-      reflections[i].set_transformed_shoebox_background(af::versa< double, af::c_grid<3> >());
+      reflections[i].set_shoebox_background(af::versa< FloatType, af::c_grid<3> >());
+      reflections[i].set_transformed_shoebox(af::versa< FloatType, af::c_grid<3> >());
+      reflections[i].set_transformed_shoebox_background(af::versa< FloatType, af::c_grid<3> >());
     }
   }
 

@@ -30,6 +30,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("values", &label_type::values);
   }
 
+  inline
   void label_pixels_wrapper(const char *name) {
     typedef LabelPixels label_type;
     class_<label_type>(name, no_init)
@@ -41,7 +42,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("coords", &label_type::coords)
       .def("values", &label_type::values);
   }
-
+ 
   void export_connected_components()
   {
     label_image_stack_wrapper<2>("LabelImageStack2d");

@@ -32,7 +32,8 @@ namespace dials { namespace algorithms {
   class ProfileFittingReciprocalSpace {
   public:
 
-    typedef ReferenceLocator<XdsCircleSampler> locator_type;
+    typedef Reflection::float_type FloatType;
+    typedef ReferenceLocator<FloatType, XdsCircleSampler> locator_type;
 
     /**
      * Initialise the class. Set the reference profile locator.
@@ -70,19 +71,19 @@ namespace dials { namespace algorithms {
     void operator()(Reflection &reflection) const {
 
       // Get the transformed shoebox
-      af::const_ref<double, af::c_grid<3> > c =
+      af::const_ref<FloatType, af::c_grid<3> > c =
         reflection.get_transformed_shoebox().const_ref();
-      af::const_ref<double, af::c_grid<3> > b =
+      af::const_ref<FloatType, af::c_grid<3> > b =
         reflection.get_transformed_shoebox_background().const_ref();
 
       // Get the reference profile at the reflection coordinate
       double3 coord(reflection.get_image_coord_px()[0],
                     reflection.get_image_coord_px()[1],
                     reflection.get_frame_number());
-      af::versa<double, af::c_grid<3> > p = locate_->profile(coord);
+      af::versa<FloatType, af::c_grid<3> > p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance
-      ProfileFitting fit(p.const_ref(), c, b, max_iter_);
+      ProfileFitting<FloatType> fit(p.const_ref(), c, b, max_iter_);
       DIALS_ASSERT(fit.niter() < max_iter_);
       reflection.set_intensity(fit.intensity());
       reflection.set_intensity_variance(fit.variance());

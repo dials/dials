@@ -25,10 +25,11 @@ namespace dials { namespace algorithms {
    * A class to provide access to reference profiles by querying either
    * profile index or image volume coordinate.
    */
-  template <typename ImageSampler>
+  template <typename FloatType, typename ImageSampler>
   class ReferenceLocator {
   public:
 
+    typedef FloatType float_type;
     typedef ImageSampler sampler_type;
 
     /**
@@ -36,7 +37,7 @@ namespace dials { namespace algorithms {
      * @param profiles The array of reference prodiles
      * @param sampler The sampler object.
      */
-    ReferenceLocator(const af::versa< double, af::c_grid<4> > &profiles,
+    ReferenceLocator(const af::versa< FloatType, af::c_grid<4> > &profiles,
                      const ImageSampler &sampler)
       : profiles_(profiles),
         sampler_(sampler) {
@@ -64,7 +65,7 @@ namespace dials { namespace algorithms {
     }
 
     /** @returns The whole list of profiles */
-    af::versa< double, af::c_grid<4> > profile() const {
+    af::versa< FloatType, af::c_grid<4> > profile() const {
       return profiles_;
     }
 
@@ -73,7 +74,7 @@ namespace dials { namespace algorithms {
      * @param index The profile index
      * @returns The profile array
      */
-    af::versa< double, af::c_grid<3> > profile(std::size_t index) const {
+    af::versa< FloatType, af::c_grid<3> > profile(std::size_t index) const {
 
       // Check the index and size of the profile array
       DIALS_ASSERT(index < sampler_.size());
@@ -81,9 +82,9 @@ namespace dials { namespace algorithms {
 
       // Unfortunately, you can't take a reference from a versa array and
       // return to python so we'll just have to make a copy.
-      af::versa< double, af::c_grid<3> > result(
+      af::versa< FloatType, af::c_grid<3> > result(
         af::c_grid<3>(profile_size[1], profile_size[2], profile_size[2]),
-        af::init_functor_null<double>());
+        af::init_functor_null<FloatType>());
       std::size_t j = index*profile_size[3]*profile_size[2]*profile_size[1];
       for (std::size_t i = 0; i < result.size(); ++i) {
         result[i] = profiles_[j + i];
@@ -98,7 +99,7 @@ namespace dials { namespace algorithms {
      * @param xyz The detector coordinate
      * @returns The profile array
      */
-    af::versa< double, af::c_grid<3> > profile(double3 xyz) const {
+    af::versa< FloatType, af::c_grid<3> > profile(double3 xyz) const {
       return profile(sampler_.nearest(xyz));
     }
 
@@ -121,7 +122,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    af::versa< double, af::c_grid<4> > profiles_;
+    af::versa< FloatType, af::c_grid<4> > profiles_;
     ImageSampler sampler_;
   };
 

@@ -30,8 +30,9 @@ namespace dials { namespace algorithms {
   class ReferenceLearner {
   public:
 
+    typedef Reflection::float_type float_type;
     typedef Sampler sampler_type;
-    typedef ReferenceLocator<sampler_type> locator_type;
+    typedef ReferenceLocator<float_type, sampler_type> locator_type;
 
     /**
      * Initialise the learner class
@@ -75,11 +76,11 @@ namespace dials { namespace algorithms {
      * @param grid_size The size of each profile
      * @returns The array of reference profiles
      */
-    af::versa< double, af::c_grid<4> > allocate_profiles(
+    af::versa< float_type, af::c_grid<4> > allocate_profiles(
         std::size_t num, int3 grid_size) {
       DIALS_ASSERT(num > 0);
       DIALS_ASSERT(grid_size.all_gt(0));
-      return af::versa< double, af::c_grid<4> >(af::c_grid<4>(
+      return af::versa< float_type, af::c_grid<4> >(af::c_grid<4>(
         int4(num, grid_size[0], grid_size[1], grid_size[2])), 0);
     }
 
@@ -99,7 +100,7 @@ namespace dials { namespace algorithms {
      * @param profile The reflection profile
      * @param coord The coordinate of the reflection
      */
-    void add_reflection(const af::const_ref< double, af::c_grid<3> > profile,
+    void add_reflection(const af::const_ref< float_type, af::c_grid<3> > profile,
         vec3<double> coord) {
 
       // Get the expected profile size
@@ -114,7 +115,7 @@ namespace dials { namespace algorithms {
       vec3<double> coord_b = locator_.coord(index);
 
       // Get the reference profile
-      af::ref<double> reference = reference_profile(index);
+      af::ref<float_type> reference = reference_profile(index);
 
       // Calculate the weighting by distance, ensure we don't get silly weights
       // for really close reflections by setting minimum distance to 1.
@@ -152,7 +153,7 @@ namespace dials { namespace algorithms {
     void normalize_reference_profile(std::size_t index) {
 
       // Get the reference profile at the index
-      af::ref<double> reference = reference_profile(index);
+      af::ref<float_type> reference = reference_profile(index);
 
       // Calculate the profile maximum and signal threshold
       double profile_maximum = max(reference);
@@ -182,11 +183,11 @@ namespace dials { namespace algorithms {
      * @param index The index of the profile to get
      * @returns The reference to the profile.
      */
-    af::ref<double> reference_profile(std::size_t index) {
-      af::versa<double, af::c_grid<4> > all_profiles = locator_.profile();
+    af::ref<float_type> reference_profile(std::size_t index) {
+      af::versa<float_type, af::c_grid<4> > all_profiles = locator_.profile();
       int4 size = all_profiles.accessor();
       int offset = size[1] * size[2] * size[3];
-      return af::ref<double>(&all_profiles[index * offset], offset);
+      return af::ref<float_type>(&all_profiles[index * offset], offset);
     }
 
     locator_type locator_;

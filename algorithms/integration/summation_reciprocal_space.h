@@ -35,37 +35,28 @@ namespace dials { namespace algorithms {
   class SummationReciprocalSpace {
   public:
 
-    typedef Summation integrator;
+    typedef Reflection::float_type FloatType;
+    typedef Summation<FloatType> integrator;
 
     /** Init the algorithm. */
-    SummationReciprocalSpace(const shared_ptr<Beam> &beam,
-                             const shared_ptr<Detector> &detector,
-                             const shared_ptr<Goniometer> &gonio)
-      : s0_(beam->get_s0()),
-        m2_(gonio->get_rotation_axis()),
-        detector_(detector) {}
+    SummationReciprocalSpace() {}
 
     /**
      * Integrate a reflection
      * @param r The reflection container
      */
-    void operator()(Reflection &r) const {
+    void operator()(Reflection &reflection) const {
 
       // Get the transformed shoebox
-      af::const_ref< double, af::c_grid<3> > c =
-        r.get_transformed_shoebox().const_ref();
-
-      // Get the transformed background
-      // HACK ALERT! Should fix: setting to mean of shoebox background
-      af::versa< double, af::c_grid<3> > b(c.accessor(), mean(
-        r.get_shoebox_background().const_ref()));
+      af::const_ref<FloatType, af::c_grid<3> > c =
+        reflection.get_transformed_shoebox().const_ref();
+      af::const_ref<FloatType, af::c_grid<3> > b =
+        reflection.get_transformed_shoebox_background().const_ref();
 
       // Integrate the reflection
-      integrator result = integrator(c, b.const_ref());
-
-      // Set intensity data in reflection container
-      r.set_intensity(result.intensity());
-      r.set_intensity_variance(result.variance());
+      integrator result = integrator(c, b);
+      reflection.set_intensity(result.intensity());
+      reflection.set_intensity_variance(result.variance());
     }
 
     /**
@@ -85,9 +76,6 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    vec3<double> s0_;
-    vec3<double> m2_;
-    shared_ptr<Detector> detector_;
   };
 
 }} // namespace dials::algorithms

@@ -25,13 +25,7 @@ namespace dials { namespace algorithms { namespace boost_python {
           &SummationReciprocalSpace::operator();     
   
     class_<SummationReciprocalSpace>(
-        "SummationReciprocalSpaceAlgorithm", no_init)
-      .def(init<const shared_ptr<Beam>&,
-                const shared_ptr<Detector>&,
-                const shared_ptr<Goniometer>&>((
-        arg("beam"),
-        arg("detector"),
-        arg("goniometer"))))
+        "SummationReciprocalSpaceAlgorithm")
       .def("__call__", call_w_reflection)
       .def("__call__", call_w_reflection_list);
   }
