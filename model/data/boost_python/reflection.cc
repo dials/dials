@@ -128,6 +128,60 @@ namespace dials { namespace model { namespace boost_python {
       data.handle(), af::c_grid<3>(data.accessor())));
   }
 
+  static
+  af::shared< cctbx::miller::index<> > get_miller_index(const af::const_ref<Reflection> &r) {
+    af::shared< cctbx::miller::index<> > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_miller_index();
+    }
+    return result;
+  }
+
+  static
+  af::shared< double > get_rotation_angle(const af::const_ref<Reflection> &r) {
+    af::shared< double > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_rotation_angle();
+    }
+    return result;
+  }
+
+  static
+  af::shared< vec3<double> > get_beam_vector(const af::const_ref<Reflection> &r) {
+    af::shared< vec3<double> > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_beam_vector();
+    }
+    return result;
+  }
+
+  static
+  af::shared< vec2<double> > get_image_coord_px(const af::const_ref<Reflection> &r) {
+    af::shared< vec2<double> > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_image_coord_px();
+    }
+    return result;
+  }
+  
+  static
+  af::shared< vec2<double> > get_image_coord_mm(const af::const_ref<Reflection> &r) {
+    af::shared< vec2<double> > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_image_coord_mm();
+    }
+    return result;
+  }
+  
+  static
+  af::shared< double > get_frame_number(const af::const_ref<Reflection> &r) {
+    af::shared< double > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_frame_number();
+    }
+    return result;
+  }
+  
 //  static
 //  flex_double get_transformed_shoebox_background(Reflection &obj) {
 //    return flex_double(obj.get_transformed_shoebox_background().handle(), 
@@ -240,7 +294,13 @@ namespace dials { namespace model { namespace boost_python {
         .def_pickle(scitbx::af::boost_python::flex_pickle_double_buffered<
           Reflection, 
           reflection::to_string, 
-          reflection::from_string>());
+          reflection::from_string>())
+        .def("miller_index", &get_miller_index)
+        .def("rotation_angle", &get_rotation_angle)
+        .def("beam_vector", &get_beam_vector)
+        .def("image_coord_px", &get_image_coord_px)
+        .def("image_coord_mm", &get_image_coord_mm)
+        .def("frame_number", &get_frame_number);
   }
   
   void export_reflection() {
