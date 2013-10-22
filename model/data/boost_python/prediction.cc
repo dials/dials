@@ -109,6 +109,7 @@ namespace dials { namespace model { namespace boost_python {
       .def_readwrite("position", &Prediction::position)
       .def_readwrite("panel", &Prediction::panel)
       .def_readwrite("entering", &Prediction::entering)
+      .def_readwrite("crystal", &Prediction::crystal)
       .def("__eq__", &Prediction::operator==)
       .def("__ne__", &Prediction::operator!=);
   }

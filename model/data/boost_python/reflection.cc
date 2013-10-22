@@ -641,6 +641,9 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("corrected_intensity_variance",
         &Reflection::get_corrected_intensity_variance,
         &Reflection::set_corrected_intensity_variance)        
+      .add_property("crystal",
+        &Reflection::get_crystal,
+        &Reflection::set_crystal)        
       .def("__str__", &reflection_to_string)
       .def_pickle(reflection::ReflectionPickleSuite());          
 

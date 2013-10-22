@@ -73,6 +73,17 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
+  
+  /** @returns An array of crystal ids */
+  static
+  af::shared<int> prediction_crystal(
+      const af::const_ref<Prediction> &obj) {
+    af::shared<int> result(obj.size(), af::init_functor_null<int>());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = obj[i].crystal;
+    }
+    return result;
+  }
 
   /** @returns An array of pixel positions */
   static
@@ -167,6 +178,7 @@ namespace dials { namespace af { namespace boost_python {
             << val.beam_vector[2]
             << val.panel
             << val.entering
+            << val.crystal
             << val.position.px[0]
             << val.position.px[1]
             << val.position.px[2]
@@ -202,6 +214,7 @@ namespace dials { namespace af { namespace boost_python {
             >> val.beam_vector[2]
             >> val.panel
             >> val.entering
+            >> val.crystal
             >> val.position.px[0]
             >> val.position.px[1]
             >> val.position.px[2]
@@ -227,6 +240,8 @@ namespace dials { namespace af { namespace boost_python {
         &prediction_panel)
       .def("entering",
         &prediction_entering)
+      .def("crystal",
+        &prediction_crystal)
       .def("position_px",
         &prediction_position_px)
       .def("position_px_xy",

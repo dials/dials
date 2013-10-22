@@ -77,20 +77,23 @@ namespace dials { namespace model {
     PositionData position;
     std::size_t panel;
     bool entering;
+    int crystal;
 
     /** Default construct */
     Prediction()
       : miller_index(0, 0, 0),
         beam_vector(0.0, 0.0, 0.0),
         panel(0),
-        entering(false) {}
+        entering(false),
+        crystal(0) {}
 
     /** Construct with miller index */
     Prediction(MillerIndex miller_index_)
       : miller_index(miller_index_),
         beam_vector(0.0, 0.0, 0.0),
         panel(0),
-        entering(false) {}
+        entering(false),
+        crystal(0) {}
 
     /**
      * Construct with values.
@@ -99,12 +102,14 @@ namespace dials { namespace model {
                vec3<double> beam_vector_,
                const PositionData &position_,
                std::size_t panel_,
-               bool entering_)
+               bool entering_,
+               int crystal_)
       : miller_index(miller_index_),
         beam_vector(beam_vector_),
         position(position_),
         panel(panel_),
-        entering(entering_) {}
+        entering(entering_),
+        crystal(crystal_) {}
 
     /**
      * Construct with values.
@@ -114,12 +119,14 @@ namespace dials { namespace model {
                vec3<double> px_position_,
                vec3<double> mm_position_,
                std::size_t panel_,
-               bool entering_)
+               bool entering_,
+               int crystal_)
       : miller_index(miller_index_),
         beam_vector(beam_vector_),
         position(px_position_, mm_position_),
         panel(panel_),
-        entering(entering_) {}
+        entering(entering_),
+        crystal(crystal_) {}
 
     /**
      * Construct with values.
@@ -131,12 +138,14 @@ namespace dials { namespace model {
                vec2<double> mm_position_,
                double angle_,
                std::size_t panel_,
-               bool entering_)
+               bool entering_,
+               int crystal_)
       : miller_index(miller_index_),
         beam_vector(beam_vector_),
         position(px_position_, frame_, mm_position_, angle_),
         panel(panel_),
-        entering(entering_) {}
+        entering(entering_),
+        crystal(crystal_) {}
 
     /**
      * Test to see if positions contain the same data
@@ -151,7 +160,8 @@ namespace dials { namespace model {
               (std::abs(beam_vector[2] - rhs.beam_vector[2]) < eps) &&
               (panel == rhs.panel) &&
               (entering == rhs.entering) &&
-              (position == rhs.position));
+              (position == rhs.position) &&
+              (crystal == rhs.crystal));
     }
 
     /**

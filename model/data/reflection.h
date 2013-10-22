@@ -141,7 +141,8 @@ namespace dials { namespace model {
         intensity_(0.0),
         intensity_variance_(0.0),
         corrected_intensity_(0.0),
-        corrected_intensity_variance_(0.0) {}
+        corrected_intensity_variance_(0.0),
+        crystal_(0) {}
 
     /**
      * Initialise the reflection with the miller index
@@ -162,7 +163,8 @@ namespace dials { namespace model {
         intensity_(0.0),
         intensity_variance_(0.0),
         corrected_intensity_(0.0),
-        corrected_intensity_variance_(0.0) {}
+        corrected_intensity_variance_(0.0),
+        crystal_(0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle and
@@ -188,7 +190,8 @@ namespace dials { namespace model {
         intensity_(0.0),
         intensity_variance_(0.0),
         corrected_intensity_(0.0),
-        corrected_intensity_variance_(0.0) {}
+        corrected_intensity_variance_(0.0),
+        crystal_(0) {}
 
     /**
      * Initialise the reflection with the miller index, rotation angle,
@@ -216,7 +219,8 @@ namespace dials { namespace model {
         intensity_(0.0),
         intensity_variance_(0.0),
         corrected_intensity_(0.0),
-        corrected_intensity_variance_(0.0) {
+        corrected_intensity_variance_(0.0),
+        crystal_(0) {
     set_entering(entering);
     }
 
@@ -408,6 +412,14 @@ namespace dials { namespace model {
       corrected_intensity_variance_ = variance;
     }
 
+    int get_crystal() const {
+      return crystal_;
+    }
+
+    void set_crystal(int crystal) {
+      crystal_ = crystal;
+    }
+
   public:
 
     double rotation_angle_;
@@ -432,6 +444,8 @@ namespace dials { namespace model {
     double intensity_variance_;
     double corrected_intensity_;
     double corrected_intensity_variance_;
+
+    int crystal_;
   };
 
   /** Print reflection to std::out */
