@@ -340,6 +340,8 @@ class Importer(object):
         try:
             imagesets = ImageSetFactory.new(args, ignore_unknown=True)
             unhandled = []
+            if len(imageset) == 0:
+                return args
             for imageset in imagesets:
                 for argument in args:
                     if argument not in imageset.paths():
