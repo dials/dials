@@ -12,19 +12,6 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 
-
-
-def get_blocks(num_blocks, sweep_length):
-    from math import ceil
-    blocks = [0]
-    block_length = int(ceil(sweep_length / num_blocks))
-    for i in range(num_blocks):
-        frame = (i + 1) * block_length
-        if frame > sweep_length:
-            frame = sweep_length
-        blocks.append(frame)
-    return blocks
-
 class Script(ScriptRunner):
     '''A class for running the script.'''
 
@@ -58,6 +45,11 @@ class Script(ScriptRunner):
         from dials.util.command_line import Command
         from dials.util.command_line import Importer
         from dials.algorithms.integration import ReflectionExtractor2
+        from dials.algorithms.integration import ReflectionPredictor
+        from dials.algorithms.integration import BlockProfileExtractor
+        from dials.algorithms.shoebox import BBoxCalculator
+        from dials.model.data import ReflectionList
+        from dials.array_family import flex
 
         # Try importing the command line arguments
         importer = Importer(args)
@@ -70,47 +62,26 @@ class Script(ScriptRunner):
         sweep = importer.imagesets[0]
         crystal = importer.crystals[0]
 
-        # Get the blocks
-        blocks = get_blocks(options.num_blocks, len(sweep))
+        predict = ReflectionPredictor()
+        predicted = predict(sweep, crystal)
 
-        # Predict the reflections
-        extract = ReflectionExtractor2(params.integration.shoebox.n_sigma)
-        import tarfile
-        import cPickle as pickle
-        import StringIO
-        from time import time
+        n_sigma = params.integration.shoebox.n_sigma
 
-        table = []
+        # Create the bbox calculator
+        compute_bbox = BBoxCalculator(
+            sweep.get_beam(), sweep.get_detector(),
+            sweep.get_goniometer(), sweep.get_scan(),
+            n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
+            n_sigma * crystal.get_mosaicity(deg=False))
 
-        f = tarfile.open(options.output_filename, 'w')
-        for i, (b0, b1) in enumerate(zip(blocks[:-1], blocks[1:])):
-            print '\nExtracting frames %d to %d\n' % (b0, b1)
+        # Calculate the bounding boxes of all the reflections
+        Command.start('Calculating bounding boxes')
+        compute_bbox(predicted)
+        Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
-            extracted = extract(sweep[b0:b1], crystal)
+        predicted = ReflectionList(sorted(predicted, key=lambda x: x.frame_number))
 
-            minz = min([r.frame_number for r in extracted])
-            maxz = max([r.frame_number for r in extracted])
-
-            print int(minz), int(maxz)
-
-            Command.start('Writing file')
-            data = StringIO.StringIO(pickle.dumps(extracted, protocol=pickle.HIGHEST_PROTOCOL))
-            info = f.tarinfo()
-            info.name = 'reflection_%d.p' % i
-            info.size = data.len
-            info.mtime = int(time())
-
-            f.addfile(info, data)
-            Command.end('wrote file')
-            table.append((b0, b1))
-
-        data = StringIO.StringIO(pickle.dumps(table, protocol=pickle.HIGHEST_PROTOCOL))
-        info = f.tarinfo()
-        info.name = 'table.p'
-        info.size = data.len
-        info.mtime = int(time())
-        f.addfile(info, data)
-        f.close()
+        extract = BlockProfileExtractor(sweep, options.num_blocks, predicted)
 
 if __name__ == '__main__':
     script = Script()

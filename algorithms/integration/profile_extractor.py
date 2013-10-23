@@ -171,3 +171,46 @@ class PartialProfileExtractor(object):
 
         # Return the indices and shoeboxes
         return (indices, shoeboxes)
+
+
+class BlockProfileExtractor(object):
+
+    def __init__(self, sweep, nblocks, predicted, filename=None):
+        from dials.model.serialize.partial_shoebox import ShoeboxSplitter
+        from dials.array_family import flex
+        from dials.util.command_line import Command
+
+        # Calculate the blocks
+        self.blocks = self._calculate_blocks(sweep, nblocks)
+
+        # Create the writer
+        if filename == None:
+            filename = 'extracted.tar'
+        writer = ShoeboxSplitter(filename, self.blocks, predicted)
+
+        panels = flex.size_t([p.panel_number for p in predicted])
+        bboxes = flex.int6([p.bounding_box for p in predicted])
+
+        # Extract the frames
+        for i, (b0, b1) in enumerate(zip(self.blocks[:-1], self.blocks[1:])):
+            extract = PartialProfileExtractor(sweep[b0:b1])
+            writer[i] = extract(panels, bboxes)
+
+    def __getitem__(self, index):
+
+        # Check index is valid
+        assert(index >= 0 and index < len(self.blocks)-1)
+
+
+
+    def _calculate_blocks(self, sweep, nblocks):
+        from math import ceil
+        blocks = [0]
+        sweep_length = len(sweep)
+        block_length = int(ceil(sweep_length / nblocks))
+        for i in range(nblocks):
+            frame = (i + 1) * block_length
+            if frame > sweep_length:
+                frame = sweep_length
+            blocks.append(frame)
+        return blocks
