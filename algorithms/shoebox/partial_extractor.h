@@ -32,15 +32,11 @@ namespace dials { namespace algorithms { namespace shoebox {
     /**
      * Initialise the shoeboxes with the given input panels and bounding boxes
      * Setup the shoebox indices and the mask with the given detector mask.
-     * This constructor is for multiple panels. In order to specify lookup
-     * arrays for each panel, the data is input as a single 1D array for each
-     * lookup and the size for each panel is determined from the shape array.
+     * This constructor is for multiple panels.
      * @param panels The list of panel numbers for the shoeboxes
      * @param bboxes The list of bounding boxes for the shoeboxes
-     * @param mask The detector mask lookup
-     * @param gain The detector gain lookup
-     * @param dark The detector dark lookup
-     * @param shape The size of each detector panel
+     * @param zrange The range of frames to extract
+     * @param npanels The number of panels
      */
     PartialExtractor(const af::const_ref<std::size_t> &panels,
                      const af::const_ref<int6> &bboxes,
@@ -72,9 +68,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * Setup the shoebox indices and the mask with the given detector mask.
      * This constructor is for single panels.
      * @param bboxes The list of bounding boxes for the shoeboxes
-     * @param mask The detector mask lookup
-     * @param gain The detector gain lookup
-     * @param dark The detector dark lookup
+     * @param zrange The number of frames to extract
      */
     PartialExtractor(const af::const_ref<int6> &bboxes, int2 zrange)
       : npanels_(1),
@@ -141,6 +135,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       }
     }
 
+    /** @returns The indices of the shoeboxes into the original arrays */
     af::shared<int> shoebox_indices() const {
       af::shared<int> result(shoebox_indices_.size(), 0);
       for (std::size_t i = 0; i < result.size(); ++i) {

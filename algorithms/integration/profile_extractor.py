@@ -102,3 +102,72 @@ class ProfileExtractor(object):
         # Finish the progress bar and return the profiles
         progress.finished("Extracted {0} profiles".format(len(shoeboxes)))
         return shoeboxes
+
+
+class PartialProfileExtractor(object):
+    ''' A class to extract the profiles from the sweep '''
+
+    def __init__(self, sweep):
+        ''' Initialise the class with the sweep etc
+
+        Params:
+            sweep The sweep to process
+
+        '''
+        self.sweep = sweep
+
+    def __call__(self, panels, bboxes):
+        ''' Extract the profiles from the sweep
+
+        Params:
+            panels The panel numbers
+            bboxes The bounding boxes
+
+        Returns:
+            The reflection list
+
+        '''
+        from dials.util.command_line import ProgressBar
+        from dials.algorithms.shoebox import PartialExtractor
+
+        # Set the number of panels
+        image = self.sweep[0]
+        if isinstance(image, tuple):
+            npanels = len(image)
+        else:
+            npanels = 1
+
+        # Get the z range
+        zrange = self.sweep.get_array_range()
+
+        # Create the class to set all the shoebox pixels
+        extractor = PartialExtractor(panels, bboxes, zrange, npanels)
+
+        # For each image in the sweep, get the reflections predicted to have
+        # been recorded on the image and copy the pixels from the image to
+        # the reflection profile image. Update a progress bar as we go along
+        progress = ProgressBar(title = "Extracting frames %d -> %d" % zrange)
+        first_array_index = self.sweep.get_array_range()[0]
+        for index, image in enumerate(self.sweep, start=first_array_index):
+
+            # Ensure the image is a tuple
+            if not isinstance(image, tuple):
+                image = (image,)
+
+            # Loop through all the images and add to the extractor
+            for panel, im in enumerate(image):
+                extractor.add_image(panel, index, im)
+
+            # Update the progress bar
+            progress.update(100*(index-first_array_index+1) / len(self.sweep))
+
+        # Get the shoeboxes from the extractor
+        shoeboxes = extractor.shoeboxes()
+        indices = extractor.shoebox_indices()
+
+        # Finish the progress bar and return the profiles
+        progress.finished("Extracted %d profiles from frames %d -> %d"
+            % ((len(shoeboxes),) + zrange))
+
+        # Return the indices and shoeboxes
+        return (indices, shoeboxes)
