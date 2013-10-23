@@ -83,6 +83,16 @@ class Script(ScriptRunner):
 
         extract = BlockProfileExtractor(sweep, options.num_blocks, predicted)
 
+
+        from dials.model.serialize.partial_shoebox import load_partial_shoeboxes
+
+        reader = load_partial_shoeboxes('extracted.tar')
+        for i in range(len(reader)):
+            Command.start('Reading')
+            reader[i]
+            Command.end('Read')
+
+
 if __name__ == '__main__':
     script = Script()
     script.run()

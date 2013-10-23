@@ -2,10 +2,11 @@
 
 class PartialShoeboxMerger(object):
 
-    def __init__(self, tar, predicted, paths):
+    def __init__(self, tar, predicted, paths, zrange):
         self._predicted = predicted
         self._paths = paths
         self._tar = tar
+        self._zrange = zrange
 
     def __del__(self):
         self._tar.close()
@@ -25,7 +26,14 @@ class PartialShoeboxMerger(object):
             yield self._load_block(i)
 
     def _load_block(self, index):
+        from dials.array_family import flex
         partials = [self._load_partial(p) for p in self.paths(index)]
+        part = flex.partial_shoebox()
+        ind = flex.int()
+        for i, s in partials:
+            part.extend(s)
+            ind.extend(i)
+        partials = (ind, part)
         indices, shoeboxes = zip(*self._merge_partials(partials))
         return (self._predicted.select(flex.size_t(indices)), shoeboxes)
 
@@ -35,10 +43,12 @@ class PartialShoeboxMerger(object):
 
     def _merge_partials(self, partials):
         from collections import defaultdict
+        from dials.array_family import flex
         tomerge = defaultdict(list)
-        for index, shoebox in partials:
+        for index, shoebox in zip(*partials):
             tomerge[index].append(shoebox)
-        return [(i, sum(m)) for i, m in tomerge.iteritems()]
+
+        return [(i, flex.partial_shoebox(m).merge(self._zrange)) for i, m in tomerge.iteritems()]
 
 
 class ShoeboxSplitter(object):
@@ -85,7 +95,7 @@ class ShoeboxSplitter(object):
         from collections import defaultdict
         sperb = defaultdict(list)
         for i in range(len(indices)):
-            sperb[self.block(int(self._predicted[i].frame_number))].append(i)
+            sperb[self.block(int(self._predicted[indices[i]].frame_number))].append(i)
         return sperb
 
     def _dump_shoeboxes(self, block, indices, shoeboxes):
@@ -106,7 +116,8 @@ class ShoeboxSplitter(object):
         import cPickle as pickle
         from StringIO import StringIO
         from time import time
-        index = { 'paths' : self._paths, 'predicted' : self._predicted }
+        zrange = min(self._blocks), max(self._blocks)
+        index = { 'paths' : self._paths, 'predicted' : self._predicted, 'zrange' : zrange }
         data = StringIO(pickle.dumps(index, protocol=pickle.HIGHEST_PROTOCOL))
         info = self._tar.tarinfo()
         info.name = 'index.p'
@@ -117,10 +128,10 @@ class ShoeboxSplitter(object):
 
 def load_partial_shoeboxes(filename):
     import tarfile
-    import cPickle as pickles
+    import cPickle as pickle
     tar = tarfile.open(filename)
     index = pickle.load(tar.extractfile('index.p'))
-    return PartialShoeboxMerger(tar, index['predicted'], index['paths'])
+    return PartialShoeboxMerger(tar, index['predicted'], index['paths'], index['zrange'])
 
 if __name__ == '__main__':
 
