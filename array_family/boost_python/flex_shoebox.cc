@@ -497,7 +497,8 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Convert a single shoebox instance to string */
     shoebox_to_string& operator<<(const shoebox_type &val) {
-      *this << val.bbox[0]
+      *this << val.panel
+            << val.bbox[0]
             << val.bbox[1]
             << val.bbox[2]
             << val.bbox[3]
@@ -543,7 +544,8 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Get a single shoebox instance from a string */
     shoebox_from_string& operator>>(shoebox_type &val) {
-      *this >> val.bbox[0]
+      *this >> val.panel
+            >> val.bbox[0]
             >> val.bbox[1]
             >> val.bbox[2]
             >> val.bbox[3]

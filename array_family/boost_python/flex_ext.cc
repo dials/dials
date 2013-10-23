@@ -21,6 +21,7 @@ namespace dials { namespace af { namespace boost_python {
 
   void export_flex_int6();
   void export_flex_mat3_double();
+  void export_flex_partial_shoebox();
   void export_flex_shoebox();
   void export_flex_centroid();
   void export_flex_intensity();
@@ -44,6 +45,7 @@ namespace dials { namespace af { namespace boost_python {
   {
     export_flex_int6();
     export_flex_mat3_double();
+    export_flex_partial_shoebox();
     export_flex_shoebox();
     export_flex_centroid();
     export_flex_intensity();
