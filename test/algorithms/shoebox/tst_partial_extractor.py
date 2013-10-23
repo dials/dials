@@ -9,15 +9,10 @@ class TestSinglePanel(object):
         # Create the mask, gainmap and dark map
         xsize, ysize = (2000, 2000)
         size = xsize * ysize
-        self.mask = flex.random_bool(size, 0.9)
-        self.gain_map = flex.random_double(size, 0.1) + 0.95
-        self.dark_map = flex.random_double(size, 0.1) + 0.0
-        self.mask.reshape(flex.grid(ysize, xsize))
-        self.gain_map.reshape(flex.grid(ysize, xsize))
-        self.dark_map.reshape(flex.grid(ysize, xsize))
 
         # Generate some reflections
         self.reflections = self.generate_reflections(1000)
+        self.zrange = (2, 7)
 
     def generate_reflections(self, num):
         ''' Generate some random reflections.'''
@@ -47,8 +42,9 @@ class TestSinglePanel(object):
 
         # Create the extractor
         bboxes = flex.int6([r.bounding_box for r in self.reflections])
-        extractor = shoebox.Extractor(bboxes, self.mask,
-                                      self.gain_map, self.dark_map)
+        extractor = shoebox.PartialExtractor(bboxes, self.zrange)
+
+        assert(len(extractor.shoeboxes()) == len(extractor.shoebox_indices()))
 
         # Create a dictionary of flex arrays
         frames_to_reflection = defaultdict(flex.int)
@@ -62,11 +58,13 @@ class TestSinglePanel(object):
                 for f in range(f0, f1):
                     frames_to_reflection[f].append(i)
 
+
         # Ensure both give the same indices
         for k, v in frames_to_reflection.iteritems():
-            index1 = v
-            index2 = extractor.indices(0, k)
-            assert(index1 == index2)
+            if k >= self.zrange[0] and k < self.zrange[1]:
+                index1 = v
+                index2 = extractor.indices(0, k)
+                assert(index1 == index2)
 
 
         # Test passed
@@ -80,28 +78,27 @@ class TestSinglePanel(object):
 
         # Create the extractor
         bboxes = flex.int6([r.bounding_box for r in self.reflections])
-        extractor = shoebox.Extractor(bboxes, self.mask,
-                                      self.gain_map, self.dark_map)
+        extractor = shoebox.PartialExtractor(bboxes, self.zrange)
 
         # Add all the images to the shoeboxes
         images = []
-        for i in range(10):
+        for i in range(0, 10):
             image = flex.random_int_gaussian_distribution(2000*2000, 100, 10)
             image.reshape(flex.grid(2000, 2000))
             images.append(image)
-            extractor.add_image(0, i, image)
+
+            if i >= self.zrange[0] and i < self.zrange[1]:
+                extractor.add_image(0, i, image)
 
         shoeboxes = extractor.shoeboxes()
-
-        # The accuracy
-        eps = 1e-7
 
         # Check all reflection shoeboxes have the correct values
         for r in shoeboxes:
             x0, x1, y0, y1, z0, z1 = r.bbox
+            z0, z1 = r.zrange
             x00, x11, y00, y11, z00, z11 = r.bbox
+            z00, z11 = r.zrange
             profile = r.data
-            pmask = r.mask
 
             # Clip coordinates
             if x0 < 0: x0 = 0
@@ -114,7 +111,7 @@ class TestSinglePanel(object):
             # Ensure that the values are either all zero or all the
             # same as the image at the same coordinates
             if x1 <= x0 or y1 <= y0 or z1 <= z0:
-                assert(abs(profile).all_le(eps))
+                assert(profile.all_eq(0))
             else:
                 for k in range(z0, z1):
                     for j in range(y0, y1):
@@ -122,13 +119,10 @@ class TestSinglePanel(object):
                             kk = k - z00
                             jj = j - y00
                             ii = i - x00
-                            value1 = self.gain_map[j, i] * (
-                                images[k][j, i] - self.dark_map[j, i])
+                            value1 = images[k][j, i]
                             value2 = profile[kk, jj, ii]
-                            assert(abs(value1 - value2) <= eps)
-                            mask1 = self.mask[j,i]
-                            mask2 = pmask[kk, jj, ii]
-                            assert(mask1 == (mask2 & shoebox.MaskCode.Valid))
+                            assert(value1 == value2)
+
 
         # Test passed
         print 'OK'
@@ -143,13 +137,7 @@ class TestMultiPanel(object):
         xsize, ysize = (500, 500)
         size = xsize * ysize
         self.npanels = 10
-        self.mask = tuple([flex.random_bool(size, 0.9) for n in range(self.npanels)])
-        self.gain_map = tuple([flex.random_double(size, 0.1) + 0.95 for n in range(self.npanels)])
-        self.dark_map = tuple([flex.random_double(size, 0.1) + 0.0 for n in range(self.npanels)])
-        for m, g, d in zip(self.mask, self.gain_map, self.dark_map):
-            m.reshape(flex.grid(ysize, xsize))
-            g.reshape(flex.grid(ysize, xsize))
-            d.reshape(flex.grid(ysize, xsize))
+        self.zrange = (2, 7)
 
         # Generate some reflections
         self.reflections = self.generate_reflections(1000)
@@ -187,8 +175,10 @@ class TestMultiPanel(object):
         panels2 = flex.size_t(len(panels))
         for i in range(len(panels)):
             panels2[i] = panels[i]
-        extractor = shoebox.Extractor(panels2, bboxes, self.mask,
-                                      self.gain_map, self.dark_map)
+        extractor = shoebox.PartialExtractor(panels2, bboxes,
+          self.zrange, self.npanels)
+
+        assert(len(extractor.shoeboxes()) == len(extractor.shoebox_indices()))
 
         # Create a dictionary of flex arrays
         frames_to_reflection = defaultdict(flex.int)
@@ -205,9 +195,10 @@ class TestMultiPanel(object):
 
         # Ensure both give the same indices
         for k, v in frames_to_reflection.iteritems():
-            index1 = v
-            index2 = extractor.indices(k[0], k[1])
-            assert(index1 == index2)
+            if k >= self.zrange[0] and k < self.zrange[1]:
+                index1 = v
+                index2 = extractor.indices(k[0], k[1])
+                assert(index1 == index2)
 
 
         # Test passed
@@ -225,8 +216,8 @@ class TestMultiPanel(object):
         panels2 = flex.size_t(len(panels))
         for i in range(len(panels)):
             panels2[i] = panels[i]
-        extractor = shoebox.Extractor(panels2, bboxes, self.mask,
-                                      self.gain_map, self.dark_map)
+        extractor = shoebox.PartialExtractor(panels2, bboxes,
+            self.zrange, self.npanels)
 
         # Add all the images to the shoeboxes
         images = [[] for i in range(self.npanels)]
@@ -235,19 +226,19 @@ class TestMultiPanel(object):
                 image = flex.random_int_gaussian_distribution(500*500, 100, 10)
                 image.reshape(flex.grid(500, 500))
                 images[p].append(image)
-                extractor.add_image(p, i, image)
+
+                if i >= self.zrange[0] and i < self.zrange[1]:
+                    extractor.add_image(p, i, image)
 
         shoeboxes = extractor.shoeboxes()
-
-        # The accuracy
-        eps = 1e-7
 
         # Check all reflection shoeboxes have the correct values
         for r in shoeboxes:
             x0, x1, y0, y1, z0, z1 = r.bbox
+            z0, z1 = r.zrange
             x00, x11, y00, y11, z00, z11 = r.bbox
+            z00, z11 = r.zrange
             profile = r.data
-            pmask = r.mask
             panel = r.panel
 
             # Clip coordinates
@@ -261,7 +252,7 @@ class TestMultiPanel(object):
             # Ensure that the values are either all zero or all the
             # same as the image at the same coordinates
             if x1 <= x0 or y1 <= y0 or z1 <= z0:
-                assert(abs(profile).all_le(eps))
+                assert(profile.all_eq(0))
             else:
                 for k in range(z0, z1):
                     for j in range(y0, y1):
@@ -269,13 +260,9 @@ class TestMultiPanel(object):
                             kk = k - z00
                             jj = j - y00
                             ii = i - x00
-                            value1 = self.gain_map[panel][j, i] * (
-                                images[panel][k][j, i] - self.dark_map[panel][j, i])
+                            value1 = images[panel][k][j, i]
                             value2 = profile[kk, jj, ii]
-                            assert(abs(value1 - value2) <= eps)
-                            mask1 = self.mask[panel][j,i]
-                            mask2 = pmask[kk, jj, ii]
-                            assert(mask1 == (mask2 & shoebox.MaskCode.Valid))
+                            assert(value1 == value2)
 
         # Test passed
         print 'OK'
@@ -287,7 +274,7 @@ class Test:
         self.tst_multi_panel = TestMultiPanel()
 
     def run(self):
-        self.tst_single_panel.run()
+        #self.tst_single_panel.run()
         self.tst_multi_panel.run()
 
 if __name__ == '__main__':

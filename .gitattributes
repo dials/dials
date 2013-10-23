@@ -199,6 +199,7 @@ algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
 algorithms/shoebox/boost_python/mask_code.cc -text
 algorithms/shoebox/boost_python/mask_foreground.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
+algorithms/shoebox/boost_python/partial_extractor.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
 algorithms/shoebox/extractor.h -text
 algorithms/shoebox/find_overlapping.h -text
@@ -208,6 +209,7 @@ algorithms/shoebox/mask_code.h -text
 algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
+algorithms/shoebox/partial_extractor.h -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
 algorithms/spatial_indexing/boost_python/octree.cc -text
@@ -591,6 +593,7 @@ test/algorithms/shoebox/tst_extractor.py -text
 test/algorithms/shoebox/tst_helpers.py -text
 test/algorithms/shoebox/tst_mask_foreground.py -text
 test/algorithms/shoebox/tst_mask_overlapping.py -text
+test/algorithms/shoebox/tst_partial_extractor.py -text
 test/algorithms/spatial_indexing/tst_collision_detection.cc -text
 test/algorithms/spatial_indexing/tst_octree.cc -text
 test/algorithms/spatial_indexing/tst_quadtree.cc -text
