@@ -240,6 +240,7 @@ array_family/boost_python/flex_int6.cc -text
 array_family/boost_python/flex_intensity.cc -text
 array_family/boost_python/flex_mat3_double.cc -text
 array_family/boost_python/flex_observation.cc -text
+array_family/boost_python/flex_partial_shoebox.cc -text
 array_family/boost_python/flex_prediction.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/flex.py -text
@@ -363,11 +364,13 @@ model/data/adjacency_list.h -text
 model/data/boost_python/adjacency_list.cc -text
 model/data/boost_python/data_ext.cc -text
 model/data/boost_python/observation.cc -text
+model/data/boost_python/partial_shoebox.cc -text
 model/data/boost_python/pickle.h -text
 model/data/boost_python/prediction.cc -text
 model/data/boost_python/reflection.cc -text
 model/data/boost_python/shoebox.cc -text
 model/data/observation.h -text
+model/data/partial_shoebox.h -text
 model/data/prediction.h -text
 model/data/reflection.h -text
 model/data/shoebox.h -text
@@ -598,6 +601,7 @@ test/array_family/tst_flex_shoebox.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
 test/model/data/tst_observation.py -text
+test/model/data/tst_partial_shoebox.py -text
 test/model/data/tst_prediction.py -text
 test/model/data/tst_reflection_pickle.py -text
 test/model/data/tst_shoebox.py -text
