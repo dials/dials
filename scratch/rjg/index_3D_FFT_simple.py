@@ -344,23 +344,15 @@ class indexer(object):
       self.reflections_in_scan_range.append(i_ref)
 
   def map_centroids_to_reciprocal_space(self):
-    self.reciprocal_space_points = flex.vec3_double()
-
-    wavelength = self.beam.get_wavelength()
-    s0 = matrix.col(self.beam.get_s0())
-    rotation_axis = matrix.col(
-      self.goniometer.get_rotation_axis())
-
-    for i_ref in self.reflections_in_scan_range:
-      refl = self.reflections[i_ref]
-      s1 = matrix.col(
-        self.detector.get_lab_coord(refl.centroid_position[:2]))
-      s1 = s1.normalize()/wavelength
-      refl.beam_vector = tuple(s1) # needed by ray_intersection
-      S = s1 - s0
-      phi = refl.rotation_angle
-      point = S.rotate_around_origin(rotation_axis, -phi, deg=False)
-      self.reciprocal_space_points.append(tuple(point))
+    reflections = self.reflections.select(self.reflections_in_scan_range)
+    x, y, _ = reflections.centroid_position().parts()
+    s1 = self.detector.get_lab_coord(flex.vec2_double(x,y))
+    s1 = s1/s1.norms() * (1/self.beam.get_wavelength())
+    self.reflections.set_beam_vector(s1) # needed by refinement
+    S = s1 - self.beam.get_s0()
+    self.reciprocal_space_points = S.rotate_around_origin(
+      self.goniometer.get_rotation_axis(),
+      -reflections.rotation_angle())
 
   def map_centroids_to_reciprocal_space_grid(self):
     self.map_centroids_to_reciprocal_space()
