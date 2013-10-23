@@ -76,11 +76,11 @@ class Test(object):
     def tst_zranges(self):
         from dials.model.data import PartialShoebox
         from random import randint, sample
-        from dials.array_family import flex
+        from dials.array_family import flex, shared
 
         shoebox = flex.partial_shoebox(10)
         bbox = flex.int6(10)
-        zrange = flex.int2(10)
+        zrange = shared.tiny_int_2(10)
         for i in range(10):
             x0 = randint(0, 90)
             y0 = randint(0, 90)

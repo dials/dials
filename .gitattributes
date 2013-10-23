@@ -238,7 +238,6 @@ array_family/SConscript -text
 array_family/__init__.py -text
 array_family/boost_python/flex_centroid.cc -text
 array_family/boost_python/flex_ext.cc -text
-array_family/boost_python/flex_int2.cc -text
 array_family/boost_python/flex_int6.cc -text
 array_family/boost_python/flex_intensity.cc -text
 array_family/boost_python/flex_mat3_double.cc -text
@@ -249,6 +248,7 @@ array_family/boost_python/flex_shoebox.cc -text
 array_family/flex.py -text
 array_family/import_scitbx_af.h -text
 array_family/scitbx_shared_and_versa.h -text
+array_family/shared.py -text
 array_family/sort_index.h -text
 command_line/analyse_blank.py -text
 command_line/background_lookup.py -text
