@@ -156,6 +156,25 @@ namespace dials { namespace model { namespace boost_python {
   }
 
   static
+  void set_beam_vector(
+      af::ref<Reflection> const& r,
+      af::const_ref<vec3 <double> > const& beam_vector) {
+    af::shared< vec3<double> > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      r[i].set_beam_vector(beam_vector[i]);
+    }
+  }
+
+  static
+  af::shared< vec3<double> > get_centroid_position(const af::const_ref<Reflection> &r) {
+    af::shared< vec3<double> > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_centroid_position();
+    }
+    return result;
+  }
+
+  static
   af::shared< vec2<double> > get_image_coord_px(const af::const_ref<Reflection> &r) {
     af::shared< vec2<double> > result(r.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -297,7 +316,9 @@ namespace dials { namespace model { namespace boost_python {
           reflection::from_string>())
         .def("miller_index", &get_miller_index)
         .def("rotation_angle", &get_rotation_angle)
+        .def("centroid_position", &get_centroid_position)
         .def("beam_vector", &get_beam_vector)
+        .def("set_beam_vector", &set_beam_vector)
         .def("image_coord_px", &get_image_coord_px)
         .def("image_coord_mm", &get_image_coord_mm)
         .def("frame_number", &get_frame_number);
