@@ -10,6 +10,8 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost/unordered_map.hpp>
+#include <boost_adaptbx/std_pair_conversion.h>
 #include <cmath>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
@@ -133,6 +135,36 @@ namespace dials { namespace af { namespace boost_python {
     // Return the new shoebox
     return shoebox;
   }
+  
+  /**
+   * Merge all shoeboxes and return indices and shoeboxes
+   */
+  template <typename FloatType>
+  std::pair< af::shared<std::size_t>, af::shared< Shoebox<FloatType> > >
+  merge_all(const const_ref<PartialShoebox> &shoeboxes, 
+      const const_ref<std::size_t> &indices, int2 srange) {
+
+    // Some useful typedefs
+    typedef boost::unordered_map<std::size_t, af::shared<PartialShoebox> > map_type;
+    typedef typename map_type::iterator iterator;
+    typedef Shoebox<FloatType> shoebox_type;
+
+    // Construct a map of the shoeboxes to merge
+    DIALS_ASSERT(indices.size() == shoeboxes.size());
+    map_type tomerge(indices.size());
+    for (std::size_t i = 0; i < indices.size(); ++i) {
+      tomerge[indices[i]].push_back(shoeboxes[i]);
+    }
+    
+    // Merge all the shoeboxes
+    af::shared<std::size_t> cindices;
+    af::shared<shoebox_type> cshoeboxes;
+    for (iterator it = tomerge.begin(); it != tomerge.end(); ++it) {
+      cindices.push_back(it->first);
+      cshoeboxes.push_back(merge<FloatType>(it->second.const_ref(), srange));
+    }
+    return std::make_pair(cindices, cshoeboxes);
+  }
    
   /**
    * A class to convert the shoebox class to a string for pickling
@@ -240,6 +272,7 @@ namespace dials { namespace af { namespace boost_python {
         .def("bounding_boxes", &bounding_boxes)
         .def("zranges", &zranges)
         .def("merge", &merge<ProfileFloatType>)
+        .def("merge_all", &merge_all<ProfileFloatType>)
         .def_pickle(flex_pickle_double_buffered<PartialShoebox, 
           partial_shoebox_to_string, 
           partial_shoebox_from_string>());
@@ -247,6 +280,11 @@ namespace dials { namespace af { namespace boost_python {
 
   void export_flex_partial_shoebox() {
     flex_partial_shoebox_wrapper("partial_shoebox");
+
+    boost_adaptbx::std_pair_conversions::to_and_from_tuple<
+      af::shared<std::size_t>, 
+      af::shared<Shoebox<ProfileFloatType> > >();
+
   }
 
 }}} // namespace dials::af::boost_python

@@ -1,59 +1,90 @@
+#!/usr/bin/env python
+#
+# dials.model.serialize.partial_shoebox.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+
+from __future__ import division
 
 
-class PartialShoeboxMerger(object):
+class Reader(object):
+    ''' A class to read partial shoeboxes. '''
 
-    def __init__(self, tar, predicted, paths, zrange):
-        self._predicted = predicted
-        self._paths = paths
-        self._tar = tar
-        self._zrange = zrange
+    def __init__(self, filename):
+        ''' Load the file and read the index. '''
+        import tarfile
+        import cPickle as pickle
+        self._tar = tarfile.open(filename)
+        index = pickle.load(self._tar.extractfile('index.p'))
+        self._predicted = index['predicted']
+        self._paths = index['paths']
+        self._zrange = index['zrange']
 
     def __del__(self):
-        self._tar.close()
-
-    def paths(self, index):
-        assert(index >= 0 and index < len(self))
-        return iter(self._paths[index])
+        ''' close the file. '''
+        self.close()
 
     def __getitem__(self, index):
-        return self._load_block(index)
+        ''' Read a block of shoeboxes '''
+        return self.read(index)
 
     def __len__(self):
+        ''' Get the number of blocks. '''
         return len(self._paths)
 
     def __iter__(self):
+        ''' Iterate through the blocks. '''
         for i in range(len(self)):
-            yield self._load_block(i)
+            yield self.read(i)
+
+    def close(self):
+        ''' Close the file. '''
+        if not self._tar.closed:
+            self._tar.close()
+
+    def read(self, index):
+        ''' Read a block of shoeboxes '''
+        return self._load_block(index)
+
+    def paths(self, index):
+        ''' Get the list of paths for a particular block. '''
+        return iter(self._paths[index])
+
+    def predictions(self):
+        ''' Get the predictions. '''
+        return self._predicted
+
+    def zrange(self):
+        ''' Get the z range. '''
+        return self._zrange
 
     def _load_block(self, index):
+        ''' Load a block of shoeboxes. '''
         from dials.array_family import flex
-        partials = [self._load_partial(p) for p in self.paths(index)]
-        part = flex.partial_shoebox()
-        ind = flex.int()
-        for i, s in partials:
-            part.extend(s)
-            ind.extend(i)
-        partials = (ind, part)
-        indices, shoeboxes = zip(*self._merge_partials(partials))
-        return (self._predicted.select(flex.size_t(indices)), shoeboxes)
+        shoeboxes = flex.partial_shoebox()
+        indices = flex.size_t()
+        for p in self.paths(index):
+            i, s = self._load_partial(p)
+            indices.extend(i)
+            shoeboxes.extend(s)
+        return shoeboxes.merge_all(indices, self._zrange)
 
     def _load_partial(self, path):
+        ''' Load a list of partial shoeboxes '''
         import cPickle as pickle
         return pickle.load(self._tar.extractfile(path))
 
-    def _merge_partials(self, partials):
-        from collections import defaultdict
-        from dials.array_family import flex
-        tomerge = defaultdict(list)
-        for index, shoebox in zip(*partials):
-            tomerge[index].append(shoebox)
 
-        return [(i, flex.partial_shoebox(m).merge(self._zrange)) for i, m in tomerge.iteritems()]
+class Writer(object):
+    ''' A class to write partial shoeboxes '''
 
-
-class ShoeboxSplitter(object):
-
-    def __init__(self, filename, blocks, predicted):
+    def __init__(self, filename, predicted, blocks):
+        ''' Open the file for writing. '''
         from collections import defaultdict
         import tarfile
         assert(len(blocks) > 1)
@@ -71,19 +102,33 @@ class ShoeboxSplitter(object):
             self._lookup.append(count)
 
     def __del__(self):
-        self._dump_index()
-        self._tar.close()
+        ''' Close the file. '''
+        self.close()
 
     def __setitem__(self, index, item):
-        self._dump_block(index, *item)
+        ''' Write shoeboxes for a block. '''
+        self.write(index, *item)
 
     def __len__(self):
+        ''' Get the number of blocks. '''
         return len(self._blocks) - 1
 
+    def close(self):
+        ''' Dump the index and close the file. '''
+        if not self._tar.closed:
+            self._dump_index()
+            self._tar.close()
+
+    def write(self, index, indices, shoeboxes):
+        ''' Write a block of shoeboxes. '''
+        self._dump_block(index, indices, shoeboxes)
+
     def block(self, frame):
+        ''' Get the block at a certain frame. '''
         return self._lookup[frame]
 
     def _dump_block(self, index, indices, shoeboxes):
+        ''' Dump a block of shoeboxes to file. '''
         from scitbx.array_family import flex
         assert(len(indices) == len(shoeboxes))
         for block, sind in self._split(indices).iteritems():
@@ -92,13 +137,16 @@ class ShoeboxSplitter(object):
                 shoeboxes.select(sind))
 
     def _split(self, indices):
+        ''' Split the shoeboxes based on the target block. '''
         from collections import defaultdict
         sperb = defaultdict(list)
         for i in range(len(indices)):
-            sperb[self.block(int(self._predicted[indices[i]].frame_number))].append(i)
+            frame = int(self._predicted[indices[i]].frame_number)
+            sperb[self.block(frame)].append(i)
         return sperb
 
     def _dump_shoeboxes(self, block, indices, shoeboxes):
+        ''' Dump a list of partial shoeboxes to file. '''
         import cPickle as pickle
         from StringIO import StringIO
         from uuid import uuid4
@@ -113,63 +161,18 @@ class ShoeboxSplitter(object):
         self._paths[block].append(info.name)
 
     def _dump_index(self):
+        ''' Dump the index to the file. '''
         import cPickle as pickle
         from StringIO import StringIO
         from time import time
-        zrange = min(self._blocks), max(self._blocks)
-        index = { 'paths' : self._paths, 'predicted' : self._predicted, 'zrange' : zrange }
+        index = {
+          'paths' : self._paths,
+          'predicted' : self._predicted,
+          'zrange' : (min(self._blocks), max(self._blocks))
+        }
         data = StringIO(pickle.dumps(index, protocol=pickle.HIGHEST_PROTOCOL))
         info = self._tar.tarinfo()
         info.name = 'index.p'
         info.size = data.len
         info.mtime = int(time())
         self._tar.addfile(info, data)
-
-
-def load_partial_shoeboxes(filename):
-    import tarfile
-    import cPickle as pickle
-    tar = tarfile.open(filename)
-    index = pickle.load(tar.extractfile('index.p'))
-    return PartialShoeboxMerger(tar, index['predicted'], index['paths'], index['zrange'])
-
-if __name__ == '__main__':
-
-    import tarfile
-    import StringIO
-    from time import time
-    import cPickle as pickle
-    from scitbx.array_family import flex
-
-    predicted = flex.int(100, 0)
-
-    paths = [[] for i in range(10)]
-
-    outfile = tarfile.open("temp.tar", 'w')
-    for i in range(100):
-        data = StringIO.StringIO(pickle.dumps((i // 10, i)))
-        info = outfile.tarinfo()
-        info.name = '%04x.p' % i
-        info.size = data.len
-        info.mtime = int(time())
-        outfile.addfile(info, data)
-        predicted[i] = i
-        paths[i % 10].append(info.name)
-
-
-    index = { 'paths' : paths, 'predicted' : predicted }
-    data = StringIO.StringIO(pickle.dumps(index))
-    info = outfile.tarinfo()
-    info.name = 'index.p'
-    info.size = data.len
-    info.mtime = int(time())
-    outfile.addfile(info, data)
-
-    outfile.close()
-
-
-    merger = load_partial_shoeboxes('temp.tar')
-
-    for m in merger:
-        p, s = m
-        print list(p), s

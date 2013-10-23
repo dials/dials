@@ -5,10 +5,14 @@ import libtbx.load_env
 tst_list = (
     "$D/test/tst_spots_xds.py",
     "$D/test/array_family/tst_flex_shoebox.py",
+    "$D/test/array_family/tst_flex_partial_shoebox.py",
     "$D/test/model/data/tst_reflection_pickle.py",
     "$D/test/model/data/tst_shoebox.py",
+    "$D/test/model/data/tst_partial_shoebox.py",
     "$D/test/model/data/tst_prediction.py",
     "$D/test/model/data/tst_observation.py",
+    "$D/test/model/data/serialize/tst_serialize.py",
+    "$D/test/model/data/serialize/tst_partial_shoeboxes.py",
     "$D/test/model/experiment/tst_crystal_model.py",
     "$D/test/algorithms/spot_prediction/tst_index_generator.py",
     "$D/test/algorithms/spot_prediction/tst_ray_predictor.py",
@@ -49,6 +53,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_mask_foreground.py",
     "$D/test/algorithms/shoebox/tst_mask_overlapping.py",
     "$D/test/algorithms/shoebox/tst_extractor.py",
+    "$D/test/algorithms/shoebox/tst_partial_extractor.py"
     "$D/test/algorithms/shoebox/tst_helpers.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     "$D/scratch/rjg/tst_index.py",

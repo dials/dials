@@ -44,7 +44,6 @@ class Script(ScriptRunner):
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
         from dials.util.command_line import Importer
-        from dials.algorithms.integration import ReflectionExtractor2
         from dials.algorithms.integration import ReflectionPredictor
         from dials.algorithms.integration import BlockProfileExtractor
         from dials.algorithms.shoebox import BBoxCalculator
@@ -83,14 +82,23 @@ class Script(ScriptRunner):
 
         extract = BlockProfileExtractor(sweep, options.num_blocks, predicted)
 
-
-        from dials.model.serialize.partial_shoebox import load_partial_shoeboxes
-
-        reader = load_partial_shoeboxes('extracted.tar')
-        for i in range(len(reader)):
+        for i in range(len(extract)):
             Command.start('Reading')
-            reader[i]
+            extract[i]
             Command.end('Read')
+
+#        from dials.model.serialize import partial_shoebox
+
+#        reader = partial_shoebox.Reader('extracted.tar')
+#
+#        from time import time
+#        st = time()
+#        for r in range(len(reader)):
+#            stt = time()
+#            reader[r]
+#            print time() - stt
+#
+#        print "Total Time: ", time() - st
 
 
 if __name__ == '__main__':

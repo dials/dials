@@ -136,8 +136,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     /** @returns The indices of the shoeboxes into the original arrays */
-    af::shared<int> shoebox_indices() const {
-      af::shared<int> result(shoebox_indices_.size(), 0);
+    af::shared<std::size_t> shoebox_indices() const {
+      af::shared<std::size_t> result(shoebox_indices_.size(), 0);
       for (std::size_t i = 0; i < result.size(); ++i) {
         result[i] = shoebox_indices_[i];
       }
@@ -187,7 +187,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     std::size_t npanels_;
     int2 zrange_;
     af::shared<PartialShoebox> shoeboxes_;
-    af::shared<int> shoebox_indices_;
+    af::shared<std::size_t> shoebox_indices_;
     af::versa< std::vector<int>, af::c_grid<2> > indices_;
   };
 
