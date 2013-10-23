@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
    * @param k The number of the moment
    * @return The moment
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   FloatType moment(const af::const_ref<FloatType> &data,
       FloatType c, std::size_t k) {
     std::size_t n = data.size();
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations
    * @returns True/False
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   bool is_poisson_distributed(const af::const_ref<FloatType> &data,
       double n_sigma) {
 

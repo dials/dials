@@ -30,7 +30,7 @@ namespace dials { namespace algorithms {
    * @param kernel The kernel to convolve with
    * @returns The convolved image
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< FloatType, af::c_grid<2> > convolve(
       const af::const_ref<FloatType, af::c_grid<2> > &image,
       const af::const_ref<FloatType, af::c_grid<2> > &kernel) {
@@ -76,7 +76,7 @@ namespace dials { namespace algorithms {
    * @param kernel The kernel to convolve with
    * @returns The convolved image
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< FloatType, af::c_grid<2> > convolve_row(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< FloatType > &kernel) {

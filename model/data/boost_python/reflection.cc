@@ -65,7 +65,7 @@ namespace dials { namespace model { namespace boost_python {
       result[i].shoebox_background_ = s[i].background;
     }
     
-    return new typename af::flex<Reflection>::type(
+    return new af::flex<Reflection>::type(
       result, af::flex_grid<>(result.size()));
   }
   

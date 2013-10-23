@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @param s The standard deviation of the distribution
    * @returns The value of the gaussian at that point
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   FloatType evaluate_gaussian(FloatType x, FloatType x0, FloatType s) {
     FloatType v = (x - x0) / s;
     return std::exp(-(v * v) / 2.0);
@@ -37,7 +37,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
    * @param nsig The number of standard deviations
    * @returns The profile
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< FloatType, af::c_grid<3> >
   ideal_profile(std::size_t size, std::size_t nsig) {
     FloatType centre = size;

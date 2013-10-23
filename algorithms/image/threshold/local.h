@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations
    * @returns The thresholded image
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > niblack(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double n_sigma) {
@@ -69,7 +69,7 @@ namespace dials { namespace algorithms {
    * @param r A parameter
    * @returns The thresholded image
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > sauvola(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double k, double r) {
@@ -105,7 +105,7 @@ namespace dials { namespace algorithms {
    * @param size The size of the local window
    * @param n_sigma The number of standard deviations.
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > fano(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       int2 size, double n_sigma) {
@@ -146,7 +146,7 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum counts for a point to be valid
    * @param n_sigma The number of standard deviations.
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > fano_masked(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
@@ -196,7 +196,7 @@ namespace dials { namespace algorithms {
    * @param min_count The minimum counts for a point to be valid
    * @param n_sigma The number of standard deviations.
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > gain(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
@@ -248,7 +248,7 @@ namespace dials { namespace algorithms {
    * @param nsig_b The background threshold.
    * @param nsig_s The strong pixel threshold
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > kabsch(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
@@ -300,7 +300,7 @@ namespace dials { namespace algorithms {
    * @param nsig_b The background threshold.
    * @param nsig_s The strong pixel threshold
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   af::versa< bool, af::c_grid<2> > kabsch_w_gain(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,

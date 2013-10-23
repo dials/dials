@@ -47,7 +47,7 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   FloatType minimum_n_sigma(const af::const_ref<FloatType> &data) {
 
     // Calculate the mean and standard deviation of the data
@@ -69,7 +69,7 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   FloatType maximum_n_sigma(const af::const_ref<FloatType> &data) {
 
     // Calculate the mean and standard deviation of the data
@@ -91,7 +91,7 @@ namespace dials { namespace algorithms {
    * @param n_obs The number of observations
    * @returns The expected number of standard deviations
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   FloatType absolute_maximum_n_sigma(const af::const_ref<FloatType> &data) {
 
     // Calculate the mean and standard deviation of the data
@@ -120,7 +120,7 @@ namespace dials { namespace algorithms {
    * @param n_sigma The number of standard deviations you expect
    * @returns True/False
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   bool is_normally_distributed(const af::const_ref<FloatType> &data,
       double n_sigma) {
     return absolute_maximum_n_sigma(data) < n_sigma;
@@ -135,7 +135,7 @@ namespace dials { namespace algorithms {
    * @param data The array of pixel values
    * @returns True/False
    */
-  template <typename FloatType = double>
+  template <typename FloatType>
   bool is_normally_distributed(const af::const_ref<FloatType> &data) {
     return is_normally_distributed<FloatType>(data,
       normal_expected_n_sigma(data.size()));
