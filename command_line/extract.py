@@ -45,7 +45,7 @@ class Script(ScriptRunner):
         from dials.util.command_line import Command
         from dials.util.command_line import Importer
         from dials.algorithms.integration import ReflectionPredictor
-        from dials.algorithms.integration import BlockProfileExtractor
+        from dials.algorithms.integration import ProfileBlockExtractor
         from dials.algorithms.shoebox import BBoxCalculator
         from dials.model.data import ReflectionList
         from dials.array_family import flex
@@ -58,12 +58,15 @@ class Script(ScriptRunner):
         elif len(importer.imagesets) > 1:
             raise RuntimeError("Only one imageset can be processed at a time")
 
+        # Get the sweep and crystal
         sweep = importer.imagesets[0]
         crystal = importer.crystals[0]
 
+        # Predict a load of reflections
         predict = ReflectionPredictor()
         predicted = predict(sweep, crystal)
 
+        # Get the bbox nsigma
         n_sigma = params.integration.shoebox.n_sigma
 
         # Create the bbox calculator
@@ -78,27 +81,14 @@ class Script(ScriptRunner):
         compute_bbox(predicted)
         Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
-        predicted = ReflectionList(sorted(predicted, key=lambda x: x.frame_number))
+        # Create the profile block extractor
+        extract = ProfileBlockExtractor(sweep, options.num_blocks, predicted)
 
-        extract = BlockProfileExtractor(sweep, options.num_blocks, predicted)
-
+        # Read through the blocks
         for i in range(len(extract)):
-            Command.start('Reading')
-            extract[i]
-            Command.end('Read')
-
-#        from dials.model.serialize import partial_shoebox
-
-#        reader = partial_shoebox.Reader('extracted.tar')
-#
-#        from time import time
-#        st = time()
-#        for r in range(len(reader)):
-#            stt = time()
-#            reader[r]
-#            print time() - stt
-#
-#        print "Total Time: ", time() - st
+            Command.start('Reading block %d' % i)
+            indices, shoeboxes = extract[i]
+            Command.end('Read %d reflections from block %d' % (len(indices), i))
 
 
 if __name__ == '__main__':

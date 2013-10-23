@@ -173,9 +173,15 @@ class PartialProfileExtractor(object):
         return (indices, shoeboxes)
 
 
-class BlockProfileExtractor(object):
+class ProfileBlockExtractor(object):
+    ''' A class to extract reflections and get them in blocks. '''
 
     def __init__(self, sweep, nblocks, predicted, filename=None):
+        ''' Initialise the extractor.
+
+        Extract all the data and save into an intermediate format.
+
+        '''
         from dials.model.serialize import partial_shoebox
         from dials.array_family import flex
         from dials.util.command_line import Command
@@ -188,33 +194,40 @@ class BlockProfileExtractor(object):
             filename = 'extracted.tar'
         writer = partial_shoebox.Writer(filename, predicted, self.blocks)
 
+        # Extract the frames and write to an intermediate format
         panels = flex.size_t([p.panel_number for p in predicted])
         bboxes = flex.int6([p.bounding_box for p in predicted])
-
-        # Extract the frames
         for i, (b0, b1) in enumerate(zip(self.blocks[:-1], self.blocks[1:])):
             extract = PartialProfileExtractor(sweep[b0:b1])
             writer.write(i, *extract(panels, bboxes))
         writer.close()
 
-        # Open the reader
+        # Open the reader ready to get the blocks
         self._reader = partial_shoebox.Reader(filename)
 
     def __len__(self):
+        ''' Get the number of blocks. '''
         return len(self.blocks) - 1
 
     def __getitem__(self, index):
-        assert(index >= 0 and index < len(self.blocks)-1)
-        return self._reader.read(index)
+        ''' Get the reflections for a particular block. '''
+        return self.extract(index)
 
     def __iter__(self):
+        ''' Iterate through all the blocks. '''
         for i in range(len(self)):
-            yield self.__getitem__(i)
+            yield self.extract(i)
+
+    def extract(self, index):
+        ''' Get the reflections for a particular block. '''
+        return self._reader.read(index)
 
     def _calculate_blocks(self, sweep, nblocks):
+        ''' Calculate the blocks. '''
         from math import ceil
         blocks = [0]
         sweep_length = len(sweep)
+        assert(nblocks <= sweep_length)
         block_length = int(ceil(sweep_length / nblocks))
         for i in range(nblocks):
             frame = (i + 1) * block_length

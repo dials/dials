@@ -89,7 +89,7 @@ class Writer(object):
         import tarfile
         assert(len(blocks) > 1)
         assert(blocks[0] == 0)
-        assert(all(b >= a for a, b in zip(blocks, blocks[1:])))
+        assert(all(b > a for a, b in zip(blocks, blocks[1:])))
         self._predicted = predicted
         self._blocks = blocks
         self._tar = tarfile.open(filename, 'w')
@@ -115,7 +115,7 @@ class Writer(object):
 
     def close(self):
         ''' Dump the index and close the file. '''
-        if not self._tar.closed:
+        if hasattr(self, '_tar') and not self._tar.closed:
             self._dump_index()
             self._tar.close()
 
