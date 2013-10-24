@@ -647,6 +647,8 @@ class indexer(object):
       self.candidate_basis_vectors.extend(vectors)
       candidate_orientation_matrices \
         = self.find_candidate_orientation_matrices(vectors, return_first=True)
+      if len(candidate_orientation_matrices) == 0:
+        continue
       # only take the first one
       crystal_model = candidate_orientation_matrices[0]
       # map to minimum reduced cell
