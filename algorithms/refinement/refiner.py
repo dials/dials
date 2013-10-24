@@ -507,6 +507,8 @@ class RefmanFactory(object):
         if options.use_all_reflections:
             self._ref_per_degree = None
 
+        self._max_num_obs = options.maximum_number_of_reflections
+
         self._min_num_obs = options.minimum_number_of_reflections
 
         self._inclusion_cutoff = options.inclusion_cutoff
@@ -531,6 +533,7 @@ class RefmanFactory(object):
                             verbosity=verbosity,
                             nref_per_degree=self._ref_per_degree,
                             min_num_obs=self._min_num_obs,
+                            max_num_obs=self._max_num_obs,
                             inclusion_cutoff=self._inclusion_cutoff)
 
 class TargetFactory(object):

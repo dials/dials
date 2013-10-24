@@ -446,6 +446,7 @@ class ReflectionManager(object):
                        verbosity=0,
                        nref_per_degree = None,
                        min_num_obs=20,
+                       max_num_obs=None,
                        inclusion_cutoff=0.1):
 
         # pull out data needed for refinement
@@ -515,7 +516,9 @@ class ReflectionManager(object):
         self._sample_size = len(self._obs_data)
 
         # choose a random subset of data for refinement
-        working_ref = self._create_working_set(nref_per_degree)
+        self._nref_per_degree = nref_per_degree
+        self._max_num_obs = max_num_obs
+        working_ref = self._create_working_set()
 
         # store observation information in a dict of observation-prediction
         # pairs (prediction information will go in here later)
@@ -594,18 +597,28 @@ class ReflectionManager(object):
 
         return test
 
-    def _create_working_set(self, nref_per_degree):
+    def _create_working_set(self):
         '''Make a subset of data for use in refinement'''
 
         working_data = self._obs_data
-        if nref_per_degree:
+        sample_size = len(working_data)
+
+        # set sample size according to nref_per_degre
+        if self._nref_per_degree:
             temp = self._scan.get_oscillation_range(deg=True)
             width = abs(temp[1] - temp[0])
-            sample_size = int(nref_per_degree * width)
-            if sample_size < len(working_data):
-                self._sample_size = sample_size
-                working_data = random.sample(working_data,
-                                             self._sample_size)
+            sample_size = int(self._nref_per_degree * width)
+
+        # set maximum sample size
+        if self._max_num_obs:
+            if sample_size > self._max_num_obs:
+                sample_size = self._max_num_obs
+
+        # sample the data and record the sample size
+        if sample_size < len(working_data):
+            self._sample_size = sample_size
+            working_data = random.sample(working_data,
+                                         self._sample_size)
         return(working_data)
 
     def get_sample_size(self):

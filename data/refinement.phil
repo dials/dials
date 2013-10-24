@@ -114,6 +114,12 @@ refinement
               "refinement."
       .type = float(value_min=0.)
 
+    maximum_number_of_reflections = None
+      .help = "The maximum number of reflections to use in refinement."
+              "Overrides reflections_per_degree if that produces a"
+              "larger sample size."
+      .type = int(value_min=1)
+
     use_all_reflections = False
       .help = "Override reflections_per_degree and use all available centroids"
               "in refinement."
