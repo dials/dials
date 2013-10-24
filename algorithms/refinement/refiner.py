@@ -482,6 +482,7 @@ class RefineryFactory(object):
         self._track_step = options.track_step
         self._track_gradient = options.track_gradient
         self._logfile = options.log
+        self._max_iterations = options.max_iterations
 
     def __call__(self, target, prediction_parameterisation, verbosity):
 
@@ -491,7 +492,8 @@ class RefineryFactory(object):
             log = self._logfile,
             verbosity = verbosity,
             track_step = self._track_step,
-            track_gradient = self._track_gradient)
+            track_gradient = self._track_gradient,
+            max_iterations = self._max_iterations)
 
 class RefmanFactory(object):
 

@@ -72,6 +72,11 @@ refinement
       .help = "Filename for an optional log that a minimisation engine may use"
               "to write additional information"
       .type = path
+
+    max_iterations = None
+      .help = "Maximum number of iterations in refinement before termination."
+              "None implies the engine supplies its own default."
+      .type = int(value_min=1)
   }
 
   target

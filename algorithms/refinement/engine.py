@@ -42,7 +42,8 @@ class Refinery(object):
 
     def __init__(self, target, prediction_parameterisation, log = None,
                  verbosity = 0, track_step = False,
-                 track_gradient = False):
+                 track_gradient = False,
+                 max_iterations = None):
 
         # reference to PredictionParameterisation and Target objects
         self._parameters = prediction_parameterisation
@@ -61,6 +62,8 @@ class Refinery(object):
         self._verbosity = verbosity
 
         self._target_achieved = False
+
+        self._max_iterations = max_iterations
 
         # attributes for journalling functionality, based on lstbx's
         # journaled_non_linear_ls class
@@ -179,6 +182,13 @@ class Refinery(object):
 class AdaptLbfgs(Refinery):
     '''Adapt Refinery for L-BFGS minimiser'''
 
+    def __init__(self, **kwargs):
+
+        Refinery.__init__(self, **kwargs)
+
+        self._termination_params = lbfgs.termination_parameters(
+            max_iterations = self._max_iterations)
+
     def compute_functional_and_gradients(self):
 
         self.prepare_for_step()
@@ -210,7 +220,9 @@ class SimpleLBFGS(AdaptLbfgs):
         #TODO convert file file handling lines to use of 'with'?
         ref_log = None
         if self._log: ref_log = open(self._log, "w")
-        self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
+        self.minimizer = lbfgs.run(target_evaluator=self,
+            termination_params=self._termination_params,
+            log=ref_log)
         if self._log: ref_log.close()
 
         if self._verbosity > 0.: self.print_table()
@@ -226,7 +238,9 @@ class LBFGScurvs(AdaptLbfgs):
         ref_log = None
         if self._log: ref_log = open(self._log, "w")
         self.diag_mode = "always"
-        self.minimizer = lbfgs.run(target_evaluator=self, log=ref_log)
+        self.minimizer = lbfgs.run(target_evaluator=self,
+            termination_params=self._termination_params,
+            log=ref_log)
         if self._log: ref_log.close()
 
         if self._verbosity > 0.: self.print_table()
@@ -261,11 +275,12 @@ class AdaptLstbx(
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
-                 track_gradient = False):
+                 track_gradient = False, max_iterations = None):
 
         Refinery.__init__(self, target, prediction_parameterisation,
-                 log=None, verbosity = verbosity, track_step = False,
-                 track_gradient = False)
+                 log=log, verbosity=verbosity, track_step=track_step,
+                 track_gradient=track_gradient,
+                 max_iterations=max_iterations)
 
         # required for restart to work (do I need that method?)
         self.x_0 = self.x.deep_copy()
@@ -315,7 +330,7 @@ class AdaptLstbx(
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     '''Refinery implementation, using lstbx Gauss Newton iterations'''
 
-    n_max_iterations = 100
+    n_max_iterations = 20
     gradient_threshold = 1.e-10
     step_threshold = None
     damping_value = 0.0007
@@ -324,20 +339,25 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
-                 track_gradient = False, **kwds):
+                 track_gradient = False, max_iterations = None, **kwds):
 
         AdaptLstbx.__init__(self, target, prediction_parameterisation,
-                 log = None, verbosity = verbosity, track_step = False,
-                 track_gradient = False)
+                 log=log, verbosity=verbosity, track_step=track_step,
+                 track_gradient=track_gradient,
+                 max_iterations=max_iterations)
 
         # add an attribute to the journal
         self.history.reduced_chi_squared = flex.double()
+
+        # adjust maximum number of iterations if requested
+        if self._max_iterations:
+            self.n_max_iterations = self._max_iterations
 
         libtbx.adopt_optional_init_args(self, kwds)
 
     def run(self):
         self.n_iterations = 0
-        while self.n_iterations < self.n_max_iterations:
+        while True:
             self.build_up()
 
             # set functional and gradients for the step (to add to the history)
@@ -390,6 +410,11 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                     "objective increased. Parameters set back one step"
                 self.step_backward()
                 self.prepare_for_step()
+                break
+
+            if self.n_iterations == self.n_max_iterations:
+                reason_for_termination = "Reached maximum number of " \
+                    "iterations"
                 break
 
             # prepare for next step
