@@ -348,7 +348,7 @@ class indexer(object):
     x, y, _ = reflections.centroid_position().parts()
     s1 = self.detector.get_lab_coord(flex.vec2_double(x,y))
     s1 = s1/s1.norms() * (1/self.beam.get_wavelength())
-    self.reflections.set_beam_vector(s1) # needed by refinement
+    reflections.set_beam_vector(s1) # needed by refinement
     S = s1 - self.beam.get_s0()
     self.reciprocal_space_points = S.rotate_around_origin(
       self.goniometer.get_rotation_axis(),
