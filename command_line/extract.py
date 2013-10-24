@@ -87,7 +87,7 @@ class Script(ScriptRunner):
 
         # Read through the blocks
         for indices, shoeboxes in extract:
-            pass
+            print shoeboxes
 
 if __name__ == '__main__':
     script = Script()

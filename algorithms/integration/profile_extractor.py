@@ -176,7 +176,8 @@ class PartialProfileExtractor(object):
 class ProfileBlockExtractor(object):
     ''' A class to extract reflections and get them in blocks. '''
 
-    def __init__(self, sweep, predicted, nblocks, filename=None):
+    def __init__(self, sweep, predicted, nblocks, filename=None,
+                 mask=None, gain=None, dark=None):
         ''' Initialise the extractor.
 
         Extract all the data and save into an intermediate format.
@@ -185,6 +186,10 @@ class ProfileBlockExtractor(object):
         from dials.model.serialize import partial_shoebox
         from dials.array_family import flex
         from dials.util.command_line import Command
+
+        # Get the gain dark and masks
+        self.gain, self.dark, self.mask = self._get_gain_dark_and_mask(
+            sweep, gain, dark, mask)
 
         # Calculate the blocks
         self.blocks = self._calculate_blocks(sweep, nblocks)
@@ -218,11 +223,17 @@ class ProfileBlockExtractor(object):
         for i in range(len(self)):
             yield self.extract(i)
 
+    def predictions(self):
+        ''' Return the list of predictions. '''
+        return self._reader.predictions()
+
     def extract(self, index):
         ''' Get the reflections for a particular block. '''
         from dials.util.command_line import Command
+        from dials.array_family import flex
         Command.start('Extracting block %d' % index)
         ind, sb = self._reader.read(index)
+        sb = flex.shoebox(sb, self.gain, self.dark, self.mask)
         Command.end('Extracted %d profiles from block %d' % (len(ind), index))
         return ind, sb
 
@@ -246,3 +257,35 @@ class ProfileBlockExtractor(object):
                 break
         assert(all(b > a for a, b in zip(blocks, blocks[1:])))
         return blocks
+
+    def _get_gain_dark_and_mask(self, sweep, gain, dark, mask):
+        ''' Helper function to get gain, dark and mask maps. '''
+        from dials.array_family import flex
+
+        # Ensure image is a tuple
+        image = sweep[0]
+        if not isinstance(image, tuple):
+            image = (image,)
+
+        # Get the mask in tuple of masks form
+        if mask:
+            if not isinstance(mask, tuple):
+                mask = (mask,)
+        else:
+            mask = tuple([im >= 0 for im in image])
+
+        # Get the gain in tuple of gains form
+        if gain:
+            if not isinstance(gain, tuple):
+                gain = (gain,)
+        else:
+            gain = tuple([flex.double(flex.grid(im.all()), 1) for im in image])
+
+        # Get the dark in tuple of darks form
+        if dark:
+            if not isinstance(dark, tuple):
+                dark = (dark,)
+        else:
+            dark = tuple([flex.double(flex.grid(im.all()), 0) for im in image])
+
+        return gain, dark, mask

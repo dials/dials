@@ -219,7 +219,8 @@ namespace dials { namespace af { namespace boost_python {
       const af::const_ref<PartialShoebox> &partial, 
       const af::const_ref< FloatType, af::c_grid<2> > &gain,
       const af::const_ref< FloatType, af::c_grid<2> > &dark,
-      const af::const_ref< bool, af::c_grid<2> > &mask) { 
+      const af::const_ref< bool, af::c_grid<2> > &mask,
+      std::size_t panel) { 
 
     // Check the input
     DIALS_ASSERT(gain.accessor().all_eq(dark.accessor()));
@@ -228,7 +229,51 @@ namespace dials { namespace af { namespace boost_python {
     // Convert all the partial shoeboxes to shoeboxes
     af::shared< Shoebox<FloatType> > result(partial.size());
     for (std::size_t i = 0; i < partial.size(); ++i) {
+      DIALS_ASSERT(partial[i].panel == panel);
       result[i] = from_partial_shoebox(partial[i], gain, dark, mask);
+    }
+    
+    // Return the array
+    return new typename af::flex< Shoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
+  
+  /**
+   * Construct from partial shoeboxes with multi panels
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_partial_shoeboxes_multi(
+      const af::const_ref<PartialShoebox> &partial,
+      const boost::python::tuple &mgain,
+      const boost::python::tuple &mdark,
+      const boost::python::tuple &mmask) {
+
+    typedef af::const_ref< FloatType, af::c_grid<2> > vdouble;
+    typedef af::const_ref< bool, af::c_grid<2> > vbool;
+
+    // Check the input tuples
+    std::size_t npanels = boost::python::len(mgain);
+    DIALS_ASSERT(npanels == boost::python::len(mdark));
+    DIALS_ASSERT(npanels == boost::python::len(mmask));
+
+    // Save all the maps    
+    std::vector<vdouble> gain(npanels);
+    std::vector<vdouble> dark(npanels);
+    std::vector<vbool> mask(npanels);
+    for (std::size_t i = 0; i < npanels; ++i) {
+      gain[i] = boost::python::extract<vdouble>(mgain[i]);
+      dark[i] = boost::python::extract<vdouble>(mdark[i]);        
+      mask[i] = boost::python::extract<vbool>(mmask[i]);
+      DIALS_ASSERT(gain[i].accessor().all_eq(dark[i].accessor()));
+      DIALS_ASSERT(gain[i].accessor().all_eq(mask[i].accessor()));
+    }
+
+    // Convert all the partial shoeboxes to shoeboxes
+    af::shared< Shoebox<FloatType> > result(partial.size());
+    for (std::size_t i = 0; i < partial.size(); ++i) {
+      std::size_t p = partial[i].panel;
+      DIALS_ASSERT(p < npanels);
+      result[i] = from_partial_shoebox(partial[i], gain[p], dark[p], mask[p]);
     }
     
     // Return the array
@@ -668,6 +713,14 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("panel") = 0)))
         .def("__init__", make_constructor(
           from_partial_shoeboxes<FloatType>, 
+          default_call_policies(), (
+            boost::python::arg("partial"), 
+            boost::python::arg("gain"),
+            boost::python::arg("dark"),
+            boost::python::arg("mask"),
+            boost::python::arg("panel") = 0)))
+        .def("__init__", make_constructor(
+          from_partial_shoeboxes_multi<FloatType>, 
           default_call_policies(), (
             boost::python::arg("partial"), 
             boost::python::arg("gain"),
