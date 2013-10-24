@@ -159,8 +159,8 @@ namespace dials { namespace model { namespace boost_python {
   void set_beam_vector(
       af::ref<Reflection> const& r,
       af::const_ref<vec3 <double> > const& beam_vector) {
-    af::shared< vec3<double> > result(r.size());
-    for (std::size_t i = 0; i < result.size(); ++i) {
+    DIALS_ASSERT(r.size() == beam_vector.size());
+    for (std::size_t i = 0; i < r.size(); ++i) {
       r[i].set_beam_vector(beam_vector[i]);
     }
   }
