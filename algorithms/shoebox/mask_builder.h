@@ -20,16 +20,13 @@ namespace dials { namespace algorithms { namespace shoebox {
   af::versa< int, af::c_grid<2> > build_mask(
       int nx, int ny, int nrx, int nry, int nc,
       const af::const_ref< double, af::c_grid<2> > &data2d) {
-
     /*
     std::cout << "\n" << "nx=" << nx <<"\n" << "ny=" << ny <<"\n"
     << "nrx=" << nrx <<"\n" << "nry=" << nry <<"\n" << "nc=" << nc <<"\n";
     */
-
     // creating a versa array the size of the entered parameters
     // with all pixels assigned to valid but not in peak area (= 3)
     af::versa< int, af::c_grid<2> > mask(af::c_grid<2>(ny, nx),3);
-
 
 
     /*
@@ -62,18 +59,19 @@ namespace dials { namespace algorithms { namespace shoebox {
     for(int row = 0; row < ny; row++){
       for( int col = 0; col < nx; col++ ){
 
-        // conditioning first the corners an then the boundaries
-          if( row + col >= nc and row < col + ny - nc and
-           row > col - nx + nc and (ny-row)+(nx-col) > nc + 1  and
-            row >= nry and row  < (ny - nry) and
-             col >= nrx and col  < (nx - nrx) )
+            // conditioning first the corners an then the boundaries
+            if( row + col + 1 >= nc and row >= col - nx + nc and
+             row <= col + ny - nc and (ny - row) + (nx - col) > nc and
+              row >= nry and row < (ny - nry) and
+               col >= nrx and col < (nx - nrx) )
+
           {
               // when [ pixel mask ] = 5 both bits are set:
               // is valid and is in peak area
-              mask(row,col) = 5;
+              mask(row, col) = 5;
           }
-          if(data2d(row,col)<0){
-            mask(row,col) = 0;
+          if(data2d(row, col) < 0){
+            mask(row, col) = 0;
           }
 
       }
