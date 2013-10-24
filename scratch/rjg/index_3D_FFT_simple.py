@@ -993,6 +993,12 @@ class indexer(object):
         self.reflections_in_scan_range).frame_number()))),
       self.sweep.get_array_range()[1])
     sweep = self.sweep[scan_range_min:scan_range_max]
+
+    if self.params.debug:
+      self.export_as_json(crystal_model, sweep, suffix="_debug")
+      with open("reflections_debug.pickle", 'wb') as f:
+        pickle.dump(reflections_for_refinement, f)
+
     refine.prepare(sweep, crystal_model, reflections_for_refinement)
     #rmsds = refine.rmsds()
     refined = refine()
