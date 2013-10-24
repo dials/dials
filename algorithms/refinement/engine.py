@@ -126,6 +126,18 @@ class Refinery(object):
 
         return all(tests)
 
+    def test_objective_increasing(self):
+        '''Test for an increase in the objective value between steps
+        (usually a bad sign)'''
+
+        try:
+            l1 = self.history.objective[-1]
+            l2 = self.history.objective[-2]
+        except IndexError:
+            return False
+
+        return l1 > l2
+
     def print_step(self):
         '''print information about the current step'''
 
@@ -364,12 +376,20 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             if self.test_for_termination():
                 reason_for_termination = "RMSD target achieved"
                 break
+
             if self.test_rmsd_convergence():
                 reason_for_termination = "RMSD no longer decreasing"
                 break
 
             if self.had_too_small_a_step():
                 reason_for_termination = "Step too small"
+                break
+
+            if self.test_objective_increasing():
+                reason_for_termination = "Refinement failure:" \
+                    "objective increased. Parameters set back one step"
+                self.step_backward()
+                self.prepare_for_step()
                 break
 
             # prepare for next step
