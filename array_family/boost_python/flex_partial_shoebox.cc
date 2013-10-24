@@ -94,8 +94,7 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Try to merge the partial shoeboxes
    */
-  template <typename FloatType>
-  Shoebox<FloatType> merge(const const_ref<PartialShoebox> &a, int2 srange) {
+  PartialShoebox merge(const const_ref<PartialShoebox> &a, int2 srange) {
   
     // Sort the array by minimum z
     DIALS_ASSERT(a.size() > 0);
@@ -122,13 +121,13 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(a[index.back()].zrange[1] <= std::min(bbox[5], srange[1]));
 
     // Copy all the data
-    Shoebox<FloatType> shoebox(panel, bbox);
+    PartialShoebox shoebox(panel, bbox, int2(bbox[4], bbox[5]));
     shoebox.allocate();
     std::size_t xysize = shoebox.xsize() * shoebox.ysize();
     for (std::size_t i = 0; i < a.size(); ++i) {
       std::size_t offset = (a[i].zrange[0] - bbox[4]) * xysize;
       for (std::size_t j = 0; j < a[i].data.size(); ++j) {
-        shoebox.data[offset + j] = (FloatType)a[i].data[j];
+        shoebox.data[offset + j] = a[i].data[j];
       }
     }
     
@@ -139,15 +138,13 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * Merge all shoeboxes and return indices and shoeboxes
    */
-  template <typename FloatType>
-  std::pair< af::shared<std::size_t>, af::shared< Shoebox<FloatType> > >
+  std::pair< af::shared<std::size_t>, af::shared<PartialShoebox> >
   merge_all(const const_ref<PartialShoebox> &shoeboxes, 
       const const_ref<std::size_t> &indices, int2 srange) {
 
     // Some useful typedefs
     typedef boost::unordered_map<std::size_t, af::shared<PartialShoebox> > map_type;
     typedef typename map_type::iterator iterator;
-    typedef Shoebox<FloatType> shoebox_type;
 
     // Construct a map of the shoeboxes to merge
     DIALS_ASSERT(indices.size() == shoeboxes.size());
@@ -158,10 +155,10 @@ namespace dials { namespace af { namespace boost_python {
     
     // Merge all the shoeboxes
     af::shared<std::size_t> cindices;
-    af::shared<shoebox_type> cshoeboxes;
+    af::shared<PartialShoebox> cshoeboxes;
     for (iterator it = tomerge.begin(); it != tomerge.end(); ++it) {
       cindices.push_back(it->first);
-      cshoeboxes.push_back(merge<FloatType>(it->second.const_ref(), srange));
+      cshoeboxes.push_back(merge(it->second.const_ref(), srange));
     }
     return std::make_pair(cindices, cshoeboxes);
   }
@@ -271,8 +268,8 @@ namespace dials { namespace af { namespace boost_python {
         .def("panels", &panels)
         .def("bounding_boxes", &bounding_boxes)
         .def("zranges", &zranges)
-        .def("merge", &merge<ProfileFloatType>)
-        .def("merge_all", &merge_all<ProfileFloatType>)
+        .def("merge", &merge)
+        .def("merge_all", &merge_all)
         .def_pickle(flex_pickle_double_buffered<PartialShoebox, 
           partial_shoebox_to_string, 
           partial_shoebox_from_string>());
@@ -283,7 +280,7 @@ namespace dials { namespace af { namespace boost_python {
 
     boost_adaptbx::std_pair_conversions::to_and_from_tuple<
       af::shared<std::size_t>, 
-      af::shared<Shoebox<ProfileFloatType> > >();
+      af::shared<PartialShoebox> >();
 
   }
 

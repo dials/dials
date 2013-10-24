@@ -11,11 +11,13 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <omptbx/omp_or_stubs.h>
+#include <cmath>
 #include <scitbx/array_family/boost_python/flex_wrapper.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/shoebox.h>
+#include <dials/model/data/partial_shoebox.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>
 #include <dials/config.h>
@@ -29,6 +31,7 @@ namespace dials { namespace af { namespace boost_python {
   using af::int6;
   using af::small;
   using scitbx::vec3;
+  using dials::model::PartialShoebox;
   using dials::model::Shoebox;
   using dials::model::Centroid;
   using dials::model::Intensity;
@@ -174,6 +177,64 @@ namespace dials { namespace af { namespace boost_python {
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(num));
   }  
+  
+  /** 
+   * Convert a partial shoebox to a complete shoebox
+   */
+  template <typename FloatType>
+  Shoebox<FloatType> from_partial_shoebox(
+      const PartialShoebox &partial, 
+      const af::const_ref< FloatType, af::c_grid<2> > &gain,
+      const af::const_ref< FloatType, af::c_grid<2> > &dark,
+      const af::const_ref< bool, af::c_grid<2> > &mask) { 
+    DIALS_ASSERT(partial.is_complete());
+    Shoebox<FloatType> result(partial.panel, partial.bbox);
+    result.allocate();
+    int x0 = result.bbox[0], y0 = result.bbox[2];
+    int i0 = std::max(result.bbox[0], 0) - result.bbox[0];
+    int j0 = std::max(result.bbox[2], 0) - result.bbox[2];
+    int i1 = std::min(result.bbox[1], (int)gain.accessor()[1]) - result.bbox[0];
+    int j1 = std::min(result.bbox[3], (int)gain.accessor()[0]) - result.bbox[2];
+    int zsize = result.zsize();
+    DIALS_ASSERT(i0 < i1 && j0 < j1);
+    for (std::size_t j = j0; j < j1; ++j) {
+      for (std::size_t i = i0; i < i1; ++i) {
+        double g = gain(j + y0, i + x0);
+        double d = dark(j + y0, i + x0);
+        int m    = mask(j + y0, i + x0) ? Valid : 0;
+        for (std::size_t k = 0; k < zsize; ++k) {
+          result.data(k, j, i) = g * (partial.data(k, j, i) - d);
+          result.mask(k, j, i) = m;
+        }        
+      }
+    }
+    return result;
+  }
+  
+  /**
+   * Construct an array of shoebxoes from an array of partial shoeboxes
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_partial_shoeboxes(
+      const af::const_ref<PartialShoebox> &partial, 
+      const af::const_ref< FloatType, af::c_grid<2> > &gain,
+      const af::const_ref< FloatType, af::c_grid<2> > &dark,
+      const af::const_ref< bool, af::c_grid<2> > &mask) { 
+
+    // Check the input
+    DIALS_ASSERT(gain.accessor().all_eq(dark.accessor()));
+    DIALS_ASSERT(gain.accessor().all_eq(mask.accessor()));
+
+    // Convert all the partial shoeboxes to shoeboxes
+    af::shared< Shoebox<FloatType> > result(partial.size());
+    for (std::size_t i = 0; i < partial.size(); ++i) {
+      result[i] = from_partial_shoebox(partial[i], gain, dark, mask);
+    }
+    
+    // Return the array
+    return new typename af::flex< Shoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
   
   /**
    * Check if the arrays are consistent
@@ -605,6 +666,13 @@ namespace dials { namespace af { namespace boost_python {
           default_call_policies(), (
             boost::python::arg("labels"), 
             boost::python::arg("panel") = 0)))
+        .def("__init__", make_constructor(
+          from_partial_shoeboxes<FloatType>, 
+          default_call_policies(), (
+            boost::python::arg("partial"), 
+            boost::python::arg("gain"),
+            boost::python::arg("dark"),
+            boost::python::arg("mask"))))
         .def("is_consistent", 
           &is_consistent<FloatType>)
         .def("panels", 
