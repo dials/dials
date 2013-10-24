@@ -86,11 +86,8 @@ class Script(ScriptRunner):
             options.num_blocks, options.output_filename)
 
         # Read through the blocks
-        for i in range(len(extract)):
-            Command.start('Extracting block %d' % i)
-            indices, shoeboxes = extract[i]
-            Command.end('Extracted %d reflections from block %d' % (len(indices), i))
-
+        for indices, shoeboxes in extract:
+            pass
 
 if __name__ == '__main__':
     script = Script()

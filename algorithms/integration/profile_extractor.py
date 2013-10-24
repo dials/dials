@@ -1,5 +1,5 @@
 #
-# copy_reflection_profiles.py
+# profile_extractor.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -220,7 +220,11 @@ class ProfileBlockExtractor(object):
 
     def extract(self, index):
         ''' Get the reflections for a particular block. '''
-        return self._reader.read(index)
+        from dials.util.command_line import Command
+        Command.start('Extracting block %d' % index)
+        ind, sb = self._reader.read(index)
+        Command.end('Extracted %d profiles from block %d' % (len(ind), index))
+        return ind, sb
 
     def zrange(self, index):
         ''' Get the frame range of the block '''
@@ -238,4 +242,7 @@ class ProfileBlockExtractor(object):
             if frame > sweep_length:
                 frame = sweep_length
             blocks.append(frame)
+            if frame == sweep_length:
+                break
+        assert(all(b > a for a, b in zip(blocks, blocks[1:])))
         return blocks

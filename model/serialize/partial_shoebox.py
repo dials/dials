@@ -87,13 +87,19 @@ class Writer(object):
         ''' Open the file for writing. '''
         from collections import defaultdict
         import tarfile
+
+        # Check the input
         assert(len(blocks) > 1)
         assert(blocks[0] == 0)
         assert(all(b > a for a, b in zip(blocks, blocks[1:])))
+
+        # Set the data members
         self._predicted = predicted
         self._blocks = blocks
         self._tar = tarfile.open(filename, 'w')
         self._paths = defaultdict(list)
+
+        # Create the frame lookup table
         self._lookup = []
         count = 0
         for i in range(max(blocks)):
