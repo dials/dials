@@ -201,6 +201,16 @@ namespace dials { namespace model { namespace boost_python {
     return result;
   }
   
+   
+  static
+  af::shared< bool > get_is_valid(const af::const_ref<Reflection> &r) {
+    af::shared< bool > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].is_valid();
+    }
+    return result;
+  } 
+  
 //  static
 //  flex_double get_transformed_shoebox_background(Reflection &obj) {
 //    return flex_double(obj.get_transformed_shoebox_background().handle(), 
@@ -321,7 +331,8 @@ namespace dials { namespace model { namespace boost_python {
         .def("set_beam_vector", &set_beam_vector)
         .def("image_coord_px", &get_image_coord_px)
         .def("image_coord_mm", &get_image_coord_mm)
-        .def("frame_number", &get_frame_number);
+        .def("frame_number", &get_frame_number)
+        .def("is_valid", &get_is_valid);
   }
   
   void export_reflection() {

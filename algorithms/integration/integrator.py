@@ -67,8 +67,9 @@ class Integrator(object):
 class Integrator2(object):
     ''' The integrator base class. '''
 
-    def __init__(self, n_sigma, n_blocks, compute_background, compute_centroid,
-                       compute_intensity, correct_intensity):
+    def __init__(self, n_sigma, n_blocks, filter_by_zeta,
+                 compute_background, compute_centroid,
+                 compute_intensity, correct_intensity):
         ''' Initialise the integrator base class.
 
         Params:
@@ -81,6 +82,7 @@ class Integrator2(object):
         '''
         self.n_sigma = n_sigma
         self.n_blocks = n_blocks
+        self.filter_by_zeta = filter_by_zeta
         self.compute_background = compute_background
         self.compute_centroid = compute_centroid
         self.compute_intensity = compute_intensity
@@ -100,51 +102,23 @@ class Integrator2(object):
 
         '''
         from dials.algorithms.integration import ReflectionPredictor
-        from dials.algorithms.integration import ProfileBlockExtractor
+        from dials.algorithms.integration import ReflectionBlockExtractor
         from dials.model.data import ReflectionList
-        from dials.algorithms.shoebox import BBoxCalculator
         from dials.array_family import flex
         from dials.util.command_line import Command
-        from dials.algorithms import shoebox
 
         # Predict a load of reflections
         predict = ReflectionPredictor()
         predicted = predict(sweep, crystal)
 
-        # Create the bbox calculator
-        compute_bbox = BBoxCalculator(
-            sweep.get_beam(), sweep.get_detector(),
-            sweep.get_goniometer(), sweep.get_scan(),
-            self.n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
-            self.n_sigma * crystal.get_mosaicity(deg=False))
-
-        # Calculate the bounding boxes of all the reflections
-        Command.start('Calculating bounding boxes')
-        compute_bbox(predicted)
-        Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
-
-        extract = ProfileBlockExtractor(sweep, predicted, self.n_blocks)
-
-        result = ReflectionList()
-
-        # Get the parameters
-        delta_d = self.n_sigma * sweep.get_beam().get_sigma_divergence(deg=False)
-        delta_m = self.n_sigma * crystal.get_mosaicity(deg=False)
-
-        # Create the function to mask the shoebox profiles
-        self.mask_profiles = shoebox.Masker(sweep, delta_d, delta_m)
+        # Get the extractor
+        extract = ReflectionBlockExtractor(sweep, crystal, predicted,
+            self.n_sigma, self.n_blocks, self.filter_by_zeta)
 
         # Loop through all the blocks
-        for indices, shoeboxes in extract:
-
-            reflections = extract.predictions().select(indices)
-            for r, s in zip(reflections, shoeboxes):
-                r.shoebox = s.data
-                r.shoebox_mask = s.mask
-                r.shoebox_background = s.background
-
-            # Mask the shoebox profiles
-            self.mask_profiles(reflections, None)
+        result = ReflectionList()
+        print ''
+        for reflections in extract:
 
             self.compute_background(sweep, crystal, reflections)
             self.compute_centroid(sweep, crystal, reflections)
@@ -159,9 +133,10 @@ class Integrator2(object):
                 r.transformed_shoebox = flex.double(flex.grid(0, 0, 0))
                 r.transformed_shoebox_background = flex.double(flex.grid(0, 0, 0))
             result.extend(reflections)
+            print ''
 
         # Return the reflections
-        return result
+        return ReflectionList(sorted(result, key=lambda x: x.miller_index))
 
 
 class IntegratorFactory(object):
@@ -417,6 +392,7 @@ class IntegratorFactory2(object):
         # Return the integrator with the given strategies
         return Integrator2(n_sigma = params.integration.shoebox.n_sigma,
                           n_blocks = params.integration.shoebox.n_blocks,
+                          filter_by_zeta = params.integration.filter.by_zeta,
                           compute_background = compute_background,
                           compute_centroid = compute_centroid,
                           compute_intensity = compute_intensity,
