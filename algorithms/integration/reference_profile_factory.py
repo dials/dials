@@ -106,7 +106,7 @@ class ReferenceProfileCreator2(object):
         sind, pind = self.match(strong, predicted)
 
         # Learn the reference profiles
-        return self.learn(sweep, crystal, predicted.select(pind))
+        return self.learn()(sweep, crystal, predicted.select(pind))
 
 
 class ProfileLearner(object):
@@ -150,7 +150,7 @@ class ProfileLearner(object):
         volume_size = image_size + (num_frames,)
         num_z = int(num_frames / self.frame_interval)
         print num_z
-#        num_z = 1
+        num_z = 1
         sampler = XdsCircleSampler(volume_size, num_z)
 
         # Configure the reference learner
@@ -178,6 +178,18 @@ class ProfileLearner(object):
 
         # Return the reference profile locator
         return learner.locate()
+
+
+class ProfileLearnerWrapper:
+
+    def __init__(self, bbox_nsigma, grid_size, threshold, frame_interval):
+        self.bbox_nsigma = bbox_nsigma
+        self.frame_interval = frame_interval
+        self.threshold = threshold
+        self.grid_size = grid_size
+
+    def __call__(self):
+        return ProfileLearner(self.bbox_nsigma, self.grid_size, self.threshold, self.frame_interval)
 
 
 class ReferenceProfileFactory(object):
@@ -212,10 +224,46 @@ class ReferenceProfileFactory(object):
 
         '''
         # Configure the strategies
-        learn = ReferenceProfileFactory.configure_learner(params)
+        learn = ReferenceProfileFactory.configure_learner2(params)
 
         # Return the reference profile creator with the given strategies
         return ReferenceProfileCreator2(learn=learn)
+
+    @staticmethod
+    def configure_learner2(params):
+        ''' Configure the reference profile learner
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The profile learner
+
+        '''
+        if params.integration.algorithm == "fit_rs":
+
+            # Create the profile learner for reciprocal space fitting
+            p = params.integration
+            learner = ProfileLearnerWrapper(
+                bbox_nsigma=p.shoebox.n_sigma,
+                grid_size=p.reciprocal_space.grid_size,
+                threshold=p.profile.reference_signal_threshold,
+                frame_interval=p.profile.reference_frame_interval)
+
+        else:
+
+            # If no profile fitting algorithm is selected, output a warning
+            import sys
+            import logging
+            log = logging.getLogger(__name__)
+            log.warn("No reference profiles were created for integration "
+                     "algorithm '{0}'. In order to create reference profiles "
+                     "you need to select a profile fitting integration "
+                     "algorithm.".format(params.integration.algorithm))
+            sys.exit(0)
+
+        # Return the learner
+        return learner
 
     @staticmethod
     def configure_learner(params):

@@ -42,7 +42,7 @@ class Script(ScriptRunner):
 
     def main(self, params, options, args):
         '''Execute the script.'''
-        from dials.algorithms.integration import IntegratorFactory
+        from dials.algorithms.integration import IntegratorFactory2
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
@@ -56,7 +56,7 @@ class Script(ScriptRunner):
 
         # Get the integrator from the input parameters
         print 'Configurating integrator from input parameters'
-        integrate = IntegratorFactory.from_parameters(params)
+        integrate = IntegratorFactory2.from_parameters(params)
 
         # Try to load the models
         print 'Loading models from {0} and {1}'.format(args[0], args[1])
@@ -65,8 +65,8 @@ class Script(ScriptRunner):
 
         # Load the reference profiles
         if len(args) == 3:
-#            reference = load.reflections(args[2])
-            reference = load.reference(args[2])
+            reference = load.reflections(args[2])
+#            reference = load.reference(args[2])
         else:
             reference = None
 

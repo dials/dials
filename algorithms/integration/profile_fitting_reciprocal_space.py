@@ -64,15 +64,17 @@ class ProfileFittingReciprocalSpace(IntegrationInterface):
         # Return the integrated reflections
         return reflections
 
-
 class ProfileFittingReciprocalSpace2(object):
 
     def __init__(self, **kwargs):
 
         self._integrate = ProfileFittingReciprocalSpace(**kwargs)
         self._learner = kwargs['learner']
+        self.count = 0
 
     def __call__(self, sweep, crystal, reflections, strong):
         reference = self._learner(sweep, crystal, strong, reflections)
-
+        import cPickle as pickle
+        pickle.dump(reference, open("reference%d.pickle" % self.count, 'w'))
+        self.count += 1
         return self._integrate(sweep, crystal, reflections, reference)
