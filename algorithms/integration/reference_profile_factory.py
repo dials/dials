@@ -64,6 +64,51 @@ class ReferenceProfileCreator(object):
         return self.learn(sweep, crystal, refl)
 
 
+class ReferenceProfileCreator2(object):
+    ''' A class to learn reference profiles from strong spots. '''
+
+    def __init__(self, learn=None):
+        ''' Initialise the algorithm.
+
+        Params:
+            learn The profile learning strategy
+
+        '''
+        from dials.algorithms.integration import ReflectionPredictor
+        from dials.algorithms.peak_finding.spot_matcher import SpotMatcher2
+
+        # Create the reflection predictor
+        self.predict = ReflectionPredictor()
+
+        # Create the spot matcher
+        self.match = SpotMatcher2(max_separation=1)
+
+        # Set the learning strategy
+        self.learn = learn
+
+    def __call__(self, sweep, crystal, strong, predicted):
+        ''' Learn the reference profiles
+
+        Params:
+            sweep The sweep to process
+            crystal The crystal to process
+            strong The strong spots
+            predicted The predicted spots
+
+        Returns:
+            The reference profile locator
+
+        '''
+        print len(strong), len(predicted)
+
+
+        # Match the predictions with the strong spots
+        sind, pind = self.match(strong, predicted)
+
+        # Learn the reference profiles
+        return self.learn(sweep, crystal, predicted.select(pind))
+
+
 class ProfileLearner(object):
     ''' A class to wrap the profile learning stuff. '''
 
@@ -103,7 +148,9 @@ class ProfileLearner(object):
         image_size = sweep.get_detector().get_image_size()
         num_frames = sweep.get_scan().get_num_images()
         volume_size = image_size + (num_frames,)
-        num_z = int(num_frames / self.frame_interval) + 1
+        num_z = int(num_frames / self.frame_interval)
+        print num_z
+#        num_z = 1
         sampler = XdsCircleSampler(volume_size, num_z)
 
         # Configure the reference learner
@@ -152,6 +199,23 @@ class ReferenceProfileFactory(object):
 
         # Return the reference profile creator with the given strategies
         return ReferenceProfileCreator(learn=learn)
+
+    @staticmethod
+    def from_parameters2(params):
+        ''' Given a set of parameters, construct the integrator
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The reference profile creator instance
+
+        '''
+        # Configure the strategies
+        learn = ReferenceProfileFactory.configure_learner(params)
+
+        # Return the reference profile creator with the given strategies
+        return ReferenceProfileCreator2(learn=learn)
 
     @staticmethod
     def configure_learner(params):

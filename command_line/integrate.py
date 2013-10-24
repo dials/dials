@@ -46,8 +46,10 @@ class Script(ScriptRunner):
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
+        from time import time
 
         # Check the number of arguments is correct
+        start_time = time()
         if len(args) != 2 and len(args) != 3:
             self.config().print_help()
             return
@@ -63,6 +65,7 @@ class Script(ScriptRunner):
 
         # Load the reference profiles
         if len(args) == 3:
+#            reference = load.reflections(args[2])
             reference = load.reference(args[2])
         else:
             reference = None
@@ -72,14 +75,17 @@ class Script(ScriptRunner):
         reflections = integrate(sweep, crystal, reference=reference)
 
         # Save the reflections to file
-        Command.start('Saving reflections to {0}'.format(
-            options.output_filename))
+        nvalid = len([r for r in reflections if r.is_valid()])
+        Command.start('Saving {0} reflections to {1}'.format(
+            nvalid, options.output_filename))
         if options.save_profiles == False:
             shoebox.deallocate(reflections)
         dump.reflections(reflections, options.output_filename)
-        Command.end('Saved reflections to {0}'.format(
-            options.output_filename))
+        Command.end('Saved {0} reflections to {1}'.format(
+            nvalid, options.output_filename))
 
+        # Print the total time taken
+        print "\nTotal time taken: ", time() - start_time
 
 if __name__ == '__main__':
     script = Script()

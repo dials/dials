@@ -88,7 +88,7 @@ class Integrator2(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal):
+    def __call__(self, sweep, crystal, reference=None):
         ''' Call to integrate.
 
         Params:
@@ -122,7 +122,7 @@ class Integrator2(object):
 
             self.compute_background(sweep, crystal, reflections)
             self.compute_centroid(sweep, crystal, reflections)
-            self.compute_intensity(sweep, crystal, reflections)
+            self.compute_intensity(sweep, crystal, reflections, reference)
             self.correct_intensity(sweep, crystal, reflections)
 
             # Remove the profiles from the reflections
@@ -518,7 +518,7 @@ class IntegratorFactory2(object):
         from dials.algorithms.integration import Summation2d
         from dials.algorithms.integration import Summation3d
         from dials.algorithms.integration import SummationReciprocalSpace
-        from dials.algorithms.integration import ProfileFittingReciprocalSpace
+        from dials.algorithms.integration import ProfileFittingReciprocalSpace2
         from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
 
         # Shorten parameter path
@@ -549,7 +549,12 @@ class IntegratorFactory2(object):
 
         # Configure the reciprocal space profile fitting algorithm
         elif integration.algorithm == 'fit_rs':
-            algorithm = ProfileFittingReciprocalSpace(
+
+            from dials.algorithms.integration import ReferenceProfileFactory
+            learner = ReferenceProfileFactory.from_parameters2(params)
+
+            algorithm = ProfileFittingReciprocalSpace2(
+                learner = learner,
                 n_sigma = integration.shoebox.n_sigma,
                 grid_size = integration.reciprocal_space.grid_size,
                 frame_interval = integration.profile.reference_frame_interval,
