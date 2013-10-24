@@ -176,7 +176,7 @@ class PartialProfileExtractor(object):
 class ProfileBlockExtractor(object):
     ''' A class to extract reflections and get them in blocks. '''
 
-    def __init__(self, sweep, nblocks, predicted, filename=None):
+    def __init__(self, sweep, predicted, nblocks, filename=None):
         ''' Initialise the extractor.
 
         Extract all the data and save into an intermediate format.
@@ -221,6 +221,10 @@ class ProfileBlockExtractor(object):
     def extract(self, index):
         ''' Get the reflections for a particular block. '''
         return self._reader.read(index)
+
+    def zrange(self, index):
+        ''' Get the frame range of the block '''
+        return tuple(self.blocks[index:index+1])
 
     def _calculate_blocks(self, sweep, nblocks):
         ''' Calculate the blocks. '''

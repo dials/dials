@@ -82,13 +82,14 @@ class Script(ScriptRunner):
         Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
         # Create the profile block extractor
-        extract = ProfileBlockExtractor(sweep, options.num_blocks, predicted)
+        extract = ProfileBlockExtractor(sweep, predicted,
+            options.num_blocks, options.output_filename)
 
         # Read through the blocks
         for i in range(len(extract)):
-            Command.start('Reading block %d' % i)
+            Command.start('Extracting block %d' % i)
             indices, shoeboxes = extract[i]
-            Command.end('Read %d reflections from block %d' % (len(indices), i))
+            Command.end('Extracted %d reflections from block %d' % (len(indices), i))
 
 
 if __name__ == '__main__':

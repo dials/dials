@@ -154,7 +154,7 @@ class Writer(object):
         data = StringIO(pickle.dumps((indices, shoeboxes),
             protocol=pickle.HIGHEST_PROTOCOL))
         info = self._tar.tarinfo()
-        info.name = '%s.p' % uuid4()
+        info.name = '%s.p' % uuid4().hex
         info.size = data.len
         info.mtime = int(time())
         self._tar.addfile(info, data)
