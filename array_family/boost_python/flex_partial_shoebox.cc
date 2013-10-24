@@ -144,7 +144,7 @@ namespace dials { namespace af { namespace boost_python {
 
     // Some useful typedefs
     typedef boost::unordered_map<std::size_t, af::shared<PartialShoebox> > map_type;
-    typedef typename map_type::iterator iterator;
+    typedef map_type::iterator iterator;
 
     // Construct a map of the shoeboxes to merge
     DIALS_ASSERT(indices.size() == shoeboxes.size());
