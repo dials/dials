@@ -99,36 +99,22 @@ class ProfileFittingReciprocalSpace2(object):
         Command.end('Transformed {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
 
-
         # Match the predictions with the strong spots
         sind, pind = self.match(strong, reflections)
-
 
         # Create the reference profile sampler
         image_size = sweep.get_detector().get_image_size()
         num_frames = sweep.get_scan().get_num_images()
         volume_size = image_size + (num_frames,)
-        num_z = int(num_frames / self.frame_interval)
-        num_z = 1
-        sampler = XdsCircleSampler(volume_size, num_z)
+        sampler = XdsCircleSampler(volume_size, 1)
 
         # Configure the reference learner
         grid_size = (self.grid_size * 2 + 1,) * 3
         learner = XdsCircleReferenceLearner(sampler, grid_size, self.threshold)
-
-        selected = reflections.select(pind)
-        # Learn the reference profiles
-        Command.start('Learning reference profiles from {0} reflections'.format(
-            len([r for r in selected if r.is_valid()])))
-        learner.learn(selected)
-        Command.end('Learnt {0} reference profiles from {1} reflections'.format(
-            len(learner.locate()),
-            len([r for r in reflections if r.is_valid()])))
-
-        reference = learner.locate()
+        learner.learn(reflections.select(pind))
 
         # Configure the integration algorithm with the locator class
-        integrate = ProfileFittingReciprocalSpaceAlgorithm(reference)
+        integrate = ProfileFittingReciprocalSpaceAlgorithm(learner.locate())
 
         # Perform the integration
         Command.start('Integrating reflections in reciprocal space')

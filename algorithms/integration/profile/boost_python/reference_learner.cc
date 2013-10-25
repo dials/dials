@@ -31,6 +31,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("grid_size"),
         arg("threshold"))))
       .def("learn", &learner_type::learn)
+      .def("counts", &learner_type::counts)
       .def("locate", &learner_type::locate);
   }
 

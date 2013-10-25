@@ -43,7 +43,8 @@ namespace dials { namespace algorithms {
     ReferenceLearner(const sampler_type &sampler,
                      int3 grid_size, double threshold)
       : locator_(allocate_profiles(sampler.size(), grid_size), sampler),
-        threshold_(threshold) {}
+        threshold_(threshold),
+        counts_(sampler.size(), 0) {}
 
     /**
      * @returns The reference profile locator.
@@ -66,6 +67,17 @@ namespace dials { namespace algorithms {
 
       // Normalize the reference profiles
       normalize_reference_profiles();
+    }
+
+    /**
+     * @returns The number of reflections contributing to each profile.
+     */
+    af::shared<int> counts() const {
+      af::shared<int> result(counts_.size());
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = counts_[i];
+      }
+      return result;
     }
 
   private:
@@ -113,6 +125,7 @@ namespace dials { namespace algorithms {
       // Find the nearest reference profile
       std::size_t index = locator_.index(coord);
       vec3<double> coord_b = locator_.coord(index);
+      counts_[index]++;
 
       // Get the reference profile
       af::ref<float_type> reference = reference_profile(index);
@@ -192,6 +205,7 @@ namespace dials { namespace algorithms {
 
     locator_type locator_;
     double threshold_;
+    af::shared<int> counts_;
   };
 
 }} // namespace dials::algorithms
