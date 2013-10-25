@@ -42,7 +42,7 @@ class Script(ScriptRunner):
 
     def main(self, params, options, args):
         '''Execute the script.'''
-        from dials.algorithms.integration import IntegratorFactory2
+        from dials.algorithms.integration import IntegratorFactory
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
@@ -70,7 +70,7 @@ class Script(ScriptRunner):
 
         # Get the integrator from the input parameters
         print 'Configurating integrator from input parameters'
-        integrate = IntegratorFactory2.from_parameters(params)
+        integrate = IntegratorFactory.from_parameters(params)
 
         # Intregate the sweep's reflections
         print 'Integrating reflections'
