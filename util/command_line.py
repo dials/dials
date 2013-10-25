@@ -270,6 +270,7 @@ class Importer(object):
         self.crystals = []
         self.reflections = ReflectionList()
         self.reference = None
+        self.extracted = None
 
         # First try to load known serialized formats. Then try to load
         # the remaining arguments as an imageset. If this fails save
@@ -292,6 +293,7 @@ class Importer(object):
         result = False
         if not result: result = self.try_pickle(argument)
         if not result: result = self.try_json(argument)
+        if not result: result = self.try_extracted(argument)
         return result
 
     def try_pickle(self, argument):
@@ -352,6 +354,15 @@ class Importer(object):
             pass
         return args
 
+    def try_extracted(self, argument):
+        ''' Try the filename as an extracted tarball. '''
+        from dials.model.serialize import partial_shoebox
+        try:
+            self.extracted = partial_shoebox.Reader(argument)
+            return True
+        except Exception:
+            pass
+        return False
 
 if __name__ == '__main__':
     import time

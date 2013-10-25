@@ -4,6 +4,7 @@ import libtbx.load_env
 
 tst_list = (
     "$D/test/tst_spots_xds.py",
+    "$D/test/util/tst_command_line.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_flex_partial_shoebox.py",
     "$D/test/model/data/tst_reflection_pickle.py",

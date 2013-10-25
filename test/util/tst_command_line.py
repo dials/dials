@@ -24,6 +24,7 @@ class TestImporter:
             os.path.join(self.path, 'non_existant.file'),
             os.path.join(self.path, 'crystal.json'),
             os.path.join(self.path, 'spot_xds.pickle'),
+            os.path.join(self.path, 'extracted.tar'),
             os.path.join(self.path, 'another_non_existant.file'),
             os.path.join(self.path, 'sweep.json'),
         ]
@@ -35,6 +36,7 @@ class TestImporter:
         assert(len(importer.imagesets) == 3)
         assert(len(importer.crystals) == 2)
         assert(len(importer.unhandled_arguments) == 2)
+        assert(importer.extracted != None)
 
         print 'OK'
 

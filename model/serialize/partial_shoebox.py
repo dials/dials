@@ -44,7 +44,7 @@ class Reader(object):
 
     def close(self):
         ''' Close the file. '''
-        if not self._tar.closed:
+        if hasattr(self, '_tar') and not self._tar.closed:
             self._tar.close()
 
     def read(self, index):
