@@ -13,24 +13,37 @@ from dials.interfaces.integration import IntegrationInterface
 
 
 class ProfileFittingReciprocalSpace(object):
+    ''' Class to do reciprocal space profile fitting. '''
 
     def __init__(self, **kwargs):
+        ''' Initialise the algorithm. '''
         from dials.algorithms.peak_finding.spot_matcher import SpotMatcher2
+
         # Set the parameters
         self.grid_size = kwargs['grid_size']
         self.threshold = kwargs['threshold']
         self.frame_interval = kwargs['frame_interval']
         self.bbox_nsigma = kwargs['n_sigma']
+
         # Create the spot matcher
         self.match = SpotMatcher2(max_separation=1)
 
     def __call__(self, sweep, crystal, reflections, strong):
+        ''' Do the integration.
+
+        Transform the profiles to reciprocal space. Select the reflections
+        to use in the reference profiles. Learn the reference profiles and
+        integrate the intensities via profile fitting.
+
+        '''
+        self._transform_profiles(sweep, crystal, reflections)
+        learner = self._learn_references(sweep, crystal, reflections, strong)
+        return self._integrate_intensities(learner, reflections)
+
+    def _transform_profiles(self, sweep, crystal, reflections):
+        ''' Transform the reflection profiles to reciprocal space. '''
         from dials.util.command_line import Command
         from dials.algorithms.reflection_basis import transform as rbt
-        from dials.algorithms.integration import \
-            ProfileFittingReciprocalSpaceAlgorithm
-        from dials.algorithms.integration.profile import XdsCircleSampler
-        from dials.algorithms.integration.profile import XdsCircleReferenceLearner
 
         # Initialise the reciprocal space transform
         Command.start('Initialising reciprocal space transform')
@@ -42,6 +55,11 @@ class ProfileFittingReciprocalSpace(object):
         rbt.forward_batch(spec, reflections, True)
         Command.end('Transformed {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
+
+    def _learn_references(self, sweep, crystal, reflections, strong):
+        ''' Learn the reference profiles. '''
+        from dials.algorithms.integration.profile import XdsCircleSampler
+        from dials.algorithms.integration.profile import XdsCircleReferenceLearner
 
         # Match the predictions with the strong spots
         sind, pind = self.match(strong, reflections)
@@ -57,6 +75,14 @@ class ProfileFittingReciprocalSpace(object):
         learner = XdsCircleReferenceLearner(sampler, grid_size, self.threshold)
         learner.learn(reflections.select(pind))
 
+        # Return the learner
+        return learner
+
+    def _integrate_intensities(self, learner, reflections):
+        ''' Integrate the intensities. '''
+        from dials.util.command_line import Command
+        from dials.algorithms.integration import ProfileFittingReciprocalSpaceAlgorithm
+
         # Configure the integration algorithm with the locator class
         integrate = ProfileFittingReciprocalSpaceAlgorithm(learner.locate())
 
@@ -66,5 +92,4 @@ class ProfileFittingReciprocalSpace(object):
         Command.end('Integrated {0} reflections'.format(
             len([r for r in reflections if r.is_valid()])))
 
-        # Return the integrated reflections
         return reflections
