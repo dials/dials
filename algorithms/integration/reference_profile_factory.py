@@ -99,14 +99,11 @@ class ReferenceProfileCreator2(object):
             The reference profile locator
 
         '''
-        print len(strong), len(predicted)
-
-
         # Match the predictions with the strong spots
         sind, pind = self.match(strong, predicted)
 
         # Learn the reference profiles
-        return self.learn()(sweep, crystal, predicted.select(pind))
+        return self.learn(sweep, crystal, predicted.select(pind))
 
 
 class ProfileLearner(object):
@@ -149,7 +146,6 @@ class ProfileLearner(object):
         num_frames = sweep.get_scan().get_num_images()
         volume_size = image_size + (num_frames,)
         num_z = int(num_frames / self.frame_interval)
-        print num_z
         num_z = 1
         sampler = XdsCircleSampler(volume_size, num_z)
 
@@ -178,18 +174,6 @@ class ProfileLearner(object):
 
         # Return the reference profile locator
         return learner.locate()
-
-
-class ProfileLearnerWrapper:
-
-    def __init__(self, bbox_nsigma, grid_size, threshold, frame_interval):
-        self.bbox_nsigma = bbox_nsigma
-        self.frame_interval = frame_interval
-        self.threshold = threshold
-        self.grid_size = grid_size
-
-    def __call__(self):
-        return ProfileLearner(self.bbox_nsigma, self.grid_size, self.threshold, self.frame_interval)
 
 
 class ReferenceProfileFactory(object):
@@ -244,7 +228,7 @@ class ReferenceProfileFactory(object):
 
             # Create the profile learner for reciprocal space fitting
             p = params.integration
-            learner = ProfileLearnerWrapper(
+            learner = ProfileLearner(
                 bbox_nsigma=p.shoebox.n_sigma,
                 grid_size=p.reciprocal_space.grid_size,
                 threshold=p.profile.reference_signal_threshold,

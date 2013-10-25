@@ -552,12 +552,7 @@ class IntegratorFactory2(object):
 
         # Configure the reciprocal space profile fitting algorithm
         elif integration.algorithm == 'fit_rs':
-
-            from dials.algorithms.integration import ReferenceProfileFactory
-            learner = ReferenceProfileFactory.from_parameters2(params)
-
             algorithm = ProfileFittingReciprocalSpace2(
-                learner = learner,
                 n_sigma = integration.shoebox.n_sigma,
                 grid_size = integration.reciprocal_space.grid_size,
                 frame_interval = integration.profile.reference_frame_interval,

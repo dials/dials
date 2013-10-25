@@ -44,6 +44,7 @@ namespace dials { namespace algorithms {
         std::size_t max_iter)
      : locate_(locate),
        max_iter_(max_iter) {
+      DIALS_ASSERT(locate != NULL);
       DIALS_ASSERT(max_iter_ > 0);
     }
 
