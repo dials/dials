@@ -21,11 +21,13 @@ class InclinedSubtractor(BackgroundSubtractionInterface):
         pass
 
     def __call__(self, sweep, crystal, reflections):
-        plane_constants = []
-        layering_and_background_plane(reflections, plane_constants)
+        #plane_constants = []
+        layering_and_background_plane(reflections)
+        #layering_and_background_plane(reflections, plane_constants)
         return reflections
 
-def layering_and_background_plane(reflections, plane_constants):
+#def layering_and_background_plane(reflections, plane_constants):
+def layering_and_background_plane(reflections):
     from dials.algorithms.background \
      import get_plane_background_syml_sys_2d, variance_n_background_from_plane
     from scitbx.array_family import flex
@@ -77,4 +79,4 @@ def layering_and_background_plane(reflections, plane_constants):
             ref.intensity_variance = tot_sigma
     print "background plane calculation ..... done"
 
-    return reflections, plane_constants
+    return reflections#, plane_constants
