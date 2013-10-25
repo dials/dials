@@ -110,6 +110,9 @@ class PredictionParameterisation(object):
 
         self._length = self._len()
 
+        # Fill out remaining attributes by a call to prepare
+        self.prepare()
+
     def _len(self):
         length = 0
         if self._detector_parameterisations:
@@ -228,19 +231,7 @@ class PredictionParameterisation(object):
     def prepare(self):
         '''Cache required quantities that are not dependent on hkl'''
 
-        # Note, the reflection prediction code should be improved to also
-        # provide detector + sensor numbers for each prediction, so that we can
-        # have multiple sensor parameterisations and only calculate derivatives
-        # for the one sensor that the ray does in fact intersect. We then need
-        # a way to look up, from a detector + sensor number, which detector
-        # parameterisation object refers to that sensor. Ideally this would be
-        # done without requiring a search through all of
-        # self._detector_parameterisations each time.
-        #
-        # For now, assume there is only one sensor, and it is parameterised by
-        # the first entry in self._detector_parameterisations.
-
-        ### Obtain various quantities of interest from the experimental model
+        # Obtain various quantities of interest from the experimental model
         self._D_mats = [matrix.sqr(p.get_D_matrix()) for p in self._detector]
         self._s0 = matrix.col(self._beam.get_s0())
         self._U = self._crystal.get_U()
