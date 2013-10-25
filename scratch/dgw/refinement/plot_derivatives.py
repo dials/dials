@@ -18,29 +18,27 @@ from scitbx import matrix
 from dials.model.experiment import beam_factory
 from dials.model.experiment import goniometer_factory
 from dials.model.experiment import detector_factory
-from dials.scratch.dgw.crystal_model import Crystal
+from dials.model.experiment.crystal_model import Crystal
 
 # Model parameterisations
-from dials.scratch.dgw.refinement.prediction_parameters import \
-    DetectorSpacePredictionParameterisation
-from dials.scratch.dgw.refinement.detector_parameters import \
+from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
-from dials.scratch.dgw.refinement.beam_parameters import \
+from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
-from dials.scratch.dgw.refinement.crystal_parameters import \
+from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.scratch.dgw.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from dials.scratch.dgw.refinement.prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 
 # Import helper functions
-from dials.scratch.dgw.refinement import print_model_geometry
+from dials.algorithms.refinement import print_model_geometry
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
@@ -73,9 +71,7 @@ print "Random seed for this run:", seed
 mygonio = goniometer_factory.known_axis((1, 0, 0))
 
 # Put the beam along the Z axis
-#wavelength = random.uniform(0.8, 1.5)
-wavelength = 1.0
-mybeam = beam_factory.make_beam((0., 0., 1.), wavelength)
+mybeam = beam_factory.make_beam(unit_s0=(0., 0., 1.), wavelength=1.0)
 
 # Make a detector modelled on PILATUS 2M, S/N 24-0107 Diamond, 200 mm from the
 # lab frame origin along the Z axis, with plane directions aligned with X and -Y axes
@@ -120,22 +116,15 @@ UB = mycrystal.get_U() * mycrystal.get_B()
 sweep_range = (0., pi/2.)
 ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 
-obs_refs = ref_predictor.predict(indices)
+predictions = ref_predictor.predict(indices)
 
-print "Total number of reflections excited", len(obs_refs)
-
-# Pull out reflection data as lists
-temp = [(ref.miller_index, ref.rotation_angle,
-         matrix.col(ref.beam_vector)) for ref in obs_refs]
-hkls, angles, svecs = zip(*temp)
+print "Total number of reflections excited", len(predictions)
 
 # Project positions on camera
-# currently assume all reflections intersect panel 0
-impacts = [mydetector[0].get_ray_intersection(
-                        ref.beam_vector) for ref in obs_refs]
-d1s, d2s = zip(*impacts)
+from dials.algorithms.spot_prediction import ray_intersection
+obs_refs = ray_intersection(mydetector, predictions)
 
-print "Total number of observations made", len(hkls)
+print "Total number of observations made", len(obs_refs)
 
 ###########################
 # Parameterise the models #
@@ -160,7 +149,12 @@ pred_param = DetectorSpacePredictionParameterisation(
 ##########################################################################
 
 nparam = len(pred_param)
-grads = [pred_param.get_gradients(h, s, phi) for h, s, phi in zip(hkls, svecs, angles)]
+
+grads = [pred_param.get_gradients(ref.miller_index,
+                                  ref.beam_vector,
+                                  ref.rotation_angle,
+                                  ref.panel_number) for ref in obs_refs]
+
 f = open("plot_derivatives.dat", "w")
 s1 = ["dX_dParam%02d"] * nparam
 s2 = ["dY_dParam%02d"] * nparam
@@ -168,7 +162,11 @@ s3 = ["dPhi_dParam%02d"] * nparam
 header_line = (("X, Y, Phi, " + ", ".join(s1 + s2 + s3) + "\n" ) % tuple(range(nparam) * 3))
 f.write(header_line)
 fmt = ", ".join(["%.5f"] * (3 + 3 * nparam)) + "\n"
-for x, y, phi, grad in zip(d1s, d2s, angles, grads):
+#for x, y, phi, grad in zip(d1s, d2s, angles, grads):
+for ref, grad in zip(obs_refs, grads):
+    x = ref.image_coord_mm[0]
+    y = ref.image_coord_mm[1]
+    phi = ref.rotation_angle
     xgrads = [g[0] for g in grad]
     ygrads = [g[1] for g in grad]
     phigrads = [g[2] for g in grad]
