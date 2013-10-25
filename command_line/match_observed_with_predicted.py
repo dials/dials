@@ -67,7 +67,21 @@ class Script(ScriptRunner):
         predicted = self.predict(sweep, crystal)
 
         # Match the predictions with the strong spots
-        matches = self.match(observed, predicted)
+        oindex, pindex = self.match(observed, predicted)
+
+        # Copy all of the reflection data for the matched reflections
+        matches = ReflectionList()
+        for i in index:
+            o = observed[oindex]
+            p = predicted[pindex]
+            o.miller_index = p.miller_index
+            o.rotation_angle = p.rotation_angle
+            o.beam_vector = p.beam_vector
+            o.image_coord_px = p.image_coord_px
+            o.image_coord_mm = p.image_coord_mm
+            o.panel_number = p.panel_number
+            o.frame_number = p.frame_number
+            matched.append(o)
 
         # Save the reflections to file
         Command.start('Saving {0} reflections to {1}'.format(

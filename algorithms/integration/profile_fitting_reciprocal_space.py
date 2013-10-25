@@ -17,7 +17,7 @@ class ProfileFittingReciprocalSpace(object):
 
     def __init__(self, **kwargs):
         ''' Initialise the algorithm. '''
-        from dials.algorithms.peak_finding.spot_matcher import SpotMatcher2
+        from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
 
         # Set the parameters
         self.grid_size = kwargs['grid_size']
@@ -26,7 +26,7 @@ class ProfileFittingReciprocalSpace(object):
         self.bbox_nsigma = kwargs['n_sigma']
 
         # Create the spot matcher
-        self.match = SpotMatcher2(max_separation=1)
+        self.match = SpotMatcher(max_separation=1)
 
     def __call__(self, sweep, crystal, reflections, strong):
         ''' Do the integration.

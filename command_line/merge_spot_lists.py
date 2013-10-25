@@ -100,15 +100,8 @@ class Script(ScriptRunner):
 
     def main(self, params, options, args):
         '''Execute the script.'''
-        from dials.algorithms.integration import ReflectionPredictor
-        from dials.algorithms.peak_finding import SpotMatcher
         from dials.util.command_line import Importer, Command
         from dials.model.serialize import dump
-        from scitbx.array_family import flex
-        from dials.algorithms.shoebox import find_overlapping
-        from dials.algorithms.shoebox import MaskCode
-        from collections import defaultdict
-        from dials.algorithms.image.connected_components import LabelPixels3d
 
         # Try importing the command line arguments
         importer = Importer(args)
