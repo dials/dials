@@ -177,7 +177,7 @@ class ProfileBlockExtractor(object):
     ''' A class to extract reflections and get them in blocks. '''
 
     def __init__(self, sweep, predicted, nblocks, filename=None,
-                 mask=None, gain=None, dark=None):
+                 mask=None, gain=None, dark=None, reader=None):
         ''' Initialise the extractor.
 
         Extract all the data and save into an intermediate format.
@@ -195,20 +195,24 @@ class ProfileBlockExtractor(object):
         self.blocks = self._calculate_blocks(sweep, nblocks)
 
         # Create the writer
-        if filename == None:
-            filename = 'extracted.tar'
-        writer = partial_shoebox.Writer(filename, predicted, self.blocks)
+        if reader == None:
+            if filename == None:
+                filename = 'extracted.tar'
+            writer = partial_shoebox.Writer(filename, predicted, self.blocks)
 
-        # Extract the frames and write to an intermediate format
-        panels = flex.size_t([p.panel_number for p in predicted])
-        bboxes = flex.int6([p.bounding_box for p in predicted])
-        for i, (b0, b1) in enumerate(zip(self.blocks[:-1], self.blocks[1:])):
-            extract = PartialProfileExtractor(sweep[b0:b1])
-            writer.write(i, *extract(panels, bboxes))
-        writer.close()
+            # Extract the frames and write to an intermediate format
+            panels = flex.size_t([p.panel_number for p in predicted])
+            bboxes = flex.int6([p.bounding_box for p in predicted])
+            for i, (b0, b1) in enumerate(zip(self.blocks[:-1], self.blocks[1:])):
+                extract = PartialProfileExtractor(sweep[b0:b1])
+                writer.write(i, *extract(panels, bboxes))
+            writer.close()
 
-        # Open the reader ready to get the blocks
-        self._reader = partial_shoebox.Reader(filename)
+            # Open the reader ready to get the blocks
+            self._reader = partial_shoebox.Reader(filename)
+        else:
+            assert(len(reader) == len(self))
+            self._reader = reader
 
     def __len__(self):
         ''' Get the number of blocks. '''

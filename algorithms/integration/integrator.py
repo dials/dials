@@ -88,7 +88,7 @@ class Integrator2(object):
         self.compute_intensity = compute_intensity
         self.correct_intensity = correct_intensity
 
-    def __call__(self, sweep, crystal, reference=None):
+    def __call__(self, sweep, crystal, reference=None, extracted=None):
         ''' Call to integrate.
 
         Params:
@@ -108,12 +108,15 @@ class Integrator2(object):
         from dials.util.command_line import Command
 
         # Predict a load of reflections
-        predict = ReflectionPredictor()
-        predicted = predict(sweep, crystal)
+        if extracted == None:
+            predict = ReflectionPredictor()
+            predicted = predict(sweep, crystal)
+        else:
+            predicted = None
 
         # Get the extractor
         extract = ReflectionBlockExtractor(sweep, crystal, predicted,
-            self.n_sigma, self.n_blocks, self.filter_by_zeta)
+            self.n_sigma, self.n_blocks, self.filter_by_zeta, extracted)
 
         # Loop through all the blocks
         result = ReflectionList()

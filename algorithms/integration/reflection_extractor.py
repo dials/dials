@@ -315,7 +315,7 @@ class ReflectionExtractor(object):
 
 class ReflectionBlockExtractor(object):
 
-    def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks, filter_by_zeta=0):
+    def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks, filter_by_zeta=0, reader=None):
         ''' Initialise and extract the reflections. '''
         from dials.algorithms.integration import ProfileBlockExtractor
         from dials.algorithms.shoebox import BBoxCalculator
@@ -323,44 +323,45 @@ class ReflectionBlockExtractor(object):
         from dials.algorithms import shoebox
         from dials.algorithms import filtering
 
-        # Create the bbox calculator
-        compute_bbox = BBoxCalculator(
-            sweep.get_beam(), sweep.get_detector(),
-            sweep.get_goniometer(), sweep.get_scan(),
-            n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
-            n_sigma * crystal.get_mosaicity(deg=False))
+        if reader == None:
+            # Create the bbox calculator
+            compute_bbox = BBoxCalculator(
+                sweep.get_beam(), sweep.get_detector(),
+                sweep.get_goniometer(), sweep.get_scan(),
+                n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
+                n_sigma * crystal.get_mosaicity(deg=False))
 
-        # Calculate the bounding boxes of all the reflections
-        Command.start('Calculating bounding boxes')
-        compute_bbox(predicted)
-        Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
+            # Calculate the bounding boxes of all the reflections
+            Command.start('Calculating bounding boxes')
+            compute_bbox(predicted)
+            Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
-        # Set all reflections which overlap bad pixels to zero
-        Command.start('Filtering reflections by detector mask')
-        array_range = sweep.get_scan().get_array_range()
-        filtering.by_detector_mask(predicted, sweep[0] >= 0, array_range)
-        Command.end('Filtered {0} reflections by detector mask'.format(
-            len([r for r in predicted if r.is_valid()])))
+            # Set all reflections which overlap bad pixels to zero
+            Command.start('Filtering reflections by detector mask')
+            array_range = sweep.get_scan().get_array_range()
+            filtering.by_detector_mask(predicted, sweep[0] >= 0, array_range)
+            Command.end('Filtered {0} reflections by detector mask'.format(
+                len([r for r in predicted if r.is_valid()])))
 
-        # Filter the reflections by zeta
-        if filter_by_zeta > 0:
-            Command.start('Filtering reflections by zeta >= {0}'.format(
-                filter_by_zeta))
-            filtering.by_zeta(sweep.get_goniometer(), sweep.get_beam(),
-                predicted, filter_by_zeta)
-            Command.end('Filtered {0} reflections by zeta >= {1}'.format(
-                len([r for r in predicted if r.is_valid()]), filter_by_zeta))
+            # Filter the reflections by zeta
+            if filter_by_zeta > 0:
+                Command.start('Filtering reflections by zeta >= {0}'.format(
+                    filter_by_zeta))
+                filtering.by_zeta(sweep.get_goniometer(), sweep.get_beam(),
+                    predicted, filter_by_zeta)
+                Command.end('Filtered {0} reflections by zeta >= {1}'.format(
+                    len([r for r in predicted if r.is_valid()]), filter_by_zeta))
 
-        # Get only those reflections which are valid
-        predicted = predicted.select(predicted.is_valid())
+            # Get only those reflections which are valid
+            predicted = predicted.select(predicted.is_valid())
 
-        # Find overlapping reflections
-        Command.start('Finding overlapping reflections')
-        overlaps = shoebox.find_overlapping(predicted)
-        Command.end('Found {0} overlaps'.format(len(overlaps)))
+            # Find overlapping reflections
+            Command.start('Finding overlapping reflections')
+            overlaps = shoebox.find_overlapping(predicted)
+            Command.end('Found {0} overlaps'.format(len(overlaps)))
 
         # Create the profile block extractor
-        self._extractor = ProfileBlockExtractor(sweep, predicted, n_blocks)
+        self._extractor = ProfileBlockExtractor(sweep, predicted, n_blocks, reader=reader)
 
         # Get the parameters
         delta_d = n_sigma * sweep.get_beam().get_sigma_divergence(deg=False)

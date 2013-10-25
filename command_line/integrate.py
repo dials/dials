@@ -46,33 +46,36 @@ class Script(ScriptRunner):
         from dials.algorithms import shoebox
         from dials.model.serialize import load, dump
         from dials.util.command_line import Command
+        from dials.util.command_line import Importer
         from time import time
 
         # Check the number of arguments is correct
         start_time = time()
-        if len(args) != 2 and len(args) != 3:
-            self.config().print_help()
-            return
+
+        # Process the command line options
+        Command.start('Processing command line options')
+        importer = Importer(args)
+        if len(importer.imagesets) != 1:
+            RuntimeError('need 1 sweep: %d given' % len(importer.imagesets))
+        if len(importer.crystals) != 1:
+            RuntimeError('need 1 crystal: %d given' % len(importer.crystals))
+        sweep = importer.imagesets[0]
+        crystal = importer.crystals[0]
+        if len(importer.reflections) == 0:
+            reference = None
+        else:
+            reference = importer.reflections
+        extracted = importer.extracted
+        Command.end('Processed command line options')
 
         # Get the integrator from the input parameters
         print 'Configurating integrator from input parameters'
         integrate = IntegratorFactory2.from_parameters(params)
 
-        # Try to load the models
-        print 'Loading models from {0} and {1}'.format(args[0], args[1])
-        sweep = load.sweep(args[0])
-        crystal = load.crystal(args[1])
-
-        # Load the reference profiles
-        if len(args) == 3:
-            reference = load.reflections(args[2])
-#            reference = load.reference(args[2])
-        else:
-            reference = None
-
         # Intregate the sweep's reflections
         print 'Integrating reflections'
-        reflections = integrate(sweep, crystal, reference=reference)
+        reflections = integrate(sweep, crystal,
+            reference=reference, extracted=extracted)
 
         # Save the reflections to file
         nvalid = len([r for r in reflections if r.is_valid()])
