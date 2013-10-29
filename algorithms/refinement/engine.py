@@ -330,7 +330,7 @@ class AdaptLstbx(
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     '''Refinery implementation, using lstbx Gauss Newton iterations'''
 
-    n_max_iterations = 20
+    # defaults that may be overridden
     gradient_threshold = 1.e-10
     step_threshold = None
     damping_value = 0.0007
@@ -339,7 +339,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
-                 track_gradient = False, max_iterations = None, **kwds):
+                 track_gradient = False, max_iterations = 20, **kwds):
 
         AdaptLstbx.__init__(self, target, prediction_parameterisation,
                  log=log, verbosity=verbosity, track_step=track_step,
@@ -349,10 +349,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         # add an attribute to the journal
         self.history.reduced_chi_squared = flex.double()
 
-        # adjust maximum number of iterations if requested
-        if self._max_iterations:
-            self.n_max_iterations = self._max_iterations
-
+        # adopt any overrides of the defaults above
         libtbx.adopt_optional_init_args(self, kwds)
 
     def run(self):
@@ -412,7 +409,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                 self.prepare_for_step()
                 break
 
-            if self.n_iterations == self.n_max_iterations:
+            if self.n_iterations == self._max_iterations:
                 reason_for_termination = "Reached maximum number of " \
                     "iterations"
                 break
