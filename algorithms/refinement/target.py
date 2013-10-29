@@ -107,6 +107,10 @@ class Target(object):
                 # do not wrap around multiples of 2*pi; keep the full rotation
                 # from zero to differentiate repeat observations.
                 resid = ref.rotation_angle - (obs.Phio % TWO_PI)
+
+                # ensure this is the smaller of two possibilities
+                resid = (resid + pi) % TWO_PI - pi
+
                 Phic = obs.Phio + resid
                 Sc = matrix.col(ref.beam_vector)
 

@@ -37,7 +37,7 @@ class ReflectionPredictor(object):
         self._crystal = crystal
         self._beam = beam
         self._gonio = gonio
-        self._sweep_range = sweep_range
+        self._sweep_range = (0, 2.*pi)
         self.update()
 
     def update(self):
