@@ -36,7 +36,7 @@ max_cell = 160
 reciprocal_space_grid {
   n_points = 256
     .type = int(value_min=0)
-  d_min = 4
+  d_min = Auto
     .type = float(value_min=0)
     .help = "The high resolution limit in Angstrom for spots to include in "
             "the initial indexing."
@@ -202,6 +202,12 @@ class indexer(object):
           self.params.known_symmetry.unit_cell)
 
   def index(self):
+    if self.params.reciprocal_space_grid.d_min is libtbx.Auto:
+      # rough calculation of suitable d_min based on max cell
+      # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
+      self.params.reciprocal_space_grid.d_min = (
+        5 * self.params.max_cell / self.params.reciprocal_space_grid.n_points)
+      print "Setting d_min: %s" %self.params.reciprocal_space_grid.d_min
     n_points = self.params.reciprocal_space_grid.n_points
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
