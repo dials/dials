@@ -182,9 +182,9 @@ class Refinery(object):
 class AdaptLbfgs(Refinery):
     '''Adapt Refinery for L-BFGS minimiser'''
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
 
-        Refinery.__init__(self, **kwargs)
+        Refinery.__init__(self, *args, **kwargs)
 
         self._termination_params = lbfgs.termination_parameters(
             max_iterations = self._max_iterations)
