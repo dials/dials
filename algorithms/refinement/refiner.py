@@ -568,10 +568,9 @@ class TargetFactory(object):
     def __call__(self, crystal, beam, goniometer, detector, scan,
         refman, pred_param):
 
-        sweep_range = scan.get_oscillation_range(deg=False)
         image_width = scan.get_oscillation(deg=False)[1]
 
-        rp = self._ref_predictor(crystal, beam, goniometer, sweep_range)
+        rp = self._ref_predictor(crystal, beam, goniometer)
         return self._target(rp, detector, refman, pred_param,
                             image_width, self._frac_binsize_cutoff,
                             self._absolute_cutoffs)

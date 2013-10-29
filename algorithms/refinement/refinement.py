@@ -170,8 +170,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     #       len(sig_d2s) == len(angles) == len(sig_angles)
 
     image_width = scan.get_oscillation(deg=False)[1]
-    sweep_range = scan.get_oscillation_range(deg=False)
-    ref_predictor = ReflectionPredictor(crystal, beam, goniometer, sweep_range)
+    ref_predictor = ReflectionPredictor(crystal, beam, goniometer)
 
     ###########################
     # Parameterise the models #
@@ -304,8 +303,7 @@ def scan_varying_refine(
     # Import the refinement engine
     from dials.algorithms.refinement.engine import GaussNewtonIterations
 
-    sweep_range = scan.get_oscillation_range(deg=False)
-    ref_predictor = ReflectionPredictor(crystal, beam, goniometer, sweep_range)
+    ref_predictor = ReflectionPredictor(crystal, beam, goniometer)
 
     ###########################
     # Parameterise the models #
