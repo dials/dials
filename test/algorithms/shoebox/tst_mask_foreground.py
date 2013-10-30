@@ -30,6 +30,7 @@ class Test(object):
         self.scan = self.sweep.get_scan()
         self.delta_d = 5 * self.beam.get_sigma_divergence(deg=False)
         self.delta_m = 5 * self.crystal.get_mosaicity(deg=False)
+        assert(len(self.detector) == 1)
 
         # Get the function object to mask the foreground
         self.mask_foreground = MaskForeground(self.beam, self.detector,
@@ -43,11 +44,11 @@ class Test(object):
         from scitbx import matrix
         from dials.algorithms import shoebox
         from dials.algorithms.reflection_basis import CoordinateSystem
-
+        assert(len(self.detector) == 1)
         s0 = self.beam.get_s0()
         m2 = self.goniometer.get_rotation_axis()
         s0_length = matrix.col(self.beam.get_s0()).length()
-        width, height = self.detector.get_image_size()
+        width, height = self.detector[0].get_image_size()
 
         # Generate some reflections
         reflections = self.generate_reflections(100)
@@ -65,7 +66,7 @@ class Test(object):
             for j in range(y1 - y0):
                 for i in range(x1 - x0):
                     value1 = mask[0, j, i]
-                    s1 = self.detector.get_pixel_lab_coord(
+                    s1 = self.detector[0].get_pixel_lab_coord(
                         (x0 + i + 0.5, y0 + j + 0.5))
                     s1 = matrix.col(s1).normalize() * s0_length
                     e1, e2 = cs.from_beam_vector(s1)
@@ -89,13 +90,14 @@ class Test(object):
         from random import randint
         from scitbx import matrix
         from scitbx.array_family import flex
+        assert(len(self.detector) == 1)
         rlist = ReflectionList(num)
         s0_length = matrix.col(self.beam.get_s0()).length()
         for i in range(num):
             x = randint(0, 2000)
             y = randint(0, 2000)
             z = randint(0, 100)
-            s1 = self.detector.get_pixel_lab_coord((x, y))
+            s1 = self.detector[0].get_pixel_lab_coord((x, y))
             s1 = matrix.col(s1).normalize() * s0_length
             phi = self.scan.get_angle_from_array_index(z)
             rlist[i].beam_vector = s1

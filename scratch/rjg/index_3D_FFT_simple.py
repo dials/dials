@@ -350,9 +350,10 @@ class indexer(object):
       self.reflections_in_scan_range.append(i_ref)
 
   def map_centroids_to_reciprocal_space(self):
+    assert(len(self.detector) == 1)
     reflections = self.reflections.select(self.reflections_in_scan_range)
     x, y, _ = reflections.centroid_position().parts()
-    s1 = self.detector.get_lab_coord(flex.vec2_double(x,y))
+    s1 = self.detector[0].get_lab_coord(flex.vec2_double(x,y))
     s1 = s1/s1.norms() * (1/self.beam.get_wavelength())
     beam_vectors = flex.vec3_double(self.reflections.size(), (0.,0.,0.))
     beam_vectors.set_selected(self.reflections_in_scan_range, s1)
@@ -1118,7 +1119,6 @@ def run(args):
   from dials.util.command_line import Importer
 
   args = sys.argv[1:]
-
   importer = Importer(args)
   if len(importer.imagesets) == 0:
       self.config().print_help()

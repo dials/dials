@@ -191,8 +191,9 @@ obs_refs = ref_predictor.predict(indices)
 #d1s, d2s = zip(*impacts)
 
 # Invent some variances for the centroid positions of the simulated data
+assert(len(mydetector) == 1)
 im_width = 0.1 * pi / 180.
-px_size = mydetector.get_pixel_size()
+px_size = mydetector[0].get_pixel_size()
 var_x = (px_size[0] / 2.)**2
 var_y = (px_size[1] / 2.)**2
 var_phi = (im_width / 2.)**2

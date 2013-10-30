@@ -15,14 +15,15 @@ def centroid_px_to_mm(detector, scan, position, variance, sd_error):
     from operator import mul
 
     # Get the pixel to millimeter function
-    pixel_size = detector.get_pixel_size()
+    assert(len(detector) == 1)
+    pixel_size = detector[0].get_pixel_size()
     oscillation = scan.get_oscillation(deg=False)
     scale = pixel_size + (oscillation[1],)
     scale2 = map(mul, scale, scale)
 
     # Convert Pixel coordinate into mm/rad
     x, y, z = position
-    xy_mm = detector.pixel_to_millimeter((x, y))
+    xy_mm = detector[0].pixel_to_millimeter((x, y))
     z_rad = scan.get_angle_from_array_index(z, deg=False)
 
     # Set the position, variance and squared width in mm/rad

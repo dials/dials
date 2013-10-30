@@ -29,16 +29,17 @@ class Test(object):
         self.beam = self.sweep.get_beam()
         self.detector = self.sweep.get_detector()
         self.gonio = self.sweep.get_goniometer()
+        assert(len(self.detector) == 1)
 
         # Get some stuff
         self.s0 = self.beam.get_s0()
         self.m2 = self.gonio.get_rotation_axis()
-        self.image_size = self.detector.get_image_size()
+        self.image_size = self.detector[0].get_image_size()
 
         # Get a random s1/phi
         i = uniform(0, self.image_size[0])
         j = uniform(1, self.image_size[1])
-        self.s1 = matrix.col(self.detector.get_pixel_lab_coord((i, j)))
+        self.s1 = matrix.col(self.detector[0].get_pixel_lab_coord((i, j)))
         self.s1 = self.s1.normalize() * matrix.col(self.s0).length()
         self.phi = uniform(0, 5)
         self.x0 = int(floor(i - 10))
@@ -83,7 +84,7 @@ class Test(object):
                 gi_1, gj_1 = self.generate_indices(j, i)
 
                 # Get the grid indices
-                xyz = matrix.col(self.detector.get_pixel_lab_coord(
+                xyz = matrix.col(self.detector[0].get_pixel_lab_coord(
                     (self.x0 + i, self.y0 + j)))
                 xyz = xyz.normalize() * matrix.col(self.s0).length()
                 c1, c2 = matrix.col(self.cs.from_beam_vector(xyz))

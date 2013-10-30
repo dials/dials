@@ -35,7 +35,8 @@ class Test(object):
         shoebox.allocate(reflections)
 
         # If the adjacency list is given, then create the reflection mask
-        image_size = self.detector.get_image_size()
+        assert(len(self.detector) == 1)
+        image_size = self.detector[0].get_image_size()
         shoebox_masker = shoebox.MaskOverlapping()
         shoebox_masker(reflections, adjacency_list)
 
@@ -58,7 +59,7 @@ class Test(object):
 
         # Run the tests
         self.tst_non_overlapping(reflections, non_overlapping,
-            self.detector.get_image_size())
+            self.detector[0].get_image_size())
         self.tst_overlapping(reflections, overlapping, adjacency_list,
             image_size)
 

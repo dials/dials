@@ -48,7 +48,7 @@ class TestMapFramesForward(object):
         from random import uniform
         from dials.algorithms.reflection_basis import CoordinateSystem
         from scitbx.array_family import flex
-
+        assert(len(self.detector) == 1)
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
         s0_length = matrix.col(self.beam.get_s0()).length()
@@ -61,7 +61,7 @@ class TestMapFramesForward(object):
             z = uniform(-1000, 1000)
 
             # Get random s1, phi, panel
-            s1 = matrix.col(self.detector.get_pixel_lab_coord(
+            s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
                 (x, y))).normalize() * s0_length
             phi = self.scan.get_angle_from_array_index(z, deg=False)
             panel = 0
@@ -170,7 +170,7 @@ class TestMapFramesReverse(object):
             z = uniform(-1000, 1000)
 
             # Get random s1, phi, panel
-            s1 = matrix.col(self.detector.get_pixel_lab_coord(
+            s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
                 (x, y))).normalize() * s0_length
             phi = self.scan.get_angle_from_array_index(z, deg=False)
             panel = 0
@@ -288,7 +288,7 @@ class TestMapForwardReverse(object):
             z = uniform(-1000, 1000)
 
             # Get random s1, phi, panel
-            s1 = matrix.col(self.detector.get_pixel_lab_coord(
+            s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
                 (x, y))).normalize() * s0_length
             phi = self.scan.get_angle_from_array_index(z, deg=False)
             panel = 0

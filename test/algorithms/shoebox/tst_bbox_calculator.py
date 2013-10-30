@@ -50,6 +50,7 @@ class Test(object):
         from random import uniform
         from dials.algorithms import reflection_basis as rb
 
+        assert(len(self.detector) == 1)
         s0 = self.beam.get_s0()
         m2 = self.gonio.get_rotation_axis()
         s0_length = matrix.col(self.beam.get_s0()).length()
@@ -62,7 +63,7 @@ class Test(object):
             z = uniform(0, 1000)
 
             # Get random s1, phi, panel
-            s1 = matrix.col(self.detector.get_pixel_lab_coord(
+            s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
                 (x, y))).normalize() * s0_length
             phi = self.scan.get_angle_from_array_index(z, deg=False)
             panel = 0
@@ -86,8 +87,8 @@ class Test(object):
 
             # Check vertical edges
             for j in range(bbox[2], bbox[3] + 1):
-                xyz1 = self.detector.get_pixel_lab_coord((bbox[0], j))
-                xyz2 = self.detector.get_pixel_lab_coord((bbox[1] + 1, j))
+                xyz1 = self.detector[0].get_pixel_lab_coord((bbox[0], j))
+                xyz2 = self.detector[0].get_pixel_lab_coord((bbox[1] + 1, j))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
                 e11, e21, e3 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
@@ -99,8 +100,8 @@ class Test(object):
 
             # Check horizontal edges
             for i in range(bbox[0], bbox[1] + 1):
-                xyz1 = self.detector.get_pixel_lab_coord((i, bbox[2]))
-                xyz2 = self.detector.get_pixel_lab_coord((i, bbox[3] + 1))
+                xyz1 = self.detector[0].get_pixel_lab_coord((i, bbox[2]))
+                xyz2 = self.detector[0].get_pixel_lab_coord((i, bbox[3] + 1))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
                 e11, e21, e3 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
@@ -137,7 +138,7 @@ class Test(object):
             z = uniform(0, 1000)
 
             # Get random s1, phi, panel
-            s1 = matrix.col(self.detector.get_pixel_lab_coord(
+            s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
                 (x, y))).normalize() * s0_length
             phi = self.scan.get_angle_from_array_index(z, deg=False)
             panel = 0
@@ -157,8 +158,8 @@ class Test(object):
 
             # Check vertical edges
             for j in range(bbox[2], bbox[3] + 1):
-                xyz1 = self.detector.get_pixel_lab_coord((bbox[0], j))
-                xyz2 = self.detector.get_pixel_lab_coord((bbox[1] + 1, j))
+                xyz1 = self.detector[0].get_pixel_lab_coord((bbox[0], j))
+                xyz2 = self.detector[0].get_pixel_lab_coord((bbox[1] + 1, j))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
                 e11, e21, e31 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
@@ -168,8 +169,8 @@ class Test(object):
 
             # Check horizontal edges
             for i in range(bbox[0], bbox[1] + 1):
-                xyz1 = self.detector.get_pixel_lab_coord((i, bbox[2]))
-                xyz2 = self.detector.get_pixel_lab_coord((i, bbox[3] + 1))
+                xyz1 = self.detector[0].get_pixel_lab_coord((i, bbox[2]))
+                xyz2 = self.detector[0].get_pixel_lab_coord((i, bbox[3] + 1))
                 sdash1 = matrix.col(xyz1).normalize() * s0_length
                 sdash2 = matrix.col(xyz2).normalize() * s0_length
                 e11, e21, e32 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)

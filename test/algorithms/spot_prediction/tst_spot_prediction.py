@@ -34,6 +34,8 @@ class TestSpotPredictor:
         self.detector = models.get_detector()
         self.scan = models.get_scan()
 
+        assert(len(self.detector) == 1)
+
         #print self.detector
 
         # Get crystal parameters
@@ -47,7 +49,7 @@ class TestSpotPredictor:
         self.ub_matrix = matrix.sqr(a_vec + b_vec + c_vec).inverse()
 
         # Get the minimum resolution in the integrate file
-        self.d_min = self.detector.get_max_resolution_at_corners(
+        self.d_min = self.detector[0].get_max_resolution_at_corners(
             self.beam.get_s0())
 
         # Get the number of frames from the max z value

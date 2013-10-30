@@ -87,7 +87,7 @@ def make_multi_panel(single_panel_detector):
         new_dir2 = dn.cross(new_dir1)
 
         # set panel frame
-        p.set_frame(new_dir1, new_dir2, new_origin)
+        p.set_local_frame(new_dir1, new_dir2, new_origin)
 
     return multi_panel_detector
 
@@ -124,7 +124,9 @@ if __name__ == '__main__':
     p_vals = dp.get_param_vals()
     p_vals[0:3] = [100., 0., 0.]
     dp.set_param_vals(p_vals)
-    panel = dp._models[0]
+    detector = dp._models[0]
+    assert(len(detector) == 1)
+    panel = detector[0]
     v1 = matrix.col(panel.get_origin())
     v2 = matrix.col((0., 0., 1.))
     assert(approx_equal(v1.dot(v2), -100.))
@@ -138,7 +140,9 @@ if __name__ == '__main__':
     p_vals[3] = 1000. * pi/2 # set tau1 value
     dp.set_param_vals(p_vals)
 
-    panel = dp._models[0]
+    detector = dp._models[0]
+    assert(len(detector) == 1)
+    panel = detector[0]
     assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(dp._initial_state['d1']), 0.))
     assert(approx_equal(matrix.col(panel.get_slow_axis()).dot(dp._initial_state['d2']), 0.))
     assert(approx_equal(matrix.col(panel.get_normal()).dot(dp._initial_state['dn']), 1.))
@@ -158,7 +162,9 @@ if __name__ == '__main__':
                      -cos(pi/18),
                      sqrt((2*sin(pi/36)*sin(pi/18))**2 - sin(pi/18)**4) - sin(pi/18)))
 
-    panel = dp._models[0]
+    detector = dp._models[0]
+    assert(len(detector) == 1)
+    panel = detector[0]
     assert(approx_equal(matrix.col(panel.get_fast_axis()).dot(v1), 1.))
     assert(approx_equal(matrix.col(panel.get_slow_axis()).dot(v2), 1.))
 

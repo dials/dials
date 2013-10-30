@@ -37,10 +37,11 @@ class Test(object):
 
         from scitbx import matrix
         from random import randint
+        assert(len(self.detector) == 1)
 
         # The detector beam vectors
         ds1 = beam_vector_map(self.detector, self.beam, True)
-        expected_size = self.detector.get_image_size()[::-1]
+        expected_size = self.detector[0].get_image_size()[::-1]
         expected_size = tuple([e + 1 for e in expected_size])
         assert(ds1.all() == expected_size)
 
@@ -55,7 +56,7 @@ class Test(object):
             i = randint(0, ds1.all()[1]-1)
             y = float(j)
             x = float(i)
-            xyz = self.detector.get_pixel_lab_coord((x, y))
+            xyz = self.detector[0].get_pixel_lab_coord((x, y))
             s11 = matrix.col(xyz).normalize() * s0_length
             s12 = matrix.col(ds1[j,i])
             assert((s11 - s12).length() <= eps)
@@ -72,7 +73,7 @@ class Test(object):
 
         # The detector beam vectors
         ds1 = beam_vector_map(self.detector, self.beam, self.n_div, True)
-        expected_size = self.detector.get_image_size()[::-1]
+        expected_size = self.detector[0].get_image_size()[::-1]
         expected_size = tuple([e * self.n_div + 1 for e in expected_size])
         assert(ds1.all() == expected_size)
 
@@ -87,7 +88,7 @@ class Test(object):
             i = randint(0, ds1.all()[1]-1)
             y = float(j) / self.n_div
             x = float(i) / self.n_div
-            xyz = self.detector.get_pixel_lab_coord((x, y))
+            xyz = self.detector[0].get_pixel_lab_coord((x, y))
             s11 = matrix.col(xyz).normalize() * s0_length
             s12 = matrix.col(ds1[j,i])
             assert((s11 - s12).length() <= eps)
@@ -104,7 +105,7 @@ class Test(object):
 
         # The detector beam vectors
         ds1 = beam_vector_map(self.detector, self.beam, self.n_div, False)
-        expected_size = self.detector.get_image_size()[::-1]
+        expected_size = self.detector[0].get_image_size()[::-1]
         expected_size = tuple([e * self.n_div for e in expected_size])
         assert(ds1.all() == expected_size)
 
@@ -119,7 +120,7 @@ class Test(object):
             i = randint(0, ds1.all()[1]-1)
             y = float(j + 0.5) / self.n_div
             x = float(i + 0.5) / self.n_div
-            xyz = self.detector.get_pixel_lab_coord((x, y))
+            xyz = self.detector[0].get_pixel_lab_coord((x, y))
             s11 = matrix.col(xyz).normalize() * s0_length
             s12 = matrix.col(ds1[j,i])
             assert((s11 - s12).length() <= eps)

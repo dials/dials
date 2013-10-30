@@ -50,8 +50,9 @@ class ScriptRunner(object):
         Command.start('Reading models from {0}'.format(self.xparm_filename))
         models = dxtbx.load(self.xparm_filename)
         self.detector = models.get_detector()
+        assert(len(self.detector) == 1)
         self.scan = models.get_scan()
-        self.pixel_size = self.detector.get_pixel_size()
+        self.pixel_size = self.detector[0].get_pixel_size()
         self.oscillation_range = self.scan.get_oscillation(deg=False)
         Command.end('Read models from {0}'.format(self.xparm_filename))
 
