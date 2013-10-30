@@ -166,9 +166,9 @@ namespace dials { namespace algorithms {
   private:
 
     af::shared<double4> get_image_extents(const detector_type &detector) {
-      af::shared<double4> extents(detector.num_panels(),
+      af::shared<double4> extents(detector.size(),
         af::init_functor_null<double4>());
-      for (std::size_t i = 0; i < detector.num_panels(); ++i) {
+      for (std::size_t i = 0; i < detector.size(); ++i) {
         vec2<double> image_size_mm = detector[i].get_image_size_mm();
         extents[i] = double4(0.0, 0.0, image_size_mm[0], image_size_mm[1]);
       }

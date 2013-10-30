@@ -39,7 +39,7 @@ class ReflectionPredictor(object):
         self.generate_hkl = IndexGenerator(
             crystal.get_unit_cell(),
             sgtbx.space_group_type(crystal.get_space_group()),
-            detector.get_max_resolution(beam.get_s0(), beam.get_wavelength()))
+            detector.get_max_resolution(beam.get_s0()))
 
         # Create the spot predictor
         self.predict_rays = RayPredictor(

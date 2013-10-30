@@ -162,8 +162,7 @@ class Test(object):
         self.generate_hkl = IndexGenerator(
             self.crystal.get_unit_cell(),
             sgtbx.space_group_type(self.crystal.get_space_group()),
-            self.detector.get_max_resolution(self.beam.get_s0(),
-                self.beam.get_wavelength()))
+            self.detector.get_max_resolution(self.beam.get_s0()))
 
         # Create the spot predictor
         self.predict_rays = RayPredictor(

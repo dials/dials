@@ -45,9 +45,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     // check the input
     DIALS_ASSERT(beam.get_wavelength() > 0.0);
     DIALS_ASSERT(n_div > 0);
+    DIALS_ASSERT(detector.size());
 
     // Calculate the image size
-    vec2<std::size_t> image_size = detector.get_image_size();
+    vec2<std::size_t> image_size = detector[0].get_image_size();
     std::size_t x_size = image_size[0] * n_div;
     std::size_t y_size = image_size[1] * n_div;
     if (corner) {
@@ -75,7 +76,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         double x = (i + offset) * n_div_r;
         double y = (j + offset) * n_div_r;
         vec2<double> px(x, y);
-        detector_s1[k] = detector.get_pixel_lab_coord(
+        detector_s1[k] = detector[0].get_pixel_lab_coord(
           px).normalize() * wavelength_r;
       }
     }

@@ -529,8 +529,9 @@ namespace dials { namespace algorithms { namespace filter {
       if (reflections[i].is_valid()) {
         vec3<double> c = reflections[i].get_centroid_position();
         vec2<double> px(c[0], c[1]);
-        double resolution = detector.get_resolution_at_pixel(
-            s0, wavelength, px);
+        std::size_t p = reflections[i].get_panel_number();
+        DIALS_ASSERT(p < detector.size());
+        double resolution = detector[p].get_resolution_at_pixel(s0, px);
         if (resolution < d_min || resolution > d_max) {
           reflections[i].set_valid(false);
         }

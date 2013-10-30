@@ -229,7 +229,7 @@ namespace dials { namespace model {
     void update_mm(std::size_t panel, const Detector &d, const Scan &s) {
 
       // Check the panel number
-      DIALS_ASSERT(panel < d.num_panels());
+      DIALS_ASSERT(panel < d.size());
 
       // Get the milliemeter x, y, z coordinates
       vec2<double> px_xy = vec2<double>(px.position[0], px.position[1]);
@@ -271,8 +271,7 @@ namespace dials { namespace model {
     double resolution(std::size_t panel,
         const Beam &b, const Detector &d) const {
       return d[panel].get_resolution_at_pixel(
-        b.get_s0(), b.get_wavelength(),
-        vec2<double>(px.position[0], px.position[1]));
+        b.get_s0(), vec2<double>(px.position[0], px.position[1]));
     }
 
     /**

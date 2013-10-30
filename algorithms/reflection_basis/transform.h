@@ -71,7 +71,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
                   double mosaicity, double n_sigma, std::size_t grid_size)
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis().normalize()),
-        image_size_(detector.get_image_size()[1], detector.get_image_size()[0]),
+        image_size_(detector[0].get_image_size()[1],
+                    detector[0].get_image_size()[0]),
         grid_size_(2*grid_size+1, 2*grid_size+1, 2*grid_size+1),
         step_size_(mosaicity * n_sigma / grid_size,
                    beam.get_sigma_divergence() * n_sigma / grid_size,
@@ -81,6 +82,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         map_frames_(scan.get_oscillation()[0],
                     scan.get_oscillation()[1],
                     mosaicity, n_sigma, grid_size) {
+      DIALS_ASSERT(detector.size() == 1);
       DIALS_ASSERT(image_size_.all_gt(0));
       DIALS_ASSERT(step_size_.all_gt(0));
       DIALS_ASSERT(grid_size_.all_gt(0));

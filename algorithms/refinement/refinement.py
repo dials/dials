@@ -384,8 +384,7 @@ def scan_varying_refine(
     #####################################################################
 
     # resolution limit to corners of image
-    dmin = detector.get_max_resolution_at_corners(
-            beam.get_s0(), beam.get_wavelength())
+    dmin = detector.get_max_resolution_at_corners(beam.get_s0())
 
     sv_predictor = ScanVaryingReflectionListGenerator(pred_param, beam,
                                                       goniometer, scan, dmin)

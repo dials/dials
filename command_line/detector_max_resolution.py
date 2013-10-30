@@ -28,11 +28,9 @@ def print_detector_max_resolution(input_filename):
     print ''
     print 'Beam centre: {0}'.format(detector.get_beam_centre(beam.get_s0()))
     print 'Max resolution at detector corners: {0}'.format(
-        detector.get_max_resolution_at_corners(
-            beam.get_unit_s0(), beam.get_wavelength()))
+        detector.get_max_resolution_at_corners(beam.get_s0()))
     print 'Max resolution for fully recorded elipse: {0}'.format(
-        detector.get_max_resolution_elipse(
-            beam.get_unit_s0(), beam.get_wavelength()))
+        detector.get_max_resolution_elipse(beam.get_s0()))
 
 if __name__ == '__main__':
     import sys
