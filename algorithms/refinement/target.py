@@ -40,6 +40,8 @@ class Target(object):
     This should all be set by a derived class.
     '''
 
+    rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
+
     def __init__(self, reflection_predictor, detector,
                  ref_manager,
                  prediction_parameterisation):

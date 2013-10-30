@@ -157,7 +157,9 @@ class Refinery(object):
         print
         print "Refinement steps"
         print "----------------"
-        header = ("Step Nref Residual RMSD_X RMSD_Y RMSD_phi " +
+        rmsd_title = " ".join(self._target.rmsd_names)
+        n_rmsds = len(self._target.rmsd_names)
+        header = ("Step Nref Residual " + rmsd_title + " " +
                      "Param_%02d " * len(self._parameters))
         print header % tuple(range(1, len(self._parameters) + 1))
 
@@ -166,7 +168,7 @@ class Refinery(object):
                   (self.history.objective[i],) + \
                   tuple(self.history.rmsd[i]) + \
                   tuple(self.history.parameter_vector[i])
-            print  ("%d " + "%d " + "%.5f " + "%.5f " * 3 +
+            print  ("%d " + "%d " + "%.5f " + "%.5f " * n_rmsds +
                 "%.5f " * len(self._parameters)) % dat
 
     def run(self):
