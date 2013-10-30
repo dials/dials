@@ -45,8 +45,11 @@ refinement
                 "either case treated as a rigid body. The default choice"
                 "automatically chooses multiple if the number of panels > 1"
         .type = choice
-      fix_detector = False
-        .help = "Fix all detector parameters"
+      fix_orientation = False
+        .help = "Fix orientation parameters"
+        .type = bool
+      fix_position = False
+        .help = "Fix positional parameters"
         .type = bool
     }
   }
@@ -82,8 +85,9 @@ refinement
   target
     .help = "Parameters to configure the target function"
   {
-    implementation = *basic
-      .help = "The target object type to use. Only basic exists at present"
+    implementation = *basic XY
+      .help = "The target object type to use. Basic expresses residuals"
+              "in X, Y, Phi space. XY does not use Phi."
       .type = choice
 
     rmsd_cutoff = *fraction_of_bin_size absolute
@@ -109,6 +113,12 @@ refinement
   reflections
     .help = "Parameters used by the reflection manager"
   {
+    implementation = *rotation stills
+      .help = "The reflection manager type to use. rotation is for a"
+              "rotation scan and removes reflections too close to the"
+              "spindle-beam plance. stills does not do this"
+      .type = choice
+
     reflections_per_degree = 50
       .help = "The number of centroids per degree of the sweep to use in"
               "refinement."

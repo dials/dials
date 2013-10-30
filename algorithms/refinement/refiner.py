@@ -399,7 +399,8 @@ class ParameterisationFactory(object):
             raise RuntimeError, "detector parameterisation type not recognised"
 
         self.detector_par_options = detector_options.panels
-        self._fix_detector = detector_options.fix_detector
+        self._detector_fix_orientation = detector_options.fix_orientation
+        self._detector_fix_position = detector_options.fix_position
 
         # Prediction equation parameterisation
         if self._crystal_scan_varying:
@@ -432,9 +433,9 @@ class ParameterisationFactory(object):
             xl_uc_param = self._crystal_uc_par(crystal)
 
         if self._crystal_fix_orientation:
-            xl_ori_param.set_fixed([True] * xl_ori_param.num_free())
+            xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
         if self._crystal_fix_cell:
-            xl_uc_param.set_fixed([True] * xl_uc_param.num_free())
+            xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
 
         from dials.algorithms.refinement.parameterisation.detector_parameters \
             import DetectorParameterisationSinglePanel, \
@@ -450,8 +451,16 @@ class ParameterisationFactory(object):
         if self.detector_par_options == "multiple":
             det_param = DetectorParameterisationMultiPanel(detector, beam)
 
-        if self._fix_detector:
-            det_param.set_fixed([True] * det_param.num_free())
+        if self._detector_fix_orientation or self._detector_fix_position:
+            det_params = det_param.get_params(only_free = False)
+            to_fix = [False] * len(det_params)
+            if self._detector_fix_orientation:
+                add_fix = [e.param_type.startswith('length') for e in det_params]
+                to_fix = [a or b for (a, b) in zip(to_fix, add_fix)]
+            if self._detector_fix_position:
+                add_fix = [e.param_type.startswith('angle') for e in det_params]
+                to_fix = [a or b for (a, b) in zip(to_fix, add_fix)]
+            det_param.set_fixed(to_fix)
 
         pred_param = self.prediction_par(detector, beam, crystal, goniometer,
                 [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
@@ -498,7 +507,13 @@ class RefmanFactory(object):
 
     def __init__(self, options):
 
-        import dials.algorithms.refinement.target as target
+        if options.implementation == "rotation":
+            import dials.algorithms.refinement.target as target
+        elif options.implementation == "stills":
+            import dials.algorithms.refinement.single_shots.target as target
+        else:
+            raise RuntimeError, "ReflectionManager type " + options.implementation + \
+                                " not recognised"
 
         self._random_seed = options.random_seed
 
@@ -539,11 +554,13 @@ class TargetFactory(object):
 
     def __init__(self, options):
 
-        import dials.algorithms.refinement.target as target
-
         if options.implementation == "basic":
+            import dials.algorithms.refinement.target as target
             from target import \
                 LeastSquaresPositionalResidualWithRmsdCutoff as targ
+        elif options.implementation == "XY":
+            from dials.algorithms.refinement.single_shots.target import \
+                LeastSquaresXYResidualWithRmsdCutoff as targ
         else:
             raise RuntimeError, "Target type " + options.implementation + \
                                 " not recognised"
