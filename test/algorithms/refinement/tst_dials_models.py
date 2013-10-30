@@ -152,9 +152,9 @@ assert my_panel.lim1 == (0, dp_lim[0])
 assert my_panel.lim2 == (0, dp_lim[1])
 
 # use of the sensor/Panel setter
-my_panel.set_frame(origin, fast, slow)
+my_panel.set_local_frame(origin, fast, slow)
 
-dials_panel.set_frame(fast, slow, origin)
+dials_panel.set_local_frame(fast, slow, origin)
 
 print "OK"
 
