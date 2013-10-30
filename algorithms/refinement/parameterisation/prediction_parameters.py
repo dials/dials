@@ -236,6 +236,7 @@ class PredictionParameterisation(object):
         self._s0 = matrix.col(self._beam.get_s0())
         self._U = self._crystal.get_U()
         self._B = self._crystal.get_B()
+        self._UB = self._U * self._B
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
     def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
@@ -299,7 +300,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         s = matrix.col(s)
         pv = self._D * s
         # r is the reciprocal lattice vector, in the lab frame
-        r = R * self._U * self._B * h
+        r = R * self._UB * h
 
         # All of the derivatives of phi have a common denominator, given by
         # (e X r).s0, where e is the rotation axis. Calculate this once, here.
