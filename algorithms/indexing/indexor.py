@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.algorithms.indexing.integrator.py
+# dials.algorithms.indexing.indexer.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -11,17 +11,17 @@
 
 from __future__ import division
 
-class IndexorSolution(object):
+class IndexerSolution(object):
     '''FIXME need to define this so we can have a list of solutions from 
     indexing.'''
 
     pass
 
-class Indexor(object):
-    ''' The indexor base class. '''
+class Indexer(object):
+    ''' The indexer base class. '''
 
     def __init__(self, strategies, parameters):
-        ''' Initialise the indexor base class.
+        ''' Initialise the indexer base class.
 
         Params:
             strategies: TBD; strategies for e.g. basis discovery
@@ -62,34 +62,60 @@ class Indexor(object):
         # - refine lattice for each solution (refine)
         # - reject outliers for each solution (refine) 
 
-        if while refined:
-            while not analysed:
-                while not indexed:
-                    while not setup:
-                        setup()
-                    index()
-                analyse()
-            refine()
+        if while self._refined:
+            while not self._analysed:
+                while not self._indexed:
+                    while not self._setuped:
+                        self._setup()
+                    self._index()
+                self._analyse()
+            self._refine()
         
         return
 
+    def _setup(self):
+        self._validate(self)
+        self._discover_beam_centre_strategy()
+        return
+
+    def _index(self):
+        self._index_strategy(self)
+        return
+
+    def _analyse(self):
+        for lattice in self._lattices:
+            self._analyse_strategy(lattice)
+        return
+
+    def _refine(self):
+        for lattice in self._lattices:
+            self._refine_strategy(lattice, spots)
+        if not self._refined:
+            # perhaps need to wind back to the mapping to reciprocal space and
+            # try reindexing
+            return
+        for lattice in self._lattices:
+            self._outlier_strategy(lattice, spots)
+        # need to decide whether to reindexing the spot lists or what
+        return
+        
     def set_target_cell_lattice(self, cell, lattice):
-        self._indexor_cell = cell
-        self._indexor_lattice = lattice
+        self._indexer_cell = cell
+        self._indexer_lattice = lattice
         return
 
     def set_max_primitive_cell(self, max_primitive_cell):
-        self._indexor_max_primitive_cell = max_primitive_cell
+        self._indexer_max_primitive_cell = max_primitive_cell
         return
 
     # etc.
 
-class IndexorFactory(object):
-    ''' Factory class to create indexors '''
+class IndexerFactory(object):
+    ''' Factory class to create indexers '''
 
     @staticmethod
     def get_from_somewhere_else(params):
-        '''Get a different indexor implementation, which for example may 
+        '''Get a different indexer implementation, which for example may 
         overload __call__ internally, or something'''
 
         # FIXME in here check with the registry for one of these based on the 
@@ -99,27 +125,27 @@ class IndexorFactory(object):
     
     @staticmethod
     def from_parameters(params):
-        ''' Given a set of parameters, construct the indexor
+        ''' Given a set of parameters, construct the indexer
 
         Params:
             params The input parameters
 
         Returns:
-            The indexor instance
+            The indexer instance
 
         '''
 
-        one_from_somewhere_else = IndexorFactory.get_from_somewhere_else(params)
+        one_from_somewhere_else = IndexerFactory.get_from_somewhere_else(params)
         if one_from_somewhere_else:
             return one_from_somewhere_else
 
         # else configure a standard one with strategies
         
         # this is deliberately not implemented
-        strategies = IndexorFactory.get_strategies_from_somewhere(params)
+        strategies = IndexerFactory.get_strategies_from_somewhere(params)
         
-        # Return the indexor with the given strategies
-        return Indexor(strategies, params)
+        # Return the indexer with the given strategies
+        return Indexer(strategies, params)
 
     @staticmethod
     def get_strategies_from_somewhere(params):
