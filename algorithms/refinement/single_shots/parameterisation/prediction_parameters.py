@@ -48,29 +48,27 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         r = R * self._UB * h
 
         ### Work through the parameterisations, calculating their contributions
-        ### to derivatives d[pv]/dp and d[phi]/dp
+        ### to derivatives d[pv]/dp
 
         # Set up the lists of derivatives
         dpv_dp = []
-        #dphi_dp = []
 
         # Calculate derivatives of pv wrt each parameter of the FIRST detector
-        # parameterisation only. All derivatives of phi are zero for detector
-        # parameters
+        # parameterisation only.
         if self._detector_parameterisations:
             self._detector_derivatives(dpv_dp, pv, panel_id)
 
-        # Calc derivatives of pv and phi wrt each parameter of each beam
+        # Calc derivatives of pv wrt each parameter of each beam
         # parameterisation that is present.
         if self._beam_parameterisations:
             self._beam_derivatives(dpv_dp, r)
 
-        # Calc derivatives of pv and phi wrt each parameter of each crystal
+        # Calc derivatives of pv wrt each parameter of each crystal
         # orientation parameterisation that is present.
         if self._xl_orientation_parameterisations:
             self._xl_orientation_derivatives(dpv_dp, R, h)
 
-        # Now derivatives of pv and phi wrt each parameter of each crystal unit
+        # Now derivatives of pv wrt each parameter of each crystal unit
         # cell parameterisation that is present.
         if self._xl_unit_cell_parameterisations:
             self._xl_unit_cell_derivatives(dpv_dp, R, h)
@@ -93,10 +91,7 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
             else:
                 dpv_ddet_p = [matrix.col((0., 0., 0.))] * len(dd_ddet_p)
 
-            #dphi_ddet_p = [0.] * len(dd_ddet_p)
-
             dpv_dp.extend(dpv_ddet_p)
-            #dphi_dp.extend(dphi_ddet_p)
 
         return
 
@@ -107,31 +102,9 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
 
         for src in self._beam_parameterisations:
             ds0_dsrc_p = src.get_ds_dp()
-            #dphi_dsrc_p = [- r.dot(ds0_dsrc_p[i]) / e_r_s0 for i
-            #                  in range(len(ds0_dsrc_p))]
             dpv_dsrc_p = [self._D * e for e in ds0_dsrc_p]
 
             dpv_dp.extend(dpv_dsrc_p)
-            #dphi_dp.extend(dphi_dsrc_p)
-
-            return
-
-    def _xl_orientation_derivatives(self, dpv_dp, R, h):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal orientation parameterisations'''
-
-        for xlo in self._xl_orientation_parameterisations:
-            dU_dxlo_p = xlo.get_ds_dp()
-
-            dr_dxlo_p = [R * e * self._B * h for e in dU_dxlo_p]
-
-            #dphi_dxlo_p = [- der.dot(s) / e_r_s0 for der in dr_dxlo_p]
-
-            dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
-
-            dpv_dp.extend(dpv_dxlo_p)
-            #dphi_dp.extend(dphi_dxlo_p)
 
         return
 
@@ -145,12 +118,25 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
 
             dr_dxlo_p = [R * e * self._B * h for e in dU_dxlo_p]
 
-            #dphi_dxlo_p = [- der.dot(s) / e_r_s0 for der in dr_dxlo_p]
+            dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
+
+            dpv_dp.extend(dpv_dxlo_p)
+
+        return
+
+    def _xl_orientation_derivatives(self, dpv_dp, R, h):
+
+        '''helper function to extend the derivatives lists by
+        derivatives of the crystal orientation parameterisations'''
+
+        for xlo in self._xl_orientation_parameterisations:
+            dU_dxlo_p = xlo.get_ds_dp()
+
+            dr_dxlo_p = [R * e * self._B * h for e in dU_dxlo_p]
 
             dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
 
             dpv_dp.extend(dpv_dxlo_p)
-            #dphi_dp.extend(dphi_dxlo_p)
 
         return
 
@@ -164,12 +150,9 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
 
             dr_dxluc_p = [R * self._U * e * h for e in dB_dxluc_p]
 
-            #phi_dxluc_p = [- der.dot(s) / e_r_s0 for der in dr_dxluc_p]
-
             dpv_dxluc_p = [self._D * e for e in dr_dxluc_p]
 
             dpv_dp.extend(dpv_dxluc_p)
-            #dphi_dp.extend(dphi_dxluc_p)
 
         return
 

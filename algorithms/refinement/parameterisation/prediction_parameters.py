@@ -365,7 +365,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             dpv_dp.extend(dpv_ddet_p)
             dphi_dp.extend(dphi_ddet_p)
 
-            return
+        return
 
     def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0):
 
@@ -387,7 +387,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             dpv_dp.extend(dpv_dsrc_p)
             dphi_dp.extend(dphi_dsrc_p)
 
-            return
+        return
 
     def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
                                     e_X_r, e_r_s0):
@@ -502,7 +502,7 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
             dpv_dp.extend(dpv_dsrc_p)
             dphi_dp.extend(dphi_dsrc_p)
 
-            return
+        return
 
     def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
                                     e_X_r, e_r_s0):
