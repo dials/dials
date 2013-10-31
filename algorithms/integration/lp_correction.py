@@ -19,7 +19,7 @@ def LP_calculations(sweep, crystal, reflection):
     p = sweep.get_beam().get_polarization_fraction()
 
     # FIXME hack for testing
-    # p = 0.5
+    p = 0.5
 
     from scitbx import matrix
 

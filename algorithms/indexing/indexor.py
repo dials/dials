@@ -11,6 +11,12 @@
 
 from __future__ import division
 
+class IndexorSolution(object):
+    '''FIXME need to define this so we can have a list of solutions from 
+    indexing.'''
+
+    pass
+
 class Indexor(object):
     ''' The indexor base class. '''
 
@@ -26,7 +32,7 @@ class Indexor(object):
         self.strategies = strategies
         self.parameters = parameters
         # will work like this: 
-        # self.correct_intensity = correct_intensity
+        # self.do_this = do_this
         # however N.B. that this will probably mean you cannot pickle an
         # instance of this
 
@@ -47,14 +53,36 @@ class Indexor(object):
 
         # structured loops within loops to employ input strategies to - 
         # 
-        # - validate input
-        # - discover beam centre
-        # - map spots to RS
-        # - determine candidate basis vectors
-        # - determine basis sets => ([P1_A_matrix], indexed_spots_and_lattice_id)
-        # - score possible lattice for each solution
-        # - refine lattice for each solution
-        # - reject outliers for each solution
+        # - validate input (setup)
+        # - discover beam centre (setup)
+        # - map spots to RS (index)
+        # - determine candidate basis vectors (index)
+        # - determine basis sets ([P1_matrix], spots_and_lattice_id) (analyse)
+        # - score possible lattice for each solution (analyse)
+        # - refine lattice for each solution (refine)
+        # - reject outliers for each solution (refine) 
+
+        if while refined:
+            while not analysed:
+                while not indexed:
+                    while not setup:
+                        setup()
+                    index()
+                analyse()
+            refine()
+        
+        return
+
+    def set_target_cell_lattice(self, cell, lattice):
+        self._indexor_cell = cell
+        self._indexor_lattice = lattice
+        return
+
+    def set_max_primitive_cell(self, max_primitive_cell):
+        self._indexor_max_primitive_cell = max_primitive_cell
+        return
+
+    # etc.
 
 class IndexorFactory(object):
     ''' Factory class to create indexors '''
