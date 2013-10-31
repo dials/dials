@@ -32,7 +32,9 @@ namespace dials { namespace model { namespace boost_python {
         arg("image"), 
         arg("mask")))
       .def("coords", &PixelList::coords)
-      .def("values", &PixelList::values);
+      .def("values", &PixelList::values)
+      .def("labels_2d", &PixelList::labels_2d)
+      .def("labels_3d", &PixelList::labels_3d);
   }
 
 }}} // namespace dials::model::boost_python

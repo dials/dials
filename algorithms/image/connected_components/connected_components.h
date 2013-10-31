@@ -399,6 +399,7 @@ namespace dials { namespace algorithms {
    * @param coords The coordinates
    * @returns The connected components
    */
+  inline
   af::shared<int> labelpixels2d(const af::const_ref< vec3<int> > &coords) {
 
     // Adjacency list type
@@ -452,6 +453,7 @@ namespace dials { namespace algorithms {
    * @param coords The coordinates
    * @returns The connected components
    */
+  inline
   af::shared<int> labelpixels3d(const af::const_ref< vec3<int> > &coords) {
 
     // Adjacency list type
