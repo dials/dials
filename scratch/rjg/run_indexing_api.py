@@ -37,10 +37,17 @@ def run(args):
 
   from dials.algorithms.indexing import indexer
 
-  strategies = None
-  idxr = indexer.Indexer(strategies, parameters=working_phil.extract())
-  idxr(reflections, detector, beam, goniometer=gonio, scan=scan)
+  #strategies = None
+  #idxr = indexer.Indexer(strategies, parameters=working_phil.extract())
+  #idxr(reflections, detector, beam, goniometer=gonio, scan=scan)
 
+  # first exercise the better experimental model discovery
+
+  indexer.discover_better_experimental_model(reflections, detector, beam, 
+                                             goniometer=gonio, scan=scan)
+
+  
+  
 
 if __name__ == '__main__':
   import sys

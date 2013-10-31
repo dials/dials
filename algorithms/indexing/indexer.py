@@ -14,7 +14,7 @@ from __future__ import division
 # we need these things
 
 def discover_better_experimental_model(spot_positions, detector, beam, 
-                                       goniometer = None, scan = None, params):
+                                       goniometer = None, scan = None):
     '''Given an attempt at indexing derive a more likely model for the 
     experimental geometry.'''
 
