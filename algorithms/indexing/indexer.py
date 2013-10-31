@@ -120,7 +120,7 @@ class Indexer(object):
         # *1 this may also be performed with or without the lattice constraints
         #    so will need as input a BravaisLattice type...
 
-        if while self._refined:
+        while self._refined:
             while not self._analysed:
                 while not self._indexed:
                     while not self._setuped:
