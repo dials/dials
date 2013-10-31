@@ -77,8 +77,9 @@ class Refiner(object):
         for ref in self.reflections:
             if ref.beam_vector != (0.0, 0.0, 0.0):
                 continue
-            x, y = self.detector.millimeter_to_pixel(ref.image_coord_mm)
-            ref.beam_vector = matrix.col(self.detector.get_pixel_lab_coord(
+            panel = self.detector[ref.panel_number]
+            x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
+            ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
                 (x, y))).normalize() / self.beam.get_wavelength()
 
         ###########################
@@ -399,6 +400,7 @@ class ParameterisationFactory(object):
             raise RuntimeError, "detector parameterisation type not recognised"
 
         self.detector_par_options = detector_options.panels
+        self._fix_detector = detector_options.fix_detector
         self._detector_fix_orientation = detector_options.fix_orientation
         self._detector_fix_position = detector_options.fix_position
 
