@@ -10,20 +10,24 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import math
 
 # we need these things
 
 def discover_better_experimental_model(spot_positions, detector, beam,
-                                       goniometer = None, scan = None):
+                                       goniometer, scan):
     '''Given an attempt at indexing derive a more likely model for the
     experimental geometry.'''
+    # the spot_position data are altered.  New mm centroid positions are calculated
     # first map pixel to mm
-    derive a max_cell from mm spots
-    derive a grid sampling from spots
+    Indexer._map_spots_pixel_to_mm_rad(
+      spots=spot_positions,detector=detector,scan=scan)
+    # derive a max_cell from mm spots
+    # derive a grid sampling from spots
 
     from rstbx.indexing_api.lattice import DPS_primitive_lattice
-    DPS = DPS_primitive_lattice(max_cell = float(process_dictionary['ref_maxcel']),
-          recommended_grid_sampling_rad = process_dictionary['recommended_grid_sampling'],
+    DPS = DPS_primitive_lattice(max_cell = 300, # max possible cell in Angstroms; guess for now
+          recommended_grid_sampling_rad = 0.029, # grid sampling in radians; guess for now
           horizon_phil = phil_set)
     DPS.S0_vector = beam.get_S0_vector()
     DPS.inv_wave = 1./beam.get_wavelength()
@@ -31,8 +35,14 @@ def discover_better_experimental_model(spot_positions, detector, beam,
     DPS.set_detector(detector)
 
     # transform input into what Nick needs
+    # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
+    from rstbx.array_family import flex
 
-    data = construct a flex.vec3 double consisting of mm spots, phi in degrees
+    data = flex.vec3_double()
+    for spot in spot_positions:
+      data.append((spot.centroid_position[0],
+                  spot.centroid_position[1],
+                  spot.centroid_position[2]*180./math.pi))
     DPS.index(raw_spot_input = data)
 
     # perform calculation
