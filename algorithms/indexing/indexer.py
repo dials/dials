@@ -13,30 +13,38 @@ from __future__ import division
 
 # we need these things
 
-def discover_better_experimental_model(spot_positions, detector, beam, 
+def discover_better_experimental_model(spot_positions, detector, beam,
                                        goniometer = None, scan = None):
-    '''Given an attempt at indexing derive a more likely model for the 
+    '''Given an attempt at indexing derive a more likely model for the
     experimental geometry.'''
-
     # first map pixel to mm
+    derive a max_cell from mm spots
+    derive a grid sampling from spots
 
-    # then map mm to reciprocal space: this is done by magic inside the 
-    # DPS pbject
+    from rstbx.indexing_api.lattice import DPS_primitive_lattice
+    DPS = DPS_primitive_lattice(max_cell = float(process_dictionary['ref_maxcel']),
+          recommended_grid_sampling_rad = process_dictionary['recommended_grid_sampling'],
+          horizon_phil = phil_set)
+    DPS.S0_vector = beam.get_S0_vector()
+    DPS.inv_wave = 1./beam.get_wavelength()
+    DPS.axis = goniometer.get_rotation_axis()
+    DPS.set_detector(detector)
 
     # transform input into what Nick needs
-    
-    # perform calculationbs
 
-    # transform answers back into DIALS format
+    data = construct a flex.vec3 double consisting of mm spots, phi in degrees
+    DPS.index(raw_spot_input = data)
 
-    # return these
+    # perform calculation
+    if params.indexing.improve_local_scope="origin_offset":
+      new_detector = DPS.optimize_origin_offset_local_scope()
+    elif params.indexing.improve_local_scope="S0_vector":
+      new_S0_vector = DPS.optimize_S0_local_scope()
+      import copy
+      new_beam = copy.copy(beam)
+      new_beam.set_s0(new_S0_vector)
 
-    
-    
-
-    
-    
-        
+    # return these: either detector or beam
 
 def candidate_basis_vectors_fft1d():
     pass
@@ -56,30 +64,30 @@ def determine_basis_set(rs_positions_xyz,
 
 # this is some kind of bodge to define a container class type
 
-def bravais_lattice_factory(bravais_lattice_type, unit_cell, 
+def bravais_lattice_factory(bravais_lattice_type, unit_cell,
                             a_axis, b_axis, c_axis, penalty):
     from collections import namedtuple
     BravaisLattice = namedtuple(
         'bravais_lattice_type unit_cell a_axis b_axis c_axis penalty')
-    return BravaisLattice(bravais_lattice_type, unit_cell, 
+    return BravaisLattice(bravais_lattice_type, unit_cell,
                           a_axis, b_axis, c_axis, penalty)
 
 def possible_lattices_given_basis_set(rs_positions_xyz,
                                       basis_set):
-    # given rs_positions_xyz decide list of possible Bravais lattice, unit 
+    # given rs_positions_xyz decide list of possible Bravais lattice, unit
     # cell constant combinations from an input triclinic basis
 
     # FIXME generate list of Bravais lattice types from the
     # bravais_lattice_factory
-    
-    return 
+
+    return
 
 def refine_lattice_from_raw_spot_positions(indexer, spot_positions, lattice):
     # FIXME interface for doing the refinement
     positions_mm_rad = indexer._map_spots_pixel_to_mm_strategy(spot_positions)
     # do some refinement
     return
-                                        
+
 
 # up to here...
 
@@ -110,7 +118,7 @@ class Indexer(object):
         # FIXME make these work properly by naming the strategies etc.
         self.strategies = strategies
         self.parameters = parameters
-        # will work like this: 
+        # will work like this:
         # self.do_this = do_this
         # however N.B. that this will probably mean you cannot pickle an
         # instance of this
@@ -130,8 +138,8 @@ class Indexer(object):
 
         '''
 
-        # structured loops within loops to employ input strategies to - 
-        # 
+        # structured loops within loops to employ input strategies to -
+        #
         # - validate input (setup) *** this is not a strategy optional ***
         # - discover beam centre (setup)
         # - map spots pixels to mm (setup) *** this will depend on geometry ***
@@ -140,7 +148,7 @@ class Indexer(object):
         # - determine basis sets ([P1_matrix], spots_and_lattice_id) (analyse)
         # - score possible lattice for each solution (analyse)
         # - refine lattice for each solution (refine) *1
-        # - reject outliers for each solution (refine) 
+        # - reject outliers for each solution (refine)
         #
         # *1 this may also be performed with or without the lattice constraints
         #    so will need as input a BravaisLattice type...
@@ -180,7 +188,7 @@ class Indexer(object):
         for lattice in self._lattices:
             for bravais_lattice in lattice.bravais_lattices:
                 self._refine_strategy(bravais_lattice, spots)
-            
+
         if not self._refined:
             # perhaps need to wind back to the mapping to reciprocal space and
             # try reindexing
@@ -190,13 +198,13 @@ class Indexer(object):
         # here
 
         for lattice in self._lattices:
-            # this will perform outlier searching on each lattice and on every 
-            # spot - we may start going back to indexing at this stage to 
+            # this will perform outlier searching on each lattice and on every
+            # spot - we may start going back to indexing at this stage to
             # mop up unindexed reflections
             self._outlier_strategy(lattice, spots)
-            
+
         return
-        
+
     def set_target_cell_lattice(self, cell, lattice):
         self._indexer_cell = cell
         self._indexer_lattice = lattice
@@ -241,14 +249,14 @@ class IndexerFactory(object):
 
     @staticmethod
     def get_from_somewhere_else(params):
-        '''Get a different indexer implementation, which for example may 
+        '''Get a different indexer implementation, which for example may
         overload __call__ internally, or something'''
 
-        # FIXME in here check with the registry for one of these based on the 
+        # FIXME in here check with the registry for one of these based on the
         # input PHIL parameters
-        
+
         return False
-    
+
     @staticmethod
     def from_parameters(params):
         ''' Given a set of parameters, construct the indexer
@@ -266,10 +274,10 @@ class IndexerFactory(object):
             return one_from_somewhere_else
 
         # else configure a standard one with strategies
-        
+
         # this is deliberately not implemented
         strategies = IndexerFactory.get_strategies_from_somewhere(params)
-        
+
         # Return the indexer with the given strategies
         return Indexer(strategies, params)
 
@@ -280,4 +288,3 @@ class IndexerFactory(object):
         indexing = params.indexing
 
         return { } # or whatever; TBD
-
