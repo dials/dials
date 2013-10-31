@@ -153,14 +153,14 @@ class Indexer(object):
                     self._index()
                 self._analyse()
             self._refine()
-        
+
         return
 
     def _setup(self):
         # FIXME one day we should implement this
         # self._discover_beam_centre_strategy()
         # FIXME this should probably be delegated to the detector object
-        self._map_spots_pixel_to_mm_strategy()
+        self._map_spots_pixel_to_mm_rad()
         self._map_spots_to_RS_strategy(self)
         return
 
@@ -205,6 +205,34 @@ class Indexer(object):
     def set_max_primitive_cell(self, max_primitive_cell):
         self._indexer_max_primitive_cell = max_primitive_cell
         return
+
+    def _map_spots_pixel_to_mm_rad(self):
+        from dials.algorithms.centroid import centroid_px_to_mm_panel
+        self.spots_mm = self.spots.deep_copy()
+        for i_spot, spot in enumerate(self.spots_mm):
+            # just a quick check for now that the reflections haven't come from
+            # somewhere else
+            assert spot.image_coord_mm == (0,0)
+
+            # set reflection properties that might be needed by the dials refinement
+            # engine, and convert values from pixels and image number to mm/rads
+            spot.frame_number = spot.centroid_position[2]
+            # XXX nasty hack - why are the centroid variances ever zero in the
+            # first place?
+            centroid_variance = list(spot.centroid_variance)
+            for i in range(3):
+                if centroid_variance[i] == 0:
+                    centroid_variance[i] = 0.25
+            spot.centroid_variance = centroid_variance
+            centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
+                self.detector[spot.panel_number], self.scan,
+                spot.centroid_position,
+                spot.centroid_variance,
+                (1,1,1))
+            spot.centroid_position = centroid_position
+            spot.centroid_variance = centroid_variance
+            spot.rotation_angle = centroid_position[2]
+
 
     # etc.
 
