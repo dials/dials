@@ -515,8 +515,8 @@ class RefmanFactory(object):
             import dials.algorithms.refinement.target as target
             from target import ReflectionManager as refman
         elif options.implementation == "stills":
-            import dials.algorithms.refinement.single_shots.target as target
-            from target import ReflectionManagerXY as refman
+            from dials.algorithms.refinement.single_shots.target import \
+                ReflectionManagerXY as refman
         else:
             raise RuntimeError, "ReflectionManager type " + options.implementation + \
                                 " not recognised"
