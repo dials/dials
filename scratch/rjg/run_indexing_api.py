@@ -26,6 +26,10 @@ def run(args):
       args=args, custom_processor="collect_remaining")
   working_phil.show()
 
+  from rstbx.phil.phil_preferences import libtbx_defs
+  import iotbx.phil
+  hardcoded_phil = iotbx.phil.parse(input_string=libtbx_defs).extract()
+
   gonio = sweep.get_goniometer()
   detector = sweep.get_detector()
   scan = sweep.get_scan()
@@ -43,11 +47,12 @@ def run(args):
 
   # first exercise the better experimental model discovery
 
-  indexer.discover_better_experimental_model(reflections, detector, beam, 
-                                             goniometer=gonio, scan=scan)
+  indexer.discover_better_experimental_model(
+    reflections, detector, beam,
+    goniometer=gonio, scan=scan, params=hardcoded_phil)
 
-  
-  
+
+
 
 if __name__ == '__main__':
   import sys
