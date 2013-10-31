@@ -461,6 +461,8 @@ class ParameterisationFactory(object):
                 add_fix = [e.param_type.startswith('angle') for e in det_params]
                 to_fix = [a or b for (a, b) in zip(to_fix, add_fix)]
             det_param.set_fixed(to_fix)
+        if self._fix_detector:
+            det_param.set_fixed([True] * det_param.num_free())
 
         pred_param = self.prediction_par(detector, beam, crystal, goniometer,
                 [det_param], [beam_param], [xl_ori_param], [xl_uc_param])

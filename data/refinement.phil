@@ -45,6 +45,9 @@ refinement
                 "either case treated as a rigid body. The default choice"
                 "automatically chooses multiple if the number of panels > 1"
         .type = choice
+      fix_detector = False
+        .help = "Fix all detector parameters"
+        .type = bool
       fix_orientation = False
         .help = "Fix orientation parameters"
         .type = bool
