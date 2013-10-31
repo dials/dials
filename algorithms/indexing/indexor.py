@@ -60,6 +60,16 @@ class IndexorFactory(object):
     ''' Factory class to create indexors '''
 
     @staticmethod
+    def get_from_somewhere_else(params):
+        '''Get a different indexor implementation, which for example may 
+        overload __call__ internally, or something'''
+
+        # FIXME in here check with the registry for one of these based on the 
+        # input PHIL parameters
+        
+        return False
+    
+    @staticmethod
     def from_parameters(params):
         ''' Given a set of parameters, construct the indexor
 
@@ -71,6 +81,12 @@ class IndexorFactory(object):
 
         '''
 
+        one_from_somewhere_else = IndexorFactory.get_from_somewhere_else(params)
+        if one_from_somewhere_else:
+            return one_from_somewhere_else
+
+        # else configure a standard one with strategies
+        
         # this is deliberately not implemented
         strategies = IndexorFactory.get_strategies_from_somewhere(params)
         
