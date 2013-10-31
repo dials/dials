@@ -321,48 +321,6 @@ class ReflectionManager(object):
                        max_num_obs=None,
                        inclusion_cutoff=0.1):
 
-        # pull out data needed for refinement
-        #temp = [(ref.miller_index, ref.entering, ref.frame_number,
-        #         ref.rotation_angle, matrix.col(ref.beam_vector),
-        #         ref.panel_number, ref.image_coord_mm,
-        #         ref.centroid_variance) \
-        #            for ref in reflections]
-        #(hkls, enterings, frames, angles,
-        # svecs, panels, intersects, variances) = zip(*temp)
-        #
-        ## tease apart tuples to separate lists
-        #d1s, d2s = zip(*intersects)
-        #var_d1s, var_d2s, var_angles = zip(*variances)
-        #
-        ## change variances to sigmas
-        #sig_d1s = [sqrt(e) for e in var_d1s]
-        #sig_d2s = [sqrt(e) for e in var_d2s]
-        #sig_angles = [sqrt(e) for e in var_angles]
-
-
-        # check the observed values
-        #h_obs = list(h_obs)
-        #svec_obs = list(svec_obs)
-        #panel_obs = list(panel_obs)
-        #x_obs = list(x_obs)
-        #sigx_obs = list(sigx_obs)
-        #y_obs = list(y_obs)
-        #sigy_obs = list(sigy_obs)
-        #phi_obs = list(phi_obs)
-        #sigphi_obs = list(sigphi_obs)
-        #frame_obs = list(frame_obs)
-        #entering_obs = list(entering_obs)
-        #assert(len(svec_obs) == \
-        #       len(panel_obs) == \
-        #       len(x_obs) == \
-        #       len(sigx_obs) == \
-        #       len(y_obs) == \
-        #       len(sigy_obs) == \
-        #       len(phi_obs) == \
-        #       len(sigphi_obs) == \
-        #       len(frame_obs) == \
-        #       len(h_obs))
-
         # track whether this is the first update of predictions or not
         self.first_update = True
 
