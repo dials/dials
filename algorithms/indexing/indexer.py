@@ -214,10 +214,12 @@ class Indexer(object):
         self._indexer_max_primitive_cell = max_primitive_cell
         return
 
-    def _map_spots_pixel_to_mm_rad(self):
+    @staticmethod
+    def _map_spots_pixel_to_mm_rad(spots, detector, scan):
         from dials.algorithms.centroid import centroid_px_to_mm_panel
-        self.spots_mm = self.spots.deep_copy()
-        for i_spot, spot in enumerate(self.spots_mm):
+        # ideally don't copy, but have separate spot attributes for mm and pixel
+        spots_mm = spots.deep_copy()
+        for i_spot, spot in enumerate(spots_mm):
             # just a quick check for now that the reflections haven't come from
             # somewhere else
             assert spot.image_coord_mm == (0,0)
@@ -233,13 +235,14 @@ class Indexer(object):
                     centroid_variance[i] = 0.25
             spot.centroid_variance = centroid_variance
             centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-                self.detector[spot.panel_number], self.scan,
+                detector[spot.panel_number], scan,
                 spot.centroid_position,
                 spot.centroid_variance,
                 (1,1,1))
             spot.centroid_position = centroid_position
             spot.centroid_variance = centroid_variance
             spot.rotation_angle = centroid_position[2]
+        return spots_mm
 
 
     # etc.
