@@ -16,14 +16,22 @@ def centroid_px_to_mm(detector, scan, position, variance, sd_error):
 
     # Get the pixel to millimeter function
     assert(len(detector) == 1)
-    pixel_size = detector[0].get_pixel_size()
+    return centroid_px_to_mm_panel(
+        detector[0], scan, position, variance, sd_error)
+
+def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
+    '''Convenience function to calculate centroid in mm/rad from px'''
+    from operator import mul
+
+    # Get the pixel to millimeter function
+    pixel_size = panel.get_pixel_size()
     oscillation = scan.get_oscillation(deg=False)
     scale = pixel_size + (oscillation[1],)
     scale2 = map(mul, scale, scale)
 
     # Convert Pixel coordinate into mm/rad
     x, y, z = position
-    xy_mm = detector[0].pixel_to_millimeter((x, y))
+    xy_mm = panel.pixel_to_millimeter((x, y))
     z_rad = scan.get_angle_from_array_index(z, deg=False)
 
     # Set the position, variance and squared width in mm/rad
