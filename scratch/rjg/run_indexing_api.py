@@ -11,10 +11,10 @@ def run(args):
   args = sys.argv[1:]
   importer = Importer(args)
   if len(importer.imagesets) == 0:
-      print "No sweep object could be constructed"
-      return
+    print "No sweep object could be constructed"
+    return
   elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
+    raise RuntimeError("Only one imageset can be processed at a time")
   sweeps = importer.imagesets
   reflections = importer.reflections
   assert len(reflections) > 0
@@ -23,7 +23,7 @@ def run(args):
   sweep = sweeps[0]
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil, args = cmd_line.process_and_fetch(
-      args=args, custom_processor="collect_remaining")
+    args=args, custom_processor="collect_remaining")
   working_phil.show()
 
   from rstbx.phil.phil_preferences import libtbx_defs
@@ -41,10 +41,6 @@ def run(args):
 
   from dials.algorithms.indexing import indexer
 
-  #strategies = None
-  #idxr = indexer.Indexer(strategies, parameters=working_phil.extract())
-  #idxr(reflections, detector, beam, goniometer=gonio, scan=scan)
-
   # first exercise the better experimental model discovery
 
   detector, beam = indexer.discover_better_experimental_model(
@@ -59,8 +55,9 @@ if __name__ == '__main__':
   import sys
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
+  if len(sys.argv) == 1:
+    raise RuntimeError, '%s sweep.json reflections.pickle' % sys.argv[0]
   run(sys.argv[1:])
-
 
 howto = '''
 dials.import ~/data/12287/12287_1_E1_0*img 
