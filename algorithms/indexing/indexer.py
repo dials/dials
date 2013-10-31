@@ -179,7 +179,7 @@ class Indexer(object):
         # self._discover_beam_centre_strategy()
         # FIXME this should probably be delegated to the detector object
         self._map_spots_pixel_to_mm_rad()
-        self._map_spots_to_RS_strategy(self)
+        self._map_centroids_to_reciprocal_space()
         return
 
     def _index(self):
@@ -253,6 +253,19 @@ class Indexer(object):
             spot.centroid_variance = centroid_variance
             spot.rotation_angle = centroid_position[2]
         return spots_mm
+
+    @staticmethod
+    def _map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
+        assert(len(detector) == 1)
+        x, y, _ = spots_mm.centroid_position().parts()
+        s1 = detector[0].get_lab_coord(flex.vec2_double(x,y))
+        beam_vectors = s1/s1.norms() * (1/beam.get_wavelength())
+        spots_mm.set_beam_vector(beam_vectors) # needed by refinement
+        S = s1 - beam.get_s0()
+        reciprocal_space_points = S.rotate_around_origin(
+          goniometer.get_rotation_axis(),
+          -reflections.rotation_angle())
+        return reciprocal_space_points
 
 
     # etc.
