@@ -29,14 +29,32 @@ def determine_basis_set(rs_positions_xyz,
     triclinic_a_matrix = []
     return triclinic_a_matrix
 
+# this is some kind of bodge to define a container class type
+
+def bravais_lattice_factory(bravais_lattice_type, unit_cell, 
+                            a_axis, b_axis, c_axis, penalty):
+    from collections import namedtuple
+    BravaisLattice = namedtuple(
+        'bravais_lattice_type unit_cell a_axis b_axis c_axis penalty')
+    return BravaisLattice(bravais_lattice_type, unit_cell, 
+                          a_axis, b_axis, c_axis, penalty)
+
 def possible_lattices_given_basis_set(rs_positions_xyz,
                                       basis_set):
     # given rs_positions_xyz decide list of possible Bravais lattice, unit 
     # cell constant combinations from an input triclinic basis
 
-    # FIXME need lattice_type
-
+    # FIXME generate list of Bravais lattice types from the
+    # bravais_lattice_factory
+    
     return 
+
+def refine_lattice_from_raw_spot_positions(indexer, spot_positions, lattice):
+    # FIXME interface for doing the refinement
+    positions_mm_rad = indexer._map_spots_pixel_to_mm_strategy(spot_positions)
+    # do some refinement
+    return
+                                        
 
 # up to here...
 
@@ -96,8 +114,11 @@ class Indexer(object):
         # - determine candidate basis vectors (index)
         # - determine basis sets ([P1_matrix], spots_and_lattice_id) (analyse)
         # - score possible lattice for each solution (analyse)
-        # - refine lattice for each solution (refine)
+        # - refine lattice for each solution (refine) *1
         # - reject outliers for each solution (refine) 
+        #
+        # *1 this may also be performed with or without the lattice constraints
+        #    so will need as input a BravaisLattice type...
 
         if while self._refined:
             while not self._analysed:
@@ -112,7 +133,7 @@ class Indexer(object):
 
     def _setup(self):
         self._discover_beam_centre_strategy()
-        self._map_spots_mm_to_pixel_strategy()
+        self._map_spots_pixel_to_mm_strategy()
         self._map_spots_to_RS_strategy(self)
         return
 
@@ -130,12 +151,16 @@ class Indexer(object):
 
     def _refine(self):
         for lattice in self._lattices:
-            self._refine_strategy(lattice, spots)
+            for bravais_lattice in lattice.bravais_lattices:
+                self._refine_strategy(bravais_lattice, spots)
             
         if not self._refined:
             # perhaps need to wind back to the mapping to reciprocal space and
             # try reindexing
             return
+
+        # FIXME may well have a think about which Bravais lattice is correct
+        # here
 
         for lattice in self._lattices:
             # this will perform outlier searching on each lattice and on every 
