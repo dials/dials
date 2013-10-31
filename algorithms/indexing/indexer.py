@@ -11,11 +11,34 @@
 
 from __future__ import division
 
-class IndexerSolution(object):
-    '''FIXME need to define this so we can have a list of solutions from 
-    indexing.'''
+# we need these things
 
+def candidate_basis_vectors_fft1d():
     pass
+
+def candidate_basis_vectors_fft3d(rs_positions_xyz, params):
+    # FIXME implement this
+    candidate_basis_vectors_lattice_1 = []
+    candidate_basis_vectors = [candidate_basis_vectors_lattice_1]
+    return candidate_basis_vectors
+
+def determine_basis_set(rs_positions_xyz,
+                        candidate_basis_vectors_one_lattice):
+    # given a list of 3 or more candidate basis vectors, decide on a good
+    # basis set for indexing [triclinic A matrix]
+    triclinic_a_matrix = []
+    return triclinic_a_matrix
+
+def possible_lattices_given_basis_set(rs_positions_xyz,
+                                      basis_set):
+    # given rs_positions_xyz decide list of possible Bravais lattice, unit 
+    # cell constant combinations from an input triclinic basis
+
+    # FIXME need lattice_type
+
+    return 
+
+# up to here...
 
 class toy_validate_spots_detector(object):
     def __init__(self):
@@ -119,6 +142,7 @@ class Indexer(object):
             # spot - we may start going back to indexing at this stage to 
             # mop up unindexed reflections
             self._outlier_strategy(lattice, spots)
+            
         return
         
     def set_target_cell_lattice(self, cell, lattice):
