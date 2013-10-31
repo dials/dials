@@ -144,9 +144,6 @@ class Indexer(object):
     # however N.B. that this will probably mean you cannot pickle an
     # instance of this
 
-    from libtbx import adopt_init_args
-    adopt_init_args(self, locals())
-
     self._refined = False
     self._analysed = False
     self._indexed = False
@@ -168,6 +165,9 @@ class Indexer(object):
     TBD
 
     '''
+
+    from libtbx import adopt_init_args
+    adopt_init_args(self, locals())
 
     # structured loops within loops to employ input strategies to -
     #
