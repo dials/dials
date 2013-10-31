@@ -47,7 +47,7 @@ def run(args):
 
   # first exercise the better experimental model discovery
 
-  indexer.discover_better_experimental_model(
+  detector, beam = indexer.discover_better_experimental_model(
     reflections, detector, beam,
     goniometer=gonio, scan=scan, params=hardcoded_phil)
 

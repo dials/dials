@@ -56,13 +56,13 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   # perform calculation
   if params.indexing.improve_local_scope=="origin_offset":
     new_detector = DPS.optimize_origin_offset_local_scope()
+    return new_detector, beam
   elif params.indexing.improve_local_scope=="S0_vector":
     new_S0_vector = DPS.optimize_S0_local_scope()
     import copy
     new_beam = copy.copy(beam)
     new_beam.set_s0(new_S0_vector)
-
-  # return these: either detector or beam
+    return detector, new_beam
 
 def candidate_basis_vectors_fft1d():
     pass
