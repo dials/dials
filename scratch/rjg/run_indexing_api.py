@@ -60,3 +60,32 @@ if __name__ == '__main__':
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
   run(sys.argv[1:])
+
+
+howto = '''
+dials.import ~/data/12287/12287_1_E1_0*img 
+Importing data from the following sources:
+ - Sweep from image file data
+ - Crystal from nowhere!
+ - Parameters from system parameters
+Saved sweep to sweep.json
+Saved parameters to param.phil
+
+dials.spotfinder scan_range=0,5 scan_range=55,60  ~/data/12287/12287_1_E1_0*img -o refl.pkl
+Configuring spot finder from input parameters
+Finding strong spots
+
+Finding spots in image 0 to 5...
+Extracted 147376 strong pixels.......................................4.89s
+Extracted 7487 spots from pixels.....................................0.15s
+
+Finding spots in image 55 to 60...
+Extracted 143364 strong pixels.......................................4.09s
+Extracted 6515 spots from pixels.....................................0.12s
+Calculated 14002 spot centroids......................................0.33s
+Calculated 14002 spot intensities....................................0.07s
+Filtered 7868 spots by number of pixels..............................0.11s
+Filtered 7432 spots by peak-centroid distance........................0.10s
+Saved 7432 reflections to refl.pkl...................................0.06s
+
+'''
