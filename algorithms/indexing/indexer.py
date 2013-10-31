@@ -13,6 +13,9 @@
 from __future__ import division
 import math
 
+from cctbx.array_family import flex
+
+
 # we need these things
 
 def discover_better_experimental_model(spot_positions, detector, beam,
@@ -141,6 +144,14 @@ class Indexer(object):
     # however N.B. that this will probably mean you cannot pickle an
     # instance of this
 
+    from libtbx import adopt_init_args
+    adopt_init_args(self, locals())
+
+    self._refined = False
+    self._analysed = False
+    self._indexed = False
+    self._setuped = False
+
     return
 
   def __call__(self, spots, detector, beam, goniometer = None, scan = None):
@@ -173,7 +184,7 @@ class Indexer(object):
     # *1 this may also be performed with or without the lattice constraints
     #    so will need as input a BravaisLattice type...
 
-    while self._refined:
+    while not self._refined:
       while not self._analysed:
         while not self._indexed:
           while not self._setuped:
@@ -188,8 +199,12 @@ class Indexer(object):
     # FIXME one day we should implement this
     # self._discover_beam_centre_strategy()
     # FIXME this should probably be delegated to the detector object
-    self._map_spots_pixel_to_mm_rad()
-    self._map_centroids_to_reciprocal_space()
+    self.spots_mm = self._map_spots_pixel_to_mm_rad(
+        self.spots, self.detector, self.scan)
+    self._map_centroids_to_reciprocal_space(
+        self.spots_mm, self.detector, self.beam, self.goniometer)
+    self._setuped = True
+
     return
 
   def _index(self):
@@ -197,11 +212,13 @@ class Indexer(object):
     # if lots of unindexed reflections:
     #     consider indexing unindexed spots
     #     store results in self._lattices
+    self._indexed = True
     return
 
   def _analyse(self):
     for lattice in self._lattices:
       self._analyse_strategy(lattice)
+    self._analysed = True
     return
 
   def _refine(self):
@@ -222,7 +239,7 @@ class Indexer(object):
       # spot - we may start going back to indexing at this stage to
       # mop up unindexed reflections
       self._outlier_strategy(lattice, spots)
-
+    self._refined = True
     return
 
   def set_target_cell_lattice(self, cell, lattice):
@@ -274,7 +291,7 @@ class Indexer(object):
     S = s1 - beam.get_s0()
     reciprocal_space_points = S.rotate_around_origin(
       goniometer.get_rotation_axis(),
-      -reflections.rotation_angle())
+      -spots_mm.rotation_angle())
     return reciprocal_space_points
 
 
