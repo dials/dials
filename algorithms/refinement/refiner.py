@@ -513,11 +513,14 @@ class RefmanFactory(object):
 
         if options.implementation == "rotation":
             import dials.algorithms.refinement.target as target
+            from target import ReflectionManager as refman
         elif options.implementation == "stills":
             import dials.algorithms.refinement.single_shots.target as target
+            from target import ReflectionManagerXY as refman
         else:
             raise RuntimeError, "ReflectionManager type " + options.implementation + \
                                 " not recognised"
+        self._refman = refman
 
         self._random_seed = options.random_seed
 
@@ -530,9 +533,6 @@ class RefmanFactory(object):
         self._min_num_obs = options.minimum_number_of_reflections
 
         self._inclusion_cutoff = options.inclusion_cutoff
-
-        from target import ReflectionManager as refman
-        self._refman = refman
 
     def __call__(self, reflections, beam, goniometer, scan, verbosity):
 

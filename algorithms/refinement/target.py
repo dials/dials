@@ -348,7 +348,8 @@ class ObsPredMatch:
         self.Sc = None
 
         # gradients will be a list, of length equal to the number of free
-        # parameters, whose elements are triplets (dX/dp, dY/dp, dPhi/dp)
+        # parameters, whose elements are the gradients in the space of
+        # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
         self.gradients = None
 
         self.Yresid = None
@@ -474,8 +475,6 @@ class ReflectionManager(object):
         self._inclusion_cutoff = inclusion_cutoff
 
         # exclude reflections that fail inclusion criteria
-        #obs_data = zip(h_obs, svec_obs, panel_obs, x_obs, sigx_obs,
-        #               y_obs, sigy_obs, phi_obs, sigphi_obs)
         self._obs_data = self._remove_excluded_obs(reflections)
         self._sample_size = len(self._obs_data)
 
