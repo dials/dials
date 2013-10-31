@@ -27,6 +27,7 @@ namespace dials { namespace af { namespace boost_python {
   void export_flex_intensity();
   void export_flex_observation();
   void export_flex_prediction();
+  void export_flex_pixel_list();
 
   template <typename FloatType>
   std::string get_real_type();
@@ -51,6 +52,7 @@ namespace dials { namespace af { namespace boost_python {
     export_flex_intensity();
     export_flex_observation();
     export_flex_prediction();
+    export_flex_pixel_list();
     
     def("get_real_type", &get_real_type<ProfileFloatType>);
     

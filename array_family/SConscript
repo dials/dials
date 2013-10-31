@@ -14,6 +14,7 @@ sources = [
     'boost_python/flex_intensity.cc',
     'boost_python/flex_observation.cc',
     'boost_python/flex_prediction.cc',
+    'boost_python/flex_pixel_list.cc',
     'boost_python/flex_ext.cc']
 
 env.SharedLibrary(
