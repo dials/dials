@@ -521,7 +521,6 @@ namespace dials { namespace algorithms { namespace filter {
       const Beam &beam, const Detector &detector,
       double d_min, double d_max) {
     vec3<double> s0 = beam.get_s0();
-    double wavelength = beam.get_wavelength();
     if (d_max < 0) {
       d_max = std::numeric_limits<double>::max();
     }
