@@ -77,7 +77,7 @@ algorithms/image/threshold/boost_python/threshold_ext.cc -text
 algorithms/image/threshold/boost_python/unimodal.cc -text
 algorithms/image/threshold/local.h -text
 algorithms/image/threshold/unimodal.h -text
-algorithms/indexing/indexor.py -text
+algorithms/indexing/indexer.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/integration_ext.cc -text
