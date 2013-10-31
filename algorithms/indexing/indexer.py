@@ -13,6 +13,31 @@ from __future__ import division
 
 # we need these things
 
+def discover_better_experimental_model(spot_positions, detector, beam, 
+                                       goniometer = None, scan = None, params):
+    '''Given an attempt at indexing derive a more likely model for the 
+    experimental geometry.'''
+
+    # first map pixel to mm
+
+    # then map mm to reciprocal space: this is done by magic inside the 
+    # DPS pbject
+
+    # transform input into what Nick needs
+    
+    # perform calculationbs
+
+    # transform answers back into DIALS format
+
+    # return these
+
+    
+    
+
+    
+    
+        
+
 def candidate_basis_vectors_fft1d():
     pass
 
@@ -132,7 +157,8 @@ class Indexer(object):
         return
 
     def _setup(self):
-        self._discover_beam_centre_strategy()
+        # FIXME one day we should implement this
+        # self._discover_beam_centre_strategy()
         # FIXME this should probably be delegated to the detector object
         self._map_spots_pixel_to_mm_strategy()
         self._map_spots_to_RS_strategy(self)
