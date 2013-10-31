@@ -133,6 +133,7 @@ class Indexer(object):
 
     def _setup(self):
         self._discover_beam_centre_strategy()
+        # FIXME this should probably be delegated to the detector object
         self._map_spots_pixel_to_mm_strategy()
         self._map_spots_to_RS_strategy(self)
         return
