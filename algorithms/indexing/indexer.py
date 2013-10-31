@@ -17,6 +17,19 @@ class IndexerSolution(object):
 
     pass
 
+class toy_validate_spots_detector(object):
+    def __init__(self):
+        pass
+
+    def __call__(self, spots, detector):
+        '''Make sure that the input is sensible.'''
+
+        # FIXME make this work as follows:
+        # - work through spot list; for each spot verify that panel is defined
+        #   and that the position is within the bounds of the panel
+
+        return
+
 class Indexer(object):
     ''' The indexer base class. '''
 
@@ -36,12 +49,12 @@ class Indexer(object):
         # however N.B. that this will probably mean you cannot pickle an
         # instance of this
 
-    def __call__(self, spots, detectors, beam, goniometer = None, scan = None):
+    def __call__(self, spots, detector, beam, goniometer = None, scan = None):
         ''' Call to index.
 
         Params:
-            spots: The spot list inc. detector number
-            detectors: dxtbx detector list
+            spots: The spot list inc. panel number, space for lattice ID
+            detectors: dxtbx detector
             beam: beam information
             goniometer: the goniometer; optional (for e.g. still images)
             scan: the scan information; optional (for e.g. still images)
@@ -53,9 +66,10 @@ class Indexer(object):
 
         # structured loops within loops to employ input strategies to - 
         # 
-        # - validate input (setup)
+        # - validate input (setup) *** this is not a strategy optional ***
         # - discover beam centre (setup)
-        # - map spots to RS (index)
+        # - map spots pixels to mm (setup) *** this will depend on geometry ***
+        # - map spots to RS (setup)
         # - determine candidate basis vectors (index)
         # - determine basis sets ([P1_matrix], spots_and_lattice_id) (analyse)
         # - score possible lattice for each solution (analyse)
@@ -74,12 +88,16 @@ class Indexer(object):
         return
 
     def _setup(self):
-        self._validate(self)
         self._discover_beam_centre_strategy()
+        self._map_spots_mm_to_pixel_strategy()
+        self._map_spots_to_RS_strategy(self)
         return
 
     def _index(self):
         self._index_strategy(self)
+        # if lots of unindexed reflections:
+        #     consider indexing unindexed spots
+        #     store results in self._lattices
         return
 
     def _analyse(self):
@@ -90,13 +108,17 @@ class Indexer(object):
     def _refine(self):
         for lattice in self._lattices:
             self._refine_strategy(lattice, spots)
+            
         if not self._refined:
             # perhaps need to wind back to the mapping to reciprocal space and
             # try reindexing
             return
+
         for lattice in self._lattices:
+            # this will perform outlier searching on each lattice and on every 
+            # spot - we may start going back to indexing at this stage to 
+            # mop up unindexed reflections
             self._outlier_strategy(lattice, spots)
-        # need to decide whether to reindexing the spot lists or what
         return
         
     def set_target_cell_lattice(self, cell, lattice):
