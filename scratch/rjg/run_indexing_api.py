@@ -51,7 +51,8 @@ def run(args):
     reflections, detector, beam,
     goniometer=gonio, scan=scan, params=hardcoded_phil)
 
-
+  print detector
+  print beam
 
 
 if __name__ == '__main__':
