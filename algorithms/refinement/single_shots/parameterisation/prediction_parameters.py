@@ -20,75 +20,10 @@ from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation import \
     PredictionParameterisation
 
-class PredictionParameterisationXY(PredictionParameterisation):
-    '''
-    Differs from PredictionParameterisation only by excluding the
-    goniometer model
-    '''
-
-    def __init__(self,
-                 detector_model,
-                 beam_model,
-                 crystal_model,
-                 detector_parameterisations = None,
-                 beam_parameterisations = None,
-                 xl_orientation_parameterisations = None,
-                 xl_unit_cell_parameterisations = None):
-
-        # References to the underlying models
-        self._detector = detector_model
-        self._beam = beam_model
-        self._crystal = crystal_model
-
-        # Keep references to all parameterised models
-        self._detector_parameterisations = detector_parameterisations
-        self._beam_parameterisations = beam_parameterisations
-        self._xl_orientation_parameterisations = \
-            xl_orientation_parameterisations
-        self._xl_unit_cell_parameterisations = \
-            xl_unit_cell_parameterisations
-
-        self._length = self._len()
-
-        # Fill out remaining attributes by a call to prepare
-        self.prepare()
-
-    def prepare(self):
-        '''Cache required quantities that are not dependent on hkl'''
-
-        # Obtain various quantities of interest from the experimental model
-        self._D_mats = [matrix.sqr(p.get_D_matrix()) for p in self._detector]
-        self._s0 = matrix.col(self._beam.get_s0())
-        self._U = self._crystal.get_U()
-        self._B = self._crystal.get_B()
-        self._UB = self._U * self._B
-        #self._axis = matrix.col(self._gonio.get_rotation_axis())
-
-    def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
-        '''
-        Calculate gradients of the prediction formula with respect to each
-        of the parameters of the contained models, for the reflection with
-        scattering vector s that intersects panel with panel_id.
-
-        To be implemented by a derived class, which determines the space of the
-        prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
-        prediction formula expressed in detector space, but components of
-        d\vec{r}/dp for the prediction formula in reciprocal space
-
-        obs_image_number included to match the interface of a scan-
-        varying version of the class
-        '''
-
-        # extract the right panel matrix
-        self._D = self._D_mats[panel_id]
-
-        return self._get_gradients_core(h, s, phi, panel_id)
-
-
-class DetectorSpacePredictionParameterisation(PredictionParameterisationXY):
+class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
     '''
     Concrete class that inherits functionality of the
-    PredictionParameterisation parent class and provides a detector space
+    PredictionParameterisationXY parent class and provides a detector space
     implementation of the get_gradients function.
 
     Untested for multiple sensor detectors.
@@ -111,37 +46,6 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisationXY):
         pv = self._D * s
         # r is the reciprocal lattice vector, in the lab frame
         r = R * self._UB * h
-
-        # All of the derivatives of phi have a common denominator, given by
-        # (e X r).s0, where e is the rotation axis. Calculate this once, here.
-        #e_X_r = self._axis.cross(r)
-        #e_r_s0 = (e_X_r).dot(self._s0)
-
-        # Note relationship between e_r_s0 and zeta_factor. Uncommenting the
-        # code below shows that s0.(e X r) = zeta * |s X s0|
-        #from dials.algorithms.reflection_basis import zeta_factor
-        #from libtbx.test_utils import approx_equal
-        #z = zeta_factor(self._axis, self._s0, s)
-        #ss0 = (s.cross(self._s0)).length()
-        #assert approx_equal(e_r_s0, z * ss0)
-
-        #try:
-        #    assert abs(e_r_s0) > 1.e-6
-        #except AssertionError as e:
-        #    print "(e X r).s0 too small:", e_r_s0
-        #    print "for reflection", h
-        #    print "with scattering vector", s
-        #    print "where r =", r
-        #    print "e =",matrix.col(self._gonio.get_rotation_axis())
-        #    print "s0 =",self._s0
-        #    print "U =",self._U
-        #    print "this reflection forms angle with the equatorial plane normal:"
-        #    vecn = self._s0.cross(self._axis).normalize()
-        #    print s.accute_angle(vecn)
-        #    raise e
-        # This is potentially dangerous! e_r_s0 -> 0 when the rotation
-        # axis, beam vector and relp are coplanar. This occurs when a reflection
-        # just touches the Ewald sphere.
 
         ### Work through the parameterisations, calculating their contributions
         ### to derivatives d[pv]/dp and d[phi]/dp

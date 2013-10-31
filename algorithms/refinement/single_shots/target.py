@@ -80,7 +80,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
 
             # m.gradients is a nparam length list, each element of which is a
             # doublet of values, (dX/dp_n, dY/dp_n)
-            dX_dp, dY_dp, dPhi_dp = zip(*m.gradients)
+            dX_dp, dY_dp = zip(*m.gradients)
 
             # FIXME Here we paste columns into the Jacobian transpose then take
             # its transpose when done. This seems inefficient: can we just start

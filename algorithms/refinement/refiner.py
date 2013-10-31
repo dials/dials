@@ -279,7 +279,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def from_parameters(params, verbosity):
-        ''' Given a set of parameters, construct the refiner
+        '''Given a set of parameters, construct the refiner
 
         Params:
             params The input parameters
@@ -301,7 +301,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_parameterisation(params):
-        ''' Given a set of parameters, configure a factory to build a
+        '''Given a set of parameters, configure a factory to build a
         parameterisation from a set of experimental models
 
         Params:
@@ -315,13 +315,14 @@ class RefinerFactory(object):
         beam_options = params.refinement.parameterisation.beam
         crystal_options = params.refinement.parameterisation.crystal
         detector_options = params.refinement.parameterisation.detector
+        prediction_options = params.refinement.parameterisation.prediction
 
         return ParameterisationFactory(beam_options, crystal_options,
-                                       detector_options)
+                                detector_options, prediction_options)
 
     @staticmethod
     def configure_refinery(params):
-        ''' Given a set of parameters, configure a factory to build a
+        '''Given a set of parameters, configure a factory to build a
         refinery
 
         Params:
@@ -337,7 +338,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_refman(params):
-        ''' Given a set of parameters, configure a factory to build a
+        '''Given a set of parameters, configure a factory to build a
         reflection manager
 
         Params:
@@ -353,7 +354,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_target(params):
-        ''' Given a set of parameters, configure a factory to build a
+        '''Given a set of parameters, configure a factory to build a
         target function
 
         Params:
@@ -370,7 +371,8 @@ class RefinerFactory(object):
 
 class ParameterisationFactory(object):
 
-    def __init__(self, beam_options, crystal_options, detector_options):
+    def __init__(self, beam_options, crystal_options, detector_options,
+                 prediction_options):
 
         # Shorten paths
         import dials.algorithms.refinement.parameterisation as par
@@ -395,20 +397,28 @@ class ParameterisationFactory(object):
         self._crystal_ori_par = cop
         self._crystal_uc_par = cucp
 
-        # Detector.
+        # Detector
         if detector_options.panels not in ["automatic", "single", "multiple"]:
             raise RuntimeError, "detector parameterisation type not recognised"
 
-        self.detector_par_options = detector_options.panels
+        self._detector_par_options = detector_options.panels
         self._fix_detector = detector_options.fix_detector
         self._detector_fix_orientation = detector_options.fix_orientation
         self._detector_fix_position = detector_options.fix_position
 
         # Prediction equation parameterisation
+        self._prediction_par_options = prediction_options.space
         if self._crystal_scan_varying:
             pep = par.VaryingCrystalPredictionParameterisation
-        else:
+        elif self._prediction_par_options == "XYPhi":
             pep = par.DetectorSpacePredictionParameterisation
+        elif self._prediction_par_options == "XY":
+            from dials.algorithms.refinement.single_shots.parameterisation import \
+                DetectorSpaceXYPredictionParameterisation
+            pep = DetectorSpaceXYPredictionParameterisation
+        else:
+            raise RuntimeError, "Prediction equation type " + \
+                self._prediction_par_options + " not recognised"
 
         self.prediction_par = pep
 
@@ -443,14 +453,14 @@ class ParameterisationFactory(object):
             import DetectorParameterisationSinglePanel, \
                 DetectorParameterisationMultiPanel
 
-        if self.detector_par_options == "automatic":
+        if self._detector_par_options == "automatic":
             if len(detector) > 1:
                 det_param = DetectorParameterisationMultiPanel(detector, beam)
             else:
                 det_param = DetectorParameterisationSinglePanel(detector)
-        if self.detector_par_options == "single":
+        if self._detector_par_options == "single":
             det_param = DetectorParameterisationSinglePanel(detector)
-        if self.detector_par_options == "multiple":
+        if self._detector_par_options == "multiple":
             det_param = DetectorParameterisationMultiPanel(detector, beam)
 
         if self._detector_fix_orientation or self._detector_fix_position:

@@ -12,14 +12,8 @@
 from __future__ import division
 from scitbx import matrix
 
-#### Import model parameterisations
+#### DIALS imports
 
-#from dials.algorithms.refinement.parameterisation.detector_parameters import \
-#    DetectorParameterisationSinglePanel
-#from dials.algorithms.refinement.parameterisation.beam_parameters import \
-#    BeamParameterisationOrientation
-#from dials.algorithms.refinement.parameterisation.crystal_parameters import \
-#    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from dials.array_family import flex
 from dials_refinement_helpers_ext import *
 
@@ -79,26 +73,6 @@ class PredictionParameterisation(object):
         self._beam = beam_model
         self._crystal = crystal_model
         self._gonio = goniometer_model
-
-        # Sanity checks
-        #if detector_parameterisations:
-        #    for model in detector_parameterisations:
-        #        # TODO replace DetectorParameterisationSinglePanel with a
-        #        # general multi sensor detector_parameterisation when available
-        #        assert isinstance(
-        #            model, DetectorParameterisationSinglePanel)
-        #
-        #if beam_parameterisations:
-        #    for model in beam_parameterisations:
-        #        assert isinstance(model, BeamParameterisationOrientation)
-        #
-        #if xl_orientation_parameterisations:
-        #    for model in xl_orientation_parameterisations:
-        #        assert isinstance(model, CrystalOrientationParameterisation)
-        #
-        #if xl_unit_cell_parameterisations:
-        #    for model in xl_unit_cell_parameterisations:
-        #        assert isinstance(model, CrystalUnitCellParameterisation)
 
         # Keep references to all parameterised models
         self._detector_parameterisations = detector_parameterisations
@@ -259,21 +233,6 @@ class PredictionParameterisation(object):
 
         return self._get_gradients_core(h, s, phi, panel_id)
 
-    #def get_multi_gradients(self, match_list):
-    #    '''
-    #    perform the functionality of get_gradients but for a list of many
-    #    reflections in one call in the form of a list of ObsPredMatch objects
-    #    (see target.py). The advantage of this is that prepare needs only be
-    #    called once.
-    #    '''
-    #
-    #    # This is effectively calculating the Jacobian and perhaps should be
-    #    # renamed as such (and returned as a matrix not a list of lists)
-    #
-    #    self.prepare()
-    #
-    #    return [self._get_gradients_core(m.H, m.Sc, m.Phic) for m in match_list]
-
 
 class DetectorSpacePredictionParameterisation(PredictionParameterisation):
     '''
@@ -307,14 +266,21 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         e_X_r = self._axis.cross(r)
         e_r_s0 = (e_X_r).dot(self._s0)
 
-        # Note relationship between e_r_s0 and zeta_factor. Uncommenting the
-        # code below shows that s0.(e X r) = zeta * |s X s0|
+        # Note that e_r_s0 -> 0 when the rotation axis, beam vector and
+        # relp are coplanar. This occurs when a reflection just touches
+        # the Ewald sphere.
+        #
+        # There is a relationship between e_r_s0 and zeta_factor.
+        # Uncommenting the code below shows that
+        # s0.(e X r) = zeta * |s X s0|
+
         #from dials.algorithms.reflection_basis import zeta_factor
         #from libtbx.test_utils import approx_equal
         #z = zeta_factor(self._axis, self._s0, s)
         #ss0 = (s.cross(self._s0)).length()
         #assert approx_equal(e_r_s0, z * ss0)
 
+        # catch small values of e_r_s0
         try:
             assert abs(e_r_s0) > 1.e-6
         except AssertionError as e:
@@ -329,9 +295,6 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             vecn = self._s0.cross(self._axis).normalize()
             print s.accute_angle(vecn)
             raise e
-        # This is potentially dangerous! e_r_s0 -> 0 when the rotation
-        # axis, beam vector and relp are coplanar. This occurs when a reflection
-        # just touches the Ewald sphere.
 
         ### Work through the parameterisations, calculating their contributions
         ### to derivatives d[pv]/dp and d[phi]/dp
@@ -483,8 +446,9 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         return
 
     def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, der):
-        '''helper function to calculate positional derivatives from dpv_dp using
-        the quotient rule'''
+        '''helper function to calculate positional derivatives from
+        dpv_dp using the quotient rule'''
+
         u = pv[0]
         v = pv[1]
         w = pv[2]

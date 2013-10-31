@@ -55,6 +55,15 @@ refinement
         .help = "Fix positional parameters"
         .type = bool
     }
+
+    prediction
+      .help = "prediction equation parameterisation"
+    {
+      space = *XYPhi XY
+        .help = "The space in which the prediction equation parameterisation"
+                "calculates derivatives."
+        .type = choice
+    }
   }
 
   refinery
