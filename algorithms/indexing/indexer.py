@@ -46,9 +46,9 @@ def discover_better_experimental_model(spot_positions, detector, beam,
     DPS.index(raw_spot_input = data)
 
     # perform calculation
-    if params.indexing.improve_local_scope="origin_offset":
+    if params.indexing.improve_local_scope=="origin_offset":
       new_detector = DPS.optimize_origin_offset_local_scope()
-    elif params.indexing.improve_local_scope="S0_vector":
+    elif params.indexing.improve_local_scope=="S0_vector":
       new_S0_vector = DPS.optimize_S0_local_scope()
       import copy
       new_beam = copy.copy(beam)
