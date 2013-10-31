@@ -531,6 +531,7 @@ scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
 scratch/rjg/__init__.py -text
 scratch/rjg/index_3D_FFT_simple.py -text
+scratch/rjg/run_indexing_api.py -text
 scratch/rjg/tst_index.py -text
 test/SConscript -text
 test/__init__.py -text
