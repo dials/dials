@@ -15,7 +15,7 @@ import math
 # we need these things
 
 def discover_better_experimental_model(spot_positions, detector, beam,
-                                       goniometer, scan):
+                                       goniometer, scan, params):
     '''Given an attempt at indexing derive a more likely model for the
     experimental geometry.'''
     # the spot_position data are altered.  New mm centroid positions are calculated
@@ -26,9 +26,9 @@ def discover_better_experimental_model(spot_positions, detector, beam,
     # derive a grid sampling from spots
 
     from rstbx.indexing_api.lattice import DPS_primitive_lattice
-    DPS = DPS_primitive_lattice(max_cell = 300, # max possible cell in Angstroms; guess for now
+    DPS = DPS_primitive_lattice(max_cell = 300,  # max possible cell in Angstroms; guess for now
           recommended_grid_sampling_rad = 0.029, # grid sampling in radians; guess for now
-          horizon_phil = phil_set)
+          horizon_phil = params)
     DPS.S0_vector = beam.get_S0_vector()
     DPS.inv_wave = 1./beam.get_wavelength()
     DPS.axis = goniometer.get_rotation_axis()
