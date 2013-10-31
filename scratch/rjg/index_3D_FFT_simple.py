@@ -1121,7 +1121,7 @@ def run(args):
   args = sys.argv[1:]
   importer = Importer(args)
   if len(importer.imagesets) == 0:
-      self.config().print_help()
+      print "Nonsense!"
       return
   elif len(importer.imagesets) > 1:
       raise RuntimeError("Only one imageset can be processed at a time")
