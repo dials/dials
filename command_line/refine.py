@@ -103,7 +103,7 @@ class RefinementRunner(object):
                                space_group = self.space_group_type.group())
 
         # Calculate resolution
-        d_min = self.detector.get_max_resolution_at_corners(self.beam.get_s0())
+        d_min = self.detector.get_max_resolution(self.beam.get_s0())
 
         # Read the integrate file to get the sigma_d and sigma_m
         print "Reading: \"{0}\"".format(self.integrate_file)
