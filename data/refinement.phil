@@ -8,25 +8,21 @@ refinement
     beam
       .help = "beam parameters"
     {
-      fix_beam = False
-        .help = "Fix all beam orientation parameters"
-        .type = bool
-      fix_in_spindle_plane = True
-        .help = "If a goniometer is present and this option is True, the beam"
-                "orientation is restricted to a direction in the initial"
-                "spindle-beam plane"
-        .type = bool
+      fix = None all *in_spindle_plane
+        .help = "Whether to fix beam parameters. By default,"
+                "in_spindle_plane is selected, and one of the two"
+                "parameters is fixed. If a goniometer is present"
+                "this leads to the beam orientation being restricted"
+                "to a direction in the initial spindle-beam plane"
+        .type = choice
     }
 
     crystal
       .help = "crystal parameters"
     {
-      fix_cell = False
-        .help = "Fix all cell parameters"
-        .type = bool
-      fix_orientation = False
-        .help = "Fix all orientation parameters"
-        .type = bool
+      fix = all cell orientation
+        .help = "Fix crystal parameters"
+        .type = choice
       scan_varying = False
         .help = "Parameterise the crystal to vary during the scan"
         .type = bool
@@ -45,15 +41,10 @@ refinement
                 "either case treated as a rigid body. The default choice"
                 "automatically chooses multiple if the number of panels > 1"
         .type = choice
-      fix_detector = False
-        .help = "Fix all detector parameters"
-        .type = bool
-      fix_orientation = False
-        .help = "Fix orientation parameters"
-        .type = bool
-      fix_position = False
-        .help = "Fix positional parameters"
-        .type = bool
+      fix = all position orientation
+        .help = "Fix detector parameters. The translational parameters"
+                "(position) may be set separately to the orientation."
+        .type = choice
     }
 
     prediction

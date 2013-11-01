@@ -379,12 +379,10 @@ class ParameterisationFactory(object):
 
         # Beam
         self._beam_par = par.BeamParameterisationOrientation
-        self._beam_fix_all = beam_options.fix_beam
-        self._beam_fix_in_spindle_plane = beam_options.fix_in_spindle_plane
+        self._beam_fix = beam_options.fix
 
         # Crystal
-        self._crystal_fix_cell = crystal_options.fix_cell
-        self._crystal_fix_orientation = crystal_options.fix_orientation
+        self._crystal_fix = crystal_options.fix
         self._crystal_scan_varying = crystal_options.scan_varying
         self._crystal_num_intervals = crystal_options.num_intervals
 
@@ -402,9 +400,7 @@ class ParameterisationFactory(object):
             raise RuntimeError, "detector parameterisation type not recognised"
 
         self._detector_par_options = detector_options.panels
-        self._fix_detector = detector_options.fix_detector
-        self._detector_fix_orientation = detector_options.fix_orientation
-        self._detector_fix_position = detector_options.fix_position
+        self._detector_fix = detector_options.fix
 
         # Prediction equation parameterisation
         self._prediction_par_options = prediction_options.space
@@ -428,10 +424,11 @@ class ParameterisationFactory(object):
     def __call__(self, beam, crystal, goniometer, detector, scan):
 
         beam_param = self._beam_par(beam, goniometer)
-        if self._beam_fix_in_spindle_plane:
-            beam_param.set_fixed([True, False])
-        if self._beam_fix_all:
-            beam_param.set_fixed([True, True])
+        if self._beam_fix:
+            if self._beam_fix == "all":
+                beam_param.set_fixed([True, True])
+            elif self._beam_fix == "in_spindle_plane":
+                beam_param.set_fixed([True, False])
 
         if self._crystal_scan_varying:
             xl_ori_param = self._crystal_ori_par(crystal,
@@ -444,10 +441,14 @@ class ParameterisationFactory(object):
             xl_ori_param = self._crystal_ori_par(crystal)
             xl_uc_param = self._crystal_uc_par(crystal)
 
-        if self._crystal_fix_orientation:
-            xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
-        if self._crystal_fix_cell:
-            xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+        if self._crystal_fix:
+            if self._crystal_fix == "all":
+                xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
+                xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+            elif self._crystal_fix == "cell":
+                xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+            elif self._crystal_fix == "orientation":
+                xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
 
         from dials.algorithms.refinement.parameterisation.detector_parameters \
             import DetectorParameterisationSinglePanel, \
@@ -463,18 +464,19 @@ class ParameterisationFactory(object):
         if self._detector_par_options == "multiple":
             det_param = DetectorParameterisationMultiPanel(detector, beam)
 
-        if self._detector_fix_orientation or self._detector_fix_position:
-            det_params = det_param.get_params(only_free = False)
-            to_fix = [False] * len(det_params)
-            if self._detector_fix_orientation:
-                add_fix = [e.param_type.startswith('length') for e in det_params]
-                to_fix = [a or b for (a, b) in zip(to_fix, add_fix)]
-            if self._detector_fix_position:
-                add_fix = [e.param_type.startswith('angle') for e in det_params]
-                to_fix = [a or b for (a, b) in zip(to_fix, add_fix)]
-            det_param.set_fixed(to_fix)
-        if self._fix_detector:
-            det_param.set_fixed([True] * det_param.num_free())
+        if self._detector_fix:
+            if self._detector_fix == "all":
+                det_param.set_fixed([True] * det_param.num_total())
+            elif self._detector_fix == "position":
+                det_params = det_param.get_params(only_free = False)
+                to_fix = [e.param_type.startswith('length') \
+                          for e in det_params]
+                det_param.set_fixed(to_fix)
+            elif self._detector_fix == "orientation":
+                det_params = det_param.get_params(only_free = False)
+                to_fix = [e.param_type.startswith('angle') \
+                          for e in det_params]
+                det_param.set_fixed(to_fix)
 
         pred_param = self.prediction_par(detector, beam, crystal, goniometer,
                 [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
