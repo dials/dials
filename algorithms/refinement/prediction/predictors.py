@@ -256,7 +256,8 @@ class ScanVaryingReflectionListGenerator(object):
 
         im_range = self._scan.get_image_range()
         for t in range(im_range[0], im_range[1] + 1):
-            self._search_on_image(t)
+            refs = self._search_on_image(t)
+            self._reflections.append(refs)
 
     def _search_on_image(self, t):
 
@@ -270,9 +271,11 @@ class ScanVaryingReflectionListGenerator(object):
 
         indices = index_generator.generate_indices()
 
+        reflections = []
         for hkl in indices:
             r = self._predictor.predict(hkl)
-            if r: self._reflections.append(r)
+            if r: reflections.append(r)
+        return reflections
 
 class AnglePredictor_rstbx(object):
     '''
