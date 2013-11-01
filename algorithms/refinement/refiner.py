@@ -241,7 +241,7 @@ class Refiner(object):
                 ScanVaryingReflectionListGenerator
 
         s0 = self.beam.get_s0()
-        dmin = self.detector.get_max_resolution_at_corners(s0)
+        dmin = self.detector.get_max_resolution(s0)
         sv_predictor = ScanVaryingReflectionListGenerator(self.pred_param,
                             self.beam, self.gonio, self.scan, dmin)
 
