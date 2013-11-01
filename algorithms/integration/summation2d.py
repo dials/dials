@@ -51,7 +51,6 @@ def flex_2d_layering_n_integrating(reflections):
                 ref.intensity += reslt[0]
                 ref.intensity_variance += reslt[1]
 
-
-    print "summation integration ..... done"
+    print "summation integration .... done"
 
     return reflections
