@@ -1012,8 +1012,8 @@ class indexer(object):
     #rmsds = refine.rmsds()
     refined = refine()
 
-    if not (params.parameterisation.beam.fix_beam
-            and params.parameterisation.detector.fix_detector):
+    if not (params.parameterisation.beam.fix == 'all'
+            and params.parameterisation.detector.fix == 'all'):
       # Experimental geometry may have changed - re-map centroids to
       # reciprocal space
       self.map_centroids_to_reciprocal_space()
