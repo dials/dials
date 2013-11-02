@@ -211,7 +211,8 @@ class ScanVaryingReflectionPredictorDebug(ScanVaryingReflectionPredictor):
     def debug_write_reciprocal_lattice_points_as_pdb(self,
                                 file_name='reciprocal_lattice.pdb'):
         from cctbx import crystal, xray
-        cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
+        cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90),
+                              space_group="P1")
         xs = xray.structure(crystal_symmetry=cs)
         for site in self.trial_sites:
           xs.add_scatterer(xray.scatterer("C", site=site))
@@ -254,10 +255,22 @@ class ScanVaryingReflectionListGenerator(object):
         '''Loop over images, doing the search on each and extending the
         predictions list'''
 
+        from libtbx import easy_mp
         im_range = self._scan.get_image_range()
         for t in range(im_range[0], im_range[1] + 1):
             refs = self._search_on_image(t)
             self._reflections.extend(refs)
+
+        iterable = range(im_range[0], im_range[1] + 1)
+
+        self._reflections = easy_mp.parallel_map(
+            func=self._search_on_image,
+            iterable=iterable,
+            processes=4,
+            method="multiprocessing",
+            preserve_order=True)
+
+        return
 
     def _search_on_image(self, t):
 
