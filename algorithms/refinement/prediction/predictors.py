@@ -257,7 +257,7 @@ class ScanVaryingReflectionListGenerator(object):
         im_range = self._scan.get_image_range()
         for t in range(im_range[0], im_range[1] + 1):
             refs = self._search_on_image(t)
-            self._reflections.append(refs)
+            self._reflections.extend(refs)
 
     def _search_on_image(self, t):
 
