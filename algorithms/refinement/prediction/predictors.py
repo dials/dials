@@ -257,19 +257,16 @@ class ScanVaryingReflectionListGenerator(object):
 
         from libtbx import easy_mp
         im_range = self._scan.get_image_range()
-        for t in range(im_range[0], im_range[1] + 1):
-            refs = self._search_on_image(t)
-            self._reflections.extend(refs)
-
         iterable = range(im_range[0], im_range[1] + 1)
 
-        self._reflections = easy_mp.parallel_map(
+        ref_list_of_list = easy_mp.parallel_map(
             func=self._search_on_image,
             iterable=iterable,
-            processes=4,
+            processes=2,
             method="multiprocessing",
             preserve_order=True)
 
+        self._reflections = [e for l in ref_list_of_list for e in l]
         return
 
     def _search_on_image(self, t):
@@ -279,8 +276,8 @@ class ScanVaryingReflectionListGenerator(object):
         T1 = self._predictor.get_T1()
         T2 = self._predictor.get_T2()
 
-        index_generator = reeke_model(T1, T2, self._axis, self._s0, self._dmin,
-                                            margin = 1)
+        index_generator = reeke_model(T1, T2, self._axis, self._s0,
+                                      self._dmin, margin = 1)
 
         indices = index_generator.generate_indices()
 
