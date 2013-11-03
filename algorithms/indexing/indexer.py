@@ -38,7 +38,7 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
   DPS = DPS_primitive_lattice(max_cell = None,
-                              recommended_grid_sampling_rad = 0.029,
+                              recommended_grid_sampling_rad = None,
                               horizon_phil = params)
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
