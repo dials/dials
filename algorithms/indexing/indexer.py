@@ -12,6 +12,7 @@
 
 from __future__ import division
 import math
+from scitbx import matrix
 
 from cctbx.array_family import flex
 
@@ -23,10 +24,10 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   '''Given an attempt at indexing derive a more likely model for the
   experimental geometry.'''
 
-  # the spot_position data are altered. New mm centroid positions are
-  # calculated: first map pixel to mm
+  # Spot_positions: Centroid positions for spotfinder spots, in pixels
+  # Return value: Corrected for parallax, converted to mm
 
-  Indexer._map_spots_pixel_to_mm_rad(
+  spots_mm = Indexer._map_spots_pixel_to_mm_rad(
     spots=spot_positions, detector=detector, scan=scan)
 
   # derive a max_cell from mm spots
@@ -50,11 +51,19 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   from rstbx.array_family import flex
 
   data = flex.vec3_double()
-  for spot in spot_positions:
+  for spot in spots_mm:
     data.append((spot.centroid_position[0],
                  spot.centroid_position[1],
                  spot.centroid_position[2]*180./math.pi))
+
+  #from matplotlib import pyplot as plt
+  #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
+  #plt.show()
+
   DPS.index(raw_spot_input = data)
+
+  # for development, we want an exhaustive plot of beam probability map:
+  params.indexing.plot_search_scope = True
 
   # perform calculation
   if params.indexing.improve_local_scope=="origin_offset":
@@ -67,8 +76,12 @@ def discover_better_experimental_model(spot_positions, detector, beam,
     new_beam.set_s0(new_S0_vector)
     return detector, new_beam
 
-def candidate_basis_vectors_fft1d():
-    pass
+  #NKS TO DO: implement rigorous scope instead of local scope.
+
+def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
+                                       goniometer, scan, params):
+  '''Given an attempt at indexing derive a more likely model for the
+  experimental geometry.'''
 
 def candidate_basis_vectors_fft3d(rs_positions_xyz, params):
   # FIXME implement this
