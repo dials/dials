@@ -34,10 +34,10 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   # derive a grid sampling from spots
 
   from rstbx.indexing_api.lattice import DPS_primitive_lattice
-  # max_cell: max possible cell in Angstroms; guess for now
+  # max_cell: max possible cell in Angstroms; set to None, determine from data
   # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
-  DPS = DPS_primitive_lattice(max_cell = 300,
+  DPS = DPS_primitive_lattice(max_cell = None,
                               recommended_grid_sampling_rad = 0.029,
                               horizon_phil = params)
   from scitbx import matrix
