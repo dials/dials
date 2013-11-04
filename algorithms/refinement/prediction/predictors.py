@@ -69,8 +69,9 @@ class ScanVaryingReflectionPredictor(object):
     rotation).
 
     Currently it is assumed that only the crystal model varies with image
-    number, whilst the other models remain static. The prediction_parameterisation
-    object is assumed to have a method get_UB(image_number).
+    number, whilst the other models remain static. The
+    prediction_parameterisation object is assumed to have a method
+    get_UB(image_number).
     '''
 
     def __init__(self, prediction_parameterisation, beam, gonio, scan, dmin):
@@ -309,8 +310,8 @@ class AnglePredictor_rstbx(object):
     # To convert from the Rossmann frame we use two of Graeme's
     # functions taken from use_case_xds_method/tdi.py
     def orthogonal_component(self, reference, changing):
-        '''Return unit vector corresponding to component of changing orthogonal to
-        reference.'''
+        '''Return unit vector corresponding to component of changing orthogonal
+        to reference.'''
 
         r = reference.normalize()
         c = changing.normalize()
@@ -366,12 +367,10 @@ class AnglePredictor_rstbx(object):
 
         axis_r = secondary_target.cross(Rprimary * secondary_axis)
         axis_s = primary_target
-        if (axis_r.angle(primary_target) > 0.5 * pi):
-            angle_s = self.orthogonal_component(axis_s, secondary_target).angle(
+        angle_s = self.orthogonal_component(axis_s, secondary_target).angle(
                 self.orthogonal_component(axis_s, Rprimary * secondary_axis))
-        else:
-            angle_s = - self.orthogonal_component(axis_s, secondary_target).angle(
-                self.orthogonal_component(axis_s, Rprimary * secondary_axis))
+        if axis_r.angle(primary_target) <= 0.5 * pi:
+            angle_s *= -1.
 
         Rsecondary = axis_s.axis_and_angle_as_r3_rotation_matrix(angle_s)
 
@@ -393,7 +392,8 @@ class AnglePredictor_rstbx(object):
                  self._beam.get_wavelength(),
                  R_to_rossmann * matrix.col(self._gonio.get_rotation_axis()))
 
-        obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
+        (obs_indices,
+         obs_angles) = ra.observed_indices_and_angles_from_angle_range(
             phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
 
         # convert to integer miller indices
@@ -546,15 +546,18 @@ class AnglePredictor_py(object):
         return (obs_ind, obs_ang)
 
 class ImpactPredictor(object):
-    '''Predict observation position for supplied reflections and angles. This
-    class is just a wrapper for RSTBX's reflection_prediction class (which is
-    superseded by DIALS' ray_intersection function). A wrapper is necessary because
-    reflection_prediction does not use the experimental models. This class
-    keeps track of those models and instantiates a reflection_prediction object
-    when required with the correct geometry.
+    '''Predict observation position for supplied reflections and angles.
+    
+    This class is just a wrapper for RSTBX's reflection_prediction class (which
+    is superseded by DIALS' ray_intersection function). A wrapper is necessary
+    because reflection_prediction does not use the experimental models. This
+    class keeps track of those models and instantiates a reflection_prediction
+    object when required with the correct geometry.
 
     It is called ImpactPredictor, because ReflectionPredictor does not imply
-    that the hkl is actually observed, whereas ImpactPredictor does'''
+    that the hkl is actually observed, whereas ImpactPredictor does
+    
+    '''
 
     def __init__(self, detector, goniometer, beam, crystal):
         self._detector = detector
