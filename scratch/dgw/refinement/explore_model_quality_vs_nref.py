@@ -8,19 +8,19 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-'''This script has the same interface as dials.refine2. It performs refinement
+"""This script has the same interface as dials.refine2. It performs refinement
 jobs, altering the number of input reflections each time. This allows an
 investigation into the final model quality and execution time vs the number
-of reflections in refinement.'''
+of reflections in refinement."""
 
 from __future__ import division
 from dials.util.script import ScriptRunner
 
 class Script(ScriptRunner):
-    '''A class for running the script.'''
+    """A class for running the script."""
 
     def __init__(self):
-        '''Initialise the script.'''
+        """Initialise the script."""
 
         # The script usage
         usage  = "usage: %prog [options] [param.phil] " \
@@ -50,7 +50,7 @@ class Script(ScriptRunner):
             help="set verbosity level; -vv gives verbosity level 2")
 
     def main(self, params, options, args):
-        '''Execute the script.'''
+        """Execute the script."""
         from dials.algorithms.refinement import RefinerFactory
         from dials.model.serialize import load, dump
         from dials.model.data import ReflectionList

@@ -20,14 +20,13 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 
 class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameterisation):
-
-    '''Support crystal parameterisations that vary with time (via the proxy of
-    "observed image number")'''
+    """Support crystal parameterisations that vary with time (via the proxy of
+    "observed image number")"""
 
     _obs_image_number = None
 
     def prepare(self, panel_id=0):
-        '''Cache required quantities that are not dependent on hkl'''
+        """Cache required quantities that are not dependent on hkl"""
 
         # Same as prepare for the parent class except we don't get
         # U and B from the model
@@ -36,8 +35,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
     def compose(self, obs_image_number):
-        '''Compose scan-varying crystal parameterisations at the specified
-        image number'''
+        """Compose scan-varying crystal parameterisations at the specified
+        image number"""
 
         self._obs_image_number = obs_image_number
         xl_op = self._xl_orientation_parameterisations[0]
@@ -46,8 +45,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         xl_ucp.compose(obs_image_number)
 
     def get_UB(self, obs_image_number):
-        '''Extract the setting matrix from the contained scan
-        dependent crystal parameterisations at specified image number'''
+        """Extract the setting matrix from the contained scan
+        dependent crystal parameterisations at specified image number"""
 
         if obs_image_number != self._obs_image_number:
             self.compose(obs_image_number)
@@ -65,10 +64,10 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         return self._get_gradients_core(h, s, phi, panel_id)
 
     #def get_multi_gradients(self, match_list):
-    #    '''
+    #    """
     #    Adds passing the observed image number to the gradient calc
     #    for scan-varying parameters
-    #    '''
+    #    """
     #
     #    self.prepare()
     #
@@ -78,12 +77,12 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
     def _get_gradients_core(self, h, s, phi, panel_id):
 
-        '''Calculate gradients of the prediction formula with respect to
+        """Calculate gradients of the prediction formula with respect to
         each of the parameters of the contained models, for reflection h
         that reflects at rotation angle phi with scattering vector s
         that intersects panel panel_id. That is, calculate dX/dp, dY/dp
         and dphi/dp. Scan-varying parameters (for the crystal) are
-        evaluated at obs_image_number'''
+        evaluated at obs_image_number"""
 
         # NB prepare and compose must be called first
 
@@ -167,9 +166,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
     def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, \
             obs_image_number, B, R, h, s, e_X_r, e_r_s0):
-
-        '''Adds calculation at obs_image_number for scan-varying
-        parameters'''
+        """Adds calculation at obs_image_number for scan-varying
+        parameters"""
 
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp(obs_image_number)
@@ -187,9 +185,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
     def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, \
             obs_image_number, U, R, h, s, e_X_r, e_r_s0):
-
-        '''Adds calculation at obs_image_number for scan-varying
-        parameters'''
+        """Adds calculation at obs_image_number for scan-varying
+        parameters"""
 
         for xluc in self._xl_unit_cell_parameterisations:
             dB_dxluc_p = xluc.get_ds_dp(obs_image_number)
@@ -207,8 +204,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         return
 
     def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, der):
-        '''helper function to calculate positional derivatives from dpv_dp using
-        the quotient rule'''
+        """helper function to calculate positional derivatives from dpv_dp using
+        the quotient rule"""
         u = pv[0]
         v = pv[1]
         w = pv[2]

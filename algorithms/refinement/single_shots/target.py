@@ -25,9 +25,9 @@ from dials.algorithms.refinement.target import ObservationPrediction
 TWO_PI = 2.0 * pi
 
 class LeastSquaresXYResidualWithRmsdCutoff(Target):
-    '''An implementation of the target class providing a least squares residual
+    """An implementation of the target class providing a least squares residual
     in terms of detector impact position X, Y only, terminating on achieved
-    rmsd (or on intrisic convergence of the chosen minimiser)'''
+    rmsd (or on intrisic convergence of the chosen minimiser)"""
 
     rmsd_names = ["RMSD_X", "RMSD_Y"]
 
@@ -61,8 +61,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         self._matches = None
 
     def compute_residuals_and_gradients(self):
-        '''return the vector of residuals plus their gradients
-        and weights for non-linear least squares methods'''
+        """return the vector of residuals plus their gradients
+        and weights for non-linear least squares methods"""
 
         self._matches = self._reflection_manager.get_matches()
 
@@ -103,7 +103,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         return(residuals, jacobian_t, weights)
 
     def compute_functional_and_gradients(self):
-        '''calculate the value of the target function and its gradients'''
+        """calculate the value of the target function and its gradients"""
 
         self._matches = self._reflection_manager.get_matches()
         self._nref = self.get_num_reflections()
@@ -133,8 +133,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         return (L, dL_dp)
 
     def curvatures(self):
-        '''First order approximation to the diagonal of the Hessian based on the
-        least squares form of the target'''
+        """First order approximation to the diagonal of the Hessian based on the
+        least squares form of the target"""
 
         # This is a hack for the case where nref=0. This should not be necessary
         # if bounds are provided for parameters to stop the algorithm exploring
@@ -158,7 +158,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         return curv
 
     def rmsds(self):
-        '''calculate unweighted RMSDs'''
+        """calculate unweighted RMSDs"""
 
         if not self._matches:
             self._matches = self._reflection_manager.get_matches()
@@ -175,7 +175,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         return self._rmsds
 
     def achieved(self):
-        '''RMSD criterion for target achieved '''
+        """RMSD criterion for target achieved """
         r = self._rmsds if self._rmsds else self.rmsds()
 
         # reset cached rmsds to avoid getting out of step
@@ -187,21 +187,21 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         return False
 
 class ReflectionManagerXY(ReflectionManager):
-    '''Overloads for a Reflection Manager that does not exclude
+    """Overloads for a Reflection Manager that does not exclude
     reflections too close to the spindle, and reports only information
-    about X, Y residuals'''
+    about X, Y residuals"""
 
     def _remove_excluded_obs(self, obs_data):
-        '''For this version of the class, do nothing. We don't want to
+        """For this version of the class, do nothing. We don't want to
         exclude reflections close to the spindle, as the spindle may
-        not exist'''
+        not exist"""
 
         inc = [ref for ref in obs_data]
 
         return tuple(inc)
 
     def get_matches(self):
-        '''For every observation matched with a prediction return all data'''
+        """For every observation matched with a prediction return all data"""
 
         l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 

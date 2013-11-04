@@ -14,11 +14,11 @@ from dials.algorithms.refinement import print_model_geometry
 
 
 class Refiner(object):
-    ''' The refiner class. '''
+    """The refiner class."""
 
     def __init__(self, parameterisation_strategy, refinery_strategy,
                  reflections_strategy, target_strategy, verbosity):
-        ''' Initialise the refiner class.
+        """ Initialise the refiner class.
 
         Params:
             parameterisation_strategy The parameterisation strategy
@@ -26,7 +26,7 @@ class Refiner(object):
             reflections_strategy The reflection manager strategy
             target_strategy The target function strategy
             verbosity The verbosity level
-        '''
+        """
 
         self.create_param = parameterisation_strategy
         self.create_refinery = refinery_strategy
@@ -35,7 +35,7 @@ class Refiner(object):
         self._verbosity = verbosity
 
     def prepare(self, sweep, crystal, reflections):
-        ''' Prepare refiner with experimental models and data.
+        """ Prepare refiner with experimental models and data.
 
         Params:
             sweep The sweep to process
@@ -45,7 +45,7 @@ class Refiner(object):
         Returns:
             The refined (sweep, crystal)
 
-        '''
+        """
         from scitbx import matrix
         from math import sqrt
 
@@ -146,14 +146,14 @@ class Refiner(object):
         return
 
     def rmsds(self):
-        '''Return rmsds of the current model'''
+        """Return rmsds of the current model"""
 
         self.refinery.prepare_for_step()
 
         return self.target.rmsds()
 
     def __call__(self, sweep=None, crystal=None, reflections=None):
-        '''Run refinement'''
+        """Run refinement"""
 
         if sweep and crystal and reflections:
             self.prepare(sweep, crystal, reflections)
@@ -233,8 +233,8 @@ class Refiner(object):
             #print c1, c2
 
     def predict_reflections(self):
-        '''Predict all reflection positions after refinement and make the
-        bounding boxes.'''
+        """Predict all reflection positions after refinement and make the
+        bounding boxes."""
         from dials.algorithms.integration import ReflectionPredictor
         from dials.algorithms.spot_prediction import ray_intersection
         from dials.model.data import ReflectionList
@@ -277,11 +277,11 @@ class Refiner(object):
 
 
 class RefinerFactory(object):
-    '''Factory class to create refiners'''
+    """Factory class to create refiners"""
 
     @staticmethod
     def from_parameters(params, verbosity):
-        '''Given a set of parameters, construct the refiner
+        """Given a set of parameters, construct the refiner
 
         Params:
             params The input parameters
@@ -290,7 +290,7 @@ class RefinerFactory(object):
         Returns:
             The refiner instance
 
-        '''
+        """
 
         parameterisation_strategy = \
                     RefinerFactory.configure_parameterisation(params)
@@ -303,7 +303,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_parameterisation(params):
-        '''Given a set of parameters, configure a factory to build a
+        """Given a set of parameters, configure a factory to build a
         parameterisation from a set of experimental models
 
         Params:
@@ -311,7 +311,7 @@ class RefinerFactory(object):
 
         Returns:
             The parameterisation factory instance
-        '''
+        """
 
         # Shorten parameter paths
         beam_options = params.refinement.parameterisation.beam
@@ -324,7 +324,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_refinery(params):
-        '''Given a set of parameters, configure a factory to build a
+        """Given a set of parameters, configure a factory to build a
         refinery
 
         Params:
@@ -332,7 +332,7 @@ class RefinerFactory(object):
 
         Returns:
             The refinery factory instance
-        '''
+        """
 
         # Shorten parameter path
         options = params.refinement.refinery
@@ -340,7 +340,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_refman(params):
-        '''Given a set of parameters, configure a factory to build a
+        """Given a set of parameters, configure a factory to build a
         reflection manager
 
         Params:
@@ -348,7 +348,7 @@ class RefinerFactory(object):
 
         Returns:
             The reflection manager factory instance
-        '''
+        """
 
         # Shorten parameter path
         options = params.refinement.reflections
@@ -356,7 +356,7 @@ class RefinerFactory(object):
 
     @staticmethod
     def configure_target(params):
-        '''Given a set of parameters, configure a factory to build a
+        """Given a set of parameters, configure a factory to build a
         target function
 
         Params:
@@ -364,7 +364,7 @@ class RefinerFactory(object):
 
         Returns:
             The target factory instance
-        '''
+        """
 
         # Shorten parameter path
         options = params.refinement.target
@@ -372,8 +372,8 @@ class RefinerFactory(object):
 
 
 class ParameterisationFactory(object):
-    ''' Factory class to create beam, crystal and detector parameterisations
-    plus a parameterisation of the prediction equation.'''
+    """ Factory class to create beam, crystal and detector parameterisations
+    plus a parameterisation of the prediction equation."""
 
     def __init__(self, beam_options, crystal_options, detector_options,
                  prediction_options):
@@ -492,7 +492,7 @@ class ParameterisationFactory(object):
                 param_reporter)
 
 class RefineryFactory(object):
-    '''Factory class to create a Refinery object (the refinement engine)'''
+    """Factory class to create a Refinery object (the refinement engine)"""
 
     def __init__(self, options):
 
@@ -526,7 +526,7 @@ class RefineryFactory(object):
             max_iterations = self._max_iterations)
 
 class RefmanFactory(object):
-    '''Factory class to create a ReflectionManager'''
+    """Factory class to create a ReflectionManager"""
 
     def __init__(self, options):
 
@@ -574,7 +574,7 @@ class RefmanFactory(object):
                             inclusion_cutoff=self._inclusion_cutoff)
 
 class TargetFactory(object):
-    '''Factory class to create a target function object'''
+    """Factory class to create a target function object"""
 
     def __init__(self, options):
 

@@ -181,8 +181,8 @@ print "Total number of reflections excited", len(excited_refs)
 px_size = mydetector.get_pixel_size()
 
 def set_impact(ref):
-    '''helper function to set centroid and fake variance and frame
-    number in a reflection'''
+    """helper function to set centroid and fake variance and frame
+    number in a reflection"""
     try:
         ref.image_coord_mm = mydetector[0].get_ray_intersection(ref.beam_vector)
         ref.centroid_variance = (px_size[0] / 2., px_size[1] / 2., im_width / 2.)

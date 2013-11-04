@@ -9,25 +9,25 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-'''This script applies a sinusoidal perturbation of up to 0.5 degree to the
+"""This script applies a sinusoidal perturbation of up to 0.5 degree to the
 reflecting phi fora set of input reflections. This is a way to exercise
 scan-varying refinement, which should be able to model the sinusoidal
-variation.'''
+variation."""
 
 from __future__ import division
 
 class ScriptRunner(object):
-    '''Class to run script.'''
+    """Class to run script."""
 
     def __init__(self, options, reflections_filename):
-        '''Setup the script.'''
+        """Setup the script."""
 
         # Filename data
         self.output_filename = options.output_file
         self.reflections_filename = reflections_filename
 
     def __call__(self):
-        '''Run the script.'''
+        """Run the script."""
         from dials.model.serialize import load, dump
         from dials.model.data import ReflectionList
         import cPickle as pickle

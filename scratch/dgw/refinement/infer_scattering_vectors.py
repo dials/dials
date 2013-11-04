@@ -9,16 +9,16 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-'''This script infers and sets the scattering vectors for a set of reflections
-by projecting back from the detector intersection to the Ewald sphere.'''
+"""This script infers and sets the scattering vectors for a set of reflections
+by projecting back from the detector intersection to the Ewald sphere."""
 
 from __future__ import division
 
 class ScriptRunner(object):
-    '''Class to run script.'''
+    """Class to run script."""
 
     def __init__(self, options, sweep_filename, reflections_filename):
-        '''Setup the script.'''
+        """Setup the script."""
 
         # Filename data
         self.output_filename = options.output_file
@@ -26,7 +26,7 @@ class ScriptRunner(object):
         self.reflections_filename = reflections_filename
 
     def __call__(self):
-        '''Run the script.'''
+        """Run the script."""
         from dials.model.serialize import load, dump
         from dials.model.data import ReflectionList
         import cPickle as pickle

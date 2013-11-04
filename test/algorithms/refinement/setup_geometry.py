@@ -35,7 +35,7 @@ def random_vector_close_to(vector, sd = 0.5):
                  random.gauss(0, sd),  deg = True)
 
 class Extract(object):
-    '''Parse and extract geometry model from PHIL'''
+    """Parse and extract geometry model from PHIL"""
 
     def __init__(self, master_phil, local_overrides = "",
                  cmdline_args = None, verbose=False):

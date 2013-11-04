@@ -13,8 +13,8 @@ from cctbx.array_family import flex
 #### For a unit test, we need two of Graeme's functions taken from
 #### use_case_xds_method/tdi.py
 def orthogonal_component(reference, changing):
-    '''Return unit vector corresponding to component of changing
-    orthogonal to reference.'''
+    """Return unit vector corresponding to component of changing
+    orthogonal to reference."""
 
     r = reference.normalize()
     c = changing.normalize()
@@ -23,11 +23,11 @@ def orthogonal_component(reference, changing):
 
 def align_reference_frame(primary_axis, primary_target,
                           secondary_axis, secondary_target):
-    '''Compute a rotation matrix R: R x primary_axis = primary_target and
+    """Compute a rotation matrix R: R x primary_axis = primary_target and
     R x secondary_axis places the secondary_axis in the plane perpendicular
     to the primary_target, as close as possible to the secondary_target.
     Require: primary_target orthogonal to secondary_target, primary axis
-    not colinear with secondary axis.'''
+    not colinear with secondary axis."""
 
     from scitbx import matrix
     import math

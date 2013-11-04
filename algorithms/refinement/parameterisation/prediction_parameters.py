@@ -18,7 +18,7 @@ from dials.array_family import flex
 from dials_refinement_helpers_ext import *
 
 class PredictionParameterisation(object):
-    '''
+    """
     Abstract interface for a class that groups together model parameterisations
     relating to diffraction geometry and provides:
 
@@ -56,7 +56,7 @@ class PredictionParameterisation(object):
     object directly, which takes the list of parameters, and indirectly via a
     Target function object, which takes the list of derivatives and composes the
     derivatives of a Target function from them.
-    '''
+    """
 
     def __init__(self,
                  detector_model,
@@ -111,8 +111,8 @@ class PredictionParameterisation(object):
         return self._length
 
     def get_param_vals(self):
-        '''return a concatenated list of parameters from each of the components
-        in the global model'''
+        """return a concatenated list of parameters from each of the components
+        in the global model"""
 
         global_p_list = []
         if self._detector_parameterisations:
@@ -140,8 +140,8 @@ class PredictionParameterisation(object):
         return global_p_list
 
     def get_param_names(self):
-        '''Return a list of the names of parameters in the order they are
-        concatenated. Useful for output to log files and debugging.'''
+        """Return a list of the names of parameters in the order they are
+        concatenated. Useful for output to log files and debugging."""
         param_names = []
         if self._detector_parameterisations:
             det_param_name_lists = [x.get_param_names() for x in \
@@ -174,10 +174,10 @@ class PredictionParameterisation(object):
         return param_names
 
     def set_param_vals(self, vals):
-        '''Set the parameter values of the contained models to the values in
+        """Set the parameter values of the contained models to the values in
         vals. This list must be of the same length as the result of
         get_param_vals and must contain the parameter values in the same order!
-        This order is to be maintained by any sensible refinement engine.'''
+        This order is to be maintained by any sensible refinement engine."""
 
         assert len(vals) == len(self)
         it = iter(vals)
@@ -203,7 +203,7 @@ class PredictionParameterisation(object):
                 model.set_param_vals(tmp)
 
     def prepare(self):
-        '''Cache required quantities that are not dependent on hkl'''
+        """Cache required quantities that are not dependent on hkl"""
 
         # Obtain various quantities of interest from the experimental model
         self._D_mats = [matrix.sqr(p.get_D_matrix()) for p in self._detector]
@@ -214,7 +214,7 @@ class PredictionParameterisation(object):
         self._axis = matrix.col(self._gonio.get_rotation_axis())
 
     def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
-        '''
+        """
         Calculate gradients of the prediction formula with respect to each
         of the parameters of the contained models, for the reflection with
         scattering vector s that intersects panel with panel_id.
@@ -226,7 +226,7 @@ class PredictionParameterisation(object):
 
         obs_image_number included to match the interface of a scan-
         varying version of the class
-        '''
+        """
 
         # extract the right panel matrix
         self._D = self._D_mats[panel_id]
@@ -235,21 +235,20 @@ class PredictionParameterisation(object):
 
 
 class DetectorSpacePredictionParameterisation(PredictionParameterisation):
-    '''
+    """
     Concrete class that inherits functionality of the
     PredictionParameterisation parent class and provides a detector space
     implementation of the get_gradients function.
 
     Untested for multiple sensor detectors.
-    '''
+    """
 
     def _get_gradients_core(self, h, s, phi, panel_id):
-
-        '''Calculate gradients of the prediction formula with respect to
+        """Calculate gradients of the prediction formula with respect to
         each of the parameters of the contained models, for reflection h
         that reflects at rotation angle phi with scattering vector s that
         intersects panel panel_id. That is, calculate dX/dp, dY/dp and
-        dphi/dp'''
+        dphi/dp"""
 
         ### Calculate various quantities of interest for this reflection
 
@@ -333,9 +332,8 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         return zip(dX_dp, dY_dp, dphi_dp)
 
     def _detector_derivatives(self, dpv_dp, dphi_dp, pv, panel_id):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the detector parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the detector parameterisations"""
         for idet, det in enumerate(self._detector_parameterisations):
 
             # Only work for the first detector parameterisation
@@ -368,9 +366,8 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         return
 
     def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the beam parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the beam parameterisations"""
 
         for src in self._beam_parameterisations:
             ds0_dsrc_p = src.get_ds_dp()
@@ -391,9 +388,8 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
 
     def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
                                     e_X_r, e_r_s0):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal orientation parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal orientation parameterisations"""
 
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp()
@@ -446,8 +442,8 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         return
 
     def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, der):
-        '''helper function to calculate positional derivatives from
-        dpv_dp using the quotient rule'''
+        """helper function to calculate positional derivatives from
+        dpv_dp using the quotient rule"""
 
         u = pv[0]
         v = pv[1]
@@ -464,14 +460,13 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
         return dX_dp, dY_dp
 
 class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParameterisation):
-
-    '''Python version, overloading functions to calc derivatives only.
-    Slow, but somewhat easier to read.'''
+    """Python version, overloading functions to calc derivatives only.
+    Slow, but somewhat easier to read."""
 
     def _detector_derivatives(self, dpv_dp, dphi_dp, pv):
 
-        '''helper function to extend the derivatives lists by
-        derivatives of the detector parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the detector parameterisations"""
 
         for idet, det in enumerate(self._detector_parameterisations):
             if idet == 0:
@@ -489,9 +484,8 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
         return
 
     def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the beam parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the beam parameterisations"""
 
         for src in self._beam_parameterisations:
             ds0_dsrc_p = src.get_ds_dp()
@@ -506,9 +500,8 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
 
     def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
                                     e_X_r, e_r_s0):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal orientation parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal orientation parameterisations"""
 
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp()
@@ -526,9 +519,8 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
 
     def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
                                     e_X_r, e_r_s0):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal unit cell parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal unit cell parameterisations"""
 
         for xluc in self._xl_unit_cell_parameterisations:
             dB_dxluc_p = xluc.get_ds_dp()

@@ -24,7 +24,7 @@ from cctbx.array_family import flex
 from dials_refinement_helpers_ext import *
 
 class ParameterReporter(object):
-    '''
+    """
     Keeps a record of all the ModelParameterisations and
     ScanVaryingModelParameterisations present and provides access to their
     Parameters and ScanVaryingParameterSets for reporting purposes.
@@ -36,7 +36,7 @@ class ParameterReporter(object):
     * Beam parameterisation
     * Crystal orientation parameterisation
     * Crystal unit cell parameterisation
-    '''
+    """
 
     def __init__(self,
                  detector_parameterisations = None,
@@ -119,9 +119,9 @@ class ParameterReporter(object):
         return s
 
     def varying_params_vs_image_number(self, image_range):
-        '''Write a table of scan-varying parameter values vs image number to
+        """Write a table of scan-varying parameter values vs image number to
         disk, if scan-varying parameters are present. Return boolean, whether
-        this table was written or not'''
+        this table was written or not"""
 
         image_numbers = range(image_range[0], image_range[1] + 1)
         columns = [TableColumn("Image", image_numbers)]
@@ -181,8 +181,8 @@ class ParameterReporter(object):
 
     # FIXME Don't need this?
     def get_params(self):
-        '''return a concatenated list of parameters from each of the components
-        in the global model'''
+        """return a concatenated list of parameters from each of the components
+        in the global model"""
 
         global_p_list = []
         if self._detector_parameterisations:
@@ -211,8 +211,8 @@ class ParameterReporter(object):
 
     # FIXME Don't need this?
     def get_param_names(self):
-        '''Return a list of the names of parameters in the order they are
-        concatenated. Useful for output to log files and debugging.'''
+        """Return a list of the names of parameters in the order they are
+        concatenated. Useful for output to log files and debugging."""
         param_names = []
         if self._detector_parameterisations:
             det_param_name_lists = [x.get_param_names() for x in \
@@ -245,7 +245,7 @@ class ParameterReporter(object):
         return param_names
 
 class TableColumn(object):
-    '''Bucket to store data to be used for constructing tables to print.'''
+    """Bucket to store data to be used for constructing tables to print."""
 
     def __init__(self, title, values):
 

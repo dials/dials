@@ -23,16 +23,16 @@ from dials.algorithms.refinement.prediction.reeke import solve_quad
 from dials.algorithms.refinement.prediction.reeke import reeke_model
 
 class ReflectionPredictor(object):
-    '''
+    """
     Predict for a relp based on the current states of models in the
     experimental geometry model. This is a wrapper for DIALS' C++
     RayPredictor class, which does the real work. This class keeps track
     of the experimental geometry, and instantiates a RayPredictor when
     required.
-    '''
+    """
 
     def __init__(self, crystal, beam, gonio, sweep_range = (0, 2.*pi)):
-        '''Construct by linking to instances of experimental model classes'''
+        """Construct by linking to instances of experimental model classes"""
 
         self._crystal = crystal
         self._beam = beam
@@ -41,26 +41,26 @@ class ReflectionPredictor(object):
         self.update()
 
     def update(self):
-        '''Build a RayPredictor object for the current geometry'''
+        """Build a RayPredictor object for the current geometry"""
 
         self._ray_predictor = RayPredictor(self._beam.get_s0(),
                         self._gonio.get_rotation_axis(),
                         self._sweep_range)
 
     def predict(self, hkl, UB = None):
-        '''
+        """
         Solve the prediction formula for the reflecting angle phi.
 
         If UB is given, override the contained crystal model. This is
         for use in refinement with time-varying crystal parameters
-        '''
+        """
 
         UB_ = UB if UB else self._crystal.get_U() * self._crystal.get_B()
 
         return self._ray_predictor(hkl, UB_)
 
 class ScanVaryingReflectionPredictor(object):
-    '''
+    """
     Reflection prediction for a relp within a small segment of a scan, which
     we assume to be a single image.
 
@@ -72,7 +72,7 @@ class ScanVaryingReflectionPredictor(object):
     number, whilst the other models remain static. The
     prediction_parameterisation object is assumed to have a method
     get_UB(image_number).
-    '''
+    """
 
     def __init__(self, prediction_parameterisation, beam, gonio, scan, dmin):
 
@@ -104,10 +104,10 @@ class ScanVaryingReflectionPredictor(object):
         self.is_outside_resolution_limit = False
 
     def prepare(self, image_number, step = 1):
-        '''
+        """
         Cache transformations that position relps at the beginning and end of
         the step.
-        '''
+        """
 
         self._image_number = image_number
         self._step = step
@@ -126,22 +126,22 @@ class ScanVaryingReflectionPredictor(object):
         self._T2 = r_end * self._pred_param.get_UB(image_number + step)
 
     def get_T1(self):
-        '''Get the setting matrix for the beginning of the step'''
+        """Get the setting matrix for the beginning of the step"""
 
         return self._T1
 
     def get_T2(self):
-        '''Get the setting matrix for the end of the step'''
+        """Get the setting matrix for the end of the step"""
 
         return self._T2
 
     def predict(self, hkl):
-        '''
+        """
         Predict for hkl during the passage from T1*h to T2*h.
 
         If a prediction is found, return the predicted Reflection. Otherwise
         return None.
-        '''
+        """
 
         self._r1 = self._T1 * matrix.col(hkl)
         self._r2 = self._T2 * matrix.col(hkl)
@@ -194,9 +194,9 @@ class ScanVaryingReflectionPredictor(object):
 
 
 class ScanVaryingReflectionPredictorDebug(ScanVaryingReflectionPredictor):
-    '''Debugging version of ScanVaryingReflectionPredictor that stores all
+    """Debugging version of ScanVaryingReflectionPredictor that stores all
     the sites it tests and provides the ability to write them out by abusing
-    PDB format.'''
+    PDB format."""
 
     # reciprocal lattice coords of predictions
     trial_sites = []
@@ -222,14 +222,14 @@ class ScanVaryingReflectionPredictorDebug(ScanVaryingReflectionPredictor):
           print >> f, xs.as_pdb_file()
 
 class ScanVaryingReflectionListGenerator(object):
-    '''
+    """
     Generate and predict all reflections for a scan with a varying crystal
     model.
 
     Starting from the (0,0,0) reflection, known to be on the Ewald sphere, for a
     particular image t, generate indices using the Reeke algorithm, then predict
     using ScanVaryingReflectionPredictor to test each candidate.
-    '''
+    """
 
     def __init__(self, prediction_parameterisation, beam,
                     gonio, scan, dmin):
@@ -253,8 +253,8 @@ class ScanVaryingReflectionListGenerator(object):
         return self._reflections
 
     def step_over_images(self):
-        '''Loop over images, doing the search on each and extending the
-        predictions list'''
+        """Loop over images, doing the search on each and extending the
+        predictions list"""
 
         from libtbx import easy_mp
         im_range = self._scan.get_image_range()
@@ -289,15 +289,15 @@ class ScanVaryingReflectionListGenerator(object):
         return reflections
 
 class AnglePredictor_rstbx(object):
-    '''
+    """
     Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model. This version is a wrapper
     for rstbx's C++ rotation_angles so is faster than the pure Python class
     AnglePredictor_py
-    '''
+    """
 
     def __init__(self, crystal, beam, gonio, dmin):
-        '''Construct by linking to instances of experimental model classes'''
+        """Construct by linking to instances of experimental model classes"""
 
         self._crystal = crystal
         self._beam = beam
@@ -310,8 +310,8 @@ class AnglePredictor_rstbx(object):
     # To convert from the Rossmann frame we use two of Graeme's
     # functions taken from use_case_xds_method/tdi.py
     def orthogonal_component(self, reference, changing):
-        '''Return unit vector corresponding to component of changing orthogonal
-        to reference.'''
+        """Return unit vector corresponding to component of changing orthogonal
+        to reference."""
 
         r = reference.normalize()
         c = changing.normalize()
@@ -320,11 +320,11 @@ class AnglePredictor_rstbx(object):
 
     def align_reference_frame(self, primary_axis, primary_target,
                               secondary_axis, secondary_target):
-        '''Compute a rotation matrix R: R x primary_axis = primary_target and
+        """Compute a rotation matrix R: R x primary_axis = primary_target and
         R x secondary_axis places the secondary_axis in the plane perpendicular
         to the primary_target, as close as possible to the secondary_target.
         Require: primary_target orthogonal to secondary_target, primary axis
-        not colinear with secondary axis.'''
+        not colinear with secondary axis."""
 
         from scitbx import matrix
 
@@ -378,8 +378,8 @@ class AnglePredictor_rstbx(object):
 
     def observed_indices_and_angles_from_angle_range(self, phi_start_rad,
             phi_end_rad, indices):
-        '''For a list of indices, return those indices that can be rotated into
-        diffracting position, along with the corresponding angles'''
+        """For a list of indices, return those indices that can be rotated into
+        diffracting position, along with the corresponding angles"""
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
@@ -404,7 +404,7 @@ class AnglePredictor_rstbx(object):
         return obs_indices_int, obs_angles
 
     def predict(self, hkl):
-        '''Solve the prediction formula for the reflecting angle phi'''
+        """Solve the prediction formula for the reflecting angle phi"""
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
@@ -424,11 +424,11 @@ class AnglePredictor_rstbx(object):
         else: return None
 
 class AnglePredictor_py(object):
-    '''Predict the reflecting angles for a relp based on the current states
-    of models in the experimental geometry model.'''
+    """Predict the reflecting angles for a relp based on the current states
+    of models in the experimental geometry model."""
 
     def __init__(self, crystal, beam, gonio, dmin):
-        '''Construct by linking to instances of experimental model classes'''
+        """Construct by linking to instances of experimental model classes"""
 
         self._crystal = crystal
         self._beam = beam
@@ -439,7 +439,7 @@ class AnglePredictor_py(object):
 
 
     def _prepare(self):
-        '''Cache required quantities that are not dependent on hkl'''
+        """Cache required quantities that are not dependent on hkl"""
 
         # obtain current crystal setting matrix
         U = self._crystal.get_U()
@@ -458,7 +458,7 @@ class AnglePredictor_py(object):
         self._axis_dot_s0 = self._axis.dot(self._s0)
 
     def predict(self, hkl):
-        '''Solve the prediction formula for the reflecting angle phi'''
+        """Solve the prediction formula for the reflecting angle phi"""
 
         self._prepare()
 
@@ -526,8 +526,8 @@ class AnglePredictor_py(object):
 
     def observed_indices_and_angles_from_angle_range(self, phi_start_rad,
             phi_end_rad, indices):
-        '''For a list of indices, return those indices that can be rotated into
-        diffracting position, along with the corresponding angles'''
+        """For a list of indices, return those indices that can be rotated into
+        diffracting position, along with the corresponding angles"""
 
         self._prepare()
 
@@ -546,7 +546,7 @@ class AnglePredictor_py(object):
         return (obs_ind, obs_ang)
 
 class ImpactPredictor(object):
-    '''Predict observation position for supplied reflections and angles.
+    """Predict observation position for supplied reflections and angles.
     
     This class is just a wrapper for RSTBX's reflection_prediction class (which
     is superseded by DIALS' ray_intersection function). A wrapper is necessary
@@ -557,7 +557,7 @@ class ImpactPredictor(object):
     It is called ImpactPredictor, because ReflectionPredictor does not imply
     that the hkl is actually observed, whereas ImpactPredictor does
     
-    '''
+    """
 
     def __init__(self, detector, goniometer, beam, crystal):
         self._detector = detector

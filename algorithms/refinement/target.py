@@ -21,7 +21,7 @@ from dials.algorithms.spot_prediction import ray_intersection
 TWO_PI = 2.0 * pi
 
 class Target(object):
-    '''Abstract interface for a target function class
+    """Abstract interface for a target function class
 
     A Target object will be used by a Refinery. It will refer to a Reflection
     Manager to get a list of observations. It will perform reflection prediction
@@ -38,7 +38,7 @@ class Target(object):
     function is used (e.g. least squares target), or limit whether the object
     is used for a detector space & phi residual, or a reciprocal space residual.
     This should all be set by a derived class.
-    '''
+    """
 
     rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
 
@@ -52,7 +52,7 @@ class Target(object):
         self._prediction_parameterisation = prediction_parameterisation
 
     def predict(self):
-        '''perform reflection prediction and update the reflection manager'''
+        """perform reflection prediction and update the reflection manager"""
 
         # update the reflection_predictor and the prediction parameterisation
         # with the scan-independent part of the current geometry
@@ -134,27 +134,27 @@ class Target(object):
         return
 
     def get_num_reflections(self):
-        '''return the number of reflections currently used in the calculation'''
+        """return the number of reflections currently used in the calculation"""
 
         # delegate to the reflection manager
         return self._reflection_manager.get_accepted_reflection_count()
 
     def compute_functional_and_gradients(self):
-        '''calculate the target function value and its gradients'''
+        """calculate the target function value and its gradients"""
 
         # To be implemented by a derived class
         raise RuntimeError('implement me')
 
     def achieved(self):
-        '''return True to terminate the refinement. To be implemented by
-        a derived class'''
+        """return True to terminate the refinement. To be implemented by
+        a derived class"""
 
         return False
 
 class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
-    '''An implementation of the target class providing a least squares residual
+    """An implementation of the target class providing a least squares residual
     in terms of detector impact position X, Y and phi, terminating on achieved
-    rmsd (or on intrisic convergence of the chosen minimiser)'''
+    rmsd (or on intrisic convergence of the chosen minimiser)"""
 
     def __init__(self, reflection_predictor, detector, ref_man,
                  prediction_parameterisation,
@@ -181,8 +181,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         self._matches = None
 
     def compute_residuals_and_gradients(self):
-        '''return the vector of residuals plus their gradients
-        and weights for non-linear least squares methods'''
+        """return the vector of residuals plus their gradients
+        and weights for non-linear least squares methods"""
 
         self._matches = self._reflection_manager.get_matches()
 
@@ -223,7 +223,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return(residuals, jacobian_t, weights)
 
     def compute_functional_and_gradients(self):
-        '''calculate the value of the target function and its gradients'''
+        """calculate the value of the target function and its gradients"""
 
         self._matches = self._reflection_manager.get_matches()
         self._nref = self.get_num_reflections()
@@ -255,8 +255,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return (L, dL_dp)
 
     def curvatures(self):
-        '''First order approximation to the diagonal of the Hessian based on the
-        least squares form of the target'''
+        """First order approximation to the diagonal of the Hessian based on the
+        least squares form of the target"""
 
         # This is a hack for the case where nref=0. This should not be necessary
         # if bounds are provided for parameters to stop the algorithm exploring
@@ -281,7 +281,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return curv
 
     def rmsds(self):
-        '''calculate unweighted RMSDs'''
+        """calculate unweighted RMSDs"""
 
         if not self._matches:
             self._matches = self._reflection_manager.get_matches()
@@ -300,7 +300,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return self._rmsds
 
     def achieved(self):
-        '''RMSD criterion for target achieved '''
+        """RMSD criterion for target achieved """
         r = self._rmsds if self._rmsds else self.rmsds()
 
         # reset cached rmsds to avoid getting out of step
@@ -313,13 +313,13 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         return False
 
 class ObsPredMatch:
-    '''
+    """
     A bucket class containing data for a prediction that has been
     matched to an observation.
 
     This contains all the raw material needed to calculate the target function
     value and gradients
-    '''
+    """
 
     # initialise with an observation
     def __init__(self, hkl, entering, frame, panel,
@@ -383,23 +383,23 @@ class ObsPredMatch:
 
     def reset(self):
 
-        '''Flag this observation to not be used'''
+        """Flag this observation to not be used"""
         self.is_matched = False
 
 class ObservationPrediction(object):
-    '''A helper class for the reflection manager to contain information about
+    """A helper class for the reflection manager to contain information about
     the unique observations of particular hkl paired with the currently
     predicted values.
 
     Reflections are either exiting or entering the Ewald sphere. This is
     calculated by the reflection manager and passed in, and used here to
-    identify which observations to update with a new prediction'''
+    identify which observations to update with a new prediction"""
 
     def __init__(self, H, entering, frame, panel,
                        Xo, sigXo, weightXo,
                        Yo, sigYo, weightYo,
                        Phio, sigPhio, weightPhio):
-        '''initialise from one observation'''
+        """initialise from one observation"""
         assert isinstance(entering, bool)
         self.H = H
 
@@ -418,18 +418,18 @@ class ObservationPrediction(object):
         return iter(self.obs)
 
     def get_num_pairs(self):
-        '''Count the number of observations that are paired with a prediction'''
+        """Count the number of observations that are paired with a prediction"""
         return sum(1 for x in self.obs if x.is_matched)
 
     def reset_predictions(self):
-        '''Set the use flag to false for all observations, so that after
+        """Set the use flag to false for all observations, so that after
         updating, any observations that still do not have a prediction are
-        flagged to be removed from calculation of residual and gradients.'''
+        flagged to be removed from calculation of residual and gradients."""
 
         map(lambda x: x.reset(), self.obs)
 
     def remove_unmatched_obs(self):
-        '''Remove observations without a matching prediction'''
+        """Remove observations without a matching prediction"""
 
         self.obs = [x for x in self.obs if x.is_matched]
 
@@ -437,7 +437,7 @@ class ObservationPrediction(object):
                               Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
                               Phio, sigPhio, weightPhio):
-        '''Add another observation of this reflection'''
+        """Add another observation of this reflection"""
 
         self.obs.append(ObsPredMatch(self.H, entering, frame, panel,
                                      Xo, sigXo, weightXo,
@@ -445,8 +445,8 @@ class ObservationPrediction(object):
                                      Phio, sigPhio, weightPhio))
 
 class ReflectionManager(object):
-    '''A class to maintain information about observed and predicted
-    reflections for refinement.'''
+    """A class to maintain information about observed and predicted
+    reflections for refinement."""
 
     def __init__(self, reflections,
                        beam, gonio, scan,
@@ -521,19 +521,19 @@ class ReflectionManager(object):
             raise RuntimeError(msg)
 
     def _spindle_beam_plane_normal(self):
-        '''return a unit vector that when placed at the origin of reciprocal
+        """return a unit vector that when placed at the origin of reciprocal
         space, points to the hemisphere of the Ewald sphere
-        in which reflections cross from inside to outside of the sphere'''
+        in which reflections cross from inside to outside of the sphere"""
 
         # NB vector in +ve Y direction when using imgCIF coordinate frame
         return matrix.col(self._beam.get_s0()).cross(
                         matrix.col(self._gonio.get_rotation_axis())).normalize()
 
     def _remove_excluded_obs(self, obs_data):
-        '''Filter observations that fail certain conditions.
+        """Filter observations that fail certain conditions.
 
         This includes outlier rejection plus rejection of reflections
-        too close to the spindle'''
+        too close to the spindle"""
 
         # TODO Add outlier rejection. Should use robust statistics.
         # See notes on M-estimators from Garib (when I have them)
@@ -547,7 +547,7 @@ class ReflectionManager(object):
         return tuple(inc)
 
     def _inclusion_test(self, s, axis, s0):
-        '''Test scattering vector s for inclusion'''
+        """Test scattering vector s for inclusion"""
 
         # reject reflections for which the parallelepiped formed between
         # the gonio axis, s0 and s has a volume of less than the cutoff.
@@ -561,7 +561,7 @@ class ReflectionManager(object):
         return test
 
     def _create_working_set(self):
-        '''Make a subset of data for use in refinement'''
+        """Make a subset of data for use in refinement"""
 
         working_data = self._obs_data
         sample_size = len(working_data)
@@ -585,19 +585,19 @@ class ReflectionManager(object):
         return(working_data)
 
     def get_sample_size(self):
-        '''Return the number of observations in the working set to be
-        used for refinement'''
+        """Return the number of observations in the working set to be
+        used for refinement"""
 
         return self._sample_size
 
     def get_total_size(self):
-        '''Return the number of observations that pass inclusion criteria and
-        can potentially be used for refinement'''
+        """Return the number of observations that pass inclusion criteria and
+        can potentially be used for refinement"""
 
         return len(self._obs_data)
 
     def get_matches(self):
-        '''For every observation matched with a prediction return all data'''
+        """For every observation matched with a prediction return all data"""
 
         l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 
@@ -621,11 +621,11 @@ class ReflectionManager(object):
         return l
 
     def strip_unmatched_observations(self):
-        '''
+        """
         Delete observations from the manager that are not matched to a
         prediction. Typically used once, after the first update of
         predictions.
-        '''
+        """
 
         for k, v in self._obs_pred_pairs.items():
 
@@ -648,22 +648,22 @@ class ReflectionManager(object):
         return
 
     def get_indices(self):
-        '''Get the unique indices of all observations in the manager'''
+        """Get the unique indices of all observations in the manager"""
 
         return flex.miller_index(self._obs_pred_pairs.keys())
 
     def get_obs(self, h):
-        '''Get the observations of a particular hkl'''
+        """Get the observations of a particular hkl"""
 
         return self._obs_pred_pairs[h]
 
     def get_accepted_reflection_count(self):
-        '''Get the number of reflections currently to be used for refinement'''
+        """Get the number of reflections currently to be used for refinement"""
 
         return sum(v.get_num_pairs() for v in self._obs_pred_pairs.values())
 
     def reset_accepted_reflections(self):
-        '''Reset all observations to use=False in preparation for a new set of
-        predictions'''
+        """Reset all observations to use=False in preparation for a new set of
+        predictions"""
 
         for v in self._obs_pred_pairs.values(): v.reset_predictions()

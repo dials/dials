@@ -12,15 +12,15 @@ from rstbx.diffraction import reflection_prediction
 from rstbx.diffraction import rotation_angles
 
 class ReflectionPredictor(object):
-    '''Predict for a relp based on the current states of models in the
+    """Predict for a relp based on the current states of models in the
     experimental geometry model. This is a wrapper for DIALS' C++
     RayPredictor class, which does the real work. This class keeps track
     of the experimental geometry, and instantiates a RayPredictor when
     required.
-    '''
+    """
 
     def __init__(self, crystal, beam, gonio, sweep_range = (0, 2.*pi)):
-        '''Construct by linking to instances of experimental model classes'''
+        """Construct by linking to instances of experimental model classes"""
 
         self._crystal = crystal
         self._beam = beam
@@ -29,7 +29,7 @@ class ReflectionPredictor(object):
         self.update()
 
     def update(self):
-        '''Build a RayPredictor object for the current geometry'''
+        """Build a RayPredictor object for the current geometry"""
 
         self._ray_predictor = RayPredictor(self._beam.get_s0(),
                         self._gonio.get_rotation_axis(),
@@ -37,18 +37,18 @@ class ReflectionPredictor(object):
                         self._sweep_range)
 
     def predict(self, hkl):
-        '''Solve the prediction formula for the reflecting angle phi'''
+        """Solve the prediction formula for the reflecting angle phi"""
 
         return self._ray_predictor(hkl)
 
 class AnglePredictor_rstbx(object):
-    '''Predict the reflecting angles for a relp based on the current states
+    """Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model. This version is a wrapper
     for rstbx's C++ rotation_angles so is faster than the pure Python class
-    AnglePredictor_py'''
+    AnglePredictor_py"""
 
     def __init__(self, crystal, beam, gonio, dmin):
-        '''Construct by linking to instances of experimental model classes'''
+        """Construct by linking to instances of experimental model classes"""
 
         self._crystal = crystal
         self._beam = beam
@@ -61,8 +61,8 @@ class AnglePredictor_rstbx(object):
     # To convert from the Rossmann frame we use two of Graeme's
     # functions taken from use_case_xds_method/tdi.py
     def orthogonal_component(self, reference, changing):
-        '''Return unit vector corresponding to component of changing orthogonal to
-        reference.'''
+        """Return unit vector corresponding to component of changing orthogonal to
+        reference."""
 
         r = reference.normalize()
         c = changing.normalize()
@@ -71,11 +71,11 @@ class AnglePredictor_rstbx(object):
 
     def align_reference_frame(self, primary_axis, primary_target,
                               secondary_axis, secondary_target):
-        '''Compute a rotation matrix R: R x primary_axis = primary_target and
+        """Compute a rotation matrix R: R x primary_axis = primary_target and
         R x secondary_axis places the secondary_axis in the plane perpendicular
         to the primary_target, as close as possible to the secondary_target.
         Require: primary_target orthogonal to secondary_target, primary axis
-        not colinear with secondary axis.'''
+        not colinear with secondary axis."""
 
         from scitbx import matrix
 
@@ -131,8 +131,8 @@ class AnglePredictor_rstbx(object):
 
     def observed_indices_and_angles_from_angle_range(self, phi_start_rad,
             phi_end_rad, indices):
-        '''For a list of indices, return those indices that can be rotated into
-        diffracting position, along with the corresponding angles'''
+        """For a list of indices, return those indices that can be rotated into
+        diffracting position, along with the corresponding angles"""
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
@@ -156,7 +156,7 @@ class AnglePredictor_rstbx(object):
         return obs_indices_int, obs_angles
 
     def predict(self, hkl):
-        '''Solve the prediction formula for the reflecting angle phi'''
+        """Solve the prediction formula for the reflecting angle phi"""
 
         # calculate conversion matrix to rossmann frame.
         R_to_rossmann = self.align_reference_frame(
@@ -176,11 +176,11 @@ class AnglePredictor_rstbx(object):
         else: return None
 
 class AnglePredictor_py(object):
-    '''Predict the reflecting angles for a relp based on the current states
-    of models in the experimental geometry model.'''
+    """Predict the reflecting angles for a relp based on the current states
+    of models in the experimental geometry model."""
 
     def __init__(self, crystal, beam, gonio, dmin):
-        '''Construct by linking to instances of experimental model classes'''
+        """Construct by linking to instances of experimental model classes"""
 
         self._crystal = crystal
         self._beam = beam
@@ -191,7 +191,7 @@ class AnglePredictor_py(object):
 
 
     def _prepare(self):
-        '''Cache required quantities that are not dependent on hkl'''
+        """Cache required quantities that are not dependent on hkl"""
 
         # obtain current crystal setting matrix
         U = self._crystal.get_U()
@@ -210,7 +210,7 @@ class AnglePredictor_py(object):
         self._axis_dot_s0 = self._axis.dot(self._s0)
 
     def predict(self, hkl):
-        '''Solve the prediction formula for the reflecting angle phi'''
+        """Solve the prediction formula for the reflecting angle phi"""
 
         self._prepare()
 
@@ -278,8 +278,8 @@ class AnglePredictor_py(object):
 
     def observed_indices_and_angles_from_angle_range(self, phi_start_rad,
             phi_end_rad, indices):
-        '''For a list of indices, return those indices that can be rotated into
-        diffracting position, along with the corresponding angles'''
+        """For a list of indices, return those indices that can be rotated into
+        diffracting position, along with the corresponding angles"""
 
         self._prepare()
 
@@ -298,15 +298,16 @@ class AnglePredictor_py(object):
         return (obs_ind, obs_ang)
 
 class ImpactPredictor(object):
-    '''Predict observation position for supplied reflections and angles. This
-    class is just a wrapper for RSTBX's reflection_prediction class (in future
-    that class should be replaced). A wrapper is necessary because
+    """Predict observation position for supplied reflections and angles.
+    
+    This class is just a wrapper for RSTBX's reflection_prediction class (in
+    future that class should be replaced). A wrapper is necessary because
     reflection_prediction does not use the experimental models. This class
     keeps track of those models and instantiates a reflection_prediction object
     when required with the correct geometry.
 
     It is called ImpactPredictor, because ReflectionPredictor does not imply
-    that the hkl is actually observed, whereas ImpactPredictor does'''
+    that the hkl is actually observed, whereas ImpactPredictor does"""
 
     def __init__(self, detector, goniometer, beam, crystal):
         self._detector = detector

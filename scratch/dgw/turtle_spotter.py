@@ -14,16 +14,16 @@ from __future__ import division
 """A turtle diffraction spot viewer"""
 
 class ScriptRunner(object):
-    '''Class to run script.'''
+    """Class to run script."""
 
     def __init__(self, reflections_filename):
-        '''Setup the script.'''
+        """Setup the script."""
 
         # Filename data
         self.reflections_filename = reflections_filename
 
     def __call__(self):
-        '''Run the script.'''
+        """Run the script."""
         import cPickle as pickle
         from dials.model.data import ReflectionList # import dependency
         from dials.util.command_line import Command

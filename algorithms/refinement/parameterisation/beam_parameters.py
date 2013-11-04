@@ -6,11 +6,11 @@ from scitbx import matrix
 from dials.algorithms.refinement import dR_from_axis_and_angle
 
 class BeamParameterisationOrientation(ModelParameterisation):
-    '''Implementation of parameterisation for the beam (direction only)
+    """Implementation of parameterisation for the beam (direction only)
     with angles expressed in mrad.
 
     Pass in a goniometer (if present) to ensure consistent definition of the
-    beam rotation angles with respect to the spindle-beam plane.'''
+    beam rotation angles with respect to the spindle-beam plane."""
 
     def __init__(self, beam, goniometer = None):
 

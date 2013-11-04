@@ -21,21 +21,21 @@ from dials.algorithms.refinement.parameterisation import \
     PredictionParameterisation
 
 class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
-    '''
+    """
     Concrete class that inherits functionality of the
     PredictionParameterisationXY parent class and provides a detector space
     implementation of the get_gradients function.
 
     Untested for multiple sensor detectors.
-    '''
+    """
 
     def _get_gradients_core(self, h, s, phi, panel_id):
 
-        '''Calculate gradients of the prediction formula with respect to
+        """Calculate gradients of the prediction formula with respect to
         each of the parameters of the contained models, for reflection h
         that reflects at rotation angle phi with scattering vector s that
         intersects panel panel_id. That is, calculate dX/dp, dY/dp and
-        dphi/dp'''
+        dphi/dp"""
 
         ### Calculate various quantities of interest for this reflection
 
@@ -80,9 +80,8 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         return zip(dX_dp, dY_dp)
 
     def _detector_derivatives(self, dpv_dp, pv, panel_id):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the detector parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the detector parameterisations"""
 
         for idet, det in enumerate(self._detector_parameterisations):
             if idet == 0:
@@ -96,9 +95,8 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         return
 
     def _beam_derivatives(self, dpv_dp, r):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the beam parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the beam parameterisations"""
 
         for src in self._beam_parameterisations:
             ds0_dsrc_p = src.get_ds_dp()
@@ -109,9 +107,8 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         return
 
     def _xl_orientation_derivatives(self, dpv_dp, R, h):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal orientation parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal orientation parameterisations"""
 
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp()
@@ -125,9 +122,8 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         return
 
     def _xl_orientation_derivatives(self, dpv_dp, R, h):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal orientation parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal orientation parameterisations"""
 
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp()
@@ -141,9 +137,8 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         return
 
     def _xl_unit_cell_derivatives(self, dpv_dp, R, h):
-
-        '''helper function to extend the derivatives lists by
-        derivatives of the crystal unit cell parameterisations'''
+        """helper function to extend the derivatives lists by
+        derivatives of the crystal unit cell parameterisations"""
 
         for xluc in self._xl_unit_cell_parameterisations:
             dB_dxluc_p = xluc.get_ds_dp()
@@ -157,8 +152,8 @@ class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
         return
 
     def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, der):
-        '''helper function to calculate positional derivatives from dpv_dp using
-        the quotient rule'''
+        """helper function to calculate positional derivatives from dpv_dp using
+        the quotient rule"""
         u = pv[0]
         v = pv[1]
         w = pv[2]

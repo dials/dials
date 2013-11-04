@@ -29,8 +29,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameter
 from dials.model.experiment.crystal_model import Crystal
 
 class SmootherTest(object):
-
-    '''Test a bare parameter set with the smoother'''
+    """Test a bare parameter set with the smoother"""
     def __init__(self, plots = False):
 
         # make scatterplots
@@ -93,15 +92,13 @@ class TestOrientationModel(ScanVaryingCrystalOrientationParameterisation):
         self.compose()
 
     def compose(self):
-
-        '''override compose to pass in the requested t'''
+        """override compose to pass in the requested t"""
 
         ScanVaryingCrystalOrientationParameterisation.compose(self,
                 self.image_number)
 
     def get_state(self):
-
-        '''override get state to do so only at the requested t'''
+        """override get state to do so only at the requested t"""
 
         # ensure the state is updated by re-composing
         self.compose()
@@ -120,15 +117,13 @@ class TestUnitCellModel(ScanVaryingCrystalUnitCellParameterisation):
         self.compose()
 
     def compose(self):
-
-        '''override compose to pass in the requested t'''
+        """override compose to pass in the requested t"""
 
         ScanVaryingCrystalUnitCellParameterisation.compose(self,
                 self.image_number)
 
     def get_state(self):
-
-        '''override get state to do so only at the requested t'''
+        """override get state to do so only at the requested t"""
 
         # ensure the state is updated by re-composing
         self.compose()
@@ -162,11 +157,10 @@ class TestScanVaryingCrystalParameterisation(object):
                      random.gauss(0, 1.0),  deg = True)
 
 class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalParameterisation):
-
-    '''Test a ScanVaryingCrystalOrientationParameterisation'''
+    """Test a ScanVaryingCrystalOrientationParameterisation"""
 
     def test_num_intervals(self, nintervals):
-        '''Test a range of different numbers of intervals'''
+        """Test a range of different numbers of intervals"""
 
         # Parameterise the crystal with the image range and five intervals. Init
         # TestOrientationModel to explore gradients at image 50, but actually
@@ -259,9 +253,8 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
         print "OK"
 
     def test_random(self):
-
-        '''Test random initial orientations, random parameter shifts and random
-        times'''
+        """Test random initial orientations, random parameter shifts and random
+        times"""
 
         attempts = 100
         failures = 0
@@ -325,11 +318,10 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
         self.test_random()
 
 class TestScanVaryingCrystalUnitCellParameterisation(TestScanVaryingCrystalParameterisation):
-
-    '''Basic test of a ScanVaryingCrystalUnitCellParameterisation'''
+    """Basic test of a ScanVaryingCrystalUnitCellParameterisation"""
 
     def test_num_intervals(self, nintervals):
-        '''Test a range of different numbers of intervals'''
+        """Test a range of different numbers of intervals"""
 
 
         # Parameterise the crystal with the image range and five intervals. Init

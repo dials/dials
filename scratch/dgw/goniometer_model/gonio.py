@@ -2,7 +2,7 @@ from __future__ import division
 from scitbx import matrix
 
 class goniometer:
-    '''Dumb goniometer: merely a unit rotation axis'''
+    """Dumb goniometer: merely a unit rotation axis"""
 
     def __init__(self, axis):
 

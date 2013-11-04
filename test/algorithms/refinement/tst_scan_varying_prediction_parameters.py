@@ -52,7 +52,7 @@ from dials.algorithms.refinement import random_param_shift, print_grads
 # Functions required for finite difference calculations
 
 def get_state(det, hkl, UB, angle, reflection_predictor):
-    '''reflection prediction for the current state of the models'''
+    """reflection prediction for the current state of the models"""
 
     # update reflection_predictor with latest geometry
     reflection_predictor.update()
@@ -71,13 +71,13 @@ def get_state(det, hkl, UB, angle, reflection_predictor):
 
 def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
                      deltas):
-    '''Calculate centered finite difference gradients for each of the
+    """Calculate centered finite difference gradients for each of the
     parameters of the prediction parameterisation object, for reflection
     hkl at angle phi.
 
     "deltas" must be a sequence of the same length as the parameter list,
     and contains the step size for the difference calculations for each
-    parameter.'''
+    parameter."""
 
     gon = pred_param._gonio
     src = pred_param._beam

@@ -8,7 +8,7 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-'''This script has the single purpose of aligning a detector from a multipanel
+"""This script has the single purpose of aligning a detector from a multipanel
 sweep with a single panel detector, for a refinement test.
 
 The multipanel detector has been created by the FormatCBFMiniPilatusSplit6M
@@ -21,7 +21,7 @@ detector.
 
 The origin and fast, slow directions of the single panel detector are hard-coded
 here. See dials_regression/refinement_test_data/i04-weak-data for the multi-
-panel refinement test.'''
+panel refinement test."""
 
 from __future__ import division
 import sys

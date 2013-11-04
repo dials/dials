@@ -10,7 +10,7 @@
 from __future__ import division
 
 class Parameter(object):
-    '''A class to help formalise what a parameter is. A Parameter must
+    """A class to help formalise what a parameter is. A Parameter must
     have a numerical value (either a length or an angle). It may also
     have a vector axis which provides context for what that number
     means.
@@ -22,7 +22,7 @@ class Parameter(object):
     A slot is also provided for the estimated standard deviation of the
     value, which may be of use in future. Currently, whenever the
     parameter value is set, the esd is reset to None. So this must be
-    set separately, and after the parameter value if it is required'''
+    set separately, and after the parameter value if it is required"""
 
     def __init__(self, value, axis = None, ptype = None, name = "Parameter"):
         self._value = value
@@ -94,7 +94,7 @@ class Parameter(object):
 
 
 class ModelParameterisation(object):
-    '''An abstract interface that model elements, such as the detector
+    """An abstract interface that model elements, such as the detector
     model, the source model, etc. should adhere to in order to compose
     their state from their parameters, access their parameters, and
     derivatives of their state wrt their parameters, taking into account
@@ -104,7 +104,7 @@ class ModelParameterisation(object):
     most obvious example is a detector with multiple panels. Each panel
     has its own matrix describing its geometrical 'state'. One set of
     parameters is used to compose all states and calculate all
-    derivatives of these states.'''
+    derivatives of these states."""
 
     def __init__(self, models, initial_state, param_list,
                  is_multi_state=False):
@@ -122,29 +122,29 @@ class ModelParameterisation(object):
     #    return len(self._param)
 
     def num_free(self):
-        '''the number of free parameters'''
+        """the number of free parameters"""
 
         return sum(not x.get_fixed() for x in self._param)
 
     def num_total(self):
-        '''the total number of parameters, both fixed and free'''
+        """the total number of parameters, both fixed and free"""
         return self._total_len
 
     def compose(self):
-        '''compose the current model state from its initial state and its
+        """compose the current model state from its initial state and its
         parameter list. Also calculate the derivatives of the state wrt
         each parameter in the list. Should be called automatically once
-        parameters are updated, e.g. at the end of each refinement cycle'''
+        parameters are updated, e.g. at the end of each refinement cycle"""
 
         raise RuntimeError('implement me')
 
     def get_params(self, only_free = True):
-        '''Return the internal list of parameters. It is intended that this
+        """Return the internal list of parameters. It is intended that this
         function be used for reporting parameter attributes, not for modifying
         them.
 
         If only_free, any fixed parameters are filtered from the returned list.
-        Otherwise all parameters are returned'''
+        Otherwise all parameters are returned"""
 
         if only_free:
 
@@ -154,11 +154,11 @@ class ModelParameterisation(object):
             return [x for x in self._param]
 
     def get_param_vals(self, only_free = True):
-        '''export the values of the internal list of parameters as a
+        """export the values of the internal list of parameters as a
         sequence of floats.
 
         If only_free, the values of fixed parameters are filtered from the
-        returned list. Otherwise all parameter values are returned'''
+        returned list. Otherwise all parameter values are returned"""
 
         if only_free:
 
@@ -168,10 +168,10 @@ class ModelParameterisation(object):
             return [x.value for x in self._param]
 
     def get_param_names(self, only_free = True):
-        '''export the names of the internal list of parameters
+        """export the names of the internal list of parameters
 
         If only_free, the names of fixed parameters are filtered from the
-        returned list. Otherwise all parameter names are returned'''
+        returned list. Otherwise all parameter names are returned"""
 
         # FIXME combine functionality with get_param_vals by returning a named, ordered
         # list
@@ -184,11 +184,11 @@ class ModelParameterisation(object):
             return [x.name for x in self._param]
 
     def set_param_vals(self, vals):
-        '''set the values of the internal list of parameters from a
+        """set the values of the internal list of parameters from a
         sequence of floats.
 
         Only free parameters can be set, therefore the length of vals must equal
-        the value of num_free'''
+        the value of num_free"""
 
         assert(len(vals) == self.num_free())
 
@@ -203,13 +203,13 @@ class ModelParameterisation(object):
         return
 
     def get_fixed(self):
-        '''return the list determining whether each parameter is fixed or not'''
+        """return the list determining whether each parameter is fixed or not"""
 
         return [p.get_fixed() for p in self._param]
 
 
     def set_fixed(self, fix):
-        '''set parameters to be fixed or free'''
+        """set parameters to be fixed or free"""
 
         assert(len(fix) == len(self._param))
 
@@ -220,12 +220,12 @@ class ModelParameterisation(object):
         return
 
     def get_state(self, multi_state_elt=None):
-        '''return the current state of the model under parameterisation.
+        """return the current state of the model under parameterisation.
         This is required, for example, by the calculation of finite
         difference gradients.
 
         For a multi-state parameterisation, the requested state is
-        selected passing an integer array index in multi_state_elt'''
+        selected passing an integer array index in multi_state_elt"""
 
         # To be implemented by the derived class, where it is clear what aspect
         # of the model under parameterisation is considered its state. The
@@ -234,7 +234,7 @@ class ModelParameterisation(object):
         raise RuntimeError('implement me')
 
     def get_ds_dp(self, only_free = True, multi_state_elt=None):
-        '''get a list of derivatives of the state wrt each parameter, as
+        """get a list of derivatives of the state wrt each parameter, as
         a list in the same order as the internal list of parameters.
 
         If only_free, the derivatives with respect to fixed parameters
@@ -243,7 +243,7 @@ class ModelParameterisation(object):
         parameters.
 
         For a multi-state parameterisation, the requested state is
-        selected passing an integer array index in multi_state_elt'''
+        selected passing an integer array index in multi_state_elt"""
 
         if only_free:
             grads = [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) \

@@ -14,12 +14,12 @@ from math import exp
 from scitbx import matrix
 
 class ScanVaryingParameterSet(Parameter):
-    '''Testing a class for a scan-varying parameter, in which values at rotation
+    """Testing a class for a scan-varying parameter, in which values at rotation
     angle phi may be derived using smoothed interpolation between checkpoint
     values stored here. Externally, this is presented as a set of parameters.
 
     num_samples is the number of checkpoints. Other arguments are as Parameter.
-    '''
+    """
 
     def __init__(self, value, num_samples = 5, axis = None, ptype = None,
                  name = "ScanVaryingParameterSet"):
@@ -78,7 +78,7 @@ class ScanVaryingParameterSet(Parameter):
         return msg
 
 class GaussianSmoother(object):
-    '''A Gaussian smoother for ScanVaryingModelParameterisations'''
+    """A Gaussian smoother for ScanVaryingModelParameterisations"""
 
     # Based largely on class SmoothedValue from Aimless.
 
@@ -112,14 +112,13 @@ class GaussianSmoother(object):
         self.set_smoothing(3, -1.0)
 
     def set_smoothing(self, num_average, sigma):
-
-        '''Set smoothing values:
+        """Set smoothing values:
 
         naverage: number of points included in each calculation
         sigma: width of the Gaussian used for smoothing.
 
         If sigma < 0, set to "optimum" (!) (or at least suitable) value from
-        num_average '''
+        num_average """
 
         self._naverage = num_average
         if self._naverage > self._nvalues:
@@ -204,13 +203,13 @@ class GaussianSmoother(object):
 
 
 class ScanVaryingModelParameterisation(ModelParameterisation):
-    '''Extending ModelParameterisation to deal with ScanVaryingParameterSets.
+    """Extending ModelParameterisation to deal with ScanVaryingParameterSets.
 
     For simplicity at this stage it is decreed that a
     ScanVaryingModelParameterisation consists only of ScanVaryingParameterSets.
     There is no combination with normal Parameters. This could be changed later,
     but there may be no reason to do so, hence starting with this simpler
-    design'''
+    design"""
 
     # The initial state is here equivalent to the initial state of the
     # time static version of the parameterisation, as it is assumed that we
@@ -235,27 +234,27 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         return
 
     def num_free(self):
-        '''the number of free parameters'''
+        """the number of free parameters"""
         return sum(not x.get_fixed() for x in self._param) * self._set_len
 
     # def num_total(self): inherited unchanged from ModelParameterisation
 
     def compose(self, t):
-        '''compose the model state at image number t from its initial state and
+        """compose the model state at image number t from its initial state and
         its parameter list. Also calculate the derivatives of the state wrt
         each parameter in the list.
 
         Unlike ModelParameterisation, does not automatically update the actual
-        model class. This should be done once refinement is complete.'''
+        model class. This should be done once refinement is complete."""
 
         raise RuntimeError('implement me')
 
     def get_param_vals(self, only_free = True):
-        '''export the values of the internal list of parameters as a
+        """export the values of the internal list of parameters as a
         sequence of floats.
 
         If only_free, the values of fixed parameters are filtered from the
-        returned list. Otherwise all parameter values are returned'''
+        returned list. Otherwise all parameter values are returned"""
 
         if only_free:
             return [x for e in self._param \
@@ -265,10 +264,10 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
             return [x for e in self._param for x in e.value]
 
     def get_param_names(self, only_free = True):
-        '''export the names of the internal list of parameters
+        """export the names of the internal list of parameters
 
         If only_free, the names of fixed parameters are filtered from the
-        returned list. Otherwise all parameter names are returned'''
+        returned list. Otherwise all parameter names are returned"""
 
         # FIXME combine functionality with get_param_vals by returning a named, ordered
         # list?
@@ -280,14 +279,14 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
             return [x for e in self._param for x in e.name]
 
     def set_param_vals(self, vals):
-        '''set the values of the internal list of parameters from a
+        """set the values of the internal list of parameters from a
         sequence of floats.
 
         First break the sequence into sub sequences of the same length
         as the _set_len.
 
         Only free parameter sets can have values assigned, therefore the
-        length of vals must equal the value of num_free'''
+        length of vals must equal the value of num_free"""
 
         assert(len(vals) == self.num_free())
         i = 0
@@ -309,7 +308,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     #def get_state(self): inherited unchanged from ModelParameterisation
 
     def get_ds_dp(self, only_free = True):
-        '''get a list of derivatives of the state wrt each parameter, as
+        """get a list of derivatives of the state wrt each parameter, as
         a list in the same order as the internal list of parameters. Requires
         compose to be called first at scan coordinate 't' so that each
         scan-dependent parameter is evaluated at coordinate t, corresponding to
@@ -318,7 +317,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
         If only_free, the derivatives with respect to fixed parameters are
         omitted from the returned list. Otherwise a list for all parameters is
-        returned, with values of 0.0 for the fixed parameters'''
+        returned, with values of 0.0 for the fixed parameters"""
 
         if only_free:
 
@@ -331,17 +330,17 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
                     for ds_dp in row]
 
     def get_smoothed_parameter_value(self, t, pset):
-        '''export the smoothed value of a parameter set at image number 't'
-        using the smoother.'''
+        """export the smoothed value of a parameter set at image number 't'
+        using the smoother."""
 
         return self._smoother.value_weight(t, pset)[0]
 
     #def get_name_stems_of_parameter_sets(self, only_free = True):
-    #    '''export the names of the internal list of parameter sets, which are
+    #    """export the names of the internal list of parameter sets, which are
     #    the name stems of the individual parameter names
     #
     #    If only_free, the names of fixed parameter sets are filtered from the
-    #    returned list. Otherwise all parameter set names are returned'''
+    #    returned list. Otherwise all parameter set names are returned"""
     #
     #    if only_free:
     #        return [x.name_stem for e in self._param if not e.get_fixed()]

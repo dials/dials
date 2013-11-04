@@ -9,17 +9,17 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-'''This script calculates and sets the intersections of a set of reflections
+"""This script calculates and sets the intersections of a set of reflections
 with a detector. The reflections must have valid beam_vectors already set!
-Reflections whose beam_vectors are (0,0,0) are ignored.'''
+Reflections whose beam_vectors are (0,0,0) are ignored."""
 
 from __future__ import division
 
 class ScriptRunner(object):
-    '''Class to run script.'''
+    """Class to run script."""
 
     def __init__(self, options, sweep_filename, reflections_filename):
-        '''Setup the script.'''
+        """Setup the script."""
 
         # Filename data
         self.output_filename = options.output_file
@@ -27,7 +27,7 @@ class ScriptRunner(object):
         self.reflections_filename = reflections_filename
 
     def __call__(self):
-        '''Run the script.'''
+        """Run the script."""
         from dials.model.serialize import load, dump
         from dials.model.data import ReflectionList
         import cPickle as pickle

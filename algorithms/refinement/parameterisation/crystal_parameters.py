@@ -18,8 +18,8 @@ from dials.algorithms.refinement \
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 
 class CrystalOrientationParameterisation(ModelParameterisation):
-    '''A work-in-progress parameterisation for crystal orientation, with angles
-    expressed in mrad'''
+    """Parameterisation for crystal orientation, with angles expressed in
+    mrad"""
 
     def __init__(self, crystal):
 
@@ -52,7 +52,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
         self.compose()
 
     def compose(self):
-        '''calculate state and derivatives'''
+        """calculate state and derivatives"""
 
         # Extract orientation from the initial state
         U0 = self._initial_state
@@ -96,7 +96,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
         return matrix.sqr(self._models[0].get_U())
 
 class CrystalUnitCellParameterisation(ModelParameterisation):
-    '''A work-in-progress parameterisation for unit cell'''
+    """A work-in-progress parameterisation for unit cell"""
 
     def __init__(self, crystal):
 
@@ -133,7 +133,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         self.compose()
 
     def compose(self):
-        '''calculate state and derivatives'''
+        """calculate state and derivatives"""
 
         # obtain parameters on natural scale
         p_vals = [p.value / 1.e5 for p in self._param]

@@ -59,7 +59,7 @@ mycrystal = models.crystal
 mybeam = models.beam
 
 class DummyPredictionParameterisation(object):
-    '''Provides get_UB(image_number) for scan-varying prediction'''
+    """Provides get_UB(image_number) for scan-varying prediction"""
 
     def __init__(self, crystal):
 

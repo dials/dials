@@ -27,8 +27,8 @@ from dials.algorithms.refinement.parameterisation.detector_parameters \
             DetectorParameterisationMultiPanel)
 
 def random_panel(lim = (0, 50)):
-    '''For testing, return a square panel with a randomised position
-    and orientation'''
+    """For testing, return a square panel with a randomised position
+    and orientation"""
 
     # start with a randomised origin vector
     o = matrix.col((random.uniform(-200, 200),

@@ -16,11 +16,11 @@ import libtbx
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
 
 class Journal(object):
-    '''Container in which to store information about refinement history'''
+    """Container in which to store information about refinement history"""
     pass
 
 class Refinery(object):
-    '''Abstract interface for Refinery objects'''
+    """Abstract interface for Refinery objects"""
 
     # NOTES. A Refinery is initialised with a Target function. The target
     # function already contains a ReflectionManager (which holds the data) so
@@ -85,7 +85,7 @@ class Refinery(object):
         return self.history._step
 
     def prepare_for_step(self):
-        '''Update the parameterisation and prepare the target function'''
+        """Update the parameterisation and prepare the target function"""
 
         # set current parameter values
         self._parameters.set_param_vals(self.x)
@@ -94,7 +94,7 @@ class Refinery(object):
         self._target.predict()
 
     def update_journal(self):
-        '''Append latest step information to the journal attributes'''
+        """Append latest step information to the journal attributes"""
 
         # add step quantities to journal
         self.history._step += 1
@@ -106,7 +106,7 @@ class Refinery(object):
             self.history.gradient.append(self._g)
 
     def test_for_termination(self):
-        '''Return True if refinement should be terminated'''
+        """Return True if refinement should be terminated"""
 
         # Basic version delegate to the Target class. Derived classes may
         # implement other termination criteria
@@ -115,7 +115,7 @@ class Refinery(object):
         return self._target_achieved
 
     def test_rmsd_convergence(self):
-        '''Test for convergence of RMSDs'''
+        """Test for convergence of RMSDs"""
 
         # http://en.wikipedia.org/wiki/
         # Non-linear_least_squares#Convergence_criteria
@@ -130,8 +130,8 @@ class Refinery(object):
         return all(tests)
 
     def test_objective_increasing(self):
-        '''Test for an increase in the objective value between steps
-        (usually a bad sign)'''
+        """Test for an increase in the objective value between steps
+        (usually a bad sign)"""
 
         try:
             l1 = self.history.objective[-1]
@@ -142,7 +142,7 @@ class Refinery(object):
         return l1 > l2
 
     def print_step(self):
-        '''print information about the current step'''
+        """print information about the current step"""
 
         print "Function evaluation"
         msg = "  Params: " + "%.5f " * len(self._parameters)
@@ -152,7 +152,7 @@ class Refinery(object):
         print msg % tuple(self._g)
 
     def print_table(self):
-        '''print useful output in the form of a space-separated table'''
+        """print useful output in the form of a space-separated table"""
 
         print
         print "Refinement steps"
@@ -172,17 +172,17 @@ class Refinery(object):
                 "%.5f " * len(self._parameters)) % dat
 
     def run(self):
-        '''
+        """
         To be implemented by derived class. It is expected that each step of
         refinement be preceeded by a call to prepare_for_step and followed by
         calls to update_journal and test_for_termination (in that order).
-        '''
+        """
 
         # Specify a minimizer and its parameters, and run
         raise RuntimeError("implement me")
 
 class AdaptLbfgs(Refinery):
-    '''Adapt Refinery for L-BFGS minimiser'''
+    """Adapt Refinery for L-BFGS minimiser"""
 
     def __init__(self, *args, **kwargs):
 
@@ -203,10 +203,10 @@ class AdaptLbfgs(Refinery):
         return self._f, flex.double(self._g)
 
     def callback_after_step(self, minimizer):
-        '''
+        """
         Do journalling, evaluate rmsds and return True if the target is
         reached to terminate the refinement.
-        '''
+        """
 
         self.update_journal()
         if self._verbosity > 0:
@@ -215,7 +215,7 @@ class AdaptLbfgs(Refinery):
         return self.test_for_termination()
 
 class SimpleLBFGS(AdaptLbfgs):
-    '''Refinery implementation, using cctbx LBFGS with basic settings'''
+    """Refinery implementation, using cctbx LBFGS with basic settings"""
 
     def run(self):
 
@@ -231,7 +231,7 @@ class SimpleLBFGS(AdaptLbfgs):
         return
 
 class LBFGScurvs(AdaptLbfgs):
-    '''Refinery implementation using cctbx LBFGS with curvatures'''
+    """Refinery implementation using cctbx LBFGS with curvatures"""
 
     def run(self):
 
@@ -271,7 +271,7 @@ class AdaptLstbx(
     Refinery,
     normal_eqns.non_linear_ls,
     normal_eqns.non_linear_ls_mixin):
-    '''Adapt Refinery for lstbx'''
+    """Adapt Refinery for lstbx"""
 
     def __init__(self, target, prediction_parameterisation, log=None,
                  verbosity = 0, track_step = False,
@@ -328,7 +328,7 @@ class AdaptLstbx(
         self.history._step -= 1
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
-    '''Refinery implementation, using lstbx Gauss Newton iterations'''
+    """Refinery implementation, using lstbx Gauss Newton iterations"""
 
     # defaults that may be overridden
     gradient_threshold = 1.e-10

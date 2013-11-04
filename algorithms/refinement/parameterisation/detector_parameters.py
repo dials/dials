@@ -16,8 +16,8 @@ from model_parameters import Parameter, ModelParameterisation
 from dials.algorithms.refinement import dR_from_axis_and_angle
 
 class DetectorParameterisationSinglePanel(ModelParameterisation):
-    '''implementation of parameterisation for a single abstract panel
-    plane, with angles expressed in mrad'''
+    """Parameterisation for a single abstract panel
+    plane, with angles expressed in mrad"""
 
     def __init__(self, detector):
 
@@ -389,8 +389,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
         return matrix.sqr(panel.get_d_matrix())
 
 class DetectorParameterisationMultiPanel(ModelParameterisation):
-    '''Experimental implementation of parameterisation for a multiple
-    panel detector, treated as a single rigid block.'''
+    """Experimental implementation of parameterisation for a multiple
+    panel detector, treated as a single rigid block."""
 
     def __init__(self, detector, beam):
 

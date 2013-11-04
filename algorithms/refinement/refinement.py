@@ -12,8 +12,8 @@ from dials_refinement_helpers_ext import *
 
 
 def dR_from_axis_and_angle(axis, angle, deg=False):
-    '''return the first derivative of a rotation matrix specified by its
-    axis and angle'''
+    """return the first derivative of a rotation matrix specified by its
+    axis and angle"""
 
     # NB it is inefficient to do this separately from the calculation of
     # the rotation matrix itself, but it seems the Python interface to
@@ -43,7 +43,7 @@ def dR_from_axis_and_angle(axis, angle, deg=False):
                     sa * axis[2] * axis[2] - sa)))
 
 def random_param_shift(vals, sigmas):
-    '''Add a random (normal) shift to a parameter set, for testing'''
+    """Add a random (normal) shift to a parameter set, for testing"""
 
     assert len(vals) == len(sigmas)
     shifts = [random.gauss(0, sd) for sd in sigmas]
@@ -52,7 +52,7 @@ def random_param_shift(vals, sigmas):
     return newvals
 
 def get_fd_gradients(mp, deltas, multi_state_elt=None):
-    '''Calculate centered finite difference gradients for each of the
+    """Calculate centered finite difference gradients for each of the
     parameters of the model parameterisation mp.
 
     "deltas" must be a sequence of the same length as the parameter list, and
@@ -60,7 +60,7 @@ def get_fd_gradients(mp, deltas, multi_state_elt=None):
 
     "multi_state_elt" selects a particular state for use when mp is a multi-
     state parameterisation.
-    '''
+    """
 
     p_vals = mp.get_param_vals()
     assert len(deltas) == len(p_vals)

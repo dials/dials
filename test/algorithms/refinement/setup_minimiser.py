@@ -20,7 +20,7 @@ from dials.algorithms.refinement.engine import SimpleLBFGS, \
     LBFGScurvs, GaussNewtonIterations
 
 class Extract(object):
-    '''Parse and extract minimiser setup from PHIL'''
+    """Parse and extract minimiser setup from PHIL"""
 
     def __init__(self, master_phil, target, prediction_parameterisation,
         local_overrides = "", cmdline_args = None, verbose=True):

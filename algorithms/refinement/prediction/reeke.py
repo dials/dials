@@ -21,8 +21,8 @@ from cctbx.sgtbx import space_group, space_group_symbols
 from cctbx.uctbx import unit_cell
 
 def solve_quad(a, b, c):
-    '''Robust solution, for real roots only, of a quadratic in the form
-    (ax^2 + bx + c).'''
+    """Robust solution, for real roots only, of a quadratic in the form
+    (ax^2 + bx + c)."""
 
     discriminant = b**2 - 4 * a * c
 
@@ -41,7 +41,7 @@ def solve_quad(a, b, c):
         return [None]
 
 class reeke_model:
-    '''Model and methods for the Reeke algorithm'''
+    """Model and methods for the Reeke algorithm"""
 
     def __init__(self, ub_beg, ub_end, axis, s0, dmin, margin = 3):
 
@@ -166,17 +166,17 @@ class reeke_model:
         return self._axis
 
     def get_all_p_limits(self):
-        '''Get both the Ewald and limiting sphere limits for planes of p.
-        This is useful for plotting the planes, for example.'''
+        """Get both the Ewald and limiting sphere limits for planes of p.
+        This is useful for plotting the planes, for example."""
 
         return (self._ewald_p_lim_beg, self._ewald_p_lim_end, \
                 self._res_p_lim_beg, self._res_p_lim_end)
 
     def _permute_axes(self, ub):
-        '''Find permutation of the columns of an orientation matrix so that
+        """Find permutation of the columns of an orientation matrix so that
         column p is closest to the source direction, column r is
         closest of q and r to the spindle axis and column q is the remaining
-        direction.'''
+        direction."""
 
         # Extract the reciprocal lattice directions from the columns of UB
         rl_dirs = [matrix.col(v).normalize() for v in \
@@ -215,7 +215,7 @@ class reeke_model:
 
 
     def _p_limits(self):
-        '''
+        """
         Calculate the values of p at which planes of constant p are tangential
         to the Ewald sphere, and values of p at which planes of constant p touch
         the circle of intersection between the Ewald and resolution limiting
@@ -224,7 +224,7 @@ class reeke_model:
         Note p is the reciprocal cell axis given by the first column of the
         permuted orientation matrix. Set the limits as attributes and return a
         single set of overall limits.
-        '''
+        """
 
         # Calculate unit vectors normal to planes of constant p, ensuring
         # they point in the direction of increasing p.
@@ -330,11 +330,11 @@ class reeke_model:
         return p_lim
 
     def _q_limits(self, p):
-        '''Calculate the values of q at which lines of constant p, q are
+        """Calculate the values of q at which lines of constant p, q are
         tangential to the circle intersecting the Ewald sphere at plane p,
         and values of q at which lines of constant p, q are tangential to
         the circle intersecting the resolution limiting sphere at plane p.i
-        Return the appropriate overall limits.'''
+        Return the appropriate overall limits."""
 
         # First the resolution limits. Set up the quadratic to solve
         a = self._cp[6]
@@ -380,9 +380,9 @@ class reeke_model:
         return q_lim
 
     def _r_limits(self, p, q, cq):
-        '''Calculate the values of r at which lines of constant p, q intersect
+        """Calculate the values of r at which lines of constant p, q intersect
         the resolution limiting and the Ewald spheres, and return the
-        appropriate overall limits'''
+        appropriate overall limits"""
 
         # First the resolution limits. Set up the quadratic to solve
         a = self._cp[0]
@@ -463,10 +463,10 @@ class reeke_model:
         return [tuple(l1), tuple(l2)]
 
     def generate_indices(self):
-        '''Determine looping limits for indices h, k and l using the Reeke
+        """Determine looping limits for indices h, k and l using the Reeke
         algorithm. This is the top level method for this module. All other
         methods are (probably) called by this, and therefore may as well be
-        private.'''
+        private."""
 
         # The outer loop is between limits for the axis most closely parallel,
         # or antiparallel, to the X-ray beam, which is called 'p'.
@@ -509,9 +509,9 @@ class reeke_model:
         return hkl
 
 def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
-    '''Write an R script and an associated data file
+    """Write an R script and an associated data file
     for visualisation of generated indices between phi_beg and phi_end,
-    using R and the rgl add-on package.'''
+    using R and the rgl add-on package."""
 
     # Sorry, this is ugly. I don't know matplotlib yet.
 
@@ -602,10 +602,10 @@ def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):
     return
 
 def reeke_model_for_use_case(phi_beg, phi_end, margin):
-    '''Construct a reeke_model for the geometry of the Use Case Thaumatin
+    """Construct a reeke_model for the geometry of the Use Case Thaumatin
     dataset, taken from the XDS XPARM. The values are hard-
     coded here so that this module does not rely on the location of that
-    file.'''
+    file."""
 
     axis = matrix.col([0.0, 1.0, 0.0])
 
@@ -627,8 +627,8 @@ def reeke_model_for_use_case(phi_beg, phi_end, margin):
     return reeke_model(ub_beg, ub_end, axis, s0, dmin, margin)
 
 def regression_test():
-    '''Perform a regression test by comparing to indices generating
-    by the brute force method used in the Use Case.'''
+    """Perform a regression test by comparing to indices generating
+    by the brute force method used in the Use Case."""
 
     # cubic, 50A cell, 1A radiation, 1 deg osciillation, everything ideal
 
