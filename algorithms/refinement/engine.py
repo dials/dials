@@ -209,7 +209,7 @@ class AdaptLbfgs(Refinery):
         '''
 
         self.update_journal()
-        if self._verbosity > 0.:
+        if self._verbosity > 0:
             print "Step", self.history._step
 
         return self.test_for_termination()
@@ -226,7 +226,7 @@ class SimpleLBFGS(AdaptLbfgs):
             log=ref_log)
         if self._log: ref_log.close()
 
-        if self._verbosity > 0.: self.print_table()
+        if self._verbosity > 0: self.print_table()
 
         return
 
@@ -243,7 +243,7 @@ class LBFGScurvs(AdaptLbfgs):
             log=ref_log)
         if self._log: ref_log.close()
 
-        if self._verbosity > 0.: self.print_table()
+        if self._verbosity > 0: self.print_table()
 
         return
 
@@ -380,7 +380,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
             # standard journalling
             self.update_journal()
-            if self._verbosity > 0.: print "Step", self.history._step
+            if self._verbosity > 0: print "Step", self.history._step
             if self._verbosity > 1: self.print_step()
 
             # extra journalling post solve
@@ -419,7 +419,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             self.n_iterations += 1
 
         # print output table
-        if self._verbosity > 0.:
+        if self._verbosity > 0:
             self.print_table()
             print reason_for_termination
 
