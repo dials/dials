@@ -96,6 +96,21 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         e_X_r = self._axis.cross(r)
         e_r_s0 = (e_X_r).dot(self._s0)
 
+        # Note that e_r_s0 -> 0 when the rotation axis, beam vector and
+        # relp are coplanar. This occurs when a reflection just touches
+        # the Ewald sphere.
+        #
+        # There is a relationship between e_r_s0 and zeta_factor.
+        # Uncommenting the code below shows that
+        # s0.(e X r) = zeta * |s X s0|
+
+        #from dials.algorithms.reflection_basis import zeta_factor
+        #from libtbx.test_utils import approx_equal
+        #z = zeta_factor(self._axis, self._s0, s)
+        #ss0 = (s.cross(self._s0)).length()
+        #assert approx_equal(e_r_s0, z * ss0)
+
+        # catch small values of e_r_s0
         try:
             assert abs(e_r_s0) > 1.e-6
         except AssertionError as e:
@@ -111,11 +126,6 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
             vecn = self._s0.cross(self._axis).normalize()
             print s.accute_angle(vecn)
             raise e
-        # FIXME This is potentially dangerous! e_r_s0 -> 0 when the rotation
-        # axis, beam vector and relp are coplanar. This occurs when a reflection
-        # just touches the Ewald sphere. The derivatives of phi go to infinity
-        # because any change moves it off this one position of grazing
-        # incidence. How best to deal with this?
 
         ### Work through the parameterisations, calculating their contributions
         ### to derivatives d[pv]/dp and d[phi]/dp
