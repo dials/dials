@@ -143,7 +143,7 @@ class Target(object):
         '''calculate the target function value and its gradients'''
 
         # To be implemented by a derived class
-        raise RuntimeError, 'implement me'
+        raise RuntimeError('implement me')
 
     def achieved(self):
         '''return True to terminate the refinement. To be implemented by
@@ -518,7 +518,7 @@ class ReflectionManager(object):
             msg = ('Remaining number of reflections = {0}, which is below '+ \
                 'the configured limit for creating this reflection ' + \
                 'manager').format(len(self._obs_pred_pairs))
-            raise RuntimeError, msg
+            raise RuntimeError(msg)
 
     def _spindle_beam_plane_normal(self):
         '''return a unit vector that when placed at the origin of reciprocal
@@ -639,7 +639,7 @@ class ReflectionManager(object):
             msg = ('Remaining number of reflections = {0}, which is below '+ \
                 'the configured limit for this reflection manager').format(
                     len(self._obs_pred_pairs))
-            raise RuntimeError, msg
+            raise RuntimeError(msg)
 
         if self._verbosity > 1:
             print len(self._obs_pred_pairs), "reflections remain in the manager after " + \

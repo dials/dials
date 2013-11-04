@@ -401,7 +401,7 @@ class ParameterisationFactory(object):
 
         # Detector
         if detector_options.panels not in ["automatic", "single", "multiple"]:
-            raise RuntimeError, "detector parameterisation type not recognised"
+            raise RuntimeError("detector parameterisation type not recognised")
 
         self._detector_par_options = detector_options.panels
         self._detector_fix = detector_options.fix
@@ -417,8 +417,8 @@ class ParameterisationFactory(object):
                 DetectorSpaceXYPredictionParameterisation
             pep = DetectorSpaceXYPredictionParameterisation
         else:
-            raise RuntimeError, "Prediction equation type " + \
-                self._prediction_par_options + " not recognised"
+            raise RuntimeError("Prediction equation type " +
+                self._prediction_par_options + " not recognised")
 
         self.prediction_par = pep
 
@@ -586,8 +586,8 @@ class TargetFactory(object):
             from dials.algorithms.refinement.single_shots.target import \
                 LeastSquaresXYResidualWithRmsdCutoff as targ
         else:
-            raise RuntimeError, "Target type " + options.implementation + \
-                                " not recognised"
+            raise RuntimeError("Target type " + options.implementation +
+                                " not recognised")
 
         self._frac_binsize_cutoff = options.bin_size_fraction
         if options.rmsd_cutoff == "fraction_of_bin_size":
@@ -595,8 +595,8 @@ class TargetFactory(object):
         elif options.rmsd_cutoff == "absolute":
             self._absolute_cutoffs = options.absolute_cutoffs
         else:
-            raise RuntimeError, "Target function rmsd_cutoff option" + \
-                options.rmsd_cutoff + " not recognised"
+            raise RuntimeError("Target function rmsd_cutoff option" +
+                options.rmsd_cutoff + " not recognised")
 
         # Reflection prediction
         from dials.algorithms.refinement.prediction import \

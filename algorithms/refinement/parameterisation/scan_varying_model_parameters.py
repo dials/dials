@@ -128,8 +128,7 @@ class GaussianSmoother(object):
         self._sigma = sigma
 
         if self._naverage < 1 or self._naverage > 5:
-            msg = "num_average must be between 1 & 5"
-            raise ValueError, msg
+            raise ValueError("num_average must be between 1 & 5")
 
         if sigma < 0.0:
             #Default values 0.65, 0.7, 0.75, 0.8 for nav = 2,3,4,5
@@ -249,7 +248,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         Unlike ModelParameterisation, does not automatically update the actual
         model class. This should be done once refinement is complete.'''
 
-        raise RuntimeError, 'implement me'
+        raise RuntimeError('implement me')
 
     def get_param_vals(self, only_free = True):
         '''export the values of the internal list of parameters as a

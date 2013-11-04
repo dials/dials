@@ -179,7 +179,7 @@ class Refinery(object):
         '''
 
         # Specify a minimizer and its parameters, and run
-        raise RuntimeError, "implement me"
+        raise RuntimeError("implement me")
 
 class AdaptLbfgs(Refinery):
     '''Adapt Refinery for L-BFGS minimiser'''
