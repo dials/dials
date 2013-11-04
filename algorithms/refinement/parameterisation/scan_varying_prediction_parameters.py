@@ -63,18 +63,6 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
         return self._get_gradients_core(h, s, phi, panel_id)
 
-    #def get_multi_gradients(self, match_list):
-    #    """
-    #    Adds passing the observed image number to the gradient calc
-    #    for scan-varying parameters
-    #    """
-    #
-    #    self.prepare()
-    #
-    #    # FIXME ObsPredMatch does not have an image attribute yet so
-    #    # the following line will not work...
-    #    return [self._get_gradients_core(m.H, m.Sc, m.Phic, m.image) for m in match_list]
-
     def _get_gradients_core(self, h, s, phi, panel_id):
 
         """Calculate gradients of the prediction formula with respect to
@@ -118,7 +106,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
             print "e =",matrix.col(self._gonio.get_rotation_axis())
             print "s0 =",self._s0
             print "U(t) =",U
-            print "this reflection forms angle with the equatorial plane normal:"
+            print ("this reflection forms angle with the equatorial plane "
+                   "normal:")
             vecn = self._s0.cross(self._axis).normalize()
             print s.accute_angle(vecn)
             raise e
@@ -159,7 +148,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
                     self._obs_image_number, U, R, h, s, e_X_r, e_r_s0)
 
         # calculate positional derivatives from d[pv]/dp
-        pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e) for e in dpv_dp]
+        pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
+                    for e in dpv_dp]
         dX_dp, dY_dp = zip(*pos_grad)
 
         return zip(dX_dp, dY_dp, dphi_dp)
@@ -172,11 +162,13 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp(obs_image_number)
 
-            dr_dxlo_p = [R * dU_dxlo_p[i] * B * h for i in range(len(dU_dxlo_p))]
+            dr_dxlo_p = [R * dU_dxlo_p[i] * B * h
+                         for i in range(len(dU_dxlo_p))]
 
             dphi_dxlo_p = [- der.dot(s) / e_r_s0 for der in dr_dxlo_p]
 
-            dpv_dxlo_p = [self._D * (dr_dxlo_p[i] + e_X_r * dphi_dxlo_p[i]) for i in range(len(dphi_dxlo_p))]
+            dpv_dxlo_p = [self._D * (dr_dxlo_p[i] + e_X_r * dphi_dxlo_p[i])
+                          for i in range(len(dphi_dxlo_p))]
 
             dpv_dp.extend(dpv_dxlo_p)
             dphi_dp.extend(dphi_dxlo_p)
@@ -196,7 +188,8 @@ class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameteri
 
             dphi_dxluc_p = [- der.dot(s) / e_r_s0 for der in dr_dxluc_p]
 
-            dpv_dxluc_p = [self._D * (dr_dxluc_p[i] + e_X_r * dphi_dxluc_p[i]) for i in range(len(dr_dxluc_p))]
+            dpv_dxluc_p = [self._D * (dr_dxluc_p[i] + e_X_r * dphi_dxluc_p[i])
+                           for i in range(len(dr_dxluc_p))]
 
             dpv_dp.extend(dpv_dxluc_p)
             dphi_dp.extend(dphi_dxluc_p)

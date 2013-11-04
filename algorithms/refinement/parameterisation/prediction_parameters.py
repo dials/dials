@@ -116,12 +116,14 @@ class PredictionParameterisation(object):
 
         global_p_list = []
         if self._detector_parameterisations:
-            det_plists = [x.get_param_vals() for x in self._detector_parameterisations]
+            det_plists = [x.get_param_vals() for x
+                          in self._detector_parameterisations]
             params = [x for l in det_plists for x in l]
             global_p_list.extend(params)
 
         if self._beam_parameterisations:
-            src_plists = [x.get_param_vals() for x in self._beam_parameterisations]
+            src_plists = [x.get_param_vals() for x
+                          in self._beam_parameterisations]
             params = [x for l in src_plists for x in l]
             global_p_list.extend(params)
 
@@ -290,7 +292,8 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
             print "e =",matrix.col(self._gonio.get_rotation_axis())
             print "s0 =",self._s0
             print "U =",self._U
-            print "this reflection forms angle with the equatorial plane normal:"
+            print ("this reflection forms angle with the equatorial plane "
+                   "normal:")
             vecn = self._s0.cross(self._axis).normalize()
             print s.accute_angle(vecn)
             raise e
@@ -326,7 +329,8 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
                                              e_X_r, e_r_s0)
 
         # calculate positional derivatives from d[pv]/dp
-        pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e) for e in dpv_dp]
+        pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
+                    for e in dpv_dp]
         dX_dp, dY_dp = zip(*pos_grad)
 
         return zip(dX_dp, dY_dp, dphi_dp)
@@ -491,7 +495,8 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
             ds0_dsrc_p = src.get_ds_dp()
             dphi_dsrc_p = [- r.dot(ds0_dsrc_p[i]) / e_r_s0 for i
                               in range(len(ds0_dsrc_p))]
-            dpv_dsrc_p = [self._D * (e_X_r * dphi_dsrc_p[i] + ds0_dsrc_p[i]) for i in range(len(ds0_dsrc_p))]
+            dpv_dsrc_p = [self._D * (e_X_r * dphi_dsrc_p[i] + ds0_dsrc_p[i])
+                          for i in range(len(ds0_dsrc_p))]
 
             dpv_dp.extend(dpv_dsrc_p)
             dphi_dp.extend(dphi_dsrc_p)
@@ -506,11 +511,13 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
         for xlo in self._xl_orientation_parameterisations:
             dU_dxlo_p = xlo.get_ds_dp()
 
-            dr_dxlo_p = [R * dU_dxlo_p[i] * self._B * h for i in range(len(dU_dxlo_p))]
+            dr_dxlo_p = [R * dU_dxlo_p[i] * self._B * h
+                         for i in range(len(dU_dxlo_p))]
 
             dphi_dxlo_p = [- der.dot(s) / e_r_s0 for der in dr_dxlo_p]
 
-            dpv_dxlo_p = [self._D * (dr_dxlo_p[i] + e_X_r * dphi_dxlo_p[i]) for i in range(len(dphi_dxlo_p))]
+            dpv_dxlo_p = [self._D * (dr_dxlo_p[i] + e_X_r * dphi_dxlo_p[i])
+                          for i in range(len(dphi_dxlo_p))]
 
             dpv_dp.extend(dpv_dxlo_p)
             dphi_dp.extend(dphi_dxlo_p)
@@ -530,7 +537,8 @@ class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParamete
 
             dphi_dxluc_p = [- der.dot(s) / e_r_s0 for der in dr_dxluc_p]
 
-            dpv_dxluc_p = [self._D * (dr_dxluc_p[i] + e_X_r * dphi_dxluc_p[i]) for i in range(len(dr_dxluc_p))]
+            dpv_dxluc_p = [self._D * (dr_dxluc_p[i] + e_X_r * dphi_dxluc_p[i])
+                           for i in range(len(dr_dxluc_p))]
 
             dpv_dp.extend(dpv_dxluc_p)
             dphi_dp.extend(dphi_dxluc_p)

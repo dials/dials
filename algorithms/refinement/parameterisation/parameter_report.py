@@ -7,19 +7,8 @@
 #  included in the root directory of this package.
 #
 
-#### Python and general cctbx imports
-
 from __future__ import division
 from scitbx import matrix
-
-#### Import model parameterisations
-
-#from dials.algorithms.refinement.parameterisation.detector_parameters import \
-#    DetectorParameterisationSinglePanel
-#from dials.algorithms.refinement.parameterisation.beam_parameters import \
-#    BeamParameterisationOrientation
-#from dials.algorithms.refinement.parameterisation.crystal_parameters import \
-#    CrystalOrientationParameterisation, CrystalUnitCellParameterisation
 from cctbx.array_family import flex
 from dials_refinement_helpers_ext import *
 
@@ -86,7 +75,8 @@ class ParameterReporter(object):
         s += "----------------\n"
         if self._detector_parameterisations:
             s += "Detector parameters:\n"
-            det_plists = [x.get_params() for x in self._detector_parameterisations]
+            det_plists = [x.get_params()
+                          for x in self._detector_parameterisations]
             params = [x for l in det_plists for x in l]
             for p in params:
                 tmp = self._indent(p)
@@ -102,7 +92,8 @@ class ParameterReporter(object):
 
         if self._xl_orientation_parameterisations:
             s += "Crystal orientation parameters:\n"
-            xlo_plists = [x.get_params() for x in self._xl_orientation_parameterisations]
+            xlo_plists = [x.get_params()
+                          for x in self._xl_orientation_parameterisations]
             params = [x for l in xlo_plists for x in l]
             for p in params:
                 tmp = self._indent(p)
@@ -110,7 +101,8 @@ class ParameterReporter(object):
 
         if self._xl_unit_cell_parameterisations:
             s += "Crystal unit cell parameters:\n"
-            xluc_plists = [x.get_params() for x in self._xl_unit_cell_parameterisations]
+            xluc_plists = [x.get_params()
+                           for x in self._xl_unit_cell_parameterisations]
             params = [x for l in xluc_plists for x in l]
             for p in params:
                 tmp = self._indent(p)
@@ -130,7 +122,7 @@ class ParameterReporter(object):
             for parameterisation in self._detector_parameterisations:
                 for p in parameterisation.get_params():
                     try:
-                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p)
                                 for i in image_numbers]
                         columns.append(TableColumn(p.name_stem, vals))
                     except AttributeError:
@@ -140,7 +132,7 @@ class ParameterReporter(object):
             for parameterisation in self._beam_parameterisations:
                 for p in parameterisation.get_params():
                     try:
-                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p)
                                 for i in image_numbers]
                         columns.append(TableColumn(p.name_stem, vals))
                     except AttributeError:
@@ -150,7 +142,7 @@ class ParameterReporter(object):
             for parameterisation in self._xl_orientation_parameterisations:
                 for p in parameterisation.get_params():
                     try:
-                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p)
                                 for i in image_numbers]
                         columns.append(TableColumn(p.name_stem, vals))
                     except AttributeError:
@@ -160,7 +152,7 @@ class ParameterReporter(object):
             for parameterisation in self._xl_unit_cell_parameterisations:
                 for p in parameterisation.get_params():
                     try:
-                        vals = [parameterisation.get_smoothed_parameter_value(i, p) \
+                        vals = [parameterisation.get_smoothed_parameter_value(i, p)
                                 for i in image_numbers]
                         columns.append(TableColumn(p.name_stem, vals))
                     except AttributeError:
@@ -186,24 +178,26 @@ class ParameterReporter(object):
 
         global_p_list = []
         if self._detector_parameterisations:
-            det_plists = [x.get_params() for x in self._detector_parameterisations]
+            det_plists = [x.get_params()
+                          for x in self._detector_parameterisations]
             params = [x for l in det_plists for x in l]
             global_p_list.extend(params)
 
         if self._beam_parameterisations:
-            src_plists = [x.get_params() for x in self._beam_parameterisations]
+            src_plists = [x.get_params()
+                          for x in self._beam_parameterisations]
             params = [x for l in src_plists for x in l]
             global_p_list.extend(params)
 
         if self._xl_orientation_parameterisations:
-            xlo_plists = [x.get_params() for x
-                          in self._xl_orientation_parameterisations]
+            xlo_plists = [x.get_params()
+                          for x in self._xl_orientation_parameterisations]
             params = [x for l in xlo_plists for x in l]
             global_p_list.extend(params)
 
         if self._xl_unit_cell_parameterisations:
-            xluc_plists = [x.get_params() for x
-                           in self._xl_unit_cell_parameterisations]
+            xluc_plists = [x.get_params()
+                           for x in self._xl_unit_cell_parameterisations]
             params = [x for l in xluc_plists for x in l]
             global_p_list.extend(params)
 

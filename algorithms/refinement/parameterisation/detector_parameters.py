@@ -396,8 +396,8 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
         # The state of each Panel in the detector model is its matrix
         # d = (d1|d2|d0). We need to define a new coordinate system rigidly
-        # attached to the detector model in which to express the parameterisation
-        # and compose each of the Panel states.
+        # attached to the detector model in which to express the
+        # parameterisation and compose each of the Panel states.
         #
         # We define:
         #
@@ -420,7 +420,8 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
         beam_centres = [matrix.col(p.get_beam_centre(beam.get_unit_s0())) \
                         for p in detector]
-        panel_centres = [0.5 * matrix.col(p.get_image_size_mm()) for p in detector]
+        panel_centres = [0.5 * matrix.col(p.get_image_size_mm())
+                         for p in detector]
         beam_to_centres = [(a - b).length() for a, b in \
                           zip(beam_centres, panel_centres)]
         mid_panel_id = beam_to_centres.index(min(beam_to_centres))

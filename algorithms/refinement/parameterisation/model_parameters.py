@@ -173,8 +173,8 @@ class ModelParameterisation(object):
         If only_free, the names of fixed parameters are filtered from the
         returned list. Otherwise all parameter names are returned"""
 
-        # FIXME combine functionality with get_param_vals by returning a named, ordered
-        # list
+        # FIXME combine functionality with get_param_vals by returning a named, 
+        # ordered list?
 
         if only_free:
 

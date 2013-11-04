@@ -15,7 +15,8 @@ from dials.model.experiment.crystal_model import Crystal
 from scitbx import matrix
 from dials.algorithms.refinement \
     import get_fd_gradients, dR_from_axis_and_angle, random_param_shift
-from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
+from rstbx.symmetry.constraints.parameter_reduction \
+    import symmetrize_reduce_enlarge
 
 class CrystalOrientationParameterisation(ModelParameterisation):
     """Parameterisation for crystal orientation, with angles expressed in
@@ -24,9 +25,10 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     def __init__(self, crystal):
 
         # The state of a crystal orientation parameterisation is an orientation
-        # matrix '[U]'. The initial state is a snapshot of the crystal orientation
-        # at the time of initialisation '[U0]'. Future states are composed by
-        # rotations around axes of the phi-axis frame by Tait-Bryan angles.
+        # matrix '[U]'. The initial state is a snapshot of the crystal 
+        # orientation at the time of initialisation '[U0]'. Future states are
+        # composed by rotations around axes of the phi-axis frame by Tait-Bryan
+        # angles.
         #
         # [U] = [Phi3][Phi2][Phi1][U0]
 
@@ -65,13 +67,16 @@ class CrystalOrientationParameterisation(ModelParameterisation):
                                      phi3.value / 1000.)
 
         # compose rotation matrices and their first order derivatives
-        Phi1 = (phi1.axis).axis_and_angle_as_r3_rotation_matrix(phi1rad, deg=False)
+        Phi1 = (phi1.axis).axis_and_angle_as_r3_rotation_matrix(
+                                                            phi1rad, deg=False)
         dPhi1_dphi1 = dR_from_axis_and_angle(phi1.axis, phi1rad, deg=False)
 
-        Phi2 = (phi2.axis).axis_and_angle_as_r3_rotation_matrix(phi2rad, deg=False)
+        Phi2 = (phi2.axis).axis_and_angle_as_r3_rotation_matrix(
+                                                            phi2rad, deg=False)
         dPhi2_dphi2 = dR_from_axis_and_angle(phi2.axis, phi2rad, deg=False)
 
-        Phi3 = (phi3.axis).axis_and_angle_as_r3_rotation_matrix(phi3rad, deg=False)
+        Phi3 = (phi3.axis).axis_and_angle_as_r3_rotation_matrix(
+                                                            phi3rad, deg=False)
         dPhi3_dphi3 = dR_from_axis_and_angle(phi3.axis, phi3rad, deg=False)
 
         Phi21 = Phi2 * Phi1
@@ -139,13 +144,14 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
         p_vals = [p.value / 1.e5 for p in self._param]
 
         # set parameter values in the symmetrizing object and obtain new B
-        newB = matrix.sqr(self._S.backward_orientation(p_vals).reciprocal_matrix())
+        newB = matrix.sqr(
+                self._S.backward_orientation(p_vals).reciprocal_matrix())
 
         # Now pass new B to the crystal model
         self._models[0].set_B(newB)
 
-        # returns the independent parameters given the set_orientation() B matrix
-        # used here for side effects
+        # returns the independent parameters given the set_orientation() B
+        # matrix. Used here for side effects
         self._S.forward_independent_parameters()
 
         # get the gradients on the adjusted scale

@@ -274,7 +274,7 @@ class reeke_model:
         # Now determine limits for the planes of p that touch the circle of
         # intersection between the Ewald and resolution limiting spheres
 
-        # TODO better way to get sin_2theta?
+        # FIXME is there a more efficient way to get sin_2theta?
         sin_theta = 0.5 * self._wavelength * self._dstarmax
         assert abs(sin_theta) <= 1.0 # sanity check
         sin_2theta = sin(2.0 * asin(sin_theta))
