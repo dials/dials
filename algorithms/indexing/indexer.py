@@ -14,7 +14,7 @@ from __future__ import division
 import math
 from scitbx import matrix
 
-from cctbx.array_family import flex
+from rstbx.array_family import flex
 
 
 # we need these things
@@ -48,7 +48,6 @@ def discover_better_experimental_model(spot_positions, detector, beam,
 
   # transform input into what Nick needs
   # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
-  from rstbx.array_family import flex
 
   data = flex.vec3_double()
   for spot in spots_mm:
@@ -63,7 +62,7 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   DPS.index(raw_spot_input = data)
 
   # for development, we want an exhaustive plot of beam probability map:
-  params.indexing.plot_search_scope = True
+  params.indexing.plot_search_scope = False
 
   # perform calculation
   if params.indexing.improve_local_scope=="origin_offset":
@@ -80,8 +79,41 @@ def discover_better_experimental_model(spot_positions, detector, beam,
 
 def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
                                        goniometer, scan, params):
-  '''Given an attempt at indexing derive a more likely model for the
-  experimental geometry.'''
+
+  # Spot_positions: Centroid positions for spotfinder spots, in pixels
+  # Return value: Corrected for parallax, converted to mm
+
+  spots_mm = Indexer._map_spots_pixel_to_mm_rad(
+    spots=spot_positions, detector=detector, scan=scan)
+
+  # derive a max_cell from mm spots
+  # derive a grid sampling from spots
+
+  from rstbx.indexing_api.lattice import DPS_primitive_lattice
+  # max_cell: max possible cell in Angstroms; set to None, determine from data
+  # recommended_grid_sampling_rad: grid sampling in radians; guess for now
+
+  DPS = DPS_primitive_lattice(max_cell = None,
+                              recommended_grid_sampling_rad = None,
+                              horizon_phil = params)
+  from scitbx import matrix
+  DPS.S0_vector = matrix.col(beam.get_s0())
+  DPS.inv_wave = 1./beam.get_wavelength()
+  DPS.axis = matrix.col(goniometer.get_rotation_axis())
+  DPS.set_detector(detector)
+
+  # transform input into what Nick needs
+  # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
+
+  data = flex.vec3_double()
+  for spot in spots_mm:
+    data.append((spot.centroid_position[0],
+                 spot.centroid_position[1],
+                 spot.centroid_position[2]*180./math.pi))
+
+  DPS.index(raw_spot_input = data)
+  solutions = DPS.getSolutions()
+  return [matrix.col(s.bvec()) for s in solutions],DPS.getXyzData()
 
 def candidate_basis_vectors_fft3d(rs_positions_xyz, params):
   # FIXME implement this
@@ -89,11 +121,59 @@ def candidate_basis_vectors_fft3d(rs_positions_xyz, params):
   candidate_basis_vectors = [candidate_basis_vectors_lattice_1]
   return candidate_basis_vectors
 
-def determine_basis_set(rs_positions_xyz,
-                        candidate_basis_vectors_one_lattice):
+def determine_basis_set(candidate_basis_vectors_one_lattice,
+                        spot_positions, detector, beam,
+                        goniometer, scan,
+                        rs_positions_xyz,
+                        params,
+                        panelID=None
+                        ):
   # given a list of 3 or more candidate basis vectors, decide on a good
   # basis set for indexing [triclinic A matrix]
-  triclinic_a_matrix = []
+
+  if panelID is None:
+    panelID = flex.int(len(spot_positions),0)
+
+  spots_mm = Indexer._map_spots_pixel_to_mm_rad(
+    spots=spot_positions, detector=detector, scan=scan)
+
+  #candidate vectors are direct space vectors with cell lengths in Angstroms
+  # Must be presorted by KVAL; KVAL is the height of the FFT peak; specifically
+  # |F(kmax)| in Figure 2 of Sauter et al (2004) 37: 399
+  assert len(candidate_basis_vectors_one_lattice) > 3
+  from rstbx.indexing_api.basis_choice import SelectBasisMetaprocedure as SBM
+  from rstbx.indexing_api.lattice import basis_choice_adapter
+  BCA = basis_choice_adapter()
+
+  from scitbx import matrix
+  BCA.S0_vector = matrix.col(beam.get_s0())
+  BCA.inv_wave = 1./beam.get_wavelength()
+  BCA.axis = matrix.col(goniometer.get_rotation_axis())
+  BCA.set_detector(detector)
+  BCA.panelID = panelID
+
+  # transform input into what Nick needs
+  # i.e., construct a flex.vec3 double consisting of mm spots, phi in degrees
+
+  data = flex.vec3_double()
+  for spot in spots_mm:
+    data.append((spot.centroid_position[0],
+                 spot.centroid_position[1],
+                 spot.centroid_position[2]*180./math.pi))
+  BCA.raw_spot_input = data
+
+  from rstbx.dps_core import Direction
+  directions = [Direction(cvec) for cvec in candidate_basis_vectors_one_lattice]
+  flexlist = flex.Direction()
+  for ij,d in enumerate(directions):
+    d.kval = len(directions) - ij
+    flexlist.append(d)
+  BCA.set_presorted_solutions(flexlist)
+  BCA.setXyzData(rs_positions_xyz)
+  M = SBM(input_index_engine = BCA,input_dictionary = {}, horizon_phil = params)
+  A_matrix = BCA.getOrientation().reduced_cell()
+
+  triclinic_a_matrix = [A_matrix]
   return triclinic_a_matrix
 
 # this is some kind of bodge to define a container class type
