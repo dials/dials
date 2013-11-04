@@ -105,28 +105,27 @@ ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 dmin = mydetector.get_max_resolution(mybeam.get_s0())
 sv_predictor = ScanVaryingReflectionListGenerator(pred_param, mybeam,
                                             mygonio, myscan, resolution)
-obs_refs = ref_predictor.predict(indices)
+refs1 = ref_predictor.predict(indices)
+refs2 = sv_predictor()
 
-sv_obs_refs = sv_predictor()
+assert len(refs1) == len(refs2)
+print "OK"
 
-print "Total number of reflections excited", len(obs_refs)
-print "Total number of reflections excited by scan-varying predictor", len(sv_obs_refs)
+def key_from_miller(ref):
+    """A fragile sort key for Reflections' Miller indices. Should think
+    up a better version!"""
+    hkl = ref.miller_index
+    key = 2*hkl[2] + 100*hkl[1] + 10000*hkl[0]
+    if ref.entering: key += 1
+    return key
 
-# Invent some variances for the centroid positions of the simulated data
-#im_width = 0.1 * pi / 180.
-#px_size = mydetector[0].get_pixel_size()
-#var_x = (px_size[0] / 2.)**2
-#var_y = (px_size[1] / 2.)**2
-#var_phi = (im_width / 2.)**2
+refs1_sorted = sorted(refs1, key=key_from_miller)
+refs2_sorted = sorted(refs2, key=key_from_miller)
 
-#obs_refs = ray_intersection(mydetector, obs_refs)
-#for ref in obs_refs:
-#
-#    # set the centroid variance
-#    ref.centroid_variance = (var_x, var_y ,var_phi)
-#
-#    # set the frame number, calculated from rotation angle
-#    ref.frame_number = myscan.get_image_index_from_angle(
-#        ref.rotation_angle, deg=False)
+for (r1, r2) in zip(refs1_sorted, refs2_sorted):
+    assert r1.miller_index == r2.miller_index
+    dphi = r1.rotation_angle - r2.rotation_angle
+    assert abs(dphi) < 0.01 * im_width
 
-#print "Total number of observations made", len(obs_refs)
+print "OK"
+
