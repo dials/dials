@@ -219,7 +219,6 @@ class SimpleLBFGS(AdaptLbfgs):
 
     def run(self):
 
-        #TODO convert file file handling lines to use of 'with'?
         ref_log = None
         if self._log: ref_log = open(self._log, "w")
         self.minimizer = lbfgs.run(target_evaluator=self,
@@ -236,7 +235,6 @@ class LBFGScurvs(AdaptLbfgs):
 
     def run(self):
 
-        #TODO convert file file handling lines to use of 'with'?
         ref_log = None
         if self._log: ref_log = open(self._log, "w")
         self.diag_mode = "always"

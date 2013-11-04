@@ -73,7 +73,6 @@ class Refiner(object):
         self._saved_reflections = self.reflections.deep_copy()
 
         # check that the beam vectors are stored: if not, compute them
-        # perhaps we should just be computing them here...
         for ref in self.reflections:
             if ref.beam_vector != (0.0, 0.0, 0.0):
                 continue
@@ -108,14 +107,17 @@ class Refiner(object):
 
         if self._verbosity > 1:
             print "Building reflection manager"
-            print "Input reflection list size = %d observations" % len(self.reflections)
+            print ("Input reflection list size = %d observations"
+                   % len(self.reflections))
 
         self.refman = self.create_refman(self.reflections, self.beam,
                                 self.gonio, self.scan, self._verbosity)
 
         if self._verbosity > 1:
-            print "Number of observations that pass inclusion criteria = %d" % self.refman.get_total_size()
-            print "Working set size = %d observations" % self.refman.get_sample_size()
+            print ("Number of observations that pass inclusion criteria = %d"
+                   % self.refman.get_total_size())
+            print ("Working set size = %d observations"
+                   % self.refman.get_sample_size())
             print "Reflection manager built\n"
 
         ##############################
@@ -275,7 +277,7 @@ class Refiner(object):
 
 
 class RefinerFactory(object):
-    ''' Factory class to create refiners '''
+    '''Factory class to create refiners'''
 
     @staticmethod
     def from_parameters(params, verbosity):
@@ -370,6 +372,8 @@ class RefinerFactory(object):
 
 
 class ParameterisationFactory(object):
+    ''' Factory class to create beam, crystal and detector parameterisations
+    plus a parameterisation of the prediction equation.'''
 
     def __init__(self, beam_options, crystal_options, detector_options,
                  prediction_options):
@@ -488,6 +492,7 @@ class ParameterisationFactory(object):
                 param_reporter)
 
 class RefineryFactory(object):
+    '''Factory class to create a Refinery object (the refinement engine)'''
 
     def __init__(self, options):
 
@@ -500,7 +505,8 @@ class RefineryFactory(object):
         elif options.engine == "GaussNewtonIterations":
             from engine import GaussNewtonIterations as ref
         else:
-            raise RuntimeError, "Refinement engine " + options.engine + " not recognised"
+            raise RuntimeError("Refinement engine " + options.engine +
+                               " not recognised")
 
         self._refinery = ref
         self._track_step = options.track_step
@@ -520,6 +526,7 @@ class RefineryFactory(object):
             max_iterations = self._max_iterations)
 
 class RefmanFactory(object):
+    '''Factory class to create a ReflectionManager'''
 
     def __init__(self, options):
 
@@ -530,8 +537,8 @@ class RefmanFactory(object):
             from dials.algorithms.refinement.single_shots.target import \
                 ReflectionManagerXY as refman
         else:
-            raise RuntimeError, "ReflectionManager type " + options.implementation + \
-                                " not recognised"
+            raise RuntimeError("ReflectionManager type " +
+                options.implementation + " not recognised")
         self._refman = refman
 
         self._random_seed = options.random_seed
@@ -567,6 +574,7 @@ class RefmanFactory(object):
                             inclusion_cutoff=self._inclusion_cutoff)
 
 class TargetFactory(object):
+    '''Factory class to create a target function object'''
 
     def __init__(self, options):
 
