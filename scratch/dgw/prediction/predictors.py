@@ -306,7 +306,7 @@ class AnglePredictor_py(object):
 
 class ImpactPredictor(object):
     """Predict observation position for supplied reflections and angles.
-    
+
     This class is just a wrapper for RSTBX's reflection_prediction class (in
     future that class should be replaced). A wrapper is necessary because
     reflection_prediction does not use the experimental models. This class

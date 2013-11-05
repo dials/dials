@@ -547,7 +547,7 @@ class AnglePredictor_py(object):
 
 class ImpactPredictor(object):
     """Predict observation position for supplied reflections and angles.
-    
+
     This class is just a wrapper for RSTBX's reflection_prediction class (which
     is superseded by DIALS' ray_intersection function). A wrapper is necessary
     because reflection_prediction does not use the experimental models. This
@@ -556,7 +556,7 @@ class ImpactPredictor(object):
 
     It is called ImpactPredictor, because ReflectionPredictor does not imply
     that the hkl is actually observed, whereas ImpactPredictor does
-    
+
     """
 
     def __init__(self, detector, goniometer, beam, crystal):

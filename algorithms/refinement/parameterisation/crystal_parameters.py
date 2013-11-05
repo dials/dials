@@ -25,7 +25,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     def __init__(self, crystal):
 
         # The state of a crystal orientation parameterisation is an orientation
-        # matrix '[U]'. The initial state is a snapshot of the crystal 
+        # matrix '[U]'. The initial state is a snapshot of the crystal
         # orientation at the time of initialisation '[U0]'. Future states are
         # composed by rotations around axes of the phi-axis frame by Tait-Bryan
         # angles.
@@ -162,4 +162,3 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
 
     def get_state(self):
         return matrix.sqr(self._models[0].get_B())
-

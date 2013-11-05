@@ -60,7 +60,7 @@ if __name__ == '__main__':
   run(sys.argv[1:])
 
 howto = '''
-dials.import ~/data/12287/12287_1_E1_0*img 
+dials.import ~/data/12287/12287_1_E1_0*img
 Importing data from the following sources:
  - Sweep from image file data
  - Crystal from nowhere!
