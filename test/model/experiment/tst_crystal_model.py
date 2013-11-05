@@ -62,7 +62,7 @@ def exercise_crystal_model():
   assert approx_equal(c_, R * real_space_c)
   s = StringIO()
   print >> s, model
-  assert not show_diff(s.getvalue(), """\
+  assert not show_diff(s.getvalue().replace("-0.0000", " 0.0000"), """\
 Crystal:
     Unit cell: (10.000, 11.000, 12.000, 90.000, 90.000, 90.000)
     Space group: P 1
@@ -70,8 +70,8 @@ Crystal:
                 { 0.7891,  0.0474, -0.6124},
                 { 0.4356,  0.6597,  0.6124}}
     B matrix:  {{ 0.1000,  0.0000,  0.0000},
-                {-0.0000,  0.0909,  0.0000},
-                {-0.0000,  0.0000,  0.0833}}
+                { 0.0000,  0.0909,  0.0000},
+                { 0.0000,  0.0000,  0.0833}}
     A = UB:    {{ 0.0433, -0.0682,  0.0417},
                 { 0.0789,  0.0043, -0.0510},
                 { 0.0436,  0.0600,  0.0510}}
