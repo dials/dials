@@ -21,11 +21,11 @@ class TestImporter:
         arguments = [
             os.path.join(self.path, 'sweep.json'),
             os.path.join(self.path, 'crystal.json'),
-            os.path.join(self.path, 'non_existant.file'),
+            os.path.join(self.path, 'non_existent.file'),
             os.path.join(self.path, 'crystal.json'),
             os.path.join(self.path, 'spot_xds.pickle'),
             os.path.join(self.path, 'extracted.tar'),
-            os.path.join(self.path, 'another_non_existant.file'),
+            os.path.join(self.path, 'another_non_existent.file'),
             os.path.join(self.path, 'sweep.json'),
         ]
         arguments.extend(glob(os.path.join(self.path, 'centroid_*.cbf')))
