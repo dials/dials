@@ -77,10 +77,6 @@ pred_param = DummyPredictionParameterisation(mycrystal)
 # Generate some reflections #
 #############################
 
-print "Reflections will be generated with the following geometry:"
-print_model_geometry(mybeam, mydetector, mycrystal)
-print
-
 # All indices in a 2.0 Angstrom sphere
 resolution = 2.0
 index_generator = IndexGenerator(mycrystal.get_unit_cell(),
