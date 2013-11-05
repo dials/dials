@@ -534,6 +534,12 @@ class indexer(object):
       xs.add_scatterer(xray.scatterer("C%i" %i, site=site))
 
     xs = xs.sites_mod_short()
+    xs = xs.select(xs.sites_frac().norms() < 0.45)
+    cell_multiplier = 10
+    xs1 = xs.customized_copy(
+      unit_cell=uctbx.unit_cell([xs.unit_cell().parameters()[0]*cell_multiplier]*3))
+    xs1.set_sites_cart(xs.sites_cart())
+    xs = xs1
     sites_cart = xs.sites_cart()
     lengths = flex.double([matrix.col(sc).length() for sc in sites_cart])
     xs = xs.select(flex.sort_permutation(lengths))
@@ -556,8 +562,8 @@ class indexer(object):
       pairs.append((i_seq, j_seq))
       rt_mx_ji = di.rt_mx_ji
       site_frac_ji = rt_mx_ji * sites_frac[j_seq]
-      site_cart_ji = self.unit_cell.orthogonalize(site_frac_ji)
-      site_cart_i = self.unit_cell.orthogonalize(sites_frac[i_seq])
+      site_cart_ji = xs.unit_cell().orthogonalize(site_frac_ji)
+      site_cart_i = xs.unit_cell().orthogonalize(sites_frac[i_seq])
       vectors.append(matrix.col(site_cart_ji))
       diff_vec = matrix.col(site_cart_i) - matrix.col(site_cart_ji)
       if diff_vec[0] < 0:
