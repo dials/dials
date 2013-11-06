@@ -371,7 +371,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
             self.history.gradient_norm.append(
               self.opposite_of_gradient().norm_inf())
 
-            if self._verbosity > 2:
+            if self._verbosity > 3:
                 print "The normal matrix for the current step is:"
                 print self.normal_matrix_packed_u().\
                     matrix_packed_u_as_symmetric().\
