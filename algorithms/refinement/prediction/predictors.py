@@ -7,6 +7,17 @@
 #  included in the root directory of this package.
 #
 
+"""Reflection prediction for refinement.
+
+* ReflectionPredictor adapts DIALS prediction for use in refinement, by keeping
+  up to date with the current model geometry
+* ScanVaryingReflectionPredictor performs prediction for a particular image with
+  different setting matrices at beginning and end of the image
+* ScanVaryingReflectionListGenerator runs ScanVaryingReflectionPredictor over
+  all images in a Scan
+
+"""
+
 from __future__ import division
 
 from math import pi, sqrt, acos, atan2, fabs
