@@ -101,7 +101,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
         return matrix.sqr(self._models[0].get_U())
 
 class CrystalUnitCellParameterisation(ModelParameterisation):
-    """A work-in-progress parameterisation for unit cell"""
+    """Parameterisation for the unit cell"""
 
     def __init__(self, crystal):
 
