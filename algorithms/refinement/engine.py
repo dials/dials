@@ -443,3 +443,132 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         # based on existing parameterisations.
 
         return
+
+class LevenbergMarquardtIterations(GaussNewtonIterations):
+    """Refinery implementation, employing lstbx Levenberg Marquadt
+    iterations"""
+
+    tau = 1e-3
+
+    class mu(libtbx.property):
+        def fget(self):
+            return self._mu
+        def fset(self, value):
+            self.history.mu.append(value)
+            self._mu = value
+
+    def run(self):
+
+        # add an attribute to the journal
+        self.history.mu = flex.double()
+
+        #FIXME need a much neater way of doing this stuff through
+        #inheritance
+        # set max iterations if not already.
+        if self._max_iterations is None:
+            self._max_iterations = 20
+
+        self.n_iterations = 0
+        nu = 2
+        self.build_up()
+        a = self.normal_matrix_packed_u()
+        self.mu = self.tau*flex.max(a.matrix_packed_u_diagonal())
+        while True:
+
+            # set functional and gradients for the step
+            self._f = self.objective()
+            self._g = -self.opposite_of_gradient()
+
+            # extra journalling prior to solve
+            self.history.parameter_vector_norm.append(
+                self.parameter_vector_norm())
+            self.history.gradient_norm.append(
+                self.opposite_of_gradient().norm_inf())
+
+            if self._verbosity > 3:
+                print "The normal matrix for the current step is:"
+                print self.normal_matrix_packed_u().\
+                    matrix_packed_u_as_symmetric().\
+                    as_scitbx_matrix().matlab_form(format=None,
+                    one_row_per_line=True)
+                print
+
+            a.matrix_packed_u_diagonal_add_in_place(self.mu)
+
+            # solve the normal equations
+            self.solve()
+
+            # standard journalling
+            self.update_journal()
+            if self._verbosity > 0: print "Step", self.history._step
+            if self._verbosity > 1: self.print_step()
+
+            # extra journalling post solve
+            if self.history.solution is not None:
+              self.history.solution.append(self.actual.step().deep_copy())
+            self.history.solution_norm.append(self.step().norm())
+            self.history.reduced_chi_squared.append(self.chi_sq())
+
+            if self.had_too_small_a_step():
+                reason_for_termination = "Step too small"
+                break
+
+            h = self.step()
+            expected_decrease = 0.5*h.dot(self.mu*h - self._g)
+            self.step_forward()
+            self.n_iterations += 1
+            self.build_up(objective_only=True)
+            objective_new = self.objective()
+            actual_decrease = self._f - objective_new
+            rho = actual_decrease/expected_decrease
+            if rho > 0:
+                # test termination criteria
+                if self.test_for_termination():
+                    reason_for_termination = "RMSD target achieved"
+                    break
+
+                if self.test_rmsd_convergence():
+                    reason_for_termination = "RMSD no longer decreasing"
+                    break
+
+                self.mu *= max(1/3, 1 - (2*rho - 1)**3)
+                nu = 2
+            else:
+                self.step_backward()
+                self.mu *= nu
+                nu *= 2
+
+            if self.n_iterations == self._max_iterations:
+                reason_for_termination = "Reached maximum number of " \
+                    "iterations"
+                break
+
+            # prepare for next step
+            self.build_up()
+
+        # print output table
+        if self._verbosity > 0:
+            self.print_table()
+            print reason_for_termination
+
+        #FIXME
+        # This stuff not yet available for the Lev Mar minimiser
+        # because I need to ensure that the normal equns are solved
+        # before calling cholesky_factor_packed_u
+
+        # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
+        #cf = self.step_equations().cholesky_factor_packed_u()
+        #cf_inv = cf.matrix_packed_u_as_upper_triangle().\
+        #    matrix_inversion()
+        #nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
+
+        # keep the estimated parameter variance-covariance matrix
+        #self.parameter_var_cov = \
+        #    self.history.reduced_chi_squared[-1] * nm_inv
+
+        # TODO
+        # send parameter variances back to the parameter classes
+        # themselves, for reporting purposes and for building restraints
+        # based on existing parameterisations.
+
+        return

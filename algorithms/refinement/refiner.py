@@ -506,6 +506,8 @@ class RefineryFactory(object):
             from engine import LBFGScurvs as ref
         elif options.engine == "GaussNewtonIterations":
             from engine import GaussNewtonIterations as ref
+        elif options.engine == "LevMarIterations":
+            from engine import LevenbergMarquardtIterations as ref
         else:
             raise RuntimeError("Refinement engine " + options.engine +
                                " not recognised")
