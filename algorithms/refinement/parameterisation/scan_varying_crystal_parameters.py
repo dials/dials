@@ -14,7 +14,8 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
                GaussianSmoother
 from scitbx import matrix
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
-from dials.algorithms.refinement import dR_from_axis_and_angle
+from dials.algorithms.refinement.refinement_helpers \
+    import dR_from_axis_and_angle
 
 class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
 

@@ -45,7 +45,8 @@ from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameter
 
 #### Import helper functions
 
-from dials.algorithms.refinement import random_param_shift, print_grads
+from dials.algorithms.refinement.refinement_helpers import \
+    random_param_shift, print_grads
 
 #### Local functions
 

@@ -198,6 +198,6 @@ minimiser_phil="""minimiser.parameters
         .type = choice
     logfile = tst_orientation_refinement.log
         .type = path
-    verbosity = 2
+    verbosity = 0
         .type = int
 }"""

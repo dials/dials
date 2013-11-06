@@ -18,7 +18,7 @@ from scitbx import matrix
 from cctbx.uctbx import unit_cell
 
 # DIALS imports
-from dials.algorithms.refinement \
+from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
 from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters \
     import ScanVaryingParameterSet, GaussianSmoother, \

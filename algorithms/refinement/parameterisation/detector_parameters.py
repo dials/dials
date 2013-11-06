@@ -13,7 +13,8 @@ from __future__ import division
 from scitbx import matrix
 
 from model_parameters import Parameter, ModelParameterisation
-from dials.algorithms.refinement import dR_from_axis_and_angle
+from dials.algorithms.refinement.refinement_helpers \
+    import dR_from_axis_and_angle
 
 class DetectorParameterisationSinglePanel(ModelParameterisation):
     """Parameterisation for a single abstract panel

@@ -20,7 +20,7 @@ from dials.model.experiment import Panel, Detector
 from dials.model.experiment import detector_factory
 from dials.model.experiment import beam_factory
 
-from dials.algorithms.refinement \
+from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
 from dials.algorithms.refinement.parameterisation.detector_parameters \
     import (DetectorParameterisationSinglePanel,

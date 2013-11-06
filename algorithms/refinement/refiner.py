@@ -10,8 +10,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.algorithms.refinement import print_model_geometry
-
+from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 class Refiner(object):
     """The refiner class."""

@@ -62,7 +62,8 @@ from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import helper functions
-from dials.algorithms.refinement import print_model_geometry, refine
+from dials.algorithms.refinement.refinement_helpers \
+    import print_model_geometry, refine
 
 #############################
 # Setup experimental models #
@@ -178,7 +179,7 @@ print "Total number of reflections excited", len(excited_refs)
 
 # Project positions on camera (assume panel 0) and set made up
 # centroid variances and frame numbers
-px_size = mydetector.get_pixel_size()
+px_size = mydetector[0].get_pixel_size()
 
 def set_impact(ref):
     """helper function to set centroid and fake variance and frame

@@ -49,7 +49,7 @@ from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import helper functions
-from dials.algorithms.refinement import print_model_geometry
+from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
@@ -160,7 +160,7 @@ print "Total number of reflections excited", len(obs_refs)
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
-px_size = mydetector.get_pixel_size()
+px_size = mydetector[0].get_pixel_size()
 var_x = (px_size[0] / 2.)**2
 var_y = (px_size[1] / 2.)**2
 var_phi = (im_width / 2.)**2

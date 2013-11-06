@@ -18,8 +18,7 @@ geometrically identical 3x3 panel detector, ensuring the results are the same.
 Control of the experimental model and choice of minimiser is done via
 PHIL, which means we can do, for example:
 
-cctbx.python tst_multi_panel_detector_parameterisation.py \
-"random_seed=3; engine=LBFGScurvs"
+cctbx.python tst_multi_panel_detector_parameterisation.py "random_seed=3"
 
 """
 
@@ -69,7 +68,7 @@ from dials.algorithms.refinement.target import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 # Import helper functions
-from dials.algorithms.refinement import print_model_geometry
+from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 ###################
 # Local functions #
@@ -96,7 +95,7 @@ def make_panel_in_array(array_elt, reference_panel):
             image_size=reference_panel.get_image_size(),
             trusted_range=(0, 1.e6))
 
-if __name__ == "main":
+if __name__ == '__main__':
 
     #############################
     # Setup experimental models #
@@ -245,7 +244,7 @@ if __name__ == "main":
 
     # Invent some variances for the centroid positions of the simulated data
     im_width = 0.1 * pi / 180.
-    px_size = single_panel_detector.get_pixel_size()
+    px_size = single_panel_detector[0].get_pixel_size()
     var_x = (px_size[0] / 2.)**2
     var_y = (px_size[1] / 2.)**2
     var_phi = (im_width / 2.)**2

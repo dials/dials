@@ -44,7 +44,8 @@ class RefinementRunner(object):
             ref.beam_vector = matrix.col(self.detector.get_pixel_lab_coord(
                 (x, y))).normalize() / self.beam.get_wavelength()
 
-        from dials.algorithms.refinement import print_model_geometry, refine
+        from dials.algorithms.refinement.refinement_helpers import \
+            print_model_geometry, refine
         random.seed(42)
         print "Random seed set to 42\n"
 

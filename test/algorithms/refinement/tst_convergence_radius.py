@@ -28,7 +28,7 @@ from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
 from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, CrystalUnitCellParameterisation
-from dials.algorithms.refinement import random_param_shift
+from dials.algorithms.refinement.refinement_helpers import random_param_shift
 
 # Symmetry constrained parameterisation for the unit cell
 from cctbx.uctbx import unit_cell
@@ -54,7 +54,7 @@ from dials.algorithms.refinement.engine import LBFGScurvs
 from dials.algorithms.refinement.engine import GaussNewtonIterations
 
 # Import helper functions
-from dials.algorithms.refinement import print_model_geometry
+from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 def setup_models(seed):
 
@@ -176,11 +176,9 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
     obs_refs = ref_predictor.predict(indices)
 
-    print "Total number of reflections excited", len(obs_refs)
-
     # Invent some variances for the centroid positions of the simulated data
     im_width = 0.1 * pi / 180.
-    px_size = mydetector.get_pixel_size()
+    px_size = mydetector[0].get_pixel_size()
     var_x = (px_size[0] / 2.)**2
     var_y = (px_size[1] / 2.)**2
     var_phi = (im_width / 2.)**2
@@ -198,8 +196,6 @@ def run(mydetector, mygonio, mycrystal, mybeam,
         # set the frame number, calculated from rotation angle
         ref.frame_number = myscan.get_image_index_from_angle(
             ref.rotation_angle, deg=False)
-
-    print "Total number of observations made", len(obs_refs)
 
     ###############################
     # Undo known parameter shifts #

@@ -12,7 +12,8 @@
 from __future__ import division
 from model_parameters import Parameter, ModelParameterisation
 from scitbx import matrix
-from dials.algorithms.refinement import dR_from_axis_and_angle
+from dials.algorithms.refinement.refinement_helpers \
+    import dR_from_axis_and_angle
 
 class BeamParameterisationOrientation(ModelParameterisation):
     """Implementation of parameterisation for the beam (direction only)

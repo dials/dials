@@ -44,7 +44,7 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
 
 #### Import helper function
 
-from dials.algorithms.refinement import print_grads
+from dials.algorithms.refinement.refinement_helpers import print_grads
 
 #### Local functions
 

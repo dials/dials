@@ -13,8 +13,8 @@ from __future__ import division
 from model_parameters import Parameter, ModelParameterisation
 from dials.model.experiment.crystal_model import Crystal
 from scitbx import matrix
-from dials.algorithms.refinement \
-    import get_fd_gradients, dR_from_axis_and_angle, random_param_shift
+from dials.algorithms.refinement.refinement_helpers \
+    import dR_from_axis_and_angle
 from rstbx.symmetry.constraints.parameter_reduction \
     import symmetrize_reduce_enlarge
 

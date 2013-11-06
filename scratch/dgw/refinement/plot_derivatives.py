@@ -38,7 +38,7 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     DetectorSpacePredictionParameterisation
 
 # Import helper functions
-from dials.algorithms.refinement import print_model_geometry
+from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):

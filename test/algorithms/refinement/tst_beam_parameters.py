@@ -9,7 +9,8 @@ from scitbx import matrix
 from dials.model.experiment import beam_factory
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
-from dials.algorithms.refinement import get_fd_gradients, random_param_shift
+from dials.algorithms.refinement.refinement_helpers \
+    import get_fd_gradients, random_param_shift
 
 if __name__ == '__main__':
 
