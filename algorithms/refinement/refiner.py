@@ -9,6 +9,9 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+"""Refiner is the refinement module public interface. RefinerFactory is what
+should usually be used to construct a Refiner."""
+
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 

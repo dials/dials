@@ -7,6 +7,9 @@
 #  included in the root directory of this package.
 #
 
+"""Contains classes used to construct a target function for refinement,
+principally Target and ReflectionManager."""
+
 # python and cctbx imports
 from __future__ import division
 from scitbx import matrix

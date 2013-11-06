@@ -7,11 +7,10 @@
 #  included in the root directory of this package.
 #
 
-from __future__ import division
-
 """Provides a class for producing efficient looping limits for reflection
 prediction based on the Reeke algorithm (see Mosflm)"""
 
+from __future__ import division
 from scitbx import matrix
 import scitbx.math
 from math import sqrt, sin, asin, fabs, pi
