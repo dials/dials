@@ -71,6 +71,8 @@ debug_plots = False
   .help = "Requires matplotlib"
 include file %s/data/refinement.phil
 refinement_protocol {
+  weight_outlier_n_sigma = 5
+    .type = float(value_min=0)
   n_macro_cycles = 3
     .type = int(value_min=0)
   d_min_step = 0.5
@@ -1014,6 +1016,18 @@ class indexer(object):
     if self.params.debug_plots:
       plot_centroid_weights_histograms(reflections_for_refinement)
 
+    if self.params.refinement_protocol.weight_outlier_n_sigma is not None:
+      from libtbx.utils import plural_s
+      sel = reject_weight_outliers_selection(
+        reflections_for_refinement,
+        sigma_cutoff=self.params.refinement_protocol.weight_outlier_n_sigma)
+      reflections_for_refinement = reflections_for_refinement.select(sel)
+      n_reject = sel.count(False)
+      if n_reject > 0:
+        n_reject, suffix = plural_s(n_reject)
+        print "Rejected %i reflection%s (weight outlier%s)" %(
+          n_reject, suffix, suffix)
+
     params = self.params.refinement
     from dials.algorithms.refinement import RefinerFactory
     refine = RefinerFactory.from_parameters(self.params, verbosity)
@@ -1120,6 +1134,34 @@ class indexer(object):
         real_space_a, real_space_b, real_space_c,
         crystal_model.get_space_group().type().number(),
         out=f)
+
+
+def reject_weight_outliers_selection(reflections, sigma_cutoff=5):
+  from scitbx.math import basic_statistics
+  variances = flex.vec3_double([r.centroid_variance for r in reflections])
+  vx, vy, vz = variances.parts()
+  wx = 1/vx
+  wy = 1/vy
+  wz = 1/vz
+  ln_wx = flex.log(wx)
+  ln_wy = flex.log(wy)
+  ln_wz = flex.log(wz)
+  selection = None
+  for v in variances.parts():
+    w = 1/v
+    ln_w = flex.log(w)
+    mean = flex.mean(ln_w)
+    stats = basic_statistics(ln_w)
+    sel = ln_w < (sigma_cutoff * stats.bias_corrected_standard_deviation
+                  + stats.mean)
+    if selection is None:
+      selection = sel
+    else:
+      selection &= sel
+
+  return selection
+
+
 
 
 def hist_outline(hist):
