@@ -36,7 +36,7 @@ max_cell = 160
 reciprocal_space_grid {
   n_points = 256
     .type = int(value_min=0)
-  d_min = Auto
+  d_min = 4
     .type = float(value_min=0)
     .help = "The high resolution limit in Angstrom for spots to include in "
             "the initial indexing."
