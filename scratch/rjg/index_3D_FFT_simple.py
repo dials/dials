@@ -1244,8 +1244,7 @@ def run(args):
 
   sweep = sweeps[0]
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-  working_phil, args = cmd_line.process_and_fetch(
-      args=args, custom_processor="collect_remaining")
+  working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
 
   gonio = sweep.get_goniometer()
