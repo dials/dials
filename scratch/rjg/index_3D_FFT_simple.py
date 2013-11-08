@@ -1139,18 +1139,10 @@ class indexer(object):
 def reject_weight_outliers_selection(reflections, sigma_cutoff=5):
   from scitbx.math import basic_statistics
   variances = flex.vec3_double([r.centroid_variance for r in reflections])
-  vx, vy, vz = variances.parts()
-  wx = 1/vx
-  wy = 1/vy
-  wz = 1/vz
-  ln_wx = flex.log(wx)
-  ln_wy = flex.log(wy)
-  ln_wz = flex.log(wz)
   selection = None
   for v in variances.parts():
     w = 1/v
     ln_w = flex.log(w)
-    mean = flex.mean(ln_w)
     stats = basic_statistics(ln_w)
     sel = ln_w < (sigma_cutoff * stats.bias_corrected_standard_deviation
                   + stats.mean)
@@ -1158,10 +1150,7 @@ def reject_weight_outliers_selection(reflections, sigma_cutoff=5):
       selection = sel
     else:
       selection &= sel
-
   return selection
-
-
 
 
 def hist_outline(hist):
