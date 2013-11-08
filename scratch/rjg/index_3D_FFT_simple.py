@@ -996,9 +996,6 @@ class indexer(object):
       self.detector, self.reflections.select(self.indexed_reflections))
     verbosity = self.params.refinement_protocol.verbosity
 
-    params = self.params.refinement
-    from dials.algorithms.refinement import RefinerFactory
-    refine = RefinerFactory.from_parameters(self.params, verbosity)
     scan_range_min = max(
       int(math.floor(flex.min(self.reflections.select(
         self.reflections_in_scan_range).frame_number()))),
@@ -1014,6 +1011,12 @@ class indexer(object):
       with open("reflections_debug.pickle", 'wb') as f:
         pickle.dump(reflections_for_refinement, f)
 
+    if self.params.debug_plots:
+      plot_centroid_weights_histograms(reflections_for_refinement)
+
+    params = self.params.refinement
+    from dials.algorithms.refinement import RefinerFactory
+    refine = RefinerFactory.from_parameters(self.params, verbosity)
     refine.prepare(sweep, crystal_model, reflections_for_refinement)
     #rmsds = refine.rmsds()
     refined = refine()
@@ -1117,6 +1120,67 @@ class indexer(object):
         real_space_a, real_space_b, real_space_c,
         crystal_model.get_space_group().type().number(),
         out=f)
+
+
+def hist_outline(hist):
+
+  step_size = hist.slot_width()
+  half_step_size = 0.5 * step_size
+  n_slots = len(hist.slots())
+
+  bins = flex.double(n_slots * 2 + 2, 0)
+  data = flex.double(n_slots * 2 + 2, 0)
+  for i in range(n_slots):
+    bins[2 * i + 1] = hist.slot_centers()[i] - half_step_size
+    bins[2 * i + 2] = hist.slot_centers()[i] + half_step_size
+    data[2 * i + 1] = hist.slots()[i]
+    data[2 * i + 2] = hist.slots()[i]
+
+  bins[0] = bins[1] - step_size
+  bins[-1] = bins[-2] + step_size
+  data[0] = 0
+  data[-1] = 0
+
+  return (bins, data)
+
+
+def plot_centroid_weights_histograms(reflections, n_slots=50):
+  from matplotlib import pyplot
+  variances = flex.vec3_double([r.centroid_variance for r in reflections])
+  vx, vy, vz = variances.parts()
+  wx = 1/vx
+  wy = 1/vy
+  wz = 1/vz
+  #hx = flex.histogram(vx, n_slots=n_slots)
+  #hy = flex.histogram(vy, n_slots=n_slots)
+  #hz = flex.histogram(vz, n_slots=n_slots)
+  wx = flex.log(wx)
+  wy = flex.log(wy)
+  wz = flex.log(wz)
+  hx = flex.histogram(wx, n_slots=n_slots)
+  hy = flex.histogram(wy, n_slots=n_slots)
+  hz = flex.histogram(wz, n_slots=n_slots)
+  fig = pyplot.figure()
+
+  #outliers = reflections.select(wx > 50)
+  #for refl in outliers:
+    #print refl
+
+  for i, h in enumerate([hx, hy, hz]):
+    ax = fig.add_subplot(311+i)
+
+    slots = h.slots().as_double()
+    bins, data = hist_outline(h)
+    log_scale = True
+    if log_scale:
+      data.set_selected(data == 0, 0.1) # otherwise lines don't get drawn when we have some empty bins
+      ax.set_yscale("log")
+    ax.plot(bins, data, '-k', linewidth=2)
+    #pyplot.suptitle(title)
+    data_min = min([slot.low_cutoff for slot in h.slot_infos() if slot.n > 0])
+    data_max = max([slot.low_cutoff for slot in h.slot_infos() if slot.n > 0])
+    ax.set_xlim(data_min, data_max+h.slot_width())
+  pyplot.show()
 
 
 def run(args):
