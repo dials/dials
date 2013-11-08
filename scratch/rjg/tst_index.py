@@ -15,6 +15,11 @@ from cctbx.array_family import flex # import dependency
 from cctbx import uctbx
 from dials.model.serialize import load
 
+have_dials_regression = libtbx.env.has_module("dials_regression")
+if have_dials_regression:
+  dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
 
 
 class run_one_indexing(object):
@@ -66,22 +71,14 @@ class run_one_indexing(object):
     refine.prepare(sweep, crystal_model, reflections)
     return refine.rmsds()
 
-def exercise_index_3D_FFT_simple():
-
-  if not libtbx.env.has_module("dials_regression"):
-    print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
-    return
-
-  dials_regression = libtbx.env.find_in_repositories(
-    relative_path="dials_regression",
-    test=os.path.isdir)
-
+def exercise_1():
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "sweep_orig.json")
   extra_args = ["multiple_lattice_search=False", # use older non-clustering version
-                "reflections_per_degree=5"]
+                "reflections_per_degree=5",
+                "n_macro_cycles=2"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.06, 0.05, 0.0004)
@@ -90,12 +87,35 @@ def exercise_index_3D_FFT_simple():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                      expected_rmsds, expected_hall_symbol)
 
+def exercise_2():
+  # thaumatin
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
+  pickle_path = os.path.join(data_dir, "full.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_orig.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
+                "n_macro_cycles=2",
                 "d_min=4"]
+  expected_unit_cell = uctbx.unit_cell(
+    (58, 58, 150, 90, 90, 90))
+  expected_rmsds = (0.06, 0.05, 0.0004)
+  expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
+
+def exercise_3():
+  # thaumatin
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
+  pickle_path = os.path.join(data_dir, "full.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_orig.json")
+  extra_args = ["multiple_lattice_search=True",
+                "reflections_per_degree=5",
+                "n_macro_cycles=2",
+                "d_min=4"]
+  expected_unit_cell = uctbx.unit_cell(
+    (58, 58, 150, 90, 90, 90))
+  expected_rmsds = (0.06, 0.05, 0.0004)
 
   # now enforce symmetry
   extra_args.append("space_group=P4")
@@ -111,11 +131,42 @@ def exercise_index_3D_FFT_simple():
   assert approx_equal(b.angle(c, deg=True), 90)
   assert approx_equal(c.angle(a, deg=True), 90)
 
+def exercise_4():
+  # trypsin
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
+  pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1.json")
+  extra_args = ["multiple_lattice_search=True",
+                "reflections_per_degree=5",
+                "n_macro_cycles=2",
+                "d_min=4",
+                "scan_range=0,50",
+                "scan_range=450,500",
+                "scan_range=850,900"]
+  expected_unit_cell = uctbx.unit_cell(
+    (54.3, 58.3, 66.5, 90, 90, 90))
+  expected_rmsds = (0.08, 0.06, 0.002)
+  expected_hall_symbol = ' P 1'
 
-def run():
-  exercise_index_3D_FFT_simple()
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
+
+
+def run(args):
+  if not libtbx.env.has_module("dials_regression"):
+    print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
+    return
+
+  exercises = (exercise_1, exercise_2, exercise_3, exercise_4)
+  if len(args):
+    args = [int(arg) for arg in args]
+    exercises = [exercises[arg] for arg in args]
+
+  for exercise in exercises:
+    exercise()
 
 if __name__ == '__main__':
+  import sys
   from libtbx.utils import show_times_at_exit
   show_times_at_exit()
-  run()
+  run(sys.argv[1:])
