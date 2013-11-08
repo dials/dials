@@ -29,16 +29,13 @@ namespace dials { namespace algorithms {
       const af::const_ref< double, af::c_grid<2> > &background2d) {
         double i_s = 0, i_bg = 0, rho_j = 0;
         double n = 0, m = 0;
+        //double tmp_diff;
         int cont = 0;
         double var_i;
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
         vec2<double> integr_data(0,1);
 
-        /*
-      for(int row = 0; row < ny; row++){
-        for( int col = 0; col < nx; col++ ){
-        */
         for (int row = 0; row<nrow;row++) {
           for (int col = 0; col<ncol;col++) {
             if ( mask2d(row,col) & Foreground ) {
@@ -54,8 +51,6 @@ namespace dials { namespace algorithms {
         }
         if( i_bg>0 && cont>0 && m>0 && n>0 ){
           var_i = i_s + i_bg + (m / n) * ( m / n) * rho_j;
-          //std::cout << "\n m =" << m << "\n n =" << n;
-          //std::cout << "\n i_s =" << i_s << "\n i_bg =" << i_bg << "\n (m/n)**2 =" << double((m / n) * ( m / n)) << "\n rho_j =" << rho_j;
         } else {
           var_i = i_s;
         }

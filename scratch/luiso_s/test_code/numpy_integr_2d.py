@@ -21,9 +21,9 @@ data2d[2, 2] = 60
 
 for row in range(5):
     for col in range(5):
-        data2d[row, col] -= row * 2
-        data2d[row, col] += col * 2
-data2d[4, 2] = 1.0
+        data2d[row, col] -= row / 2
+        data2d[row, col] += col / 2
+#data2d[4, 2] = 1.0
 #data2d[2, 4] = 1.0
 print data2d
 
@@ -60,28 +60,23 @@ rlist = ReflectionList()
 rlist.append(r)
 from dials.algorithms.background.flat_background_subtractor \
  import tmp_numpy_layering_n_bkgr_avg, layering_and_background_avg
+#layering_and_background_avg(rlist)
+#tmp_numpy_layering_n_bkgr_avg(rlist)
 
 from dials.algorithms.background.curved_background_subtractor \
  import tmp_numpy_layering_n_bkgr_modl, layering_and_background_modl \
+#tmp_numpy_layering_n_bkgr_modl(rlist)
+#layering_and_background_modl(rlist)
+
 
 from dials.algorithms.background.inclined_background_subtractor \
  import layering_and_background_plane
-
-#tmp_numpy_layering_n_bkgr_avg(rlist)
-#tmp_numpy_layering_n_bkgr_modl(rlist)
-
-
-
-#layering_and_background_avg(rlist)
-#layering_and_background_modl(rlist)
-
 
 layering_and_background_plane(rlist)
 
 
 from dials.algorithms.integration.summation2d \
  import  flex_2d_layering_n_integrating
-
 
 flex_2d_layering_n_integrating(rlist)
 
