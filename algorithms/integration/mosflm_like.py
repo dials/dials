@@ -11,8 +11,7 @@ class MosflmProfileFitting:
 
         layering_and_background_modl(rlist)
         flex_2d_layering_n_integrating(rlist)
-
-        xmax, ymax = sweep.get_detector().get_image_size()
+        xmax, ymax = sweep.get_detector()[0].get_image_size()
         rlist = mosflm_caller(rlist, xmax, ymax, self.nblocks)
         return rlist
 
