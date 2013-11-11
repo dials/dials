@@ -930,7 +930,7 @@ class indexer(object):
     return model
 
   def index_reflections_given_orientation_matix(
-      self, crystal_model, tolerance=0.2, verbose=0, plot_differences=False):
+      self, crystal_model, tolerance=0.2, verbose=0):
 
     if verbose > 1:
       print "Candidate crystal model:"
@@ -944,51 +944,25 @@ class indexer(object):
     A = crystal_model.get_A()
     A_inv = A.inverse()
 
-    diff_h = flex.double()
-    diff_k = flex.double()
-    diff_l = flex.double()
+    d_spacings = 1/self.reciprocal_space_points.norms()
+    inside_resolution_limit = d_spacings > self.d_min
+    sel = inside_resolution_limit & (self.reflections_i_lattice.select(
+        self.reflections_in_scan_range) == -1)
+    isel = sel.iselection()
+    rlps = self.reciprocal_space_points.select(isel)
+    hkl_float = tuple(A_inv) * rlps
+    hkl_int = hkl_float.iround()
 
-    for i_ref in self.reflections_in_scan_range:
-      if self.reflections_i_lattice[i_ref] > -1:
-        # this reflection has already been indexed by a previous lattice
-        continue
-      i_rlp = flex.first_index(self.reflections_in_scan_range, i_ref)
-      rlp = self.reciprocal_space_points[i_rlp]
-      rlp = matrix.col(rlp)
-      spot_resolution = 1/rlp.length()
-      if spot_resolution < self.d_min:
-        continue
-      refl = self.reflections[i_ref]
-      hkl_float = A_inv * rlp
-      hkl_int = [int(round(h)) for h in hkl_float]
-      if plot_differences:
-        diff = matrix.col(hkl_int) - hkl_float
-        diff_h.append(diff[0])
-        diff_k.append(diff[1])
-        diff_l.append(diff[2])
-      max_difference = max([abs(hkl_float[i] - hkl_int[i]) for i in range(3)])
+    for i_hkl in range(hkl_int.size()):
+      max_difference = max([abs(hkl_float[i_hkl][i] - hkl_int[i_hkl][i]) for i in range(3)])
       if max_difference > tolerance:
         n_rejects += 1
         continue
-      miller_indices.append(hkl_int)
-      refl.miller_index = hkl_int
+      miller_index = hkl_int[i_hkl]
+      miller_indices.append(miller_index)
+      i_ref = self.reflections_in_scan_range[isel[i_hkl]]
+      self.reflections[i_ref].miller_index = miller_index
       indexed_reflections.append(i_ref)
-
-    #n_rejects = n_rejects
-    if verbose > 0:
-      print "%i reflections indexed successfully (%i rejects)" %(
-      indexed_reflections.size(), n_rejects)
-
-    if plot_differences:
-      from matplotlib import pyplot
-      n_slots = 50
-      hist_h = flex.histogram(diff_h, n_slots=n_slots)
-      hist_k = flex.histogram(diff_k, n_slots=n_slots)
-      hist_l = flex.histogram(diff_l, n_slots=n_slots)
-      pyplot.plot(hist_h.slot_centers(), hist_h.slots())
-      pyplot.plot(hist_k.slot_centers(), hist_k.slots())
-      pyplot.plot(hist_l.slot_centers(), hist_l.slots())
-      pyplot.show()
 
     return indexed_reflections, miller_indices
 
