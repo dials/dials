@@ -20,7 +20,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 439
+    assert len(reflections) == 459
     refl = reflections[0]
     assert approx_equal(refl.intensity, 142)
     assert approx_equal(refl.frame_number, 0)
@@ -35,7 +35,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 353
+    assert len(reflections) == 371
 
   # now with more generous parameters
   args = ["dials.spotfinder", "min_spot_size=3", "max_separation=3",
@@ -44,7 +44,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 651
+    assert len(reflections) == 679
 
 def run():
   exercise_spotfinder()
