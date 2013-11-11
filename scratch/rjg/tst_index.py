@@ -41,16 +41,16 @@ except ImportError:
   have_hcluster = False
 
 try:
-  import hcluster
-  have_hcluster = True
+  import networkx
+  have_networkx = True
 except ImportError:
-  have_hcluster = False
+  have_networkx = False
 
 
 def check_external_dependencies(dependencies):
   missing = []
   for dependency in dependencies:
-    if locals().get('have_%s' %dependency, False):
+    if not globals().get('have_%s' %dependency, False):
       missing.append(dependency)
   return missing
 
