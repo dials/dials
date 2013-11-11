@@ -36,7 +36,9 @@ class TestImporter:
         assert(len(importer.imagesets) == 3)
         assert(len(importer.crystals) == 2)
         assert(len(importer.unhandled_arguments) == 2)
-        assert(importer.extracted != None)
+
+        if os.path.exists(os.path.join(self.path, 'extracted.tar')):
+            assert(importer.extracted != None)
 
         print 'OK'
 
