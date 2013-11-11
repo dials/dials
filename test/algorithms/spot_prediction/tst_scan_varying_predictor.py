@@ -107,16 +107,18 @@ refs2 = sv_predictor()
 assert len(refs1) == len(refs2)
 print "OK"
 
-def key_from_miller(ref):
-    """A fragile sort key for Reflections' Miller indices. Should think
-    up a better version!"""
-    hkl = ref.miller_index
-    key = 2*hkl[2] + 100*hkl[1] + 10000*hkl[0]
-    if ref.entering: key += 1
-    return key
+def sort_refs(reflections):
 
-refs1_sorted = sorted(refs1, key=key_from_miller)
-refs2_sorted = sorted(refs2, key=key_from_miller)
+    """Sort reflections by Miller index and entering flag"""
+    refs_sorted = sorted(reflections, key=lambda x: x.entering)
+    refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[2])
+    refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[1])
+    refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[0])
+
+    return refs_sorted
+
+refs1_sorted = sort_refs(refs1)
+refs2_sorted = sort_refs(refs2)
 
 for (r1, r2) in zip(refs1_sorted, refs2_sorted):
     assert r1.miller_index == r2.miller_index
@@ -124,4 +126,3 @@ for (r1, r2) in zip(refs1_sorted, refs2_sorted):
     assert abs(dphi) < 0.01 * im_width
 
 print "OK"
-
