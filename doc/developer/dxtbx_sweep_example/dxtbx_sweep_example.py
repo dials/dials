@@ -62,14 +62,5 @@ if __name__ == '__main__':
     volume = sweep.to_array((2, 7, 100, 200, 100, 300))
     print "sweep volume 4 size: ", volume.all()
 
-    # Get/Set the image cache
-    print "max image cache: ", sweep.reader().get_max_cache()
-    sweep.reader().set_max_cache(10)
-
-    for image in sweep:
-        pass
-
-    print "Currently in cache: ", sweep.reader().cached()
-
     print "Format: ", sweep.reader().get_format()
-    print "Template: ", sweep.reader().get_template()
+    print "Template: ", sweep.get_template()
