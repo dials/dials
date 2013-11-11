@@ -2,7 +2,8 @@
 #
 # dials.algorithms.refinement.refiner.py
 #
-#  Copyright (C) 2013 Diamond Light Source
+#  Copyright (C) 2013 Diamond Light Source and STFC Rutherford Appleton
+#                     Laboratory, UK.
 #
 #  Authors: James Parkhurst, David Waterman
 #
