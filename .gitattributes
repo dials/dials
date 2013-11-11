@@ -422,9 +422,6 @@ scratch/dgw/refinement/infer_scattering_vectors.py -text
 scratch/dgw/refinement/parameterisation/__init__.py -text
 scratch/dgw/refinement/perturb_reflection_phi.py -text
 scratch/dgw/refinement/plot_derivatives.py -text
-scratch/dgw/refinement/tst_prediction.py -text
-scratch/dgw/refinement/tst_prediction_parameters.py -text
-scratch/dgw/refinement/tst_ref_passage_categorisation.py -text
 scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
