@@ -55,6 +55,7 @@ class Refinery(object):
 
         # initial parameter values
         self.x = flex.double(self._parameters.get_param_vals())
+        self.old_x = None
 
         # undefined initial functional and gradients values
         self._f = None
@@ -331,9 +332,12 @@ class AdaptLstbx(
         self.x += self.step()
 
     def step_backward(self):
-        assert self.old_x is not None
-        self.x, self.old_x = self.old_x, None
-        self.history._step -= 1
+        if self.old_x is None:
+            return False
+        else:
+            self.x, self.old_x = self.old_x, None
+            self.history._step -= 1
+            return True
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     """Refinery implementation, using lstbx Gauss Newton iterations"""
@@ -412,8 +416,9 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
             if self.test_objective_increasing_but_not_nref():
                 reason_for_termination = "Refinement failure:" \
-                    "objective increased. Parameters set back one step"
-                self.step_backward()
+                    "objective increased"
+                if self.step_backward():
+                    reason_for_termination += ". Parameters set back one step"
                 self.prepare_for_step()
                 break
 
