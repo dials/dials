@@ -133,17 +133,21 @@ class Refinery(object):
 
         return all(tests)
 
-    def test_objective_increasing(self):
-        """Test for an increase in the objective value between steps
-        (usually a bad sign)"""
+    def test_objective_increasing_but_not_nref(self):
+        """Test for an increase in the objective value between steps. This
+        could be caused simply by the number of matches between observations
+        and predictions increasing. However, if the number of matches stayed
+        the same or reduced then this is a bad sign."""
 
         try:
             l1 = self.history.objective[-1]
             l2 = self.history.objective[-2]
+            n1 = self.history.num_reflections[-1]
+            n2 = self.history.num_reflections[-2]
         except IndexError:
             return False
 
-        return l1 > l2
+        return l1 > l2 and n1 <= n2
 
     def print_step(self):
         """print information about the current step"""
@@ -406,7 +410,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
                 reason_for_termination = "Step too small"
                 break
 
-            if self.test_objective_increasing():
+            if self.test_objective_increasing_but_not_nref():
                 reason_for_termination = "Refinement failure:" \
                     "objective increased. Parameters set back one step"
                 self.step_backward()
