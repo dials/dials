@@ -95,6 +95,9 @@ for ref in obs_refs:
     impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
     ref.image_coord_mm = impacts
 
+    # set the 'observed' centroids
+    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+
     # set the centroid variance
     ref.centroid_variance = (var_x, var_y ,var_phi)
 

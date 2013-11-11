@@ -205,7 +205,6 @@ hkls, angles, s_vecs = zip(*temp)
 
 # convert angles to image number
 frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False), angles)
-print max(frames), min(frames), sum(frames) / len(frames)
 
 # Project positions on camera. Currently assuming all reflections
 # intersect panel 0

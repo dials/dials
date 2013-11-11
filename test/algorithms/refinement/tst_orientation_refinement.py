@@ -188,6 +188,9 @@ var_phi = (im_width / 2.)**2
 obs_refs = ray_intersection(mydetector, obs_refs)
 for ref in obs_refs:
 
+    # set the 'observed' centroids
+    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+
     # set the centroid variance
     ref.centroid_variance = (var_x, var_y ,var_phi)
 

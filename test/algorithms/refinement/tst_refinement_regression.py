@@ -174,22 +174,6 @@ ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 
-## Pull out reflection data as lists
-#temp = [(ref.miller_index, ref.entering, ref.rotation_angle,
-#         matrix.col(ref.beam_vector)) for ref in obs_refs]
-#hkls, entering_flags, angles, svecs = zip(*temp)
-#
-## convert angles to image number
-#frames = map(lambda x: myscan.get_image_index_from_angle(x, deg=False),
-#             angles)
-#
-## Project positions on camera
-## currently assume all reflections intersect panel 0
-#panels = [0] * len(hkls)
-#impacts = [mydetector[0].get_ray_intersection(
-#                        ref.beam_vector) for ref in obs_refs]
-#d1s, d2s = zip(*impacts)
-
 # Invent some variances for the centroid positions of the simulated data
 assert(len(mydetector) == 1)
 im_width = 0.1 * pi / 180.
@@ -200,10 +184,11 @@ var_phi = (im_width / 2.)**2
 
 for ref in obs_refs:
 
-    # calc and set the impact position, assuming all reflections
+    # calc and set the observed impact position, assuming all reflections
     # intersect panel 0.
     impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
     ref.image_coord_mm = impacts
+    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
 
     # set the centroid variance
     ref.centroid_variance = (var_x, var_y ,var_phi)

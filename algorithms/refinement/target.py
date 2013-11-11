@@ -501,9 +501,9 @@ class ReflectionManager(object):
             entering = s.dot(self._vecn) < 0.
             frame = ref.frame_number
             panel = ref.panel_number
-            x = ref.image_coord_mm[0]
-            y = ref.image_coord_mm[1]
-            phi = ref.rotation_angle
+            x = ref.centroid_position[0]
+            y = ref.centroid_position[1]
+            phi = ref.centroid_position[2]
             sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
             w_x, w_y, w_phi = [1. / e for e in ref.centroid_variance]
 

@@ -253,6 +253,10 @@ if __name__ == '__main__':
     assert len(obs_refs) == len(obs_refs2)
     for ref, ref2 in zip(obs_refs, obs_refs2):
 
+        # set the 'observed' centroids
+        ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+        ref2.centroid_position = ref2.image_coord_mm + (ref2.rotation_angle, )
+
         # set the centroid variance
         ref.centroid_variance = (var_x, var_y, var_phi)
         ref2.centroid_variance = (var_x, var_y, var_phi)
