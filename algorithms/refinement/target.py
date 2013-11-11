@@ -325,11 +325,12 @@ class ObsPredMatch:
     """
 
     # initialise with an observation
-    def __init__(self, hkl, entering, frame, panel,
+    def __init__(self, hkl, iobs, entering, frame, panel,
                             Xo, sigXo, weightXo,
                             Yo, sigYo, weightYo,
                             Phio, sigPhio, weightPhio):
         self.H = hkl
+        self.iobs = iobs
         self.entering = entering
         self.frame_o = frame
         self.panel = panel
@@ -398,7 +399,7 @@ class ObservationPrediction(object):
     calculated by the reflection manager and passed in, and used here to
     identify which observations to update with a new prediction"""
 
-    def __init__(self, H, entering, frame, panel,
+    def __init__(self, H, iobs, entering, frame, panel,
                        Xo, sigXo, weightXo,
                        Yo, sigYo, weightYo,
                        Phio, sigPhio, weightPhio):
@@ -406,7 +407,7 @@ class ObservationPrediction(object):
         assert isinstance(entering, bool)
         self.H = H
 
-        self.obs = [ObsPredMatch(H, entering, frame, panel,
+        self.obs = [ObsPredMatch(H, iobs, entering, frame, panel,
                                  Xo, sigXo, weightXo,
                                  Yo, sigYo, weightYo,
                                  Phio, sigPhio, weightPhio)]
@@ -436,13 +437,13 @@ class ObservationPrediction(object):
 
         self.obs = [x for x in self.obs if x.is_matched]
 
-    def add_observation(self, entering, frame, panel,
+    def add_observation(self, iobs, entering, frame, panel,
                               Xo, sigXo, weightXo,
                               Yo, sigYo, weightYo,
                               Phio, sigPhio, weightPhio):
         """Add another observation of this reflection"""
 
-        self.obs.append(ObsPredMatch(self.H, entering, frame, panel,
+        self.obs.append(ObsPredMatch(self.H, iobs, entering, frame, panel,
                                      Xo, sigXo, weightXo,
                                      Yo, sigYo, weightYo,
                                      Phio, sigPhio, weightPhio))
@@ -478,19 +479,23 @@ class ReflectionManager(object):
         self._inclusion_cutoff = inclusion_cutoff
 
         # exclude reflections that fail inclusion criteria
-        self._obs_data = self._remove_excluded_obs(reflections)
-        self._sample_size = len(self._obs_data)
+        #self._obs_data = self._remove_excluded_obs(reflections)
+        refs_to_keep = self._id_refs_to_keep(reflections)
+        #self._sample_size = len(refs_to_keep)
+        self._total_size = len(refs_to_keep)
 
         # choose a random subset of data for refinement
+        self._sample_size = self._total_size
         self._nref_per_degree = nref_per_degree
         self._max_num_obs = max_num_obs
-        working_ref = self._create_working_set()
+        refs_to_keep = self._create_working_set(refs_to_keep)
 
         # store observation information in a dict of observation-prediction
         # pairs (prediction information will go in here later)
         self._obs_pred_pairs = {}
-        for ref in working_ref:
+        for i in refs_to_keep:
 
+            ref = reflections[i]
             h = ref.miller_index
             s = matrix.col(ref.beam_vector)
             entering = s.dot(self._vecn) < 0.
@@ -504,13 +509,13 @@ class ReflectionManager(object):
 
             if h not in self._obs_pred_pairs:
                 self._obs_pred_pairs[h] = ObservationPrediction(
-                    h, entering, frame, panel,
+                    h, i, entering, frame, panel,
                     x, sig_x, w_x,
                     y, sig_y, w_y,
                     phi, sig_phi, w_phi)
             else:
                 self._obs_pred_pairs[h].add_observation(
-                    entering, frame, panel,
+                    i, entering, frame, panel,
                     x, sig_x, w_x,
                     y, sig_y, w_y,
                     phi, sig_phi, w_phi)
@@ -532,8 +537,8 @@ class ReflectionManager(object):
         return matrix.col(self._beam.get_s0()).cross(
                         matrix.col(self._gonio.get_rotation_axis())).normalize()
 
-    def _remove_excluded_obs(self, obs_data):
-        """Filter observations that fail certain conditions.
+    def _id_refs_to_keep(self, obs_data):
+        """Create a selection of observations that pass certain conditions.
 
         This includes outlier rejection plus rejection of reflections
         too close to the spindle"""
@@ -544,10 +549,10 @@ class ReflectionManager(object):
         axis = matrix.col(self._gonio.get_rotation_axis())
         s0 = matrix.col(self._beam.get_s0())
 
-        inc = [ref for ref in obs_data if self._inclusion_test(
+        inc = [i for i, ref in enumerate(obs_data) if self._inclusion_test(
             matrix.col(ref.beam_vector), axis, s0)]
 
-        return tuple(inc)
+        return inc
 
     def _inclusion_test(self, s, axis, s0):
         """Test scattering vector s for inclusion"""
@@ -563,11 +568,11 @@ class ReflectionManager(object):
 
         return test
 
-    def _create_working_set(self):
-        """Make a subset of data for use in refinement"""
+    def _create_working_set(self, indices):
+        """Make a subset of the indices of reflections to use in refinement"""
 
-        working_data = self._obs_data
-        sample_size = len(working_data)
+        working_indices = indices
+        sample_size = len(working_indices)
 
         # set sample size according to nref_per_degre
         if self._nref_per_degree:
@@ -581,11 +586,11 @@ class ReflectionManager(object):
                 sample_size = self._max_num_obs
 
         # sample the data and record the sample size
-        if sample_size < len(working_data):
+        if sample_size < len(working_indices):
             self._sample_size = sample_size
-            working_data = random.sample(working_data,
-                                         self._sample_size)
-        return(working_data)
+            working_indices = random.sample(working_indices,
+                                            self._sample_size)
+        return(working_indices)
 
     def get_sample_size(self):
         """Return the number of observations in the working set to be
@@ -597,7 +602,7 @@ class ReflectionManager(object):
         """Return the number of observations that pass inclusion criteria and
         can potentially be used for refinement"""
 
-        return len(self._obs_data)
+        return self._total_size
 
     def _sort_obs_by_residual(self, obs, angular=False):
         """For analysis purposes, sort the obs-pred matches so that the
@@ -618,12 +623,12 @@ class ReflectionManager(object):
         return sort_obs
 
 
-    def get_matches(self):
+    def get_matches(self, silent = False):
         """For every observation matched with a prediction return all data"""
 
         l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 
-        if self._verbosity > 2 and len(l) > 20:
+        if self._verbosity > 2 and len(l) > 20 and not silent:
 
             sl = self._sort_obs_by_residual(l)
             print "Reflections with the worst 20 positional residuals:"

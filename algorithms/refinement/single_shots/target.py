@@ -191,21 +191,21 @@ class ReflectionManagerXY(ReflectionManager):
     reflections too close to the spindle, and reports only information
     about X, Y residuals"""
 
-    def _remove_excluded_obs(self, obs_data):
+    def _id_refs_to_keep(self, obs_data):
         """For this version of the class, do nothing. We don't want to
         exclude reflections close to the spindle, as the spindle may
         not exist"""
 
-        inc = [ref for ref in obs_data]
+        inc = [i for i, ref in enumerate(obs_data)]
 
-        return tuple(inc)
+        return inc
 
-    def get_matches(self):
+    def get_matches(self, silent = False):
         """For every observation matched with a prediction return all data"""
 
         l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 
-        if self._verbosity > 2 and len(l) > 20:
+        if self._verbosity > 2 and len(l) > 20 and not silent:
             print "Listing predictions matched with observations for " + \
                   "the first 20 reflections:"
             print "H, K, L, Xresid, Yresid, weightXo, weightYo"

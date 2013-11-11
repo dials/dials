@@ -189,6 +189,19 @@ class Refiner(object):
         # refinement history. The refined models are set by side-effect
         return self.refinery
 
+    def selection_used_for_refinement(self):
+        """Return a selection as a flex.bool in terms of the input reflection
+        data of those reflections that were used in the final step of
+        refinement."""
+
+        from scitbx.array_family import flex
+        matches = self.refman.get_matches()
+        selection = flex.bool(len(self.reflections))
+        for m in matches:
+            selection[m.iobs] = True
+
+        return selection
+
     def write_residuals_table(self):
 
         matches = self.refman.get_matches()
