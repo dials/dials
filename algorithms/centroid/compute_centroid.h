@@ -82,9 +82,16 @@ namespace dials { namespace algorithms {
       // Compute the centroid and set the stuff
       CentroidMaskedImage3d<FloatType> centroid(shoebox, mask.const_ref());
       typedef CentroidMaskedImage3d<FloatType>::coord_type coord_type;
+
       reflection.set_centroid_position(centroid.mean() + offset);
-      reflection.set_centroid_variance(centroid.standard_error_sq());
-      reflection.set_centroid_sq_width(centroid.unbiased_variance());
+      try {
+        reflection.set_centroid_variance(centroid.unbiased_standard_error_sq()
+          + vec3<double>(0.25, 0.25, 0.25));
+        reflection.set_centroid_sq_width(centroid.unbiased_variance());
+      } catch(dials::error) {
+        reflection.set_centroid_variance(vec3<double>(0.25, 0.25, 0.25));
+        reflection.set_centroid_sq_width(vec3<double>(0.0, 0.0, 0.0));
+      }
     }
   };
 
