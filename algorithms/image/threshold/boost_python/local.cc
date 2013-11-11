@@ -55,7 +55,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("mask"),
       arg("size"),
       arg("n_sigma_b"),
-      arg("n_sigma_s")));
+      arg("n_sigma_s"),
+      arg("min_count")));
       
     def("kabsch_w_gain", &kabsch_w_gain<FloatType>, (
       arg("image"),
@@ -63,7 +64,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("gain"),
       arg("size"),
       arg("n_sigma_b"),
-      arg("n_sigma_s")));  
+      arg("n_sigma_s"),
+      arg("min_count")));  
   }
 
   void export_local() {

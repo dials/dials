@@ -59,14 +59,14 @@ class Test:
         from dials.algorithms.image.threshold import kabsch
         nsig_b = 3
         nsig_s = 3
-        result = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s)
+        result = kabsch(self.image, self.mask, self.size, nsig_b, nsig_s, self.min_count)
         print 'OK'
 
     def tst_kabsch_w_gain(self):
         from dials.algorithms.image.threshold import kabsch_w_gain
         nsig_b = 3
         nsig_s = 3
-        result = kabsch_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s)
+        result = kabsch_w_gain(self.image, self.mask, self.gain, self.size, nsig_b, nsig_s, self.min_count)
         print 'OK'
 
 if __name__ == '__main__':

@@ -255,7 +255,8 @@ namespace dials { namespace algorithms {
       if (min_count_ <= 0) {
         min_count_ = (2 * size[0] + 1) * (2 * size[1] + 1);
       } else {
-        DIALS_ASSERT(min_count_ <= (2 * size[0] + 1) * (2 * size[1] + 1));
+        DIALS_ASSERT(min_count_ <= (2 * size[0] + 1) * (2 * size[1] + 1)
+          && min_count_ > 1);
       }
 
       // Calculate the summed area under the mask

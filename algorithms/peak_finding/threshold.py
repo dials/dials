@@ -81,6 +81,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
         self._mask        = kwargs.get('mask')
         self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
         self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
+        self._min_count   = kwargs.get('min_count', 2)
 
     def __call__(self, image):
         '''Call the thresholding function
@@ -105,10 +106,12 @@ class XDSThresholdStrategy(ThresholdStrategy):
         result = None
         if self._gain:
             result = threshold.kabsch_w_gain(image.as_double(), mask,
-                self._gain, self._kernel_size, self._n_sigma_b, self._n_sigma_s)
+                self._gain, self._kernel_size, self._n_sigma_b, self._n_sigma_s,
+                self._min_count)
         else:
             result = threshold.kabsch(image.as_double(), mask,
-                self._kernel_size, self._n_sigma_b, self._n_sigma_s)
+                self._kernel_size, self._n_sigma_b, self._n_sigma_s,
+                self._min_count)
 
         # Return the result
         return result

@@ -247,12 +247,13 @@ namespace dials { namespace algorithms {
    * @param size The size of the local window
    * @param nsig_b The background threshold.
    * @param nsig_s The strong pixel threshold
+   * @param min_count The minimum number of pixels in the local area
    */
   template <typename FloatType>
   af::versa< bool, af::c_grid<2> > kabsch(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
-      int2 size, double nsig_b, double nsig_s) {
+      int2 size, double nsig_b, double nsig_s, int min_count) {
 
     // Check the input
     DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
@@ -265,7 +266,7 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the masked fano filtered image
-    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, 0);
+    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
     af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
     af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
     af::versa< int, af::c_grid<2> > count = filter.count();
@@ -299,13 +300,14 @@ namespace dials { namespace algorithms {
    * @param size The size of the local window
    * @param nsig_b The background threshold.
    * @param nsig_s The strong pixel threshold
+   * @param min_count The minimum number of pixels in the local area
    */
   template <typename FloatType>
   af::versa< bool, af::c_grid<2> > kabsch_w_gain(
       const af::const_ref< FloatType, af::c_grid<2> > &image,
       const af::const_ref< bool, af::c_grid<2> > &mask,
       const af::const_ref< FloatType, af::c_grid<2> > &gain,
-      int2 size, double nsig_b, double nsig_s) {
+      int2 size, double nsig_b, double nsig_s, int min_count) {
 
     // Check the input
     DIALS_ASSERT(nsig_b >= 0 && nsig_s >= 0);
@@ -318,7 +320,7 @@ namespace dials { namespace algorithms {
     }
 
     // Calculate the masked fano filtered image
-    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, 0);
+    FanoFilterMasked<FloatType> filter(image, temp.const_ref(), size, min_count);
     af::versa< FloatType, af::c_grid<2> > fano_image = filter.fano();
     af::versa< FloatType, af::c_grid<2> > mean = filter.mean();
     af::versa< int, af::c_grid<2> > count = filter.count();
