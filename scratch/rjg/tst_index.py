@@ -21,6 +21,39 @@ if have_dials_regression:
     relative_path="dials_regression",
     test=os.path.isdir)
 
+# check optional dependencies of multi-lattice search
+try:
+  import scipy
+  have_scipy = True
+except ImportError:
+  have_scipy = False
+
+try:
+  import sklearn
+  have_sklearn = True
+except ImportError:
+  have_sklearn = False
+
+try:
+  import hcluster
+  have_hcluster = True
+except ImportError:
+  have_hcluster = False
+
+try:
+  import hcluster
+  have_hcluster = True
+except ImportError:
+  have_hcluster = False
+
+
+def check_external_dependencies(dependencies):
+  missing = []
+  for dependency in dependencies:
+    if locals().get('have_%s' %dependency, False):
+      missing.append(dependency)
+  return missing
+
 
 class run_one_indexing(object):
   def __init__(self,
@@ -88,6 +121,10 @@ def exercise_1():
                      expected_rmsds, expected_hall_symbol)
 
 def exercise_2():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print "Skipping exercise_2: missing dependencies %s" %(tuple(missing))
+    return
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -105,6 +142,10 @@ def exercise_2():
                             expected_rmsds, expected_hall_symbol)
 
 def exercise_3():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print "Skipping exercise_3: missing dependencies %s" %(tuple(missing))
+    return
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
   pickle_path = os.path.join(data_dir, "full.pickle")
@@ -132,6 +173,10 @@ def exercise_3():
   assert approx_equal(c.angle(a, deg=True), 90)
 
 def exercise_4():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print "Skipping exercise_4: missing dependencies %s" %(tuple(missing))
+    return
   # trypsin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
