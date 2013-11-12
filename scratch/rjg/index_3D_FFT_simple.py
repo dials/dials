@@ -250,35 +250,45 @@ class indexer(object):
       print "#" * 80
 
       self.d_min = self.params.reciprocal_space_grid.d_min
-      self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
-        crystal_model, verbose=1)
       if self.target_symmetry_primitive is not None:
         symmetrized_model = self.apply_symmetry(
           crystal_model, self.target_symmetry_primitive)
-        self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
-          symmetrized_model, verbose=1)
         crystal_model = symmetrized_model
+
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
+        if i_cycle > 0:
+          self.d_min -= self.params.refinement_protocol.d_min_step
+          self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
+          print "Increasing resolution to %.1f Angstrom" %self.d_min
+          n_indexed_last_cycle = self.indexed_reflections.size()
+
+          if self.indexed_reflections.size() == n_indexed_last_cycle:
+            print "No more reflections indexed this cycle - finished with refinement"
+            break
+
+        # reset in case some reflections are no longer indexed by this lattice
+        self.reflections_i_lattice.set_selected(
+          self.reflections_i_lattice == i_lattice, -1)
+        self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
+          crystal_model, verbose=1)
+        self.reflections_i_lattice.set_selected(
+          self.indexed_reflections, i_lattice)
+
+        if self.params.debug:
+          sel = flex.bool(self.reflections.size(), False)
+          lengths = 1/self.reciprocal_space_points.norms()
+          isel = self.reflections_in_scan_range.select(lengths >= self.d_min)
+          sel.set_selected(isel, True)
+          sel.set_selected(self.reflections_i_lattice > -1, False)
+          unindexed = self.reflections.select(sel)
+          with open("unindexed.pickle", 'wb') as f:
+            pickle.dump(unindexed, f)
+
         print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
         print
         self.refine(crystal_model)
 
-        self.d_min -= self.params.refinement_protocol.d_min_step
-        self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
-        print "Increasing resolution to %.1f Angstrom" %self.d_min
-        n_indexed_last_cycle = self.indexed_reflections.size()
-
-        self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
-          crystal_model, verbose=1)
-        # reset in case some reflections are no longer indexed by this lattice
-        self.reflections_i_lattice.set_selected(
-          self.reflections_i_lattice == i_lattice, -1)
-        self.reflections_i_lattice.set_selected(
-          self.indexed_reflections, i_lattice)
-        if self.indexed_reflections.size() == n_indexed_last_cycle:
-          print "No more reflections indexed this cycle - finished with refinement"
-          break
-        elif self.d_min == self.params.refinement_protocol.d_min_final:
+        if self.d_min == self.params.refinement_protocol.d_min_final:
           print "Target d_min_final reached: finished with refinement"
           break
 
