@@ -53,7 +53,7 @@ namespace dials { namespace af { namespace boost_python {
     // Check the frames are sequential
     int2 fr1(0, a[0].first_frame());
     int2 size = a[0].size();
-    for (std::size_t i = 1; i < a.size(); ++i) {
+    for (std::size_t i = 0; i < a.size(); ++i) {
       int2 fr2 = a[i].frame_range();
       DIALS_ASSERT(fr2[0] == fr1[1]);
       DIALS_ASSERT(a[i].size().all_eq(size));
