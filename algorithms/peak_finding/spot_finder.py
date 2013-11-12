@@ -26,7 +26,7 @@ class ExtractSpots(object):
         # Set the required strategies
         self.threshold_image = threshold_image
 
-    def __call__(self, sweep):
+    def __call__2(self, sweep):
         ''' Find the spots in the sweep
 
         Params:
@@ -66,6 +66,10 @@ class ExtractSpots(object):
             # Update progress bar
             progress.update(100.0 * float(frame + 1) / len(sweep))
 
+        import cPickle as pickle
+        lb = label[0]
+        pickle.dump((lb.values(), lb.coords(), lb.labels()), open("temp.p", "wb"))
+
         # Finish the progess bar
         progress.finished('Extracted {0} strong pixels'.format(
           sum([len(lb.values()) for lb in label])))
@@ -79,6 +83,71 @@ class ExtractSpots(object):
 
         # Return the shoeboxes
         return shoeboxes
+
+    def __call__(self, sweep):
+        ''' Find the spots in the sweep
+
+        Params:
+            sweep The sweep to process
+
+        Returns:
+            The list of spot shoeboxes
+
+        '''
+        from dials.util.command_line import ProgressBar, Command
+        from dials.model.data import PixelList
+        from dials.array_family import flex
+        from dxtbx.imageset import ImageSweep
+        from libtbx import easy_mp
+
+        def extract(index):
+            ''' Extract pixels from a block of images. '''
+            pl = PixelList(sweep.get_image_size()[::-1], index[0])
+            for image in sweep[index[0]:index[1]]:
+                pl.add_image(image, self.threshold_image(image))
+            return pl
+
+        # Extract the pixels in blocks of images in parallel
+        Command.start('Extracting strong pixels from images')
+        nprocs = 4
+        pl = easy_mp.parallel_map(
+          func=extract,
+          iterable=self._calculate_blocks(sweep, nprocs),
+          processes=nprocs,
+          method="multiprocessing",
+          preserve_order=True)
+        Command.end('Extracted strong pixels from images')
+
+        # Merge pixel lists into a single list
+        len_pl = len(pl)
+        Command.start('Merging {0} pixel lists'.format(len_pl))
+        pl = flex.pixel_list(pl).merge()
+        Command.end('Merged {0} pixel lists with {1} pixels'.format(len_pl, len(pl.coords())))
+
+        # Extract the pixel lists into a list of reflections
+        Command.start('Extracting')
+        s = flex.shoebox(pl)
+        Command.end('Extracted {0} spots'.format(len(s)))
+
+        # Return the shoeboxes
+        return s
+
+    def _calculate_blocks(self, sweep, nblocks):
+        ''' Calculate the blocks. '''
+        from math import ceil
+        blocks = [0]
+        sweep_length = len(sweep)
+        assert(nblocks <= sweep_length)
+        block_length = int(ceil(sweep_length / nblocks))
+        for i in range(nblocks):
+            frame = (i + 1) * block_length
+            if frame > sweep_length:
+                frame = sweep_length
+            blocks.append(frame)
+            if frame == sweep_length:
+                break
+        assert(all(b > a for a, b in zip(blocks, blocks[1:])))
+        return [(i, j) for i, j in zip(blocks[0:-1], blocks[1:])]
 
 
 class SpotFinder(object):
