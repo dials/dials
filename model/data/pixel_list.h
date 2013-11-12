@@ -21,8 +21,6 @@ namespace dials { namespace model {
 
   using scitbx::af::int2;
   using scitbx::vec3;
-  using dials::algorithms::labelpixels3d;
-  using dials::algorithms::labelpixels2d;
 
   /**
    * A class to hold a load of pixels and coordinates
@@ -59,6 +57,7 @@ namespace dials { namespace model {
         last_frame_(frame_range[1]),
         coords_(coords),
         values_(values) {
+      DIALS_ASSERT(size[0] > 0 && size[1] > 0);
       DIALS_ASSERT(last_frame_ >= first_frame_);
       DIALS_ASSERT(coords_.size() == values_.size());
       for (std::size_t i = 0; i < coords_.size(); ++i) {
@@ -135,14 +134,104 @@ namespace dials { namespace model {
     }
 
     af::shared<int> labels_3d() const {
-      return labelpixels3d(coords_.const_ref());
+
+      // Adjacency list type
+      typedef boost::adjacency_list<
+        boost::listS,
+        boost::vecS,
+        boost::undirectedS> AdjacencyList;
+
+      // Calculate the coordinate indices
+      std::vector<std::size_t> idx(coords_.size());
+      for (std::size_t i = 0; i < coords_.size(); ++i) {
+        idx[i] = index(coords_[i]);
+        if (i > 0) DIALS_ASSERT(idx[i] > idx[i-1]);
+      }
+
+      // Create a graph of coordinates
+      AdjacencyList graph(coords_.size());
+      std::size_t i1 = 0, i2 = 0, i3 = 0;
+      for (; i1 < coords_.size()-1; ++i1) {
+        std::size_t idx0 = idx[i1];
+        std::size_t idx1 = idx0+1;
+        std::size_t idx2 = idx0+size_[1];
+        std::size_t idx3 = idx0+size_[0]*size_[1];
+        if (idx[i1+1] == idx1 && coords_[i1][2] < size_[1]-1) {
+          boost::add_edge(i1, i1+1, graph);
+        }
+        if (coords_[i1][1] < size_[0]-1) {
+          for (; idx[i2] < idx2 && i2 < coords_.size(); ++i2);
+          if (idx[i2] == idx2) {
+            boost::add_edge(i1, i2, graph);
+          }
+        }
+        if (coords_[i1][0] < last_frame_-1) {
+          if (i2 > i3) i3 = i2;
+          for (; idx[i3] < idx3 && i3 < coords_.size(); ++i3);
+          if (idx[i3] == idx3) {
+            boost::add_edge(i1, i3, graph);
+          }
+        }
+      }
+
+      // Do the connected components
+      af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
+      int num = boost::connected_components(graph, &labels[0]);
+      DIALS_ASSERT(num <= labels.size());
+      return labels;
     }
 
     af::shared<int> labels_2d() const {
-      return labelpixels2d(coords_.const_ref());
+
+      // Adjacency list type
+      typedef boost::adjacency_list<
+        boost::listS,
+        boost::vecS,
+        boost::undirectedS> AdjacencyList;
+
+      // Calculate the coordinate indices
+      std::vector<std::size_t> idx(coords_.size());
+      for (std::size_t i = 0; i < coords_.size(); ++i) {
+        idx[i] = index(coords_[i]);
+        if (i > 0) DIALS_ASSERT(idx[i] > idx[i-1]);
+      }
+
+      // Create a graph of coordinates
+      AdjacencyList graph(coords_.size());
+      std::size_t i1 = 0, i2 = 0, i3 = 0;
+      for (; i1 < coords_.size()-1; ++i1) {
+        std::size_t idx0 = idx[i1];
+        std::size_t idx1 = idx0+1;
+        std::size_t idx2 = idx0+size_[1];
+        std::size_t idx3 = idx0+size_[0]*size_[1];
+        if (idx[i1+1] == idx1 && coords_[i1][2] < size_[1]-1) {
+          boost::add_edge(i1, i1+1, graph);
+        }
+        if (coords_[i1][1] < size_[0]-1) {
+          for (; idx[i2] < idx2 && i2 < coords_.size(); ++i2);
+          if (idx[i2] == idx2) {
+            boost::add_edge(i1, i2, graph);
+          }
+        }
+      }
+
+      // Do the connected components
+      af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
+      int num = boost::connected_components(graph, &labels[0]);
+      DIALS_ASSERT(num <= labels.size());
+      return labels;
     }
 
   private:
+
+    std::size_t index(vec3<int> a) const {
+      DIALS_ASSERT(a[0] >= first_frame_ && a[0] < last_frame_);
+      DIALS_ASSERT(a[1] >= 0 && a[1] < size_[0]);
+      DIALS_ASSERT(a[2] >= 0 && a[2] < size_[1]);
+      return ((std::size_t)(a[0] - first_frame_) * (std::size_t)size_[0] +
+              (std::size_t)a[1]) * (std::size_t)size_[1] +
+              (std::size_t)a[2];
+    }
 
     int2 size_;
     int first_frame_;
