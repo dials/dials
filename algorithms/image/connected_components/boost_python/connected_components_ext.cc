@@ -48,9 +48,6 @@ namespace dials { namespace algorithms { namespace boost_python {
     label_image_stack_wrapper<2>("LabelImageStack2d");
     label_image_stack_wrapper<3>("LabelImageStack3d");
     label_pixels_wrapper("LabelPixels3d");
-    
-    def("labelpixels2d", &labelpixels2d);
-    def("labelpixels3d", &labelpixels3d);
   }
   
   BOOST_PYTHON_MODULE(dials_algorithms_image_connected_components_ext)
