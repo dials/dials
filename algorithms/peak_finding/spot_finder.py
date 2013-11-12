@@ -84,8 +84,12 @@ class ExtractSpots(object):
         # Extract the pixel lists into a list of reflections
         Command.start('Extracting spots')
         shoeboxes = flex.shoebox()
+        if isinstance(sweep, ImageSweep):
+            twod = False
+        else:
+            twod = True
         for i, p in enumerate(pl):
-            shoeboxes.extend(flex.shoebox(p, i))
+            shoeboxes.extend(flex.shoebox(p, i, 0, twod))
         Command.end('Extracted {0} spots'.format(len(shoeboxes)))
 
         # Return the shoeboxes
