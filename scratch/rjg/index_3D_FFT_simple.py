@@ -645,6 +645,7 @@ class indexer(object):
 
     cluster_point_sets = []
     centroids = []
+    cluster_sizes = flex.int()
 
     difference_vectors = flex.vec3_double(difference_vectors)
 
@@ -652,13 +653,9 @@ class indexer(object):
     for cluster in clusters:
       points = flat_list([pairs[i] for i in cluster])
       cluster_point_sets.append(set(points))
-      centroids.append(difference_vectors.select(cluster).mean())
-
-    combinations = flex.vec3_int()
-    unions = []
-    intersections = []
-    n_common_points = flex.int()
-    fraction_common_points = flex.double()
+      d_vectors = difference_vectors.select(cluster)
+      cluster_sizes.append(len(d_vectors))
+      centroids.append(d_vectors.mean())
 
     # build a graph where each node is a centroid from the difference vector
     # cluster analysis above, and an edge is defined when there is a
@@ -687,7 +684,7 @@ class indexer(object):
     distinct_cliques = []
     cliques = list(nx.find_cliques(G))
     cliques = sorted(cliques, key=len, reverse=True)
-    for clique in cliques:
+    for i, clique in enumerate(cliques):
       clique = set(clique)
       if len(clique) < 3:
         break
@@ -698,6 +695,10 @@ class indexer(object):
           break
       if is_distinct:
         distinct_cliques.append(clique)
+        this_set = set()
+        for i_cluster in clique:
+          this_set = this_set.union(cluster_point_sets[i_cluster])
+        print "Clique %i: %i lattice points" %(i+1, len(this_set))
 
     assert len(distinct_cliques) > 0
 
@@ -707,9 +708,26 @@ class indexer(object):
     self.candidate_crystal_models = []
 
     for clique in distinct_cliques:
-      vectors = flex.vec3_double(centroids).select(flex.size_t(list(clique)))
+      sel = flex.size_t(list(clique))
+      vectors = flex.vec3_double(centroids).select(sel)
       perm = flex.sort_permutation(vectors.norms())
       vectors = [matrix.col(vectors[p]) for p in perm]
+
+      # exclude vectors that are (approximately) integer multiples of a shorter
+      # vector
+      unique_vectors = []
+      for v in vectors:
+        is_unique = True
+        for v_u in unique_vectors:
+          if is_approximate_integer_multiple(v_u, v,
+                                             relative_tolerance=0.01,
+                                             angular_tolerance=0.5):
+            is_unique = False
+            break
+        if is_unique:
+          unique_vectors.append(v)
+      vectors = unique_vectors
+
       self.candidate_basis_vectors.extend(vectors)
       candidate_orientation_matrices \
         = self.find_candidate_orientation_matrices(vectors, return_first=True)
@@ -761,6 +779,8 @@ class indexer(object):
 
     from sklearn.cluster import DBSCAN
     from sklearn.preprocessing import StandardScaler
+
+    vectors = flex.vec3_double(vectors)
 
     X = np.array(vectors)
     # scale the data - is this necessary/does it help or hinder?
