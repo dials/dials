@@ -41,6 +41,7 @@ class ExtractSpots(object):
         from dials.array_family import flex
         from dxtbx.imageset import ImageSweep
         from libtbx import easy_mp
+        from dials.util import mp
 
         def extract(index):
             ''' Extract pixels from a block of images. '''
@@ -49,6 +50,7 @@ class ExtractSpots(object):
             plists = [PixelList(p.get_image_size()[::-1], index[0])
                 for p in sweep.get_detector()]
 
+            # Iterate through the range of images
             for image in sweep[index[0]:index[1]]:
 
                 # Ensure image is a tuple of images (for multi-panel support)
@@ -64,12 +66,11 @@ class ExtractSpots(object):
 
         # Extract the pixels in blocks of images in parallel
         Command.start('Extracting strong pixels from images')
-        nprocs = 4
         pl = easy_mp.parallel_map(
           func=extract,
-          iterable=self._calculate_blocks(sweep, nprocs),
-          processes=nprocs,
-          method="multiprocessing",
+          iterable=self._calculate_blocks(sweep, mp.nproc),
+          processes=mp.nproc,
+          method=mp.method,
           preserve_order=True)
         Command.end('Extracted strong pixels from images')
 

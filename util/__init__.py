@@ -58,3 +58,13 @@ def halraiser(e):
 
     # Reraise the exception
     raise
+
+
+class MPState(object):
+    ''' Class to hold global state for multiprocessing. '''
+    def __init__(self):
+        self.nproc = 1
+        self.method = 'multiprocessing'
+
+# Global variable for multiprocessing
+mp = MPState()

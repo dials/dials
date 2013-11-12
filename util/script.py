@@ -91,9 +91,14 @@ class ScriptRunner(object):
 
         if kwargs.get('num_threads_option', True):
             self._config.add_option(
-                '--num-threads',
-                dest='num_threads', type='int', default=0,
-                help='The number of threads to use. Default=max')
+                '--nproc',
+                dest='nproc', type='int', default=0,
+                help='The number of processes to use. Default=1')
+            self._config.add_option(
+                '--mp-method',
+                dest='mp_method', type='string', default='multiprocessing',
+                help='The multiprocessing method to use ' \
+                     '(multiprocessing | sge | lsf | pbs)')
 
         # Bind the config add_option function to this class
         self.add_option = self._config.add_option
@@ -124,7 +129,7 @@ class ScriptRunner(object):
 
         # Configure the number of threads to use
         try:
-            self._configure_threads(options.num_threads)
+            self._configure_multiprocessing(options.nproc, options.mp_method)
         except AttributeError:
             pass
 
@@ -142,16 +147,21 @@ class ScriptRunner(object):
         except AttributeError:
             pass
 
-    def _configure_threads(self, num_threads):
+    def _configure_multiprocessing(self, nproc, method):
         '''Configure the number of parallel threads to use.'''
-        from omptbx import omp_set_num_threads, omp_get_max_threads
+        from libtbx import easy_mp
+        from dials.util import mp
 
         # If number of threads is <= 0 then set to max
-        if num_threads <= 0:
-            num_threads = omp_get_max_threads()
+        if nproc <= 0:
+            nproc = easy_mp.get_processes(None)
 
-        # Set the number of threads to use
-        omp_set_num_threads(num_threads)
+        if method not in ['multiprocessing', 'sge', 'lsf', 'pbs']:
+            raise RuntimeError('%s not recognisable option method' % method)
+
+        # Set the number of processes to use and the multiprocessing method
+        mp.nproc = nproc
+        mp.method = method
 
     def _configure_logging(self, phil):
         '''Configure the logging.'''
