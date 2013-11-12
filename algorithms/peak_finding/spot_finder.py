@@ -102,10 +102,23 @@ class ExtractSpots(object):
 
         def extract(index):
             ''' Extract pixels from a block of images. '''
-            pl = PixelList(sweep.get_image_size()[::-1], index[0])
+
+            # Create the list of pixel lists
+            plists = [PixelList(p.get_image_size()[::-1], index[0])
+                for p in sweep.get_detector()]
+
             for image in sweep[index[0]:index[1]]:
-                pl.add_image(image, self.threshold_image(image))
-            return pl
+
+                # Ensure image is a tuple of images (for multi-panel support)
+                if not isinstance(image, tuple):
+                    image = (image,)
+
+                # Add the images to the pixel lists
+                for pl, im in zip(plists, image):
+                    pl.add_image(im, self.threshold_image(im))
+
+            # Return the pixel lists
+            return plists
 
         # Extract the pixels in blocks of images in parallel
         Command.start('Extracting strong pixels from images')
@@ -118,19 +131,22 @@ class ExtractSpots(object):
           preserve_order=True)
         Command.end('Extracted strong pixels from images')
 
-        # Merge pixel lists into a single list
-        len_pl = len(pl)
+        # Merge pixel lists into a single list for each panel
+        len_pl = sum(len(p) for p in pl)
         Command.start('Merging {0} pixel lists'.format(len_pl))
-        pl = flex.pixel_list(pl).merge()
-        Command.end('Merged {0} pixel lists with {1} pixels'.format(len_pl, len(pl.coords())))
+        pl = [flex.pixel_list(p).merge() for p in zip(*pl)]
+        np = sum([len(p.values()) for p in pl])
+        Command.end('Merged {0} pixel lists with {1} pixels'.format(len_pl, np))
 
         # Extract the pixel lists into a list of reflections
-        Command.start('Extracting')
-        s = flex.shoebox(pl)
-        Command.end('Extracted {0} spots'.format(len(s)))
+        Command.start('Extracting spots')
+        shoeboxes = flex.shoebox()
+        for i, p in enumerate(pl):
+            shoeboxes.extend(flex.shoebox(p, i))
+        Command.end('Extracted {0} spots'.format(len(shoeboxes)))
 
         # Return the shoeboxes
-        return s
+        return shoeboxes
 
     def _calculate_blocks(self, sweep, nblocks):
         ''' Calculate the blocks. '''
