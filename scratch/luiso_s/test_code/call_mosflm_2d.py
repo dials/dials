@@ -31,10 +31,10 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
         for row in range(nrow):
             profile, tr_hold = calc_background_n_make_2d_profile(arr_rlist[row][col])
 
-            #from matplotlib import pyplot as plt
-            #data2d = profile.as_numpy_array()
-            #plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
-            #plt.show()
+            from matplotlib import pyplot as plt
+            data2d = profile.as_numpy_array()
+            plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
+            plt.show()
 
             arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], profile, tr_hold)
 

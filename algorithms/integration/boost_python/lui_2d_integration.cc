@@ -19,6 +19,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_luiso_s_2d_integration() {
     def("raw_2d_cut", &raw_2d_cut, (arg("data2d")), (arg("mask2d")),
             (arg("background2d")));
+    def("profile_2d_real_space", &profile_2d_real_space, (arg("data2d")), (arg("mask2d")),
+            (arg("background2d")));
   }
 
 }}}

@@ -28,6 +28,7 @@ class Summation2d(IntegrationInterface):
 def flex_2d_layering_n_integrating(reflections):
     from scitbx.array_family import flex
     from dials.algorithms.integration import raw_2d_cut
+    #from dials.algorithms.integration import profile_2d_real_space
     print "performing summation integration .... "
 
     for ref in reflections:
@@ -46,8 +47,9 @@ def flex_2d_layering_n_integrating(reflections):
                 mask2d.reshape(flex.grid(shoebox.all()[1:]))
                 background2d.reshape(flex.grid(shoebox.all()[1:]))
 
+                #reslt = profile_2d_real_space(data2d, mask2d, background2d)
                 reslt = raw_2d_cut(data2d, mask2d, background2d)
-
+                
                 ref.intensity += reslt[0]
                 ref.intensity_variance += reslt[1]
 
