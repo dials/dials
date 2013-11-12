@@ -411,8 +411,8 @@ class indexer(object):
 
     # real space FFT grid dimensions
     cell_lengths = [n_points * d_min/2 for i in range(3)]
-    self.unit_cell = uctbx.unit_cell(cell_lengths+[90]*3)
-    self.crystal_symmetry = crystal.symmetry(unit_cell=self.unit_cell,
+    self.fft_cell = uctbx.unit_cell(cell_lengths+[90]*3)
+    self.crystal_symmetry = crystal.symmetry(unit_cell=self.fft_cell,
                                              space_group_symbol="P1")
 
     print "FFT gridding: (%i,%i,%i)" %self.gridding
@@ -471,7 +471,7 @@ class indexer(object):
     grid_real_binary.as_1d().set_selected(grid_real_binary.as_1d() > 0, 1)
     grid_real_binary = grid_real_binary.iround()
     from cctbx import masks
-    flood_fill = masks.flood_fill(grid_real_binary, self.unit_cell)
+    flood_fill = masks.flood_fill(grid_real_binary, self.fft_cell)
     # the peak at the origin might have a significantly larger volume than the
     # rest so exclude this peak from determining maximum volume
     isel = (flood_fill.grid_points_per_void() > int(
@@ -515,7 +515,7 @@ class indexer(object):
       assert (sum(x**2 for x in sites_frac[i_seq]) < 1e-8)
       rt_mx_ji = di.rt_mx_ji
       site_frac_ji = rt_mx_ji * sites_frac[j_seq]
-      site_cart = self.unit_cell.orthogonalize(site_frac_ji)
+      site_cart = self.fft_cell.orthogonalize(site_frac_ji)
       vectors.append(matrix.col(site_cart))
       #vector_heights.append(heights[j_seq])
 
@@ -526,7 +526,7 @@ class indexer(object):
     relative_length_tolerance = 0.1
     angle_tolerance = 10 # degrees
 
-    orth = self.unit_cell.orthogonalize
+    orth = self.fft_cell.orthogonalize
     for v in vectors:
       length = v.length()
       if length < self.params.min_cell or length > self.params.max_cell:
@@ -1125,7 +1125,7 @@ class indexer(object):
     labels = ["cctbx.miller.fft_map"]
     ccp4_map.write_ccp4_map(
       file_name=file_name,
-      unit_cell=self.unit_cell,
+      unit_cell=self.fft_cell,
       space_group=sgtbx.space_group("P1"),
       gridding_first=gridding_first,
       gridding_last=gridding_last,
