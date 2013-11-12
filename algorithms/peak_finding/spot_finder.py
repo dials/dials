@@ -26,64 +26,6 @@ class ExtractSpots(object):
         # Set the required strategies
         self.threshold_image = threshold_image
 
-    def __call__2(self, sweep):
-        ''' Find the spots in the sweep
-
-        Params:
-            sweep The sweep to process
-
-        Returns:
-            The list of spot shoeboxes
-
-        '''
-        from dials.util.command_line import ProgressBar, Command
-        from dials.algorithms.image.connected_components import LabelImageStack2d
-        from dials.algorithms.image.connected_components import LabelImageStack3d
-        from dials.array_family import flex
-        from dxtbx.imageset import ImageSweep
-
-        # Construct the pixel labeller for either 2D or 3D
-        if not isinstance(sweep, ImageSweep):
-            Label = LabelImageStack2d
-        else:
-            Label = LabelImageStack3d
-        label = [Label(p.get_image_size()[::-1]) for p in sweep.get_detector()]
-
-        # Loop through all the images in the sweep and extract the pixels
-        # from each of the images
-        progress = ProgressBar(title='Extracting pixels from sweep')
-        for frame, image in enumerate(sweep):
-
-            # Ensure image is a tuple of images (for multi-panel support)
-            if not isinstance(image, tuple):
-                image = (image,)
-
-            # Create the mask by thresholding the image. Then add the mask
-            # and the image to the pixel labeller
-            for lb, im in zip(label, image):
-                lb.add_image(im, self.threshold_image(im))
-
-            # Update progress bar
-            progress.update(100.0 * float(frame + 1) / len(sweep))
-
-        import cPickle as pickle
-        lb = label[0]
-        pickle.dump((lb.values(), lb.coords(), lb.labels()), open("temp.p", "wb"))
-
-        # Finish the progess bar
-        progress.finished('Extracted {0} strong pixels'.format(
-          sum([len(lb.values()) for lb in label])))
-
-        # Extract the shoeboxes
-        Command.start('Extracting spots from pixels')
-        shoeboxes = flex.shoebox()
-        for i, lb in enumerate(label):
-            shoeboxes.extend(flex.shoebox(lb, i, sweep.get_array_range()[0]))
-        Command.end('Extracted {0} spots from pixels'.format(len(shoeboxes)))
-
-        # Return the shoeboxes
-        return shoeboxes
-
     def __call__(self, sweep):
         ''' Find the spots in the sweep
 
