@@ -69,6 +69,8 @@ debug = False
 debug_plots = False
   .type = bool
   .help = "Requires matplotlib"
+show_timing = False
+  .type = bool
 include file %s/data/refinement.phil
 refinement_protocol {
   weight_outlier_n_sigma = 5
@@ -178,6 +180,15 @@ class indexer(object):
     self.beam = sweep.get_beam()
     if params is None: params = master_params
     self.params = params
+
+    from libtbx.utils import time_log
+    self._index_reflections_timer = time_log("index_reflections")
+    self._refine_timer = time_log("refinement")
+    self._map_centroids_timer = time_log("map_centroids")
+    self._map_to_grid_timer = time_log("map_to_grid")
+    self._fft_timer = time_log("fft")
+    self._find_peaks_timer = time_log("find_peaks")
+    self._cluster_analysis_timer = time_log("cluster_analysis")
 
     self.target_symmetry_primitive = None
     self.target_symmetry_centred = None
@@ -316,6 +327,16 @@ class indexer(object):
         i+1, (self.reflections_i_lattice == i).count(True))
       print crystal_model
 
+    if self.params.show_timing:
+      print self._index_reflections_timer.legend
+      print self._map_centroids_timer.report()
+      print self._map_to_grid_timer.report()
+      print self._fft_timer.report()
+      print self._find_peaks_timer.report()
+      print self._cluster_analysis_timer.report()
+      print self._index_reflections_timer.report()
+      print self._refine_timer.report()
+
   def prepare_reflections(self):
     """Reflections that come from dials.spotfinder only have the centroid
     position and variance set, """
@@ -362,6 +383,7 @@ class indexer(object):
       self.reflections_in_scan_range.append(i_ref)
 
   def map_centroids_to_reciprocal_space(self):
+    self._map_centroids_timer.start()
     assert(len(self.detector) == 1)
     reflections = self.reflections.select(self.reflections_in_scan_range)
     x, y, _ = reflections.centroid_position().parts()
@@ -371,11 +393,14 @@ class indexer(object):
     beam_vectors.set_selected(self.reflections_in_scan_range, s1)
     self.reflections.set_beam_vector(beam_vectors) # needed by refinement
     S = s1 - self.beam.get_s0()
+    # XXX what about if goniometer fixed rotation is not identity?
     self.reciprocal_space_points = S.rotate_around_origin(
       self.goniometer.get_rotation_axis(),
       -reflections.rotation_angle())
+    self._map_centroids_timer.stop()
 
   def map_centroids_to_reciprocal_space_grid(self):
+    self._map_to_grid_timer.start()
     self.map_centroids_to_reciprocal_space()
     assert len(self.reciprocal_space_points) == len(self.reflections_in_scan_range)
     wavelength = self.beam.get_wavelength()
@@ -413,24 +438,37 @@ class indexer(object):
 
     self.reciprocal_space_grid = grid
     self.reflections_used_for_indexing = reflections_used_for_indexing
+    self._map_to_grid_timer.stop()
 
   def fft(self):
+    self._fft_timer.start()
+    #gb_to_bytes = 1073741824
+    #bytes_to_gb = 1/gb_to_bytes
+    #(128**3)*8*2*bytes_to_gb
+    #0.03125
+    #(256**3)*8*2*bytes_to_gb
+    #0.25
+    #(512**3)*8*2*bytes_to_gb
+    #2.0
+
     fft = fftpack.complex_to_complex_3d(self.gridding)
     grid_complex = flex.complex_double(
       reals=self.reciprocal_space_grid,
       imags=flex.double(self.reciprocal_space_grid.size(), 0))
-    self.grid_transformed = fft.forward(grid_complex)
-    #self.grid_real = flex.pow2(flex.abs(self.grid_transformed))
-    self.grid_real = flex.pow2(flex.real(self.grid_transformed))
+    grid_transformed = fft.forward(grid_complex)
+    #self.grid_real = flex.pow2(flex.abs(grid_transformed))
+    self.grid_real = flex.pow2(flex.real(grid_transformed))
     #self.grid_real = flex.pow2(flex.imag(self.grid_transformed))
+    del grid_transformed
+    self._fft_timer.stop()
 
   def find_peaks(self):
-    grid_real = self.grid_real.deep_copy()
+    self._find_peaks_timer.start()
+    grid_real_binary = self.grid_real.deep_copy()
     rmsd = math.sqrt(
-      flex.mean(flex.pow2(grid_real.as_1d()-flex.mean(grid_real.as_1d()))))
-    grid_real.set_selected(grid_real < (self.params.rmsd_cutoff)*rmsd, 0)
-    grid_real_binary = grid_real.deep_copy()
-    grid_real_binary.as_1d().set_selected(grid_real.as_1d() > 0, 1)
+      flex.mean(flex.pow2(grid_real_binary.as_1d()-flex.mean(grid_real_binary.as_1d()))))
+    grid_real_binary.set_selected(grid_real_binary < (self.params.rmsd_cutoff)*rmsd, 0)
+    grid_real_binary.as_1d().set_selected(grid_real_binary.as_1d() > 0, 1)
     grid_real_binary = grid_real_binary.iround()
     from cctbx import masks
     flood_fill = masks.flood_fill(grid_real_binary, self.unit_cell)
@@ -446,6 +484,7 @@ class indexer(object):
       #sites.append(
 
     self.sites = flood_fill.centres_of_mass_frac().select(isel)
+    self._find_peaks_timer.stop()
 
   def find_candidate_basis_vectors(self):
     # hijack the xray.structure class to facilitate calculation of distances
@@ -698,6 +737,10 @@ class indexer(object):
       with open(file_name, 'wb') as f:
         print >> f, xs.as_pdb_file()
 
+    if self.params.debug:
+      for crystal_model in self.candidate_crystal_models:
+        print crystal_model
+
   def cluster_analysis_hcluster(self, vectors):
     from hcluster import pdist, linkage, dendrogram, fcluster
     import numpy
@@ -794,7 +837,7 @@ class indexer(object):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
 
-    min_angle = 20 # degrees, aritrary cutoff
+    min_angle = 20 # degrees, arbitrary cutoff
     for i in range(len(vectors)):
       a = vectors[i]
       for j in range(i, len(vectors)):
@@ -942,6 +985,8 @@ class indexer(object):
   def index_reflections_given_orientation_matix(
       self, crystal_model, tolerance=0.2, verbose=0):
 
+    self._index_reflections_timer.start()
+
     if verbose > 1:
       print "Candidate crystal model:"
       print crystal_model
@@ -973,6 +1018,8 @@ class indexer(object):
       i_ref = self.reflections_in_scan_range[isel[i_hkl]]
       self.reflections[i_ref].miller_index = miller_index
       indexed_reflections.append(i_ref)
+
+    self._index_reflections_timer.stop()
 
     return indexed_reflections, miller_indices
 
@@ -1013,11 +1060,14 @@ class indexer(object):
           n_reject, suffix, suffix)
 
     params = self.params.refinement
+
+    self._refine_timer.start()
     from dials.algorithms.refinement import RefinerFactory
     refine = RefinerFactory.from_parameters(self.params, verbosity)
     refine.prepare(sweep, crystal_model, reflections_for_refinement)
     #rmsds = refine.rmsds()
     refined = refine()
+    self._refine_timer.stop()
 
     if not (params.parameterisation.beam.fix == 'all'
             and params.parameterisation.detector.fix == 'all'):
