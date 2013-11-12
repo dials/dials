@@ -200,8 +200,25 @@ namespace dials { namespace model { namespace boost_python {
     }
     return result;
   }
-  
-   
+
+  static
+  af::shared< int > get_crystal(const af::const_ref<Reflection> &r) {
+    af::shared< int > result(r.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = r[i].get_crystal();
+    }
+    return result;
+  }
+
+  static
+  void set_crystal(const af::ref<Reflection> &r,
+                                   const af::const_ref<int> &crystal) {
+    DIALS_ASSERT(r.size() == crystal.size());
+    for (std::size_t i = 0; i < r.size(); ++i) {
+      r[i].set_crystal(crystal[i]);
+    }
+  }
+
   static
   af::shared< bool > get_is_valid(const af::const_ref<Reflection> &r) {
     af::shared< bool > result(r.size());
@@ -329,6 +346,8 @@ namespace dials { namespace model { namespace boost_python {
         .def("centroid_position", &get_centroid_position)
         .def("beam_vector", &get_beam_vector)
         .def("set_beam_vector", &set_beam_vector)
+        .def("crystal", &get_crystal)
+        .def("set_crystal", &set_crystal)
         .def("image_coord_px", &get_image_coord_px)
         .def("image_coord_mm", &get_image_coord_mm)
         .def("frame_number", &get_frame_number)
