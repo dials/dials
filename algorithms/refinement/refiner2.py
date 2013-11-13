@@ -163,7 +163,7 @@ class RefinerFactory(object):
         if verbosity > 1: print "Refinement engine built\n"
 
         # build refiner interface and return
-        return Refiner(beam, crystals, detector,
+        return Refiner2(beam, crystals, detector,
                        parameterisations, refman, target, refinery,
                        goniometer=goniometer,
                        scan=scan,
@@ -429,7 +429,7 @@ class RefinerFactory(object):
 
         return target
 
-class Refiner(object):
+class Refiner2(object):
     """The refiner class."""
 
     def __init__(self, beam, crystals, detector,
@@ -448,8 +448,11 @@ class Refiner(object):
         self.crystals = crystals
         # only keep crystal if there is only one of them
         self.crystal = crystals[0] if len(crystals) == 1 else None
-        self.goniometer = goniometer
         self.detector = detector
+
+        # could be None
+        self.goniometer = goniometer
+        self.scan = scan
 
         # keep the parameterisations(FIXME should be private? - or
         # maybe don't even need these references to them?)
