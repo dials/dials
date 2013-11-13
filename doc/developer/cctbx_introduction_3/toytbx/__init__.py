@@ -8,4 +8,3 @@ else:
 
 if not ext is None:
   from toytbx_ext import *
-

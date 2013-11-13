@@ -26,130 +26,130 @@ UB = matrix.sqr([0.0144873, -0.0128813, -0.0002988,
 # Why doesn't Python include a basic nearest integer?!
 
 def nint(a):
-    return int(round(a) - 0.5) + (a > 0)
+  return int(round(a) - 0.5) + (a > 0)
 
 def find_beam_direction(cbf_handle):
-    '''Find the beam direction (why is this not simpler in pycbf?)'''
+  '''Find the beam direction (why is this not simpler in pycbf?)'''
 
-    cbf_handle.find_category('axis')
-    cbf_handle.find_column('equipment')
-    cbf_handle.find_row('source')
+  cbf_handle.find_category('axis')
+  cbf_handle.find_column('equipment')
+  cbf_handle.find_row('source')
 
-    beam_direction = []
+  beam_direction = []
 
-    for j in range(3):
-        cbf_handle.find_column('vector[%d]' % (j + 1))
-        beam_direction.append(cbf_handle.get_doublevalue())
+  for j in range(3):
+    cbf_handle.find_column('vector[%d]' % (j + 1))
+    beam_direction.append(cbf_handle.get_doublevalue())
 
-    B = - matrix.col(beam_direction).normalize()
+  B = - matrix.col(beam_direction).normalize()
 
-    return B
+  return B
 
 def compute_central_rotation_matrix(gonio):
-    '''Compute the composite rotation matrix mid way through the acquisition
-    of this frame.'''
+  '''Compute the composite rotation matrix mid way through the acquisition
+  of this frame.'''
 
-    x = gonio.rotate_vector(0.5, 1, 0, 0)
-    y = gonio.rotate_vector(0.5, 0, 1, 0)
-    z = gonio.rotate_vector(0.5, 0, 0, 1)
+  x = gonio.rotate_vector(0.5, 1, 0, 0)
+  y = gonio.rotate_vector(0.5, 0, 1, 0)
+  z = gonio.rotate_vector(0.5, 0, 0, 1)
 
-    R = matrix.sqr(x + y + z).transpose()
+  R = matrix.sqr(x + y + z).transpose()
 
-    return R
+  return R
 
 def plot_image(size1, size2, image_values, plot_file_name):
-    '''Plot an image size size1 x size2 of values.'''
+  '''Plot an image size size1 x size2 of values.'''
 
-    from matplotlib import pyplot as plt
-    import numpy
+  from matplotlib import pyplot as plt
+  import numpy
 
-    assert(len(image_values) == size1 * size2)
+  assert(len(image_values) == size1 * size2)
 
-    image = numpy.reshape(numpy.array(image_values, dtype = float),
-                          (size2, size1))
+  image = numpy.reshape(numpy.array(image_values, dtype = float),
+                        (size2, size1))
 
-    plt.imshow(image)
-    plt.savefig(plot_file_name)
+  plt.imshow(image)
+  plt.savefig(plot_file_name)
 
-    return
+  return
 
 def compute_reciprocal_space_distance_map(cbf_image):
-    '''Compute a map of distance from the transformed centre of each pixel
-    to the nearest reciprocal space node, measured in h, k, l space.'''
+  '''Compute a map of distance from the transformed centre of each pixel
+  to the nearest reciprocal space node, measured in h, k, l space.'''
 
-    # construct and link a cbf_handle to the image itself.
-    cbf_handle = pycbf.cbf_handle_struct()
-    cbf_handle.read_file(cbf_image, pycbf.MSG_DIGEST)
+  # construct and link a cbf_handle to the image itself.
+  cbf_handle = pycbf.cbf_handle_struct()
+  cbf_handle.read_file(cbf_image, pycbf.MSG_DIGEST)
 
-    # find the direction if the S0 beam vector (i.e. source -> sample)
-    B = find_beam_direction(cbf_handle)
+  # find the direction if the S0 beam vector (i.e. source -> sample)
+  B = find_beam_direction(cbf_handle)
 
-    # find out about the detector
-    detector = cbf_handle.construct_detector(0)
+  # find out about the detector
+  detector = cbf_handle.construct_detector(0)
 
-    # this returns slow fast slow fast pixels pixels mm mm
-    detector_normal = tuple(detector.get_detector_normal())
-    distance = detector.get_detector_distance()
-    pixel = (detector.get_inferred_pixel_size(1),
-             detector.get_inferred_pixel_size(2))
+  # this returns slow fast slow fast pixels pixels mm mm
+  detector_normal = tuple(detector.get_detector_normal())
+  distance = detector.get_detector_distance()
+  pixel = (detector.get_inferred_pixel_size(1),
+           detector.get_inferred_pixel_size(2))
 
-    # find out about the goniometer
-    gonio = cbf_handle.construct_goniometer()
-    R = compute_central_rotation_matrix(gonio)
+  # find out about the goniometer
+  gonio = cbf_handle.construct_goniometer()
+  R = compute_central_rotation_matrix(gonio)
 
-    # this method returns slow then fast dimensions i.e. (y, x)
+  # this method returns slow then fast dimensions i.e. (y, x)
 
-    size = tuple(reversed(cbf_handle.get_image_size(0)))
+  size = tuple(reversed(cbf_handle.get_image_size(0)))
 
-    wavelength = cbf_handle.get_wavelength()
+  wavelength = cbf_handle.get_wavelength()
 
-    O = matrix.col(detector.get_pixel_coordinates(0, 0))
-    fast = matrix.col(detector.get_pixel_coordinates(0, 1))
-    slow = matrix.col(detector.get_pixel_coordinates(1, 0))
+  O = matrix.col(detector.get_pixel_coordinates(0, 0))
+  fast = matrix.col(detector.get_pixel_coordinates(0, 1))
+  slow = matrix.col(detector.get_pixel_coordinates(1, 0))
 
-    X = fast - O
-    Y = slow - O
+  X = fast - O
+  Y = slow - O
 
-    X = X.normalize()
-    Y = Y.normalize()
-    N = X.cross(Y)
+  X = X.normalize()
+  Y = Y.normalize()
+  N = X.cross(Y)
 
-    S0 = (1.0 / wavelength) * B
+  S0 = (1.0 / wavelength) * B
 
-    # RUBI is (R * UB).inverse()
+  # RUBI is (R * UB).inverse()
 
-    RUBI = (R * UB).inverse()
+  RUBI = (R * UB).inverse()
 
-    square_distances = []
+  square_distances = []
 
-    for i in range(size[1]):
-        for j in range(size[0]):
-            p = matrix.col(detector.get_pixel_coordinates_fs(j, i)).normalize()
-            q = (1.0 / wavelength) * p - S0
+  for i in range(size[1]):
+    for j in range(size[0]):
+      p = matrix.col(detector.get_pixel_coordinates_fs(j, i)).normalize()
+      q = (1.0 / wavelength) * p - S0
 
-            _hkl = (RUBI * q).elems
-            hkl = map(nint, _hkl)
+      _hkl = (RUBI * q).elems
+      hkl = map(nint, _hkl)
 
-            d2 = sum([(_hkl[k] - hkl[k]) * (_hkl[k] - hkl[k])
-                      for k in range(3)])
+      d2 = sum([(_hkl[k] - hkl[k]) * (_hkl[k] - hkl[k])
+                for k in range(3)])
 
-            square_distances.append(d2)
+      square_distances.append(d2)
 
-    # plot - this needs the full fat cctbx with extra bits
+  # plot - this needs the full fat cctbx with extra bits
 
-    try:
-        plot_image(size[0], size[1], square_distances,
-                   'cctbx_introduction_1.png')
-    except exceptions.Exception, e:
-        print 'Plotting image failed: %s' % str(e)
+  try:
+    plot_image(size[0], size[1], square_distances,
+               'cctbx_introduction_1.png')
+  except exceptions.Exception, e:
+    print 'Plotting image failed: %s' % str(e)
 
-    # clean up...
+  # clean up...
 
-    detector.__swig_destroy__(detector)
-    del(detector)
+  detector.__swig_destroy__(detector)
+  del(detector)
 
-    gonio.__swig_destroy__(gonio)
-    del(gonio)
+  gonio.__swig_destroy__(gonio)
+  del(gonio)
 
 if __name__ == '__main__':
-    compute_reciprocal_space_distance_map(sys.argv[1])
+  compute_reciprocal_space_distance_map(sys.argv[1])
