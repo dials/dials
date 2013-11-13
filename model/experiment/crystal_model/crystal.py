@@ -137,13 +137,15 @@ class Crystal(object):
         return self._U * self._B
 
     def __eq__(self, other, eps=1e-7):
-        d_mosaicity = abs(self._mosaicity - other._mosaicity)
-        d_U = sum([abs(u1 - u2) for u1, u2 in zip(self._U, other._U)])
-        d_B = sum([abs(b1 - b2) for b1, b2 in zip(self._B, other._B)])
-        return (d_mosaicity <= eps and
-                d_U <= eps and
-                d_B <= eps and
-                self._sg == other._sg)
+        if isinstance(other, Crystal):
+            d_mosaicity = abs(self._mosaicity - other._mosaicity)
+            d_U = sum([abs(u1 - u2) for u1, u2 in zip(self._U, other._U)])
+            d_B = sum([abs(b1 - b2) for b1, b2 in zip(self._B, other._B)])
+            return (d_mosaicity <= eps and
+                    d_U <= eps and
+                    d_B <= eps and
+                    self._sg == other._sg)
+        return NotImplemented
 
     def get_real_space_vectors(self):
         A_inv = self.get_A().inverse()
