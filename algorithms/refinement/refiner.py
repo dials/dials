@@ -581,15 +581,16 @@ class RefmanFactory(object):
             if verbosity > 1:
                 print "Random seed set to %d\n" % self._random_seed
 
+        sweep_range_deg = scan.get_oscillation_range(deg=True)
         return self._refman(reflections=reflections,
                             beam=beam,
                             gonio=goniometer,
-                            scan=scan,
-                            verbosity=verbosity,
+                            sweep_range_deg=sweep_range_deg,
                             nref_per_degree=self._ref_per_degree,
                             min_num_obs=self._min_num_obs,
                             max_num_obs=self._max_num_obs,
-                            inclusion_cutoff=self._inclusion_cutoff)
+                            inclusion_cutoff=self._inclusion_cutoff,
+                            verbosity=verbosity)
 
 class TargetFactory(object):
     """Factory class to create a target function object"""

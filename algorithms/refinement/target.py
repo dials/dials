@@ -453,12 +453,13 @@ class ReflectionManager(object):
     reflections for refinement."""
 
     def __init__(self, reflections,
-                       beam, gonio, scan,
-                       verbosity=0,
-                       nref_per_degree = None,
+                       beam, gonio,
+                       sweep_range_deg=None,
+                       nref_per_degree=None,
                        min_num_obs=20,
                        max_num_obs=None,
-                       inclusion_cutoff=0.1):
+                       inclusion_cutoff=0.1,
+                       verbosity=0):
 
         # track whether this is the first update of predictions or not
         self.first_update = True
@@ -470,7 +471,7 @@ class ReflectionManager(object):
         # reflection exclusion and subsetting)
         self._beam = beam
         self._gonio = gonio
-        self._scan = scan
+        self._sweep_range_deg = sweep_range_deg
 
         # find vector normal to the spindle-beam plane for the initial model
         self._vecn = self._spindle_beam_plane_normal()
@@ -576,8 +577,7 @@ class ReflectionManager(object):
 
         # set sample size according to nref_per_degree
         if self._nref_per_degree:
-            temp = self._scan.get_oscillation_range(deg=True)
-            width = abs(temp[1] - temp[0])
+            width = abs(self._sweep_range_deg[1] - self._sweep_range_deg[0])
             sample_size = int(self._nref_per_degree * width)
 
         # set maximum sample size
