@@ -55,30 +55,32 @@ class RefinerFactory(object):
             _gonio = sweep.get_goniometer()
             _scan = sweep.get_scan()
         else:
-            _scan = scan
             _beam = beam
             _detector = detector
             _goniometer = goniometer
             _scan = scan
-            _image_width = image_width
-            if _image_width: assert _scan is None
+
+        _image_width = image_width
+        if _image_width: assert _scan is None
 
         assert crystal is not None
         _crystal = crystal
 
-        parameterisation_strategy = \
-                    RefinerFactory.configure_parameterisation(params)
+        parameterisation = \
+                    RefinerFactory.configure_parameterisation(
+                        params, _beam, _detector, crystal, _goniometer, _scan)
         refinery_strategy = RefinerFactory.configure_refinery(params)
         reflections_strategy = RefinerFactory.configure_refman(params)
         target_strategy = RefinerFactory.configure_target(params)
 
-        return Refiner(parameterisation_strategy, refinery_strategy,
+        return Refiner(parameterisation, refinery_strategy,
                  reflections_strategy, target_strategy, verbosity)
 
     @staticmethod
-    def configure_parameterisation(params):
-        """Given a set of parameters, configure a factory to build a
-        parameterisation from a set of experimental models
+    def configure_parameterisation(
+            params, beam, detector, crystal, goniometer, scan):
+        """Given a set of parameters, create a parameterisation from a set of
+        experimental models.
 
         Params:
             params The input parameters
@@ -93,8 +95,95 @@ class RefinerFactory(object):
         detector_options = params.refinement.parameterisation.detector
         prediction_options = params.refinement.parameterisation.prediction
 
-        return ParameterisationFactory(beam_options, crystal_options,
-                                detector_options, prediction_options)
+        # Shorten paths
+        import dials.algorithms.refinement.parameterisation as par
+
+        # Beam (accepts goniometer=None)
+        beam_param = par.BeamParameterisationOrientation(beam, goniometer)
+        if beam_options.fix:
+            if self._beam_fix == "all":
+                beam_param.set_fixed([True, True])
+            elif self._beam_fix == "in_spindle_plane":
+                beam_param.set_fixed([True, False])
+
+        # Crystal
+        if crystal_options.scan_varying:
+            assert [goniometer, scan].count(None) == 0
+            xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
+                                                crystal,
+                                                scan.get_image_range(),
+                                                crystal_options.num_intervals)
+            xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
+                                                crystal,
+                                                scan.get_image_range(),
+                                                crystal_options.num_intervals)
+        else:
+            xl_ori_param = par.CrystalOrientationParameterisation(crystal)
+            xl_uc_param = par.CrystalUnitCellParameterisation(crystal)
+
+        if crystal_options.fix:
+            if crystal_options.fix == "all":
+                xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
+                xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+            elif crystal_options.fix == "cell":
+                xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+            elif crystal_options.fix == "orientation":
+                xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
+            else: # can only get here if refinement.phil is broken
+                raise RuntimeError("crystal_options.fix value not recognised")
+
+        # Detector
+        if detector_options.panels == "automatic":
+            if len(detector) > 1:
+                det_param = par.DetectorParameterisationMultiPanel(detector, beam)
+            else:
+                det_param = par.DetectorParameterisationSinglePanel(detector)
+        elif detector_options.panels == "single":
+            det_param = DetectorParameterisationSinglePanel(detector)
+        elif self._detector_par_options == "multiple":
+            det_param = DetectorParameterisationMultiPanel(detector, beam)
+        else: # can only get here if refinement.phil is broken
+            raise RuntimeError("detector_options.panels value not recognised")
+
+        if detector_options.fix:
+            if detector_options.fix == "all":
+                det_param.set_fixed([True] * det_param.num_total())
+            elif detector_options.fix == "position":
+                det_params = det_param.get_params(only_free = False)
+                to_fix = [e.param_type.startswith('length') \
+                          for e in det_params]
+                det_param.set_fixed(to_fix)
+            elif detector_options.fix == "orientation":
+                det_params = det_param.get_params(only_free = False)
+                to_fix = [e.param_type.startswith('angle') \
+                          for e in det_params]
+                det_param.set_fixed(to_fix)
+            else: # can only get here if refinement.phil is broken
+                raise RuntimeError("detector_options.fix value not recognised")
+
+        # Prediction equation parameterisation
+        #prediction_options.space
+        if crystal_options.scan_varying:
+            pep = par.VaryingCrystalPredictionParameterisation
+        elif goniometer is None:
+            from dials.algorithms.refinement.single_shots.parameterisation import \
+                XYPredictionParameterisation
+            pep = XYPredictionParameterisation
+        else
+            pep = par.XYPhiPredictionParameterisation
+
+        pred_param = pep(detector, beam, crystal, goniometer,
+                [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
+
+        # Parameter reporting
+        param_reporter = par.ParameterReporter[det_param], [beam_param],
+            [xl_ori_param], [xl_uc_param])
+
+        return (beam_param, xl_ori_param, xl_uc_param, det_param, pred_param,
+                param_reporter)
+
+        #return ParameterisationFactory(beam_options, crystal_options,
+        #                        detector_options, prediction_options)
 
     @staticmethod
     def configure_refinery(params):
@@ -459,11 +548,11 @@ class ParameterisationFactory(object):
         if self._crystal_scan_varying:
             pep = par.VaryingCrystalPredictionParameterisation
         elif self._prediction_par_options == "XYPhi":
-            pep = par.DetectorSpacePredictionParameterisation
+            pep = par.XYPhiPredictionParameterisation
         elif self._prediction_par_options == "XY":
             from dials.algorithms.refinement.single_shots.parameterisation import \
-                DetectorSpaceXYPredictionParameterisation
-            pep = DetectorSpaceXYPredictionParameterisation
+                XYPredictionParameterisation
+            pep = XYPredictionParameterisation
         else:
             raise RuntimeError("Prediction equation type " +
                 self._prediction_par_options + " not recognised")

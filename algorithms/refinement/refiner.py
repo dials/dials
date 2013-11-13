@@ -427,11 +427,11 @@ class ParameterisationFactory(object):
         if self._crystal_scan_varying:
             pep = par.VaryingCrystalPredictionParameterisation
         elif self._prediction_par_options == "XYPhi":
-            pep = par.DetectorSpacePredictionParameterisation
+            pep = par.XYPhiPredictionParameterisation
         elif self._prediction_par_options == "XY":
             from dials.algorithms.refinement.single_shots.parameterisation import \
-                DetectorSpaceXYPredictionParameterisation
-            pep = DetectorSpaceXYPredictionParameterisation
+                XYPredictionParameterisation
+            pep = XYPredictionParameterisation
         else:
             raise RuntimeError("Prediction equation type " +
                 self._prediction_par_options + " not recognised")

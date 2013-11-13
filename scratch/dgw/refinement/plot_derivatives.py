@@ -35,7 +35,7 @@ from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    DetectorSpacePredictionParameterisation
+    XYPhiPredictionParameterisation
 
 # Import helper functions
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
@@ -140,7 +140,7 @@ xluc_param = CrystalUnitCellParameterisation(mycrystal)
 # prediction equation                                                  #
 ########################################################################
 
-pred_param = DetectorSpacePredictionParameterisation(
+pred_param = XYPhiPredictionParameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 

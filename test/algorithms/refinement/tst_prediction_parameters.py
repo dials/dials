@@ -33,7 +33,7 @@ from dials.algorithms.refinement.prediction import ReflectionPredictor
 #### Import model parameterisations
 
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    DetectorSpacePredictionParameterisation
+    XYPhiPredictionParameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
@@ -140,7 +140,7 @@ xluc_param = CrystalUnitCellParameterisation(mycrystal)
 #### Unit tests
 
 # Build a prediction parameterisation with a single detector model
-pred_param = DetectorSpacePredictionParameterisation(mydetector,
+pred_param = XYPhiPredictionParameterisation(mydetector,
              mybeam, mycrystal, mygonio, [det_param])
 
 # Check the accessors
@@ -153,7 +153,7 @@ for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
     assert a==b
 
 # Build a full global parameterisation
-pred_param = DetectorSpacePredictionParameterisation(
+pred_param = XYPhiPredictionParameterisation(
     mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
     [xlo_param], [xluc_param])
 

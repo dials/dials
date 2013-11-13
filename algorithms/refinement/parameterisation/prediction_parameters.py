@@ -50,7 +50,7 @@ class PredictionParameterisation(object):
       experiment)
     * A beam model
     * A crystal model
-    * A goniometer model 
+    * A goniometer model
 
     The goniometer model is not yet parameterised, but we need it for the
     equations if we are doing parameterisation in X, Y, Phi space. Conversely,
@@ -241,7 +241,7 @@ class PredictionParameterisation(object):
         return self._get_gradients_core(h, s, phi, panel_id)
 
 
-class DetectorSpacePredictionParameterisation(PredictionParameterisation):
+class XYPhiPredictionParameterisation(PredictionParameterisation):
     """
     Concrete class that inherits functionality of the
     PredictionParameterisation parent class and provides a detector space
@@ -468,7 +468,7 @@ class DetectorSpacePredictionParameterisation(PredictionParameterisation):
 
         return dX_dp, dY_dp
 
-class DetectorSpacePredictionParameterisation_py(DetectorSpacePredictionParameterisation):
+class XYPhiPredictionParameterisation_py(XYPhiPredictionParameterisation):
     """Python version, overloading functions to calc derivatives only.
     Slow, but somewhat easier to read."""
 

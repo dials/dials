@@ -20,10 +20,10 @@ from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation import \
     PredictionParameterisation
 
-class DetectorSpaceXYPredictionParameterisation(PredictionParameterisation):
+class XYPredictionParameterisation(PredictionParameterisation):
     """
     Concrete class that inherits functionality of the
-    PredictionParameterisationXY parent class and provides a detector space
+    PredictionParameterisation parent class and provides a detector X, Y space
     implementation of the get_gradients function.
 
     Untested for multiple sensor detectors.

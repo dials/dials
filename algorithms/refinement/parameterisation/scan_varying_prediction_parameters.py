@@ -17,9 +17,9 @@ from scitbx import matrix
 from cctbx.array_family import flex
 from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    DetectorSpacePredictionParameterisation
+    XYPhiPredictionParameterisation
 
-class VaryingCrystalPredictionParameterisation(DetectorSpacePredictionParameterisation):
+class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     """Support crystal parameterisations that vary with time (via the proxy of
     "observed image number")"""
 

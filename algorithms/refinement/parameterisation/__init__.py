@@ -4,7 +4,7 @@ from crystal_parameters import CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
 from detector_parameters import DetectorParameterisationSinglePanel, \
     DetectorParameterisationMultiPanel
-from prediction_parameters import DetectorSpacePredictionParameterisation, \
+from prediction_parameters import XYPhiPredictionParameterisation, \
      PredictionParameterisation
 from scan_varying_crystal_parameters \
     import ScanVaryingCrystalOrientationParameterisation, \

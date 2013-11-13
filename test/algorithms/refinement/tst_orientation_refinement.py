@@ -57,7 +57,7 @@ from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    DetectorSpacePredictionParameterisation
+    XYPhiPredictionParameterisation
 
 # Imports for the target function
 from dials.algorithms.refinement.target import \
@@ -103,7 +103,7 @@ s0_param.set_fixed([True, False])
 # prediction equation                                                  #
 ########################################################################
 
-pred_param = DetectorSpacePredictionParameterisation(
+pred_param = XYPhiPredictionParameterisation(
 mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
 [xlo_param], [xluc_param])
 
