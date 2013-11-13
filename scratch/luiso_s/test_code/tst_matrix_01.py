@@ -29,6 +29,7 @@ print"______________________________________"
 a_2d = numpy.arange( 16, dtype = float ).reshape( 4, 4 )
 b_2d = numpy.arange( 16, dtype = float ).reshape( 4, 4 )
 
+
 print "a_2d"
 print a_2d
 
@@ -38,3 +39,9 @@ print a_2d
 sum_2d = numpy.sum( a_2d[1:4, 1:4] )
 print "sum_2d"
 print sum_2d
+
+random_test='''
+from scitbx.array_family import flex
+w_var=flex.double(flex.grid(4,4))
+flex.show(w_var)
+'''
