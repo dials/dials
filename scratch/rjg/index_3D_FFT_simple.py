@@ -243,6 +243,7 @@ class indexer(object):
       crystal_models = self.candidate_crystal_models
     else:
       self.find_candidate_basis_vectors()
+      # self.find_candidate_basis_vectors_nks()
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
       self.candidate_crystal_models = self.find_candidate_orientation_matrices(
@@ -486,6 +487,37 @@ class indexer(object):
     self.sites = flood_fill.centres_of_mass_frac().select(isel)
     self._find_peaks_timer.stop()
 
+  def find_candidate_basis_vectors_nks(self):
+    '''Find the candidate basis vectors from the Patterson peaks using code 
+    from NKS which will search for the basis which best describes the list of 
+    input spot positions. Based on using indexer.determine_basis_set.'''
+    
+    from dials.algorithms.indexing import indexer
+    
+    # hmm... conventionally the basis selection works on around 30 possible
+    # basis vectors, the code above appears to generate 200+ for one example    
+
+    from rstbx.phil.phil_preferences import libtbx_defs,iotbx_defs
+    import iotbx.phil
+    hardcoded_phil = iotbx.phil.parse(
+      input_string=iotbx_defs+libtbx_defs).extract()
+
+    # do we really need all of these parameters? surely some of them seem
+    # a little ... redundant
+
+    triclinic_crystal = indexer.determine_basis_set(
+      candidate_basis_vectors_one_lattice = self.sites,
+      rs_positions_xyz = self.reciprocal_space_points,
+      params=hardcoded_phil,
+      spot_positions = self.reflections,
+      detector = self.detector,
+      beam = self.beam,
+      goniometer = self.goniometer,
+      scan = self.scan
+      )
+
+    print 1/0
+       
   def find_candidate_basis_vectors(self):
     # hijack the xray.structure class to facilitate calculation of distances
     xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
