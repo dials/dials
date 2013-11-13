@@ -22,6 +22,7 @@ from dials.algorithms.spot_prediction import ray_intersection
 
 # constants
 TWO_PI = 2.0 * pi
+RAD_TO_DEG = 180. / pi
 
 class Target(object):
     """Abstract interface for a target function class
@@ -454,7 +455,7 @@ class ReflectionManager(object):
 
     def __init__(self, reflections,
                        beam, gonio,
-                       sweep_range_deg=None,
+                       sweep_range_rad=None,
                        nref_per_degree=None,
                        min_num_obs=20,
                        max_num_obs=None,
@@ -467,11 +468,11 @@ class ReflectionManager(object):
         # set verbosity
         self._verbosity = verbosity
 
-        # keep references to the beam, goniometer and scan models (for
+        # keep references to the beam, goniometer and sweep range (for
         # reflection exclusion and subsetting)
         self._beam = beam
         self._gonio = gonio
-        self._sweep_range_deg = sweep_range_deg
+        self._sweep_range_rad = sweep_range_rad
 
         # find vector normal to the spindle-beam plane for the initial model
         self._vecn = self._spindle_beam_plane_normal()
@@ -577,7 +578,8 @@ class ReflectionManager(object):
 
         # set sample size according to nref_per_degree
         if self._nref_per_degree:
-            width = abs(self._sweep_range_deg[1] - self._sweep_range_deg[0])
+            width = abs(self._sweep_range_rad[1] -
+                        self._sweep_range_rad[0]) * RAD_TO_DEG
             sample_size = int(self._nref_per_degree * width)
 
         # set maximum sample size

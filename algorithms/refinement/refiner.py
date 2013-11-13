@@ -581,11 +581,11 @@ class RefmanFactory(object):
             if verbosity > 1:
                 print "Random seed set to %d\n" % self._random_seed
 
-        sweep_range_deg = scan.get_oscillation_range(deg=True)
+        sweep_range = scan.get_oscillation_range(deg=False)
         return self._refman(reflections=reflections,
                             beam=beam,
                             gonio=goniometer,
-                            sweep_range_deg=sweep_range_deg,
+                            sweep_range_rad=sweep_range,
                             nref_per_degree=self._ref_per_degree,
                             min_num_obs=self._min_num_obs,
                             max_num_obs=self._max_num_obs,
