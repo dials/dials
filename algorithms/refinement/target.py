@@ -574,7 +574,7 @@ class ReflectionManager(object):
         working_indices = indices
         sample_size = len(working_indices)
 
-        # set sample size according to nref_per_degre
+        # set sample size according to nref_per_degree
         if self._nref_per_degree:
             temp = self._scan.get_oscillation_range(deg=True)
             width = abs(temp[1] - temp[0])

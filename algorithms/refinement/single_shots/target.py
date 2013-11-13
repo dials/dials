@@ -200,6 +200,26 @@ class ReflectionManagerXY(ReflectionManager):
 
         return inc
 
+    def _create_working_set(self, indices):
+        """Make a subset of the indices of reflections to use in refinement.
+
+        This version ignores nref_per_degree"""
+
+        working_indices = indices
+        sample_size = len(working_indices)
+
+        # set maximum sample size
+        if self._max_num_obs:
+            if sample_size > self._max_num_obs:
+                sample_size = self._max_num_obs
+
+        # sample the data and record the sample size
+        if sample_size < len(working_indices):
+            self._sample_size = sample_size
+            working_indices = random.sample(working_indices,
+                                            self._sample_size)
+        return(working_indices)
+
     def get_matches(self, silent = False):
         """For every observation matched with a prediction return all data"""
 
