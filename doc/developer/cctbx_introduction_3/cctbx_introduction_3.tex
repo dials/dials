@@ -11,7 +11,7 @@
 
 Much of the benefit of the hybrid approach to CCTBX\footnote{http://cctbx.sourceforge.net/current/tour.html\#thinking-hybrid} is the ability to move computationally expensive steps from Python to C++ relatively straightforwardly. It is however helpful to have an example of how to create C++ extensions and compile these with the existing compilation tools. The aim of this document is to provide this example with a toy example, toytbx. Some introductory information is however useful.
 
-Within CCTBX C++ code is made available to Python using the Boost Python framework\footnote{http://www.boost.org/libs/python/doc/} and compiled with SCons\footnote{http://www.scons.org/}. Two steps are therefore needed to expose C++ code: writing a wrapper using Boost Python and a SConscript for compilation. Additionally a libtbx_config file is needed to specify the project dependencies. Using this libtbx does most of the work. In addition it is nice to expose functionality as ``pseudo-executable'' programs e.g. toytbx.task - this is also handled automatically by libtbx.
+Within CCTBX C++ code is made available to Python using the Boost Python framework\footnote{http://www.boost.org/libs/python/doc/} and compiled with SCons\footnote{http://www.scons.org/}. Two steps are therefore needed to expose C++ code: writing a wrapper using Boost Python and a SConscript for compilation. Additionally a libtbx\_config file is needed to specify the project dependencies. Using this libtbx does most of the work. In addition it is nice to expose functionality as ``pseudo-executable'' programs e.g. toytbx.task - this is also handled automatically by libtbx.
 
 \section{C++ Code}
 
@@ -83,7 +83,7 @@ if (not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include")):
 
 This can refer to other compiled modules to ensure dependencies are correctly built. With this file and ext.cpp in the toytbx directory, accessible to libtbx.configure, libtbx.configure toytbx may be run, followed by make, which will correctly compile the extension module.
 
-If the project has dependencies, a libtbx_config file is needed for the libtbx to build projects in the correct order. The example for toytbx is shown below.
+If the project has dependencies, a libtbx\_config file is needed for the libtbx to build projects in the correct order. The example for toytbx is shown below.
 
 {\small
 \begin{verbatim}
@@ -121,11 +121,11 @@ As with other code test cases should be written which ensure that the behaviour 
 from toytbx import make_list
 
 def tst_toytbx():
-    assert(make_list(4) == [j for j in range(4)])
-    print 'OK'
+  assert(make_list(4) == [j for j in range(4)])
+  print 'OK'
 
 if __name__ == '__main__':
-    tst_toytbx()
+  tst_toytbx()
 \end{verbatim}
 }
 
@@ -140,13 +140,13 @@ If a command-line executable is desired once again libtbx comes to the rescue. M
 from toytbx import make_list
 
 def main(args):
-    assert(args)
-    n = int(args[0])
-    print make_list(n)
+  assert(args)
+  n = int(args[0])
+  print make_list(n)
 
 if __name__ == '__main__':
-    import sys
-    main(sys.argv[1:])
+  import sys
+  main(sys.argv[1:])
 \end{verbatim}
 }
 
@@ -222,12 +222,12 @@ import scitbx.array_family.flex
 import toytbx
 
 def tst_toytbx():
-    assert(toytbx.make_list(4) == [j for j in range(4)])
-    assert(sum(toytbx.make_flex(10)) == toytbx.sum(toytbx.make_flex(10)))
-    print 'OK'
+  assert(toytbx.make_list(4) == [j for j in range(4)])
+  assert(sum(toytbx.make_flex(10)) == toytbx.sum(toytbx.make_flex(10)))
+  print 'OK'
 
 if __name__ == '__main__':
-    tst_toytbx()
+  tst_toytbx()
 \end{verbatim}
 } 
 
