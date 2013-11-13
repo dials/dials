@@ -83,7 +83,7 @@ class run_one_indexing(object):
     self.sweep = load.sweep(os.path.join(tmp_dir, "sweep.json"))
     assert self.crystal_model.get_unit_cell().is_similar_to(
       expected_unit_cell,
-      relative_length_tolerance=0.005,
+      relative_length_tolerance=0.01,
       absolute_angle_tolerance=0.5)
     sg = self.crystal_model.get_space_group()
     assert sg.type().hall_symbol() == expected_hall_symbol
@@ -135,7 +135,7 @@ def exercise_2():
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.06, 0.05, 0.0004)
+  expected_rmsds = (0.06, 0.05, 0.0005)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,

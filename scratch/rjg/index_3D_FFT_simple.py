@@ -251,40 +251,67 @@ class indexer(object):
       crystal_models = self.candidate_crystal_models[:1]
 
     self.refined_crystal_models = []
-    for i_lattice, crystal_model in enumerate(crystal_models):
-      self.i_lattice = i_lattice
+    self.d_min = self.params.reciprocal_space_grid.d_min
+
+    # for now refine a separate sweep object for each lattice - once we have
+    # true multi-lattice refinement we can just refine a single sweep object
+    # XXX copy.deepcopy(sweep) does not currently work
+    import copy
+    from dxtbx.serialize.imageset import NullSweep
+    from dxtbx.model import Detector
+    from dxtbx.array_family import flex
+    sweeps = []
+    for i in range(len(crystal_models)):
+      sweep = NullSweep(self.sweep.get_template())
+      sweep.set_beam(copy.deepcopy(self.beam))
+      sweep.set_goniometer(copy.deepcopy(self.goniometer))
+      sweep.set_scan(copy.deepcopy(self.scan))
+      sweep.set_detector(
+        Detector(flex.panel([panel for panel in self.detector])))
+      sweeps.append(sweep)
+
+    for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
+      if i_cycle > 0:
+        self.d_min -= self.params.refinement_protocol.d_min_step
+        self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
+        print "Increasing resolution to %.1f Angstrom" %self.d_min
+        #n_indexed_last_cycle = self.indexed_reflections.size()
+
+        #if self.indexed_reflections.size() == n_indexed_last_cycle:
+          #print "No more reflections indexed this cycle - finished with refinement"
+          #break
+
+      # reset reflection lattice flags
+      self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
+      self.reflections.set_crystal(self.reflections_i_lattice)
+
+      self.index_reflections(crystal_models)
 
       print
       print "#" * 80
-      print "Starting refinement of crystal model %i" %(i_lattice+1)
-      print "Starting crystal model:"
-      print crystal_model
+      print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
       print "#" * 80
+      print
 
-      self.d_min = self.params.reciprocal_space_grid.d_min
-      if self.target_symmetry_primitive is not None:
-        symmetrized_model = self.apply_symmetry(
-          crystal_model, self.target_symmetry_primitive)
-        crystal_model = symmetrized_model
+      for i_lattice, crystal_model in enumerate(crystal_models):
+        self.sweep = sweeps[i_lattice] # XXX
 
-      for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
-        if i_cycle > 0:
-          self.d_min -= self.params.refinement_protocol.d_min_step
-          self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
-          print "Increasing resolution to %.1f Angstrom" %self.d_min
-          n_indexed_last_cycle = self.indexed_reflections.size()
+        if self.target_symmetry_primitive is not None:
+          symmetrized_model = self.apply_symmetry(
+            crystal_model, self.target_symmetry_primitive)
+          crystal_model = symmetrized_model
+          crystal_models[i_lattice] = crystal_model
 
-          if self.indexed_reflections.size() == n_indexed_last_cycle:
-            print "No more reflections indexed this cycle - finished with refinement"
-            break
+        self.i_lattice = i_lattice
 
-        # reset in case some reflections are no longer indexed by this lattice
-        self.reflections_i_lattice.set_selected(
-          self.reflections_i_lattice == i_lattice, -1)
-        self.indexed_reflections, _ = self.index_reflections_given_orientation_matix(
-          crystal_model, verbose=1)
-        self.reflections_i_lattice.set_selected(
-          self.indexed_reflections, i_lattice)
+        print
+        print "Starting refinement of crystal model %i" %(i_lattice+1)
+        print "Starting crystal model:"
+        print crystal_model
+        print
+
+        self.reflections_i_lattice = self.reflections.crystal()
+        self.indexed_reflections = self.reflections_i_lattice == i_lattice
 
         if self.params.debug:
           sel = flex.bool(self.reflections.size(), False)
@@ -296,24 +323,29 @@ class indexer(object):
           with open("unindexed.pickle", 'wb') as f:
             pickle.dump(unindexed, f)
 
-        print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
-        print
         self.refine(crystal_model)
+
+        # these may have been updated in refinement
+        # XXX once david has implemented multi-lattice refinement there
+        # should be one and only one sweep object to refine
+        self.sweep = sweeps[0]
+        self.detector = self.sweep.detector
+        self.beam = self.sweep.beam
+        self.goniometer = self.sweep.goniometer
+        self.scan = self.sweep.scan
 
         if self.d_min == self.params.refinement_protocol.d_min_final:
           print "Target d_min_final reached: finished with refinement"
           break
 
-      print "Final crystal model:"
-      print crystal_model
-
+    for i_lattice, crystal_model in enumerate(crystal_models):
       self.refined_crystal_models.append(crystal_model)
       suffix = ""
       if len(crystal_models) > 1:
         suffix = "_%i" %(i_lattice+1)
-      self.export_as_json(crystal_model, self.sweep, suffix=suffix)
+      self.export_as_json(crystal_model, sweeps[i_lattice], suffix=suffix)
       if self.params.export_xds_files:
-        self.export_xds_files(crystal_model, self.sweep, suffix=suffix)
+        self.export_xds_files(crystal_model, sweeps[i_lattice], suffix=suffix)
       self.export_reflections(file_name='indexed%s.pickle' %suffix,
                               indexed_only=True)
 
@@ -1074,6 +1106,64 @@ class indexer(object):
     self._index_reflections_timer.stop()
 
     return indexed_reflections, miller_indices
+
+  def index_reflections(
+      self, crystal_models, tolerance=0.3, verbose=0):
+
+    self._index_reflections_timer.start()
+
+    d_spacings = 1/self.reciprocal_space_points.norms()
+    inside_resolution_limit = d_spacings > self.d_min
+    sel = inside_resolution_limit & (self.reflections_i_lattice.select(
+        self.reflections_in_scan_range) == -1)
+    isel = sel.iselection()
+    rlps = self.reciprocal_space_points.select(isel)
+
+    diffs = []
+    norms = []
+    hkl_ints = []
+
+    for i_lattice, crystal_model in enumerate(crystal_models):
+      A = crystal_model.get_A()
+      A_inv = A.inverse()
+      hkl_float = tuple(A_inv) * rlps
+      hkl_int = hkl_float.iround()
+      differences = hkl_float - hkl_int.as_vec3_double()
+
+      diffs.append(differences)
+      norms.append(differences.norms())
+      hkl_ints.append(hkl_int)
+
+    n_rejects = 0
+
+    for i_hkl in range(hkl_int.size()):
+      d = flex.vec3_double([diffs[j][i_hkl]
+                       for j in range(len(crystal_models))])
+      n = flex.double([norms[j][i_hkl]
+                       for j in range(len(crystal_models))])
+      potential_hkls = [hkl_ints[j][i_hkl]
+                        for j in range(len(crystal_models))]
+
+      i_best_lattice = flex.min_index(n)
+      if n[i_best_lattice] > tolerance:
+        n_rejects += 1
+        continue
+      miller_index = potential_hkls[i_best_lattice]
+
+      i_ref = self.reflections_in_scan_range[isel[i_hkl]]
+      self.reflections[i_ref].miller_index = miller_index
+      self.reflections[i_ref].crystal = i_best_lattice
+
+    if self.params.refinement_protocol.verbosity > 0:
+      for i_lattice, crystal_model in enumerate(crystal_models):
+        print "model %i (%i reflections):" %(
+          i_lattice+1, (self.reflections.crystal() == i_lattice).count(True))
+        print crystal_model
+        print
+
+      print "%i unindexed reflections" %n_rejects
+
+    self._index_reflections_timer.stop()
 
   def refine(self, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
