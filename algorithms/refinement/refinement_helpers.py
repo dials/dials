@@ -179,6 +179,7 @@ def refine(beam, goniometer, crystal, detector, scan,
     #       len(sig_d2s) == len(angles) == len(sig_angles)
 
     image_width = scan.get_oscillation(deg=False)[1]
+    sweep_range = scan.get_oscillation_range(deg=False)
     ref_predictor = ReflectionPredictor(crystal, beam, goniometer)
 
     ###########################
@@ -224,8 +225,8 @@ def refine(beam, goniometer, crystal, detector, scan,
     #####################################
 
     refman = ReflectionManager(reflections,
-                               beam, goniometer, scan, verbosity,
-                               nref_per_degree)
+                               beam, goniometer, sweep_range,
+                               nref_per_degree, verbosity=verbosity)
 
     if verbosity > 1: print "Reflection manager built\n"
 
@@ -352,10 +353,10 @@ def scan_varying_refine(
     # Select reflections for refinement #
     #####################################
 
+    sweep_range = scan.get_oscillation_range(deg=False)
     refman = ReflectionManager(reflections,
-                            beam, goniometer, scan,
-                            verbosity,
-                            nref_per_degree)
+                            beam, goniometer, sweep_range,
+                            nref_per_degree, verbosity=verbosity)
 
     if verbosity > 1:
         print "Reflection manager built\n"

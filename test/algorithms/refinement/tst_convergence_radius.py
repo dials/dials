@@ -212,7 +212,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(obs_refs, mybeam, mygonio, myscan)
+    refman = ReflectionManager(obs_refs, mybeam, mygonio, sweep_range)
 
     ##############################
     # Set up the target function #

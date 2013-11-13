@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.algorithms.refinement.refiner.py
+# dials.algorithms.refinement.refiner2.py
 #
 #  Copyright (C) 2013 Diamond Light Source and STFC Rutherford Appleton
 #                     Laboratory, UK.
@@ -11,10 +11,138 @@
 #  included in the root directory of this package.
 
 """Refiner is the refinement module public interface. RefinerFactory is what
-should usually be used to construct a Refiner."""
+should usually be used to construct a Refiner.
+
+Here work on a new version of the interface"""
 
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
+
+class RefinerFactory(object):
+    """Factory class to create refiners"""
+
+    @staticmethod
+    def from_parameters_models_data(params,
+                                    sweep=None,
+                                    beam=None,
+                                    goniometer=None,
+                                    detector=None,
+                                    scan=None,
+                                    image_width=None,
+                                    crystal=None,
+                                    reflections=None,
+                                    verbosity=0):
+        """Given a set of parameters, experimental models and reflections,
+        construct the refiner
+
+        Params:
+            params The input parameters
+            verbosity The verbosity level
+
+        Returns:
+            The refiner instance
+
+        """
+
+        # checks on the input
+        if sweep:
+            assert [beam, goniometer, detector, scan].count(None) == 4
+
+            # Get the models from the sweep
+            #self.sweep = sweep
+            _beam = sweep.get_beam()
+            _detector = sweep.get_detector()
+            _gonio = sweep.get_goniometer()
+            _scan = sweep.get_scan()
+        else:
+            _scan = scan
+            _beam = beam
+            _detector = detector
+            _goniometer = goniometer
+            _scan = scan
+            _image_width = image_width
+            if _image_width: assert _scan is None
+
+        assert crystal is not None
+        _crystal = crystal
+
+        parameterisation_strategy = \
+                    RefinerFactory.configure_parameterisation(params)
+        refinery_strategy = RefinerFactory.configure_refinery(params)
+        reflections_strategy = RefinerFactory.configure_refman(params)
+        target_strategy = RefinerFactory.configure_target(params)
+
+        return Refiner(parameterisation_strategy, refinery_strategy,
+                 reflections_strategy, target_strategy, verbosity)
+
+    @staticmethod
+    def configure_parameterisation(params):
+        """Given a set of parameters, configure a factory to build a
+        parameterisation from a set of experimental models
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The parameterisation factory instance
+        """
+
+        # Shorten parameter paths
+        beam_options = params.refinement.parameterisation.beam
+        crystal_options = params.refinement.parameterisation.crystal
+        detector_options = params.refinement.parameterisation.detector
+        prediction_options = params.refinement.parameterisation.prediction
+
+        return ParameterisationFactory(beam_options, crystal_options,
+                                detector_options, prediction_options)
+
+    @staticmethod
+    def configure_refinery(params):
+        """Given a set of parameters, configure a factory to build a
+        refinery
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The refinery factory instance
+        """
+
+        # Shorten parameter path
+        options = params.refinement.refinery
+        return RefineryFactory(options)
+
+    @staticmethod
+    def configure_refman(params):
+        """Given a set of parameters, configure a factory to build a
+        reflection manager
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The reflection manager factory instance
+        """
+
+        # Shorten parameter path
+        options = params.refinement.reflections
+        return RefmanFactory(options)
+
+    @staticmethod
+    def configure_target(params):
+        """Given a set of parameters, configure a factory to build a
+        target function
+
+        Params:
+            params The input parameters
+
+        Returns:
+            The target factory instance
+        """
+
+        # Shorten parameter path
+        options = params.refinement.target
+        return TargetFactory(options)
 
 class Refiner(object):
     """The refiner class."""
@@ -291,102 +419,6 @@ class Refiner(object):
 
         return self._new_reflections
 
-
-class RefinerFactory(object):
-    """Factory class to create refiners"""
-
-    @staticmethod
-    def from_parameters(params, verbosity):
-        """Given a set of parameters, construct the refiner
-
-        Params:
-            params The input parameters
-            verbosity The verbosity level
-
-        Returns:
-            The refiner instance
-
-        """
-
-        parameterisation_strategy = \
-                    RefinerFactory.configure_parameterisation(params)
-        refinery_strategy = RefinerFactory.configure_refinery(params)
-        reflections_strategy = RefinerFactory.configure_refman(params)
-        target_strategy = RefinerFactory.configure_target(params)
-
-        return Refiner(parameterisation_strategy, refinery_strategy,
-                 reflections_strategy, target_strategy, verbosity)
-
-    @staticmethod
-    def configure_parameterisation(params):
-        """Given a set of parameters, configure a factory to build a
-        parameterisation from a set of experimental models
-
-        Params:
-            params The input parameters
-
-        Returns:
-            The parameterisation factory instance
-        """
-
-        # Shorten parameter paths
-        beam_options = params.refinement.parameterisation.beam
-        crystal_options = params.refinement.parameterisation.crystal
-        detector_options = params.refinement.parameterisation.detector
-        prediction_options = params.refinement.parameterisation.prediction
-
-        return ParameterisationFactory(beam_options, crystal_options,
-                                detector_options, prediction_options)
-
-    @staticmethod
-    def configure_refinery(params):
-        """Given a set of parameters, configure a factory to build a
-        refinery
-
-        Params:
-            params The input parameters
-
-        Returns:
-            The refinery factory instance
-        """
-
-        # Shorten parameter path
-        options = params.refinement.refinery
-        return RefineryFactory(options)
-
-    @staticmethod
-    def configure_refman(params):
-        """Given a set of parameters, configure a factory to build a
-        reflection manager
-
-        Params:
-            params The input parameters
-
-        Returns:
-            The reflection manager factory instance
-        """
-
-        # Shorten parameter path
-        options = params.refinement.reflections
-        return RefmanFactory(options)
-
-    @staticmethod
-    def configure_target(params):
-        """Given a set of parameters, configure a factory to build a
-        target function
-
-        Params:
-            params The input parameters
-
-        Returns:
-            The target factory instance
-        """
-
-        # Shorten parameter path
-        options = params.refinement.target
-        return TargetFactory(options)
-
-
 class ParameterisationFactory(object):
     """ Factory class to create beam, crystal and detector parameterisations
     plus a parameterisation of the prediction equation."""
@@ -584,12 +616,12 @@ class RefmanFactory(object):
         return self._refman(reflections=reflections,
                             beam=beam,
                             gonio=goniometer,
-                            scan=scan,
-                            verbosity=verbosity,
+                            sweep_range_rad=sweep_range,
                             nref_per_degree=self._ref_per_degree,
                             min_num_obs=self._min_num_obs,
                             max_num_obs=self._max_num_obs,
-                            inclusion_cutoff=self._inclusion_cutoff)
+                            inclusion_cutoff=self._inclusion_cutoff,
+                            verbosity=verbosity)
 
 class TargetFactory(object):
     """Factory class to create a target function object"""

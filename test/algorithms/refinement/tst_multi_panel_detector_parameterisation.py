@@ -283,8 +283,8 @@ if __name__ == '__main__':
     # Select reflections for refinement #
     #####################################
 
-    refman = ReflectionManager(obs_refs, mybeam, mygonio, myscan)
-    refman2 = ReflectionManager(obs_refs2, mybeam, mygonio, myscan)
+    refman = ReflectionManager(obs_refs, mybeam, mygonio, sweep_range)
+    refman2 = ReflectionManager(obs_refs2, mybeam, mygonio, sweep_range)
 
     ###############################
     # Set up the target functions #
