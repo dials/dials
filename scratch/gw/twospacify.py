@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+from __future__ import division
+
 # Released to the public domain, by Tim Peters, 03 October 2000.
 #
 # Modified by Graeme Winter to make two-space indents consistent with cctbx

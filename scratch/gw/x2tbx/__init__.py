@@ -8,4 +8,3 @@ else:
 
 if not ext is None:
   from x2tbx_ext import *
-
