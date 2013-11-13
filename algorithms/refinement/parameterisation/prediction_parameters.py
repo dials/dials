@@ -50,7 +50,11 @@ class PredictionParameterisation(object):
       experiment)
     * A beam model
     * A crystal model
-    * A goniometer model (not yet parameterised, but required for the equations)
+    * A goniometer model 
+
+    The goniometer model is not yet parameterised, but we need it for the
+    equations if we are doing parameterisation in X, Y, Phi space. Conversely,
+    if parameterisation is only in X, Y space, the goniometer model is optional.
 
     A class implementing PredictionParameterisation is used by a Refinery
     object directly, which takes the list of parameters, and indirectly via a
@@ -62,7 +66,7 @@ class PredictionParameterisation(object):
                  detector_model,
                  beam_model,
                  crystal_model,
-                 goniometer_model,
+                 goniometer_model = None,
                  detector_parameterisations = None,
                  beam_parameterisations = None,
                  xl_orientation_parameterisations = None,
@@ -213,7 +217,8 @@ class PredictionParameterisation(object):
         self._U = self._crystal.get_U()
         self._B = self._crystal.get_B()
         self._UB = self._U * self._B
-        self._axis = matrix.col(self._gonio.get_rotation_axis())
+        if self._gonio:
+            self._axis = matrix.col(self._gonio.get_rotation_axis())
 
     def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
         """
