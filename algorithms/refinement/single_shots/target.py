@@ -33,15 +33,9 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
 
     def __init__(self, reflection_predictor, detector, ref_man,
                  prediction_parameterisation,
-                 image_width, frac_binsize_cutoff=0.33333,
+                 frac_binsize_cutoff=0.33333,
                  absolute_cutoffs=None):
 
-        # FIXME image_width is passed, so that __init__  takes the same
-        # parameters as LeastSquaresPositionalResidualWithRmsdCutoff,
-        # but this parameter is not used. Prefer a better way to
-        # instantiate this class from its factory. For now, print a
-        # reminder.
-        print "WARNING, image_width is not used here!"
         Target.__init__(self, reflection_predictor, detector, ref_man,
                         prediction_parameterisation)
 

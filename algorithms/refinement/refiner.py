@@ -597,6 +597,9 @@ class TargetFactory(object):
 
     def __init__(self, options):
 
+        # this is a temporary patch for the old interface
+        self._XY = False
+
         if options.implementation == "basic":
             import dials.algorithms.refinement.target as target
             from target import \
@@ -604,6 +607,7 @@ class TargetFactory(object):
         elif options.implementation == "XY":
             from dials.algorithms.refinement.single_shots.target import \
                 LeastSquaresXYResidualWithRmsdCutoff as targ
+            self._XY = True
         else:
             raise RuntimeError("Target type " + options.implementation +
                                 " not recognised")
@@ -630,6 +634,11 @@ class TargetFactory(object):
         image_width = scan.get_oscillation(deg=False)[1]
 
         rp = self._ref_predictor(crystal, beam, goniometer)
-        return self._target(rp, detector, refman, pred_param,
+        if self._XY:
+            return self._target(rp, detector, refman, pred_param,
+                            self._frac_binsize_cutoff,
+                            self._absolute_cutoffs)
+        else:
+            return self._target(rp, detector, refman, pred_param,
                             image_width, self._frac_binsize_cutoff,
                             self._absolute_cutoffs)
