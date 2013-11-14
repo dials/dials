@@ -83,6 +83,7 @@ class Refinery(object):
         self.history.parameter_vector = []
         self.history.parameter_vector_norm = flex.double()
         self.history.rmsd = []
+        self.history.reason_for_termination = None
 
         self.prepare_for_step()
 
@@ -403,27 +404,27 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
             # test termination criteria
             if self.test_for_termination():
-                reason_for_termination = "RMSD target achieved"
+                self.history.reason_for_termination = "RMSD target achieved"
                 break
 
             if self.test_rmsd_convergence():
-                reason_for_termination = "RMSD no longer decreasing"
+                self.history.reason_for_termination = "RMSD no longer decreasing"
                 break
 
             if self.had_too_small_a_step():
-                reason_for_termination = "Step too small"
+                self.history.reason_for_termination = "Step too small"
                 break
 
             if self.test_objective_increasing_but_not_nref():
-                reason_for_termination = "Refinement failure:" \
+                self.history.reason_for_termination = "Refinement failure:" \
                     "objective increased"
                 if self.step_backward():
-                    reason_for_termination += ". Parameters set back one step"
+                    self.history.reason_for_termination += ". Parameters set back one step"
                 self.prepare_for_step()
                 break
 
             if self.n_iterations == self._max_iterations:
-                reason_for_termination = "Reached maximum number of " \
+                self.history.reason_for_termination = "Reached maximum number of " \
                     "iterations"
                 break
 
@@ -434,7 +435,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
         # print output table
         if self._verbosity > 0:
             self.print_table()
-            print reason_for_termination
+            print self.history.reason_for_termination
 
         # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
         cf = self.step_equations().cholesky_factor_packed_u()
@@ -519,7 +520,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
             self.history.reduced_chi_squared.append(self.chi_sq())
 
             if self.had_too_small_a_step():
-                reason_for_termination = "Step too small"
+                self.history.reason_for_termination = "Step too small"
                 break
 
             h = self.step()
@@ -533,11 +534,11 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
             if rho > 0:
                 # test termination criteria
                 if self.test_for_termination():
-                    reason_for_termination = "RMSD target achieved"
+                    self.history.reason_for_termination = "RMSD target achieved"
                     break
 
                 if self.test_rmsd_convergence():
-                    reason_for_termination = "RMSD no longer decreasing"
+                    self.history.reason_for_termination = "RMSD no longer decreasing"
                     break
 
                 self.mu *= max(1/3, 1 - (2*rho - 1)**3)
@@ -548,7 +549,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
                 nu *= 2
 
             if self.n_iterations == self._max_iterations:
-                reason_for_termination = "Reached maximum number of " \
+                self.history.reason_for_termination = "Reached maximum number of " \
                     "iterations"
                 break
 
@@ -558,7 +559,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
         # print output table
         if self._verbosity > 0:
             self.print_table()
-            print reason_for_termination
+            print self.history.reason_for_termination
 
         #FIXME
         # This stuff not yet available for the Lev Mar minimiser
