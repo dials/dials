@@ -33,34 +33,28 @@ class Refiner2(object):
             FIXME Documentation
         """
 
-        # keep the models for access after refinement
+        # keep the models public for access after refinement
         self.beam = beam
         self.crystals = crystals
-        # only keep crystal if there is only one of them
+        # only keep crystal if there is indeed only one
         self.crystal = crystals[0] if len(crystals) == 1 else None
         self.detector = detector
 
-        # could be None
+        # these could be None (for stills/XFEL)
         self.goniometer = goniometer
         self.scan = scan
 
-        # keep the parameterisations(FIXME should be private? - or
-        # maybe don't even need these references to them?)
-        self.beam_param = parameterisations.beam_param
-        self.xl_ori_param = parameterisations.xl_ori_param
-        self.xl_uc_param = parameterisations.xl_uc_param
-        self.det_param = parameterisations.det_param
+        # the prediction equation parameterisation is required for scan-varying
+        # reflection prediction
+        self._pred_param = parameterisations.pred_param
 
-        # need this?
-        self.pred_param = parameterisations.pred_param
+        # parameter reporter
+        self._param_report = parameterisations.param_reporter
 
-        # I do want this though
-        self.param_report = parameterisations.param_reporter
-
-        # should be private?
-        self.refman = refman
-        self.target = target
-        self.refinery = refinery
+        #
+        self._refman = refman
+        self._target = target
+        self._refinery = refinery
 
         self._verbosity = verbosity
 
@@ -69,18 +63,18 @@ class Refiner2(object):
     def rmsds(self):
         """Return rmsds of the current model"""
 
-        self.refinery.prepare_for_step()
+        self._refinery.prepare_for_step()
 
-        return self.target.rmsds()
+        return self._target.rmsds()
 
-    def __call__(self):
+    def run(self):
         """Run refinement"""
 
         ###################################
         # Do refinement and return models #
         ###################################
 
-        self.refinery.run()
+        self._refinery.run()
 
         if self._verbosity > 1:
             print
@@ -89,21 +83,20 @@ class Refiner2(object):
             print_model_geometry(self.beam, self.detector, self.crystals[0])
 
             try: # can only do this if there is a scan
-                if self.param_report.varying_params_vs_image_number(
+                if self._param_report.varying_params_vs_image_number(
                     self.scan.get_image_range()):
                     print "Writing scan-varying parameter table to file"
             except AttributeError:
                 pass
 
             print "Reporting on the refined parameters:"
-            print self.param_report
+            print self._param_report
 
             print "Writing residuals to file"
             self.write_residuals_table()
 
-        # Return the refinery, containing useful information such as the
-        # refinement history. The refined models are set by side-effect
-        return self.refinery
+        # Return the refinement history
+        return self._refinery.history
 
     def selection_used_for_refinement(self):
         """Return a selection as a flex.bool in terms of the input reflection
@@ -111,7 +104,7 @@ class Refiner2(object):
         refinement."""
 
         from scitbx.array_family import flex
-        matches = self.refman.get_matches()
+        matches = self._refman.get_matches()
         selection = flex.bool(len(self.reflections))
         for m in matches:
             selection[m.iobs] = True
@@ -120,7 +113,7 @@ class Refiner2(object):
 
     def write_residuals_table(self):
 
-        matches = self.refman.get_matches()
+        matches = self._refman.get_matches()
 
         f = open("residuals.dat","w")
         header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
@@ -147,7 +140,7 @@ class Refiner2(object):
 
         s0 = self.beam.get_s0()
         dmin = self.detector.get_max_resolution(s0)
-        sv_predictor = ScanVaryingReflectionListGenerator(self.pred_param,
+        sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
                             self.beam, self.gonio, self.scan, dmin)
 
         # Duck typing to determine whether prediction is scan-varying or not
@@ -829,8 +822,6 @@ class RefinerFactory(object):
                             image_width_rad, options.bin_size_fraction,
                             absolute_cutoffs)
         else:
-            # FIXME: StillsReflectionPredictor doesn't actually
-            # exist yet!
             from dials.algorithms.refinement.prediction import \
                 StillsReflectionPredictor
             ref_predictor = ReflectionPredictor(crystal, beam)

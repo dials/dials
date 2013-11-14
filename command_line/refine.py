@@ -68,25 +68,25 @@ class Script(ScriptRunner):
         crystal = load.crystal(args[1])
         reflections = pickle.load(open(args[2], 'rb'))
 
-        refine = RefinerFactory.from_parameters_models_data(params,
+        refiner = RefinerFactory.from_parameters_models_data(params,
             reflections, sweep, crystal=crystal, verbosity=options.verbosity)
 
         # Refine the geometry
         print 'Performing refinement'
 
-        # this returns the Refinery
-        refined = refine()
+        # Refine and get the refinement history
+        refined = refiner.run()
 
         # The new models are attributes of refine
-        print refine.beam
-        print refine.detector
-        print refine.goniometer
-        print refine.scan
+        print refiner.beam
+        print refiner.detector
+        print refiner.goniometer
+        print refiner.scan
 
         # update the input sweep
-        sweep.set_beam(refine.beam)
-        sweep.set_detector(refine.detector)
-        sweep.set_goniometer(refine.goniometer)
+        sweep.set_beam(refiner.beam)
+        sweep.set_detector(refiner.detector)
+        sweep.set_goniometer(refiner.goniometer)
 
         # Save the refined geometry to file
         output_sweep_filename = options.output_sweep_filename
@@ -96,7 +96,7 @@ class Script(ScriptRunner):
         # Save the refined crystal to file
         output_crystal_filename = options.output_crystal_filename
         print 'Saving refined geometry to {0}'.format(output_crystal_filename)
-        dump.crystal(refine.crystal, open(output_crystal_filename, 'w'))
+        dump.crystal(refiner.crystal, open(output_crystal_filename, 'w'))
 
 
 if __name__ == '__main__':
