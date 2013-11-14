@@ -11,6 +11,8 @@
 
 * ReflectionPredictor adapts DIALS prediction for use in refinement, by keeping
   up to date with the current model geometry
+* StillsReflectionPredictor predicts reflections without a goniometer, under
+  the naive assumption that the relp is already in reflecting position
 * ScanVaryingReflectionPredictor performs prediction for a particular image with
   different setting matrices at beginning and end of the image
 * ScanVaryingReflectionListGenerator runs ScanVaryingReflectionPredictor over
@@ -35,8 +37,8 @@ from dials.algorithms.refinement.prediction.reeke import reeke_model
 
 class ReflectionPredictor(object):
     """
-    Predict for a relp based on the current states of models in the
-    experimental geometry model. This is a wrapper for DIALS' C++
+    Predict for a relp based on the current states of models of the
+    experimental geometry. This is a wrapper for DIALS' C++
     RayPredictor class, which does the real work. This class keeps track
     of the experimental geometry, and instantiates a RayPredictor when
     required.
@@ -57,6 +59,7 @@ class ReflectionPredictor(object):
         self._ray_predictor = RayPredictor(self._beam.get_s0(),
                         self._gonio.get_rotation_axis(),
                         self._sweep_range)
+        self._UB = self._crystal.get_U() * self._crystal.get_B()
 
     def predict(self, hkl, UB = None):
         """
@@ -66,9 +69,51 @@ class ReflectionPredictor(object):
         for use in refinement with time-varying crystal parameters
         """
 
-        UB_ = UB if UB else self._crystal.get_U() * self._crystal.get_B()
+        UB_ = UB if UB else self._UB
 
         return self._ray_predictor(hkl, UB_)
+
+class StillsReflectionPredictor(object):
+    """
+    Predict for a relp based on the current states of models of the
+    experimental geometry. Here we assume the crystal UB already puts hkl
+    in reflecting position, so no rotation is required.
+
+    Generally, this assumption is not true: most relps are not touching the
+    Ewald sphere on a still image, but are observed due to their finite
+    mosaicity and the finite width of the Ewald sphere. Rather than employing
+    a complicated polychromatic and mosaic model, here we take a naive
+    approach, which is likely to introduce (small?) errors in the direction of
+    predicted rays.
+
+    """
+
+    def __init__(self, crystal, beam):
+        """Construct by linking to instances of experimental model classes"""
+
+        self._crystal = crystal
+        self._beam = beam
+        self.update()
+
+    def update(self):
+        """Cache s0 and UB"""
+
+        self._s0 = matrix.col(self._beam.get_s0())
+        self._s0_length = self._s0.length()
+        self._UB = self._crystal.get_U() * self._crystal.get_B()
+
+    def predict(self, hkl):
+        """Predict for hkl under the assumption it is in reflecting position"""
+
+        r = self._UB * matrix.col(hkl)
+        s1 = (self._s0 + r).normalize() * self._s0_length
+
+        # create the Reflection and set properties
+        r = Reflection(hkl)
+        r.beam_vector = s1
+        r.rotation_angle = 0.0
+
+        return r
 
 class ScanVaryingReflectionPredictor(object):
     """
@@ -304,7 +349,9 @@ class AnglePredictor_rstbx(object):
     Predict the reflecting angles for a relp based on the current states
     of models in the experimental geometry model. This version is a wrapper
     for rstbx's C++ rotation_angles so is faster than the pure Python class
-    AnglePredictor_py
+    AnglePredictor_py.
+
+    This is essentially deprecated by DIALS reflection prediction code.
     """
 
     def __init__(self, crystal, beam, gonio, dmin):
@@ -315,12 +362,10 @@ class AnglePredictor_rstbx(object):
         self._gonio = gonio
 
         self._dmin = dmin
-        #self._dstarmax = 1. / dmin
-        #self._dstarmax_sq = self._dstarmax**2
 
-    # To convert from the Rossmann frame we use two of Graeme's
-    # functions taken from use_case_xds_method/tdi.py
-    def orthogonal_component(self, reference, changing):
+    # To convert from the Rossmann frame we use two of Graeme's functions
+    @staticmethod
+    def orthogonal_component(reference, changing):
         """Return unit vector corresponding to component of changing orthogonal
         to reference."""
 
@@ -329,7 +374,8 @@ class AnglePredictor_rstbx(object):
 
         return (c - c.dot(r) * r).normalize()
 
-    def align_reference_frame(self, primary_axis, primary_target,
+    @staticmethod
+    def align_reference_frame(primary_axis, primary_target,
                               secondary_axis, secondary_target):
         """Compute a rotation matrix R: R x primary_axis = primary_target and
         R x secondary_axis places the secondary_axis in the plane perpendicular
@@ -376,10 +422,11 @@ class AnglePredictor_rstbx(object):
         else:
             Rprimary = matrix.identity(3)
 
-        axis_r = secondary_target.cross(Rprimary * secondary_axis)
+        Rpsa = Rprimary * secondary_axis
+        axis_r = secondary_target.cross(Rpsa)
         axis_s = primary_target
-        angle_s = self.orthogonal_component(axis_s, secondary_target).angle(
-                self.orthogonal_component(axis_s, Rprimary * secondary_axis))
+        oc = AnglePredictor_rstbx.orthogonal_component
+        angle_s = oc(axis_s, secondary_target).angle(oc(axis_s, Rpsa))
         if axis_r.angle(primary_target) <= 0.5 * pi:
             angle_s *= -1.
 
@@ -594,7 +641,6 @@ class ImpactPredictor(object):
         for hkl in indices:
             hkl = matrix.col(hkl)
             temp.append(hkl)
-        #Hc, Xc, Yc, Phic, Sc = rp.predict(indices, angles)
         Hc, Xc, Yc, Phic, Sc = rp.predict(temp, angles)
 
         # Hc is now an an array of floating point vec3. How annoying! We want
