@@ -198,12 +198,11 @@ namespace dials { namespace model {
 
       // Create a graph of coordinates
       AdjacencyList graph(coords_.size());
-      std::size_t i1 = 0, i2 = 0, i3 = 0;
+      std::size_t i1 = 0, i2 = 0;
       for (; i1 < coords_.size()-1; ++i1) {
         std::size_t idx0 = idx[i1];
         std::size_t idx1 = idx0+1;
         std::size_t idx2 = idx0+size_[1];
-        std::size_t idx3 = idx0+size_[0]*size_[1];
         if (idx[i1+1] == idx1 && coords_[i1][2] < size_[1]-1) {
           boost::add_edge(i1, i1+1, graph);
         }
