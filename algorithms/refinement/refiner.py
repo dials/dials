@@ -70,26 +70,38 @@ class Refiner2(object):
     def run(self):
         """Run refinement"""
 
-        ###################################
-        # Do refinement and return models #
-        ###################################
+        ####################################
+        # Do refinement and return history #
+        ####################################
+
+        if self._verbosity > 1:
+            print ""
+            print "Experimental models before refinement"
+            print "-------------------------------------"
+            print self.beam
+            print self.detector
+            if self.goniometer: print self.goniometer
+            if self.scan: print self.scan
+            for x in self.crystals: print x
 
         self._refinery.run()
 
         if self._verbosity > 1:
             print
-            print "Refinement has completed with the following geometry:"
-            # FIXME Not useful for multiple crystals
-            print_model_geometry(self.beam, self.detector, self.crystals[0])
+            print "Experimental models after refinement"
+            print "------------------------------------"
+            print self.beam
+            print self.detector
+            if self.goniometer: print self.goniometer
+            if self.scan: print self.scan
+            for x in self.crystals: print x
 
-            try: # can only do this if there is a scan
-                if self._param_report.varying_params_vs_image_number(
+            # Write scan-varying parameters to file, if there were any
+            if self.scan and self._param_report.varying_params_vs_image_number(
                     self.scan.get_image_range()):
                     print "Writing scan-varying parameter table to file"
-            except AttributeError:
-                pass
 
-            print "Reporting on the refined parameters:"
+            # Report on the refined parameters
             print self._param_report
 
             print "Writing residuals to file"
@@ -516,26 +528,10 @@ class RefinerFactory(object):
         pred_param = parameterisations.pred_param
 
         if verbosity > 1:
-            print ""
-            print "Experimental Models"
-            print "-------------------"
-            print beam
-            print detector
-            if goniometer: print goniometer
-            if scan: print scan
-            for x in crystals: print x
-
-        if verbosity > 1:
             print "Prediction equation parameterisation built\n"
             print "Parameter order : name mapping"
             for i, e in enumerate(pred_param.get_param_names()):
                 print "Parameter %03d : " % i + e
-            print
-
-            print "Prior to refinement the experimental model is:"
-            # FIXME. Won't work for a list of crystals. Do I really
-            # need print_model_geometry? (probably not)
-            print_model_geometry(beam, detector, crystals[0])
             print
 
         if verbosity > 1:

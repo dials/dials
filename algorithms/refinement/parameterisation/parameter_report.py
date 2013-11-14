@@ -112,8 +112,8 @@ class ParameterReporter(object):
 
     def varying_params_vs_image_number(self, image_range):
         """Write a table of scan-varying parameter values vs image number to
-        disk, if scan-varying parameters are present. Return boolean, whether
-        this table was written or not"""
+        disk, if scan-varying parameters are present. Return boolean, reporting
+        whether this table was written or not"""
 
         image_numbers = range(image_range[0], image_range[1] + 1)
         columns = [TableColumn("Image", image_numbers)]

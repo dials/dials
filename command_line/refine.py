@@ -77,12 +77,6 @@ class Script(ScriptRunner):
         # Refine and get the refinement history
         refined = refiner.run()
 
-        # The new models are attributes of refine
-        print refiner.beam
-        print refiner.detector
-        print refiner.goniometer
-        print refiner.scan
-
         # update the input sweep
         sweep.set_beam(refiner.beam)
         sweep.set_detector(refiner.detector)
