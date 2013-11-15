@@ -30,7 +30,7 @@ from dials.algorithms.spot_prediction import RayPredictor
 from rstbx.diffraction import reflection_prediction
 from rstbx.diffraction import rotation_angles
 
-from dials.model.data import Reflection
+from dials.model.data import Reflection, ReflectionList
 
 from dials.algorithms.refinement.prediction.reeke import solve_quad
 from dials.algorithms.refinement.prediction.reeke import reeke_model
@@ -113,7 +113,9 @@ class StillsReflectionPredictor(object):
         r.beam_vector = s1
         r.rotation_angle = 0.0
 
-        return r
+        rl = ReflectionList(1)
+        rl[0] = r
+        return rl
 
 class ScanVaryingReflectionPredictor(object):
     """
