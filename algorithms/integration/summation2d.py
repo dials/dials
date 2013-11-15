@@ -49,7 +49,7 @@ def flex_2d_layering_n_integrating(reflections):
 
                 #reslt = profile_2d_real_space(data2d, mask2d, background2d)
                 reslt = raw_2d_cut(data2d, mask2d, background2d)
-                
+
                 ref.intensity += reslt[0]
                 ref.intensity_variance += reslt[1]
 

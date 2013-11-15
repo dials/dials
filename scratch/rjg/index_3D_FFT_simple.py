@@ -520,14 +520,14 @@ class indexer(object):
     self._find_peaks_timer.stop()
 
   def find_candidate_basis_vectors_nks(self):
-    '''Find the candidate basis vectors from the Patterson peaks using code 
-    from NKS which will search for the basis which best describes the list of 
+    '''Find the candidate basis vectors from the Patterson peaks using code
+    from NKS which will search for the basis which best describes the list of
     input spot positions. Based on using indexer.determine_basis_set.'''
-    
+
     from dials.algorithms.indexing import indexer
-    
+
     # hmm... conventionally the basis selection works on around 30 possible
-    # basis vectors, the code above appears to generate 200+ for one example    
+    # basis vectors, the code above appears to generate 200+ for one example
 
     from rstbx.phil.phil_preferences import libtbx_defs,iotbx_defs
     import iotbx.phil
@@ -549,7 +549,7 @@ class indexer(object):
       )
 
     print 1/0
-       
+
   def find_candidate_basis_vectors(self):
     # hijack the xray.structure class to facilitate calculation of distances
     xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
