@@ -103,11 +103,9 @@ class RefinerFactory(object):
                 (x, y))).normalize() / beam.get_wavelength()
 
         # create parameterisations
-        parameterisations = \
+        pred_param, param_reporter = \
                 RefinerFactory.config_parameterisation(
                     params, beam, detector, crystals, goniometer, scan)
-
-        pred_param = parameterisations.pred_param
 
         if verbosity > 1:
             print "Prediction equation parameterisation built\n"
@@ -151,7 +149,7 @@ class RefinerFactory(object):
 
         # build refiner interface and return
         return Refiner2(beam, crystals, detector,
-                       parameterisations, refman, target, refinery,
+                       pred_param, param_reporter, refman, target, refinery,
                        goniometer=goniometer,
                        scan=scan,
                        verbosity=verbosity)
@@ -166,7 +164,8 @@ class RefinerFactory(object):
             params The input parameters
 
         Returns:
-            The parameterisation instances in a bucket
+            A tuple of the prediction equation parameterisation and the
+            parameter reporter.
         """
 
         # Shorten parameter paths
@@ -269,15 +268,7 @@ class RefinerFactory(object):
         param_reporter = par.ParameterReporter([det_param], [beam_param],
             [xl_ori_param], [xl_uc_param])
 
-        parameterisations = Bucket()
-        parameterisations.beam_param = beam_param
-        parameterisations.xl_ori_param = xl_ori_param
-        parameterisations.xl_uc_param = xl_uc_param
-        parameterisations.det_param = det_param
-        parameterisations.pred_param = pred_param
-        parameterisations.param_reporter = param_reporter
-
-        return parameterisations
+        return pred_param, param_reporter
 
     @staticmethod
     def config_refinery(params, target, pred_param, verbosity):
@@ -770,14 +761,11 @@ class TargetFactory(object):
                             image_width, self._frac_binsize_cutoff,
                             self._absolute_cutoffs)
 
-class Bucket:
-    pass
-
 class Refiner2(object):
     """The refiner class."""
 
     def __init__(self, beam, crystals, detector,
-                 parameterisations, refman, target, refinery,
+                 pred_param, param_reporter, refman, target, refinery,
                  goniometer=None,
                  scan=None,
                  verbosity=0):
@@ -799,13 +787,13 @@ class Refiner2(object):
         self.scan = scan
 
         # refinement module main objects
-        self._pred_param = parameterisations.pred_param
+        self._pred_param = pred_param
         self._refman = refman
         self._target = target
         self._refinery = refinery
 
         # parameter reporter
-        self._param_report = parameterisations.param_reporter
+        self._param_report = param_reporter
 
         self._verbosity = verbosity
 
