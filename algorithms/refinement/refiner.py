@@ -16,432 +16,6 @@ should usually be used to construct a Refiner."""
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
-class Bucket:
-    pass
-
-class Refiner2(object):
-    """The refiner class."""
-
-    def __init__(self, beam, crystals, detector,
-                 parameterisations, refman, target, refinery,
-                 goniometer=None,
-                 scan=None,
-                 verbosity=0):
-        """ Initialise the refiner class.
-
-        Params:
-            FIXME Documentation
-        """
-
-        # keep the models public for access after refinement
-        self.beam = beam
-        self.crystals = crystals
-        # only keep crystal if there is indeed only one
-        self.crystal = crystals[0] if len(crystals) == 1 else None
-        self.detector = detector
-
-        # these could be None (for stills/XFEL)
-        self.goniometer = goniometer
-        self.scan = scan
-
-        # the prediction equation parameterisation is required for scan-varying
-        # reflection prediction
-        self._pred_param = parameterisations.pred_param
-
-        # parameter reporter
-        self._param_report = parameterisations.param_reporter
-
-        #
-        self._refman = refman
-        self._target = target
-        self._refinery = refinery
-
-        self._verbosity = verbosity
-
-        return
-
-    def rmsds(self):
-        """Return rmsds of the current model"""
-
-        self._refinery.prepare_for_step()
-
-        return self._target.rmsds()
-
-    def run(self):
-        """Run refinement"""
-
-        ####################################
-        # Do refinement and return history #
-        ####################################
-
-        if self._verbosity > 1:
-            print ""
-            print "Experimental models before refinement"
-            print "-------------------------------------"
-            print self.beam
-            print self.detector
-            if self.goniometer: print self.goniometer
-            if self.scan: print self.scan
-            for x in self.crystals: print x
-
-        self._refinery.run()
-
-        if self._verbosity > 1:
-            print
-            print "Experimental models after refinement"
-            print "------------------------------------"
-            print self.beam
-            print self.detector
-            if self.goniometer: print self.goniometer
-            if self.scan: print self.scan
-            for x in self.crystals: print x
-
-            # Write scan-varying parameters to file, if there were any
-            if self.scan and self._param_report.varying_params_vs_image_number(
-                    self.scan.get_image_range()):
-                    print "Writing scan-varying parameter table to file"
-
-            # Report on the refined parameters
-            print self._param_report
-
-            print "Writing residuals to file"
-            self.write_residuals_table()
-
-        # Return the refinement history
-        return self._refinery.history
-
-    def selection_used_for_refinement(self):
-        """Return a selection as a flex.bool in terms of the input reflection
-        data of those reflections that were used in the final step of
-        refinement."""
-
-        from scitbx.array_family import flex
-        matches = self._refman.get_matches()
-        selection = flex.bool(len(self.reflections))
-        for m in matches:
-            selection[m.iobs] = True
-
-        return selection
-
-    def write_residuals_table(self):
-
-        matches = self._refman.get_matches()
-
-        f = open("residuals.dat","w")
-        header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
-            "Y_calc\tPhi_calc\n")
-        f.write(header)
-
-        for m in matches:
-            msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
-                  "%5.3f\n")
-            msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
-                         m.Phio, m.Xc, m.Yc, m.Phic)
-            f.write(msg)
-        f.close()
-
-    def predict_reflections(self):
-        """Predict all reflection positions after refinement"""
-
-        from dials.algorithms.integration import ReflectionPredictor
-        from dials.algorithms.spot_prediction import ray_intersection
-        from dials.model.data import ReflectionList
-        from math import pi
-        from dials.algorithms.refinement.prediction.predictors import \
-                ScanVaryingReflectionListGenerator
-
-        s0 = self.beam.get_s0()
-        dmin = self.detector.get_max_resolution(s0)
-        sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
-                            self.beam, self.gonio, self.scan, dmin)
-
-        # Duck typing to determine whether prediction is scan-varying or not
-        try:
-            refs = ReflectionList(sv_predictor())
-            self._new_reflections = ray_intersection(self.detector, refs)
-
-        except AttributeError: # prediction seems to be scan-static
-            predict = ReflectionPredictor()
-            self._new_reflections = predict(self.sweep, self.crystal)
-
-        return self._new_reflections
-
-class Refiner(object):
-    """The refiner class."""
-
-    def __init__(self, parameterisation_strategy, refinery_strategy,
-                 reflections_strategy, target_strategy, verbosity):
-        """ Initialise the refiner class.
-
-        Params:
-            parameterisation_strategy The parameterisation strategy
-            refinery_strategy The engine strategy
-            reflections_strategy The reflection manager strategy
-            target_strategy The target function strategy
-            verbosity The verbosity level
-        """
-
-        self.create_param = parameterisation_strategy
-        self.create_refinery = refinery_strategy
-        self.create_target = target_strategy
-        self.create_refman = reflections_strategy
-        self._verbosity = verbosity
-
-    def prepare(self, sweep, crystal, reflections):
-        """ Prepare refiner with experimental models and data.
-
-        Params:
-            sweep The sweep to process
-            crystal The crystal to process
-            reflections The reflection list
-
-        Returns:
-            The refined (sweep, crystal)
-
-        """
-        from scitbx import matrix
-        from math import sqrt
-
-        # Get the models from the sweep
-        self.sweep = sweep
-        self.beam = sweep.get_beam()
-        self.detector = sweep.get_detector()
-        self.gonio = sweep.get_goniometer()
-        self.scan = sweep.get_scan()
-        self.crystal = crystal
-
-        if self._verbosity > 1:
-            print ""
-            print "Experimental Models"
-            print "-------------------"
-            print self.beam
-            print self.detector
-            print self.gonio
-            print self.scan
-            print self.crystal
-
-
-        # Copy the reflections
-        self.reflections = reflections
-        self._saved_reflections = self.reflections.deep_copy()
-
-        # check that the beam vectors are stored: if not, compute them
-        for ref in self.reflections:
-            if ref.beam_vector != (0.0, 0.0, 0.0):
-                continue
-            panel = self.detector[ref.panel_number]
-            x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
-            ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
-                (x, y))).normalize() / self.beam.get_wavelength()
-
-        ###########################
-        # Parameterise the models #
-        ###########################
-
-        (self.beam_param, self.xl_ori_param, self.xl_uc_param, self.det_param,
-         self.pred_param, self.param_report) = \
-            self.create_param(self.beam, self.crystal, self.gonio,
-                              self.detector, self.scan)
-
-        if self._verbosity > 1:
-            print "Prediction equation parameterisation built\n"
-            print "Parameter order : name mapping"
-            for i, e in enumerate(self.pred_param.get_param_names()):
-                print "Parameter %03d : " % i + e
-            print
-
-            print "Prior to refinement the experimental model is:"
-            print_model_geometry(self.beam, self.detector, self.crystal)
-            print
-
-        #####################################
-        # Select reflections for refinement #
-        #####################################
-
-        if self._verbosity > 1:
-            print "Building reflection manager"
-            print ("Input reflection list size = %d observations"
-                   % len(self.reflections))
-
-        self.refman = self.create_refman(self.reflections, self.beam,
-                                self.gonio, self.scan, self._verbosity)
-
-        if self._verbosity > 1:
-            print ("Number of observations that pass inclusion criteria = %d"
-                   % self.refman.get_total_size())
-            print ("Working set size = %d observations"
-                   % self.refman.get_sample_size())
-            print "Reflection manager built\n"
-
-        ##############################
-        # Set up the target function #
-        ##############################
-
-        if self._verbosity > 1: print "Building target function"
-
-        self.target = self.create_target(self.crystal, self.beam,
-            self.gonio, self.detector, self.scan, self.refman,
-            self.pred_param)
-
-        if self._verbosity > 1: print "Target function built\n"
-
-        ################################
-        # Set up the refinement engine #
-        ################################
-
-        if self._verbosity > 1: print "Building refinement engine"
-
-        self.refinery = self.create_refinery(self.target, self.pred_param,
-                                             self._verbosity)
-
-        if self._verbosity > 1: print "Refinement engine built\n"
-
-        return
-
-    def rmsds(self):
-        """Return rmsds of the current model"""
-
-        self.refinery.prepare_for_step()
-
-        return self.target.rmsds()
-
-    def __call__(self, sweep=None, crystal=None, reflections=None):
-        """Run refinement"""
-
-        if sweep and crystal and reflections:
-            self.prepare(sweep, crystal, reflections)
-        else: assert [sweep, crystal, reflections].count(None) == 3
-
-        ###################################
-        # Do refinement and return models #
-        ###################################
-
-        self.refinery.run()
-
-        if self._verbosity > 1:
-            print
-            print "Refinement has completed with the following geometry:"
-            print_model_geometry(self.beam, self.detector, self.crystal)
-
-            if self.param_report.varying_params_vs_image_number(
-                self.scan.get_image_range()):
-                print "Writing scan-varying parameter table to file"
-
-            print "Reporting on the refined parameters:"
-            print self.param_report
-
-            print "Writing residuals to file"
-            self.write_residuals_table()
-
-        # Do a test of new reflection pos
-        #self._update_reflections_test()
-
-        # Return the refinery, containing useful information such as the
-        # refinement history. The refined models are set by side-effect
-        return self.refinery
-
-    def selection_used_for_refinement(self):
-        """Return a selection as a flex.bool in terms of the input reflection
-        data of those reflections that were used in the final step of
-        refinement."""
-
-        from scitbx.array_family import flex
-        matches = self.refman.get_matches()
-        selection = flex.bool(len(self.reflections))
-        for m in matches:
-            selection[m.iobs] = True
-
-        return selection
-
-    def write_residuals_table(self):
-
-        matches = self.refman.get_matches()
-
-        f = open("residuals.dat","w")
-        header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
-            "Y_calc\tPhi_calc\n")
-        f.write(header)
-
-        for m in matches:
-            msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
-                  "%5.3f\n")
-            msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
-                         m.Phio, m.Xc, m.Yc, m.Phic)
-            f.write(msg)
-        f.close()
-
-    def _update_reflections_test(self):
-        from cctbx.array_family import flex
-        from collections import defaultdict
-
-        # Get miller indices from saved reflectons
-        miller_indices = [r.miller_index for r in self._saved_reflections]
-
-        self.miller_indices = flex.miller_index(miller_indices)
-
-        print "Predicting new reflections"
-        self.predict_reflections()
-
-        # Put coords from same hkl in dict for saved reflections
-        coord1 = defaultdict(list)
-        for r1 in self._saved_reflections:
-            coord1[r1.miller_index].append(r1.image_coord_px)
-
-        # Put coords from same hkl in dict for new reflections
-        coord2 = defaultdict(list)
-        for r2 in self._new_reflections:
-            coord2[r2.miller_index].append(r2.image_coord_px)
-
-        # Print out coords for each hkl
-        for h in coord1.keys():
-            c1 = coord1[h]
-            c2 = coord2[h]
-            #print c1, c2
-
-    def predict_reflections(self):
-        """Predict all reflection positions after refinement and make the
-        bounding boxes."""
-        from dials.algorithms.integration import ReflectionPredictor
-        from dials.algorithms.spot_prediction import ray_intersection
-        from dials.model.data import ReflectionList
-        from math import pi
-        from dials.algorithms.refinement.prediction.predictors import \
-                ScanVaryingReflectionListGenerator
-
-        s0 = self.beam.get_s0()
-        dmin = self.detector.get_max_resolution(s0)
-        sv_predictor = ScanVaryingReflectionListGenerator(self.pred_param,
-                            self.beam, self.gonio, self.scan, dmin)
-
-        # Duck typing to determine whether prediction is scan-varying or not
-        try:
-            refs = ReflectionList(sv_predictor())
-            self._new_reflections = ray_intersection(self.detector, refs)
-
-        except AttributeError: # prediction seems to be scan-static
-            predict = ReflectionPredictor()
-            self._new_reflections = predict(self.sweep, self.crystal)
-
-        self.sigma_divergence = self.beam.get_sigma_divergence()
-        self.sigma_mosaicity = self.crystal.get_mosaicity()
-
-        # Set the divergence and mosaicity
-        n_sigma = 5.0
-        delta_divergence = n_sigma * self.sigma_divergence * pi / 180.0
-        delta_mosaicity = n_sigma * self.sigma_mosaicity * pi / 180.0
-
-        # FIXME: DIALS_ASSERT(delta_divergence > 0.0) failure.
-        #
-        # Create the bounding box calculator
-        #calculate_bbox = BBoxCalculator(self.beam, self.detector, self.gonio,
-        #    self.scan, delta_divergence, delta_mosaicity)
-
-        # Calculate the frame numbers of all the reflections
-        #calculate_bbox(self._new_reflections)
-
-        return self._new_reflections
-
-
 class RefinerFactory(object):
     """Factory class to create refiners"""
 
@@ -1187,3 +761,425 @@ class TargetFactory(object):
             return self._target(rp, detector, refman, pred_param,
                             image_width, self._frac_binsize_cutoff,
                             self._absolute_cutoffs)
+
+class Bucket:
+    pass
+
+class Refiner2(object):
+    """The refiner class."""
+
+    def __init__(self, beam, crystals, detector,
+                 parameterisations, refman, target, refinery,
+                 goniometer=None,
+                 scan=None,
+                 verbosity=0):
+        """ Initialise the refiner class.
+
+        Params:
+            FIXME Documentation
+        """
+
+        # keep the models public for access after refinement
+        self.beam = beam
+        self.crystals = crystals
+        # only keep crystal if there is indeed only one
+        self.crystal = crystals[0] if len(crystals) == 1 else None
+        self.detector = detector
+
+        # these could be None (for stills/XFEL)
+        self.goniometer = goniometer
+        self.scan = scan
+
+        # refinement module main objects
+        self._pred_param = parameterisations.pred_param
+        self._refman = refman
+        self._target = target
+        self._refinery = refinery
+
+        # parameter reporter
+        self._param_report = parameterisations.param_reporter
+
+        self._verbosity = verbosity
+
+        return
+
+    def rmsds(self):
+        """Return rmsds of the current model"""
+
+        self._refinery.prepare_for_step()
+
+        return self._target.rmsds()
+
+    def run(self):
+        """Run refinement"""
+
+        ####################################
+        # Do refinement and return history #
+        ####################################
+
+        if self._verbosity > 1:
+            print ""
+            print "Experimental models before refinement"
+            print "-------------------------------------"
+            print self.beam
+            print self.detector
+            if self.goniometer: print self.goniometer
+            if self.scan: print self.scan
+            for x in self.crystals: print x
+
+        self._refinery.run()
+
+        if self._verbosity > 1:
+            print
+            print "Experimental models after refinement"
+            print "------------------------------------"
+            print self.beam
+            print self.detector
+            if self.goniometer: print self.goniometer
+            if self.scan: print self.scan
+            for x in self.crystals: print x
+
+            # Write scan-varying parameters to file, if there were any
+            if self.scan and self._param_report.varying_params_vs_image_number(
+                    self.scan.get_image_range()):
+                    print "Writing scan-varying parameter table to file"
+
+            # Report on the refined parameters
+            print self._param_report
+
+            print "Writing residuals to file"
+            self.write_residuals_table()
+
+        # Return the refinement history
+        return self._refinery.history
+
+    def selection_used_for_refinement(self):
+        """Return a selection as a flex.bool in terms of the input reflection
+        data of those reflections that were used in the final step of
+        refinement."""
+
+        from scitbx.array_family import flex
+        matches = self._refman.get_matches()
+        selection = flex.bool(len(self.reflections))
+        for m in matches:
+            selection[m.iobs] = True
+
+        return selection
+
+    def write_residuals_table(self):
+
+        matches = self._refman.get_matches()
+
+        f = open("residuals.dat","w")
+        header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
+            "Y_calc\tPhi_calc\n")
+        f.write(header)
+
+        for m in matches:
+            msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
+                  "%5.3f\n")
+            msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
+                         m.Phio, m.Xc, m.Yc, m.Phic)
+            f.write(msg)
+        f.close()
+
+    def predict_reflections(self):
+        """Predict all reflection positions after refinement"""
+
+        from dials.algorithms.integration import ReflectionPredictor
+        from dials.algorithms.spot_prediction import ray_intersection
+        from dials.model.data import ReflectionList
+        from math import pi
+        from dials.algorithms.refinement.prediction.predictors import \
+                ScanVaryingReflectionListGenerator
+
+        s0 = self.beam.get_s0()
+        dmin = self.detector.get_max_resolution(s0)
+        sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
+                            self.beam, self.gonio, self.scan, dmin)
+
+        # Duck typing to determine whether prediction is scan-varying or not
+        try:
+            refs = ReflectionList(sv_predictor())
+            self._new_reflections = ray_intersection(self.detector, refs)
+
+        except AttributeError: # prediction seems to be scan-static
+            predict = ReflectionPredictor()
+            self._new_reflections = predict(self.sweep, self.crystal)
+
+        return self._new_reflections
+
+class Refiner(object):
+    """The refiner class."""
+
+    def __init__(self, parameterisation_strategy, refinery_strategy,
+                 reflections_strategy, target_strategy, verbosity):
+        """ Initialise the refiner class.
+
+        Params:
+            parameterisation_strategy The parameterisation strategy
+            refinery_strategy The engine strategy
+            reflections_strategy The reflection manager strategy
+            target_strategy The target function strategy
+            verbosity The verbosity level
+        """
+
+        self.create_param = parameterisation_strategy
+        self.create_refinery = refinery_strategy
+        self.create_target = target_strategy
+        self.create_refman = reflections_strategy
+        self._verbosity = verbosity
+
+    def prepare(self, sweep, crystal, reflections):
+        """ Prepare refiner with experimental models and data.
+
+        Params:
+            sweep The sweep to process
+            crystal The crystal to process
+            reflections The reflection list
+
+        Returns:
+            The refined (sweep, crystal)
+
+        """
+        from scitbx import matrix
+        from math import sqrt
+
+        # Get the models from the sweep
+        self.sweep = sweep
+        self.beam = sweep.get_beam()
+        self.detector = sweep.get_detector()
+        self.gonio = sweep.get_goniometer()
+        self.scan = sweep.get_scan()
+        self.crystal = crystal
+
+        if self._verbosity > 1:
+            print ""
+            print "Experimental Models"
+            print "-------------------"
+            print self.beam
+            print self.detector
+            print self.gonio
+            print self.scan
+            print self.crystal
+
+
+        # Copy the reflections
+        self.reflections = reflections
+        self._saved_reflections = self.reflections.deep_copy()
+
+        # check that the beam vectors are stored: if not, compute them
+        for ref in self.reflections:
+            if ref.beam_vector != (0.0, 0.0, 0.0):
+                continue
+            panel = self.detector[ref.panel_number]
+            x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
+            ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
+                (x, y))).normalize() / self.beam.get_wavelength()
+
+        ###########################
+        # Parameterise the models #
+        ###########################
+
+        (self.beam_param, self.xl_ori_param, self.xl_uc_param, self.det_param,
+         self.pred_param, self.param_report) = \
+            self.create_param(self.beam, self.crystal, self.gonio,
+                              self.detector, self.scan)
+
+        if self._verbosity > 1:
+            print "Prediction equation parameterisation built\n"
+            print "Parameter order : name mapping"
+            for i, e in enumerate(self.pred_param.get_param_names()):
+                print "Parameter %03d : " % i + e
+            print
+
+            print "Prior to refinement the experimental model is:"
+            print_model_geometry(self.beam, self.detector, self.crystal)
+            print
+
+        #####################################
+        # Select reflections for refinement #
+        #####################################
+
+        if self._verbosity > 1:
+            print "Building reflection manager"
+            print ("Input reflection list size = %d observations"
+                   % len(self.reflections))
+
+        self.refman = self.create_refman(self.reflections, self.beam,
+                                self.gonio, self.scan, self._verbosity)
+
+        if self._verbosity > 1:
+            print ("Number of observations that pass inclusion criteria = %d"
+                   % self.refman.get_total_size())
+            print ("Working set size = %d observations"
+                   % self.refman.get_sample_size())
+            print "Reflection manager built\n"
+
+        ##############################
+        # Set up the target function #
+        ##############################
+
+        if self._verbosity > 1: print "Building target function"
+
+        self.target = self.create_target(self.crystal, self.beam,
+            self.gonio, self.detector, self.scan, self.refman,
+            self.pred_param)
+
+        if self._verbosity > 1: print "Target function built\n"
+
+        ################################
+        # Set up the refinement engine #
+        ################################
+
+        if self._verbosity > 1: print "Building refinement engine"
+
+        self.refinery = self.create_refinery(self.target, self.pred_param,
+                                             self._verbosity)
+
+        if self._verbosity > 1: print "Refinement engine built\n"
+
+        return
+
+    def rmsds(self):
+        """Return rmsds of the current model"""
+
+        self.refinery.prepare_for_step()
+
+        return self.target.rmsds()
+
+    def __call__(self, sweep=None, crystal=None, reflections=None):
+        """Run refinement"""
+
+        if sweep and crystal and reflections:
+            self.prepare(sweep, crystal, reflections)
+        else: assert [sweep, crystal, reflections].count(None) == 3
+
+        ###################################
+        # Do refinement and return models #
+        ###################################
+
+        self.refinery.run()
+
+        if self._verbosity > 1:
+            print
+            print "Refinement has completed with the following geometry:"
+            print_model_geometry(self.beam, self.detector, self.crystal)
+
+            if self.param_report.varying_params_vs_image_number(
+                self.scan.get_image_range()):
+                print "Writing scan-varying parameter table to file"
+
+            print "Reporting on the refined parameters:"
+            print self.param_report
+
+            print "Writing residuals to file"
+            self.write_residuals_table()
+
+        # Do a test of new reflection pos
+        #self._update_reflections_test()
+
+        # Return the refinery, containing useful information such as the
+        # refinement history. The refined models are set by side-effect
+        return self.refinery
+
+    def selection_used_for_refinement(self):
+        """Return a selection as a flex.bool in terms of the input reflection
+        data of those reflections that were used in the final step of
+        refinement."""
+
+        from scitbx.array_family import flex
+        matches = self.refman.get_matches()
+        selection = flex.bool(len(self.reflections))
+        for m in matches:
+            selection[m.iobs] = True
+
+        return selection
+
+    def write_residuals_table(self):
+
+        matches = self.refman.get_matches()
+
+        f = open("residuals.dat","w")
+        header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
+            "Y_calc\tPhi_calc\n")
+        f.write(header)
+
+        for m in matches:
+            msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
+                  "%5.3f\n")
+            msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
+                         m.Phio, m.Xc, m.Yc, m.Phic)
+            f.write(msg)
+        f.close()
+
+    def _update_reflections_test(self):
+        from cctbx.array_family import flex
+        from collections import defaultdict
+
+        # Get miller indices from saved reflectons
+        miller_indices = [r.miller_index for r in self._saved_reflections]
+
+        self.miller_indices = flex.miller_index(miller_indices)
+
+        print "Predicting new reflections"
+        self.predict_reflections()
+
+        # Put coords from same hkl in dict for saved reflections
+        coord1 = defaultdict(list)
+        for r1 in self._saved_reflections:
+            coord1[r1.miller_index].append(r1.image_coord_px)
+
+        # Put coords from same hkl in dict for new reflections
+        coord2 = defaultdict(list)
+        for r2 in self._new_reflections:
+            coord2[r2.miller_index].append(r2.image_coord_px)
+
+        # Print out coords for each hkl
+        for h in coord1.keys():
+            c1 = coord1[h]
+            c2 = coord2[h]
+            #print c1, c2
+
+    def predict_reflections(self):
+        """Predict all reflection positions after refinement and make the
+        bounding boxes."""
+        from dials.algorithms.integration import ReflectionPredictor
+        from dials.algorithms.spot_prediction import ray_intersection
+        from dials.model.data import ReflectionList
+        from math import pi
+        from dials.algorithms.refinement.prediction.predictors import \
+                ScanVaryingReflectionListGenerator
+
+        s0 = self.beam.get_s0()
+        dmin = self.detector.get_max_resolution(s0)
+        sv_predictor = ScanVaryingReflectionListGenerator(self.pred_param,
+                            self.beam, self.gonio, self.scan, dmin)
+
+        # Duck typing to determine whether prediction is scan-varying or not
+        try:
+            refs = ReflectionList(sv_predictor())
+            self._new_reflections = ray_intersection(self.detector, refs)
+
+        except AttributeError: # prediction seems to be scan-static
+            predict = ReflectionPredictor()
+            self._new_reflections = predict(self.sweep, self.crystal)
+
+        self.sigma_divergence = self.beam.get_sigma_divergence()
+        self.sigma_mosaicity = self.crystal.get_mosaicity()
+
+        # Set the divergence and mosaicity
+        n_sigma = 5.0
+        delta_divergence = n_sigma * self.sigma_divergence * pi / 180.0
+        delta_mosaicity = n_sigma * self.sigma_mosaicity * pi / 180.0
+
+        # FIXME: DIALS_ASSERT(delta_divergence > 0.0) failure.
+        #
+        # Create the bounding box calculator
+        #calculate_bbox = BBoxCalculator(self.beam, self.detector, self.gonio,
+        #    self.scan, delta_divergence, delta_mosaicity)
+
+        # Calculate the frame numbers of all the reflections
+        #calculate_bbox(self._new_reflections)
+
+        return self._new_reflections
