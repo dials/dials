@@ -47,8 +47,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
             self._binsize_cutoffs = [min_px_size_x * frac_binsize_cutoff,
                                      min_px_size_y * frac_binsize_cutoff]
         else:
-            assert len(absolute_cutoffs) == 2
-            self._binsize_cutoffs = absolute_cutoffs
+            self._binsize_cutoffs = absolute_cutoffs[:2]
 
         # Quantities to cache each step
         self._rmsds = None

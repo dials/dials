@@ -61,11 +61,19 @@ class RefinerFactory(object):
         if image_width_rad or sweep_range_rad:
             assert image_width_rad and sweep_range_rad
 
-        # only one of image_width or scan should be provided (or neither)
+        # only one of image_width_rad or scan should be provided (or neither)
         assert [image_width_rad, scan].count(None) >= 1
         if scan:
             image_width_rad = scan.get_oscillation(deg=False)[1]
             sweep_range_rad = scan.get_oscillation_range(deg=False)
+
+        if goniometer and not image_width_rad:
+            # if there is neither a scan nor the image width provided,
+            # the target rmsd must be provided in absolute terms
+            assert params.refinement.target.rmsd_cutoff == "absolute"
+            # also there is no sweep range, so the reflection manager
+            # cannot sample by number of reflections per degree
+            assert params.refinement.reflections.reflections_per_degree is None
 
         # do we have the essential models?
         assert [beam, detector].count(None) == 0
