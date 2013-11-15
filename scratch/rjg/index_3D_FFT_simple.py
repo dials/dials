@@ -311,7 +311,7 @@ class indexer(object):
         print
 
         self.reflections_i_lattice = self.reflections.crystal()
-        self.indexed_reflections = self.reflections_i_lattice == i_lattice
+        self.indexed_reflections = (self.reflections_i_lattice == i_lattice)
 
         if self.params.debug:
           sel = flex.bool(self.reflections.size(), False)
@@ -346,8 +346,9 @@ class indexer(object):
       self.export_as_json(crystal_model, sweeps[i_lattice], suffix=suffix)
       if self.params.export_xds_files:
         self.export_xds_files(crystal_model, sweeps[i_lattice], suffix=suffix)
-      self.export_reflections(file_name='indexed%s.pickle' %suffix,
-                              indexed_only=True)
+      self.export_reflections(
+        self.reflections.select(self.reflections_i_lattice == i_lattice),
+        file_name='indexed%s.pickle' %suffix)
 
     #self.export_reflections(indexed_only=False)
     if self.params.debug:
@@ -1284,10 +1285,7 @@ class indexer(object):
     with open('sweep%s.json' %suffix, 'wb') as f:
       dump.imageset(sweep, f, compact=compact)
 
-  def export_reflections(self, file_name="indexed.pickle", indexed_only=False):
-    reflections = self.reflections
-    if indexed_only:
-      reflections = reflections.select(self.indexed_reflections)
+  def export_reflections(self, reflections, file_name="reflections.pickle"):
     with open(file_name, 'wb') as f:
       pickle.dump(reflections, f)
 
