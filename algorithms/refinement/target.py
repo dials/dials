@@ -481,13 +481,12 @@ class ReflectionManager(object):
         self._inclusion_cutoff = inclusion_cutoff
 
         # exclude reflections that fail inclusion criteria
-        #self._obs_data = self._remove_excluded_obs(reflections)
+        self._input_size = len(reflections)
         refs_to_keep = self._id_refs_to_keep(reflections)
-        #self._sample_size = len(refs_to_keep)
-        self._total_size = len(refs_to_keep)
+        self._accepted_refs_size = len(refs_to_keep)
 
         # choose a random subset of data for refinement
-        self._sample_size = self._total_size
+        self._sample_size = self._accepted_refs_size
         self._nref_per_degree = nref_per_degree
         self._max_num_obs = max_num_obs
         refs_to_keep = self._create_working_set(refs_to_keep)
@@ -594,17 +593,23 @@ class ReflectionManager(object):
                                             self._sample_size)
         return(working_indices)
 
+    def get_input_size(self):
+        """Return the number of observations in the intial list supplied
+        as input"""
+
+        return self._input_size
+
+    def get_accepted_refs_size(self):
+        """Return the number of observations that pass inclusion criteria and
+        can potentially be used for refinement"""
+
+        return self._accepted_refs_size
+
     def get_sample_size(self):
         """Return the number of observations in the working set to be
         used for refinement"""
 
         return self._sample_size
-
-    def get_total_size(self):
-        """Return the number of observations that pass inclusion criteria and
-        can potentially be used for refinement"""
-
-        return self._total_size
 
     def _sort_obs_by_residual(self, obs, angular=False):
         """For analysis purposes, sort the obs-pred matches so that the
