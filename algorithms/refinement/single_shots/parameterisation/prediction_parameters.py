@@ -39,7 +39,12 @@ class XYPredictionParameterisation(PredictionParameterisation):
 
         ### Calculate various quantities of interest for this reflection
 
-        R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
+        # FIXME: axis is only here to satisfy the old interface which
+        # has a pretend goniometer
+        if self._axis:
+            R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
+        else:
+            R = matrix.identity(3)
 
         # pv is the 'projection vector' for the reflection s.
         s = matrix.col(s)
