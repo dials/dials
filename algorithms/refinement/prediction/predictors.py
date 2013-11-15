@@ -108,13 +108,18 @@ class StillsReflectionPredictor(object):
         r = self._UB * matrix.col(hkl)
         s1 = (self._s0 + r).normalize() * self._s0_length
 
-        # create the Reflection and set properties
-        r = Reflection(hkl)
-        r.beam_vector = s1
-        r.rotation_angle = 0.0
+        # create the Reflections and set properties. The relp is
+        # neither entering nor exiting the Ewald sphere, but we need
+        # both to ensure we match whatever this flag is set to for
+        # the observation.
+        ref1, ref2 = Reflection(hkl), Reflection(hkl)
+        ref1.beam_vector, ref2.beam_vector = s1, s1
+        ref1.rotation_angle, ref2.rotation_angle = 0.0, 0.0
+        ref1.entering, ref2.entering = True, False
 
-        rl = ReflectionList(1)
-        rl[0] = r
+        rl = ReflectionList(2)
+        rl[0] = ref1
+        rl[1] = ref2
         return rl
 
 class ScanVaryingReflectionPredictor(object):
