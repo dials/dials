@@ -62,7 +62,10 @@ class run_one_indexing(object):
                extra_args,
                expected_unit_cell,
                expected_rmsds,
-               expected_hall_symbol):
+               expected_hall_symbol,
+               n_expected_lattices=1,
+               relative_length_tolerance=0.005,
+               absolute_angle_tolerance=0.5):
 
     py_script_path = libtbx.env.find_in_repositories(
       relative_path="dials/scratch/rjg/index_3D_FFT_simple.py",
@@ -75,25 +78,29 @@ class run_one_indexing(object):
     os.chdir(tmp_dir)
     result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
     os.chdir(cwd)
-    assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
-    assert os.path.exists(os.path.join(tmp_dir, "crystal.json"))
-    assert os.path.exists(os.path.join(tmp_dir, "sweep.json"))
-    self.reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
-    self.crystal_model = load.crystal(os.path.join(tmp_dir, "crystal.json"))
-    self.sweep = load.sweep(os.path.join(tmp_dir, "sweep.json"))
-    assert self.crystal_model.get_unit_cell().is_similar_to(
-      expected_unit_cell,
-      relative_length_tolerance=0.01,
-      absolute_angle_tolerance=0.5)
-    sg = self.crystal_model.get_space_group()
-    assert sg.type().hall_symbol() == expected_hall_symbol
-    mi = self.reflections.miller_index()
-    assert (mi != (0,0,0)).count(False) == 0
-    self.reflections = self.reflections.select(mi != (0,0,0))
-    self.rmsds = self.get_rmsds_obs_pred(
-      self.reflections, self.sweep, self.crystal_model)
-    for actual, expected in zip(self.rmsds, expected_rmsds):
-      assert actual <= expected
+    for i in range(n_expected_lattices):
+      suffix = ""
+      if n_expected_lattices > 1:
+        suffix = "_%i" %(i+1)
+      assert os.path.exists(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
+      assert os.path.exists(os.path.join(tmp_dir, "crystal%s.json" %suffix))
+      assert os.path.exists(os.path.join(tmp_dir, "sweep%s.json" %suffix))
+      self.reflections = load.reflections(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
+      self.crystal_model = load.crystal(os.path.join(tmp_dir, "crystal%s.json" %suffix))
+      self.sweep = load.sweep(os.path.join(tmp_dir, "sweep%s.json" %suffix))
+      assert self.crystal_model.get_unit_cell().is_similar_to(
+        expected_unit_cell,
+        relative_length_tolerance=relative_length_tolerance,
+        absolute_angle_tolerance=absolute_angle_tolerance)
+      sg = self.crystal_model.get_space_group()
+      assert sg.type().hall_symbol() == expected_hall_symbol
+      mi = self.reflections.miller_index()
+      assert (mi != (0,0,0)).count(False) == 0
+      self.reflections = self.reflections.select(mi != (0,0,0))
+      self.rmsds = self.get_rmsds_obs_pred(
+        self.reflections, self.sweep, self.crystal_model)
+      for actual, expected in zip(self.rmsds, expected_rmsds):
+        assert actual <= expected
 
   def get_rmsds_obs_pred(self, observations, sweep, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
@@ -114,7 +121,7 @@ def exercise_1():
                 "n_macro_cycles=2"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.06, 0.05, 0.0004)
+  expected_rmsds = (0.06, 0.05, 0.0005)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -156,7 +163,7 @@ def exercise_3():
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.06, 0.05, 0.0004)
+  expected_rmsds = (0.06, 0.05, 0.0005)
 
   # now enforce symmetry
   extra_args.append("space_group=P4")
@@ -196,16 +203,100 @@ def exercise_4():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol)
 
+def exercise_5():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print "Skipping exercise_5: missing dependencies %s" %(tuple(missing))
+    return
+  # synthetic trypsin multi-lattice dataset (2 lattices)
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
+  pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2.json")
+  extra_args = ["multiple_lattice_search=True",
+                "reflections_per_degree=5",
+                "n_macro_cycles=2",
+                "d_min=4",
+                "scan_range=0,50",
+                "scan_range=450,500",
+                "scan_range=850,900"]
+  expected_unit_cell = uctbx.unit_cell(
+    (54.3, 58.3, 66.5, 90, 90, 90))
+  expected_rmsds = (0.17, 0.17, 0.004)
+  expected_hall_symbol = ' P 1'
+  n_expected_lattices = 2
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol,
+                            n_expected_lattices=n_expected_lattices,
+                            relative_length_tolerance=0.02,
+                            absolute_angle_tolerance=1)
+
+def exercise_6():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print "Skipping exercise_6: missing dependencies %s" %(tuple(missing))
+    return
+  # synthetic trypsin multi-lattice dataset (3 lattices)
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
+  pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3.json")
+  extra_args = ["multiple_lattice_search=True",
+                "reflections_per_degree=5",
+                "n_macro_cycles=2",
+                "d_min=4",
+                "max_cell=70", #XXX eventually this should not be needed
+                ]
+  expected_unit_cell = uctbx.unit_cell(
+    (54.3, 58.3, 66.5, 90, 90, 90))
+  expected_rmsds = (0.24, 0.30, 0.006)
+  expected_hall_symbol = ' P 1'
+  n_expected_lattices = 3
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol,
+                            n_expected_lattices=n_expected_lattices,
+                            relative_length_tolerance=0.01,
+                            absolute_angle_tolerance=1)
+
+def exercise_7():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print "Skipping exercise_7: missing dependencies %s" %(tuple(missing))
+    return
+  # synthetic trypsin multi-lattice dataset (4 lattices)
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
+  pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3_4.json")
+  extra_args = ["multiple_lattice_search=True",
+                "reflections_per_degree=5",
+                "n_macro_cycles=2",
+                "d_min=4",
+                "max_cell=70", #XXX eventually this should not be needed
+                ]
+  expected_unit_cell = uctbx.unit_cell(
+    (54.3, 58.3, 66.5, 90, 90, 90))
+  expected_rmsds = (0.24, 0.30, 0.006)
+  expected_hall_symbol = ' P 1'
+  n_expected_lattices = 4
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol,
+                            n_expected_lattices=n_expected_lattices,
+                            relative_length_tolerance=0.01,
+                            absolute_angle_tolerance=1)
+
 
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
     print "Skipping exercise_index_3D_FFT_simple: dials_regression not present"
     return
 
-  exercises = (exercise_1, exercise_2, exercise_3, exercise_4)
+  exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
+               exercise_6, exercise_7)
   if len(args):
     args = [int(arg) for arg in args]
-    exercises = [exercises[arg] for arg in args]
+    for arg in args: assert arg > 0
+    exercises = [exercises[arg-1] for arg in args]
 
   for exercise in exercises:
     exercise()

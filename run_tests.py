@@ -59,10 +59,11 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_partial_extractor.py",
     "$D/test/algorithms/shoebox/tst_helpers.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
-    ["$D/scratch/rjg/tst_index.py", "0"],
     ["$D/scratch/rjg/tst_index.py", "1"],
     ["$D/scratch/rjg/tst_index.py", "2"],
     ["$D/scratch/rjg/tst_index.py", "3"],
+    ["$D/scratch/rjg/tst_index.py", "4"],
+    ["$D/scratch/rjg/tst_index.py", "7"],
     )
 
 def run () :
