@@ -219,6 +219,8 @@ class PredictionParameterisation(object):
         self._UB = self._U * self._B
         if self._gonio:
             self._axis = matrix.col(self._gonio.get_rotation_axis())
+        else:
+            self._axis = None
 
     def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
         """
