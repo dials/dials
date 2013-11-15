@@ -35,10 +35,12 @@ class TestImporter:
         assert(len(importer.reflections) == 664)
         assert(len(importer.imagesets) == 3)
         assert(len(importer.crystals) == 2)
-        assert(len(importer.unhandled_arguments) == 2)
 
         if os.path.exists(os.path.join(self.path, 'extracted.tar')):
             assert(importer.extracted != None)
+            assert(len(importer.unhandled_arguments) == 2)
+        else:
+            assert(len(importer.unhandled_arguments) == 3)
 
         print 'OK'
 

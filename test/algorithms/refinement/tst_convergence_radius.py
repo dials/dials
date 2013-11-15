@@ -163,7 +163,7 @@ def run(mydetector, mygonio, mycrystal, mybeam,
     # Build a mock scan for a 180 degree sweep
     sf = scan_factory()
     myscan = sf.make_scan(image_range = (1,1800),
-                          exposure_time = 0.1,
+                          exposure_times = 0.1,
                           oscillation = (0, 0.1),
                           epochs = range(1800),
                           deg = True)

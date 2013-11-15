@@ -64,12 +64,17 @@ class ExtractSpots(object):
             # Return the pixel lists
             return plists
 
+        # Change the number of processors if necessary
+        nproc = mp.nproc
+        if nproc > len(sweep):
+            nproc = len(sweep)
+
         # Extract the pixels in blocks of images in parallel
         Command.start('Extracting strong pixels from images')
         pl = easy_mp.parallel_map(
           func=extract,
-          iterable=self._calculate_blocks(sweep, mp.nproc),
-          processes=mp.nproc,
+          iterable=self._calculate_blocks(sweep, nproc),
+          processes=nproc,
           method=mp.method,
           preserve_order=True)
         Command.end('Extracted strong pixels from images')

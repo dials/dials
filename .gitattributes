@@ -397,7 +397,6 @@ model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/partial_shoebox.py -text
-model/serialize/test_encode.py -text
 model/serialize/xds.py -text
 /process.py -text
 /run_tests.py -text

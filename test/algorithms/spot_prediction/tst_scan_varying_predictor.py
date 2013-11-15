@@ -86,7 +86,7 @@ indices = index_generator.to_array()
 # Build a mock scan for a 180 degree sweep
 sf = scan_factory()
 myscan = sf.make_scan(image_range = (1,180),
-                      exposure_time = 0.1,
+                      exposure_times = 0.1,
                       oscillation = (0, 1.0),
                       epochs = range(180),
                       deg = True)

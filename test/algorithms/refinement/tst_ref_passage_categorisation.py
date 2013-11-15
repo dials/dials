@@ -70,7 +70,7 @@ obs_refs = ref_predictor.predict(indices)
 # Build a mock scan for a 30 degree sweep
 sf = scan_factory()
 myscan = sf.make_scan(image_range = (1,300),
-                      exposure_time = 0.1,
+                      exposure_times = 0.1,
                       oscillation = (0, 0.1),
                       epochs = range(300),
                       deg = True)
