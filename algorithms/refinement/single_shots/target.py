@@ -187,7 +187,11 @@ class ReflectionManagerXY(ReflectionManager):
     def _spindle_beam_plane_normal(self):
         """There is no goniometer, so overload to return None"""
 
-        return None
+        # FIXME old interface still assumes there *is* a goniometer
+        if self._gonio:
+            return ReflectionManager._spindle_beam_plane_normal(self)
+        else:
+            return None
 
     def _id_refs_to_keep(self, obs_data):
         """For this version of the class, do nothing. We don't want to
