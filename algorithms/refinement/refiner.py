@@ -125,7 +125,7 @@ class RefinerFactory(object):
 
         if verbosity > 1:
             print ("Number of observations that pass inclusion criteria = %d"
-                   % refman.get_total_size())
+                   % refman.get_accepted_refs_size())
             print ("Working set size = %d observations"
                    % refman.get_sample_size())
             print "Reflection manager built\n"
@@ -383,22 +383,20 @@ class RefinerFactory(object):
             from dials.algorithms.refinement.prediction import ReflectionPredictor
             ref_predictor = ReflectionPredictor(crystal, beam, goniometer)
 
-            import dials.algorithms.refinement.target as target
-            from target import LeastSquaresPositionalResidualWithRmsdCutoff
+            import dials.algorithms.refinement.target as targ
 
-            target = LeastSquaresPositionalResidualWithRmsdCutoff(
+            target = targ.LeastSquaresPositionalResidualWithRmsdCutoff(
                             ref_predictor, detector, refman, pred_param,
                             image_width_rad, options.bin_size_fraction,
                             absolute_cutoffs)
         else:
             from dials.algorithms.refinement.prediction import \
                 StillsReflectionPredictor
-            ref_predictor = ReflectionPredictor(crystal, beam)
+            ref_predictor = StillsReflectionPredictor(crystal, beam)
 
-            import dials.algorithms.refinement.single_shots.target as target
-            from target import LeastSquaresXYResidualWithRmsdCutoff
+            import dials.algorithms.refinement.single_shots.target as targ
 
-            target = LeastSquaresXYResidualWithRmsdCutoff(
+            target = targ.LeastSquaresXYResidualWithRmsdCutoff(
                             ref_predictor, detector, refman, pred_param,
                             options.bin_size_fraction,
                             absolute_cutoffs)
@@ -856,7 +854,7 @@ class Refiner2(object):
 
         from scitbx.array_family import flex
         matches = self._refman.get_matches()
-        selection = flex.bool(len(self.reflections))
+        selection = flex.bool(self._refman.get_input_size())
         for m in matches:
             selection[m.iobs] = True
 
@@ -1007,7 +1005,7 @@ class Refiner(object):
 
         if self._verbosity > 1:
             print ("Number of observations that pass inclusion criteria = %d"
-                   % self.refman.get_total_size())
+                   % self.refman.get_accepted_refs_size())
             print ("Working set size = %d observations"
                    % self.refman.get_sample_size())
             print "Reflection manager built\n"
@@ -1086,7 +1084,7 @@ class Refiner(object):
 
         from scitbx.array_family import flex
         matches = self.refman.get_matches()
-        selection = flex.bool(len(self.reflections))
+        selection = flex.bool(self.refman.get_input_size())
         for m in matches:
             selection[m.iobs] = True
 
