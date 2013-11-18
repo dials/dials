@@ -101,17 +101,17 @@ class Test(object):
       z1 = randint(1, 10) + z0
 
       try:
-          shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
-          assert(shoebox.is_consistent() == False)
-          shoebox.allocate()
-          assert(shoebox.is_consistent() == True)
-          shoebox.data = flex.double(flex.grid(20,20, 20))
-          assert(shoebox.is_consistent() == False)
-          shoebox.deallocate()
-          assert(shoebox.is_consistent() == False)
+        shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
+        assert(shoebox.is_consistent() == False)
+        shoebox.allocate()
+        assert(shoebox.is_consistent() == True)
+        shoebox.data = flex.double(flex.grid(20,20, 20))
+        assert(shoebox.is_consistent() == False)
+        shoebox.deallocate()
+        assert(shoebox.is_consistent() == False)
       except Exception, e:
-          print x0, y0, z0, x1, y1, z1
-          raise
+        print x0, y0, z0, x1, y1, z1
+        raise
 
     # Test passed
     print 'OK'
