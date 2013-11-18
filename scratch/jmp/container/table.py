@@ -89,7 +89,7 @@ class Table(object):
     columns = [self._columns[name] for name in items]
     if func is not None:
       result = func(columns)
-      assert(self.is_consistent)
+      assert(self.is_consistent())
       return result
     if ltype is None:
       ltype = list
