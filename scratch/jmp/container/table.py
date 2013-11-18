@@ -87,8 +87,12 @@ class Table(object):
 
   def extract(self, items, ltype=None, func=None):
     columns = [self._columns[name] for name in items]
-    if func is not None: return func(columns)
-    if ltype is None: ltype = list
+    if func is not None:
+      result = func(columns)
+      assert(self.is_consistent)
+      return result
+    if ltype is None:
+      ltype = list
     return ltype(zip(*columns))
 
   def is_consistent(self):
