@@ -4,7 +4,10 @@ class Table(object):
 
   def __init__(self, columns=None):
     from collections import OrderedDict
-    self._columns = OrderedDict(columns)
+    if columns == None:
+      self._columns = OrderedDict()
+    else:
+      self._columns = OrderedDict(columns)
     if not self.is_consistent():
       raise RuntimeError('inconsistent column sizes')
 
@@ -30,7 +33,7 @@ class Table(object):
       else:
         raise TypeError('expected tuple or record, got %s' % type(item))
     elif isinstance(index, str):
-      if len(item) != len(self):
+      if self.ncols() != 0 and len(item) != self.nrows():
         raise RuntimeError('inconsistent column sizes')
       self._columns[index] = type(item)(item)
     else:
@@ -164,3 +167,11 @@ if __name__ == '__main__':
   table['column_5'] = flex.double(6)
   l = table.extract(('column_3', 'column_4', 'column_5'), flex.vec3_double)
   print "Len Extracted: ", len(l)
+
+  # Create table with nothing in
+  table = Table()
+
+  # Set items
+  table['a'] = flex.int(1000000)
+  table['b'] = flex.int(1000000)
+  table['c'] = flex.int(1000000)
