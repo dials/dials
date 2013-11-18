@@ -1,11 +1,11 @@
 def lorentz(m2, s0, s1):
-    return abs(m2.dot(s1.cross(s0))) / (s1.length() * s0.length())
+  return abs(m2.dot(s1.cross(s0))) / (s1.length() * s0.length())
 
 def include_ref(m2, e1, e3, ps, dm):
-    m2e1 = m2.dot(e1)
-    m2e3 = m2.dot(e3)
-    m2ps = m2.dot(ps)
-    return dm**2 - 2 * dm * m2e3 * m2ps - m2e3**2 >= 0.0
+  m2e1 = m2.dot(e1)
+  m2e3 = m2.dot(e3)
+  m2ps = m2.dot(ps)
+  return dm**2 - 2 * dm * m2e3 * m2ps - m2e3**2 >= 0.0
 
 
 from math import pi, acos
@@ -62,10 +62,10 @@ from_angle = FromRotationAngleAccurate(cs)
 phi_list = []
 e3_list = []
 for t in range(-10, 10):
-    p = phi - 0.1 * t * pi / 180
-    print p, from_angle(p)
-    phi_list.append(p * 180 / pi)
-    e3_list.append(from_angle(p))
+  p = phi - 0.1 * t * pi / 180
+  print p, from_angle(p)
+  phi_list.append(p * 180 / pi)
+  e3_list.append(from_angle(p))
 
 from matplotlib import pylab
 pylab.plot(phi_list, e3_list)

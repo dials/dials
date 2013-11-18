@@ -15,9 +15,9 @@ data[:, :, :] = 5
 data[1:3, 1:3, 1:3] = 50
 print data
 for frame in range(4):
-    for row in range(4):
-        for col in range(4):
-            data[frame, row, col] += frame + col + row
+  for row in range(4):
+    for col in range(4):
+      data[frame, row, col] += frame + col + row
 '''
 data = numpy.zeros((3, 3, 3), dtype = numpy.float64)
 data[:, :, :] = 5
@@ -82,19 +82,18 @@ from dials.algorithms.integration.summation2d \
 flex_2d_layering_n_integrating(rlist)
 
 for r in rlist:
-    print r
-    matrix_img = r.shoebox.as_numpy_array()
-    print
-    print "shoebox"
-    print matrix_img
+  print r
+  matrix_img = r.shoebox.as_numpy_array()
+  print
+  print "shoebox"
+  print matrix_img
 
-    matrix_bkg = r.shoebox_background.as_numpy_array()
-    print
-    print "background"
-    print matrix_bkg
+  matrix_bkg = r.shoebox_background.as_numpy_array()
+  print
+  print "background"
+  print matrix_bkg
 
-    matrix_mask = r.shoebox_mask.as_numpy_array()
-    print
-    print "mask"
-    print matrix_mask
-
+  matrix_mask = r.shoebox_mask.as_numpy_array()
+  print
+  print "mask"
+  print matrix_mask

@@ -81,14 +81,14 @@ print "Limits: ", cs.limits()
 from dials.algorithms.integration import filter
 
 for j in range(int(ysize / div)):
-    print j
-    for i in range(int(xsize / div)):
-        xyz = detector.get_pixel_lab_coord((div*i, div*j))
-        s1 = matrix.col(xyz).normalize() * s0.length()
-        phi = 0.0
-        cs = CoordinateSystem(m2, s0, s1, phi)
+  print j
+  for i in range(int(xsize / div)):
+    xyz = detector.get_pixel_lab_coord((div*i, div*j))
+    s1 = matrix.col(xyz).normalize() * s0.length()
+    phi = 0.0
+    cs = CoordinateSystem(m2, s0, s1, phi)
 
-        mask1[j,i] = filter.is_xds_angle_valid(cs, dm)
+    mask1[j,i] = filter.is_xds_angle_valid(cs, dm)
 
 
 #        m2 = matrix.col(cs.m2())

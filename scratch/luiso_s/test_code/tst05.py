@@ -21,8 +21,8 @@ data2dsmoth = numpy.zeros(nfast * nslow, dtype='uintc').reshape(ysize, xsize)
 diffdata2d = numpy.zeros(nfast * nslow, dtype='uintc').reshape(ysize, xsize)
 
 for y in range(1, ysize-1):
-    for x in range(1, xsize-1):
-        data2dsmoth[y, x]=( data2d[y-1, x] + data2d[y+1, x] + data2d[y, x-1] + data2d[y, x+1] ) / 4
+  for x in range(1, xsize-1):
+    data2dsmoth[y, x]=( data2d[y-1, x] + data2d[y+1, x] + data2d[y, x-1] + data2d[y, x+1] ) / 4
 
 #for y in range(1,ysize-1):
 #    for x in range(1,xsize-1):

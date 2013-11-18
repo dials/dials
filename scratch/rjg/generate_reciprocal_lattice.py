@@ -156,10 +156,10 @@ def run(args):
   args = sys.argv[1:]
   importer = Importer(args)
   if len(importer.imagesets) == 0:
-      print "No sweep object could be constructed"
-      return
+    print "No sweep object could be constructed"
+    return
   elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
+    raise RuntimeError("Only one imageset can be processed at a time")
   sweeps = importer.imagesets
   args = importer.unhandled_arguments
 

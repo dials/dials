@@ -15,15 +15,15 @@ ncol = 60
 
 
 for xpos in range(10):
-    for ypos in range(10):
-        row_str = ypos * 50
-        col_str = xpos * 90
-        ref_ang = float(ypos / 10)
-        '''flex_int model_2d(int nrow, int ncol, float a, float b,
-        float delta_ang, float imax, float asp)'''
-        ref2d = model_2d(nrow, ncol, 3, 2, ref_ang, 955, 0.5)
-        data2d_tmp = ref2d.as_numpy_array()
-        data2d[row_str:row_str + 60, col_str:col_str + 60] += numpy.float64(data2d_tmp)
+  for ypos in range(10):
+    row_str = ypos * 50
+    col_str = xpos * 90
+    ref_ang = float(ypos / 10)
+    '''flex_int model_2d(int nrow, int ncol, float a, float b,
+    float delta_ang, float imax, float asp)'''
+    ref2d = model_2d(nrow, ncol, 3, 2, ref_ang, 955, 0.5)
+    data2d_tmp = ref2d.as_numpy_array()
+    data2d[row_str:row_str + 60, col_str:col_str + 60] += numpy.float64(data2d_tmp)
 
 
 ref2d = model_2d(550, 950, 280, 140, 1.0, 955, 0.5)

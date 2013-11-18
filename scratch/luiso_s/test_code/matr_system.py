@@ -23,9 +23,9 @@ b = flex.double(flex.grid(3, 1))
 
 
 for ypos in range(3):
-    b[ypos, 0] = random.random()
-    for xpos in range(3):
-        a[ypos, xpos] = random.random()
+  b[ypos, 0] = random.random()
+  for xpos in range(3):
+    a[ypos, xpos] = random.random()
 
 
 print "a ="

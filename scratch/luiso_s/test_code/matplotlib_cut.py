@@ -9,4 +9,3 @@ pylab.imshow(mask_normal.as_numpy_array(), interpolation='none')
 pylab.subplot2grid((2, 3), (1, 2))
 pylab.imshow(mask_poisson.as_numpy_array(), interpolation='none')
 pylab.show()
-

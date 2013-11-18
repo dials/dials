@@ -20,13 +20,13 @@ var1_phil = parse(arg_defaults)
 arg_lst = arg_lst = sys.argv[1:]
 
 for arg in arg_lst[1:]:
-    if os.path.exists(arg):
-        print "here"
-        var1_phil = var1_phil.fetch(
-            source = parse(open(arg).read()))
-    else:
-        arg_lst.append(arg)
-        print "here else"
+  if os.path.exists(arg):
+    print "here"
+    var1_phil = var1_phil.fetch(
+        source = parse(open(arg).read()))
+  else:
+    arg_lst.append(arg)
+    print "here else"
 
 print arg_lst
 

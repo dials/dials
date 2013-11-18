@@ -1,4 +1,5 @@
 from __future__ import division
+
 def reflgen(num_refl):
 
   from dials.model.data import ReflectionList, Reflection

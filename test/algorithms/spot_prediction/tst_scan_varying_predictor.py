@@ -59,17 +59,17 @@ mycrystal = models.crystal
 mybeam = models.beam
 
 class DummyPredictionParameterisation(object):
-    """Provides get_UB(image_number) for scan-varying prediction"""
+  """Provides get_UB(image_number) for scan-varying prediction"""
 
-    def __init__(self, crystal):
+  def __init__(self, crystal):
 
-        self._crystal = crystal
+    self._crystal = crystal
 
-    def get_UB(self, image_number):
+  def get_UB(self, image_number):
 
-        UB = matrix.sqr(self._crystal.get_U()) * \
-             matrix.sqr(self._crystal.get_B())
-        return UB
+    UB = matrix.sqr(self._crystal.get_U()) * \
+         matrix.sqr(self._crystal.get_B())
+    return UB
 
 pred_param = DummyPredictionParameterisation(mycrystal)
 
@@ -109,20 +109,20 @@ print "OK"
 
 def sort_refs(reflections):
 
-    """Sort reflections by Miller index and entering flag"""
-    refs_sorted = sorted(reflections, key=lambda x: x.entering)
-    refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[2])
-    refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[1])
-    refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[0])
+  """Sort reflections by Miller index and entering flag"""
+  refs_sorted = sorted(reflections, key=lambda x: x.entering)
+  refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[2])
+  refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[1])
+  refs_sorted = sorted(refs_sorted, key=lambda x: x.miller_index[0])
 
-    return refs_sorted
+  return refs_sorted
 
 refs1_sorted = sort_refs(refs1)
 refs2_sorted = sort_refs(refs2)
 
 for (r1, r2) in zip(refs1_sorted, refs2_sorted):
-    assert r1.miller_index == r2.miller_index
-    dphi = r1.rotation_angle - r2.rotation_angle
-    assert abs(dphi) < 0.01 * im_width
+  assert r1.miller_index == r2.miller_index
+  dphi = r1.rotation_angle - r2.rotation_angle
+  assert abs(dphi) < 0.01 * im_width
 
 print "OK"

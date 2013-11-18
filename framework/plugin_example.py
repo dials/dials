@@ -1,54 +1,54 @@
 from dials.framework.plugin import Interface, Registry, abstractmethod
 
 class Integrator(object):
-    ''' The integration algorithm. '''
+  ''' The integration algorithm. '''
 
-    __metaclass__ = Interface
+  __metaclass__ = Interface
 
-    name = 'integrator'
+  name = 'integrator'
 
-    @abstractmethod
-    def integrate(self):
-        pass
+  @abstractmethod
+  def integrate(self):
+    pass
 
 
 class XdsIntegrator(Integrator):
-    '''The XDS intensity calculation algorithm.'''
+  '''The XDS intensity calculation algorithm.'''
 
-    name = "xds"
+  name = "xds"
 
-    phil = '''
-      param1 = 10
-        .type = int
-        .help = 'a parameter'
-    '''
+  phil = '''
+    param1 = 10
+      .type = int
+      .help = 'a parameter'
+  '''
 
-    def __init__(self, sweep, crystal, params):
-        super(XdsIntegrator, self).__init__()
-        print "Init XDS:"
+  def __init__(self, sweep, crystal, params):
+    super(XdsIntegrator, self).__init__()
+    print "Init XDS:"
 
-    def integrate(self):
-        print "Integrate"
+  def integrate(self):
+    print "Integrate"
 
 
 
 class MosflmIntegrator(Integrator):
-    '''The XDS intensity calculation algorithm.'''
+  '''The XDS intensity calculation algorithm.'''
 
-    name = "mosflm"
+  name = "mosflm"
 
-    def __init__(self, sweep, crystal, params):
-        super(MosflmIntegrator, self).__init__()
-        print "Init Mosflm:"
+  def __init__(self, sweep, crystal, params):
+    super(MosflmIntegrator, self).__init__()
+    print "Init Mosflm:"
 
-    def integrate(self):
-        print "Integrate"
+  def integrate(self):
+    print "Integrate"
 
 
 
 
 class params:
-    pass
+  pass
 
 params.integration = params()
 params.integration.algorithm = "xds"

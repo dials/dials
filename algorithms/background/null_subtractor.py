@@ -13,23 +13,23 @@ from dials.interfaces.background import BackgroundSubtractionInterface
 
 
 class NullSubtractor(BackgroundSubtractionInterface):
-    ''' The NULL background subtractor '''
-    def __init__(self, **kwargs):
-        ''' Initialise the algorithm. '''
-        pass
+  ''' The NULL background subtractor '''
+  def __init__(self, **kwargs):
+    ''' Initialise the algorithm. '''
+    pass
 
-    def __call__(self, sweep, crystal, reflections):
-        ''' Do the background subtraction (i.e. set all the background to 0)
+  def __call__(self, sweep, crystal, reflections):
+    ''' Do the background subtraction (i.e. set all the background to 0)
 
-        Params:
-            sweep The sweep to process
-            crystal The crystal to use
-            reflections The reflections to process
+    Params:
+        sweep The sweep to process
+        crystal The crystal to use
+        reflections The reflections to process
 
-        Returns:
-            The background subtracted reflection list
+    Returns:
+        The background subtracted reflection list
 
-        '''
-        from dials.algorithms.background import set_shoebox_background_value
-        set_shoebox_background_value(reflections, 0)
-        return reflections
+    '''
+    from dials.algorithms.background import set_shoebox_background_value
+    set_shoebox_background_value(reflections, 0)
+    return reflections

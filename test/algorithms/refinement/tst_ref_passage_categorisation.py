@@ -90,20 +90,20 @@ var_phi = (im_width / 2.)**2
 
 for ref in obs_refs:
 
-    # calc and set the impact position, assuming all reflections
-    # intersect panel 0.
-    impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
-    ref.image_coord_mm = impacts
+  # calc and set the impact position, assuming all reflections
+  # intersect panel 0.
+  impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
+  ref.image_coord_mm = impacts
 
-    # set the 'observed' centroids
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+  # set the 'observed' centroids
+  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
 
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y ,var_phi)
+  # set the centroid variance
+  ref.centroid_variance = (var_x, var_y ,var_phi)
 
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = myscan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
+  # set the frame number, calculated from rotation angle
+  ref.frame_number = myscan.get_image_index_from_angle(
+      ref.rotation_angle, deg=False)
 
 print "Total number of observations made", len(obs_refs)
 
@@ -113,14 +113,14 @@ spindle = matrix.col(mygonio.get_rotation_axis())
 
 for ref in obs_refs:
 
-    # get the s vector of this reflection
-    s = matrix.col(ref.beam_vector)
+  # get the s vector of this reflection
+  s = matrix.col(ref.beam_vector)
 
-    r = s - s0
-    r_orig = r.rotate(spindle, -1., deg=True)
+  r = s - s0
+  r_orig = r.rotate(spindle, -1., deg=True)
 
-    # is it outside the Ewald sphere (i.e. entering)?
-    test = (s0 + r_orig).length() > s0.length()
-    assert(ref.entering == test)
+  # is it outside the Ewald sphere (i.e. entering)?
+  test = (s0 + r_orig).length() > s0.length()
+  assert(ref.entering == test)
 
 print "OK"

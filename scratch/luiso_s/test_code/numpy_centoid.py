@@ -42,8 +42,7 @@ from dials.algorithms.centroid.toy_centroid_Lui import toy_centroid_lui
 toy_centroid_lui(rlist)
 
 for r in rlist:
-    print r
-    matrix_img = r.shoebox.as_numpy_array()
-    print matrix_img
+  print r
+  matrix_img = r.shoebox.as_numpy_array()
+  print matrix_img
 print "done"
-

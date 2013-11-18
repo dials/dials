@@ -14,168 +14,168 @@ from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 
 class ExtractSpots(object):
-    ''' Class to find spots in an image and extract them into shoeboxes. '''
+  ''' Class to find spots in an image and extract them into shoeboxes. '''
 
-    def __init__(self, threshold_image):
-        ''' Initialise the class with the strategy
+  def __init__(self, threshold_image):
+    ''' Initialise the class with the strategy
 
-        Params:
-            threshold_image The image thresholding strategy
+    Params:
+        threshold_image The image thresholding strategy
 
-        '''
-        # Set the required strategies
-        self.threshold_image = threshold_image
+    '''
+    # Set the required strategies
+    self.threshold_image = threshold_image
 
-    def __call__(self, sweep):
-        ''' Find the spots in the sweep
+  def __call__(self, sweep):
+    ''' Find the spots in the sweep
 
-        Params:
-            sweep The sweep to process
+    Params:
+        sweep The sweep to process
 
-        Returns:
-            The list of spot shoeboxes
+    Returns:
+        The list of spot shoeboxes
 
-        '''
-        from dials.util.command_line import ProgressBar, Command
-        from dials.model.data import PixelList
-        from dials.array_family import flex
-        from dxtbx.imageset import ImageSweep
-        from libtbx import easy_mp
-        from dials.util import mp
+    '''
+    from dials.util.command_line import ProgressBar, Command
+    from dials.model.data import PixelList
+    from dials.array_family import flex
+    from dxtbx.imageset import ImageSweep
+    from libtbx import easy_mp
+    from dials.util import mp
 
-        def extract(index):
-            ''' Extract pixels from a block of images. '''
+    def extract(index):
+      ''' Extract pixels from a block of images. '''
 
-            # Create the list of pixel lists
-            plists = [PixelList(p.get_image_size()[::-1], index[0])
-                for p in sweep.get_detector()]
+      # Create the list of pixel lists
+      plists = [PixelList(p.get_image_size()[::-1], index[0])
+          for p in sweep.get_detector()]
 
-            # Iterate through the range of images
-            for image in sweep[index[0]:index[1]]:
+      # Iterate through the range of images
+      for image in sweep[index[0]:index[1]]:
 
-                # Ensure image is a tuple of images (for multi-panel support)
-                if not isinstance(image, tuple):
-                    image = (image,)
+        # Ensure image is a tuple of images (for multi-panel support)
+        if not isinstance(image, tuple):
+          image = (image,)
 
-                # Add the images to the pixel lists
-                for pl, im in zip(plists, image):
-                    pl.add_image(im, self.threshold_image(im))
+        # Add the images to the pixel lists
+        for pl, im in zip(plists, image):
+          pl.add_image(im, self.threshold_image(im))
 
-            # Return the pixel lists
-            return plists
+      # Return the pixel lists
+      return plists
 
-        # Change the number of processors if necessary
-        nproc = mp.nproc
-        if nproc > len(sweep):
-            nproc = len(sweep)
+    # Change the number of processors if necessary
+    nproc = mp.nproc
+    if nproc > len(sweep):
+      nproc = len(sweep)
 
-        # Extract the pixels in blocks of images in parallel
-        Command.start('Extracting strong pixels from images')
-        pl = easy_mp.parallel_map(
-          func=extract,
-          iterable=self._calculate_blocks(sweep, nproc),
-          processes=nproc,
-          method=mp.method,
-          preserve_order=True)
-        Command.end('Extracted strong pixels from images')
+    # Extract the pixels in blocks of images in parallel
+    Command.start('Extracting strong pixels from images')
+    pl = easy_mp.parallel_map(
+      func=extract,
+      iterable=self._calculate_blocks(sweep, nproc),
+      processes=nproc,
+      method=mp.method,
+      preserve_order=True)
+    Command.end('Extracted strong pixels from images')
 
-        # Merge pixel lists into a single list for each panel
-        len_pl = sum(len(p) for p in pl)
-        Command.start('Merging {0} pixel lists'.format(len_pl))
-        pl = [flex.pixel_list(p).merge() for p in zip(*pl)]
-        np = sum([len(p.values()) for p in pl])
-        Command.end('Merged {0} pixel lists with {1} pixels'.format(len_pl, np))
+    # Merge pixel lists into a single list for each panel
+    len_pl = sum(len(p) for p in pl)
+    Command.start('Merging {0} pixel lists'.format(len_pl))
+    pl = [flex.pixel_list(p).merge() for p in zip(*pl)]
+    np = sum([len(p.values()) for p in pl])
+    Command.end('Merged {0} pixel lists with {1} pixels'.format(len_pl, np))
 
-        # Extract the pixel lists into a list of reflections
-        Command.start('Extracting spots')
-        shoeboxes = flex.shoebox()
-        if isinstance(sweep, ImageSweep):
-            twod = False
-        else:
-            twod = True
-        for i, p in enumerate(pl):
-            shoeboxes.extend(flex.shoebox(p, i, 0, twod))
-        Command.end('Extracted {0} spots'.format(len(shoeboxes)))
+    # Extract the pixel lists into a list of reflections
+    Command.start('Extracting spots')
+    shoeboxes = flex.shoebox()
+    if isinstance(sweep, ImageSweep):
+      twod = False
+    else:
+      twod = True
+    for i, p in enumerate(pl):
+      shoeboxes.extend(flex.shoebox(p, i, 0, twod))
+    Command.end('Extracted {0} spots'.format(len(shoeboxes)))
 
-        # Return the shoeboxes
-        return shoeboxes
+    # Return the shoeboxes
+    return shoeboxes
 
-    def _calculate_blocks(self, sweep, nblocks):
-        ''' Calculate the blocks. '''
-        from math import ceil
-        blocks = [0]
-        sweep_length = len(sweep)
-        assert(nblocks <= sweep_length)
-        block_length = int(ceil(sweep_length / nblocks))
-        for i in range(nblocks):
-            frame = (i + 1) * block_length
-            if frame > sweep_length:
-                frame = sweep_length
-            blocks.append(frame)
-            if frame == sweep_length:
-                break
-        assert(all(b > a for a, b in zip(blocks, blocks[1:])))
-        return [(i, j) for i, j in zip(blocks[0:-1], blocks[1:])]
+  def _calculate_blocks(self, sweep, nblocks):
+    ''' Calculate the blocks. '''
+    from math import ceil
+    blocks = [0]
+    sweep_length = len(sweep)
+    assert(nblocks <= sweep_length)
+    block_length = int(ceil(sweep_length / nblocks))
+    for i in range(nblocks):
+      frame = (i + 1) * block_length
+      if frame > sweep_length:
+        frame = sweep_length
+      blocks.append(frame)
+      if frame == sweep_length:
+        break
+    assert(all(b > a for a, b in zip(blocks, blocks[1:])))
+    return [(i, j) for i, j in zip(blocks[0:-1], blocks[1:])]
 
 
 class SpotFinder(object):
-    ''' A class to do spot finding and filtering. '''
+  ''' A class to do spot finding and filtering. '''
 
-    def __init__(self, find_spots=None, filter_spots=None, scan_range=None):
-        ''' Initialise the class. '''
+  def __init__(self, find_spots=None, filter_spots=None, scan_range=None):
+    ''' Initialise the class. '''
 
-        # Set the spot finding and filter functions
-        assert(find_spots != None and filter_spots != None)
-        self.find_spots = find_spots
-        self.filter_spots = filter_spots
+    # Set the spot finding and filter functions
+    assert(find_spots != None and filter_spots != None)
+    self.find_spots = find_spots
+    self.filter_spots = filter_spots
 
-        # Set the scan range
-        self.scan_range = scan_range
+    # Set the scan range
+    self.scan_range = scan_range
 
-    def __call__(self, sweep):
-        ''' Do the spot finding '''
-        from dials.model.data import ReflectionList
-        from dials.array_family import flex
-        from dials.util.command_line import Command
-        from dxtbx.imageset import ImageSweep
+  def __call__(self, sweep):
+    ''' Do the spot finding '''
+    from dials.model.data import ReflectionList
+    from dials.array_family import flex
+    from dials.util.command_line import Command
+    from dxtbx.imageset import ImageSweep
 
-        # Get list of scan ranges
-        if not self.scan_range or not isinstance(sweep, ImageSweep):
-            scan_range = [sweep.get_array_range()]
-        else:
-            scan_range = self.scan_range
+    # Get list of scan ranges
+    if not self.scan_range or not isinstance(sweep, ImageSweep):
+      scan_range = [sweep.get_array_range()]
+    else:
+      scan_range = self.scan_range
 
-        # Get spots from bits of scan
-        spots_all = []
-        for scan in scan_range:
-            j0, j1 = scan
-            assert(j1 > j0 and j0 >= 0 and j1 <= len(sweep))
-            print '\nFinding spots in image {0} to {1}...'.format(j0, j1)
-            spots_all.extend(self.find_spots(sweep[j0:j1]))
+    # Get spots from bits of scan
+    spots_all = []
+    for scan in scan_range:
+      j0, j1 = scan
+      assert(j1 > j0 and j0 >= 0 and j1 <= len(sweep))
+      print '\nFinding spots in image {0} to {1}...'.format(j0, j1)
+      spots_all.extend(self.find_spots(sweep[j0:j1]))
 
-        # Get the list of shoeboxes
-        shoeboxes = flex.shoebox(spots_all)
+    # Get the list of shoeboxes
+    shoeboxes = flex.shoebox(spots_all)
 
-        # Calculate the spot centroids
-        Command.start('Calculating {0} spot centroids'.format(len(shoeboxes)))
-        centroid = shoeboxes.centroid_valid()
-        Command.end('Calculated {0} spot centroids'.format(len(shoeboxes)))
+    # Calculate the spot centroids
+    Command.start('Calculating {0} spot centroids'.format(len(shoeboxes)))
+    centroid = shoeboxes.centroid_valid()
+    Command.end('Calculated {0} spot centroids'.format(len(shoeboxes)))
 
-        # Calculate the spot intensities
-        Command.start('Calculating {0} spot intensities'.format(len(shoeboxes)))
-        intensity = shoeboxes.summed_intensity_valid()
-        Command.end('Calculated {0} spot intensities'.format(len(shoeboxes)))
+    # Calculate the spot intensities
+    Command.start('Calculating {0} spot intensities'.format(len(shoeboxes)))
+    intensity = shoeboxes.summed_intensity_valid()
+    Command.end('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
-        # Create the observations
-        observed = flex.observation(shoeboxes.panels(), centroid, intensity)
+    # Create the observations
+    observed = flex.observation(shoeboxes.panels(), centroid, intensity)
 
-        # Filter the reflections and select only the desired spots
-        flags = self.filter_spots(None,
-            sweep=sweep,
-            observations=observed,
-            shoeboxes=shoeboxes)
-        observed = observed.select(flags)
-        shoeboxes = shoeboxes.select(flags)
+    # Filter the reflections and select only the desired spots
+    flags = self.filter_spots(None,
+        sweep=sweep,
+        observations=observed,
+        shoeboxes=shoeboxes)
+    observed = observed.select(flags)
+    shoeboxes = shoeboxes.select(flags)
 
-        # Return as a reflection list
-        return ReflectionList(observed, shoeboxes)
+    # Return as a reflection list
+    return ReflectionList(observed, shoeboxes)

@@ -13,58 +13,58 @@ from __future__ import division
 
 
 class HalError(RuntimeError):
-    def __init__(self, string=''):
-
-        # Get the username
-        try:
-            from getpass import getuser
-            username = getuser()
-        except Exception:
-            username = 'Dave'
-
-        # Put in HAL error text.
-        text = 'I\'m sorry {0}. I\'m afraid I can\'t do that. {1}'.format(
-            username, string)
-
-        # Init base class
-        RuntimeError.__init__(self, text)
-
-
-def halraiser(e):
-    ''' Function to re-raise an exception with a Hal message. '''
-    import logging
-
-    # Get the log and write the error to the log file
-    log = logging.getLogger(__name__)
-    log.error(e)
+  def __init__(self, string=''):
 
     # Get the username
     try:
-        from getpass import getuser
-        username = getuser()
+      from getpass import getuser
+      username = getuser()
     except Exception:
-        username = 'Humanoid'
+      username = 'Dave'
 
     # Put in HAL error text.
-    text = 'I\'m sorry {0}. I\'m afraid I can\'t do that.'.format(username)
+    text = 'I\'m sorry {0}. I\'m afraid I can\'t do that. {1}'.format(
+        username, string)
 
-    # Append to exception
-    if len(e.args) == 0:
-        e.args = (text,)
-    elif len(e.args) == 1:
-        e.args = (text + ' ' + str(e.args[0]),)
-    else:
-        e.args = (text,) + e.args
+    # Init base class
+    RuntimeError.__init__(self, text)
 
-    # Reraise the exception
-    raise
+
+def halraiser(e):
+  ''' Function to re-raise an exception with a Hal message. '''
+  import logging
+
+  # Get the log and write the error to the log file
+  log = logging.getLogger(__name__)
+  log.error(e)
+
+  # Get the username
+  try:
+    from getpass import getuser
+    username = getuser()
+  except Exception:
+    username = 'Humanoid'
+
+  # Put in HAL error text.
+  text = 'I\'m sorry {0}. I\'m afraid I can\'t do that.'.format(username)
+
+  # Append to exception
+  if len(e.args) == 0:
+    e.args = (text,)
+  elif len(e.args) == 1:
+    e.args = (text + ' ' + str(e.args[0]),)
+  else:
+    e.args = (text,) + e.args
+
+  # Reraise the exception
+  raise
 
 
 class MPState(object):
-    ''' Class to hold global state for multiprocessing. '''
-    def __init__(self):
-        self.nproc = 1
-        self.method = 'multiprocessing'
+  ''' Class to hold global state for multiprocessing. '''
+  def __init__(self):
+    self.nproc = 1
+    self.method = 'multiprocessing'
 
 # Global variable for multiprocessing
 mp = MPState()

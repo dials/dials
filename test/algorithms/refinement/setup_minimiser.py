@@ -20,57 +20,57 @@ from dials.algorithms.refinement.engine import SimpleLBFGS, \
     LBFGScurvs, GaussNewtonIterations
 
 class Extract(object):
-    """Parse and extract minimiser setup from PHIL"""
+  """Parse and extract minimiser setup from PHIL"""
 
-    def __init__(self, master_phil, target, prediction_parameterisation,
-        local_overrides = "", cmdline_args = None, verbose=True):
+  def __init__(self, master_phil, target, prediction_parameterisation,
+      local_overrides = "", cmdline_args = None, verbose=True):
 
-        self._target = target
-        self._prediction_parameterisation = prediction_parameterisation
-        self._verbose = verbose
+    self._target = target
+    self._prediction_parameterisation = prediction_parameterisation
+    self._verbose = verbose
 
-        arg_interpreter = command_line.argument_interpreter(
-            master_phil=master_phil)
+    arg_interpreter = command_line.argument_interpreter(
+        master_phil=master_phil)
 
-        user_phil = parse(local_overrides)
-        cmdline_phils = []
-        if cmdline_args:
-            for arg in cmdline_args:
-                cmdline_phils.append(arg_interpreter.process(arg))
+    user_phil = parse(local_overrides)
+    cmdline_phils = []
+    if cmdline_args:
+      for arg in cmdline_args:
+        cmdline_phils.append(arg_interpreter.process(arg))
 
-        working_phil = master_phil.fetch(
-            sources=[user_phil] + cmdline_phils)
+    working_phil = master_phil.fetch(
+        sources=[user_phil] + cmdline_phils)
 
-        self._params = working_phil.extract().minimiser.parameters
+    self._params = working_phil.extract().minimiser.parameters
 
-        self.refiner = self.build_minimiser()
+    self.refiner = self.build_minimiser()
 
-    def build_minimiser(self):
+  def build_minimiser(self):
 
-        assert self._params.engine in ["SimpleLBFGS", "LBFGScurvs",
-            "GaussNewtonIterations"]
+    assert self._params.engine in ["SimpleLBFGS", "LBFGScurvs",
+        "GaussNewtonIterations"]
 
-        if self._params.engine == "SimpleLBFGS":
-            refiner = SimpleLBFGS(
-                self._target,
-                self._prediction_parameterisation,
-                self._params.logfile,
-                self._params.verbosity)
-            return refiner
+    if self._params.engine == "SimpleLBFGS":
+      refiner = SimpleLBFGS(
+          self._target,
+          self._prediction_parameterisation,
+          self._params.logfile,
+          self._params.verbosity)
+      return refiner
 
-        if self._params.engine == "LBFGScurvs":
-            refiner = LBFGScurvs(
-                self._target,
-                self._prediction_parameterisation,
-                self._params.logfile,
-                self._params.verbosity)
-            return refiner
+    if self._params.engine == "LBFGScurvs":
+      refiner = LBFGScurvs(
+          self._target,
+          self._prediction_parameterisation,
+          self._params.logfile,
+          self._params.verbosity)
+      return refiner
 
-        if self._params.engine == "GaussNewtonIterations":
+    if self._params.engine == "GaussNewtonIterations":
 
-            refiner = GaussNewtonIterations(
-                self._target,
-                self._prediction_parameterisation,
-                self._params.logfile,
-                self._params.verbosity)
-            return refiner
+      refiner = GaussNewtonIterations(
+          self._target,
+          self._prediction_parameterisation,
+          self._params.logfile,
+          self._params.verbosity)
+      return refiner

@@ -182,17 +182,17 @@ print "Total number of reflections excited", len(excited_refs)
 px_size = mydetector[0].get_pixel_size()
 
 def set_impact(ref):
-    """helper function to set centroid and fake variance and frame
-    number in a reflection"""
-    try:
-        ref.image_coord_mm = mydetector[0].get_ray_intersection(ref.beam_vector)
-        ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
-        ref.centroid_variance = (px_size[0] / 2., px_size[1] / 2., im_width / 2.)
-        ref.frame_number = myscan.get_image_index_from_angle(ref.rotation_angle, deg=False)
-        return ref
-    except RuntimeError:
-        # this reflection doesn't intersect the Panel
-        return False
+  """helper function to set centroid and fake variance and frame
+  number in a reflection"""
+  try:
+    ref.image_coord_mm = mydetector[0].get_ray_intersection(ref.beam_vector)
+    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+    ref.centroid_variance = (px_size[0] / 2., px_size[1] / 2., im_width / 2.)
+    ref.frame_number = myscan.get_image_index_from_angle(ref.rotation_angle, deg=False)
+    return ref
+  except RuntimeError:
+    # this reflection doesn't intersect the Panel
+    return False
 
 obs_refs = [e for e in excited_refs if set_impact(e)]
 

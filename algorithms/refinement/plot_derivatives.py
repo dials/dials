@@ -44,23 +44,23 @@ from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
-    return vector.rotate_around_origin(matrix.col(
-                (random.random(),
-                 random.random(),
-                 random.random())).normalize(),
-                 random.gauss(0, sd),  deg = True)
+  return vector.rotate_around_origin(matrix.col(
+              (random.random(),
+               random.random(),
+               random.random())).normalize(),
+               random.gauss(0, sd),  deg = True)
 
 ##############################
 # Set and report random seed #
 ##############################
 
 if len(sys.argv) == 1:
-    seed = random.randint(0, sys.maxint)
+  seed = random.randint(0, sys.maxint)
 elif len(sys.argv) == 2:
-    seed = int(sys.argv[1])
+  seed = int(sys.argv[1])
 else:
-    print "Usage:", sys.argv[0], "[random_seed]"
-    sys.exit(1)
+  print "Usage:", sys.argv[0], "[random_seed]"
+  sys.exit(1)
 
 random.seed(seed)
 print "Random seed for this run:", seed
@@ -168,9 +168,9 @@ header_line = (("X, Y, Phi, " + ", ".join(s1 + s2 + s3) + "\n" ) % tuple(range(n
 f.write(header_line)
 fmt = ", ".join(["%.5f"] * (3 + 3 * nparam)) + "\n"
 for x, y, phi, grad in zip(d1s, d2s, angles, grads):
-    xgrads = [g[0] for g in grad]
-    ygrads = [g[1] for g in grad]
-    phigrads = [g[2] for g in grad]
-    line = fmt % tuple([x] + [y] + [phi] + xgrads + ygrads + phigrads)
-    f.write(line)
+  xgrads = [g[0] for g in grad]
+  ygrads = [g[1] for g in grad]
+  phigrads = [g[2] for g in grad]
+  line = fmt % tuple([x] + [y] + [phi] + xgrads + ygrads + phigrads)
+  f.write(line)
 f.close()

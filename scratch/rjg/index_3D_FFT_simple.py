@@ -887,32 +887,32 @@ class indexer(object):
     #vectors = flex.vec3_double(vectors)
     ax.scatter([0],[0],[0], c='k', marker='+', s=50)
     for k, col in zip(unique_labels, colours):
-        class_members = (labels == k).iselection()
-        if k == -1:# or len(class_members) < min_cluster_size:
+      class_members = (labels == k).iselection()
+      if k == -1:# or len(class_members) < min_cluster_size:
           # Black used for noise.
-          col = 'k'
-          col = '0.25' # mid-grey
-          markersize = 1
-          marker = '+'
-          #continue
-        else:
-          markersize = 10
-          marker = 'o'
-        if not isinstance(col, basestring) and len(col) == 4:
-          # darken the edges
-          frac = 0.75
-          edgecolor = [col[0]*frac, col[1]*frac, col[2]*frac, col[3]]
-        else:
-          edgecolor = col
-        vs = numpy.array([vectors[i] for i in class_members])
-        xs = vs[:,0]
-        ys = vs[:,1]
-        zs = vs[:,2]
-        # plot whole sphere for visual effect
-        xs = numpy.concatenate((xs, -xs))
-        ys = numpy.concatenate((ys, -ys))
-        zs = numpy.concatenate((zs, -zs))
-        ax.scatter(xs, ys, zs, c=col, marker=marker, s=markersize, edgecolor=edgecolor)
+        col = 'k'
+        col = '0.25' # mid-grey
+        markersize = 1
+        marker = '+'
+        #continue
+      else:
+        markersize = 10
+        marker = 'o'
+      if not isinstance(col, basestring) and len(col) == 4:
+        # darken the edges
+        frac = 0.75
+        edgecolor = [col[0]*frac, col[1]*frac, col[2]*frac, col[3]]
+      else:
+        edgecolor = col
+      vs = numpy.array([vectors[i] for i in class_members])
+      xs = vs[:,0]
+      ys = vs[:,1]
+      zs = vs[:,2]
+      # plot whole sphere for visual effect
+      xs = numpy.concatenate((xs, -xs))
+      ys = numpy.concatenate((ys, -ys))
+      zs = numpy.concatenate((zs, -zs))
+      ax.scatter(xs, ys, zs, c=col, marker=marker, s=markersize, edgecolor=edgecolor)
 
     pyplot.title('Estimated number of clusters: %d' % n_clusters)
     pyplot.show()
@@ -1396,10 +1396,10 @@ def run(args):
   args = sys.argv[1:]
   importer = Importer(args)
   if len(importer.imagesets) == 0:
-      print "Nonsense!"
-      return
+    print "Nonsense!"
+    return
   elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
+    raise RuntimeError("Only one imageset can be processed at a time")
   sweeps = importer.imagesets
   reflections = importer.reflections
   assert len(reflections) > 0

@@ -188,15 +188,15 @@ var_phi = (im_width / 2.)**2
 obs_refs = ray_intersection(mydetector, obs_refs)
 for ref in obs_refs:
 
-    # set the 'observed' centroids
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+  # set the 'observed' centroids
+  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
 
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y ,var_phi)
+  # set the centroid variance
+  ref.centroid_variance = (var_x, var_y ,var_phi)
 
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = myscan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
+  # set the frame number, calculated from rotation angle
+  ref.frame_number = myscan.get_image_index_from_angle(
+      ref.rotation_angle, deg=False)
 
 print "Total number of observations made", len(obs_refs)
 

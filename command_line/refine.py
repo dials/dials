@@ -15,84 +15,84 @@ from dials.util.script import ScriptRunner
 
 
 class Script(ScriptRunner):
-    '''A class for running the script.'''
+  '''A class for running the script.'''
 
-    def __init__(self):
-        '''Initialise the script.'''
+  def __init__(self):
+    '''Initialise the script.'''
 
-        # The script usage
-        usage  = "usage: %prog [options] [param.phil] " \
-                 "sweep.json crystal.json reflections.pickle"
+    # The script usage
+    usage  = "usage: %prog [options] [param.phil] " \
+             "sweep.json crystal.json reflections.pickle"
 
-        # Initialise the base class
-        ScriptRunner.__init__(self, usage=usage)
+    # Initialise the base class
+    ScriptRunner.__init__(self, usage=usage)
 
-        # Output filename option
-        self.config().add_option(
-            '--output-sweep-filename',
-            dest = 'output_sweep_filename',
-            type = 'string', default = 'refined_sweep.json',
-            help = 'Set the filename for refined experimental models.')
+    # Output filename option
+    self.config().add_option(
+        '--output-sweep-filename',
+        dest = 'output_sweep_filename',
+        type = 'string', default = 'refined_sweep.json',
+        help = 'Set the filename for refined experimental models.')
 
-        # Output filename option
-        self.config().add_option(
-            '--output-crystal-filename',
-            dest = 'output_crystal_filename',
-            type = 'string', default = 'refined_crystal.json',
-            help = 'Set the filename for refined crystal model.')
+    # Output filename option
+    self.config().add_option(
+        '--output-crystal-filename',
+        dest = 'output_crystal_filename',
+        type = 'string', default = 'refined_crystal.json',
+        help = 'Set the filename for refined crystal model.')
 
-        # Add a verbosity option
-        self.config().add_option(
-            "-v", "--verbosity",
-            action="count", default=0,
-            help="set verbosity level; -vv gives verbosity level 2")
+    # Add a verbosity option
+    self.config().add_option(
+        "-v", "--verbosity",
+        action="count", default=0,
+        help="set verbosity level; -vv gives verbosity level 2")
 
-    def main(self, params, options, args):
-        '''Execute the script.'''
-        from dials.algorithms.refinement import RefinerFactory
-        from dials.model.serialize import load, dump
-        from dials.model.data import ReflectionList
-        import cPickle as pickle
+  def main(self, params, options, args):
+    '''Execute the script.'''
+    from dials.algorithms.refinement import RefinerFactory
+    from dials.model.serialize import load, dump
+    from dials.model.data import ReflectionList
+    import cPickle as pickle
 
-        # Check the number of arguments is correct
-        if len(args) != 3:
-            self.config().print_help()
-            return
+    # Check the number of arguments is correct
+    if len(args) != 3:
+      self.config().print_help()
+      return
 
-        # Get the refiner
-        print 'Configuring refiner'
+    # Get the refiner
+    print 'Configuring refiner'
 
-        # Try to load the models
-        print 'Loading models from {0} and {1}'.format(args[0], args[1])
-        sweep = load.sweep(args[0])
-        crystal = load.crystal(args[1])
-        reflections = pickle.load(open(args[2], 'rb'))
+    # Try to load the models
+    print 'Loading models from {0} and {1}'.format(args[0], args[1])
+    sweep = load.sweep(args[0])
+    crystal = load.crystal(args[1])
+    reflections = pickle.load(open(args[2], 'rb'))
 
-        refiner = RefinerFactory.from_parameters_models_data(params,
-            reflections, sweep, crystal=crystal, verbosity=options.verbosity)
+    refiner = RefinerFactory.from_parameters_models_data(params,
+        reflections, sweep, crystal=crystal, verbosity=options.verbosity)
 
-        # Refine the geometry
-        print 'Performing refinement'
+    # Refine the geometry
+    print 'Performing refinement'
 
-        # Refine and get the refinement history
-        refined = refiner.run()
+    # Refine and get the refinement history
+    refined = refiner.run()
 
-        # update the input sweep
-        sweep.set_beam(refiner.beam)
-        sweep.set_detector(refiner.detector)
-        sweep.set_goniometer(refiner.goniometer)
+    # update the input sweep
+    sweep.set_beam(refiner.beam)
+    sweep.set_detector(refiner.detector)
+    sweep.set_goniometer(refiner.goniometer)
 
-        # Save the refined geometry to file
-        output_sweep_filename = options.output_sweep_filename
-        print 'Saving refined geometry to {0}'.format(output_sweep_filename)
-        dump.sweep(sweep, open(output_sweep_filename, 'w'))
+    # Save the refined geometry to file
+    output_sweep_filename = options.output_sweep_filename
+    print 'Saving refined geometry to {0}'.format(output_sweep_filename)
+    dump.sweep(sweep, open(output_sweep_filename, 'w'))
 
-        # Save the refined crystal to file
-        output_crystal_filename = options.output_crystal_filename
-        print 'Saving refined geometry to {0}'.format(output_crystal_filename)
-        dump.crystal(refiner.crystal, open(output_crystal_filename, 'w'))
+    # Save the refined crystal to file
+    output_crystal_filename = options.output_crystal_filename
+    print 'Saving refined geometry to {0}'.format(output_crystal_filename)
+    dump.crystal(refiner.crystal, open(output_crystal_filename, 'w'))
 
 
 if __name__ == '__main__':
-    script = Script()
-    script.run()
+  script = Script()
+  script.run()

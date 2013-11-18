@@ -23,17 +23,17 @@ print "max(data2d) =", numpy.max( data2d )
 print "min(data2d) =", numpy.min( data2d )
 
 for f in range( 1, nfast - 1 ):
-    for s in range( 1, nslow - 1 ):
-        pscan = float( numpy.sum( data2d[f - 1:f + 1, s - 1:s + 1] ) / 9.0 )
-        data2dsmoth[f, s] = pscan
+  for s in range( 1, nslow - 1 ):
+    pscan = float( numpy.sum( data2d[f - 1:f + 1, s - 1:s + 1] ) / 9.0 )
+    data2dsmoth[f, s] = pscan
 
 print "max(data2dsmoth) =", numpy.max( data2dsmoth )
 print "min(data2dsmoth) =", numpy.min( data2dsmoth )
 
 for f in range( 1, nfast - 1 ):
-    for s in range( 1, nslow - 1 ):
-        if data2d[f, s] > data2dsmoth[f, s]:
-            diffdata2d[f, s] = 1
+  for s in range( 1, nslow - 1 ):
+    if data2d[f, s] > data2dsmoth[f, s]:
+      diffdata2d[f, s] = 1
 
 print "max(diffdata2d) =", numpy.max( diffdata2d )
 print "min(diffdata2d) =", numpy.min( diffdata2d )

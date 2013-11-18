@@ -15,8 +15,8 @@ print 'here 1'
 
 data2d = numpy.zeros( nfast * nslow, dtype = float ).reshape( nfast, nslow )
 for f in range( nfast ):
-    for s in range( nslow ):
-        data2d[f, s] = data[s * nfast + f]
+  for s in range( nslow ):
+    data2d[f, s] = data[s * nfast + f]
 
 data2dsmoth = numpy.zeros( nfast * nslow, dtype = float ).reshape( nfast, nslow )
 diffdata2d = numpy.zeros( nfast * nslow, dtype = float ).reshape( nfast, nslow )
@@ -28,20 +28,20 @@ print "min(data2d) =", numpy.min( data2d )
 
 
 for f in range( 1, nfast - 1 ):
-    for s in range( 1, nslow - 1 ):
-        prom = 0.0
-        for fscan in range( f - 1, f + 1, 1 ):
-            for sscan in range( s - 1, s + 1, 1 ):
-                prom = prom + data2d[ fscan, sscan ]
-        data2dsmoth[f, s] = prom / 9.0
+  for s in range( 1, nslow - 1 ):
+    prom = 0.0
+    for fscan in range( f - 1, f + 1, 1 ):
+      for sscan in range( s - 1, s + 1, 1 ):
+        prom = prom + data2d[ fscan, sscan ]
+    data2dsmoth[f, s] = prom / 9.0
 
 print "max(data2dsmoth) =", numpy.max( data2dsmoth )
 print "min(data2dsmoth) =", numpy.min( data2dsmoth )
 
 for f in range( 1, nfast - 1 ):
-    for s in range( 1, nslow - 1 ):
-        if data2d[f, s] > data2dsmoth[f, s]:
-            diffdata2d[f, s] = 1
+  for s in range( 1, nslow - 1 ):
+    if data2d[f, s] > data2dsmoth[f, s]:
+      diffdata2d[f, s] = 1
 
 print "max(diffdata2d) =", numpy.max( diffdata2d )
 print "min(diffdata2d) =", numpy.min( diffdata2d )

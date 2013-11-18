@@ -15,10 +15,10 @@ data3d = numpy.arange(f_size * r_size * c_size, dtype = int).reshape(f_size, r_s
 data = []
 cont = 0
 for f in range(f_size):
-    for r in range(r_size):
-        for c in range(c_size):
-            data.append((f, r, c, cont ** 2))
-            cont += 1
+  for r in range(r_size):
+    for c in range(c_size):
+      data.append((f, r, c, cont ** 2))
+      cont += 1
 
 print 'data =', data
 #f_tot = 0.0
@@ -28,10 +28,10 @@ print 'data =', data
 #
 cont = 0
 for f, r, c, d in data:
-    print cont
-    #print 'data3d[', f, ',', r, ',', c, '] =', data[f, r, c]
-    print f, c, r, d
-    cont += 1
+  print cont
+  #print 'data3d[', f, ',', r, ',', c, '] =', data[f, r, c]
+  print f, c, r, d
+  cont += 1
 #    f_tot += d * f
 #    r_tot += d * r
 #    c_tot += d * c

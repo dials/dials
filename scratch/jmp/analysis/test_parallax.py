@@ -16,10 +16,10 @@ detector = sweep.get_detector()
 image_size = sweep[0].all()
 image = flex.double(flex.grid(image_size))
 for j in range(image_size[0]):
-    for i in range(image_size[1]):
-        mm1 = convert2.to_millimeter(detector[0], (i, j))
-        px2 = convert.to_pixel(detector[0], mm1)
-        image[j,i] = j - px2[1]
+  for i in range(image_size[1]):
+    mm1 = convert2.to_millimeter(detector[0], (i, j))
+    px2 = convert.to_pixel(detector[0], mm1)
+    image[j,i] = j - px2[1]
 
 
 print flex.max(image), flex.min(image)

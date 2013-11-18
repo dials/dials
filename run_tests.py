@@ -67,9 +67,9 @@ tst_list = (
     )
 
 def run () :
-    build_dir = libtbx.env.under_build("dials")
-    dist_dir = libtbx.env.dist_path("dials")
-    test_utils.run_tests(build_dir, dist_dir, tst_list)
+  build_dir = libtbx.env.under_build("dials")
+  dist_dir = libtbx.env.dist_path("dials")
+  test_utils.run_tests(build_dir, dist_dir, tst_list)
 
 if (__name__ == "__main__"):
-    run()
+  run()

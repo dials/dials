@@ -8,12 +8,12 @@ TOP = (1 << 3)
 OUTSIDE = (1 << 4)
 
 def outcode(p, b):
-    code = INSIDE
-    if (p[0] < b[0][0]): code |= LEFT
-    elif(p[0] > b[1][0]): code |= RIGHT
-    if (p[1] < b[0][1]): code |= BOTTOM
-    elif(p[1] > b[1][1]): code |= TOP
-    return code
+  code = INSIDE
+  if (p[0] < b[0][0]): code |= LEFT
+  elif(p[0] > b[1][0]): code |= RIGHT
+  if (p[1] < b[0][1]): code |= BOTTOM
+  elif(p[1] > b[1][1]): code |= TOP
+  return code
 
 #def quad_with_aabb_area(poly, aabb):
 #
@@ -42,33 +42,33 @@ def outcode(p, b):
 
 def area_component(i, poly, aabb):
 
-    p0 = poly[i]
-    code0 = outcode(p0, aabb)
+  p0 = poly[i]
+  code0 = outcode(p0, aabb)
 
-    area = 0.0
-    for j in range(i, len(poly)):
-        p1 = poly[j]
-        code1 = outcode(p1, aabb)
+  area = 0.0
+  for j in range(i, len(poly)):
+    p1 = poly[j]
+    code1 = outcode(p1, aabb)
 
-        if code0 == code1:
-            if code0 != INSIDE:
-                area += p0[0] * p1[i] - p1[0] * p0[1]
+    if code0 == code1:
+      if code0 != INSIDE:
+        area += p0[0] * p1[i] - p1[0] * p0[1]
 
 
-    return area
+  return area
 
 
 def quad_with_aabb_area(poly, aabb):
 
-    area = 0.0
+  area = 0.0
 
-    i = 0
-    while i < len(poly):
+  i = 0
+  while i < len(poly):
 
-        area, i += area_component(i, poly, aabb)
+    area, i += area_component(i, poly, aabb)
 
-    # Return the intersection area
-    return 0.5 * area
+  # Return the intersection area
+  return 0.5 * area
 
 
 #aabb = ((-10, -10), (10, 10))

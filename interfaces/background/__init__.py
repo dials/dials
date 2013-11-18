@@ -11,12 +11,12 @@
 from __future__ import division
 
 class BackgroundSubtractionInterface(object):
-    '''Interface for background subtraction algorithms.'''
+  '''Interface for background subtraction algorithms.'''
 
-    def __init__(self, **kwargs):
-        '''Initialise algorithm.'''
-        pass
+  def __init__(self, **kwargs):
+    '''Initialise algorithm.'''
+    pass
 
-    def __call__(self, reflections):
-        '''Process the reflections.'''
-        raise RuntimeError('Overload!')
+  def __call__(self, reflections):
+    '''Process the reflections.'''
+    raise RuntimeError('Overload!')

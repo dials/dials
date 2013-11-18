@@ -13,22 +13,22 @@ from __future__ import division
 from dials.util.script import ScriptRunner
 
 class Script(ScriptRunner):
-    '''A class for running the script.'''
+  '''A class for running the script.'''
 
-    def __init__(self):
-        '''Initialise the script.'''
+  def __init__(self):
+    '''Initialise the script.'''
 
-        # Initialise the base class
-        ScriptRunner.__init__(self, show_config_option=False)
+    # Initialise the base class
+    ScriptRunner.__init__(self, show_config_option=False)
 
-    def main(self, params, options, args):
-        '''Execute the script.'''
+  def main(self, params, options, args):
+    '''Execute the script.'''
 
-        # Show the configuration parameters
-        self.config().print_phil()
+    # Show the configuration parameters
+    self.config().print_phil()
 
 
 if __name__ == '__main__':
 
-    script = Script()
-    script.run()
+  script = Script()
+  script.run()

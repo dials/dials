@@ -66,7 +66,7 @@ smoth3d = numpy.zeros((row_dif) * (col_dif) * n_frm , dtype = int).reshape(n_frm
 time1 = time.time()
 
 for frm_tmp in range(n_frm):
-    dif3d[frm_tmp, :, :], smoth3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
+  dif3d[frm_tmp, :, :], smoth3d[frm_tmp, :, :] = find_mask_2d(data3d[frm_tmp, :, :])
 
 
 time2 = time.time()
@@ -88,8 +88,8 @@ time4 = time.time()
 
 
 for pos in range(len(x_from_lst)):
-    print "x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst =" \
-    , x_from_lst[pos], x_to_lst[pos], y_from_lst[pos], y_to_lst[pos], z_from_lst[pos], z_to_lst[pos]
+  print "x_from_lst, x_to_lst, y_from_lst, y_to_lst, z_from_lst, z_to_lst =" \
+  , x_from_lst[pos], x_to_lst[pos], y_from_lst[pos], y_to_lst[pos], z_from_lst[pos], z_to_lst[pos]
 time5 = time.time()
 
 print "time dif =", time2 - time1
@@ -97,22 +97,22 @@ print "time dif =", time3 - time2
 print "time dif =", time4 - time3
 print "time dif =", time5 - time4
 
-    #print lst_box_pos
-    #
-    #print data2d[206:213, 335:343]
-    #print dif[206:213, 335:343]
-    #sumdat = numpy.sum(data2d)
-    #print 'sum =', sumdat
+  #print lst_box_pos
+  #
+  #print data2d[206:213, 335:343]
+  #print dif[206:213, 335:343]
+  #sumdat = numpy.sum(data2d)
+  #print 'sum =', sumdat
 
 from matplotlib import pylab, cm
 for frm_tmp in range(n_frm):
-    plt = pylab.imshow(dif3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-    pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
-    pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
-    plt.axes.get_xaxis().set_ticks([])
-    plt.axes.get_yaxis().set_ticks([])
-    pylab.show()
-    plt = pylab.imshow(data3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-    pylab.show()
-    plt = pylab.imshow(smoth3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
-    pylab.show()
+  plt = pylab.imshow(dif3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+  pylab.scatter(x_from_lst, y_from_lst, marker = 'x')
+  pylab.scatter(x_to_lst, y_to_lst, marker = 'x')
+  plt.axes.get_xaxis().set_ticks([])
+  plt.axes.get_yaxis().set_ticks([])
+  pylab.show()
+  plt = pylab.imshow(data3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+  pylab.show()
+  plt = pylab.imshow(smoth3d[frm_tmp, :, :], cmap = cm.Greys_r, interpolation = 'nearest', origin = 'lower')
+  pylab.show()

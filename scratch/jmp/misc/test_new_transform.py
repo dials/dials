@@ -27,7 +27,7 @@ Command.end('Init transform')
 
 Command.start('Transform')
 for i in range(1):
-    trans(refl)
+  trans(refl)
 Command.end('Transform')
 
 Command.start('Init Transform')
@@ -36,18 +36,18 @@ Command.end('Init Transform')
 
 Command.start('Transform')
 for i in range(1):
-    transform.forward_batch(spec, refl2)
+  transform.forward_batch(spec, refl2)
 Command.end('Transform')
 
 assert(len(refl) == len(refl2))
 for r1, r2 in zip(refl, refl2):
-    assert(r1.is_valid() == r2.is_valid())
-    if r1.is_valid():
+  assert(r1.is_valid() == r2.is_valid())
+  if r1.is_valid():
 
-        prof1 = r1.transformed_shoebox
-        prof2 = r2.transformed_shoebox
+    prof1 = r1.transformed_shoebox
+    prof2 = r2.transformed_shoebox
 
-        assert(len(prof1) == len(prof2))
+    assert(len(prof1) == len(prof2))
 
-        diff = abs(prof1 - prof2)
-        assert(diff.all_lt(1e-7))
+    diff = abs(prof1 - prof2)
+    assert(diff.all_lt(1e-7))

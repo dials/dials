@@ -7,21 +7,21 @@ data2d[3, 3] = a
 print data2d
 cont = 0
 for scan in data2d[2:4, 2:4]:
-    cont = cont + 1
-    print scan
-    print cont
-    scan = cont
+  cont = cont + 1
+  print scan
+  print cont
+  scan = cont
 print "data2d"
 print data2d
 print"______________________________________"
 
 cont = 0
 for xscan in range( 2, 4, 1 ):
-    for yscan in range( 2, 4, 1 ):
-        cont = cont + 1
-        print cont
-        print data2d[yscan, xscan]
-        data2d[yscan, xscan] = cont
+  for yscan in range( 2, 4, 1 ):
+    cont = cont + 1
+    print cont
+    print data2d[yscan, xscan]
+    data2d[yscan, xscan] = cont
 print "data2d"
 print data2d
 print"______________________________________"

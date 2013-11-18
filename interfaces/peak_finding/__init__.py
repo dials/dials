@@ -11,27 +11,27 @@
 from __future__ import division
 
 class SpotFinderInterface(object):
-    '''An interface specification for spot finding classes.'''
+  '''An interface specification for spot finding classes.'''
 
-    def __init__(self, **kwargs):
-        '''Initialise the algorithm with some parameters.
+  def __init__(self, **kwargs):
+    '''Initialise the algorithm with some parameters.
 
-        Params:
-            kwargs Key word arguments
+    Params:
+        kwargs Key word arguments
 
-        '''
-        raise RuntimeError('Please overload!')
+    '''
+    raise RuntimeError('Please overload!')
 
-    def __call__(self, sweep):
-        '''The main function of the spot finder. Select the pixels from
-        the sweep and then group the pixels into spots. Return the data
-        in the form of a reflection list.
+  def __call__(self, sweep):
+    '''The main function of the spot finder. Select the pixels from
+    the sweep and then group the pixels into spots. Return the data
+    in the form of a reflection list.
 
-        Params:
-            sweep The sweep object
+    Params:
+        sweep The sweep object
 
-        Returns:
-            The reflection list
+    Returns:
+        The reflection list
 
-        '''
-        raise RuntimeError('Please overload!')
+    '''
+    raise RuntimeError('Please overload!')

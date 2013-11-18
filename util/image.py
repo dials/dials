@@ -57,8 +57,8 @@ class reader:
     return image
 
 if __name__ == '__main__':
-    import sys
-    import numpy
-    handle = reader()
-    handle.read_file(sys.argv[1])
-    image = handle.get_data()
+  import sys
+  import numpy
+  handle = reader()
+  handle.read_file(sys.argv[1])
+  image = handle.get_data()

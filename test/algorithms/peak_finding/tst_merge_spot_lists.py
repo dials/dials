@@ -44,13 +44,13 @@ def exercise_merge_spot_lists():
   assert(len(spot1) == len(spot2))
 
   for r1, r2 in zip(spot1, spot2):
-      from scitbx import matrix
-      c1 = matrix.col(r1.centroid_position)
-      c2 = matrix.col(r2.centroid_position)
-      assert(abs(c1 - c2) < 1e-7)
-      i1 = r1.intensity
-      i2 = r2.intensity
-      assert(abs(i1 - i2) < 1e-7)
+    from scitbx import matrix
+    c1 = matrix.col(r1.centroid_position)
+    c2 = matrix.col(r2.centroid_position)
+    assert(abs(c1 - c2) < 1e-7)
+    i1 = r1.intensity
+    i2 = r2.intensity
+    assert(abs(i1 - i2) < 1e-7)
 
   print 'OK'
 

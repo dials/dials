@@ -13,66 +13,66 @@ import exceptions
 
 
 class CentroidException(exceptions.Exception):
-    pass
+  pass
 
 
 class centroid_interface_prototype(object):
-    '''Centroid calculation interface: all of the stuff in here is in pixels.'''
+  '''Centroid calculation interface: all of the stuff in here is in pixels.'''
 
-    def __init__(self, reflections):
-        '''Initialise the algorithm with the list of reflections.'''
+  def __init__(self, reflections):
+    '''Initialise the algorithm with the list of reflections.'''
 
-        from dials.model.data import ReflectionList
+    from dials.model.data import ReflectionList
 
-        # Save the reflection list
-        self._reflections = ReflectionList()
+    # Save the reflection list
+    self._reflections = ReflectionList()
 
-        # Calculate the centroids
-        self._compute_centroids(reflections)
+    # Calculate the centroids
+    self._compute_centroids(reflections)
 
-    def get_reflections(self):
-        '''Return the list of reflections'''
-        return self._reflections
+  def get_reflections(self):
+    '''Return the list of reflections'''
+    return self._reflections
 
-    def compute_shoebox_centroid(self, shoebox):
-        '''Overload me: shoebox has the form of the subset of data which
-        should contain all pixels identified within the reflection bounding
-        box.'''
+  def compute_shoebox_centroid(self, shoebox):
+    '''Overload me: shoebox has the form of the subset of data which
+    should contain all pixels identified within the reflection bounding
+    box.'''
 
-        raise RuntimeError, 'overload me'
+    raise RuntimeError, 'overload me'
 
-    def _compute_centroids(self, reflections):
-        ''' Compute the centroids. For each reflection, call the overloaded
-        compute_centroid_from_bbox method.'''
+  def _compute_centroids(self, reflections):
+    ''' Compute the centroids. For each reflection, call the overloaded
+    compute_centroid_from_bbox method.'''
 
-        # Loop through all the refflections and try to calculate the
-        # centroid. If a CentroidException is encountered, then pass.
-        for i, ref in enumerate(reflections):
+    # Loop through all the refflections and try to calculate the
+    # centroid. If a CentroidException is encountered, then pass.
+    for i, ref in enumerate(reflections):
 
-            try:
+      try:
 
-                # Compute the centroid
-                f, r, c, sf, sr, sc, cnt = self.compute_shoebox_centroid(
-                    ref.shoebox)
+        # Compute the centroid
+        f, r, c, sf, sr, sc, cnt = self.compute_shoebox_centroid(
+            ref.shoebox)
 
-                # Add the bounding box offset to the centroid position
-                f += ref.bounding_box[4]
-                r += ref.bounding_box[2]
-                c += ref.bounding_box[0]
+        # Add the bounding box offset to the centroid position
+        f += ref.bounding_box[4]
+        r += ref.bounding_box[2]
+        c += ref.bounding_box[0]
 
-                # Add centroid data to reflection
-                ref.intensity = cnt
-                ref.centroid_position = (c, r, f)
-                ref.centroid_sq_width = (sc, sr, sf)
+        # Add centroid data to reflection
+        ref.intensity = cnt
+        ref.centroid_position = (c, r, f)
+        ref.centroid_sq_width = (sc, sr, sf)
 
-                if cnt > 0:
-                    ref.centroid_variance = (1 + sc / cnt, 1 + sr / cnt,
-                                             1 + sf / cnt)
+        if cnt > 0:
+          ref.centroid_variance = (1 + sc / cnt, 1 + sr / cnt,
+                                   1 + sf / cnt)
 
-                # Copy reflection back into array
-                self._reflections.append(ref)
+        # Copy reflection back into array
+        self._reflections.append(ref)
 
-            except CentroidException, e:
-                continue
+      except CentroidException, e:
+        continue
 
-        return
+    return

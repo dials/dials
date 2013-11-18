@@ -15,8 +15,8 @@ time1 = time.time()
 print "time1 =", time1
 
 for y in range(ysize):
-    for x in range(xsize):
-        mat2dres[y, x] = mat2d1[y, x] + mat2d2[y, x]
+  for x in range(xsize):
+    mat2dres[y, x] = mat2d1[y, x] + mat2d2[y, x]
 
 time2 = time.time()
 print "time2 =", time2

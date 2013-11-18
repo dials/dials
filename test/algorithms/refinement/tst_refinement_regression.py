@@ -184,18 +184,18 @@ var_phi = (im_width / 2.)**2
 
 for ref in obs_refs:
 
-    # calc and set the observed impact position, assuming all reflections
-    # intersect panel 0.
-    impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
-    ref.image_coord_mm = impacts
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+  # calc and set the observed impact position, assuming all reflections
+  # intersect panel 0.
+  impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
+  ref.image_coord_mm = impacts
+  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
 
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y ,var_phi)
+  # set the centroid variance
+  ref.centroid_variance = (var_x, var_y ,var_phi)
 
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = myscan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
+  # set the frame number, calculated from rotation angle
+  ref.frame_number = myscan.get_image_index_from_angle(
+      ref.rotation_angle, deg=False)
 
 # The total number of observations should be 1128
 assert len(obs_refs) == 1128

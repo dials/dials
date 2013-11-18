@@ -11,4 +11,3 @@ text = pickle.dumps(sweep)
 sweep2 = pickle.loads(text)
 
 sweep2.get_detector()
-

@@ -12,81 +12,81 @@
 from dials.framework import plugin
 
 class SpotFinderThreshold(object):
-    '''The threshold for the spotfinding algorithm.'''
+  '''The threshold for the spotfinding algorithm.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'threshold'
+  name = 'threshold'
 
-    @plugin.abstractmethod
-    def __call__(self, image):
-        pass
+  @plugin.abstractmethod
+  def __call__(self, image):
+    pass
 
 
 class SpotFinderFilter(object):
-    '''The filtering for the spotfinding algorithm.'''
+  '''The filtering for the spotfinding algorithm.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'filter'
-    multi = True
+  name = 'filter'
+  multi = True
 
-    @plugin.abstractmethod
-    def __call__(self, flags, **kwargs):
-        pass
+  @plugin.abstractmethod
+  def __call__(self, flags, **kwargs):
+    pass
 
 
 class RefinementParameterisation(object):
-    '''The refinement parameterisation.'''
+  '''The refinement parameterisation.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'parameterisation'
+  name = 'parameterisation'
 
 
 class IntegrationBoundingBox(object):
-    '''The bounding box algorithm.'''
+  '''The bounding box algorithm.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'bounding_box'
+  name = 'bounding_box'
 
-    @plugin.abstractmethod
-    def __call__(self):
-        pass
+  @plugin.abstractmethod
+  def __call__(self):
+    pass
 
 
 class IntegrationCentroids(object):
-    '''The centroid algorithm.'''
+  '''The centroid algorithm.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'centroid'
+  name = 'centroid'
 
-    @plugin.abstractmethod
-    def __call__(self):
-        pass
+  @plugin.abstractmethod
+  def __call__(self):
+    pass
 
 
 class IntegrationBackground(object):
-    '''The background modelling algorithm.'''
+  '''The background modelling algorithm.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'background'
+  name = 'background'
 
-    @plugin.abstractmethod
-    def __call__(self):
-        pass
+  @plugin.abstractmethod
+  def __call__(self):
+    pass
 
 
 class IntegrationIntensity(object):
-    '''The intensity algorithm.'''
+  '''The intensity algorithm.'''
 
-    __metaclass__ = plugin.Interface
+  __metaclass__ = plugin.Interface
 
-    name = 'intensity'
+  name = 'intensity'
 
-    @plugin.abstractmethod
-    def __call__(self):
-        pass
+  @plugin.abstractmethod
+  def __call__(self):
+    pass

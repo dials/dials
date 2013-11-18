@@ -53,11 +53,11 @@ from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
 # Local functions
 def random_direction_close_to(vector, sd = 0.5):
-    return vector.rotate_around_origin(matrix.col(
-                (random.random(),
-                 random.random(),
-                 random.random())).normalize(),
-                 random.gauss(0, sd),  deg = True)
+  return vector.rotate_around_origin(matrix.col(
+              (random.random(),
+               random.random(),
+               random.random())).normalize(),
+               random.gauss(0, sd),  deg = True)
 
 #############################
 # Setup experimental models #
@@ -167,20 +167,20 @@ var_phi = (im_width / 2.)**2
 
 for ref in obs_refs:
 
-    # calc and set the impact position, assuming all reflections
-    # intersect panel 0.
-    impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
-    ref.image_coord_mm = impacts
+  # calc and set the impact position, assuming all reflections
+  # intersect panel 0.
+  impacts = mydetector[0].get_ray_intersection(ref.beam_vector)
+  ref.image_coord_mm = impacts
 
-    # set the 'observed' centroids
-    ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
+  # set the 'observed' centroids
+  ref.centroid_position = ref.image_coord_mm + (ref.rotation_angle, )
 
-    # set the centroid variance
-    ref.centroid_variance = (var_x, var_y ,var_phi)
+  # set the centroid variance
+  ref.centroid_variance = (var_x, var_y ,var_phi)
 
-    # set the frame number, calculated from rotation angle
-    ref.frame_number = myscan.get_image_index_from_angle(
-        ref.rotation_angle, deg=False)
+  # set the frame number, calculated from rotation angle
+  ref.frame_number = myscan.get_image_index_from_angle(
+      ref.rotation_angle, deg=False)
 
 print "Total number of observations made", len(obs_refs), "\n"
 
@@ -215,9 +215,9 @@ mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
 mytarget.predict()
 L, dL_dp = mytarget.compute_functional_and_gradients()
 try:
-    curvs = mytarget.curvatures()
+  curvs = mytarget.curvatures()
 except AttributeError:
-    curvs = None
+  curvs = None
 
 print "Calculated gradients"
 print "===================="
@@ -225,8 +225,8 @@ print "Target L           = %.6f" % L
 msg = "Gradients dL/dp    = " + "%.6f " * len(dL_dp)
 print msg % tuple(dL_dp)
 if curvs:
-    msg = "Curvatures d2L/dp2 = " + "%.6f " * len(curvs)
-    print msg % tuple(curvs)
+  msg = "Curvatures d2L/dp2 = " + "%.6f " * len(curvs)
+  print msg % tuple(curvs)
 print
 
 ####################################
@@ -235,59 +235,59 @@ print
 
 # function for calculating finite difference gradients of the target function
 def get_fd_gradients(target, pred_param, deltas):
-    """Calculate centered finite difference gradients for each of the
-    parameters of the target function.
+  """Calculate centered finite difference gradients for each of the
+  parameters of the target function.
 
-    "deltas" must be a sequence of the same length as the parameter list, and
-    contains the step size for the difference calculations for each parameter.
-    """
+  "deltas" must be a sequence of the same length as the parameter list, and
+  contains the step size for the difference calculations for each parameter.
+  """
 
-    p_vals = pred_param.get_param_vals()
-    assert len(deltas) == len(p_vals)
-    fd_grad = []
-    fd_curvs = []
+  p_vals = pred_param.get_param_vals()
+  assert len(deltas) == len(p_vals)
+  fd_grad = []
+  fd_curvs = []
 
-    try:
-        do_curvs = callable(target.curvatures)
-    except AttributeError:
-        do_curvs = False
+  try:
+    do_curvs = callable(target.curvatures)
+  except AttributeError:
+    do_curvs = False
 
-    print "Parameter",
-    for i in range(len(deltas)):
-        val = p_vals[i]
+  print "Parameter",
+  for i in range(len(deltas)):
+    val = p_vals[i]
 
-        print i,
-        sys.stdout.flush()
-        p_vals[i] -= deltas[i] / 2.
-        pred_param.set_param_vals(p_vals)
-        target.predict()
+    print i,
+    sys.stdout.flush()
+    p_vals[i] -= deltas[i] / 2.
+    pred_param.set_param_vals(p_vals)
+    target.predict()
 
-        rev_state = target.compute_functional_and_gradients()
+    rev_state = target.compute_functional_and_gradients()
 
-        p_vals[i] += deltas[i]
-        pred_param.set_param_vals(p_vals)
-
-        target.predict()
-
-        fwd_state = target.compute_functional_and_gradients()
-
-        # finite difference estimation of first derivatives
-        fd_grad.append((fwd_state[0] - rev_state[0]) / deltas[i])
-
-        # finite difference estimation of curvatures, using the analytical
-        # first derivatives
-        if do_curvs:
-            fd_curvs.append((fwd_state[1][i] - rev_state[1][i]) / deltas[i])
-
-        # set parameter back to centred value
-        p_vals[i] = val
-
-    print "\n"
-
-    # return to the initial state
+    p_vals[i] += deltas[i]
     pred_param.set_param_vals(p_vals)
 
-    return fd_grad, fd_curvs
+    target.predict()
+
+    fwd_state = target.compute_functional_and_gradients()
+
+    # finite difference estimation of first derivatives
+    fd_grad.append((fwd_state[0] - rev_state[0]) / deltas[i])
+
+    # finite difference estimation of curvatures, using the analytical
+    # first derivatives
+    if do_curvs:
+      fd_curvs.append((fwd_state[1][i] - rev_state[1][i]) / deltas[i])
+
+    # set parameter back to centred value
+    p_vals[i] = val
+
+  print "\n"
+
+  # return to the initial state
+  pred_param.set_param_vals(p_vals)
+
+  return fd_grad, fd_curvs
 
 print "Finite difference gradients"
 print "==========================="
@@ -306,15 +306,15 @@ print
 for e in norm_diffs: assert abs(e) < 0.001 # check differences less than 0.1%
 
 if curvs:
-    print "Finite difference curvatures"
-    print "============================"
-    msg = "FD curvatures d2L[fd]/dp2             = " + "%.6f " * len(fdgrads[1])
-    print msg % tuple(fdgrads[1])
-    diffs = [a - b for a, b in zip(curvs, fdgrads[1])]
-    msg = "d2L/dp2 - d2L[fd]/dp2                 = " + "%.6f " * len(diffs)
-    print msg % tuple(diffs)
-    print "Normalised differences:"
-    msg = "(d2L/dp2 - d2L[fd]/dp2) / d2L[fd]/dp2 = " + "%.6f " * len(diffs)
-    print msg % tuple([a / b for a, b in zip(diffs, fdgrads[1])])
+  print "Finite difference curvatures"
+  print "============================"
+  msg = "FD curvatures d2L[fd]/dp2             = " + "%.6f " * len(fdgrads[1])
+  print msg % tuple(fdgrads[1])
+  diffs = [a - b for a, b in zip(curvs, fdgrads[1])]
+  msg = "d2L/dp2 - d2L[fd]/dp2                 = " + "%.6f " * len(diffs)
+  print msg % tuple(diffs)
+  print "Normalised differences:"
+  msg = "(d2L/dp2 - d2L[fd]/dp2) / d2L[fd]/dp2 = " + "%.6f " * len(diffs)
+  print msg % tuple([a / b for a, b in zip(diffs, fdgrads[1])])
 
 print "OK"

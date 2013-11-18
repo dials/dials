@@ -20,9 +20,9 @@ data2d[1:4, 1:4] = 20
 data2d[2, 2] = 60
 
 for row in range(5):
-    for col in range(5):
-        data2d[row, col] += row * 0.2
-        data2d[row, col] += col * 0.1
+  for col in range(5):
+    data2d[row, col] += row * 0.2
+    data2d[row, col] += col * 0.1
 '''
 data2d[4, 2] = 1.0
 data2d[2, 4] = 1.0
@@ -84,18 +84,18 @@ from dials.algorithms.integration.summation2d \
 flex_2d_layering_n_integrating(rlist)
 
 for r in rlist:
-    print r
-    matrix_img = r.shoebox.as_numpy_array()
-    print
-    print "shoebox"
-    print matrix_img
+  print r
+  matrix_img = r.shoebox.as_numpy_array()
+  print
+  print "shoebox"
+  print matrix_img
 
-    matrix_bkg = r.shoebox_background.as_numpy_array()
-    print
-    print "background"
-    print matrix_bkg
+  matrix_bkg = r.shoebox_background.as_numpy_array()
+  print
+  print "background"
+  print matrix_bkg
 
-    matrix_mask = r.shoebox_mask.as_numpy_array()
-    print
-    print "mask"
-    print matrix_mask
+  matrix_mask = r.shoebox_mask.as_numpy_array()
+  print
+  print "mask"
+  print matrix_mask

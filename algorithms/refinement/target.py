@@ -25,695 +25,695 @@ TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
 
 class Target(object):
-    """Abstract interface for a target function class
+  """Abstract interface for a target function class
 
-    A Target object will be used by a Refinery. It will refer to a Reflection
-    Manager to get a list of observations. It will perform reflection prediction
-    on those observations and update the reflection manager with those
-    predictions. It will then query the reflection manager to get a list of
-    accepted reflections with observed and calculated positions. These are the
-    reflections for use in refinement. It obtains the gradients of reflection
-    positions from a relevant prediction parameterisation object. With all of
-    this information in place, it calculates the value of the target function,
-    the gradients of the target function and auxiliary information (e.g. RMSDs).
+  A Target object will be used by a Refinery. It will refer to a Reflection
+  Manager to get a list of observations. It will perform reflection prediction
+  on those observations and update the reflection manager with those
+  predictions. It will then query the reflection manager to get a list of
+  accepted reflections with observed and calculated positions. These are the
+  reflections for use in refinement. It obtains the gradients of reflection
+  positions from a relevant prediction parameterisation object. With all of
+  this information in place, it calculates the value of the target function,
+  the gradients of the target function and auxiliary information (e.g. RMSDs).
 
-    Concrete instances of this class implement the actual target function
-    calculation. The base class should not determine what type of target
-    function is used (e.g. least squares target), or limit whether the object
-    is used for a detector space & phi residual, or a reciprocal space residual.
-    This should all be set by a derived class.
-    """
+  Concrete instances of this class implement the actual target function
+  calculation. The base class should not determine what type of target
+  function is used (e.g. least squares target), or limit whether the object
+  is used for a detector space & phi residual, or a reciprocal space residual.
+  This should all be set by a derived class.
+  """
 
-    rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
+  rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
 
-    def __init__(self, reflection_predictor, detector,
-                 ref_manager,
-                 prediction_parameterisation):
+  def __init__(self, reflection_predictor, detector,
+               ref_manager,
+               prediction_parameterisation):
 
-        self._reflection_predictor = reflection_predictor
-        self._detector = detector
-        self._reflection_manager = ref_manager
-        self._prediction_parameterisation = prediction_parameterisation
+    self._reflection_predictor = reflection_predictor
+    self._detector = detector
+    self._reflection_manager = ref_manager
+    self._prediction_parameterisation = prediction_parameterisation
 
-    def predict(self):
-        """perform reflection prediction and update the reflection manager"""
+  def predict(self):
+    """perform reflection prediction and update the reflection manager"""
 
-        # update the reflection_predictor and the prediction parameterisation
-        # with the scan-independent part of the current geometry
-        self._reflection_predictor.update()
-        self._prediction_parameterisation.prepare()
+    # update the reflection_predictor and the prediction parameterisation
+    # with the scan-independent part of the current geometry
+    self._reflection_predictor.update()
+    self._prediction_parameterisation.prepare()
 
-        # reset the 'use' flag for all observations
-        self._reflection_manager.reset_accepted_reflections()
+    # reset the 'use' flag for all observations
+    self._reflection_manager.reset_accepted_reflections()
 
-        # loop over all reflections in the manager
-        for h in self._reflection_manager.get_indices():
+    # loop over all reflections in the manager
+    for h in self._reflection_manager.get_indices():
 
-            # loop over observations of this hkl
-            for obs in self._reflection_manager.get_obs(h):
+      # loop over observations of this hkl
+      for obs in self._reflection_manager.get_obs(h):
 
-                # get the observation image and panel numbers
-                frame = obs.frame_o
-                panel = obs.panel
+        # get the observation image and panel numbers
+        frame = obs.frame_o
+        panel = obs.panel
 
-                # duck-typing for scan varying version of
-                # prediction_parameterisation
-                try:
+        # duck-typing for scan varying version of
+        # prediction_parameterisation
+        try:
 
-                    # compose the prediction parameterisation at the
-                    # requested image number
-                    self._prediction_parameterisation.compose(frame)
+          # compose the prediction parameterisation at the
+          # requested image number
+          self._prediction_parameterisation.compose(frame)
 
-                    # extract UB matrix
-                    UB = self._prediction_parameterisation.get_UB(frame)
+          # extract UB matrix
+          UB = self._prediction_parameterisation.get_UB(frame)
 
-                    # predict for this hkl at setting UB
-                    predictions = self._reflection_predictor.predict(h, UB)
+          # predict for this hkl at setting UB
+          predictions = self._reflection_predictor.predict(h, UB)
 
-                except AttributeError:
+        except AttributeError:
 
-                    # predict for this hkl
-                    predictions = self._reflection_predictor.predict(h)
+          # predict for this hkl
+          predictions = self._reflection_predictor.predict(h)
 
-                # obtain the impact positions
-                impacts = ray_intersection(self._detector, predictions,
-                                           panel=panel)
+        # obtain the impact positions
+        impacts = ray_intersection(self._detector, predictions,
+                                   panel=panel)
 
-                # find the prediction with the right 'entering' flag
-                try:
-                    i = [x.entering == obs.entering \
-                         for x in impacts].index(True)
-                except ValueError:
-                    # we don't have a prediction for this obs
-                    continue
+        # find the prediction with the right 'entering' flag
+        try:
+          i = [x.entering == obs.entering \
+               for x in impacts].index(True)
+        except ValueError:
+          # we don't have a prediction for this obs
+          continue
 
-                ref = impacts[i]
-                Xc, Yc = ref.image_coord_mm
+        ref = impacts[i]
+        Xc, Yc = ref.image_coord_mm
 
-                # do not wrap around multiples of 2*pi; keep the full rotation
-                # from zero to differentiate repeat observations.
-                resid = ref.rotation_angle - (obs.Phio % TWO_PI)
+        # do not wrap around multiples of 2*pi; keep the full rotation
+        # from zero to differentiate repeat observations.
+        resid = ref.rotation_angle - (obs.Phio % TWO_PI)
 
-                # ensure this is the smaller of two possibilities
-                resid = (resid + pi) % TWO_PI - pi
+        # ensure this is the smaller of two possibilities
+        resid = (resid + pi) % TWO_PI - pi
 
-                Phic = obs.Phio + resid
-                Sc = matrix.col(ref.beam_vector)
+        Phic = obs.Phio + resid
+        Sc = matrix.col(ref.beam_vector)
 
-                # calculate gradients for this reflection
-                grads = self._prediction_parameterisation.get_gradients(
-                                            h, Sc, Phic, panel, frame)
+        # calculate gradients for this reflection
+        grads = self._prediction_parameterisation.get_gradients(
+                                    h, Sc, Phic, panel, frame)
 
-                # store all this information in the matched obs-pred pair
-                obs.update_prediction(Xc, Yc, Phic, Sc, grads)
+        # store all this information in the matched obs-pred pair
+        obs.update_prediction(Xc, Yc, Phic, Sc, grads)
 
-        if self._reflection_manager.first_update:
+    if self._reflection_manager.first_update:
 
-            # delete all obs-pred pairs from the manager that do not
-            # have a prediction
-            self._reflection_manager.strip_unmatched_observations()
+      # delete all obs-pred pairs from the manager that do not
+      # have a prediction
+      self._reflection_manager.strip_unmatched_observations()
 
-            self._reflection_manager.first_update = False
+      self._reflection_manager.first_update = False
 
-        return
+    return
 
-    def get_num_reflections(self):
-        """return the number of reflections currently used in the calculation"""
+  def get_num_reflections(self):
+    """return the number of reflections currently used in the calculation"""
 
-        # delegate to the reflection manager
-        return self._reflection_manager.get_accepted_reflection_count()
+    # delegate to the reflection manager
+    return self._reflection_manager.get_accepted_reflection_count()
 
-    def compute_functional_and_gradients(self):
-        """calculate the target function value and its gradients"""
+  def compute_functional_and_gradients(self):
+    """calculate the target function value and its gradients"""
 
-        # To be implemented by a derived class
-        raise RuntimeError('implement me')
+    # To be implemented by a derived class
+    raise RuntimeError('implement me')
 
-    def achieved(self):
-        """return True to terminate the refinement. To be implemented by
-        a derived class"""
+  def achieved(self):
+    """return True to terminate the refinement. To be implemented by
+    a derived class"""
 
-        return False
+    return False
 
 class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
-    """An implementation of the target class providing a least squares residual
-    in terms of detector impact position X, Y and phi, terminating on achieved
-    rmsd (or on intrisic convergence of the chosen minimiser)"""
+  """An implementation of the target class providing a least squares residual
+  in terms of detector impact position X, Y and phi, terminating on achieved
+  rmsd (or on intrisic convergence of the chosen minimiser)"""
 
-    def __init__(self, reflection_predictor, detector, ref_man,
-                 prediction_parameterisation,
-                 image_width, frac_binsize_cutoff=0.33333,
-                 absolute_cutoffs=None):
+  def __init__(self, reflection_predictor, detector, ref_man,
+               prediction_parameterisation,
+               image_width, frac_binsize_cutoff=0.33333,
+               absolute_cutoffs=None):
 
-        Target.__init__(self, reflection_predictor, detector, ref_man,
-                        prediction_parameterisation)
+    Target.__init__(self, reflection_predictor, detector, ref_man,
+                    prediction_parameterisation)
 
-        # Set up the RMSD achieved criterion
-        if not absolute_cutoffs:
-            pixel_sizes = [p.get_pixel_size() for p in detector]
-            min_px_size_x = min(e[0] for e in pixel_sizes)
-            min_px_size_y = min(e[1] for e in pixel_sizes)
-            self._binsize_cutoffs = [min_px_size_x * frac_binsize_cutoff,
-                                     min_px_size_y * frac_binsize_cutoff,
-                                     image_width * frac_binsize_cutoff]
-        else:
-            assert len(absolute_cutoffs) == 3
-            self._binsize_cutoffs = absolute_cutoffs
+    # Set up the RMSD achieved criterion
+    if not absolute_cutoffs:
+      pixel_sizes = [p.get_pixel_size() for p in detector]
+      min_px_size_x = min(e[0] for e in pixel_sizes)
+      min_px_size_y = min(e[1] for e in pixel_sizes)
+      self._binsize_cutoffs = [min_px_size_x * frac_binsize_cutoff,
+                               min_px_size_y * frac_binsize_cutoff,
+                               image_width * frac_binsize_cutoff]
+    else:
+      assert len(absolute_cutoffs) == 3
+      self._binsize_cutoffs = absolute_cutoffs
 
-        # Quantities to cache each step
-        self._rmsds = None
-        self._matches = None
+    # Quantities to cache each step
+    self._rmsds = None
+    self._matches = None
 
-    def compute_residuals_and_gradients(self):
-        """return the vector of residuals plus their gradients
-        and weights for non-linear least squares methods"""
+  def compute_residuals_and_gradients(self):
+    """return the vector of residuals plus their gradients
+    and weights for non-linear least squares methods"""
 
-        self._matches = self._reflection_manager.get_matches()
+    self._matches = self._reflection_manager.get_matches()
 
-        # return residuals and weights as 1d flex.double vectors
-        nelem = len(self._matches) * 3
-        residuals = flex.double(nelem)
-        jacobian_t = flex.double(flex.grid(
-            len(self._prediction_parameterisation), nelem))
-        weights = flex.double(nelem)
+    # return residuals and weights as 1d flex.double vectors
+    nelem = len(self._matches) * 3
+    residuals = flex.double(nelem)
+    jacobian_t = flex.double(flex.grid(
+        len(self._prediction_parameterisation), nelem))
+    weights = flex.double(nelem)
 
-        for i, m in enumerate(self._matches):
-            residuals[3*i] = m.Xresid
-            residuals[3*i + 1] = m.Yresid
-            residuals[3*i + 2] = m.Phiresid
+    for i, m in enumerate(self._matches):
+      residuals[3*i] = m.Xresid
+      residuals[3*i + 1] = m.Yresid
+      residuals[3*i + 2] = m.Phiresid
 
-            # are these the right weights? Or inverse, or sqrt?
-            weights[3*i] = m.weightXo
-            weights[3*i + 1] = m.weightYo
-            weights[3*i + 2] = m.weightPhio
+      # are these the right weights? Or inverse, or sqrt?
+      weights[3*i] = m.weightXo
+      weights[3*i + 1] = m.weightYo
+      weights[3*i + 2] = m.weightPhio
 
-            # m.gradients is a nparam length list, each element of which is a
-            # triplet of values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
-            dX_dp, dY_dp, dPhi_dp = zip(*m.gradients)
+      # m.gradients is a nparam length list, each element of which is a
+      # triplet of values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
+      dX_dp, dY_dp, dPhi_dp = zip(*m.gradients)
 
-            # FIXME Here we paste columns into the Jacobian transpose then take
-            # its transpose when done. This seems inefficient: can we just start
-            # with the Jacobian and fill elements sequentially, using row-major
-            # order to ensure the values are filled in the right order?
+      # FIXME Here we paste columns into the Jacobian transpose then take
+      # its transpose when done. This seems inefficient: can we just start
+      # with the Jacobian and fill elements sequentially, using row-major
+      # order to ensure the values are filled in the right order?
 
-            # fill jacobian elements here.
-            jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
-            jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i+1)
-            jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
+      # fill jacobian elements here.
+      jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
+      jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i+1)
+      jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
 
-        # We return the Jacobian, not its transpose.
-        jacobian_t.matrix_transpose_in_place()
+    # We return the Jacobian, not its transpose.
+    jacobian_t.matrix_transpose_in_place()
 
-        return(residuals, jacobian_t, weights)
+    return(residuals, jacobian_t, weights)
 
-    def compute_functional_and_gradients(self):
-        """calculate the value of the target function and its gradients"""
+  def compute_functional_and_gradients(self):
+    """calculate the value of the target function and its gradients"""
 
-        self._matches = self._reflection_manager.get_matches()
-        self._nref = self.get_num_reflections()
+    self._matches = self._reflection_manager.get_matches()
+    self._nref = self.get_num_reflections()
 
-        # This is a hack for the case where nref=0. This should not be necessary
-        # if bounds are provided for parameters to stop the algorithm exploring
-        # unreasonable regions of parameter space where no predictions exist.
-        # Unfortunately the L-BFGS line search does make such extreme trials.
-        if self._nref == 0:
-            return 1.e12, [1.] * len(self._prediction_parameterisation)
+    # This is a hack for the case where nref=0. This should not be necessary
+    # if bounds are provided for parameters to stop the algorithm exploring
+    # unreasonable regions of parameter space where no predictions exist.
+    # Unfortunately the L-BFGS line search does make such extreme trials.
+    if self._nref == 0:
+      return 1.e12, [1.] * len(self._prediction_parameterisation)
 
-        # compute target function
-        L = 0.5 * sum([m.weightXo * m.Xresid2 +
-                       m.weightYo * m.Yresid2 +
-                       m.weightPhio * m.Phiresid2
-                       for m in self._matches])
+    # compute target function
+    L = 0.5 * sum([m.weightXo * m.Xresid2 +
+                   m.weightYo * m.Yresid2 +
+                   m.weightPhio * m.Phiresid2
+                   for m in self._matches])
 
-        # prepare list of gradients
-        dL_dp = [0.] * len(self._prediction_parameterisation)
+    # prepare list of gradients
+    dL_dp = [0.] * len(self._prediction_parameterisation)
 
-        # the gradients wrt each parameter are stored with the matches
-        for m in self._matches:
+    # the gradients wrt each parameter are stored with the matches
+    for m in self._matches:
 
-            for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-                dL_dp[j] += (m.weightXo * m.Xresid * grad_X +
-                             m.weightYo * m.Yresid * grad_Y +
-                             m.weightPhio * m.Phiresid * grad_Phi)
+      for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
+        dL_dp[j] += (m.weightXo * m.Xresid * grad_X +
+                     m.weightYo * m.Yresid * grad_Y +
+                     m.weightPhio * m.Phiresid * grad_Phi)
 
-        return (L, dL_dp)
+    return (L, dL_dp)
 
-    def curvatures(self):
-        """First order approximation to the diagonal of the Hessian based on the
-        least squares form of the target"""
+  def curvatures(self):
+    """First order approximation to the diagonal of the Hessian based on the
+    least squares form of the target"""
 
-        # This is a hack for the case where nref=0. This should not be necessary
-        # if bounds are provided for parameters to stop the algorithm exploring
-        # unreasonable regions of parameter space where there are no predictions
-        if self._nref == 0:
-            return [1.] * len(self._prediction_parameterisation)
+    # This is a hack for the case where nref=0. This should not be necessary
+    # if bounds are provided for parameters to stop the algorithm exploring
+    # unreasonable regions of parameter space where there are no predictions
+    if self._nref == 0:
+      return [1.] * len(self._prediction_parameterisation)
 
-        # prepare lists of gradients and curvatures
-        curv = [0.] * len(self._prediction_parameterisation)
+    # prepare lists of gradients and curvatures
+    curv = [0.] * len(self._prediction_parameterisation)
 
-        # for each reflection, get the approximate curvatures wrt each parameter
-        for m in self._matches:
+    # for each reflection, get the approximate curvatures wrt each parameter
+    for m in self._matches:
 
-            for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-                curv[j] += (m.weightXo * grad_X**2 +
-                            m.weightYo * grad_Y**2 +
-                            m.weightPhio * grad_Phi**2)
+      for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
+        curv[j] += (m.weightXo * grad_X**2 +
+                    m.weightYo * grad_Y**2 +
+                    m.weightPhio * grad_Phi**2)
 
-        # Curvatures of zero will cause a crash, because their inverse is taken.
-        assert all([c > 0.0 for c in curv])
+    # Curvatures of zero will cause a crash, because their inverse is taken.
+    assert all([c > 0.0 for c in curv])
 
-        return curv
+    return curv
 
-    def rmsds(self):
-        """calculate unweighted RMSDs"""
+  def rmsds(self):
+    """calculate unweighted RMSDs"""
 
-        if not self._matches:
-            self._matches = self._reflection_manager.get_matches()
+    if not self._matches:
+      self._matches = self._reflection_manager.get_matches()
 
-        n = self._reflection_manager.get_accepted_reflection_count()
+    n = self._reflection_manager.get_accepted_reflection_count()
 
-        resid_x = sum((m.Xresid2 for m in self._matches))
-        resid_y = sum((m.Yresid2 for m in self._matches))
-        resid_phi = sum((m.Phiresid2 for m in self._matches))
+    resid_x = sum((m.Xresid2 for m in self._matches))
+    resid_y = sum((m.Yresid2 for m in self._matches))
+    resid_phi = sum((m.Phiresid2 for m in self._matches))
 
-        # cache rmsd calculation for achieved test
-        self._rmsds = (sqrt(resid_x / n),
-                       sqrt(resid_y / n),
-                       sqrt(resid_phi / n))
+    # cache rmsd calculation for achieved test
+    self._rmsds = (sqrt(resid_x / n),
+                   sqrt(resid_y / n),
+                   sqrt(resid_phi / n))
 
-        return self._rmsds
+    return self._rmsds
 
-    def achieved(self):
-        """RMSD criterion for target achieved """
-        r = self._rmsds if self._rmsds else self.rmsds()
+  def achieved(self):
+    """RMSD criterion for target achieved """
+    r = self._rmsds if self._rmsds else self.rmsds()
 
-        # reset cached rmsds to avoid getting out of step
-        self._rmsds = None
+    # reset cached rmsds to avoid getting out of step
+    self._rmsds = None
 
-        if (r[0] < self._binsize_cutoffs[0] and
-            r[1] < self._binsize_cutoffs[1] and
-            r[2] < self._binsize_cutoffs[2]):
-            return True
-        return False
+    if (r[0] < self._binsize_cutoffs[0] and
+        r[1] < self._binsize_cutoffs[1] and
+        r[2] < self._binsize_cutoffs[2]):
+      return True
+    return False
 
 class ObsPredMatch:
-    """
-    A bucket class containing data for a prediction that has been
-    matched to an observation.
+  """
+  A bucket class containing data for a prediction that has been
+  matched to an observation.
 
-    This contains all the raw material needed to calculate the target function
-    value and gradients
-    """
+  This contains all the raw material needed to calculate the target function
+  value and gradients
+  """
 
-    # initialise with an observation
-    def __init__(self, hkl, iobs, entering, frame, panel,
+  # initialise with an observation
+  def __init__(self, hkl, iobs, entering, frame, panel,
+                          Xo, sigXo, weightXo,
+                          Yo, sigYo, weightYo,
+                          Phio, sigPhio, weightPhio):
+    self.H = hkl
+    self.iobs = iobs
+    self.entering = entering
+    self.frame_o = frame
+    self.panel = panel
+    self.Xo = Xo
+    self.sigXo = sigXo
+    self.weightXo = weightXo
+
+    self.Yo = Yo
+    self.sigYo = sigYo
+    self.weightYo = weightYo
+
+    self.Phio = Phio
+    self.sigPhio = sigPhio
+    self.weightPhio = weightPhio
+
+    self.Xc = None
+    self.Yc = None
+    self.Phic = None
+    self.Sc = None
+
+    # gradients will be a list, of length equal to the number of free
+    # parameters, whose elements are the gradients in the space of
+    # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
+    self.gradients = None
+
+    self.Yresid = None
+    self.Yresid2 = None
+    self.Xresid = None
+    self.Xresid2 = None
+    self.Phiresid = None
+    self.Phiresid2 = None
+
+    self.is_matched = False
+
+  # update with a prediction
+  def update_prediction(self, Xc, Yc, Phic, Sc, gradients):
+
+    self.Xc = Xc
+    self.Yc = Yc
+    self.Phic = Phic
+    self.Sc = Sc
+
+    self.gradients = gradients
+
+    # calculate residuals
+    self.Xresid = Xc - self.Xo
+    self.Xresid2 = self.Xresid**2
+    self.Yresid = Yc - self.Yo
+    self.Yresid2 = self.Yresid**2
+    self.Phiresid = Phic - self.Phio
+    self.Phiresid2 = self.Phiresid**2
+
+    self.is_matched = True
+
+  def reset(self):
+
+    """Flag this observation to not be used"""
+    self.is_matched = False
+
+class ObservationPrediction(object):
+  """A helper class for the reflection manager to contain information about
+  the unique observations of particular hkl paired with the currently
+  predicted values.
+
+  Reflections are either exiting or entering the Ewald sphere. This is
+  calculated by the reflection manager and passed in, and used here to
+  identify which observations to update with a new prediction"""
+
+  def __init__(self, H, iobs, entering, frame, panel,
+                     Xo, sigXo, weightXo,
+                     Yo, sigYo, weightYo,
+                     Phio, sigPhio, weightPhio):
+    """initialise from one observation"""
+    assert isinstance(entering, bool)
+    self.H = H
+
+    self.obs = [ObsPredMatch(H, iobs, entering, frame, panel,
+                             Xo, sigXo, weightXo,
+                             Yo, sigYo, weightYo,
+                             Phio, sigPhio, weightPhio)]
+
+  def __len__(self):
+
+    return len(self.obs)
+
+  def __iter__(self):
+
+    # make this class iterable through the observations
+    return iter(self.obs)
+
+  def get_num_pairs(self):
+    """Count the number of observations that are paired with a prediction"""
+    return sum(1 for x in self.obs if x.is_matched)
+
+  def reset_predictions(self):
+    """Set the use flag to false for all observations, so that after
+    updating, any observations that still do not have a prediction are
+    flagged to be removed from calculation of residual and gradients."""
+
+    map(lambda x: x.reset(), self.obs)
+
+  def remove_unmatched_obs(self):
+    """Remove observations without a matching prediction"""
+
+    self.obs = [x for x in self.obs if x.is_matched]
+
+  def add_observation(self, iobs, entering, frame, panel,
                             Xo, sigXo, weightXo,
                             Yo, sigYo, weightYo,
                             Phio, sigPhio, weightPhio):
-        self.H = hkl
-        self.iobs = iobs
-        self.entering = entering
-        self.frame_o = frame
-        self.panel = panel
-        self.Xo = Xo
-        self.sigXo = sigXo
-        self.weightXo = weightXo
+    """Add another observation of this reflection"""
 
-        self.Yo = Yo
-        self.sigYo = sigYo
-        self.weightYo = weightYo
-
-        self.Phio = Phio
-        self.sigPhio = sigPhio
-        self.weightPhio = weightPhio
-
-        self.Xc = None
-        self.Yc = None
-        self.Phic = None
-        self.Sc = None
-
-        # gradients will be a list, of length equal to the number of free
-        # parameters, whose elements are the gradients in the space of
-        # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
-        self.gradients = None
-
-        self.Yresid = None
-        self.Yresid2 = None
-        self.Xresid = None
-        self.Xresid2 = None
-        self.Phiresid = None
-        self.Phiresid2 = None
-
-        self.is_matched = False
-
-    # update with a prediction
-    def update_prediction(self, Xc, Yc, Phic, Sc, gradients):
-
-        self.Xc = Xc
-        self.Yc = Yc
-        self.Phic = Phic
-        self.Sc = Sc
-
-        self.gradients = gradients
-
-        # calculate residuals
-        self.Xresid = Xc - self.Xo
-        self.Xresid2 = self.Xresid**2
-        self.Yresid = Yc - self.Yo
-        self.Yresid2 = self.Yresid**2
-        self.Phiresid = Phic - self.Phio
-        self.Phiresid2 = self.Phiresid**2
-
-        self.is_matched = True
-
-    def reset(self):
-
-        """Flag this observation to not be used"""
-        self.is_matched = False
-
-class ObservationPrediction(object):
-    """A helper class for the reflection manager to contain information about
-    the unique observations of particular hkl paired with the currently
-    predicted values.
-
-    Reflections are either exiting or entering the Ewald sphere. This is
-    calculated by the reflection manager and passed in, and used here to
-    identify which observations to update with a new prediction"""
-
-    def __init__(self, H, iobs, entering, frame, panel,
-                       Xo, sigXo, weightXo,
-                       Yo, sigYo, weightYo,
-                       Phio, sigPhio, weightPhio):
-        """initialise from one observation"""
-        assert isinstance(entering, bool)
-        self.H = H
-
-        self.obs = [ObsPredMatch(H, iobs, entering, frame, panel,
+    self.obs.append(ObsPredMatch(self.H, iobs, entering, frame, panel,
                                  Xo, sigXo, weightXo,
                                  Yo, sigYo, weightYo,
-                                 Phio, sigPhio, weightPhio)]
-
-    def __len__(self):
-
-        return len(self.obs)
-
-    def __iter__(self):
-
-        # make this class iterable through the observations
-        return iter(self.obs)
-
-    def get_num_pairs(self):
-        """Count the number of observations that are paired with a prediction"""
-        return sum(1 for x in self.obs if x.is_matched)
-
-    def reset_predictions(self):
-        """Set the use flag to false for all observations, so that after
-        updating, any observations that still do not have a prediction are
-        flagged to be removed from calculation of residual and gradients."""
-
-        map(lambda x: x.reset(), self.obs)
-
-    def remove_unmatched_obs(self):
-        """Remove observations without a matching prediction"""
-
-        self.obs = [x for x in self.obs if x.is_matched]
-
-    def add_observation(self, iobs, entering, frame, panel,
-                              Xo, sigXo, weightXo,
-                              Yo, sigYo, weightYo,
-                              Phio, sigPhio, weightPhio):
-        """Add another observation of this reflection"""
-
-        self.obs.append(ObsPredMatch(self.H, iobs, entering, frame, panel,
-                                     Xo, sigXo, weightXo,
-                                     Yo, sigYo, weightYo,
-                                     Phio, sigPhio, weightPhio))
+                                 Phio, sigPhio, weightPhio))
 
 class ReflectionManager(object):
-    """A class to maintain information about observed and predicted
-    reflections for refinement."""
+  """A class to maintain information about observed and predicted
+  reflections for refinement."""
 
-    def __init__(self, reflections,
-                       beam, gonio,
-                       sweep_range_rad=None,
-                       nref_per_degree=None,
-                       min_num_obs=20,
-                       max_num_obs=None,
-                       inclusion_cutoff=0.1,
-                       verbosity=0):
+  def __init__(self, reflections,
+                     beam, gonio,
+                     sweep_range_rad=None,
+                     nref_per_degree=None,
+                     min_num_obs=20,
+                     max_num_obs=None,
+                     inclusion_cutoff=0.1,
+                     verbosity=0):
 
-        # track whether this is the first update of predictions or not
-        self.first_update = True
+    # track whether this is the first update of predictions or not
+    self.first_update = True
 
-        # set verbosity
-        self._verbosity = verbosity
+    # set verbosity
+    self._verbosity = verbosity
 
-        # keep references to the beam, goniometer and sweep range (for
-        # reflection exclusion and subsetting)
-        self._beam = beam
-        self._gonio = gonio
-        self._sweep_range_rad = sweep_range_rad
+    # keep references to the beam, goniometer and sweep range (for
+    # reflection exclusion and subsetting)
+    self._beam = beam
+    self._gonio = gonio
+    self._sweep_range_rad = sweep_range_rad
 
-        # find vector normal to the spindle-beam plane for the initial model
-        self._vecn = self._spindle_beam_plane_normal()
+    # find vector normal to the spindle-beam plane for the initial model
+    self._vecn = self._spindle_beam_plane_normal()
 
-        # set up the reflection inclusion cutoff
-        self._inclusion_cutoff = inclusion_cutoff
+    # set up the reflection inclusion cutoff
+    self._inclusion_cutoff = inclusion_cutoff
 
-        # exclude reflections that fail inclusion criteria
-        self._input_size = len(reflections)
-        refs_to_keep = self._id_refs_to_keep(reflections)
-        self._accepted_refs_size = len(refs_to_keep)
+    # exclude reflections that fail inclusion criteria
+    self._input_size = len(reflections)
+    refs_to_keep = self._id_refs_to_keep(reflections)
+    self._accepted_refs_size = len(refs_to_keep)
 
-        # choose a random subset of data for refinement
-        self._sample_size = self._accepted_refs_size
-        self._nref_per_degree = nref_per_degree
-        self._max_num_obs = max_num_obs
-        refs_to_keep = self._create_working_set(refs_to_keep)
+    # choose a random subset of data for refinement
+    self._sample_size = self._accepted_refs_size
+    self._nref_per_degree = nref_per_degree
+    self._max_num_obs = max_num_obs
+    refs_to_keep = self._create_working_set(refs_to_keep)
 
-        # store observation information in a dict of observation-prediction
-        # pairs (prediction information will go in here later)
-        self._obs_pred_pairs = {}
-        for i in refs_to_keep:
+    # store observation information in a dict of observation-prediction
+    # pairs (prediction information will go in here later)
+    self._obs_pred_pairs = {}
+    for i in refs_to_keep:
 
-            ref = reflections[i]
-            h = ref.miller_index
-            s = matrix.col(ref.beam_vector)
-            entering = s.dot(self._vecn) < 0.
-            frame = ref.frame_number
-            panel = ref.panel_number
-            x = ref.centroid_position[0]
-            y = ref.centroid_position[1]
-            phi = ref.centroid_position[2]
-            sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
-            w_x, w_y, w_phi = [1. / e for e in ref.centroid_variance]
+      ref = reflections[i]
+      h = ref.miller_index
+      s = matrix.col(ref.beam_vector)
+      entering = s.dot(self._vecn) < 0.
+      frame = ref.frame_number
+      panel = ref.panel_number
+      x = ref.centroid_position[0]
+      y = ref.centroid_position[1]
+      phi = ref.centroid_position[2]
+      sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
+      w_x, w_y, w_phi = [1. / e for e in ref.centroid_variance]
 
-            if h not in self._obs_pred_pairs:
-                self._obs_pred_pairs[h] = ObservationPrediction(
-                    h, i, entering, frame, panel,
-                    x, sig_x, w_x,
-                    y, sig_y, w_y,
-                    phi, sig_phi, w_phi)
-            else:
-                self._obs_pred_pairs[h].add_observation(
-                    i, entering, frame, panel,
-                    x, sig_x, w_x,
-                    y, sig_y, w_y,
-                    phi, sig_phi, w_phi)
+      if h not in self._obs_pred_pairs:
+        self._obs_pred_pairs[h] = ObservationPrediction(
+            h, i, entering, frame, panel,
+            x, sig_x, w_x,
+            y, sig_y, w_y,
+            phi, sig_phi, w_phi)
+      else:
+        self._obs_pred_pairs[h].add_observation(
+            i, entering, frame, panel,
+            x, sig_x, w_x,
+            y, sig_y, w_y,
+            phi, sig_phi, w_phi)
 
-        # fail if there are too few reflections in the manager
-        self._min_num_obs = min_num_obs
-        if len(self._obs_pred_pairs) < self._min_num_obs:
-            msg = ('Remaining number of reflections = {0}, which is below '+ \
-                'the configured limit for creating this reflection ' + \
-                'manager').format(len(self._obs_pred_pairs))
-            raise RuntimeError(msg)
+    # fail if there are too few reflections in the manager
+    self._min_num_obs = min_num_obs
+    if len(self._obs_pred_pairs) < self._min_num_obs:
+      msg = ('Remaining number of reflections = {0}, which is below '+ \
+          'the configured limit for creating this reflection ' + \
+          'manager').format(len(self._obs_pred_pairs))
+      raise RuntimeError(msg)
 
-    def _spindle_beam_plane_normal(self):
-        """return a unit vector that when placed at the origin of reciprocal
-        space, points to the hemisphere of the Ewald sphere
-        in which reflections cross from inside to outside of the sphere"""
+  def _spindle_beam_plane_normal(self):
+    """return a unit vector that when placed at the origin of reciprocal
+    space, points to the hemisphere of the Ewald sphere
+    in which reflections cross from inside to outside of the sphere"""
 
-        # NB vector in +ve Y direction when using imgCIF coordinate frame
-        return matrix.col(self._beam.get_s0()).cross(
-                        matrix.col(self._gonio.get_rotation_axis())).normalize()
+    # NB vector in +ve Y direction when using imgCIF coordinate frame
+    return matrix.col(self._beam.get_s0()).cross(
+                    matrix.col(self._gonio.get_rotation_axis())).normalize()
 
-    def _id_refs_to_keep(self, obs_data):
-        """Create a selection of observations that pass certain conditions.
+  def _id_refs_to_keep(self, obs_data):
+    """Create a selection of observations that pass certain conditions.
 
-        This includes outlier rejection plus rejection of reflections
-        too close to the spindle"""
+    This includes outlier rejection plus rejection of reflections
+    too close to the spindle"""
 
-        # TODO Add outlier rejection. Should use robust statistics.
-        # See notes on M-estimators from Garib (when I have them)
+    # TODO Add outlier rejection. Should use robust statistics.
+    # See notes on M-estimators from Garib (when I have them)
 
-        axis = matrix.col(self._gonio.get_rotation_axis())
-        s0 = matrix.col(self._beam.get_s0())
+    axis = matrix.col(self._gonio.get_rotation_axis())
+    s0 = matrix.col(self._beam.get_s0())
 
-        inc = [i for i, ref in enumerate(obs_data) if self._inclusion_test(
-            matrix.col(ref.beam_vector), axis, s0)]
+    inc = [i for i, ref in enumerate(obs_data) if self._inclusion_test(
+        matrix.col(ref.beam_vector), axis, s0)]
 
-        return inc
+    return inc
 
-    def _inclusion_test(self, s, axis, s0):
-        """Test scattering vector s for inclusion"""
+  def _inclusion_test(self, s, axis, s0):
+    """Test scattering vector s for inclusion"""
 
-        # reject reflections for which the parallelepiped formed between
-        # the gonio axis, s0 and s has a volume of less than the cutoff.
-        # Those reflections are by definition closer to the spindle-beam
-        # plane and for low values of the cutoff are troublesome to
-        # integrate anyway.
+    # reject reflections for which the parallelepiped formed between
+    # the gonio axis, s0 and s has a volume of less than the cutoff.
+    # Those reflections are by definition closer to the spindle-beam
+    # plane and for low values of the cutoff are troublesome to
+    # integrate anyway.
 
-        test = abs(axis.dot(matrix.col(s).cross(s0))) > \
-            self._inclusion_cutoff
+    test = abs(axis.dot(matrix.col(s).cross(s0))) > \
+        self._inclusion_cutoff
 
-        return test
+    return test
 
-    def _create_working_set(self, indices):
-        """Make a subset of the indices of reflections to use in refinement"""
+  def _create_working_set(self, indices):
+    """Make a subset of the indices of reflections to use in refinement"""
 
-        working_indices = indices
-        sample_size = len(working_indices)
+    working_indices = indices
+    sample_size = len(working_indices)
 
-        # set sample size according to nref_per_degree
-        if self._nref_per_degree:
-            width = abs(self._sweep_range_rad[1] -
-                        self._sweep_range_rad[0]) * RAD_TO_DEG
-            sample_size = int(self._nref_per_degree * width)
+    # set sample size according to nref_per_degree
+    if self._nref_per_degree:
+      width = abs(self._sweep_range_rad[1] -
+                  self._sweep_range_rad[0]) * RAD_TO_DEG
+      sample_size = int(self._nref_per_degree * width)
 
-        # set maximum sample size
-        if self._max_num_obs:
-            if sample_size > self._max_num_obs:
-                sample_size = self._max_num_obs
+    # set maximum sample size
+    if self._max_num_obs:
+      if sample_size > self._max_num_obs:
+        sample_size = self._max_num_obs
 
-        # sample the data and record the sample size
-        if sample_size < len(working_indices):
-            self._sample_size = sample_size
-            working_indices = random.sample(working_indices,
-                                            self._sample_size)
-        return(working_indices)
+    # sample the data and record the sample size
+    if sample_size < len(working_indices):
+      self._sample_size = sample_size
+      working_indices = random.sample(working_indices,
+                                      self._sample_size)
+    return(working_indices)
 
-    def get_input_size(self):
-        """Return the number of observations in the intial list supplied
-        as input"""
+  def get_input_size(self):
+    """Return the number of observations in the intial list supplied
+    as input"""
 
-        return self._input_size
+    return self._input_size
 
-    def get_accepted_refs_size(self):
-        """Return the number of observations that pass inclusion criteria and
-        can potentially be used for refinement"""
+  def get_accepted_refs_size(self):
+    """Return the number of observations that pass inclusion criteria and
+    can potentially be used for refinement"""
 
-        return self._accepted_refs_size
+    return self._accepted_refs_size
 
-    def get_sample_size(self):
-        """Return the number of observations in the working set to be
-        used for refinement"""
+  def get_sample_size(self):
+    """Return the number of observations in the working set to be
+    used for refinement"""
 
-        return self._sample_size
+    return self._sample_size
 
-    def _sort_obs_by_residual(self, obs, angular=False):
-        """For analysis purposes, sort the obs-pred matches so that the
-        highest residuals are first. By default, sort by positional
-        residual, unless angular=True.
+  def _sort_obs_by_residual(self, obs, angular=False):
+    """For analysis purposes, sort the obs-pred matches so that the
+    highest residuals are first. By default, sort by positional
+    residual, unless angular=True.
 
-        The earliest entries in the return list may be those that are
-        causing problems in refinement.
+    The earliest entries in the return list may be those that are
+    causing problems in refinement.
 
-        """
+    """
 
-        if angular:
-            k = lambda e: e.Phiresid
-        else:
-            k = lambda e: e.Xresid**2 + e.Yresid**2
-        sort_obs = sorted(obs, key=k, reverse=True)
+    if angular:
+      k = lambda e: e.Phiresid
+    else:
+      k = lambda e: e.Xresid**2 + e.Yresid**2
+    sort_obs = sorted(obs, key=k, reverse=True)
 
-        return sort_obs
+    return sort_obs
 
 
-    def get_matches(self, silent = False):
-        """For every observation matched with a prediction return all data"""
+  def get_matches(self, silent = False):
+    """For every observation matched with a prediction return all data"""
 
-        l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
+    l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 
-        if self._verbosity > 2 and len(l) > 20 and not silent:
+    if self._verbosity > 2 and len(l) > 20 and not silent:
 
-            sl = self._sort_obs_by_residual(l)
-            print "Reflections with the worst 20 positional residuals:"
-            print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
-                  "weightPhio"
-            fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-            for i in xrange(20):
-                e = sl[i]
-                msg = fmt % tuple(e.H + (e.Xresid,
-                                 e.Yresid,
-                                 e.Phiresid,
-                                 e.weightXo,
-                                 e.weightYo,
-                                 e.weightPhio))
-                print msg
-            print
-            sl = self._sort_obs_by_residual(l, angular=True)
-            print "\nReflections with the worst 20 angular residuals:"
-            print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
-                  "weightPhio"
-            fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-            for i in xrange(20):
-                e = sl[i]
-                msg = fmt % tuple(e.H + (e.Xresid,
-                                 e.Yresid,
-                                 e.Phiresid,
-                                 e.weightXo,
-                                 e.weightYo,
-                                 e.weightPhio))
-                print msg
-            print
+      sl = self._sort_obs_by_residual(l)
+      print "Reflections with the worst 20 positional residuals:"
+      print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
+            "weightPhio"
+      fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+      for i in xrange(20):
+        e = sl[i]
+        msg = fmt % tuple(e.H + (e.Xresid,
+                         e.Yresid,
+                         e.Phiresid,
+                         e.weightXo,
+                         e.weightYo,
+                         e.weightPhio))
+        print msg
+      print
+      sl = self._sort_obs_by_residual(l, angular=True)
+      print "\nReflections with the worst 20 angular residuals:"
+      print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
+            "weightPhio"
+      fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+      for i in xrange(20):
+        e = sl[i]
+        msg = fmt % tuple(e.H + (e.Xresid,
+                         e.Yresid,
+                         e.Phiresid,
+                         e.weightXo,
+                         e.weightYo,
+                         e.weightPhio))
+        print msg
+      print
 
-        return l
+    return l
 
-    def strip_unmatched_observations(self):
-        """
-        Delete observations from the manager that are not matched to a
-        prediction. Typically used once, after the first update of
-        predictions.
-        """
+  def strip_unmatched_observations(self):
+    """
+    Delete observations from the manager that are not matched to a
+    prediction. Typically used once, after the first update of
+    predictions.
+    """
 
-        for k, v in self._obs_pred_pairs.items():
+    for k, v in self._obs_pred_pairs.items():
 
-            v.remove_unmatched_obs()
+      v.remove_unmatched_obs()
 
-            # if no observations left, delete the hkl from the dict
-            if len(v) == 0:
-                del self._obs_pred_pairs[k]
+      # if no observations left, delete the hkl from the dict
+      if len(v) == 0:
+        del self._obs_pred_pairs[k]
 
-        if len(self._obs_pred_pairs) < self._min_num_obs:
-            msg = ('Remaining number of reflections = {0}, which is below '+ \
-                'the configured limit for this reflection manager').format(
-                    len(self._obs_pred_pairs))
-            raise RuntimeError(msg)
+    if len(self._obs_pred_pairs) < self._min_num_obs:
+      msg = ('Remaining number of reflections = {0}, which is below '+ \
+          'the configured limit for this reflection manager').format(
+              len(self._obs_pred_pairs))
+      raise RuntimeError(msg)
 
-        if self._verbosity > 1:
-            print len(self._obs_pred_pairs), "reflections remain in the manager after " + \
-                "removing those unmatched with predictions"
+    if self._verbosity > 1:
+      print len(self._obs_pred_pairs), "reflections remain in the manager after " + \
+          "removing those unmatched with predictions"
 
-        return
+    return
 
-    def get_indices(self):
-        """Get the unique indices of all observations in the manager"""
+  def get_indices(self):
+    """Get the unique indices of all observations in the manager"""
 
-        return flex.miller_index(self._obs_pred_pairs.keys())
+    return flex.miller_index(self._obs_pred_pairs.keys())
 
-    def get_obs(self, h):
-        """Get the observations of a particular hkl"""
+  def get_obs(self, h):
+    """Get the observations of a particular hkl"""
 
-        return self._obs_pred_pairs[h]
+    return self._obs_pred_pairs[h]
 
-    def get_accepted_reflection_count(self):
-        """Get the number of reflections currently to be used for refinement"""
+  def get_accepted_reflection_count(self):
+    """Get the number of reflections currently to be used for refinement"""
 
-        return sum(v.get_num_pairs() for v in self._obs_pred_pairs.values())
+    return sum(v.get_num_pairs() for v in self._obs_pred_pairs.values())
 
-    def reset_accepted_reflections(self):
-        """Reset all observations to use=False in preparation for a new set of
-        predictions"""
+  def reset_accepted_reflections(self):
+    """Reset all observations to use=False in preparation for a new set of
+    predictions"""
 
-        for v in self._obs_pred_pairs.values(): v.reset_predictions()
+    for v in self._obs_pred_pairs.values(): v.reset_predictions()

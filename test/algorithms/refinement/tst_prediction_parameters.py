@@ -51,62 +51,62 @@ from dials.algorithms.refinement.refinement_helpers import print_grads
 # Functions required for finite difference calculations
 
 def get_state(det, hkl, angle, reflection_predictor):
-    """reflection prediction for the current state of the models"""
+  """reflection prediction for the current state of the models"""
 
-    # update reflection_predictor with latest geometry
-    reflection_predictor.update()
+  # update reflection_predictor with latest geometry
+  reflection_predictor.update()
 
-    # predict for this hkl
-    refs = reflection_predictor.predict(hkl)
+  # predict for this hkl
+  refs = reflection_predictor.predict(hkl)
 
-    # select which is nearest the observed angle
-    deltas = [abs(ref.rotation_angle - angle) for ref in refs]
-    new_ref = refs[deltas.index(min(deltas))]
+  # select which is nearest the observed angle
+  deltas = [abs(ref.rotation_angle - angle) for ref in refs]
+  new_ref = refs[deltas.index(min(deltas))]
 
-    # predict impact position
-    impact = det[0].get_ray_intersection(new_ref.beam_vector)
+  # predict impact position
+  impact = det[0].get_ray_intersection(new_ref.beam_vector)
 
-    return matrix.col((impact) + (new_ref.rotation_angle,))
+  return matrix.col((impact) + (new_ref.rotation_angle,))
 
 def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
                      deltas):
-    """Calculate centered finite difference gradients for each of the
-    parameters of the prediction parameterisation object, for reflection
-    hkl at angle phi.
+  """Calculate centered finite difference gradients for each of the
+  parameters of the prediction parameterisation object, for reflection
+  hkl at angle phi.
 
-    "deltas" must be a sequence of the same length as the parameter list,
-    and contains the step size for the difference calculations for each
-    parameter."""
+  "deltas" must be a sequence of the same length as the parameter list,
+  and contains the step size for the difference calculations for each
+  parameter."""
 
-    gon = pred_param._gonio
-    src = pred_param._beam
-    det = pred_param._detector
-    xl = pred_param._crystal
-    rp = reflection_predictor
+  gon = pred_param._gonio
+  src = pred_param._beam
+  det = pred_param._detector
+  xl = pred_param._crystal
+  rp = reflection_predictor
 
-    p_vals = pred_param.get_param_vals()
-    assert len(deltas) == len(p_vals)
-    fd_grad = []
+  p_vals = pred_param.get_param_vals()
+  assert len(deltas) == len(p_vals)
+  fd_grad = []
 
-    for i in range(len(deltas)):
+  for i in range(len(deltas)):
 
-        val = p_vals[i]
+    val = p_vals[i]
 
-        p_vals[i] -= deltas[i] / 2.
-        pred_param.set_param_vals(p_vals)
-        rev_state = get_state(det, hkl, phi, rp)
-
-        p_vals[i] += deltas[i]
-        pred_param.set_param_vals(p_vals)
-        fwd_state = get_state(det, hkl, phi, rp)
-
-        fd_grad.append((fwd_state - rev_state) / deltas[i])
-        p_vals[i] = val
-
-    # return to the initial state
+    p_vals[i] -= deltas[i] / 2.
     pred_param.set_param_vals(p_vals)
+    rev_state = get_state(det, hkl, phi, rp)
 
-    return fd_grad
+    p_vals[i] += deltas[i]
+    pred_param.set_param_vals(p_vals)
+    fwd_state = get_state(det, hkl, phi, rp)
+
+    fd_grad.append((fwd_state - rev_state) / deltas[i])
+    p_vals[i] = val
+
+  # return to the initial state
+  pred_param.set_param_vals(p_vals)
+
+  return fd_grad
 
 from time import time
 
@@ -146,11 +146,11 @@ pred_param = XYPhiPredictionParameterisation(mydetector,
 # Check the accessors
 assert len(pred_param) == 6
 for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
-    assert a==b
+  assert a==b
 
 pred_param.set_param_vals([100., 1.0, 1.0, 0., 0., 0.])
 for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
-    assert a==b
+  assert a==b
 
 # Build a full global parameterisation
 pred_param = XYPhiPredictionParameterisation(
@@ -186,7 +186,7 @@ d1s, d2s = zip(*impacts)
 # Test get_state for the first reflection
 tmp = get_state(mydetector, hkls[0], angles[0], ref_predictor)
 for (a, b) in zip(tmp, (d1s[0], d2s[0], angles[0])):
-    assert a == b
+  assert a == b
 
 # Compare analytical and finite difference gradients for up to 50
 # randomly selected reflections.
@@ -200,10 +200,10 @@ pred_param.prepare()
 
 verbose = False
 for iref in selection:
-    hkl, s, angle = hkls[iref], s_vecs[iref], angles[iref]
+  hkl, s, angle = hkls[iref], s_vecs[iref], angles[iref]
 
-    # get analytical gradients
-    an_grads = pred_param.get_gradients(hkl, s, angle, panel_id)
+  # get analytical gradients
+  an_grads = pred_param.get_gradients(hkl, s, angle, panel_id)
 
 # NB, reflections that just touch the Ewald sphere have large
 # derivatives of phi wrt some parameters (asymptotically approching
@@ -213,39 +213,38 @@ for iref in selection:
 # correction. To avoid failures of this test, we exclude reflections
 # that are closer than the largest reciprocal lattice vector length from
 # the plane of the rotation axis and beam direction.
-    s0 = matrix.col(mybeam.get_s0())
-    r = s - s0
-    e_s0_plane_norm = matrix.col(
-                    mygonio.get_rotation_axis()).cross(s0).normalize()
-    r_dist_from_plane = abs(r.dot(e_s0_plane_norm))
-    if r_dist_from_plane <= exclusion_limit:
-        continue
+  s0 = matrix.col(mybeam.get_s0())
+  r = s - s0
+  e_s0_plane_norm = matrix.col(
+                  mygonio.get_rotation_axis()).cross(s0).normalize()
+  r_dist_from_plane = abs(r.dot(e_s0_plane_norm))
+  if r_dist_from_plane <= exclusion_limit:
+    continue
 
-    fd_grads = get_fd_gradients(pred_param, hkl, angle, ref_predictor,
-                                [1.e-7] * len(pred_param))
+  fd_grads = get_fd_gradients(pred_param, hkl, angle, ref_predictor,
+                              [1.e-7] * len(pred_param))
 
-    if verbose:
-        print hkl
-        for g in an_grads: print g
-        for g in fd_grads: print g
-    for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
-        for a, b in zip(an_grad, fd_grad):
-            try:
-                if abs(b) > 10.:
-                    assert approx_equal((a - b) / b, 0., eps = 5.e-6)
-                else:
-                    assert approx_equal(a - b, 0., eps = 5.e-6)
-            except AssertionError:
-                print "Failure for parameter number %d" %i
-                print "Analytical derivatives: %.6f, %.6f, %.6f" % tuple(an_grad)
-                print "Finite derivatives: %.6f, %.6f, %.6f" % tuple(fd_grad)
-                finish_time = time()
-                print "Time Taken: ",finish_time - start_time
-                raise
+  if verbose:
+    print hkl
+    for g in an_grads: print g
+    for g in fd_grads: print g
+  for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
+    for a, b in zip(an_grad, fd_grad):
+      try:
+        if abs(b) > 10.:
+          assert approx_equal((a - b) / b, 0., eps = 5.e-6)
+        else:
+          assert approx_equal(a - b, 0., eps = 5.e-6)
+      except AssertionError:
+        print "Failure for parameter number %d" %i
+        print "Analytical derivatives: %.6f, %.6f, %.6f" % tuple(an_grad)
+        print "Finite derivatives: %.6f, %.6f, %.6f" % tuple(fd_grad)
+        finish_time = time()
+        print "Time Taken: ",finish_time - start_time
+        raise
 
 finish_time = time()
 #print "Time Taken: ",finish_time - start_time
 
 # if we got this far,
 print "OK"
-

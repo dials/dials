@@ -52,23 +52,23 @@ def derived_draw_spotfinder_spots(self,dc):
           #dc.DrawCircle(x,y,1)
 
       if self.settings.show_ctr_mass:
-          centroid = reflection.centroid_position
-          import math
-          if math.floor(centroid[2]) == i_frame:
-            x,y = self._img.image_coords_as_screen_coords(
-              centroid[0],
-              centroid[1])
-            xm1,ym1 = self._img.image_coords_as_screen_coords(
-              centroid[0]-1,
-              centroid[1]-1)
-            xp1,yp1 = self._img.image_coords_as_screen_coords(
-              centroid[0]+1,
-              centroid[1]+1)
-            dc.SetPen(wx.Pen('red'))
-            dc.SetBrush(wx.RED_BRUSH)
-            lines = [(x, ym1, x, yp1),
-                     (xm1, y, xp1, y)]
-            dc.DrawLineList((lines))
+        centroid = reflection.centroid_position
+        import math
+        if math.floor(centroid[2]) == i_frame:
+          x,y = self._img.image_coords_as_screen_coords(
+            centroid[0],
+            centroid[1])
+          xm1,ym1 = self._img.image_coords_as_screen_coords(
+            centroid[0]-1,
+            centroid[1]-1)
+          xp1,yp1 = self._img.image_coords_as_screen_coords(
+            centroid[0]+1,
+            centroid[1]+1)
+          dc.SetPen(wx.Pen('red'))
+          dc.SetBrush(wx.RED_BRUSH)
+          lines = [(x, ym1, x, yp1),
+                   (xm1, y, xp1, y)]
+          dc.DrawLineList((lines))
 
 rstbx.viewer.display.XrayView.draw_spotfinder_spots = derived_draw_spotfinder_spots
 

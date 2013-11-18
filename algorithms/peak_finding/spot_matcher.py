@@ -12,124 +12,124 @@ from __future__ import division
 
 
 class SpotMatcher(object):
-    '''Match the observed with predicted spots.'''
+  '''Match the observed with predicted spots.'''
 
-    def __init__(self, max_separation=2):
-      '''Setup the algorithm
+  def __init__(self, max_separation=2):
+    '''Setup the algorithm
 
-      Params:
-          max_separation Max pixel dist between predicted and observed spot
+    Params:
+        max_separation Max pixel dist between predicted and observed spot
 
-      '''
-      # Set the algorithm parameters
-      self._max_separation = max_separation
+    '''
+    # Set the algorithm parameters
+    self._max_separation = max_separation
 
-    def __call__(self, observed, predicted):
-        '''Match the observed reflections with the predicted.
+  def __call__(self, observed, predicted):
+    '''Match the observed reflections with the predicted.
 
-        Params:
-            observed The list of observed reflections.
-            predicted The list of predicted reflections.
+    Params:
+        observed The list of observed reflections.
+        predicted The list of predicted reflections.
 
-        Returns:
-            The list of matched reflections
+    Returns:
+        The list of matched reflections
 
-        '''
-        from dials.model.data import ReflectionList
-        from dials.util.command_line import Command
-        from dials.array_family import flex
+    '''
+    from dials.model.data import ReflectionList
+    from dials.util.command_line import Command
+    from dials.array_family import flex
 
-        # Find the nearest neighbours and distances
-        Command.start('Finding nearest neighbours')
-        nn, dist = self._find_nearest_neighbours(observed, predicted)
-        Command.end('Found nearest neighbours')
+    # Find the nearest neighbours and distances
+    Command.start('Finding nearest neighbours')
+    nn, dist = self._find_nearest_neighbours(observed, predicted)
+    Command.end('Found nearest neighbours')
 
-        # Filter the matches by distance
-        Command.start('Filtering matches by distance')
-        index = self._filter_by_distance(nn, dist)
-        Command.end('Filtered {0} matches by distance'.format(len(index)))
+    # Filter the matches by distance
+    Command.start('Filtering matches by distance')
+    index = self._filter_by_distance(nn, dist)
+    Command.end('Filtered {0} matches by distance'.format(len(index)))
 
-        # Filter out duplicates to just leave the closest pairs
-        Command.start('Removing duplicate matches')
-        len_index = len(index)
-        index = self._filter_duplicates(index, nn, dist)
-        len_diff = len_index - len(index)
-        Command.end('Removed {0} duplicate match(es)'.format(len_diff))
+    # Filter out duplicates to just leave the closest pairs
+    Command.start('Removing duplicate matches')
+    len_index = len(index)
+    index = self._filter_duplicates(index, nn, dist)
+    len_diff = len_index - len(index)
+    Command.end('Removed {0} duplicate match(es)'.format(len_diff))
 
-        # Copy all of the reflection data for the matched reflections
-        return flex.size_t(index), flex.size_t([nn[i] for i in index])
+    # Copy all of the reflection data for the matched reflections
+    return flex.size_t(index), flex.size_t([nn[i] for i in index])
 
-    def _find_nearest_neighbours(self, observed, predicted):
-        '''Find the nearest predicted spot to the observed spot.
+  def _find_nearest_neighbours(self, observed, predicted):
+    '''Find the nearest predicted spot to the observed spot.
 
-        Params:
-            observed The observed reflections
-            predicted The predicted reflections
+    Params:
+        observed The observed reflections
+        predicted The predicted reflections
 
-        Returns:
-            (nearest neighbours, distance)
+    Returns:
+        (nearest neighbours, distance)
 
-        '''
-        from annlib_ext import AnnAdaptor
-        from scitbx.array_family import flex
-        from math import sqrt
+    '''
+    from annlib_ext import AnnAdaptor
+    from scitbx.array_family import flex
+    from math import sqrt
 
-        # Get the predicted coordinates
-        predicted_xyz = []
-        for r in predicted:
-            x, y = r.image_coord_px
-            z = r.frame_number
-            predicted_xyz.append((x, y, z))
+    # Get the predicted coordinates
+    predicted_xyz = []
+    for r in predicted:
+      x, y = r.image_coord_px
+      z = r.frame_number
+      predicted_xyz.append((x, y, z))
 
-        observed_xyz = [r.centroid_position for r in observed]
+    observed_xyz = [r.centroid_position for r in observed]
 
-        # Create the KD Tree
-        ann = AnnAdaptor(flex.double(predicted_xyz).as_1d(), 3)
+    # Create the KD Tree
+    ann = AnnAdaptor(flex.double(predicted_xyz).as_1d(), 3)
 
-        # Query to find all the nearest neighbours
-        ann.query(flex.double(observed_xyz).as_1d())
+    # Query to find all the nearest neighbours
+    ann.query(flex.double(observed_xyz).as_1d())
 
-        # Return the nearest neighbours and distances
-        return ann.nn, flex.sqrt(ann.distances)
+    # Return the nearest neighbours and distances
+    return ann.nn, flex.sqrt(ann.distances)
 
-    def _filter_by_distance(self, nn, dist):
-        '''Filter the matches by distance.
+  def _filter_by_distance(self, nn, dist):
+    '''Filter the matches by distance.
 
-        Params:
-            nn The nearest neighbour list
-            dist The distances
+    Params:
+        nn The nearest neighbour list
+        dist The distances
 
-        Returns:
-            A reduced list of nearest neighbours
+    Returns:
+        A reduced list of nearest neighbours
 
-        '''
-        from scitbx.array_family import flex
-        index = range(len(nn))
-        return flex.int([i for i in index if dist[i] <= self._max_separation])
+    '''
+    from scitbx.array_family import flex
+    index = range(len(nn))
+    return flex.int([i for i in index if dist[i] <= self._max_separation])
 
-    def _filter_duplicates(self, index, nn, dist):
-        ''' Filter the matches to remove duplicates
+  def _filter_duplicates(self, index, nn, dist):
+    ''' Filter the matches to remove duplicates
 
-        Params:
-            index The indices of valid spots
-            nn The nearest neighbour indices
-            dist The distances
+    Params:
+        index The indices of valid spots
+        nn The nearest neighbour indices
+        dist The distances
 
-        Returns:
-            A reduced list of nearest neighbours
+    Returns:
+        A reduced list of nearest neighbours
 
-        '''
-        seen = {}
-        for i in index:
-            p = nn[i]
-            if p in seen:
-                j = seen[p]
-                if dist[i] < dist[j]:
-                    seen[p] = i
-            else:
-                seen[p] = i;
+    '''
+    seen = {}
+    for i in index:
+      p = nn[i]
+      if p in seen:
+        j = seen[p]
+        if dist[i] < dist[j]:
+          seen[p] = i
+      else:
+        seen[p] = i;
 
-        index = []
-        for k, v in seen.iteritems():
-            index.append(v)
-        return index
+    index = []
+    for k, v in seen.iteritems():
+      index.append(v)
+    return index

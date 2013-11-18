@@ -70,7 +70,7 @@ bprof = ref_list[0].transformed_shoebox_background
 for k in range(9):
 #    pylab.imshow(bprof.as_numpy_array()[k], vmin=flex.min(bprof), vmax=flex.max(bprof))
 #    pylab.show()
-    print bprof.as_numpy_array()[k].astype(numpy.int32)
+  print bprof.as_numpy_array()[k].astype(numpy.int32)
 
 
 print flex.sum(prof), flex.sum(shoebox)
@@ -117,8 +117,8 @@ R = (1.0/(n-1.0)) * flex.sum((prof_a-ma) * (prof_b-mb) / (sa*sb))
 print "Correlation: ", R
 
 for k in range(9):
-    pylab.subplot(3, 3, k+1)
-    pylab.imshow(iprof.as_numpy_array()[k], vmin=flex.min(iprof), vmax=flex.max(iprof))
+  pylab.subplot(3, 3, k+1)
+  pylab.imshow(iprof.as_numpy_array()[k], vmin=flex.min(iprof), vmax=flex.max(iprof))
 pylab.show()
 
 print flex.sum(iprof)

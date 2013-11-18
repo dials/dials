@@ -1,7 +1,7 @@
 
 
 def func(a):
-    return a * a
+  return a * a
 
 from multiprocessing import Pool
 pool = Pool(processes=4)
