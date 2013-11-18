@@ -85,14 +85,11 @@ class Table(object):
     from collections import namedtuple
     return namedtuple("Record", self._columns.iterkeys())
 
-  def extract(self, items, list_type=None):
-    if list_type == None:
-      result = list()
-    else:
-      result = list_type()
-    for item in zip(*[self._columns[name] for name in items]):
-      result.append(item)
-    return result
+  def extract(self, items, ltype=None, func=None):
+    columns = [self._columns[name] for name in items]
+    if func is not None: return func(columns)
+    if ltype is None: ltype = list
+    return ltype(zip(*columns))
 
   def is_consistent(self):
     length = [len(c) for c in self._columns.itervalues()]
@@ -165,8 +162,10 @@ if __name__ == '__main__':
 
   print '\nExtract columns into arbitrary lists'
   table['column_5'] = flex.double(6)
-  l = table.extract(('column_3', 'column_4', 'column_5'), flex.vec3_double)
-  print "Len Extracted: ", len(l)
+  l = table.extract(('column_3', 'column_4', 'column_5'), ltype=flex.vec3_double)
+  print "Extracted: ", type(l), len(l)
+  l = table.extract(('column_3', 'column_4', 'column_5'), func=lambda x: list(zip(*x)))
+  print "Extracted: ", type(l), len(l)
 
   # Create table with nothing in
   table = Table()
