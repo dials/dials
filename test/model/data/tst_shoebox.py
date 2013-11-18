@@ -91,7 +91,7 @@ class Test(object):
     from dials.model.data import Shoebox
     from scitbx.array_family import flex
 
-    for i in range(10):
+    for i in range(1000):
 
       x0 = randint(0, 1000)
       y0 = randint(0, 1000)
@@ -100,14 +100,18 @@ class Test(object):
       y1 = randint(1, 10) + y0
       z1 = randint(1, 10) + z0
 
-      shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
-      assert(shoebox.is_consistent() == False)
-      shoebox.allocate()
-      assert(shoebox.is_consistent() == True)
-      shoebox.data = flex.double(flex.grid(10, 10, 10))
-      assert(shoebox.is_consistent() == False)
-      shoebox.deallocate()
-      assert(shoebox.is_consistent() == False)
+      try:
+          shoebox = Shoebox((x0, x1, y0, y1, z0, z1))
+          assert(shoebox.is_consistent() == False)
+          shoebox.allocate()
+          assert(shoebox.is_consistent() == True)
+          shoebox.data = flex.double(flex.grid(20,20, 20))
+          assert(shoebox.is_consistent() == False)
+          shoebox.deallocate()
+          assert(shoebox.is_consistent() == False)
+      except Exception, e:
+          print x0, y0, z0, x1, y1, z1
+          raise
 
     # Test passed
     print 'OK'
