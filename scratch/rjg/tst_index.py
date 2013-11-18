@@ -130,7 +130,8 @@ def exercise_1():
 def exercise_2():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print "Skipping exercise_2: missing dependencies %s" %(tuple(missing))
+    print ("Skipping exercise_2: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
     return
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
@@ -151,7 +152,8 @@ def exercise_2():
 def exercise_3():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print "Skipping exercise_3: missing dependencies %s" %(tuple(missing))
+    print ("Skipping exercise_2: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
     return
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
@@ -182,7 +184,8 @@ def exercise_3():
 def exercise_4():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print "Skipping exercise_4: missing dependencies %s" %(tuple(missing))
+    print ("Skipping exercise_2: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
     return
   # trypsin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -206,7 +209,8 @@ def exercise_4():
 def exercise_5():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print "Skipping exercise_5: missing dependencies %s" %(tuple(missing))
+    print ("Skipping exercise_2: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
     return
   # synthetic trypsin multi-lattice dataset (2 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -234,7 +238,8 @@ def exercise_5():
 def exercise_6():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print "Skipping exercise_6: missing dependencies %s" %(tuple(missing))
+    print ("Skipping exercise_2: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
     return
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
@@ -261,7 +266,8 @@ def exercise_6():
 def exercise_7():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
   if len(missing):
-    print "Skipping exercise_7: missing dependencies %s" %(tuple(missing))
+    print ("Skipping exercise_2: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
     return
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
