@@ -284,6 +284,7 @@ command_line/print_reflection_stats.py -text
 command_line/process.py -text
 command_line/refine.py -text
 command_line/reflection_stats.py -text
+command_line/show_models.py -text
 command_line/show_profiles.py -text
 /config.h -text
 data/completion_template.txt -text
