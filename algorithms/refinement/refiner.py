@@ -32,12 +32,12 @@ class RefinerFactory(object):
                                   crystal=None,
                                   crystals=None,
                                   verbosity=0):
-    """Given a set of parameters, experimental models and reflections,
-    construct the refiner.
+    """Given a set of parameters, experimental models and reflections, construct
+    a refiner.
 
     Mandatory arguments:
       params - The input parameters as a phil scope_extract object
-      reflections - input ReflectionList data
+      reflections - Input ReflectionList data
 
     Argument alternatives:
       sweep - Experimental models as a dxtbx sweep
@@ -63,26 +63,42 @@ class RefinerFactory(object):
     Notes
     -----
 
-    The interface is intended to be flexible by allowing input to be
-    passed in various forms. Some are incompatible, e.g. passing a sweep
-    alongside any other dxtbx model is disallowed. Either crystal or
-    crystals must be provided (but not both).
+    The interface is intended to be flexible by allowing input to be passed in
+    various forms. Some are incompatible, e.g. passing a sweep alongside any
+    other dxtbx model is disallowed. Either crystal or crystals must be
+    provided (but not both).
 
-    The optional arguments determine the behaviour of the refiner,
-    alongside the phil parameters. Of particular interest, the presence
-    of a goniometer model decides whether the refinement is of a
-    rotation scan, with a target expressed in (X, Y, Phi) space, or of
-    a still image, with an (X, Y) target. For a rotation scan, a Scan
-    object is optional. It is only used for some information, which may
-    be provided instead by using the image_width_rad and sweep_range_rad
-    arguments. It is even possible to specify none of image_width_rad,
-    sweep_range_rad or scan and still do (X, Y, Phi) refinement, but in
-    such a case the phil params should not specify
+    The optional arguments determine the behaviour of the refiner, alongside the
+    phil parameters. Of particular interest, the presence of a goniometer model
+    decides whether the refinement is of a rotation scan, with a target
+    expressed in (X, Y, Phi) space, or of a still image, with an (X, Y) target.
+    For a rotation scan, a Scan object is optional. It is only used for some
+    information, which may be provided instead by using the image_width_rad and
+    sweep_range_rad arguments. It is even possible to specify none of
+    image_width_rad, sweep_range_rad or scan and still do (X, Y, Phi)
+    refinement, but in such a case the phil params should not specify
     reflections.reflections_per_degree and must specify
-    target.rmsd_cutoff=absolute.
+    target.rmsd_cutoff=absolute. This is checked to avoid illegal construction
+    of the target and reflection manager objects.
 
     The steps performed by this factory function are:
     * check for consistent input
+    * copy the input models and reflections
+    * set beam vectors in the working copy of reflections if not already set
+    * create parameterisations of the models that were provided, depending on
+      phil preferences for choices such as fixing certain parameters
+    * create a reflection manager, depending on phil preferences for decisions
+      regarding inclusion and random sampling criteria
+    * create a target function using phil parameters to determine the 'target
+      achieved' criterion, and the presence of a goniometer to determine whether
+      to include or ignore residuals in phi
+    * create a refinery (minimisation engine) using phil parameters to select a
+      particular algorithm, determine a maximum number of steps and to control
+      additional logging features
+    * package all the above together in a 'refiner' object, which provides the
+      interface for running refinement
+    * return that refiner
+
     """
 
     # checks on the input
