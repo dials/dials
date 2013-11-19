@@ -117,7 +117,7 @@ class Test(object):
       assert(shoebox.is_consistent() == False)
       shoebox.allocate()
       assert(shoebox.is_consistent() == True)
-      shoebox.data = flex.int(flex.grid(10, 10, 10))
+      shoebox.data = flex.int(flex.grid(x1 - x0 + 3, y1 - y0 + 3, z1 - z0 + 3))
       assert(shoebox.is_consistent() == False)
       shoebox.deallocate()
       assert(shoebox.is_consistent() == False)
