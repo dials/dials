@@ -46,6 +46,13 @@ class Table(object):
     return '%s: %s' % (self.__class__, str(self._columns))
 
   def __iter__(self):
+    for row in self.iterrows():
+      yield row
+
+  def __contains__(self, column):
+    return column in self._columns
+
+  def iterrows(self):
     for i in range(len(self)):
       yield self.__getitem__(i)
 
@@ -110,6 +117,13 @@ class Table(object):
   def ncols(self):
     return len(self._columns)
 
+  def index_map(self, column):
+    from collections import defaultdict
+    index = defaultdict(list)
+    for i, item in enumerate(self._columns[column]):
+      index[item].append(i)
+    return index
+
 
 if __name__ == '__main__':
   from scitbx.array_family import flex
@@ -170,6 +184,21 @@ if __name__ == '__main__':
   print "Extracted: ", type(l), len(l)
   l = table.extract(('column_3', 'column_4', 'column_5'), func=lambda x: list(zip(*x)))
   print "Extracted: ", type(l), len(l)
+
+  print '\nTest column is available'
+  print "Is Column 4 available: ", 'column_4' in table
+  print "Is Column 8 available: ", 'column_8' in table
+
+  print '\nTry bad column size'
+  try:
+    table['columns_6'] = flex.int(10)
+  except Exception, e:
+    print "Exception raised: ", e
+
+  print '\nGet the indices for unique column_1 values'
+  indexer = table.index_map('column_1')
+  for key, indices in indexer.iteritems():
+    print key, [table[i] for i in indices]
 
   # Create table with nothing in
   table = Table()
