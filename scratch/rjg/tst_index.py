@@ -227,7 +227,7 @@ def exercise_5():
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.17, 0.17, 0.004)
+  expected_rmsds = (0.17, 0.20, 0.004)
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 2
 
