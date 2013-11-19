@@ -32,7 +32,7 @@ class RefinerFactory(object):
                                   crystal=None,
                                   crystals=None,
                                   verbosity=0):
-    """Given a set of parameters, experimental models and reflections, construct
+    """Given a set of parameters, reflections and experimental models, construct
     a refiner.
 
     Mandatory arguments:
