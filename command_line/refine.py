@@ -68,7 +68,7 @@ class Script(ScriptRunner):
     crystal = load.crystal(args[1])
     reflections = pickle.load(open(args[2], 'rb'))
 
-    refiner = RefinerFactory.from_parameters_models_data(params,
+    refiner = RefinerFactory.from_parameters_data_models(params,
         reflections, sweep, crystal=crystal, verbosity=options.verbosity)
 
     # Refine the geometry
