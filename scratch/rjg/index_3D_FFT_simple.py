@@ -169,7 +169,8 @@ deg_to_radians = math.pi/180
 class indexer(object):
 
   def __init__(self, reflections, sweep, params=None):
-    self.reflections = reflections
+    self.reflections_raw = reflections
+    self.reflections = reflections.deep_copy()
     # the lattice a given reflection belongs to: a value of -1 indicates
     # that a reflection doesn't belong to any lattice so far
     self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
@@ -184,11 +185,13 @@ class indexer(object):
     from libtbx.utils import time_log
     self._index_reflections_timer = time_log("index_reflections")
     self._refine_timer = time_log("refinement")
+    self._refine_core_timer = time_log("refinement_core")
     self._map_centroids_timer = time_log("map_centroids")
     self._map_to_grid_timer = time_log("map_to_grid")
     self._fft_timer = time_log("fft")
     self._find_peaks_timer = time_log("find_peaks")
     self._cluster_analysis_timer = time_log("cluster_analysis")
+    self._ray_intersection_timer = time_log("ray_intersection")
 
     self.target_symmetry_primitive = None
     self.target_symmetry_centred = None
@@ -370,6 +373,8 @@ class indexer(object):
       print self._cluster_analysis_timer.report()
       print self._index_reflections_timer.report()
       print self._refine_timer.report()
+      print self._refine_core_timer.report()
+      print self._ray_intersection_timer.report()
 
   def prepare_reflections(self):
     """Reflections that come from dials.spotfinder only have the centroid
@@ -1167,9 +1172,12 @@ class indexer(object):
     self._index_reflections_timer.stop()
 
   def refine(self, crystal_model):
+    self._refine_timer.start()
+    self._ray_intersection_timer.start()
     from dials.algorithms.spot_prediction import ray_intersection
     reflections_for_refinement = ray_intersection(
       self.detector, self.reflections.select(self.indexed_reflections))
+    self._ray_intersection_timer.stop()
     verbosity = self.params.refinement_protocol.verbosity
 
     scan_range_min = max(
@@ -1201,22 +1209,56 @@ class indexer(object):
         n_reject, suffix = plural_s(n_reject)
         print "Rejected %i reflection%s (weight outlier%s)" %(
           n_reject, suffix, suffix)
+    else:
+      sel = flex.bool(reflections_for_refinement.size(), True)
 
     params = self.params.refinement
 
-    self._refine_timer.start()
-    from dials.algorithms.refinement import RefinerFactory
-    refine = RefinerFactory.from_parameters(self.params, verbosity)
-    refine.prepare(sweep, crystal_model, reflections_for_refinement)
-    #rmsds = refine.rmsds()
-    refined = refine()
-    self._refine_timer.stop()
+    if 0:
+
+      from dials.algorithms.indexing import indexer
+      from dials_regression.indexing_test_data.i04_weak_data.run_indexing_api \
+           import outlier_main_procedure
+
+      from rstbx.phil.phil_preferences import indexing_api_defs
+      import iotbx.phil
+      hardcoded_phil = iotbx.phil.parse(
+        input_string=indexing_api_defs).extract()
+
+      from cctbx.crystal_orientation import crystal_orientation
+      triclinic_crystal = crystal_orientation(crystal_model.get_A(), True)
+
+      reflections = self.reflections_raw.select(self.indexed_reflections).select(sel)
+      refinery, refined_crystal, status = \
+        outlier_main_procedure(reflections,
+                               sweep.get_scan(), sweep.get_goniometer(),
+                               sweep.get_beam(), sweep.get_detector(),
+                               triclinic_crystal,
+        self.reciprocal_space_points.select(
+          self.indexed_reflections.select(self.reflections_in_scan_range)).select(sel),
+        hardcoded_phil)
+      self.sweep.set_goniometer(refinery.gonio)
+      self.sweep.set_beam(refinery.beam)
+      self.sweep.set_detector(refinery.detector)
+      crystal_model.set_B(refined_crystal.get_B())
+      crystal_model.set_U(refined_crystal.get_U())
+      assert crystal_model == refined_crystal
+
+    else:
+      self._refine_core_timer.start()
+      from dials.algorithms.refinement import RefinerFactory
+      refine = RefinerFactory.from_parameters(self.params, verbosity)
+      refine.prepare(sweep, crystal_model, reflections_for_refinement)
+      #rmsds = refine.rmsds()
+      refined = refine()
+      self._refine_core_timer.stop()
 
     if not (params.parameterisation.beam.fix == 'all'
             and params.parameterisation.detector.fix == 'all'):
       # Experimental geometry may have changed - re-map centroids to
       # reciprocal space
       self.map_centroids_to_reciprocal_space()
+    self._refine_timer.stop()
 
   def debug_show_candidate_basis_vectors(self):
 
