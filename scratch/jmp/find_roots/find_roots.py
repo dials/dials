@@ -1,3 +1,4 @@
+from __future__ import division
 
 
 def bisection(func, x0, x1, eps, max_iter=50):

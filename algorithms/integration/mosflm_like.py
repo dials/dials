@@ -1,3 +1,4 @@
+from __future__ import division
 class MosflmProfileFitting:
   def __init__(self, nblocks):
 

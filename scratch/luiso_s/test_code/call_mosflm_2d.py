@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.scratch.luiso_s.test_code.mosflm_2D import \
  fit_profile_2d, calc_background_n_make_2d_profile
 

@@ -1,3 +1,4 @@
+from __future__ import division
 def lorentz(m2, s0, s1):
   return abs(m2.dot(s1.cross(s0))) / (s1.length() * s0.length())
 

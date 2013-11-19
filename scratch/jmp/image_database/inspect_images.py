@@ -1,3 +1,4 @@
+from __future__ import division
 
 class ImageRecord(object):
   def __init__(self, filename=None, mtime=None, beam=None,

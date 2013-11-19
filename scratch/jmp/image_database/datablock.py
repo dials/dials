@@ -1,3 +1,4 @@
+from __future__ import division
 
 class ImageRecord(object):
   ''' Record for storing image metadata. '''

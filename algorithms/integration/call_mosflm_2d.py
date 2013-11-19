@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.algorithms.integration.mosflm_2D_profile import \
  fit_profile_2d, calc_background_n_make_2d_profile
 

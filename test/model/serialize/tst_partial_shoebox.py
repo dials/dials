@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.model.serialize.partial_shoebox import Reader, Writer
 
 class Test(object):

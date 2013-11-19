@@ -1,3 +1,4 @@
+from __future__ import division
 
 from dials.framework.toplevel import Interface
 

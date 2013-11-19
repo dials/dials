@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.framework import toplevel
 
 class SpotFinderInterface(toplevel.Interface):

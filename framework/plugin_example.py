@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.framework.plugin import Interface, Registry, abstractmethod
 
 class Integrator(object):
