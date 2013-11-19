@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include "qotree.h"
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
@@ -34,6 +35,7 @@ namespace dials { namespace algorithms {
     int h = box.y1 - box.y0;
     int d = box.z1 - box.z0;
     int min_d = (w < h ? (w < d ? w : d) : (h < d ? h : d));
+    DIALS_ASSERT(min_d > 0);
     return (std::size_t)floor(log2(min_d));
   }
 

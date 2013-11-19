@@ -151,7 +151,7 @@ namespace dials { namespace algorithms {
       // Then query the tree to get the list of elements that are contained
       // with the given range.
       const_node_pointer root = &node_list_.front();
-      if (compare<box_type, box_type>::contains(root->box, range)) {
+      if (compare<box_type, box_type>::collides(root->box, range)) {
         return query_range(range, elements, root);
       }
 
@@ -165,7 +165,7 @@ namespace dials { namespace algorithms {
       // Get the root node and ensure the object is contained within.
       // Then query the tree to get the list of elements that collide.
       const_node_pointer root = &node_list_.front();
-      if (compare<box_type, object_type>::contains(root->box, v)) {
+      if (compare<box_type, object_type>::collides(root->box, v)) {
         return query_collision(v, elements, root);
       }
 

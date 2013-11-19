@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include "qotree.h"
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
@@ -32,7 +33,9 @@ namespace dials { namespace algorithms {
   std::size_t maximum_depth<Box>(const Box &box) {
     int w = box.x1 - box.x0;
     int h = box.y1 - box.y0;
-    return (std::size_t)floor(log2(w < h ? w : h));
+    int min_d = w < h ? w : h;
+    DIALS_ASSERT(min_d > 0);
+    return (std::size_t)floor(log2(min_d));
   }
 
   /** Subdivide the box */

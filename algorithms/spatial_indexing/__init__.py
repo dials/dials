@@ -1,2 +1,3 @@
 from __future__ import division
-from dials_spatial_indexing_ext import *
+from dials.array_family import flex
+from dials_algorithms_spatial_indexing_ext import *

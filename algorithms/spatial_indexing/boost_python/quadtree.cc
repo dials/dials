@@ -102,8 +102,10 @@ namespace boost_python {
       if (a[i][1] < ymin) ymin = a[i][1];
       if (a[i][1] > ymax) ymax = a[i][1];
     }
-    af::int4 box((int)xmin, (int)xmax, (int)ymin, (int)ymax);
-    Quadtree< QuadtreeObject<ObjectType> > *qt = make_quadtree<ObjectType>(box, max_bucket_size);
+    af::int4 box((int)xmin, (int)xmax+1,
+                 (int)ymin, (int)ymax+1);
+    Quadtree< QuadtreeObject<ObjectType> > *qt =
+      make_quadtree<ObjectType>(box, max_bucket_size);
     for (std::size_t i = 0; i < a.size(); ++i) {
       qt->insert(QuadtreeObject<ObjectType>(a[i], i));
     }
@@ -125,13 +127,13 @@ namespace boost_python {
           arg("max_bucket_size") = 10)))
       .def("max_depth", &quadtree_type::max_depth)
       .def("query_range", &quadtree_query_range<ObjectType>)
-      .def("query_collision", &quadtree_query_collision<ObjectType>);
+      ;//.def("query_collision", &quadtree_query_collision<ObjectType>);
 
     def("make_spatial_index",
       &make_quadtree_from_list<ObjectType>,
         return_value_policy<manage_new_object>(), (
         arg("items"),
-        arg("max_bucket_size")));
+        arg("max_bucket_size") = 10));
   }
 
   void export_quadtree()

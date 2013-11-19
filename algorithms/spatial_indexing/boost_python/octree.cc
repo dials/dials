@@ -106,7 +106,8 @@ namespace boost_python {
       if (a[i][1] < zmin) zmin = a[i][2];
       if (a[i][1] > zmax) zmax = a[i][2];
     }
-    af::int6 box((int)xmin, (int)xmax, (int)ymin, (int)ymax, (int)zmin, (int)zmax);
+    af::int6 box((int)xmin, (int)xmax+1, (int)ymin,
+                 (int)ymax+1, (int)zmin, (int)zmax+1);
     Octree< OctreeObject<ObjectType> > *qt =
       make_octree<ObjectType>(box, max_bucket_size);
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -130,13 +131,13 @@ namespace boost_python {
           arg("max_bucket_size") = 10)))
       .def("max_depth", &octree_type::max_depth)
       .def("query_range", &octree_query_range<ObjectType>)
-      .def("query_collision", &octree_query_collision<ObjectType>);
+      ;//.def("query_collision", &octree_query_collision<ObjectType>);
 
     def("make_spatial_index",
       &make_octree_from_list<ObjectType>,
         return_value_policy<manage_new_object>(), (
         arg("items"),
-        arg("max_bucket_size")));
+        arg("max_bucket_size") = 10));
   }
 
   void export_octree()
