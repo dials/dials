@@ -151,7 +151,7 @@ namespace dials { namespace algorithms {
       // Then query the tree to get the list of elements that are contained
       // with the given range.
       const_node_pointer root = &node_list_.front();
-      if (compare<box_type, object_type>::contains(root->box, range)) {
+      if (compare<box_type, box_type>::contains(root->box, range)) {
         return query_range(range, elements, root);
       }
 
@@ -182,14 +182,15 @@ namespace dials { namespace algorithms {
     }
 
     /** Choose the sub-division to that the object is contained within */
-    size_type choose_subdivision(const object_type &v,
+    template <typename T>
+    size_type choose_subdivision(const T &v,
         const_node_pointer node) const {
       // Find the sub-division in which the element is contained. Return the
       // index of the sub-division. If no subdivision fully contains the
       // element, this will return NCHILD.
       size_type div;
       for (div = 0; div < NCHILD; ++div) {
-        if (compare<box_type, object_type>::contains(
+        if (compare<box_type, T>::contains(
             node->child[div]->box, v)) {
           break;
         }
@@ -322,7 +323,7 @@ namespace dials { namespace algorithms {
         append_contained_objects(range, elements, node);
         if (!node->is_leaf) {
           for (size_type i = 0; i < NCHILD; ++i) {
-            if (compare<box_type, object_type>::collides(
+            if (compare<box_type, box_type>::collides(
                 range, node->child[i]->box)) {
               stack.push(node->child[i]);
             }
@@ -342,7 +343,7 @@ namespace dials { namespace algorithms {
       // to the given object list.
       for (const_object_iterator it = node->bucket.begin();
           it != node->bucket.end(); ++it) {
-        if (compare<box_type, object_type>::collides(*it, v)) {
+        if (compare<object_type, object_type>::collides(*it, v)) {
           elements.push_back(*it);
         }
       }
