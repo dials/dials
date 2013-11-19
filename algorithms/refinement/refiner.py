@@ -10,8 +10,8 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-"""Refiner is the refinement module public interface. RefinerFactory is what
-should usually be used to construct a Refiner."""
+"""Refiner is the refinement module public interface. RefinerFactory is
+what should usually be used to construct a Refiner."""
 
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
@@ -20,7 +20,7 @@ class RefinerFactory(object):
   """Factory class to create refiners"""
 
   @staticmethod
-  def from_parameters_models_data(params,
+  def from_parameters_data_models(params,
                                   reflections,
                                   sweep=None,
                                   beam=None,
@@ -33,20 +33,56 @@ class RefinerFactory(object):
                                   crystals=None,
                                   verbosity=0):
     """Given a set of parameters, experimental models and reflections,
-    construct the refiner
+    construct the refiner.
 
-    Params:
-        params The input parameters
-        verbosity The verbosity level
+    Mandatory arguments:
+      params - The input parameters as a phil scope_extract object
+      reflections - input ReflectionList data
+
+    Argument alternatives:
+      sweep - Experimental models as a dxtbx sweep
+        or
+      /beam - A dxtbx Beam object
+      \detector - A dxtbx Detector object
+      crystal - A dials Crystal object
+        or
+      crystals - A list of dials Crystal objects
+
+    Optional arguments:
+      goniometer - A dxtbx Goniometer model
+      scan - A dxtbx Scan model
+        or
+      /image_width_rad - The 'width' of one image in radians
+      \sweep_range_rad - Pair of rotation scan extremes in radians
+      verbosity - An integer verbosity level
 
     Returns:
-        The refiner instance
+      The Refiner2 instance (to be renamed Refiner once the old
+      interface is no longer in use).
 
-    NB it is possible to have image_width_rad=None, sweep_range_rad=None
-    and scan=None and still do X, Y, Phi refinement, but in this case the
-    PHIL parameters should not specify reflections.reflections_per_degree
-    and must specify target.rmsd_cutoff=absolute.
+    Notes
+    -----
 
+    The interface is intended to be flexible by allowing input to be
+    passed in various forms. Some are incompatible, e.g. passing a sweep
+    alongside any other dxtbx model is disallowed. Either crystal or
+    crystals must be provided (but not both).
+
+    The optional arguments determine the behaviour of the refiner,
+    alongside the phil parameters. Of particular interest, the presence
+    of a goniometer model decides whether the refinement is of a
+    rotation scan, with a target expressed in (X, Y, Phi) space, or of
+    a still image, with an (X, Y) target. For a rotation scan, a Scan
+    object is optional. It is only used for some information, which may
+    be provided instead by using the image_width_rad and sweep_range_rad
+    arguments. It is even possible to specify none of image_width_rad,
+    sweep_range_rad or scan and still do (X, Y, Phi) refinement, but in
+    such a case the phil params should not specify
+    reflections.reflections_per_degree and must specify
+    target.rmsd_cutoff=absolute.
+
+    The steps performed by this factory function are:
+    * check for consistent input
     """
 
     # checks on the input
