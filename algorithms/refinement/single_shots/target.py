@@ -228,12 +228,13 @@ class ReflectionManagerXY(ReflectionManager):
     l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
 
     if self._verbosity > 2 and len(l) > 20 and not silent:
-      print "Listing predictions matched with observations for " + \
-            "the first 20 reflections:"
+
+      sl = self._sort_obs_by_residual(l)
+      print "Reflections with the worst 20 positional residuals:"
       print "H, K, L, Xresid, Yresid, weightXo, weightYo"
       fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
       for i in xrange(20):
-        e = l[i]
+        e = sl[i]
         msg = fmt % tuple(e.H + (e.Xresid,
                          e.Yresid,
                          e.weightXo,
