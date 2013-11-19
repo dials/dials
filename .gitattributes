@@ -610,6 +610,7 @@ test/algorithms/shoebox/tst_partial_extractor.py -text
 test/algorithms/spatial_indexing/tst_collision_detection.cc -text
 test/algorithms/spatial_indexing/tst_octree.cc -text
 test/algorithms/spatial_indexing/tst_quadtree.cc -text
+test/algorithms/spatial_indexing/tst_spatial_index.py -text
 test/algorithms/spot_prediction/tst_index_generator.py -text
 test/algorithms/spot_prediction/tst_ray_predictor.py -text
 test/algorithms/spot_prediction/tst_reeke.py -text

@@ -103,8 +103,8 @@ namespace boost_python {
       if (a[i][0] > xmax) xmax = a[i][0];
       if (a[i][1] < ymin) ymin = a[i][1];
       if (a[i][1] > ymax) ymax = a[i][1];
-      if (a[i][1] < zmin) zmin = a[i][2];
-      if (a[i][1] > zmax) zmax = a[i][2];
+      if (a[i][2] < zmin) zmin = a[i][2];
+      if (a[i][2] > zmax) zmax = a[i][2];
     }
     af::int6 box((int)xmin, (int)xmax+1, (int)ymin,
                  (int)ymax+1, (int)zmin, (int)zmax+1);
