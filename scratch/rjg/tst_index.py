@@ -76,7 +76,9 @@ class run_one_indexing(object):
     cwd = os.path.abspath(os.curdir)
     tmp_dir = open_tmp_directory(suffix="test_3DFFT_indexing")
     os.chdir(tmp_dir)
-    result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
+    command = " ".join(args)
+    print command
+    result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
     for i in range(n_expected_lattices):
       suffix = ""
@@ -113,7 +115,7 @@ class run_one_indexing(object):
 
 def exercise_1():
   # thaumatin
-  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "sweep_orig.json")
   extra_args = ["multiple_lattice_search=False", # use older non-clustering version
@@ -134,7 +136,7 @@ def exercise_2():
            " %s" * len(missing)) %(tuple(missing))
     return
   # thaumatin
-  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "sweep_orig.json")
   extra_args = ["multiple_lattice_search=True",
@@ -156,7 +158,7 @@ def exercise_3():
            " %s" * len(missing)) %(tuple(missing))
     return
   # thaumatin
-  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04-weak-data")
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "sweep_orig.json")
   extra_args = ["multiple_lattice_search=True",

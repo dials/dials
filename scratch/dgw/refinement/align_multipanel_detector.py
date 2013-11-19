@@ -20,7 +20,7 @@ All panels must also share the same fast, slow directions as the single panel
 detector.
 
 The origin and fast, slow directions of the single panel detector are hard-coded
-here. See dials_regression/refinement_test_data/i04-weak-data for the multi-
+here. See dials_regression/refinement_test_data/i04_weak_data for the multi-
 panel refinement test."""
 
 from __future__ import division
