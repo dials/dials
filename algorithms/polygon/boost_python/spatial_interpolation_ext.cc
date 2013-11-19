@@ -18,8 +18,8 @@ namespace dials { namespace algorithms { namespace polygon {
   namespace spatial_interpolation { namespace boost_python {
 
   using namespace boost::python;
-  
-  void export_spatial_interpolation() 
+
+  void export_spatial_interpolation()
   {
     class_<Match>("Match")
       .def(init<int, int, double>())
@@ -29,7 +29,7 @@ namespace dials { namespace algorithms { namespace polygon {
 
     def("irregular_grid_to_grid", &irregular_grid_to_grid);
     def("grid_to_irregular_grid", &grid_to_irregular_grid);
-    
+
     def("regrid_irregular_grid_to_grid", &regrid_irregular_grid_to_grid);
     def("regrid_grid_to_irregular_grid", &regrid_grid_to_irregular_grid);
   }

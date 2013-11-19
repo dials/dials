@@ -52,20 +52,25 @@ namespace dials { namespace algorithms {
     return Box3d(x00[i], y00[i], z00[i], x11[i], y11[i], z11[i]);
   }
 
-  /** Check if a box contains another box */
+  /** Comparison operations for Box3d/Box3d objects */
   template <>
-  bool contains<Box3d, Box3d>(const Box3d &box, const Box3d &v) {
-    return box.x0 <= v.x0 && box.y0 <= v.y0 && box.z0 <= v.z0
-        && box.x1 >= v.x1 && box.y1 >= v.y1 && box.z1 >= v.z1;
-  }
+  struct compare<Box3d, Box3d> {
 
-  /** Check collisions between boxes */
-  template <>
-  bool collides<Box3d, Box3d>(const Box3d &box, const Box3d &v) {
-    return !(box.x0 >= v.x1 || v.x0 >= box.x1
-          || box.y0 >= v.y1 || v.y0 >= box.y1
-          || box.z0 >= v.z1 || v.z0 >= box.z1);
-  }
+    /** Check if a box contains another box */
+    static
+    bool contains(const Box3d &box, const Box3d &v) {
+      return box.x0 <= v.x0 && box.y0 <= v.y0 && box.z0 <= v.z0
+          && box.x1 >= v.x1 && box.y1 >= v.y1 && box.z1 >= v.z1;
+    }
+
+    /** Check collisions between boxes */
+    static
+    bool collides(const Box3d &box, const Box3d &v) {
+      return !(box.x0 >= v.x1 || v.x0 >= box.x1
+            || box.y0 >= v.y1 || v.y0 >= box.y1
+            || box.z0 >= v.z1 || v.z0 >= box.z1);
+    }
+  };
 
   /**
    * A class implementing an octree. The class takes an object as template

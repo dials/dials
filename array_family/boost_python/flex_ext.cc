@@ -36,7 +36,7 @@ namespace dials { namespace af { namespace boost_python {
   std::string get_real_type<float>() {
     return "float";
   }
-  
+
   template <>
   std::string get_real_type<double>() {
     return "double";
@@ -53,9 +53,9 @@ namespace dials { namespace af { namespace boost_python {
     export_flex_observation();
     export_flex_prediction();
     export_flex_pixel_list();
-    
+
     def("get_real_type", &get_real_type<ProfileFloatType>);
-    
+
     scitbx::af::boost_python::c_grid_flex_conversions<double, af::c_grid<4> >();
   }
 

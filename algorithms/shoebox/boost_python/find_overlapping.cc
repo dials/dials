@@ -21,7 +21,7 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   void export_find_overlapping()
   {
-    def("find_overlapping", 
+    def("find_overlapping",
       &find_overlapping, (arg("reflection_list")));
   }
 

@@ -62,7 +62,7 @@ namespace dials { namespace refinement { namespace boost_python {
       mat3 <double>, mat3 <double>, mat3 <double>, miller_index) =
         &crystal_cell_r_derivative;
 
-    af::shared< vec3<double> > (*crystal_cell_r_derivative_array)(mat3 <double>, 
+    af::shared< vec3<double> > (*crystal_cell_r_derivative_array)(mat3 <double>,
       mat3 <double>, const af::const_ref< mat3<double> >&, miller_index) =
         &crystal_cell_r_derivative;
 
@@ -79,7 +79,7 @@ namespace dials { namespace refinement { namespace boost_python {
         &crystal_cell_pv_derivative;
 
     af::shared< vec3<double> > (*crystal_cell_pv_derivative_array)(
-      mat3 <double>, const af::const_ref< vec3<double> >&, vec3 <double>, 
+      mat3 <double>, const af::const_ref< vec3<double> >&, vec3 <double>,
       const af::const_ref<double>&) = &crystal_cell_pv_derivative;
 
     def("detector_pv_derivative",

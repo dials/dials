@@ -20,10 +20,10 @@ namespace dials { namespace algorithms { namespace polygon {
   using namespace boost::python;
 
   using scitbx::vec2;
-  
-  void export_area() 
+
+  void export_area()
   {
-    def("simple_area", 
+    def("simple_area",
       &simple_area< af::shared< vec2<double> > >, (
         arg("poly")));
   }

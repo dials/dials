@@ -21,7 +21,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   public:
     XdsCircleSamplerIterator(const XdsCircleSampler &obj, int index)
       : obj_(obj), index_(index) {}
-      
+
     typedef double3 value_type;
     typedef int difference_type;
     typedef double3 reference;
@@ -30,27 +30,27 @@ namespace dials { namespace algorithms { namespace boost_python {
     value_type operator*() { return obj_[index_]; }
     XdsCircleSamplerIterator operator++() { ++index_; return *this; }
     XdsCircleSamplerIterator operator--() { --index_; return *this; }
-    XdsCircleSamplerIterator operator++(int) { 
+    XdsCircleSamplerIterator operator++(int) {
       XdsCircleSamplerIterator result(obj_, index_);
-      ++(*this); 
-      return result; 
+      ++(*this);
+      return result;
     }
     XdsCircleSamplerIterator operator--(int) {
       XdsCircleSamplerIterator result(obj_, index_);
-      --(*this); 
-      return result; 
+      --(*this);
+      return result;
     }
-    bool operator==(const XdsCircleSamplerIterator& rhs) { 
-      return index_ == rhs.index_; 
+    bool operator==(const XdsCircleSamplerIterator& rhs) {
+      return index_ == rhs.index_;
     }
-    bool operator!=(const XdsCircleSamplerIterator& rhs) { 
-      return index_ == rhs.index_; 
+    bool operator!=(const XdsCircleSamplerIterator& rhs) {
+      return index_ == rhs.index_;
     }
   private:
     const XdsCircleSampler &obj_;
     int index_;
   };
-  
+
   XdsCircleSamplerIterator xds_sampler_begin(const XdsCircleSampler &obj) {
     return XdsCircleSamplerIterator(obj, 0);
   }
@@ -58,7 +58,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   XdsCircleSamplerIterator xds_sampler_end(const XdsCircleSampler &obj) {
     return XdsCircleSamplerIterator(obj, obj.size());
   }
-  
+
   struct XdsCircleSamplerPickleSuite : boost::python::pickle_suite {
     static
     boost::python::tuple getinitargs(const XdsCircleSampler &obj) {

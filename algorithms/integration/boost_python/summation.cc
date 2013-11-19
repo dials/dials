@@ -24,7 +24,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void summation_wrapper(const char *name)
   {
     typedef Summation<FloatType> SummationType;
-  
+
     class_ <SummationType> ("Summation", no_init)
       .def(init <const af::const_ref<FloatType>&,
                  const af::const_ref<FloatType>&>((
@@ -56,26 +56,26 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("signal"),
           arg("background"),
           arg("mask"))))
-      .def("intensity", 
+      .def("intensity",
         &SummationType::intensity)
-      .def("variance", 
+      .def("variance",
         &SummationType::variance)
-      .def("standard_deviation", 
+      .def("standard_deviation",
         &SummationType::standard_deviation)
-      .def("signal_intensity", 
+      .def("signal_intensity",
         &SummationType::signal_intensity)
-      .def("signal_variance", 
+      .def("signal_variance",
         &SummationType::signal_variance)
-      .def("signal_standard_deviation", 
+      .def("signal_standard_deviation",
         &SummationType::signal_standard_deviation)
-      .def("background_intensity", 
+      .def("background_intensity",
         &SummationType::background_intensity)
-      .def("background_variance", 
+      .def("background_variance",
         &SummationType::background_variance)
-      .def("background_standard_deviation", 
+      .def("background_standard_deviation",
         &SummationType::background_standard_deviation);
   }
-  
+
   template <typename FloatType>
   Summation<FloatType> make_summation_1d(
     const af::const_ref<FloatType> &image,
@@ -105,7 +105,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     const af::const_ref<bool, af::c_grid<2> > &mask) {
     return Summation<FloatType>(image, background, mask);
   }
-  
+
   template <typename FloatType>
   Summation<FloatType> make_summation_3d(
     const af::const_ref<FloatType, af::c_grid<3> > &image,
@@ -124,40 +124,40 @@ namespace dials { namespace algorithms { namespace boost_python {
   template <typename FloatType>
   void summation_suite() {
 
-    def("integrate_by_summation", 
+    def("integrate_by_summation",
       &make_summation_1d<FloatType>, (
         arg("image"),
         arg("background")));
-        
-    def("integrate_by_summation", 
+
+    def("integrate_by_summation",
       &make_summation_1d_bg<FloatType>, (
         arg("image"),
         arg("background"),
         arg("mask")));
-        
-    def("integrate_by_summation", 
+
+    def("integrate_by_summation",
       &make_summation_2d<FloatType>, (
         arg("image"),
         arg("background")));
 
-    def("integrate_by_summation", 
+    def("integrate_by_summation",
       &make_summation_2d_bg<FloatType>, (
         arg("image"),
         arg("background"),
         arg("mask")));
-        
-    def("integrate_by_summation", 
+
+    def("integrate_by_summation",
       &make_summation_3d<FloatType>, (
         arg("image"),
         arg("background")));
 
-    def("integrate_by_summation", 
+    def("integrate_by_summation",
       &make_summation_3d_bg<FloatType>, (
         arg("image"),
         arg("background"),
         arg("mask")));
   }
-  
+
   void summation_with_reflection(Reflection &r) {
 
     af::const_ref< int, af::c_grid<3> > shoebox_mask =
@@ -191,16 +191,16 @@ namespace dials { namespace algorithms { namespace boost_python {
       }
     }
   }
-  
+
   void export_summation() {
     summation_wrapper<float>("SummationFloat");
     summation_wrapper<double>("SummationDouble");
 
     summation_suite<float>();
     summation_suite<double>();
-    
+
     def("integrate_by_summation", &summation_with_reflection);
-    def("integrate_by_summation", &summation_with_reflection_list);  
+    def("integrate_by_summation", &summation_with_reflection_list);
   }
 
 }}} // namespace = dials::algorithms::boost_python

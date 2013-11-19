@@ -22,11 +22,11 @@ namespace dials { namespace algorithms { namespace boost_python {
       scitbx::vec3 <double>) const = &RotationAngles::operator();
 
     scitbx::vec2 <double> (RotationAngles::*calculate_miller) (
-      cctbx::miller::index <>, scitbx::mat3 <double>) const = 
+      cctbx::miller::index <>, scitbx::mat3 <double>) const =
         &RotationAngles::operator();
 
     class_ <RotationAngles> ("RotationAngles", no_init)
-      .def(init <scitbx::vec3 <double>, 
+      .def(init <scitbx::vec3 <double>,
                  scitbx::vec3 <double> > ((
         arg("beam_direction"),
         arg("rotation_axis"))))

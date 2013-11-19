@@ -21,7 +21,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   public:
     GridSamplerIterator(const GridSampler &obj, int index)
       : obj_(obj), index_(index) {}
-      
+
     typedef double3 value_type;
     typedef int difference_type;
     typedef double3 reference;
@@ -32,25 +32,25 @@ namespace dials { namespace algorithms { namespace boost_python {
     GridSamplerIterator operator--() { --index_; return *this; }
     GridSamplerIterator operator++(int) {
       GridSamplerIterator result(obj_, index_);
-      ++(*this); 
-      return result; 
+      ++(*this);
+      return result;
     }
     GridSamplerIterator operator--(int) {
       GridSamplerIterator result(obj_, index_);
-      ++(*this); 
-      return result; 
+      ++(*this);
+      return result;
     }
-    bool operator==(const GridSamplerIterator& rhs) { 
-      return index_ == rhs.index_; 
+    bool operator==(const GridSamplerIterator& rhs) {
+      return index_ == rhs.index_;
     }
-    bool operator!=(const GridSamplerIterator& rhs) { 
-      return index_ == rhs.index_; 
+    bool operator!=(const GridSamplerIterator& rhs) {
+      return index_ == rhs.index_;
     }
   private:
     const GridSampler &obj_;
     int index_;
   };
-  
+
   GridSamplerIterator grid_sampler_begin(const GridSampler &obj) {
     return GridSamplerIterator(obj, 0);
   }

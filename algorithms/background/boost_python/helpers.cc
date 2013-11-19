@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_helpers()
   {
-    def("set_shoebox_background_value", 
+    def("set_shoebox_background_value",
       &set_shoebox_background_value, (
         arg("reflections"), arg("value")));
   }

@@ -19,9 +19,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   void profile_fitting_wrapper(const char *name) {
-  
+
     typedef ProfileFitting<FloatType> ProfileFittingType;
-  
+
     class_<ProfileFittingType>(name, no_init)
       .def(init<const af::const_ref<FloatType, af::c_grid<3> >&,
                 const af::const_ref<FloatType, af::c_grid<3> >&,
@@ -38,7 +38,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("niter", &ProfileFittingType::niter)
       .def("error", &ProfileFittingType::error);
   }
-  
+
   template <typename FloatType>
   ProfileFitting<FloatType> make_profile_fitting(
       const af::const_ref<FloatType, af::c_grid<3> > &p,
@@ -46,7 +46,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       const af::const_ref<FloatType, af::c_grid<3> > &b,
       double eps,
       std::size_t max_iter) {
-    return ProfileFitting<FloatType>(p, c, b, eps, max_iter); 
+    return ProfileFitting<FloatType>(p, c, b, eps, max_iter);
   }
 
   template <typename FloatType>
@@ -60,7 +60,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     profile_fitting_wrapper<float>("ProfileFittingFloat");
     profile_fitting_wrapper<double>("ProfileFittingDouble");
-    
+
     profile_fitting_suite<float>();
     profile_fitting_suite<double>();
   }

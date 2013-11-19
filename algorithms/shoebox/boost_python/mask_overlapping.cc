@@ -20,9 +20,9 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_mask_overlapping()
   {
     class_ <MaskOverlapping> ("MaskOverlapping")
-      .def("__call__", 
+      .def("__call__",
         &MaskOverlapping::operator(), (
-          arg("reflection_list"), 
+          arg("reflection_list"),
           arg("adjacency_list")));
   }
 

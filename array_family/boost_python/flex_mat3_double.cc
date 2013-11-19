@@ -20,7 +20,7 @@ namespace scitbx { namespace serialization { namespace single_buffered {
       to_string(to_string(to_string(
         to_string(to_string(to_string(
           to_string(to_string(to_string(
-            start, value[0]), value[1]), value[2]), 
+            start, value[0]), value[1]), value[2]),
               value[0]), value[1]), value[2]),
                 value[0]), value[1]), value[2]);
   }
@@ -66,7 +66,7 @@ namespace {
   {
     SCITBX_ASSERT(x.size() % 9 == 0);
     std::size_t result_size = x.size() / 9;
-    scitbx::af::shared<scitbx::mat3<double> > result(result_size, 
+    scitbx::af::shared<scitbx::mat3<double> > result(result_size,
       scitbx::af::init_functor_null< scitbx::mat3<double> >());
     const double* d = x.begin();
     for(std::size_t i=0;i<result_size;i++) {

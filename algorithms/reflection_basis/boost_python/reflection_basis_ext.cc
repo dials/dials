@@ -17,16 +17,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   using namespace boost::python;
 
-  void export_coordinate_system() 
+  void export_coordinate_system()
   {
-    // Export zeta factor functions       
-    def("zeta_factor", 
-      (double (*)(vec3<double>, vec3<double>, vec3<double>))&zeta_factor, 
+    // Export zeta factor functions
+    def("zeta_factor",
+      (double (*)(vec3<double>, vec3<double>, vec3<double>))&zeta_factor,
       (arg("m2"), arg("s0"), arg("s1")));
-    def("zeta_factor", 
-      (double (*)(vec3<double>, vec3<double>))&zeta_factor, 
+    def("zeta_factor",
+      (double (*)(vec3<double>, vec3<double>))&zeta_factor,
       (arg("m2"), arg("e1")));
-  
+
     // Export coordinate system
     class_<CoordinateSystem>("CoordinateSystem", no_init)
       .def(init<vec3<double>,
@@ -50,21 +50,21 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       .def("lorentz", &CoordinateSystem::lorentz)
       .def("path_length_increase", &CoordinateSystem::path_length_increase)
       .def("limits", &CoordinateSystem::limits)
-      .def("from_beam_vector", 
+      .def("from_beam_vector",
         &CoordinateSystem::from_beam_vector)
-      .def("from_rotation_angle", 
+      .def("from_rotation_angle",
         &CoordinateSystem::from_rotation_angle)
-      .def("from_rotation_angle_fast", 
+      .def("from_rotation_angle_fast",
         &CoordinateSystem::from_rotation_angle_fast)
-      .def("from_beam_vector_and_rotation_angle", 
+      .def("from_beam_vector_and_rotation_angle",
         &CoordinateSystem::from_beam_vector_and_rotation_angle)
-      .def("to_beam_vector", 
+      .def("to_beam_vector",
         &CoordinateSystem::to_beam_vector)
-      .def("to_rotation_angle", 
+      .def("to_rotation_angle",
         &CoordinateSystem::to_rotation_angle)
-      .def("to_rotation_angle_fast", 
+      .def("to_rotation_angle_fast",
         &CoordinateSystem::to_rotation_angle_fast)
-      .def("to_beam_vector_and_rotation_angle", 
+      .def("to_beam_vector_and_rotation_angle",
         &CoordinateSystem::to_beam_vector_and_rotation_angle);
   }
 

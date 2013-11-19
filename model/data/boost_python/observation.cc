@@ -19,57 +19,57 @@ namespace dials { namespace model { namespace boost_python {
   using namespace boost::python;
   using scitbx::vec2;
   using scitbx::vec3;
- 
+
   /** Wrapper function to get the xy pixel coordinate */
   static
   vec2<double> centroid_get_px_xy(const Centroid &obj) {
     return vec2<double>(obj.px.position[0], obj.px.position[1]);
   }
-  
+
   /** Wrapper function to set the xy pixel coordinate */
   static
   void centroid_set_px_xy(Centroid &obj, vec2<double> v) {
     obj.px.position[0] = v[0];
     obj.px.position[1] = v[1];
   }
-  
+
   /** Wrapper function to get the frame */
   static
   double centroid_get_frame(const Centroid &obj) {
     return obj.px.position[2];
   }
-  
+
   /** Wrapper function to set the frame */
   static
   void centroid_set_frame(Centroid &obj, double v) {
     obj.px.position[2] = v;
   }
-  
+
   /** Wrapper function to get the millimeter xy coordinate */
   static
   vec2<double> centroid_get_mm_xy(const Centroid &obj) {
     return vec2<double>(obj.mm.position[0], obj.mm.position[1]);
   }
-  
+
   /** Wrapper function to set the millimeter xy coordinate */
   static
   void centroid_set_mm_xy(Centroid &obj, vec2<double> v) {
     obj.mm.position[0] = v[0];
     obj.mm.position[1] = v[1];
   }
-  
+
   /** Wrapper function to get the angle */
   static
   double centroid_get_angle(const Centroid &obj) {
     return obj.mm.position[2];
   }
-  
+
   /** Wrapper function to set the angle */
   static
   void centroid_set_angle(Centroid &obj, double v) {
     obj.mm.position[2] = v;
   }
-      
+
   void export_observation()
   {
     class_<Intensity::IntensityData>("IntensityData")
@@ -80,7 +80,7 @@ namespace dials { namespace model { namespace boost_python {
       .def_readwrite("variance", &Intensity::IntensityData::variance)
       .def("__eq__", &Intensity::IntensityData::operator==)
       .def("__ne__", &Intensity::IntensityData::operator!=);
-    
+
     class_<Intensity>("Intensity")
       .def(init<double, double>((
         arg("observed_value"),
@@ -93,7 +93,7 @@ namespace dials { namespace model { namespace boost_python {
       .def(init<const Intensity::IntensityData&>((
         arg("observed"))))
       .def(init<
-          const Intensity::IntensityData&, 
+          const Intensity::IntensityData&,
           const Intensity::IntensityData&>((
         arg("observed"),
         arg("corrected"))))
@@ -107,24 +107,24 @@ namespace dials { namespace model { namespace boost_python {
         arg("position"),
         arg("variance"),
         arg("std_err_sq"))))
-      .add_property("position", 
-        make_getter(&Centroid::CentroidData::position, 
+      .add_property("position",
+        make_getter(&Centroid::CentroidData::position,
           return_value_policy<return_by_value>()),
         make_setter(&Centroid::CentroidData::position,
           return_value_policy<return_by_value>()))
-      .add_property("variance", 
-        make_getter(&Centroid::CentroidData::variance, 
+      .add_property("variance",
+        make_getter(&Centroid::CentroidData::variance,
           return_value_policy<return_by_value>()),
-        make_setter(&Centroid::CentroidData::variance, 
+        make_setter(&Centroid::CentroidData::variance,
           return_value_policy<return_by_value>()))
       .add_property("std_err_sq",
-        make_getter(&Centroid::CentroidData::std_err_sq, 
+        make_getter(&Centroid::CentroidData::std_err_sq,
           return_value_policy<return_by_value>()),
-        make_setter(&Centroid::CentroidData::std_err_sq, 
+        make_setter(&Centroid::CentroidData::std_err_sq,
           return_value_policy<return_by_value>()))
       .def("__eq__", &Centroid::CentroidData::operator==)
       .def("__ne__", &Centroid::CentroidData::operator!=);
-      
+
     class_<Centroid>("Centroid")
       .def(init<vec3<double>, vec3<double>, vec3<double> >((
         arg("px_position"),
@@ -137,7 +137,7 @@ namespace dials { namespace model { namespace boost_python {
         arg("px_std_err_sq"),
         arg("mm_position"),
         arg("mm_variance"),
-        arg("mm_std_err_sq"))))   
+        arg("mm_std_err_sq"))))
       .def(init<const Centroid::CentroidData&>((
         arg("px"))))
       .def(init<const Centroid::CentroidData&, const Centroid::CentroidData&>((
@@ -157,23 +157,23 @@ namespace dials { namespace model { namespace boost_python {
       .add_property("angle",
         &centroid_get_angle,
         &centroid_set_angle)
-      .def("update_mm", 
+      .def("update_mm",
         (void(Centroid::*)(const Detector&,const Scan&))
         &Centroid::update_mm, (
           arg("detector"),
           arg("scan")))
-      .def("update_mm", 
+      .def("update_mm",
         (void(Centroid::*)(std::size_t,const Detector&,const Scan&))
         &Centroid::update_mm, (
           arg("panel"),
           arg("detector"),
           arg("scan")))
-      .def("resolution", 
+      .def("resolution",
         (double(Centroid::*)(const Beam &, const Detector&)const)
         &Centroid::resolution, (
           arg("beam"),
           arg("detector")))
-      .def("resolution", 
+      .def("resolution",
         (double(Centroid::*)(std::size_t,const Beam&,const Detector&)const)
         &Centroid::resolution, (
           arg("panel"),
@@ -181,7 +181,7 @@ namespace dials { namespace model { namespace boost_python {
           arg("detector")))
       .def("__eq__", &Centroid::operator==)
       .def("__ne__", &Centroid::operator!=);
-    
+
     class_<Observation>("Observation")
       .def(init<const Observation&>())
       .def(init<const Centroid&>((
@@ -206,11 +206,11 @@ namespace dials { namespace model { namespace boost_python {
       .def_readwrite("panel", &Observation::panel)
       .def_readwrite("centroid", &Observation::centroid)
       .def_readwrite("intensity", &Observation::intensity)
-      .def("update_centroid_mm", 
+      .def("update_centroid_mm",
         &Observation::update_centroid_mm, (
           arg("detector"),
           arg("scan")))
-      .def("resolution", 
+      .def("resolution",
         &Observation::resolution, (
           arg("beam"),
           arg("detector")))

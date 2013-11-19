@@ -19,7 +19,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   void export_map_frames();
   void export_beam_vector_map();
   void export_index_generator();
-  void export_ideal_profile();  
+  void export_ideal_profile();
   void export_transform();
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_transform_ext)

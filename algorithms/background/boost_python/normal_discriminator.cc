@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   bool is_normally_distributed_wrapper(
-      const af::const_ref<FloatType> &data, 
+      const af::const_ref<FloatType> &data,
       double n_sigma) {
     if (n_sigma <= 0) {
       return is_normally_distributed(data);
@@ -28,23 +28,23 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   void normal_discriminator_suite() {
-    
-    def("maximum_n_sigma", 
+
+    def("maximum_n_sigma",
       &maximum_n_sigma<FloatType>, (
         arg("data")));
-  
-    def("minimum_n_sigma", 
+
+    def("minimum_n_sigma",
       &minimum_n_sigma<FloatType>, (
         arg("data")));
-  
-    def("absolute_maximum_n_sigma", 
+
+    def("absolute_maximum_n_sigma",
       &maximum_n_sigma<FloatType>, (
         arg("data")));
-  
-    def("is_normally_distributed", 
+
+    def("is_normally_distributed",
       &is_normally_distributed_wrapper<FloatType>, (
-        arg("data"), 
-        arg("n_sigma") = -1));   
+        arg("data"),
+        arg("n_sigma") = -1));
   }
 
   template <typename FloatType>
@@ -58,39 +58,39 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_normal_discriminator()
   {
     typedef Reflection::float_type FloatType;
-  
-    def("normal_expected_n_sigma", 
+
+    def("normal_expected_n_sigma",
       &normal_expected_n_sigma, (
         arg("n_obs")));
-  
+
     normal_discriminator_suite<float>();
     normal_discriminator_suite<double>();
 
-    NDOperator<float>::with_mask call_with_mask_float = 
+    NDOperator<float>::with_mask call_with_mask_float =
       &NormalDiscriminator::operator()<float>;
-    NDOperator<double>::with_mask call_with_mask_double = 
+    NDOperator<double>::with_mask call_with_mask_double =
       &NormalDiscriminator::operator()<double>;
-    NDOperator<float>::without_mask call_without_mask_float = 
+    NDOperator<float>::without_mask call_without_mask_float =
       &NormalDiscriminator::operator()<float>;
-    NDOperator<double>::without_mask call_without_mask_double = 
+    NDOperator<double>::without_mask call_without_mask_double =
       &NormalDiscriminator::operator()<double>;
 
     class_<NormalDiscriminator>("NormalDiscriminator", no_init)
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
         arg("n_sigma") = 3.0)))
-      .def("__call__", 
+      .def("__call__",
         call_with_mask_float, (
           arg("shoebox"),
           arg("mask")))
-      .def("__call__", 
+      .def("__call__",
         call_with_mask_double, (
           arg("shoebox"),
           arg("mask")))
-      .def("__call__", 
+      .def("__call__",
         call_without_mask_float, (
           arg("shoebox")))
-      .def("__call__", 
+      .def("__call__",
         call_without_mask_double, (
           arg("shoebox")));
   }

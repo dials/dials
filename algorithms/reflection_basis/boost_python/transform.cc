@@ -18,7 +18,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using namespace boost::python;
 
   template <typename FloatType>
-  boost::shared_ptr< TransformSpec<FloatType> > 
+  boost::shared_ptr< TransformSpec<FloatType> >
     init_forward_from_sweep_and_crystal(
       PyObject *sweep, PyObject *crystal,
       double nsigma, std::size_t grid_size) {
@@ -31,7 +31,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         call_method<double>(crystal, "get_mosaicity", false),
         nsigma, grid_size));
   }
-  
+
   static
   Forward<Reflection::float_type> forward_with_reflection(
       const TransformSpec<Reflection::float_type> &spec,
@@ -41,11 +41,11 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     vec3<double> s1 = reflection.get_beam_vector();
     double phi = reflection.get_rotation_angle();
     int6 bbox = reflection.get_bounding_box();
-    
+
     // Get the shoebox data
-    af::const_ref< Reflection::float_type, af::c_grid<3> > shoebox = 
+    af::const_ref< Reflection::float_type, af::c_grid<3> > shoebox =
       reflection.get_shoebox().const_ref();
-    af::const_ref< Reflection::float_type, af::c_grid<3> > background = 
+    af::const_ref< Reflection::float_type, af::c_grid<3> > background =
       reflection.get_shoebox_background().const_ref();
     af::const_ref< int, af::c_grid<3> > shoebox_mask =
       reflection.get_shoebox_mask().const_ref();
@@ -58,10 +58,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     // Do the transform
     if (with_background) {
-      return Forward<Reflection::float_type>(spec, s1, phi, bbox, shoebox, 
+      return Forward<Reflection::float_type>(spec, s1, phi, bbox, shoebox,
         background, mask.const_ref());
     } else {
-      return Forward<Reflection::float_type>(spec, s1, phi, bbox, shoebox, 
+      return Forward<Reflection::float_type>(spec, s1, phi, bbox, shoebox,
         mask.const_ref());
     }
   }
@@ -80,7 +80,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
       }
     }
   }
-    
+
   template <typename FloatType>
   void forward_wrapper(const char *name) {
 
@@ -88,8 +88,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     typedef TransformSpec<FloatType> TransformSpecType;
 
     class_<TransformSpecType>("TransformSpec", no_init)
-      .def(init<const Beam &, const Detector &, 
-                const Goniometer &, const Scan &, 
+      .def(init<const Beam &, const Detector &,
+                const Goniometer &, const Scan &,
                 double, double, std::size_t>())
       .def("__init__", make_constructor(
         &init_forward_from_sweep_and_crystal<FloatType>))
@@ -128,9 +128,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   void export_transform() {
 
     forward_wrapper<Reflection::float_type>("Forward");
-      
+
     def("forward", &forward_with_reflection);
     def("forward_batch", &forward_batch);
   }
-  
+
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

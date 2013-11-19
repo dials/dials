@@ -36,7 +36,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     std::size_t npanels = boost::python::len(mask);
     DIALS_ASSERT(npanels > 0);
     DIALS_ASSERT(boost::python::len(gain) == npanels);
-    DIALS_ASSERT(boost::python::len(dark) == npanels);    
+    DIALS_ASSERT(boost::python::len(dark) == npanels);
 
     // Get the shape of all the panels into an array and check the size of
     // each is consistent. Get the total array size needed
@@ -54,7 +54,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       shape[i][1] = m.accessor().all()[1];
       size += m.size();
     }
-    
+
     // Construct the 1D arrays
     af::shared<bool> mask_1d(size, af::init_functor_null<bool>());
     af::shared<FloatType> gain_1d(size, af::init_functor_null<FloatType>());
@@ -68,11 +68,11 @@ namespace dials { namespace algorithms { namespace shoebox {
         mask_1d[k] = m[j];
         gain_1d[k] = g[j];
         dark_1d[k] = d[j];
-      }  
+      }
     }
-    
+
     // Return the new extractor object
-    return new Extractor<FloatType>(panels, bboxes, mask_1d, 
+    return new Extractor<FloatType>(panels, bboxes, mask_1d,
       gain_1d, dark_1d, shape);
   }
 
@@ -81,13 +81,13 @@ namespace dials { namespace algorithms { namespace shoebox {
    */
   template <typename FloatType>
   Extractor<FloatType>* make_for_single_panel(
-      const af::const_ref<int6> bboxes, 
+      const af::const_ref<int6> bboxes,
       af::versa< bool, scitbx::af::flex_grid<> > mask,
       af::versa< FloatType, scitbx::af::flex_grid<> > gain,
       af::versa< FloatType, scitbx::af::flex_grid<> > dark) {
     af::c_grid<2> accessor(mask.accessor());
     return new Extractor<FloatType>(
-      bboxes, 
+      bboxes,
       af::versa< bool, af::c_grid<2> >(mask.handle(), accessor),
       af::versa< FloatType, af::c_grid<2> >(gain.handle(), accessor),
       af::versa< FloatType, af::c_grid<2> >(dark.handle(), accessor));
@@ -110,7 +110,7 @@ namespace dials { namespace algorithms { namespace shoebox {
           arg("dark"),
           arg("shape"))))
       .def("__init__", make_constructor(
-        &make_for_multi_panel<FloatType>, 
+        &make_for_multi_panel<FloatType>,
         default_call_policies(), (
           arg("panels"),
           arg("bboxes"),
@@ -118,20 +118,20 @@ namespace dials { namespace algorithms { namespace shoebox {
           arg("gain"),
           arg("dark"))))
       .def("__init__", make_constructor(
-        &make_for_single_panel<FloatType>, 
+        &make_for_single_panel<FloatType>,
         default_call_policies(), (
           arg("bboxes"),
           arg("mask"),
           arg("gain"),
           arg("dark"))))
       .def("add_image", &Extractor<FloatType>::add_image, (
-        arg("panel"), 
-        arg("frame"), 
+        arg("panel"),
+        arg("frame"),
         arg("image")))
       .def("indices", &Extractor<FloatType>::indices)
       .def("shoeboxes", &Extractor<FloatType>::shoeboxes);
   }
-  
+
   void export_extractor() {
     extractor_wrapper<ProfileFloatType>("Extractor");
   }

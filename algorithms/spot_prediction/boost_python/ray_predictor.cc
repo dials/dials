@@ -31,7 +31,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     reflection_list_type (RayPredictor::*predict_single)(
       miller_index, mat3 <double>) const = &RayPredictor::operator();
     reflection_list_type (RayPredictor::*predict_array)(
-      const af::const_ref<miller_index> &, mat3 <double>) const = 
+      const af::const_ref<miller_index> &, mat3 <double>) const =
         &RayPredictor::operator();
 
     // Create and return the wrapper for the spot predictor object

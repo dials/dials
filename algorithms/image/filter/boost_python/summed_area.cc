@@ -18,18 +18,18 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename T>
   void summed_area_suite() {
-    
-    def("summed_area_table", 
+
+    def("summed_area_table",
       &summed_area_table<T>, (
         arg("image")));
-    
-    def("summed_area", 
+
+    def("summed_area",
       &summed_area<T>, (
-        arg("image"), 
-        arg("size")));  
+        arg("image"),
+        arg("size")));
   }
 
-  void export_summed_area() 
+  void export_summed_area()
   {
     summed_area_suite<int>();
     summed_area_suite<float>();

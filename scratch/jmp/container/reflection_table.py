@@ -2,7 +2,9 @@
 from table import Table
 
 class ReflectionTable(Table):
-  pass
+
+  def spatial_index_map(self, column):
+    pass
 
 
 if __name__ == '__main__':

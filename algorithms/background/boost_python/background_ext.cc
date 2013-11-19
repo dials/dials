@@ -17,7 +17,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_helpers();
   void export_normal_discriminator();
-  void export_poisson_discriminator();  
+  void export_poisson_discriminator();
   void export_xds_subtractor();
   void export_fable_subtractor();
   void export_lui_2d_background();

@@ -19,16 +19,16 @@ namespace dials { namespace algorithms { namespace boost_python {
   template <typename FloatType>
   void poisson_discriminator_suite() {
 
-    def("moment", 
+    def("moment",
       &moment<FloatType>, (
-        arg("data"), 
-        arg("centre"), 
+        arg("data"),
+        arg("centre"),
         arg("k")));
-  
-    def("is_poisson_distributed", 
+
+    def("is_poisson_distributed",
       &is_poisson_distributed<FloatType>, (
-        arg("data"), 
-        arg("n_sigma")));  
+        arg("data"),
+        arg("n_sigma")));
   }
 
   template <typename FloatType>
@@ -43,35 +43,35 @@ namespace dials { namespace algorithms { namespace boost_python {
   {
     poisson_discriminator_suite<float>();
     poisson_discriminator_suite<double>();
-    
-    PDOperator<float>::with_mask call_with_mask_float = 
+
+    PDOperator<float>::with_mask call_with_mask_float =
       &PoissonDiscriminator::operator()<float>;
-    PDOperator<double>::with_mask call_with_mask_double = 
+    PDOperator<double>::with_mask call_with_mask_double =
       &PoissonDiscriminator::operator()<double>;
-    PDOperator<float>::without_mask call_without_mask_float = 
+    PDOperator<float>::without_mask call_without_mask_float =
       &PoissonDiscriminator::operator()<float>;
-    PDOperator<double>::without_mask call_without_mask_double = 
+    PDOperator<double>::without_mask call_without_mask_double =
       &PoissonDiscriminator::operator()<double>;
-    
+
     class_<PoissonDiscriminator>(
         "PoissonDiscriminator")
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
         arg("n_sigma") = 3.0)))
-      .def("__call__", 
+      .def("__call__",
         call_with_mask_float, (
           arg("shoebox"),
           arg("mask")))
-      .def("__call__", 
+      .def("__call__",
         call_with_mask_double, (
           arg("shoebox"),
           arg("mask")))
-      .def("__call__", 
+      .def("__call__",
         call_without_mask_float, (
           arg("shoebox")))
-      .def("__call__", 
+      .def("__call__",
         call_without_mask_double, (
-          arg("shoebox")));       
+          arg("shoebox")));
   }
 
 }}} // namespace = dials::algorithms::boost_python

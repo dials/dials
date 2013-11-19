@@ -72,7 +72,7 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
+
   void export_flex_intensity()
   {
     scitbx::af::boost_python::flex_wrapper <

@@ -42,14 +42,14 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("coords", &label_type::coords)
       .def("values", &label_type::values);
   }
- 
+
   void export_connected_components()
   {
     label_image_stack_wrapper<2>("LabelImageStack2d");
     label_image_stack_wrapper<3>("LabelImageStack3d");
     label_pixels_wrapper("LabelPixels3d");
   }
-  
+
   BOOST_PYTHON_MODULE(dials_algorithms_image_connected_components_ext)
   {
     export_connected_components();

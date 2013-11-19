@@ -17,7 +17,7 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
   using scitbx::af::flex_int;
-   
+
   /** Set the data array as a flex array */
   static
   void set_data(PartialShoebox &obj, flex_int data) {
@@ -33,21 +33,21 @@ namespace dials { namespace model { namespace boost_python {
       .def(init<const PartialShoebox&>())
       .def(init<std::size_t, const int6&, const int2&>())
       .def(init<const int6&, const int2&>())
-      .add_property("data", 
-        make_getter(&PartialShoebox::data, 
+      .add_property("data",
+        make_getter(&PartialShoebox::data,
           return_value_policy<return_by_value>()),
-        &set_data)        
-      .add_property("bbox", 
-        make_getter(&PartialShoebox::bbox, 
+        &set_data)
+      .add_property("bbox",
+        make_getter(&PartialShoebox::bbox,
           return_value_policy<return_by_value>()),
-        make_setter(&PartialShoebox::bbox, 
-          return_value_policy<return_by_value>())) 
-      .add_property("zrange", 
-        make_getter(&PartialShoebox::zrange, 
+        make_setter(&PartialShoebox::bbox,
+          return_value_policy<return_by_value>()))
+      .add_property("zrange",
+        make_getter(&PartialShoebox::zrange,
           return_value_policy<return_by_value>()),
-        make_setter(&PartialShoebox::zrange, 
-          return_value_policy<return_by_value>())) 
-      .def_readwrite("panel", &PartialShoebox::panel)       
+        make_setter(&PartialShoebox::zrange,
+          return_value_policy<return_by_value>()))
+      .def_readwrite("panel", &PartialShoebox::panel)
       .def("allocate", &PartialShoebox::allocate)
       .def("deallocate", &PartialShoebox::deallocate)
       .def("xoffset", &PartialShoebox::xoffset)
@@ -67,7 +67,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("__eq__", &PartialShoebox::operator==)
       .def("__ne__", &PartialShoebox::operator!=);
   }
-  
+
   void export_partial_shoebox()
   {
     partial_shoebox_wrapper("PartialShoebox");

@@ -47,19 +47,24 @@ namespace dials { namespace algorithms {
     return Box(x00[i], y00[i], x11[i], y11[i]);
   }
 
-  /** Check if a box contains another box */
+  /** Comparison operations for Box/Box objects */
   template <>
-  bool contains<Box, Box>(const Box &box, const Box &v) {
-    return box.x0 <= v.x0 && box.y0 <= v.y0
-        && box.x1 >= v.x1 && box.y1 >= v.y1;
-  }
+  struct compare<Box, Box> {
 
-  /** Check collisions between boxes */
-  template <>
-  bool collides<Box, Box>(const Box &box, const Box &v) {
-    return !(box.x0 >= v.x1 || v.x0 >= box.x1
-          || box.y0 >= v.y1 || v.y0 >= box.y1);
-  }
+    /** Check if a box contains another box */
+    static
+    bool contains(const Box &box, const Box &v) {
+      return box.x0 <= v.x0 && box.y0 <= v.y0
+          && box.x1 >= v.x1 && box.y1 >= v.y1;
+    }
+
+    /** Check collisions between boxes */
+    static
+    bool collides(const Box &box, const Box &v) {
+      return !(box.x0 >= v.x1 || v.x0 >= box.x1
+            || box.y0 >= v.y1 || v.y0 >= box.y1);
+    }
+  };
 
   /**
    * A class implementing a quadtree. The class takes an object as template

@@ -43,7 +43,7 @@ namespace dials { namespace model { namespace boost_python {
       .def("num_frames", &PixelList::num_frames)
       .def("num_pixels", &PixelList::num_pixels)
       .def("add_image", &PixelList::add_image, (
-        arg("image"), 
+        arg("image"),
         arg("mask")))
       .def("coords", &PixelList::coords)
       .def("values", &PixelList::values)

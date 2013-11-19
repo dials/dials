@@ -17,11 +17,11 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   static
-  void subtract_with_reflection(const XdsSubtractor &subtract, 
+  void subtract_with_reflection(const XdsSubtractor &subtract,
       Reflection &reflection) {
-  
+
     typedef Reflection::float_type FloatType;
-  
+
     af::ref< int, af::c_grid<3> > mask = reflection.get_shoebox_mask().ref();
     af::ref< FloatType, af::c_grid<3> > shoebox = reflection.get_shoebox().ref();
     af::ref< FloatType, af::c_grid<3> > background =
@@ -54,18 +54,18 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<std::size_t, double>((
         arg("min_data") = 10,
         arg("n_sigma") = 3.0)))
-      .def("__call__", 
+      .def("__call__",
          &XdsSubtractor::operator()<float>, (
           arg("shoebox"),
           arg("mask")))
-      .def("__call__", 
+      .def("__call__",
          &XdsSubtractor::operator()<double>, (
           arg("shoebox"),
           arg("mask")))
-      .def("__call__", 
+      .def("__call__",
         subtract_with_reflection, (
           arg("reflection")))
-      .def("__call__", 
+      .def("__call__",
         subtract_with_reflection_list, (
           arg("reflection_list")));
   }

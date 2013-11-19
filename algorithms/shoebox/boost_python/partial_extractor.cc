@@ -32,14 +32,14 @@ namespace dials { namespace algorithms { namespace shoebox {
           arg("bboxes"),
           arg("zrange"))))
       .def("add_image", &PartialExtractor::add_image, (
-        arg("panel"), 
-        arg("frame"), 
+        arg("panel"),
+        arg("frame"),
         arg("image")))
       .def("indices", &PartialExtractor::indices)
       .def("shoeboxes", &PartialExtractor::shoeboxes)
       .def("shoebox_indices", &PartialExtractor::shoebox_indices);
   }
-  
+
   void export_partial_extractor() {
     extractor_wrapper("PartialExtractor");
   }

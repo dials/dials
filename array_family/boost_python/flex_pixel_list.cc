@@ -30,26 +30,26 @@ namespace dials { namespace af { namespace boost_python {
   using scitbx::vec2;
   using scitbx::vec3;
   using dials::model::PixelList;
-  
+
   /**
    * Merge a load of pixel lists
    */
-  static 
+  static
   PixelList pixel_list_merge(const af::const_ref<PixelList> &a) {
-    
+
     // Number of pixel lists is > 0
     DIALS_ASSERT(a.size() > 0);
-    
+
     // Calculate the total number of pixels
     std::size_t num = 0;
     for (std::size_t i = 0; i < a.size(); ++i) {
       num += a[i].num_pixels();
     }
-    
+
     // Allocate arrays
     af::shared< vec3<int> > coords((af::reserve(num)));
     af::shared<int> values((af::reserve(num)));
-    
+
     // Check the frames are sequential
     int2 fr1(0, a[0].first_frame());
     int2 size = a[0].size();
@@ -59,19 +59,19 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(a[i].size().all_eq(size));
       fr1 = fr2;
       af::shared<int> v = a[i].values();
-      af::shared< vec3<int> > c = a[i].coords();        
+      af::shared< vec3<int> > c = a[i].coords();
       std::copy(v.begin(), v.end(), std::back_inserter(values));
       std::copy(c.begin(), c.end(), std::back_inserter(coords));
     }
-    
+
     // Return the merged pixel list
     int2 frame_range(a.front().first_frame(), a.back().last_frame());
-    return PixelList(size, frame_range, values, coords); 
+    return PixelList(size, frame_range, values, coords);
   }
-  
+
   void export_flex_pixel_list()
   {
-    scitbx::af::boost_python::flex_wrapper <PixelList, 
+    scitbx::af::boost_python::flex_wrapper <PixelList,
         return_internal_reference<> >::plain("pixel_list")
       .def("merge", &pixel_list_merge);
   }

@@ -19,11 +19,11 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
   using namespace boost::python;
   using boost_adaptbx::std_pair_conversions::to_tuple;
 
-  void export_clip() 
+  void export_clip()
   {
     to_tuple<vert2, bool>();
-  
-    def("simple_with_convex", 
+
+    def("simple_with_convex",
       &simple_with_convex, (
         arg("subject"),
         arg("target")));
@@ -31,19 +31,19 @@ namespace dials { namespace algorithms { namespace polygon { namespace clip {
       &simple_with_rect, (
         arg("poly"),
         arg("rect")));
-    def("triangle_with_triangle", 
+    def("triangle_with_triangle",
       &triangle_with_triangle, (
-        arg("subject"), 
+        arg("subject"),
         arg("target")));
-    def("triangle_with_convex_quad", 
+    def("triangle_with_convex_quad",
       &triangle_with_convex_quad, (
         arg("subject"),
         arg("target")));
-    def("quad_with_triangle", 
+    def("quad_with_triangle",
       &quad_with_triangle, (
         arg("subject"),
         arg("target")));
-    def("quad_with_convex_quad", 
+    def("quad_with_convex_quad",
       &quad_with_convex_quad, (
         arg("subject"),
         arg("target")));

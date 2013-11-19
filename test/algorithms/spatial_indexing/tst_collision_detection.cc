@@ -89,9 +89,9 @@ void tst_detect_2d() {
   std::vector<Box> data(num);
   std::deque<std::pair<int, int> > collisions1;
   std::deque<std::pair<int, int> > collisions2;
-  
+
   Box bounds(0, 0, 20000, 20000);
-  
+
   // Create a number of random boxes
   for (std::size_t i = 0; i < num; ++i) {
     data[i] = random_box(bounds, 3, 8);
@@ -102,29 +102,29 @@ void tst_detect_2d() {
   detect_collisions2d(data.begin(), data.end(), collisions1);
 //  std::cout << ((float)(clock() - st)) / CLOCKS_PER_SEC << "\n";
 //  std::cout << collisions1.size() << "\n";
-// 
+//
   // Do a brute force check to see if we get the correct results.
   for (std::size_t j = 0; j < num-1; ++j) {
     int jx0 = data[j].x0;
     int jx1 = data[j].x1;
     int jy0 = data[j].y0;
-    int jy1 = data[j].y1;  
+    int jy1 = data[j].y1;
     for (std::size_t i = j+1; i < num; ++i) {
       int ix0 = data[i].x0;
       int ix1 = data[i].x1;
       int iy0 = data[i].y0;
-      int iy1 = data[i].y1;  
+      int iy1 = data[i].y1;
       if (!(ix0 >= jx1 || jx0 >= ix1 || iy0 >= jy1 || jy0 >= iy1)) {
         collisions2.push_back(std::pair<int,int>(i, j));
       }
     }
   }
-  
+
   // Check the sizes are equal
   assert(collisions2.size() == collisions1.size());
-  
+
   // Test passed
-  std::cout << "OK" << std::endl;  
+  std::cout << "OK" << std::endl;
 }
 
 void tst_detect_3d() {
@@ -135,7 +135,7 @@ void tst_detect_3d() {
   std::deque<std::pair<int, int> > collisions2;
 
   Box3d bounds(0, 0, 0, 512, 512, 512);
-  
+
   // Create a load of random boxes
   for (std::size_t i = 0; i < num; ++i) {
     data[i] = random_box3d(bounds, 3, 8);
@@ -149,30 +149,30 @@ void tst_detect_3d() {
     int jx0 = data[j].x0;
     int jx1 = data[j].x1;
     int jy0 = data[j].y0;
-    int jy1 = data[j].y1;  
+    int jy1 = data[j].y1;
     int jz0 = data[j].z0;
-    int jz1 = data[j].z1;     
+    int jz1 = data[j].z1;
     for (std::size_t i = j+1; i < num; ++i) {
       int ix0 = data[i].x0;
       int ix1 = data[i].x1;
       int iy0 = data[i].y0;
-      int iy1 = data[i].y1;  
+      int iy1 = data[i].y1;
       int iz0 = data[i].z0;
-      int iz1 = data[i].z1;    
+      int iz1 = data[i].z1;
 
-      if (!(ix0 >= jx1 || jx0 >= ix1 || 
-            iy0 >= jy1 || jy0 >= iy1 || 
+      if (!(ix0 >= jx1 || jx0 >= ix1 ||
+            iy0 >= jy1 || jy0 >= iy1 ||
             iz0 >= jz1 || jz0 >= iz1)) {
         collisions2.push_back(std::pair<int,int>(i, j));
       }
     }
   }
-  
+
   // Check the sizes are equal
   assert(collisions2.size() == collisions1.size());
-  
+
   // Test passed
-  std::cout << "OK" << std::endl;   
+  std::cout << "OK" << std::endl;
 }
 
 int main (int argc, char const* argv[])

@@ -20,13 +20,13 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_bbox_calculator()
   {
     int6 (BBoxCalculator::*calculate_single)(
-      vec3 <double>, double, std::size_t) const = 
+      vec3 <double>, double, std::size_t) const =
         &BBoxCalculator::operator();
     af::shared<int6> (BBoxCalculator::*calculate_array) (
-      const af::const_ref< vec3<double> >&, 
-      const af::const_ref<double> &, std::size_t) const = 
+      const af::const_ref< vec3<double> >&,
+      const af::const_ref<double> &, std::size_t) const =
         &BBoxCalculator::operator();
-    void (BBoxCalculator::*calculate_reflection)(Reflection &) const = 
+    void (BBoxCalculator::*calculate_reflection)(Reflection &) const =
       &BBoxCalculator::operator();
     void (BBoxCalculator::*calculate_reflection_list)(
       af::ref<Reflection>) const = &BBoxCalculator::operator();
@@ -38,7 +38,7 @@ namespace dials { namespace algorithms { namespace shoebox {
                  const Scan&,
                  double,
                  double > ((
-        arg("beam"), 
+        arg("beam"),
         arg("detector"),
         arg("goniometer"),
         arg("scan"),

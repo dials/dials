@@ -18,27 +18,27 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using namespace boost::python;
 
   CoordinateGenerator* make_coordinate_generator(
-      const CoordinateSystem &cs, 
-      int x0, int y0, 
+      const CoordinateSystem &cs,
+      int x0, int y0,
       af::versa< vec3<double>, scitbx::af::flex_grid<> > s1_map) {
-    return new CoordinateGenerator(cs, x0, y0, 
-      af::versa< vec3<double>, af::c_grid<2> >(s1_map.handle(), 
-        af::c_grid<2>(s1_map.accessor()))); 
+    return new CoordinateGenerator(cs, x0, y0,
+      af::versa< vec3<double>, af::c_grid<2> >(s1_map.handle(),
+        af::c_grid<2>(s1_map.accessor())));
   }
 
-  GridIndexGenerator* make_grid_index_generator(const CoordinateSystem &cs, 
-      int x0, int y0, vec2<double> step_size, std::size_t grid_half_size, 
+  GridIndexGenerator* make_grid_index_generator(const CoordinateSystem &cs,
+      int x0, int y0, vec2<double> step_size, std::size_t grid_half_size,
       af::versa< vec3<double>, scitbx::af::flex_grid<> > s1_map) {
-    return new GridIndexGenerator(cs, x0, y0, step_size, grid_half_size, 
+    return new GridIndexGenerator(cs, x0, y0, step_size, grid_half_size,
       af::versa< vec3<double>, af::c_grid<2> >(
-        s1_map.handle(), af::c_grid<2>(s1_map.accessor()))); 
+        s1_map.handle(), af::c_grid<2>(s1_map.accessor())));
   }
 
   void export_index_generator()
   {
     class_<CoordinateGenerator>("CoordinateGenerator", no_init)
       .def("__init__", make_constructor(
-        &make_coordinate_generator, 
+        &make_coordinate_generator,
         default_call_policies(), (
           arg("cs"),
           arg("x0"),
@@ -48,15 +48,15 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
     class_<GridIndexGenerator>("GridIndexGenerator", no_init)
       .def("__init__", make_constructor(
-        &make_grid_index_generator, 
+        &make_grid_index_generator,
         default_call_policies(), (
           arg("cs"),
           arg("x0"),
           arg("y0"),
           arg("step_size"),
           arg("grid_half_size"),
-          arg("s1_map"))))    
+          arg("s1_map"))))
       .def("__call__", &GridIndexGenerator::operator());
   }
-  
+
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

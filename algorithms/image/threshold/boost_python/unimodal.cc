@@ -16,7 +16,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_unimodal() 
+  void export_unimodal()
   {
     def("maximum_deviation", &maximum_deviation, (arg("histo")));
     def("probability_distribution", &probability_distribution, (

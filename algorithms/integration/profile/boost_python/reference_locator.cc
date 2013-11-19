@@ -22,9 +22,9 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType, typename ImageSampler>
   struct ReferenceLocatorPickleSuite : boost::python::pickle_suite {
-    
-    typedef ReferenceLocator<FloatType, ImageSampler> locator_type;    
-    
+
+    typedef ReferenceLocator<FloatType, ImageSampler> locator_type;
+
     static
     boost::python::tuple getinitargs(const locator_type &r) {
       return boost::python::make_tuple(r.profile(), r.sampler());
@@ -33,7 +33,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType, typename ImageSampler>
   ReferenceLocator<FloatType, ImageSampler>* make_reference_locator(
-      af::versa< FloatType, scitbx::af::flex_grid<> > &profiles, 
+      af::versa< FloatType, scitbx::af::flex_grid<> > &profiles,
       const ImageSampler &sampler_type) {
     af::versa< FloatType, af::c_grid<4> > profiles_c_grid(
       profiles.handle(), af::c_grid<4>(profiles.accessor()));
@@ -43,11 +43,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType, typename ImageSampler>
   void reference_locator_wrapper(const char *name) {
-  
+
     typedef FloatType float_type;
     typedef ImageSampler sampler_type;
     typedef ReferenceLocator<FloatType, ImageSampler> locator_type;
-  
+
     af::versa<FloatType, af::c_grid<4> > (locator_type::*profile_all)() const =
       &locator_type::profile;
     af::versa<FloatType, af::c_grid<3> > (locator_type::*profile_at_index)(
@@ -59,10 +59,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       std::size_t) const = &locator_type::coord;
     double3 (locator_type::*coord_at_coord)(
       double3) const = &locator_type::coord;
-  
+
     class_<locator_type>(name, no_init)
       .def("__init__", make_constructor(
-        &make_reference_locator<FloatType, ImageSampler>))    
+        &make_reference_locator<FloatType, ImageSampler>))
       .def("size", &locator_type::size)
       .def("sampler", &locator_type::sampler)
       .def("index", &locator_type::index)

@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   {
     typedef MapFramesForward<ProfileFloatType> MapFramesForwardType;
     typedef MapFramesReverse<ProfileFloatType> MapFramesReverseType;
-  
+
     class_<MapFramesForwardType>(
         "MapFramesForward", no_init)
       .def(init<double, double, double, double, int>((
@@ -51,5 +51,5 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           arg("phi"),
           arg("zeta")));
   }
-  
+
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

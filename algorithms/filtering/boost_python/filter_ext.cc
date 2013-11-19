@@ -12,19 +12,19 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/filtering/filter.h>
 
-namespace dials { namespace algorithms { namespace filter { 
+namespace dials { namespace algorithms { namespace filter {
     namespace boost_python {
 
   using namespace boost::python;
 
   void export_is_zeta_valid()
   {
-    def("is_zeta_valid", 
+    def("is_zeta_valid",
       (bool(*)(vec3<double>, vec3<double>, vec3<double>, double))
       &is_zeta_valid, (
-        arg("m2"), arg("s0"), arg("s1"), arg("zeta_min")));    
+        arg("m2"), arg("s0"), arg("s1"), arg("zeta_min")));
     def("is_zeta_valid",
-      (bool(*)(const CoordinateSystem&, double)) 
+      (bool(*)(const CoordinateSystem&, double))
       &is_zeta_valid, (
         arg("cs"), arg("zeta_min")));
     def("is_zeta_valid",
@@ -39,12 +39,12 @@ namespace dials { namespace algorithms { namespace filter {
 
   void export_is_xds_small_angle_valid()
   {
-    def("is_xds_small_angle_valid", 
+    def("is_xds_small_angle_valid",
       (bool(*)(vec3<double>, vec3<double>, vec3<double>, double))
       &is_xds_small_angle_valid, (
-        arg("m2"), arg("s0"), arg("s1"), arg("delta_m")));    
+        arg("m2"), arg("s0"), arg("s1"), arg("delta_m")));
     def("is_xds_small_angle_valid",
-      (bool(*)(const CoordinateSystem&, double)) 
+      (bool(*)(const CoordinateSystem&, double))
       &is_xds_small_angle_valid, (
         arg("cs"), arg("delta_m")));
     def("is_xds_small_angle_valid",
@@ -56,15 +56,15 @@ namespace dials { namespace algorithms { namespace filter {
       &is_xds_small_angle_valid, (
         arg("g"), arg("b"), arg("r"), arg("delta_m")));
   }
-  
+
   void export_is_xds_angle_valid()
   {
-    def("is_xds_angle_valid", 
+    def("is_xds_angle_valid",
       (bool(*)(vec3<double>, vec3<double>, vec3<double>, double))
       &is_xds_angle_valid, (
-        arg("m2"), arg("s0"), arg("s1"), arg("delta_m")));    
+        arg("m2"), arg("s0"), arg("s1"), arg("delta_m")));
     def("is_xds_angle_valid",
-      (bool(*)(const CoordinateSystem&, double)) 
+      (bool(*)(const CoordinateSystem&, double))
       &is_xds_angle_valid, (
         arg("cs"), arg("delta_m")));
     def("is_xds_angle_valid",
@@ -89,23 +89,23 @@ namespace dials { namespace algorithms { namespace filter {
       &by_bbox_volume, (arg("r"), arg("num")));
     def("by_bbox_volume", (void(*)(af::ref<Reflection>))&by_bbox_volume, (
       arg("r")));
-      
-    void (*filter_reflection_by_detector_mask)(Reflection&, 
+
+    void (*filter_reflection_by_detector_mask)(Reflection&,
       const af::const_ref< bool, af::c_grid<2> >&, int2) = &by_detector_mask;
-  
-    void (*filter_reflection_list_by_detector_mask)(af::ref<Reflection>, 
+
+    void (*filter_reflection_list_by_detector_mask)(af::ref<Reflection>,
       const af::const_ref< bool, af::c_grid<2> >&, int2) = &by_detector_mask;
-  
+
     def("is_bbox_outside_image_range", &is_bbox_outside_image_range);
     def("does_bbox_contain_bad_pixels", &does_bbox_contain_bad_pixels);
     def("is_bbox_valid", &is_bbox_valid);
     def("by_detector_mask", filter_reflection_by_detector_mask);
-    def("by_detector_mask", filter_reflection_list_by_detector_mask); 
-    
-    def("by_centroid_prediction_separation", 
-      &by_centroid_prediction_separation);  
+    def("by_detector_mask", filter_reflection_list_by_detector_mask);
+
+    def("by_centroid_prediction_separation",
+      &by_centroid_prediction_separation);
     def("by_resolution_at_centroid",
-      &by_resolution_at_centroid);   
+      &by_resolution_at_centroid);
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_filter_ext)

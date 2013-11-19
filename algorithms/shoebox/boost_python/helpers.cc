@@ -27,10 +27,10 @@ namespace dials { namespace algorithms { namespace shoebox {
       arg("reflection_list")));
     def("assign_strong_spots",
       &assign_strong_spots, (
-        arg("image"), 
-        arg("array_index"), 
-        arg("reflection_indices"), 
-        arg("reflections")));        
+        arg("image"),
+        arg("array_index"),
+        arg("reflection_indices"),
+        arg("reflections")));
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

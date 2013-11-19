@@ -21,5 +21,5 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     def("ideal_profile_float", &ideal_profile<float>);
     def("ideal_profile_double", &ideal_profile<double>);
   }
-  
+
 }}}}} // namespace dials::algorithms::reflexion_basis::transform::boost_python

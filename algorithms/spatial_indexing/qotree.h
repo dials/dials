@@ -36,24 +36,25 @@ namespace dials { namespace algorithms {
   BoxType subdivide(const BoxType&, std::size_t);
 
   /**
-   * Template function to be specialized that check whether object A contains
-   * object B.
+   * Template structure containing functions to use in comparison of objects
    * @tparam ObjectTypeA The bounding box type
    * @tparam ObjectTypeB The object type
-   * @return True/False the objects collide
    */
   template <typename ObjectTypeA, typename ObjectTypeB>
-  bool contains(const ObjectTypeA&, const ObjectTypeB &);
+  struct compare {
 
   /**
-   * Template function to be specialized that check for a collision between
-   * object A and object B.
-   * @tparam ObjectTypeA The bounding box type
-   * @tparam ObjectTypeB The object type
+   * @return True/False object a contains object b
+   */
+    static
+    bool contains(const ObjectTypeA&, const ObjectTypeB &);
+
+  /**
    * @return True/False the objects collide
    */
-  template <typename ObjectTypeA, typename ObjectTypeB>
-  bool collides(const ObjectTypeA&, const ObjectTypeB&);
+    static
+    bool collides(const ObjectTypeA&, const ObjectTypeB&);
+  };
 
   /**
    * A class that implements the base behaviour for a quadtree and octree.
@@ -135,7 +136,7 @@ namespace dials { namespace algorithms {
 
       // Get the root node and ensure input is inside
       node_pointer root = &node_list_.front();
-      if (contains(root->box, v)) {
+      if (compare<box_type, object_type>::contains(root->box, v)) {
         return insert(v, root);
       }
 
@@ -150,7 +151,7 @@ namespace dials { namespace algorithms {
       // Then query the tree to get the list of elements that are contained
       // with the given range.
       const_node_pointer root = &node_list_.front();
-      if (contains(root->box, range)) {
+      if (compare<box_type, object_type>::contains(root->box, range)) {
         return query_range(range, elements, root);
       }
 
@@ -164,7 +165,7 @@ namespace dials { namespace algorithms {
       // Get the root node and ensure the object is contained within.
       // Then query the tree to get the list of elements that collide.
       const_node_pointer root = &node_list_.front();
-      if (contains(root->box, v)) {
+      if (compare<box_type, object_type>::contains(root->box, v)) {
         return query_collision(v, elements, root);
       }
 
@@ -188,7 +189,8 @@ namespace dials { namespace algorithms {
       // element, this will return NCHILD.
       size_type div;
       for (div = 0; div < NCHILD; ++div) {
-        if (contains(node->child[div]->box, v)) {
+        if (compare<box_type, object_type>::contains(
+            node->child[div]->box, v)) {
           break;
         }
       }
@@ -283,7 +285,7 @@ namespace dials { namespace algorithms {
       // to the given object list.
       for (const_object_iterator it = node->bucket.begin();
           it != node->bucket.end(); ++it) {
-        if (contains(range, *it)) {
+        if (compare<box_type, object_type>::contains(range, *it)) {
           elements.push_back(*it);
         }
       }
@@ -320,7 +322,8 @@ namespace dials { namespace algorithms {
         append_contained_objects(range, elements, node);
         if (!node->is_leaf) {
           for (size_type i = 0; i < NCHILD; ++i) {
-            if (collides(range, node->child[i]->box)) {
+            if (compare<box_type, object_type>::collides(
+                range, node->child[i]->box)) {
               stack.push(node->child[i]);
             }
           }
@@ -339,7 +342,7 @@ namespace dials { namespace algorithms {
       // to the given object list.
       for (const_object_iterator it = node->bucket.begin();
           it != node->bucket.end(); ++it) {
-        if (collides(*it, v)) {
+        if (compare<box_type, object_type>::collides(*it, v)) {
           elements.push_back(*it);
         }
       }
@@ -362,7 +365,8 @@ namespace dials { namespace algorithms {
         append_colliding_objects(v, elements, node);
         if (!node->is_leaf) {
           for (size_type i = 0; i < NCHILD; ++i) {
-            if (collides(node->child[i]->box, v)) {
+            if (compare<box_type, object_type>::collides(
+                node->child[i]->box, v)) {
               stack.push(node->child[i]);
             }
           }

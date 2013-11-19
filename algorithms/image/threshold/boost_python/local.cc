@@ -18,23 +18,23 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   void local_threshold_suite() {
-  
+
     def("niblack", &niblack<FloatType>, (
       arg("image"),
       arg("size"),
       arg("n_sigma")));
-  
+
     def("sauvola", &sauvola<FloatType>, (
       arg("image"),
       arg("size"),
       arg("k"),
       arg("r")));
-  
+
     def("fano", &fano<FloatType>, (
       arg("image"),
       arg("size"),
       arg("n_sigma")));
-      
+
     def("fano_masked", &fano_masked<FloatType>, (
       arg("image"),
       arg("mask"),
@@ -57,7 +57,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("n_sigma_b"),
       arg("n_sigma_s"),
       arg("min_count")));
-      
+
     def("kabsch_w_gain", &kabsch_w_gain<FloatType>, (
       arg("image"),
       arg("mask"),
@@ -65,7 +65,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       arg("size"),
       arg("n_sigma_b"),
       arg("n_sigma_s"),
-      arg("min_count")));  
+      arg("min_count")));
   }
 
   void export_local() {

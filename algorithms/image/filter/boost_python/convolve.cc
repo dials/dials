@@ -21,11 +21,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("convolve", &convolve<FloatType>, (
       arg("image"),
       arg("kernel")));
-    
+
     def("convolve_row", &convolve_row<FloatType>, (
       arg("image"),
       arg("kernel")));
-    
+
     def("convolve_col", &convolve_col<FloatType>, (
       arg("image"),
       arg("kernel")));

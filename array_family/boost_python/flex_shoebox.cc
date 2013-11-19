@@ -48,7 +48,7 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <typename FloatType>
   typename af::flex< Shoebox<FloatType> >::type* from_pixel_list(
-      const PixelList &pixel, std::size_t panel, 
+      const PixelList &pixel, std::size_t panel,
       std::size_t zstart, bool twod) {
 
     // Get the stuff from the label struct
@@ -59,7 +59,7 @@ namespace dials { namespace af { namespace boost_python {
     // Get the number of labels and allocate the array
     std::size_t num = af::max(labels.const_ref()) + 1;
     af::shared< Shoebox<FloatType> > result(num, Shoebox<FloatType>());
-    
+
     // Initialise the bboxes
     int xsize = pixel.size()[1];
     int ysize = pixel.size()[0];
@@ -82,11 +82,11 @@ namespace dials { namespace af { namespace boost_python {
       if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
       if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
     }
-    
+
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].allocate();
-    } 
+    }
 
     // Set all the mask and data points
     for (std::size_t i = 0; i < labels.size(); ++i) {
@@ -99,10 +99,10 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
       DIALS_ASSERT(ii < result[l].xsize());
       DIALS_ASSERT(jj < result[l].ysize());
-      DIALS_ASSERT(kk < result[l].zsize());     
+      DIALS_ASSERT(kk < result[l].zsize());
       result[l].data(kk,jj,ii) = v;
       result[l].mask(kk,jj,ii) = Valid | Foreground;
-    }  
+    }
 
     // Shift bbox z start position
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -120,7 +120,7 @@ namespace dials { namespace af { namespace boost_python {
    */
   template <std::size_t DIM, typename FloatType>
   typename af::flex< Shoebox<FloatType> >::type* from_labels(
-      const LabelImageStack<DIM> &label, 
+      const LabelImageStack<DIM> &label,
       std::size_t panel, std::size_t zstart) {
 
     // Get the stuff from the label struct
@@ -131,7 +131,7 @@ namespace dials { namespace af { namespace boost_python {
     // Get the number of labels and allocate the array
     std::size_t num = af::max(labels.const_ref()) + 1;
     af::shared< Shoebox<FloatType> > result(num, Shoebox<FloatType>());
-    
+
     // Initialise the bboxes
     int xsize = label.size()[1];
     int ysize = label.size()[0];
@@ -154,11 +154,11 @@ namespace dials { namespace af { namespace boost_python {
       if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
       if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
     }
-    
+
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].allocate();
-    } 
+    }
 
     // Set all the mask and data points
     for (std::size_t i = 0; i < labels.size(); ++i) {
@@ -171,10 +171,10 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
       DIALS_ASSERT(ii < result[l].xsize());
       DIALS_ASSERT(jj < result[l].ysize());
-      DIALS_ASSERT(kk < result[l].zsize());     
+      DIALS_ASSERT(kk < result[l].zsize());
       result[l].data(kk,jj,ii) = v;
       result[l].mask(kk,jj,ii) = Valid | Foreground;
-    }  
+    }
 
     // Shift bbox z start position
     for (std::size_t i = 0; i < result.size(); ++i) {
@@ -185,8 +185,8 @@ namespace dials { namespace af { namespace boost_python {
     // Return the array
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(num));
-  }  
-  
+  }
+
   /**
    * Construct an array of shoebxoes from a spot labelling class
    */
@@ -202,7 +202,7 @@ namespace dials { namespace af { namespace boost_python {
     // Get the number of labels and allocate the array
     std::size_t num = af::max(labels.const_ref()) + 1;
     af::shared< Shoebox<FloatType> > result(num, Shoebox<FloatType>());
-    
+
     // Initialise the bboxes
     int xsize = label.size()[2];
     int ysize = label.size()[1];
@@ -225,11 +225,11 @@ namespace dials { namespace af { namespace boost_python {
       if (c[0] <  result[l].bbox[4]) result[l].bbox[4] = c[0];
       if (c[0] >= result[l].bbox[5]) result[l].bbox[5] = c[0] + 1;
     }
-    
+
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i].allocate();
-    } 
+    }
 
     // Set all the mask and data points
     for (std::size_t i = 0; i < labels.size(); ++i) {
@@ -242,25 +242,25 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(ii >= 0 && jj >= 0 && kk >= 0);
       DIALS_ASSERT(ii < result[l].xsize());
       DIALS_ASSERT(jj < result[l].ysize());
-      DIALS_ASSERT(kk < result[l].zsize());     
+      DIALS_ASSERT(kk < result[l].zsize());
       result[l].data(kk,jj,ii) = (double)v;
       result[l].mask(kk,jj,ii) = Valid | Foreground;
-    }  
+    }
 
     // Return the array
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(num));
-  }  
-  
-  /** 
+  }
+
+  /**
    * Convert a partial shoebox to a complete shoebox
    */
   template <typename FloatType>
   Shoebox<FloatType> from_partial_shoebox(
-      const PartialShoebox &partial, 
+      const PartialShoebox &partial,
       const af::const_ref< FloatType, af::c_grid<2> > &gain,
       const af::const_ref< FloatType, af::c_grid<2> > &dark,
-      const af::const_ref< bool, af::c_grid<2> > &mask) { 
+      const af::const_ref< bool, af::c_grid<2> > &mask) {
     DIALS_ASSERT(partial.is_complete());
     Shoebox<FloatType> result(partial.panel, partial.bbox);
     result.allocate();
@@ -279,22 +279,22 @@ namespace dials { namespace af { namespace boost_python {
         for (std::size_t k = 0; k < zsize; ++k) {
           result.data(k, j, i) = g * (partial.data(k, j, i) - d);
           result.mask(k, j, i) = m;
-        }        
+        }
       }
     }
     return result;
   }
-  
+
   /**
    * Construct an array of shoebxoes from an array of partial shoeboxes
    */
   template <typename FloatType>
   typename af::flex< Shoebox<FloatType> >::type* from_partial_shoeboxes(
-      const af::const_ref<PartialShoebox> &partial, 
+      const af::const_ref<PartialShoebox> &partial,
       const af::const_ref< FloatType, af::c_grid<2> > &gain,
       const af::const_ref< FloatType, af::c_grid<2> > &dark,
       const af::const_ref< bool, af::c_grid<2> > &mask,
-      std::size_t panel) { 
+      std::size_t panel) {
 
     // Check the input
     DIALS_ASSERT(gain.accessor().all_eq(dark.accessor()));
@@ -306,12 +306,12 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(partial[i].panel == panel);
       result[i] = from_partial_shoebox(partial[i], gain, dark, mask);
     }
-    
+
     // Return the array
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(result.size()));
   }
-  
+
   /**
    * Construct from partial shoeboxes with multi panels
    */
@@ -330,13 +330,13 @@ namespace dials { namespace af { namespace boost_python {
     DIALS_ASSERT(npanels == boost::python::len(mdark));
     DIALS_ASSERT(npanels == boost::python::len(mmask));
 
-    // Save all the maps    
+    // Save all the maps
     std::vector<vdouble> gain(npanels);
     std::vector<vdouble> dark(npanels);
     std::vector<vbool> mask(npanels);
     for (std::size_t i = 0; i < npanels; ++i) {
       gain[i] = boost::python::extract<vdouble>(mgain[i]);
-      dark[i] = boost::python::extract<vdouble>(mdark[i]);        
+      dark[i] = boost::python::extract<vdouble>(mdark[i]);
       mask[i] = boost::python::extract<vbool>(mmask[i]);
       DIALS_ASSERT(gain[i].accessor().all_eq(dark[i].accessor()));
       DIALS_ASSERT(gain[i].accessor().all_eq(mask[i].accessor()));
@@ -349,12 +349,12 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(p < npanels);
       result[i] = from_partial_shoebox(partial[i], gain[p], dark[p], mask[p]);
     }
-    
+
     // Return the array
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(result.size()));
   }
-  
+
   /**
    * Check if the arrays are consistent
    */
@@ -366,7 +366,7 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
+
   /**
    * Check if the bounding box has points outside the image range.
    */
@@ -380,13 +380,13 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
+
   /**
    * Check if the bounding box has points that cover bad pixels
    */
   template <typename FloatType>
   shared<bool> does_bbox_contain_bad_pixels(
-      const const_ref< Shoebox<FloatType> > &a, 
+      const const_ref< Shoebox<FloatType> > &a,
       const const_ref<bool, c_grid<2> > &mask) {
     shared<bool> result(a.size(), af::init_functor_null<bool>());
     for (std::size_t i = 0; i < a.size(); ++i) {
@@ -394,7 +394,7 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
+
   /**
    * Count the number of mask pixels with the given code
    */
@@ -407,13 +407,13 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
-  /** 
+
+  /**
    * Get the maximum index of each shoebox
    */
   template <typename FloatType>
   shared< vec3<double> > peak_coordinates(ref< Shoebox<FloatType> > a) {
-    shared< vec3<double> > result(a.size(), 
+    shared< vec3<double> > result(a.size(),
       af::init_functor_null< vec3<double> >());
     for (std::size_t i = 0; i < a.size(); ++i) {
       std::size_t index = af::max_index(a[i].data.const_ref());
@@ -437,7 +437,7 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
+
   /**
    * Get the panel numbers
    */
@@ -449,8 +449,8 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
-  /** 
+
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -463,7 +463,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -477,7 +477,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -491,7 +491,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -505,7 +505,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -519,7 +519,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -533,7 +533,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -547,7 +547,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -561,7 +561,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -575,7 +575,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of centroid
    */
   template <typename FloatType>
@@ -589,7 +589,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-  /** 
+  /**
    * Get a list of intensities
    */
   template <typename FloatType>
@@ -602,22 +602,22 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
-  /** 
+
+  /**
    * Get a list of intensities
    */
   template <typename FloatType>
   af::shared<Intensity> summed_intensity_masked(
       const const_ref< Shoebox<FloatType> > &a, int code) {
     af::shared<Intensity> result(a.size(), Intensity());
-    #pragma omp parallel for   
+    #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_masked(code);
     }
     return result;
   }
-  
-  /** 
+
+  /**
    * Get a list of intensities
    */
   template <typename FloatType>
@@ -630,8 +630,8 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
-  /** 
+
+  /**
    * Get a list of intensities
    */
   template <typename FloatType>
@@ -644,8 +644,8 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
-  
-    /** 
+
+    /**
    * Get a list of intensities
    */
   template <typename FloatType>
@@ -658,7 +658,7 @@ namespace dials { namespace af { namespace boost_python {
     }
     return result;
   }
- 
+
   /**
    * A class to convert the shoebox class to a string for pickling
    */
@@ -684,14 +684,14 @@ namespace dials { namespace af { namespace boost_python {
             << val.bbox[3]
             << val.bbox[4]
             << val.bbox[5];
-            
+
       profile_to_string(val.data);
       profile_to_string(val.mask);
       profile_to_string(val.background);
 
       return *this;
     }
-    
+
     /** Convert a profile to string */
     template <typename ProfileType>
     void profile_to_string(const ProfileType &p) {
@@ -705,7 +705,7 @@ namespace dials { namespace af { namespace boost_python {
     }
   };
 
-  /** 
+  /**
    * A class to convert a string to a shoebox for unpickling
    */
   template <typename FloatType>
@@ -766,83 +766,83 @@ namespace dials { namespace af { namespace boost_python {
   flex_shoebox_wrapper(const char *name)
   {
     typedef Shoebox<FloatType> shoebox_type;
-    
+
     return scitbx::af::boost_python::flex_wrapper <
       shoebox_type, return_internal_reference<> >::plain(name)
         .def("__init__", make_constructor(
-          from_pixel_list<FloatType>, 
+          from_pixel_list<FloatType>,
           default_call_policies(), (
-            boost::python::arg("pixel"), 
+            boost::python::arg("pixel"),
             boost::python::arg("panel") = 0,
             boost::python::arg("zstart") = 0,
             boost::python::arg("twod") = false)))
         .def("__init__", make_constructor(
-          from_labels<2, FloatType>, 
+          from_labels<2, FloatType>,
           default_call_policies(), (
-            boost::python::arg("labels"), 
+            boost::python::arg("labels"),
             boost::python::arg("panel") = 0,
             boost::python::arg("zstart") = 0)))
         .def("__init__", make_constructor(
-          from_labels<3, FloatType>, 
+          from_labels<3, FloatType>,
           default_call_policies(), (
-            boost::python::arg("labels"), 
+            boost::python::arg("labels"),
             boost::python::arg("panel") = 0)))
         .def("__init__", make_constructor(
-          from_pixel_labeller<FloatType>, 
+          from_pixel_labeller<FloatType>,
           default_call_policies(), (
-            boost::python::arg("labels"), 
+            boost::python::arg("labels"),
             boost::python::arg("panel") = 0)))
         .def("__init__", make_constructor(
-          from_partial_shoeboxes<FloatType>, 
+          from_partial_shoeboxes<FloatType>,
           default_call_policies(), (
-            boost::python::arg("partial"), 
+            boost::python::arg("partial"),
             boost::python::arg("gain"),
             boost::python::arg("dark"),
             boost::python::arg("mask"),
             boost::python::arg("panel") = 0)))
         .def("__init__", make_constructor(
-          from_partial_shoeboxes_multi<FloatType>, 
+          from_partial_shoeboxes_multi<FloatType>,
           default_call_policies(), (
-            boost::python::arg("partial"), 
+            boost::python::arg("partial"),
             boost::python::arg("gain"),
             boost::python::arg("dark"),
             boost::python::arg("mask"))))
-        .def("is_consistent", 
+        .def("is_consistent",
           &is_consistent<FloatType>)
-        .def("panels", 
+        .def("panels",
           &panels<FloatType>)
-        .def("bounding_boxes", 
+        .def("bounding_boxes",
           &bounding_boxes<FloatType>)
-        .def("count_mask_values", 
+        .def("count_mask_values",
           &count_mask_values<FloatType>)
-        .def("is_bbox_within_image_volume", 
+        .def("is_bbox_within_image_volume",
           &is_bbox_within_image_volume<FloatType>, (
-            boost::python::arg("image_size"), 
+            boost::python::arg("image_size"),
             boost::python::arg("scan_range")))
-        .def("does_bbox_contain_bad_pixels", 
+        .def("does_bbox_contain_bad_pixels",
           &does_bbox_contain_bad_pixels<FloatType>, (
             boost::python::arg("mask")))
-        .def("peak_coordinates", 
+        .def("peak_coordinates",
           &peak_coordinates<FloatType>)
        .def("centroid_all",
           &centroid_all<FloatType>)
-        .def("centroid_masked", 
+        .def("centroid_masked",
           &centroid_masked<FloatType>)
-        .def("centroid_valid", 
+        .def("centroid_valid",
           &centroid_valid<FloatType>)
-        .def("centroid_foreground", 
+        .def("centroid_foreground",
           &centroid_foreground<FloatType>)
-        .def("centroid_strong", 
+        .def("centroid_strong",
           &centroid_strong<FloatType>)
-        .def("centroid_all_minus_background", 
+        .def("centroid_all_minus_background",
           &centroid_all_minus_background<FloatType>)
-        .def("centroid_masked_minus_background", 
+        .def("centroid_masked_minus_background",
           &centroid_masked_minus_background<FloatType>)
-        .def("centroid_valid_minus_background", 
+        .def("centroid_valid_minus_background",
           &centroid_valid_minus_background<FloatType>)
-        .def("centroid_foreground_minus_background", 
+        .def("centroid_foreground_minus_background",
           &centroid_foreground_minus_background<FloatType>)
-        .def("centroid_strong_minus_background", 
+        .def("centroid_strong_minus_background",
           &centroid_strong_minus_background<FloatType>)
         .def("summed_intensity_all",
           &summed_intensity_all<FloatType>)
@@ -853,9 +853,9 @@ namespace dials { namespace af { namespace boost_python {
         .def("summed_intensity_foreground",
           &summed_intensity_foreground<FloatType>)
         .def("summed_intensity_strong",
-          &summed_intensity_strong<FloatType>)      
-        .def_pickle(flex_pickle_double_buffered<shoebox_type, 
-          shoebox_to_string<FloatType>, 
+          &summed_intensity_strong<FloatType>)
+        .def_pickle(flex_pickle_double_buffered<shoebox_type,
+          shoebox_to_string<FloatType>,
           shoebox_from_string<FloatType> >());
   }
 
