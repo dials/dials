@@ -45,3 +45,7 @@ if __name__ == '__main__':
   for i in indexer.query_range(vol):
     print "  Miller Index: {0}, Centroid: {1}".format(
       table[i].miller_index, table[i].centroid_px)
+
+  print '\nSet some global metadata'
+  table.metadata['some_data'] = "Some global meta data"
+  print table.metadata

@@ -11,6 +11,7 @@ class Table(object):
       self._columns = OrderedDict(columns)
     if not self.is_consistent():
       raise RuntimeError('inconsistent column sizes')
+    self._metadata = dict()
 
   def __getitem__(self, index):
     if isinstance(index, int):
@@ -125,6 +126,10 @@ class Table(object):
       index[item].append(i)
     return index
 
+  @property
+  def metadata(self):
+    return self._metadata
+
 
 if __name__ == '__main__':
   from scitbx.array_family import flex
@@ -200,6 +205,10 @@ if __name__ == '__main__':
   indexer = table.index_map('column_1')
   for key, indices in indexer.iteritems():
     print key, [table[i] for i in indices]
+
+  print '\nSet some metadata'
+  table.metadata['some_data'] = "hello world"
+  print table.metadata
 
   # Create table with nothing in
   table = Table()
