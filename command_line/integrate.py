@@ -55,6 +55,9 @@ class Script(ScriptRunner):
     # Process the command line options
     Command.start('Processing command line options')
     importer = Importer(args)
+    if len(importer.imagesets) == 0 and len(importer.crystals) == 0:
+      self.config().print_help()
+      return
     if len(importer.imagesets) != 1:
       RuntimeError('need 1 sweep: %d given' % len(importer.imagesets))
     if len(importer.crystals) != 1:
