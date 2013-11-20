@@ -122,29 +122,32 @@ namespace dials { namespace algorithms {
       // Ensure that the profiles are the correct size
       DIALS_ASSERT(profile.accessor().all_eq(size));
 
-      // Find the nearest reference profile
-      std::size_t index = locator_.index(coord);
-      vec3<double> coord_b = locator_.coord(index);
-      counts_[index]++;
-
-      // Get the reference profile
-      af::ref<float_type> reference = reference_profile(index);
-
-      // Calculate the weighting by distance, ensure we don't get silly weights
-      // for really close reflections by setting minimum distance to 1.
-      double distance = (coord - coord_b).length();
-      double weight = 1.0 / (distance < 1.0 ? 1.0 : distance);
-
       // Calculate the sum of intensity to normalize the reflection profile
       double sum_profile = 0.0;
       for (std::size_t i = 0; i < profile.size(); ++i) {
         sum_profile += profile[i];
       }
 
-      // Add to the reference profile
+      // Find the nearest reference profile
       if (sum_profile > 0) {
-        for (std::size_t i = 0; i < reference.size(); ++i) {
-          reference[i] += weight * profile[i] / sum_profile;
+        af::shared<std::size_t> indices = locator_.indices(coord);
+        for (std::size_t ii = 0; ii < indices.size(); ++ii) {
+          std::size_t index = indices[ii];
+          vec3<double> coord_b = locator_.coord(index);
+          counts_[index]++;
+
+          // Get the reference profile
+          af::ref<float_type> reference = reference_profile(index);
+
+          // Calculate the weighting by distance, ensure we don't get silly weights
+          // for really close reflections by setting minimum distance to 1.
+          double distance = (coord - coord_b).length();
+          double weight = 1.0 / (distance < 1.0 ? 1.0 : distance);
+
+          // Add to the reference profile
+          for (std::size_t i = 0; i < reference.size(); ++i) {
+            reference[i] += weight * profile[i] / sum_profile;
+          }
         }
       }
     }
