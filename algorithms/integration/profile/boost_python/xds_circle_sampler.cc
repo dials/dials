@@ -79,6 +79,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("r1", &XdsCircleSampler::r1)
       .def("r2", &XdsCircleSampler::r2)
       .def("nearest", &XdsCircleSampler::nearest)
+      .def("nearest_n", &XdsCircleSampler::nearest_n)
       .def("size", &XdsCircleSampler::size)
       .def("__getitem__", &XdsCircleSampler::operator[])
       .def("__len__", &XdsCircleSampler::size)

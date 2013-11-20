@@ -10,6 +10,7 @@ class Test(object):
     self.tst_detector_area()
     self.tst_indexing()
     self.tst_nearest()
+    self.tst_nearest_n()
     self.tst_self_consistent()
     self.tst_z_index()
     self.tst_pickle()
@@ -63,7 +64,7 @@ class Test(object):
     assert(im[0, 0] == 6)
     assert(im[0, width//2] == 7)
     assert(im[0, width-1] == 8)
-
+    print 'OK'
 #        from matplotlib import pylab
 #        pylab.imshow(im.as_numpy_array())
 #        pylab.show()
@@ -131,6 +132,58 @@ class Test(object):
       index0 = index00 + index01 * 9
       index1 = sampler.nearest((x, y, z))
       assert(index0 == index1)
+
+    print 'OK'
+
+  def tst_nearest_n(self):
+    from math import sqrt, atan2, pi, floor
+    from random import randint
+    from dials.algorithms.integration.profile import XdsCircleSampler
+    width = 1000
+    height = 1000
+    depth = 10
+    nz = 2
+    sampler = XdsCircleSampler((width, height, depth), nz)
+    xc, yc = sampler.image_centre()
+    r1 = sampler.r1()
+
+    for i in range(1000):
+      x = randint(0, 1000)
+      y = randint(0, 1000)
+      z = randint(0, 10)
+
+      r = sqrt((x - xc)**2 + (y - yc)**2)
+      if r < r1:
+        index00 = 0
+      else:
+        t = atan2(y - yc, x - xc)
+        ai = int(floor(t * 8 / (2 * pi) + 0.5)) % 8
+        index00 = ai + 1
+
+      index01 = int(z * nz / 10)
+      if index01 < 0:
+        index01 = 0
+      if index01 >= 2:
+        index01 = 1
+
+      index0 = index00 + index01 * 9
+      index1 = sampler.nearest_n((x, y, z))
+      assert(index0 == index1[0])
+      if index0 % 9 == 0:
+        assert(len(index1) == 9)
+        assert(all([idx == index0 + i for i, idx in enumerate(index1)]))
+      else:
+        assert(len(index1) == 4)
+        assert(index1[1] == (index0 // 9) * 9)
+        if (index0 % 9) == 1:
+          assert(index1[2] == index0 + 1)
+          assert(index1[3] == index0 + 7)
+        elif (index0 % 9) == 8:
+          assert(index1[2] == index0 - 7)
+          assert(index1[3] == index0 - 1)
+        else:
+          assert(index1[2] == index0 + 1)
+          assert(index1[3] == index0 - 1)
 
     print 'OK'
 

@@ -15,6 +15,7 @@
 #include <scitbx/constants.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -116,6 +117,34 @@ namespace dials { namespace algorithms {
 
       // Return the index
       return ij + k * nprofile_;
+    }
+
+    /**
+     * Find the nearest n reference profiles to the given point.
+     * This is mostly used during learning to get the neighbouring profiles.
+     * @param xyz The coordinate
+     * @returns A list of reference profile indices
+     */
+    af::shared<std::size_t> nearest_n(double3 xyz) const {
+
+      // Get the main index
+      std::size_t main_index = nearest(xyz);
+      std::size_t image_index = main_index % 9;
+      std::size_t zero_index = (main_index / 9) * 9;
+
+      // Get the adjacent indices
+      af::shared<std::size_t> result;
+      if (image_index == 0) {
+        for (std::size_t i = 0; i < 9; ++i) {
+          result.push_back(main_index + i);
+        }
+      } else {
+        result.push_back(main_index);
+        result.push_back(zero_index);
+        result.push_back(zero_index + (image_index) % 8 + 1);
+        result.push_back(zero_index + (image_index - 2) % 8 + 1);
+      }
+      return result;
     }
 
     /**
