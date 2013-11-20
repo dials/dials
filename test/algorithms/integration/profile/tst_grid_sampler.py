@@ -9,6 +9,7 @@ class Test(object):
     self.tst_getters()
     self.tst_indexing()
     self.tst_nearest()
+    self.tst_nearest_n()
     self.tst_self_consistent()
     self.tst_pickle()
 
@@ -96,6 +97,56 @@ class Test(object):
       index0 = i + j * nx + k * nx * ny
       index1 = sampler.nearest((x, y, z))
       assert(index0 == index1)
+
+    print 'OK'
+
+  def tst_nearest_n(self):
+    from random import randint
+    from dials.algorithms.integration.profile import GridSampler
+    width = 1000
+    height = 1000
+    depth = 10
+    nx = 10
+    ny = 10
+    nz = 2
+    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+
+    for i in range(1000):
+      x = randint(0, 1000)
+      y = randint(0, 1000)
+      z = randint(0, 10)
+      i = int((x+0.5) * nx // 1000)
+      j = int((y+0.5) * ny // 1000)
+      k = int((z+0.5) * nz // 10)
+      if i >= nx:
+        i = nx - 1
+      if j >= ny:
+        j = ny - 1
+      if k >= nz:
+        k = nz - 1
+      index0 = i + j * nx + k * nx * ny
+      index1 = sampler.nearest_n((x, y, z))
+      assert(index0 == index1[0])
+      c = 1
+      if i > 0:
+        assert(index1[c] == index0 - 1)
+        c += 1
+      if j > 0:
+        assert(index1[c] == index0 - nx)
+        c += 1
+      if k > 0:
+        assert(index1[c] == index0 - nx * ny)
+        c += 1
+      if i < nx-1:
+        assert(index1[c] == index0 + 1)
+        c += 1
+      if j < ny-1:
+        assert(index1[c] == index0 + nx)
+        c += 1
+      if k < nz-1:
+        assert(index1[c] == index0 + nx * ny)
+        c += 1
+      assert(c == len(index1))
 
     print 'OK'
 

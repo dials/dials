@@ -13,6 +13,7 @@
 
 #include <cmath>
 #include <scitbx/array_family/tiny_types.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
@@ -84,7 +85,34 @@ namespace dials { namespace algorithms {
       if (ix >= grid_size_[0]) ix = grid_size_[0] - 1;
       if (iy >= grid_size_[1]) iy = grid_size_[1] - 1;
       if (iz >= grid_size_[2]) iz = grid_size_[2] - 1;
-      return ix + iy * grid_size_[0] + iz * grid_size_[0] * grid_size_[1];
+      return index(ix, iy, iz);
+    }
+
+    /**
+     * Find the nearest n reference profiles to the given point.
+     * This is mostly used during learning to get the neighbouring profiles.
+     * @param xyz The coordinate
+     * @returns A list of reference profile indices
+     */
+    af::shared<std::size_t> nearest_n(double3 xyz) const {
+      int ix = (int)floor(xyz[0] / step_size_[0]);
+      int iy = (int)floor(xyz[1] / step_size_[1]);
+      int iz = (int)floor(xyz[2] / step_size_[2]);
+      if (ix < 0) ix = 0;
+      if (iy < 0) iy = 0;
+      if (iz < 0) iz = 0;
+      if (ix >= grid_size_[0]) ix = grid_size_[0] - 1;
+      if (iy >= grid_size_[1]) iy = grid_size_[1] - 1;
+      if (iz >= grid_size_[2]) iz = grid_size_[2] - 1;
+      af::shared<std::size_t> result;
+      result.push_back(index(ix, iy, iz));
+      if (ix > 0) result.push_back(index(ix-1, iy, iz));
+      if (iy > 0) result.push_back(index(ix, iy-1, iz));
+      if (iz > 0) result.push_back(index(ix, iy, iz-1));
+      if (ix < grid_size_[0]-1) result.push_back(index(ix+1, iy, iz));
+      if (iy < grid_size_[1]-1) result.push_back(index(ix, iy+1, iz));
+      if (iz < grid_size_[2]-1) result.push_back(index(ix, iy, iz+1));
+      return result;
     }
 
     /**
@@ -105,6 +133,14 @@ namespace dials { namespace algorithms {
     }
 
   private:
+
+    /**
+     * Create a profile index
+     */
+    std::size_t index(std::size_t ix, std::size_t iy, std::size_t iz) const {
+      return ix + iy * grid_size_[0] + iz * grid_size_[0] * grid_size_[1];
+    }
+
     int3 volume_size_;
     int3 grid_size_;
     double3 step_size_;
