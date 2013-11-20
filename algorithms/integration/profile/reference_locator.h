@@ -64,6 +64,15 @@ namespace dials { namespace algorithms {
       return sampler_.nearest(xyz);
     }
 
+    /**
+     * Get the indices of the nearest profiles used in learning.
+     * @param xyz The image volume coordinate
+     * @return The list of indices
+     */
+    af::shared<std::size_t> indices(double3 xyz) const {
+      return sampler_.nearest_n(xyz);
+    }
+
     /** @returns The whole list of profiles */
     af::versa< FloatType, af::c_grid<4> > profile() const {
       return profiles_;

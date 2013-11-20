@@ -66,6 +66,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("size", &locator_type::size)
       .def("sampler", &locator_type::sampler)
       .def("index", &locator_type::index)
+      .def("indices", &locator_type::indices)
       .def("profile", profile_all)
       .def("profile", profile_at_index)
       .def("profile", profile_at_coord)
