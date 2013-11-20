@@ -78,9 +78,9 @@ class Script(ScriptRunner):
     refined = refiner.run()
 
     # update the input sweep
-    sweep.set_beam(refiner.beam)
-    sweep.set_detector(refiner.detector)
-    sweep.set_goniometer(refiner.goniometer)
+    sweep.set_beam(refiner.get_beam())
+    sweep.set_detector(refiner.get_detector())
+    sweep.set_goniometer(refiner.get_goniometer())
 
     # Save the refined geometry to file
     output_sweep_filename = options.output_sweep_filename
@@ -90,7 +90,7 @@ class Script(ScriptRunner):
     # Save the refined crystal to file
     output_crystal_filename = options.output_crystal_filename
     print 'Saving refined geometry to {0}'.format(output_crystal_filename)
-    dump.crystal(refiner.crystal, open(output_crystal_filename, 'w'))
+    dump.crystal(refiner.get_crystal(), open(output_crystal_filename, 'w'))
 
 
 if __name__ == '__main__':

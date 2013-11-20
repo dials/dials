@@ -200,11 +200,11 @@ class RefinerFactory(object):
     if verbosity > 1: print "Refinement engine built\n"
 
     # build refiner interface and return
-    return Refiner2(beam, crystals, detector,
-                   pred_param, param_reporter, refman, target, refinery,
-                   goniometer=goniometer,
-                   scan=scan,
-                   verbosity=verbosity)
+    return Refiner2(reflections, beam, crystals, detector,
+                    pred_param, param_reporter, refman, target, refinery,
+                    goniometer=goniometer,
+                    scan=scan,
+                    verbosity=verbosity)
 
   @staticmethod
   def config_parameterisation(
@@ -812,29 +812,69 @@ class TargetFactory(object):
                       self._absolute_cutoffs)
 
 class Refiner2(object):
-  """The refiner class."""
+  """Public interface for performing DIALS refinement.
 
-  def __init__(self, beam, crystals, detector,
+  Public methods:
+    run
+    rmsds
+    get_beam
+    get_crystal
+    get_crystals
+    get_detector
+    get_goniometer
+    get_scan
+    get_matches
+    selection_used_for_refinement
+    write_residuals_table
+    predict_reflections
+
+  Notes:
+    * The return value of run is a recorded history of the refinement
+    * The model accessors provide copies of those models that might be modified
+      by refinement (beam, crystal and detector)
+    * get_matches exposes the function of the same name from the privately
+      stored reflection manager
+    * The return value of selection_used_for_refinement is a flex.bool
+    * predict_reflections does so for all observable reflections, not just the
+      set passed into the refiner
+
+    """
+
+  def __init__(self, reflections, beam, crystals, detector,
                pred_param, param_reporter, refman, target, refinery,
                goniometer=None,
                scan=None,
                verbosity=0):
-    """ Initialise the refiner class.
+    """
+    Mandatory arguments:
+      reflections - Input ReflectionList data
+      beam - A dxtbx Beam object
+      crystals - A list of DIALS Crystal objects
+      detector - A dxtbx Detector object
+      pred_param - An object derived from the PredictionParameterisation class
+      param_reporter -A ParameterReporter object
+      refman - A ReflectionManager object
+      target - An object derived from the Target class
+      refinery - An object derived from the Refinery class
 
-    Params:
-        FIXME Documentation
+    Optional arguments:
+      goniometer - A dxtbx Goniometer object
+      scan - A dxtbx Scan object
+      verbosity - An integer verbosity level
+
     """
 
-    # keep the models public for access after refinement
-    self.beam = beam
-    self.crystals = crystals
+    # keep the data and models public for access after refinement
+    self._reflections = reflections
+    self._beam = beam
+    self._crystals = crystals
     # only keep crystal if there is indeed only one
-    self.crystal = crystals[0] if len(crystals) == 1 else None
-    self.detector = detector
+    self._crystal = crystals[0] if len(crystals) == 1 else None
+    self._detector = detector
 
     # these could be None (for stills/XFEL)
-    self.goniometer = goniometer
-    self.scan = scan
+    self._goniometer = goniometer
+    self._scan = scan
 
     # refinement module main objects
     self._pred_param = pred_param
@@ -849,12 +889,79 @@ class Refiner2(object):
 
     return
 
+  def get_beam(self):
+    """Return a copy of the beam model"""
+
+    from dxtbx.model import Beam
+    return Beam(self._beam)
+
+  def get_crystal(self):
+    """Return a copy of the crystal model, if present"""
+
+    from copy import deepcopy
+    if self._crystal:
+      return deepcopy(self._crystal)
+    else:
+      return None
+
+  def get_crystals(self):
+    """Return a copy of the crystal models (always present)"""
+
+    from copy import deepcopy
+    return deepcopy(self._crystals)
+
+  def get_detector(self):
+    """Return a copy of the detector model"""
+
+    from copy import deepcopy
+    from dxtbx.model import Detector
+    from dxtbx.array_family import flex
+    return Detector(flex.panel([deepcopy(panel) \
+                                for panel in self._detector]))
+
+  def get_goniometer(self):
+    """Return the goniometer model, if present"""
+
+    # this is unmodified by refinement, so safe to return directly without copy
+    if self._goniometer:
+      return self._goniometer
+    else:
+      return None
+
+  def get_scan(self):
+    """Return the scan model, if present"""
+
+    # this is unmodified by refinement, so safe to return directly without copy
+    if self._scan:
+      return self._scan
+    else:
+      return None
+
+  def get_reflections(self):
+    """Return the input reflections"""
+
+    # FIXME Consider: Does a Refiner really need to keep a copy of the input
+    # reflections? (indexing code seems to use it, but is it necessary?)
+
+    # The length and order of this is unmodified by refinement - only beam
+    # vectors may have been set, if they were not already. It is deemed safe
+    # to return this without a copy (NB the input will usually already have been
+    # copied by the RefinerFactory)
+    return self._reflections
+
   def rmsds(self):
     """Return rmsds of the current model"""
 
     self._refinery.prepare_for_step()
 
     return self._target.rmsds()
+
+  def get_matches(self):
+    """Delegated to the reflection manager, but suppress output"""
+
+    # FIXME Consider: Does this information really need to be exposed by the
+    # public API (indexing code seems to use it, but is it necessary?)
+    return self._refman.get_matches(silent = True)
 
   def run(self):
     """Run refinement"""
@@ -867,11 +974,11 @@ class Refiner2(object):
       print ""
       print "Experimental models before refinement"
       print "-------------------------------------"
-      print self.beam
-      print self.detector
-      if self.goniometer: print self.goniometer
-      if self.scan: print self.scan
-      for x in self.crystals: print x
+      print self._beam
+      print self._detector
+      if self._goniometer: print self._goniometer
+      if self._scan: print self._scan
+      for x in self._crystals: print x
 
     self._refinery.run()
 
@@ -879,15 +986,15 @@ class Refiner2(object):
       print
       print "Experimental models after refinement"
       print "------------------------------------"
-      print self.beam
-      print self.detector
-      if self.goniometer: print self.goniometer
-      if self.scan: print self.scan
-      for x in self.crystals: print x
+      print self._beam
+      print self._detector
+      if self._goniometer: print self._goniometer
+      if self._scan: print self._scan
+      for x in self._crystals: print x
 
       # Write scan-varying parameters to file, if there were any
-      if self.scan and self._param_report.varying_params_vs_image_number(
-              self.scan.get_image_range()):
+      if self._scan and self._param_report.varying_params_vs_image_number(
+              self._scan.get_image_range()):
         print "Writing scan-varying parameter table to file"
 
       # Report on the refined parameters
@@ -932,28 +1039,49 @@ class Refiner2(object):
   def predict_reflections(self):
     """Predict all reflection positions after refinement"""
 
-    from dials.algorithms.integration import ReflectionPredictor
+    #FIXME only works for a single crystal
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.model.data import ReflectionList
     from math import pi
     from dials.algorithms.refinement.prediction.predictors import \
             ScanVaryingReflectionListGenerator
 
-    s0 = self.beam.get_s0()
-    dmin = self.detector.get_max_resolution(s0)
-    sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
-                        self.beam, self.gonio, self.scan, dmin)
+    if any (self._scan, self._goniometer) is None:
+        raise TypeError("Prediction can only be done when a scan and "
+                        "goniometer are provided")
+
+    dmin = self._detector.get_max_resolution(s0)
 
     # Duck typing to determine whether prediction is scan-varying or not
     try:
+      sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
+                            self._beam, self._goniometer, self._scan, dmin)
       refs = ReflectionList(sv_predictor())
-      self._new_reflections = ray_intersection(self.detector, refs)
+      new_reflections = ray_intersection(self._detector, refs)
 
     except AttributeError: # prediction seems to be scan-static
-      predict = ReflectionPredictor()
-      self._new_reflections = predict(self.sweep, self.crystal)
+      from dials.algorithms.spot_prediction import IndexGenerator
+      from cctbx.sgtbx import space_group_type
+      from dials.algorithms.spot_prediction import RayPredictor
+      from dials.algorithms.spot_prediction import reflection_frames
 
-    return self._new_reflections
+      # Create an index generator
+      generate_hkl = IndexGenerator(self._crystal.get_unit_cell(),
+                        sgtbx.space_group_type(self._crystal.get_space_group()),
+                        dmin)
+
+      # Create a spot predictor
+      predict_rays = RayPredictor(self._beam.get_s0(),
+                                  self._goniometer.get_rotation_axis(),
+                                  self._scan.get_oscillation_range(deg=False))
+
+      # predict
+      miller_indices = generate_hkl.to_array()
+      new_reflections = predict_rays(miller_indices, self._crystal.get_A())
+      new_reflections = ray_intersection(self._detector, new_reflections)
+      new_reflections = reflection_frames(self._scan, new_reflections)
+
+    return new_reflections
 
 class Refiner(object):
   """The refiner class."""
