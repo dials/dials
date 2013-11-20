@@ -69,5 +69,10 @@ class Script(ScriptRunner):
 
 
 if __name__ == '__main__':
+  from time import time
+  start_time = time()
+
   script = Script()
   script.run()
+
+  print "Total time: ", time() - start_time

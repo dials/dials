@@ -13,6 +13,59 @@ from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 
+class Extract(object):
+  ''' Class to extract a batch of images '''
+
+  def __init__(self, sweep, threshold_image):
+      ''' Initialise with sweep and threshold function, both need to be
+      picklable for this to be called using multiprocessing. '''
+      self.threshold_image = threshold_image
+      self.sweep = sweep
+
+  def __call__(self, index):
+      ''' Extract pixels from a block of images. '''
+      from dials.model.data import PixelList
+
+      # Create the list of pixel lists
+      plists = [PixelList(p.get_image_size()[::-1], index[0])
+          for p in self.sweep.get_detector()]
+
+      # Iterate through the range of images
+      for image in self.sweep[index[0]:index[1]]:
+
+        # Ensure image is a tuple of images (for multi-panel support)
+        if not isinstance(image, tuple):
+          image = (image,)
+
+        # Add the images to the pixel lists
+        for pl, im in zip(plists, image):
+          pl.add_image(im, self.threshold_image(im))
+
+      # Return the pixel lists
+      return plists
+
+
+class ProgressUpdater(object):
+  ''' Class to update the progress bar from multi processing callback. '''
+
+  def __init__(self, total):
+    ''' Initialise the progress bar. '''
+    from dials.util.command_line import ProgressBar
+    self.total = total
+    self.num = 0
+    self.progress = ProgressBar(title='Extracting strong pixels from images')
+
+  def __call__(self, result):
+    ''' Update the progress bar. '''
+    self.num += 1
+    percent = 100.0 * (self.num+1) / self.total
+    self.progress.update(percent)
+
+  def finished(self):
+     ''' Finish the progress bar. '''
+     self.progress.finished('Extracted strong pixels from images')
+
+
 class ExtractSpots(object):
   ''' Class to find spots in an image and extract them into shoeboxes. '''
 
@@ -36,33 +89,12 @@ class ExtractSpots(object):
         The list of spot shoeboxes
 
     '''
-    from dials.util.command_line import ProgressBar, Command
+    from dials.util.command_line import Command
     from dials.model.data import PixelList
     from dials.array_family import flex
     from dxtbx.imageset import ImageSweep
     from libtbx import easy_mp
     from dials.util import mp
-
-    def extract(index):
-      ''' Extract pixels from a block of images. '''
-
-      # Create the list of pixel lists
-      plists = [PixelList(p.get_image_size()[::-1], index[0])
-          for p in sweep.get_detector()]
-
-      # Iterate through the range of images
-      for image in sweep[index[0]:index[1]]:
-
-        # Ensure image is a tuple of images (for multi-panel support)
-        if not isinstance(image, tuple):
-          image = (image,)
-
-        # Add the images to the pixel lists
-        for pl, im in zip(plists, image):
-          pl.add_image(im, self.threshold_image(im))
-
-      # Return the pixel lists
-      return plists
 
     # Change the number of processors if necessary
     nproc = mp.nproc
@@ -70,14 +102,16 @@ class ExtractSpots(object):
       nproc = len(sweep)
 
     # Extract the pixels in blocks of images in parallel
-    Command.start('Extracting strong pixels from images')
+    progress = ProgressUpdater(nproc)
     pl = easy_mp.parallel_map(
-      func=extract,
+      func=Extract(sweep, self.threshold_image),
       iterable=self._calculate_blocks(sweep, nproc),
       processes=nproc,
       method=mp.method,
-      preserve_order=True)
-    Command.end('Extracted strong pixels from images')
+      preserve_order=True,
+      asynchronous=True,
+      callback=progress)
+    progress.finished()
 
     # Merge pixel lists into a single list for each panel
     len_pl = sum(len(p) for p in pl)
