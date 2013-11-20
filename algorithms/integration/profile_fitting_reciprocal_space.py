@@ -65,7 +65,8 @@ class ProfileFittingReciprocalSpace(object):
     sind, pind = self.match(strong, reflections)
 
     # Create the reference profile sampler
-    image_size = sweep.get_detector().get_image_size()
+    assert(len(sweep.get_detector()) == 1)
+    image_size = sweep.get_detector()[0].get_image_size()
     num_frames = sweep.get_scan().get_num_images()
     volume_size = image_size + (num_frames,)
     sampler = XdsCircleSampler(volume_size, 1)
