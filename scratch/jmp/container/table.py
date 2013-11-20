@@ -3,7 +3,7 @@ from __future__ import division
 
 class Table(object):
 
-  def __init__(self, columns=None):
+  def __init__(self, columns=None, metadata=None):
     from collections import OrderedDict
     if columns == None:
       self._columns = OrderedDict()
@@ -11,14 +11,19 @@ class Table(object):
       self._columns = OrderedDict(columns)
     if not self.is_consistent():
       raise RuntimeError('inconsistent column sizes')
-    self._metadata = dict()
+    if metadata == None:
+      self._metadata = dict()
+    else:
+      self._metadata = metadata
 
   def __getitem__(self, index):
     if isinstance(index, int):
       d = dict((k, c[index]) for k, c in self._columns.iteritems())
       return self.make_record(**d)
     elif isinstance(index, slice):
-      return Table([(k, c[index]) for k, c in self._columns.iteritems()])
+      return Table(
+        [(k, c[index]) for k, c in self._columns.iteritems()],
+        self._metadata)
     elif isinstance(index, str):
       return type(self._columns[index])(self._columns[index])
     else:
