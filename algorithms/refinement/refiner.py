@@ -823,6 +823,7 @@ class Refiner2(object):
     get_detector
     get_goniometer
     get_scan
+    get_reflections
     get_matches
     selection_used_for_refinement
     write_residuals_table
