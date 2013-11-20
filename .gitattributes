@@ -447,6 +447,7 @@ scratch/jmp/analysis/centroid_difference.py -text
 scratch/jmp/analysis/show_reference_profiles.py -text
 scratch/jmp/analysis/test_parallax.py -text
 scratch/jmp/analysis/xds_xyz_diff_map.py -text
+scratch/jmp/container/__init__.py -text
 scratch/jmp/container/reflection_table.py -text
 scratch/jmp/container/table.py -text
 scratch/jmp/find_roots/find_roots.py -text
