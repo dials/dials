@@ -1,6 +1,6 @@
 from __future__ import division
 from dials.algorithms.integration.mosflm_2D_profile import \
- fit_profile_2d, calc_background_n_make_2d_profile
+ fit_profile_2d, make_2d_profile
 
 from dials.model.data import Reflection, ReflectionList
 def mosflm_caller(rlist, xmax, ymax, n_div):
@@ -29,7 +29,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
 
   for col in range(ncol):
     for row in range(nrow):
-      profile, tr_hold = calc_background_n_make_2d_profile(arr_rlist[row][col])      
+      profile, tr_hold = make_2d_profile(arr_rlist[row][col])      
       arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], profile, tr_hold)
 
   new_rlist = ReflectionList()

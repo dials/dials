@@ -256,7 +256,6 @@ namespace dials { namespace scratch {
         sum += scale * imodl_lst[i];
       }
 
-
       avg_i_scale = sum;
       for (int i = 0; i < counter; i++){
         modl_scal_lst[i] =imodl_lst[i] * avg_i_scale;
@@ -564,12 +563,9 @@ namespace dials { namespace scratch {
       std::cout << "  ]";
     }
     std::cout << " ] \n"; 
-    
-    
-    
-    
+
     return data2dreturn;
-    
+
   }
 
   
