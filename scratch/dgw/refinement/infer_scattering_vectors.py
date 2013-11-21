@@ -28,9 +28,7 @@ class ScriptRunner(object):
   def __call__(self):
     """Run the script."""
     from dials.model.serialize import load, dump
-    from dials.model.data import ReflectionList
     import cPickle as pickle
-    from scitbx.array_family import flex
     from scitbx import matrix
 
     # Load the reflection list

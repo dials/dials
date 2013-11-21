@@ -27,7 +27,6 @@ from setup_geometry import Extract
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
-from dials.algorithms.spot_prediction import ray_intersection
 
 # We will set up a mock scan
 from dxtbx.model.scan import scan_factory

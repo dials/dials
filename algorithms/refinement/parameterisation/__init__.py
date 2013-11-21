@@ -1,14 +1,12 @@
 from __future__ import division
-from beam_parameters import BeamParameterisationOrientation
-from crystal_parameters import CrystalOrientationParameterisation, \
-    CrystalUnitCellParameterisation
-from detector_parameters import DetectorParameterisationSinglePanel, \
-    DetectorParameterisationMultiPanel
-from prediction_parameters import XYPhiPredictionParameterisation, \
-     PredictionParameterisation
-from scan_varying_crystal_parameters \
-    import ScanVaryingCrystalOrientationParameterisation, \
-           ScanVaryingCrystalUnitCellParameterisation
-from scan_varying_prediction_parameters \
-    import VaryingCrystalPredictionParameterisation
-from parameter_report import ParameterReporter
+from beam_parameters import BeamParameterisationOrientation # import dependency
+from crystal_parameters import CrystalOrientationParameterisation # import dependency
+from crystal_parameters import CrystalUnitCellParameterisation # import dependency
+from detector_parameters import DetectorParameterisationSinglePanel # import dependency
+from detector_parameters import DetectorParameterisationMultiPanel # import dependency
+from prediction_parameters import PredictionParameterisation # import dependency
+from prediction_parameters import XYPhiPredictionParameterisation # import dependency
+from scan_varying_crystal_parameters import ScanVaryingCrystalOrientationParameterisation # import dependency
+from scan_varying_crystal_parameters import ScanVaryingCrystalUnitCellParameterisation # import dependency
+from scan_varying_prediction_parameters import VaryingCrystalPredictionParameterisation  # import dependency
+from parameter_report import ParameterReporter # import dependency

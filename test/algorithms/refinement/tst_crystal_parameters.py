@@ -14,7 +14,7 @@ from __future__ import division
 from dials.model.experiment.crystal_model import Crystal
 from scitbx import matrix
 from dials.algorithms.refinement.refinement_helpers \
-    import get_fd_gradients, dR_from_axis_and_angle, random_param_shift
+    import get_fd_gradients, random_param_shift
 from math import pi
 from rstbx.symmetry.constraints.parameter_reduction import symmetrize_reduce_enlarge
 from dials.algorithms.refinement.parameterisation \

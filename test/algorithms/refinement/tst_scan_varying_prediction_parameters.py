@@ -15,7 +15,6 @@ from __future__ import division
 
 import sys
 import random
-from math import pi
 from scitbx import matrix
 from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
@@ -45,8 +44,7 @@ from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameter
 
 #### Import helper functions
 
-from dials.algorithms.refinement.refinement_helpers import \
-    random_param_shift, print_grads
+from dials.algorithms.refinement.refinement_helpers import random_param_shift
 
 #### Local functions
 
@@ -126,10 +124,6 @@ def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
 
   return fd_grad
 
-from time import time
-
-start_time = time()
-
 #### Create models and parameterisations
 
 args = sys.argv[1:]
@@ -151,7 +145,6 @@ mybeam = models.beam
 # Make a scan of 1-360 * 0.5 deg images
 sf = scan_factory()
 myscan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
-print myscan
 
 # Create parameterisations of these models, with 5 samples for the
 # scan-varying crystal parameterisations
@@ -296,12 +289,7 @@ for iref in selection:
         print "Failure for parameter number %d" %i
         print "Analytical derivatives: %.6f, %.6f, %.6f" % tuple(an_grad)
         print "Finite difference derivatives: %.6f, %.6f, %.6f" % tuple(fd_grad)
-        finish_time = time()
-        print "Time Taken: ",finish_time - start_time
         raise
-
-finish_time = time()
-print "Time Taken: ",finish_time - start_time
 
 # if we got this far,
 print "OK"

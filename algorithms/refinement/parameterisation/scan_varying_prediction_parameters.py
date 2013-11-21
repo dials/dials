@@ -14,7 +14,6 @@ from __future__ import division
 from scitbx import matrix
 
 # dials imports
-from cctbx.array_family import flex
 from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation

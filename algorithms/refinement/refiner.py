@@ -1118,7 +1118,6 @@ class Refiner(object):
 
     """
     from scitbx import matrix
-    from math import sqrt
 
     # Get the models from the sweep
     self.sweep = sweep

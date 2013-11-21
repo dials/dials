@@ -13,7 +13,7 @@ from __future__ import division
 
 from scitbx import matrix
 import scitbx.math
-from math import sqrt, sin, asin, fabs, pi
+from math import sqrt, sin, asin, pi
 from dials.algorithms.refinement.prediction.reeke import reeke_model
 
 def visualize_with_rgl(reeke_model, rscript="reeke_vis.R", dat="reeke_hkl.dat"):

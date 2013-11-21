@@ -52,8 +52,7 @@ class Script(ScriptRunner):
   def main(self, params, options, args):
     """Execute the script."""
     from dials.algorithms.refinement import RefinerFactory
-    from dials.model.serialize import load, dump
-    from dials.model.data import ReflectionList
+    from dials.model.serialize import load
     import cPickle as pickle
     from time import time
     import sys

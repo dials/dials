@@ -51,7 +51,6 @@ class Script(ScriptRunner):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.serialize import load, dump
-    from dials.model.data import ReflectionList
     import cPickle as pickle
 
     # Check the number of arguments is correct

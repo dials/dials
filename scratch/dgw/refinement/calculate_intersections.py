@@ -31,8 +31,6 @@ class ScriptRunner(object):
     from dials.model.serialize import load, dump
     from dials.model.data import ReflectionList
     import cPickle as pickle
-    from scitbx.array_family import flex
-    from scitbx import matrix
     from dials.algorithms.spot_prediction import ray_intersection
 
     # Load the reflection list

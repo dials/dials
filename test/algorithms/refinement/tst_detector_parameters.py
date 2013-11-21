@@ -23,8 +23,7 @@ from dials.model.experiment import beam_factory
 from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift
 from dials.algorithms.refinement.parameterisation.detector_parameters \
-    import (DetectorParameterisationSinglePanel,
-            DetectorParameterisationMultiPanel)
+    import DetectorParameterisationSinglePanel, DetectorParameterisationMultiPanel
 
 def random_panel(lim = (0, 50)):
   """For testing, return a square panel with a randomised position

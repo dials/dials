@@ -42,10 +42,6 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
 
-#### Import helper function
-
-from dials.algorithms.refinement.refinement_helpers import print_grads
-
 #### Local functions
 
 # Functions required for finite difference calculations

@@ -49,7 +49,6 @@ if __name__ == '__main__':
     sys.exit()
 
   from dials.model.serialize import load, dump
-  import cPickle as pickle
 
   # Try to load the models
   print 'Loading detector from {0}'.format(args[0])

@@ -11,7 +11,6 @@ from __future__ import division
 from dials.algorithms.refinement.parameterisation.model_parameters \
         import Parameter, ModelParameterisation
 from math import exp
-from scitbx import matrix
 
 class ScanVaryingParameterSet(Parameter):
   """Testing a class for a scan-varying parameter, in which values at rotation

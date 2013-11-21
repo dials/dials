@@ -10,7 +10,7 @@
 #  included in the root directory of this package.
 
 """This script applies a sinusoidal perturbation of up to 0.5 degree to the
-reflecting phi fora set of input reflections. This is a way to exercise
+reflecting phi for a set of input reflections. This is a way to exercise
 scan-varying refinement, which should be able to model the sinusoidal
 variation."""
 
@@ -29,10 +29,7 @@ class ScriptRunner(object):
   def __call__(self):
     """Run the script."""
     from dials.model.serialize import load, dump
-    from dials.model.data import ReflectionList
     import cPickle as pickle
-    from scitbx.array_family import flex
-    from scitbx import matrix
     from math import sin, pi
 
     # Load the reflection list

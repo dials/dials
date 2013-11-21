@@ -35,13 +35,6 @@ from dials.algorithms.refinement.prediction import \
     ScanVaryingReflectionListGenerator
 from cctbx.sgtbx import space_group, space_group_symbols
 
-# Imports for the target function
-from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff
-
-# Import helper functions
-from dials.algorithms.refinement.refinement_helpers import print_model_geometry
-
 #############################
 # Setup experimental models #
 #############################

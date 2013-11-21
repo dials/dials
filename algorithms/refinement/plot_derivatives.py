@@ -10,7 +10,6 @@ reflection coordinates (X, Y, phi) with respect to any parameter"""
 # Python and cctbx imports
 from __future__ import division
 import sys
-from math import pi
 import random
 from scitbx import matrix
 

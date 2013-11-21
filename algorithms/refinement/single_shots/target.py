@@ -9,17 +9,15 @@
 
 # python and cctbx imports
 from __future__ import division
-from scitbx import matrix
 from math import pi, sqrt
 from cctbx.array_family import flex
 import random
 
 # dials imports
-from dials.algorithms.spot_prediction import ray_intersection
 from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.target import ReflectionManager
-from dials.algorithms.refinement.target import ObsPredMatch
-from dials.algorithms.refinement.target import ObservationPrediction
+from dials.algorithms.refinement.target import ObsPredMatch # implicit import
+from dials.algorithms.refinement.target import ObservationPrediction # implicit import
 
 # constants
 TWO_PI = 2.0 * pi

@@ -12,8 +12,7 @@ prediction based on the Reeke algorithm (see Mosflm)"""
 
 from __future__ import division
 from scitbx import matrix
-import scitbx.math
-from math import sqrt, sin, asin, fabs, pi
+from math import sqrt, sin, asin, fabs
 
 def solve_quad(a, b, c):
   """Robust solution, for real roots only, of a quadratic in the form
