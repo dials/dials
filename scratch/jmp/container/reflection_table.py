@@ -8,6 +8,35 @@ class ReflectionTable(Table):
     from dials.algorithms.spatial_indexing import make_spatial_index
     return make_spatial_index(self._columns[column])
 
+def ReflectionTableMTZ(mtz_file):
+  '''Create a ReflectionTable from an MTZ file.'''
+
+  from iotbx import mtz
+
+  table = ReflectionTable()
+
+  m = mtz.object(mtz_file)
+  mi = m.extract_miller_indices()
+
+  table = ReflectionTable()
+  table["miller_index"] = mi
+
+  for c in m.columns():
+    if c.type() == 'H':
+      continue
+    if c.type() in 'BYI':
+      table[c.label()] = m.extract_integers(c.label()).data
+    else:
+      table[c.label()] = c.extract_values()
+
+  crystals = m.crystals()
+
+  table.metadata['unit_cell'] = crystals[0].unit_cell()
+  table.metadata['max_min_resolution'] = m.max_min_resolution()
+
+  # FIXME add more metadata?
+
+  return table
 
 if __name__ == '__main__':
   from cctbx.array_family import flex
