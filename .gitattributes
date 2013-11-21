@@ -517,6 +517,7 @@ scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test_f.f90 -text
 scratch/luiso_s/test_code/mosflm_2D.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/mosflm_test.py -text
 scratch/luiso_s/test_code/my_mosflm.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_centoid.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_2d.py -text svneol=unset#text/plain
@@ -536,6 +537,7 @@ scratch/luiso_s/test_code/tst_matrix_01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_mosflm_real_img.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting_1d_demo.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/versa_test.py -text
 scratch/luiso_s/test_flex_n_mix.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
