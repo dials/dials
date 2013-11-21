@@ -4,18 +4,19 @@
 #include <scitbx/vec2.h>
 #include <scitbx/array_family/flex_types.h>
 
-//#include <scitbx/array_family/ref_algebra.h>
-//#include <scitbx/array_family/accessors/mat_grid.h>
-//#include <scitbx/matrix/norms.h>
-//#include <scitbx/matrix/packed.h>
 #include <scitbx/array_family/versa_matrix.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <scitbx/matrix/inversion.h>
+
+
+#include <cstdlib>
+#include <scitbx/array_family/accessors/mat_grid.h>
 
 
 #include <cmath>
 #include <stdio.h>
 #include <cstdlib>
-#include <dials/array_family/scitbx_shared_and_versa.h>
+
 const float pi=3.14159265358;
 
 namespace dials { namespace scratch {
@@ -97,6 +98,7 @@ namespace dials { namespace scratch {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
     int num=0;
+    
     for (int row = 0; row<=nrow-1;row++) {
       if (row==0){
         std::cout << "\n  [ [ ";
@@ -233,7 +235,8 @@ namespace dials { namespace scratch {
       double imodl_lst[counter];
       double iback_lst[counter];
       double modl_scal_lst[counter];
-      double scale = 0, sum = 0, i_var, bkg_var;
+      double scale = 0, sum = 0, i_var;
+      //double bkg_var;
       double avg_i_scale, diff, df_sqr;
       counter = 0;
       for (int row = 0; row <= nrow - 1; row++) {
@@ -273,7 +276,7 @@ namespace dials { namespace scratch {
           df_sqr = iback_lst[i] * iback_lst[i];
           sum += df_sqr;
         }
-      bkg_var = sum;
+      //bkg_var = sum;
 
       integr_data[0] = avg_i_scale;//                            // intensity
       integr_data[1] = i_var;// + bkg_var ;          // intensity variance
@@ -377,8 +380,8 @@ namespace dials { namespace scratch {
     //std::cout <<"\n" << "cont =" << contr <<"\n";
     float angl_tmp[int(contr)];
     float dist_tmp[int(contr)];
-    int   xcol_tmp[int(contr)];
-    int   yrow_tmp[int(contr)];
+    //int   xcol_tmp[int(contr)];
+    //int   yrow_tmp[int(contr)];
     int area=contr;
     contr = 0;
     for (int row = 0; row < nrow; row++) {
@@ -388,8 +391,8 @@ namespace dials { namespace scratch {
           dx = float(col) - xpos;
           dy = float(row) - ypos;
           get_polar (angl_tmp[contr], dist_tmp[contr], dx, dy);
-          xcol_tmp[contr]=col;
-          yrow_tmp[contr]=row;
+          //xcol_tmp[contr]=col;
+          //yrow_tmp[contr]=row;
         }
       }
     }
@@ -403,8 +406,8 @@ namespace dials { namespace scratch {
     //std::cout << "pie_size =" << pie_size << "\n";
     float dist[int(pie_size)];
     float angl[int(pie_size)];
-    int   xcol[int(pie_size)];
-    int   yrow[int(pie_size)];
+    //int   xcol[int(pie_size)];
+    //int   yrow[int(pie_size)];
 
     float ang_min, ang_max, max_dst;
     for (int pos=0; pos < pie_size; pos++){
@@ -426,8 +429,8 @@ namespace dials { namespace scratch {
             max_dst = dist_tmp[locl_pos];
             dist[pos] = dist_tmp[locl_pos];
             angl[pos] = angl_tmp[locl_pos];
-            xcol[pos] = xcol_tmp[locl_pos];
-            yrow[pos] = yrow_tmp[locl_pos];
+            //xcol[pos] = xcol_tmp[locl_pos];
+            //yrow[pos] = yrow_tmp[locl_pos];
           }
         }
       }
@@ -504,6 +507,73 @@ namespace dials { namespace scratch {
     return fin_ang;
   }
 
+
+  flex_double test_compare_2d(flex_double descriptor, flex_double data2d, flex_double total) {
+    flex_double data2dreturn(total);
+    int ncol_in = data2d.accessor().all()[1];
+    int nrow_in = data2d.accessor().all()[0];
+    int ncol_tot = total.accessor().all()[1];
+    int nrow_tot = total.accessor().all()[0];
+ 
+
+  /*
+  af::versa< double, af::c_grid<2> > test_compare_2d(
+    const af::const_ref< double, af::c_grid<2> > &descriptor,
+    const af::const_ref< double, af::c_grid<2> > &data2d,
+    const af::const_ref< double, af::c_grid<2> > &total) {
+    af::versa< double, af::c_grid<2> > data2dreturn(total.accessor(),0);
+    int ncol_in=data2d.accessor()[1];
+    int nrow_in=data2d.accessor()[0];
+    int ncol_tot=total.accessor()[1];
+    int nrow_tot=total.accessor()[0];
+  */ 
+    
+    for (int row = 0; row<nrow_in;row++) {
+      if (row==0){
+        std::cout << "\n  [ [ ";
+      } else {
+        std::cout << "\n    [ ";
+      }
+      for (int col = 0; col<ncol_in;col++) {
+        //[ 6 ] = minimum width (no maximum given)
+        //[ 2 ] = precision after the period
+        printf("%6.3f ", data2d(row,col));
+        //std::cout << int(matx2d[row][col]) << " ,   ";
+      }
+      //fflush(stdout);
+      std::cout << "  ]";
+    }
+    std::cout << " ] \n";
+
+    for (int row = 0; row<nrow_tot;row++) {
+      if (row==0){
+        std::cout << "\n  [ [ ";
+      } else {
+        std::cout << "\n    [ ";
+      }
+
+      for (int col = 0; col<ncol_tot;col++) {
+
+        //[ 6 ] = minimum width (no maximum given)
+        //[ 2 ] = precision after the period
+        printf("%6.3f ", total(row,col));
+
+        //std::cout << int(matx2d[row][col]) << " ,   ";
+      }
+      //fflush(stdout);
+      std::cout << "  ]";
+    }
+    std::cout << " ] \n"; 
+    
+    
+    
+    
+    return data2dreturn;
+    
+  }
+
+  
+  
 
 }}
 

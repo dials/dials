@@ -1,9 +1,12 @@
 from __future__ import division
 
 from scitbx.array_family import flex
-from dials.scratch.luiso_s import model_2d
+from dials.scratch.luiso_s import model_2d, write_2d
 from matplotlib import pyplot as plt
-from dials.scratch.luiso_s import add_2d, write_2d
+
+# from dials.scratch.luiso_s import add_2d
+
+from dials.algorithms.integration import add_2d
 
 import numpy
 
@@ -25,8 +28,8 @@ for xpos in range(3):
     row_str = ypos * 12
     col_str = xpos * 20
     ref_ang = float((ypos + 1) / 10)
-    #flex_int model_2d(int nrow, int ncol, float a, float b,
-    #float delta_ang, float imax, float asp)
+    # flex_int model_2d(int nrow, int ncol, float a, float b,
+    # float delta_ang, float imax, float asp)
     ref2d = model_2d(nrow, ncol, 2, 1, ref_ang, 55, 0.5)
     data2d_tmp = ref2d.as_numpy_array()
     data2d[row_str:row_str + nrow, col_str:col_str + ncol] += numpy.float64(data2d_tmp)

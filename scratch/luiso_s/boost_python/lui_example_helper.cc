@@ -21,6 +21,7 @@ namespace dials { namespace scratch { namespace boost_python {
          arg("mask2d"), arg("xpos")=1, arg("ypos")=20)  );
     def("tst_prod", &tst_prod, arg("matr01"), arg("matr02"));
     def("tst_ref_prod", &tst_ref_prod, arg("matr01"), arg("matr02"));
+    def("test_compare_2d", &test_compare_2d, arg("descriptor"), arg("data2d"), arg("total"));
   }
 
 }}}
