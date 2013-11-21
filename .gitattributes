@@ -158,6 +158,7 @@ algorithms/refinement/parameterisation/detector_parameters.py -text
 algorithms/refinement/parameterisation/model_parameters.py -text
 algorithms/refinement/parameterisation/parameter_report.py -text
 algorithms/refinement/parameterisation/prediction_parameters.py -text
+algorithms/refinement/parameterisation/prediction_parameters_stills.py -text
 algorithms/refinement/parameterisation/scan_varying_crystal_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_model_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_prediction_parameters.py -text
@@ -176,9 +177,8 @@ algorithms/refinement/refiner.py -text
 algorithms/refinement/single_shots/README.txt -text
 algorithms/refinement/single_shots/__init__.py -text
 algorithms/refinement/single_shots/parameterisation/__init__.py -text
-algorithms/refinement/single_shots/parameterisation/prediction_parameters.py -text
-algorithms/refinement/single_shots/target.py -text
 algorithms/refinement/target.py -text
+algorithms/refinement/target_stills.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
 algorithms/reflection_basis/SConscript -text
 algorithms/reflection_basis/__init__.py -text

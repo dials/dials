@@ -306,9 +306,7 @@ class RefinerFactory(object):
           detector, beam, crystal, goniometer,
           [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
     elif goniometer is None:
-      from dials.algorithms.refinement.single_shots.parameterisation import \
-          XYPredictionParameterisation
-      pred_param = XYPredictionParameterisation(
+      pred_param = par.XYPredictionParameterisation(
           detector, beam, crystal, goniometer,
           [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
     else:
@@ -388,11 +386,10 @@ class RefinerFactory(object):
         print "Random seed set to %d\n" % options.random_seed
 
     if goniometer:
-      import dials.algorithms.refinement.target as target
-      from target import ReflectionManager as refman
+      from dials.algorithms.refinement.target import ReflectionManager as refman
 
     else:
-      from dials.algorithms.refinement.single_shots.target import \
+      from dials.algorithms.refinement.target_stills import \
           ReflectionManagerXY as refman
 
     return refman(reflections=reflections,
@@ -446,7 +443,7 @@ class RefinerFactory(object):
           StillsReflectionPredictor
       ref_predictor = StillsReflectionPredictor(crystal, beam)
 
-      import dials.algorithms.refinement.single_shots.target as targ
+      import dials.algorithms.refinement.target_stills as targ
 
       target = targ.LeastSquaresXYResidualWithRmsdCutoff(
                       ref_predictor, detector, refman, pred_param,
@@ -594,9 +591,7 @@ class ParameterisationFactory(object):
     elif self._prediction_par_options == "XYPhi":
       pep = par.XYPhiPredictionParameterisation
     elif self._prediction_par_options == "XY":
-      from dials.algorithms.refinement.single_shots.parameterisation import \
-          XYPredictionParameterisation
-      pep = XYPredictionParameterisation
+      pep = par.XYPredictionParameterisation
     else:
       raise RuntimeError("Prediction equation type " +
           self._prediction_par_options + " not recognised")
@@ -716,14 +711,14 @@ class RefmanFactory(object):
   def __init__(self, options):
 
     if options.implementation == "rotation":
-      import dials.algorithms.refinement.target as target
-      from target import ReflectionManager as refman
+      from dials.algorithms.refinement.target import \
+        ReflectionManager as refman
     elif options.implementation == "stills":
-      from dials.algorithms.refinement.single_shots.target import \
-          ReflectionManagerXY as refman
+      from dials.algorithms.refinement.target_stills import \
+        ReflectionManagerXY as refman
     else:
       raise RuntimeError("ReflectionManager type " +
-          options.implementation + " not recognised")
+                         options.implementation + " not recognised")
     self._refman = refman
 
     self._random_seed = options.random_seed
@@ -769,11 +764,10 @@ class TargetFactory(object):
     self._XY = False
 
     if options.implementation == "basic":
-      import dials.algorithms.refinement.target as target
-      from target import \
+      from dials.algorithms.refinement.target import \
           LeastSquaresPositionalResidualWithRmsdCutoff as targ
     elif options.implementation == "XY":
-      from dials.algorithms.refinement.single_shots.target import \
+      from dials.algorithms.refinement.target_stills import \
           LeastSquaresXYResidualWithRmsdCutoff as targ
       self._XY = True
     else:
