@@ -71,6 +71,7 @@ namespace dials { namespace algorithms {
 
     }
 
+    
    flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double tmp_total) {
     flex_double total(tmp_total);
     int ncol_in = data2d.accessor().all()[1];
