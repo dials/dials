@@ -192,11 +192,11 @@ class ReflectionManagerXY(ReflectionManager):
       return None
 
   def _id_refs_to_keep(self, obs_data):
-    """For this version of the class, do nothing. We don't want to
-    exclude reflections close to the spindle, as the spindle may
-    not exist"""
+    """For this version of the class, only reject the (0,0,0) reflections. 
+    We don't want to exclude reflections close to the spindle, as the spindle
+    may not exist"""
 
-    inc = [i for i, ref in enumerate(obs_data)]
+    inc = [i for i, ref in enumerate(obs_data) if ref.miller_index != (0,0,0)]
 
     return inc
 

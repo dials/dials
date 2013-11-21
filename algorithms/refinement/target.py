@@ -542,7 +542,7 @@ class ReflectionManager(object):
     """Create a selection of observations that pass certain conditions.
 
     This includes outlier rejection plus rejection of reflections
-    too close to the spindle"""
+    too close to the spindle, and rejection of the (0,0,0) Miller index"""
 
     # TODO Add outlier rejection. Should use robust statistics.
     # See notes on M-estimators from Garib (when I have them)
@@ -550,8 +550,8 @@ class ReflectionManager(object):
     axis = matrix.col(self._gonio.get_rotation_axis())
     s0 = matrix.col(self._beam.get_s0())
 
-    inc = [i for i, ref in enumerate(obs_data) if self._inclusion_test(
-        matrix.col(ref.beam_vector), axis, s0)]
+    inc = [i for i, ref in enumerate(obs_data) if ref.miller_index != (0,0,0) \
+           and self._inclusion_test(matrix.col(ref.beam_vector), axis, s0)]
 
     return inc
 
