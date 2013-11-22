@@ -1050,6 +1050,8 @@ class Refiner2(object):
 
     # Test whether prediction is scan-varying or not (try-except duck-typing
     # fails because scan-varying prediction is done in multiple processes).
+    from dials.algorithms.refinement.parameterisation import \
+      VaryingCrystalPredictionParameterisation
     if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
 
       sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
