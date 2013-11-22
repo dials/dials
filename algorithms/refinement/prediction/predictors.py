@@ -320,18 +320,49 @@ class ScanVaryingReflectionListGenerator(object):
     predictions list"""
 
     from libtbx import easy_mp
+    from dials.util import mp
+
     im_range = self._scan.get_image_range()
-    iterable = range(im_range[0], im_range[1] + 1)
+    n_images = im_range[-1] - im_range[0] + 1
+
+    # Change the number of processors if necessary
+    nproc = mp.nproc
+    if nproc > n_images:
+      nproc = n_images
+
+    iterable = self._make_blocks(im_range, nproc)
 
     ref_list_of_list = easy_mp.parallel_map(
-        func=self._search_on_image,
+        func=self._search_on_image_range,
         iterable=iterable,
-        processes=2,
-        method="multiprocessing",
+        processes=nproc,
+        method=mp.method,
         preserve_order=True)
 
     self._reflections = [e for l in ref_list_of_list for e in l]
     return
+
+  def _make_blocks(self, im_range, num_blocks):
+
+    n_images = im_range[-1] - im_range[0] + 1
+    blocksizes = [n_images // num_blocks] * num_blocks
+
+    # increase the final blocksize by the remainder
+    blocksizes[-1] += n_images % num_blocks
+
+    blockranges = []
+    start = im_range[0]
+    for block in blocksizes:
+      blockranges.append((start, start + block))
+      start += block
+
+    return blockranges
+
+  def _search_on_image_range(self, indices):
+
+    reflections = [e for t in range(indices[0], indices[1]+1) \
+                   for e in self._search_on_image(t)]
+    return reflections
 
   def _search_on_image(self, t):
 
