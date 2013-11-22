@@ -64,10 +64,16 @@ class Script(ScriptRunner):
       RuntimeError('need 1 crystal: %d given' % len(importer.crystals))
     sweep = importer.imagesets[0]
     crystal = importer.crystals[0]
-    if len(importer.reflections) == 0:
-      reference = None
-    else:
-      reference = importer.reflections
+    reference = None
+    predicted = None
+    for rlist in importer.reflections:
+      hkl = [r.miller_index for r in rlist]
+      if all(h == (0, 0, 0) for h in hkl):
+        assert(reference == None)
+        reference = rlist
+      else:
+        assert(predicted == None)
+        predicted = rlist
     extracted = importer.extracted
     Command.end('Processed command line options')
 

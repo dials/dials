@@ -1443,7 +1443,8 @@ def run(args):
   elif len(importer.imagesets) > 1:
     raise RuntimeError("Only one imageset can be processed at a time")
   sweeps = importer.imagesets
-  reflections = importer.reflections
+  assert(len(importer.reflections) == 1)
+  reflections = importer.reflections[0]
   assert len(reflections) > 0
   args = importer.unhandled_arguments
 

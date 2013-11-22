@@ -268,7 +268,7 @@ class Importer(object):
     # Initialise output
     self.imagesets = []
     self.crystals = []
-    self.reflections = ReflectionList()
+    self.reflections = []
     self.reference = None
     self.extracted = None
 
@@ -305,7 +305,7 @@ class Importer(object):
       with open(argument, 'rb') as inputfile:
         obj = pickle.load(inputfile)
         if isinstance(obj, ReflectionList):
-          self.reflections.extend(obj)
+          self.reflections.append(obj)
           return True
         elif isinstance(obj, profile.XdsCircleReferenceLocator):
           self.reference = obj

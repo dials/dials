@@ -29,7 +29,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
 
   for col in range(ncol):
     for row in range(nrow):
-      profile, tr_hold = make_2d_profile(arr_rlist[row][col])      
+      profile, tr_hold = make_2d_profile(arr_rlist[row][col])
       arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], profile, tr_hold)
 
   new_rlist = ReflectionList()

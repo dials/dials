@@ -45,9 +45,9 @@ def flex_2d_layering_n_integrating(reflections):
         data2d.reshape(flex.grid(shoebox.all()[1:]))
         mask2d.reshape(flex.grid(shoebox.all()[1:]))
         background2d.reshape(flex.grid(shoebox.all()[1:]))
-        
+
         reslt = raw_2d_cut(data2d, mask2d, background2d)
-        
+
         ref.intensity += reslt[0]
         ref.intensity_variance += reslt[1]
 

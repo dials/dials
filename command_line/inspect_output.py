@@ -66,6 +66,55 @@ def display_centroid_deviations(refl, index):
   pylab.show()
 
 
+def display_chunked_centroid_deviations(refl, index):
+  ''' Display centroid deviations. '''
+  from math import sqrt
+  from matplotlib import pylab
+
+  print 'Displaying differences in observed-predicted position'
+
+  # Get the predicted and observed xyz and the difference
+  xyz_prd = [refl[i].image_coord_px + (refl[i].frame_number,) for i in index]
+  xyz_obs = [refl[i].centroid_position for i in index]
+  #xyz_dif = [sqrt(sum((x0-x1)**2 for x0, x1 in zip(*xyz)))
+  xyz_dif = [(x0-x1 for x0, x1 in zip(*xyz)) for xyz in zip(xyz_prd, xyz_obs)]
+
+  # Get the individual components
+  x, y, z = zip(*xyz_prd)
+  xd, yd, zd = zip(*xyz_dif)
+
+  index = sorted(range(len(zd)), key=lambda i: z[i])
+  xd = [xd[i] for i in index]
+  yd = [yd[i] for i in index]
+  zd = [zd[i] for i in index]
+  x = [x[i] for i in index]
+  y = [y[i] for i in index]
+  z = [z[i] for i in index]
+
+  chunks = [0]
+  for i, zz in enumerate(z):
+    if zz > (len(chunks) * 10):
+      chunks.append(i)
+  chunks = list(zip(chunks[:-1], chunks[1:]))
+  xc = []
+  yc = []
+  zc = []
+  for chunk in chunks:
+    if chunk[1] > chunk[0]:
+      xc.append(sum(xd[chunk[0]:chunk[1]]) / (chunk[1] - chunk[0]))
+      yc.append(sum(yd[chunk[0]:chunk[1]]) / (chunk[1] - chunk[0]))
+      zc.append(sum(zd[chunk[0]:chunk[1]]) / (chunk[1] - chunk[0]))
+  chunks = [j for j in range(len(chunks))]
+  chunks = chunks[:len(xc)]
+
+  # Plot the output
+  pylab.title('Difference between predicted-observed position in x, y, z')
+#  pylab.plot(chunks, xc, label='X')
+#  pylab.plot(chunks, yc, label='Y')
+  pylab.plot(chunks, zc, label='Z')
+  pylab.legend()
+  pylab.show()
+
 def display_profile_correlation(refl, reference, index):
   ''' Display the correlation coefficient between profiles and
   their references.'''
@@ -281,6 +330,12 @@ class Script(ScriptRunner):
         help = 'Display a graph of position-centroid deviations')
 
     self.config().add_option(
+        '--chunked-centroid-deviations',
+        dest = 'chunked_centroid_deviations',
+        action = 'store_true', default = False,
+        help = 'Display a graph of position-centroid deviations')
+
+    self.config().add_option(
         '--profile-correlations',
         dest = 'profile_correlations',
         action = 'store_true', default = False,
@@ -333,16 +388,21 @@ class Script(ScriptRunner):
 
     # Try importing the command line arguments
     importer = Importer(args)
-
     # Display centroid deviations
     if options.centroid_deviations:
-      refl = importer.reflections
+      refl = importer.reflections[0]
       display_centroid_deviations(refl,
+        filter_indices_by_i_over_sigma(refl, options.min_i_over_sigma))
+
+    # Display chunked centroid deviations
+    if options.chunked_centroid_deviations:
+      refl = importer.reflections[0]
+      display_chunked_centroid_deviations(refl,
         filter_indices_by_i_over_sigma(refl, options.min_i_over_sigma))
 
     # Display profile correlation coefficients
     if options.profile_correlations:
-      refl = importer.reflections
+      refl = importer.reflections[0]
       reference = importer.reference
       display_profile_correlation(refl, reference,
         filter_indices_by_i_over_sigma(refl, options.min_i_over_sigma))
@@ -354,13 +414,13 @@ class Script(ScriptRunner):
 
     # Display the spots per frame
     if options.spots_per_frame:
-      refl = importer.reflections
+      refl = importer.reflections[0]
       display_spots_per_frame(refl,
         filter_indices_by_valid(refl))
 
     # Display the spot sizes
     if options.spot_sizes:
-      refl = importer.reflections
+      refl = importer.reflections[0]
       display_spot_sizes(refl, filter_indices_by_valid(refl))
 
     # Display the reference profiles

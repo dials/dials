@@ -33,7 +33,7 @@ def make_2d_profile(reflections):
   print "len(select_rlist) =", len(select_rlist)
   for ref in select_rlist:
     local_nrow = ref.shoebox.all()[1]
-    local_ncol = ref.shoebox.all()[2]    
+    local_ncol = ref.shoebox.all()[2]
     if local_nrow > big_nrow:
       big_nrow = local_nrow
     if local_ncol > big_ncol:

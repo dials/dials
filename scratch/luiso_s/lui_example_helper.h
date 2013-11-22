@@ -98,7 +98,7 @@ namespace dials { namespace scratch {
     int ncol=data2d.accessor().all()[1];
     int nrow=data2d.accessor().all()[0];
     int num=0;
-    
+
     for (int row = 0; row<=nrow-1;row++) {
       if (row==0){
         std::cout << "\n  [ [ ";
@@ -513,7 +513,7 @@ namespace dials { namespace scratch {
     int nrow_in = data2d.accessor().all()[0];
     int ncol_tot = total.accessor().all()[1];
     int nrow_tot = total.accessor().all()[0];
- 
+
 
   /*
   af::versa< double, af::c_grid<2> > test_compare_2d(
@@ -525,8 +525,8 @@ namespace dials { namespace scratch {
     int nrow_in=data2d.accessor()[0];
     int ncol_tot=total.accessor()[1];
     int nrow_tot=total.accessor()[0];
-  */ 
-    
+  */
+
     for (int row = 0; row<nrow_in;row++) {
       if (row==0){
         std::cout << "\n  [ [ ";
@@ -562,14 +562,14 @@ namespace dials { namespace scratch {
       //fflush(stdout);
       std::cout << "  ]";
     }
-    std::cout << " ] \n"; 
+    std::cout << " ] \n";
 
     return data2dreturn;
 
   }
 
-  
-  
+
+
 
 }}
 

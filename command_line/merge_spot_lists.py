@@ -108,9 +108,12 @@ class Script(ScriptRunner):
     if len(importer.reflections) == 0:
       self.config().print_help()
       return
+    reflections = importer.reflections[0]
+    for rlist in importer.reflections:
+      reflections.extend(rlist)
 
     merge = MergeSpotLists()
-    spotlist = merge(importer.reflections)
+    spotlist = merge(reflections)
 
     # Save the reflections to file
     Command.start('Saving {0} spot list to {1}'.format(

@@ -26,7 +26,7 @@ namespace dials { namespace algorithms {
 
   using scitbx::vec2;
   // using dials::model::Valid;
-  
+
   using scitbx::af::flex_int;
   using scitbx::af::flex_double;
   using scitbx::af::flex_grid;
@@ -71,7 +71,7 @@ namespace dials { namespace algorithms {
 
     }
 
-    
+
    flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double tmp_total) {
     flex_double total(tmp_total);
     int ncol_in = data2d.accessor().all()[1];
@@ -140,12 +140,12 @@ namespace dials { namespace algorithms {
         }
       }
     }
-    
+
     return total;
   }
 
-   /*  
-    * 
+   /*
+    *
    // this piece of code chould be analized with richard help from Richard
    af::versa< double, af::c_grid<2> > add_2d(
      const af::const_ref< double, af::c_grid<2> > &descriptor,
@@ -156,8 +156,8 @@ namespace dials { namespace algorithms {
      int nrow_in=data2d.accessor()[0];
      int ncol_tot=tmp_total.accessor()[1];
      int nrow_tot=tmp_total.accessor()[0];
-     //std::cout << "\n ncol_tot =" << ncol_tot << "\n nrow_tot =" << nrow_tot << 
-     //"\n total.accessor()[0] =" << total.accessor()[0] << 
+     //std::cout << "\n ncol_tot =" << ncol_tot << "\n nrow_tot =" << nrow_tot <<
+     //"\n total.accessor()[0] =" << total.accessor()[0] <<
      //"\n total.accessor()[1] =" << total.accessor()[1];
      //std::copy(tmp_total.begin(), tmp_total.end(), total.begin());
      for (int row = 0; row < nrow_tot; row++) {
@@ -165,8 +165,8 @@ namespace dials { namespace algorithms {
          //std::cout << "\n row =" << row << "\n col =" << col << "\n";
          total(row, col) = tmp_total(row, col);
        }
-     }    
-   
+     }
+
      //printing & testing
      std::cout << "\n <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< printing & testing ";
      for (int row = 0; row < nrow_tot; row++) {
@@ -185,8 +185,8 @@ namespace dials { namespace algorithms {
        std::cout << "  ]";
      }
      std::cout << " ] \n";
-     
-     
+
+
      for (int row = 0; row < nrow_tot; row++) {
        if (row==0){
          std::cout << "\n  [ [ ";
@@ -203,8 +203,8 @@ namespace dials { namespace algorithms {
        std::cout << "  ]";
      }
      std::cout << " ] \n";
-     
-     
+
+
      for (int row = 0; row < nrow_in; row++) {
        if (row==0){
          std::cout << "\n  [ [ ";
@@ -221,12 +221,12 @@ namespace dials { namespace algorithms {
        std::cout << "  ]";
      }
      std::cout << " ] \n";
-     
+
      std::cout << "\n printing & testing >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ";
-     
-     */  
-     
- 
+
+     */
+
+
 } }
 
 #endif

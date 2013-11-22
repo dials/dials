@@ -55,7 +55,8 @@ class Script(ScriptRunner):
 
     # Load the reflections
     Command.start('Loading reflections')
-    observed = importer.reflections
+    assert(len(importer.reflections) == 1)
+    observed = importer.reflections[0]
     Command.end('Loaded {0} reflections'.format(len(observed)))
 
     # Create the reflection predictor

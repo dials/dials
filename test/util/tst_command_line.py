@@ -33,7 +33,7 @@ class TestImporter:
 
     from dials.util.command_line import Importer
     importer = Importer(arguments)
-    assert(len(importer.reflections) == 664)
+    assert(len(importer.reflections) == 1 and len(importer.reflections[0]) == 664)
     assert(len(importer.imagesets) == 3)
     assert(len(importer.crystals) == 2)
 
