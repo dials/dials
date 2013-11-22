@@ -49,9 +49,9 @@ def simple_gaussian_spots(num_refl, signal, background):
 
     counts_true = 0
     for j in range(signal):
-      x = int(round(random.gauss(x0, 1)))
-      y = int(round(random.gauss(y0, 1)))
-      z = int(round(random.gauss(z0, 1)))
+      x = int(random.gauss(x0, 1))
+      y = int(random.gauss(y0, 1))
+      z = int(random.gauss(z0, 1))
       if x < 0 or x >= 10:
         continue
       if y < 0 or y >= 10:
@@ -144,9 +144,9 @@ def simple_gaussian_spots_proper_mask(num_refl, signal, background):
 
     counts_true = 0
     for j in range(signal):
-      x = int(round(random.gauss(x0, 1)))
-      y = int(round(random.gauss(y0, 1)))
-      z = int(round(random.gauss(z0, 1)))
+      x = int(random.gauss(x0, 1))
+      y = int(random.gauss(y0, 1))
+      z = int(random.gauss(z0, 1))
       if x < 0 or x >= 10:
         continue
       if y < 0 or y >= 10:
