@@ -233,6 +233,21 @@ def main(argv):
   pickle.dump(overestimates,
               open('%d_%d_over.pickle' % (counts, background), 'w'))
 
+  pickle.dump(rlist, open('%d_%d_all.pickle' % (counts, background), 'w'))
+
 if __name__ == '__main__':
   import sys
+
+  # FIXME add Phil parameters for
+  # nrefl
+  # nproc
+  # size of box
+  # width of spot
+  # counts
+  # background
+  # background method
+  # integration method
+  # set proper background mask or no
+  # set static mask
+  
   main(sys.argv[1:])

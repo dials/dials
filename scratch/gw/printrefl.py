@@ -13,7 +13,7 @@ def print_refl(refl):
   for k in range(dims[0]):
     for j in range(dims[1]):
       for i in range(dims[0]):
-        if mask[k, j, i] & MaskCode.Background:
+        if mask[k, j, i] & MaskCode.BackgroundUsed:
           print '%4d*' % int(sbox[k, j, i]),
         else:
           print '%4d ' % int(sbox[k, j, i]),
