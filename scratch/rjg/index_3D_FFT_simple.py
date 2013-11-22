@@ -1215,7 +1215,6 @@ class indexer(object):
     params = self.params.refinement
 
     if 0:
-
       from dials.algorithms.indexing import indexer
       from dials_regression.indexing_test_data.i04_weak_data.run_indexing_api \
            import outlier_main_procedure
@@ -1229,7 +1228,7 @@ class indexer(object):
       triclinic_crystal = crystal_orientation(crystal_model.get_A(), True)
 
       reflections = self.reflections_raw.select(self.indexed_reflections).select(sel)
-      refinery, refined_crystal, status = \
+      refiner, refined_crystal, status = \
         outlier_main_procedure(reflections,
                                sweep.get_scan(), sweep.get_goniometer(),
                                sweep.get_beam(), sweep.get_detector(),
@@ -1237,21 +1236,28 @@ class indexer(object):
         self.reciprocal_space_points.select(
           self.indexed_reflections.select(self.reflections_in_scan_range)).select(sel),
         hardcoded_phil)
-      self.sweep.set_goniometer(refinery.gonio)
-      self.sweep.set_beam(refinery.beam)
-      self.sweep.set_detector(refinery.detector)
-      crystal_model.set_B(refined_crystal.get_B())
-      crystal_model.set_U(refined_crystal.get_U())
-      assert crystal_model == refined_crystal
 
     else:
       self._refine_core_timer.start()
       from dials.algorithms.refinement import RefinerFactory
-      refine = RefinerFactory.from_parameters(self.params, verbosity)
-      refine.prepare(sweep, crystal_model, reflections_for_refinement)
-      #rmsds = refine.rmsds()
-      refined = refine()
+      refiner = RefinerFactory.from_parameters_data_models(
+        self.params, reflections_for_refinement,
+        beam=self.sweep.get_beam(),
+        goniometer=self.sweep.get_goniometer(),
+        detector=self.sweep.get_detector(),
+        scan=self.sweep.get_scan(),
+        crystal=crystal_model,
+        verbosity=verbosity)
+      refined = refiner.run()
       self._refine_core_timer.stop()
+
+    self.sweep.set_goniometer(refiner.get_goniometer())
+    self.sweep.set_beam(refiner.get_beam())
+    self.sweep.set_detector(refiner.get_detector())
+    refined_crystal = refiner.get_crystal()
+    crystal_model.set_B(refined_crystal.get_B())
+    crystal_model.set_U(refined_crystal.get_U())
+    assert crystal_model == refined_crystal
 
     if not (params.parameterisation.beam.fix == 'all'
             and params.parameterisation.detector.fix == 'all'):
