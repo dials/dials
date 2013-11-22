@@ -104,7 +104,7 @@ class Refinery(object):
 
     # add step quantities to journal
     self.history._step += 1
-    self.history.num_reflections.append(self._target.get_num_reflections())
+    self.history.num_reflections.append(self._target.get_num_matches())
     self.history.rmsd.append(self._target.rmsds())
     self.history.parameter_vector.append(self._parameters.get_param_vals())
     self.history.objective.append(self._f)

@@ -47,9 +47,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     else:
       self._binsize_cutoffs = absolute_cutoffs[:2]
 
-    # Quantities to cache each step
-    self._rmsds = None
-    self._matches = None
+    return
 
   def compute_residuals_and_gradients(self):
     """return the vector of residuals plus their gradients
@@ -97,7 +95,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     """calculate the value of the target function and its gradients"""
 
     self._matches = self._reflection_manager.get_matches()
-    self._nref = self.get_num_reflections()
+    self._nref = len(self._matches)
 
     # This is a hack for the case where nref=0. This should not be necessary
     # if bounds are provided for parameters to stop the algorithm exploring
@@ -154,12 +152,11 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    n = self._reflection_manager.get_accepted_reflection_count()
-
     resid_x = sum((m.Xresid2 for m in self._matches))
     resid_y = sum((m.Yresid2 for m in self._matches))
 
     # cache rmsd calculation for achieved test
+    n = len(self._matches)
     self._rmsds = (sqrt(resid_x / n),
                    sqrt(resid_y / n))
 
@@ -192,7 +189,7 @@ class ReflectionManagerXY(ReflectionManager):
       return None
 
   def _id_refs_to_keep(self, obs_data):
-    """For this version of the class, only reject the (0,0,0) reflections. 
+    """For this version of the class, only reject the (0,0,0) reflections.
     We don't want to exclude reflections close to the spindle, as the spindle
     may not exist"""
 

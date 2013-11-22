@@ -55,6 +55,12 @@ class Target(object):
     self._reflection_manager = ref_manager
     self._prediction_parameterisation = prediction_parameterisation
 
+    # Quantities to cache each step
+    self._rmsds = None
+    self._matches = None
+
+    return
+
   def predict(self):
     """perform reflection prediction and update the reflection manager"""
 
@@ -137,14 +143,36 @@ class Target(object):
 
     return
 
-  def get_num_reflections(self):
+  def get_num_matches(self):
     """return the number of reflections currently used in the calculation"""
 
-    # delegate to the reflection manager
-    return self._reflection_manager.get_accepted_reflection_count()
+    if not self._matches:
+      self._matches = self._reflection_manager.get_matches()
+
+    return len(self._matches)
 
   def compute_functional_and_gradients(self):
     """calculate the target function value and its gradients"""
+
+    # To be implemented by a derived class
+    raise RuntimeError('implement me')
+
+  def compute_residuals_and_gradients(self):
+    """return the vector of residuals plus their gradients and weights for
+    non-linear least squares methods"""
+
+    # To be implemented by a derived class
+    raise RuntimeError('implement me')
+
+  def curvatures(self):
+    """First order approximation to the diagonal of the Hessian based on the
+    least squares form of the target"""
+
+    # To be implemented by a derived class
+    raise RuntimeError('implement me')
+
+  def rmsds(self):
+    """calculate unweighted RMSDs"""
 
     # To be implemented by a derived class
     raise RuntimeError('implement me')
@@ -153,7 +181,8 @@ class Target(object):
     """return True to terminate the refinement. To be implemented by
     a derived class"""
 
-    return False
+    # To be implemented by a derived class
+    raise RuntimeError('implement me')
 
 class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   """An implementation of the target class providing a least squares residual
@@ -180,13 +209,11 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       assert len(absolute_cutoffs) == 3
       self._binsize_cutoffs = absolute_cutoffs
 
-    # Quantities to cache each step
-    self._rmsds = None
-    self._matches = None
+    return
 
   def compute_residuals_and_gradients(self):
-    """return the vector of residuals plus their gradients
-    and weights for non-linear least squares methods"""
+    """return the vector of residuals plus their gradients and weights for
+    non-linear least squares methods"""
 
     self._matches = self._reflection_manager.get_matches()
 
@@ -230,7 +257,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     """calculate the value of the target function and its gradients"""
 
     self._matches = self._reflection_manager.get_matches()
-    self._nref = self.get_num_reflections()
+    self._nref = len(self._matches)
 
     # This is a hack for the case where nref=0. This should not be necessary
     # if bounds are provided for parameters to stop the algorithm exploring
@@ -290,13 +317,12 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    n = self._reflection_manager.get_accepted_reflection_count()
-
     resid_x = sum((m.Xresid2 for m in self._matches))
     resid_y = sum((m.Yresid2 for m in self._matches))
     resid_phi = sum((m.Phiresid2 for m in self._matches))
 
     # cache rmsd calculation for achieved test
+    n = len(self._matches)
     self._rmsds = (sqrt(resid_x / n),
                    sqrt(resid_y / n),
                    sqrt(resid_phi / n))
@@ -706,11 +732,6 @@ class ReflectionManager(object):
     """Get the observations of a particular hkl"""
 
     return self._obs_pred_pairs[h]
-
-  def get_accepted_reflection_count(self):
-    """Get the number of reflections currently to be used for refinement"""
-
-    return sum(v.get_num_pairs() for v in self._obs_pred_pairs.values())
 
   def reset_accepted_reflections(self):
     """Reset all observations to use=False in preparation for a new set of
