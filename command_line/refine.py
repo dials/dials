@@ -41,11 +41,18 @@ class Script(ScriptRunner):
         type = 'string', default = 'refined_crystal.json',
         help = 'Set the filename for refined crystal model.')
 
+    # Output filename option
+    self.config().add_option(
+        '--output-reflections-filename',
+        dest = 'output_reflections_filename',
+        type = 'string', default = None,
+        help = 'Set the filename for reflections predicted by the refined model.')
+
     # Add a verbosity option
     self.config().add_option(
         "-v", "--verbosity",
         action="count", default=0,
-        help="set verbosity level; -vv gives verbosity level 2")
+        help="set verbosity level; -vv gives verbosity level 2.")
 
   def main(self, params, options, args):
     '''Execute the script.'''
@@ -91,6 +98,16 @@ class Script(ScriptRunner):
     print 'Saving refined geometry to {0}'.format(output_crystal_filename)
     dump.crystal(refiner.get_crystal(), open(output_crystal_filename, 'w'))
 
+    # Predict reflections and save to file
+    output_reflections_filename = options.output_reflections_filename
+    if output_reflections_filename:
+      print "Predicting reflections with the refined model"
+      rlist = refiner.predict_reflections()
+      print "Saving reflections to {0}".format(output_reflections_filename)
+      pickle.dump(rlist, open(output_reflections_filename, 'wb'),
+          pickle.HIGHEST_PROTOCOL)
+
+    return
 
 if __name__ == '__main__':
   script = Script()

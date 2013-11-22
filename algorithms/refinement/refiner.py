@@ -1041,20 +1041,23 @@ class Refiner2(object):
     from dials.algorithms.refinement.prediction.predictors import \
             ScanVaryingReflectionListGenerator
 
-    if any (self._scan, self._goniometer) is None:
+    if any([self._scan, self._goniometer]) is None:
         raise TypeError("Prediction can only be done when a scan and "
                         "goniometer are provided")
 
+    s0 = self._beam.get_s0()
     dmin = self._detector.get_max_resolution(s0)
 
-    # Duck typing to determine whether prediction is scan-varying or not
-    try:
+    # Test whether prediction is scan-varying or not (try-except duck-typing
+    # fails because scan-varying prediction is done in multiple processes).
+    if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
+
       sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
                             self._beam, self._goniometer, self._scan, dmin)
       refs = ReflectionList(sv_predictor())
       new_reflections = ray_intersection(self._detector, refs)
 
-    except AttributeError: # prediction seems to be scan-static
+    else: # prediction seems to be scan-static
       from dials.algorithms.spot_prediction import IndexGenerator
       from cctbx.sgtbx import space_group_type
       from dials.algorithms.spot_prediction import RayPredictor
@@ -1062,11 +1065,11 @@ class Refiner2(object):
 
       # Create an index generator
       generate_hkl = IndexGenerator(self._crystal.get_unit_cell(),
-                        sgtbx.space_group_type(self._crystal.get_space_group()),
+                        space_group_type(self._crystal.get_space_group()),
                         dmin)
 
       # Create a spot predictor
-      predict_rays = RayPredictor(self._beam.get_s0(),
+      predict_rays = RayPredictor(s0,
                                   self._goniometer.get_rotation_axis(),
                                   self._scan.get_oscillation_range(deg=False))
 
