@@ -271,6 +271,7 @@ command_line/extract.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
 command_line/import.py -text
+command_line/index.py -text
 command_line/inspect_output.py -text
 command_line/integrate.py -text
 command_line/match_observed_with_predicted.py -text
