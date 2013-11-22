@@ -9,7 +9,7 @@ class Test(object):
     width = 1000
     height = 1000
     depth = 10
-    nz = 2
+    nz = 1
     self.sampler = XdsCircleSampler((width, height, depth), nz)
 
     self.grid_size = (9, 9, 9)
@@ -19,6 +19,7 @@ class Test(object):
 
     self.tst_with_identical_non_negative_profiles()
     self.tst_with_systematically_offset_profiles()
+    self.tst_with_single_profile()
 
   def tst_with_identical_non_negative_profiles(self):
 
@@ -100,6 +101,41 @@ class Test(object):
 
     print 'OK'
 
+  def tst_with_single_profile(self):
+
+    from dials.algorithms.integration.profile import XdsCircleReferenceLearner
+    from scitbx.array_family import flex
+
+    # Generate identical non-negative profiles
+    reflections, profile = self.generate_single_central_non_negative_profiles()
+
+    # Create the reference learner
+    learner = XdsCircleReferenceLearner(self.sampler,
+        self.grid_size, self.threshold)
+
+    # Learn from the reflections
+    learner.learn(reflections)
+
+    # Get the reference locator
+    locate = learner.locate()
+
+    # Normalize the profile
+    profile = self.normalize_profile(profile)
+    zero = flex.double(profile.accessor(), 0)
+
+    assert(len(reflections) == 1)
+    coord = reflections[0].image_coord_px + (reflections[0].frame_number,)
+    ind = locate.indices(coord)
+
+    nind = set(range(locate.size())).difference(ind)
+    assert(len(nind) == 0)
+
+    for i in ind:
+      assert(locate.profile(i).as_1d().all_approx_equal(profile.as_1d()))
+
+    print 'OK'
+
+
   def normalize_profile(self, profile):
     from scitbx.array_family import flex
     max_profile = flex.max(profile)
@@ -116,6 +152,26 @@ class Test(object):
       result[i] = profile[i] / sum_profile
 
     return result
+
+
+  def generate_single_central_non_negative_profiles(self):
+    from dials.model.data import ReflectionList, Reflection
+    from scitbx.array_family import flex
+    from random import uniform
+    from tst_profile_helpers import gaussian
+    rlist = ReflectionList(1)
+
+    profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
+
+    x = 500
+    y = 500
+    z = 5
+    rlist[0].set_strong(True)
+    rlist[0].image_coord_px = (x, y)
+    rlist[0].frame_number = z
+    rlist[0].transformed_shoebox = profile.deep_copy()
+
+    return rlist, profile
 
 
   def generate_identical_non_negative_profiles(self):
