@@ -51,7 +51,7 @@ def reflgen(num_refl):
     mask = rlist[j].shoebox_mask
     background = rlist[j].shoebox_background
 
-def start(num_refl):
+def simple_gaussian_spots(num_refl, signal, background):
   from dials.model.data import ReflectionList, Reflection
   from dials.algorithms import shoebox
   import random
@@ -59,7 +59,11 @@ def start(num_refl):
 
   rlist = ReflectionList(num_refl)
 
+  from dials.util.command_line import ProgressBar 
+  p = ProgressBar(title = 'Generating reflections')
+  
   for j in range(num_refl):
+    p.update(j * 100.0 / num_refl)
     rlist[j].miller_index = (random.randint(0, 20),
                              random.randint(0, 20),
                              random.randint(0, 20))
@@ -78,17 +82,14 @@ def start(num_refl):
     rlist[j].corrected_intensity = 0
     rlist[j].corrected_intensity_variance = 0
 
+  p.finished('Generating %d reflections' % num_refl)
   shoebox.allocate(rlist)
 
-  for refl in rlist:
+  p = ProgressBar(title = 'Generating shoeboxes')
 
-    counts = random.randint(0, 10000)
-    background = random.randint(0, 10000)
-    
-    # FIXME in here fake up background and peak and mask but don't assign
-    # the "true" values here unless we want to test things? Maybe that
-    # would be best ... make sure we can reproduce the observations?
-
+  for _, refl in enumerate(rlist):
+   
+    p.update(_ * 100.0 / num_refl)
     sbox = refl.shoebox
 
     x0 = 5
@@ -98,10 +99,10 @@ def start(num_refl):
     # reflection itself
 
     counts_true = 0
-    for j in range(counts):
+    for j in range(signal):
       x = int(round(random.gauss(x0, 1)))
-      y = int(round(random.gauss(x0, 1)))
-      z = int(round(random.gauss(x0, 1)))
+      y = int(round(random.gauss(y0, 1)))
+      z = int(round(random.gauss(z0, 1)))
       if x < 0 or x >= 10:
         continue
       if y < 0 or y >= 10:
@@ -115,40 +116,46 @@ def start(num_refl):
 
     # background:flat
 
-    for j in range(background):
+    for j in range(background * len(sbox)):
       x = random.randint(0, 9)
       y = random.randint(0, 9)
       z = random.randint(0, 9)
       sbox[z, y, x] += 1
 
-  # set the mask
+  # set the mask - it's all good
+  
   from dials.algorithms.shoebox import MaskCode
   mask_value = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
   for refl in rlist:
     mask = refl.shoebox_mask
     for j in range(len(mask)):
       mask[j] = mask_value
+  p.finished('Generating %d shoeboxes' % num_refl)
 
   return rlist
 
-def print_shoebox(sbox):
+def print_refl(refl):
+  sbox = refl.shoebox
+  mask = refl.shoebox_mask
   ndim = sbox.nd()
   dims = sbox.focus()
+
+  from dials.algorithms.shoebox import MaskCode
+  mask_value = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
   
   print '-' * 80
   
   for k in range(dims[0]):
     for j in range(dims[1]):
       for i in range(dims[0]):
-        print '%4d' % int(sbox[k, j, i]),
+        if mask[k, j, i] & MaskCode.Background:
+          print '%4d*' % int(sbox[k, j, i]),
+        else:
+          print '%4d ' % int(sbox[k, j, i]),
       print
     print '-' * 80
       
   return
-
-def print_summary(refl):
-  print 'Claimed / total intensity: %9.2f %9.2f' % (refl.intensity, 
-                                                    sum(refl.shoebox))
 
 def integrate(rlist):
 
@@ -159,18 +166,24 @@ def integrate(rlist):
   background(None, None, rlist)
   integration = Summation3d()
   integration(None, None, rlist)
+  return
   
 def main():
-  rlist = start(100)
+  rlist = simple_gaussian_spots(100, 1000, 2)
   correct_intensities = [r.intensity for r in rlist]
+  correct_background = [sum(r.shoebox) - r.intensity for r in rlist]
   for r in rlist:
     r.intensity = 0
   integrate(rlist)
   integrated_intensities = [r.intensity for r in rlist]
 
-  for c, i in zip(correct_intensities, integrated_intensities):
-    print c, i
-  
+  fout = open('reflgen.dat', 'w')  
+  for c, b, i in zip(correct_intensities, correct_background, 
+                     integrated_intensities):
+    fout.write('%8.2f %8.2f %8.2f\n' % (c, b, i))
+  fout.close()
+
+  print_refl(rlist[0])
   
 if __name__ == '__main__':
   main()
