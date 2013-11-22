@@ -121,6 +121,14 @@ def start(num_refl):
       z = random.randint(0, 9)
       sbox[z, y, x] += 1
 
+  # set the mask
+  from dials.algorithms.shoebox import MaskCode
+  mask_value = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
+  for refl in rlist:
+    mask = refl.shoebox_mask
+    for j in range(len(mask)):
+      mask[j] = mask_value
+
   return rlist
 
 def print_shoebox(sbox):
@@ -142,10 +150,27 @@ def print_summary(refl):
   print 'Claimed / total intensity: %9.2f %9.2f' % (refl.intensity, 
                                                     sum(refl.shoebox))
 
+def integrate(rlist):
+
+  from dials.algorithms.background import XdsSubtractor
+  from dials.algorithms.integration import Summation3d
+  
+  background = XdsSubtractor()
+  background(None, None, rlist)
+  integration = Summation3d()
+  integration(None, None, rlist)
+  
 def main():
-  profiles = start(100)
-  for p in profiles:
-    print_summary(p)
-    
+  rlist = start(100)
+  correct_intensities = [r.intensity for r in rlist]
+  for r in rlist:
+    r.intensity = 0
+  integrate(rlist)
+  integrated_intensities = [r.intensity for r in rlist]
+
+  for c, i in zip(correct_intensities, integrated_intensities):
+    print c, i
+  
+  
 if __name__ == '__main__':
   main()
