@@ -38,6 +38,7 @@ class Script(ScriptRunner):
     from dials.algorithms.peak_finding import SpotMatcher
     from dials.util.command_line import Importer, Command
     from dials.model.serialize import dump
+    from dials.model.data import ReflectionList
 
     # Try importing the command line arguments
     importer = Importer(args)
@@ -70,10 +71,11 @@ class Script(ScriptRunner):
     oindex, pindex = self.match(observed, predicted)
 
     # Copy all of the reflection data for the matched reflections
-    matches = ReflectionList()
-    for i in index:
-      o = observed[oindex]
-      p = predicted[pindex]
+    Command.start('Creating matches')
+    matched = ReflectionList()
+    for io, ip in zip(oindex, pindex):
+      o = observed[io]
+      p = predicted[ip]
       o.miller_index = p.miller_index
       o.rotation_angle = p.rotation_angle
       o.beam_vector = p.beam_vector
@@ -82,13 +84,14 @@ class Script(ScriptRunner):
       o.panel_number = p.panel_number
       o.frame_number = p.frame_number
       matched.append(o)
+    Command.end('Created {0} matches'.format(len(matched)))
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
-        len(matches), options.output_filename))
-    dump.reflections(matches, options.output_filename)
+        len(matched), options.output_filename))
+    dump.reflections(matched, options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
-        len(matches), options.output_filename))
+        len(matched), options.output_filename))
 
 
 if __name__ == '__main__':
