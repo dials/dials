@@ -20,6 +20,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dials::model::Background;
   using dials::model::Foreground;
   using dials::model::Strong;
+  using dials::model::BackgroundUsed;
 
 }}}; // namespace dials::algorithms::shoebox
 

@@ -49,7 +49,7 @@ namespace dials { namespace algorithms {
       // Copy the background pixels into an array
       af::shared<FloatType> pixels;
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if (mask[i] & shoebox::Valid && mask[i] & shoebox::Background) {
+        if (mask[i] & shoebox::Valid && mask[i] & shoebox::BackgroundUsed) {
           pixels.push_back(shoebox[i]);
         }
       }

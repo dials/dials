@@ -157,8 +157,8 @@ namespace dials { namespace algorithms {
       }
 
       // Set rejected pixels as 'not background'
-      for (std::size_t i = num_data; i < indices.size(); ++i) {
-        mask[indices[i]] &= ~shoebox::Background;
+      for (std::size_t i = 0; i < num_data; ++i) {
+        mask[indices[i]] |= shoebox::BackgroundUsed;
       }
     }
 

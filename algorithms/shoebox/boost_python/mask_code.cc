@@ -23,7 +23,8 @@ namespace dials { namespace algorithms { namespace shoebox {
       .value("Valid", Valid)
       .value("Background", Background)
       .value("Foreground", Foreground)
-      .value("Strong", Strong);
+      .value("Strong", Strong)
+      .value("BackgroundUsed", BackgroundUsed);
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

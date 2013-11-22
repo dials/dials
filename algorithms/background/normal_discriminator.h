@@ -44,7 +44,7 @@ namespace dials { namespace algorithms {
 
   /**
    * Get the maximum number of standard deviations in the range of data
-   * @param n_obs The number of observations
+   * @param data The observations
    * @returns The expected number of standard deviations
    */
   template <typename FloatType>
@@ -66,8 +66,8 @@ namespace dials { namespace algorithms {
 
   /**
    * Get the maximum number of standard deviations in the range of data
-   * @param n_obs The number of observations
-   * @returns The expected number of standard deviations
+   * @param data The observations
+   * @returns The maximum number of standard deviations
    */
   template <typename FloatType>
   FloatType maximum_n_sigma(const af::const_ref<FloatType> &data) {
@@ -88,8 +88,8 @@ namespace dials { namespace algorithms {
 
   /**
    * Get the maximum number of standard deviations in the range of data
-   * @param n_obs The number of observations
-   * @returns The expected number of standard deviations
+   * @param data The observations
+   * @returns The maximum number of standard deviations
    */
   template <typename FloatType>
   FloatType absolute_maximum_n_sigma(const af::const_ref<FloatType> &data) {
@@ -123,7 +123,7 @@ namespace dials { namespace algorithms {
   template <typename FloatType>
   bool is_normally_distributed(const af::const_ref<FloatType> &data,
       double n_sigma) {
-    return absolute_maximum_n_sigma(data) < n_sigma;
+    return maximum_n_sigma(data) < n_sigma;
   }
 
   /**
@@ -218,8 +218,8 @@ namespace dials { namespace algorithms {
       }
 
       // Set rejected pixels as 'not background'
-      for (std::size_t i = num_data; i < indices.size(); ++i) {
-        mask[indices[i]] &= ~shoebox::Background;
+      for (std::size_t i = 0; i < num_data; ++i) {
+        mask[indices[i]] |= shoebox::BackgroundUsed;
       }
     }
 
