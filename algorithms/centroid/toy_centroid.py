@@ -16,7 +16,6 @@ class toy_centroid(centroid_interface):
   def compute_shoebox_centroid(self, shoebox):
     from dials.algorithms.image.centroid import centroid_points
     from scitbx.array_family import flex
-    import math
 
     f_size, r_size, c_size = shoebox.all()
 
