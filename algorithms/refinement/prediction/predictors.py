@@ -353,7 +353,7 @@ class ScanVaryingReflectionListGenerator(object):
     blockranges = []
     start = im_range[0]
     for block in blocksizes:
-      blockranges.append((start, start + block))
+      blockranges.append((start, start + block - 1))
       start += block
 
     return blockranges
