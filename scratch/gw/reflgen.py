@@ -2,7 +2,7 @@ from __future__ import division
 
 def reflgen(num_refl):
 
-  from dials.model.data import ReflectionList, Reflection
+  from dials.model.data import ReflectionList
   from dials.algorithms import shoebox
   import random
   import math
@@ -59,9 +59,9 @@ def simple_gaussian_spots(num_refl, signal, background):
 
   rlist = ReflectionList(num_refl)
 
-  from dials.util.command_line import ProgressBar 
+  from dials.util.command_line import ProgressBar
   p = ProgressBar(title = 'Generating reflections')
-  
+
   for j in range(num_refl):
     p.update(j * 100.0 / num_refl)
     rlist[j].miller_index = (random.randint(0, 20),
@@ -88,7 +88,7 @@ def simple_gaussian_spots(num_refl, signal, background):
   p = ProgressBar(title = 'Generating shoeboxes')
 
   for _, refl in enumerate(rlist):
-   
+
     p.update(_ * 100.0 / num_refl)
     sbox = refl.shoebox
 
@@ -111,7 +111,7 @@ def simple_gaussian_spots(num_refl, signal, background):
         continue
       sbox[z, y, x] += 1
       counts_true += 1
-      
+
     refl.intensity = counts_true
 
     # background:flat
@@ -123,7 +123,7 @@ def simple_gaussian_spots(num_refl, signal, background):
       sbox[z, y, x] += 1
 
   # set the mask - it's all good
-  
+
   from dials.algorithms.shoebox import MaskCode
   mask_value = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
   for refl in rlist:
@@ -134,56 +134,62 @@ def simple_gaussian_spots(num_refl, signal, background):
 
   return rlist
 
-def print_refl(refl):
-  sbox = refl.shoebox
-  mask = refl.shoebox_mask
-  ndim = sbox.nd()
-  dims = sbox.focus()
-
-  from dials.algorithms.shoebox import MaskCode
-  mask_value = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
-  
-  print '-' * 80
-  
-  for k in range(dims[0]):
-    for j in range(dims[1]):
-      for i in range(dims[0]):
-        if mask[k, j, i] & MaskCode.Background:
-          print '%4d*' % int(sbox[k, j, i]),
-        else:
-          print '%4d ' % int(sbox[k, j, i]),
-      print
-    print '-' * 80
-      
-  return
-
-def integrate(rlist):
-
+def integrate_xds_background_3d_summation(rlist):
   from dials.algorithms.background import XdsSubtractor
   from dials.algorithms.integration import Summation3d
-  
+
   background = XdsSubtractor()
   background(None, None, rlist)
   integration = Summation3d()
   integration(None, None, rlist)
   return
-  
-def main():
-  rlist = simple_gaussian_spots(100, 1000, 2)
+
+def meansd(values):
+  import math
+  mean = sum(values) / len(values)
+  var = sum([(v - mean) ** 2 for v in values]) / (len(values) - 1)
+  return mean, math.sqrt(var)
+
+def main(argv):
+  nrefl, counts, background = map(int, argv)
+  rlist = simple_gaussian_spots(nrefl, counts, background)
   correct_intensities = [r.intensity for r in rlist]
-  correct_background = [sum(r.shoebox) - r.intensity for r in rlist]
   for r in rlist:
     r.intensity = 0
-  integrate(rlist)
+  integrate_xds_background_3d_summation(rlist)
   integrated_intensities = [r.intensity for r in rlist]
 
-  fout = open('reflgen.dat', 'w')  
-  for c, b, i in zip(correct_intensities, correct_background, 
-                     integrated_intensities):
-    fout.write('%8.2f %8.2f %8.2f\n' % (c, b, i))
-  fout.close()
+  # now scan through the reflection list and find those where the integration
+  # gave an apparently duff answer i.e. outside of 3 sigma from correct value
 
-  print_refl(rlist[0])
-  
+  from dials.model.data import ReflectionList
+  import math
+
+  overestimates = ReflectionList()
+  underestimates = ReflectionList()
+
+  for j, (c, i) in enumerate(zip(correct_intensities, integrated_intensities)):
+    sigma = math.sqrt(c)
+    if math.fabs(c - i) < 3 * sigma:
+      continue
+    if i > counts:
+      overestimates.append(rlist[j])
+    else:
+      underestimates.append(rlist[j])
+
+  print '%d overestimates, %d underestimates' % (len(overestimates),
+                                                 len(underestimates))
+
+  # now pickle these
+
+  import cPickle as pickle
+
+  pickle.dump(underestimates,
+              open('%d_%d_under.pickle' % (counts, background), 'w'))
+
+  pickle.dump(overestimates,
+              open('%d_%d_over.pickle' % (counts, background), 'w'))
+
 if __name__ == '__main__':
-  main()
+  import sys
+  main(sys.argv[1:])

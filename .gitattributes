@@ -427,6 +427,7 @@ scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/biostruct-25.py -text
+scratch/gw/printrefl.py -text
 scratch/gw/refine.py -text
 scratch/gw/reflgen.py -text
 scratch/gw/sympy_spells.py -text
