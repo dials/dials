@@ -11,7 +11,7 @@ class TestImporter:
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
       print 'FAIL: dials_regression not configured'
-      return
+      exit(0)
 
     self.path = os.path.join(dials_regression, 'centroid_test_data')
 

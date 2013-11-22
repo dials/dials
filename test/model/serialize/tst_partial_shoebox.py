@@ -9,7 +9,7 @@ class Test(object):
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
       print 'FAIL: dials_regression not configured'
-      return
+      exit(0)
 
     import os
     from dials.model.serialize import load, dump
