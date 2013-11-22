@@ -1,17 +1,13 @@
 from __future__ import division
 from dials.model.data import Reflection, ReflectionList
-
-from dials.scratch.luiso_s import subtrac_bkg_2d, fitting_2d
-from dials.algorithms.integration import add_2d
-
-from dials.algorithms.background import curved_background_flex_2d
+from dials.algorithms.integration import add_2d, subtrac_bkg_2d, fitting_2d
 from scitbx.array_family import flex
 
 def make_2d_profile(reflections):
   #print "len(reflections) =", len(reflections)
   big_nrow = 0
   big_ncol = 0
-  counter = 0
+  
   select_rlist = ReflectionList()
   max_i_01 = 0.0
   for ref in reflections:
@@ -29,8 +25,7 @@ def make_2d_profile(reflections):
   for ref in reflections:
     if ref.is_valid() and ref.intensity > thold:
       select_rlist.append(ref)
-
-  print "len(select_rlist) =", len(select_rlist)
+  counter = 0
   for ref in select_rlist:
     local_nrow = ref.shoebox.all()[1]
     local_ncol = ref.shoebox.all()[2]

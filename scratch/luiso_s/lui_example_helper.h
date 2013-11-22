@@ -222,8 +222,8 @@ namespace dials { namespace scratch {
       backg2dmov = add_2d(descriptor, backg2d, backg2dmov);
 
       // Counting how many pixels are useful so far
-      for (int row = 0; row <= nrow - 1; row++) {
-        for (int col = 0; col <= ncol - 1; col++) {
+      for (int row = 0; row < nrow; row++) {
+        for (int col = 0; col < ncol; col++) {
           if (data2dmov(row,col) != backg2dmov(row,col) ) {
             counter++ ;
           }
@@ -239,8 +239,8 @@ namespace dials { namespace scratch {
       //double bkg_var;
       double avg_i_scale, diff, df_sqr;
       counter = 0;
-      for (int row = 0; row <= nrow - 1; row++) {
-        for (int col = 0; col <= ncol - 1; col++) {
+      for (int row = 0; row < nrow; row++) {
+        for (int col = 0; col < ncol; col++) {
           if (data2dmov(row,col) != backg2dmov(row,col) and profile2d(row,col) > 0 ) {
             iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
             imodl_lst[counter] = profile2d(row,col);// * conv_scale;
