@@ -169,17 +169,22 @@ class Refinery(object):
     print "----------------"
     rmsd_title = " ".join(self._target.rmsd_names)
     n_rmsds = len(self._target.rmsd_names)
-    header = ("Step Nref Residual " + rmsd_title + " " +
-                 "Param_%02d " * len(self._parameters))
-    print header % tuple(range(1, len(self._parameters) + 1))
+    header = "Step Nref Residual " + rmsd_title
+    if self._verbosity > 1:
+      header += " " + "Param_%02d " * len(self._parameters)
+      header = header % tuple(range(1, len(self._parameters) + 1))
+    print header
 
     for i in range(self.history._step + 1):
       dat = (i,) + (self.history.num_reflections[i],) + \
             (self.history.objective[i],) + \
-            tuple(self.history.rmsd[i]) + \
-            tuple(self.history.parameter_vector[i])
-      print  ("%d " + "%d " + "%.5f " + "%.5f " * n_rmsds +
-          "%.5f " * len(self._parameters)) % dat
+            tuple(self.history.rmsd[i])
+      if self._verbosity > 1:
+        dat += tuple(self.history.parameter_vector[i])
+        print  ("%d " + "%d " + "%.5f " + "%.5f " * n_rmsds +
+                "%.5f " * len(self._parameters)) % dat
+      else:
+        print  ("%d " + "%d " + "%.5f " + "%.5f " * n_rmsds) % dat
 
   def run(self):
     """
