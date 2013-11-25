@@ -29,7 +29,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     FloatType value = subtract(shoebox, mask);
     for (std::size_t i = 0; i < background.size(); ++i) {
-      background[i] = value;
+      //if (mask[i] & shoebox::BackgroundUsed) {
+      //  background[i] = shoebox[i];
+      //} else {
+        background[i] = value;
+      //}
     }
   }
 
@@ -51,9 +55,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_xds_subtractor()
   {
     class_<XdsSubtractor>("XdsSubtractorAlgorithm", no_init)
-      .def(init<std::size_t, double>((
-        arg("min_data") = 10,
-        arg("n_sigma") = 3.0)))
+      .def(init<std::size_t>((
+        arg("min_data") = 10)))
       .def("__call__",
          &XdsSubtractor::operator()<float>, (
           arg("shoebox"),

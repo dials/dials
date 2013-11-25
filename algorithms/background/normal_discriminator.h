@@ -153,11 +153,9 @@ namespace dials { namespace algorithms {
      * @param min_data The minimum number of data points to use.
      * @param n_sigma The number of standard deviations to check for
      */
-    NormalDiscriminator(std::size_t min_data, double n_sigma)
-      : min_data_(min_data),
-        n_sigma_(n_sigma) {
+    NormalDiscriminator(std::size_t min_data)
+      : min_data_(min_data) {
       DIALS_ASSERT(min_data > 0);
-      DIALS_ASSERT(n_sigma > 0.0);
     }
 
     /**
@@ -212,7 +210,7 @@ namespace dials { namespace algorithms {
       std::size_t num_data = pixels.size();
       for (; num_data > min_data_; --num_data) {
         if (is_normally_distributed(af::const_ref<FloatType>(
-            pixels.begin(), num_data), n_sigma_)) {
+            pixels.begin(), num_data))) {
           break;
         }
       }
@@ -238,7 +236,6 @@ namespace dials { namespace algorithms {
   private:
 
     std::size_t min_data_;
-    double n_sigma_;
   };
 }}
 

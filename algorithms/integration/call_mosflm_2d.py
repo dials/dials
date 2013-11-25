@@ -30,7 +30,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
   for col in range(ncol):
     for row in range(nrow):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col])
-      
+
       if_you_want_to_see_how_the_profiles_look='''
       from matplotlib import pyplot as plt
       data2d = profile.as_numpy_array()

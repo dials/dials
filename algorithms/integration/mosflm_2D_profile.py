@@ -7,7 +7,7 @@ def make_2d_profile(reflections):
   #print "len(reflections) =", len(reflections)
   big_nrow = 0
   big_ncol = 0
-  
+
   select_rlist = ReflectionList()
   max_i_01 = 0.0
   for ref in reflections:

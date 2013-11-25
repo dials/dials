@@ -21,8 +21,7 @@ class XdsSubtractor(BackgroundSubtractionInterface):
 
     # Create the algorithm
     self._subtractor = XdsSubtractorAlgorithm(
-        min_data=kwargs.get("min_data", 10),
-        n_sigma=kwargs.get("n_sigma", 3.0))
+        min_data=kwargs.get("min_data", 10))
 
   def __call__(self, sweep, crystal, reflections):
     ''' Do the background subtraction as in XDS

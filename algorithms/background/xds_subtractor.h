@@ -29,8 +29,8 @@ namespace dials { namespace algorithms {
      * @param min_data The minimum number of pixels to use
      * @param n_sigma The number of standard deviations
      */
-    XdsSubtractor(std::size_t min_data, double n_sigma):
-      discriminate_(min_data, n_sigma) {}
+    XdsSubtractor(std::size_t min_data):
+      discriminate_(min_data) {}
 
     /**
      * Process the shoebox
