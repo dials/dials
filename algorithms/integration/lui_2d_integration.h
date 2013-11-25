@@ -30,14 +30,14 @@ namespace dials { namespace algorithms {
   using dials::model::Foreground;
   using dials::model::Background;
   // using dials::model::Valid;
-  
+
   vec2<double> raw_2d_cut(
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< int, af::c_grid<2> > &mask2d,
     const af::const_ref< double, af::c_grid<2> > &background2d) {
-    
+
     // classic and simple integration summation
-    
+
     double i_s = 0, i_bg = 0, rho_j = 0;
     double n = 0, m = 0;
     int cont = 0;
@@ -76,10 +76,10 @@ namespace dials { namespace algorithms {
 
   }
 
-    
-  flex_double add_2d(flex_double descriptor, flex_double data2d, 
+
+  flex_double add_2d(flex_double descriptor, flex_double data2d,
                      flex_double tmp_total) {
-    
+
     // given two shoe boxes, adds the second to the first one,
     // but each pixel interpolates by following the
     // position given in the descriptor
@@ -99,14 +99,14 @@ namespace dials { namespace algorithms {
     int xpos_ex, ypos_ex;
     int tot_row_centr=int(nrow_tot / 2);
     int tot_col_centr=int(ncol_tot / 2);
-    
+
     // looping thru each pixel
     for (int row = 0; row < nrow_in; row++) {
       for (int col = 0; col < ncol_in; col++) {
         tot_row = row + tot_row_centr - centr_row + 1;
         tot_col = col + tot_col_centr - centr_col + 1;
         if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and tot_col < ncol_tot) {
-          
+
           // interpolating and finding contributions of each pixel
           // to the four surrounding  pixels in the other shoe box
           x_pix_pos=tot_col - int(tot_col);
@@ -120,7 +120,7 @@ namespace dials { namespace algorithms {
             x_contrib = 1;
             xpos_ex = tot_col;
           }
-    
+
           y_pix_pos=tot_row - int(tot_row);
           if (y_pix_pos < 0.5) {
             y_contrib = 0.5 + y_pix_pos;
@@ -132,7 +132,7 @@ namespace dials { namespace algorithms {
             y_contrib = 1;
             ypos_ex = tot_row;
           }
-          
+
           // Adding corresponding contributions to each pixel
           total(tot_row, tot_col) = tmp_total(tot_row, tot_col) + data2d(row, col) * scale * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){
@@ -146,7 +146,7 @@ namespace dials { namespace algorithms {
               total(ypos_ex, xpos_ex)=tmp_total(ypos_ex, xpos_ex) + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
             }
           }
-    
+
         } else {
           std::cout << "\n ERROR Not fitting in the area to be added \n";
           std::cout <<"  tot_row =" <<tot_row << "  tot_col =" << tot_col <<
@@ -155,15 +155,15 @@ namespace dials { namespace algorithms {
         }
       }
     }
-    
+
     return total;
   }
 
-  
+
 
   vec2<double> fitting_2d(flex_double descriptor, flex_double data2d,
                           flex_double backg2d, flex_double profile2d) {
-    
+
     // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
 
     int ncol = profile2d.accessor().all()[1];
@@ -175,7 +175,7 @@ namespace dials { namespace algorithms {
     descriptor(0,2) = 1;
     data2dmov = add_2d(descriptor, data2d, data2dmov);
     backg2dmov = add_2d(descriptor, backg2d, backg2dmov);
-    
+
     // Counting how many pixels are useful so far
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
@@ -184,7 +184,7 @@ namespace dials { namespace algorithms {
         }
       }
     }
-    
+
     // Building a set 1D lists with the useful pixels
     double iexpr_lst[counter];
     double imodl_lst[counter];
@@ -203,7 +203,7 @@ namespace dials { namespace algorithms {
         }
       }
     }
-    
+
     // finding the scale needed to fit profile list to experiment list
 
     // least-squares scaling following the formula:
@@ -218,7 +218,7 @@ namespace dials { namespace algorithms {
     for (int i = 0; i < counter; i++){
       modl_scal_lst[i] =imodl_lst[i] * avg_i_scale;
     }
-    
+
     sum = 0;
     for (int i = 0; i < counter; i++){
       diff = (modl_scal_lst[i] - iexpr_lst[i]);
@@ -226,20 +226,20 @@ namespace dials { namespace algorithms {
       sum += df_sqr;
     }
     i_var = sum;
-    
+
     sum = 0;
     for (int i = 0; i < counter; i++){
       sum += modl_scal_lst[i];
     }
-    
+
     integr_data[0] = sum;                   // intensity
     integr_data[1] = i_var;                         // intensity variance
-    
+
     return integr_data;
   }
 
   flex_double subtrac_bkg_2d(flex_double data2d, flex_double backg2d) {
-    // given a 2D shoebox and a 2D background, 
+    // given a 2D shoebox and a 2D background,
     // it subtract the background from the shoebox
     int ncol = data2d.accessor().all()[1];
     int nrow = data2d.accessor().all()[0];
@@ -255,9 +255,9 @@ namespace dials { namespace algorithms {
     }
     return data2dreturn;
   }
-   
-   /*  
-    * 
+
+   /*
+    *
    // this piece of code chould be analized with richard help from Richard
    af::versa< double, af::c_grid<2> > add_2d(
      const af::const_ref< double, af::c_grid<2> > &descriptor,
@@ -268,8 +268,8 @@ namespace dials { namespace algorithms {
      int nrow_in=data2d.accessor()[0];
      int ncol_tot=tmp_total.accessor()[1];
      int nrow_tot=tmp_total.accessor()[0];
-     //std::cout << "\n ncol_tot =" << ncol_tot << "\n nrow_tot =" << nrow_tot << 
-     //"\n total.accessor()[0] =" << total.accessor()[0] << 
+     //std::cout << "\n ncol_tot =" << ncol_tot << "\n nrow_tot =" << nrow_tot <<
+     //"\n total.accessor()[0] =" << total.accessor()[0] <<
      //"\n total.accessor()[1] =" << total.accessor()[1];
      //std::copy(tmp_total.begin(), tmp_total.end(), total.begin());
      for (int row = 0; row < nrow_tot; row++) {
@@ -277,8 +277,8 @@ namespace dials { namespace algorithms {
          //std::cout << "\n row =" << row << "\n col =" << col << "\n";
          total(row, col) = tmp_total(row, col);
        }
-     }    
-   
+     }
+
      //printing & testing
      std::cout << "\n <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< printing & testing ";
      for (int row = 0; row < nrow_tot; row++) {
@@ -297,8 +297,8 @@ namespace dials { namespace algorithms {
        std::cout << "  ]";
      }
      std::cout << " ] \n";
-     
-     
+
+
      for (int row = 0; row < nrow_tot; row++) {
        if (row==0){
          std::cout << "\n  [ [ ";
@@ -315,8 +315,8 @@ namespace dials { namespace algorithms {
        std::cout << "  ]";
      }
      std::cout << " ] \n";
-     
-     
+
+
      for (int row = 0; row < nrow_in; row++) {
        if (row==0){
          std::cout << "\n  [ [ ";
@@ -333,12 +333,12 @@ namespace dials { namespace algorithms {
        std::cout << "  ]";
      }
      std::cout << " ] \n";
-     
+
      std::cout << "\n printing & testing >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ";
-     
-     */  
-     
- 
+
+     */
+
+
 } }
 
 #endif
