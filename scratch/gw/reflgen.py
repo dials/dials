@@ -72,7 +72,6 @@ def simple_gaussian_spots(params):
   import random
   import math
 
-
   from scitbx import matrix
   r = params.rotation
   axis = matrix.col((r.axis.x, r.axis.y, r.axis.z))
@@ -154,7 +153,9 @@ def simple_gaussian_spots(params):
     sbox = refl.shoebox
 
     # reflection itself, including setting the peak region if we're doing that
-
+    # FIXME use flex arrays to make the rotation bit more efficient as this is 
+    # now rather slow...
+    
     counts_true = 0
     for j in range(params.counts):
       _x = random.gauss(0, params.spot_size.x)
@@ -181,7 +182,9 @@ def simple_gaussian_spots(params):
     refl.intensity = counts_true
 
     # background:flat; FIXME can replace this with Poissonian added random
-    # number, which will give the same answer...
+    # number, which will give the same answer... also would like to find some
+    # reasonable way of gathering random numbers drawn from an inclined 
+    # distribution...
 
     for j in range(params.background * len(sbox)):
       x = random.randint(0, params.shoebox_size.x - 1)
@@ -262,21 +265,14 @@ def main(params):
 if __name__ == '__main__':
   import sys
 
-  # FIXME add Phil parameters for
-  # nrefl - done
+  # FXIME use phil parameters for 
   # nproc - done
-  # size of box - done x y z
-  # width of spot - done x y z
-  # rotation of spot density - not done
+  # FIXME add Phil parameters for
   # background plane method with B(x, y) = c + ax + by; don't know how to make
   #                                                   ; random dist. like this
-  # counts
-  # background
-  # background method
-  # integration method
-  # set proper background mask or no
-  # set static mask
 
+  # FIXME parse Phil parameters better
+  # FIXME pass in Phil file?
   working_phil = master_phil
   for arg in sys.argv[1:]:
     working_phil = working_phil.fetch(parse(arg))
