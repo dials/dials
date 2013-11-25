@@ -31,6 +31,8 @@ spot_offset {
   z = 0.0
     .type = float
 }
+mask_nsigma = 3.0
+  .type = float
 counts = 0
   .type = int
 background = 0
@@ -70,14 +72,14 @@ def simple_gaussian_spots(params):
   import random
   import math
 
-  
+
   from scitbx import matrix
-  r = params.rotation 
+  r = params.rotation
   axis = matrix.col((r.axis.x, r.axis.y, r.axis.z))
-  if axis.length() > 0: 
+  if axis.length() > 0:
     rotation = axis.axis_and_angle_as_r3_rotation_matrix(r.angle, deg=True)
   else:
-    rotation = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))  
+    rotation = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))
 
   # generate mask and peak values
 
@@ -135,9 +137,9 @@ def simple_gaussian_spots(params):
       x0 = params.shoebox_size.x / 2
       y0 = params.shoebox_size.y / 2
       z0 = params.shoebox_size.z / 2
-      sx = params.spot_size.x
-      sy = params.spot_size.y
-      sz = params.spot_size.z
+      sx = params.mask_nsigma * params.spot_size.x
+      sy = params.mask_nsigma * params.spot_size.y
+      sz = params.mask_nsigma * params.spot_size.z
       for k in range(mask.all()[0]):
         for j in range(mask.all()[1]):
           for i in range(mask.all()[2]):
@@ -156,13 +158,13 @@ def simple_gaussian_spots(params):
       _x = random.gauss(0, params.spot_size.x)
       _y = random.gauss(0, params.spot_size.y)
       _z = random.gauss(0, params.spot_size.z)
-      
+
       Rxyz = rotation * matrix.col((_x, _y, _z)).elems
-      
+
       x = int(Rxyz[0] + params.spot_offset.x + params.shoebox_size.x / 2)
       y = int(Rxyz[1] + params.spot_offset.y + params.shoebox_size.y / 2)
       z = int(Rxyz[2] + params.spot_offset.z + params.shoebox_size.z / 2)
-      
+
       if x < 0 or x >= params.shoebox_size.x:
         continue
       if y < 0 or y >= params.shoebox_size.y:
