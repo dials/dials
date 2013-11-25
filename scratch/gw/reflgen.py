@@ -23,11 +23,19 @@ spot_size {
   z = 1.0
     .type = float
 }
+spot_offset {
+  x = 0.0
+    .type = float
+  y = 0.0
+    .type = float
+  z = 0.0
+    .type = float
+}
 counts = 0
   .type = int
 background = 0
   .type = int
-pixel_mask = *none static precise
+pixel_mask = *all static precise
   .type = choice
 background_method = *xds mosflm
   .type = choice
@@ -41,6 +49,19 @@ output {
   all = None
     .type = path
 }
+rotation {
+  axis {
+    x = 0.0
+      .type = float
+    y = 0.0
+      .type = float
+    z = 0.0
+      .type = float
+  }
+
+  angle = 0.0
+    .type = float
+}
 """)
 
 def simple_gaussian_spots(params):
@@ -48,6 +69,15 @@ def simple_gaussian_spots(params):
   from dials.algorithms import shoebox
   import random
   import math
+
+  
+  from scitbx import matrix
+  r = params.rotation 
+  axis = matrix.col((r.axis.x, r.axis.y, r.axis.z))
+  if axis.length() > 0: 
+    rotation = axis.axis_and_angle_as_r3_rotation_matrix(r.angle, deg=True)
+  else:
+    rotation = matrix.sqr((1, 0, 0, 0, 1, 0, 0, 0, 1))  
 
   # generate mask and peak values
 
@@ -95,7 +125,7 @@ def simple_gaussian_spots(params):
       # flag everything as background: peak will me assigned later
       for j in range(len(mask)):
         mask[j] = mask_back
-    elif params.pixel_mask == 'none' or params.pixel_mask == None:
+    elif params.pixel_mask == 'all':
       # flag we have no idea what anything is
       mask_none = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
       for j in range(len(mask)):
@@ -123,9 +153,16 @@ def simple_gaussian_spots(params):
 
     counts_true = 0
     for j in range(params.counts):
-      x = int(random.gauss(params.shoebox_size.x / 2, params.spot_size.x))
-      y = int(random.gauss(params.shoebox_size.y / 2, params.spot_size.y))
-      z = int(random.gauss(params.shoebox_size.z / 2, params.spot_size.z))
+      _x = random.gauss(0, params.spot_size.x)
+      _y = random.gauss(0, params.spot_size.y)
+      _z = random.gauss(0, params.spot_size.z)
+      
+      Rxyz = rotation * matrix.col((_x, _y, _z)).elems
+      
+      x = int(Rxyz[0] + params.spot_offset.x + params.shoebox_size.x / 2)
+      y = int(Rxyz[1] + params.spot_offset.y + params.shoebox_size.y / 2)
+      z = int(Rxyz[2] + params.spot_offset.z + params.shoebox_size.z / 2)
+      
       if x < 0 or x >= params.shoebox_size.x:
         continue
       if y < 0 or y >= params.shoebox_size.y:
@@ -179,8 +216,7 @@ def main(params):
   if params.background_method == 'xds':
     background_xds(rlist)
   elif params.background_method == 'mosflm':
-    assert(params.pixel_mask)
-    assert(params.pixel_mask != 'none')
+    assert(params.pixel_mask != 'all')
     background_inclined(rlist)
 
   integrate_3d_summation(rlist)
