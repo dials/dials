@@ -71,7 +71,7 @@ def simple_gaussian_spots(params):
     rlist[j].image_coord_mm = (0, 0)
     rlist[j].frame_number = 0
     rlist[j].panel_number = 0
-    rlist[j].bounding_box = (0, params.shoebox_size.x, 0, params.shoebox_size.y, 
+    rlist[j].bounding_box = (0, params.shoebox_size.x, 0, params.shoebox_size.y,
                              0, params.shoebox_size.z)
     rlist[j].centroid_position = (0, 0, 0)
     rlist[j].centroid_variance = (0, 0, 0)
@@ -100,6 +100,22 @@ def simple_gaussian_spots(params):
       mask_none = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
       for j in range(len(mask)):
         mask[j] = mask_none
+    elif params.pixel_mask == 'static':
+      from math import sqrt
+      x0 = params.shoebox_size.x / 2
+      y0 = params.shoebox_size.y / 2
+      z0 = params.shoebox_size.z / 2
+      sx = params.spot_size.x
+      sy = params.spot_size.y
+      sz = params.spot_size.z
+      for k in range(mask.all()[0]):
+        for j in range(mask.all()[1]):
+          for i in range(mask.all()[2]):
+            d = ((i - x0) / sx)**2 + ((j - y0) / sy)**2 + ((k - z0) / sz)**2
+            if d <= 1.0:
+              mask[k,j,i] = MaskCode.Valid | MaskCode.Foreground
+            else:
+              mask[k,j,i] = MaskCode.Valid | MaskCode.Background# | MaskCode.Foreground
 
     sbox = refl.shoebox
 
@@ -123,7 +139,7 @@ def simple_gaussian_spots(params):
 
     refl.intensity = counts_true
 
-    # background:flat; FIXME can replace this with Poissonian added random 
+    # background:flat; FIXME can replace this with Poissonian added random
     # number, which will give the same answer...
 
     for j in range(params.background * len(sbox)):
@@ -141,7 +157,7 @@ def background_xds(rlist):
   background = XdsSubtractor()
   background(None, None, rlist)
   return
-  
+
 def background_inclined(rlist):
   from dials.algorithms.background import InclinedSubtractor
   background = InclinedSubtractor()
@@ -166,9 +182,9 @@ def main(params):
     assert(params.pixel_mask)
     assert(params.pixel_mask != 'none')
     background_inclined(rlist)
-    
+
   integrate_3d_summation(rlist)
-  
+
   integrated_intensities = [r.intensity for r in rlist]
 
   # now scan through the reflection list and find those where the integration
@@ -200,7 +216,7 @@ def main(params):
     pickle.dump(underestimates, open(params.output.under, 'w'))
   if params.output.over:
     pickle.dump(overestimates, open(params.output.over, 'w'))
-  if params.output.all:  
+  if params.output.all:
     pickle.dump(rlist, open(params.output.all, 'w'))
 
 if __name__ == '__main__':
