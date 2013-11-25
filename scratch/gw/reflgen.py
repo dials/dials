@@ -137,6 +137,8 @@ def simple_gaussian_spots(params):
       x0 = params.shoebox_size.x / 2
       y0 = params.shoebox_size.y / 2
       z0 = params.shoebox_size.z / 2
+      # FIXME make this work gracefully for rotations see below use of 
+      # matrix rotation => Rxyz etc.
       sx = params.mask_nsigma * params.spot_size.x
       sy = params.mask_nsigma * params.spot_size.y
       sz = params.mask_nsigma * params.spot_size.z
