@@ -28,7 +28,7 @@ class Extract(object):
 
       # Create the list of pixel lists
       plists = [PixelList(p.get_image_size()[::-1], index[0])
-          for p in self.sweep.get_detector()]
+        for p in self.sweep.get_detector()]
 
       # Iterate through the range of images
       for image in self.sweep[index[0]:index[1]]:
@@ -174,8 +174,11 @@ class SpotFinder(object):
     from dxtbx.imageset import ImageSweep
 
     # Get list of scan ranges
-    if not self.scan_range or not isinstance(sweep, ImageSweep):
-      scan_range = [sweep.get_array_range()]
+    if not self.scan_range:
+      if isinstance(sweep, ImageSweep):
+        scan_range = [sweep.get_array_range()]
+      else:
+        scan_range = [(0, len(sweep))]
     else:
       scan_range = self.scan_range
 
