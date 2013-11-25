@@ -132,30 +132,38 @@ def simple_gaussian_spots(params):
       for j in range(len(mask)):
         mask[j] = mask_none
     elif params.pixel_mask == 'static':
+      import itertools
+      from scitbx.array_family import flex
       from math import sqrt
-      x0 = params.shoebox_size.x / 2
-      y0 = params.shoebox_size.y / 2
-      z0 = params.shoebox_size.z / 2
-      # FIXME make this work gracefully for rotations see below use of 
-      # matrix rotation => Rxyz etc.
+      x0 = params.spot_offset.x + params.shoebox_size.x / 2
+      y0 = params.spot_offset.x + params.shoebox_size.y / 2
+      z0 = params.spot_offset.x + params.shoebox_size.z / 2
       sx = params.mask_nsigma * params.spot_size.x
       sy = params.mask_nsigma * params.spot_size.y
       sz = params.mask_nsigma * params.spot_size.z
-      for k in range(mask.all()[0]):
-        for j in range(mask.all()[1]):
-          for i in range(mask.all()[2]):
-            d = ((i - x0) / sx)**2 + ((j - y0) / sy)**2 + ((k - z0) / sz)**2
-            if d <= 1.0:
-              mask[k,j,i] = MaskCode.Valid | MaskCode.Foreground
-            else:
-              mask[k,j,i] = MaskCode.Valid | MaskCode.Background# | MaskCode.Foreground
+
+      # The x, y, z indices
+      z, y, x = zip(*itertools.product(*(range(n) for n in mask.all())))
+      xyz = flex.vec3_double(flex.double(x), flex.double(y), flex.double(z))
+
+      # Calculate SUM(((xj - xj0) / sxj)**2) for each element
+      xyz0 = (x0, y0, z0)
+      isxyz = (1.0/sx, 1.0/sy, 1.0/sz)
+      dxyz = sum([(x * isx)**2 for x, isx in
+        zip(((xyz - xyz0) * rotation).parts(), isxyz)])
+
+      # Set the mask values
+      index = dxyz <= 1.0
+      index.reshape(mask.accessor())
+      mask.set_selected(index, MaskCode.Valid | MaskCode.Foreground)
+      mask.set_selected(index != True, MaskCode.Valid | MaskCode.Background)
 
     sbox = refl.shoebox
 
     # reflection itself, including setting the peak region if we're doing that
-    # FIXME use flex arrays to make the rotation bit more efficient as this is 
+    # FIXME use flex arrays to make the rotation bit more efficient as this is
     # now rather slow...
-    
+
     counts_true = 0
     for j in range(params.counts):
       _x = random.gauss(0, params.spot_size.x)
@@ -183,7 +191,7 @@ def simple_gaussian_spots(params):
 
     # background:flat; FIXME can replace this with Poissonian added random
     # number, which will give the same answer... also would like to find some
-    # reasonable way of gathering random numbers drawn from an inclined 
+    # reasonable way of gathering random numbers drawn from an inclined
     # distribution...
 
     for j in range(params.background * len(sbox)):
@@ -265,7 +273,7 @@ def main(params):
 if __name__ == '__main__':
   import sys
 
-  # FXIME use phil parameters for 
+  # FXIME use phil parameters for
   # nproc - done
   # FIXME add Phil parameters for
   # background plane method with B(x, y) = c + ax + by; don't know how to make
