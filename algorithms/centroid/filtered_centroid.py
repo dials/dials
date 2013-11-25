@@ -93,7 +93,7 @@ def select_foreground_pixels(pixel_data, min_pixels=10, n_sigma=-1, conn=4):
     data[i] = pixel_data[i]
 
   # Get a list of foreground pixel indices
-  discriminate = NormalDiscriminator(min_pixels, n_sigma)
+  discriminate = NormalDiscriminator(min_pixels)
   mask = discriminate(data)
   index = flex.select(range(len(mask)), flags=mask)
 

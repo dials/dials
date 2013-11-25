@@ -22,7 +22,7 @@ class Test(object):
   def tst_no_mask(self):
     from scitbx.array_family import flex
     from dials.algorithms.background import NormalDiscriminator
-    discriminate = NormalDiscriminator(n_sigma=3.0, min_data=10)
+    discriminate = NormalDiscriminator(min_data=10)
     shoebox_d = flex.random_double(5 * 5 * 5) * 100
     shoebox = flex.int([int(s) for s in shoebox_d])
     shoebox.reshape(flex.grid((5, 5, 5)))
