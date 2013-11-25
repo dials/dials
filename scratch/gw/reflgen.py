@@ -1,5 +1,40 @@
 from __future__ import division
 
+from libtbx.phil import parse
+
+master_phil = parse("""
+nrefl = 0
+  .type = int
+nproc = 0
+  .type = int
+shoebox_size {
+  x = 10
+    .type = int
+  y = 10
+    .type = int
+  z = 10
+    .type = int
+}
+spot_size {
+  x = 1.0
+    .type = float
+  y = 1.0
+    .type = float
+  z = 1.0
+    .type = float
+}
+counts = 0
+  .type = int
+background = 0
+  .type = int
+pixel_mask = *none static precise
+  .type = choice
+background_method = *xds mosflm
+  .type = choice
+integration_methpd = *xds mosflm
+  .type = choice
+""")
+
 def simple_gaussian_spots(num_refl, signal, background):
   from dials.model.data import ReflectionList
   from dials.algorithms import shoebox
@@ -191,15 +226,20 @@ def integrate_inclined_background_3d_summation(rlist):
   integration(None, None, rlist)
   return
 
-def main(argv):
-  nrefl, counts, background = map(int, argv)
-  # rlist = simple_gaussian_spots_proper_mask(nrefl, counts, background)
-  rlist = simple_gaussian_spots(nrefl, counts, background)
+def main(params):
+  if params.pixel_mask == 'none':
+    rlist = simple_gaussian_spots(params.nrefl, params.counts, params.background)
+  elif params.pixel_mask == 'precise':
+    rlist = simple_gaussian_spots_proper_mask(params.nrefl, params.counts, 
+                                              params.background)
   correct_intensities = [r.intensity for r in rlist]
   for r in rlist:
     r.intensity = 0
-  # integrate_inclined_background_3d_summation(rlist)
-  integrate_xds_background_3d_summation(rlist)
+
+  if params.background_method == 'xds':
+    integrate_xds_background_3d_summation(rlist)
+  elif params.background_method == 'mosflm':
+    integrate_inclined_background_3d_summation(rlist)
   integrated_intensities = [r.intensity for r in rlist]
 
   # now scan through the reflection list and find those where the integration
@@ -215,7 +255,7 @@ def main(argv):
     sigma = math.sqrt(c)
     if math.fabs(c - i) < 3 * sigma:
       continue
-    if i > counts:
+    if i > params.counts:
       overestimates.append(rlist[j])
     else:
       underestimates.append(rlist[j])
@@ -227,27 +267,34 @@ def main(argv):
 
   import cPickle as pickle
 
-  pickle.dump(underestimates,
-              open('%d_%d_under.pickle' % (counts, background), 'w'))
+  pickle.dump(underestimates, open(
+    '%d_%d_under.pickle' % (params.counts, params.background), 'w'))
 
-  pickle.dump(overestimates,
-              open('%d_%d_over.pickle' % (counts, background), 'w'))
+  pickle.dump(overestimates, open(
+    '%d_%d_over.pickle' % (params.counts, params.background), 'w'))
 
-  pickle.dump(rlist, open('%d_%d_all.pickle' % (counts, background), 'w'))
+  pickle.dump(rlist, open(
+    '%d_%d_all.pickle' % (params.counts, params.background), 'w'))
 
 if __name__ == '__main__':
   import sys
 
   # FIXME add Phil parameters for
-  # nrefl
-  # nproc
-  # size of box
-  # width of spot
+  # nrefl - done
+  # nproc - done
+  # size of box - done x y z
+  # width of spot - done x y z
+  # rotation of spot density - not done
+  # background plane method with B(x, y) = c + ax + by; don't know how to make
+  #                                                   ; random dist. like this
   # counts
   # background
   # background method
   # integration method
   # set proper background mask or no
   # set static mask
-  
-  main(sys.argv[1:])
+
+  working_phil = master_phil
+  for arg in sys.argv[1:]:
+    working_phil = working_phil.fetch(parse(arg))
+  main(working_phil.extract())
