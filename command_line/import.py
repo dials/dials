@@ -31,10 +31,6 @@ class RawSweepImporter(object):
       raise RuntimeError(
           'Requires exactly 1 sweep, got {0}'.format(len(imagesets)))
 
-    # Ensure its a sweep
-    if not isinstance(imagesets[0], ImageSweep):
-      raise RuntimeError('Dials requires an ImageSweep not an ImageSet')
-
     # Return the sweep
     return imagesets[0]
 
