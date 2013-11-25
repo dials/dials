@@ -33,6 +33,14 @@ background_method = *xds mosflm
   .type = choice
 integration_methpd = *xds mosflm
   .type = choice
+output {
+  over = None
+    .type = path
+  under = None
+    .type = path
+  all = None
+    .type = path
+}
 """)
 
 def simple_gaussian_spots(num_refl, signal, background):
@@ -263,18 +271,16 @@ def main(params):
   print '%d overestimates, %d underestimates' % (len(overestimates),
                                                  len(underestimates))
 
-  # now pickle these
+  # now pickle these, perhaps
 
   import cPickle as pickle
 
-  pickle.dump(underestimates, open(
-    '%d_%d_under.pickle' % (params.counts, params.background), 'w'))
-
-  pickle.dump(overestimates, open(
-    '%d_%d_over.pickle' % (params.counts, params.background), 'w'))
-
-  pickle.dump(rlist, open(
-    '%d_%d_all.pickle' % (params.counts, params.background), 'w'))
+  if params.output.under:
+    pickle.dump(underestimates, open(params.output.under, 'w'))
+  if params.output.over:
+    pickle.dump(overestimates, open(params.output.over, 'w'))
+  if params.output.all:  
+    pickle.dump(rlist, open(params.output.all, 'w'))
 
 if __name__ == '__main__':
   import sys
