@@ -188,9 +188,9 @@ namespace dials { namespace algorithms {
     // Building a set 1D lists with the useful pixels
     double iexpr_lst[counter];
     double imodl_lst[counter];
-    double iback_lst[counter];
+    //double iback_lst[counter];
     double modl_scal_lst[counter];
-    double scale = 0, sum = 0, i_var;
+    double sum = 0, i_var;
     double avg_i_scale, diff, df_sqr;
     counter = 0;
     for (int row = 0; row < nrow; row++) {
@@ -198,19 +198,23 @@ namespace dials { namespace algorithms {
         if (data2dmov(row,col) != backg2dmov(row,col) and profile2d(row,col) > 0 ) {
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;
-          iback_lst[counter] = backg2dmov(row,col);
+          // iback_lst[counter] = backg2dmov(row,col);
           counter++ ;
         }
       }
     }
     
     // finding the scale needed to fit profile list to experiment list
+
+    // least-squares scaling following the formula:
+    // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
+    double sum_xy = 0, sum_x_sq = 0;
     for (int i = 0; i < counter; i++){
-      scale = iexpr_lst[i] / imodl_lst[i];
-      sum += scale * imodl_lst[i];
+      sum_xy += iexpr_lst[i] * imodl_lst[i];
+      sum_x_sq += imodl_lst[i] * imodl_lst[i];
     }
-    
-    avg_i_scale = sum;
+    avg_i_scale = sum_xy / sum_x_sq;
+
     for (int i = 0; i < counter; i++){
       modl_scal_lst[i] =imodl_lst[i] * avg_i_scale;
     }
@@ -221,16 +225,14 @@ namespace dials { namespace algorithms {
       df_sqr = diff * diff;
       sum += df_sqr;
     }
-    
     i_var = sum;
     
     sum = 0;
-      for (int i = 0; i < counter; i++){
-        df_sqr = iback_lst[i] * iback_lst[i];
-        sum += df_sqr;
-      }
+    for (int i = 0; i < counter; i++){
+      sum += modl_scal_lst[i];
+    }
     
-    integr_data[0] = avg_i_scale;                   // intensity
+    integr_data[0] = sum;                   // intensity
     integr_data[1] = i_var;                         // intensity variance
     
     return integr_data;
