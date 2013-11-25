@@ -95,7 +95,7 @@ def simple_gaussian_spots(params):
       # flag everything as background: peak will me assigned later
       for j in range(len(mask)):
         mask[j] = mask_back
-    elif params.pixel_mask == 'none':
+    elif params.pixel_mask == 'none' or params.pixel_mask == None:
       # flag we have no idea what anything is
       mask_none = MaskCode.Valid|MaskCode.Foreground|MaskCode.Background
       for j in range(len(mask)):
@@ -103,7 +103,7 @@ def simple_gaussian_spots(params):
 
     sbox = refl.shoebox
 
-    # reflection itself, including setting the peak region
+    # reflection itself, including setting the peak region if we're doing that
 
     counts_true = 0
     for j in range(params.counts):
@@ -142,16 +142,16 @@ def background_xds(rlist):
   background(None, None, rlist)
   return
   
-def integrate_3d_summation(rlist):
-  from dials.algorithms.integration import Summation3d
-  integration = Summation3d()
-  integration(None, None, rlist)
-  return
-
 def background_inclined(rlist):
   from dials.algorithms.background import InclinedSubtractor
   background = InclinedSubtractor()
   background(None, None, rlist)
+  return
+
+def integrate_3d_summation(rlist):
+  from dials.algorithms.integration import Summation3d
+  integration = Summation3d()
+  integration(None, None, rlist)
   return
 
 def main(params):
@@ -163,6 +163,7 @@ def main(params):
   if params.background_method == 'xds':
     background_xds(rlist)
   elif params.background_method == 'mosflm':
+    assert(params.pixel_mask)
     assert(params.pixel_mask != 'none')
     background_inclined(rlist)
     
