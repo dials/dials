@@ -819,6 +819,7 @@ class Refiner2(object):
     get_scan
     get_reflections
     get_matches
+    get_param_reporter
     selection_used_for_refinement
     predict_reflections
 
@@ -957,6 +958,11 @@ class Refiner2(object):
     # public API (indexing code seems to use it, but is it necessary?)
     return self._refman.get_matches(silent = True)
 
+  def get_param_reporter(self):
+      """Get the ParameterReport object linked to this Refiner"""
+
+      return self._param_report
+
   def run(self):
     """Run refinement"""
 
@@ -985,11 +991,6 @@ class Refiner2(object):
       if self._goniometer: print self._goniometer
       if self._scan: print self._scan
       for x in self._crystals: print x
-
-      # Write scan-varying parameters to file, if there were any
-      if self._scan and self._param_report.varying_params_vs_image_number(
-              self._scan.get_image_range()):
-        print "Writing scan-varying parameter table to file"
 
       # Report on the refined parameters
       print self._param_report

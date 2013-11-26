@@ -108,9 +108,9 @@ class ParameterReporter(object):
     return s
 
   def varying_params_vs_image_number(self, image_range):
-    """Write a table of scan-varying parameter values vs image number to
-    disk, if scan-varying parameters are present. Return boolean, reporting
-    whether this table was written or not"""
+    """Returns a string which is a table of scan-varying parameter values vs
+    image number, if scan-varying parameters are present. Otherwise returns
+    None"""
 
     image_numbers = range(image_range[0], image_range[1] + 1)
     columns = [TableColumn("Image", image_numbers)]
@@ -155,18 +155,16 @@ class ParameterReporter(object):
           except AttributeError:
             continue
 
-    if len(columns) > 1:
-      f = open("varying_params.dat","w")
+    if len(columns) > 1: 
       header = "\t".join([e.title for e in columns])
-      f.write(header + "\n")
+      text = header + "\n"
       for i in range(len(columns[0])):
         vals = "\t".join(["%.6f" % e.values[i] for e in columns])
-        f.write(vals + "\n")
-      f.close()
-      return True
+        text += vals + "\n"
+      return text
 
     else:
-      return False
+      return None
 
   # FIXME Don't need this?
   def get_params(self):

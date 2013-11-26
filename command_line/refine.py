@@ -104,6 +104,17 @@ class Script(ScriptRunner):
       print "Writing residuals to file"
       self.write_residuals_table(refiner)
 
+      # Write scan-varying parameters to file, if there were any
+      scan = refiner.get_scan()
+      if scan:
+        text = refiner.get_param_reporter().varying_params_vs_image_number(
+            scan.get_image_range())
+        if text:
+          print "Writing scan-varying parameter table to file"
+          f = open("varying_params.dat","w")
+          f.write(text)
+          f.close()
+
     # update the input sweep
     sweep.set_beam(refiner.get_beam())
     sweep.set_detector(refiner.get_detector())
