@@ -37,6 +37,14 @@ counts = 0
   .type = int
 background = 0
   .type = int
+background_a = 0.0
+  .type = float
+background_b = 0.0
+  .type = float
+background_c = 0.0
+  .type = float
+background_d = 0.0
+  .type = float
 pixel_mask = *all static precise
   .type = choice
 background_method = *xds mosflm
@@ -65,6 +73,32 @@ rotation {
     .type = float
 }
 """)
+
+def random_background_plane(sbox, a, b, c, d):
+  '''Draw values from Poisson distribution for each position where the mean for
+  that distribition is equal to a + b * i + c * j + d * k where a, b, c, d are
+  floating point values and i, j, k are the shoebox indices in directions x, y
+  and z respectively.'''
+
+  from scitbx.array_family import flex
+  from scitbx.random import variate, poisson_distribution
+
+  dz, dy, dx = sbox.focus()
+
+  if b == c == d == 0.0:
+    g = variate(poisson_distribution(mean = a))
+    for k in range(dz):
+      for j in range(dy):
+        for i in range(dx):
+          sbox[k, j, i] += g.next()
+  else:
+    for k in range(dz):
+      for j in range(dy):
+        for i in range(dx):
+          pixel = a + b * i + c * j + d * k
+          g = variate(poisson_distribution(mean = pixel))
+          sbox[k, j, i] += g.next()
+  return
 
 def simple_gaussian_spots(params):
   from dials.model.data import ReflectionList
@@ -189,16 +223,17 @@ def simple_gaussian_spots(params):
 
     refl.intensity = counts_true
 
-    # background:flat; FIXME can replace this with Poissonian added random
-    # number, which will give the same answer... also would like to find some
-    # reasonable way of gathering random numbers drawn from an inclined
-    # distribution...
-
-    for j in range(params.background * len(sbox)):
-      x = random.randint(0, params.shoebox_size.x - 1)
-      y = random.randint(0, params.shoebox_size.y - 1)
-      z = random.randint(0, params.shoebox_size.z - 1)
-      sbox[z, y, x] += 1
+    if params.background:
+      # background:flat;
+      for j in range(params.background * len(sbox)):
+        x = random.randint(0, params.shoebox_size.x - 1)
+        y = random.randint(0, params.shoebox_size.y - 1)
+        z = random.randint(0, params.shoebox_size.z - 1)
+        sbox[z, y, x] += 1
+    else:
+      # or inclined
+      random_background_plane(sbox, params.background_a, params.background_b,
+                              params.background_c, params.background_d)
 
   p.finished('Generating %d shoeboxes' % params.nrefl)
 
@@ -278,9 +313,9 @@ if __name__ == '__main__':
   # FIXME add Phil parameters for
   # background plane method with B(x, y) = c + ax + by; don't know how to make
   #                                                   ; random dist. like this
-
   # FIXME parse Phil parameters better
   # FIXME pass in Phil file?
+
   working_phil = master_phil
   for arg in sys.argv[1:]:
     working_phil = working_phil.fetch(parse(arg))
