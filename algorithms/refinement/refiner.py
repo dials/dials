@@ -820,7 +820,6 @@ class Refiner2(object):
     get_reflections
     get_matches
     selection_used_for_refinement
-    write_residuals_table
     predict_reflections
 
   Notes:
@@ -995,9 +994,6 @@ class Refiner2(object):
       # Report on the refined parameters
       print self._param_report
 
-      print "Writing residuals to file"
-      self.write_residuals_table()
-
     # Return the refinement history
     return self._refinery.history
 
@@ -1013,23 +1009,6 @@ class Refiner2(object):
       selection[m.iobs] = True
 
     return selection
-
-  def write_residuals_table(self):
-
-    matches = self._refman.get_matches()
-
-    f = open("residuals.dat","w")
-    header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
-        "Y_calc\tPhi_calc\n")
-    f.write(header)
-
-    for m in matches:
-      msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
-            "%5.3f\n")
-      msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
-                   m.Phio, m.Xc, m.Yc, m.Phic)
-      f.write(msg)
-    f.close()
 
   def predict_reflections(self):
     """Predict all reflection positions after refinement"""

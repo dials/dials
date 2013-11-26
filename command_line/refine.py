@@ -54,6 +54,23 @@ class Script(ScriptRunner):
         action="count", default=0,
         help="set verbosity level; -vv gives verbosity level 2.")
 
+  def write_residuals_table(self, refiner):
+
+    matches = refiner.get_matches()
+
+    f = open("residuals.dat","w")
+    header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
+        "Y_calc\tPhi_calc\n")
+    f.write(header)
+
+    for m in matches:
+      msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
+            "%5.3f\n")
+      msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
+                   m.Phio, m.Xc, m.Yc, m.Phic)
+      f.write(msg)
+    f.close()
+
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
@@ -82,6 +99,10 @@ class Script(ScriptRunner):
 
     # Refine and get the refinement history
     refined = refiner.run()
+
+    if options.verbosity > 1:
+      print "Writing residuals to file"
+      self.write_residuals_table(refiner)
 
     # update the input sweep
     sweep.set_beam(refiner.get_beam())
