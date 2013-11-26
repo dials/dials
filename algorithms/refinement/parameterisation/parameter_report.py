@@ -155,7 +155,7 @@ class ParameterReporter(object):
           except AttributeError:
             continue
 
-    if len(columns) > 1: 
+    if len(columns) > 1:
       header = "\t".join([e.title for e in columns])
       text = header + "\n"
       for i in range(len(columns[0])):
