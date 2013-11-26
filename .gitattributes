@@ -427,10 +427,10 @@ scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/biostruct-25.py -text
+scratch/gw/generate_test_reflections.py -text
 scratch/gw/plotintensity.py -text
-scratch/gw/printrefl.py -text
+scratch/gw/print_test_reflections.py -text
 scratch/gw/refine.py -text
-scratch/gw/reflgen.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/twospacify.py -text
 scratch/gw/x2tbx/SConscript -text
