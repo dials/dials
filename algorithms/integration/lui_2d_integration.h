@@ -105,7 +105,8 @@ namespace dials { namespace algorithms {
       for (int col = 0; col < ncol_in; col++) {
         tot_row = row + tot_row_centr - centr_row + 1;
         tot_col = col + tot_col_centr - centr_col + 1;
-        if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and tot_col < ncol_tot) {
+        if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot
+          and tot_col < ncol_tot) {
 
           // interpolating and finding contributions of each pixel
           // to the four surrounding  pixels in the other shoe box
@@ -134,16 +135,20 @@ namespace dials { namespace algorithms {
           }
 
           // Adding corresponding contributions to each pixel
-          total(tot_row, tot_col) = tmp_total(tot_row, tot_col) + data2d(row, col) * scale * x_contrib * y_contrib;
+          total(tot_row, tot_col) = tmp_total(tot_row, tot_col)
+            + data2d(row, col) * scale * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){
             if( xpos_ex != tot_col ){
-              total(tot_row, xpos_ex)=tmp_total(tot_row, xpos_ex) + data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
+              total(tot_row, xpos_ex)=tmp_total(tot_row, xpos_ex)
+                + data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
             }
             if( ypos_ex != tot_row ){
-              total(ypos_ex, tot_col)=tmp_total(ypos_ex, tot_col) + data2d(row, col) * scale * x_contrib * (1 - y_contrib);
+              total(ypos_ex, tot_col)=tmp_total(ypos_ex, tot_col)
+                + data2d(row, col) * scale * x_contrib * (1 - y_contrib);
             }
             if( xpos_ex != tot_col and ypos_ex != tot_row ){
-              total(ypos_ex, xpos_ex)=tmp_total(ypos_ex, xpos_ex) + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
+              total(ypos_ex, xpos_ex)=tmp_total(ypos_ex, xpos_ex)
+                + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
             }
           }
 
@@ -151,7 +156,8 @@ namespace dials { namespace algorithms {
           std::cout << "\n ERROR Not fitting in the area to be added \n";
           std::cout <<"  tot_row =" <<tot_row << "  tot_col =" << tot_col <<
               "  nrow_tot =" << nrow_tot << "  ncol_tot =" << ncol_tot << "\n";
-          std::cout <<" centr_col =" <<  centr_col << " centr_row =" << centr_row << "\n";
+          std::cout <<" centr_col =" <<  centr_col <<
+            " centr_row =" << centr_row << "\n";
         }
       }
     }
@@ -191,11 +197,13 @@ namespace dials { namespace algorithms {
     //double iback_lst[counter];
     double modl_scal_lst[counter];
     double sum = 0, i_var;
-    double avg_i_scale, diff, df_sqr;
+    double m, diff, df_sqr;
     counter = 0;
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
-        if (data2dmov(row,col) != backg2dmov(row,col) and profile2d(row,col) > 0 ) {
+        if (data2dmov(row,col) != backg2dmov(row,col)
+          and profile2d(row,col) > 0 ) {
+
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;
           // iback_lst[counter] = backg2dmov(row,col);
@@ -213,10 +221,10 @@ namespace dials { namespace algorithms {
       sum_xy += iexpr_lst[i] * imodl_lst[i];
       sum_x_sq += imodl_lst[i] * imodl_lst[i];
     }
-    avg_i_scale = sum_xy / sum_x_sq;
+    m = sum_xy / sum_x_sq;
 
     for (int i = 0; i < counter; i++){
-      modl_scal_lst[i] =imodl_lst[i] * avg_i_scale;
+      modl_scal_lst[i] =imodl_lst[i] * m;
     }
 
     sum = 0;
@@ -233,7 +241,7 @@ namespace dials { namespace algorithms {
     }
 
     integr_data[0] = sum;                   // intensity
-    integr_data[1] = i_var;                         // intensity variance
+    integr_data[1] = i_var;                 // intensity variance
 
     return integr_data;
   }

@@ -8,7 +8,7 @@ def make_2d_profile(reflections):
   big_nrow = 0
   big_ncol = 0
 
-  select_rlist = ReflectionList()
+
   max_i_01 = 0.0
   for ref in reflections:
     if ref.is_valid():
@@ -18,12 +18,13 @@ def make_2d_profile(reflections):
   max_i = 0.0
   for ref in reflections:
     if ref.is_valid():
-      if ref.intensity > max_i and ref.intensity < max_i_01 * 0.99:
+      if ref.intensity > max_i and ref.intensity < max_i_01 * 0.95:
         max_i = ref.intensity
-  thold = 0.4 * max_i
+  thold = 0.2 * max_i
 
+  select_rlist = ReflectionList()
   for ref in reflections:
-    if ref.is_valid() and ref.intensity > thold:
+    if ref.is_valid() and ref.intensity > thold and ref.intensity < max_i:
       select_rlist.append(ref)
   counter = 0
   for ref in select_rlist:

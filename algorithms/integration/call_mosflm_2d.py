@@ -31,12 +31,12 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
     for row in range(nrow):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col])
 
-      if_you_want_to_see_how_the_profiles_look='''
+      #if_you_want_to_see_how_the_profiles_look='''
       from matplotlib import pyplot as plt
       data2d = profile.as_numpy_array()
       plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
       plt.show()
-      '''
+      #'''
       arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], profile, tr_hold)
 
   new_rlist = ReflectionList()
