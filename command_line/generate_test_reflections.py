@@ -5,8 +5,6 @@ from libtbx.phil import parse
 master_phil = parse("""
 nrefl = 0
   .type = int
-nproc = 0
-  .type = int
 shoebox_size {
   x = 10
     .type = int
@@ -308,15 +306,7 @@ def main(params):
 if __name__ == '__main__':
   import sys
 
-  # FXIME use phil parameters for
-  # nproc - done
-  # FIXME add Phil parameters for
-  # background plane method with B(x, y) = c + ax + by; don't know how to make
-  #                                                   ; random dist. like this
-  # FIXME parse Phil parameters better
-  # FIXME pass in Phil file?
-
-  working_phil = master_phil
-  for arg in sys.argv[1:]:
-    working_phil = working_phil.fetch(parse(arg))
+  from libtbx.phil import command_line
+  cmd = command_line.argument_interpreter(master_params = master_phil)
+  working_phil = cmd.process_and_fetch(args = sys.argv[1:])
   main(working_phil.extract())
