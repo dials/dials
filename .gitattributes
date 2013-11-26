@@ -215,6 +215,7 @@ algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
 algorithms/shoebox/partial_extractor.h -text
+algorithms/simulation/generate_test_reflections.py -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
 algorithms/spatial_indexing/boost_python/octree.cc -text
@@ -271,7 +272,6 @@ command_line/export_spot_xds.py -text
 command_line/extract.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
-command_line/generate_test_reflections.py -text
 command_line/import.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
