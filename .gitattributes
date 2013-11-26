@@ -271,6 +271,7 @@ command_line/export_spot_xds.py -text
 command_line/extract.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
+command_line/generate_test_reflections.py -text
 command_line/import.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
@@ -280,6 +281,7 @@ command_line/merge_spot_lists.py -text
 command_line/parameters.py -text
 command_line/predict.py -text
 command_line/print_reflection_stats.py -text
+command_line/print_test_reflections.py -text
 command_line/process.py -text
 command_line/refine.py -text
 command_line/reflection_stats.py -text
@@ -427,9 +429,7 @@ scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/biostruct-25.py -text
-scratch/gw/generate_test_reflections.py -text
 scratch/gw/plotintensity.py -text
-scratch/gw/print_test_reflections.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/twospacify.py -text
