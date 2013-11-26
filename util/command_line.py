@@ -316,12 +316,13 @@ class Importer(object):
 
   def try_json(self, argument):
     ''' Try as a json file. '''
+    from dxtbx.serialize.load import _decode_dict
     from dials.model.serialize.imageset import imageset_from_dict
     from dials.model.serialize.crystal import crystal_from_dict
     import json
     try:
       with open(argument, 'r') as inputfile:
-        obj = json.loads(inputfile.read())
+        obj = json.loads(inputfile.read(), object_hook=_decode_dict)
         try:
           self.imagesets.append(imageset_from_dict(obj))
           return True
