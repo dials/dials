@@ -46,6 +46,18 @@ def exercise_spotfinder():
     reflections = pickle.load(f)
     assert len(reflections) == 679
 
+  # now with XFEL stills
+  data_dir = libtbx.env.find_in_repositories(
+    relative_path="dials_regression/spotfinding_test_data",
+    test=os.path.isdir)
+  template = os.path.join(data_dir, "idx*.cbf")
+  args = ["dials.spotfinder", template, "-o spotfinder.pickle", "--nproc=1"]
+  result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
+  assert os.path.exists("spotfinder.pickle")
+  with open("spotfinder.pickle", "rb") as f:
+    reflections = pickle.load(f)
+    assert len(reflections) == 2989
+
 def run():
   exercise_spotfinder()
 
