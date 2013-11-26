@@ -53,7 +53,7 @@ namespace dials { namespace af { namespace boost_python {
 
     // Get the stuff from the label struct
     af::shared<int> labels = twod ? pixel.labels_2d() : pixel.labels_3d();
-    af::shared<int> values = pixel.values();
+    af::shared<double> values = pixel.values();
     af::shared< vec3<int> > coords = pixel.coords();
 
     // Get the number of labels and allocate the array

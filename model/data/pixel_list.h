@@ -50,7 +50,7 @@ namespace dials { namespace model {
      * @param coords The image coords
      */
     PixelList(int2 size, int2 frame_range,
-              af::shared<int> values,
+              af::shared<double> values,
               af::shared< vec3<int> > coords)
       : size_(size),
         first_frame_(frame_range[0]),
@@ -104,8 +104,28 @@ namespace dials { namespace model {
      * @param image The image pixels
      * @param mask The mask values
      */
-    void add_image(const af::const_ref< int, af::c_grid<2> > &image,
-                   const af::const_ref< bool, af::c_grid<2> > &mask) {
+    void add_int_image(const af::const_ref< int, af::c_grid<2> > &image,
+                       const af::const_ref< bool, af::c_grid<2> > &mask) {
+      DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
+      DIALS_ASSERT(image.accessor().all_eq(size_));
+      for (std::size_t j = 0; j < size_[0]; ++j) {
+        for (std::size_t i = 0; i < size_[1]; ++i) {
+          if (mask(j, i)) {
+            coords_.push_back(vec3<int>(last_frame_, j, i));
+            values_.push_back((double)image(j, i));
+          }
+        }
+      }
+      last_frame_++;
+    }
+
+    /**
+     * Add an image
+     * @param image The image pixels
+     * @param mask The mask values
+     */
+    void add_double_image(const af::const_ref< double, af::c_grid<2> > &image,
+                          const af::const_ref< bool, af::c_grid<2> > &mask) {
       DIALS_ASSERT(image.accessor().all_eq(mask.accessor()));
       DIALS_ASSERT(image.accessor().all_eq(size_));
       for (std::size_t j = 0; j < size_[0]; ++j) {
@@ -129,7 +149,7 @@ namespace dials { namespace model {
     /**
      * @returns The list of valid point values
      */
-    af::shared<int> values() const {
+    af::shared<double> values() const {
       return values_;
     }
 
@@ -236,7 +256,7 @@ namespace dials { namespace model {
     int first_frame_;
     int last_frame_;
     af::shared< vec3<int> > coords_;
-    af::shared<int> values_;
+    af::shared<double> values_;
   };
 
 }} // namespace dials::model

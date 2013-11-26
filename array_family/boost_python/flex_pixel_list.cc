@@ -48,7 +48,7 @@ namespace dials { namespace af { namespace boost_python {
 
     // Allocate arrays
     af::shared< vec3<int> > coords((af::reserve(num)));
-    af::shared<int> values((af::reserve(num)));
+    af::shared<double> values((af::reserve(num)));
 
     // Check the frames are sequential
     int2 fr1(0, a[0].first_frame());
@@ -58,7 +58,7 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(fr2[0] == fr1[1]);
       DIALS_ASSERT(a[i].size().all_eq(size));
       fr1 = fr2;
-      af::shared<int> v = a[i].values();
+      af::shared<double> v = a[i].values();
       af::shared< vec3<int> > c = a[i].coords();
       std::copy(v.begin(), v.end(), std::back_inserter(values));
       std::copy(c.begin(), c.end(), std::back_inserter(coords));

@@ -34,7 +34,7 @@ namespace dials { namespace model { namespace boost_python {
         arg("size"),
         arg("start_frame"))))
       .def(init<int2, int2,
-                af::shared<int>,
+                af::shared<double>,
                 af::shared< vec3<int> > >())
       .def("size", &PixelList::size)
       .def("first_frame", &PixelList::first_frame)
@@ -42,7 +42,10 @@ namespace dials { namespace model { namespace boost_python {
       .def("frame_range", &PixelList::frame_range)
       .def("num_frames", &PixelList::num_frames)
       .def("num_pixels", &PixelList::num_pixels)
-      .def("add_image", &PixelList::add_image, (
+      .def("add_image", &PixelList::add_int_image, (
+        arg("image"),
+        arg("mask")))
+      .def("add_image", &PixelList::add_double_image, (
         arg("image"),
         arg("mask")))
       .def("coords", &PixelList::coords)
