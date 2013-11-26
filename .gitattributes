@@ -563,7 +563,7 @@ test/algorithms/centroid/tst_lui_centroid.py -text svneol=unset#text/plain
 test/algorithms/centroid/tst_toy_centroid.py -text
 test/algorithms/centroid/tst_toy_centroid_helpers.py -text
 test/algorithms/generate_test_reflections/__init__.py -text
-test/algorithms/generate_test_reflections/tst_generate_test_reflections.py -text
+test/algorithms/generate_test_reflections/tst_generate_test_refl.py -text
 test/algorithms/image/connected_components/tst_connected_components.py -text
 test/algorithms/image/filter/tst_fano.py -text
 test/algorithms/image/filter/tst_mean_and_variance.py -text
