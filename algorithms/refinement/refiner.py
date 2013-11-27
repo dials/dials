@@ -31,6 +31,7 @@ class RefinerFactory(object):
                                   sweep_range_rad=None,
                                   crystal=None,
                                   crystals=None,
+                                  crystal_ids=None,
                                   verbosity=0):
     """Given a set of parameters, reflections and experimental models, construct
     a refiner.
@@ -46,7 +47,8 @@ class RefinerFactory(object):
       \detector - A dxtbx Detector object
       crystal - A dials Crystal object
         or
-      crystals - A list of dials Crystal objects
+      /crystals - A list of dials Crystal objects
+      \crystal_ids - A list of integer crystal ids to match to crystals
 
     Optional arguments:
       goniometer - A dxtbx Goniometer model
@@ -65,8 +67,9 @@ class RefinerFactory(object):
 
     The interface is intended to be flexible by allowing input to be passed in
     various forms. Some are incompatible, e.g. passing a sweep alongside any
-    other dxtbx model is disallowed. Either crystal or crystals must be
-    provided (but not both).
+    other dxtbx model is disallowed. Either a crystal or a list of crystals must
+    be provided (but not both). A list of crystals must be associated with a
+    list of crystal id integers to associate with the crystals.
 
     The optional arguments determine the behaviour of the refiner, alongside the
     phil parameters. Of particular interest, the presence of a goniometer model
@@ -130,6 +133,7 @@ class RefinerFactory(object):
     # do we have the essential models?
     assert [beam, detector].count(None) == 0
     assert [crystal, crystals].count(None) == 1
+    if crystals: assert len(crystals) == len(crystal_ids)
 
     # copy the models
     from dxtbx.model import Beam, Detector
@@ -138,7 +142,9 @@ class RefinerFactory(object):
     # use copy constructors
     beam = Beam(beam)
     detector = Detector(flex.panel([panel for panel in detector]))
-    if crystal: crystals = [copy.deepcopy(crystal)]
+    if crystal:
+      crystals = [copy.deepcopy(crystal)]
+      crystal_ids = [0]
     if crystals: crystals = copy.deepcopy(crystals)
 
     # copy the reflections
@@ -157,7 +163,7 @@ class RefinerFactory(object):
     # create parameterisations
     pred_param, param_reporter = \
             RefinerFactory.config_parameterisation(
-                params, beam, detector, crystals, goniometer, scan)
+                params, beam, detector, crystals, crystal_ids, goniometer, scan)
 
     if verbosity > 1:
       print "Prediction equation parameterisation built\n"
@@ -185,7 +191,7 @@ class RefinerFactory(object):
     if verbosity > 1: print "Building target function"
 
     # create target function
-    target = RefinerFactory.config_target(params, crystals, beam,
+    target = RefinerFactory.config_target(params, crystals, crystal_ids, beam,
                     goniometer, detector, image_width_rad, refman,
                     pred_param)
 
@@ -200,7 +206,7 @@ class RefinerFactory(object):
     if verbosity > 1: print "Refinement engine built\n"
 
     # build refiner interface and return
-    return Refiner2(reflections, beam, crystals, detector,
+    return Refiner2(reflections, beam, crystals, crystal_ids, detector,
                     pred_param, param_reporter, refman, target, refinery,
                     goniometer=goniometer,
                     scan=scan,
@@ -208,7 +214,7 @@ class RefinerFactory(object):
 
   @staticmethod
   def config_parameterisation(
-          params, beam, detector, crystals, goniometer, scan):
+          params, beam, detector, crystals, crystal_ids, goniometer, scan):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
@@ -403,7 +409,7 @@ class RefinerFactory(object):
                   verbosity=verbosity)
 
   @staticmethod
-  def config_target(params, crystals, beam, goniometer, detector,
+  def config_target(params, crystals, crystal_ids, beam, goniometer, detector,
       image_width_rad, refman, pred_param):
     """Given a set of parameters, configure a factory to build a
     target function
@@ -427,10 +433,9 @@ class RefinerFactory(object):
           options.rmsd_cutoff + " not recognised")
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
-    crystal = crystals[0] # FIXME: multiple crystals not yet supported
     if goniometer:
       from dials.algorithms.refinement.prediction import ReflectionPredictor
-      ref_predictor = ReflectionPredictor(crystal, beam, goniometer)
+      ref_predictor = ReflectionPredictor(crystals, crystal_ids, beam, goniometer)
 
       import dials.algorithms.refinement.target as targ
 
@@ -441,7 +446,7 @@ class RefinerFactory(object):
     else:
       from dials.algorithms.refinement.prediction import \
           StillsReflectionPredictor
-      ref_predictor = StillsReflectionPredictor(crystal, beam)
+      ref_predictor = StillsReflectionPredictor(crystals, crystal_ids, beam)
 
       import dials.algorithms.refinement.target_stills as targ
 
@@ -835,7 +840,7 @@ class Refiner2(object):
 
     """
 
-  def __init__(self, reflections, beam, crystals, detector,
+  def __init__(self, reflections, beam, crystals, crystal_ids, detector,
                pred_param, param_reporter, refman, target, refinery,
                goniometer=None,
                scan=None,
@@ -863,6 +868,7 @@ class Refiner2(object):
     self._reflections = reflections
     self._beam = beam
     self._crystals = crystals
+    self._crystal_ids = crystal_ids
     # only keep crystal if there is indeed only one
     self._crystal = crystals[0] if len(crystals) == 1 else None
     self._detector = detector
@@ -978,7 +984,7 @@ class Refiner2(object):
       print self._detector
       if self._goniometer: print self._goniometer
       if self._scan: print self._scan
-      for x in self._crystals: print x
+      for i, x in zip(self._crystal_ids, self._crystals): print i, x
 
     self._refinery.run()
 
@@ -990,7 +996,7 @@ class Refiner2(object):
       print self._detector
       if self._goniometer: print self._goniometer
       if self._scan: print self._scan
-      for x in self._crystals: print x
+      for i, x in zip(self._crystal_ids, self._crystals): print i, x
 
       # Report on the refined parameters
       print self._param_report
