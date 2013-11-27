@@ -173,7 +173,8 @@ def run(mydetector, mygonio, mycrystal, mybeam,
   assert sweep_range == (0., pi)
   assert approx_equal(im_width, 0.1 * pi / 180.)
 
-  ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
+  ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
+                                      sweep_range)
   obs_refs = ref_predictor.predict(indices)
 
   # Invent some variances for the centroid positions of the simulated data

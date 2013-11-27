@@ -163,7 +163,7 @@ indices = index_generator.to_array()
 # Generate list of reflections
 UB = mycrystal.get_U() * mycrystal.get_B()
 sweep_range = (0., pi/5.)
-ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio,
+ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
                                     sweep_range)
 ref_list = ref_predictor.predict(indices)
 

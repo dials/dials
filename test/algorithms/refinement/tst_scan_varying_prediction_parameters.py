@@ -187,7 +187,7 @@ indices = index_generator.to_array()
 
 # Generate list of reflections
 UB = mycrystal.get_U() * mycrystal.get_B()
-ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio,
+ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
                                 myscan.get_oscillation_range(deg=False))
 ref_list = ref_predictor.predict(indices)
 

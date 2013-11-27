@@ -151,7 +151,8 @@ im_width = temp[1] - temp[0]
 assert sweep_range == (0., pi)
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
-ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
+ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
+                                    sweep_range)
 obs_refs = ref_predictor.predict(indices)
 
 print "Generating reflections"

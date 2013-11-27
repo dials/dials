@@ -62,7 +62,8 @@ indices = index_generator.to_array()
 # Select those that are excited in a 30 degree sweep and get angles
 UB = mycrystal.get_U() * mycrystal.get_B()
 sweep_range = (0., pi/6.)
-ref_predictor = ReflectionPredictor(mycrystal, mybeam, mygonio, sweep_range)
+ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
+                                    sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 
