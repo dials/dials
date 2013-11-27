@@ -557,7 +557,7 @@ class ReflectionManager(object):
     return(working_indices)
 
   def get_input_size(self):
-    """Return the number of observations in the intial list supplied
+    """Return the number of observations in the initial list supplied
     as input"""
 
     return self._input_size
