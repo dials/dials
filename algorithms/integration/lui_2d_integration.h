@@ -287,7 +287,7 @@ namespace dials { namespace algorithms {
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
         if (data2d(row,col) > backg2d(row,col) ) {
-          data2dreturn(row,col) = data2d(row,col) - backg2d(row,col);
+          data2dreturn(row,col) = data2d(row,col)-backg2d(row,col);
         } else {
           data2dreturn(row,col) = 0.0;
         }
