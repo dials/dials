@@ -44,10 +44,10 @@ class ReflectionPredictor(object):
   required.
   """
 
-  def __init__(self, crystal, beam, gonio, sweep_range = (0, 2.*pi)):
+  def __init__(self, crystals, crystal_ids, beam, gonio, sweep_range = (0, 2.*pi)):
     """Construct by linking to instances of experimental model classes"""
 
-    self._crystal = crystal
+    self._crystals = dict(zip(crystal_ids, crystals))
     self._beam = beam
     self._gonio = gonio
     self._sweep_range = sweep_range
@@ -59,9 +59,10 @@ class ReflectionPredictor(object):
     self._ray_predictor = RayPredictor(self._beam.get_s0(),
                     self._gonio.get_rotation_axis(),
                     self._sweep_range)
-    self._UB = self._crystal.get_U() * self._crystal.get_B()
+    UBs = [x.get_U() * x.get_B() for x in self._crystals.values()]
+    self._UBs = dict(zip(self._crystals.keys(), UBs))
 
-  def predict(self, hkl, UB = None):
+  def predict(self, hkl, UB = None, crystal_id = 0):
     """
     Solve the prediction formula for the reflecting angle phi.
 
@@ -69,7 +70,7 @@ class ReflectionPredictor(object):
     for use in refinement with time-varying crystal parameters
     """
 
-    UB_ = UB if UB else self._UB
+    UB_ = UB if UB else self._UBs[crystal_id]
 
     return self._ray_predictor(hkl, UB_)
 
@@ -88,10 +89,10 @@ class StillsReflectionPredictor(object):
 
   """
 
-  def __init__(self, crystal, beam):
+  def __init__(self, crystals, crystal_ids, beam):
     """Construct by linking to instances of experimental model classes"""
 
-    self._crystal = crystal
+    self._crystals = dict(zip(crystal_ids, crystals))
     self._beam = beam
     self.update()
 
@@ -100,12 +101,13 @@ class StillsReflectionPredictor(object):
 
     self._s0 = matrix.col(self._beam.get_s0())
     self._s0_length = self._s0.length()
-    self._UB = self._crystal.get_U() * self._crystal.get_B()
+    UBs = [x.get_U() * x.get_B() for x in self._crystals.values()]
+    self._UBs = dict(zip(self._crystals.keys(), UBs))
 
-  def predict(self, hkl):
+  def predict(self, hkl, crystal_id = 0):
     """Predict for hkl under the assumption it is in reflecting position"""
 
-    r = self._UB * matrix.col(hkl)
+    r = self._UBs[crystal_id] * matrix.col(hkl)
     s1 = (self._s0 + r).normalize() * self._s0_length
 
     # create the Reflections and set properties. The relp is
