@@ -76,8 +76,8 @@ class Target(object):
     for obs in self._reflection_manager.get_obs():
 
       # get data from the observation
-      h = obs.H
-      frame = obs.frame_o
+      h = obs.miller_index
+      frame = obs.frame_obs
       panel = obs.panel
 
       # duck-typing for scan varying version of
@@ -112,24 +112,24 @@ class Target(object):
         continue
 
       ref = impacts[i]
-      Xc, Yc = ref.image_coord_mm
+      x_calc, y_calc = ref.image_coord_mm
 
       # do not wrap around multiples of 2*pi; keep the full rotation
       # from zero to differentiate repeat observations.
-      resid = ref.rotation_angle - (obs.Phio % TWO_PI)
+      resid = ref.rotation_angle - (obs.phi_obs % TWO_PI)
 
       # ensure this is the smaller of two possibilities
       resid = (resid + pi) % TWO_PI - pi
 
-      Phic = obs.Phio + resid
-      Sc = matrix.col(ref.beam_vector)
+      phi_calc = obs.phi_obs + resid
+      s_calc = matrix.col(ref.beam_vector)
 
       # calculate gradients for this reflection
       grads = self._prediction_parameterisation.get_gradients(
-                                  h, Sc, Phic, panel, frame)
+                                  h, s_calc, phi_calc, panel, frame)
 
       # store all this information in the matched obs-pred pair
-      obs.update_prediction(Xc, Yc, Phic, Sc, grads)
+      obs.update_prediction(x_calc, y_calc, phi_calc, s_calc, grads)
 
     if self._reflection_manager.first_update:
 
@@ -223,14 +223,14 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     weights = flex.double(nelem)
 
     for i, m in enumerate(self._matches):
-      residuals[3*i] = m.Xresid
-      residuals[3*i + 1] = m.Yresid
-      residuals[3*i + 2] = m.Phiresid
+      residuals[3*i] = m.x_resid
+      residuals[3*i + 1] = m.y_resid
+      residuals[3*i + 2] = m.phi_resid
 
       # are these the right weights? Or inverse, or sqrt?
-      weights[3*i] = m.weightXo
-      weights[3*i + 1] = m.weightYo
-      weights[3*i + 2] = m.weightPhio
+      weights[3*i] = m.weight_x_obs
+      weights[3*i + 1] = m.weight_y_obs
+      weights[3*i + 2] = m.weight_phi_obs
 
       # m.gradients is a nparam length list, each element of which is a
       # triplet of values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
@@ -265,9 +265,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
     # compute target function
-    L = 0.5 * sum([m.weightXo * m.Xresid2 +
-                   m.weightYo * m.Yresid2 +
-                   m.weightPhio * m.Phiresid2
+    L = 0.5 * sum([m.weight_x_obs * m.x_resid2 +
+                   m.weight_y_obs * m.y_resid2 +
+                   m.weight_phi_obs * m.phi_resid2
                    for m in self._matches])
 
     # prepare list of gradients
@@ -277,9 +277,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     for m in self._matches:
 
       for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-        dL_dp[j] += (m.weightXo * m.Xresid * grad_X +
-                     m.weightYo * m.Yresid * grad_Y +
-                     m.weightPhio * m.Phiresid * grad_Phi)
+        dL_dp[j] += (m.weight_x_obs * m.x_resid * grad_X +
+                     m.weight_y_obs * m.y_resid * grad_Y +
+                     m.weight_phi_obs * m.phi_resid * grad_Phi)
 
     return (L, dL_dp)
 
@@ -300,9 +300,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     for m in self._matches:
 
       for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-        curv[j] += (m.weightXo * grad_X**2 +
-                    m.weightYo * grad_Y**2 +
-                    m.weightPhio * grad_Phi**2)
+        curv[j] += (m.weight_x_obs * grad_X**2 +
+                    m.weight_y_obs * grad_Y**2 +
+                    m.weight_phi_obs * grad_Phi**2)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
     assert all([c > 0.0 for c in curv])
@@ -315,9 +315,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    resid_x = sum((m.Xresid2 for m in self._matches))
-    resid_y = sum((m.Yresid2 for m in self._matches))
-    resid_phi = sum((m.Phiresid2 for m in self._matches))
+    resid_x = sum((m.x_resid2 for m in self._matches))
+    resid_y = sum((m.y_resid2 for m in self._matches))
+    resid_phi = sum((m.phi_resid2 for m in self._matches))
 
     # cache rmsd calculation for achieved test
     n = len(self._matches)
@@ -351,62 +351,62 @@ class ObsPredMatch:
 
   # initialise with an observation
   def __init__(self, hkl, iobs, entering, frame, panel,
-                          Xo, sigXo, weightXo,
-                          Yo, sigYo, weightYo,
-                          Phio, sigPhio, weightPhio):
-    self.H = hkl
+                          x_obs, sigx_obs, weight_x_obs,
+                          y_obs, sigy_obs, weight_y_obs,
+                          phi_obs, sigphi_obs, weight_phi_obs):
+    self.miller_index = hkl
     self.iobs = iobs
     self.entering = entering
-    self.frame_o = frame
+    self.frame_obs = frame
     self.panel = panel
-    self.Xo = Xo
-    self.sigXo = sigXo
-    self.weightXo = weightXo
+    self.x_obs = x_obs
+    self.sigx_obs = sigx_obs
+    self.weight_x_obs = weight_x_obs
 
-    self.Yo = Yo
-    self.sigYo = sigYo
-    self.weightYo = weightYo
+    self.y_obs = y_obs
+    self.sigy_obs = sigy_obs
+    self.weight_y_obs = weight_y_obs
 
-    self.Phio = Phio
-    self.sigPhio = sigPhio
-    self.weightPhio = weightPhio
+    self.phi_obs = phi_obs
+    self.sigphi_obs = sigphi_obs
+    self.weight_phi_obs = weight_phi_obs
 
-    self.Xc = None
-    self.Yc = None
-    self.Phic = None
-    self.Sc = None
+    self.x_calc = None
+    self.y_calc = None
+    self.phi_calc = None
+    self.s_calc = None
 
     # gradients will be a list, of length equal to the number of free
     # parameters, whose elements are the gradients in the space of
     # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
     self.gradients = None
 
-    self.Yresid = None
-    self.Yresid2 = None
-    self.Xresid = None
-    self.Xresid2 = None
-    self.Phiresid = None
-    self.Phiresid2 = None
+    self.y_resid = None
+    self.y_resid2 = None
+    self.x_resid = None
+    self.x_resid2 = None
+    self.phi_resid = None
+    self.phi_resid2 = None
 
     self.is_matched = False
 
   # update with a prediction
-  def update_prediction(self, Xc, Yc, Phic, Sc, gradients):
+  def update_prediction(self, x_calc, y_calc, phi_calc, s_calc, gradients):
 
-    self.Xc = Xc
-    self.Yc = Yc
-    self.Phic = Phic
-    self.Sc = Sc
+    self.x_calc = x_calc
+    self.y_calc = y_calc
+    self.phi_calc = phi_calc
+    self.s_calc = s_calc
 
     self.gradients = gradients
 
     # calculate residuals
-    self.Xresid = Xc - self.Xo
-    self.Xresid2 = self.Xresid**2
-    self.Yresid = Yc - self.Yo
-    self.Yresid2 = self.Yresid**2
-    self.Phiresid = Phic - self.Phio
-    self.Phiresid2 = self.Phiresid**2
+    self.x_resid = x_calc - self.x_obs
+    self.x_resid2 = self.x_resid**2
+    self.y_resid = y_calc - self.y_obs
+    self.y_resid2 = self.y_resid**2
+    self.phi_resid = phi_calc - self.phi_obs
+    self.phi_resid2 = self.phi_resid**2
 
     self.is_matched = True
 
@@ -581,9 +581,9 @@ class ReflectionManager(object):
     """
 
     if angular:
-      k = lambda e: e.Phiresid
+      k = lambda e: e.phi_resid
     else:
-      k = lambda e: e.Xresid**2 + e.Yresid**2
+      k = lambda e: e.x_resid**2 + e.y_resid**2
     sort_obs = sorted(obs, key=k, reverse=True)
 
     return sort_obs
@@ -597,32 +597,32 @@ class ReflectionManager(object):
 
       sl = self._sort_obs_by_residual(l)
       print "Reflections with the worst 20 positional residuals:"
-      print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
-            "weightPhio"
+      print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
+            "weight_phi_obs"
       fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
       for i in xrange(20):
         e = sl[i]
-        msg = fmt % tuple(e.H + (e.Xresid,
-                         e.Yresid,
-                         e.Phiresid,
-                         e.weightXo,
-                         e.weightYo,
-                         e.weightPhio))
+        msg = fmt % tuple(e.miller_index + (e.x_resid,
+                         e.y_resid,
+                         e.phi_resid,
+                         e.weight_x_obs,
+                         e.weight_y_obs,
+                         e.weight_phi_obs))
         print msg
       print
       sl = self._sort_obs_by_residual(l, angular=True)
       print "\nReflections with the worst 20 angular residuals:"
-      print "H, K, L, Xresid, Yresid, Phiresid, weightXo, weightYo, " + \
-            "weightPhio"
+      print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
+            "weight_phi_obs"
       fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
       for i in xrange(20):
         e = sl[i]
-        msg = fmt % tuple(e.H + (e.Xresid,
-                         e.Yresid,
-                         e.Phiresid,
-                         e.weightXo,
-                         e.weightYo,
-                         e.weightPhio))
+        msg = fmt % tuple(e.miller_index + (e.x_resid,
+                         e.y_resid,
+                         e.phi_resid,
+                         e.weight_x_obs,
+                         e.weight_y_obs,
+                         e.weight_phi_obs))
         print msg
       print
 

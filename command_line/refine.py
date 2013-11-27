@@ -66,8 +66,9 @@ class Script(ScriptRunner):
     for m in matches:
       msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
             "%5.3f\n")
-      msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
-                   m.Phio, m.Xc, m.Yc, m.Phic)
+      msg = msg % (m.miller_index[0], m.miller_index[1], m.miller_index[2],
+                   m.frame_obs, m.x_obs, m.y_obs,
+                   m.phi_obs, m.x_calc, m.y_calc, m.phi_calc)
       f.write(msg)
     f.close()
 

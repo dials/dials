@@ -1261,7 +1261,7 @@ class Refiner(object):
     for m in matches:
       msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
             "%5.3f\n")
-      msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_o, m.Xo, m.Yo,
+      msg = msg % (m.H[0], m.H[1], m.H[2], m.frame_obs, m.Xo, m.Yo,
                    m.Phio, m.Xc, m.Yc, m.Phic)
       f.write(msg)
     f.close()
