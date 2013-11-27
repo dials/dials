@@ -299,10 +299,10 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     # for each reflection, get the approximate curvatures wrt each parameter
     for m in self._matches:
 
-      for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-        curv[j] += (m.weight_x_obs * grad_X**2 +
-                    m.weight_y_obs * grad_Y**2 +
-                    m.weight_phi_obs * grad_Phi**2)
+      for j, (grad_x, grad_y, grad_phi) in enumerate(m.gradients):
+        curv[j] += (m.weight_x_obs * grad_x**2 +
+                    m.weight_y_obs * grad_y**2 +
+                    m.weight_phi_obs * grad_phi**2)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
     assert all([c > 0.0 for c in curv])

@@ -17,7 +17,6 @@ import random
 from dials.algorithms.refinement.target import Target
 from dials.algorithms.refinement.target import ReflectionManager
 from dials.algorithms.refinement.target import ObsPredMatch # implicit import
-from dials.algorithms.refinement.target import ObservationPrediction # implicit import
 
 # constants
 TWO_PI = 2.0 * pi
@@ -63,13 +62,13 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     weights = flex.double(nelem)
 
     for i, m in enumerate(self._matches):
-      residuals[2*i] = m.Xresid
-      residuals[2*i + 1] = m.Yresid
+      residuals[2*i] = m.x_resid
+      residuals[2*i + 1] = m.y_resid
       #residuals[3*i + 2] = m.Phiresid
 
       # are these the right weights? Or inverse, or sqrt?
-      weights[2*i] = m.weightXo
-      weights[2*i + 1] = m.weightYo
+      weights[2*i] = m.weight_x_obs
+      weights[2*i + 1] = m.weight_y_obs
       #weights[3*i + 2] = m.weightPhio
 
       # m.gradients is a nparam length list, each element of which is a
@@ -105,8 +104,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
     # compute target function
-    L = 0.5 * sum([m.weightXo * m.Xresid2 +
-                   m.weightYo * m.Yresid2
+    L = 0.5 * sum([m.weight_x_obs * m.x_resid2 +
+                   m.weight_y_obs * m.y_resid2
                    for m in self._matches])
 
     # prepare list of gradients
@@ -116,8 +115,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     for m in self._matches:
 
       for j, (grad_X, grad_Y) in enumerate(m.gradients):
-        dL_dp[j] += (m.weightXo * m.Xresid * grad_X +
-                     m.weightYo * m.Yresid * grad_Y)
+        dL_dp[j] += (m.weight_x_obs * m.x_resid * grad_X +
+                     m.weight_y_obs * m.y_resid * grad_Y)
 
     return (L, dL_dp)
 
@@ -138,8 +137,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     for m in self._matches:
 
       for j, (grad_X, grad_Y) in enumerate(m.gradients):
-        curv[j] += (m.weightXo * grad_X**2 +
-                    m.weightYo * grad_Y**2)
+        curv[j] += (m.weight_x_obs * grad_X**2 +
+                    m.weight_y_obs * grad_Y**2)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
     assert all([c > 0.0 for c in curv])
@@ -152,8 +151,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    resid_x = sum((m.Xresid2 for m in self._matches))
-    resid_y = sum((m.Yresid2 for m in self._matches))
+    resid_x = sum((m.x_resid2 for m in self._matches))
+    resid_y = sum((m.y_resid2 for m in self._matches))
 
     # cache rmsd calculation for achieved test
     n = len(self._matches)
@@ -220,20 +219,20 @@ class ReflectionManagerXY(ReflectionManager):
   def get_matches(self, silent = False):
     """For every observation matched with a prediction return all data"""
 
-    l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
+    l = [obs for obs in self._obs_pred_pairs if obs.is_matched]
 
     if self._verbosity > 2 and len(l) > 20 and not silent:
 
       sl = self._sort_obs_by_residual(l)
       print "Reflections with the worst 20 positional residuals:"
-      print "H, K, L, Xresid, Yresid, weightXo, weightYo"
+      print "H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs"
       fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
       for i in xrange(20):
         e = sl[i]
-        msg = fmt % tuple(e.H + (e.Xresid,
-                         e.Yresid,
-                         e.weightXo,
-                         e.weightYo))
+        msg = fmt % tuple(e.H + (e.x_resid,
+                         e.y_resid,
+                         e.weight_x_obs,
+                         e.weight_y_obs))
         print msg
       print
 

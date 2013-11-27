@@ -800,7 +800,8 @@ class TargetFactory(object):
 
     image_width = scan.get_oscillation(deg=False)[1]
 
-    rp = self._ref_predictor(crystal, beam, goniometer)
+    # forced to single crystal only here
+    rp = self._ref_predictor([crystal], [0], beam, goniometer)
     if self._XY:
       return self._target(rp, detector, refman, pred_param,
                       self._frac_binsize_cutoff,
