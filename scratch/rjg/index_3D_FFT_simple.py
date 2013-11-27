@@ -319,7 +319,7 @@ class indexer(object):
         if self.params.debug:
           sel = flex.bool(self.reflections.size(), False)
           lengths = 1/self.reciprocal_space_points.norms()
-          isel = self.reflections_in_scan_range.select(lengths >= self.d_min)
+          isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
           sel.set_selected(self.reflections_i_lattice > -1, False)
           unindexed = self.reflections.select(sel)
@@ -405,7 +405,7 @@ class indexer(object):
       refl.rotation_angle = centroid_position[2]
 
   def filter_reflections_by_scan_range(self):
-    self.reflections_in_scan_range = flex.size_t()
+    reflections_in_scan_range = flex.size_t()
     for i_ref, refl in enumerate(self.reflections):
       frame_number = refl.frame_number
 
@@ -419,29 +419,28 @@ class indexer(object):
             break
         if not reflections_in_range:
           continue
-      self.reflections_in_scan_range.append(i_ref)
+      reflections_in_scan_range.append(i_ref)
+    self.reflections = self.reflections.select(reflections_in_scan_range)
+    self.reflections_raw = self.reflections_raw.select(reflections_in_scan_range)
 
   def map_centroids_to_reciprocal_space(self):
     self._map_centroids_timer.start()
     assert(len(self.detector) == 1)
-    reflections = self.reflections.select(self.reflections_in_scan_range)
-    x, y, _ = reflections.centroid_position().parts()
+    x, y, _ = self.reflections.centroid_position().parts()
     s1 = self.detector[0].get_lab_coord(flex.vec2_double(x,y))
     s1 = s1/s1.norms() * (1/self.beam.get_wavelength())
-    beam_vectors = flex.vec3_double(self.reflections.size(), (0.,0.,0.))
-    beam_vectors.set_selected(self.reflections_in_scan_range, s1)
-    self.reflections.set_beam_vector(beam_vectors) # needed by refinement
+    self.reflections.set_beam_vector(s1) # needed by refinement
     S = s1 - self.beam.get_s0()
     # XXX what about if goniometer fixed rotation is not identity?
     self.reciprocal_space_points = S.rotate_around_origin(
       self.goniometer.get_rotation_axis(),
-      -reflections.rotation_angle())
+      -self.reflections.rotation_angle())
     self._map_centroids_timer.stop()
 
   def map_centroids_to_reciprocal_space_grid(self):
     self._map_to_grid_timer.start()
     self.map_centroids_to_reciprocal_space()
-    assert len(self.reciprocal_space_points) == len(self.reflections_in_scan_range)
+    assert len(self.reciprocal_space_points) == len(self.reflections)
     wavelength = self.beam.get_wavelength()
     d_min = self.params.reciprocal_space_grid.d_min
 
@@ -460,7 +459,7 @@ class indexer(object):
 
     reflections_used_for_indexing = flex.size_t()
 
-    for i_pnt, point in enumerate(self.reciprocal_space_points):
+    for i_ref, point in enumerate(self.reciprocal_space_points):
       point = matrix.col(point)
       spot_resolution = 1/point.length()
       if spot_resolution < d_min:
@@ -471,8 +470,6 @@ class indexer(object):
       if min(grid_coordinates) < 0: continue # this reflection is outside the grid
       T = math.exp(-self.params.b_iso * point.length()**2 / 4)
       grid[grid_coordinates] = T
-
-      i_ref = self.reflections_in_scan_range[i_pnt]
       reflections_used_for_indexing.append(i_ref)
 
     self.reciprocal_space_grid = grid
@@ -1091,8 +1088,7 @@ class indexer(object):
 
     d_spacings = 1/self.reciprocal_space_points.norms()
     inside_resolution_limit = d_spacings > self.d_min
-    sel = inside_resolution_limit & (self.reflections_i_lattice.select(
-        self.reflections_in_scan_range) == -1)
+    sel = inside_resolution_limit & (self.reflections_i_lattice == -1)
     isel = sel.iselection()
     rlps = self.reciprocal_space_points.select(isel)
     hkl_float = tuple(A_inv) * rlps
@@ -1105,7 +1101,7 @@ class indexer(object):
         continue
       miller_index = hkl_int[i_hkl]
       miller_indices.append(miller_index)
-      i_ref = self.reflections_in_scan_range[isel[i_hkl]]
+      i_ref = isel[i_hkl]
       self.reflections[i_ref].miller_index = miller_index
       indexed_reflections.append(i_ref)
 
@@ -1120,8 +1116,7 @@ class indexer(object):
 
     d_spacings = 1/self.reciprocal_space_points.norms()
     inside_resolution_limit = d_spacings > self.d_min
-    sel = inside_resolution_limit & (self.reflections_i_lattice.select(
-        self.reflections_in_scan_range) == -1)
+    sel = inside_resolution_limit & (self.reflections_i_lattice == -1)
     isel = sel.iselection()
     rlps = self.reciprocal_space_points.select(isel)
 
@@ -1155,8 +1150,7 @@ class indexer(object):
         n_rejects += 1
         continue
       miller_index = potential_hkls[i_best_lattice]
-
-      i_ref = self.reflections_in_scan_range[isel[i_hkl]]
+      i_ref = isel[i_hkl]
       self.reflections[i_ref].miller_index = miller_index
       self.reflections[i_ref].crystal = i_best_lattice
 
@@ -1181,12 +1175,10 @@ class indexer(object):
     verbosity = self.params.refinement_protocol.verbosity
 
     scan_range_min = max(
-      int(math.floor(flex.min(self.reflections.select(
-        self.reflections_in_scan_range).frame_number()))),
+      int(math.floor(flex.min(self.reflections.frame_number()))),
       self.sweep.get_array_range()[0])
     scan_range_max = min(
-      int(math.ceil(flex.max(self.reflections.select(
-        self.reflections_in_scan_range).frame_number()))),
+      int(math.ceil(flex.max(self.reflections.frame_number()))),
       self.sweep.get_array_range()[1])
     sweep = self.sweep[scan_range_min:scan_range_max]
 
@@ -1234,8 +1226,11 @@ class indexer(object):
                                sweep.get_beam(), sweep.get_detector(),
                                triclinic_crystal,
         self.reciprocal_space_points.select(
-          self.indexed_reflections.select(self.reflections_in_scan_range)).select(sel),
+          self.indexed_reflections).select(sel),
         hardcoded_phil)
+      self.sweep.set_goniometer(refiner.gonio)
+      self.sweep.set_beam(refiner.beam)
+      self.sweep.set_detector(refiner.detector)
 
     else:
       self._refine_core_timer.start()
@@ -1251,12 +1246,14 @@ class indexer(object):
       refined = refiner.run()
       self._refine_core_timer.stop()
 
-    self.sweep.set_goniometer(refiner.get_goniometer())
-    self.sweep.set_beam(refiner.get_beam())
-    self.sweep.set_detector(refiner.get_detector())
-    refined_crystal = refiner.get_crystal()
+      self.sweep.set_goniometer(refiner.get_goniometer())
+      self.sweep.set_beam(refiner.get_beam())
+      self.sweep.set_detector(refiner.get_detector())
+      refined_crystal = refiner.get_crystal()
+
     crystal_model.set_B(refined_crystal.get_B())
     crystal_model.set_U(refined_crystal.get_U())
+
     assert crystal_model == refined_crystal
 
     if not (params.parameterisation.beam.fix == 'all'
