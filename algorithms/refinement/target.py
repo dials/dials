@@ -73,65 +73,63 @@ class Target(object):
     self._reflection_manager.reset_accepted_reflections()
 
     # loop over all reflections in the manager
-    for h in self._reflection_manager.get_indices():
+    for obs in self._reflection_manager.get_obs():
 
-      # loop over observations of this hkl
-      for obs in self._reflection_manager.get_obs(h):
+      # get data from the observation
+      h = obs.H
+      frame = obs.frame_o
+      panel = obs.panel
 
-        # get the observation image and panel numbers
-        frame = obs.frame_o
-        panel = obs.panel
+      # duck-typing for scan varying version of
+      # prediction_parameterisation
+      try:
 
-        # duck-typing for scan varying version of
-        # prediction_parameterisation
-        try:
+        # compose the prediction parameterisation at the
+        # requested image number
+        self._prediction_parameterisation.compose(frame)
 
-          # compose the prediction parameterisation at the
-          # requested image number
-          self._prediction_parameterisation.compose(frame)
+        # extract UB matrix
+        UB = self._prediction_parameterisation.get_UB(frame)
 
-          # extract UB matrix
-          UB = self._prediction_parameterisation.get_UB(frame)
+        # predict for this hkl at setting UB
+        predictions = self._reflection_predictor.predict(h, UB)
 
-          # predict for this hkl at setting UB
-          predictions = self._reflection_predictor.predict(h, UB)
+      except AttributeError:
 
-        except AttributeError:
+        # predict for this hkl
+        predictions = self._reflection_predictor.predict(h)
 
-          # predict for this hkl
-          predictions = self._reflection_predictor.predict(h)
+      # obtain the impact positions
+      impacts = ray_intersection(self._detector, predictions,
+                                 panel=panel)
 
-        # obtain the impact positions
-        impacts = ray_intersection(self._detector, predictions,
-                                   panel=panel)
+      # find the prediction with the right 'entering' flag
+      try:
+        i = [x.entering == obs.entering \
+             for x in impacts].index(True)
+      except ValueError:
+        # we don't have a prediction for this obs
+        continue
 
-        # find the prediction with the right 'entering' flag
-        try:
-          i = [x.entering == obs.entering \
-               for x in impacts].index(True)
-        except ValueError:
-          # we don't have a prediction for this obs
-          continue
+      ref = impacts[i]
+      Xc, Yc = ref.image_coord_mm
 
-        ref = impacts[i]
-        Xc, Yc = ref.image_coord_mm
+      # do not wrap around multiples of 2*pi; keep the full rotation
+      # from zero to differentiate repeat observations.
+      resid = ref.rotation_angle - (obs.Phio % TWO_PI)
 
-        # do not wrap around multiples of 2*pi; keep the full rotation
-        # from zero to differentiate repeat observations.
-        resid = ref.rotation_angle - (obs.Phio % TWO_PI)
+      # ensure this is the smaller of two possibilities
+      resid = (resid + pi) % TWO_PI - pi
 
-        # ensure this is the smaller of two possibilities
-        resid = (resid + pi) % TWO_PI - pi
+      Phic = obs.Phio + resid
+      Sc = matrix.col(ref.beam_vector)
 
-        Phic = obs.Phio + resid
-        Sc = matrix.col(ref.beam_vector)
+      # calculate gradients for this reflection
+      grads = self._prediction_parameterisation.get_gradients(
+                                  h, Sc, Phic, panel, frame)
 
-        # calculate gradients for this reflection
-        grads = self._prediction_parameterisation.get_gradients(
-                                    h, Sc, Phic, panel, frame)
-
-        # store all this information in the matched obs-pred pair
-        obs.update_prediction(Xc, Yc, Phic, Sc, grads)
+      # store all this information in the matched obs-pred pair
+      obs.update_prediction(Xc, Yc, Phic, Sc, grads)
 
     if self._reflection_manager.first_update:
 
@@ -417,63 +415,6 @@ class ObsPredMatch:
     """Flag this observation to not be used"""
     self.is_matched = False
 
-class ObservationPrediction(object):
-  """A helper class for the reflection manager to contain information about
-  the unique observations of particular hkl paired with the currently
-  predicted values.
-
-  Reflections are either exiting or entering the Ewald sphere. This is
-  calculated by the reflection manager and passed in, and used here to
-  identify which observations to update with a new prediction"""
-
-  def __init__(self, H, iobs, entering, frame, panel,
-                     Xo, sigXo, weightXo,
-                     Yo, sigYo, weightYo,
-                     Phio, sigPhio, weightPhio):
-    """initialise from one observation"""
-    assert isinstance(entering, bool)
-    self.H = H
-
-    self.obs = [ObsPredMatch(H, iobs, entering, frame, panel,
-                             Xo, sigXo, weightXo,
-                             Yo, sigYo, weightYo,
-                             Phio, sigPhio, weightPhio)]
-
-  def __len__(self):
-
-    return len(self.obs)
-
-  def __iter__(self):
-
-    # make this class iterable through the observations
-    return iter(self.obs)
-
-  def get_num_pairs(self):
-    """Count the number of observations that are paired with a prediction"""
-    return sum(1 for x in self.obs if x.is_matched)
-
-  def reset_predictions(self):
-    """Set the use flag to false for all observations, so that after
-    updating, any observations that still do not have a prediction are
-    flagged to be removed from calculation of residual and gradients."""
-
-    map(lambda x: x.reset(), self.obs)
-
-  def remove_unmatched_obs(self):
-    """Remove observations without a matching prediction"""
-
-    self.obs = [x for x in self.obs if x.is_matched]
-
-  def add_observation(self, iobs, entering, frame, panel,
-                            Xo, sigXo, weightXo,
-                            Yo, sigYo, weightYo,
-                            Phio, sigPhio, weightPhio):
-    """Add another observation of this reflection"""
-
-    self.obs.append(ObsPredMatch(self.H, iobs, entering, frame, panel,
-                                 Xo, sigXo, weightXo,
-                                 Yo, sigYo, weightYo,
-                                 Phio, sigPhio, weightPhio))
 
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted
@@ -517,9 +458,9 @@ class ReflectionManager(object):
     self._max_num_obs = max_num_obs
     refs_to_keep = self._create_working_set(refs_to_keep)
 
-    # store observation information in a dict of observation-prediction
+    # store observation information in a list of observation-prediction
     # pairs (prediction information will go in here later)
-    self._obs_pred_pairs = {}
+    self._obs_pred_pairs = []
     for i in refs_to_keep:
 
       ref = reflections[i]
@@ -534,18 +475,10 @@ class ReflectionManager(object):
       sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
       w_x, w_y, w_phi = [1. / e for e in ref.centroid_variance]
 
-      if h not in self._obs_pred_pairs:
-        self._obs_pred_pairs[h] = ObservationPrediction(
-            h, i, entering, frame, panel,
-            x, sig_x, w_x,
-            y, sig_y, w_y,
-            phi, sig_phi, w_phi)
-      else:
-        self._obs_pred_pairs[h].add_observation(
-            i, entering, frame, panel,
-            x, sig_x, w_x,
-            y, sig_y, w_y,
-            phi, sig_phi, w_phi)
+      self._obs_pred_pairs.append(ObsPredMatch(h, i, entering, frame, panel,
+                                               x, sig_x, w_x,
+                                               y, sig_y, w_y,
+                                               phi, sig_phi, w_phi))
 
     # fail if there are too few reflections in the manager
     self._min_num_obs = min_num_obs
@@ -638,7 +571,7 @@ class ReflectionManager(object):
     return self._sample_size
 
   def _sort_obs_by_residual(self, obs, angular=False):
-    """For analysis purposes, sort the obs-pred matches so that the
+    """For diagnostic purposes, sort the obs-pred matches so that the
     highest residuals are first. By default, sort by positional
     residual, unless angular=True.
 
@@ -655,11 +588,10 @@ class ReflectionManager(object):
 
     return sort_obs
 
-
   def get_matches(self, silent = False):
     """For every observation matched with a prediction return all data"""
 
-    l = [obs for v in self._obs_pred_pairs.values() for obs in v.obs if obs.is_matched]
+    l = [obs for obs in self._obs_pred_pairs if obs.is_matched]
 
     if self._verbosity > 2 and len(l) > 20 and not silent:
 
@@ -697,19 +629,11 @@ class ReflectionManager(object):
     return l
 
   def strip_unmatched_observations(self):
-    """
-    Delete observations from the manager that are not matched to a
+    """Delete observations from the manager that are not matched to a
     prediction. Typically used once, after the first update of
-    predictions.
-    """
+    predictions."""
 
-    for k, v in self._obs_pred_pairs.items():
-
-      v.remove_unmatched_obs()
-
-      # if no observations left, delete the hkl from the dict
-      if len(v) == 0:
-        del self._obs_pred_pairs[k]
+    self._obs_pred_pairs = [e for e in self._obs_pred_pairs if e.is_matched]
 
     if len(self._obs_pred_pairs) < self._min_num_obs:
       msg = ('Remaining number of reflections = {0}, which is below '+ \
@@ -723,18 +647,13 @@ class ReflectionManager(object):
 
     return
 
-  def get_indices(self):
-    """Get the unique indices of all observations in the manager"""
-
-    return flex.miller_index(self._obs_pred_pairs.keys())
-
-  def get_obs(self, h):
-    """Get the observations of a particular hkl"""
-
-    return self._obs_pred_pairs[h]
-
   def reset_accepted_reflections(self):
     """Reset all observations to use=False in preparation for a new set of
     predictions"""
 
-    for v in self._obs_pred_pairs.values(): v.reset_predictions()
+    for obs in self._obs_pred_pairs: obs.reset()
+
+  def get_obs(self):
+    """Get the list of managed observations"""
+
+    return self._obs_pred_pairs
