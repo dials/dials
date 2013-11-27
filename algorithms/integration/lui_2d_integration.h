@@ -165,12 +165,49 @@ namespace dials { namespace algorithms {
     return total;
   }
 
+  double m_linear_scale(int cnt, double i_mod[], double i_exp[]){
+
+    double i_wgt[cnt];
+    double avg = 0, m;
+    for (int i = 0; i < cnt; i++){
+      avg += i_mod[i];
+    }
+    avg = avg/double(cnt);
+    for (int i = 0; i < cnt; i++){
+      i_wgt[i] = i_mod[i] / avg;
+    }
+    avg = 0;
+    for (int i = 0; i < cnt; i++){
+      avg += i_wgt[i];
+    }
+    avg = avg/double(cnt);
+    double scale = 0, px_scl;
+    for (int i = 0; i < cnt; i++){
+      px_scl = i_exp[i] / i_mod[i];
+      scale += px_scl * i_wgt[i];
+    }
+    m = scale / cnt;
+
+    return m;
+  }
 
 
-  vec2<double> fitting_2d(flex_double descriptor, flex_double data2d,
-                          flex_double backg2d, flex_double profile2d) {
+  double m_least_squres_1d(int cnt, double i_mod[], double i_exp[]){
+    // least-squares scaling following the formula:
+    // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
+
+    double sum_xy = 0, sum_x_sq = 0, m;
+    for (int i = 0; i < cnt; i++){
+      sum_xy += i_exp[i] * i_mod[i];
+      sum_x_sq += i_mod[i] * i_mod[i];
+    }
+    m = sum_xy / sum_x_sq;
+    return m;
+  }
 
     // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
+  vec2<double> fitting_2d(flex_double descriptor, flex_double data2d,
+                          flex_double backg2d, flex_double profile2d) {
 
     int ncol = profile2d.accessor().all()[1];
     int nrow = profile2d.accessor().all()[0];
@@ -214,14 +251,9 @@ namespace dials { namespace algorithms {
 
     // finding the scale needed to fit profile list to experiment list
 
-    // least-squares scaling following the formula:
-    // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
-    double sum_xy = 0, sum_x_sq = 0;
-    for (int i = 0; i < counter; i++){
-      sum_xy += iexpr_lst[i] * imodl_lst[i];
-      sum_x_sq += imodl_lst[i] * imodl_lst[i];
-    }
-    m = sum_xy / sum_x_sq;
+    //m = m_linear_scale(counter, imodl_lst, iexpr_lst);
+
+    m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
 
     for (int i = 0; i < counter; i++){
       modl_scal_lst[i] =imodl_lst[i] * m;
@@ -264,9 +296,12 @@ namespace dials { namespace algorithms {
     return data2dreturn;
   }
 
+
+
+
    /*
     *
-   // this piece of code chould be analized with richard help from Richard
+   // this piece of code chould be analized with help from Richard
    af::versa< double, af::c_grid<2> > add_2d(
      const af::const_ref< double, af::c_grid<2> > &descriptor,
      const af::const_ref< double, af::c_grid<2> > &data2d,
