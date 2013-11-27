@@ -350,12 +350,14 @@ class ObsPredMatch:
   """
 
   # initialise with an observation
-  def __init__(self, hkl, iobs, entering, frame, panel,
-                          x_obs, sigx_obs, weight_x_obs,
-                          y_obs, sigy_obs, weight_y_obs,
-                          phi_obs, sigphi_obs, weight_phi_obs):
-    self.miller_index = hkl
+  def __init__(self, iobs, crystal, hkl, entering, frame, panel,
+                     x_obs, sigx_obs, weight_x_obs,
+                     y_obs, sigy_obs, weight_y_obs,
+                     phi_obs, sigphi_obs, weight_phi_obs):
+
     self.iobs = iobs
+    self.crystal_id = crystal
+    self.miller_index = hkl
     self.entering = entering
     self.frame_obs = frame
     self.panel = panel
@@ -464,6 +466,7 @@ class ReflectionManager(object):
     for i in refs_to_keep:
 
       ref = reflections[i]
+      crystal = ref.crystal
       h = ref.miller_index
       s = matrix.col(ref.beam_vector)
       entering = s.dot(self._vecn) < 0.
@@ -475,7 +478,8 @@ class ReflectionManager(object):
       sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
       w_x, w_y, w_phi = [1. / e for e in ref.centroid_variance]
 
-      self._obs_pred_pairs.append(ObsPredMatch(h, i, entering, frame, panel,
+      self._obs_pred_pairs.append(ObsPredMatch(i, crystal, h,
+                                               entering, frame, panel,
                                                x, sig_x, w_x,
                                                y, sig_y, w_y,
                                                phi, sig_phi, w_phi))
