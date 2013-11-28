@@ -15,6 +15,7 @@ class SpotFrame(XrayFrame) :
     self.dials_spotfinder_layer = None
     self.shoebox_layer = None
     self.ctr_mass_layer = None
+    self.max_pix_layer = None
 
   def OnShowSettings (self, event) :
     if (self.settings_frame is None) :
@@ -35,6 +36,7 @@ class SpotFrame(XrayFrame) :
       shoebox_data = spotfinder_data.shoebox_data
       all_pix_data = spotfinder_data.all_pix_data
       ctr_mass_data = spotfinder_data.ctr_mass_data
+      max_pix_data = spotfinder_data.max_pix_data
       if self.dials_spotfinder_layer is not None:
         self.pyslip.DeleteLayer(self.dials_spotfinder_layer)
         self.dials_spotfinder_layer = None
@@ -44,6 +46,9 @@ class SpotFrame(XrayFrame) :
       if self.ctr_mass_layer is not None:
         self.pyslip.DeleteLayer(self.ctr_mass_layer)
         self.ctr_mass_layer = None
+      if self.max_pix_layer is not None:
+        self.pyslip.DeleteLayer(self.max_pix_layer)
+        self.max_pix_layer = None
       if self.settings.show_all_pix:
         self.dials_spotfinder_layer = self.pyslip.AddPointLayer(
           all_pix_data, color="green", name="<all_pix_layer>",
@@ -62,8 +67,15 @@ class SpotFrame(XrayFrame) :
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<ctr_mass_layer>')
+      if self.settings.show_max_pix:
+        self.max_pix_layer = self.pyslip.AddPointLayer(
+          max_pix_data, color="pink", name="<max_pix_layer>",
+          radius=2,
+          renderer = self.pyslip.LightweightDrawPointLayer,
+          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
 
   def get_spotfinder_data(self):
+    from scitbx.array_family import flex
 
     def map_coords(x, y, p):
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
@@ -79,6 +91,7 @@ class SpotFrame(XrayFrame) :
     shoebox_data = []
     all_pix_data = []
     ctr_mass_data = []
+    max_pix_data = []
     for reflection in self.reflections:
       x0, x1, y0, y1, z0, z1 = reflection.bounding_box
       nx = x1 - x0 # size of reflection box in x-direction
@@ -105,15 +118,20 @@ class SpotFrame(XrayFrame) :
                    (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
           shoebox_data.extend(lines)
 
-        #if self.settings.show_max_pix:
-          #pink_brush = wx.Brush(colour=wx.Colour(255,192,203))
-          #for spot in self.spotfinder.images[self.frames[0]]["spots_total"]:
-            #x,y = self._img.image_coords_as_screen_coords(
-              #spot.max_pxl_y(),
-              #spot.max_pxl_x())
-            #dc.SetPen(wx.Pen('pink'))
-            #dc.SetBrush(pink_brush)
-            #dc.DrawCircle(x,y,1)
+        if self.settings.show_max_pix:
+          shoebox = reflection.shoebox
+          offset = flex.max_index(shoebox)
+          offset, k = divmod(offset, shoebox.all()[2])
+          offset, j = divmod(offset, shoebox.all()[1])
+          offset, i = divmod(offset, shoebox.all()[0])
+          assert offset == 0
+          max_index = (i, j, k)
+          assert shoebox[max_index] == flex.max(shoebox)
+          if z0 + max_index[0] == i_frame:
+            x, y = map_coords(x0 + max_index[2] + 0.5,
+                              y0 + max_index[1] + 0.5,
+                              reflection.panel_number)
+            max_pix_data.append((x, y))
 
         if self.settings.show_ctr_mass:
           centroid = reflection.centroid_position
@@ -132,7 +150,8 @@ class SpotFrame(XrayFrame) :
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
                       shoebox_data=shoebox_data,
-                      ctr_mass_data=ctr_mass_data)
+                      ctr_mass_data=ctr_mass_data,
+                      max_pix_data=max_pix_data)
 
 
 class SpotSettingsFrame (SettingsFrame) :
@@ -201,10 +220,10 @@ class SpotSettingsPanel (SettingsPanel) :
     self.ctr_mass.SetValue(self.settings.show_ctr_mass)
     s.Add(self.ctr_mass, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
-    ## Max pixel control
-    #self.max_pix = wx.CheckBox(self, -1, "Spot max pixels")
-    #self.max_pix.SetValue(self.settings.show_max_pix)
-    #s.Add(self.max_pix, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+    # Max pixel control
+    self.max_pix = wx.CheckBox(self, -1, "Spot max pixels")
+    self.max_pix.SetValue(self.settings.show_max_pix)
+    s.Add(self.max_pix, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
     # Spot pixels control
     self.all_pix = wx.CheckBox(self, -1, "Spot all pixels")
@@ -237,7 +256,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_SLIDER, self.OnUpdateBrightness, self.brightness_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdate2, self.center_ctrl)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.ctr_mass)
-    #self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.max_pix)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.max_pix)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.all_pix)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.shoebox)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
@@ -257,7 +276,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.brightness = self.brightness_ctrl.GetValue()
       self.settings.show_beam_center = self.center_ctrl.GetValue()
       self.settings.show_ctr_mass = self.ctr_mass.GetValue()
-      #self.settings.show_max_pix = self.max_pix.GetValue()
+      self.settings.show_max_pix = self.max_pix.GetValue()
       self.settings.show_all_pix = self.all_pix.GetValue()
       self.settings.show_shoebox = self.shoebox.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
