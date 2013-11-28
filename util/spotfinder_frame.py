@@ -35,33 +35,33 @@ class SpotFrame(XrayFrame) :
       shoebox_data = spotfinder_data.shoebox_data
       all_pix_data = spotfinder_data.all_pix_data
       ctr_mass_data = spotfinder_data.ctr_mass_data
+      if self.dials_spotfinder_layer is not None:
+        self.pyslip.DeleteLayer(self.dials_spotfinder_layer)
+        self.dials_spotfinder_layer = None
+      if self.shoebox_layer is not None:
+        self.pyslip.DeleteLayer(self.shoebox_layer)
+        self.shoebox_layer = None
+      if self.ctr_mass_layer is not None:
+        self.pyslip.DeleteLayer(self.ctr_mass_layer)
+        self.ctr_mass_layer = None
       if self.settings.show_all_pix:
         self.dials_spotfinder_layer = self.pyslip.AddPointLayer(
           all_pix_data, color="green", name="<all_pix_layer>",
           radius=2,
           renderer = self.pyslip.LightweightDrawPointLayer,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
-      elif self.dials_spotfinder_layer is not None:
-        self.pyslip.DeleteLayer(self.dials_spotfinder_layer)
-        self.dials_spotfinder_layer = None
       if self.settings.show_shoebox:
         self.shoebox_layer = self.pyslip.AddPolygonLayer(
           shoebox_data, map_rel=True, visible=True,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<shoebox_layer>')
-      elif self.shoebox_layer is not None:
-        self.pyslip.DeleteLayer(self.shoebox_layer)
-        self.shoebox_layer = None
       if self.settings.show_ctr_mass:
         self.ctr_mass_layer = self.pyslip.AddPolygonLayer(
           ctr_mass_data, map_rel=True, visible=True,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<ctr_mass_layer>')
-      elif self.ctr_mass_layer is not None:
-        self.pyslip.DeleteLayer(self.ctr_mass_layer)
-        self.ctr_mass_layer = None
 
   def get_spotfinder_data(self):
 
