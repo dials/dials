@@ -15,7 +15,8 @@ def exercise_spotfinder():
     relative_path="dials_regression/centroid_test_data",
     test=os.path.isdir)
   template = os.path.join(data_dir, "centroid_00*.cbf")
-  args = ["dials.spotfinder", template, "-o spotfinder.pickle", "--nproc=1"]
+  args = ["dials.spotfinder", template, "-o spotfinder.pickle", "--nproc=1",
+          "save_shoeboxes=True"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
@@ -27,6 +28,7 @@ def exercise_spotfinder():
     assert approx_equal(refl.bounding_box, (1258, 1260, 537, 541, 0, 1))
     assert approx_equal(refl.centroid_position,
                         (1258.7957746478874, 539.112676056338, 0.5))
+    assert len(refl.shoebox) > 0
 
   # now with a resolution filter
   args = ["dials.spotfinder", "d_min=2", "d_max=15",
@@ -36,6 +38,8 @@ def exercise_spotfinder():
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 371
+    refl = reflections[0]
+    assert len(refl.shoebox) == 0
 
   # now with more generous parameters
   args = ["dials.spotfinder", "min_spot_size=3", "max_separation=3",
