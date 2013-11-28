@@ -92,6 +92,9 @@ spotfinder
               "accepted by the filtering algorithm."
       .type = float(value_min=0)
   }
+  save_shoeboxes = False
+    .type = bool
+    .help = "Save the raw pixel values inside the reflection shoeboxes."
   image_viewer = False
     .help = "Display the results of spot finding in an interactive image"
             "viewer."
