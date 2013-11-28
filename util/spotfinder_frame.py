@@ -64,6 +64,14 @@ class SpotFrame(XrayFrame) :
         self.ctr_mass_layer = None
 
   def get_spotfinder_data(self):
+
+    def map_coords(x, y, p):
+      if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
+        y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
+          reflection.panel_number, y - 0.5, x - 0.5)
+      return self.pyslip.tiles.picture_fast_slow_to_map_relative(
+        x, y)
+
     shoebox_dict = {'width': 2, 'color': '#0000FFA0', 'closed': False}
     ctr_mass_dict = {'width': 2, 'color': '#FF0000', 'closed': False}
     i_frame = self.image_chooser.GetClientData(
@@ -84,13 +92,13 @@ class SpotFrame(XrayFrame) :
               for iz in range(nz):
                 if iz + z0 != i_frame: continue
                 if shoebox_mask[iz, iy, ix] > 0:
-                  mr = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-                    ix + x0 + 0.5, iy + y0 + 0.5)
-                  all_pix_data.append(mr)
+                  x_, y_ = map_coords(
+                    ix + x0 + 0.5, iy + y0 + 0.5, reflection.panel_number)
+                  all_pix_data.append((x_, y_))
 
         if self.settings.show_shoebox:
-          x0_, y0_ = self.pyslip.tiles.picture_fast_slow_to_map_relative(x0, y0)
-          x1_, y1_ = self.pyslip.tiles.picture_fast_slow_to_map_relative(x1, y1)
+          x0_, y0_ = map_coords(x0, y0, reflection.panel_number)
+          x1_, y1_ = map_coords(x1, y1, reflection.panel_number)
           lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
                    (((x0_, y1_), (x1_, y1_)), shoebox_dict),
                    (((x1_, y1_), (x1_, y0_)), shoebox_dict),
@@ -111,12 +119,12 @@ class SpotFrame(XrayFrame) :
           centroid = reflection.centroid_position
           import math
           if math.floor(centroid[2]) == i_frame:
-            x,y = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-              centroid[0], centroid[1])
-            xm1,ym1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-              centroid[0]-1, centroid[1]-1)
-            xp1,yp1 = self.pyslip.tiles.picture_fast_slow_to_map_relative(
-              centroid[0]+1, centroid[1]+1)
+            x,y = map_coords(
+              centroid[0], centroid[1], reflection.panel_number)
+            xm1,ym1 = map_coords(
+              centroid[0]-1, centroid[1]-1, reflection.panel_number)
+            xp1,yp1 = map_coords(
+              centroid[0]+1, centroid[1]+1, reflection.panel_number)
             lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
                      (((xm1, y), (xp1, y)), ctr_mass_dict)]
             ctr_mass_data.extend(lines)
