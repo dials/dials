@@ -41,11 +41,8 @@ for row in range(size_box):
       data2d[row, col] = planepos
       mask2d[row, col] = 3
     data2d[row, col] += random.random() * 6.0
-print data2d
-
-
-
-print mask2d
+#print data2d
+#print mask2d
 
 background2d = numpy.copy(data2d)
 background2d[:, :] = 0.0
@@ -94,41 +91,39 @@ from dials.algorithms.integration.summation2d \
 
 flex_2d_layering_n_integrating(rlist)
 
+
+
+
 for r in rlist:
   print r
   matrix_img = r.shoebox.as_numpy_array()
-  print
-  print "shoebox"
-  print matrix_img
-
   matrix_bkg = r.shoebox_background.as_numpy_array()
-  print
-  print "background"
-  print matrix_bkg
-
   matrix_mask = r.shoebox_mask.as_numpy_array()
-  print
-  print "mask"
-  print matrix_mask
+
+
+
 from matplotlib import pylab
 
 data2d_tmp =  numpy.copy(matrix_img[0 , :, :])
-print "data2d_tmp ", data2d_tmp
+#print "data2d_tmp ", data2d_tmp
 data1d = numpy.copy(data2d_tmp[12, :])
 pylab.plot(data1d)
 
-data2d_tmp =  numpy.copy(matrix_bkg[0 , :, :])
-print "data2d_tmp ", data2d_tmp
-bkg_data1d = numpy.copy(data2d_tmp[12, :])
+bkg_data2d_tmp =  numpy.copy(matrix_bkg[0 , :, :])
+#print "data2d_tmp ", bkg_data2d_tmp
+bkg_data1d = numpy.copy(bkg_data2d_tmp[12, :])
 pylab.plot(bkg_data1d)
 pylab.show()
 
-import matplotlib.pyplot as plt
-
-data2d_tmp =  numpy.copy(matrix_img[0 , :, :])
-print "data2d_tmp ", data2d_tmp
-data1d = numpy.copy(data2d_tmp[12, :])
-
+from matplotlib import pyplot as plt
 ind = numpy.arange(25)
 p1 = plt.bar(ind, data1d,   0.85, color='r')
+plt.show()
+
+
+print "Plotting shoebox"
+plt.imshow(data2d_tmp, interpolation = "nearest")
+plt.show()
+
+plt.imshow(bkg_data2d_tmp, interpolation = "nearest")
 plt.show()
