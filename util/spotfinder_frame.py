@@ -94,12 +94,12 @@ class SpotFrame(XrayFrame) :
     max_pix_data = []
     for reflection in self.reflections:
       x0, x1, y0, y1, z0, z1 = reflection.bounding_box
-      nx = x1 - x0 # size of reflection box in x-direction
-      ny = y1 - y0 # size of reflection box in y-direction
-      nz = z1 - z0 # number of frames this spot appears on
-      shoebox_mask = reflection.shoebox_mask
       if i_frame >= z0 and i_frame < z1:
+        nx = x1 - x0 # size of reflection box in x-direction
+        ny = y1 - y0 # size of reflection box in y-direction
+        nz = z1 - z0 # number of frames this spot appears on
         if self.settings.show_all_pix:
+          shoebox_mask = reflection.shoebox_mask
           for ix in range(nx):
             for iy in range(ny):
               for iz in range(nz):
