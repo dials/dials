@@ -1339,7 +1339,7 @@ def index_reflections(
 
   d_spacings = 1/reciprocal_space_points.norms()
   inside_resolution_limit = d_spacings > d_min
-  sel = inside_resolution_limit #& (self.reflections_i_lattice == -1)
+  sel = inside_resolution_limit & (reflections.crystal() == -1)
   isel = sel.iselection()
   rlps = reciprocal_space_points.select(isel)
 
