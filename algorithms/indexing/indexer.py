@@ -379,8 +379,8 @@ class Indexer(object):
     assert(len(detector) == 1)
     x, y, _ = spots_mm.centroid_position().parts()
     s1 = detector[0].get_lab_coord(flex.vec2_double(x,y))
-    beam_vectors = s1/s1.norms() * (1/beam.get_wavelength())
-    spots_mm.set_beam_vector(beam_vectors) # needed by refinement
+    s1 = s1/s1.norms() * (1/beam.get_wavelength())
+    spots_mm.set_beam_vector(s1) # needed by refinement
     S = s1 - beam.get_s0()
     reciprocal_space_points = S.rotate_around_origin(
       goniometer.get_rotation_axis(),
