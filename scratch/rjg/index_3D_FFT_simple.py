@@ -1135,60 +1135,11 @@ class indexer(object):
 
     return indexed_reflections, miller_indices
 
-  def index_reflections(
-      self, crystal_models, tolerance=0.3, verbose=0):
-
+  def index_reflections(self, crystal_models, tolerance=0.3):
     self._index_reflections_timer.start()
-
-    d_spacings = 1/self.reciprocal_space_points.norms()
-    inside_resolution_limit = d_spacings > self.d_min
-    sel = inside_resolution_limit & (self.reflections_i_lattice == -1)
-    isel = sel.iselection()
-    rlps = self.reciprocal_space_points.select(isel)
-
-    diffs = []
-    norms = []
-    hkl_ints = []
-
-    for i_lattice, crystal_model in enumerate(crystal_models):
-      A = crystal_model.get_A()
-      A_inv = A.inverse()
-      hkl_float = tuple(A_inv) * rlps
-      hkl_int = hkl_float.iround()
-      differences = hkl_float - hkl_int.as_vec3_double()
-
-      diffs.append(differences)
-      norms.append(differences.norms())
-      hkl_ints.append(hkl_int)
-
-    n_rejects = 0
-
-    for i_hkl in range(hkl_int.size()):
-      d = flex.vec3_double([diffs[j][i_hkl]
-                       for j in range(len(crystal_models))])
-      n = flex.double([norms[j][i_hkl]
-                       for j in range(len(crystal_models))])
-      potential_hkls = [hkl_ints[j][i_hkl]
-                        for j in range(len(crystal_models))]
-
-      i_best_lattice = flex.min_index(n)
-      if n[i_best_lattice] > tolerance:
-        n_rejects += 1
-        continue
-      miller_index = potential_hkls[i_best_lattice]
-      i_ref = isel[i_hkl]
-      self.reflections[i_ref].miller_index = miller_index
-      self.reflections[i_ref].crystal = i_best_lattice
-
-    if self.params.refinement_protocol.verbosity > 0:
-      for i_lattice, crystal_model in enumerate(crystal_models):
-        print "model %i (%i reflections):" %(
-          i_lattice+1, (self.reflections.crystal() == i_lattice).count(True))
-        print crystal_model
-        print
-
-      print "%i unindexed reflections" %n_rejects
-
+    index_reflections(self.reflections, self.reciprocal_space_points,
+                      crystal_models, self.d_min, tolerance=0.3,
+                      verbosity=self.params.refinement_protocol.verbosity)
     self._index_reflections_timer.stop()
 
   def refine(self, crystal_model):
@@ -1379,6 +1330,61 @@ class indexer(object):
         real_space_a, real_space_b, real_space_c,
         crystal_model.get_space_group().type().number(),
         out=f)
+
+
+
+def index_reflections(
+    reflections, reciprocal_space_points, crystal_models, d_min,
+    tolerance=0.3, verbosity=0):
+
+  d_spacings = 1/reciprocal_space_points.norms()
+  inside_resolution_limit = d_spacings > d_min
+  sel = inside_resolution_limit #& (self.reflections_i_lattice == -1)
+  isel = sel.iselection()
+  rlps = reciprocal_space_points.select(isel)
+
+  diffs = []
+  norms = []
+  hkl_ints = []
+
+  for i_lattice, crystal_model in enumerate(crystal_models):
+    A = crystal_model.get_A()
+    A_inv = A.inverse()
+    hkl_float = tuple(A_inv) * rlps
+    hkl_int = hkl_float.iround()
+    differences = hkl_float - hkl_int.as_vec3_double()
+
+    diffs.append(differences)
+    norms.append(differences.norms())
+    hkl_ints.append(hkl_int)
+
+  n_rejects = 0
+
+  for i_hkl in range(hkl_int.size()):
+    d = flex.vec3_double([diffs[j][i_hkl]
+                     for j in range(len(crystal_models))])
+    n = flex.double([norms[j][i_hkl]
+                     for j in range(len(crystal_models))])
+    potential_hkls = [hkl_ints[j][i_hkl]
+                      for j in range(len(crystal_models))]
+
+    i_best_lattice = flex.min_index(n)
+    if n[i_best_lattice] > tolerance:
+      n_rejects += 1
+      continue
+    miller_index = potential_hkls[i_best_lattice]
+    i_ref = isel[i_hkl]
+    reflections[i_ref].miller_index = miller_index
+    reflections[i_ref].crystal = i_best_lattice
+
+  if verbosity > 0:
+    for i_lattice, crystal_model in enumerate(crystal_models):
+      print "model %i (%i reflections):" %(
+        i_lattice+1, (reflections.crystal() == i_lattice).count(True))
+      print crystal_model
+      print
+
+    print "%i unindexed reflections" %n_rejects
 
 
 def optimise_basis_vectors(reciprocal_space_points, vectors):
