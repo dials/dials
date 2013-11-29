@@ -636,9 +636,7 @@ test/model/data/tst_pixel_list.py -text
 test/model/data/tst_prediction.py -text
 test/model/data/tst_reflection_pickle.py -text
 test/model/data/tst_shoebox.py -text
-test/model/experiment/tst_crystal_model.py -text
 test/model/serialize/tst_partial_shoebox.py -text
-test/model/serialize/tst_serialize.py -text
 test/tst_spots_xds.py -text
 test/util/tst_command_line.py -text
 util/__init__.py -text
