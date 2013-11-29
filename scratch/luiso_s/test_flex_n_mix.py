@@ -3,7 +3,7 @@ from dials.scratch.luiso_s import  write_2d
 from scitbx.array_family import flex
 from dials.scratch.luiso_s import model_2d
 from dials.algorithms.peak_finding import smooth_2d, smooth_3d
-from matplotlib import pyplot as plt
+
 from matplotlib import pylab
 
 import numpy
@@ -34,7 +34,7 @@ data2d[:, :] += numpy.float64(data2d_tmp)
 #n = write_2d(flex.double(data2d))
 
 
-
+from matplotlib import pyplot as plt
 print "Plotting data2d"
 plt.imshow(data2d, interpolation = "nearest")
 plt.show()

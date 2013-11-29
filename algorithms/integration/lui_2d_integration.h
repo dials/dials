@@ -231,7 +231,6 @@ namespace dials { namespace algorithms {
     // Building a set 1D lists with the useful pixels
     double iexpr_lst[counter];
     double imodl_lst[counter];
-    //double iback_lst[counter];
     double modl_scal_lst[counter];
     double sum = 0, i_var;
     double m, diff, df_sqr;
@@ -243,7 +242,6 @@ namespace dials { namespace algorithms {
 
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;
-          // iback_lst[counter] = backg2dmov(row,col);
           counter++ ;
         }
       }
@@ -251,7 +249,7 @@ namespace dials { namespace algorithms {
 
     // finding the scale needed to fit profile list to experiment list
 
-    //m = m_linear_scale(counter, imodl_lst, iexpr_lst);
+    // m = m_linear_scale(counter, imodl_lst, iexpr_lst);
 
     m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
 

@@ -67,29 +67,28 @@ def fit_profile_2d(reflections, average, thold):
       mask = ref.shoebox_mask
       background = ref.shoebox_background
 
-      data2d = shoebox[0:1, :, :]
-      mask2d = mask[0:1, :, :]
-      background2d = background[0:1, :, :]
+      ref.intensity = 0.0
+      ref.intensity_variance = 0.0
+      for i in range(shoebox.all()[0]):
+        data2d = shoebox[i:i + 1, :, :]
+        mask2d = mask[i:i + 1, :, :]
+        background2d = background[i:i + 1, :, :]
+        try:
+          data2d.reshape(flex.grid(shoebox.all()[1:]))
+          mask2d.reshape(flex.grid(shoebox.all()[1:]))
+          background2d.reshape(flex.grid(shoebox.all()[1:]))
 
-      try:
-        data2d.reshape(flex.grid(shoebox.all()[1:]))
-        mask2d.reshape(flex.grid(shoebox.all()[1:]))
+        except:
+          print "error reshaping flex-array"
+          print "ref.bounding_box", ref.bounding_box
+          break
 
-      except:
-        print "error reshaping flex-array"
-        print "ref.bounding_box", ref.bounding_box
-        break
+        descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
+        descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
+        descr[0, 2] = 1.0 #/ (ref.intensity * counter)
 
-      data2d.reshape(flex.grid(shoebox.all()[1:]))
-      mask2d.reshape(flex.grid(shoebox.all()[1:]))
-      background2d.reshape(flex.grid(shoebox.all()[1:]))
-
-      descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
-      descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
-      descr[0, 2] = 1.0 #/ (ref.intensity * counter)
-
-      I_R = fitting_2d(descr, data2d, background2d, average)
-      ref.intensity = I_R[0]
-      ref.intensity_variance = I_R[1]
+        I_R = fitting_2d(descr, data2d, background2d, average)
+        ref.intensity += I_R[0]
+        ref.intensity_variance += I_R[1]
 
   return reflections
