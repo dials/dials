@@ -64,6 +64,8 @@ known_symmetry {
     .type = float
     .help = "Angular tolerance (in degrees) in unit cell comparison."
 }
+optimise_initial_basis_vectors = False
+  .type = bool
 debug = False
   .type = bool
 debug_plots = False
@@ -519,7 +521,31 @@ class indexer(object):
       #idx = flex.first_index(grid_real, max_value)
       #sites.append(
 
-    self.sites = flood_fill.centres_of_mass_frac().select(isel)
+    if self.params.optimise_initial_basis_vectors:
+      sites_cart = flood_fill.centres_of_mass_cart().select(isel)
+      sites_cart_optimised = optimise_basis_vectors(
+        #self.reciprocal_space_points,
+        self.reciprocal_space_points.select(self.reflections_used_for_indexing),
+        sites_cart)
+
+      self.sites = self.fft_cell.fractionalize(sites_cart_optimised)
+
+      diffs = (sites_cart_optimised - sites_cart)
+      norms = diffs.norms()
+      flex.min_max_mean_double(norms).show()
+      perm = flex.sort_permutation(norms, reverse=True)
+      for p in perm[:10]:
+        print sites_cart[p], sites_cart_optimised[p], norms[p]
+
+      # only use those vectors which haven't shifted too far from starting point
+      self.sites = self.sites.select(
+        norms < (5 * self.fft_cell.parameters()[0]/self.gridding[0]))
+      #diff = (self.sites - flood_fill.centres_of_mass_frac().select(isel))
+      #flex.min_max_mean_double(diff.norms()).show()
+
+    else:
+      self.sites = flood_fill.centres_of_mass_frac().select(isel)
+
     self._find_peaks_timer.stop()
 
   def find_candidate_basis_vectors_nks(self):
@@ -1353,6 +1379,75 @@ class indexer(object):
         real_space_a, real_space_b, real_space_c,
         crystal_model.get_space_group().type().number(),
         out=f)
+
+
+def optimise_basis_vectors(reciprocal_space_points, vectors):
+  optimised = flex.vec3_double()
+  for vector in vectors:
+    minimised = basis_vector_minimser(reciprocal_space_points, vector)
+    optimised.append(tuple(minimised.x))
+  return optimised
+
+
+from scitbx import lbfgs
+
+# Optimise the initial basis vectors as per equation 11.4.3.4 of
+# Otwinowski et al, International Tables Vol. F, chapter 11.4 pp. 282-295
+class basis_vector_target(object):
+
+  def __init__(self, reciprocal_space_points):
+    self.reciprocal_space_points = reciprocal_space_points
+    self._xyz_parts = self.reciprocal_space_points.parts()
+
+  def compute_functional_and_gradients(self, vector):
+    assert len(vector) == 3
+    two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(vector)
+    f = - flex.sum(flex.cos(two_pi_S_dot_v))
+    sin_part = flex.sin(two_pi_S_dot_v)
+    g = flex.double([flex.sum(2 * math.pi * self._xyz_parts[i] * sin_part)
+                     for i in range(3)])
+    return f, g
+
+
+class basis_vector_minimser(object):
+  def __init__(self, reciprocal_space_points, vector,
+               lbfgs_termination_params=None,
+               lbfgs_core_params=lbfgs.core_parameters(m=20)):
+    self.reciprocal_space_points = reciprocal_space_points
+    if not isinstance(vector, flex.double):
+      self.x = flex.double(vector)
+    else:
+      self.x = vector.deep_copy()
+    self.n = len(self.x)
+    assert self.n == 3
+    self.target = basis_vector_target(self.reciprocal_space_points)
+    self.minimizer = lbfgs.run(target_evaluator=self,
+                               termination_params=lbfgs_termination_params,
+                               core_params=lbfgs_core_params)
+    #print "number of iterations:", self.minimizer.iter()
+
+  def compute_functional_and_gradients(self):
+    f, g = self.target.compute_functional_and_gradients(tuple(self.x))
+    #g_fd = _gradient_fd(self.target, tuple(self.x))
+    #from libtbx.test_utils import approx_equal
+    #assert approx_equal(g, g_fd, eps=1e-3)
+    return f, g
+
+  def callback_after_step(self, minimizer):
+    #print tuple(self.x)
+    return
+
+
+def _gradient_fd(target, vector, eps=1e-6):
+  grads = []
+  for i in range(len(vector)):
+    v = list(vector)
+    v[i] -= eps
+    tm, _ = target.compute_functional_and_gradients(v)
+    v[i] += 2 * eps
+    tp, _ = target.compute_functional_and_gradients(v)
+    grads.append((tp-tm)/(2*eps))
+  return grads
 
 
 def reject_weight_outliers_selection(reflections, sigma_cutoff=5):
