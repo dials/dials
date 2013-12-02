@@ -237,6 +237,17 @@ def simple_gaussian_spots(params):
 
   return rlist
 
+# FIXME to do:
+#
+#  - generate the reflections in reciprocal space w.r.t. a reciprocal space
+#    node; will require taking a position then calculating a prediction for it
+#    (i.e. when it will be in reflecting position) then extrapolate this and
+#    add it to the appropriate voxel
+#  - apply the detector geometric correction due to the depth of the pixel, will
+#    depend on the actual detector geometry and so on
+#  - include input of beam, crystal, detector, scan, goniometer models so that
+#    the predictions are realistic
+
 def background_xds(rlist):
   from dials.algorithms.background import XdsSubtractor
   background = XdsSubtractor()
