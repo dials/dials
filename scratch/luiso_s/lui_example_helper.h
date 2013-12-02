@@ -123,7 +123,7 @@ namespace dials { namespace scratch {
     std::cout << " ] \n";
   return num;
   }
-
+/*
   flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
     flex_double data2dreturn(total);
     int ncol_in = data2d.accessor().all()[1];
@@ -136,12 +136,6 @@ namespace dials { namespace scratch {
     double tot_row, tot_col;
     double x_contrib, y_contrib, x_pix_pos, y_pix_pos;
     int xpos_ex, ypos_ex;
-    /*
-    std::cout <<"\n ncol_tot ="<< ncol_tot <<"\n";
-    std::cout <<"\n nrow_tot ="<< nrow_tot <<"\n";
-    std::cout <<"\n centr_col ="<< centr_col <<"\n";
-    std::cout <<"\n centr_row ="<< centr_row <<"\n";
-     */
 
     int tot_row_centr=int(nrow_tot / 2);
     int tot_col_centr=int(ncol_tot / 2);
@@ -175,13 +169,6 @@ namespace dials { namespace scratch {
             y_contrib = 1;
             ypos_ex = tot_row;
           }
-          /*
-          std::cout << "\n tot_col =" << tot_col << "\n";
-          std::cout << "\n double(int(tot_row)) =" << double(int(tot_col)) << "\n";
-
-          std::cout << "\n y_contrib =" << y_contrib;
-          std::cout << "\n x_contrib =" << x_contrib << "\n____________________________________________________________";
-           */
           data2dreturn(tot_row, tot_col)=total(tot_row, tot_col) + data2d(row, col) * scale * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){
             if( xpos_ex != tot_col ){
@@ -206,8 +193,107 @@ namespace dials { namespace scratch {
     }
     return data2dreturn;
   }
+*/
+////////////////////////////////////////////////////////////////////////////////////////
 
 
+  flex_double add_2d(flex_double descriptor, flex_double data2d,
+                     flex_double tmp_total) {
+
+    // given two shoe boxes, adds the second to the first one,
+    // but each pixel interpolates by following the
+    // position given in the descriptor
+    //
+    // This subroutine helps building a profile
+
+    int ncol_in = data2d.accessor().all()[1];
+    int nrow_in = data2d.accessor().all()[0];
+    int ncol_tot = tmp_total.accessor().all()[1];
+    int nrow_tot = tmp_total.accessor().all()[0];
+    flex_double total(flex_grid<>(nrow_tot, ncol_tot),0);
+    for (int row = 0; row < nrow_tot; row++) {
+      for (int col = 0; col < ncol_tot; col++) {
+	total(row,col) = tmp_total(row,col);
+      }
+    }
+    
+    
+    //double total[nrow_tot, ncol_tot];
+    //flex_double total(tmp_total);
+    double centr_col = descriptor(0,0);
+    double centr_row = descriptor(0,1);
+    double scale = descriptor(0,2);
+    double tot_row, tot_col;
+    double x_contrib, y_contrib, x_pix_pos, y_pix_pos;
+    int xpos_ex, ypos_ex;
+    int tot_row_centr=int(nrow_tot / 2);
+    int tot_col_centr=int(ncol_tot / 2);
+    // looping thru each pixel
+    for (int row = 0; row < nrow_in; row++) {
+      for (int col = 0; col < ncol_in; col++) {
+        tot_row = row + tot_row_centr - centr_row + 1;
+        tot_col = col + tot_col_centr - centr_col + 1;
+        if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot
+          and tot_col < ncol_tot) {
+
+          // interpolating and finding contributions of each pixel
+          // to the four surrounding  pixels in the other shoe box
+          x_pix_pos=tot_col - int(tot_col);
+          if (x_pix_pos < 0.5) {
+            x_contrib = 0.5 + x_pix_pos;
+            xpos_ex = tot_col - 1;
+          } else if ( x_pix_pos > 0.5 ) {
+            x_contrib = 1.5 - x_pix_pos;
+            xpos_ex = tot_col + 1;
+          } else {
+            x_contrib = 1;
+            xpos_ex = tot_col;
+          }
+	  
+          y_pix_pos=tot_row - int(tot_row);
+          if (y_pix_pos < 0.5) {
+            y_contrib = 0.5 + y_pix_pos;
+            ypos_ex = tot_row - 1;
+          } else if ( y_pix_pos > 0.5 ) {
+            y_contrib = 1.5 - y_pix_pos;
+            ypos_ex = tot_row + 1;
+          } else {
+            y_contrib = 1;
+            ypos_ex = tot_row;
+          }
+	  int pos_tot_row = int(tot_row);
+	  int pos_tot_col = int(tot_col);
+          // Adding corresponding contributions to each pixel
+          total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale * x_contrib * y_contrib;
+          if( xpos_ex != tot_col or ypos_ex != tot_row ){
+            if( xpos_ex != tot_col ){
+              total(pos_tot_row, xpos_ex) += data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
+            }
+            if( ypos_ex != tot_row ){
+              total(ypos_ex, pos_tot_col) += data2d(row, col) * scale * x_contrib * (1 - y_contrib);
+            }
+            if( xpos_ex != tot_col and ypos_ex != tot_row ){
+              total(ypos_ex, xpos_ex) += data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
+            }
+          }
+
+        } else {
+          std::cout << "\n ERROR Not fitting in the area to be added \n";
+          std::cout <<"  tot_row =" <<tot_row << "  tot_col =" << tot_col <<
+              "  nrow_tot =" << nrow_tot << "  ncol_tot =" << ncol_tot << "\n";
+          std::cout <<" centr_col =" <<  centr_col <<
+            " centr_row =" << centr_row << "\n";
+        }
+      }
+    }
+
+    return total;
+  }
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////
   vec2<double> fitting_2d(flex_double descriptor, flex_double data2d, flex_double backg2d, flex_double profile2d) {
       vec2<double> integr_data(0,1);
       int ncol = profile2d.accessor().all()[1];
