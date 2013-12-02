@@ -23,8 +23,8 @@ from dials.model.experiment import beam_factory
 from dials.model.experiment import goniometer_factory
 from dials.model.experiment import detector_factory
 
-# local crystal model
-from dials.model.experiment.crystal_model import Crystal
+# crystal model
+from cctbx.crystal.crystal_model import crystal_model
 
 # Local functions
 def random_vector_close_to(vector, sd = 0.5):
@@ -202,4 +202,4 @@ class Extract(object):
 
     sg = self._params.crystal.space_group_symbol
 
-    self.crystal = Crystal(*vecs, space_group_symbol = sg)
+    self.crystal = crystal_model(*vecs, space_group_symbol = sg)

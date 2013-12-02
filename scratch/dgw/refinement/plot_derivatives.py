@@ -18,7 +18,7 @@ from scitbx import matrix
 from dials.model.experiment import beam_factory
 from dials.model.experiment import goniometer_factory
 from dials.model.experiment import detector_factory
-from dials.model.experiment.crystal_model import Crystal
+from cctbx.crystal.crystal_model import crystal_model
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -96,7 +96,7 @@ mydetector = detector_factory.make_detector("PAD",
 a = random.uniform(10,30) * random_direction_close_to(matrix.col((1, 0, 0)))
 b = random.uniform(10,30) * random_direction_close_to(matrix.col((0, 1, 0)))
 c = random.uniform(10,30) * random_direction_close_to(matrix.col((0, 0, 1)))
-mycrystal = Crystal(a, b, c, space_group_symbol="P 1")
+mycrystal = crystal_model(a, b, c, space_group_symbol="P 1")
 
 print "Reflections will be generated with the following geometry:"
 print_model_geometry(mybeam, mydetector, mycrystal)

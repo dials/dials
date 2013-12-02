@@ -45,9 +45,9 @@ class RefinerFactory(object):
         or
       /beam - A dxtbx Beam object
       \detector - A dxtbx Detector object
-      crystal - A dials Crystal object
+      crystal - A cctbx crystal_model object
         or
-      /crystals - A list of dials Crystal objects
+      /crystals - A list of cctbx crystal_model objects
       \crystal_ids - A list of integer crystal ids to match to crystals
 
     Optional arguments:
@@ -850,7 +850,7 @@ class Refiner2(object):
     Mandatory arguments:
       reflections - Input ReflectionList data
       beam - A dxtbx Beam object
-      crystals - A list of DIALS Crystal objects
+      crystals - A list of cctbx crystal_model objects
       detector - A dxtbx Detector object
       pred_param - An object derived from the PredictionParameterisation class
       param_reporter -A ParameterReporter object

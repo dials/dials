@@ -94,7 +94,7 @@ from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 
 ### import models
-from dials.scratch.dgw.crystal_model import Crystal
+from cctbx.crystal.crystal_model import crystal_model
 from dials.model.experiment import beam_factory, goniometer_factory
 
 ### local functions
@@ -115,7 +115,7 @@ mybeam = beam_factory.make_beam(direction, 1.5)
 a = random.uniform(10,20) * random_direction_close_to(matrix.col((1, 0, 0)))
 b = random.uniform(10,20) * random_direction_close_to(matrix.col((0, 1, 0)))
 c = random.uniform(10,20) * random_direction_close_to(matrix.col((0, 0, 1)))
-Crystal(a, b, c, space_group_symbol="P 1")
+crystal_model(a, b, c, space_group_symbol="P 1")
 
 # make a dumb goniometer that rotates around X
 mygonio = goniometer_factory.known_axis((1, 0, 0))

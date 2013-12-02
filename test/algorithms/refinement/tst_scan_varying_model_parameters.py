@@ -15,6 +15,7 @@ import random
 # CCTBX imports
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
+from cctbx.crystal.crystal_model import crystal_model
 
 # DIALS imports
 from dials.algorithms.refinement.refinement_helpers \
@@ -24,7 +25,6 @@ from dials.algorithms.refinement.parameterisation.scan_varying_model_parameters 
 from dials.algorithms.refinement.parameterisation.scan_varying_crystal_parameters \
     import ScanVaryingCrystalOrientationParameterisation, \
            ScanVaryingCrystalUnitCellParameterisation
-from dials.model.experiment.crystal_model import Crystal
 
 class SmootherTest(object):
   """Test a bare parameter set with the smoother"""
@@ -145,7 +145,7 @@ class TestScanVaryingCrystalParameterisation(object):
         self.random_direction_close_to(matrix.col((0, 1, 0)))
     c = random.uniform(10,50) * \
         self.random_direction_close_to(matrix.col((0, 0, 1)))
-    self.xl = Crystal(a, b, c, space_group_symbol = "P 1")
+    self.xl = crystal_model(a, b, c, space_group_symbol = "P 1")
 
   def random_direction_close_to(self, vector):
     return vector.rotate_around_origin(matrix.col(
@@ -267,7 +267,7 @@ class TestScanVaryingCrystalOrientationParameterisation(TestScanVaryingCrystalPa
               self.random_direction_close_to(matrix.col((0, 1, 0)))
       c = random.uniform(10,50) * \
               self.random_direction_close_to(matrix.col((0, 0, 1)))
-      xl = Crystal(a, b, c, space_group_symbol="P 1")
+      xl = crystal_model(a, b, c, space_group_symbol="P 1")
 
       xl_op = TestOrientationModel(50, xl, self.image_range, 5)
 
