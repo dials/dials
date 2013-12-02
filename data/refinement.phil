@@ -23,10 +23,21 @@ refinement
       fix = all cell orientation
         .help = "Fix crystal parameters"
         .type = choice
+
       scan_varying = False
         .help = "Parameterise the crystal to vary during the scan"
         .type = bool
-      num_intervals = 5
+
+      num_intervals = *fixed_width absolute
+        .help = "Choose the way to determine the number of intervals for scan-"
+                "varying refinement"
+        .type = choice
+
+      interval_width_degrees = 36.0
+        .help = "Width of scan between checkpoints in degrees"
+        .type = float(value_min=0.)
+
+      absolute_num_intervals = 5
         .help = "Number of intervals between checkpoints if scan_varying"
                 "refinement is requested"
       .type = int(value_min=1)

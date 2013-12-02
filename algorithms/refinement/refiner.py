@@ -252,15 +252,22 @@ class RefinerFactory(object):
                          "yet supported")
     crystal = crystals[0] # Reminder for FIXME
     if crystal_options.scan_varying:
+      if crystal_options.num_intervals == "fixed_width":
+        sweep_range_deg = scan.get_oscillation_range(deg=True)
+        deg_per_interval = crystal_options.interval_width_degrees
+        n_intervals = int(
+          abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval)
+      else:
+        n_intervals = crystal_options.absolute_num_intervals
       assert [goniometer, scan].count(None) == 0
       xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
                                           crystal,
                                           scan.get_image_range(),
-                                          crystal_options.num_intervals)
+                                          n_intervals)
       xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
                                           crystal,
                                           scan.get_image_range(),
-                                          crystal_options.num_intervals)
+                                          n_intervals)
     else:
       xl_ori_param = par.CrystalOrientationParameterisation(crystal)
       xl_uc_param = par.CrystalUnitCellParameterisation(crystal)
@@ -571,7 +578,10 @@ class ParameterisationFactory(object):
     # Crystal
     self._crystal_fix = crystal_options.fix
     self._crystal_scan_varying = crystal_options.scan_varying
-    self._crystal_num_intervals = crystal_options.num_intervals
+    self._crystal_num_intervals = crystal_options.absolute_num_intervals
+    # NB This old interface ignores the choice between 'fixed_width' and
+    # 'absolute' when choosing the number of intervals, and always takes
+    # 'absolute'.
 
     if self._crystal_scan_varying:
       cop = par.ScanVaryingCrystalOrientationParameterisation
