@@ -546,6 +546,7 @@ scratch/luiso_s/test_code/tst_mosflm_real_img.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/tst_plotting_1d_demo.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/versa_test.py -text
+scratch/luiso_s/test_code/versa_test_01.py -text
 scratch/luiso_s/test_flex_n_mix.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
