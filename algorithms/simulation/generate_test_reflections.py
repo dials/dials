@@ -243,10 +243,16 @@ def simple_gaussian_spots(params):
 #    node; will require taking a position then calculating a prediction for it
 #    (i.e. when it will be in reflecting position) then extrapolate this and
 #    add it to the appropriate voxel
+#  - implement this as a flex array of events then perform this mapping in C++
+#    to the target space, then accumulate into the shoebox in the target space
+#    (can this be done in C++ as well?)
 #  - apply the detector geometric correction due to the depth of the pixel, will
 #    depend on the actual detector geometry and so on
 #  - include input of beam, crystal, detector, scan, goniometer models so that
 #    the predictions are realistic
+#  - worth noting that if I can make this work it could form the kernel of old
+#    deadly - taking all of the dials models as input along with some profile 
+#    parameters and generating an image of a spot...
 
 def background_xds(rlist):
   from dials.algorithms.background import XdsSubtractor
@@ -267,11 +273,13 @@ def integrate_3d_summation(rlist):
   return
 
 def main(params):
+  # first generate the reflections - this could be called from elsewhere
   rlist = simple_gaussian_spots(params)
   correct_intensities = [r.intensity for r in rlist]
   for r in rlist:
     r.intensity = 0
 
+  # now integrate those reflections using code from elsewhere
   if params.background_method == 'xds':
     background_xds(rlist)
   elif params.background_method == 'mosflm':
