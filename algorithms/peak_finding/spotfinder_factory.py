@@ -251,8 +251,8 @@ class SpotFinderFactory(object):
         params.spotfinder.filter.max_separation))
 
     # Add a centroid resolution filter
-    if (params.spotfinder.filter.d_min is not None and
-        params.spotfinder.filter.d_min is not None):
+    if (params.spotfinder.filter.d_min is not None or
+        params.spotfinder.filter.d_max is not None):
       filters.append(CentroidResolutionFilter(
           params.spotfinder.filter.d_min,
           params.spotfinder.filter.d_max))
