@@ -46,6 +46,10 @@ def run(args):
     beam=sweep.get_beam(),
     goniometer=sweep.get_goniometer())
 
+  # run this so the output reflections will be suitable for input to dials.refine
+  from dials.algorithms.spot_prediction import ray_intersection
+  spots_mm = ray_intersection(sweep.get_detector(), spots_mm)
+
   from scitbx.array_family import flex
   spots_mm.set_crystal(flex.int(spots_mm.size(), -1))
 
