@@ -476,10 +476,10 @@ class ReflectionManager(object):
       y = ref.centroid_position[1]
       phi = ref.centroid_position[2]
       sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
-      w_x = w_y = w_phi = 0
-      if ref.centroid_variance[0] != 0: w_x   /= ref.centroid_variance[0]
-      if ref.centroid_variance[1] != 0: w_y   /= ref.centroid_variance[1]
-      if ref.centroid_variance[2] != 0: w_phi /= ref.centroid_variance[2]
+      w_x = w_y = w_phi = 0.
+      if ref.centroid_variance[0] != 0: w_x   = 1. / ref.centroid_variance[0]
+      if ref.centroid_variance[1] != 0: w_y   = 1. / ref.centroid_variance[1]
+      if ref.centroid_variance[2] != 0: w_phi = 1. / ref.centroid_variance[2]
 
       self._obs_pred_pairs.append(ObsPredMatch(i, crystal, h,
                                                entering, frame, panel,
