@@ -1,0 +1,4 @@
+
+Import('env')
+
+env.SConscript('table/SConscript', exports={ 'env' : env })

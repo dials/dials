@@ -1,0 +1,9 @@
+
+Import('env')
+
+sources = [
+    'boost_python/column_table.cc',
+    'boost_python/table_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_framework_table_ext', 
+    source=sources)
