@@ -43,7 +43,10 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
   DPS.inv_wave = 1./beam.get_wavelength()
-  DPS.axis = matrix.col(goniometer.get_rotation_axis())
+  if goniometer is None:
+    DPS.axis = matrix.col((1,0,0))
+  else:
+    DPS.axis = matrix.col(goniometer.get_rotation_axis())
   DPS.set_detector(detector)
 
   # transform input into what Nick needs
@@ -59,7 +62,7 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
   #plt.show()
 
-  DPS.index(raw_spot_input = data)
+  DPS.index(raw_spot_input = data, panel_addresses = flex.int([s.panel_number for s in spots_mm]))
 
   # for development, we want an exhaustive plot of beam probability map:
   params.indexing.plot_search_scope = False
@@ -86,6 +89,12 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
   spots_mm = Indexer._map_spots_pixel_to_mm_rad(
     spots=spot_positions, detector=detector, scan=scan)
 
+  if len(detector) > 1:
+    panel_ids = [spot.panel_number for spot in spot_positions]
+  else:
+    panel_ids = None
+
+
   # derive a max_cell from mm spots
   # derive a grid sampling from spots
 
@@ -99,7 +108,10 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
   from scitbx import matrix
   DPS.S0_vector = matrix.col(beam.get_s0())
   DPS.inv_wave = 1./beam.get_wavelength()
-  DPS.axis = matrix.col(goniometer.get_rotation_axis())
+  if goniometer is None:
+    DPS.axis = matrix.col((1,0,0))
+  else:
+    DPS.axis = matrix.col(goniometer.get_rotation_axis())
   DPS.set_detector(detector)
 
   # transform input into what Nick needs
@@ -111,7 +123,7 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
                  spot.centroid_position[1],
                  spot.centroid_position[2]*180./math.pi))
 
-  DPS.index(raw_spot_input = data)
+  DPS.index(raw_spot_input = data, panel_addresses = panel_ids)
   solutions = DPS.getSolutions()
   return [matrix.col(s.bvec()) for s in solutions],DPS.getXyzData()
 
@@ -148,7 +160,10 @@ def determine_basis_set(candidate_basis_vectors_one_lattice,
   from scitbx import matrix
   BCA.S0_vector = matrix.col(beam.get_s0())
   BCA.inv_wave = 1./beam.get_wavelength()
-  BCA.axis = matrix.col(goniometer.get_rotation_axis())
+  if goniometer is None:
+    BCA.axis = matrix.col((1,0,0))
+  else:
+    BCA.axis = matrix.col(goniometer.get_rotation_axis())
   BCA.set_detector(detector)
   BCA.panelID = panelID
 

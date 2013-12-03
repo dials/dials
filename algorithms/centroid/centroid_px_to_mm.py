@@ -25,14 +25,21 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
 
   # Get the pixel to millimeter function
   pixel_size = panel.get_pixel_size()
-  oscillation = scan.get_oscillation(deg=False)
+  if scan is None:
+    oscillation = (0,0)
+  else:
+    oscillation = scan.get_oscillation(deg=False)
   scale = pixel_size + (oscillation[1],)
   scale2 = map(mul, scale, scale)
 
   # Convert Pixel coordinate into mm/rad
   x, y, z = position
   xy_mm = panel.pixel_to_millimeter((x, y))
-  z_rad = scan.get_angle_from_array_index(z, deg=False)
+
+  if scan is None:
+    z_rad = 0
+  else:
+    z_rad = scan.get_angle_from_array_index(z, deg=False)
 
   # Set the position, variance and squared width in mm/rad
   # N.B assuming locally flat pixel to millimeter transform

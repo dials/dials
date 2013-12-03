@@ -141,7 +141,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
                     m.weight_y_obs * grad_Y**2)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
-    assert all([c > 0.0 for c in curv])
+    #assert all([c > 0.0 for c in curv])
 
     return curv
 

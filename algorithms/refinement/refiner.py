@@ -758,7 +758,10 @@ class RefmanFactory(object):
       if verbosity > 1:
         print "Random seed set to %d\n" % self._random_seed
 
-    sweep_range = scan.get_oscillation_range(deg=False)
+    if scan is None:
+      sweep_range = [0,0]
+    else:
+      sweep_range = scan.get_oscillation_range(deg=False)
     return self._refman(reflections=reflections,
                         beam=beam,
                         gonio=goniometer,
@@ -808,7 +811,10 @@ class TargetFactory(object):
   def __call__(self, crystal, beam, goniometer, detector, scan,
       refman, pred_param):
 
-    image_width = scan.get_oscillation(deg=False)[1]
+    if scan is None:
+      image_width = 0
+    else:
+      image_width = scan.get_oscillation(deg=False)[1]
 
     # forced to single crystal only here
     rp = self._ref_predictor([crystal], [0], beam, goniometer)
