@@ -477,6 +477,7 @@ scratch/jmp/image_database/image_database.py -text
 scratch/jmp/image_database/inspect_images.py -text
 scratch/jmp/misc/angle_test.py -text
 scratch/jmp/misc/area.py -text
+scratch/jmp/misc/check_reflection_lists.py -text
 scratch/jmp/misc/clip_line2.py -text
 scratch/jmp/misc/clip_line3.py -text
 scratch/jmp/misc/generic_tree.h -text
@@ -488,13 +489,18 @@ scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/misc/show_reference.py -text
 scratch/jmp/misc/strip_integrate_hkl.py -text
 scratch/jmp/misc/test_area.py -text
+scratch/jmp/misc/test_centroid.py -text
+scratch/jmp/misc/test_diff_spot.py -text
 scratch/jmp/misc/test_exclude.py -text
 scratch/jmp/misc/test_new_transform.py -text
+scratch/jmp/misc/test_output.py -text
 scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/misc/test_pool.py -text
 scratch/jmp/misc/test_problem.py -text
+scratch/jmp/misc/test_reference.py -text
 scratch/jmp/misc/test_reflection -text
 scratch/jmp/misc/test_sweep_pickle.py -text
+scratch/jmp/misc/test_to_dict.py -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
