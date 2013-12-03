@@ -375,8 +375,19 @@ namespace dials { namespace model {
      */
     Intensity summed_intensity_all() const {
 
+      // Get the number of background pixels used
+      std::size_t n_background = 0;
+      for (std::size_t i = 0; i < mask.size(); ++i) {
+        if (mask[i] & BackgroundUsed) {
+          n_background++;
+        }
+      }
+
       // Do the intengration
-      Summation<FloatType> summation(data.const_ref(), background.const_ref());
+      Summation<FloatType> summation(
+        data.const_ref(),
+        background.const_ref(),
+        n_background);
 
       // Return the intensity struct
       Intensity result;
@@ -394,13 +405,17 @@ namespace dials { namespace model {
       // Create a boolean mask
       af::versa< bool, af::c_grid<3> > temp_arr(mask.accessor());
       af::ref< bool, af::c_grid<3> > temp = temp_arr.ref();
+      std::size_t n_background = 0;
       for (std::size_t i = 0; i < temp.size(); ++i) {
         temp[i] = mask[i] & code;
+        if (mask[i] & BackgroundUsed) {
+          n_background++;
+        }
       }
 
       // Do the intengration
       Summation<FloatType> summation(data.const_ref(),
-        background.const_ref(), temp);
+        background.const_ref(), temp, n_background);
 
       // Return the intensity struct
       Intensity result;

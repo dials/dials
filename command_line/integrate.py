@@ -59,9 +59,9 @@ class Script(ScriptRunner):
       self.config().print_help()
       return
     if len(importer.imagesets) != 1:
-      RuntimeError('need 1 sweep: %d given' % len(importer.imagesets))
+      raise RuntimeError('need 1 sweep: %d given' % len(importer.imagesets))
     if len(importer.crystals) != 1:
-      RuntimeError('need 1 crystal: %d given' % len(importer.crystals))
+      raise RuntimeError('need 1 crystal: %d given' % len(importer.crystals))
     sweep = importer.imagesets[0]
     crystal = importer.crystals[0]
     reference = None
