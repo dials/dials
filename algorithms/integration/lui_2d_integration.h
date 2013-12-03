@@ -76,21 +76,25 @@ namespace dials { namespace algorithms {
 
   }
 
+  af::versa< double, af::c_grid<2> > add_2d(
+    const af::const_ref< double, af::c_grid<2> > &descriptor,
+    const af::const_ref< double, af::c_grid<2> > &data2d,
+    const af::const_ref< double, af::c_grid<2> > &tmp_total) {
+    int ncol_in=data2d.accessor()[1];
+    int nrow_in=data2d.accessor()[0];
+    int ncol_tot=tmp_total.accessor()[1];
+    int nrow_tot=tmp_total.accessor()[0];
 
-  flex_double add_2d(flex_double descriptor, flex_double data2d,
-                     flex_double tmp_total) {
+    af::versa< double, af::c_grid<2> > total(af::c_grid<2>(nrow_tot, ncol_tot),0);
 
-    // given two shoe boxes, adds the second to the first one,
-    // but each pixel interpolates by following the
-    // position given in the descriptor
-    //
-    // This subroutine helps building a profile
+    for (int row = 0; row < nrow_tot; row++) {
+      for (int col = 0; col < ncol_tot; col++) {
+        total(row,col) = tmp_total(row,col);
+      }
+    }
 
-    flex_double total(tmp_total);
-    int ncol_in = data2d.accessor().all()[1];
-    int nrow_in = data2d.accessor().all()[0];
-    int ncol_tot = tmp_total.accessor().all()[1];
-    int nrow_tot = tmp_total.accessor().all()[0];
+    //double total[nrow_tot, ncol_tot];
+    //flex_double total(tmp_total);
     double centr_col = descriptor(0,0);
     double centr_row = descriptor(0,1);
     double scale = descriptor(0,2);
@@ -99,7 +103,6 @@ namespace dials { namespace algorithms {
     int xpos_ex, ypos_ex;
     int tot_row_centr=int(nrow_tot / 2);
     int tot_col_centr=int(ncol_tot / 2);
-
     // looping thru each pixel
     for (int row = 0; row < nrow_in; row++) {
       for (int col = 0; col < ncol_in; col++) {
@@ -133,22 +136,23 @@ namespace dials { namespace algorithms {
             y_contrib = 1;
             ypos_ex = tot_row;
           }
-
+          int pos_tot_row = int(tot_row);
+          int pos_tot_col = int(tot_col);
           // Adding corresponding contributions to each pixel
-          total(tot_row, tot_col) = tmp_total(tot_row, tot_col)
-            + data2d(row, col) * scale * x_contrib * y_contrib;
+          total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale
+            * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){
             if( xpos_ex != tot_col ){
-              total(tot_row, xpos_ex)=tmp_total(tot_row, xpos_ex)
-                + data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
+              total(pos_tot_row, xpos_ex) += data2d(row,col) * scale
+                * (1 - x_contrib) * y_contrib;
             }
             if( ypos_ex != tot_row ){
-              total(ypos_ex, tot_col)=tmp_total(ypos_ex, tot_col)
-                + data2d(row, col) * scale * x_contrib * (1 - y_contrib);
+              total(ypos_ex, pos_tot_col) += data2d(row, col) * scale
+                * x_contrib * (1 - y_contrib);
             }
             if( xpos_ex != tot_col and ypos_ex != tot_row ){
-              total(ypos_ex, xpos_ex)=tmp_total(ypos_ex, xpos_ex)
-                + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
+              total(ypos_ex, xpos_ex) += data2d(row, col)* scale
+                * (1 - x_contrib) * (1 - y_contrib);
             }
           }
 
@@ -161,6 +165,7 @@ namespace dials { namespace algorithms {
         }
       }
     }
+
 
     return total;
   }
@@ -205,19 +210,26 @@ namespace dials { namespace algorithms {
     return m;
   }
 
-    // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
-  vec2<double> fitting_2d(flex_double descriptor, flex_double data2d,
-                          flex_double backg2d, flex_double profile2d) {
+  // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
+  vec2<double> fitting_2d(
+    const af::const_ref< double, af::c_grid<2> > &descriptor,
+    const af::const_ref< double, af::c_grid<2> > &data2d,
+    const af::const_ref< double, af::c_grid<2> > &backg2d,
+    const af::const_ref< double, af::c_grid<2> > &profile2d) {
 
-    int ncol = profile2d.accessor().all()[1];
-    int nrow = profile2d.accessor().all()[0];
+    int ncol = profile2d.accessor()[1];
+    int nrow = profile2d.accessor()[0];
     int counter = 0;
-    vec2<double> integr_data(0,1);
-    flex_double data2dmov(profile2d.accessor(), 0);
-    flex_double backg2dmov(profile2d.accessor(), 0);
-    descriptor(0,2) = 1;
-    data2dmov = add_2d(descriptor, data2d, data2dmov);
-    backg2dmov = add_2d(descriptor, backg2d, backg2dmov);
+
+    af::versa< double, af::c_grid<2> > data2dmov_01(af::c_grid<2>(nrow, ncol),0);
+    af::versa< double, af::c_grid<2> > backg2dmov_01(af::c_grid<2>(nrow, ncol),0);
+
+    af::versa< double, af::c_grid<2> > data2dmov(af::c_grid<2>(nrow, ncol),0);
+    af::versa< double, af::c_grid<2> > backg2dmov(af::c_grid<2>(nrow, ncol),0);
+
+    //descriptor(0,2) = 1;
+    data2dmov = add_2d(descriptor, data2d, data2dmov_01.const_ref());
+    backg2dmov = add_2d(descriptor, backg2d, backg2dmov_01.const_ref());
 
     // Counting how many pixels are useful so far
     for (int row = 0; row < nrow; row++) {
@@ -269,7 +281,7 @@ namespace dials { namespace algorithms {
     for (int i = 0; i < counter; i++){
       sum += modl_scal_lst[i];
     }
-
+    vec2<double> integr_data(0,1);
     integr_data[0] = sum;                   // intensity
     integr_data[1] = i_var;                 // intensity variance
 
@@ -293,91 +305,6 @@ namespace dials { namespace algorithms {
     }
     return data2dreturn;
   }
-
-
-
-
-   /*
-    *
-   // this piece of code chould be analized with help from Richard
-   af::versa< double, af::c_grid<2> > add_2d(
-     const af::const_ref< double, af::c_grid<2> > &descriptor,
-     const af::const_ref< double, af::c_grid<2> > &data2d,
-     const af::const_ref< double, af::c_grid<2> > &tmp_total) {
-     af::versa< double, af::c_grid<2> > total(tmp_total.accessor(),0);
-     int ncol_in=data2d.accessor()[1];
-     int nrow_in=data2d.accessor()[0];
-     int ncol_tot=tmp_total.accessor()[1];
-     int nrow_tot=tmp_total.accessor()[0];
-     //std::cout << "\n ncol_tot =" << ncol_tot << "\n nrow_tot =" << nrow_tot <<
-     //"\n total.accessor()[0] =" << total.accessor()[0] <<
-     //"\n total.accessor()[1] =" << total.accessor()[1];
-     //std::copy(tmp_total.begin(), tmp_total.end(), total.begin());
-     for (int row = 0; row < nrow_tot; row++) {
-       for (int col = 0; col < ncol_tot; col++) {
-         //std::cout << "\n row =" << row << "\n col =" << col << "\n";
-         total(row, col) = tmp_total(row, col);
-       }
-     }
-
-     //printing & testing
-     std::cout << "\n <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< printing & testing ";
-     for (int row = 0; row < nrow_tot; row++) {
-       if (row==0){
-         std::cout << "\n  [ [ ";
-       } else {
-         std::cout << "\n    [ ";
-       }
-       for (int col = 0; col < ncol_tot;col++) {
-         //[ 6 ] = minimum width (no maximum given)
-         //[ 2 ] = precision after the period
-         printf("%6.3f ", total(row,col));
-         //std::cout << int(matx2d[row][col]) << " ,   ";
-       }
-       //fflush(stdout);
-       std::cout << "  ]";
-     }
-     std::cout << " ] \n";
-
-
-     for (int row = 0; row < nrow_tot; row++) {
-       if (row==0){
-         std::cout << "\n  [ [ ";
-       } else {
-         std::cout << "\n    [ ";
-       }
-       for (int col = 0; col < ncol_tot;col++) {
-         //[ 6 ] = minimum width (no maximum given)
-         //[ 2 ] = precision after the period
-         printf("%6.3f ", tmp_total(row,col));
-         //std::cout << int(matx2d[row][col]) << " ,   ";
-       }
-       //fflush(stdout);
-       std::cout << "  ]";
-     }
-     std::cout << " ] \n";
-
-
-     for (int row = 0; row < nrow_in; row++) {
-       if (row==0){
-         std::cout << "\n  [ [ ";
-       } else {
-         std::cout << "\n    [ ";
-       }
-       for (int col = 0; col < ncol_in;col++) {
-         //[ 6 ] = minimum width (no maximum given)
-         //[ 2 ] = precision after the period
-         printf("%6.3f ", data2d(row,col));
-         //std::cout << int(matx2d[row][col]) << " ,   ";
-       }
-       //fflush(stdout);
-       std::cout << "  ]";
-     }
-     std::cout << " ] \n";
-
-     std::cout << "\n printing & testing >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> ";
-
-     */
 
 
 } }

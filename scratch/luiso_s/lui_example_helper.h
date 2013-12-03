@@ -124,7 +124,8 @@ namespace dials { namespace scratch {
   return num;
   }
 /*
-  flex_double add_2d(flex_double descriptor, flex_double data2d, flex_double total) {
+  flex_double add_2d(flex_double descriptor, flex_double data2d,
+                     flex_double total) {
     flex_double data2dreturn(total);
     int ncol_in = data2d.accessor().all()[1];
     int nrow_in = data2d.accessor().all()[0];
@@ -144,7 +145,8 @@ namespace dials { namespace scratch {
       for (int col = 0; col <= ncol_in - 1;col++) {
         tot_row = row + tot_row_centr - centr_row + 1;
         tot_col = col + tot_col_centr - centr_col + 1;
-        if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and tot_col < ncol_tot) {
+        if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot and
+          tot_col < ncol_tot) {
 
           x_pix_pos=tot_col - int(tot_col);
           if (x_pix_pos < 0.5) {
@@ -172,13 +174,16 @@ namespace dials { namespace scratch {
           data2dreturn(tot_row, tot_col)=total(tot_row, tot_col) + data2d(row, col) * scale * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){
             if( xpos_ex != tot_col ){
-              data2dreturn(tot_row, xpos_ex)=total(tot_row, xpos_ex) + data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
+              data2dreturn(tot_row, xpos_ex)=total(tot_row, xpos_ex)
+              + data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
             }
             if( ypos_ex != tot_row ){
-              data2dreturn(ypos_ex, tot_col)=total(ypos_ex, tot_col) + data2d(row, col) * scale * x_contrib * (1 - y_contrib);
+              data2dreturn(ypos_ex, tot_col)=total(ypos_ex, tot_col)
+              + data2d(row, col) * scale * x_contrib * (1 - y_contrib);
             }
             if( xpos_ex != tot_col and ypos_ex != tot_row ){
-              data2dreturn(ypos_ex, xpos_ex)=total(ypos_ex, xpos_ex) + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
+              data2dreturn(ypos_ex, xpos_ex)=total(ypos_ex, xpos_ex)
+              + data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
             }
           }
 
@@ -211,6 +216,7 @@ namespace dials { namespace scratch {
     int ncol_tot = tmp_total.accessor().all()[1];
     int nrow_tot = tmp_total.accessor().all()[0];
     flex_double total(flex_grid<>(nrow_tot, ncol_tot),0);
+
     for (int row = 0; row < nrow_tot; row++) {
       for (int col = 0; col < ncol_tot; col++) {
         total(row,col) = tmp_total(row,col);
@@ -261,19 +267,23 @@ namespace dials { namespace scratch {
             y_contrib = 1;
             ypos_ex = tot_row;
           }
-          int pos_tot_row = int(tot_row);
-          int pos_tot_col = int(tot_col);
+	        int pos_tot_row = int(tot_row);
+	        int pos_tot_col = int(tot_col);
           // Adding corresponding contributions to each pixel
-          total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale * x_contrib * y_contrib;
+          total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale
+            * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){
             if( xpos_ex != tot_col ){
-              total(pos_tot_row, xpos_ex) += data2d(row,col) * scale * (1 - x_contrib) * y_contrib;
+              total(pos_tot_row, xpos_ex) += data2d(row,col) * scale
+                * (1 - x_contrib) * y_contrib;
             }
             if( ypos_ex != tot_row ){
-              total(ypos_ex, pos_tot_col) += data2d(row, col) * scale * x_contrib * (1 - y_contrib);
+              total(ypos_ex, pos_tot_col) += data2d(row, col) * scale
+                * x_contrib * (1 - y_contrib);
             }
             if( xpos_ex != tot_col and ypos_ex != tot_row ){
-              total(ypos_ex, xpos_ex) += data2d(row, col)* scale * (1 - x_contrib) * (1 - y_contrib);
+              total(ypos_ex, xpos_ex) += data2d(row, col)* scale
+                * (1 - x_contrib) * (1 - y_contrib);
             }
           }
 
