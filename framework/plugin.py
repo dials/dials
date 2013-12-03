@@ -63,12 +63,12 @@ def generate_phil_string(interface, extensions):
   return text
 
 def generate_single_phil(interface, extensions):
-  from libtbx import phil
+  from iotbx import phil
   return phil.parse(generate_phil_string(interface, extensions))
 
 
 def generate_phil(interfaces):
-  from libtbx import phil
+  from iotbx import phil
   text = '\n'.join(generate_phil_string(*x) for x in interfaces.iteritems())
   return phil.parse(text)
 

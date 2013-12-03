@@ -82,7 +82,7 @@ class SystemConfig(object):
 
   def config(self):
     '''Get the configuration.'''
-    from libtbx.phil import parse
+    from iotbx.phil import parse
 
     # Read the master and user files
     master_text = self._files.master()
