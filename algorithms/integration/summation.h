@@ -161,7 +161,8 @@ namespace dials { namespace algorithms {
      * @returns the variance on the background intensity
      */
     FloatType background_variance() const {
-      double m_n = (double)n_signal_ / (double)n_background_;
+      double m_n = n_background_ > 0 ?
+        (double)n_signal_ / (double)n_background_ : 0.0;
       return background_variance_ * m_n;
     }
 
@@ -199,7 +200,6 @@ namespace dials { namespace algorithms {
               std::size_t n_background)
     {
       // Check both arrays are the same size
-      DIALS_ASSERT(n_background > 0);
       DIALS_ASSERT(signal.size() == background.size());
 
       // Save the number of background pixels
@@ -232,7 +232,6 @@ namespace dials { namespace algorithms {
               std::size_t n_background)
     {
       // Check both arrays are the same size
-      DIALS_ASSERT(n_background > 0);
       DIALS_ASSERT(signal.size() == background.size());
       DIALS_ASSERT(signal.size() == mask.size());
 
