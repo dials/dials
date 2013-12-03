@@ -56,6 +56,7 @@ class reader:
     # Return the image
     return image
 
+
 if __name__ == '__main__':
   import sys
   import numpy
