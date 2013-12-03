@@ -338,9 +338,12 @@ class TestForward(object):
       sum_bgrid = flex.sum(bgrid)
       sum_image = flex.sum(flex.double(flex.select(image, flags=mask)))
       sum_bkgrd = flex.sum(flex.double(flex.select(background, flags=mask)))
-      assert(abs(sum_igrid - sum_image) <= eps)
-      assert(abs(sum_bgrid - sum_bkgrd) <= eps)
-
+      try:
+        assert(abs(sum_igrid - sum_image) <= eps)
+        assert(abs(sum_bgrid - sum_bkgrd) <= eps)
+      except Exception:
+        print "Failed for: ", (x, y, z)
+        raise
     # Test passed
     print 'OK'
 
