@@ -163,6 +163,53 @@ class CentroidResolutionFilter(object):
     return flags
 
 
+class PowderRingFilter(object):
+
+  def __init__(self, crystal_symmetry):
+    self.crystal_symmetry = crystal_symmetry
+
+  def run(self, flags, sweep=None, observations=None, **kwargs):
+    from cctbx import crystal, sgtbx, uctbx
+
+    from dials.array_family import flex
+    from dials.model.data import ReflectionList
+    from dxtbx import imageset
+    detector = sweep.get_detector()
+    beam = sweep.get_beam()
+
+    ms = self.crystal_symmetry.build_miller_set(
+      anomalous_flag=False, d_min=detector.get_max_resolution(beam.get_s0()))
+    ms = ms.sort(by_value="resolution")
+
+    miller_indices = flex.miller_index()
+    two_thetas_obs = flex.double()
+    wavelength = beam.get_wavelength()
+
+    for i, centroid in enumerate(observations):
+      if not flags[i]: continue
+      x, y = centroid.centroid.px_xy
+      d_spacing = detector[centroid.panel].get_resolution_at_pixel(
+        beam.get_s0(), (x, y))
+      for j, d in enumerate(ms.d_spacings().data()):
+        if abs(d - d_spacing) < 0.02:
+          flags[i] = False
+          miller_indices.append(ms.indices()[j])
+          two_thetas_obs.append(uctbx.d_star_sq_as_two_theta(
+            uctbx.d_as_d_star_sq(d_spacing), wavelength=wavelength, deg=True))
+
+    return flags
+
+  def __call__(self, flags, **kwargs):
+    ''' Call the filter and print information. '''
+    from dials.util.command_line import Command
+    Command.start('Filtering {0} spots by powder rings'.format(
+        flags.count(True)))
+    flags = self.run(flags, **kwargs)
+    Command.end('Filtered {0} spots by powder rings'.format(
+        flags.count(True)))
+    return flags
+
+
 class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
@@ -183,9 +230,9 @@ class SpotFinderFactory(object):
     find_spots = SpotFinderFactory.configure_algorithm(params)
     filter_spots = SpotFinderFactory.configure_filter(params)
     return SpotFinder(
-        find_spots=find_spots,
-        filter_spots=filter_spots,
-        scan_range=params.spotfinder.scan_range)
+      find_spots=find_spots,
+      filter_spots=filter_spots,
+      scan_range=params.spotfinder.scan_range)
 
   @staticmethod
   def configure_algorithm(params):
@@ -235,6 +282,7 @@ class SpotFinderFactory(object):
   def configure_filter(params):
     ''' Get the filter strategy. '''
     from dials.algorithms import shoebox
+    from cctbx import crystal
 
     # Initialise an empty list of filters
     filters = []
@@ -256,6 +304,12 @@ class SpotFinderFactory(object):
       filters.append(CentroidResolutionFilter(
           params.spotfinder.filter.d_min,
           params.spotfinder.filter.d_max))
+
+    if params.spotfinder.filter.ice_rings.filter:
+      crystal_symmetry = crystal.symmetry(
+        unit_cell=params.spotfinder.filter.ice_rings.unit_cell,
+        space_group=params.spotfinder.filter.ice_rings.space_group.group())
+      filters.append(PowderRingFilter(crystal_symmetry))
 
     # Return the filter runner with the list of filters
     return FilterRunner(filters)
