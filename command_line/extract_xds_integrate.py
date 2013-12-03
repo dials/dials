@@ -118,10 +118,6 @@ class ScriptRunner(object):
       import cPickle as pickle
       Command.start('Saving reflections to {0}'.format(
           self.output_filename))
-#            from dials.util.nexus import NexusFile
-#            handle = NexusFile(self.output_filename, 'w')
-#            handle.set_reflections(rlist)
-#            handle.close()
       pickle.dump(rlist, open(self.output_filename, 'wb'),
           pickle.HIGHEST_PROTOCOL)
       Command.end('Saved reflections to {0}'.format(
