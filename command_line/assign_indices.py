@@ -53,7 +53,7 @@ def run(args):
   from scitbx.array_family import flex
   spots_mm.set_crystal(flex.int(spots_mm.size(), -1))
 
-  from dials.scratch.rjg.index_3D_FFT_simple import index_reflections
+  from dials.algorithms.indexing import index_reflections
   index_reflections(
     spots_mm,
     reciprocal_space_points,
