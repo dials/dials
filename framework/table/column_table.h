@@ -135,6 +135,10 @@ namespace dials { namespace framework {
 
   template <typename T>
   class column_data_core {
+    struct resizer;
+    struct inserter;
+    struct eraser;
+
   public:
 
     typedef std::vector<T> storage_type;
@@ -143,33 +147,6 @@ namespace dials { namespace framework {
     typedef typename storage_type::iterator iterator;
     typedef typename storage_type::const_iterator const_iterator;
     typedef typename storage_type::size_type size_type;
-
-    struct resizer {
-      storage_type *storage;
-      resizer(storage_type *s)
-        : storage(s) {}
-      void operator()(size_type n) {
-        storage->resize(n);
-      }
-    };
-
-    struct inserter {
-      storage_type *storage;
-      inserter(storage_type *s)
-        : storage(s) {}
-      void operator()(size_type pos, size_type n) {
-        storage->insert(storage->begin() + pos, n, value_type());
-      }
-    };
-
-    struct eraser {
-      storage_type *storage;
-      eraser(storage_type *s)
-        : storage(s) {}
-      void operator()(size_type first, size_type last) {
-        storage->erase(storage->begin()+first, storage->begin()+last);
-      }
-    };
 
     column_data_core(column_synchronizer sync)
       : storage_(sync.size()),
@@ -247,6 +224,33 @@ namespace dials { namespace framework {
     }
 
   private:
+
+    struct resizer {
+      storage_type *storage;
+      resizer(storage_type *s)
+        : storage(s) {}
+      void operator()(size_type n) {
+        storage->resize(n);
+      }
+    };
+
+    struct inserter {
+      storage_type *storage;
+      inserter(storage_type *s)
+        : storage(s) {}
+      void operator()(size_type pos, size_type n) {
+        storage->insert(storage->begin() + pos, n, value_type());
+      }
+    };
+
+    struct eraser {
+      storage_type *storage;
+      eraser(storage_type *s)
+        : storage(s) {}
+      void operator()(size_type first, size_type last) {
+        storage->erase(storage->begin()+first, storage->begin()+last);
+      }
+    };
 
     storage_type storage_;
     column_synchronizer sync_;
