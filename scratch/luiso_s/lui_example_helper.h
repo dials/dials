@@ -213,11 +213,11 @@ namespace dials { namespace scratch {
     flex_double total(flex_grid<>(nrow_tot, ncol_tot),0);
     for (int row = 0; row < nrow_tot; row++) {
       for (int col = 0; col < ncol_tot; col++) {
-	total(row,col) = tmp_total(row,col);
+        total(row,col) = tmp_total(row,col);
       }
     }
-    
-    
+
+
     //double total[nrow_tot, ncol_tot];
     //flex_double total(tmp_total);
     double centr_col = descriptor(0,0);
@@ -249,7 +249,7 @@ namespace dials { namespace scratch {
             x_contrib = 1;
             xpos_ex = tot_col;
           }
-	  
+
           y_pix_pos=tot_row - int(tot_row);
           if (y_pix_pos < 0.5) {
             y_contrib = 0.5 + y_pix_pos;
@@ -261,8 +261,8 @@ namespace dials { namespace scratch {
             y_contrib = 1;
             ypos_ex = tot_row;
           }
-	  int pos_tot_row = int(tot_row);
-	  int pos_tot_col = int(tot_col);
+          int pos_tot_row = int(tot_row);
+          int pos_tot_col = int(tot_col);
           // Adding corresponding contributions to each pixel
           total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale * x_contrib * y_contrib;
           if( xpos_ex != tot_col or ypos_ex != tot_row ){

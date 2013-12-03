@@ -251,7 +251,7 @@ def simple_gaussian_spots(params):
 #  - include input of beam, crystal, detector, scan, goniometer models so that
 #    the predictions are realistic
 #  - worth noting that if I can make this work it could form the kernel of old
-#    deadly - taking all of the dials models as input along with some profile 
+#    deadly - taking all of the dials models as input along with some profile
 #    parameters and generating an image of a spot...
 
 def background_xds(rlist):

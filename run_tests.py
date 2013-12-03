@@ -19,6 +19,7 @@ tst_list = (
     "$D/test/algorithms/spot_prediction/tst_spot_prediction.py",
     "$D/test/algorithms/spot_prediction/tst_scan_varying_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_reeke.py",
+    "$D/test/algorithms/background/tst_background_subtraction.py",
     "$D/test/algorithms/integration/profile/tst_grid_sampler.py",
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",
