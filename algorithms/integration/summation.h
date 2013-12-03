@@ -34,32 +34,12 @@ namespace dials { namespace algorithms {
      * Perform the summation integration
      * @param signal The signal array
      * @param background The background array
-     */
-    Summation(const af::const_ref<FloatType> &signal,
-              const af::const_ref<FloatType> &background) {
-      init(signal, background);
-    }
-
-    /**
-     * Perform the summation integration
-     * @param signal The signal array
-     * @param background The background array
-     * @param mask The mask array
+     * @param n_background The number of counts used to calculate background
      */
     Summation(const af::const_ref<FloatType> &signal,
               const af::const_ref<FloatType> &background,
-              const af::const_ref<bool> &mask) {
-      init(signal, background, mask);
-    }
-
-    /**
-     * Perform the summation integration
-     * @param signal The signal array
-     * @param background The background array
-     */
-    Summation(const af::const_ref< FloatType, af::c_grid<2> > &signal,
-              const af::const_ref< FloatType, af::c_grid<2> > &background) {
-      init(signal.as_1d(), background.as_1d());
+              std::size_t n_background) {
+      init(signal, background, n_background);
     }
 
     /**
@@ -67,21 +47,25 @@ namespace dials { namespace algorithms {
      * @param signal The signal array
      * @param background The background array
      * @param mask The mask array
+     * @param n_background The number of counts used to calculate background
+     */
+    Summation(const af::const_ref<FloatType> &signal,
+              const af::const_ref<FloatType> &background,
+              const af::const_ref<bool> &mask,
+              std::size_t n_background) {
+      init(signal, background, mask, n_background);
+    }
+
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     * @param n_background The number of counts used to calculate background
      */
     Summation(const af::const_ref< FloatType, af::c_grid<2> > &signal,
               const af::const_ref< FloatType, af::c_grid<2> > &background,
-              const af::const_ref< bool, af::c_grid<2> > &mask) {
-      init(signal.as_1d(), background.as_1d(), mask.as_1d());
-    }
-
-    /**
-     * Perform the summation integration
-     * @param signal The signal array
-     * @param background The background array
-     */
-    Summation(const af::const_ref< FloatType, af::c_grid<3> > &signal,
-              const af::const_ref< FloatType, af::c_grid<3> > &background) {
-      init(signal.as_1d(), background.as_1d());
+              std::size_t n_background) {
+      init(signal.as_1d(), background.as_1d(), n_background);
     }
 
     /**
@@ -89,11 +73,39 @@ namespace dials { namespace algorithms {
      * @param signal The signal array
      * @param background The background array
      * @param mask The mask array
+     * @param n_background The number of counts used to calculate background
+     */
+    Summation(const af::const_ref< FloatType, af::c_grid<2> > &signal,
+              const af::const_ref< FloatType, af::c_grid<2> > &background,
+              const af::const_ref< bool, af::c_grid<2> > &mask,
+              std::size_t n_background) {
+      init(signal.as_1d(), background.as_1d(), mask.as_1d(), n_background);
+    }
+
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     * @param n_background The number of counts used to calculate background
      */
     Summation(const af::const_ref< FloatType, af::c_grid<3> > &signal,
               const af::const_ref< FloatType, af::c_grid<3> > &background,
-              const af::const_ref< bool, af::c_grid<3> > &mask) {
-      init(signal.as_1d(), background.as_1d(), mask.as_1d());
+              std::size_t n_background) {
+      init(signal.as_1d(), background.as_1d(), n_background);
+    }
+
+    /**
+     * Perform the summation integration
+     * @param signal The signal array
+     * @param background The background array
+     * @param mask The mask array
+     * @param n_background The number of counts used to calculate background
+     */
+    Summation(const af::const_ref< FloatType, af::c_grid<3> > &signal,
+              const af::const_ref< FloatType, af::c_grid<3> > &background,
+              const af::const_ref< bool, af::c_grid<3> > &mask,
+              std::size_t n_background) {
+      init(signal.as_1d(), background.as_1d(), mask.as_1d(), n_background);
     }
 
     /**
@@ -149,7 +161,8 @@ namespace dials { namespace algorithms {
      * @returns the variance on the background intensity
      */
     FloatType background_variance() const {
-      return background_variance_;
+      double m_n = (double)n_signal_ / (double)n_background_;
+      return background_variance_ * m_n;
     }
 
     /**
@@ -159,20 +172,41 @@ namespace dials { namespace algorithms {
       return std::sqrt(background_variance());
     }
 
+    /**
+     * @returns the number of background pixels
+     */
+    std::size_t n_background() const {
+      return n_background_;
+    }
+
+    /**
+     * @returns the number of signal pixels
+     */
+    std::size_t n_signal() const {
+      return n_signal_;
+    }
+
   private:
 
     /**
      * Integrate the intensity
      * @param signal The signal to integrate
      * @param background The background to the signal
+     * @param n_background The number of counts used to calculate background
      */
     void init(const af::const_ref<FloatType> &signal,
-              const af::const_ref<FloatType> &background)
+              const af::const_ref<FloatType> &background,
+              std::size_t n_background)
     {
       // Check both arrays are the same size
+      DIALS_ASSERT(n_background > 0);
       DIALS_ASSERT(signal.size() == background.size());
 
+      // Save the number of background pixels
+      n_background_ = n_background;
+
       // Calculate the signal and background intensity
+      n_signal_ = signal.size();
       signal_intensity_ = 0.0;
       background_intensity_ = 0.0;
       for (std::size_t i = 0; i < signal.size(); ++i) {
@@ -190,22 +224,30 @@ namespace dials { namespace algorithms {
      * @param signal The signal to integrate
      * @param background The background to the signal
      * @param mask The mask to the signal
+     * @param n_background The number of counts used to calculate background
      */
     void init(const af::const_ref<FloatType> &signal,
               const af::const_ref<FloatType> &background,
-              const af::const_ref<bool> &mask)
+              const af::const_ref<bool> &mask,
+              std::size_t n_background)
     {
       // Check both arrays are the same size
+      DIALS_ASSERT(n_background > 0);
       DIALS_ASSERT(signal.size() == background.size());
       DIALS_ASSERT(signal.size() == mask.size());
 
+      // Save the number of background pixels
+      n_background_ = n_background;
+
       // Calculate the signal and background intensity
+      n_signal_ = 0;
       signal_intensity_ = 0.0;
       background_intensity_ = 0.0;
       for (std::size_t i = 0; i < signal.size(); ++i) {
         if (mask[i]) {
           signal_intensity_ += signal[i];
           background_intensity_ += background[i];
+          n_signal_++;
         }
       }
 
@@ -218,6 +260,8 @@ namespace dials { namespace algorithms {
     FloatType signal_variance_;
     FloatType background_intensity_;
     FloatType background_variance_;
+    std::size_t n_background_;
+    std::size_t n_signal_;
   };
 
 }}

@@ -27,35 +27,47 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_ <SummationType> ("Summation", no_init)
       .def(init <const af::const_ref<FloatType>&,
-                 const af::const_ref<FloatType>&>((
+                 const af::const_ref<FloatType>&,
+                 std::size_t>((
           arg("signal"),
-          arg("background"))))
+          arg("background"),
+          arg("n_background"))))
       .def(init <const af::const_ref<FloatType>&,
                  const af::const_ref<FloatType>&,
-                 const af::const_ref<bool>&>((
+                 const af::const_ref<bool>&,
+                 std::size_t>((
           arg("signal"),
           arg("background"),
-          arg("mask"))))
-      .def(init <const af::const_ref< FloatType, af::c_grid<2> >&,
-                 const af::const_ref< FloatType, af::c_grid<2> >&>((
-          arg("signal"),
-          arg("background"))))
+          arg("mask"),
+          arg("n_background"))))
       .def(init <const af::const_ref< FloatType, af::c_grid<2> >&,
                  const af::const_ref< FloatType, af::c_grid<2> >&,
-                 const af::const_ref< bool, af::c_grid<2> >&>((
+                 std::size_t>((
           arg("signal"),
           arg("background"),
-          arg("mask"))))
-      .def(init <const af::const_ref< FloatType, af::c_grid<3> >&,
-                 const af::const_ref< FloatType, af::c_grid<3> >&>((
+          arg("n_background"))))
+      .def(init <const af::const_ref< FloatType, af::c_grid<2> >&,
+                 const af::const_ref< FloatType, af::c_grid<2> >&,
+                 const af::const_ref< bool, af::c_grid<2> >&,
+                 std::size_t>((
           arg("signal"),
-          arg("background"))))
+          arg("background"),
+          arg("mask"),
+          arg("n_background"))))
       .def(init <const af::const_ref< FloatType, af::c_grid<3> >&,
                  const af::const_ref< FloatType, af::c_grid<3> >&,
-                 const af::const_ref< bool, af::c_grid<3> >&>((
+                 std::size_t>((
           arg("signal"),
           arg("background"),
-          arg("mask"))))
+          arg("n_background"))))
+      .def(init <const af::const_ref< FloatType, af::c_grid<3> >&,
+                 const af::const_ref< FloatType, af::c_grid<3> >&,
+                 const af::const_ref< bool, af::c_grid<3> >&,
+                 std::size_t>((
+          arg("signal"),
+          arg("background"),
+          arg("mask"),
+          arg("n_background"))))
       .def("intensity",
         &SummationType::intensity)
       .def("variance",
@@ -73,52 +85,62 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("background_variance",
         &SummationType::background_variance)
       .def("background_standard_deviation",
-        &SummationType::background_standard_deviation);
+        &SummationType::background_standard_deviation)
+      .def("n_background",
+        &SummationType::n_background)
+      .def("n_signal",
+        &SummationType::n_signal);
   }
 
   template <typename FloatType>
   Summation<FloatType> make_summation_1d(
     const af::const_ref<FloatType> &image,
-    const af::const_ref<FloatType> &background) {
-    return Summation<FloatType>(image, background);
+    const af::const_ref<FloatType> &background,
+    std::size_t n_background) {
+    return Summation<FloatType>(image, background, n_background);
   }
 
   template <typename FloatType>
   Summation<FloatType> make_summation_1d_bg(
     const af::const_ref<FloatType> &image,
     const af::const_ref<FloatType> &background,
-    const af::const_ref<bool> &mask) {
-    return Summation<FloatType>(image, background, mask);
+    const af::const_ref<bool> &mask,
+    std::size_t n_background) {
+    return Summation<FloatType>(image, background, mask, n_background);
   }
 
   template <typename FloatType>
   Summation<FloatType> make_summation_2d(
     const af::const_ref<FloatType, af::c_grid<2> > &image,
-    const af::const_ref<FloatType, af::c_grid<2> > &background) {
-    return Summation<FloatType>(image, background);
+    const af::const_ref<FloatType, af::c_grid<2> > &background,
+    std::size_t n_background) {
+    return Summation<FloatType>(image, background, n_background);
   }
 
   template <typename FloatType>
   Summation<FloatType> make_summation_2d_bg(
     const af::const_ref<FloatType, af::c_grid<2> > &image,
     const af::const_ref<FloatType, af::c_grid<2> > &background,
-    const af::const_ref<bool, af::c_grid<2> > &mask) {
-    return Summation<FloatType>(image, background, mask);
+    const af::const_ref<bool, af::c_grid<2> > &mask,
+    std::size_t n_background) {
+    return Summation<FloatType>(image, background, mask, n_background);
   }
 
   template <typename FloatType>
   Summation<FloatType> make_summation_3d(
     const af::const_ref<FloatType, af::c_grid<3> > &image,
-    const af::const_ref<FloatType, af::c_grid<3> > &background) {
-    return Summation<FloatType>(image, background);
+    const af::const_ref<FloatType, af::c_grid<3> > &background,
+    std::size_t n_background) {
+    return Summation<FloatType>(image, background, n_background);
   }
 
   template <typename FloatType>
   Summation<FloatType> make_summation_3d_bg(
     const af::const_ref<FloatType, af::c_grid<3> > &image,
     const af::const_ref<FloatType, af::c_grid<3> > &background,
-    const af::const_ref<bool, af::c_grid<3> > &mask) {
-    return Summation<FloatType>(image, background, mask);
+    const af::const_ref<bool, af::c_grid<3> > &mask,
+    std::size_t n_background) {
+    return Summation<FloatType>(image, background, mask, n_background);
   }
 
   template <typename FloatType>
@@ -127,35 +149,41 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("integrate_by_summation",
       &make_summation_1d<FloatType>, (
         arg("image"),
-        arg("background")));
+        arg("background"),
+        arg("n_background")));
 
     def("integrate_by_summation",
       &make_summation_1d_bg<FloatType>, (
         arg("image"),
         arg("background"),
-        arg("mask")));
+        arg("mask"),
+        arg("n_background")));
 
     def("integrate_by_summation",
       &make_summation_2d<FloatType>, (
         arg("image"),
-        arg("background")));
+        arg("background"),
+        arg("n_background")));
 
     def("integrate_by_summation",
       &make_summation_2d_bg<FloatType>, (
         arg("image"),
         arg("background"),
-        arg("mask")));
+        arg("mask"),
+        arg("n_background")));
 
     def("integrate_by_summation",
       &make_summation_3d<FloatType>, (
         arg("image"),
-        arg("background")));
+        arg("background"),
+        arg("n_background")));
 
     def("integrate_by_summation",
       &make_summation_3d_bg<FloatType>, (
         arg("image"),
         arg("background"),
-        arg("mask")));
+        arg("mask"),
+        arg("n_background")));
   }
 
   void summation_with_reflection(Reflection &r) {
@@ -164,16 +192,22 @@ namespace dials { namespace algorithms { namespace boost_python {
       r.get_shoebox_mask().const_ref();
     af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor(),
       af::init_functor_null<bool>());
+    std::size_t n_background = 0;
     for (std::size_t i = 0; i < mask.size(); ++i) {
       mask[i] = (shoebox_mask[i] & shoebox::Valid &&
                  shoebox_mask[i] & shoebox::Foreground) ? true : false;
+
+      if (shoebox_mask[i] & shoebox::BackgroundUsed) {
+        n_background++;
+      }
     }
 
     // Integrate the reflection
     Summation<Reflection::float_type> result(
       r.get_shoebox().const_ref(),
       r.get_shoebox_background().const_ref(),
-      mask.const_ref());
+      mask.const_ref(),
+      n_background);
 
     // Set the intensity and variance
     r.set_intensity(result.intensity());

@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
         reflection.get_transformed_shoebox_background().const_ref();
 
       // Integrate the reflection
-      integrator result = integrator(c, b);
+      integrator result = integrator(c, b, 0);
       reflection.set_intensity(result.intensity());
       reflection.set_intensity_variance(result.variance());
     }
