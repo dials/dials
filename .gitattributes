@@ -574,6 +574,7 @@ scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/index_3D_FFT_simple.py -text
 scratch/rjg/run_indexing_api.py -text
 scratch/rjg/tst_index.py -text
+scratch/rjg/unit_cell_refinement.py -text
 test/SConscript -text
 test/__init__.py -text
 test/algorithms/__init__.py -text
