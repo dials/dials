@@ -98,13 +98,12 @@ class SpotFrame(XrayFrame) :
         nx = x1 - x0 # size of reflection box in x-direction
         ny = y1 - y0 # size of reflection box in y-direction
         nz = z1 - z0 # number of frames this spot appears on
-        if self.settings.show_all_pix:
-          shoebox_mask = reflection.shoebox_mask
+        if self.settings.show_all_pix and reflection.shoebox_mask.size() > 0:
           for ix in range(nx):
             for iy in range(ny):
               for iz in range(nz):
                 if iz + z0 != i_frame: continue
-                if shoebox_mask[iz, iy, ix] > 0:
+                if reflection.shoebox_mask[iz, iy, ix] > 0:
                   x_, y_ = map_coords(
                     ix + x0 + 0.5, iy + y0 + 0.5, reflection.panel_number)
                   all_pix_data.append((x_, y_))
@@ -118,7 +117,7 @@ class SpotFrame(XrayFrame) :
                    (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
           shoebox_data.extend(lines)
 
-        if self.settings.show_max_pix:
+        if self.settings.show_max_pix and reflection.shoebox.size() > 0:
           shoebox = reflection.shoebox
           offset = flex.max_index(shoebox)
           offset, k = divmod(offset, shoebox.all()[2])
