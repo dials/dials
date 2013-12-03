@@ -335,12 +335,12 @@ namespace dials { namespace framework {
   public:
 
     typedef std::map<std::string, boost::any> map_type;
-    typedef typename map_type::key_type key_type;
-    typedef typename map_type::mapped_type mapped_type;
-    typedef typename map_type::value_type map_value_type;
-    typedef typename map_type::iterator iterator;
-    typedef typename map_type::const_iterator const_iterator;
-    typedef typename map_type::size_type size_type;
+    typedef map_type::key_type key_type;
+    typedef map_type::mapped_type mapped_type;
+    typedef map_type::value_type map_value_type;
+    typedef map_type::iterator iterator;
+    typedef map_type::const_iterator const_iterator;
+    typedef map_type::size_type size_type;
 
   private:
 
