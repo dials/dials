@@ -104,7 +104,7 @@ spotfinder
     }
 
   }
-  save_shoeboxes = False
+  save_shoeboxes = True
     .type = bool
     .help = "Save the raw pixel values inside the reflection shoeboxes."
   image_viewer = False
