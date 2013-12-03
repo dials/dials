@@ -172,9 +172,11 @@ def R(calc, obs, scale = None):
   if not scale:
     scale = sum(obs) / sum(calc)
 
+  var = sum([(scale * c - o) ** 2 for c, o in zip(calc, obs)]) / len(calc)
+
   return sum([math.fabs(math.fabs(o) - math.fabs(scale * c)) \
               for c, o in zip(calc, obs)]) / \
-              sum([math.fabs(o) for o in obs]), scale
+              sum([math.fabs(o) for o in obs]), scale, var
 
 def meansd(values):
   import math
@@ -218,6 +220,8 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
   DIALS = []
   HKL = []
   XYZ = []
+  SIGMA_XDS = []
+  SIGMA_DIALS = []
 
   # perform the analysis
   for j, hkl in enumerate(dhkl):
@@ -227,12 +231,17 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
       DIALS.append(di[j])
       HKL.append(hkl)
       XYZ.append(dxyz[j])
+      SIGMA_XDS.append(xsigi[c])
+      SIGMA_DIALS.append(dsigi[j])
 
-  compare = CompareIntensity(uc, HKL, XYZ, XDS, DIALS)
-  compare.plot_scale_factor_vs_resolution()
-  compare.plot_scale_factor_vs_frame_number()
+  compare = CompareIntensity(uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS)
+#  compare.plot_scale_factor_vs_resolution()
+#  compare.plot_scale_factor_vs_frame_number()
   compare.plot_chunked_statistics_vs_resolution()
   compare.plot_chunked_statistics_vs_frame_number()
+  compare.plot_chunked_statistics_vs_i_over_sigma()
+  compare.plot_chunked_i_over_sigma_vs_frame_number()
+  compare.plot_chunked_resolution_vs_frame_number()
 
 
 def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
@@ -257,11 +266,13 @@ def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
 
 class CompareIntensity(object):
 
-  def __init__(self, uc, hkl, xyz, i_xds, i_dials):
+  def __init__(self, uc, hkl, xyz, i_xds, i_dials, sigma_xds, sigma_dials):
     self.hkl = hkl
     self.xyz = xyz
     self.i_xds = i_xds
+    self.sigma_xds = sigma_xds
     self.i_dials = i_dials
+    self.sigma_dials = sigma_dials
     self.d = [uc.d(h) for h in self.hkl]
     self.scale = [d / x for d, x in zip(self.i_dials, self.i_xds)]
 
@@ -308,6 +319,7 @@ class CompareIntensity(object):
     ccs = []
     rs = []
     ss = []
+    vs = []
     for chunk in chunks:
         xds = i_xds[chunk[0]:chunk[1]]
         dials = i_dials[chunk[0]:chunk[1]]
@@ -315,12 +327,14 @@ class CompareIntensity(object):
         if len(xds) < 100:
           break
         c = cc(dials, xds)
-        r, s = R(dials, xds)
-        print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
-          (chunk[0], len(xds), min(resols), max(resols), c, r, s)
+        r, s, v = R(dials, xds)
+        import math
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f %.3f' % \
+          (chunk[0], len(xds), min(resols), max(resols), c, r, s, math.sqrt(v))
         ccs.append(c)
         rs.append(r)
         ss.append(s)
+        vs.append(math.sqrt(v))
     chunks = [j for j in range(len(chunks))]
     chunks = chunks[:len(rs)]
 
@@ -331,6 +345,7 @@ class CompareIntensity(object):
     pyplot.plot(chunks, ccs, label = 'CC')
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
+    pyplot.plot(chunks, vs, label = 'stddev')
     pyplot.legend()
     pyplot.savefig('plot-statistics-vs-res.png')
     pyplot.close()
@@ -348,21 +363,66 @@ class CompareIntensity(object):
     for i, z in enumerate(frame):
       if z > (len(chunks) * 10):
         chunks.append(i)
-    print chunks
+
     chunks = list(zip(chunks[:-1], chunks[1:]))
+    ccs = []
+    rs = []
+    ss = []
+    vs = []
+    for chunk in chunks:
+        xds = i_xds[chunk[0]:chunk[1]]
+        dials = i_dials[chunk[0]:chunk[1]]
+        frames = frame[chunk[0]:chunk[1]]
+        if len(xds) < 10:
+          break
+        c = cc(dials, xds)
+        r, s, v = R(dials, xds)
+        import math
+        print '%7d %4d %.3f %.3f %.3f %.3f %.3f %.3f' % \
+          (chunk[0], len(xds), min(frames), max(frames), c, r, s, math.sqrt(v))
+        ccs.append(c)
+        rs.append(r)
+        ss.append(s)
+        vs.append(math.sqrt(v))
+    chunks = [j for j in range(len(chunks))]
+    chunks = chunks[:len(rs)]
+
+    from matplotlib import pyplot
+    pyplot.xlabel('Chunk')
+    pyplot.ylabel('Statistic')
+    pyplot.title('Statistics for 1000 reflection-pair chunks')
+    pyplot.plot(chunks, ccs, label = 'CC')
+    pyplot.plot(chunks, rs, label = 'R')
+    pyplot.plot(chunks, ss, label = 'K')
+    pyplot.plot(chunks, vs, label = 'stddev')
+    pyplot.legend()
+    pyplot.savefig('plot-statistics-vs-frame.png')
+    pyplot.close()
+
+  def plot_chunked_statistics_vs_i_over_sigma(self):
+    print "plot_chunked_statistics_vs_frame_number"
+    # Sort by resolution
+    i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
+    index = sorted(range(len(i_over_s)), key=lambda i: i_over_s[i])
+    i_xds = [self.i_xds[i] for i in index]
+    i_dials = [self.i_dials[i] for i in index]
+    i_over_s = [i_over_s[i] for i in index]
+
+    # Get stats for chunks
+    chunks = [(i, i + 1000) for i in range(0, len(self.hkl), 1000)]
     ccs = []
     rs = []
     ss = []
     for chunk in chunks:
         xds = i_xds[chunk[0]:chunk[1]]
         dials = i_dials[chunk[0]:chunk[1]]
-        frames = frame[chunk[0]:chunk[1]]
+        ios = i_over_s[chunk[0]:chunk[1]]
         if len(xds) < 100:
           break
         c = cc(dials, xds)
-        r, s = R(dials, xds)
+        r, s, v = R(dials, xds)
         print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % \
-          (chunk[0], len(xds), min(frames), max(frames), c, r, s)
+          (chunk[0], len(xds), min(ios), max(ios), c, r, s)
         ccs.append(c)
         rs.append(r)
         ss.append(s)
@@ -377,9 +437,79 @@ class CompareIntensity(object):
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
     pyplot.legend()
-    pyplot.savefig('plot-statistics-vs-frame.png')
+    pyplot.savefig('plot-statistics-vs-i_over_s.png')
     pyplot.close()
 
+  def plot_chunked_i_over_sigma_vs_frame_number(self):
+    print "plot_chunked_i_over_sigma__vs_frame_number"
+    # Sort by resolution
+    index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
+    i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
+    i_over_s = [i_over_s[i] for i in index]
+    frame = [self.xyz[i][2] for i in index]
+
+    # Get stats for chunks
+    chunks = [0]
+    for i, z in enumerate(frame):
+      if z > (len(chunks) * 10):
+        chunks.append(i)
+
+    chunks = list(zip(chunks[:-1], chunks[1:]))
+    mean_i_over_sigma = []
+    for chunk in chunks:
+        ios = i_over_s[chunk[0]:chunk[1]]
+        frames = frame[chunk[0]:chunk[1]]
+        if len(ios) < 10:
+          break
+        mios = sum(ios) / len(ios)
+        print '%7d %4d %.3f %.3f %.3f' % \
+          (chunk[0], len(ios), min(frames), max(frames), mios)
+        mean_i_over_sigma.append(mios)
+    chunks = [j for j in range(len(chunks))]
+    chunks = chunks[:len(mean_i_over_sigma)]
+
+    from matplotlib import pyplot
+    pyplot.xlabel('Chunk')
+    pyplot.ylabel('Statistic')
+    pyplot.title('Statistics for 1000 reflection-pair chunks')
+    pyplot.plot(chunks, mean_i_over_sigma)
+    pyplot.savefig('plot-i-over-sigma-vs-frame.png')
+    pyplot.close()
+
+  def plot_chunked_resolution_vs_frame_number(self):
+    print "plot_chunked_resolution__vs_frame_number"
+    # Sort by resolution
+    index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
+    d = [self.d[i] for i in index]
+    frame = [self.xyz[i][2] for i in index]
+
+    # Get stats for chunks
+    chunks = [0]
+    for i, z in enumerate(frame):
+      if z > (len(chunks) * 10):
+        chunks.append(i)
+
+    chunks = list(zip(chunks[:-1], chunks[1:]))
+    mean_d = []
+    for chunk in chunks:
+        dd = d[chunk[0]:chunk[1]]
+        frames = frame[chunk[0]:chunk[1]]
+        if len(dd) < 10:
+          break
+        md = sum(dd) / len(dd)
+        print '%7d %4d %.3f %.3f %.3f' % \
+          (chunk[0], len(dd), min(frames), max(frames), md)
+        mean_d.append(md)
+    chunks = [j for j in range(len(chunks))]
+    chunks = chunks[:len(mean_d)]
+
+    from matplotlib import pyplot
+    pyplot.xlabel('Chunk')
+    pyplot.ylabel('Statistic')
+    pyplot.title('Statistics for 1000 reflection-pair chunks')
+    pyplot.plot(chunks, mean_d)
+    pyplot.savefig('plot-resolution-vs-frame.png')
+    pyplot.close()
 
 if __name__ == '__main__':
   import sys
