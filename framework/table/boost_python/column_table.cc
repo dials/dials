@@ -17,10 +17,10 @@ namespace dials { namespace framework { namespace boost_python {
 
   using namespace boost::python;
 
-  static
-  void get_data(const column_table &table, const std::string key) {
+//  static
+//  void get_data(const column_table &table, const std::string key) {
 
-  }
+//  }
 
   void export_column_table() {
     class_<column_table>("column_table")
