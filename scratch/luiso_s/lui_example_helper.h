@@ -267,8 +267,8 @@ namespace dials { namespace scratch {
             y_contrib = 1;
             ypos_ex = tot_row;
           }
-	        int pos_tot_row = int(tot_row);
-	        int pos_tot_col = int(tot_col);
+                int pos_tot_row = int(tot_row);
+                int pos_tot_col = int(tot_col);
           // Adding corresponding contributions to each pixel
           total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale
             * x_contrib * y_contrib;

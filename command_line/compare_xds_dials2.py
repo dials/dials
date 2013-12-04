@@ -222,6 +222,8 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
   XYZ = []
   SIGMA_XDS = []
   SIGMA_DIALS = []
+  XLP = []
+  DLP = []
 
   # perform the analysis
   for j, hkl in enumerate(dhkl):
@@ -233,8 +235,12 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
       XYZ.append(dxyz[j])
       SIGMA_XDS.append(xsigi[c])
       SIGMA_DIALS.append(dsigi[j])
+      XLP.append(xlp[c])
+      DLP.append(dlp[j])
 
-  compare = CompareIntensity(uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS)
+  print "Found %d matches" % len(XDS)
+
+  compare = CompareIntensity(uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS, XLP, DLP)
 #  compare.plot_scale_factor_vs_resolution()
 #  compare.plot_scale_factor_vs_frame_number()
   compare.plot_chunked_statistics_vs_resolution()
@@ -242,7 +248,7 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
   compare.plot_chunked_statistics_vs_i_over_sigma()
   compare.plot_chunked_i_over_sigma_vs_frame_number()
   compare.plot_chunked_resolution_vs_frame_number()
-
+  compare.plot_chunked_lp_vs_frame_number()
 
 def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
   '''Derive a reindexing matrix to go from the orientation matrix used
@@ -266,7 +272,7 @@ def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
 
 class CompareIntensity(object):
 
-  def __init__(self, uc, hkl, xyz, i_xds, i_dials, sigma_xds, sigma_dials):
+  def __init__(self, uc, hkl, xyz, i_xds, i_dials, sigma_xds, sigma_dials, xlp, dlp):
     self.hkl = hkl
     self.xyz = xyz
     self.i_xds = i_xds
@@ -275,6 +281,8 @@ class CompareIntensity(object):
     self.sigma_dials = sigma_dials
     self.d = [uc.d(h) for h in self.hkl]
     self.scale = [d / x for d, x in zip(self.i_dials, self.i_xds)]
+    self.xlp = xlp
+    self.dlp = dlp
 
   def plot_scale_factor_vs_resolution(self):
     print "plot_scale_factor_vs_resolution"
@@ -345,7 +353,7 @@ class CompareIntensity(object):
     pyplot.plot(chunks, ccs, label = 'CC')
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
-    pyplot.plot(chunks, vs, label = 'stddev')
+#    pyplot.plot(chunks, vs, label = 'stddev')
     pyplot.legend()
     pyplot.savefig('plot-statistics-vs-res.png')
     pyplot.close()
@@ -394,7 +402,7 @@ class CompareIntensity(object):
     pyplot.plot(chunks, ccs, label = 'CC')
     pyplot.plot(chunks, rs, label = 'R')
     pyplot.plot(chunks, ss, label = 'K')
-    pyplot.plot(chunks, vs, label = 'stddev')
+    #pyplot.plot(chunks, vs, label = 'stddev')
     pyplot.legend()
     pyplot.savefig('plot-statistics-vs-frame.png')
     pyplot.close()
@@ -403,7 +411,7 @@ class CompareIntensity(object):
     print "plot_chunked_statistics_vs_frame_number"
     # Sort by resolution
     i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
-    index = sorted(range(len(i_over_s)), key=lambda i: i_over_s[i])
+    index = list(reversed(sorted(range(len(i_over_s)), key=lambda i: i_over_s[i])))
     i_xds = [self.i_xds[i] for i in index]
     i_dials = [self.i_dials[i] for i in index]
     i_over_s = [i_over_s[i] for i in index]
@@ -510,6 +518,44 @@ class CompareIntensity(object):
     pyplot.plot(chunks, mean_d)
     pyplot.savefig('plot-resolution-vs-frame.png')
     pyplot.close()
+
+  def plot_chunked_lp_vs_frame_number(self):
+    print "plot_chunked_lp__vs_frame_number"
+    # Sort by resolution
+    index = sorted(range(len(self.xyz)), key=lambda i: self.xyz[i][2])
+    xlp = [self.xlp[i] for i in index]
+    dlp = [self.dlp[i] for i in index]
+    frame = [self.xyz[i][2] for i in index]
+
+    # Get stats for chunks
+    chunks = [0]
+    for i, z in enumerate(frame):
+      if z > (len(chunks) * 10):
+        chunks.append(i)
+
+    chunks = list(zip(chunks[:-1], chunks[1:]))
+    ss = []
+    for chunk in chunks:
+        XLP = xlp[chunk[0]:chunk[1]]
+        DLP = dlp[chunk[0]:chunk[1]]
+        frames = frame[chunk[0]:chunk[1]]
+        if len(XLP) < 10:
+          break
+        r, s, v0 = R(DLP, XLP)
+        print '%7d %4d %.3f %.3f %.3f' % \
+          (chunk[0], len(xlp), min(frames), max(frames), s)
+        ss.append(s)
+    chunks = [j for j in range(len(chunks))]
+    chunks = chunks[:len(ss)]
+
+    from matplotlib import pyplot
+    pyplot.xlabel('Chunk')
+    pyplot.ylabel('Statistic')
+    pyplot.title('scale LP for 1000 reflection-pair chunks')
+    pyplot.plot(chunks, ss)
+    pyplot.savefig('plot-lp-vs-frame.png')
+    pyplot.close()
+
 
 if __name__ == '__main__':
   import sys
