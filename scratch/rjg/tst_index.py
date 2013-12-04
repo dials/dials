@@ -109,8 +109,9 @@ class run_one_indexing(object):
     reflections = ray_intersection(sweep.get_detector(), observations)
     from dials.scratch.rjg.index_3D_FFT_simple import master_params
     from dials.algorithms.refinement import RefinerFactory
-    refine = RefinerFactory.from_parameters(master_params, verbosity=0)
-    refine.prepare(sweep, crystal_model, reflections)
+    refine = RefinerFactory.from_parameters_data_models(
+      master_params, reflections, sweep=sweep, crystal=crystal_model,
+      verbosity=0)
     return refine.rmsds()
 
 def exercise_1():
