@@ -37,8 +37,7 @@ class XYPredictionParameterisation(PredictionParameterisation):
 
     ### Calculate various quantities of interest for this reflection
 
-    # FIXME: axis is only here to satisfy the old interface which
-    # has a pretend goniometer
+    # Are we dealing with rotation data or a still?
     if self._axis:
       R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
     else:
