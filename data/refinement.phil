@@ -58,14 +58,6 @@ refinement
         .type = choice
     }
 
-    prediction
-      .help = "prediction equation parameterisation"
-    {
-      space = *XYPhi XY
-        .help = "The space in which the prediction equation parameterisation"
-                "calculates derivatives."
-        .type = choice
-    }
   }
 
   refinery
@@ -99,10 +91,6 @@ refinement
   target
     .help = "Parameters to configure the target function"
   {
-    implementation = *basic XY
-      .help = "The target object type to use. Basic expresses residuals"
-              "in X, Y, Phi space. XY does not use Phi."
-      .type = choice
 
     rmsd_cutoff = *fraction_of_bin_size absolute
       .help = "Method to choose rmsd cutoffs. This is currently either as a"
@@ -127,11 +115,6 @@ refinement
   reflections
     .help = "Parameters used by the reflection manager"
   {
-    implementation = *rotation stills
-      .help = "The reflection manager type to use. rotation is for a"
-              "rotation scan and removes reflections too close to the"
-              "spindle-beam plance. stills does not do this"
-      .type = choice
 
     reflections_per_degree = 50
       .help = "The number of centroids per degree of the sweep to use in"
