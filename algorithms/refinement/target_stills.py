@@ -225,7 +225,7 @@ class ReflectionManagerXY(ReflectionManager):
       fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
       for i in xrange(20):
         e = sl[i]
-        msg = fmt % tuple(e.H + (e.x_resid,
+        msg = fmt % tuple(e.miller_index + (e.x_resid,
                          e.y_resid,
                          e.weight_x_obs,
                          e.weight_y_obs))
