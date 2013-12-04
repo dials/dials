@@ -169,7 +169,7 @@ class Refinery(object):
     print "----------------"
     rmsd_title = " ".join(self._target.rmsd_names)
     n_rmsds = len(self._target.rmsd_names)
-    header = "Step Nref Residual " + rmsd_title
+    header = "Step Nref Objective " + rmsd_title
     if self._verbosity > 1:
       header += " " + "Param_%02d " * len(self._parameters)
       header = header % tuple(range(1, len(self._parameters) + 1))
