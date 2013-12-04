@@ -118,9 +118,6 @@ class ModelParameterisation(object):
     self._is_multi_state = is_multi_state
     return
 
-  #def __len__(self):
-  #    return len(self._param)
-
   def num_free(self):
     """the number of free parameters"""
 
@@ -137,6 +134,7 @@ class ModelParameterisation(object):
     parameters are updated, e.g. at the end of each refinement cycle"""
 
     raise RuntimeError('implement me')
+    return
 
   def get_params(self, only_free = True):
     """Return the internal list of parameters. It is intended that this
@@ -232,6 +230,7 @@ class ModelParameterisation(object):
     # type of this result should match the type of one element of the return
     # value of get_ds_dp.
     raise RuntimeError('implement me')
+    return
 
   def get_ds_dp(self, only_free = True, multi_state_elt=None):
     """get a list of derivatives of the state wrt each parameter, as

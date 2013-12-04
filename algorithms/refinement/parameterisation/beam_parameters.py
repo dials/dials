@@ -64,6 +64,8 @@ class BeamParameterisationOrientation(ModelParameterisation):
     # call compose to calculate all the derivatives
     self.compose()
 
+    return
+
   def compose(self):
 
     # extract direction from the initial state
@@ -110,4 +112,7 @@ class BeamParameterisationOrientation(ModelParameterisation):
     return
 
   def get_state(self):
+
+    # only a single beam exists, so no multi_state_elt argument is allowed
+
     return matrix.col(self._models[0].get_s0())

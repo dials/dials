@@ -234,6 +234,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
   def num_free(self):
     """the number of free parameters"""
+
     return sum(not x.get_fixed() for x in self._param) * self._set_len
 
   # def num_total(self): inherited unchanged from ModelParameterisation
@@ -247,6 +248,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     model class. This should be done once refinement is complete."""
 
     raise RuntimeError('implement me')
+    return
 
   def get_param_vals(self, only_free = True):
     """export the values of the internal list of parameters as a

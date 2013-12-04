@@ -112,6 +112,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # call compose to calculate all the derivatives
     self.compose()
 
+    return
+
   def compose(self):
 
     # extract items from the initial state
@@ -385,7 +387,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
 
   def get_state(self):
 
-    # only a single panel
+    # only a single panel exists, so no multi_state_elt argument is allowed
     panel = (self._models[0])[0]
     return matrix.sqr(panel.get_d_matrix())
 
@@ -501,6 +503,8 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
     # call compose to calculate all the derivatives
     self.compose()
+
+    return
 
   def compose(self):
 

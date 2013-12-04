@@ -53,6 +53,8 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     # call compose to calculate all the derivatives
     self.compose()
 
+    return
+
   def compose(self):
     """calculate state and derivatives"""
 
@@ -98,6 +100,9 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     return
 
   def get_state(self):
+
+    # only a single crystal is parameterised here, so no multi_state_elt
+    # argument is allowed
     return matrix.sqr(self._models[0].get_U())
 
 class CrystalUnitCellParameterisation(ModelParameterisation):
@@ -137,6 +142,8 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     # call compose to calculate all the derivatives
     self.compose()
 
+    return
+
   def compose(self):
     """calculate state and derivatives"""
 
@@ -161,4 +168,7 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     return
 
   def get_state(self):
+
+    # only a single crystal is parameterised here, so no multi_state_elt
+    # argument is allowed
     return matrix.sqr(self._models[0].get_B())

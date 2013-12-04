@@ -18,9 +18,8 @@ from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle
 
 class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisation):
-
-  '''A work-in-progress time-dependent parameterisation for crystal
-  orientation, with angles expressed in mrad'''
+  """A work-in-progress time-dependent parameterisation for crystal
+  orientation, with angles expressed in mrad"""
 
   def __init__(self, crystal, t_range, num_intervals):
 
@@ -67,8 +66,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     return
 
   def compose(self, t):
-
-    '''calculate state and derivatives for model at image number t'''
+    """calculate state and derivatives for model at image number t"""
 
     # Extract orientation from the initial state
     U0 = self._initial_state
@@ -123,16 +121,17 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
     return
 
   def get_state(self):
+    """Return crystal orientation matrix [U] at image number t"""
 
-    '''Return crystal orientation matrix [U] at image number t'''
+    # only a single crystal is parameterised here, so no multi_state_elt
+    # argument is allowed
 
     return self._U_at_t
 
 
 class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisation):
-
-  '''A work-in-progress time-dependent parameterisation for the crystal
-  unit cell'''
+  """A work-in-progress time-dependent parameterisation for the crystal
+  unit cell"""
 
   def __init__(self, crystal, t_range, num_intervals):
 
@@ -171,8 +170,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     return
 
   def compose(self, t):
-
-    '''calculate state and derivatives for model at image number t'''
+    """calculate state and derivatives for model at image number t"""
 
     # extract values and weights at time t using the smoother
     data = [self._smoother.value_weight(t, pset) for pset in self._param]
@@ -200,8 +198,12 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
     # calculate derivatives of state wrt underlying parameters
     self._dstate_dp = [[b * e for e in a] for a, b in zip(dvals_dp, dB_dval)]
 
-  def get_state(self):
+    return
 
-    '''Return crystal orthogonalisation matrix [B] at image number t'''
+  def get_state(self):
+    """Return crystal orthogonalisation matrix [B] at image number t"""
+
+    # only a single crystal is parameterised here, so no multi_state_elt
+    # argument is allowed
 
     return self._B_at_t
