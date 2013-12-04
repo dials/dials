@@ -56,14 +56,9 @@ class ReflectionPredictor(object):
   def update(self):
     """Build a RayPredictor object for the current geometry"""
 
-    if self._gonio == None:
-      self._ray_predictor = RayPredictor(self._beam.get_s0(),
-                          matrix.col((1,0,0)),
-                          self._sweep_range)
-    else:
-      self._ray_predictor = RayPredictor(self._beam.get_s0(),
-                      self._gonio.get_rotation_axis(),
-                      self._sweep_range)
+    self._ray_predictor = RayPredictor(self._beam.get_s0(),
+                    self._gonio.get_rotation_axis(),
+                    self._sweep_range)
     UBs = [x.get_U() * x.get_B() for x in self._crystals.values()]
     self._UBs = dict(zip(self._crystals.keys(), UBs))
 
