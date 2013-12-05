@@ -135,12 +135,12 @@ class RefinerFactory(object):
     if crystals: assert len(crystals) == len(crystal_ids)
 
     # copy the models
-    from dxtbx.model import Beam, Detector
+    from dxtbx.model import Beam
     from dxtbx.array_family import flex
     import copy
-    # use copy constructors
+    # use copy constructor
     beam = Beam(beam)
-    detector = Detector(flex.panel([panel for panel in detector]))
+    detector = copy.deepcopy(detector)
     if crystal:
       crystals = [copy.deepcopy(crystal)]
       crystal_ids = [0]
