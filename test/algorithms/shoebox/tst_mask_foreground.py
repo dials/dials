@@ -102,6 +102,8 @@ class Test(object):
       phi = self.scan.get_angle_from_array_index(z, deg=False)
       rlist[i].beam_vector = s1
       rlist[i].rotation_angle = phi
+      rlist[i].frame_number = z
+      rlist[i].image_coord_px = (x, y)
     self.calculate_bbox(rlist)
     for i in range(num):
       bbox = rlist[i].bounding_box

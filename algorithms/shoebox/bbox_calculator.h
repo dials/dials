@@ -62,6 +62,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         delta_mosaicity_(
           delta_mosaicity.begin(),
           delta_mosaicity.end()) {
+      DIALS_ASSERT(delta_divergence.size() == delta_mosaicity.size());
+      DIALS_ASSERT(delta_divergence.size() == scan_.get_num_images());
       DIALS_ASSERT(delta_divergence.all_gt(0.0));
       DIALS_ASSERT(delta_mosaicity.all_gt(0.0));
     }
