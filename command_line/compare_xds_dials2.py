@@ -1,4 +1,5 @@
 from __future__ import division
+from scipy.interpolate import griddata
 
 import matplotlib
 matplotlib.use('WXAgg')
@@ -35,8 +36,8 @@ def pull_reference(integrate_hkl, d_min = 0.0):
     # need to scale by PEAK stored value to get comparison value
 
     peak = 0.01 * f_tokens[9]
-    i.append(f_tokens[3] * peak)
-    sigi.append(f_tokens[4] * peak)
+    i.append(f_tokens[3] * peak / f_tokens[8])
+    sigi.append(f_tokens[4] * peak / f_tokens[8])
     xyz.append(tuple(f_tokens[5:8]))
     lp.append(f_tokens[8])
 
@@ -131,8 +132,10 @@ def pull_calculated(integrate_pkl):
 
   for r in strong_reflections:
     hkl.append(r.miller_index)
-    i.append(r.corrected_intensity)
-    sigi.append(math.sqrt(r.corrected_intensity_variance))
+#    i.append(r.corrected_intensity)
+#    sigi.append(math.sqrt(r.corrected_intensity_variance))
+    i.append(r.intensity)
+    sigi.append(math.sqrt(r.intensity_variance))
     lp.append(r.corrected_intensity / r.intensity)
     x, y = r.image_coord_px
     z = r.frame_number
@@ -189,6 +192,8 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
   from cctbx.array_family import flex
   from annlib_ext import AnnAdaptor as ann_adaptor
+  from dials.model.serialize import load
+  sweep = load.sweep(sweep_json)
 
   rdx = derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl)
 
@@ -240,15 +245,16 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
   print "Found %d matches" % len(XDS)
 
-  compare = CompareIntensity(uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS, XLP, DLP)
+  compare = CompareIntensity(sweep, uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS, XLP, DLP)
 #  compare.plot_scale_factor_vs_resolution()
 #  compare.plot_scale_factor_vs_frame_number()
-  compare.plot_chunked_statistics_vs_resolution()
-  compare.plot_chunked_statistics_vs_frame_number()
-  compare.plot_chunked_statistics_vs_i_over_sigma()
-  compare.plot_chunked_i_over_sigma_vs_frame_number()
-  compare.plot_chunked_resolution_vs_frame_number()
-  compare.plot_chunked_lp_vs_frame_number()
+#  compare.plot_chunked_statistics_vs_resolution()
+#  compare.plot_chunked_statistics_vs_frame_number()
+#  compare.plot_chunked_statistics_vs_i_over_sigma()
+#  compare.plot_chunked_i_over_sigma_vs_frame_number()
+#  compare.plot_chunked_resolution_vs_frame_number()
+#  compare.plot_chunked_lp_vs_frame_number()
+  compare.plot_scale_vs_x_y()
 
 def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
   '''Derive a reindexing matrix to go from the orientation matrix used
@@ -272,7 +278,8 @@ def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
 
 class CompareIntensity(object):
 
-  def __init__(self, uc, hkl, xyz, i_xds, i_dials, sigma_xds, sigma_dials, xlp, dlp):
+  def __init__(self, sweep, uc, hkl, xyz, i_xds, i_dials, sigma_xds, sigma_dials, xlp, dlp):
+    self.sweep = sweep
     self.hkl = hkl
     self.xyz = xyz
     self.i_xds = i_xds
@@ -554,6 +561,22 @@ class CompareIntensity(object):
     pyplot.title('scale LP for 1000 reflection-pair chunks')
     pyplot.plot(chunks, ss)
     pyplot.savefig('plot-lp-vs-frame.png')
+    pyplot.close()
+
+  def plot_scale_vs_x_y(self):
+
+    points = [(xyz[0], xyz[1]) for xyz in self.xyz]
+    scale = [x / d for x, d in zip(self.xi, self.di)]
+
+    image_size = self.sweep.get_detector()[0].get_image_size()[::-1]
+    grid_points = [(j,i) for j in range(image_size[0]) for i in range(image_size[1])]
+
+    grid = griddata(points, scale, grid_points)
+    grid.shape = image_size
+    from matplotlib import pyplot
+    pyplot.title('scale vs x/y')
+    pyplot.imshow(grid)
+    pyplot.savefig('plot-scale-vs-xy.png')
     pyplot.close()
 
 
