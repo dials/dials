@@ -45,7 +45,7 @@ namespace dials { namespace framework { namespace boost_python {
       T &table,
       const typename T::key_type &key,
       const af::const_ref<U> &a) {
-    std::cout << "Set" << std::endl;
+    table.erase(key);
     column_data<U> col = table[key];
     col.resize(a.size());
     std::copy(a.begin(), a.end(), col.begin());
@@ -79,8 +79,6 @@ namespace dials { namespace framework { namespace boost_python {
   boost::python::object column_table_get_data(
       column_table<T> &table,
       const typename column_table<T>::key_type &key) {
-
-    std::cout << "Get" << std::endl;
 
     typedef typename column_table<T>::mapped_type mapped_type;
     mapped_type col = table[key];

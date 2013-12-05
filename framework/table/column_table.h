@@ -447,12 +447,12 @@ namespace dials { namespace framework {
       template <typename T>
       operator column_data<T>() const{
         map_type& table = t_->table_;
-              iterator it = table.lower_bound(k_);
-              if (it == table.end() || table.key_comp()(k_, it->first)) {
+        iterator it = table.lower_bound(k_);
+        if (it == table.end() || table.key_comp()(k_, it->first)) {
           it = table.insert(it, map_value_type(k_,
             mapped_type(column_data<T>(t_->sync_))));
         }
-              return boost::get< column_data<T> >(it->second);
+        return boost::get< column_data<T> >(it->second);
       }
 
       operator mapped_type() const {

@@ -27,3 +27,6 @@ col1.resize(10000000)
 
 print len(col1), len(col2), len(table), table.nrows()
 
+table["col2"] = flex.double(30)
+
+print len(col1), len(col2), len(table), table.nrows()
