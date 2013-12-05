@@ -214,7 +214,7 @@ class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
   @staticmethod
-  def from_parameters(params, trusted_range):
+  def from_parameters(params):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -227,7 +227,7 @@ class SpotFinderFactory(object):
     from dials.algorithms.peak_finding import SpotFinder
 
     # Configure the algorithm and wrap it up
-    find_spots = SpotFinderFactory.configure_algorithm(params, trusted_range)
+    find_spots = SpotFinderFactory.configure_algorithm(params)
     filter_spots = SpotFinderFactory.configure_filter(params)
     return SpotFinder(
       find_spots=find_spots,
@@ -235,7 +235,7 @@ class SpotFinderFactory(object):
       scan_range=params.spotfinder.scan_range)
 
   @staticmethod
-  def configure_algorithm(params, trusted_range):
+  def configure_algorithm(params):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -254,14 +254,13 @@ class SpotFinderFactory(object):
     mask = SpotFinderFactory.load_image(params.lookup.mask)
 
     # Create the threshold strategy
-    threshold = SpotFinderFactory.configure_threshold(
-      params, gain_map, mask, trusted_range)
+    threshold = SpotFinderFactory.configure_threshold(params, gain_map, mask)
 
     # Setup the spot finder
     return ExtractSpots(threshold_image=threshold)
 
   @staticmethod
-  def configure_threshold(params, gain_map, mask, trusted_range):
+  def configure_threshold(params, gain_map, mask):
     ''' Get the threshold strategy'''
     from dials.algorithms.peak_finding.threshold \
         import UnimodalThresholdStrategy, XDSThresholdStrategy
@@ -272,7 +271,6 @@ class SpotFinderFactory(object):
           kernel_size=params.spotfinder.threshold.kernel_size,
           gain=gain_map,
           mask=mask,
-          trusted_range=trusted_range,
           n_sigma_b=params.spotfinder.threshold.sigma_background,
           n_sigma_s=params.spotfinder.threshold.sigma_strong,
           min_count=params.spotfinder.threshold.min_local)
