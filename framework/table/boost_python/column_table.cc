@@ -33,7 +33,8 @@ namespace dials { namespace framework { namespace boost_python {
       std::string name = name_ + typeid(x).name();
       typedef T column_data_type;
       class_<column_data_type>(name.c_str())
-        .def(vector_indexing_suite<column_data_type>());
+        .def(vector_indexing_suite<column_data_type>())
+        .def("resize", &column_data_type::resize);
     }
   };
 
@@ -60,7 +61,8 @@ namespace dials { namespace framework { namespace boost_python {
 
     template <typename U>
     void operator()(const U &x) {
-      table_class_.def("__setitem__", &column_table_set_data<T, typename U::value_type>);
+      table_class_.def("__setitem__", &column_table_set_data<T, typename U::value_type>,
+        return_internal_reference<>());
     }
   };
 

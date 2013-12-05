@@ -212,41 +212,48 @@ namespace dials { namespace framework {
     }
 
     iterator insert(iterator position, const value_type &v) {
+      size_type index = std::distance(begin(), position);
       column_synchronizer::connection_block block(insert_conn_);
       iterator result = storage_.insert(position, v);
-      sync_.insert(position - begin(), 1);
+      sync_.insert(index, 1);
       assert(storage_.size() == sync_.size());
       return result;
     }
 
     void insert(iterator position, size_type n, const value_type &v) {
+      size_type index = std::distance(begin(), position);
       column_synchronizer::connection_block block(insert_conn_);
       storage_.insert(position, n, v);
-      sync_.insert(position - begin(), n);
+      sync_.insert(index, n);
       assert(storage_.size() == sync_.size());
     }
 
     template <typename InputIterator>
-    void insert(iterator pos, InputIterator first, InputIterator last) {
+    void insert(iterator position, InputIterator first, InputIterator last) {
       size_type n = std::distance(first, last);
+      size_type index = std::distance(begin(), position);
       column_synchronizer::connection_block block(insert_conn_);
-      storage_.insert(pos, first, last);
-      sync_.insert(pos - begin(), n);
+      storage_.insert(position, first, last);
+      sync_.insert(index, n);
       assert(storage_.size() == sync_.size());
     }
 
     iterator erase(iterator first, iterator last) {
+      size_type first_index = std::distance(begin(), first);
+      size_type last_index = std::distance(begin(), last);
       column_synchronizer::connection_block block(erase_conn_);
       iterator result = storage_.erase(first, last);
-      sync_.erase(first - begin(), last - begin());
+      sync_.erase(first_index, last_index);
       assert(storage_.size() == sync_.size());
       return result;
     }
 
     iterator erase(iterator position) {
+      size_type first_index = std::distance(begin(), position);
+      size_type last_index = first_index + 1;
       column_synchronizer::connection_block block(erase_conn_);
       iterator result = storage_.erase(position);
-      sync_.erase(position - begin(), position + 1 - begin());
+      sync_.erase(first_index, last_index);
       assert(storage_.size() == sync_.size());
       return result;
     }
@@ -267,7 +274,6 @@ namespace dials { namespace framework {
       inserter(storage_type *s)
         : storage(s) {}
       void operator()(size_type pos, size_type n) {
-        std::cout << "Insert" << std::endl;
         storage->insert(storage->begin() + pos, n, value_type());
       }
     };
