@@ -58,8 +58,8 @@ namespace dials { namespace framework {
     }
 
     void erase(size_type first, size_type last) {
-      assert(last > first);
-      assert(last <= size_);
+      DIALS_ASSERT(last > first);
+      DIALS_ASSERT(last <= size_);
       size_ -= (last - first);
       erase_(first, last);
     }
@@ -216,7 +216,7 @@ namespace dials { namespace framework {
       column_synchronizer::connection_block block(insert_conn_);
       iterator result = storage_.insert(position, v);
       sync_.insert(index, 1);
-      assert(storage_.size() == sync_.size());
+      DIALS_ASSERT(storage_.size() == sync_.size());
       return result;
     }
 
@@ -225,7 +225,7 @@ namespace dials { namespace framework {
       column_synchronizer::connection_block block(insert_conn_);
       storage_.insert(position, n, v);
       sync_.insert(index, n);
-      assert(storage_.size() == sync_.size());
+      DIALS_ASSERT(storage_.size() == sync_.size());
     }
 
     template <typename InputIterator>
@@ -235,7 +235,7 @@ namespace dials { namespace framework {
       column_synchronizer::connection_block block(insert_conn_);
       storage_.insert(position, first, last);
       sync_.insert(index, n);
-      assert(storage_.size() == sync_.size());
+      DIALS_ASSERT(storage_.size() == sync_.size());
     }
 
     iterator erase(iterator first, iterator last) {
@@ -244,7 +244,7 @@ namespace dials { namespace framework {
       column_synchronizer::connection_block block(erase_conn_);
       iterator result = storage_.erase(first, last);
       sync_.erase(first_index, last_index);
-      assert(storage_.size() == sync_.size());
+      DIALS_ASSERT(storage_.size() == sync_.size());
       return result;
     }
 
@@ -254,7 +254,7 @@ namespace dials { namespace framework {
       column_synchronizer::connection_block block(erase_conn_);
       iterator result = storage_.erase(position);
       sync_.erase(first_index, last_index);
-      assert(storage_.size() == sync_.size());
+      DIALS_ASSERT(storage_.size() == sync_.size());
       return result;
     }
 
