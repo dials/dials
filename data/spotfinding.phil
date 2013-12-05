@@ -41,6 +41,13 @@ spotfinder
               "Used by: xds."
       .type = float
 
+    min_local=2
+      .help = "The number of pixels in the local area of each pixel needed"
+              "to do the thresholding. Setting to 0 or less means that all"
+              "the pixels under the kernel are needed. The minimum allowable"
+              "number is 2"
+      .type = int
+
     times = 5
       .help = "How many times to run the smoothing algorithm."
               ""

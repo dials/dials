@@ -97,7 +97,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
 
     # Set the mask
     if self._mask:
-      mask = self._mask
+      mask = self._mask.__and__(image >= 0)
     else:
       mask = image >= 0
 

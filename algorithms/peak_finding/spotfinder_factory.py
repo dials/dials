@@ -251,15 +251,17 @@ class SpotFinderFactory(object):
     # Read in the lookup files
     gain_map = SpotFinderFactory.load_image(params.lookup.gain_map)
     dark_map = SpotFinderFactory.load_image(params.lookup.dark_map)
+    mask = SpotFinderFactory.load_image(params.lookup.mask)
 
     # Create the threshold strategy
-    threshold = SpotFinderFactory.configure_threshold(params, gain_map)
+    threshold = SpotFinderFactory.configure_threshold(
+      params, gain_map, mask)
 
     # Setup the spot finder
     return ExtractSpots(threshold_image=threshold)
 
   @staticmethod
-  def configure_threshold(params, gain_map):
+  def configure_threshold(params, gain_map, mask):
     ''' Get the threshold strategy'''
     from dials.algorithms.peak_finding.threshold \
         import UnimodalThresholdStrategy, XDSThresholdStrategy
@@ -269,8 +271,10 @@ class SpotFinderFactory(object):
       return XDSThresholdStrategy(
           kernel_size=params.spotfinder.threshold.kernel_size,
           gain=gain_map,
+          mask=mask,
           n_sigma_b=params.spotfinder.threshold.sigma_background,
-          n_sigma_s=params.spotfinder.threshold.sigma_strong)
+          n_sigma_s=params.spotfinder.threshold.sigma_strong,
+          min_count=params.spotfinder.threshold.min_local)
 
     elif params.spotfinder.threshold.algorithm == 'unimodal':
       return UnimodalThresholdStrategy()
