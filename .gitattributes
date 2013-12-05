@@ -526,6 +526,7 @@ scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#
 scratch/luiso_s/test_code/call_mosflm_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_matmul.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_mix_01.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/flex_integr_2d_single_pixel.py -text
 scratch/luiso_s/test_code/flex_ref_opr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
