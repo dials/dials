@@ -82,6 +82,7 @@ class XDSThresholdStrategy(ThresholdStrategy):
     self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
     self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
     self._min_count   = kwargs.get('min_count', 2)
+    self._min_value   = kwargs.get('trusted_range', (0,0))[0]
 
   def __call__(self, image):
     '''Call the thresholding function
@@ -97,9 +98,9 @@ class XDSThresholdStrategy(ThresholdStrategy):
 
     # Set the mask
     if self._mask:
-      mask = self._mask.__and__(image >= 0)
+      mask = self._mask.__and__(image >= int(self._min_value))
     else:
-      mask = image >= 0
+      mask = image >= int(self._min_value)
 
     # Do the thresholding, if gain is given then use gain threshold,
     # otherwise do normal poisson exclusion (fano) threshold

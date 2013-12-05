@@ -54,7 +54,8 @@ class Script(ScriptRunner):
 
     # Get the integrator from the input parameters
     print 'Configuring spot finder from input parameters'
-    find_spots = SpotFinderFactory.from_parameters(params)
+    trusted_range = sweep.get_detector()[0].get_trusted_range()
+    find_spots = SpotFinderFactory.from_parameters(params, trusted_range)
 
     # Find the strong spots in the sweep
     print 'Finding strong spots'
