@@ -15,7 +15,10 @@
 #include <boost/make_shared.hpp>
 #include <boost/signals2/signal.hpp>
 #include <boost/signals2/shared_connection_block.hpp>
-#include <boost/any.hpp>
+#include <boost/variant.hpp>
+#include <boost/mpl/list.hpp>
+#include <boost/mpl/remove_if.hpp>
+#include <boost/mpl/transform.hpp>
 #include <algorithm>
 #include <vector>
 #include <map>
@@ -40,6 +43,9 @@ namespace dials { namespace framework {
 
     column_synchronizer_core()
       : size_(0) {}
+
+    column_synchronizer_core(size_type n)
+      : size_(n) {}
 
     void resize(size_type n) {
       size_ = n;
@@ -98,6 +104,9 @@ namespace dials { namespace framework {
     column_synchronizer()
       : core_(boost::make_shared<column_synchronizer_core>()) {}
 
+    column_synchronizer(size_type n)
+      : core_(boost::make_shared<column_synchronizer_core>(n)) {}
+
     void resize(size_type n) {
       core_->resize(n);
     }
@@ -147,6 +156,21 @@ namespace dials { namespace framework {
     typedef typename storage_type::iterator iterator;
     typedef typename storage_type::const_iterator const_iterator;
     typedef typename storage_type::size_type size_type;
+    typedef typename storage_type::difference_type difference_type;
+
+    column_data_core()
+      : sync_(0),
+        resize_conn_(sync_.connect_resize(resizer(&storage_))),
+        insert_conn_(sync_.connect_insert(inserter(&storage_))),
+        erase_conn_(sync_.connect_erase(eraser(&storage_))) {}
+
+    template <typename InputIterator>
+    column_data_core(InputIterator first, InputIterator last)
+      : storage_(first, last),
+        sync_(storage_.size()),
+        resize_conn_(sync_.connect_resize(resizer(&storage_))),
+        insert_conn_(sync_.connect_insert(inserter(&storage_))),
+        erase_conn_(sync_.connect_erase(eraser(&storage_))) {}
 
     column_data_core(column_synchronizer sync)
       : storage_(sync.size()),
@@ -183,10 +207,14 @@ namespace dials { namespace framework {
       sync_.resize(n);
     }
 
+    void push_back(const value_type &v) {
+      insert(end(), v);
+    }
+
     iterator insert(iterator position, const value_type &v) {
       column_synchronizer::connection_block block(insert_conn_);
       iterator result = storage_.insert(position, v);
-      sync_.insert(position - begin(), position + 1 - begin());
+      sync_.insert(position - begin(), 1);
       assert(storage_.size() == sync_.size());
       return result;
     }
@@ -194,7 +222,7 @@ namespace dials { namespace framework {
     void insert(iterator position, size_type n, const value_type &v) {
       column_synchronizer::connection_block block(insert_conn_);
       storage_.insert(position, n, v);
-      sync_.insert(position - begin(), position + n - begin());
+      sync_.insert(position - begin(), n);
       assert(storage_.size() == sync_.size());
     }
 
@@ -203,11 +231,11 @@ namespace dials { namespace framework {
       size_type n = std::distance(first, last);
       column_synchronizer::connection_block block(insert_conn_);
       storage_.insert(pos, first, last);
-      sync_.insert(pos - begin(), pos + n - begin());
+      sync_.insert(pos - begin(), n);
       assert(storage_.size() == sync_.size());
     }
 
-    iterator erase(iterator first, size_type last) {
+    iterator erase(iterator first, iterator last) {
       column_synchronizer::connection_block block(erase_conn_);
       iterator result = storage_.erase(first, last);
       sync_.erase(first - begin(), last - begin());
@@ -239,6 +267,7 @@ namespace dials { namespace framework {
       inserter(storage_type *s)
         : storage(s) {}
       void operator()(size_type pos, size_type n) {
+        std::cout << "Insert" << std::endl;
         storage->insert(storage->begin() + pos, n, value_type());
       }
     };
@@ -271,6 +300,14 @@ namespace dials { namespace framework {
     typedef typename core_type::iterator iterator;
     typedef typename core_type::const_iterator const_iterator;
     typedef typename core_type::size_type size_type;
+    typedef typename core_type::difference_type difference_type;
+
+    column_data()
+      : core_(boost::make_shared<core_type>()) {}
+
+    template <typename InputIterator>
+    column_data(InputIterator first, InputIterator last)
+      : core_(boost::make_shared<core_type>(first, last)) {}
 
     column_data(column_synchronizer sync)
       : core_(boost::make_shared<core_type>(sync)) {}
@@ -303,6 +340,10 @@ namespace dials { namespace framework {
       core_->resize(n);
     }
 
+    void push_back(const value_type &v) {
+      core_->push_back(v);
+    }
+
     iterator insert(iterator position, const value_type &v) {
       return core_->insert(position, v);
     }
@@ -330,17 +371,63 @@ namespace dials { namespace framework {
   };
 
 
+  struct null_type {};
 
+  template <typename T>
+  struct is_null_type : public boost::mpl::bool_<false> {};
+
+  template<>
+  struct is_null_type<null_type> : public boost::mpl::bool_<true> {};
+
+
+  template <typename T0,
+            typename T1=null_type, typename T2=null_type, typename T3=null_type,
+            typename T4=null_type, typename T5=null_type, typename T6=null_type,
+            typename T7=null_type, typename T8=null_type, typename T9=null_type>
+  class column_type_generator {
+  private:
+
+    template <typename T>
+    struct create_column_type {
+      typedef column_data<T> type;
+    };
+
+    // MPL List of all input types
+    typedef boost::mpl::list<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> all_types;
+
+    // Remove any types if they are null
+    typedef typename boost::mpl::remove_if<
+      all_types,
+      typename boost::mpl::lambda<
+        is_null_type<boost::mpl::_1>
+      >::type
+    >::type valid_types;
+
+    // Create a list of column_data<T> types
+    typedef typename boost::mpl::transform<
+      valid_types,
+      typename boost::mpl::lambda<
+        create_column_type<boost::mpl::_1>
+      >::type
+    >::type column_types;
+
+  public:
+
+    // Expose the variant type
+    typedef typename boost::make_variant_over<column_types>::type type;
+  };
+
+  template <typename VarientType>
   class column_table {
   public:
 
-    typedef std::map<std::string, boost::any> map_type;
-    typedef map_type::key_type key_type;
-    typedef map_type::mapped_type mapped_type;
-    typedef map_type::value_type map_value_type;
-    typedef map_type::iterator iterator;
-    typedef map_type::const_iterator const_iterator;
-    typedef map_type::size_type size_type;
+    typedef std::map<std::string, VarientType> map_type;
+    typedef typename map_type::key_type key_type;
+    typedef typename map_type::mapped_type mapped_type;
+    typedef typename map_type::value_type map_value_type;
+    typedef typename map_type::iterator iterator;
+    typedef typename map_type::const_iterator const_iterator;
+    typedef typename map_type::size_type size_type;
 
   private:
 
@@ -353,14 +440,16 @@ namespace dials { namespace framework {
 
       template <typename T>
       operator column_data<T>() const{
-        boost::any& element = t_->get(k_);
-        if (element.empty()) {
-          element = column_data<T>(t_->sync_);
+        map_type& table = t_->table_;
+              iterator it = table.lower_bound(k_);
+              if (it == table.end() || table.key_comp()(k_, it->first)) {
+          it = table.insert(it, map_value_type(k_,
+            mapped_type(column_data<T>(t_->sync_))));
         }
-        return boost::any_cast< column_data<T> >(element);
+              return boost::get< column_data<T> >(it->second);
       }
 
-      operator boost::any() const {
+      operator mapped_type() const {
         return t_->get(k_);
       }
     };
@@ -407,7 +496,7 @@ namespace dials { namespace framework {
     }
 
     size_type size() const {
-      return ncols();
+      return ncols() ;
     }
 
     void clear() {
