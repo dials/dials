@@ -60,7 +60,7 @@ class Test(object):
       # Get random x, y, z
       x = uniform(0, 2000)
       y = uniform(0, 2000)
-      z = uniform(0, 1000)
+      z = uniform(0, 9)
 
       # Get random s1, phi, panel
       s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
@@ -135,7 +135,7 @@ class Test(object):
       # Get random x, y, z
       x = uniform(0, 2000)
       y = uniform(0, 2000)
-      z = uniform(0, 1000)
+      z = uniform(0, 9)
 
       # Get random s1, phi, panel
       s1 = matrix.col(self.detector[0].get_pixel_lab_coord(

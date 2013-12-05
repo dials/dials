@@ -315,7 +315,8 @@ class ReflectionExtractor(object):
 
 class ReflectionBlockExtractor(object):
 
-  def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks, filter_by_zeta=0, reader=None):
+  def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks,
+      filter_by_zeta=0, reader=None, sigma_b=None, sigma_m=None):
     ''' Initialise and extract the reflections. '''
     from dials.algorithms.integration import ProfileBlockExtractor
     from dials.algorithms.shoebox import BBoxCalculator
@@ -324,8 +325,19 @@ class ReflectionBlockExtractor(object):
     from dials.algorithms import filtering
 
     if reader == None:
-      # Create the bbox calculator
-      compute_bbox = BBoxCalculator(
+
+      # These are arrays the length of the sweep
+      if sigma_b is not None and sigma_m is not None:
+        assert(len(sigma_b) == len(sweep))
+        assert(len(sigma_m) == len(sweep))
+        compute_bbox = BBoxCalculator(
+          sweep.get_beam(), sweep.get_detector(),
+          sweep.get_goniometer(), sweep.get_scan(),
+          n_sigma * sigma_b, n_sigma * sigma_m)
+      else:
+
+        # Create the bbox calculator
+        compute_bbox = BBoxCalculator(
           sweep.get_beam(), sweep.get_detector(),
           sweep.get_goniometer(), sweep.get_scan(),
           n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),

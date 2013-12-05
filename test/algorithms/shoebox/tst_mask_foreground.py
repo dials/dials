@@ -96,10 +96,10 @@ class Test(object):
     for i in range(num):
       x = randint(0, 2000)
       y = randint(0, 2000)
-      z = randint(0, 100)
+      z = randint(0, 8)
       s1 = self.detector[0].get_pixel_lab_coord((x, y))
       s1 = matrix.col(s1).normalize() * s0_length
-      phi = self.scan.get_angle_from_array_index(z)
+      phi = self.scan.get_angle_from_array_index(z, deg=False)
       rlist[i].beam_vector = s1
       rlist[i].rotation_angle = phi
     self.calculate_bbox(rlist)

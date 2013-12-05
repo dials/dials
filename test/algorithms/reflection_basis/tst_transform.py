@@ -100,7 +100,7 @@ class TestForward(object):
       # Get random x, y, z
       x = uniform(300, 1800)
       y = uniform(300, 1800)
-      z = uniform(-10, 0)
+      z = uniform(0, 9)
 
       # Get random s1, phi, panel
       s1 = matrix.col(self.detector[0].get_pixel_lab_coord(
@@ -283,7 +283,7 @@ class TestForward(object):
       # Get random x, y, z
       x = uniform(300, 1800)
       y = uniform(300, 1800)
-      z = uniform(-10, 0)
+      z = uniform(0, 9)
 
       # Get random s1, phi, panel
       s1 = matrix.col(self.detector[0].get_pixel_lab_coord(

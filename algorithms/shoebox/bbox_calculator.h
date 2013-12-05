@@ -46,6 +46,26 @@ namespace dials { namespace algorithms { namespace shoebox {
 
   public:
 
+    BBoxCalculator(const Beam &beam,
+                   const Detector &detector,
+                   const Goniometer &gonio,
+                   const Scan &scan,
+                   const af::const_ref<double> &delta_divergence,
+                   const af::const_ref<double> &delta_mosaicity)
+      : s0_(beam.get_s0()),
+        m2_(gonio.get_rotation_axis()),
+        detector_(detector),
+        scan_(scan),
+        delta_divergence_(
+          delta_divergence.begin(),
+          delta_divergence.end()),
+        delta_mosaicity_(
+          delta_mosaicity.begin(),
+          delta_mosaicity.end()) {
+      DIALS_ASSERT(delta_divergence.all_gt(0.0));
+      DIALS_ASSERT(delta_mosaicity.all_gt(0.0));
+    }
+
     /**
      * Initialise the bounding box calculation.
      * @param beam The beam parameters
@@ -64,8 +84,8 @@ namespace dials { namespace algorithms { namespace shoebox {
         m2_(gonio.get_rotation_axis()),
         detector_(detector),
         scan_(scan),
-        delta_divergence_(delta_divergence),
-        delta_mosaicity_(delta_mosaicity) {
+        delta_divergence_(scan.get_num_images(), delta_divergence),
+        delta_mosaicity_(scan.get_num_images(), delta_mosaicity) {
       DIALS_ASSERT(delta_divergence > 0.0);
       DIALS_ASSERT(delta_mosaicity > 0.0);
     }
@@ -98,12 +118,18 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Create the coordinate system for the reflection
       reflection_basis::CoordinateSystem xcs(m2_, s0_, s1, phi);
 
+      // Get the divergence and mosaicity for this point
+      int z0 = (int)floor(scan_.get_array_index_from_angle(phi));
+      DIALS_ASSERT(z0 >= 0 && z0 < delta_divergence_.size());
+      double delta_d = delta_divergence_[z0];
+      double delta_m = delta_mosaicity_[z0];
+
       // Calculate the beam vectors at the following xds coordinates:
       //   (-delta_d, -delta_d, 0)
       //   (+delta_d, -delta_d, 0)
       //   (-delta_d, +delta_d, 0)
       //   (+delta_d, +delta_d, 0)
-      double point = delta_divergence_;
+      double point = delta_d;
       double3 sdash1 = xcs.to_beam_vector(double2(-point, -point));
       double3 sdash2 = xcs.to_beam_vector(double2(+point, -point));
       double3 sdash3 = xcs.to_beam_vector(double2(-point, +point));
@@ -117,8 +143,8 @@ namespace dials { namespace algorithms { namespace shoebox {
 
       /// Calculate the rotation angles at the following XDS
       // e3 coordinates: -delta_m, +delta_m
-      double phi1 = xcs.to_rotation_angle_fast(-delta_mosaicity_);
-      double phi2 = xcs.to_rotation_angle_fast(+delta_mosaicity_);
+      double phi1 = xcs.to_rotation_angle_fast(-delta_m);
+      double phi2 = xcs.to_rotation_angle_fast(+delta_m);
 
       // Get the array indices at the rotation angles
       double z1 = scan_.get_array_index_from_angle(phi1);
@@ -180,8 +206,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     vec3<double> m2_;
     Detector detector_;
     Scan scan_;
-    double delta_divergence_;
-    double delta_mosaicity_;
+    af::shared<double> delta_divergence_;
+    af::shared<double> delta_mosaicity_;
   };
 
 }}} // namespace dials::algorithms::shoebox
