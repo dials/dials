@@ -610,11 +610,11 @@ class Refiner(object):
     return self._target.rmsds()
 
   def get_matches(self):
-    """Delegated to the reflection manager, but suppress output"""
+    """Delegated to the reflection manager"""
 
     # FIXME Consider: Does this information really need to be exposed by the
     # public API (indexing code seems to use it, but is it necessary?)
-    return self._refman.get_matches(silent = True)
+    return self._refman.get_matches()
 
   def get_param_reporter(self):
       """Get the ParameterReport object linked to this Refiner"""

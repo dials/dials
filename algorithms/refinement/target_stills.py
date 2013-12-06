@@ -212,12 +212,12 @@ class ReflectionManagerXY(ReflectionManager):
                                       self._sample_size)
     return(working_indices)
 
-  def get_matches(self, silent = False):
-    """For every observation matched with a prediction return all data"""
+  def print_stats_on_matches(self):
+    """Print some basic statistics on the matches"""
 
-    l = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+    l = self.get_matches()
 
-    if self._verbosity > 2 and len(l) > 20 and not silent:
+    if self._verbosity > 2 and len(l) > 20:
 
       sl = self._sort_obs_by_residual(l)
       print "Reflections with the worst 20 positional residuals:"
@@ -232,4 +232,4 @@ class ReflectionManagerXY(ReflectionManager):
         print msg
       print
 
-    return l
+      return

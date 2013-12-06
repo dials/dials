@@ -137,6 +137,8 @@ class Target(object):
       # have a prediction
       self._reflection_manager.strip_unmatched_observations()
 
+      self._reflection_manager.print_stats_on_matches()
+
       self._reflection_manager.first_update = False
 
     return
@@ -595,12 +597,16 @@ class ReflectionManager(object):
 
     return sort_obs
 
-  def get_matches(self, silent = False):
+  def get_matches(self):
     """For every observation matched with a prediction return all data"""
 
-    l = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+    return [obs for obs in self._obs_pred_pairs if obs.is_matched]
 
-    if self._verbosity > 2 and len(l) > 20 and not silent:
+  def print_stats_on_matches(self):
+    """Print some basic statistics on the matches"""
+
+    l = self.get_matches()
+    if self._verbosity > 2 and len(l) > 20:
 
       sl = self._sort_obs_by_residual(l)
       print "Reflections with the worst 20 positional residuals:"
@@ -633,7 +639,7 @@ class ReflectionManager(object):
         print msg
       print
 
-    return l
+      return
 
   def strip_unmatched_observations(self):
     """Delete observations from the manager that are not matched to a
