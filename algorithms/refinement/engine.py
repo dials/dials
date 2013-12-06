@@ -181,10 +181,10 @@ class Refinery(object):
             tuple(self.history.rmsd[i])
       if self._verbosity > 1:
         dat += tuple(self.history.parameter_vector[i])
-        print  ("%d " + "%d " + "%.5f " + "%.5f " * n_rmsds +
-                "%.5f " * len(self._parameters)) % dat
+        print  ("%d " + "%d " + "%.5g " + "%.5g " * n_rmsds +
+                "%.5g " * len(self._parameters)) % dat
       else:
-        print  ("%d " + "%d " + "%.5f " + "%.5f " * n_rmsds) % dat
+        print  ("%d " + "%d " + "%.5g " + "%.5g " * n_rmsds) % dat
 
   def run(self):
     """
