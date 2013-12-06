@@ -213,11 +213,20 @@ class indexer(object):
         space_group=space_group_primitive,
         assert_is_compatible_unit_cell=False)
       if is_centred and self.params.known_symmetry.unit_cell is not None:
-        self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
-          self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
+        if not self.target_symmetry_primitive.unit_cell().is_similar_to(
+          self.params.known_symmetry.unit_cell):
+          self.target_symmetry_centred = crystal.symmetry(
+            unit_cell=self.params.known_symmetry.unit_cell,
+            space_group=self.params.known_symmetry.space_group.group())
+          self.target_symmetry_primitive = self.target_symmetry_centred.change_basis(
+            self.target_symmetry_centred.change_of_basis_op_to_primitive_setting())
+        else:
+          self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
+            self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
       if self.params.known_symmetry.unit_cell is not None:
-        assert self.target_symmetry_primitive.unit_cell().is_similar_to(
-          self.params.known_symmetry.unit_cell)
+        assert (self.target_symmetry_primitive.unit_cell().is_similar_to(
+          self.params.known_symmetry.unit_cell) or self.target_symmetry_centred.unit_cell().is_similar_to(
+          self.params.known_symmetry.unit_cell))
 
   def index(self):
     if self.params.reciprocal_space_grid.d_min is libtbx.Auto:
@@ -275,6 +284,15 @@ class indexer(object):
         Detector(flex.panel([panel for panel in self.detector])))
       sweeps.append(sweep)
 
+    for i_lattice in range(len(crystal_models)):
+      if self.target_symmetry_primitive is not None:
+        print "symmetrizing model"
+        #self.target_symmetry_primitive.show_summary()
+        symmetrized_model = self.apply_symmetry(
+          crystal_models[i_lattice], self.target_symmetry_primitive)
+        print symmetrized_model.get_unit_cell()
+        crystal_models[i_lattice] = symmetrized_model
+
     for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
       if i_cycle > 0:
         self.d_min -= self.params.refinement_protocol.d_min_step
@@ -301,11 +319,6 @@ class indexer(object):
       for i_lattice, crystal_model in enumerate(crystal_models):
         self.sweep = sweeps[i_lattice] # XXX
 
-        if self.target_symmetry_primitive is not None:
-          symmetrized_model = self.apply_symmetry(
-            crystal_model, self.target_symmetry_primitive)
-          crystal_model = symmetrized_model
-          crystal_models[i_lattice] = crystal_model
 
         self.i_lattice = i_lattice
 
@@ -1061,8 +1074,8 @@ class indexer(object):
         absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
         bmsd = unit_cell.bases_mean_square_difference(
           symm_target_sg.unit_cell())
-        min_bmsd = min(min_bmsd, bmsd)
-        if min_bmsd == bmsd:
+        if bmsd < min_bmsd:
+          min_bmsd = bmsd
           best_perm = list(perm)
     if best_perm is None:
       return None
@@ -1077,7 +1090,7 @@ class indexer(object):
     from rstbx.symmetry.constraints import parameter_reduction
     s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
     s.set_orientation(crystal_model.get_A())
-    #s.symmetrize()
+    s.symmetrize()
     #direct_matrix = s.orientation.change_basis(cb_op_target_ref).direct_matrix()
     if return_primitive_setting:
       sgi = sgtbx.space_group_info(group=target_space_group)
