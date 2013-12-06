@@ -606,45 +606,75 @@ class ReflectionManager(object):
     """Print some basic statistics on the matches"""
 
     l = self.get_matches()
-    if self._verbosity > 2 and len(l) > 20:
+    if self._verbosity > 1:
 
-      sl = self._sort_obs_by_residual(l)
-      print "Reflections with the worst 20 positional residuals:"
-      print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
-            "weight_phi_obs"
-      fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-      for i in xrange(20):
-        e = sl[i]
-        msg = fmt % tuple(e.miller_index + (e.x_resid,
-                         e.y_resid,
-                         e.phi_resid,
-                         e.weight_x_obs,
-                         e.weight_y_obs,
-                         e.weight_phi_obs))
-        print msg
-      print
-      sl = self._sort_obs_by_residual(l, angular=True)
-      print "\nReflections with the worst 20 angular residuals:"
-      print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
-            "weight_phi_obs"
-      fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-      for i in xrange(20):
-        e = sl[i]
-        msg = fmt % tuple(e.miller_index + (e.x_resid,
-                         e.y_resid,
-                         e.phi_resid,
-                         e.weight_x_obs,
-                         e.weight_y_obs,
-                         e.weight_phi_obs))
-        print msg
+      from scitbx.math import five_number_summary
+      x_resid2 = [e.x_resid**2 for e in l]
+      y_resid2 = [e.y_resid**2 for e in l]
+      phi_resid2 = [e.phi_resid**2 for e in l]
+      w_x = [e.weight_x_obs for e in l]
+      w_y = [e.weight_y_obs for e in l]
+      w_phi = [e.weight_phi_obs for e in l]
+
+      print "\nSummary statistics for observations matched to predictions:"
+      print ("                      "
+             "Min         Q1        Med         Q3        Max")
+      print "(Xc-Xo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(x_resid2))
+      print "(Yc-Yo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(y_resid2))
+      print "(Phic-Phio)^2  {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(phi_resid2))
+      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(w_x))
+      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(w_y))
+      print "Phi weights    {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(w_phi))
       print
 
-      return
+      if len(l) >= 20:
+
+        sl = self._sort_obs_by_residual(l)
+        print "Reflections with the worst 20 positional residuals:"
+        print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
+              "weight_phi_obs"
+        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+        for i in xrange(20):
+          e = sl[i]
+          msg = fmt % tuple(e.miller_index + (e.x_resid,
+                           e.y_resid,
+                           e.phi_resid,
+                           e.weight_x_obs,
+                           e.weight_y_obs,
+                           e.weight_phi_obs))
+          print msg
+        print
+        sl = self._sort_obs_by_residual(l, angular=True)
+        print "\nReflections with the worst 20 angular residuals:"
+        print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
+              "weight_phi_obs"
+        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
+        for i in xrange(20):
+          e = sl[i]
+          msg = fmt % tuple(e.miller_index + (e.x_resid,
+                           e.y_resid,
+                           e.phi_resid,
+                           e.weight_x_obs,
+                           e.weight_y_obs,
+                           e.weight_phi_obs))
+          print msg
+        print
+
+    return
 
   def strip_unmatched_observations(self):
     """Delete observations from the manager that are not matched to a
     prediction. Typically used once, after the first update of
     predictions."""
+
+    if self._verbosity > 1:
+      print "Removing reflections not matched to predictions"
 
     self._obs_pred_pairs = [e for e in self._obs_pred_pairs if e.is_matched]
 
@@ -655,8 +685,7 @@ class ReflectionManager(object):
       raise RuntimeError(msg)
 
     if self._verbosity > 1:
-      print len(self._obs_pred_pairs), "reflections remain in the manager after " + \
-          "removing those unmatched with predictions"
+      print len(self._obs_pred_pairs), "reflections remain in the manager"
 
     return
 

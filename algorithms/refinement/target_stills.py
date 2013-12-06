@@ -217,7 +217,28 @@ class ReflectionManagerXY(ReflectionManager):
 
     l = self.get_matches()
 
-    if self._verbosity > 2 and len(l) > 20:
+    if self._verbosity > 1:
+
+      from scitbx.math import five_number_summary
+      x_resid2 = [e.x_resid**2 for e in l]
+      y_resid2 = [e.y_resid**2 for e in l]
+      w_x = [e.weight_x_obs for e in l]
+      w_y = [e.weight_y_obs for e in l]
+
+      print "\nSummary statistics for observations matched to predictions:"
+      print ("                      "
+             "Min         Q1        Med         Q3        Max")
+      print "(Xc-Xo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(x_resid2))
+      print "(Yc-Yo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(y_resid2))
+      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(w_x))
+      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(w_y))
+      print
+
+      if len(l) >= 20:
 
       sl = self._sort_obs_by_residual(l)
       print "Reflections with the worst 20 positional residuals:"
@@ -232,4 +253,4 @@ class ReflectionManagerXY(ReflectionManager):
         print msg
       print
 
-      return
+    return
