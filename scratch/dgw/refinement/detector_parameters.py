@@ -167,7 +167,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # now update the panel with its new position and orientation.
     # The detector is the first model in _models, the panel is the
     # first in the detector
-    (self._models[0])[0].set_local_frame(dir1, dir2, o)
+    (self._models[0])[0].set_frame(dir1, dir2, o)
 
     # calculate derivatives of the state wrt parameters
     # =================================================

@@ -86,7 +86,7 @@ def make_multi_panel(single_panel_detector):
     new_dir2 = dn.cross(new_dir1)
 
     # set panel frame
-    p.set_local_frame(new_dir1, new_dir2, new_origin)
+    p.set_frame(new_dir1, new_dir2, new_origin)
 
   return multi_panel_detector
 

@@ -240,17 +240,17 @@ class ReflectionManagerXY(ReflectionManager):
 
       if len(l) >= 20:
 
-      sl = self._sort_obs_by_residual(l)
-      print "Reflections with the worst 20 positional residuals:"
-      print "H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs"
-      fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
-      for i in xrange(20):
-        e = sl[i]
-        msg = fmt % tuple(e.miller_index + (e.x_resid,
-                         e.y_resid,
-                         e.weight_x_obs,
-                         e.weight_y_obs))
-        print msg
-      print
+        sl = self._sort_obs_by_residual(l)
+        print "Reflections with the worst 20 positional residuals:"
+        print "H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs"
+        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
+        for i in xrange(20):
+          e = sl[i]
+          msg = fmt % tuple(e.miller_index + (e.x_resid,
+                           e.y_resid,
+                           e.weight_x_obs,
+                           e.weight_y_obs))
+          print msg
+        print
 
     return

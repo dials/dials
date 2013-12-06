@@ -81,7 +81,7 @@ if __name__ == '__main__':
   for f, s, panel in zip(fast_offsets, slow_offsets, detector):
 
     new_origin = ref_origin + f * ref_fast + s * ref_slow
-    panel.set_local_frame(ref_fast, ref_slow, new_origin)
+    panel.set_frame(ref_fast, ref_slow, new_origin)
 
   # Save the refined geometry to file
   print "detector aligned"

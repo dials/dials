@@ -177,7 +177,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     # now update the panel with its new position and orientation.
     # The detector is the first model in _models, the panel is the
     # first in the detector
-    (self._models[0])[0].set_local_frame(dir1, dir2, o)
+    (self._models[0])[0].set_frame(dir1, dir2, o)
 
     # calculate derivatives of the state wrt parameters
     # =================================================
@@ -574,7 +574,11 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
     # now update the panels with their new position and orientation.
     for p, dir1, dir2, org in zip(detector, dir1s, dir2s, origins):
-      p.set_local_frame(dir1, dir2, org)
+      print p
+      print dir1
+      print dir2
+      print org
+      p.set_frame(dir1, dir2, org)
 
     # calculate derivatives of the state wrt parameters
     # =================================================
