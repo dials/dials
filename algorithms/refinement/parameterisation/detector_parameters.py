@@ -574,10 +574,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
     # now update the panels with their new position and orientation.
     for p, dir1, dir2, org in zip(detector, dir1s, dir2s, origins):
-      print p
-      print dir1
-      print dir2
-      print org
+
       p.set_frame(dir1, dir2, org)
 
     # calculate derivatives of the state wrt parameters
