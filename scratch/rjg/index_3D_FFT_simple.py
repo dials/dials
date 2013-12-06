@@ -93,6 +93,8 @@ export_xds_files = False
   .help = "Export results as XDS.INP, XPARM.XDS for integration with XDS."
 multiple_lattice_search = False
   .type = bool
+max_lattices = None
+  .type = int
 cluster_analysis {
   method = *dbscan hcluster
     .type = choice
@@ -252,7 +254,7 @@ class indexer(object):
       if self.params.debug:
         self.debug_write_reciprocal_lattice_points_as_pdb()
         self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
-        self.find_peaks()
+      self.find_peaks()
       if self.params.multiple_lattice_search:
         self.find_basis_vector_combinations_cluster_analysis()
         if self.params.debug:
