@@ -119,6 +119,8 @@ cluster_analysis {
   intersection_union_ratio_cutoff = 0.4
     .type = float(value_min=0.0, value_max=1.0)
 }
+real_space_grid_search = False
+  .type = bool
 """ %dials_path, process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
@@ -245,24 +247,30 @@ class indexer(object):
 
     print "Number of centroids used: %i" %(
       (self.reciprocal_space_grid>0).count(True))
-    self.fft()
-    if self.params.debug:
-      self.debug_write_reciprocal_lattice_points_as_pdb()
-      self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
-    self.find_peaks()
-    if self.params.multiple_lattice_search:
-      self.find_basis_vector_combinations_cluster_analysis()
+    if not self.params.real_space_grid_search:
+      self.fft()
       if self.params.debug:
-        self.debug_show_candidate_basis_vectors()
-      crystal_models = self.candidate_crystal_models
+        self.debug_write_reciprocal_lattice_points_as_pdb()
+        self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
+        self.find_peaks()
+      if self.params.multiple_lattice_search:
+        self.find_basis_vector_combinations_cluster_analysis()
+        if self.params.debug:
+          self.debug_show_candidate_basis_vectors()
+        crystal_models = self.candidate_crystal_models
+        if self.params.max_lattices is not None:
+          crystal_models = crystal_models[:self.params.max_lattices]
+      else:
+        self.find_candidate_basis_vectors()
+        # self.find_candidate_basis_vectors_nks()
+        if self.params.debug:
+          self.debug_show_candidate_basis_vectors()
+        self.candidate_crystal_models = self.find_candidate_orientation_matrices(
+          self.candidate_basis_vectors)
+        crystal_models = self.candidate_crystal_models[:1]
     else:
-      self.find_candidate_basis_vectors()
-      # self.find_candidate_basis_vectors_nks()
-      if self.params.debug:
-        self.debug_show_candidate_basis_vectors()
-      self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-        self.candidate_basis_vectors)
-      crystal_models = self.candidate_crystal_models[:1]
+      self.real_space_grid_search()
+      crystal_models = self.candidate_crystal_models
 
     self.refined_crystal_models = []
     self.d_min = self.params.reciprocal_space_grid.d_min
@@ -957,6 +965,73 @@ class indexer(object):
 
     pyplot.title('Estimated number of clusters: %d' % n_clusters)
     pyplot.show()
+
+
+  def real_space_grid_search(self):
+
+    def compute_functional(vector):
+      two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(vector)
+      return flex.sum(flex.cos(two_pi_S_dot_v))
+
+    from rstbx.array_family import flex
+    from rstbx.dps_core import Direction, directional_show, SimpleSamplerTool
+    assert self.target_symmetry_primitive is not None
+    assert self.target_symmetry_primitive.unit_cell() is not None
+    SST = SimpleSamplerTool(0.03)
+    SST.construct_hemisphere_grid(SST.incr)
+    cell_dimensions = self.target_symmetry_primitive.unit_cell().parameters()[:3]
+    unique_cell_dimensions = set(cell_dimensions)
+    print "Number of search vectors: %i" %(len(SST.angles) * len(unique_cell_dimensions))
+    vectors = flex.vec3_double()
+    function_values = flex.double()
+    for i, direction in enumerate(SST.angles):
+      for l in unique_cell_dimensions:
+        v = matrix.col(direction.dvec) * l
+        two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(v.elems)
+        f = compute_functional(v.elems)
+        vectors.append(v.elems)
+        function_values.append(f)
+
+    perm = flex.sort_permutation(function_values, reverse=True)
+    vectors = vectors.select(perm)
+    function_values = function_values.select(perm)
+
+    for i in range(30):
+      v = matrix.col(vectors[i])
+      print v.elems, v.length(), function_values[i]
+
+    basis_vectors = [matrix.col(v) for v in vectors[:30]]
+    self.candidate_basis_vectors = basis_vectors
+
+    candidate_orientation_matrices \
+      = self.find_candidate_orientation_matrices(
+        basis_vectors, return_first=True)
+    print candidate_orientation_matrices[0]
+
+    optimised_basis_vectors = optimise_basis_vectors(
+      self.reciprocal_space_points, basis_vectors)
+
+    optimised_basis_vectors = [matrix.col(v) for v in optimised_basis_vectors]
+
+    for i in range(len(basis_vectors)):
+      print compute_functional(basis_vectors[i].elems), basis_vectors[i].elems
+      print compute_functional(optimised_basis_vectors[i].elems), optimised_basis_vectors[i].elems
+      print
+
+    candidate_orientation_matrices \
+      = self.find_candidate_orientation_matrices(
+        optimised_basis_vectors, return_first=True)
+    print candidate_orientation_matrices[0]
+
+    if self.target_symmetry_primitive is not None:
+      print "symmetrizing model"
+      #self.target_symmetry_primitive.show_summary()
+      symmetrized_model = self.apply_symmetry(
+        candidate_orientation_matrices[0], self.target_symmetry_primitive)
+      candidate_orientation_matrices[0] = symmetrized_model
+
+    self.candidate_crystal_models = candidate_orientation_matrices
+
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
                                           return_first=False):
