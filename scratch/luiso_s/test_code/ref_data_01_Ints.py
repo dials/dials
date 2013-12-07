@@ -242,36 +242,33 @@ lst_img.append([28,16,12,24,14,19,21,20,18,20,14,23,14,14,13,11,15,9,16,13,
 16,11,16,10,9,11,10,8,11,5,11,8,9,7,7,9,8,10,10,2,
 13,9,11,9,13,9,13,9,3,22,9,5,6,8,4,9,3,9,2,2])
 
+mask_lst=[]
+
 from matplotlib import pyplot as plt
 import numpy
 
 for b in lst_msk:
   row = 0
   col = -1
-  data_msk = numpy.zeros((1, 20, 20), dtype = numpy.float64)
-
+  data_msk = numpy.zeros((1, 20, 20), dtype = numpy.int32)
   data_msk2d = numpy.zeros((20, 20), dtype = numpy.float64)
-
   for m in b:
     col += 1
-    print m
     if col == 20:
       col=0
       row += 1
     data_msk[0,row,col] = m
-    print "row, col =", row, col
+  mask_lst.append(data_msk)
 
-  print b 
-  print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-  print data_msk
-  data_msk2d[:,:]=data_msk[0:1,:,:]
-  plt.imshow(data_msk2d, interpolation = "nearest")
-  plt.show()
-
-
-
-
+  
+  
+data_lst=[]
+var_slp=-2
 for b in lst_img:
+  if float(var_slp)/float(2)==int(var_slp/2):
+    var_slp01 = -2
+  else:
+    var_slp01 = 2
   row = 0
   col = -1
   data_img = numpy.zeros((1, 20, 20), dtype = numpy.float64)
@@ -279,18 +276,41 @@ for b in lst_img:
 
   for m in b:
     col += 1
-    print m
     if col == 20:
       col=0
       row += 1
-    data_img[0,row,col] = m
-    print "row, col =", row, col
+    data_img[0,row,col] = m + col * var_slp * 3 + row * var_slp01 * 2
+  data_lst.append(data_img)
+  var_slp += 1
 
-  print b 
-  print "<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<"
-  print data_img
+
+from dials.model.data import Reflection, ReflectionList
+from scitbx.array_family import flex
+r_lst=ReflectionList()
+for i in range(len(data_lst)):
+  r = Reflection()
+  r.shoebox = flex.double(data_lst[i])
+  r.shoebox_mask = flex.int(mask_lst[i])
+  r.shoebox_background = flex.double(data_lst[i])
+  r_lst.append(r)
+
+for r in r_lst:
+  data_msk=r.shoebox.as_numpy_array()
+  data_msk2d[:,:]=data_msk[0:1,:,:]
+  plt.imshow(data_msk2d, interpolation = "nearest")
+  plt.show()
+  data_img=r.shoebox_mask.as_numpy_array()
   data_msk2d[:,:]=data_img[0:1,:,:]
   plt.imshow(data_msk2d, interpolation = "nearest")
   plt.show()
 
+from dials.algorithms.background.inclined_background_subtractor \
+ import layering_and_background_plane
+layering_and_background_plane(r_lst)
 
+
+for r in r_lst:
+  data_img=r.shoebox_background.as_numpy_array()
+  data_msk2d[:,:]=data_img[0:1,:,:]
+  plt.imshow(data_msk2d, interpolation = "nearest")
+  plt.show()
