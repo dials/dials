@@ -293,7 +293,6 @@ for i in range(len(data_lst)):
   r.shoebox_mask = flex.int(mask_lst[i])
   r.shoebox_background = flex.double(data_lst[i])
   r_lst.append(r)
-
 for r in r_lst:
   data_msk=r.shoebox.as_numpy_array()
   data_msk2d[:,:]=data_msk[0:1,:,:]
@@ -303,14 +302,39 @@ for r in r_lst:
   data_msk2d[:,:]=data_img[0:1,:,:]
   plt.imshow(data_msk2d, interpolation = "nearest")
   plt.show()
-
 from dials.algorithms.background.inclined_background_subtractor \
  import layering_and_background_plane
 layering_and_background_plane(r_lst)
-
 
 for r in r_lst:
   data_img=r.shoebox_background.as_numpy_array()
   data_msk2d[:,:]=data_img[0:1,:,:]
   plt.imshow(data_msk2d, interpolation = "nearest")
   plt.show()
+  
+  
+big_nrow = 41
+big_ncol = 41
+sumation = flex.double(flex.grid(big_nrow, big_ncol))
+descr = flex.double(flex.grid(1, 3))
+from dials.algorithms.integration import add_2d, subtrac_bkg_2d, fitting_2d
+for ref in r_lst:
+  shoebox = ref.shoebox
+  background = ref.shoebox_background
+  data2d = shoebox[0:1, :, :]
+  #mask2d = mask[0:1, :, :]
+  background2d = background[0:1, :, :]
+
+  data2d.reshape(flex.grid(shoebox.all()[1:]))
+  #mask2d.reshape(flex.grid(shoebox.all()[1:]))
+  background2d.reshape(flex.grid(shoebox.all()[1:]))
+
+  descr[0, 0] = 10.5
+  descr[0, 1] = 10.5
+  descr[0, 2] = 1.0
+  peak2d = subtrac_bkg_2d(data2d, background2d)
+  sumation = add_2d(descr, peak2d, sumation)
+
+data_img=sumation.as_numpy_array()
+plt.imshow(data_img, interpolation = "nearest")
+plt.show()
