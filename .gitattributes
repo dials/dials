@@ -550,6 +550,7 @@ scratch/luiso_s/test_code/numpy_integr_2d_plot_hist.py -text
 scratch/luiso_s/test_code/numpy_integr_2d_single_pixel.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d_single_pixel.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/ref_data_01_Ints.py -text
 scratch/luiso_s/test_code/simulate_ref_lst.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/sort_exers.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/test_add_2d.py -text
