@@ -55,6 +55,7 @@ class Script(ScriptRunner):
     # FIXME import simulation code
     from dials.model.serialize import load, dump
     import cPickle as pickle
+    import math
     from dials.util.command_line import Importer
     from dials.algorithms.integration import ReflectionPredictor
 
@@ -69,17 +70,13 @@ class Script(ScriptRunner):
     sweep = importer.imagesets[0]
     crystal = importer.crystals[0]
 
-    goniometer = sweep.get_goniometer()
-    detector = sweep.get_detector()
-    beam = sweep.get_beam()
-    scan = sweep.get_scan()
-
-    # generate predictions for requested reflections => generate a
+    # generate predictions for possible reflections => generate a
     # reflection list
 
     predict = ReflectionPredictor()
     predicted = predict(sweep, crystal)
 
+    # sort with James's reflection table: should this not go somewhere central?
     from dials.scratch.jmp.container.reflection_table import ReflectionTable
 
     # calculate shoebox sizes: take parameters from params & transform
@@ -122,9 +119,30 @@ class Script(ScriptRunner):
 
     node_size = params.rs_node_size
     window_size = params.rs_window_size
+    reference = params.integrated_data_file
+    scale = params.integrated_data_file_scale
+
+    if reference:
+      counts_database = { }
+      from iotbx import mtz
+      m = mtz.object(reference)
+      mi = m.extract_miller_indices()
+      i = m.extract_reals('IMEAN').data
+      s = m.space_group().build_derived_point_group()
+      for j in range(len(mi)):
+        for op in s.all_ops():
+          hkl = tuple(map(int, op * mi[j]))
+          counts = max(0, int(math.floor(i[j] * scale)))
+          counts_database[hkl] = counts
+          counts_database[(-hkl[0], -hkl[1], -hkl[2])] = counts
+    else:
+      def constant_factory(value):
+        import itertools
+        return itertools.repeat(value).next
+      from collections import defaultdict
+      counts_database = defaultdict(constant_factory(params.counts))
 
     from dials.model.data import ReflectionList
-    import math
 
     useful = ReflectionList()
     d_matrices = []
@@ -145,7 +163,7 @@ class Script(ScriptRunner):
       d = build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl)
       d_matrices.append(d)
 
-      # construct the shoebox parameters
+      # construct the shoebox parameters: outline the ellipsoid
       x, y, z = [], [], []
 
       for dh in (1, 0, 0), (0, 1, 0), (0, 0, 1):
@@ -161,7 +179,11 @@ class Script(ScriptRunner):
       hkl.bounding_box = (int(math.floor(min(x))), int(math.floor(max(x)) + 1),
                           int(math.floor(min(y))), int(math.floor(max(y)) + 1),
                           int(math.floor(min(z))), int(math.floor(max(z)) + 1))
-      useful.append(hkl)
+      try:
+        counts = counts_database[hkl.miller_index]
+        useful.append(hkl)
+      except KeyError, e:
+        continue
 
     from dials.algorithms import shoebox
     shoebox.allocate(useful)
@@ -179,9 +201,10 @@ class Script(ScriptRunner):
       from scitbx.array_family import flex
       from scitbx.random import variate, normal_distribution
       g = variate(normal_distribution(mean = 0, sigma = node_size))
-      dhs = g(params.counts)
-      dks = g(params.counts)
-      dls = g(params.counts)
+      counts = counts_database[refl.miller_index]
+      dhs = g(counts)
+      dks = g(counts)
+      dls = g(counts)
       self.map_to_image_space(refl, d, dhs, dks, dls)
 
     p.finished('Generated %d shoeboxes' % len(useful))
