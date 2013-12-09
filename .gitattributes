@@ -292,6 +292,7 @@ command_line/refine.py -text
 command_line/reflection_stats.py -text
 command_line/show_models.py -text
 command_line/show_profiles.py -text
+command_line/simulate.py -text
 command_line/sort_reflections.py -text
 /config.h -text
 data/completion_template.txt -text
