@@ -54,7 +54,6 @@ class Script(ScriptRunner):
   def main(self, params, options, args):
     # FIXME import simulation code
     from dials.model.serialize import load, dump
-    from iotbx import mtz
     import cPickle as pickle
     from dials.util.command_line import Importer
     from dials.algorithms.integration import ReflectionPredictor
@@ -69,14 +68,13 @@ class Script(ScriptRunner):
       raise RuntimeError('need 1 crystal: %d given' % len(importer.crystals))
     sweep = importer.imagesets[0]
     crystal = importer.crystals[0]
-    data = mtz.object(args[2])
 
     goniometer = sweep.get_goniometer()
     detector = sweep.get_detector()
     beam = sweep.get_beam()
     scan = sweep.get_scan()
 
-    # FIXME generate predictions for requested reflections => generate a
+    # generate predictions for requested reflections => generate a
     # reflection list
 
     predict = ReflectionPredictor()
@@ -84,7 +82,7 @@ class Script(ScriptRunner):
 
     from dials.scratch.jmp.container.reflection_table import ReflectionTable
 
-    # FIXME calculate shoebox sizes: take parameters from params & transform
+    # calculate shoebox sizes: take parameters from params & transform
     # from reciprocal space to image space to decide how big a shoe box to use
 
     table = ReflectionTable()
@@ -119,7 +117,7 @@ class Script(ScriptRunner):
      master_phil
     from libtbx.phil import command_line
     cmd = command_line.argument_interpreter(master_params=master_phil)
-    working_phil = cmd.process_and_fetch(args=args[3:])
+    working_phil = cmd.process_and_fetch(args=args[2:])
     params = working_phil.extract()
 
     node_size = params.rs_node_size
@@ -173,7 +171,7 @@ class Script(ScriptRunner):
     from dials.util.command_line import ProgressBar
     p = ProgressBar(title = 'Generating shoeboxes')
 
-    # FIXME now for each reflection perform the simulation
+    # now for each reflection perform the simulation
     for j, refl in enumerate(useful):
       p.update(j * 100.0 / len(useful))
       d = d_matrices[j]
@@ -188,8 +186,7 @@ class Script(ScriptRunner):
 
     p.finished('Generated %d shoeboxes' % len(useful))
 
-    # FIXME now for each reflection add background
-
+    # now for each reflection add background
     from dials.algorithms.simulation.generate_test_reflections import \
      random_background_plane
 
