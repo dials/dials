@@ -201,7 +201,8 @@ class Script(ScriptRunner):
           params.background_c, params.background_d)
 
     p.finished('Generated %d backgrounds' % len(useful))
-    pickle.dump(useful, open('useful.pickle', 'w'))
+    if params.output.all:
+      pickle.dump(useful, open(params.output.all, 'w'))
 
     return
 
