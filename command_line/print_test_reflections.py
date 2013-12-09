@@ -10,6 +10,14 @@ def print_refl(refl):
 
   print '-' * 80
 
+  print 'HKL:      %d %d %d' % refl.miller_index
+  print 'S vector: %.3f %.3f %.3f' % refl.beam_vector
+  print 'Bounding: %d %d %d %d %d %d' % refl.bounding_box
+  print 'Frame:    %.3f' % refl.frame_number
+  print 'Position: %.3f %.3f' % refl.image_coord_px
+
+  print '-' * 80
+
   for k in range(dims[0]):
     for j in range(dims[1]):
       for i in range(dims[2]):
