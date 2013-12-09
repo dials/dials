@@ -186,13 +186,26 @@ class Script(ScriptRunner):
       dls = g(params.counts)
       self.map_to_image_space(refl, d, dhs, dks, dls)
 
-    p.finished('Generating %d shoeboxes' % len(useful))
-    pickle.dump(useful, open('useful.pickle', 'w'))
+    p.finished('Generated %d shoeboxes' % len(useful))
         
     # FIXME now for each reflection add background
 
-    
+    from dials.algorithms.simulation.generate_test_reflections import \
+     random_background_plane
 
+    p = ProgressBar(title = 'Generating background')
+    for j, refl in enumerate(useful):
+      p.update(j * 100.0 / len(useful))
+      if params.background:
+        random_background_plane(refl.shoebox, params.background, 0.0, 0.0, 0.0)
+      else:
+        random_background_plane(
+          refl.shoebox, params.background_a, params.background_b,
+          params.background_c, params.background_d)
+
+    p.finished('Generated %d backgrounds' % len(useful))
+    pickle.dump(useful, open('useful.pickle', 'w'))
+      
     return
 
 if __name__ == '__main__':
