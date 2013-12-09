@@ -260,8 +260,8 @@ for b in lst_msk:
     data_msk[0,row,col] = m
   mask_lst.append(data_msk)
 
-  
-  
+
+
 data_lst=[]
 var_slp=-2
 for b in lst_img:
@@ -311,8 +311,8 @@ for r in r_lst:
   data_msk2d[:,:]=data_img[0:1,:,:]
   plt.imshow(data_msk2d, interpolation = "nearest")
   plt.show()
-  
-  
+
+
 big_nrow = 41
 big_ncol = 41
 sumation = flex.double(flex.grid(big_nrow, big_ncol))

@@ -4,7 +4,7 @@ def build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl, tst=False):
   from scitbx import matrix
 
   refl = hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl
-  
+
   x = [r.image_coord_px[0] for r in refl]
   y = [r.image_coord_px[1] for r in refl]
   z = [r.frame_number for r in refl]
@@ -15,7 +15,7 @@ def build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl, tst=False):
 
   if not tst:
     return d
-  
+
   # now assess how accurate this d matrix is
 
   for j, r in enumerate(refl[1:]):

@@ -43,12 +43,12 @@ class Script(ScriptRunner):
     ys = flex.floor(dys + refl.image_coord_px[1]).iround() - bb[2]
     zs = flex.floor(dzs + refl.frame_number).iround() - bb[4]
     xyz = flex.vec3_int(zs, ys, xs)
-    xyz = xyz.select((xs >= 0 and xs < (bb[1] - bb[0])) & 
+    xyz = xyz.select((xs >= 0 and xs < (bb[1] - bb[0])) &
                      (ys >= 0 and ys < (bb[3] - bb[2])) &
                      (zs >= 0 and zs < (bb[5] - bb[4])))
     for _xyz in xyz:
       refl.shoebox[_xyz] += 1
-    
+
     return
 
   def main(self, params, options, args):
@@ -83,7 +83,7 @@ class Script(ScriptRunner):
     predicted = predict(sweep, crystal)
 
     from dials.scratch.jmp.container.reflection_table import ReflectionTable
-    
+
     # FIXME calculate shoebox sizes: take parameters from params & transform
     # from reciprocal space to image space to decide how big a shoe box to use
 
@@ -94,7 +94,7 @@ class Script(ScriptRunner):
     candidates = []
 
     unique = sorted(indexer)
-    
+
     for h, k, l in unique:
 
       try:
@@ -114,24 +114,24 @@ class Script(ScriptRunner):
     from dials.algorithms.simulation.utils import build_prediction_matrix
 
     # FIXME should this not be handled by magic by the ScriptRunner?
-    
+
     from dials.algorithms.simulation.generate_test_reflections import \
      master_phil
     from libtbx.phil import command_line
     cmd = command_line.argument_interpreter(master_params=master_phil)
     working_phil = cmd.process_and_fetch(args=args[3:])
     params = working_phil.extract()
-    
+
     node_size = params.rs_node_size
     window_size = params.rs_window_size
-    
+
     from dials.model.data import ReflectionList
     import math
 
     useful = ReflectionList()
     d_matrices = []
 
-    for h, k, l in candidates:      
+    for h, k, l in candidates:
       hkl = predicted[indexer[(h, k, l)][0]]
       _x = hkl.image_coord_px[0]
       _y = hkl.image_coord_px[1]
@@ -146,7 +146,7 @@ class Script(ScriptRunner):
       hkpl = predicted[indexer[(h, k, l + 1)][0]]
       d = build_prediction_matrix(hkl, mhkl, phkl, hmkl, hpkl, hkml, hkpl)
       d_matrices.append(d)
-      
+
       # construct the shoebox parameters
       x, y, z = [], [], []
 
@@ -159,7 +159,7 @@ class Script(ScriptRunner):
         x.append(dxyz[0] + _x)
         y.append(dxyz[1] + _y)
         z.append(dxyz[2] + _z)
-        
+
       hkl.bounding_box = (int(math.floor(min(x))), int(math.floor(max(x)) + 1),
                           int(math.floor(min(y))), int(math.floor(max(y)) + 1),
                           int(math.floor(min(z))), int(math.floor(max(z)) + 1))
@@ -187,7 +187,7 @@ class Script(ScriptRunner):
       self.map_to_image_space(refl, d, dhs, dks, dls)
 
     p.finished('Generated %d shoeboxes' % len(useful))
-        
+
     # FIXME now for each reflection add background
 
     from dials.algorithms.simulation.generate_test_reflections import \
@@ -205,7 +205,7 @@ class Script(ScriptRunner):
 
     p.finished('Generated %d backgrounds' % len(useful))
     pickle.dump(useful, open('useful.pickle', 'w'))
-      
+
     return
 
 if __name__ == '__main__':
