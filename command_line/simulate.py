@@ -30,6 +30,27 @@ class Script(ScriptRunner):
         action="count", default=0,
         help="set verbosity level; -vv gives verbosity level 2.")
 
+  @staticmethod
+  def map_to_image_space(refl, d, dhs, dks, dls):
+    import math
+    from scitbx.array_family import flex
+    d_elems = d.elems
+    bb = refl.bounding_box
+    dxs = d_elems[0] * dhs + d_elems[1] * dks + d_elems[2] * dls
+    dys = d_elems[3] * dhs + d_elems[4] * dks + d_elems[5] * dls
+    dzs = d_elems[6] * dhs + d_elems[7] * dks + d_elems[8] * dls
+    xs = flex.floor(dxs + refl.image_coord_px[0]).iround() - bb[0]
+    ys = flex.floor(dys + refl.image_coord_px[1]).iround() - bb[2]
+    zs = flex.floor(dzs + refl.frame_number).iround() - bb[4]
+    xyz = flex.vec3_int(zs, ys, xs)
+    xyz = xyz.select((xs >= 0 and xs < (bb[1] - bb[0])) & 
+                     (ys >= 0 and ys < (bb[3] - bb[2])) &
+                     (zs >= 0 and zs < (bb[5] - bb[4])))
+    for _xyz in xyz:
+      refl.shoebox[_xyz] += 1
+    
+    return
+
   def main(self, params, options, args):
     # FIXME import simulation code
     from dials.model.serialize import load, dump
@@ -105,6 +126,7 @@ class Script(ScriptRunner):
     window_size = params.rs_window_size
     
     from dials.model.data import ReflectionList
+    import math
 
     useful = ReflectionList()
     d_matrices = []
@@ -137,8 +159,6 @@ class Script(ScriptRunner):
         x.append(dxyz[0] + _x)
         y.append(dxyz[1] + _y)
         z.append(dxyz[2] + _z)
-
-      import math
         
       hkl.bounding_box = (int(math.floor(min(x))), int(math.floor(max(x)) + 1),
                           int(math.floor(min(y))), int(math.floor(max(y)) + 1),
@@ -148,39 +168,30 @@ class Script(ScriptRunner):
     from dials.algorithms import shoebox
     shoebox.allocate(useful)
 
-    useful = useful[:10]
-    
     import random
-    
+
+    from dials.util.command_line import ProgressBar
+    p = ProgressBar(title = 'Generating shoeboxes')
+
     # FIXME now for each reflection perform the simulation
     for j, refl in enumerate(useful):
+      p.update(j * 100.0 / len(useful))
       d = d_matrices[j]
-      for j in range(params.counts):
-        dh = random.gauss(0, node_size)
-        dk = random.gauss(0, node_size)
-        dl = random.gauss(0, node_size)
-        _x = refl.image_coord_px[0]
-        _y = refl.image_coord_px[1]
-        _z = refl.frame_number
-        xyz = d * (dh, dk, dl)
-        x = int(math.floor(xyz[0] + _x))
-        y = int(math.floor(xyz[1] + _y))
-        z = int(math.floor(xyz[2] + _z))
-        if x < refl.bounding_box[0] or x >= refl.bounding_box[1]:
-          continue
-        if y < refl.bounding_box[2] or y >= refl.bounding_box[3]:
-          continue
-        if z < refl.bounding_box[4] or z >= refl.bounding_box[5]:
-          continue
-        x -= refl.bounding_box[0]
-        y -= refl.bounding_box[2]
-        z -= refl.bounding_box[4]
-        refl.shoebox[(z, y, x)] += 1
 
+      from scitbx.array_family import flex
+      from scitbx.random import variate, normal_distribution
+      g = variate(normal_distribution(mean = 0, sigma = node_size))
+      dhs = g(params.counts)
+      dks = g(params.counts)
+      dls = g(params.counts)
+      self.map_to_image_space(refl, d, dhs, dks, dls)
+
+    p.finished('Generating %d shoeboxes' % len(useful))
     pickle.dump(useful, open('useful.pickle', 'w'))
         
     # FIXME now for each reflection add background
 
+    
 
     return
 
