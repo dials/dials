@@ -217,6 +217,7 @@ algorithms/shoebox/masker.py -text
 algorithms/shoebox/partial_extractor.h -text
 algorithms/simulation/__init__.py -text
 algorithms/simulation/generate_test_reflections.py -text
+algorithms/simulation/utils.py -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
 algorithms/spatial_indexing/boost_python/octree.cc -text

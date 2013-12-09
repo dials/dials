@@ -29,6 +29,10 @@ spot_offset {
   z = 0.0
     .type = float
 }
+rs_node_size = 0.05
+  .type = float
+rs_window_size = 0.25
+  .type = float
 mask_nsigma = 3.0
   .type = float
 counts = 0
