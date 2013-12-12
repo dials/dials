@@ -42,14 +42,14 @@ def make_2d_profile(reflections):
   descr = flex.double(flex.grid(1, 3))
   for ref in select_rlist:
     shoebox = ref.shoebox
-    mask = ref.shoebox_mask
+    #mask = ref.shoebox_mask                                  # may be needed soon
     background = ref.shoebox_background
     data2d = shoebox[0:1, :, :]
-    mask2d = mask[0:1, :, :]
+    #mask2d = mask[0:1, :, :]                                # may be needed soon
     background2d = background[0:1, :, :]
 
     data2d.reshape(flex.grid(shoebox.all()[1:]))
-    mask2d.reshape(flex.grid(shoebox.all()[1:]))
+    #mask2d.reshape(flex.grid(shoebox.all()[1:]))            # may be needed soon
     background2d.reshape(flex.grid(shoebox.all()[1:]))
 
     descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
@@ -74,18 +74,17 @@ def fit_profile_2d(reflections, arr_proff, row, col):
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:
       shoebox = ref.shoebox
-      mask = ref.shoebox_mask
+      #mask = ref.shoebox_mask                               # may be needed soon
       background = ref.shoebox_background
-
       ref.intensity = 0.0
       ref.intensity_variance = 0.0
       for i in range(shoebox.all()[0]):
         data2d = shoebox[i:i + 1, :, :]
-        mask2d = mask[i:i + 1, :, :]
+        #mask2d = mask[i:i + 1, :, :]                        # may be needed soon
         background2d = background[i:i + 1, :, :]
         try:
           data2d.reshape(flex.grid(shoebox.all()[1:]))
-          mask2d.reshape(flex.grid(shoebox.all()[1:]))
+          #mask2d.reshape(flex.grid(shoebox.all()[1:]))      # may be needed soon
           background2d.reshape(flex.grid(shoebox.all()[1:]))
 
         except:
