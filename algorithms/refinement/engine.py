@@ -252,7 +252,7 @@ class AdaptLbfgs(Refinery):
 
     log = ref_log.getvalue()
     if self._log:
-      f = open(self._log, "w")
+      f = open(self._log, "a")
       f.write(log)
       f.close()
     ref_log.close()
