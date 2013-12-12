@@ -161,6 +161,8 @@ class Refinery(object):
     msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
     print msg % tuple(self._g)
 
+    return
+
   def print_table(self):
     """print useful output in the form of a space-separated table"""
 
@@ -185,6 +187,9 @@ class Refinery(object):
                 "%.5g " * len(self._parameters)) % dat
       else:
         print  ("%d " + "%d " + "%.5g " + "%.5g " * n_rmsds) % dat
+    print self.history.reason_for_termination
+
+    return
 
   def run(self):
     """
@@ -205,6 +210,11 @@ class AdaptLbfgs(Refinery):
 
     self._termination_params = lbfgs.termination_parameters(
         max_iterations = self._max_iterations)
+
+    import cStringIO
+    self._log_string = cStringIO.StringIO
+
+    return
 
   def compute_functional_and_gradients(self):
 
@@ -229,38 +239,48 @@ class AdaptLbfgs(Refinery):
 
     return self.test_for_termination()
 
+  def run_lbfgs(self, curvatures=False):
+    """
+    Run the minimiser, keeping track of its log.
+    """
+
+    ref_log = self._log_string()
+    if curvatures: self.diag_mode = "always"
+    self.minimizer = lbfgs.run(target_evaluator=self,
+        termination_params=self._termination_params,
+        log=ref_log)
+
+    log = ref_log.getvalue()
+    if self._log:
+      f = open(self._log, "w")
+      f.write(log)
+      f.close()
+    ref_log.close()
+
+    pos = log.rfind("lbfgs minimizer stop: ")
+    if pos >= 0:
+      self.history.reason_for_termination = log[pos:].splitlines()[0]
+
+    if self.minimizer.error:
+      self.history.reason_for_termination = self.minimizer.error
+
+    if self._verbosity > 0: self.print_table()
+
+    return
+
 class SimpleLBFGS(AdaptLbfgs):
   """Refinery implementation, using cctbx LBFGS with basic settings"""
 
   def run(self):
 
-    ref_log = None
-    if self._log: ref_log = open(self._log, "w")
-    self.minimizer = lbfgs.run(target_evaluator=self,
-        termination_params=self._termination_params,
-        log=ref_log)
-    if self._log: ref_log.close()
-
-    if self._verbosity > 0: self.print_table()
-
-    return
+    return self.run_lbfgs(curvatures=False)
 
 class LBFGScurvs(AdaptLbfgs):
   """Refinery implementation using cctbx LBFGS with curvatures"""
 
   def run(self):
 
-    ref_log = None
-    if self._log: ref_log = open(self._log, "w")
-    self.diag_mode = "always"
-    self.minimizer = lbfgs.run(target_evaluator=self,
-        termination_params=self._termination_params,
-        log=ref_log)
-    if self._log: ref_log.close()
-
-    if self._verbosity > 0: self.print_table()
-
-    return
+    return self.run_lbfgs(curvatures=True)
 
   def compute_functional_gradients_diag(self):
 
@@ -440,7 +460,6 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     # print output table
     if self._verbosity > 0:
       self.print_table()
-      print self.history.reason_for_termination
 
     # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
     cf = self.step_equations().cholesky_factor_packed_u()
@@ -564,7 +583,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
     # print output table
     if self._verbosity > 0:
       self.print_table()
-      print self.history.reason_for_termination
 
     #FIXME
     # This stuff not yet available for the Lev Mar minimiser
