@@ -24,6 +24,7 @@ def run(args):
   pred_x, pred_y = predicted_xy.parts()
   pyplot.scatter(obs_x, obs_y, marker='o', c='red')
   pyplot.scatter(pred_x, pred_y, marker='+', c='blue')
+  pyplot.gca().invert_yaxis()
   pyplot.show()
 
 
