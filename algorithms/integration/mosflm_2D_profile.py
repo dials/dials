@@ -42,14 +42,14 @@ def make_2d_profile(reflections):
   descr = flex.double(flex.grid(1, 3))
   for ref in select_rlist:
     shoebox = ref.shoebox
-    mask = ref.shoebox_mask  #  maybe not needed to use
+    mask = ref.shoebox_mask
     background = ref.shoebox_background
     data2d = shoebox[0:1, :, :]
-    mask2d = mask[0:1, :, :]  #  maybe not needed to use
+    mask2d = mask[0:1, :, :]
     background2d = background[0:1, :, :]
 
     data2d.reshape(flex.grid(shoebox.all()[1:]))
-    mask2d.reshape(flex.grid(shoebox.all()[1:]))  #  maybe not needed to use
+    mask2d.reshape(flex.grid(shoebox.all()[1:]))
     background2d.reshape(flex.grid(shoebox.all()[1:]))
 
     descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
@@ -59,7 +59,17 @@ def make_2d_profile(reflections):
     sumation = add_2d(descr, peak2d, sumation)
 
   return sumation, thold
-def fit_profile_2d(reflections, average, thold):
+
+def fit_profile_2d(reflections, arr_proff, row, col):
+  average = arr_proff[row][col][0]
+  thold = arr_proff[row][col][1]
+
+  if_you_want_to_see_how_the_profiles_look = '''
+  from matplotlib import pyplot as plt
+  data2d = average.as_numpy_array()
+  plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
+  plt.show()
+  '''
   descr = flex.double(flex.grid(1, 3))
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:

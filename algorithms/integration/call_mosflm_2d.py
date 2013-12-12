@@ -8,13 +8,15 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
   ncol = n_div
   nrow = n_div
   arr_rlist = []
-
+  arr_proff = []
   for col in range(ncol):
     b = []
+    tmp_empty = []
     for row in range(nrow):
       b.append(ReflectionList())
+      tmp_empty.append([])
     arr_rlist.append(b)
-
+    arr_proff.append(tmp_empty)
   ncnt = 0
   lst_pos = []
   for r in rlist:
@@ -30,14 +32,11 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
   for col in range(ncol):
     for row in range(nrow):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col])
-
-      if_you_want_to_see_how_the_profiles_look='''
-      from matplotlib import pyplot as plt
-      data2d = profile.as_numpy_array()
-      plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
-      plt.show()
-      '''
-      arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], profile, tr_hold)
+      arr_proff[row][col] = [profile, tr_hold]
+  for col in range(ncol):
+    for row in range(nrow):
+      arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col],
+                                           arr_proff, row, col)
 
   new_rlist = ReflectionList()
   for numpos in lst_pos:
