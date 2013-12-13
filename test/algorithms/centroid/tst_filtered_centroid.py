@@ -2,6 +2,12 @@ from __future__ import division
 from dials.algorithms.centroid.filtered_centroid import FilteredCentroid
 
 def tst_filtered_centroid():
+  try:
+    import scipy
+  except Exception:
+    print "skiping this test: Scipy unavailable"
+    return
+
   import libtbx.load_env
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')

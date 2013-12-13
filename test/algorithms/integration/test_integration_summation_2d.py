@@ -64,6 +64,6 @@ def run():
 
 
 if __name__ == '__main__':
-  for i in range(50):
+  for i in range(5):
     res=run()
     print res
