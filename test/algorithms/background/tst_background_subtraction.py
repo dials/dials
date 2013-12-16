@@ -12,7 +12,7 @@ class TestSimulated:
     from math import sqrt
     from scitbx.array_family import flex
     counts = 0
-    num = 1000
+    num = 100
     rlist = self.generate_profiles(num, counts)
     I = []
     S = []
@@ -25,7 +25,7 @@ class TestSimulated:
     varz = mv.unweighted_sample_variance()
     sdevz = sqrt(varz)
     print "Z: mean=%f, sdev=%f" % (meanz, sdevz)
-    assert(abs(meanz - 0.0) < 1e-1)
+    assert(abs(meanz - 0.0) < (5 * sdevz / sqrt(num)))
     assert(abs(sdevz - 1.0) < 1e-1)
     print 'OK'
 
