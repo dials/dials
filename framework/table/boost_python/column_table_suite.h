@@ -737,6 +737,8 @@ namespace column_table_suite {
         .def("__setitem__", &setitem_row<column_table_type>)
         .def("__getitem__", &getitem_slice<column_table_type>)
         .def("__setitem__", &setitem_slice<column_table_type>)
+        .def("__iter__", make_iterator<
+          row_iterator<column_table_type> >::range())
         .def("cols", make_iterator<
           column_iterator<column_table_type> >::range())
         .def("rows", make_iterator<

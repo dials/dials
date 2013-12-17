@@ -647,7 +647,7 @@ namespace dials { namespace framework {
 
     /** @returns The number of columns in the table */
     size_type size() const {
-      return ncols() ;
+      return nrows() ;
     }
 
     /** Clear the table */
