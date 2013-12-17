@@ -11,26 +11,11 @@ table['c3'] = flex.std_string(30)
 print "Keys"
 print table.keys()
 
-print "Values"
-print table.values()
-
 print "Items"
-print table.items()
-
-print "Iterkeys"
-for key in table.iterkeys():
-  print key
-
-print "IterValues"
-for value in table.itervalues():
-  print value
-
-print "IterItems"
-for key, value in table.iteritems():
-  print key, value
+print table.cols()
 
 print "IterRows"
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 print "IndexRows"
@@ -60,26 +45,26 @@ table = column_table([
   ("column_1", flex.int()),
   ("column_2", flex.std_string())])
 
-print list(table.iterkeys())
+print list(table.keys())
 
 table.append({ 'column_1' : 200, 'column_2' : "Hello World 1" })
 table.append({ 'column_1' : 300, 'column_2' : "Hello World 2" })
 table.append({ 'column_1' : 400, 'column_2' : "Hello World 3" })
 table.append({ 'column_1' : 500, 'column_2' : "Hello World 4" })
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 table.insert(2, { 'column_1' : 1000 })
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 print "Extend"
 table.extend(table)
 
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 new_table = column_table([
@@ -89,7 +74,7 @@ new_table = column_table([
 
 table.update(new_table)
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 
@@ -102,19 +87,19 @@ table["c3"] = flex.int([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
 index = flex.size_t([9, 8, 7, 6, 4, 4, 3, 2, 1, 0])
 table.reorder(index)
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 print "Sort"
 table.sort("c1")
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 print "Sort"
 table.sort("c1", reverse=True)
 
-for row in table.iterrows():
+for row in table.rows():
   print row
 
 print "Types"
