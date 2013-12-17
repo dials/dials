@@ -577,6 +577,92 @@ namespace dials { namespace framework { namespace boost_python {
     }
   }
 
+  struct reorder_column_data :
+      public boost::static_visitor<void> {
+
+    af::const_ref<std::size_t> index;
+
+    reorder_column_data(const af::const_ref<std::size_t> &index_)
+      : index(index_) {}
+
+    template <typename T>
+    void operator () (T col) {
+      std::vector<typename T::value_type> temp(col.begin(), col.end());
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        col[i] = temp[index[i]];
+      }
+    }
+  };
+
+  template <typename ColumnTable>
+  void reorder_table(ColumnTable &table, const af::const_ref<std::size_t> &index) {
+    reorder_column_data rec(index);
+    for (typename ColumnTable::const_iterator it = table.begin(); it != table.end(); ++it) {
+      it->second.apply_visitor(rec);
+    }
+  }
+
+  template <typename T>
+  struct compare_index {
+    const T &v_;
+    compare_index(const T &v)
+      : v_(v) {}
+    bool operator()(std::size_t a, std::size_t b) {
+      return v_[a] < v_[b];
+    }
+  };
+
+  struct sort_column_data :
+      public boost::static_visitor<void> {
+    af::ref<std::size_t> index;
+    sort_column_data(af::ref<std::size_t> index_)
+      : index(index_) {}
+
+    template <typename T>
+    void operator () (const T col) {
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        index[i] = i;
+      }
+      std::sort(index.begin(), index.end(), compare_index<T>(col));
+    }
+  };
+
+  template <typename ColumnTable>
+  void sort_table(ColumnTable &table, std::string column, bool reverse) {
+    af::shared<std::size_t> index(table.nrows());
+    sort_column_data sc(index.ref());
+    typename ColumnTable::mapped_type col = table[column];
+    col.apply_visitor(sc);
+    if (reverse) {
+      std::reverse(index.begin(), index.end());
+    }
+    reorder_table(table, index.const_ref());
+  }
+
+  struct type_printer {
+    boost::python::list type_list;
+    type_printer(boost::python::list type_list_)
+      : type_list(type_list_) {}
+
+    template <typename U>
+    void operator()(U x) {
+      typedef typename U::value_type type;
+      type a;
+      boost::python::object obj(a);
+      boost::python::object tt(boost::python::handle<>(PyObject_Type(obj.ptr())));
+      type_list.append(tt);
+      //type_list.append(PyObject_Type(obj.ptr()));
+    }
+  };
+
+  template <typename ColumnTable>
+  boost::python::list types(const ColumnTable &table) {
+    boost::python::list result;
+    typedef typename ColumnTable::mapped_type::types column_types;
+    boost::mpl::for_each<column_types>(type_printer(result));
+    return result;
+  }
+
   template <typename column_types>
   void column_table_wrapper(const char *name) {
 
@@ -622,6 +708,9 @@ namespace dials { namespace framework { namespace boost_python {
       .def("insert", &insert<column_table_type>)
       .def("extend", &extend<column_table_type>)
       .def("update", &update<column_table_type>)
+      .def("reorder", &reorder_table<column_table_type>)
+      .def("sort", &sort_table<column_table_type>, (arg("column"), arg("reverse")=false))
+      .def("types", &types<column_table_type>)
       ;
 
     boost::mpl::for_each<typename column_types::types>(

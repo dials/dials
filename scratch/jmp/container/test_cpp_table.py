@@ -91,3 +91,31 @@ table.update(new_table)
 
 for row in table.iterrows():
   print row
+
+
+print "Reorder"
+table = column_table()
+table["c1"] = flex.int([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+table["c2"] = flex.int([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+table["c3"] = flex.int([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
+
+index = flex.size_t([9, 8, 7, 6, 4, 4, 3, 2, 1, 0])
+table.reorder(index)
+
+for row in table.iterrows():
+  print row
+
+print "Sort"
+table.sort("c1")
+
+for row in table.iterrows():
+  print row
+
+print "Sort"
+table.sort("c1", reverse=True)
+
+for row in table.iterrows():
+  print row
+
+print "Types"
+print table.types()
