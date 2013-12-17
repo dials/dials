@@ -353,7 +353,6 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.png
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tiff -text
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 /error.h -text
-framework/SConscript -text
 framework/__init__.py -text
 framework/dftbx/SConscript -text
 framework/dftbx/__init__.py -text
@@ -363,11 +362,8 @@ framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 framework/plugin.py -text
 framework/plugin_example.py -text
-framework/table/SConscript -text
 framework/table/__init__.py -text
-framework/table/boost_python/column_table.cc -text
 framework/table/boost_python/column_table_suite.h -text
-framework/table/boost_python/table_ext.cc -text
 framework/table/column_table.h -text
 framework/toplevel.py -text
 framework/toplevel_example.py -text
