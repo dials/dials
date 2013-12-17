@@ -414,17 +414,13 @@ namespace dials { namespace framework {
     // Remove any types if they are null
     typedef typename boost::mpl::remove_if<
       all_types,
-      typename boost::mpl::lambda<
-        is_null_type<boost::mpl::_1>
-      >::type
+      typename boost::mpl::lambda< is_null_type<boost::mpl::_1> >::type
     >::type valid_types;
 
     // Create a list of column_data<T> types
     typedef typename boost::mpl::transform<
       valid_types,
-      typename boost::mpl::lambda<
-        create_column_type<boost::mpl::_1>
-      >::type
+      typename boost::mpl::lambda< create_column_type<boost::mpl::_1> >::type
     >::type column_types;
 
   public:
@@ -455,11 +451,11 @@ namespace dials { namespace framework {
         : t_(t), k_(k) {}
 
       template <typename T>
-      operator column_data<T>() const{
-        map_type& table = t_->table_;
-        iterator it = table.lower_bound(k_);
-        if (it == table.end() || table.key_comp()(k_, it->first)) {
-          it = table.insert(it, map_value_type(k_,
+      operator column_data<T>() const {
+        boost::shared_ptr<map_type> table = t_->table_;
+        iterator it = table->lower_bound(k_);
+        if (it == table->end() || table->key_comp()(k_, it->first)) {
+          it = table->insert(it, map_value_type(k_,
             mapped_type(column_data<T>(t_->sync_))));
         }
         return boost::get< column_data<T> >(it->second);
@@ -473,29 +469,31 @@ namespace dials { namespace framework {
   public:
 
     column_table()
-      : sync_() {}
+      : table_(boost::make_shared<map_type>()),
+        sync_() {}
 
     column_table(size_type n)
-      : sync_(n) {}
+      : table_(boost::make_shared<map_type>()),
+        sync_(n) {}
 
     proxy operator[](const key_type &key) {
       return proxy(this, key);
     }
 
     iterator begin() {
-      return table_.begin();
+      return table_->begin();
     }
 
     iterator end() {
-      return table_.end();
+      return table_->end();
     }
 
     const_iterator begin() const {
-      return table_.begin();
+      return table_->begin();
     }
 
     const_iterator end() const {
-      return table_.end();
+      return table_->end();
     }
 
     size_type nrows() const {
@@ -503,15 +501,15 @@ namespace dials { namespace framework {
     }
 
     size_type ncols() const {
-      return table_.size();
+      return table_->size();
     }
 
     size_type erase(const key_type &key) {
-      return table_.erase(key);
+      return table_->erase(key);
     }
 
     bool empty() const {
-      return table_.empty();
+      return table_->empty();
     }
 
     size_type size() const {
@@ -519,28 +517,40 @@ namespace dials { namespace framework {
     }
 
     void clear() {
-      table_.clear();
+      table_->clear();
     }
 
     size_type count(const key_type &key) const {
-      return table_.count(key);
+      return table_->count(key);
     }
 
     iterator find(const key_type &key) {
-      return table_.find(key);
+      return table_->find(key);
     }
 
     const_iterator find(const key_type &key) const {
-      return table_.find(key);
+      return table_->find(key);
+    }
+
+    void resize(size_type n) {
+      sync_.resize(n);
+    }
+
+    void insert(size_type pos) {
+      insert(pos, 1);
+    }
+
+    void insert(size_type pos, size_type n) {
+      sync_.insert(pos, n);
     }
 
   private:
 
     mapped_type& get(const key_type &key) {
-      return table_[key];
+      return (*table_)[key];
     }
 
-    map_type table_;
+    boost::shared_ptr<map_type> table_;
     column_synchronizer sync_;
   };
 
