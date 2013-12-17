@@ -4,8 +4,8 @@ from dials.framework.table import column_table
 from scitbx.array_family import flex
 
 table = column_table()
-table['c1'] = flex.int(10)
-table['c2'] = flex.double(20)
+table['c1'] = flex.int(range(10))
+table['c2'] = flex.double(range(20))
 table['c3'] = flex.std_string(30)
 
 print "Keys"
@@ -31,4 +31,13 @@ for key, value in table.iteritems():
 
 print "IterRows"
 for row in table.iterrows():
+  print row
+
+print "IndexRows"
+print table[10]
+
+print "Slice Table"
+new_table = table[5:15]
+print len(new_table)
+for row in new_table:
   print row

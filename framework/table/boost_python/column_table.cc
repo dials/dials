@@ -10,11 +10,13 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost/python/slice.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <string>
 #include <iterator>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/boost_python/slice.h>
 #include <dials/framework/table/column_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -364,6 +366,56 @@ namespace dials { namespace framework { namespace boost_python {
     return column_table_iterrows_proxy<ColumnTable>(table.begin(), table.end(), table.nrows());
   }
 
+  template <typename ColumnTable>
+  boost::python::object column_table_get_row_data(
+      ColumnTable &table, std::size_t index) {
+    boost::python::list result;
+    column_data_to_object to_object;
+    for (typename ColumnTable::iterator it = table.begin(); it != table.end(); ++it) {
+      result.append(it->second.apply_visitor(to_object)[index]);
+    }
+    return result;
+  }
+
+  template <typename ColumnTable>
+  struct copy_column_data_slice :
+      public boost::static_visitor<void> {
+
+    ColumnTable &table;
+    typename ColumnTable::key_type name;
+    scitbx::boost_python::adapted_slice slice;
+
+    copy_column_data_slice(
+          ColumnTable &table_,
+          typename ColumnTable::key_type name_,
+          scitbx::boost_python::adapted_slice slice_)
+      : table(table_),
+        name(name_),
+        slice(slice_) {}
+
+    template <typename T>
+    void operator () (const T &col) {
+      T c = table[name];
+      for (std::size_t i = 0, j = slice.start; i < table.nrows(); ++i, j += slice.step) {
+        c[i] = col[j];
+      }
+    }
+  };
+
+  template <typename ColumnTable>
+  ColumnTable column_table_get_slice(const ColumnTable &table,
+      boost::python::slice slice) {
+
+    scitbx::boost_python::adapted_slice aslice(slice, table.nrows());
+
+    ColumnTable result(aslice.size);
+    for (typename ColumnTable::const_iterator it = table.begin(); it != table.end(); ++it) {
+      copy_column_data_slice <ColumnTable> copy_slice(result, it->first, aslice);
+      it->second.apply_visitor(copy_slice);
+    }
+    return result;
+  }
+
   template <typename column_types>
   void column_table_wrapper(const char *name) {
 
@@ -374,6 +426,7 @@ namespace dials { namespace framework { namespace boost_python {
 
     class_<column_table_type> column_table_class(name);
     column_table_class
+      .def(init<std::size_t>())
       .def("clear", &column_table_type::clear)
       .def("has_key", &column_table_has_key<column_table_type>)
       .def("items", &column_table_items<column_table_type>)
@@ -397,7 +450,10 @@ namespace dials { namespace framework { namespace boost_python {
       .def("nrows", &column_table_type::nrows)
       .def("ncols", &column_table_type::ncols)
       .def("__len__", &column_table_type::size)
-      .def("__getitem__", &column_table_get_data<column_table_type>);
+      .def("__contains__", &column_table_has_key<column_table_type>)
+      .def("__getitem__", &column_table_get_data<column_table_type>)
+      .def("__getitem__", &column_table_get_row_data<column_table_type>)
+      .def("__getitem__", &column_table_get_slice<column_table_type>);
 
     boost::mpl::for_each<typename column_types::types>(
       column_table_set_data_wrapper<column_table_type>(

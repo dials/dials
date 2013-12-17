@@ -153,6 +153,7 @@ namespace dials { namespace framework {
     typedef std::vector<T> storage_type;
     typedef typename storage_type::value_type value_type;
     typedef typename storage_type::reference reference;
+    typedef typename storage_type::const_reference const_reference;
     typedef typename storage_type::iterator iterator;
     typedef typename storage_type::const_iterator const_iterator;
     typedef typename storage_type::size_type size_type;
@@ -180,6 +181,10 @@ namespace dials { namespace framework {
         erase_conn_(sync_.connect_erase(eraser(&storage_))) {}
 
     reference operator[](size_type index) {
+      return storage_[index];
+    }
+
+    const_reference operator[](size_type index) const {
       return storage_[index];
     }
 
@@ -303,6 +308,7 @@ namespace dials { namespace framework {
     typedef typename core_type::storage_type storage_type;
     typedef typename core_type::value_type value_type;
     typedef typename core_type::reference reference;
+    typedef typename core_type::const_reference const_reference;
     typedef typename core_type::iterator iterator;
     typedef typename core_type::const_iterator const_iterator;
     typedef typename core_type::size_type size_type;
@@ -319,6 +325,10 @@ namespace dials { namespace framework {
       : core_(boost::make_shared<core_type>(sync)) {}
 
     reference operator[](size_type index) {
+      return (*core_)[index];
+    }
+
+    const_reference operator[](size_type index) const {
       return (*core_)[index];
     }
 
@@ -465,6 +475,9 @@ namespace dials { namespace framework {
     column_table()
       : sync_() {}
 
+    column_table(size_type n)
+      : sync_(n) {}
+
     proxy operator[](const key_type &key) {
       return proxy(this, key);
     }
@@ -524,7 +537,7 @@ namespace dials { namespace framework {
   private:
 
     mapped_type& get(const key_type &key) {
-            return table_[key];
+      return table_[key];
     }
 
     map_type table_;
