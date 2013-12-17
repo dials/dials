@@ -2,105 +2,119 @@
 
 from dials.framework.table import column_table
 from scitbx.array_family import flex
-
+from time import time
 table = column_table()
-table['c1'] = flex.int(range(10))
-table['c2'] = flex.double(range(20))
-table['c3'] = flex.std_string(30)
+table['c1'] = flex.int()
+table['c2'] = flex.double()
+table.resize(1000000)
 
-print "Keys"
-print table.keys()
+st = time()
 
-print "Items"
-print table.cols()
+keys, cols = zip(*list(table.cols()))
+for c in zip(*cols):
+  d = dict(zip(keys, c))
+print time() - st
 
-print "IterRows"
+st = time()
 for row in table.rows():
-  print row
+  pass
+print time() - st
 
-print "IndexRows"
-print table[10]
+#table['c3'] = flex.std_string(30)
 
-print "Slice Table"
-new_table = table[5:15]
-print len(new_table)
-for row in new_table:
-  print row
+#print "Keys"
+#print table.keys()
 
-print "Set Slice"
-table[15:20] = new_table
-for row in table:
-  print row
+#print "Items"
+#print table.cols()
 
-print "c1" in table
-print "c" in table
+#print "IterRows"
+#for row in table.rows():
+#  print row
 
-table[10] = { 'c1' : 100 }
-table[11] = { 'c1' : 200, 'c3' : "Hello World" }
+#print "IndexRows"
+#print table[10]
 
-print table[10]
-print table[11]
+#print "Slice Table"
+#new_table = table[5:15]
+#print len(new_table)
+#for row in new_table:
+#  print row
 
-table = column_table([
-  ("column_1", flex.int()),
-  ("column_2", flex.std_string())])
+#print "Set Slice"
+#table[15:20] = new_table
+#for row in table:
+#  print row
 
-print list(table.keys())
+#print "c1" in table
+#print "c" in table
 
-table.append({ 'column_1' : 200, 'column_2' : "Hello World 1" })
-table.append({ 'column_1' : 300, 'column_2' : "Hello World 2" })
-table.append({ 'column_1' : 400, 'column_2' : "Hello World 3" })
-table.append({ 'column_1' : 500, 'column_2' : "Hello World 4" })
+#table[10] = { 'c1' : 100 }
+#table[11] = { 'c1' : 200, 'c3' : "Hello World" }
 
-for row in table.rows():
-  print row
+#print table[10]
+#print table[11]
 
-table.insert(2, { 'column_1' : 1000 })
+#table = column_table([
+#  ("column_1", flex.int()),
+#  ("column_2", flex.std_string())])
 
-for row in table.rows():
-  print row
+#print list(table.keys())
 
-print "Extend"
-table.extend(table)
+#table.append({ 'column_1' : 200, 'column_2' : "Hello World 1" })
+#table.append({ 'column_1' : 300, 'column_2' : "Hello World 2" })
+#table.append({ 'column_1' : 400, 'column_2' : "Hello World 3" })
+#table.append({ 'column_1' : 500, 'column_2' : "Hello World 4" })
 
+#for row in table.rows():
+#  print row
 
-for row in table.rows():
-  print row
+#table.insert(2, { 'column_1' : 1000 })
 
-new_table = column_table([
-  ("column_2", flex.int()),
-  ("column_3", flex.int()),
-  ("column_4", flex.std_string())])
+#for row in table.rows():
+#  print row
 
-table.update(new_table)
-
-for row in table.rows():
-  print row
+#print "Extend"
+#table.extend(table)
 
 
-print "Reorder"
-table = column_table()
-table["c1"] = flex.int([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-table["c2"] = flex.int([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-table["c3"] = flex.int([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
+#for row in table.rows():
+#  print row
 
-index = flex.size_t([9, 8, 7, 6, 4, 4, 3, 2, 1, 0])
-table.reorder(index)
+#new_table = column_table([
+#  ("column_2", flex.int()),
+#  ("column_3", flex.int()),
+#  ("column_4", flex.std_string())])
 
-for row in table.rows():
-  print row
+#table.update(new_table)
 
-print "Sort"
-table.sort("c1")
+#for row in table.rows():
+#  print row
 
-for row in table.rows():
-  print row
 
-print "Sort"
-table.sort("c1", reverse=True)
+#print "Reorder"
+#table = column_table()
+#table["c1"] = flex.int([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+#table["c2"] = flex.int([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+#table["c3"] = flex.int([9, 8, 7, 6, 5, 4, 3, 2, 1, 0])
 
-for row in table.rows():
-  print row
+#index = flex.size_t([9, 8, 7, 6, 4, 4, 3, 2, 1, 0])
+#table.reorder(index)
 
-print "Types"
-print table.types()
+#for row in table.rows():
+#  print row
+
+#print "Sort"
+#table.sort("c1")
+
+#for row in table.rows():
+#  print row
+
+#print "Sort"
+#table.sort("c1", reverse=True)
+
+#for row in table.rows():
+#  print row
+
+#print "Types"
+#print table.types()

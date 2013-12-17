@@ -64,7 +64,7 @@ namespace column_table_suite {
   struct setitem_row_visitor : public boost::static_visitor<void> {
     std::size_t index;
     object item;
-    
+
     setitem_row_visitor(std::size_t index_, object item_)
       : index(index_),
         item(item_) {}
@@ -88,7 +88,7 @@ namespace column_table_suite {
     append_column_visitor(
           T &self_,
           typename T::key_type key_,
-          typename T::size_type na_, 
+          typename T::size_type na_,
           typename T::size_type nb_)
       : self(self_),
         key(key_),
@@ -103,7 +103,7 @@ namespace column_table_suite {
       }
     }
   };
-  
+
   /**
    * A visitor to add new columns (and over-write old columns) in the table.
    */
@@ -126,7 +126,7 @@ namespace column_table_suite {
       }
     }
   };
-  
+
   /**
    * Read a slice from the input column and write it to a column in the
    * output table.
@@ -149,13 +149,13 @@ namespace column_table_suite {
     template <typename U>
     void operator () (const U &col) {
       U c = self[key];
-      for (std::size_t i = 0, j = slice.start; 
+      for (std::size_t i = 0, j = slice.start;
           i < self.nrows(); ++i, j += slice.step) {
         c[i] = col[j];
       }
     }
   };
-  
+
   /**
    * Copy from a slice of column data into the column table.
    */
@@ -166,7 +166,7 @@ namespace column_table_suite {
     typename T::key_type key;
     scitbx::boost_python::adapted_slice slice;
     typename T::size_type num;
-    
+
     copy_from_slice_visitor(
           T &self_,
           typename T::key_type key_,
@@ -180,14 +180,14 @@ namespace column_table_suite {
     template <typename U>
     void operator () (const U &col) {
       U c = self[key];
-      for (std::size_t i = 0, j = slice.start; 
+      for (std::size_t i = 0, j = slice.start;
           i < num; ++i, j += slice.step) {
         c[j] = col[i];
       }
     }
   };
-  
- 
+
+
   /**
    * A visitor to reorder the elements of a column
    */
@@ -206,7 +206,7 @@ namespace column_table_suite {
       }
     }
   };
-  
+
   /**
    * Functor to compare elements by index
    */
@@ -216,7 +216,7 @@ namespace column_table_suite {
 
     compare_index(const T &v)
       : v_(v) {}
-      
+
     template <typename U>
     bool operator()(U a, U b) {
       return v_[a] < v_[b];
@@ -228,7 +228,7 @@ namespace column_table_suite {
    */
   struct sort_visitor : public boost::static_visitor<void> {
     af::ref<std::size_t> index;
-    
+
     sort_visitor(af::ref<std::size_t> index_)
         : index(index_) {
       for (std::size_t i = 0; i < index.size(); ++i) {
@@ -241,7 +241,7 @@ namespace column_table_suite {
       std::sort(index.begin(), index.end(), compare_index<T>(col));
     }
   };
-  
+
   /**
    * Initialise the column table from a list of (key, column) pairs
    * @param columns The list of columns
@@ -311,7 +311,7 @@ namespace column_table_suite {
    */
   template <typename T>
   dict getitem_row(const T &self, typename T::size_type n) {
-    typedef typename T::const_iterator iterator; 
+    typedef typename T::const_iterator iterator;
     dict result;
     column_to_object_visitor visitor;
     for (iterator it = self.begin(); it != self.end(); ++it) {
@@ -344,7 +344,7 @@ namespace column_table_suite {
    */
   template <typename T>
   T getitem_slice(const T &self, slice s) {
-    typedef typename T::const_iterator iterator; 
+    typedef typename T::const_iterator iterator;
     scitbx::boost_python::adapted_slice as(s, self.nrows());
     T result(as.size);
     for (iterator it = self.begin(); it != self.end(); ++it) {
@@ -362,7 +362,7 @@ namespace column_table_suite {
    */
   template <typename T>
   void setitem_slice(T &self, slice s, const T &other) {
-    typedef typename T::const_iterator iterator; 
+    typedef typename T::const_iterator iterator;
     scitbx::boost_python::adapted_slice as(s, self.nrows());
     for (iterator it = other.begin(); it != other.end(); ++it) {
       copy_from_slice_visitor<T> visitor(self, it->first, as, other.nrows());
@@ -411,7 +411,7 @@ namespace column_table_suite {
    */
   template <typename T>
   void extend(T &self, const T &other) {
-    typedef typename T::const_iterator iterator; 
+    typedef typename T::const_iterator iterator;
     typename T::size_type ns = self.nrows();
     typename T::size_type no = other.nrows();
     self.resize(ns + no);
@@ -430,7 +430,7 @@ namespace column_table_suite {
    */
   template <typename T>
   void update(T &self, const T &other) {
-    typedef typename T::const_iterator iterator; 
+    typedef typename T::const_iterator iterator;
     for (iterator it = other.begin(); it != other.end(); ++it) {
       update_column_visitor<T> visitor(self, it->first);
       it->second.apply_visitor(visitor);
@@ -442,10 +442,10 @@ namespace column_table_suite {
    */
   struct type_appender {
     list type_list;
-    
+
     type_appender(list type_list_)
       : type_list(type_list_) {}
-    
+
     template <typename U>
     void operator()(U x) {
       typename U::value_type a;
@@ -472,7 +472,7 @@ namespace column_table_suite {
    */
   template <typename T>
   void reorder(T &self, const af::const_ref<std::size_t> &index) {
-    typedef typename T::iterator iterator; 
+    typedef typename T::iterator iterator;
     reorder_visitor visitor(index);
     for (iterator it = self.begin(); it != self.end(); ++it) {
       it->second.apply_visitor(visitor);
@@ -496,8 +496,8 @@ namespace column_table_suite {
     }
     reorder(self, index.const_ref());
   }
-  
-  
+
+
   /**
    * A proxy iterator to iterate over the table keys
    */
@@ -608,15 +608,20 @@ namespace column_table_suite {
     typedef const value_type reference;
 
     row_iterator(const T &self, std::size_t index)
-      : self_(self),
-        index_(index) {}
+      : index_(index) {
+      typedef typename T::const_iterator iterator;
+      column_to_object_visitor visitor;
+      for (iterator it = self.begin(); it != self.end(); ++it) {
+        keys.push_back(it->first);
+        cols.push_back(it->second.apply_visitor(visitor));
+      }
+    }
 
     reference operator*() {
-      typedef typename T::const_iterator iterator; 
+      typedef typename T::const_iterator iterator;
       dict result;
-      column_to_object_visitor visitor;
-      for (iterator it = self_.begin(); it != self_.end(); ++it) {
-        result[it->first] = it->second.apply_visitor(visitor)[index_];
+      for (std::size_t i = 0; i < keys.size(); ++i) {
+        result[keys[i]] = cols[i][index_];
       }
       return result;
     }
@@ -641,7 +646,8 @@ namespace column_table_suite {
     }
 
   private:
-    const T &self_;
+    std::vector<boost::python::object> cols;
+    std::vector<std::string> keys;
     std::size_t index_;
   };
 
@@ -655,10 +661,17 @@ namespace column_table_suite {
     Iterator begin(const typename Iterator::table_type &self) {
       return Iterator(self.begin());
     }
-    
+
     static
     Iterator end(const typename Iterator::table_type &self) {
       return Iterator(self.end());
+    }
+
+    static
+    object range() {
+      return boost::python::range(
+        &make_iterator<Iterator>::begin,
+        &make_iterator<Iterator>::end);
     }
   };
 
@@ -671,66 +684,78 @@ namespace column_table_suite {
     row_iterator<T> begin(const T &self) {
       return row_iterator<T>(self, 0);
     }
-    
+
     static
     row_iterator<T> end(const T &self) {
       return row_iterator<T>(self, self.nrows());
     }
+
+    static
+    object range() {
+      return boost::python::range(
+        &make_iterator< row_iterator<T> >::begin,
+        &make_iterator< row_iterator<T> >::end);
+    }
   };
-  
-  /**
-   * Create an iterator range for the table iterators
-   */
-  template <typename Iterator>
-  object make_iterator_range() {
-    return range(&make_iterator<Iterator>::begin,
-                 &make_iterator<Iterator>::end);
-  }
-  
-  
+
   /**
    * Export the wrapped class to python
    */
-  template <typename column_types>
-  void column_table_wrapper(const char *name) {
+  template <typename T>
+  struct column_table_wrapper {
 
-    boost::mpl::for_each<typename column_types::types>(
-      column_data_wrapper(name));
-
+    typedef T column_types;
     typedef column_table<column_types> column_table_type;
+    typedef class_<column_table_type> class_type;
 
-    class_<column_table_type> column_table_class(name);
-    column_table_class
-      .def(init<std::size_t>())
-      .def("__init__", make_constructor(
-        &make_column_table<column_table_type>))
-      .def("types", &types<column_table_type>)
-      .def("has_key", &has_key<column_table_type>)
-      .def("clear", &column_table_type::clear)
-      .def("empty", &column_table_type::empty)
-      .def("append", &append<column_table_type>)
-      .def("insert", &insert<column_table_type>)
-      .def("extend", &extend<column_table_type>)
-      .def("update", &update<column_table_type>)
-      .def("nrows", &column_table_type::nrows)
-      .def("ncols", &column_table_type::ncols)
-      .def("__len__", &column_table_type::size)
-      .def("__contains__", &has_key<column_table_type>)
-      .def("__getitem__", &getitem_column<column_table_type>)
-      .def("__getitem__", &getitem_row<column_table_type>)
-      .def("__setitem__", &setitem_row<column_table_type>)
-      .def("__getitem__", &getitem_slice<column_table_type>)
-      .def("__setitem__", &setitem_slice<column_table_type>)
-      .def("cols", make_iterator_range< column_iterator<column_table_type> >())
-      .def("rows", make_iterator_range< row_iterator<column_table_type> >())
-      .def("keys", make_iterator_range< key_iterator<column_table_type> >())
-      .def("reorder", &reorder<column_table_type>)
-      .def("sort", &sort<column_table_type>, (arg("column"), arg("reverse")=false))
-      ;
+    static
+    class_type wrap(const char *name) {
 
-    // For each column type, create a __setitem__ method to set column data
-    boost::mpl::for_each<typename column_types::types>(
-      setitem_column_generator<column_table_type>(column_table_class));
-  }
+      boost::mpl::for_each<typename column_types::types>(
+        column_data_wrapper(name));
+
+      class_type column_table_class(name);
+      column_table_class
+        .def(init<std::size_t>())
+        .def("__init__", make_constructor(
+          &make_column_table<column_table_type>))
+        .def("types", &types<column_table_type>)
+        .def("has_key", &has_key<column_table_type>)
+        .def("clear", &column_table_type::clear)
+        .def("empty", &column_table_type::empty)
+        .def("resize", &column_table_type::resize)
+        .def("append", &append<column_table_type>)
+        .def("insert", &insert<column_table_type>)
+        .def("extend", &extend<column_table_type>)
+        .def("update", &update<column_table_type>)
+        .def("nrows", &column_table_type::nrows)
+        .def("ncols", &column_table_type::ncols)
+        .def("__len__", &column_table_type::size)
+        .def("__contains__", &has_key<column_table_type>)
+        .def("__getitem__", &getitem_column<column_table_type>)
+        .def("__getitem__", &getitem_row<column_table_type>)
+        .def("__setitem__", &setitem_row<column_table_type>)
+        .def("__getitem__", &getitem_slice<column_table_type>)
+        .def("__setitem__", &setitem_slice<column_table_type>)
+        .def("cols", make_iterator<
+          column_iterator<column_table_type> >::range())
+        .def("rows", make_iterator<
+          row_iterator<column_table_type> >::range())
+        .def("keys", make_iterator<
+          key_iterator<column_table_type> >::range())
+        .def("reorder", &reorder<column_table_type>)
+        .def("sort", &sort<column_table_type>, (
+          arg("column"),
+          arg("reverse")=false))
+        ;
+
+      // For each column type, create a __setitem__ method to set column data
+      boost::mpl::for_each<typename column_types::types>(
+        setitem_column_generator<column_table_type>(column_table_class));
+
+      // Return the class
+      return column_table_class;
+    }
+  };
 
 }}}} // namespace dials::framework::boost_python::column_table_suite

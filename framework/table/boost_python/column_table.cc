@@ -36,8 +36,7 @@ namespace dials { namespace framework { namespace boost_python {
       std::string
     >::type column_types;
 
-    column_table_suite::column_table_wrapper<column_types>("column_table");
-
+    column_table_suite::column_table_wrapper<column_types>::wrap("column_table");
   }
 
 }}} // namespace dials::framework::boost_python
