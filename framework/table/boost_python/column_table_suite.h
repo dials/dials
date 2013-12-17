@@ -428,7 +428,7 @@ namespace column_table_suite {
 
     template <typename U>
     void operator()(U x) {
-      typename U::value_type a;
+      typename U::value_type a = typename U::value_type();
       type_list.append(object(handle<>(PyObject_Type(object(a).ptr()))));
     }
   };
