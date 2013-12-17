@@ -651,7 +651,6 @@ namespace dials { namespace framework { namespace boost_python {
       boost::python::object obj(a);
       boost::python::object tt(boost::python::handle<>(PyObject_Type(obj.ptr())));
       type_list.append(tt);
-      //type_list.append(PyObject_Type(obj.ptr()));
     }
   };
 
@@ -693,7 +692,7 @@ namespace dials { namespace framework { namespace boost_python {
         &column_table_iterrows_begin<column_table_type>,
         &column_table_iterrows_end<column_table_type>))
       .def("update", &column_table_update<column_table_type>)
-      .def("erase", &column_table_type::erase)
+      //.def("erase", &column_table_type::erase)
       .def("empty", &column_table_type::empty)
       .def("nrows", &column_table_type::nrows)
       .def("ncols", &column_table_type::ncols)
