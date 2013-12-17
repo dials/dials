@@ -362,7 +362,6 @@ class AdaptLstbx(
       return False
     else:
       self.x, self.old_x = self.old_x, None
-      self.history._step -= 1
       return True
 
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
