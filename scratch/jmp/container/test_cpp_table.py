@@ -41,3 +41,8 @@ new_table = table[5:15]
 print len(new_table)
 for row in new_table:
   print row
+
+print "Set Slice"
+table[15:20] = new_table
+for row in table:
+  print row

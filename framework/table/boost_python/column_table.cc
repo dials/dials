@@ -403,6 +403,34 @@ namespace dials { namespace framework { namespace boost_python {
   };
 
   template <typename ColumnTable>
+  struct copy_column_data_from_slice :
+      public boost::static_visitor<void> {
+
+    ColumnTable &table;
+    typename ColumnTable::key_type name;
+    scitbx::boost_python::adapted_slice slice;
+    std::size_t num;
+
+    copy_column_data_from_slice(
+          ColumnTable &table_,
+          typename ColumnTable::key_type name_,
+          scitbx::boost_python::adapted_slice slice_,
+          std::size_t num_)
+      : table(table_),
+        name(name_),
+        slice(slice_),
+        num(num_) {}
+
+    template <typename T>
+    void operator () (const T &col) {
+      T c = table[name];
+      for (std::size_t i = 0, j = slice.start; i < num; ++i, j += slice.step) {
+        c[j] = col[i];
+      }
+    }
+  };
+
+  template <typename ColumnTable>
   ColumnTable column_table_get_slice(const ColumnTable &table,
       boost::python::slice slice) {
 
@@ -414,6 +442,17 @@ namespace dials { namespace framework { namespace boost_python {
       it->second.apply_visitor(copy_slice);
     }
     return result;
+  }
+
+  template <typename ColumnTable>
+  void column_table_set_slice(ColumnTable &table,
+      boost::python::slice slice, const ColumnTable &other) {
+
+    scitbx::boost_python::adapted_slice aslice(slice, table.nrows());
+    for (typename ColumnTable::const_iterator it = other.begin(); it != other.end(); ++it) {
+      copy_column_data_from_slice <ColumnTable> copy_slice(table, it->first, aslice, other.nrows());
+      it->second.apply_visitor(copy_slice);
+    }
   }
 
   template <typename column_types>
@@ -453,7 +492,8 @@ namespace dials { namespace framework { namespace boost_python {
       .def("__contains__", &column_table_has_key<column_table_type>)
       .def("__getitem__", &column_table_get_data<column_table_type>)
       .def("__getitem__", &column_table_get_row_data<column_table_type>)
-      .def("__getitem__", &column_table_get_slice<column_table_type>);
+      .def("__getitem__", &column_table_get_slice<column_table_type>)
+      .def("__setitem__", &column_table_set_slice<column_table_type>);
 
     boost::mpl::for_each<typename column_types::types>(
       column_table_set_data_wrapper<column_table_type>(
