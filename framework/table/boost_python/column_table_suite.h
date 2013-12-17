@@ -28,26 +28,6 @@ namespace column_table_suite {
 
   using namespace boost::python;
 
-  struct column_data_wrapper {
-    std::string name_;
-
-    column_data_wrapper(std::string name)
-      : name_(name) {}
-
-    template <typename T>
-    void operator()(const T &x) {
-      std::string name = name_ + typeid(x).name();
-      typedef T column_data_type;
-      class_<column_data_type>(name.c_str())
-        .def(vector_indexing_suite<column_data_type>())
-        .def("resize", &column_data_type::resize);
-    }
-  };
-
-
-
-
-
   /**
    * A visitor to convert the column to a boost python object
    */
@@ -699,7 +679,26 @@ namespace column_table_suite {
   };
 
   /**
-   * Export the wrapped class to python
+   * Export the wrapped column data class to python
+   */
+  template <typename T>
+  struct column_data_wrapper {
+
+    typedef column_data<T> column_data_type;
+    typedef class_<column_data_type> class_type;
+
+    static
+    class_type wrap(const char *name) {
+      class_<column_data_type> column_data_class(name);
+      column_data_class
+        .def(vector_indexing_suite<column_data_type>())
+        .def("resize", &column_data_type::resize);
+      return column_data_class;
+    }
+  };
+
+  /**
+   * Export the wrapped column table class to python
    */
   template <typename T>
   struct column_table_wrapper {
@@ -710,9 +709,6 @@ namespace column_table_suite {
 
     static
     class_type wrap(const char *name) {
-
-      boost::mpl::for_each<typename column_types::types>(
-        column_data_wrapper(name));
 
       class_type column_table_class(name);
       column_table_class
@@ -746,9 +742,9 @@ namespace column_table_suite {
         .def("keys", make_iterator<
           key_iterator<column_table_type> >::range())
         .def("reorder", &reorder<column_table_type>)
-        .def("sort", &sort<column_table_type>, (
-          arg("column"),
-          arg("reverse")=false))
+//        .def("sort", &sort<column_table_type>, (
+//          arg("column"),
+//          arg("reverse")=false))
         ;
 
       // For each column type, create a __setitem__ method to set column data

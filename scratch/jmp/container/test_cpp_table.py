@@ -1,9 +1,9 @@
 
 
-from dials.framework.table import column_table
+from dials.model.data import reflection_table
 from scitbx.array_family import flex
 from time import time
-table = column_table()
+table = reflection_table()
 table['c1'] = flex.int()
 table['c2'] = flex.double()
 table.resize(1000000)
