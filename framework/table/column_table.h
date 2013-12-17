@@ -543,7 +543,7 @@ namespace dials { namespace framework {
   private:
 
     /**
-     * operator[] proxy to aid in returning and casting elements. 
+     * operator[] proxy to aid in returning and casting elements.
      */
     struct proxy {
       column_table *t_;

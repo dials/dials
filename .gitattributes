@@ -366,6 +366,7 @@ framework/plugin_example.py -text
 framework/table/SConscript -text
 framework/table/__init__.py -text
 framework/table/boost_python/column_table.cc -text
+framework/table/boost_python/column_table_suite.h -text
 framework/table/boost_python/table_ext.cc -text
 framework/table/column_table.h -text
 framework/toplevel.py -text
