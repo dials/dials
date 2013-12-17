@@ -13,6 +13,7 @@
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <string>
+#include <iterator>
 #include <scitbx/array_family/flex_types.h>
 #include <dials/framework/table/column_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
@@ -53,40 +54,315 @@ namespace dials { namespace framework { namespace boost_python {
 
   template <typename T>
   struct column_table_set_data_wrapper {
-
     class_<T> table_class_;
-
     column_table_set_data_wrapper(class_<T> table_class)
       : table_class_(table_class) {}
-
     template <typename U>
     void operator()(const U &x) {
-      table_class_.def("__setitem__", &column_table_set_data<T, typename U::value_type>,
-        return_internal_reference<>());
+      table_class_.def("__setitem__",
+        &column_table_set_data<T, typename U::value_type>,
+          return_internal_reference<>());
     }
   };
 
-  struct column_data_to_object : public boost::static_visitor<boost::python::object> {
-
+  struct column_data_to_object :
+      public boost::static_visitor<boost::python::object> {
     template <typename T>
-    boost::python::object operator () (T &col)
-    {
+    boost::python::object operator () (T &col) {
       return boost::python::object(col);
     }
   };
 
-  template <typename T>
+  template <typename ColumnTable>
   boost::python::object column_table_get_data(
-      column_table<T> &table,
-      const typename column_table<T>::key_type &key) {
-
-    typedef typename column_table<T>::mapped_type mapped_type;
+      ColumnTable &table,
+      const typename ColumnTable::key_type &key) {
+    typedef typename ColumnTable::mapped_type mapped_type;
     mapped_type col = table[key];
     DIALS_ASSERT(!col.empty());
     column_data_to_object to_object;
     return col.apply_visitor(to_object);
   }
 
+  template <typename ColumnTable>
+  bool column_table_has_key(
+      const ColumnTable &table,
+      const typename ColumnTable::key_type &key) {
+    return table.count(key) == 1;
+  }
+
+  template <typename ColumnTable>
+  boost::python::list column_table_items(const ColumnTable &table) {
+    boost::python::list result;
+    column_data_to_object to_object;
+    for (typename ColumnTable::const_iterator it = table.begin();
+        it != table.end(); ++it) {
+      result.append(boost::python::make_tuple(
+        it->first,
+        it->second.apply_visitor(to_object)));
+    }
+    return result;
+  }
+
+  template <typename ColumnTable>
+  boost::python::list column_table_keys(const ColumnTable &table) {
+    boost::python::list result;
+    for (typename ColumnTable::const_iterator it = table.begin();
+        it != table.end(); ++it) {
+      result.append(it->first);
+    }
+    return result;
+  }
+
+  template <typename ColumnTable>
+  boost::python::list column_table_values(const ColumnTable &table) {
+    boost::python::list result;
+    column_data_to_object to_object;
+    for (typename ColumnTable::const_iterator it = table.begin();
+        it != table.end(); ++it) {
+      result.append(it->second.apply_visitor(to_object));
+    }
+    return result;
+  }
+
+  template <typename ColumnTable>
+  void column_table_update(ColumnTable &self, const ColumnTable &other) {
+
+  }
+
+  template <typename ColumnTable>
+  class column_table_iterkeys_proxy {
+  public:
+
+    typedef typename ColumnTable::const_iterator base_iterator;
+
+    typedef ptrdiff_t difference_type;
+    typedef std::forward_iterator_tag iterator_category;
+    typedef typename ColumnTable::key_type value_type;
+    typedef const value_type *pointer;
+    typedef const value_type &reference;
+
+    column_table_iterkeys_proxy(base_iterator it)
+      : it_(it) {}
+
+    reference operator*() {
+      return it_->first;
+    }
+
+    column_table_iterkeys_proxy& operator++() {
+      ++it_;
+      return *this;
+    }
+
+    column_table_iterkeys_proxy operator++(int) {
+      column_table_iterkeys_proxy result(*this);
+      ++(*this);
+      return result;
+    }
+
+    bool operator==(const column_table_iterkeys_proxy& rhs) const {
+      return it_ == rhs.it_;
+    }
+
+    bool operator!=(const column_table_iterkeys_proxy& rhs) const {
+      return !(*this == rhs);
+    }
+
+  private:
+    base_iterator it_;
+  };
+
+  template <typename ColumnTable>
+  column_table_iterkeys_proxy<ColumnTable> column_table_iterkeys_begin(
+      const ColumnTable &table) {
+    return column_table_iterkeys_proxy<ColumnTable>(table.begin());
+  }
+
+  template <typename ColumnTable>
+  column_table_iterkeys_proxy<ColumnTable> column_table_iterkeys_end(
+      const ColumnTable &table) {
+    return column_table_iterkeys_proxy<ColumnTable>(table.end());
+  }
+
+  template <typename ColumnTable>
+  class column_table_itervalues_proxy {
+  public:
+
+    typedef typename ColumnTable::const_iterator base_iterator;
+
+    typedef ptrdiff_t difference_type;
+    typedef std::forward_iterator_tag iterator_category;
+    typedef boost::python::object value_type;
+    typedef const value_type *pointer;
+    typedef const value_type reference;
+
+    column_table_itervalues_proxy(base_iterator it)
+      : it_(it) {}
+
+    reference operator*() {
+      column_data_to_object to_object;
+      return it_->second.apply_visitor(to_object);
+    }
+
+    column_table_itervalues_proxy& operator++() {
+      ++it_;
+      return *this;
+    }
+
+    column_table_itervalues_proxy operator++(int) {
+      column_table_itervalues_proxy result(*this);
+      ++(*this);
+      return result;
+    }
+
+    bool operator==(const column_table_itervalues_proxy& rhs) const {
+      return it_ == rhs.it_;
+    }
+
+    bool operator!=(const column_table_itervalues_proxy& rhs) const {
+      return !(*this == rhs);
+    }
+
+  private:
+    base_iterator it_;
+  };
+
+
+  template <typename ColumnTable>
+  column_table_itervalues_proxy<ColumnTable> column_table_itervalues_begin(
+      const ColumnTable &table) {
+    return column_table_itervalues_proxy<ColumnTable>(table.begin());
+  }
+
+  template <typename ColumnTable>
+  column_table_itervalues_proxy<ColumnTable> column_table_itervalues_end(
+      const ColumnTable &table) {
+    return column_table_itervalues_proxy<ColumnTable>(table.end());
+  }
+
+
+  template <typename ColumnTable>
+  class column_table_iteritems_proxy {
+  public:
+
+    typedef typename ColumnTable::const_iterator base_iterator;
+
+    typedef ptrdiff_t difference_type;
+    typedef std::forward_iterator_tag iterator_category;
+    typedef boost::python::object value_type;
+    typedef const value_type *pointer;
+    typedef const value_type reference;
+
+    column_table_iteritems_proxy(base_iterator it)
+      : it_(it) {}
+
+    reference operator*() {
+      column_data_to_object to_object;
+      return boost::python::make_tuple(
+        it_->first,
+        it_->second.apply_visitor(to_object));
+    }
+
+    column_table_iteritems_proxy& operator++() {
+      ++it_;
+      return *this;
+    }
+
+    column_table_iteritems_proxy operator++(int) {
+      column_table_iteritems_proxy result(*this);
+      ++(*this);
+      return result;
+    }
+
+    bool operator==(const column_table_iteritems_proxy& rhs) const {
+      return it_ == rhs.it_;
+    }
+
+    bool operator!=(const column_table_iteritems_proxy& rhs) const {
+      return !(*this == rhs);
+    }
+
+  private:
+    base_iterator it_;
+  };
+
+  template <typename ColumnTable>
+  class column_table_iterrows_proxy {
+  public:
+
+    typedef ptrdiff_t difference_type;
+    typedef std::forward_iterator_tag iterator_category;
+    typedef boost::python::object value_type;
+    typedef const value_type *pointer;
+    typedef const value_type reference;
+
+    column_table_iterrows_proxy(
+        typename ColumnTable::const_iterator first,
+        typename ColumnTable::const_iterator last,
+        std::size_t index)
+      : index_(index) {
+      for (; first != last; ++first) {
+        columns_.push_back(first->second);
+      }
+    }
+
+    reference operator*() {
+      boost::python::list result;
+      column_data_to_object to_object;
+      for (std::size_t i = 0; i < columns_.size(); ++i) {
+        result.append(columns_[i].apply_visitor(to_object)[i]);
+      }
+      return result;
+    }
+
+    column_table_iterrows_proxy& operator++() {
+      ++index_;
+      return *this;
+    }
+
+    column_table_iterrows_proxy operator++(int) {
+      column_table_iterrows_proxy result(*this);
+      ++(*this);
+      return result;
+    }
+
+    bool operator==(const column_table_iterrows_proxy& rhs) const {
+      return index_ == rhs.index_;
+    }
+
+    bool operator!=(const column_table_iterrows_proxy& rhs) const {
+      return !(*this == rhs);
+    }
+
+  private:
+    std::size_t index_;
+    std::vector<typename ColumnTable::mapped_type> columns_;
+  };
+
+  template <typename ColumnTable>
+  column_table_iteritems_proxy<ColumnTable> column_table_iteritems_begin(
+      const ColumnTable &table) {
+    return column_table_iteritems_proxy<ColumnTable>(table.begin());
+  }
+
+  template <typename ColumnTable>
+  column_table_iteritems_proxy<ColumnTable> column_table_iteritems_end(
+      const ColumnTable &table) {
+    return column_table_iteritems_proxy<ColumnTable>(table.end());
+  }
+
+
+  template <typename ColumnTable>
+  column_table_iterrows_proxy<ColumnTable> column_table_iterrows_begin(
+      const ColumnTable &table) {
+    return column_table_iterrows_proxy<ColumnTable>(table.begin(), table.end(), 0);
+  }
+
+  template <typename ColumnTable>
+  column_table_iterrows_proxy<ColumnTable> column_table_iterrows_end(
+      const ColumnTable &table) {
+    return column_table_iterrows_proxy<ColumnTable>(table.begin(), table.end(), table.nrows());
+  }
 
   template <typename column_types>
   void column_table_wrapper(const char *name) {
@@ -94,20 +370,38 @@ namespace dials { namespace framework { namespace boost_python {
     boost::mpl::for_each<typename column_types::types>(
       column_data_wrapper(name));
 
-
     typedef column_table<column_types> column_table_type;
+
     class_<column_table_type> column_table_class(name);
     column_table_class
+      .def("clear", &column_table_type::clear)
+      .def("has_key", &column_table_has_key<column_table_type>)
+      .def("items", &column_table_items<column_table_type>)
+      .def("keys", &column_table_keys<column_table_type>)
+      .def("values", &column_table_values<column_table_type>)
+      .def("iteritems", range(
+        &column_table_iteritems_begin<column_table_type>,
+        &column_table_iteritems_end<column_table_type>))
+      .def("iterkeys", range(
+        &column_table_iterkeys_begin<column_table_type>,
+        &column_table_iterkeys_end<column_table_type>))
+      .def("itervalues", range(
+        &column_table_itervalues_begin<column_table_type>,
+        &column_table_itervalues_end<column_table_type>))
+      .def("iterrows", range(
+        &column_table_iterrows_begin<column_table_type>,
+        &column_table_iterrows_end<column_table_type>))
+      .def("update", &column_table_update<column_table_type>)
       .def("erase", &column_table_type::erase)
       .def("empty", &column_table_type::empty)
-      .def("clear", &column_table_type::clear)
       .def("nrows", &column_table_type::nrows)
       .def("ncols", &column_table_type::ncols)
       .def("__len__", &column_table_type::size)
-      .def("__getitem__", &column_table_get_data<typename column_table_type::mapped_type>);
+      .def("__getitem__", &column_table_get_data<column_table_type>);
 
     boost::mpl::for_each<typename column_types::types>(
-      column_table_set_data_wrapper<column_table_type>(column_table_class));
+      column_table_set_data_wrapper<column_table_type>(
+        column_table_class));
   }
 
   void export_column_table() {

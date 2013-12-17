@@ -509,6 +509,10 @@ namespace dials { namespace framework {
       table_.clear();
     }
 
+    size_type count(const key_type &key) const {
+      return table_.count(key);
+    }
+
     iterator find(const key_type &key) {
       return table_.find(key);
     }
