@@ -29,7 +29,6 @@ for xpos in range(80):
     ref2d = model_2d(nrow, ncol, 5, 1, ref_ang, i_loc, 0.5)
 
     '''
-
     flex_double model_2d(int nrow, int ncol, float a, float b,
                 float delta_ang, float imax, float asp)
     '''
@@ -76,4 +75,4 @@ layering_and_background_plane(rlist)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 flex_2d_layering_n_integrating(rlist)
-rlist = mosflm_caller(rlist, xmax, ymax, 2)
+rlist = mosflm_caller(rlist, xmax, ymax, 3)

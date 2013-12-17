@@ -4,7 +4,7 @@ from dials.algorithms.integration import add_2d, subtrac_bkg_2d, fitting_2d
 from scitbx.array_family import flex
 
 def make_2d_profile(reflections):
-  #print "len(reflections) =", len(reflections)
+  print "len(reflections) =", len(reflections)
   big_nrow = 0
   big_ncol = 0
 
@@ -14,7 +14,7 @@ def make_2d_profile(reflections):
     if ref.is_valid():
       if ref.intensity > max_i_01:
         max_i_01 = ref.intensity
-  #print "max_i_01 =", max_i_01
+  print "max_i_01 =", max_i_01
   max_i = 0.0
   for ref in reflections:
     if ref.is_valid():
@@ -27,6 +27,7 @@ def make_2d_profile(reflections):
     if ref.is_valid() and ref.intensity > thold and ref.intensity < max_i:
       select_rlist.append(ref)
   counter = 0
+  print "len(select_rlist) =", len(select_rlist)
   for ref in select_rlist:
     local_nrow = ref.shoebox.all()[1]
     local_ncol = ref.shoebox.all()[2]
@@ -42,12 +43,11 @@ def make_2d_profile(reflections):
   descr = flex.double(flex.grid(1, 3))
   for ref in select_rlist:
     shoebox = ref.shoebox
-    #mask = ref.shoebox_mask                                  # may be needed soon
+    #mask = ref.shoebox_mask                                 # may be needed soon
     background = ref.shoebox_background
     data2d = shoebox[0:1, :, :]
     #mask2d = mask[0:1, :, :]                                # may be needed soon
     background2d = background[0:1, :, :]
-
     data2d.reshape(flex.grid(shoebox.all()[1:]))
     #mask2d.reshape(flex.grid(shoebox.all()[1:]))            # may be needed soon
     background2d.reshape(flex.grid(shoebox.all()[1:]))
@@ -64,12 +64,12 @@ def fit_profile_2d(reflections, arr_proff, row, col):
   average = arr_proff[row][col][0]
   thold = arr_proff[row][col][1]
 
-  if_you_want_to_see_how_the_profiles_look = '''
+  #if_you_want_to_see_how_the_profiles_look = '''
   from matplotlib import pyplot as plt
   data2d = average.as_numpy_array()
   plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
   plt.show()
-  '''
+  #'''
   descr = flex.double(flex.grid(1, 3))
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:

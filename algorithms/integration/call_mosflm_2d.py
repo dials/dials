@@ -21,7 +21,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
   lst_pos = []
   for r in rlist:
     if r.is_valid():
-      x, y = r.image_coord_px
+      x, y = r.image_coord_px                    # consider replasing with centroid pos
       col = int(float(x) / float(xmax) * n_div)
       row = int(float(y) / float(ymax) * n_div)
       arr_rlist[row][col].append(r)
