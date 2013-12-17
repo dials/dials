@@ -542,6 +542,9 @@ namespace dials { namespace framework {
 
   private:
 
+    /**
+     * operator[] proxy to aid in returning and casting elements. 
+     */
     struct proxy {
       column_table *t_;
       key_type k_;
@@ -549,6 +552,12 @@ namespace dials { namespace framework {
       proxy(column_table *t, key_type k)
         : t_(t), k_(k) {}
 
+      /**
+       * Cast the element to the desired column data type. If no element is
+       * present, a new element with the desired type is created and returned.
+       * Otherwise the current element is returned. If the types don't match,
+       * an exception is raised.
+       */
       template <typename T>
       operator column_data<T>() const {
         boost::shared_ptr<map_type> table = t_->table_;
@@ -560,6 +569,9 @@ namespace dials { namespace framework {
         return boost::get< column_data<T> >(it->second);
       }
 
+      /**
+       * Return the mapped variant type at the given element directly.
+       */
       operator mapped_type() const {
         return t_->get(k_);
       }
