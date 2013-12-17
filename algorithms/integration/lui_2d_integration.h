@@ -171,27 +171,29 @@ namespace dials { namespace algorithms {
   }
 
   double m_linear_scale(int cnt, double i_mod[], double i_exp[]){
-
-    double i_wgt[cnt];
-    double avg = 0, m;
-    for (int i = 0; i < cnt; i++){
-      avg += i_mod[i];
+    double m = 0;
+    if (cnt > 0){
+      double i_wgt[cnt];
+      double avg = 0;
+      for (int i = 0; i < cnt; i++){
+        avg += i_mod[i];
+      }
+      avg = avg/double(cnt);
+      for (int i = 0; i < cnt; i++){
+        i_wgt[i] = i_mod[i] / avg;
+      }
+      avg = 0;
+      for (int i = 0; i < cnt; i++){
+        avg += i_wgt[i];
+      }
+      avg = avg/double(cnt);
+      double scale = 0, px_scl;
+      for (int i = 0; i < cnt; i++){
+        px_scl = i_exp[i] / i_mod[i];
+        scale += px_scl * i_wgt[i];
+      }
+      m = scale / cnt;
     }
-    avg = avg/double(cnt);
-    for (int i = 0; i < cnt; i++){
-      i_wgt[i] = i_mod[i] / avg;
-    }
-    avg = 0;
-    for (int i = 0; i < cnt; i++){
-      avg += i_wgt[i];
-    }
-    avg = avg/double(cnt);
-    double scale = 0, px_scl;
-    for (int i = 0; i < cnt; i++){
-      px_scl = i_exp[i] / i_mod[i];
-      scale += px_scl * i_wgt[i];
-    }
-    m = scale / cnt;
 
     return m;
   }
