@@ -271,6 +271,7 @@ namespace dials { namespace framework {
 
     /** @returns The size of the column */
     size_type size() const {
+      DIALS_ASSERT(storage_.size() == sync_.size());
       return sync_.size();
     }
 
@@ -280,6 +281,7 @@ namespace dials { namespace framework {
      */
     void resize(size_type n) {
       sync_.resize(n);
+      DIALS_ASSERT(storage_.size() == sync_.size());
     }
 
     /**
