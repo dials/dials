@@ -569,8 +569,7 @@ class Refiner(object):
     from copy import deepcopy
     from dxtbx.model import Detector
     from dxtbx.array_family import flex
-    return Detector(flex.panel([deepcopy(panel) \
-                                for panel in self._detector]))
+    return deepcopy(self._detector)
 
   def get_goniometer(self):
     """Return the goniometer model, if present"""
