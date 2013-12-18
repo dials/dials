@@ -63,6 +63,15 @@ plt.imshow(data2d, interpolation = "nearest")
 plt.show()
 
 
+for r in rlist:
+    for x_loc in range(ncol):
+      for y_loc in range(nrow):
+        roll_the_dice = random.randint(1,6)
+        if roll_the_dice <=2:
+          r.shoebox[0, y_loc, x_loc] = -1
+          r.shoebox_mask[0, y_loc, x_loc] = 0
+        else:
+          r.shoebox[0, y_loc, x_loc] += random.randint(0,20)
 
 
 from dials.algorithms.background.inclined_background_subtractor \
@@ -75,10 +84,6 @@ flex_2d_layering_n_integrating(rlist)
 
 
 
-for r in rlist:
-    for x_loc in range(ncol):
-      for y_loc in range(nrow):
-        r.shoebox[0, y_loc, x_loc] += random.randint(0,20)
 
 old_r_list = rlist[:]
 from dials.algorithms.background.inclined_background_subtractor \
