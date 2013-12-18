@@ -290,8 +290,7 @@ class indexer(object):
       sweep.set_beam(copy.deepcopy(self.beam))
       sweep.set_goniometer(copy.deepcopy(self.goniometer))
       sweep.set_scan(copy.deepcopy(self.scan))
-      sweep.set_detector(
-        Detector(flex.panel([panel for panel in self.detector])))
+      sweep.set_detector(copy.deepcopy(self.detector))
       sweeps.append(sweep)
 
     for i_lattice in range(len(crystal_models)):
