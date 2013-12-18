@@ -71,7 +71,7 @@ def run(args):
     xds_writer = spot_xds.writer(centroids=centroids,
                                  intensities=intensities,
                                  miller_indices=miller_indices)
-    xds_writer.write_file(filename='SPOTS%s.XDS' %suffix)
+    xds_writer.write_file(filename='SPOT%s.XDS' %suffix)
 
 
 if __name__ == '__main__':
