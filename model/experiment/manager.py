@@ -1,9 +1,34 @@
-class Experiment(object):
+#!/usr/bin/env python
+#
+#  experiment_list.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+from __future__ import division
 
+class Experiment(object):
+  ''' A class to represent what's in an experiment.
+
+  Contains:
+    - imageset Access to the image data
+    - beam The beam model
+    - detector The detector model
+    - goniometer The goniometer model
+    - scan The scan model
+    - crystal The crystal model
+
+  Some of these may be set to "None"
+
+  '''
   __slots__ = ('imageset', 'beam', 'detector', 'goniometer', 'scan', 'crystal')
 
   def __init__(self, imageset=None, beam=None, detector=None,
                goniometer=None, scan=None, crystal=None):
+    ''' Initialise the experiment with the given models. '''
     self.imageset = imageset
     self.beam = beam
     self.detector = detector
@@ -12,6 +37,7 @@ class Experiment(object):
     self.crystal = crystal
 
   def __contains__(self, item):
+    ''' Check if the experiment contains the model. '''
     return (item is self.imageset or
             item is self.beam or
             item is self.detector or
@@ -20,6 +46,7 @@ class Experiment(object):
             item is self.crystal)
 
   def __eq__(self, other):
+    ''' Check if an experiment is the same as another. '''
     if not isinstance(other, Experiment):
       return False
     return (self.imageset is other.imageset and
@@ -30,6 +57,7 @@ class Experiment(object):
             self.crystal is other.crystal)
 
   def __ne__(self, other):
+    ''' Check if an experiment not equal to another. '''
     return not self.__eq__(other)
 
   def is_consistent(self):
@@ -51,54 +79,69 @@ class Experiment(object):
           return False
     return True
 
+
 class ExperimentList(object):
+  ''' The experiment list class. This class is used to manage all the
+  experiments and contains methods to get groups of models etc. '''
 
   def __init__(self, item=None):
+    ''' Initialise the list. '''
     if item is not None:
       self._data = list(item)
     else:
       self._data = list()
 
   def __setitem__(self, index, item):
+    ''' Set an experiment. '''
     if isinstance(item, Experiment):
       self._data[index] = item
     else:
       raise TypeError('expected type Experiment, got %s' % type(item))
 
   def __getitem__(self, index):
+    ''' Get an experiment. '''
     if isinstance(index, slice):
       return ExperimentList(self._data[index])
     return self._data[index]
 
   def __delitem__(self, index):
+    ''' Delete an experiment. '''
     del self._data[index]
 
   def __len__(self):
+    ''' Get the number of experiments. '''
     return len(self._data)
 
   def __iter__(self):
+    ''' Iterate through the experiments. '''
     for e in self._data:
       yield e
 
   def __contains__(self, item):
+    ''' Check if an item is contained in the list of experiments.
+    Also checks to see if a model is contained in an experiment. '''
     return item in self._data or any(item in e for e in self._data)
 
   def index(self, item):
+    ''' Get the index of an experiment. '''
     return self._data.index(item)
 
   def append(self, item):
+    ''' Add a new experiment to the list. '''
     if isinstance(item, Experiment):
       self._data.append(item)
     else:
       raise TypeError('expected type Experiment, got %s' % type(item))
 
   def extend(self, other):
+    ''' Add another experiment list to this one. '''
     if isinstance(other, ExperimentList):
       self._data.extend(other._data)
     else:
       raise TypeError('expected type ExperimentList, got %s' % type(item))
 
   def replace(self, a, b):
+    ''' Replace all occurances of a with b. '''
     for i in self.indices(a):
       exp = self._data[i]
       if   exp.imageset is a:   exp.imageset = b
@@ -110,35 +153,46 @@ class ExperimentList(object):
       else: raise ValueError('unidentified model %s' % a)
 
   def remove(self, model):
+    ''' Remove all occurances of the model. '''
     self.replace(model, None)
 
   def indices(self, model):
+    ''' Get the indices of the experiments which contains the model. '''
     if isinstance(model, list) or isinstance(model, tuple):
       return list(set.intersection(*[set(self.indices(m)) for m in model]))
     else:
       return [i for i, e in enumerate(self) if model in e]
 
   def beams(self):
+    ''' Get a list of the unique beams (includes None). '''
     from collections import OrderedDict
     return OrderedDict([(e.beam, None) for e in self]).keys()
 
   def detectors(self):
+    ''' Get a list of the unique detectors (includes None). '''
     from collections import OrderedDict
     return OrderedDict([(e.detector, None) for e in self]).keys()
 
   def goniometers(self):
+    ''' Get a list of the unique goniometers (includes None). '''
     from collections import OrderedDict
     return OrderedDict([(e.goniometer, None) for e in self]).keys()
 
   def scans(self):
+    ''' Get a list of the unique scans (includes None). '''
     from collections import OrderedDict
     return OrderedDict([(e.scan, None) for e in self]).keys()
 
   def crystals(self):
+    ''' Get a list of the unique crystals (includes None). '''
     from collections import OrderedDict
     return OrderedDict([(e.crystal, None) for e in self]).keys()
 
   def imagesets(self):
+    ''' Get a list of the unique imagesets (includes None).
+
+    This returns unique complete sets rather than partial.
+    '''
     from collections import OrderedDict
     temp = OrderedDict([(e.imageset.reader(), i) for i, e in enumerate(self)
       if e is not None])
@@ -146,12 +200,15 @@ class ExperimentList(object):
       for i in temp.itervalues()]).keys()
 
   def is_consistent(self):
+    ''' Check all the models are consistent. '''
     return all([e.is_consistent() for e in self])
 
   def to_dict(self):
+    ''' Serialize the experiment list to dictionary. '''
     from collections import OrderedDict
     from dxtbx.imageset2 import ImageSet, ImageSweep
 
+    # Check the experiment list is consistent
     assert(self.is_consistent())
 
     # Get the list of unique models
@@ -209,12 +266,16 @@ class ExperimentList(object):
 
 
 class ExperimentListDict(object):
+  ''' A helper class for serializing the experiment list to dictionary (needed
+  to save the experiment list to JSON format. '''
 
   def __init__(self, obj):
+    ''' Initialise. Copy the dictionary. '''
     from copy import deepcopy
     self._obj = deepcopy(obj)
 
   def decode(self):
+    ''' Decode the dictionary into a list of experiments. '''
 
     # Extract lists of models referenced by experiments
     self._blist = self._extract_models('beam')
@@ -233,6 +294,7 @@ class ExperimentListDict(object):
     return self._extract_experiments()
 
   def _extract_models(self, name):
+    ''' Helper function. Extract the models. '''
 
     # The from dict function
     from_dict = getattr(self, '_%s_from_dict' % name)
@@ -267,6 +329,7 @@ class ExperimentListDict(object):
     return mlist
 
   def _extract_imagesets(self):
+    ''' Helper function, extract the imagesets. '''
 
     # Extract all the model list
     mlist = self._obj.get('imageset', [])
@@ -294,6 +357,7 @@ class ExperimentListDict(object):
     return mlist
 
   def _extract_experiments(self):
+    ''' Helper function. Extract the experiments. '''
     from dials.model.experiment.manager import ExperimentList
 
     # For every experiment, use the given input to create
@@ -311,8 +375,9 @@ class ExperimentListDict(object):
     # Return the experiment list
     return el
 
-  def _create_experiment(self, imageset, beam, detector, goniometer, scan,
-                         crystal):
+  def _create_experiment(self, imageset, beam, detector,
+      goniometer, scan, crystal):
+    ''' Helper function. Create an experiment. '''
 
     # Create the imageset from the input data
     if imageset is None:
@@ -343,13 +408,16 @@ class ExperimentListDict(object):
     )
 
   def _make_null(self):
+    ''' Make a null sweep. '''
     raise RuntimeError('NullSet not yet supported')
 
   def _make_stills(self, imageset):
+    ''' Make a still imageset. '''
     from dxtbx.imageset2 import ImageSetFactory
     return ImageSetFactory.make_imageset(imageset['images'])
 
   def _make_sweep(self, imageset, scan):
+    ''' Make an image sweep. '''
     from os.path import abspath, expanduser, expandvars
     from dxtbx.sweep_filenames import template_image_range
     from dxtbx.format.Registry import Registry
@@ -377,6 +445,7 @@ class ExperimentListDict(object):
 
   @staticmethod
   def model_or_none(mlist, eobj, name):
+    ''' Get a model or None. '''
     index = eobj.get(name, None)
     if index is not None:
       return mlist[index]
@@ -384,11 +453,13 @@ class ExperimentListDict(object):
 
   @staticmethod
   def _beam_from_dict(obj):
+    ''' Get a beam from a dictionary. '''
     from dxtbx.model import Beam
     return Beam.from_dict(obj)
 
   @staticmethod
   def _detector_from_dict(obj):
+    ''' Get the detector from a dictionary. '''
     from dxtbx.model import Detector, HierarchicalDetector
     if 'hierarchy' in obj:
       return HierarchicalDetector.from_dict(obj)
@@ -397,21 +468,25 @@ class ExperimentListDict(object):
 
   @staticmethod
   def _goniometer_from_dict(obj):
+    ''' Get the goniometer from a dictionary. '''
     from dxtbx.model import Goniometer
     return Goniometer.from_dict(obj)
 
   @staticmethod
   def _scan_from_dict(obj):
+    ''' Get the scan from a dictionary. '''
     from dxtbx.model import Scan
     return Scan.from_dict(obj)
 
   @staticmethod
   def _crystal_from_dict(obj):
+    ''' Get the crystal from a dictionary. '''
     from dials.model.serialize import crystal
     return crystal.crystal_from_dict(obj)
 
   @staticmethod
   def _from_file(filename):
+    ''' Load a model dictionary from a file. '''
     from dxtbx.serialize.load import _decode_dict
     from os.path import expanduser, expandvars, abspath
     import json
@@ -424,10 +499,11 @@ class ExperimentListDict(object):
 
 
 class ExperimentListFactory(object):
+  ''' A class to help instantiate experiment lists. '''
 
   @staticmethod
   def from_args(args, verbose=False, unhandled=None):
-    ''' Try to load datablocks from any recognised format. '''
+    ''' Try to load experiment from any recognised format. '''
     from dxtbx.datablock import DataBlockFactory
 
     # Create a list for unhandled arguments
@@ -463,6 +539,7 @@ class ExperimentListFactory(object):
 
   @staticmethod
   def from_datablock(datablock):
+    ''' Load an experiment list from a datablock. '''
 
     # Initialise the experiment list
     experiments = ExperimentList()
@@ -498,10 +575,12 @@ class ExperimentListFactory(object):
 
   @staticmethod
   def from_dict(obj):
+    ''' Load an experiment list from a dictionary. '''
     return ExperimentListDict(obj).decode()
 
   @staticmethod
   def from_json(text):
+    ''' Load an experiment list from JSON. '''
     from dxtbx.serialize.load import _decode_dict
     import json
     return ExperimentListFactory.from_dict(
@@ -509,6 +588,7 @@ class ExperimentListFactory(object):
 
   @staticmethod
   def from_json_file(filename):
+    ''' Load an experiment list from a json file. '''
     with open(filename, 'r') as infile:
       return ExperimentListFactory.from_json(infile.read())
 
@@ -520,74 +600,3 @@ class ExperimentListFactory(object):
       obj = pickle.load(infile)
       assert(isinstance(obj, ExperimentList))
       return obj
-
-
-from dials.model.experiment import Beam, Detector, Goniometer, Scan, Crystal
-
-if __name__ == '__main__':
-
-  crystal0 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 1)
-  crystal1 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 1)
-  crystal2 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 1)
-
-  detector0 = Detector()
-  detector1 = Detector()
-  detector2 = detector0
-
-  beam0 = Beam()
-  beam1 = beam0
-  beam2 = beam1
-
-  expr0 = Experiment(beam=beam0, detector=detector0, crystal=crystal0)
-  expr1 = Experiment(beam=beam1, detector=detector1, crystal=crystal1)
-  expr2 = Experiment(beam=beam2, detector=detector2, crystal=crystal2)
-
-  em = ExperimentList()
-  em.append(expr0)
-  em.append(expr1)
-  em.append(expr2)
-
-  print "Unique Crystals"
-  print em.crystals()
-
-  print "Unique Beams"
-  print em.beams()
-
-  print "Unique Detectors"
-  print em.detectors()
-
-  print "Experiments with crystal:"
-  print em.indices(crystal0)
-  print em.indices(crystal1)
-  print em.indices(crystal2)
-
-  print "Experiments with beam:"
-  print em.indices(beam0)
-  print em.indices(beam1)
-  print em.indices(beam2)
-
-  print "Experiments with detector:"
-  print em.indices(detector0)
-  print em.indices(detector1)
-  print em.indices(detector2)
-
-  print "Experiments with detector/crystal combinations"
-  print em.indices((detector0, crystal0))
-  print em.indices((detector0, crystal1))
-  print em.indices((detector0, crystal2))
-  print em.indices((detector1, crystal0))
-  print em.indices((detector1, crystal1))
-  print em.indices((detector1, crystal2))
-  print em.indices((detector2, crystal0))
-  print em.indices((detector2, crystal1))
-  print em.indices((detector2, crystal2))
-
-  print "Replace model"
-  em.replace(detector1, detector0)
-  print em.detectors()
-
-  print detector0 in em
-  print detector1 in em
-
-  em.extend(em)
-  print em
