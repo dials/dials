@@ -32,6 +32,24 @@ class Experiment(object):
   def __ne__(self, other):
     return not self.__eq__(other)
 
+  def is_consistent(self):
+    ''' If a scan is present, check that it makes sense with the imageset. '''
+    from dxtbx.imageset2 import ImageSweep
+    if self.scan:
+      if isinstance(self.imageset, ImageSweep):
+        if len(self.imageset) != self.scan.get_num_images():
+          return False
+        if self.imageset.get_array_range() != self.scan.get_array_range():
+          return False
+      elif self.imageset is not None:
+        if (self.scan.get_num_images() != 1 or
+            self.scan.get_oscillation()[1] != 0.0):
+          return False
+        if len(self.imageset.indices()) != 1:
+          return False
+        if self.imageset.indices()[0] != self.scan.get_array_range()[0]:
+          return False
+    return True
 
 class ExperimentList(object):
 
@@ -127,9 +145,14 @@ class ExperimentList(object):
     return OrderedDict([(self[i].imageset.complete_set(), None)
       for i in temp.itervalues()]).keys()
 
+  def is_consistent(self):
+    return all([e.is_consistent() for e in self])
+
   def to_dict(self):
     from collections import OrderedDict
     from dxtbx.imageset2 import ImageSet, ImageSweep
+
+    assert(self.is_consistent())
 
     # Get the list of unique models
     blist = self.beams()
@@ -153,7 +176,11 @@ class ExperimentList(object):
       if e.goniometer: obj['goniometer'] = glist.index(e.goniometer)
       if e.scan:       obj['scan']       = slist.index(e.scan)
       if e.crystal:    obj['crystal']    = clist.index(e.crystal)
-      if e.imageset:   obj['imageset']   = ilist.index(e.imageset)
+      if e.imageset:
+        obj['imageset'] = ilist.index(e.imageset)
+        if e.scan is None and not isinstance(e.imageset, ImageSweep):
+          if len(e.imageset) != len(e.imageset.complete_set()):
+            obj['imageset'] = (obj['imageset'], e.imageset.indices())
       result['experiment'].append(obj)
 
     # Serialize all the imagesets
@@ -459,7 +486,6 @@ class ExperimentListFactory(object):
     stills = datablock.extract_stills()
     for i in range(len(stills)):
       still = stills[i:i+1]
-      print "Get for %d" % i
       experiments.append(Experiment(
         imageset=still,
         beam=still.get_beam(),
