@@ -45,56 +45,52 @@ if __name__ == '__main__':
     for filename in unhandled:
       print '  %s' % filename
 
+  # Print some general info
+  print '-' * 80
+  print 'Read %d experiments' % len(experiments)
+
   # Loop through the data blocks
   for i, exp in enumerate(experiments):
-    print exp
-    ## Extract any sweeps
-    #sweeps = datablock.extract_sweeps()
 
-    ## Extract any stills
-    #stills = datablock.extract_stills()
-    #if not stills:
-      #num_stills = 0
-    #else:
-      #num_stills = len(stills)
+    # Print some experiment info
+    print "-" * 80
+    print "Experiment %d" % i
+    print "  format: %s" % str(exp.imageset.reader().get_format_class())
+    print "  type: %s" % type(exp.imageset)
+    print "  num images: %d" % len(exp.imageset)
 
-    ## Print some data block info
-    #print "-" * 80
-    #print "DataBlock %d" % i
-    #print "  format: %s" % str(datablock.format_class())
-    #print "  num images: %d" % len(datablock)
-    #print "  num sweeps: %d" % len(sweeps)
-    #print "  num stills: %d" % num_stills
+    # Print some model info
+    if options.verbose > 1:
+      print ""
+      if exp.beam:       print exp.beam
+      else:              print "no beam!"
+      if exp.detector:   print exp.detector
+      else:              print "no detector!"
+      if exp.goniometer: print exp.goniometer
+      else:              print "no goniometer!"
+      if exp.scan:       print exp.scan
+      else:              print "no scan!"
+      if exp.crystal:    print exp.crystal
+      else:              print "no crystal!"
 
-    ## Loop through all the sweeps
-    #if options.verbose > 1:
-      #for j, sweep in enumerate(sweeps):
-        #print ""
-        #print "Sweep %d" % j
-        #print "  length %d" % len(sweep)
-        #print sweep.get_beam()
-        #print sweep.get_goniometer()
-        #print sweep.get_detector()
-        #print sweep.get_scan()
-
-  ## Write the datablock to a JSON or pickle file
-  #if options.output:
-    #print "-" * 80
-    #print 'Writing datablocks to %s' % options.output
-    #import os
-    #import json
-    #import cPickle as pickle
-    #ext = os.path.splitext(options.output)[1]
-    #if ext == '.json':
-      #dictionary = [db.to_dict() for db in datablocks]
-      #if options.compact:
-        #json.dump(dictionary, open(options.output, "w"),
-          #separators=(',',':'), ensure_ascii=True)
-      #else:
-        #json.dump(dictionary, open(options.output, "w"),
-          #indent=2, ensure_ascii=True)
-    #elif ext == '.pickle':
-      #pickle.dump(datablocks, open(options.output, "wb"),
-        #protocol=pickle.HIGHEST_PROTOCOL)
-    #else:
-      #raise RuntimeError('expected extension .json or .pickle, got %s' % ext)
+  # Write the experiment list to a JSON or pickle file
+  if options.output:
+    print "-" * 80
+    print 'Writing experiments to %s' % options.output
+    import os
+    import json
+    import cPickle as pickle
+    ext = os.path.splitext(options.output)[1]
+    if ext == '.json':
+      dictionary = experiments.to_dict()
+      if options.compact:
+        json.dump(dictionary, open(options.output, "w"),
+          separators=(',',':'), ensure_ascii=True)
+      else:
+        json.dump(dictionary, open(options.output, "w"),
+          indent=2, ensure_ascii=True)
+    elif ext == '.pickle':
+      pickle.dump(experiments, open(options.output, "wb"),
+        protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+      raise RuntimeError('expected extension .json or .pickle, got %s' % ext)

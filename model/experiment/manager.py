@@ -101,22 +101,71 @@ class ExperimentList(object):
       return [i for i, e in enumerate(self) if model in e]
 
   def beams(self):
-    return list(set([e.beam for e in self]))
+    from collections import OrderedDict
+    return OrderedDict([(e.beam, None) for e in self]).keys()
 
   def detectors(self):
-    return list(set([e.detector for e in self]))
+    from collections import OrderedDict
+    return OrderedDict([(e.detector, None) for e in self]).keys()
 
   def goniometers(self):
-    return list(set([e.goniometer for e in self]))
+    from collections import OrderedDict
+    return OrderedDict([(e.goniometer, None) for e in self]).keys()
 
   def scans(self):
-    return list(set([e.scan for e in self]))
+    from collections import OrderedDict
+    return OrderedDict([(e.scan, None) for e in self]).keys()
 
   def crystals(self):
-    return list(set([e.crystal for e in self]))
+    from collections import OrderedDict
+    return OrderedDict([(e.crystal, None) for e in self]).keys()
 
   def imagesets(self):
-    return list(set([e.imageset for e in self]))
+    from collections import OrderedDict
+    return OrderedDict([(e.imageset, None) for e in self]).keys()
+
+  def to_dict(self):
+    from collections import OrderedDict
+    from dxtbx.imageset2 import ImageSet, ImageSweep
+
+    # Get the list of unique models
+    beam = self.beams()
+    detector = self.detectors()
+    goniometer = self.goniometers()
+    scan = self.scans()
+    crystal = self.crystals()
+    imageset = self.imagesets()
+
+    # Create the output dictionary
+    result = OrderedDict()
+    result['__id__'] = 'ExperimentList'
+    result['experiment'] = []
+
+    # Serialize all the imagesets
+    result['imageset'] = []
+    for imset in imageset:
+      if isinstance(imset, ImageSweep):
+        result['imageset'].append(OrderedDict([
+          ('__id__', 'ImageSweep'),
+          ('template', imset.get_template())
+        ]))
+      elif isinstance(imset, ImageSet):
+        result['imageset'].append(OrderedDict([
+          ('__id__', 'ImageSet'),
+          ('images', imset.paths())
+        ]))
+      else:
+        raise TypeError('expected ImageSet or ImageSweep, got %s' % type(imset))
+
+    # Extract all the model dictionaries
+    result['beam'] = [b.to_dict() for b in beam if b is not None]
+    result['detector'] = [d.to_dict() for d in detector if d is not None]
+    result['goniometer'] = [g.to_dict() for g in goniometer if g is not None]
+    result['scan'] = [s.to_dict() for s in scan if s is not None]
+    result['crystal'] = [c.to_dict() for c in crystal if c is not None]
+
+    # Return the dictionary
+    return result
 
 
 class ExperimentListDict(object):
@@ -423,7 +472,14 @@ class ExperimentListFactory(object):
     with open(filename, 'r') as infile:
       return ExperimentListFactory.from_json(infile.read())
 
-
+  @staticmethod
+  def from_pickle_file(filename):
+    ''' Decode an experiment list from a pickle file. '''
+    import cPickle as pickle
+    with open(filename, 'rb') as infile:
+      obj = pickle.load(infile)
+      assert(isinstance(obj, ExperimentList))
+      return obj
 
 
 from dials.model.experiment import Beam, Detector, Goniometer, Scan, Crystal
