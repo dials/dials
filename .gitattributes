@@ -408,7 +408,7 @@ model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/crystal_model/__init__.py -text
 model/experiment/crystal_model/crystal.py -text
-model/experiment/manager.py -text
+model/experiment/experiment_list.py -text
 model/serialize/__init__.py -text
 model/serialize/crystal.py -text
 model/serialize/dump.py -text

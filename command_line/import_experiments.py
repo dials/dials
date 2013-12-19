@@ -1,5 +1,5 @@
 from __future__ import division
-from dials.model.experiment.manager import ExperimentListFactory
+from dials.model.experiment.experiment_list import ExperimentListFactory
 
 if __name__ == '__main__':
 
