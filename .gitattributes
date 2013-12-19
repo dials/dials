@@ -469,6 +469,7 @@ scratch/jmp/container/__init__.py -text
 scratch/jmp/container/reflection_table.py -text
 scratch/jmp/container/table.py -text
 scratch/jmp/container/test_cpp_table.py -text
+scratch/jmp/experiment_manager/import_experiment.py -text
 scratch/jmp/find_roots/find_roots.py -text
 scratch/jmp/find_roots/find_roots_2.py -text
 scratch/jmp/find_strong_spots/calculate_divergence.py -text
