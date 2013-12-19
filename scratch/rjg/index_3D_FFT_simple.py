@@ -283,7 +283,6 @@ class indexer(object):
     import copy
     from dxtbx.serialize.imageset import NullSweep
     from dxtbx.model import Detector
-    from dxtbx.array_family import flex
     sweeps = []
     for i in range(len(crystal_models)):
       sweep = NullSweep(self.sweep.get_template())
