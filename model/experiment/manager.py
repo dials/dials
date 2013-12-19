@@ -122,47 +122,60 @@ class ExperimentList(object):
 
   def imagesets(self):
     from collections import OrderedDict
-    return OrderedDict([(e.imageset, None) for e in self]).keys()
+    temp = OrderedDict([(e.imageset.reader(), i) for i, e in enumerate(self)
+      if e is not None])
+    return OrderedDict([(self[i].imageset.complete_set(), None)
+      for i in temp.itervalues()]).keys()
 
   def to_dict(self):
     from collections import OrderedDict
     from dxtbx.imageset2 import ImageSet, ImageSweep
 
     # Get the list of unique models
-    beam = self.beams()
-    detector = self.detectors()
-    goniometer = self.goniometers()
-    scan = self.scans()
-    crystal = self.crystals()
-    imageset = self.imagesets()
+    blist = self.beams()
+    dlist = self.detectors()
+    glist = self.goniometers()
+    slist = self.scans()
+    clist = self.crystals()
+    ilist = self.imagesets()
 
     # Create the output dictionary
     result = OrderedDict()
     result['__id__'] = 'ExperimentList'
     result['experiment'] = []
 
+    # Add the experiments to the dictionary
+    for e in self:
+      obj = OrderedDict()
+      obj['__id__'] = 'Experiment'
+      if e.beam:       obj['beam']       = blist.index(e.beam)
+      if e.detector:   obj['detector']   = dlist.index(e.detector)
+      if e.goniometer: obj['goniometer'] = glist.index(e.goniometer)
+      if e.scan:       obj['scan']       = slist.index(e.scan)
+      if e.crystal:    obj['crystal']    = clist.index(e.crystal)
+      if e.imageset:   obj['imageset']   = ilist.index(e.imageset)
+      result['experiment'].append(obj)
+
     # Serialize all the imagesets
     result['imageset'] = []
-    for imset in imageset:
+    for imset in ilist:
       if isinstance(imset, ImageSweep):
         result['imageset'].append(OrderedDict([
           ('__id__', 'ImageSweep'),
-          ('template', imset.get_template())
-        ]))
+          ('template', imset.get_template())]))
       elif isinstance(imset, ImageSet):
         result['imageset'].append(OrderedDict([
           ('__id__', 'ImageSet'),
-          ('images', imset.paths())
-        ]))
+          ('images', imset.paths())]))
       else:
         raise TypeError('expected ImageSet or ImageSweep, got %s' % type(imset))
 
     # Extract all the model dictionaries
-    result['beam'] = [b.to_dict() for b in beam if b is not None]
-    result['detector'] = [d.to_dict() for d in detector if d is not None]
-    result['goniometer'] = [g.to_dict() for g in goniometer if g is not None]
-    result['scan'] = [s.to_dict() for s in scan if s is not None]
-    result['crystal'] = [c.to_dict() for c in crystal if c is not None]
+    result['beam']       = [b.to_dict() for b in blist if b is not None]
+    result['detector']   = [d.to_dict() for d in dlist if d is not None]
+    result['goniometer'] = [g.to_dict() for g in glist if g is not None]
+    result['scan']       = [s.to_dict() for s in slist if s is not None]
+    result['crystal']    = [c.to_dict() for c in clist if c is not None]
 
     # Return the dictionary
     return result
@@ -446,6 +459,7 @@ class ExperimentListFactory(object):
     stills = datablock.extract_stills()
     for i in range(len(stills)):
       still = stills[i:i+1]
+      print "Get for %d" % i
       experiments.append(Experiment(
         imageset=still,
         beam=still.get_beam(),
