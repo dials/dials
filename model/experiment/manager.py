@@ -33,7 +33,7 @@ class Experiment(object):
     return not self.__eq__(other)
 
 
-class ExperimentManager(object):
+class ExperimentList(object):
 
   def __init__(self, item=None):
     if item is not None:
@@ -49,7 +49,7 @@ class ExperimentManager(object):
 
   def __getitem__(self, index):
     if isinstance(index, slice):
-      return ExperimentManager(self._data[index])
+      return ExperimentList(self._data[index])
     return self._data[index]
 
   def __delitem__(self, index):
@@ -75,10 +75,10 @@ class ExperimentManager(object):
       raise TypeError('expected type Experiment, got %s' % type(item))
 
   def extend(self, other):
-    if isinstance(other, ExperimentManager):
+    if isinstance(other, ExperimentList):
       self._data.extend(other._data)
     else:
-      raise TypeError('expected type ExperimentManager, got %s' % type(item))
+      raise TypeError('expected type ExperimentList, got %s' % type(item))
 
   def replace(self, a, b):
     for i in self.indices(a):
@@ -205,11 +205,11 @@ class ExperimentListDict(object):
     return mlist
 
   def _extract_experiments(self):
-    from dials.model.experiment.manager import ExperimentManager
+    from dials.model.experiment.manager import ExperimentList
 
     # For every experiment, use the given input to create
     # a sensible experiment.
-    el = ExperimentManager()
+    el = ExperimentList()
     for eobj in self._obj['experiment']:
       el.append(self._create_experiment(
         ExperimentListDict.model_or_none(self._ilist, eobj, 'imageset'),
@@ -334,22 +334,78 @@ class ExperimentListDict(object):
       raise IOError('unable to read file, %s' % filename)
 
 
-class ExperimentManagerFactory(object):
+class ExperimentListFactory(object):
+
+  @staticmethod
+  def from_args(args, verbose=False, unhandled=None):
+    ''' Try to load datablocks from any recognised format. '''
+    from dxtbx.datablock import DataBlockFactory
+
+    # Create a list for unhandled arguments
+    if unhandled is None:
+      unhandled = []
+    unhandled1 = []
+    unhandled2 = []
+
+    # First try as image files
+    experiments = ExperimentListFactory.from_datablock(
+      DataBlockFactory.from_args(args, verbose, unhandled1))
+
+    # Now try as JSON files
+    if len(unhandled1) > 0:
+      for filename in unhandled1:
+        try:
+          experiments.extend(ExperimentListFactory.from_json_file(filename))
+          if verbose: print 'Loaded experiment(s) from %s' % filename
+        except Exception, e:
+          unhandled2.append(filename)
+
+    # Now try as pickle files
+    if len(unhandled2) > 0:
+      for filename in unhandled2:
+        try:
+          experiments.extend(ExperimentListFactory.from_pickle_file(filename))
+          if verbose: print 'Loaded experiments(s) from %s' % filename
+        except Exception:
+          unhandled.append(filename)
+
+    # Return the experiments
+    return experiments
 
   @staticmethod
   def from_datablock(datablock):
-    pass
 
-  @staticmethod
-  def from_imageset_list_and_crystal(imageset_list, crystal):
-    em = ExperimentManager()
-    for imageset in imageset_list:
-      em.extend(ExperimentManagerFactory.from_imageset(imageset, crystal))
-    return em
+    # Initialise the experiment list
+    experiments = ExperimentList()
 
-  @staticmethod
-  def from_imageset_and_crystal(imageset):
-    pass
+    # If we have a list, loop through
+    if isinstance(datablock, list):
+      for db in datablock:
+        experiments.extend(ExperimentListFactory.from_datablock(db))
+      return experiments
+
+    # Extract the sweeps
+    for sweep in datablock.extract_sweeps():
+      experiments.append(Experiment(
+        imageset=sweep,
+        beam=sweep.get_beam(),
+        detector=sweep.get_detector(),
+        goniometer=sweep.get_goniometer(),
+        scan=sweep.get_scan()))
+
+    # Extract the stills
+    stills = datablock.extract_stills()
+    for i in range(len(stills)):
+      still = stills[i:i+1]
+      experiments.append(Experiment(
+        imageset=still,
+        beam=still.get_beam(),
+        detector=still.get_detector(),
+        goniometer=still.get_goniometer(),
+        scan=still.get_scan()))
+
+    # Return the experiments
+    return experiments
 
   @staticmethod
   def from_dict(obj):
@@ -359,13 +415,13 @@ class ExperimentManagerFactory(object):
   def from_json(text):
     from dxtbx.serialize.load import _decode_dict
     import json
-    return ExperimentManagerFactory.from_dict(
+    return ExperimentListFactory.from_dict(
       json.loads(text, object_hook=_decode_dict))
 
   @staticmethod
   def from_json_file(filename):
     with open(filename, 'r') as infile:
-      return ExperimentManagerFactory.from_json(infile.read())
+      return ExperimentListFactory.from_json(infile.read())
 
 
 
@@ -390,7 +446,7 @@ if __name__ == '__main__':
   expr1 = Experiment(beam=beam1, detector=detector1, crystal=crystal1)
   expr2 = Experiment(beam=beam2, detector=detector2, crystal=crystal2)
 
-  em = ExperimentManager()
+  em = ExperimentList()
   em.append(expr0)
   em.append(expr1)
   em.append(expr2)
