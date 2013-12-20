@@ -136,7 +136,6 @@ class RefinerFactory(object):
 
     # copy the models
     from dxtbx.model import Beam
-    from dxtbx.array_family import flex
     import copy
     # use copy constructor
     beam = Beam(beam)
