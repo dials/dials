@@ -73,11 +73,11 @@ class ComputeEsdBeamDivergence(object):
       zp = zi + zs + 0.5
 
       # Calculate the beam directions to each pixel
-      s1 = [detector.get_pixel_lab_coord((x, y)) for x, y in zip(xp, yp)]
+      s1 = [detector[0].get_pixel_lab_coord((x, y)) for x, y in zip(xp, yp)]
 
       # Calculate the beam vector at the centroid
       xc, yc, zc = r.centroid_position
-      s1_centroid = detector.get_pixel_lab_coord((xc, yc))
+      s1_centroid = detector[0].get_pixel_lab_coord((xc, yc))
 
       # Calculate the variance in beam vector directions
       var = self._beam_direction_variance(s1_centroid, s1, values)

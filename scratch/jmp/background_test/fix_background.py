@@ -12,9 +12,9 @@ def create_phil_string(n, cts, bg):
       z = 1
     }
     spot_offset {
-      x = -0.5
-      y = -0.5
-      z = -0.5
+      x = 0
+      y = 0
+      z = 0
     }
     mask_nsigma = 3.0
     counts = %d
@@ -31,7 +31,7 @@ def create_phil_string(n, cts, bg):
       axis {
         x = 0
         y = 0
-        z = 1
+        z = 0
       }
       angle = 0
     }
@@ -49,20 +49,37 @@ def create_phil(n, cts, bg):
 
 def background_xds(rlist):
   from dials.algorithms.background import XdsSubtractor
-#  background = XdsSubtractor()
-#  background(None, None, rlist)
-  from dials.algorithms.shoebox import MaskCode
-  from scitbx.array_family import flex
-  for r in rlist:
-    mask = r.shoebox_mask
-    background = flex.bool([bool(m & MaskCode.Background) for m in mask])
-    pixels = r.shoebox.select(background)
-    bg = flex.median(pixels)
-    print bg
-    for i in range(len(r.shoebox_background)):
-      r.shoebox_background[i] = bg
+  from math import sqrt, erf
+  background = XdsSubtractor()
+  background(None, None, rlist)
+#  from dials.algorithms.shoebox import MaskCode
+#  from scitbx.array_family import flex
+#  for r in rlist:
+#    mask = r.shoebox_mask
+#    foreground = flex.bool([bool(m & MaskCode.Foreground) for m in mask])
+#    pixels = r.shoebox.select(foreground)
+#    I = flex.sum(pixels) * (1.0 - erf(3.0 / sqrt(2.0)))
+#    for i in range(len(r.shoebox_background)):
+#      r.shoebox_background[i] -= I
+#  from dials.algorithms.shoebox import MaskCode
+#  from scitbx.array_family import flex
+#  for r in rlist:
+#    mask = r.shoebox_mask
+#    background = flex.bool([bool(m & MaskCode.Background) for m in mask])
+#    pixels = r.shoebox.select(background)
+#    bg = flex.median(pixels)
+#    print bg
+#    for i in range(len(r.shoebox_background)):
+#      r.shoebox_background[i] = bg
 
   return
+
+def background_inclined(rlist):
+  from dials.algorithms.background import InclinedSubtractor
+  background = InclinedSubtractor()
+  background(None, None, rlist)
+  return
+
 def integrate_3d_summation(rlist):
   from dials.algorithms.integration import Summation3d
   integration = Summation3d()
@@ -83,27 +100,39 @@ def generate_reflections(num, min_cts, max_cts, bg):
     expected.append(cts)
     rlist.extend(simple_gaussian_spots(phil))
 
+#  background_inclined(rlist)
   background_xds(rlist)
   integrate_3d_summation(rlist)
 
-  for r, e in zip(rlist, expected):
-    mask = r.shoebox_mask
-    background = flex.bool([bool(m & MaskCode.Background) for m in mask])
-    foreground = flex.bool([bool(m & MaskCode.Foreground) for m in mask])
-    pixels = r.shoebox.select(foreground)
-
-
-    print e, r.intensity, flex.sum(pixels) - len(pixels) * 10.0, e / r.intensity
+  import pickle
+  pickle.dump(rlist, open("test.pickle", "w"))
 
 #  for r in rlist:
 #    from math import sqrt, erf
 #    r.intensity *= 1.0 + (1.0 - erf(3.0 / sqrt(2.0)))
 
 
+  for r, e in zip(rlist, expected):
+    mask = r.shoebox_mask
+    background = flex.bool([bool(m & MaskCode.Background) for m in mask])
+    foreground = flex.bool([bool(m & MaskCode.Foreground) for m in mask])
+    pixels = r.shoebox.select(foreground)
+    print e, r.intensity, flex.sum(pixels) - len(pixels) * 0, e / r.intensity
+
+
+  from math import sqrt
+  I = [r.intensity for r in rlist]
+  S = [sqrt(r.intensity_variance) for r in rlist]
+  Z = [(i - e) / s for i, e, s in zip(I, expected, S)]
+  meanz =sum(Z) / len(Z)
+  sdevz =sqrt(sum((z - meanz)**2 for z in Z) / len(Z))
+  print "MeanZ: %f, SDevZ: %f" % (meanz, sdevz)
+
   from matplotlib import pylab
+  #pylab.ylim(0, 2)
   pylab.scatter(expected, [e / r.intensity for r, e in zip(rlist, expected)])
   pylab.show()
 
 
 if __name__ == '__main__':
-  generate_reflections(100, 0, 10000, 10)
+  generate_reflections(1000, 0, 10000, 10)
