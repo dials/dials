@@ -196,8 +196,8 @@ class ExperimentList(object):
     This returns unique complete sets rather than partial.
     '''
     from collections import OrderedDict
-    temp = OrderedDict([(e.imageset.reader(), i) for i, e in enumerate(self)
-      if e is not None])
+    temp = OrderedDict([(e.imageset.reader(), i)
+      for i, e in enumerate(self) if e.imageset is not None])
     return OrderedDict([(self[i].imageset.complete_set(), None)
       for i in temp.itervalues()]).keys()
 
@@ -226,16 +226,28 @@ class ExperimentList(object):
     result['__id__'] = 'ExperimentList'
     result['experiment'] = []
 
+    # Function to find in list by reference
+    def find_index(l, m):
+      for i, mm in enumerate(l):
+        if mm is m:
+          return i
+      return -1
+
     # Add the experiments to the dictionary
     for e in self:
       obj = OrderedDict()
       obj['__id__'] = 'Experiment'
-      if e.beam:       obj['beam']       = blist.index(e.beam)
-      if e.detector:   obj['detector']   = dlist.index(e.detector)
-      if e.goniometer: obj['goniometer'] = glist.index(e.goniometer)
-      if e.scan:       obj['scan']       = slist.index(e.scan)
-      if e.crystal:    obj['crystal']    = clist.index(e.crystal)
-      if e.imageset:
+      if e.beam is not None:
+        obj['beam'] = find_index(blist, e.beam)
+      if e.detector is not None:
+        obj['detector'] = find_index(dlist, e.detector)
+      if e.goniometer is not None:
+        obj['goniometer'] = find_index(glist, e.goniometer)
+      if e.scan is not None:
+        obj['scan'] = find_index(slist, e.scan)
+      if e.crystal is not None:
+        obj['crystal'] = find_index(clist, e.crystal)
+      if e.imageset is not None:
         obj['imageset'] = ilist.index(e.imageset)
         if e.scan is None and not isinstance(e.imageset, ImageSweep):
           if len(e.imageset) != len(e.imageset.complete_set()):
