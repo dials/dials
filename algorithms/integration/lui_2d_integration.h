@@ -243,11 +243,11 @@ namespace dials { namespace algorithms {
     }
 
     // Building a set 1D lists with the useful pixels
+
     double iexpr_lst[counter];
     double imodl_lst[counter];
-    double modl_scal_lst[counter];
     double sum = 0, i_var;
-    double m, diff, df_sqr;
+
     counter = 0;
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
@@ -262,26 +262,30 @@ namespace dials { namespace algorithms {
     }
 
     // finding the scale needed to fit profile list to experiment list
+    double m, diff, df_sqr;
 
-    // m = m_linear_scale(counter, imodl_lst, iexpr_lst);
-
+    //m = m_linear_scale(counter, imodl_lst, iexpr_lst);
     m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
 
-    for (int i = 0; i < counter; i++){
-      modl_scal_lst[i] =imodl_lst[i] * m;
-    }
-
+    //measuring R
     sum = 0;
-    for (int i = 0; i < counter; i++){
-      diff = (modl_scal_lst[i] - iexpr_lst[i]);
-      df_sqr = diff * diff;
-      sum += df_sqr;
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
+
+        diff = profile2d(row, col) * m - data2dmov(row, col);
+        df_sqr = diff * diff;
+        sum += df_sqr;
+
+      }
     }
     i_var = sum;
 
+    //measuring the volume of the scaled profile
     sum = 0;
-    for (int i = 0; i < counter; i++){
-      sum += modl_scal_lst[i];
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
+        sum += profile2d(row, col) * m;
+      }
     }
     vec2<double> integr_data(0,1);
     integr_data[0] = sum;                   // intensity

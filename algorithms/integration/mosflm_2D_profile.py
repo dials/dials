@@ -18,7 +18,7 @@ def make_2d_profile(reflections):
     if ref.is_valid():
       if ref.intensity > max_i and ref.intensity < max_i_01 * 0.95:
         max_i = ref.intensity
-  thold = 0.2 * max_i
+  thold = 0.5 * max_i
 
   select_rlist = ReflectionList()
   for ref in reflections:

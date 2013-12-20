@@ -63,39 +63,33 @@ plt.imshow(data2d, interpolation = "nearest")
 plt.show()
 
 
+from dials.algorithms.background.inclined_background_subtractor \
+  import layering_and_background_plane
+layering_and_background_plane(rlist)
+from dials.algorithms.integration import flex_2d_layering_n_integrating
+flex_2d_layering_n_integrating(rlist)
+
+old_r_list = rlist[:]
+
+
 for r in rlist:
     for x_loc in range(ncol):
       for y_loc in range(nrow):
-        roll_the_dice = random.randint(1,6)
-        if roll_the_dice <=2:
+        roll_the_dice = random.randint(1,50)
+        if roll_the_dice <=5:
           r.shoebox[0, y_loc, x_loc] = -1
           r.shoebox_mask[0, y_loc, x_loc] = 0
         else:
-          r.shoebox[0, y_loc, x_loc] += random.randint(0,20)
+          r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
 
 
 from dials.algorithms.background.inclined_background_subtractor \
   import layering_and_background_plane
 layering_and_background_plane(rlist)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
-from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 flex_2d_layering_n_integrating(rlist)
 
-
-
-
-
-old_r_list = rlist[:]
-from dials.algorithms.background.inclined_background_subtractor \
-  import layering_and_background_plane
-layering_and_background_plane(rlist)
-from dials.algorithms.integration import flex_2d_layering_n_integrating
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-flex_2d_layering_n_integrating(rlist)
-
-
-
-
 rlist = mosflm_caller(rlist, xmax, ymax, 5)
 
 
@@ -105,7 +99,6 @@ for i in range(len(rlist)):
   paint_compare.append([old_r_list[i].intensity, rlist[i].intensity])
 
 paint_compare_sort = sorted(paint_compare)
-
 
 from matplotlib import pylab
 import numpy
