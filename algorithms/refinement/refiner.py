@@ -477,6 +477,7 @@ class Refiner(object):
     get_reflections
     get_matches
     get_param_reporter
+    parameter_correlation_plot
     selection_used_for_refinement
     predict_reflections
 
@@ -615,9 +616,62 @@ class Refiner(object):
     return self._refman.get_matches()
 
   def get_param_reporter(self):
-      """Get the ParameterReport object linked to this Refiner"""
+    """Get the ParameterReport object linked to this Refiner"""
 
-      return self._param_report
+    return self._param_report
+
+  def parameter_correlation_plot(self, step):
+    """Create a correlation matrix plot between columns of the Jacobian at
+    the specified refinement step. Inspired by
+    https://github.com/louridas/corrplot/blob/master/corrplot.py"""
+
+    corrmat = self._refinery.get_correlation_matrix_for_step(step)
+    if corrmat is None: return None
+
+    try:
+      import matplotlib.pyplot as plt
+      import matplotlib.cm as cm
+      from matplotlib.patches import Ellipse
+      import numpy as np
+    except ImportError as e:
+      print "matplotlib modules not available", e
+      return None
+
+    labels = self._pred_param.get_param_names()
+    plt.figure(1)
+    ax = plt.subplot(1, 1, 1, aspect='equal')
+    width, height = corrmat.all()
+    num_cols, num_rows = width, height
+    shrink = 0.9
+    poscm = cm.get_cmap('Blues')
+    negcm = cm.get_cmap('Oranges')
+    for x in xrange(width):
+      for y in xrange(height):
+        d = corrmat[x, y]
+        rotate = -45 if d > 0 else +45
+        clrmap = poscm if d >= 0 else negcm
+        d_abs = abs(d)
+        ellipse = Ellipse((x, y),
+                          width=1 * shrink,
+                          height=(shrink - d_abs*shrink),
+                          angle=rotate)
+        ellipse.set_edgecolor('black')
+        ellipse.set_facecolor(clrmap(d_abs))
+        ax.add_artist(ellipse)
+    ax.set_xlim(-1, num_cols)
+    ax.set_ylim(-1, num_rows)
+
+    ax.xaxis.tick_top()
+    xtickslocs = np.arange(len(labels))
+    ax.set_xticks(xtickslocs)
+    ax.set_xticklabels(labels, rotation=30, fontsize='small', ha='left')
+
+    ax.invert_yaxis()
+    ytickslocs = np.arange(len(labels))
+    ax.set_yticks(ytickslocs)
+    ax.set_yticklabels(labels, fontsize='small')
+
+    return plt
 
   def run(self):
     """Run refinement"""
