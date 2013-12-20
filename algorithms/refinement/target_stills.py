@@ -254,3 +254,14 @@ class ReflectionManagerXY(ReflectionManager):
         print
 
     return
+
+  def reject_large_residuals(self):
+    """Unset the use flag on matches that have the highest residuals"""
+
+    matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+    sl = self._sort_obs_by_residual(matches)
+    cutoff = int(ceil(len(sl) * self._residual_cutoff))
+
+    for m in sl[cutoff:]: m.is_matched = False
+
+    return

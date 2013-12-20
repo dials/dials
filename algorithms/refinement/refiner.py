@@ -180,7 +180,7 @@ class RefinerFactory(object):
         beam, goniometer, sweep_range_rad, verbosity)
 
     if verbosity > 1:
-      print ("Number of observations that pass inclusion criteria = %d"
+      print ("Number of observations that pass initial inclusion criteria = %d"
              % refman.get_accepted_refs_size())
       print ("Working set size = %d observations"
              % refman.get_sample_size())
@@ -410,7 +410,8 @@ class RefinerFactory(object):
                   nref_per_degree=nref_per_degree,
                   min_num_obs=options.minimum_number_of_reflections,
                   max_num_obs=options.maximum_number_of_reflections,
-                  inclusion_cutoff=options.inclusion_cutoff,
+                  close_to_spindle_cutoff=options.close_to_spindle_cutoff,
+                  residual_cutoff=options.residual_cutoff,
                   verbosity=verbosity)
 
   @staticmethod

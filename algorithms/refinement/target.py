@@ -13,7 +13,7 @@ principally Target and ReflectionManager."""
 # python and cctbx imports
 from __future__ import division
 from scitbx import matrix
-from math import pi, sqrt
+from math import pi, sqrt, ceil
 from cctbx.array_family import flex
 import random
 
@@ -132,6 +132,9 @@ class Target(object):
       obs.update_prediction(x_calc, y_calc, phi_calc, s_calc, grads)
 
     if self._reflection_manager.first_update:
+
+      # reject the matches with highest residuals (potential outliers)
+      self._reflection_manager.reject_large_residuals()
 
       # delete all obs-pred pairs from the manager that do not
       # have a prediction
@@ -430,7 +433,8 @@ class ReflectionManager(object):
                      nref_per_degree=None,
                      min_num_obs=20,
                      max_num_obs=None,
-                     inclusion_cutoff=0.1,
+                     close_to_spindle_cutoff=0.1,
+                     residual_cutoff=1.0,
                      verbosity=0):
 
     # track whether this is the first update of predictions or not
@@ -448,8 +452,9 @@ class ReflectionManager(object):
     # find vector normal to the spindle-beam plane for the initial model
     self._vecn = self._spindle_beam_plane_normal()
 
-    # set up the reflection inclusion cutoff
-    self._inclusion_cutoff = inclusion_cutoff
+    # set up the reflection inclusion cutoffs
+    self._close_to_spindle_cutoff = close_to_spindle_cutoff
+    self._residual_cutoff = residual_cutoff
 
     # exclude reflections that fail inclusion criteria
     self._input_size = len(reflections)
@@ -533,7 +538,7 @@ class ReflectionManager(object):
     # integrate anyway.
 
     test = abs(axis.dot(matrix.col(s).cross(s0))) > \
-        self._inclusion_cutoff
+        self._close_to_spindle_cutoff
 
     return test
 
@@ -650,7 +655,7 @@ class ReflectionManager(object):
                            e.weight_phi_obs))
           print msg
         print
-        sl = self._sort_obs_by_residual(l, angular=True)
+        sl = self._sort_obs_by_residual(sl, angular=True)
         print "\nReflections with the worst 20 angular residuals:"
         print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
               "weight_phi_obs"
@@ -665,6 +670,20 @@ class ReflectionManager(object):
                            e.weight_phi_obs))
           print msg
         print
+
+    return
+
+  def reject_large_residuals(self):
+    """Unset the use flag on matches that have the highest residuals"""
+
+    matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+    sl = self._sort_obs_by_residual(matches)
+    cutoff = int(ceil(len(sl) * self._residual_cutoff))
+
+    for m in sl[cutoff:]: m.is_matched = False
+
+    sl = self._sort_obs_by_residual(sl, angular=True)
+    for m in sl[cutoff:]: m.is_matched = False
 
     return
 

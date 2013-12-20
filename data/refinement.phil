@@ -147,7 +147,7 @@ refinement
               "manager to be constructed for."
       .type = int(value_min=1)
 
-    inclusion_cutoff = 0.1
+    close_to_spindle_cutoff = 0.1
       .help = "The inclusion criterion currently uses the volume of the"
               "parallelepiped formed by the spindle axis, the incident"
               "beam and the scattered beam. If this is lower than some"
@@ -155,5 +155,12 @@ refinement
               "In detector space, these are the reflections located close"
               "to the rotation axis."
       .type = float(value_min = 0)
+
+    residual_cutoff = 1.0
+      .help = "The fraction of reflections to keep when testing both positional"
+              "and angular residuals. Any reflections with residuals higher"
+              "than this fraction of reflections will be excluded from"
+              "refinement. This is a dumb outlier rejection method."
+      .type = float(value_min = 0., value_max = 1.)
   }
 }
