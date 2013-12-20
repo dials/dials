@@ -46,7 +46,7 @@ class Refinery(object):
 
   def __init__(self, target, prediction_parameterisation, log = None,
                verbosity = 0, track_step = False,
-               track_gradient = False,
+               track_gradient = False, track_parameter_correlation = False,
                max_iterations = None):
 
     # reference to PredictionParameterisation and Target objects
@@ -79,6 +79,8 @@ class Refinery(object):
     self.history.objective = flex.double()
     self.history.gradient = [] if track_gradient else None
     self.history.gradient_norm = flex.double()
+    self.history.parameter_correlation = [] if track_parameter_correlation \
+      else None
     self.history.solution = [] if track_step else None
     self.history.solution_norm = flex.double()
     self.history.parameter_vector = []
@@ -100,6 +102,8 @@ class Refinery(object):
     # do reflection prediction
     self._target.predict()
 
+    return
+
   def update_journal(self):
     """Append latest step information to the journal attributes"""
 
@@ -111,6 +115,21 @@ class Refinery(object):
     self.history.objective.append(self._f)
     if self.history.gradient is not None:
       self.history.gradient.append(self._g)
+    if self.history.parameter_correlation is not None:
+      if self._jacobian is not None:
+        self.history.parameter_correlation.append(
+          self._packed_corr_mat(self._jacobian))
+
+    return
+
+  @staticmethod
+  def _packed_corr_mat(m):
+    """Return a 1D flex array containing the upper diagonal values of the
+    correlation matrix calculated between columns of m"""
+
+    ncol = m.all()[1]
+    packed_len = (ncol*(ncol + 1)) // 2
+    return flex.double(packed_len)
 
   def test_for_termination(self):
     """Return True if refinement should be terminated"""
@@ -310,12 +329,13 @@ class AdaptLstbx(
   """Adapt Refinery for lstbx"""
 
   def __init__(self, target, prediction_parameterisation, log=None,
-               verbosity = 0, track_step = False,
-               track_gradient = False, max_iterations = None):
+               verbosity = 0, track_step = False, track_gradient = False,
+               track_parameter_correlation = False, max_iterations = None):
 
     Refinery.__init__(self, target, prediction_parameterisation,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
+             track_parameter_correlation=track_parameter_correlation,
              max_iterations=max_iterations)
 
     # required for restart to work (do I need that method?)
@@ -376,12 +396,14 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   convergence_as_shift_over_esd = 1e-5
 
   def __init__(self, target, prediction_parameterisation, log=None,
-               verbosity = 0, track_step = False,
-               track_gradient = False, max_iterations = 20, **kwds):
+               verbosity=0, track_step=False, track_gradient=False,
+               track_parameter_correlation=False,
+               max_iterations=20, **kwds):
 
     AdaptLstbx.__init__(self, target, prediction_parameterisation,
              log=log, verbosity=verbosity, track_step=track_step,
              track_gradient=track_gradient,
+             track_parameter_correlation=track_parameter_correlation,
              max_iterations=max_iterations)
 
     # add an attribute to the journal

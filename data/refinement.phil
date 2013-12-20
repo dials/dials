@@ -77,6 +77,11 @@ refinement
               "the engine supports it."
       .type = bool
 
+    track_parameter_correlation = False
+      .help = "Record correlation matrix between columns of the Jacobian for"
+              "each step of refinement."
+      .type = bool
+
     log = None
       .help = "Filename for an optional log that a minimisation engine may use"
               "to write additional information"

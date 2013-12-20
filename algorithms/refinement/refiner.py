@@ -360,12 +360,13 @@ class RefinerFactory(object):
                          " not recognised")
 
     return refinery(target = target,
-                    prediction_parameterisation = pred_param,
-                    log = options.log,
-                    verbosity = verbosity,
-                    track_step = options.track_step,
-                    track_gradient = options.track_gradient,
-                    max_iterations = options.max_iterations)
+            prediction_parameterisation = pred_param,
+            log = options.log,
+            verbosity = verbosity,
+            track_step = options.track_step,
+            track_gradient = options.track_gradient,
+            track_parameter_correlation = options.track_parameter_correlation,
+            max_iterations = options.max_iterations)
 
   @staticmethod
   def config_refman(params, reflections, beam, goniometer,
