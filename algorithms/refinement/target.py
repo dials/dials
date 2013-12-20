@@ -614,9 +614,9 @@ class ReflectionManager(object):
     if self._verbosity > 1:
 
       from scitbx.math import five_number_summary
-      x_resid2 = [e.x_resid**2 for e in l]
-      y_resid2 = [e.y_resid**2 for e in l]
-      phi_resid2 = [e.phi_resid**2 for e in l]
+      x_resid = [e.x_resid for e in l]
+      y_resid = [e.y_resid for e in l]
+      phi_resid = [e.phi_resid for e in l]
       w_x = [e.weight_x_obs for e in l]
       w_y = [e.weight_y_obs for e in l]
       w_phi = [e.weight_phi_obs for e in l]
@@ -624,12 +624,12 @@ class ReflectionManager(object):
       print "\nSummary statistics for observations matched to predictions:"
       print ("                      "
              "Min         Q1        Med         Q3        Max")
-      print "(Xc-Xo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(x_resid2))
-      print "(Yc-Yo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(y_resid2))
-      print "(Phic-Phio)^2  {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(phi_resid2))
+      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(x_resid))
+      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(y_resid))
+      print "(Phic-Phio)    {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(phi_resid))
       print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
         format(*five_number_summary(w_x))
       print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
