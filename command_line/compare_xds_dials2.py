@@ -1,5 +1,5 @@
 from __future__ import division
-from scipy.interpolate import griddata
+#from scipy.interpolate import griddata
 
 import matplotlib
 matplotlib.use('WXAgg')
@@ -30,6 +30,9 @@ def pull_reference(integrate_hkl, d_min = 0.0):
     _hkl = tuple(map(int, f_tokens[0:3]))
     if uc.d(_hkl) < d_min:
       continue
+
+#    if f_tokens[3] / f_tokens[4] < 5 or f_tokens[3] / f_tokens[4] > 10:
+#      continue
 
     hkl.append(_hkl)
 
@@ -248,13 +251,14 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
   compare = CompareIntensity(sweep, uc, HKL, XYZ, XDS, DIALS, SIGMA_XDS, SIGMA_DIALS, XLP, DLP)
 #  compare.plot_scale_factor_vs_resolution()
 #  compare.plot_scale_factor_vs_frame_number()
-#  compare.plot_chunked_statistics_vs_resolution()
-#  compare.plot_chunked_statistics_vs_frame_number()
-#  compare.plot_chunked_statistics_vs_i_over_sigma()
-#  compare.plot_chunked_i_over_sigma_vs_frame_number()
-#  compare.plot_chunked_resolution_vs_frame_number()
-#  compare.plot_chunked_lp_vs_frame_number()
+  compare.plot_chunked_statistics_vs_resolution()
+  compare.plot_chunked_statistics_vs_frame_number()
+  compare.plot_chunked_statistics_vs_i_over_sigma()
+  compare.plot_chunked_i_over_sigma_vs_frame_number()
+  compare.plot_chunked_resolution_vs_frame_number()
+  compare.plot_chunked_lp_vs_frame_number()
   compare.plot_scale_vs_x_y()
+  compare.plot_scale_vs_i_over_sigma()
 
 def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
   '''Derive a reindexing matrix to go from the orientation matrix used
@@ -455,6 +459,45 @@ class CompareIntensity(object):
     pyplot.savefig('plot-statistics-vs-i_over_s.png')
     pyplot.close()
 
+  def plot_scale_vs_i_over_sigma(self):
+    print "plot_scale_vs_i_over_sigma"
+    # Sort by resolution
+    i_over_s = [i / s for i, s in zip(self.i_xds, self.sigma_xds)]
+    index = list(reversed(sorted(range(len(i_over_s)), key=lambda i: i_over_s[i])))
+    i_xds = [self.i_xds[i] for i in index]
+    i_dials = [self.i_dials[i] for i in index]
+    i_over_s = [i_over_s[i] for i in index]
+
+    x0 = min(i_over_s)
+    x1 = max(i_over_s)
+    n = int(len(i_over_s) / 1000)
+    step = (x1 - x0) / n
+
+    chunk = [x0 + i * step for i in range(n)]
+    scale = [0 for i in range(n)]
+    count = [0 for i in range(n)]
+    for ios, i_x, i_d in zip(i_over_s, i_xds, i_dials):
+      i = int((ios - x0) / step)
+      if i >= 0 and i < len(chunk):
+        scale[i] += i_x / i_d
+        count[i] += 1
+    for i in range(n):
+      if count[i] > 0:
+        scale[i] /= count[i]
+
+    from matplotlib import pyplot
+    pyplot.xlabel('I/sig(I)')
+    pyplot.ylabel('Scale')
+    pyplot.plot(chunk, scale)
+    pyplot.savefig('plot-scale-vs-i_over_s.png')
+    pyplot.close()
+
+    pyplot.xlabel('I/sig(I)')
+    pyplot.ylabel('Num')
+    pyplot.plot(chunk, count)
+    pyplot.savefig('plot-num-vs-i_over_s.png')
+    pyplot.close()
+
   def plot_chunked_i_over_sigma_vs_frame_number(self):
     print "plot_chunked_i_over_sigma__vs_frame_number"
     # Sort by resolution
@@ -564,18 +607,33 @@ class CompareIntensity(object):
     pyplot.close()
 
   def plot_scale_vs_x_y(self):
+    from scitbx.array_family import flex
+    from math import ceil
+    print "Getting scale"
+    points = [(int(xyz[1] / 8), int(xyz[0] / 8)) for xyz in self.xyz]
+    scale = [x / d for x, d in zip(self.i_xds, self.i_dials)]
 
-    points = [(xyz[0], xyz[1]) for xyz in self.xyz]
-    scale = [x / d for x, d in zip(self.xi, self.di)]
-
+    print "Creating Grid"
     image_size = self.sweep.get_detector()[0].get_image_size()[::-1]
-    grid_points = [(j,i) for j in range(image_size[0]) for i in range(image_size[1])]
+    image_size = (int(ceil(image_size[0] / 8)), int(ceil(image_size[1] / 8)))
+    grid = flex.double(flex.grid(image_size))
+    count = flex.int(flex.grid(image_size))
+    for p, s in zip(points, scale):
+      grid[p] += s
+      count[p] += 1
+    for i in range(len(grid)):
+      if count[i] > 0:
+        grid[i] /= count[i]
 
-    grid = griddata(points, scale, grid_points)
-    grid.shape = image_size
+    #grid_points = [(j,i) for j in range(image_size[0]) for i in range(image_size[1])]
+
+    #grid = griddata(points, scale, grid_points)
+    #grid.shape = image_size
     from matplotlib import pyplot
+    fig, ax = pyplot.subplots()
     pyplot.title('scale vs x/y')
-    pyplot.imshow(grid)
+    cax = pyplot.imshow(grid.as_numpy_array())
+    cbar = fig.colorbar(cax)
     pyplot.savefig('plot-scale-vs-xy.png')
     pyplot.close()
 
