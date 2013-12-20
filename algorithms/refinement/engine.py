@@ -125,7 +125,7 @@ class Refinery(object):
   @staticmethod
   def _packed_corr_mat(m):
     """Return a 1D flex array containing the upper diagonal values of the
-    correlation matrix calculated between columns of m"""
+    correlation matrix calculated between columns of 2D matrix m"""
 
     ncol = m.all()[1]
     packed_len = (ncol*(ncol + 1)) // 2
@@ -138,6 +138,26 @@ class Refinery(object):
         i += 1
 
     return tmp
+
+  def get_correlation_matrix_for_step(self, step):
+    """Decompress and return the full 2D correlation matrix between columns of
+    the Jacobian that was stored in the journal at the given step number. If
+    not available, return None"""
+
+    if self.history.parameter_correlation is None: return None
+    try:
+      packed = self.history.parameter_correlation[step]
+    except IndexError:
+      return None
+    nparam = len(self.x)
+    corr_mat = flex.double(flex.grid(nparam, nparam))
+    i = 0
+    for row in range(nparam):
+      for col in range(row, nparam):
+        corr_mat[row, col] = packed[i]
+        i += 1
+    corr_mat.matrix_copy_upper_to_lower_triangle_in_place()
+    return corr_mat
 
   def test_for_termination(self):
     """Return True if refinement should be terminated"""
