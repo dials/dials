@@ -60,24 +60,26 @@ class Experiment(object):
     ''' Check if an experiment not equal to another. '''
     return not self.__eq__(other)
 
-  def is_consistent(self):
+  def assert_is_consistent(self):
     ''' If a scan is present, check that it makes sense with the imageset. '''
     from dxtbx.imageset2 import ImageSweep
     if self.scan:
       if isinstance(self.imageset, ImageSweep):
-        if len(self.imageset) != self.scan.get_num_images():
-          return False
-        if self.imageset.get_array_range() != self.scan.get_array_range():
-          return False
+        assert(len(self.imageset) == self.scan.get_num_images())
+        assert(self.imageset.get_array_range() == self.scan.get_array_range())
       elif self.imageset is not None:
-        if (self.scan.get_num_images() != 1 or
-            self.scan.get_oscillation()[1] != 0.0):
-          return False
-        if len(self.imageset.indices()) != 1:
-          return False
-        if self.imageset.indices()[0] != self.scan.get_array_range()[0]:
-          return False
-    return True
+        assert((self.scan.get_num_images() == 1 and
+                self.scan.get_oscillation()[1] == 0.0))
+        assert(len(self.imageset.indices()) == 1)
+        assert(self.imageset.indices()[0] == self.scan.get_array_range()[0])
+
+  def is_consistent(self):
+    ''' If a scan is present, check that it makes sense with the imageset. '''
+    try:
+      self.assert_is_consistent()
+      return True
+    except Exception:
+      return False
 
 
 class ExperimentList(object):

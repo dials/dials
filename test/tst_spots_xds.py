@@ -70,18 +70,18 @@ def exercise_spots_xds():
  216.68 223.61 -0.04 116.00  -4 2 6
  187.44 206.22 0.06 114.00  -2 3 -13
 """)
-    
-    
+
+
 def export_xds():
   from libtbx import easy_run
   import libtbx.load_env
-  
+
   try:
     dials_regression = libtbx.env.dist_path('dials_regression')
   except KeyError, e:
     print "skipping exercise_export_xds: dials_regression not available"
     return
-  
+
   args = ["dials.export_xds",
           os.path.join(dials_regression, "centroid_test_data",
                        "crystal.json"),
