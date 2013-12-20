@@ -622,17 +622,16 @@ class Refiner(object):
 
   def parameter_correlation_plot(self, step):
     """Create a correlation matrix plot between columns of the Jacobian at
-    the specified refinement step. Inspired by
+    the specified refinement step. Inspired by R's corrplot and
     https://github.com/louridas/corrplot/blob/master/corrplot.py"""
 
     corrmat = self._refinery.get_correlation_matrix_for_step(step)
     if corrmat is None: return None
 
+    from math import pi, sqrt
     try:
       import matplotlib.pyplot as plt
       import matplotlib.cm as cm
-      from matplotlib.patches import Ellipse
-      import numpy as np
     except ImportError as e:
       print "matplotlib modules not available", e
       return None
@@ -642,32 +641,28 @@ class Refiner(object):
     ax = plt.subplot(1, 1, 1, aspect='equal')
     width, height = corrmat.all()
     num_cols, num_rows = width, height
-    shrink = 0.9
     poscm = cm.get_cmap('Blues')
-    negcm = cm.get_cmap('Oranges')
+    negcm = cm.get_cmap('Reds')
     for x in xrange(width):
       for y in xrange(height):
         d = corrmat[x, y]
         rotate = -45 if d > 0 else +45
         clrmap = poscm if d >= 0 else negcm
         d_abs = abs(d)
-        ellipse = Ellipse((x, y),
-                          width=1 * shrink,
-                          height=(shrink - d_abs*shrink),
-                          angle=rotate)
-        ellipse.set_edgecolor('black')
-        ellipse.set_facecolor(clrmap(d_abs))
-        ax.add_artist(ellipse)
+        circ = plt.Circle((x, y),radius=sqrt(d_abs/pi))
+        circ.set_edgecolor('white')
+        circ.set_facecolor(clrmap(d_abs))
+        ax.add_artist(circ)
     ax.set_xlim(-1, num_cols)
     ax.set_ylim(-1, num_rows)
 
     ax.xaxis.tick_top()
-    xtickslocs = np.arange(len(labels))
+    xtickslocs = range(len(labels))
     ax.set_xticks(xtickslocs)
     ax.set_xticklabels(labels, rotation=30, fontsize='small', ha='left')
 
     ax.invert_yaxis()
-    ytickslocs = np.arange(len(labels))
+    ytickslocs = range(len(labels))
     ax.set_yticks(ytickslocs)
     ax.set_yticklabels(labels, fontsize='small')
 
