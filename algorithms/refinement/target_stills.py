@@ -220,18 +220,18 @@ class ReflectionManagerXY(ReflectionManager):
     if self._verbosity > 1:
 
       from scitbx.math import five_number_summary
-      x_resid2 = [e.x_resid**2 for e in l]
-      y_resid2 = [e.y_resid**2 for e in l]
+      x_resid = [e.x_resid for e in l]
+      y_resid = [e.y_resid for e in l]
       w_x = [e.weight_x_obs for e in l]
       w_y = [e.weight_y_obs for e in l]
 
       print "\nSummary statistics for observations matched to predictions:"
       print ("                      "
              "Min         Q1        Med         Q3        Max")
-      print "(Xc-Xo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(x_resid2))
-      print "(Yc-Yo)^2      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(y_resid2))
+      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(x_resid))
+      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(y_resid))
       print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
         format(*five_number_summary(w_x))
       print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
@@ -255,13 +255,43 @@ class ReflectionManagerXY(ReflectionManager):
 
     return
 
-  def reject_large_residuals(self):
-    """Unset the use flag on matches that have the highest residuals"""
+  def reject_outliers(self):
+    """Unset the use flag on matches with extreme (outlying) residuals.
 
+    Outlier detection finds values more than _iqr_multiplier times the
+    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
+
+    Return boolean whether rejection was performed or not"""
+
+    # return early if outlier rejection is disabled
+    if self._iqr_multiplier is None: return False
+
+    from scitbx.math import five_number_summary
     matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
-    sl = self._sort_obs_by_residual(matches)
-    cutoff = int(ceil(len(sl) * self._residual_cutoff))
 
-    for m in sl[cutoff:]: m.is_matched = False
+    x_resid = [e.x_resid for e in matches]
+    y_resid = [e.y_resid for e in matches]
 
-    return
+    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
+    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
+
+    iqr_x = q3_x - q1_x
+    iqr_y = q3_y - q1_y
+
+    cut_x = self._iqr_multiplier * iqr_x
+    cut_y = self._iqr_multiplier * iqr_y
+
+    for m in matches:
+      if m.x_resid > q3_x + cut_x: m.is_matched = False
+      if m.x_resid < q1_x - cut_x: m.is_matched = False
+      if m.y_resid > q3_y + cut_y: m.is_matched = False
+      if m.y_resid < q1_y - cut_y: m.is_matched = False
+
+    nreject = [m.is_matched for m in matches].count(False)
+
+    if nreject == 0: return False
+
+    if self._verbosity > 1:
+      print "%d reflections have been rejected as outliers" % nreject
+
+    return True

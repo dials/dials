@@ -403,6 +403,12 @@ class RefinerFactory(object):
       from dials.algorithms.refinement.target_stills import \
           ReflectionManagerXY as refman
 
+    # do outlier rejection?
+    if options.do_outlier_rejection:
+      iqr_multiplier=options.iqr_multiplier
+    else:
+      iqr_multiplier=None
+
     return refman(reflections=reflections,
                   beam=beam,
                   gonio=goniometer,
@@ -411,7 +417,7 @@ class RefinerFactory(object):
                   min_num_obs=options.minimum_number_of_reflections,
                   max_num_obs=options.maximum_number_of_reflections,
                   close_to_spindle_cutoff=options.close_to_spindle_cutoff,
-                  residual_cutoff=options.residual_cutoff,
+                  iqr_multiplier=iqr_multiplier,
                   verbosity=verbosity)
 
   @staticmethod

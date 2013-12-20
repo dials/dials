@@ -133,14 +133,18 @@ class Target(object):
 
     if self._reflection_manager.first_update:
 
-      # reject the matches with highest residuals (potential outliers)
-      self._reflection_manager.reject_large_residuals()
+      # print summary before outlier rejection
+      self._reflection_manager.print_stats_on_matches()
+
+      # flag potential outliers
+      rejection_occurred = self._reflection_manager.reject_outliers()
 
       # delete all obs-pred pairs from the manager that do not
-      # have a prediction
+      # have a prediction or were flagged as outliers
       self._reflection_manager.strip_unmatched_observations()
 
-      self._reflection_manager.print_stats_on_matches()
+      # print summary after outlier rejection
+      if rejection_occurred: self._reflection_manager.print_stats_on_matches()
 
       self._reflection_manager.first_update = False
 
@@ -434,7 +438,7 @@ class ReflectionManager(object):
                      min_num_obs=20,
                      max_num_obs=None,
                      close_to_spindle_cutoff=0.1,
-                     residual_cutoff=1.0,
+                     iqr_multiplier=1.5,
                      verbosity=0):
 
     # track whether this is the first update of predictions or not
@@ -454,7 +458,7 @@ class ReflectionManager(object):
 
     # set up the reflection inclusion cutoffs
     self._close_to_spindle_cutoff = close_to_spindle_cutoff
-    self._residual_cutoff = residual_cutoff
+    self._iqr_multiplier = iqr_multiplier
 
     # exclude reflections that fail inclusion criteria
     self._input_size = len(reflections)
@@ -673,19 +677,52 @@ class ReflectionManager(object):
 
     return
 
-  def reject_large_residuals(self):
-    """Unset the use flag on matches that have the highest residuals"""
+  def reject_outliers(self):
+    """Unset the use flag on matches with extreme (outlying) residuals.
 
+    Outlier detection finds values more than _iqr_multiplier times the
+    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
+
+    Return boolean whether rejection was performed or not"""
+
+    # return early if outlier rejection is disabled
+    if self._iqr_multiplier is None: return False
+
+    from scitbx.math import five_number_summary
     matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
-    sl = self._sort_obs_by_residual(matches)
-    cutoff = int(ceil(len(sl) * self._residual_cutoff))
 
-    for m in sl[0:cutoff]: m.is_matched = False
+    x_resid = [e.x_resid for e in matches]
+    y_resid = [e.y_resid for e in matches]
+    phi_resid = [e.phi_resid for e in matches]
 
-    sl = self._sort_obs_by_residual(sl, angular=True)
-    for m in sl[0:cutoff]: m.is_matched = False
+    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
+    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
+    min_phi, q1_phi, med_phi, q3_phi, max_phi = five_number_summary(phi_resid)
 
-    return
+    iqr_x = q3_x - q1_x
+    iqr_y = q3_y - q1_y
+    iqr_phi = q3_phi - q1_phi
+
+    cut_x = self._iqr_multiplier * iqr_x
+    cut_y = self._iqr_multiplier * iqr_y
+    cut_phi = self._iqr_multiplier * iqr_phi
+
+    for m in matches:
+      if m.x_resid > q3_x + cut_x: m.is_matched = False
+      if m.x_resid < q1_x - cut_x: m.is_matched = False
+      if m.y_resid > q3_y + cut_y: m.is_matched = False
+      if m.y_resid < q1_y - cut_y: m.is_matched = False
+      if m.phi_resid > q3_phi + cut_phi: m.is_matched = False
+      if m.phi_resid < q1_phi - cut_phi: m.is_matched = False
+
+    nreject = [m.is_matched for m in matches].count(False)
+
+    if nreject == 0: return False
+
+    if self._verbosity > 1:
+      print "%d reflections have been rejected as outliers" % nreject
+
+    return True
 
   def strip_unmatched_observations(self):
     """Delete observations from the manager that are not matched to a

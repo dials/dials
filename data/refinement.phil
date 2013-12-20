@@ -156,10 +156,14 @@ refinement
               "to the rotation axis."
       .type = float(value_min = 0)
 
-    residual_cutoff = 0.0
-      .help = "The fraction of reflections to reject when testing both"
-              "positional and angular residuals. This is a dumb outlier"
-              "rejection method."
-      .type = float(value_min = 0., value_max = 1.)
+    do_outlier_rejection = False
+      .help = "Whether refinement should attempt to reject outliers. Warning:"
+              "by default we assume the user code will have already done this!"
+      .type = bool
+
+    iqr_multiplier = 1.5
+      .help = "The IQR multiplier used to detect outliers. A value of 1.5 gives"
+              "Tukey's rule for outlier detection"
+      .type = float(value_min = 0.)
   }
 }
