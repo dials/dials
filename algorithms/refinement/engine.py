@@ -60,6 +60,7 @@ class Refinery(object):
     # undefined initial functional and gradients values
     self._f = None
     self._g = None
+    self._jacobian = None
 
     # filename for an optional log file
     self._log = log
@@ -342,7 +343,7 @@ class AdaptLstbx(
     self.prepare_for_step()
 
     # get calculations from the target
-    residuals, jacobian, weights = \
+    residuals, self._jacobian, weights = \
         self._target.compute_residuals_and_gradients()
 
     # Reset the state to construction time, i.e. no equations accumulated
@@ -351,7 +352,7 @@ class AdaptLstbx(
     if objective_only:
       self.add_residuals(residuals, weights)
     else:
-      self.add_equations(residuals, jacobian, weights)
+      self.add_equations(residuals, self._jacobian, weights)
 
   def step_forward(self):
     self.old_x = self.x.deep_copy()
