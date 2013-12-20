@@ -24,7 +24,6 @@ class Experiment(object):
   Some of these may be set to "None"
 
   '''
-  __slots__ = ('imageset', 'beam', 'detector', 'goniometer', 'scan', 'crystal')
 
   def __init__(self, imageset=None, beam=None, detector=None,
                goniometer=None, scan=None, crystal=None):
@@ -80,7 +79,6 @@ class Experiment(object):
       return True
     except Exception:
       return False
-
 
 class ExperimentList(object):
   ''' The experiment list class. This class is used to manage all the
@@ -372,7 +370,6 @@ class ExperimentListDict(object):
 
   def _extract_experiments(self):
     ''' Helper function. Extract the experiments. '''
-    from dials.model.experiment.manager import ExperimentList
 
     # For every experiment, use the given input to create
     # a sensible experiment.
@@ -575,14 +572,18 @@ class ExperimentListFactory(object):
 
     # Extract the stills
     stills = datablock.extract_stills()
-    for i in range(len(stills)):
-      still = stills[i:i+1]
-      experiments.append(Experiment(
-        imageset=still,
-        beam=still.get_beam(),
-        detector=still.get_detector(),
-        goniometer=still.get_goniometer(),
-        scan=still.get_scan()))
+    if stills is not None:
+      for i in range(len(stills)):
+        still = stills[i:i+1]
+        experiments.append(Experiment(
+          imageset=still,
+          beam=still.get_beam(),
+          detector=still.get_detector(),
+          goniometer=still.get_goniometer(),
+          scan=still.get_scan()))
+
+    # Check the list is consistent
+    assert(experiments.is_consistent())
 
     # Return the experiments
     return experiments
@@ -590,7 +591,15 @@ class ExperimentListFactory(object):
   @staticmethod
   def from_dict(obj):
     ''' Load an experiment list from a dictionary. '''
-    return ExperimentListDict(obj).decode()
+
+    # Decode the experiments from the dictionary
+    experiments = ExperimentListDict(obj).decode()
+
+    # Check the list is consistent
+    assert(experiments.is_consistent())
+
+    # Return the experiments
+    return experiments
 
   @staticmethod
   def from_json(text):

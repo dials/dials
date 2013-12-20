@@ -73,6 +73,7 @@ class DataBlock(object):
   def extract_stills(self):
     ''' Extract all the still images as an image set. '''
     from dxtbx.imageset import ImageSetFactory
+    print "Hello World"
     stills = [f for f, i in self._images.iteritems() if i.template is None]
     if len(stills) == 0:
       return None

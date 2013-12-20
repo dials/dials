@@ -106,7 +106,7 @@ class TestExperiment(object):
 
     # Create a sweep
     sweep_filenames = join(self.path, 'centroid_test_data', 'centroid*.cbf')
-    sweep = ImageSetFactory.new(glob(sweep_filenames))[0]
+    sweep = ImageSetFactory.new(sorted(glob(sweep_filenames)))[0]
 
     # Create experiment with sweep and good scan
     e = Experiment(imageset=sweep, scan=sweep.get_scan())
@@ -370,21 +370,131 @@ class TestExperimentList(object):
 class TestExperimentListFactory(object):
 
   def __init__(self, path):
-    pass
+    self.path = path
 
   def run(self):
-    self.tst_from_datablock()
     self.tst_from_json()
     self.tst_from_pickle()
-
-  def tst_from_datablock(self):
-    print 'OK'
+    self.tst_from_args()
 
   def tst_from_json(self):
+    from os.path import join
+    import os
+
+    os.environ['DIALS_REGRESSION'] = self.path
+
+    # Get all the filenames
+    filename1 = join(self.path, 'experiment_test_data', 'experiment_1.json')
+    filename2 = join(self.path, 'experiment_test_data', 'experiment_2.json')
+    filename3 = join(self.path, 'experiment_test_data', 'experiment_3.json')
+    filename4 = join(self.path, 'experiment_test_data', 'experiment_4.json')
+
+    # Read all the experiment lists in
+    el1 = ExperimentListFactory.from_json_file(filename1)
+    el2 = ExperimentListFactory.from_json_file(filename2)
+    el3 = ExperimentListFactory.from_json_file(filename3)
+    el4 = ExperimentListFactory.from_json_file(filename4)
+
+    # All the experiment lists should be the same length
+    assert(len(el1) == 1)
+    assert(len(el1) == len(el2))
+    assert(len(el1) == len(el3))
+    assert(len(el1) == len(el4))
+
+    # Check all the models are the same
+    for e in zip(el1, el2, el3, el4):
+      e1 = e[0]
+      assert(e1.imageset is not None)
+      assert(e1.beam is not None)
+      assert(e1.detector is not None)
+      assert(e1.goniometer is not None)
+      assert(e1.scan is not None)
+      assert(e1.crystal is not None)
+      for ee in e[1:]:
+        assert(e1.imageset == ee.imageset)
+        assert(e1.beam == ee.beam)
+        assert(e1.detector == ee.detector)
+        assert(e1.goniometer == ee.goniometer)
+        assert(e1.scan == ee.scan)
+        assert(e1.crystal == ee.crystal)
+
+    # test passed
     print 'OK'
 
   def tst_from_pickle(self):
+    from os.path import join
+    import os
+
+    os.environ['DIALS_REGRESSION'] = self.path
+
+    # Get all the filenames
+    filename1 = join(self.path, 'experiment_test_data', 'experiment_1.json')
+
+    # Read all the experiment lists in
+    el1 = ExperimentListFactory.from_json_file(filename1)
+
+    # Pickle then load again
+    el2 = self.pickle_then_unpickle(el1)
+
+    # All the experiment lists should be the same length
+    assert(len(el1) == 1)
+    assert(len(el1) == len(el2))
+
+    # Check all the models are the same
+    for e1, e2 in zip(el1, el2):
+      assert(e1.imageset is not None)
+      assert(e1.beam is not None)
+      assert(e1.detector is not None)
+      assert(e1.goniometer is not None)
+      assert(e1.scan is not None)
+      assert(e1.crystal is not None)
+      assert(e1.imageset == e2.imageset)
+      assert(e1.beam == e2.beam)
+      assert(e1.detector == e2.detector)
+      assert(e1.goniometer == e2.goniometer)
+      assert(e1.scan == e2.scan)
+      assert(e1.crystal == e2.crystal)
+
+    # test passed
     print 'OK'
+
+  def tst_from_args(self):
+    from os.path import join
+    from glob import glob
+
+    # Get all the filenames
+    filenames = sorted(glob(join(
+      self.path, 'centroid_test_data', 'centroid*.cbf')))
+
+    # Get the experiments from a list of filenames
+    experiments = ExperimentListFactory.from_args(filenames)
+
+    # Have 1 experiment
+    assert(len(experiments) == 1)
+    assert(experiments[0].imageset is not None)
+    assert(experiments[0].beam is not None)
+    assert(experiments[0].detector is not None)
+    assert(experiments[0].goniometer is not None)
+    assert(experiments[0].scan is not None)
+
+    # Test passed
+    print 'OK'
+
+  def pickle_then_unpickle(self, obj):
+    '''Pickle to a temp file then un-pickle.'''
+    import pickle
+    import tempfile
+
+    # Create a tmp file
+    temp = tempfile.TemporaryFile()
+
+    # Pickle the object
+    pickle.dump(obj, temp)
+
+    # Read the object
+    temp.flush()
+    temp.seek(0)
+    return pickle.load(temp)
 
 class Test(object):
   def __init__(self):
