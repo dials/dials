@@ -156,11 +156,10 @@ refinement
               "to the rotation axis."
       .type = float(value_min = 0)
 
-    residual_cutoff = 1.0
-      .help = "The fraction of reflections to keep when testing both positional"
-              "and angular residuals. Any reflections with residuals higher"
-              "than this fraction of reflections will be excluded from"
-              "refinement. This is a dumb outlier rejection method."
+    residual_cutoff = 0.0
+      .help = "The fraction of reflections to reject when testing both"
+              "positional and angular residuals. This is a dumb outlier"
+              "rejection method."
       .type = float(value_min = 0., value_max = 1.)
   }
 }

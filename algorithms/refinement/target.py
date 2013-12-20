@@ -680,10 +680,10 @@ class ReflectionManager(object):
     sl = self._sort_obs_by_residual(matches)
     cutoff = int(ceil(len(sl) * self._residual_cutoff))
 
-    for m in sl[cutoff:]: m.is_matched = False
+    for m in sl[0:cutoff]: m.is_matched = False
 
     sl = self._sort_obs_by_residual(sl, angular=True)
-    for m in sl[cutoff:]: m.is_matched = False
+    for m in sl[0:cutoff]: m.is_matched = False
 
     return
 
