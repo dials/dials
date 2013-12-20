@@ -642,7 +642,7 @@ class ReflectionManager(object):
         format(*five_number_summary(w_phi))
       print
 
-      if len(l) >= 20:
+      if len(l) >= 20 and self._verbosity > 2:
 
         sl = self._sort_obs_by_residual(l)
         print "Reflections with the worst 20 positional residuals:"
