@@ -129,7 +129,15 @@ class Refinery(object):
 
     ncol = m.all()[1]
     packed_len = (ncol*(ncol + 1)) // 2
-    return flex.double(packed_len)
+    i = 0
+    tmp = flex.double(packed_len)
+    for col1 in range(ncol):
+      for col2 in range(col1, ncol):
+        tmp[i] = flex.linear_correlation(m.matrix_copy_column(col1),
+                                     m.matrix_copy_column(col2)).coefficient()
+        i += 1
+
+    return tmp
 
   def test_for_termination(self):
     """Return True if refinement should be terminated"""
