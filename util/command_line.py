@@ -264,6 +264,7 @@ class Importer(object):
   def __init__(self, args):
     ''' Parse the arguments. '''
     from dials.model.data import ReflectionList
+    from dxtbx.imageset import ImageSet
 
     # Initialise output
     self.imagesets = []
@@ -277,7 +278,14 @@ class Importer(object):
     # the remaining arguments as a list of unhandled arguments
     unhandled = self.try_as_imageset(args)
     unhandled = self.try_serialized_formats(unhandled)
-    self.unhandled_arguments = unhandled
+    self.unhandled_arguments = []
+    for arg in unhandled:
+      if isinstance(arg, ReflectionList):
+        self.reflections.append(arg)
+      elif isinstance(arg, ImageSet):
+        self.imagesets.append(arg)
+      else:
+        self.unhandled_arguments.append(arg)
 
   def try_serialized_formats(self, args):
     ''' Parse known serialized formats. '''
