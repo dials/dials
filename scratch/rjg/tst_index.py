@@ -321,7 +321,7 @@ def exercise_8():
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol,
                             n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.01,
+                            relative_length_tolerance=0.02,
                             absolute_angle_tolerance=1)
 
 
