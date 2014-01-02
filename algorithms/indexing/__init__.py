@@ -49,6 +49,30 @@ def index_reflections(
     reflections[i_ref].miller_index = miller_index
     reflections[i_ref].crystal = i_best_lattice
 
+  # if more than one spot can be assigned the same miller index then choose
+  # the closest one
+  miller_indices = reflections.miller_index().select(isel)
+  for i_hkl, hkl in enumerate(miller_indices):
+    if hkl == (0,0,0): continue
+    iselection = (miller_indices == hkl).iselection()
+    if len(iselection) > 1:
+      for i in iselection:
+        for j in iselection:
+          if j <= i: continue
+          crystal_i = reflections[isel[i]].crystal
+          crystal_j = reflections[isel[j]].crystal
+          if crystal_i != crystal_j:
+            continue
+          elif crystal_i == -1:
+            continue
+          assert hkl_ints[crystal_j][j] == hkl_ints[crystal_i][i]
+          if norms[crystal_j][j] < norms[crystal_i][i]:
+            i_ref = isel[i]
+          else:
+            i_ref = isel[j]
+          reflections[i_ref].miller_index = (0,0,0)
+          reflections[i_ref].crystal = -1
+
   if verbosity > 0:
     for i_lattice, crystal_model in enumerate(crystal_models):
       print "model %i (%i reflections):" %(
