@@ -270,52 +270,13 @@ class indexer(object):
           self.params.known_symmetry.unit_cell))
 
   def index(self):
-    if self.params.reciprocal_space_grid.d_min is libtbx.Auto:
-      # rough calculation of suitable d_min based on max cell
-      # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
-      self.params.reciprocal_space_grid.d_min = (
-        5 * self.params.max_cell / self.params.reciprocal_space_grid.n_points)
-      print "Setting d_min: %s" %self.params.reciprocal_space_grid.d_min
-    n_points = self.params.reciprocal_space_grid.n_points
-    self.gridding = fftpack.adjust_gridding_triple(
-      (n_points,n_points,n_points), max_prime=5)
-    n_points = self.gridding[0]
     self.reflections = self.map_spots_pixel_to_mm_rad(
       self.reflections, self.detector, self.scan)
     self.filter_reflections_by_scan_range()
-    self.map_centroids_to_reciprocal_space_grid()
-    self.d_min = self.params.reciprocal_space_grid.d_min
+    self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+      self.reflections, self.detector, self.beam, self.goniometer)
 
-    print "Number of centroids used: %i" %(
-      (self.reciprocal_space_grid>0).count(True))
-    if not self.params.real_space_grid_search:
-      self.fft()
-      if self.params.debug:
-        self.debug_write_reciprocal_lattice_points_as_pdb()
-        self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
-      self.find_peaks()
-      if self.params.multiple_lattice_search:
-        self.find_basis_vector_combinations_cluster_analysis()
-        if self.params.debug:
-          self.debug_show_candidate_basis_vectors()
-        crystal_models = self.candidate_crystal_models
-        if self.params.max_lattices is not None:
-          crystal_models = crystal_models[:self.params.max_lattices]
-      else:
-        self.find_candidate_basis_vectors()
-        # self.find_candidate_basis_vectors_nks()
-        if self.params.debug:
-          self.debug_show_candidate_basis_vectors()
-        self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-          self.candidate_basis_vectors)
-        crystal_models = self.candidate_crystal_models[:1]
-      if self.target_symmetry_primitive is not None:
-        crystal_models = [
-          self.apply_symmetry(cm, self.target_symmetry_primitive)
-          for cm in crystal_models]
-    elif self.params.real_space_grid_search:
-      self.real_space_grid_search()
-      crystal_models = self.candidate_crystal_models
+    crystal_models = self.find_lattices()
 
     self.refined_crystal_models = []
 
@@ -512,10 +473,63 @@ class indexer(object):
       reciprocal_space_points = S
     return reciprocal_space_points
 
+
+  def find_lattices(self):
+    if self.params.real_space_grid_search:
+      return self.find_lattices_real_space_grid_search()
+    else:
+      return self.find_lattices_3d_fft()
+
+  def find_lattices_3d_fft(self):
+    if self.params.reciprocal_space_grid.d_min is libtbx.Auto:
+      # rough calculation of suitable d_min based on max cell
+      # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
+      self.params.reciprocal_space_grid.d_min = (
+        5 * self.params.max_cell / self.params.reciprocal_space_grid.n_points)
+      print "Setting d_min: %s" %self.params.reciprocal_space_grid.d_min
+    n_points = self.params.reciprocal_space_grid.n_points
+    self.gridding = fftpack.adjust_gridding_triple(
+      (n_points,n_points,n_points), max_prime=5)
+    n_points = self.gridding[0]
+    self.map_centroids_to_reciprocal_space_grid()
+    self.d_min = self.params.reciprocal_space_grid.d_min
+
+    print "Number of centroids used: %i" %(
+      (self.reciprocal_space_grid>0).count(True))
+    self.fft()
+    if self.params.debug:
+      self.debug_write_reciprocal_lattice_points_as_pdb()
+      self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
+    self.find_peaks()
+    if self.params.multiple_lattice_search:
+      self.find_basis_vector_combinations_cluster_analysis()
+      if self.params.debug:
+        self.debug_show_candidate_basis_vectors()
+      crystal_models = self.candidate_crystal_models
+      if self.params.max_lattices is not None:
+        crystal_models = crystal_models[:self.params.max_lattices]
+    else:
+      self.find_candidate_basis_vectors()
+      # self.find_candidate_basis_vectors_nks()
+      if self.params.debug:
+        self.debug_show_candidate_basis_vectors()
+      self.candidate_crystal_models = self.find_candidate_orientation_matrices(
+        self.candidate_basis_vectors)
+      crystal_models = self.candidate_crystal_models[:1]
+    if self.target_symmetry_primitive is not None:
+      crystal_models = [
+        self.apply_symmetry(cm, self.target_symmetry_primitive)
+        for cm in crystal_models]
+    return crystal_models
+
+  def find_lattices_real_space_grid_search(self):
+    self.d_min = self.params.reciprocal_space_grid.d_min # XXX this should be another parameter
+    self.real_space_grid_search()
+    crystal_models = self.candidate_crystal_models
+    return crystal_models
+
   def map_centroids_to_reciprocal_space_grid(self):
     self._map_to_grid_timer.start()
-    self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
-      self.reflections, self.detector, self.beam, self.goniometer)
     assert len(self.reciprocal_space_points) == len(self.reflections)
     wavelength = self.beam.get_wavelength()
     d_min = self.params.reciprocal_space_grid.d_min
