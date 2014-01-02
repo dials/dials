@@ -280,7 +280,8 @@ class indexer(object):
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
     n_points = self.gridding[0]
-    self.prepare_reflections()
+    self.reflections = self.map_spots_pixel_to_mm_rad(
+      self.reflections, self.detector, self.scan)
     self.filter_reflections_by_scan_range()
     self.map_centroids_to_reciprocal_space_grid()
     self.d_min = self.params.reciprocal_space_grid.d_min
@@ -449,27 +450,6 @@ class indexer(object):
       print self._refine_core_timer.report()
       print self._ray_intersection_timer.report()
 
-  def prepare_reflections(self):
-    """Reflections that come from dials.spotfinder only have the centroid
-    position and variance set, """
-
-    for i_ref, refl in enumerate(self.reflections):
-      # just a quick check for now that the reflections haven't come from
-      # somewhere else
-      assert refl.image_coord_mm == (0,0)
-
-      # set reflection properties that might be needed by the dials refinement
-      # engine, and convert values from pixels and image number to mm/rads
-      refl.frame_number = refl.centroid_position[2]
-      centroid_position, centroid_variance, _ = centroid_px_to_mm(
-        self.detector, self.scan,
-        refl.centroid_position,
-        refl.centroid_variance,
-        (1,1,1))
-      refl.centroid_position = centroid_position
-      refl.centroid_variance = centroid_variance
-      refl.rotation_angle = centroid_position[2]
-
   def filter_reflections_by_scan_range(self):
     reflections_in_scan_range = flex.size_t()
     for i_ref, refl in enumerate(self.reflections):
@@ -489,23 +469,53 @@ class indexer(object):
     self.reflections = self.reflections.select(reflections_in_scan_range)
     self.reflections_raw = self.reflections_raw.select(reflections_in_scan_range)
 
-  def map_centroids_to_reciprocal_space(self):
-    self._map_centroids_timer.start()
-    assert(len(self.detector) == 1)
-    x, y, _ = self.reflections.centroid_position().parts()
-    s1 = self.detector[0].get_lab_coord(flex.vec2_double(x,y))
-    s1 = s1/s1.norms() * (1/self.beam.get_wavelength())
-    self.reflections.set_beam_vector(s1) # needed by refinement
-    S = s1 - self.beam.get_s0()
+  @staticmethod
+  def map_spots_pixel_to_mm_rad(spots, detector, scan):
+    """Reflections that come from dials.spotfinder only have the centroid
+    position and variance set, """
+
+    from dials.algorithms.centroid import centroid_px_to_mm_panel
+    # ideally don't copy, but have separate spot attributes for mm and pixel
+    spots_mm = spots.deep_copy()
+    for i_spot, spot in enumerate(spots_mm):
+      # just a quick check for now that the reflections haven't come from
+      # somewhere else
+      assert spot.image_coord_mm == (0,0)
+
+      # set reflection properties that might be needed by the dials refinement
+      # engine, and convert values from pixels and image number to mm/rads
+      spot.frame_number = spot.centroid_position[2]
+      centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
+        detector[spot.panel_number], scan,
+        spot.centroid_position,
+        spot.centroid_variance,
+        (1,1,1))
+      spot.centroid_position = centroid_position
+      spot.centroid_variance = centroid_variance
+      spot.rotation_angle = centroid_position[2]
+    return spots_mm
+
+  @staticmethod
+  def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
+    assert(len(detector) == 1)
+    x, y, _ = spots_mm.centroid_position().parts()
+    s1 = detector[0].get_lab_coord(flex.vec2_double(x,y))
+    s1 = s1/s1.norms() * (1/beam.get_wavelength())
+    spots_mm.set_beam_vector(s1) # needed by refinement
+    S = s1 - beam.get_s0()
     # XXX what about if goniometer fixed rotation is not identity?
-    self.reciprocal_space_points = S.rotate_around_origin(
-      self.goniometer.get_rotation_axis(),
-      -self.reflections.rotation_angle())
-    self._map_centroids_timer.stop()
+    if goniometer is not None:
+      reciprocal_space_points = S.rotate_around_origin(
+        goniometer.get_rotation_axis(),
+        -spots_mm.rotation_angle())
+    else:
+      reciprocal_space_points = S
+    return reciprocal_space_points
 
   def map_centroids_to_reciprocal_space_grid(self):
     self._map_to_grid_timer.start()
-    self.map_centroids_to_reciprocal_space()
+    self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+      self.reflections, self.detector, self.beam, self.goniometer)
     assert len(self.reciprocal_space_points) == len(self.reflections)
     wavelength = self.beam.get_wavelength()
     d_min = self.params.reciprocal_space_grid.d_min
@@ -1463,13 +1473,14 @@ class indexer(object):
     crystal_model.set_B(refined_crystal.get_B())
     crystal_model.set_U(refined_crystal.get_U())
 
-    assert crystal_model == refined_crystal
+    #assert crystal_model == refined_crystal
 
     if not (params.parameterisation.beam.fix == 'all'
             and params.parameterisation.detector.fix == 'all'):
       # Experimental geometry may have changed - re-map centroids to
       # reciprocal space
-      self.map_centroids_to_reciprocal_space()
+      self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+        self.reflections, self.detector, self.beam, self.goniometer)
     self._refine_timer.stop()
 
   def debug_show_candidate_basis_vectors(self):
