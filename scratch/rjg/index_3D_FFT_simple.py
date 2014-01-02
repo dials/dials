@@ -461,13 +461,6 @@ class indexer(object):
       # set reflection properties that might be needed by the dials refinement
       # engine, and convert values from pixels and image number to mm/rads
       refl.frame_number = refl.centroid_position[2]
-      # XXX nasty hack - why are the centroid variances ever zero in the
-      # first place?
-      centroid_variance = list(refl.centroid_variance)
-      for i in range(3):
-        if centroid_variance[i] == 0:
-          centroid_variance[i] = 0.25
-      refl.centroid_variance = centroid_variance
       centroid_position, centroid_variance, _ = centroid_px_to_mm(
         self.detector, self.scan,
         refl.centroid_position,
