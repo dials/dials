@@ -177,7 +177,10 @@ def is_approximate_integer_multiple(vec_a, vec_b,
                                      angular_tolerance=5.0):
   length_a = vec_a.length()
   length_b = vec_b.length()
-  assert length_b >= length_a
+  #assert length_b >= length_a
+  if length_a > length_b:
+    vec_a, vec_b = vec_b, vec_a
+    length_a, length_b = length_b, length_a
   angle = vec_a.angle(vec_b, deg=True)
   if angle < angular_tolerance or abs(180-angle) < angular_tolerance:
     n = length_b/length_a
@@ -280,6 +283,7 @@ class indexer(object):
     self.prepare_reflections()
     self.filter_reflections_by_scan_range()
     self.map_centroids_to_reciprocal_space_grid()
+    self.d_min = self.params.reciprocal_space_grid.d_min
 
     print "Number of centroids used: %i" %(
       (self.reciprocal_space_grid>0).count(True))
@@ -309,7 +313,6 @@ class indexer(object):
       crystal_models = self.candidate_crystal_models
 
     self.refined_crystal_models = []
-    self.d_min = self.params.reciprocal_space_grid.d_min
 
     # for now refine a separate sweep object for each lattice - once we have
     # true multi-lattice refinement we can just refine a single sweep object
@@ -326,19 +329,21 @@ class indexer(object):
       sweep.set_detector(copy.deepcopy(self.detector))
       sweeps.append(sweep)
 
-    for i_lattice in range(len(crystal_models)):
-      if self.target_symmetry_primitive is not None:
-        print "symmetrizing model"
-        #self.target_symmetry_primitive.show_summary()
-        symmetrized_model = self.apply_symmetry(
-          crystal_models[i_lattice], self.target_symmetry_primitive)
-        print symmetrized_model.get_unit_cell()
-        crystal_models[i_lattice] = symmetrized_model
+    #for i_lattice in range(len(crystal_models)):
+      #if self.target_symmetry_primitive is not None:
+        #print "symmetrizing model"
+        ##self.target_symmetry_primitive.show_summary()
+        #symmetrized_model = self.apply_symmetry(
+          #crystal_models[i_lattice], self.target_symmetry_primitive)
+        #print symmetrized_model.get_unit_cell()
+        #crystal_models[i_lattice] = symmetrized_model
 
     for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
       if i_cycle > 0:
         self.d_min -= self.params.refinement_protocol.d_min_step
         self.d_min = max(self.d_min, self.params.refinement_protocol.d_min_final)
+        if self.d_min < 0:
+          break
         print "Increasing resolution to %.1f Angstrom" %self.d_min
         #n_indexed_last_cycle = self.indexed_reflections.size()
 
@@ -1018,7 +1023,7 @@ class indexer(object):
     from rstbx.dps_core import Direction, directional_show, SimpleSamplerTool
     assert self.target_symmetry_primitive is not None
     assert self.target_symmetry_primitive.unit_cell() is not None
-    SST = SimpleSamplerTool(0.03)
+    SST = SimpleSamplerTool(0.020)
     SST.construct_hemisphere_grid(SST.incr)
     cell_dimensions = self.target_symmetry_primitive.unit_cell().parameters()[:3]
     unique_cell_dimensions = set(cell_dimensions)
@@ -1028,7 +1033,6 @@ class indexer(object):
     for i, direction in enumerate(SST.angles):
       for l in unique_cell_dimensions:
         v = matrix.col(direction.dvec) * l
-        two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(v.elems)
         f = compute_functional(v.elems)
         vectors.append(v.elems)
         function_values.append(f)
@@ -1037,39 +1041,101 @@ class indexer(object):
     vectors = vectors.select(perm)
     function_values = function_values.select(perm)
 
-    for i in range(30):
+    unique_vectors = []
+    i = 0
+    while len(unique_vectors) < 30:
       v = matrix.col(vectors[i])
-      print v.elems, v.length(), function_values[i]
+      is_unique = True
+      if i > 0:
+        for v_u in unique_vectors:
+          if v.length() < v_u.length():
+            if is_approximate_integer_multiple(v, v_u):
+              is_unique = False
+              break
+          elif is_approximate_integer_multiple(v_u, v):
+            is_unique = False
+            break
+      if is_unique:
+        unique_vectors.append(v)
+      i += 1
 
-    basis_vectors = [matrix.col(v) for v in vectors[:30]]
+    #for i in range(30):
+      #v = matrix.col(vectors[i])
+      #print v.elems, v.length(), function_values[i]
+
+    basis_vectors = [v.elems for v in unique_vectors]
     self.candidate_basis_vectors = basis_vectors
 
-    candidate_orientation_matrices \
-      = self.find_candidate_orientation_matrices(
-        basis_vectors, return_first=True)
-    print candidate_orientation_matrices[0]
+    if self.params.optimise_initial_basis_vectors:
+      optimised_basis_vectors = optimise_basis_vectors(
+        self.reciprocal_space_points, basis_vectors, n_multiples=1)
+      optimised_function_values = flex.double([
+        compute_functional(v) for v in optimised_basis_vectors])
 
-    optimised_basis_vectors = optimise_basis_vectors(
-      self.reciprocal_space_points, basis_vectors)
+      perm = flex.sort_permutation(optimised_function_values, reverse=True)
+      optimised_basis_vectors = optimised_basis_vectors.select(perm)
+      optimised_function_values = optimised_function_values.select(perm)
 
-    optimised_basis_vectors = [matrix.col(v) for v in optimised_basis_vectors]
+      unique_vectors = [matrix.col(v) for v in optimised_basis_vectors]
 
-    for i in range(len(basis_vectors)):
-      print compute_functional(basis_vectors[i].elems), basis_vectors[i].elems
-      print compute_functional(optimised_basis_vectors[i].elems), optimised_basis_vectors[i].elems
+    print "Number of unique vectors: %i" %len(unique_vectors)
+
+    for i in range(len(unique_vectors)):
+      print compute_functional(unique_vectors[i].elems), unique_vectors[i].length(), unique_vectors[i].elems
       print
 
-    candidate_orientation_matrices \
-      = self.find_candidate_orientation_matrices(
-        optimised_basis_vectors, return_first=True)
-    print candidate_orientation_matrices[0]
+    crystal_models = []
+    self.reflections.set_crystal(flex.int(self.reflections.size(), -1))
+    while True:
+      self.candidate_basis_vectors = unique_vectors
+      if self.params.debug:
+        self.debug_show_candidate_basis_vectors()
+      candidate_orientation_matrices \
+        = self.find_candidate_orientation_matrices(
+          unique_vectors, return_first=False)
+      if len(candidate_orientation_matrices) == 0: break
+      n_indexed = flex.int()
+      from dials.algorithms.indexing import index_reflections
+      for cm in candidate_orientation_matrices:
+        refl = self.reflections.deep_copy()
+        index_reflections(refl, self.reciprocal_space_points,
+                          [cm], self.d_min, tolerance=0.25,
+                          verbosity=0)
+        n_indexed.append((refl.crystal() > -1).count(True))
+      perm = flex.sort_permutation(n_indexed, reverse=True)
+      print list(perm)
+      print list(n_indexed.select(perm))
+      print candidate_orientation_matrices[perm[0]]
+      cryst = flex.int(self.reflections.size(), -1)
+      cryst.set_selected(self.reflections.crystal() > -1 and refl.crystal() > -1, 0)
+      self.reflections.set_crystal(cryst)
 
-    if self.target_symmetry_primitive is not None:
-      print "symmetrizing model"
-      #self.target_symmetry_primitive.show_summary()
-      symmetrized_model = self.apply_symmetry(
-        candidate_orientation_matrices[0], self.target_symmetry_primitive)
-      candidate_orientation_matrices[0] = symmetrized_model
+      new_unique_vectors = []
+      cm = candidate_orientation_matrices[perm[0]]
+      crystal_models.append(cm)
+      a, b, c = cm.get_real_space_vectors()
+      for v in unique_vectors:
+        if not (is_approximate_integer_multiple(v, a) or
+                is_approximate_integer_multiple(v, b) or
+                is_approximate_integer_multiple(v, c)):
+          new_unique_vectors.append(v)
+      assert len(new_unique_vectors) == len(unique_vectors) - 3
+      if len(new_unique_vectors) < 3: break
+      unique_vectors = new_unique_vectors
+      if len(crystal_models) == 1:
+        break
+
+    assert len(crystal_models) > 0
+
+    candidate_orientation_matrices = crystal_models
+
+    for i in range(len(candidate_orientation_matrices)):
+      if self.target_symmetry_primitive is not None:
+        #print "symmetrizing model"
+        #self.target_symmetry_primitive.show_summary()
+        symmetrized_model = self.apply_symmetry(
+          candidate_orientation_matrices[i], self.target_symmetry_primitive)
+        candidate_orientation_matrices[i] = symmetrized_model
 
     self.candidate_crystal_models = candidate_orientation_matrices
 
