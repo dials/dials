@@ -96,6 +96,14 @@ refinement_protocol {
     .help = "Do not ever include reflections below this value in refinement."
   verbosity = 1
     .type = int(value_min=0)
+  outlier_rejection {
+    maximum_spot_error = None
+      .type = float(value_min=0)
+      .help = "Reject reflections whose predicted and observed centroids differ "
+              "by more than the given multiple of the pixel size."
+              "No outlier rejection is performed in the first macro cycle, and "
+              "in the second macro cycle twice the given multiple is used."
+  }
 }
 export_xds_files = False
   .type = bool
@@ -375,7 +383,14 @@ class indexer(object):
           with open("unindexed.pickle", 'wb') as f:
             pickle.dump(unindexed, f)
 
-        self.refine(crystal_model)
+        maximum_spot_error \
+          = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
+        if maximum_spot_error is None or i_cycle == 0:
+          self.refine(crystal_model)
+        elif i_cycle == 1:
+          self.refine(crystal_model, maximum_spot_error=2*maximum_spot_error)
+        else:
+          self.refine(crystal_model, maximum_spot_error=maximum_spot_error)
 
         # these may have been updated in refinement
         # XXX once david has implemented multi-lattice refinement there
@@ -1257,7 +1272,7 @@ class indexer(object):
                       verbosity=self.params.refinement_protocol.verbosity)
     self._index_reflections_timer.stop()
 
-  def refine(self, crystal_model):
+  def refine(self, crystal_model, maximum_spot_error=None):
     self._refine_timer.start()
     self._ray_intersection_timer.start()
     from dials.algorithms.spot_prediction import ray_intersection
@@ -1274,12 +1289,7 @@ class indexer(object):
       self.sweep.get_array_range()[1])
     sweep = self.sweep[scan_range_min:scan_range_max]
 
-    if self.params.debug:
-      self.export_as_json(crystal_model, sweep, suffix="_debug")
-      with open("reflections_debug.pickle", 'wb') as f:
-        pickle.dump(reflections_for_refinement, f)
-
-    if self.params.debug_plots:
+    if 0 and self.params.debug_plots:
       plot_centroid_weights_histograms(reflections_for_refinement)
 
     if self.params.refinement_protocol.weight_outlier_n_sigma is not None:
@@ -1320,9 +1330,10 @@ class indexer(object):
         self.reciprocal_space_points.select(
           self.indexed_reflections).select(sel),
         hardcoded_phil)
-      self.sweep.set_goniometer(refiner.gonio)
-      self.sweep.set_beam(refiner.beam)
-      self.sweep.set_detector(refiner.detector)
+      self.sweep.set_goniometer(refiner.get_goniometer())
+      self.sweep.set_beam(refiner.get_beam())
+      self.sweep.set_detector(refiner.get_detector())
+      refined_crystal = refiner.get_crystal()
 
     else:
       self._refine_core_timer.start()
@@ -1335,6 +1346,49 @@ class indexer(object):
         scan=self.sweep.get_scan(),
         crystal=crystal_model,
         verbosity=verbosity)
+
+      if maximum_spot_error is not None:
+        residuals = flex.vec3_double()
+        matches = refiner.get_matches()
+        for match in matches:
+          residuals.append((match.x_resid, match.y_resid, match.phi_resid))
+        x_residuals, y_residuals, phi_residuals = residuals.parts()
+        mm_residual_norms = flex.sqrt(
+          flex.pow2(x_residuals) + flex.pow2(y_residuals))
+        # hard cutoff, but this is essentially what XDS does by default
+        # assumes pixel size is same for all panels and same in x and y
+        inlier_sel = mm_residual_norms < (
+          maximum_spot_error * self.detector[0].get_pixel_size()[0])
+        reflections_for_refinement = reflections_for_refinement.select(
+          refiner.selection_used_for_refinement()).select(inlier_sel)
+        refiner = RefinerFactory.from_parameters_data_models(
+          self.params, reflections_for_refinement,
+          beam=self.sweep.get_beam(),
+          goniometer=self.sweep.get_goniometer(),
+          detector=self.sweep.get_detector(),
+          scan=self.sweep.get_scan(),
+          crystal=crystal_model,
+          verbosity=verbosity)
+
+        if self.params.debug_plots:
+          from matplotlib import pyplot
+          pyplot.scatter(x_residuals.select(inlier_sel).as_numpy_array(),
+                         y_residuals.select(inlier_sel).as_numpy_array(),
+                         c='b', alpha=0.5)
+          pyplot.scatter(x_residuals.select(~inlier_sel).as_numpy_array(),
+                         y_residuals.select(~inlier_sel).as_numpy_array(),
+                         c='r', alpha=0.5)
+          #r = maximum_spot_error * self.detector[0].get_pixel_size()
+          #pyplot.Circle((r, r), 0.5, color='b', fill=False)
+          pyplot.axes().set_aspect('equal')
+          pyplot.show()
+
+      if self.params.debug:
+        self.export_as_json(crystal_model, sweep, suffix="_debug")
+        with open("reflections_debug.pickle", 'wb') as f:
+          pickle.dump(reflections_for_refinement, f)
+
+
       refined = refiner.run()
       self._refine_core_timer.stop()
 
