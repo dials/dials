@@ -314,7 +314,7 @@ def exercise_8():
   expected_unit_cell = uctbx.unit_cell(
     #(54.3, 58.3, 66.5, 90, 90, 90))
     (58.3, 54.3, 66.5, 90, 90, 90)) # XXX why the permutation of axes?
-  expected_rmsds = (0.28, 0.29, 0.006)
+  expected_rmsds = (0.28, 0.30, 0.006)
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 1
 
