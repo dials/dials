@@ -473,6 +473,433 @@ class indexer(object):
       reciprocal_space_points = S
     return reciprocal_space_points
 
+  def find_candidate_orientation_matrices(self, candidate_basis_vectors,
+                                          return_first=False):
+    candidate_crystal_models = []
+    vectors = candidate_basis_vectors
+
+    min_angle = 20 # degrees, arbitrary cutoff
+    for i in range(len(vectors)):
+      a = vectors[i]
+      for j in range(i, len(vectors)):
+        b = vectors[j]
+        angle = a.angle(b, deg=True)
+        if angle < min_angle or (180-angle) < min_angle:
+          continue
+        a_cross_b = a.cross(b)
+        gamma = a.angle(b, deg=True)
+        if gamma < 90:
+          # all angles obtuse if possible please
+          b = -b
+          gamma = 180 - gamma
+          a_cross_b = -a_cross_b
+        for k in range(j, len(vectors)):
+          c = vectors[k]
+          if abs(90-a_cross_b.angle(c, deg=True)) < min_angle:
+            continue
+          alpha = b.angle(c, deg=True)
+          if alpha < 90:
+            c = -c
+          beta = c.angle(a, deg=True)
+          if a_cross_b.dot(c) < 0:
+            # we want right-handed basis set, therefore invert all vectors
+            a = -a
+            b = -b
+            c = -c
+            #assert a.cross(b).dot(c) > 0
+          model = Crystal(a, b, c, space_group_symbol="P 1")
+          uc = model.get_unit_cell()
+          if self.target_symmetry_primitive is not None:
+            symmetrized_model = self.apply_symmetry(
+              model, self.target_symmetry_primitive)
+            if symmetrized_model is None:
+              if self.target_symmetry_centred is not None:
+                symmetrized_model = self.apply_symmetry(
+                model, self.target_symmetry_centred,
+                return_primitive_setting=True)
+                if symmetrized_model is not None:
+                  model = symmetrized_model
+                  uc = model.get_unit_cell()
+              if symmetrized_model is None:
+                continue
+
+          params = uc.parameters()
+          if uc.volume() > (params[0]*params[1]*params[2]/100):
+            # unit cell volume cutoff from labelit 2004 paper
+            candidate_crystal_models.append(model)
+            if return_first:
+              return candidate_crystal_models
+    return candidate_crystal_models
+
+  def apply_symmetry(self, crystal_model, target_symmetry,
+                     return_primitive_setting=False):
+    unit_cell = crystal_model.get_unit_cell()
+    target_unit_cell = target_symmetry.unit_cell()
+    target_space_group = target_symmetry.space_group()
+    A = crystal_model.get_A()
+    A_inv = A.inverse()
+    unit_cell_is_similar = False
+    real_space_a = A_inv[:3]
+    real_space_b = A_inv[3:6]
+    real_space_c = A_inv[6:9]
+    basis_vectors = [real_space_a, real_space_b, real_space_c]
+    min_bmsd = 1e8
+    best_perm = None
+    for perm in ((0,1,2), (1,2,0), (2,0,1)):
+      crystal_model = Crystal(
+        basis_vectors[perm[0]],
+        basis_vectors[perm[1]],
+        basis_vectors[perm[2]],
+        space_group=target_space_group)
+      unit_cell = crystal_model.get_unit_cell()
+      uc = target_unit_cell
+      if uc is None:
+        uc = unit_cell
+      # XXX what about permuting the target_unit_cell (if not None)?
+      symm_target_sg = crystal.symmetry(
+        unit_cell=uc,
+        space_group=target_space_group,
+        assert_is_compatible_unit_cell=False)
+      # this assumes that the initial basis vectors are good enough that
+      # we can tell which should be the unique axis - probably not a robust
+      # solution
+      if unit_cell.is_similar_to(
+        symm_target_sg.unit_cell(),
+        relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+        absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
+        bmsd = unit_cell.bases_mean_square_difference(
+          symm_target_sg.unit_cell())
+        if bmsd < min_bmsd:
+          min_bmsd = bmsd
+          best_perm = list(perm)
+    if best_perm is None:
+      return None
+    crystal_model = Crystal(
+      basis_vectors[best_perm[0]],
+      basis_vectors[best_perm[1]],
+      basis_vectors[best_perm[2]],
+      space_group=target_space_group)
+    model = crystal_model
+    #cb_op_target_ref = symm_target_sg.space_group_info().type().cb_op()
+    #symm_target_sg_ref = symm_target_sg.change_basis(cb_op_target_ref)
+    from rstbx.symmetry.constraints import parameter_reduction
+    s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
+    s.set_orientation(crystal_model.get_A())
+    s.symmetrize()
+    #direct_matrix = s.orientation.change_basis(cb_op_target_ref).direct_matrix()
+    if return_primitive_setting:
+      sgi = sgtbx.space_group_info(group=target_space_group)
+      cb_op_to_primitive = sgi.change_of_basis_op_to_primitive_setting()
+      direct_matrix = s.orientation.change_basis(
+        cb_op_to_primitive).direct_matrix()
+    else:
+      direct_matrix = s.orientation.direct_matrix()
+    a = matrix.col(direct_matrix[:3])
+    b = matrix.col(direct_matrix[3:6])
+    c = matrix.col(direct_matrix[6:9])
+    ## verify it is still right-handed basis set
+    #assert a.cross(b).dot(c) > 0
+    model = Crystal(
+      a, b, c, space_group=target_space_group)
+    return model
+
+  def index_reflections_given_orientation_matix(
+      self, crystal_model, tolerance=0.2, verbose=0):
+
+    self._index_reflections_timer.start()
+
+    if verbose > 1:
+      print "Candidate crystal model:"
+      print crystal_model
+
+    n_rejects = 0
+
+    miller_indices = flex.miller_index()
+    indexed_reflections = flex.size_t()
+
+    A = crystal_model.get_A()
+    A_inv = A.inverse()
+
+    d_spacings = 1/self.reciprocal_space_points.norms()
+    inside_resolution_limit = d_spacings > self.d_min
+    sel = inside_resolution_limit & (self.reflections_i_lattice == -1)
+    isel = sel.iselection()
+    rlps = self.reciprocal_space_points.select(isel)
+    hkl_float = tuple(A_inv) * rlps
+    hkl_int = hkl_float.iround()
+
+    for i_hkl in range(hkl_int.size()):
+      max_difference = max([abs(hkl_float[i_hkl][i] - hkl_int[i_hkl][i]) for i in range(3)])
+      if max_difference > tolerance:
+        n_rejects += 1
+        continue
+      miller_index = hkl_int[i_hkl]
+      miller_indices.append(miller_index)
+      i_ref = isel[i_hkl]
+      self.reflections[i_ref].miller_index = miller_index
+      indexed_reflections.append(i_ref)
+
+    self._index_reflections_timer.stop()
+
+    return indexed_reflections, miller_indices
+
+  def index_reflections(self, crystal_models, tolerance=0.3):
+    self._index_reflections_timer.start()
+    from dials.algorithms.indexing import index_reflections
+    index_reflections(self.reflections, self.reciprocal_space_points,
+                      crystal_models, self.d_min, tolerance=tolerance,
+                      verbosity=self.params.refinement_protocol.verbosity)
+    self._index_reflections_timer.stop()
+
+  def refine(self, crystal_model, maximum_spot_error=None):
+    self._refine_timer.start()
+    self._ray_intersection_timer.start()
+    from dials.algorithms.spot_prediction import ray_intersection
+    reflections_for_refinement = ray_intersection(
+      self.detector, self.reflections.select(self.indexed_reflections))
+    self._ray_intersection_timer.stop()
+    verbosity = self.params.refinement_protocol.verbosity
+
+    scan_range_min = max(
+      int(math.floor(flex.min(self.reflections.frame_number()))),
+      self.sweep.get_array_range()[0])
+    scan_range_max = min(
+      int(math.ceil(flex.max(self.reflections.frame_number()))),
+      self.sweep.get_array_range()[1])
+    sweep = self.sweep[scan_range_min:scan_range_max]
+
+    if 0 and self.params.debug_plots:
+      plot_centroid_weights_histograms(reflections_for_refinement)
+
+    if self.params.refinement_protocol.weight_outlier_n_sigma is not None:
+      from libtbx.utils import plural_s
+      sel = reject_weight_outliers_selection(
+        reflections_for_refinement,
+        sigma_cutoff=self.params.refinement_protocol.weight_outlier_n_sigma)
+      reflections_for_refinement = reflections_for_refinement.select(sel)
+      n_reject = sel.count(False)
+      if n_reject > 0:
+        n_reject, suffix = plural_s(n_reject)
+        print "Rejected %i reflection%s (weight outlier%s)" %(
+          n_reject, suffix, suffix)
+    else:
+      sel = flex.bool(reflections_for_refinement.size(), True)
+
+    params = self.params.refinement
+
+    if 0:
+      from dials.algorithms.indexing import indexer
+      from dials_regression.indexing_test_data.i04_weak_data.run_indexing_api \
+           import outlier_main_procedure
+
+      from rstbx.phil.phil_preferences import indexing_api_defs
+      import iotbx.phil
+      hardcoded_phil = iotbx.phil.parse(
+        input_string=indexing_api_defs).extract()
+
+      from cctbx.crystal_orientation import crystal_orientation
+      triclinic_crystal = crystal_orientation(crystal_model.get_A(), True)
+
+      reflections = self.reflections_raw.select(self.indexed_reflections).select(sel)
+      refiner, refined_crystal, status = \
+        outlier_main_procedure(reflections,
+                               sweep.get_scan(), sweep.get_goniometer(),
+                               sweep.get_beam(), sweep.get_detector(),
+                               triclinic_crystal,
+        self.reciprocal_space_points.select(
+          self.indexed_reflections).select(sel),
+        hardcoded_phil)
+      self.sweep.set_goniometer(refiner.get_goniometer())
+      self.sweep.set_beam(refiner.get_beam())
+      self.sweep.set_detector(refiner.get_detector())
+      refined_crystal = refiner.get_crystal()
+
+    else:
+      self._refine_core_timer.start()
+      from dials.algorithms.refinement import RefinerFactory
+      refiner = RefinerFactory.from_parameters_data_models(
+        self.params, reflections_for_refinement,
+        beam=self.sweep.get_beam(),
+        goniometer=self.sweep.get_goniometer(),
+        detector=self.sweep.get_detector(),
+        scan=self.sweep.get_scan(),
+        crystal=crystal_model,
+        verbosity=verbosity)
+
+      if maximum_spot_error is not None:
+        residuals = flex.vec3_double()
+        matches = refiner.get_matches()
+        for match in matches:
+          residuals.append((match.x_resid, match.y_resid, match.phi_resid))
+        x_residuals, y_residuals, phi_residuals = residuals.parts()
+        mm_residual_norms = flex.sqrt(
+          flex.pow2(x_residuals) + flex.pow2(y_residuals))
+        # hard cutoff, but this is essentially what XDS does by default
+        # assumes pixel size is same for all panels and same in x and y
+        inlier_sel = mm_residual_norms < (
+          maximum_spot_error * self.detector[0].get_pixel_size()[0])
+        reflections_for_refinement = reflections_for_refinement.select(
+          refiner.selection_used_for_refinement()).select(inlier_sel)
+        refiner = RefinerFactory.from_parameters_data_models(
+          self.params, reflections_for_refinement,
+          beam=self.sweep.get_beam(),
+          goniometer=self.sweep.get_goniometer(),
+          detector=self.sweep.get_detector(),
+          scan=self.sweep.get_scan(),
+          crystal=crystal_model,
+          verbosity=verbosity)
+
+        if self.params.debug_plots:
+          from matplotlib import pyplot
+          pyplot.scatter(x_residuals.select(inlier_sel).as_numpy_array(),
+                         y_residuals.select(inlier_sel).as_numpy_array(),
+                         c='b', alpha=0.5)
+          pyplot.scatter(x_residuals.select(~inlier_sel).as_numpy_array(),
+                         y_residuals.select(~inlier_sel).as_numpy_array(),
+                         c='r', alpha=0.5)
+          #r = maximum_spot_error * self.detector[0].get_pixel_size()
+          #pyplot.Circle((r, r), 0.5, color='b', fill=False)
+          pyplot.axes().set_aspect('equal')
+          pyplot.show()
+
+      if self.params.debug:
+        self.export_as_json(crystal_model, sweep, suffix="_debug")
+        with open("reflections_debug.pickle", 'wb') as f:
+          pickle.dump(reflections_for_refinement, f)
+
+
+      refined = refiner.run()
+      self._refine_core_timer.stop()
+
+      self.sweep.set_goniometer(refiner.get_goniometer())
+      self.sweep.set_beam(refiner.get_beam())
+      self.sweep.set_detector(refiner.get_detector())
+      refined_crystal = refiner.get_crystal()
+
+    crystal_model.set_B(refined_crystal.get_B())
+    crystal_model.set_U(refined_crystal.get_U())
+
+    #assert crystal_model == refined_crystal
+
+    if not (params.parameterisation.beam.fix == 'all'
+            and params.parameterisation.detector.fix == 'all'):
+      # Experimental geometry may have changed - re-map centroids to
+      # reciprocal space
+      self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+        self.reflections, self.detector, self.beam, self.goniometer)
+    self._refine_timer.stop()
+
+  def predict_reflections(self, crystal_model):
+    from dials.algorithms.integration import ReflectionPredictor
+    predictor = ReflectionPredictor()
+
+    sigma_divergence = self.beam.get_sigma_divergence()
+    mosaicity = crystal_model.get_mosaicity()
+
+    if sigma_divergence == 0.0:
+      self.beam.set_sigma_divergence(0.02) # degrees
+    if mosaicity == 0.0:
+      crystal_model.set_mosaicity(0.139) # degrees
+
+    reflections = predictor(self.sweep, crystal_model)
+    self.predicted_reflections = reflections
+    return self.predicted_reflections
+
+  def export_predicted_reflections(self, file_name='predictions.pickle'):
+    from dials.model.serialize import dump
+    dump.reflections(self.predicted_reflections, file_name)
+
+  def debug_show_candidate_basis_vectors(self):
+
+    vectors = self.candidate_basis_vectors
+
+    for i, v in enumerate(vectors):
+      print i, v.length()# , vector_heights[i]
+
+    # print a table of the angles between each pair of vectors
+
+    angles = flex.double(len(vectors)**2)
+    angles.reshape(flex.grid(len(vectors), len(vectors)))
+
+    for i in range(len(vectors)):
+      v_i = vectors[i]
+      for j in range(i+1, len(vectors)):
+        v_j = vectors[j]
+        angles[i,j] = v_i.angle(v_j, deg=True)
+
+    print (" "*7),
+    for i in range(len(vectors)):
+      print "%7.3f" % vectors[i].length(),
+    print
+    for i in range(len(vectors)):
+      print "%7.3f" % vectors[i].length(),
+      for j in range(len(vectors)):
+        if j <= i:
+          print (" "*7),
+        else:
+          print "%5.1f  " %angles[i,j],
+      print
+
+  def debug_write_reciprocal_lattice_points_as_pdb(
+      self, file_name='reciprocal_lattice.pdb'):
+    from cctbx import crystal, xray
+    cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
+    xs = xray.structure(crystal_symmetry=cs)
+    for site in self.reciprocal_space_points:
+      xs.add_scatterer(xray.scatterer("C", site=site))
+
+    xs.sites_mod_short()
+    with open(file_name, 'wb') as f:
+      print >> f, xs.as_pdb_file()
+
+  def debug_write_ccp4_map(self, map_data, file_name):
+    from iotbx import ccp4_map
+    gridding_first = (0,0,0)
+    gridding_last = map_data.all()
+    labels = ["cctbx.miller.fft_map"]
+    ccp4_map.write_ccp4_map(
+      file_name=file_name,
+      unit_cell=self.fft_cell,
+      space_group=sgtbx.space_group("P1"),
+      gridding_first=gridding_first,
+      gridding_last=gridding_last,
+      map_data=map_data,
+      labels=flex.std_string(labels))
+
+  def export_as_json(self, crystal_model, sweep, suffix=None, compact=False):
+    from cctbx.crystal.crystal_model.serialize import dump_crystal
+    from dxtbx.serialize import dump
+    if suffix is None:
+      suffix = ''
+    with open('crystal%s.json' %suffix, 'wb') as f:
+      dump_crystal(crystal_model, f, compact=compact)
+    with open('sweep%s.json' %suffix, 'wb') as f:
+      dump.imageset(sweep, f, compact=compact)
+
+  def export_reflections(self, reflections, file_name="reflections.pickle"):
+    with open(file_name, 'wb') as f:
+      pickle.dump(reflections, f)
+
+  def export_xds_files(self, crystal_model, sweep, suffix=None):
+    from dxtbx.serialize import xds
+    if suffix is None:
+      suffix = ''
+    crystal_model = crystal_model.change_basis(
+      crystal_model.get_space_group().info().change_of_basis_op_to_reference_setting())
+    A = crystal_model.get_A()
+    A_inv = A.inverse()
+    real_space_a = A_inv.elems[:3]
+    real_space_b = A_inv.elems[3:6]
+    real_space_c = A_inv.elems[6:9]
+    to_xds = xds.to_xds(sweep)
+    with open('XDS%s.INP' %suffix, 'wb') as f:
+      to_xds.XDS_INP(out=f, job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
+    with open('XPARM%s.XDS' %suffix, 'wb') as f:
+      to_xds.xparm_xds(
+        real_space_a, real_space_b, real_space_c,
+        crystal_model.get_space_group().type().number(),
+        out=f)
+
 
   def find_lattices(self):
     if self.params.real_space_grid_search:
@@ -1164,432 +1591,6 @@ class indexer(object):
     self.candidate_crystal_models = candidate_orientation_matrices
 
 
-  def find_candidate_orientation_matrices(self, candidate_basis_vectors,
-                                          return_first=False):
-    candidate_crystal_models = []
-    vectors = candidate_basis_vectors
-
-    min_angle = 20 # degrees, arbitrary cutoff
-    for i in range(len(vectors)):
-      a = vectors[i]
-      for j in range(i, len(vectors)):
-        b = vectors[j]
-        angle = a.angle(b, deg=True)
-        if angle < min_angle or (180-angle) < min_angle:
-          continue
-        a_cross_b = a.cross(b)
-        gamma = a.angle(b, deg=True)
-        if gamma < 90:
-          # all angles obtuse if possible please
-          b = -b
-          gamma = 180 - gamma
-          a_cross_b = -a_cross_b
-        for k in range(j, len(vectors)):
-          c = vectors[k]
-          if abs(90-a_cross_b.angle(c, deg=True)) < min_angle:
-            continue
-          alpha = b.angle(c, deg=True)
-          if alpha < 90:
-            c = -c
-          beta = c.angle(a, deg=True)
-          if a_cross_b.dot(c) < 0:
-            # we want right-handed basis set, therefore invert all vectors
-            a = -a
-            b = -b
-            c = -c
-            #assert a.cross(b).dot(c) > 0
-          model = Crystal(a, b, c, space_group_symbol="P 1")
-          uc = model.get_unit_cell()
-          if self.target_symmetry_primitive is not None:
-            symmetrized_model = self.apply_symmetry(
-              model, self.target_symmetry_primitive)
-            if symmetrized_model is None:
-              if self.target_symmetry_centred is not None:
-                symmetrized_model = self.apply_symmetry(
-                model, self.target_symmetry_centred,
-                return_primitive_setting=True)
-                if symmetrized_model is not None:
-                  model = symmetrized_model
-                  uc = model.get_unit_cell()
-              if symmetrized_model is None:
-                continue
-
-          params = uc.parameters()
-          if uc.volume() > (params[0]*params[1]*params[2]/100):
-            # unit cell volume cutoff from labelit 2004 paper
-            candidate_crystal_models.append(model)
-            if return_first:
-              return candidate_crystal_models
-    return candidate_crystal_models
-
-  def predict_reflections(self, crystal_model):
-    from dials.algorithms.integration import ReflectionPredictor
-    predictor = ReflectionPredictor()
-
-    sigma_divergence = self.beam.get_sigma_divergence()
-    mosaicity = crystal_model.get_mosaicity()
-
-    if sigma_divergence == 0.0:
-      self.beam.set_sigma_divergence(0.02) # degrees
-    if mosaicity == 0.0:
-      crystal_model.set_mosaicity(0.139) # degrees
-
-    reflections = predictor(self.sweep, crystal_model)
-    self.predicted_reflections = reflections
-    return self.predicted_reflections
-
-  def export_predicted_reflections(self, file_name='predictions.pickle'):
-    from dials.model.serialize import dump
-    dump.reflections(self.predicted_reflections, file_name)
-
-  def apply_symmetry(self, crystal_model, target_symmetry,
-                     return_primitive_setting=False):
-    unit_cell = crystal_model.get_unit_cell()
-    target_unit_cell = target_symmetry.unit_cell()
-    target_space_group = target_symmetry.space_group()
-    A = crystal_model.get_A()
-    A_inv = A.inverse()
-    unit_cell_is_similar = False
-    real_space_a = A_inv[:3]
-    real_space_b = A_inv[3:6]
-    real_space_c = A_inv[6:9]
-    basis_vectors = [real_space_a, real_space_b, real_space_c]
-    min_bmsd = 1e8
-    best_perm = None
-    for perm in ((0,1,2), (1,2,0), (2,0,1)):
-      crystal_model = Crystal(
-        basis_vectors[perm[0]],
-        basis_vectors[perm[1]],
-        basis_vectors[perm[2]],
-        space_group=target_space_group)
-      unit_cell = crystal_model.get_unit_cell()
-      uc = target_unit_cell
-      if uc is None:
-        uc = unit_cell
-      # XXX what about permuting the target_unit_cell (if not None)?
-      symm_target_sg = crystal.symmetry(
-        unit_cell=uc,
-        space_group=target_space_group,
-        assert_is_compatible_unit_cell=False)
-      # this assumes that the initial basis vectors are good enough that
-      # we can tell which should be the unique axis - probably not a robust
-      # solution
-      if unit_cell.is_similar_to(
-        symm_target_sg.unit_cell(),
-        relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-        absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
-        bmsd = unit_cell.bases_mean_square_difference(
-          symm_target_sg.unit_cell())
-        if bmsd < min_bmsd:
-          min_bmsd = bmsd
-          best_perm = list(perm)
-    if best_perm is None:
-      return None
-    crystal_model = Crystal(
-      basis_vectors[best_perm[0]],
-      basis_vectors[best_perm[1]],
-      basis_vectors[best_perm[2]],
-      space_group=target_space_group)
-    model = crystal_model
-    #cb_op_target_ref = symm_target_sg.space_group_info().type().cb_op()
-    #symm_target_sg_ref = symm_target_sg.change_basis(cb_op_target_ref)
-    from rstbx.symmetry.constraints import parameter_reduction
-    s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
-    s.set_orientation(crystal_model.get_A())
-    s.symmetrize()
-    #direct_matrix = s.orientation.change_basis(cb_op_target_ref).direct_matrix()
-    if return_primitive_setting:
-      sgi = sgtbx.space_group_info(group=target_space_group)
-      cb_op_to_primitive = sgi.change_of_basis_op_to_primitive_setting()
-      direct_matrix = s.orientation.change_basis(
-        cb_op_to_primitive).direct_matrix()
-    else:
-      direct_matrix = s.orientation.direct_matrix()
-    a = matrix.col(direct_matrix[:3])
-    b = matrix.col(direct_matrix[3:6])
-    c = matrix.col(direct_matrix[6:9])
-    ## verify it is still right-handed basis set
-    #assert a.cross(b).dot(c) > 0
-    model = Crystal(
-      a, b, c, space_group=target_space_group)
-    return model
-
-  def index_reflections_given_orientation_matix(
-      self, crystal_model, tolerance=0.2, verbose=0):
-
-    self._index_reflections_timer.start()
-
-    if verbose > 1:
-      print "Candidate crystal model:"
-      print crystal_model
-
-    n_rejects = 0
-
-    miller_indices = flex.miller_index()
-    indexed_reflections = flex.size_t()
-
-    A = crystal_model.get_A()
-    A_inv = A.inverse()
-
-    d_spacings = 1/self.reciprocal_space_points.norms()
-    inside_resolution_limit = d_spacings > self.d_min
-    sel = inside_resolution_limit & (self.reflections_i_lattice == -1)
-    isel = sel.iselection()
-    rlps = self.reciprocal_space_points.select(isel)
-    hkl_float = tuple(A_inv) * rlps
-    hkl_int = hkl_float.iround()
-
-    for i_hkl in range(hkl_int.size()):
-      max_difference = max([abs(hkl_float[i_hkl][i] - hkl_int[i_hkl][i]) for i in range(3)])
-      if max_difference > tolerance:
-        n_rejects += 1
-        continue
-      miller_index = hkl_int[i_hkl]
-      miller_indices.append(miller_index)
-      i_ref = isel[i_hkl]
-      self.reflections[i_ref].miller_index = miller_index
-      indexed_reflections.append(i_ref)
-
-    self._index_reflections_timer.stop()
-
-    return indexed_reflections, miller_indices
-
-  def index_reflections(self, crystal_models, tolerance=0.3):
-    self._index_reflections_timer.start()
-    from dials.algorithms.indexing import index_reflections
-    index_reflections(self.reflections, self.reciprocal_space_points,
-                      crystal_models, self.d_min, tolerance=tolerance,
-                      verbosity=self.params.refinement_protocol.verbosity)
-    self._index_reflections_timer.stop()
-
-  def refine(self, crystal_model, maximum_spot_error=None):
-    self._refine_timer.start()
-    self._ray_intersection_timer.start()
-    from dials.algorithms.spot_prediction import ray_intersection
-    reflections_for_refinement = ray_intersection(
-      self.detector, self.reflections.select(self.indexed_reflections))
-    self._ray_intersection_timer.stop()
-    verbosity = self.params.refinement_protocol.verbosity
-
-    scan_range_min = max(
-      int(math.floor(flex.min(self.reflections.frame_number()))),
-      self.sweep.get_array_range()[0])
-    scan_range_max = min(
-      int(math.ceil(flex.max(self.reflections.frame_number()))),
-      self.sweep.get_array_range()[1])
-    sweep = self.sweep[scan_range_min:scan_range_max]
-
-    if 0 and self.params.debug_plots:
-      plot_centroid_weights_histograms(reflections_for_refinement)
-
-    if self.params.refinement_protocol.weight_outlier_n_sigma is not None:
-      from libtbx.utils import plural_s
-      sel = reject_weight_outliers_selection(
-        reflections_for_refinement,
-        sigma_cutoff=self.params.refinement_protocol.weight_outlier_n_sigma)
-      reflections_for_refinement = reflections_for_refinement.select(sel)
-      n_reject = sel.count(False)
-      if n_reject > 0:
-        n_reject, suffix = plural_s(n_reject)
-        print "Rejected %i reflection%s (weight outlier%s)" %(
-          n_reject, suffix, suffix)
-    else:
-      sel = flex.bool(reflections_for_refinement.size(), True)
-
-    params = self.params.refinement
-
-    if 0:
-      from dials.algorithms.indexing import indexer
-      from dials_regression.indexing_test_data.i04_weak_data.run_indexing_api \
-           import outlier_main_procedure
-
-      from rstbx.phil.phil_preferences import indexing_api_defs
-      import iotbx.phil
-      hardcoded_phil = iotbx.phil.parse(
-        input_string=indexing_api_defs).extract()
-
-      from cctbx.crystal_orientation import crystal_orientation
-      triclinic_crystal = crystal_orientation(crystal_model.get_A(), True)
-
-      reflections = self.reflections_raw.select(self.indexed_reflections).select(sel)
-      refiner, refined_crystal, status = \
-        outlier_main_procedure(reflections,
-                               sweep.get_scan(), sweep.get_goniometer(),
-                               sweep.get_beam(), sweep.get_detector(),
-                               triclinic_crystal,
-        self.reciprocal_space_points.select(
-          self.indexed_reflections).select(sel),
-        hardcoded_phil)
-      self.sweep.set_goniometer(refiner.get_goniometer())
-      self.sweep.set_beam(refiner.get_beam())
-      self.sweep.set_detector(refiner.get_detector())
-      refined_crystal = refiner.get_crystal()
-
-    else:
-      self._refine_core_timer.start()
-      from dials.algorithms.refinement import RefinerFactory
-      refiner = RefinerFactory.from_parameters_data_models(
-        self.params, reflections_for_refinement,
-        beam=self.sweep.get_beam(),
-        goniometer=self.sweep.get_goniometer(),
-        detector=self.sweep.get_detector(),
-        scan=self.sweep.get_scan(),
-        crystal=crystal_model,
-        verbosity=verbosity)
-
-      if maximum_spot_error is not None:
-        residuals = flex.vec3_double()
-        matches = refiner.get_matches()
-        for match in matches:
-          residuals.append((match.x_resid, match.y_resid, match.phi_resid))
-        x_residuals, y_residuals, phi_residuals = residuals.parts()
-        mm_residual_norms = flex.sqrt(
-          flex.pow2(x_residuals) + flex.pow2(y_residuals))
-        # hard cutoff, but this is essentially what XDS does by default
-        # assumes pixel size is same for all panels and same in x and y
-        inlier_sel = mm_residual_norms < (
-          maximum_spot_error * self.detector[0].get_pixel_size()[0])
-        reflections_for_refinement = reflections_for_refinement.select(
-          refiner.selection_used_for_refinement()).select(inlier_sel)
-        refiner = RefinerFactory.from_parameters_data_models(
-          self.params, reflections_for_refinement,
-          beam=self.sweep.get_beam(),
-          goniometer=self.sweep.get_goniometer(),
-          detector=self.sweep.get_detector(),
-          scan=self.sweep.get_scan(),
-          crystal=crystal_model,
-          verbosity=verbosity)
-
-        if self.params.debug_plots:
-          from matplotlib import pyplot
-          pyplot.scatter(x_residuals.select(inlier_sel).as_numpy_array(),
-                         y_residuals.select(inlier_sel).as_numpy_array(),
-                         c='b', alpha=0.5)
-          pyplot.scatter(x_residuals.select(~inlier_sel).as_numpy_array(),
-                         y_residuals.select(~inlier_sel).as_numpy_array(),
-                         c='r', alpha=0.5)
-          #r = maximum_spot_error * self.detector[0].get_pixel_size()
-          #pyplot.Circle((r, r), 0.5, color='b', fill=False)
-          pyplot.axes().set_aspect('equal')
-          pyplot.show()
-
-      if self.params.debug:
-        self.export_as_json(crystal_model, sweep, suffix="_debug")
-        with open("reflections_debug.pickle", 'wb') as f:
-          pickle.dump(reflections_for_refinement, f)
-
-
-      refined = refiner.run()
-      self._refine_core_timer.stop()
-
-      self.sweep.set_goniometer(refiner.get_goniometer())
-      self.sweep.set_beam(refiner.get_beam())
-      self.sweep.set_detector(refiner.get_detector())
-      refined_crystal = refiner.get_crystal()
-
-    crystal_model.set_B(refined_crystal.get_B())
-    crystal_model.set_U(refined_crystal.get_U())
-
-    #assert crystal_model == refined_crystal
-
-    if not (params.parameterisation.beam.fix == 'all'
-            and params.parameterisation.detector.fix == 'all'):
-      # Experimental geometry may have changed - re-map centroids to
-      # reciprocal space
-      self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
-        self.reflections, self.detector, self.beam, self.goniometer)
-    self._refine_timer.stop()
-
-  def debug_show_candidate_basis_vectors(self):
-
-    vectors = self.candidate_basis_vectors
-
-    for i, v in enumerate(vectors):
-      print i, v.length()# , vector_heights[i]
-
-    # print a table of the angles between each pair of vectors
-
-    angles = flex.double(len(vectors)**2)
-    angles.reshape(flex.grid(len(vectors), len(vectors)))
-
-    for i in range(len(vectors)):
-      v_i = vectors[i]
-      for j in range(i+1, len(vectors)):
-        v_j = vectors[j]
-        angles[i,j] = v_i.angle(v_j, deg=True)
-
-    print (" "*7),
-    for i in range(len(vectors)):
-      print "%7.3f" % vectors[i].length(),
-    print
-    for i in range(len(vectors)):
-      print "%7.3f" % vectors[i].length(),
-      for j in range(len(vectors)):
-        if j <= i:
-          print (" "*7),
-        else:
-          print "%5.1f  " %angles[i,j],
-      print
-
-  def debug_write_reciprocal_lattice_points_as_pdb(
-      self, file_name='reciprocal_lattice.pdb'):
-    from cctbx import crystal, xray
-    cs = crystal.symmetry(unit_cell=(1000,1000,1000,90,90,90), space_group="P1")
-    xs = xray.structure(crystal_symmetry=cs)
-    for site in self.reciprocal_space_points:
-      xs.add_scatterer(xray.scatterer("C", site=site))
-
-    xs.sites_mod_short()
-    with open(file_name, 'wb') as f:
-      print >> f, xs.as_pdb_file()
-
-  def debug_write_ccp4_map(self, map_data, file_name):
-    from iotbx import ccp4_map
-    gridding_first = (0,0,0)
-    gridding_last = map_data.all()
-    labels = ["cctbx.miller.fft_map"]
-    ccp4_map.write_ccp4_map(
-      file_name=file_name,
-      unit_cell=self.fft_cell,
-      space_group=sgtbx.space_group("P1"),
-      gridding_first=gridding_first,
-      gridding_last=gridding_last,
-      map_data=map_data,
-      labels=flex.std_string(labels))
-
-  def export_as_json(self, crystal_model, sweep, suffix=None, compact=False):
-    from cctbx.crystal.crystal_model.serialize import dump_crystal
-    from dxtbx.serialize import dump
-    if suffix is None:
-      suffix = ''
-    with open('crystal%s.json' %suffix, 'wb') as f:
-      dump_crystal(crystal_model, f, compact=compact)
-    with open('sweep%s.json' %suffix, 'wb') as f:
-      dump.imageset(sweep, f, compact=compact)
-
-  def export_reflections(self, reflections, file_name="reflections.pickle"):
-    with open(file_name, 'wb') as f:
-      pickle.dump(reflections, f)
-
-  def export_xds_files(self, crystal_model, sweep, suffix=None):
-    from dxtbx.serialize import xds
-    if suffix is None:
-      suffix = ''
-    crystal_model = crystal_model.change_basis(
-      crystal_model.get_space_group().info().change_of_basis_op_to_reference_setting())
-    A = crystal_model.get_A()
-    A_inv = A.inverse()
-    real_space_a = A_inv.elems[:3]
-    real_space_b = A_inv.elems[3:6]
-    real_space_c = A_inv.elems[6:9]
-    to_xds = xds.to_xds(sweep)
-    with open('XDS%s.INP' %suffix, 'wb') as f:
-      to_xds.XDS_INP(out=f, job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
-    with open('XPARM%s.XDS' %suffix, 'wb') as f:
-      to_xds.xparm_xds(
-        real_space_a, real_space_b, real_space_c,
-        crystal_model.get_space_group().type().number(),
-        out=f)
 
 
 
