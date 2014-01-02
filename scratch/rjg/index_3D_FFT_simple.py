@@ -1341,7 +1341,7 @@ class indexer(object):
     self._index_reflections_timer.start()
     from dials.algorithms.indexing import index_reflections
     index_reflections(self.reflections, self.reciprocal_space_points,
-                      crystal_models, self.d_min, tolerance=0.3,
+                      crystal_models, self.d_min, tolerance=tolerance,
                       verbosity=self.params.refinement_protocol.verbosity)
     self._index_reflections_timer.stop()
 
