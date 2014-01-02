@@ -636,7 +636,7 @@ class indexer(object):
 
     self._find_peaks_timer.stop()
 
-  def find_candidate_basis_vectors_nks(self):
+  def find_candidate_basis_vectors_nks(self, vectors):
     '''Find the candidate basis vectors from the Patterson peaks using code
     from NKS which will search for the basis which best describes the list of
     input spot positions. Based on using indexer.determine_basis_set.'''
@@ -655,17 +655,20 @@ class indexer(object):
     # a little ... redundant
 
     triclinic_crystal = indexer.determine_basis_set(
-      candidate_basis_vectors_one_lattice = self.sites,
-      rs_positions_xyz = self.reciprocal_space_points,
-      params=hardcoded_phil,
-      spot_positions = self.reflections,
-      detector = self.detector,
-      beam = self.beam,
-      goniometer = self.goniometer,
-      scan = self.scan
-      )
+      candidate_basis_vectors_one_lattice=vectors,
+      spot_positions=self.reflections_raw,
+      detector=self.detector,
+      beam=self.beam,
+      goniometer=self.goniometer,
+      scan=self.scan,
+      rs_positions_xyz=self.reciprocal_space_points,
+      params=hardcoded_phil)
 
-    print 1/0
+    direct_matrix = triclinic_crystal[0].direct_matrix()
+    return [Crystal(direct_matrix[0:3],
+                    direct_matrix[3:6],
+                    direct_matrix[6:9],
+                    space_group_symbol="P 1")]
 
   def find_candidate_basis_vectors(self):
     # hijack the xray.structure class to facilitate calculation of distances
