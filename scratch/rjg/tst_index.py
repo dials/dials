@@ -294,6 +294,36 @@ def exercise_7():
                             relative_length_tolerance=0.01,
                             absolute_angle_tolerance=1)
 
+def exercise_8():
+  # synthetic trypsin multi-lattice dataset (4 lattices)
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
+  pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3_4.json")
+  extra_args = ["real_space_grid_search=True",
+                "use_all_reflections=True",
+                "n_macro_cycles=5",
+                "d_min=4",
+                "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
+                "known_symmetry.space_group=P212121",
+                "scan_range=0,10",
+                "engine=LevMarIterations",
+                "beam.fix=all",
+                "detector.fix=orientation",
+                #"max_cell=70", #XXX eventually this should not be needed
+                ]
+  expected_unit_cell = uctbx.unit_cell(
+    #(54.3, 58.3, 66.5, 90, 90, 90))
+    (58.3, 54.3, 66.5, 90, 90, 90)) # XXX why the permutation of axes?
+  expected_rmsds = (0.28, 0.29, 0.006)
+  expected_hall_symbol = ' P 2ac 2ab'
+  n_expected_lattices = 1
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol,
+                            n_expected_lattices=n_expected_lattices,
+                            relative_length_tolerance=0.01,
+                            absolute_angle_tolerance=1)
+
 
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
@@ -301,7 +331,7 @@ def run(args):
     return
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
-               exercise_6, exercise_7)
+               exercise_6, exercise_7, exercise_8)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0

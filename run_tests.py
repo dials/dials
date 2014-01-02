@@ -69,6 +69,7 @@ tst_list = (
     ["$D/scratch/rjg/tst_index.py", "3"],
     ["$D/scratch/rjg/tst_index.py", "4"],
     ["$D/scratch/rjg/tst_index.py", "7"],
+    ["$D/scratch/rjg/tst_index.py", "8"],
     "$D/scratch/rjg/unit_cell_refinement.py",
     )
 
