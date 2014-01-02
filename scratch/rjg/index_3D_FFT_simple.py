@@ -27,6 +27,15 @@ import libtbx.load_env
 dials_path = libtbx.env.dist_path('dials')
 
 master_phil_scope = iotbx.phil.parse("""
+reference {
+  detector = None
+    .type = path
+    .help = "Use detector model from the given reference sweep."
+  beam = None
+    .type = path
+    .help = "Use beam model from the given reference sweep."
+}
+
 min_cell = 20
   .type = float(value_min=0)
   .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
@@ -181,6 +190,23 @@ class indexer(object):
     # that a reflection doesn't belong to any lattice so far
     self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
     self.sweep = sweep
+
+    from dxtbx.serialize import load
+    if params.reference.detector is not None:
+      imageset = load.imageset(params.reference.detector)
+      print "Replacing detector:"
+      print self.sweep.get_detector()
+      print "with:"
+      print imageset.get_detector()
+      self.sweep.set_detector(imageset.get_detector())
+    if params.reference.beam is not None:
+      imageset = load.imageset(params.reference.beam)
+      print "Replacing beam:"
+      print self.sweep.get_beam()
+      print "with:"
+      print imageset.get_beam()
+      self.sweep.set_beam(imageset.get_beam())
+
     self.goniometer = sweep.get_goniometer()
     self.detector = sweep.get_detector()
     self.scan = sweep.get_scan()
