@@ -308,7 +308,11 @@ class indexer(object):
         self.candidate_crystal_models = self.find_candidate_orientation_matrices(
           self.candidate_basis_vectors)
         crystal_models = self.candidate_crystal_models[:1]
-    else:
+      if self.target_symmetry_primitive is not None:
+        crystal_models = [
+          self.apply_symmetry(cm, self.target_symmetry_primitive)
+          for cm in crystal_models]
+    elif self.params.real_space_grid_search:
       self.real_space_grid_search()
       crystal_models = self.candidate_crystal_models
 
