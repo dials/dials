@@ -21,7 +21,7 @@ from cctbx import crystal, miller, sgtbx, uctbx, xray
 import dxtbx
 from dials.algorithms.centroid import centroid_px_to_mm
 from dials.model.data import ReflectionList
-from dials.model.experiment.crystal_model import Crystal
+from cctbx.crystal.crystal_model import crystal_model as Crystal
 
 import libtbx.load_env
 dials_path = libtbx.env.dist_path('dials')
@@ -1530,7 +1530,7 @@ class indexer(object):
       labels=flex.std_string(labels))
 
   def export_as_json(self, crystal_model, sweep, suffix=None, compact=False):
-    from dials.model.serialize.dump import crystal as dump_crystal
+    from cctbx.crystal.crystal_model.serialize import dump_crystal
     from dxtbx.serialize import dump
     if suffix is None:
       suffix = ''
