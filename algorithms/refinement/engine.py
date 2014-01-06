@@ -24,7 +24,8 @@ class Journal(object):
   pass
 
 class Refinery(object):
-  """Abstract interface for Refinery objects"""
+  """Interface for Refinery objects. This should be subclassed and the run
+  method implemented."""
 
   # NOTES. A Refinery is initialised with a Target function. The target
   # function already contains a ReflectionManager (which holds the data) so
@@ -247,7 +248,7 @@ class Refinery(object):
     """
 
     # Specify a minimizer and its parameters, and run
-    raise RuntimeError("implement me")
+    raise NotImplementedError()
 
 class AdaptLbfgs(Refinery):
   """Adapt Refinery for L-BFGS minimiser"""

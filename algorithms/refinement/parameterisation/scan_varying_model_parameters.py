@@ -11,6 +11,7 @@ from __future__ import division
 from dials.algorithms.refinement.parameterisation.model_parameters \
         import Parameter, ModelParameterisation
 from math import exp
+import abc
 
 class ScanVaryingParameterSet(Parameter):
   """Testing a class for a scan-varying parameter, in which values at rotation
@@ -214,6 +215,8 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
   # time static version of the parameterisation, as it is assumed that we
   # start with a flat model wrt rotation angle.
 
+  __metaclass__  = abc.ABCMeta
+
   def __init__(self, models, initial_state, param_sets, smoother):
     assert(isinstance(param_sets, list))
     self._initial_state = initial_state
@@ -239,6 +242,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
   # def num_total(self): inherited unchanged from ModelParameterisation
 
+  @abc.abstractmethod
   def compose(self, t):
     """compose the model state at image number t from its initial state and
     its parameter list. Also calculate the derivatives of the state wrt
@@ -247,8 +251,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     Unlike ModelParameterisation, does not automatically update the actual
     model class. This should be done once refinement is complete."""
 
-    raise RuntimeError('implement me')
-    return
+    pass
 
   def get_param_vals(self, only_free = True):
     """export the values of the internal list of parameters as a

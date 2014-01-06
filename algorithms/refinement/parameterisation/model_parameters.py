@@ -8,6 +8,7 @@
 #
 
 from __future__ import division
+import abc
 
 class Parameter(object):
   """A class to help formalise what a parameter is. A Parameter must
@@ -106,6 +107,8 @@ class ModelParameterisation(object):
   parameters is used to compose all states and calculate all
   derivatives of these states."""
 
+  __metaclass__  = abc.ABCMeta
+
   def __init__(self, models, initial_state, param_list,
                is_multi_state=False):
     assert(isinstance(param_list, list))
@@ -127,14 +130,14 @@ class ModelParameterisation(object):
     """the total number of parameters, both fixed and free"""
     return self._total_len
 
+  @abc.abstractmethod
   def compose(self):
     """compose the current model state from its initial state and its
     parameter list. Also calculate the derivatives of the state wrt
     each parameter in the list. Should be called automatically once
     parameters are updated, e.g. at the end of each refinement cycle"""
 
-    raise RuntimeError('implement me')
-    return
+    pass
 
   def get_params(self, only_free = True):
     """Return the internal list of parameters. It is intended that this
@@ -217,6 +220,7 @@ class ModelParameterisation(object):
 
     return
 
+  @abc.abstractmethod
   def get_state(self, multi_state_elt=None):
     """return the current state of the model under parameterisation.
     This is required, for example, by the calculation of finite
@@ -229,8 +233,7 @@ class ModelParameterisation(object):
     # of the model under parameterisation is considered its state. The
     # type of this result should match the type of one element of the return
     # value of get_ds_dp.
-    raise RuntimeError('implement me')
-    return
+    pass
 
   def get_ds_dp(self, only_free = True, multi_state_elt=None):
     """get a list of derivatives of the state wrt each parameter, as

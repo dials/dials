@@ -16,6 +16,7 @@ from scitbx import matrix
 from math import pi, sqrt, ceil
 from cctbx.array_family import flex
 import random
+import abc
 
 # dials imports
 from dials.algorithms.spot_prediction import ray_intersection
@@ -44,6 +45,7 @@ class Target(object):
   This should all be set by a derived class.
   """
 
+  __metaclass__  = abc.ABCMeta
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
 
   def __init__(self, reflection_predictor, detector,
@@ -158,38 +160,37 @@ class Target(object):
 
     return len(self._matches)
 
+  @abc.abstractmethod
   def compute_functional_and_gradients(self):
     """calculate the target function value and its gradients"""
 
-    # To be implemented by a derived class
-    raise RuntimeError('implement me')
+    pass
 
+  @abc.abstractmethod
   def compute_residuals_and_gradients(self):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
 
-    # To be implemented by a derived class
-    raise RuntimeError('implement me')
+    pass
 
+  @abc.abstractmethod
   def curvatures(self):
     """First order approximation to the diagonal of the Hessian based on the
     least squares form of the target"""
 
-    # To be implemented by a derived class
-    raise RuntimeError('implement me')
+    pass
 
+  @abc.abstractmethod
   def rmsds(self):
     """calculate unweighted RMSDs"""
 
-    # To be implemented by a derived class
-    raise RuntimeError('implement me')
+    pass
 
+  @abc.abstractmethod
   def achieved(self):
-    """return True to terminate the refinement. To be implemented by
-    a derived class"""
+    """return True to terminate the refinement."""
 
-    # To be implemented by a derived class
-    raise RuntimeError('implement me')
+    pass
 
 class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   """An implementation of the target class providing a least squares residual
