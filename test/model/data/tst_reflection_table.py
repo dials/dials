@@ -19,6 +19,7 @@ class Test(object):
     #self.tst_slicing()
     self.tst_updating()
     self.tst_selecting()
+    self.tst_serialize()
 
   def tst_resizing(self):
     from dials.model.data import ReflectionTable
@@ -342,6 +343,8 @@ class Test(object):
   def tst_selecting(self):
     pass
 
+  def tst_serialize(self):
+    pass
 
 if __name__ == '__main__':
   test = Test()

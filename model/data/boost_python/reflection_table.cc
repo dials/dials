@@ -27,6 +27,7 @@ namespace dials { namespace model { namespace boost_python {
 
   void export_reflection_table() {
 
+    // Define all the types we want to support in the table
     typedef column_type_generator<
       bool,
       int,
@@ -37,6 +38,7 @@ namespace dials { namespace model { namespace boost_python {
       vec3<double>
     >::type column_types;
 
+    // Export the reflection table
     column_table_suite::column_table_wrapper<column_types>::wrap("ReflectionTable");
   }
 

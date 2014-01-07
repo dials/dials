@@ -167,6 +167,56 @@ namespace column_table_suite {
     }
   };
 
+  /**
+   * Copy all the values in a column
+   */
+  template <typename T>
+  struct copy_column_visitor : public boost::static_visitor<void> {
+
+    T &result;
+    typename T::key_type key;
+
+    copy_column_visitor(
+          T &result_,
+          typename T::key_type key_)
+      : result(result_),
+        key(key_) {}
+
+    template <typename U>
+    void operator()(const U &col) {
+      U c = result[key];
+      for (std::size_t i = 0; i < col.size(); ++i) {
+        c[i] = col[i];
+      }
+    }
+  };
+
+  /**
+   * Copy the selected rows from the input column to a output column.
+   */
+  template <typename T>
+  struct copy_from_indices_visitor : public boost::static_visitor<void> {
+
+    T &result;
+    typename T::key_type key;
+    af::const_ref<std::size_t> index;
+
+    copy_from_indices_visitor(
+          T &result_,
+          typename T::key_type key_,
+          af::const_ref<std::size_t> index_)
+      : result(result_),
+        key(key_),
+        index(index_) {}
+
+    template <typename U>
+    void operator()(const U &col) {
+      U c = result[key];
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        c[i] = col[index[i]];
+      }
+    }
+  };
 
   /**
    * A visitor to reorder the elements of a column
@@ -425,8 +475,12 @@ namespace column_table_suite {
    */
   template <typename T>
   T select_rows_index(const T &self, const af::const_ref<std::size_t> &index) {
-    T other;
-    return other;
+    T result;
+    for (typename T::const_iterator it = self.begin(); it != self.end(); ++it) {
+      copy_from_indices_visitor<T> visitor(result, it->first, index);
+      it->second.apply_visitor(visitor);
+    }
+    return result;
   }
 
   /**
@@ -437,8 +491,12 @@ namespace column_table_suite {
    */
   template <typename T>
   T select_rows_flags(const T &self, const af::const_ref<bool> &flags) {
-    T other;
-    return other;
+    DIALS_ASSERT(self.nrows() == flags.size());
+    af::shared<std::size_t> index;
+    for (std::size_t i = 0; i < flags.size(); ++i) {
+      if (flags[i]) index.push_back(i);
+    }
+    return select_rows_index(self, index.const_ref());
   }
 
   /**
@@ -449,8 +507,14 @@ namespace column_table_suite {
    */
   template <typename T>
   T select_cols_keys(const T &self, const af::const_ref<std::string> &keys) {
-    T other;
-    return other;
+    T result;
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+      copy_column_visitor<T> visitor(result, keys[i]);
+      typename T::const_iterator it = self.find(keys[i]);
+      DIALS_ASSERT(it != self.end());
+      it->second.apply_visitor(visitor);
+    }
+    return result;
   }
 
   /**
