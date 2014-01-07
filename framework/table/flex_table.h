@@ -1,5 +1,5 @@
 /*
- * column_table.h
+ * flex_table.h
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_FRAMEWORK_TABLE_COLUMN_TABLE_H
-#define DIALS_FRAMEWORK_TABLE_COLUMN_TABLE_H
+#ifndef DIALS_FRAMEWORK_TABLE_FLEX_TABLE_H
+#define DIALS_FRAMEWORK_TABLE_FLEX_TABLE_H
 
 #include <algorithm>
 #include <vector>
@@ -30,15 +30,15 @@ namespace dials { namespace framework {
    * data is represented as a list of columns. It is created with a variant
    * type of column data. It can be instantiated as follows:
    *
-   * typedef column_type_generator<int, double>::type column_types;
-   * column_table<column_types> table;
+   * typedef flex_type_generator<int, double>::type flex_types;
+   * flex_table<flex_types> table;
    *
    * The columns can be accessed as values in a std::map as follows:
    *
-   * column_data<int> col = table["column"];
+   * af::shared<int> col = table["column"];
    */
   template <typename VarientType>
-  class column_table {
+  class flex_table {
   public:
 
     typedef std::map<std::string, VarientType> map_type;
@@ -55,10 +55,10 @@ namespace dials { namespace framework {
      * operator[] proxy to aid in returning and casting elements.
      */
     struct proxy {
-      column_table *t_;
+      flex_table *t_;
       key_type k_;
 
-      proxy(column_table *t, key_type k)
+      proxy(flex_table *t, key_type k)
         : t_(t), k_(k) {}
 
       /**
@@ -83,44 +83,49 @@ namespace dials { namespace framework {
        * Return the mapped variant type at the given element directly.
        */
       operator mapped_type() const {
-        return t_->get(k_);
+        boost::shared_ptr<map_type> table = t_->table_;
+        iterator it = table->find(k_);
+        DIALS_ASSERT(it != table->end());
+        return it->second;
       }
     };
 
+    /** Get the size of each column */
     struct size_visitor : boost::static_visitor<size_type> {
-
       template <typename T>
       size_type operator()(const T &v) const {
         return v.size();
       }
     };
 
+    /** Resize each column */
     struct resize_visitor : boost::static_visitor<void> {
       size_type n_;
-      resize_visitor(size_type n)
-        : n_(n) {}
+      resize_visitor(size_type n) : n_(n) {}
       template <typename T>
-      void operator()(T &v) {
+      void operator()(T &v) const {
         v.resize(n_);
       }
     };
 
+    /** Insert an element into each column */
     struct insert_visitor : boost::static_visitor<void> {
       size_type pos, n;
       insert_visitor(size_type pos_, size_type n_)
         : pos(pos_), n(n_) {}
       template <typename T>
-      void operator()(T &v) {
+      void operator()(T &v) const {
         v.insert(v.begin() + pos, n, typename T::value_type());
       }
     };
 
+    /** Erase an element from each column */
     struct erase_visitor : boost::static_visitor<void> {
       size_type pos, n;
       erase_visitor(size_type pos_, size_type n_)
         : pos(pos_), n(n_) {}
       template <typename T>
-      void operator()(T &v) {
+      void operator()(T &v) const {
         iterator first = v.begin() + pos;
         iterator last = first + n;
         v.erase(first, last);
@@ -130,7 +135,7 @@ namespace dials { namespace framework {
   public:
 
     /** Initialise the table */
-    column_table()
+    flex_table()
       : table_(boost::make_shared<map_type>()),
         nrows_(0) {}
 
@@ -138,7 +143,7 @@ namespace dials { namespace framework {
      * Initialise the table to a certain size
      * @param n The size to initialise to
      */
-    column_table(size_type n)
+    flex_table(size_type n)
       : table_(boost::make_shared<map_type>()),
         nrows_(n) {}
 
@@ -182,13 +187,9 @@ namespace dials { namespace framework {
       return table_->size();
     }
 
-    /**
-     * Erase a column from the table.
-     * @param key The column name
-     * @returns The number of columns removed
-     */
-    size_type erase(const key_type &key) {
-      return table_->erase(key);
+    /** @returns The number of columns in the table */
+    size_type size() const {
+      return nrows() ;
     }
 
     /** @returns Is the table empty */
@@ -196,27 +197,15 @@ namespace dials { namespace framework {
       return table_->empty();
     }
 
-    /** @returns The number of columns in the table */
-    size_type size() const {
-      return nrows() ;
-    }
-
     /** @returns Are the column sizes consistent */
     bool is_consistent() const {
       size_visitor visitor;
       for (const_iterator it = begin(); it != end(); ++it) {
-        DIALS_ASSERT(!it->second.empty());
         if (it->second.apply_visitor(visitor) != nrows_) {
           return false;
         }
       }
       return true;
-    }
-
-    /** Clear the table */
-    void clear() {
-      table_->clear();
-      resize(0);
     }
 
     /** @returns The number of columns matching the key (0 or 1) */
@@ -247,11 +236,13 @@ namespace dials { namespace framework {
      * @param n The size to resize to
      */
     void resize(size_type n) {
+      DIALS_ASSERT(is_consistent());
       resize_visitor visitor(n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
       nrows_ = n;
+      DIALS_ASSERT(is_consistent());
     }
 
     /**
@@ -268,12 +259,14 @@ namespace dials { namespace framework {
      * @param n The number of elements to insert
      */
     void insert(size_type pos, size_type n) {
+      DIALS_ASSERT(is_consistent());
       DIALS_ASSERT(pos <= nrows_);
       insert_visitor visitor(pos, n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
       nrows_ += n;
+      DIALS_ASSERT(is_consistent());
     }
 
     /**
@@ -290,20 +283,32 @@ namespace dials { namespace framework {
      * @param n The number of elements to erase
      */
     void erase(size_type pos, size_type n) {
+      DIALS_ASSERT(is_consistent());
       DIALS_ASSERT(pos + n <= nrows_);
       erase_visitor visitor(pos, n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
       nrows_ -= n;
+      DIALS_ASSERT(is_consistent());
+    }
+
+    /**
+     * Erase a column from the table.
+     * @param key The column name
+     * @returns The number of columns removed
+     */
+    size_type erase(const key_type &key) {
+      return table_->erase(key);
+    }
+
+    /** Clear the table */
+    void clear() {
+      table_->clear();
+      resize(0);
     }
 
   private:
-
-    /** @returns The element at the given key */
-    mapped_type& get(const key_type &key) {
-      return (*table_)[key];
-    }
 
     boost::shared_ptr<map_type> table_;
     size_type nrows_;
@@ -320,12 +325,12 @@ namespace dials { namespace framework {
 
 
   /**
-   * A class to help in generating a variant type for use in the column_table
+   * A class to help in generating a variant type for use in the flex_table
    * class. Given a variadic template list of types it will convert the list
    * into list of af::shared<T> types and then export a variant.
    *
    * For example:
-   *  column_type_generator<int, double, std::string>::type
+   *  flex_type_generator<int, double, std::string>::type
    *
    * Becomes:
    *
@@ -339,11 +344,11 @@ namespace dials { namespace framework {
             typename T1=null_type, typename T2=null_type, typename T3=null_type,
             typename T4=null_type, typename T5=null_type, typename T6=null_type,
             typename T7=null_type, typename T8=null_type, typename T9=null_type>
-  class column_type_generator {
+  class flex_type_generator {
   private:
 
     template <typename T>
-    struct create_column_type {
+    struct create_flex_type {
       typedef af::shared<T> type;
     };
 
@@ -356,18 +361,18 @@ namespace dials { namespace framework {
       typename boost::mpl::lambda< is_null_type<boost::mpl::_1> >::type
     >::type valid_types;
 
-    // Create a list of column_data<T> types
+    // Create a list of af::shared<T> types
     typedef typename boost::mpl::transform<
       valid_types,
-      typename boost::mpl::lambda< create_column_type<boost::mpl::_1> >::type
-    >::type column_types;
+      typename boost::mpl::lambda< create_flex_type<boost::mpl::_1> >::type
+    >::type flex_types;
 
   public:
 
     // Expose the variant type
-    typedef typename boost::make_variant_over<column_types>::type type;
+    typedef typename boost::make_variant_over<flex_types>::type type;
   };
 
 }} // namespace dials::framework
 
-#endif // DIALS_FRAMEWORK_TABLE_COLUMN_TABLE_H
+#endif // DIALS_FRAMEWORK_TABLE_FLEX_TABLE_H

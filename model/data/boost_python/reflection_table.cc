@@ -10,7 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/framework/table/boost_python/column_table_suite.h>
+#include <dials/framework/table/boost_python/flex_table_suite.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/vec3.h>
@@ -28,7 +28,7 @@ namespace dials { namespace model { namespace boost_python {
   void export_reflection_table() {
 
     // Define all the types we want to support in the table
-    typedef column_type_generator<
+    typedef flex_type_generator<
       bool,
       int,
       std::size_t,
@@ -36,10 +36,10 @@ namespace dials { namespace model { namespace boost_python {
       std::string,
       vec2<double>,
       vec3<double>
-    >::type column_types;
+    >::type flex_types;
 
     // Export the reflection table
-    column_table_suite::column_table_wrapper<column_types>::wrap("ReflectionTable");
+    flex_table_suite::flex_table_wrapper<flex_types>::wrap("ReflectionTable");
   }
 
 }}} // namespace dials::model::boost_python

@@ -363,8 +363,8 @@ framework/dftbx/tst_dftbx.py -text
 framework/plugin.py -text
 framework/plugin_example.py -text
 framework/table/__init__.py -text
-framework/table/boost_python/column_table_suite.h -text
-framework/table/column_table.h -text
+framework/table/boost_python/flex_table_suite.h -text
+framework/table/flex_table.h -text
 framework/toplevel.py -text
 framework/toplevel_example.py -text
 interfaces/__init__.py -text

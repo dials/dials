@@ -47,24 +47,26 @@ class Test(object):
     assert(table.ncols() == 2)
     print 'OK'
 
-    # Add an extra column and resize
-    table['col3'] = flex.std_string(20)
-    assert(table.nrows() == 20)
-    assert(table.ncols() == 3)
+    # Add an extra column with the wrong size (throw)
+    try:
+      table['col3'] = flex.std_string(20)
+      assert(False)
+    except Exception:
+      pass
+    assert(table.nrows() == 10)
+    assert(table.ncols() == 2)
     assert(table.is_consistent())
-    assert(len(table['col1']) == 20)
-    assert(len(table['col2']) == 20)
-    assert(len(table['col3']) == 20)
+    assert(len(table['col1']) == 10)
+    assert(len(table['col2']) == 10)
     print 'OK'
 
     # Resize the table (should resize all columns)
     table.resize(50)
     assert(table.nrows() == 50)
-    assert(table.ncols() == 3)
+    assert(table.ncols() == 2)
     assert(table.is_consistent())
     assert(len(table['col1']) == 50)
     assert(len(table['col2']) == 50)
-    assert(len(table['col3']) == 50)
     print 'OK'
 
     # Make the table inconsistent
@@ -339,7 +341,25 @@ class Test(object):
     assert(table2.ncols() == 1)
     print 'OK'
 
-    # TODO update with different # rows
+    # Update trable1 with invalid table
+    c3 = ['a', 'b', 'c']
+
+    # Create a table with some elements
+    table2 = ReflectionTable()
+    table2['col3'] = flex.std_string(c3)
+    try:
+      table1.update(table2)
+      assert(False)
+    except Exception:
+      pass
+
+    assert(table1.is_consistent())
+    assert(table1.nrows() == 10)
+    assert(table1.ncols() == 3)
+    assert(table2.is_consistent())
+    assert(table2.nrows() == 3)
+    assert(table2.ncols() == 1)
+    print 'OK'
 
   def tst_select(self):
 
