@@ -94,7 +94,20 @@ class RefinerFactory(object):
 
     if verbosity > 1: print "Target function built\n"
 
-    return
+    if verbosity > 1: print "Building refinement engine"
+
+    # create refinery
+    refinery = RefinerFactory.config_refinery(
+                    params, target, pred_param, verbosity)
+
+    if verbosity > 1: print "Refinement engine built\n"
+
+    # build refiner interface and return
+    return Refiner(reflections, beam, crystals, crystal_ids, detector,
+                    pred_param, param_reporter, refman, target, refinery,
+                    goniometer=goniometer,
+                    scan=scan,
+                    verbosity=verbosity)
 
   @staticmethod
   def from_parameters_data_models(params,
