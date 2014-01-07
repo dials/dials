@@ -68,10 +68,9 @@ from dials.algorithms.background.inclined_background_subtractor \
 layering_and_background_plane(rlist)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
-
 old_r_list = rlist[:]
-
-
+tmp='''
+print "adding noise ...."
 for r in rlist:
     for x_loc in range(ncol):
       for y_loc in range(nrow):
@@ -81,25 +80,21 @@ for r in rlist:
           r.shoebox_mask[0, y_loc, x_loc] = 0
         else:
           r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
-
-
+print "adding noise .... done"
+#'''
 from dials.algorithms.background.inclined_background_subtractor \
   import layering_and_background_plane
 layering_and_background_plane(rlist)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
-
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-rlist = mosflm_caller(rlist, xmax, ymax, 5)
-
-
+rlist = mosflm_caller(rlist, xmax, ymax, 3)
 paint_compare = []
 for i in range(len(rlist)):
   #paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
   paint_compare.append([old_r_list[i].intensity, rlist[i].intensity])
 
 paint_compare_sort = sorted(paint_compare)
-
 from matplotlib import pylab
 import numpy
 data1d = numpy.zeros(len(rlist), dtype = numpy.float64)

@@ -5,8 +5,7 @@ from scitbx.array_family import flex
 
 def make_2d_profile(reflections):
   #print "len(reflections) =", len(reflections)
-  big_nrow = 0
-  big_ncol = 0
+
   max_i_01 = 0.0
   for ref in reflections:
     if ref.is_valid():
@@ -26,6 +25,8 @@ def make_2d_profile(reflections):
       select_rlist.append(ref)
   counter = 0
   #print "len(select_rlist) =", len(select_rlist)
+  big_nrow = 0
+  big_ncol = 0
   for ref in select_rlist:
     local_nrow = ref.shoebox.all()[1]
     local_ncol = ref.shoebox.all()[2]
@@ -59,7 +60,7 @@ def make_2d_profile(reflections):
   return sumation, thold
 
 def fit_profile_2d(reflections, arr_proff, row, col):
-  average = arr_proff[row][col][0]
+  local_average = arr_proff[row][col][0]
   thold = arr_proff[row][col][1]
 
   if_you_want_to_see_how_the_profiles_look = '''
@@ -71,6 +72,7 @@ def fit_profile_2d(reflections, arr_proff, row, col):
   descr = flex.double(flex.grid(1, 3))
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:
+      average = local_average
       shoebox = ref.shoebox
       #mask = ref.shoebox_mask                               # may be needed soon
       background = ref.shoebox_background

@@ -4,7 +4,7 @@ from dials.algorithms.integration.mosflm_2D_profile import \
 
 from dials.model.data import Reflection, ReflectionList
 def mosflm_caller(rlist, xmax, ymax, n_div):
-  print "performing profile fitting  ...."
+  print "building profiles ...."
   ncol = n_div
   nrow = n_div
   arr_rlist = []
@@ -21,7 +21,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
   lst_pos = []
   for r in rlist:
     if r.is_valid():
-      x, y = r.image_coord_px                    # consider replasing with centroid pos
+      x, y = r.image_coord_px              # consider replasing with centroid pos
       col = int(float(x) / float(xmax) * n_div)
       row = int(float(y) / float(ymax) * n_div)
       arr_rlist[row][col].append(r)
@@ -33,6 +33,8 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
     for row in range(nrow):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col])
       arr_proff[row][col] = [profile, tr_hold]
+  print "building profiles .... done"
+  print "performing profile fitting  ...."
   for col in range(ncol):
     for row in range(nrow):
       arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col],
