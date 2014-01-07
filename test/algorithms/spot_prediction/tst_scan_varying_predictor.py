@@ -25,8 +25,9 @@ from libtbx.test_utils import approx_equal
 # Get modules to build models and minimiser using PHIL
 from dials.test.algorithms.refinement import setup_geometry
 
-# We will set up a mock scan
+# We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
@@ -89,8 +90,12 @@ im_width = temp[1] - temp[0]
 assert sweep_range == (0., pi)
 assert approx_equal(im_width, 1.0 * pi / 180.)
 
-ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                    sweep_range)
+# Build a reflection predictor
+experiments = ExperimentList()
+experiments.append(Experiment(
+      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      scan=myscan, crystal=mycrystal, imageset=None))
+ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
 dmin = mydetector.get_max_resolution(mybeam.get_s0())
 sv_predictor = ScanVaryingReflectionListGenerator(pred_param, mybeam,

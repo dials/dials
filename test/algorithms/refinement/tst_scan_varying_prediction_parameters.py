@@ -28,6 +28,7 @@ from dxtbx.model.scan import scan_factory
 ##### Imports for reflection prediction
 
 from dials.algorithms.spot_prediction import IndexGenerator
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ReflectionPredictor
 
 #### Import model parameterisations
@@ -186,9 +187,12 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
 indices = index_generator.to_array()
 
 # Generate list of reflections
-UB = mycrystal.get_U() * mycrystal.get_B()
-ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                myscan.get_oscillation_range(deg=False))
+experiments = ExperimentList()
+experiments.append(Experiment(
+      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      crystal=mycrystal, imageset=None))
+sweep_range = myscan.get_oscillation_range(deg=False)
+ref_predictor = ReflectionPredictor(experiments, sweep_range)
 ref_list = ref_predictor.predict(indices)
 
 # Pull out lists of required reflection data
@@ -207,6 +211,7 @@ impacts = [mydetector[panel_id].get_ray_intersection(
 d1s, d2s = zip(*impacts)
 
 # Test get_state for the first reflection
+UB = mycrystal.get_U() * mycrystal.get_B()
 tmp = get_state(mydetector, hkls[0], UB, angles[0], ref_predictor)
 for (a, b) in zip(tmp, (d1s[0], d2s[0], angles[0])):
   assert a == b

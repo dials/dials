@@ -44,25 +44,23 @@ class ReflectionPredictor(object):
   required.
   """
 
-  def __init__(self, crystals, crystal_ids, beam, gonio, sweep_range = (0, 2.*pi)):
+  def __init__(self, experiments, sweep_range = (0, 2.*pi)):
     """Construct by linking to instances of experimental model classes"""
 
-    self._crystals = dict(zip(crystal_ids, crystals))
-    self._beam = beam
-    self._gonio = gonio
+    self._experiments = experiments
     self._sweep_range = sweep_range
     self.update()
 
   def update(self):
-    """Build a RayPredictor object for the current geometry"""
+    """Build RayPredictor objects for the current geometry of each Experiment"""
 
-    self._ray_predictor = RayPredictor(self._beam.get_s0(),
-                    self._gonio.get_rotation_axis(),
-                    self._sweep_range)
-    UBs = [x.get_U() * x.get_B() for x in self._crystals.values()]
-    self._UBs = dict(zip(self._crystals.keys(), UBs))
+    self._ray_predictors = [RayPredictor(
+                              e.beam.get_s0(),
+                              e.goniometer.get_rotation_axis(),
+                              self._sweep_range) for e in self._experiments]
+    self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 
-  def predict(self, hkl, UB = None, crystal_id = 0):
+  def predict(self, hkl, UB = None, experiment_id = 0):
     """
     Solve the prediction formula for the reflecting angle phi.
 
@@ -70,9 +68,9 @@ class ReflectionPredictor(object):
     for use in refinement with time-varying crystal parameters
     """
 
-    UB_ = UB if UB else self._UBs[crystal_id]
+    UB_ = UB if UB else self._UBs[experiment_id]
 
-    return self._ray_predictor(hkl, UB_)
+    return self._ray_predictors[experiment_id](hkl, UB_)
 
 class StillsReflectionPredictor(object):
   """
@@ -89,26 +87,26 @@ class StillsReflectionPredictor(object):
 
   """
 
-  def __init__(self, crystals, crystal_ids, beam):
+  def __init__(self, experiments):
     """Construct by linking to instances of experimental model classes"""
 
-    self._crystals = dict(zip(crystal_ids, crystals))
-    self._beam = beam
+    self._experiments = experiments
     self.update()
 
   def update(self):
     """Cache s0 and UB"""
 
-    self._s0 = matrix.col(self._beam.get_s0())
-    self._s0_length = self._s0.length()
-    UBs = [x.get_U() * x.get_B() for x in self._crystals.values()]
-    self._UBs = dict(zip(self._crystals.keys(), UBs))
+    self._s0s = [matrix.col(e.beam.get_s0()) for e in self._experiments]
+    self._s0_lengths = [s0.length() for s0 in self._s0s]
+    self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 
-  def predict(self, hkl, crystal_id = 0):
+  def predict(self, hkl, experiment_id = 0):
     """Predict for hkl under the assumption it is in reflecting position"""
 
-    r = self._UBs[crystal_id] * matrix.col(hkl)
-    s1 = (self._s0 + r).normalize() * self._s0_length
+    s0 = self._s0s[experiment_id]
+    s0_length = self._s0_lengths[experiment_id]
+    r = self._UBs[experiment_id] * matrix.col(hkl)
+    s1 = (s0 + r).normalize() * s0_length
 
     # create the Reflections and set properties. The relp is
     # neither entering nor exiting the Ewald sphere, but we need

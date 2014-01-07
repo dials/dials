@@ -20,8 +20,9 @@ from libtbx.phil import parse
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
 
-# Get class to build experimental models
+# Building experimental models
 from setup_geometry import Extract
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
@@ -59,14 +60,6 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Select those that are excited in a 30 degree sweep and get angles
-UB = mycrystal.get_U() * mycrystal.get_B()
-sweep_range = (0., pi/6.)
-ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                    sweep_range)
-
-obs_refs = ref_predictor.predict(indices)
-
 # Build a mock scan for a 30 degree sweep
 sf = scan_factory()
 myscan = sf.make_scan(image_range = (1,300),
@@ -75,11 +68,22 @@ myscan = sf.make_scan(image_range = (1,300),
                       epochs = range(300),
                       deg = True)
 sweep_range = myscan.get_oscillation_range(deg=False)
+assert approx_equal(sweep_range, (0., pi / 6.))
 temp = myscan.get_oscillation(deg=False)
 im_width = temp[1] - temp[0]
-
-assert approx_equal(sweep_range, (0., pi / 6.))
 assert approx_equal(im_width, 0.1 * pi / 180.)
+
+# Create an ExperimentList for ReflectionPredictor
+experiments = ExperimentList()
+experiments.append(Experiment(
+        beam=mybeam, detector=mydetector, goniometer=mygonio,
+        scan=myscan, crystal=mycrystal, imageset=None))
+
+# Select those that are excited in a 30 degree sweep and get angles
+UB = mycrystal.get_U() * mycrystal.get_B()
+ref_predictor = ReflectionPredictor(experiments, sweep_range)
+
+obs_refs = ref_predictor.predict(indices)
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.

@@ -28,6 +28,7 @@ from setup_geometry import Extract
 ##### Imports for reflection prediction
 
 from dials.algorithms.spot_prediction import IndexGenerator
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ReflectionPredictor
 
 #### Import model parameterisations
@@ -161,10 +162,13 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
 indices = index_generator.to_array()
 
 # Generate list of reflections
-UB = mycrystal.get_U() * mycrystal.get_B()
+experiments = ExperimentList()
+experiments.append(Experiment(
+      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      crystal=mycrystal, imageset=None))
 sweep_range = (0., pi/5.)
-ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                    sweep_range)
+ref_predictor = ReflectionPredictor(experiments, sweep_range)
+
 ref_list = ref_predictor.predict(indices)
 
 # Pull out lists of required reflection data

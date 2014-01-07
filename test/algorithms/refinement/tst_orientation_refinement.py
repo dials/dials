@@ -33,8 +33,9 @@ from libtbx.test_utils import approx_equal
 import setup_geometry
 import setup_minimiser
 
-# We will set up a mock scan
+# We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -172,8 +173,12 @@ im_width = temp[1] - temp[0]
 assert sweep_range == (0., pi)
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
-ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                    sweep_range)
+# Build a reflection predictor
+experiments = ExperimentList()
+experiments.append(Experiment(
+      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      scan=myscan, crystal=mycrystal, imageset=None))
+ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 

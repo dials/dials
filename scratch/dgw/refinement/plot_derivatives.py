@@ -30,6 +30,7 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ReflectionPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -112,10 +113,12 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
 indices = index_generator.to_array()
 
 # Select those that are excited in a 90 degree sweep and get angles
-UB = mycrystal.get_U() * mycrystal.get_B()
+experiments = ExperimentList()
+experiments.append(Experiment(
+      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      crystal=mycrystal, imageset=None))
 sweep_range = (0., pi/2.)
-ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                    sweep_range)
+ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
 predictions = ref_predictor.predict(indices)
 

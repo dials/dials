@@ -131,6 +131,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   """Simple refinement interface for the centroid refinement sprint"""
 
   # Reflection prediction
+  from dials.model.experiment.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ReflectionPredictor
 
   # Model parameterisations
@@ -180,7 +181,11 @@ def refine(beam, goniometer, crystal, detector, scan,
 
   image_width = scan.get_oscillation(deg=False)[1]
   sweep_range = scan.get_oscillation_range(deg=False)
-  ref_predictor = ReflectionPredictor([crystal], [0], beam, goniometer)
+  experiments = ExperimentList()
+  experiments.append(Experiment(
+      beam=beam, detector=detector, goniometer=goniometer,
+      scan=scan, crystal=crystal, imageset=None))
+  ref_predictor = ReflectionPredictor(experiments)
 
   ###########################
   # Parameterise the models #
@@ -282,6 +287,7 @@ def scan_varying_refine(
   """experimental refinement function for scan-varying refinement"""
 
   # Reflection prediction
+  from dials.model.experiment.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ReflectionPredictor
   from dials.algorithms.refinement.prediction import \
       ScanVaryingReflectionListGenerator
@@ -313,7 +319,11 @@ def scan_varying_refine(
   # Import the refinement engine
   from dials.algorithms.refinement.engine import GaussNewtonIterations
 
-  ref_predictor = ReflectionPredictor([crystal], [0], beam, goniometer)
+  experiments = ExperimentList()
+  experiments.append(Experiment(
+      beam=beam, detector=detector, goniometer=goniometer,
+      scan=scan, crystal=crystal, imageset=None))
+  ref_predictor = ReflectionPredictor(experiments)
 
   ###########################
   # Parameterise the models #

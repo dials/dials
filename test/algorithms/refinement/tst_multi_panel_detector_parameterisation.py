@@ -37,8 +37,9 @@ import setup_minimiser
 # Get the models to build the multi panel detector
 from dials.model.experiment import Panel, Detector
 
-# We will set up a mock scan
+# We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -228,8 +229,12 @@ if __name__ == '__main__':
   assert sweep_range == (0., pi)
   assert approx_equal(im_width, 0.1 * pi / 180.)
 
-  ref_predictor = ReflectionPredictor([mycrystal], [0], mybeam, mygonio,
-                                      sweep_range)
+  # build an ExperimentList for the ReflectionPredictor
+  experiments = ExperimentList()
+  experiments.append(Experiment(
+        beam=mybeam, detector=single_panel_detector, goniometer=mygonio,
+        scan=myscan, crystal=mycrystal, imageset=None))
+  ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
   # get two sets of identical reflections
   obs_refs = ref_predictor.predict(indices)
