@@ -15,9 +15,45 @@ what should usually be used to construct a Refiner."""
 
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
+from dials.model.experiment.experiment_list import \
+  ExperimentList, Experiment, ExperimentListFactory
 
 class RefinerFactory(object):
   """Factory class to create refiners"""
+
+  @staticmethod
+  def from_parameters_data_experiments(params,
+                                        reflections,
+                                        experiments,
+                                        verbosity=0):
+
+    #TODO Checks on the input
+    #E.g. does every experiment contain at least one overlapping model with at
+    #least one other experiment? Are all the experiments either rotation series
+    #or stills (the combination of both not yet supported)?
+
+    #copy the experiments
+    experiments = copy.deepcopy(experiments)
+
+    # copy the reflections
+    reflections = reflections.deep_copy()
+
+    # check that the beam vectors are stored: if not, compute them
+    from scitbx import matrix
+    for ref in reflections:
+      if ref.beam_vector != (0.0, 0.0, 0.0):
+        continue
+      panel = detector[ref.panel_number]
+      x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
+      ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
+          (x, y))).normalize() / beam.get_wavelength()
+
+    # create parameterisations
+    pred_param, param_reporter = \
+            RefinerFactory.config_parameterisation(
+                params, experiments)
+
+    return
 
   @staticmethod
   def from_parameters_data_models(params,
@@ -145,6 +181,13 @@ class RefinerFactory(object):
       crystal_ids = [0]
     if crystals: crystals = copy.deepcopy(crystals)
 
+    # build an experiment list with the copied models
+    experiments = ExperimentList()
+    for crystal in crystals:
+      experiments.append(Experiment(
+        beam=beam, detector=detector, goniometer=goniometer,
+        scan=scan, crystal=crystal, imageset=None))
+
     # copy the reflections
     reflections = reflections.deep_copy()
 
@@ -161,7 +204,7 @@ class RefinerFactory(object):
     # create parameterisations
     pred_param, param_reporter = \
             RefinerFactory.config_parameterisation(
-                params, beam, detector, crystals, crystal_ids, goniometer, scan)
+                params, experiments)
 
     if verbosity > 1:
       print "Prediction equation parameterisation built\n"
@@ -211,13 +254,13 @@ class RefinerFactory(object):
                     verbosity=verbosity)
 
   @staticmethod
-  def config_parameterisation(
-          params, beam, detector, crystals, crystal_ids, goniometer, scan):
+  def config_parameterisation(params, experiments):
     """Given a set of parameters, create a parameterisation from a set of
     experimental models.
 
     Params:
         params The input parameters
+        experiments An ExperimentList object
 
     Returns:
         A tuple of the prediction equation parameterisation and the
@@ -232,6 +275,16 @@ class RefinerFactory(object):
     # Shorten paths
     import dials.algorithms.refinement.parameterisation as par
 
+    # FIXME: Multiple Experiments not yet supported!
+    if len(experiments) > 1:
+      raise RuntimeError("Multiple experiment parameterisation not"
+                         "yet supported")
+    beam = experiments[0].beam
+    goniometer = experiments[0].goniometer
+    crystal = experiments[0].crystal
+    detector = experiments[0].detector
+    scan = experiments[0].scan
+
     # Beam (accepts goniometer=None)
     beam_param = par.BeamParameterisationOrientation(beam, goniometer)
     if beam_options.fix:
@@ -243,11 +296,6 @@ class RefinerFactory(object):
         raise RuntimeError("beam_options.fix value not recognised")
 
     # Crystal
-    # FIXME:
-    if len(crystals) > 1:
-      raise RuntimeError("Multiple crystal parameterisation not"
-                         "yet supported")
-    crystal = crystals[0] # Reminder for FIXME
     if crystal_options.scan_varying:
       if crystal_options.num_intervals == "fixed_width":
         sweep_range_deg = scan.get_oscillation_range(deg=True)
@@ -310,7 +358,6 @@ class RefinerFactory(object):
         raise RuntimeError("detector_options.fix value not recognised")
 
     # Prediction equation parameterisation
-    crystal = crystals[0] # FIXME: multiple xls not yet supported
     if crystal_options.scan_varying:
       pred_param = par.VaryingCrystalPredictionParameterisation(
           detector, beam, crystal, goniometer,
