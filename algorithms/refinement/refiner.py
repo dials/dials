@@ -32,8 +32,19 @@ class RefinerFactory(object):
     #least one other experiment? Are all the experiments either rotation series
     #or stills (the combination of both not yet supported)?
 
-    #copy the experiments
+    # copy the experiments
     experiments = copy.deepcopy(experiments)
+
+    # With this interface, assume that these come either from a scan, or
+    # are None. The from_parameters_data_models interface provides more control.
+    # We currently only support a single Experiment.
+    scan = experiments[0].scan
+    if scan:
+      image_width_rad = scan.get_oscillation(deg=False)[1]
+      sweep_range_rad = scan.get_oscillation_range(deg=False)
+    else:
+      image_width_rad = None
+      sweep_range_rad = None
 
     # copy the reflections
     reflections = reflections.deep_copy()
@@ -52,6 +63,22 @@ class RefinerFactory(object):
     pred_param, param_reporter = \
             RefinerFactory.config_parameterisation(
                 params, experiments)
+
+    if verbosity > 1:
+      print "Prediction equation parameterisation built\n"
+      print "Parameter order : name mapping"
+      for i, e in enumerate(pred_param.get_param_names()):
+        print "Parameter %03d : " % i + e
+      print
+
+    if verbosity > 1:
+      print "Building reflection manager"
+      print ("Input reflection list size = %d observations"
+             % len(reflections))
+
+    # create reflection manager
+    refman = RefinerFactory.config_refman(params, reflections,
+        experiments, sweep_range_rad, verbosity)
 
     return
 
@@ -220,7 +247,7 @@ class RefinerFactory(object):
 
     # create reflection manager
     refman = RefinerFactory.config_refman(params, reflections,
-        beam, goniometer, sweep_range_rad, verbosity)
+        experiments, sweep_range_rad, verbosity)
 
     if verbosity > 1:
       print ("Number of observations that pass initial inclusion criteria = %d"
@@ -416,7 +443,7 @@ class RefinerFactory(object):
             max_iterations = options.max_iterations)
 
   @staticmethod
-  def config_refman(params, reflections, beam, goniometer,
+  def config_refman(params, reflections, experiments,
                        sweep_range_rad, verbosity):
     """Given a set of parameters and models, build a reflection manager
 
@@ -443,6 +470,9 @@ class RefinerFactory(object):
       if verbosity > 1:
         print "Random seed set to %d\n" % options.random_seed
 
+    #FIXME only single Experiment currently supported
+    goniometer = experiments[0].goniometer
+    beam = experiments[0].beam
     if goniometer:
       from dials.algorithms.refinement.target import ReflectionManager as refman
 
