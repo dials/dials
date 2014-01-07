@@ -15,8 +15,7 @@ what should usually be used to construct a Refiner."""
 
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
-from dials.model.experiment.experiment_list import \
-  ExperimentList, Experiment, ExperimentListFactory
+from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 class RefinerFactory(object):
   """Factory class to create refiners"""
@@ -541,19 +540,13 @@ class RefinerFactory(object):
     if len(experiments) > 1:
       raise RuntimeError("Multiple experiment parameterisation not"
                          "yet supported")
-    beam = experiments[0].beam
     goniometer = experiments[0].goniometer
-    crystal = experiments[0].crystal
     detector = experiments[0].detector
-    scan = experiments[0].scan
-
-    crystals = [crystal]
-    crystal_ids = [0]
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if goniometer:
       from dials.algorithms.refinement.prediction import ReflectionPredictor
-      ref_predictor = ReflectionPredictor(crystals, crystal_ids, beam, goniometer)
+      ref_predictor = ReflectionPredictor(experiments)
 
       import dials.algorithms.refinement.target as targ
 
@@ -564,7 +557,7 @@ class RefinerFactory(object):
     else:
       from dials.algorithms.refinement.prediction import \
           StillsReflectionPredictor
-      ref_predictor = StillsReflectionPredictor(crystals, crystal_ids, beam)
+      ref_predictor = StillsReflectionPredictor(experiments)
 
       import dials.algorithms.refinement.target_stills as targ
 
