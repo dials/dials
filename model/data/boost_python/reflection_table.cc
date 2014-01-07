@@ -35,7 +35,8 @@ namespace dials { namespace model { namespace boost_python {
       double,
       std::string,
       vec2<double>,
-      vec3<double>
+      vec3<double>,
+      int6
     >::type flex_types;
 
     // Export the reflection table
