@@ -18,6 +18,7 @@
 #include <iostream>
 #include <sstream>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/boost_python/slice.h>
 #include <dials/framework/table/column_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
@@ -131,6 +132,8 @@ namespace column_table_suite {
       U c = self[key];
       for (std::size_t i = 0, j = slice.start;
           i < self.nrows(); ++i, j += slice.step) {
+        DIALS_ASSERT(i < c.size());
+        DIALS_ASSERT(j < col.size());
         c[i] = col[j];
       }
     }
@@ -162,6 +165,8 @@ namespace column_table_suite {
       U c = self[key];
       for (std::size_t i = 0, j = slice.start;
           i < num; ++i, j += slice.step) {
+        DIALS_ASSERT(j < c.size());
+        DIALS_ASSERT(i < col.size());
         c[j] = col[i];
       }
     }
@@ -403,6 +408,7 @@ namespace column_table_suite {
   T getitem_slice(const T &self, slice s) {
     typedef typename T::const_iterator iterator;
     scitbx::boost_python::adapted_slice as(s, self.nrows());
+    DIALS_ASSERT(self.is_consistent());
     T result(as.size);
     for (iterator it = self.begin(); it != self.end(); ++it) {
       copy_to_slice_visitor<T> visitor(result, it->first, as);
@@ -892,6 +898,59 @@ namespace column_table_suite {
     }
   };
 
+
+  /**
+   * Class to pickle and unpickle the table
+   */
+  template <typename T>
+  struct column_table_pickle_suite : boost::python::pickle_suite {
+
+    typedef T column_table_type;
+    typedef typename T::const_iterator const_iterator;
+
+    static
+    boost::python::tuple getstate(const column_table_type &self) {
+      DIALS_ASSERT(self.is_consistent());
+      unsigned int version = 1;
+
+      // Get the columns as a dictionary
+      dict columns;
+      column_to_object_visitor visitor;
+      for (const_iterator it = self.begin(); it != self.end(); ++it) {
+        columns[it->first] = it->second.apply_visitor(visitor);
+      }
+
+      // Make the tuple
+      return boost::python::make_tuple(
+          version,
+          self.nrows(),
+          self.ncols(),
+          columns);
+    }
+
+    static
+    void setstate(column_table_type &self, boost::python::tuple state) {
+      DIALS_ASSERT(boost::python::len(state) == 4);
+      DIALS_ASSERT(extract<unsigned int>(state[0]) == 1);
+      std::size_t nrows = extract<std::size_t>(state[1]);
+      std::size_t ncols = extract<std::size_t>(state[2]);
+      self.resize(nrows);
+
+      // Extract the columns
+      dict columns = extract<dict>(state[3]);
+      DIALS_ASSERT(len(columns) == ncols);
+      object iterator = columns.iteritems();
+      object self_obj(self);
+      for (std::size_t i = 0; i < ncols; ++i) {
+        object item = iterator.attr("next")();
+        DIALS_ASSERT(len(item[1]) == nrows);
+        std::string name = extract<std::string>(item[0]);
+        self_obj[name] = item[1];
+      }
+      DIALS_ASSERT(self.is_consistent());
+    }
+  };
+
   /**
    * Export the wrapped column table class to python
    */
@@ -949,6 +1008,7 @@ namespace column_table_suite {
 //        .def("sort", &sort<column_table_type>, (
 //          arg("column"),
 //          arg("reverse")=false))
+        .def_pickle(column_table_pickle_suite<column_table_type>())
         ;
 
       // For each column type, create a __setitem__ method to set column data

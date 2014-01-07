@@ -16,9 +16,10 @@ class Test(object):
     self.tst_resizing()
     self.tst_iteration()
     self.tst_row_operations()
-    #self.tst_slicing()
+    self.tst_slicing()
     self.tst_updating()
-    self.tst_selecting()
+    self.tst_select()
+    self.tst_set_selected()
     self.tst_serialize()
 
   def tst_resizing(self):
@@ -287,9 +288,9 @@ class Test(object):
 
     # Try setting forward slicing
     table[2:7:2] = new_table
-    assert(new_table.ncols() == 3)
-    assert(new_table.nrows() == 10)
-    assert(new_table.is_consistent())
+    assert(table.ncols() == 3)
+    assert(table.nrows() == 10)
+    assert(table.is_consistent())
     c1[2:7:2] = c11
     c2[2:7:2] = c22
     c3[2:7:2] = c33
@@ -300,9 +301,9 @@ class Test(object):
 
     # Try setting backward slicing
     table[7:2:-2] = new_table
-    assert(new_table.ncols() == 3)
-    assert(new_table.nrows() == 10)
-    assert(new_table.is_consistent())
+    assert(table.ncols() == 3)
+    assert(table.nrows() == 10)
+    assert(table.is_consistent())
     c1[7:2:-2] = c11
     c2[7:2:-2] = c22
     c3[7:2:-2] = c33
@@ -340,7 +341,7 @@ class Test(object):
 
     # TODO update with different # rows
 
-  def tst_selecting(self):
+  def tst_select(self):
 
     from dials.model.data import ReflectionTable
     from scitbx.array_family import flex
@@ -396,11 +397,111 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col3'], cc3)))
     print 'OK'
 
-    # TODO set selecting
+  def tst_set_selected(self):
+
+    from dials.model.data import ReflectionTable
+    from scitbx.array_family import flex
+    from copy import deepcopy
+
+    # The columns as lists
+    c1 = list(range(10))
+    c2 = list(range(10))
+    c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
+
+    # Create a table with some elements
+    table1 = ReflectionTable()
+    table2 = ReflectionTable()
+    table1['col1'] = flex.int(c1)
+    table2['col2'] = flex.double(c2)
+    table2['col3'] = flex.std_string(c3)
+
+    # Set selected columns
+    table1.set_selected(('col3', 'col2'), table2)
+    assert(table1.nrows() == 10)
+    assert(table1.ncols() == 3)
+    assert(all(a == b for a, b in zip(table1['col1'], c1)))
+    assert(all(a == b for a, b in zip(table1['col2'], c2)))
+    assert(all(a == b for a, b in zip(table1['col3'], c3)))
+    print 'OK'
+
+    # Set selected columns
+    table1 = ReflectionTable()
+    table1['col1'] = flex.int(c1)
+    table1.set_selected(flex.std_string(['col3', 'col2']), table2)
+    assert(table1.nrows() == 10)
+    assert(table1.ncols() == 3)
+    assert(all(a == b for a, b in zip(table1['col1'], c1)))
+    assert(all(a == b for a, b in zip(table1['col2'], c2)))
+    assert(all(a == b for a, b in zip(table1['col3'], c3)))
+    print 'OK'
+
+    cc1 = list(range(10, 15))
+    cc2 = list(range(10, 15))
+    cc3 = ['l', 'm', 'n', 'o', 'p']
+
+    # Set selected rows
+    table2 = ReflectionTable()
+    table2['col1'] = flex.int(cc1)
+    table2['col2'] = flex.double(cc2)
+    table2['col3'] = flex.std_string(cc3)
+
+    index = flex.size_t([0, 1, 5, 8, 9])
+    ccc1 = deepcopy(c1)
+    ccc2 = deepcopy(c2)
+    ccc3 = deepcopy(c3)
+    for j, i in enumerate(index):
+      ccc1[i] = cc1[j]
+      ccc2[i] = cc2[j]
+      ccc3[i] = cc3[j]
+    table1.set_selected(index, table2)
+    assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
+    assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
+    assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
+    print 'OK'
+
+    # Set selected rows
+    table2 = ReflectionTable()
+    table2['col1'] = flex.int(cc1)
+    table2['col2'] = flex.double(cc2)
+    table2['col3'] = flex.std_string(cc3)
+
+    flags = flex.bool([True, True, False, False, False,
+                       True, False, False, True, True])
+    table1.set_selected(index, table2)
+    assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
+    assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
+    assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
+    print 'OK'
 
   def tst_serialize(self):
-    pass
+
+    from dials.model.data import ReflectionTable
+    from scitbx.array_family import flex
+
+    # The columns as lists
+    c1 = list(range(10))
+    c2 = list(range(10))
+    c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
+
+    # Create a table with some elements
+    table = ReflectionTable()
+    table['col1'] = flex.int(c1)
+    table['col2'] = flex.double(c2)
+    table['col3'] = flex.std_string(c3)
+
+    # Pickle, then unpickle
+    import cPickle as pickle
+    obj = pickle.dumps(table)
+    new_table = pickle.loads(obj)
+    assert(new_table.is_consistent())
+    assert(new_table.nrows() == 10)
+    assert(new_table.ncols() == 3)
+    assert(all(a == b for a, b in zip(new_table['col1'], c1)))
+    assert(all(a == b for a, b in zip(new_table['col2'], c2)))
+    assert(all(a == b for a, b in zip(new_table['col3'], c3)))
+    print 'OK'
 
 if __name__ == '__main__':
   test = Test()
   test.run()
+

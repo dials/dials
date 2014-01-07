@@ -11,23 +11,19 @@
 #ifndef DIALS_FRAMEWORK_TABLE_COLUMN_TABLE_H
 #define DIALS_FRAMEWORK_TABLE_COLUMN_TABLE_H
 
+#include <algorithm>
+#include <vector>
+#include <map>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/signals2/signal.hpp>
-#include <boost/signals2/shared_connection_block.hpp>
 #include <boost/variant.hpp>
 #include <boost/mpl/list.hpp>
 #include <boost/mpl/remove_if.hpp>
 #include <boost/mpl/transform.hpp>
-#include <algorithm>
-#include <vector>
-#include <map>
 #include <dials/error.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace framework {
-
-  namespace bs2 = boost::signals2;
 
   /**
    * A class to represent a column-centric table. I.e. a table in which the
@@ -73,7 +69,7 @@ namespace dials { namespace framework {
        */
       template <typename T>
       operator af::shared<T>() const {
-        size_type n = t_->sync_.size();
+        size_type n = t_->nrows();
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->lower_bound(k_);
         if (it == table->end() || table->key_comp()(k_, it->first)) {
@@ -91,137 +87,44 @@ namespace dials { namespace framework {
       }
     };
 
+    struct size_visitor : boost::static_visitor<size_type> {
 
-    class column_synchronizer {
-    public:
-
-      typedef std::size_t size_type;
-
-      struct size_visitor : boost::static_visitor<size_type> {
-
-        template <typename T>
-        size_type operator()(const T &v) const {
-          return v.size();
-        }
-      };
-
-      struct resize_visitor : boost::static_visitor<void> {
-        size_type n_;
-        resize_visitor(size_type n)
-          : n_(n) {}
-        template <typename T>
-        void operator()(T &v) {
-          v.resize(n_);
-        }
-      };
-
-      struct insert_visitor : boost::static_visitor<void> {
-        size_type pos, n;
-        insert_visitor(size_type pos_, size_type n_)
-          : pos(pos_), n(n_) {}
-        template <typename T>
-        void operator()(T &v) {
-          v.insert(v.begin() + pos, n, typename T::value_type());
-        }
-      };
-
-      struct erase_visitor : boost::static_visitor<void> {
-        size_type pos, n;
-        erase_visitor(size_type pos_, size_type n_)
-          : pos(pos_), n(n_) {}
-        template <typename T>
-        void operator()(T &v) {
-          iterator first = v.begin() + pos;
-          iterator last = first + n;
-          v.erase(first, last);
-        }
-      };
-
-      /** Initialise the size to zero */
-      column_synchronizer(column_table *t)
-        : size_(0),
-          table_(t) {}
-
-      /**
-       * Initialise the columns to a given size
-       * @param n The size of the columns
-       */
-      column_synchronizer(size_type n, column_table *t)
-        : size_(n),
-          table_(t) {}
-
-      /**
-       * Resize all the columns to the given size
-       * @param n The new size to make the columns.
-       */
-      void resize(size_type n) {
-        size_ = n;
-        resize_(n);
+      template <typename T>
+      size_type operator()(const T &v) const {
+        return v.size();
       }
+    };
 
-      /**
-       * Insert elements into each column
-       * @param pos The position to insert at
-       * @param n The number of elements to insert
-       */
-      void insert(size_type pos, size_type n) {
-        DIALS_ASSERT(pos <= size_);
-        size_ += n;
-        insert_(pos, n);
+    struct resize_visitor : boost::static_visitor<void> {
+      size_type n_;
+      resize_visitor(size_type n)
+        : n_(n) {}
+      template <typename T>
+      void operator()(T &v) {
+        v.resize(n_);
       }
+    };
 
-      /**
-       * Erase some elements from the columns
-       * @param pos The position to erase at
-       * @param n The number of elements to erase
-       */
-      void erase(size_type pos, size_type n) {
-        DIALS_ASSERT(pos + n <= size_);
-        size_ -= n;
-        erase_(pos, n);
+    struct insert_visitor : boost::static_visitor<void> {
+      size_type pos, n;
+      insert_visitor(size_type pos_, size_type n_)
+        : pos(pos_), n(n_) {}
+      template <typename T>
+      void operator()(T &v) {
+        v.insert(v.begin() + pos, n, typename T::value_type());
       }
+    };
 
-      /* @returns The size of the columns */
-      size_type size() const {
-        DIALS_ASSERT(is_consistent());
-        return size_;
+    struct erase_visitor : boost::static_visitor<void> {
+      size_type pos, n;
+      erase_visitor(size_type pos_, size_type n_)
+        : pos(pos_), n(n_) {}
+      template <typename T>
+      void operator()(T &v) {
+        iterator first = v.begin() + pos;
+        iterator last = first + n;
+        v.erase(first, last);
       }
-
-      bool is_consistent() const {
-        size_visitor visitor;
-        for (iterator it = table_->begin(); it != table_->end(); ++it) {
-          if (it->second.apply_visitor(visitor) != size_) {
-            return false;
-          }
-        }
-        return true;
-      }
-
-    protected:
-
-      void resize_(size_type n) {
-        resize_visitor visitor(n);
-        for (iterator it = table_->begin(); it != table_->end(); ++it) {
-          it->second.apply_visitor(visitor);
-        }
-      }
-
-      void insert_(size_type pos, size_type n) {
-        insert_visitor visitor(pos, n);
-        for (iterator it = table_->begin(); it != table_->end(); ++it) {
-          it->second.apply_visitor(visitor);
-        }
-      }
-
-      void erase_(size_type pos, size_type n) {
-        erase_visitor visitor(pos, n);
-        for (iterator it = table_->begin(); it != table_->end(); ++it) {
-          it->second.apply_visitor(visitor);
-        }
-      }
-
-      size_type size_;
-      column_table *table_;
     };
 
   public:
@@ -229,7 +132,7 @@ namespace dials { namespace framework {
     /** Initialise the table */
     column_table()
       : table_(boost::make_shared<map_type>()),
-        sync_(this) {}
+        nrows_(0) {}
 
     /**
      * Initialise the table to a certain size
@@ -237,7 +140,7 @@ namespace dials { namespace framework {
      */
     column_table(size_type n)
       : table_(boost::make_shared<map_type>()),
-        sync_(n, this) {}
+        nrows_(n) {}
 
     /**
      * Access a column by key
@@ -270,7 +173,8 @@ namespace dials { namespace framework {
 
     /** @returns The number of rows in the table */
     size_type nrows() const {
-      return sync_.size();
+      DIALS_ASSERT(is_consistent());
+      return nrows_;
     }
 
     /** @returns The number of columns in the table */
@@ -297,14 +201,22 @@ namespace dials { namespace framework {
       return nrows() ;
     }
 
+    /** @returns Are the column sizes consistent */
     bool is_consistent() const {
-      return sync_.is_consistent();
+      size_visitor visitor;
+      for (const_iterator it = begin(); it != end(); ++it) {
+        DIALS_ASSERT(!it->second.empty());
+        if (it->second.apply_visitor(visitor) != nrows_) {
+          return false;
+        }
+      }
+      return true;
     }
 
     /** Clear the table */
     void clear() {
       table_->clear();
-      sync_.resize(0);
+      resize(0);
     }
 
     /** @returns The number of columns matching the key (0 or 1) */
@@ -335,7 +247,11 @@ namespace dials { namespace framework {
      * @param n The size to resize to
      */
     void resize(size_type n) {
-      sync_.resize(n);
+      resize_visitor visitor(n);
+      for (iterator it = begin(); it != end(); ++it) {
+        it->second.apply_visitor(visitor);
+      }
+      nrows_ = n;
     }
 
     /**
@@ -352,7 +268,12 @@ namespace dials { namespace framework {
      * @param n The number of elements to insert
      */
     void insert(size_type pos, size_type n) {
-      sync_.insert(pos, n);
+      DIALS_ASSERT(pos <= nrows_);
+      insert_visitor visitor(pos, n);
+      for (iterator it = begin(); it != end(); ++it) {
+        it->second.apply_visitor(visitor);
+      }
+      nrows_ += n;
     }
 
     /**
@@ -369,7 +290,12 @@ namespace dials { namespace framework {
      * @param n The number of elements to erase
      */
     void erase(size_type pos, size_type n) {
-      sync_.erase(pos, n);
+      DIALS_ASSERT(pos + n <= nrows_);
+      erase_visitor visitor(pos, n);
+      for (iterator it = begin(); it != end(); ++it) {
+        it->second.apply_visitor(visitor);
+      }
+      nrows_ -= n;
     }
 
   private:
@@ -380,7 +306,7 @@ namespace dials { namespace framework {
     }
 
     boost::shared_ptr<map_type> table_;
-    column_synchronizer sync_;
+    size_type nrows_;
   };
 
 
