@@ -341,7 +341,62 @@ class Test(object):
     # TODO update with different # rows
 
   def tst_selecting(self):
-    pass
+
+    from dials.model.data import ReflectionTable
+    from scitbx.array_family import flex
+
+    # The columns as lists
+    c1 = list(range(10))
+    c2 = list(range(10))
+    c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
+
+    # Create a table with some elements
+    table = ReflectionTable()
+    table['col1'] = flex.int(c1)
+    table['col2'] = flex.double(c2)
+    table['col3'] = flex.std_string(c3)
+
+    # Select some columns
+    new_table = table.select(('col1', 'col2'))
+    assert(new_table.nrows() == 10)
+    assert(new_table.ncols() == 2)
+    assert(all(a == b for a, b in zip(new_table['col1'], c1)))
+    assert(all(a == b for a, b in zip(new_table['col2'], c2)))
+    print 'OK'
+
+    # Select some columns
+    new_table = table.select(flex.std_string(['col1', 'col2']))
+    assert(new_table.nrows() == 10)
+    assert(new_table.ncols() == 2)
+    assert(all(a == b for a, b in zip(new_table['col1'], c1)))
+    assert(all(a == b for a, b in zip(new_table['col2'], c2)))
+    print 'OK'
+
+    # Select some rows
+    index = flex.size_t([0, 1, 5, 8, 9])
+    cc1 = [c1[i] for i in index]
+    cc2 = [c2[i] for i in index]
+    cc3 = [c3[i] for i in index]
+    new_table = table.select(index)
+    assert(new_table.nrows() == 5)
+    assert(new_table.ncols() == 3)
+    assert(all(a == b for a, b in zip(new_table['col1'], cc1)))
+    assert(all(a == b for a, b in zip(new_table['col2'], cc2)))
+    assert(all(a == b for a, b in zip(new_table['col3'], cc3)))
+    print 'OK'
+
+    # Select some rows
+    index = flex.bool([True, True, False, False, False,
+                       True, False, False, True, True])
+    new_table = table.select(index)
+    assert(new_table.nrows() == 5)
+    assert(new_table.ncols() == 3)
+    assert(all(a == b for a, b in zip(new_table['col1'], cc1)))
+    assert(all(a == b for a, b in zip(new_table['col2'], cc2)))
+    assert(all(a == b for a, b in zip(new_table['col3'], cc3)))
+    print 'OK'
+
+    # TODO set selecting
 
   def tst_serialize(self):
     pass

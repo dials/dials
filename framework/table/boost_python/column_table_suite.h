@@ -219,6 +219,33 @@ namespace column_table_suite {
   };
 
   /**
+   * Copy the selected rows from the input column to a output column.
+   */
+  template <typename T>
+  struct copy_to_indices_visitor : public boost::static_visitor<void> {
+
+    T &result;
+    typename T::key_type key;
+    af::const_ref<std::size_t> index;
+
+    copy_to_indices_visitor(
+          T &result_,
+          typename T::key_type key_,
+          af::const_ref<std::size_t> index_)
+      : result(result_),
+        key(key_),
+        index(index_) {}
+
+    template <typename U>
+    void operator()(const U &col) {
+      U c = result[key];
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        c[index[i]] = col[i];
+      }
+    }
+  };
+
+  /**
    * A visitor to reorder the elements of a column
    */
   struct reorder_visitor : public boost::static_visitor<void> {
@@ -475,7 +502,12 @@ namespace column_table_suite {
    */
   template <typename T>
   T select_rows_index(const T &self, const af::const_ref<std::size_t> &index) {
+    std::size_t nrows = self.nrows();
     T result;
+    result.resize(index.size());
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      DIALS_ASSERT(index[i] < nrows);
+    }
     for (typename T::const_iterator it = self.begin(); it != self.end(); ++it) {
       copy_from_indices_visitor<T> visitor(result, it->first, index);
       it->second.apply_visitor(visitor);
@@ -508,6 +540,7 @@ namespace column_table_suite {
   template <typename T>
   T select_cols_keys(const T &self, const af::const_ref<std::string> &keys) {
     T result;
+    result.resize(self.nrows());
     for (std::size_t i = 0; i < keys.size(); ++i) {
       copy_column_visitor<T> visitor(result, keys[i]);
       typename T::const_iterator it = self.find(keys[i]);
@@ -518,14 +551,34 @@ namespace column_table_suite {
   }
 
   /**
+   * Select a number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @returns The new table with the requested columns
+   */
+  template <typename T>
+  T select_cols_tuple(const T &self, boost::python::tuple keys) {
+    af::shared<std::string> keys_array;
+    for (std::size_t i = 0; i < len(keys); ++i) {
+      keys_array.push_back(extract<std::string>(keys[i]));
+    }
+    return select_cols_keys(self, keys_array.const_ref());
+  }
+
+  /**
    * Set the selected number of rows from the table via an index array
    * @param self The current table
    * @param index The index array
    * @param other The other table
    */
   template <typename T>
-  void set_selected_rows_index(const T &self,
+  void set_selected_rows_index(T &self,
       const af::const_ref<std::size_t> &index, const T &other) {
+    DIALS_ASSERT(index.size() == other.nrows());
+    for (typename T::const_iterator it = other.begin(); it != other.end(); ++it) {
+      copy_to_indices_visitor<T> visitor(self, it->first, index);
+      it->second.apply_visitor(visitor);
+    }
   }
 
   /**
@@ -535,8 +588,14 @@ namespace column_table_suite {
    * @param other The other table
    */
   template <typename T>
-  void set_selected_rows_flags(const T &self, const af::const_ref<bool> &flags,
+  void set_selected_rows_flags(T &self, const af::const_ref<bool> &flags,
       const T &other) {
+    DIALS_ASSERT(self.nrows() == flags.size());
+    af::shared<std::size_t> index;
+    for (std::size_t i = 0 ; i < flags.size(); ++i) {
+      if (flags[i]) index.push_back(i);
+    }
+    set_selected_rows_index(self, index.const_ref(), other);
   }
 
   /**
@@ -546,8 +605,30 @@ namespace column_table_suite {
    * @param other The other table
    */
   template <typename T>
-  void set_selected_cols_keys(const T &self, const af::const_ref<std::string> &keys,
+  void set_selected_cols_keys(T &self, const af::const_ref<std::string> &keys,
       const T &other) {
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+      copy_column_visitor<T> visitor(self, keys[i]);
+      typename T::const_iterator it = other.find(keys[i]);
+      DIALS_ASSERT(it != other.end());
+      it->second.apply_visitor(visitor);
+    }
+  }
+
+  /**
+   * Set the selected number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @param other The other table
+   */
+  template <typename T>
+  void set_selected_cols_tuple(T &self, boost::python::tuple keys,
+      const T &other) {
+    af::shared<std::string> keys_array;
+    for (std::size_t i = 0; i < len(keys); ++i) {
+      keys_array.push_back(extract<std::string>(keys[i]));
+    }
+    set_selected_cols_keys(self, keys_array.const_ref(), other);
   }
 
   /**
@@ -859,9 +940,11 @@ namespace column_table_suite {
         .def("select", &select_rows_index<column_table_type>)
         .def("select", &select_rows_flags<column_table_type>)
         .def("select", &select_cols_keys<column_table_type>)
+        .def("select", &select_cols_tuple<column_table_type>)
         .def("set_selected", &set_selected_rows_index<column_table_type>)
         .def("set_selected", &set_selected_rows_flags<column_table_type>)
         .def("set_selected", &set_selected_cols_keys<column_table_type>)
+        .def("set_selected", &set_selected_cols_tuple<column_table_type>)
         .def("reorder", &reorder<column_table_type>)
 //        .def("sort", &sort<column_table_type>, (
 //          arg("column"),
