@@ -80,6 +80,21 @@ class RefinerFactory(object):
     refman = RefinerFactory.config_refman(params, reflections,
         experiments, sweep_range_rad, verbosity)
 
+    if verbosity > 1:
+      print ("Number of observations that pass initial inclusion criteria = %d"
+             % refman.get_accepted_refs_size())
+      print ("Working set size = %d observations"
+             % refman.get_sample_size())
+      print "Reflection manager built\n"
+
+    if verbosity > 1: print "Building target function"
+
+    # create target function
+    target = RefinerFactory.config_target(params, experiments, image_width_rad,
+                                          refman, pred_param)
+
+    if verbosity > 1: print "Target function built\n"
+
     return
 
   @staticmethod
@@ -259,9 +274,8 @@ class RefinerFactory(object):
     if verbosity > 1: print "Building target function"
 
     # create target function
-    target = RefinerFactory.config_target(params, crystals, crystal_ids, beam,
-                    goniometer, detector, image_width_rad, refman,
-                    pred_param)
+    target = RefinerFactory.config_target(params, experiments, image_width_rad,
+                    refman, pred_param)
 
     if verbosity > 1: print "Target function built\n"
 
@@ -471,6 +485,9 @@ class RefinerFactory(object):
         print "Random seed set to %d\n" % options.random_seed
 
     #FIXME only single Experiment currently supported
+    if len(experiments) > 1:
+      raise RuntimeError("Multiple experiment parameterisation not"
+                         "yet supported")
     goniometer = experiments[0].goniometer
     beam = experiments[0].beam
     if goniometer:
@@ -498,8 +515,7 @@ class RefinerFactory(object):
                   verbosity=verbosity)
 
   @staticmethod
-  def config_target(params, crystals, crystal_ids, beam, goniometer, detector,
-      image_width_rad, refman, pred_param):
+  def config_target(params, experiments, image_width_rad, refman, pred_param):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -520,6 +536,19 @@ class RefinerFactory(object):
     else:
       raise RuntimeError("Target function rmsd_cutoff option" +
           options.rmsd_cutoff + " not recognised")
+
+    # FIXME: Multiple Experiments not yet supported!
+    if len(experiments) > 1:
+      raise RuntimeError("Multiple experiment parameterisation not"
+                         "yet supported")
+    beam = experiments[0].beam
+    goniometer = experiments[0].goniometer
+    crystal = experiments[0].crystal
+    detector = experiments[0].detector
+    scan = experiments[0].scan
+
+    crystals = [crystal]
+    crystal_ids = [0]
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if goniometer:
