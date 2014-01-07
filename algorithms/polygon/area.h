@@ -11,6 +11,8 @@
 #ifndef DIALS_ALGORITHMS_POLYGON_AREA_H
 #define DIALS_ALGORITHMS_POLYGON_AREA_H
 
+#include <cstddef>
+
 namespace dials { namespace algorithms { namespace polygon {
 
   /**
