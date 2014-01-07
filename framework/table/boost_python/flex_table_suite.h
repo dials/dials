@@ -817,22 +817,23 @@ namespace flex_table_suite {
     typedef dict value_type;
     typedef const value_type *pointer;
     typedef const value_type reference;
+    typedef typename T::mapped_type mapped_type;
 
     row_iterator(const T &self, std::size_t index)
       : index_(index) {
       typedef typename T::const_iterator iterator;
-      column_to_object_visitor visitor;
       for (iterator it = self.begin(); it != self.end(); ++it) {
         keys.push_back(it->first);
-        cols.push_back(it->second.apply_visitor(visitor));
+        cols.push_back(it->second);
       }
     }
 
     reference operator*() {
       typedef typename T::const_iterator iterator;
       dict result;
+      element_to_object_visitor visitor(index_);
       for (std::size_t i = 0; i < keys.size(); ++i) {
-        result[keys[i]] = cols[i][index_];
+        result[keys[i]] = cols[i].apply_visitor(visitor);
       }
       return result;
     }
@@ -857,7 +858,7 @@ namespace flex_table_suite {
     }
 
   private:
-    std::vector<boost::python::object> cols;
+    std::vector<mapped_type> cols;
     std::vector<std::string> keys;
     std::size_t index_;
   };
