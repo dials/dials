@@ -37,14 +37,7 @@ namespace dials { namespace model { namespace boost_python {
       vec3<double>
     >::type column_types;
 
-    column_table_suite::column_data_wrapper<bool>::wrap("column_bool");
-    column_table_suite::column_data_wrapper<int>::wrap("column_int");
-    column_table_suite::column_data_wrapper<std::size_t>::wrap("column_size_t");
-    column_table_suite::column_data_wrapper<double>::wrap("column_double");
-    column_table_suite::column_data_wrapper<std::string>::wrap("column_std_string");
-    column_table_suite::column_data_wrapper< vec2<double> >::wrap("column_vec2_double");
-    column_table_suite::column_data_wrapper< vec3<double> >::wrap("column_vec3_double");
-    column_table_suite::column_table_wrapper<column_types>::wrap("reflection_table");
+    column_table_suite::column_table_wrapper<column_types>::wrap("ReflectionTable");
   }
 
 }}} // namespace dials::model::boost_python

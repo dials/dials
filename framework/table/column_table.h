@@ -23,498 +23,11 @@
 #include <vector>
 #include <map>
 #include <dials/error.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 
 namespace dials { namespace framework {
 
   namespace bs2 = boost::signals2;
-
-  /**
-   * Base class for synchronizing the sizes of the different columns
-   */
-  class column_synchronizer_core {
-  public:
-
-    typedef std::size_t size_type;
-    typedef bs2::connection connection;
-    typedef bs2::shared_connection_block connection_block;
-    typedef bs2::signal<void(size_type)> resize_signal_type;
-    typedef bs2::signal<void(size_type,size_type)> insert_signal_type;
-    typedef bs2::signal<void(size_type,size_type)> erase_signal_type;
-    typedef resize_signal_type::slot_type resize_slot_type;
-    typedef insert_signal_type::slot_type insert_slot_type;
-    typedef erase_signal_type::slot_type erase_slot_type;
-
-    /** Initialise the size to zero */
-    column_synchronizer_core()
-      : size_(0) {}
-
-    /**
-     * Initialise the columns to a given size
-     * @param n The size of the columns
-     */
-    column_synchronizer_core(size_type n)
-      : size_(n) {}
-
-    /**
-     * Resize all the columns to the given size
-     * @param n The new size to make the columns.
-     */
-    void resize(size_type n) {
-      size_ = n;
-      resize_(n);
-    }
-
-    /**
-     * Insert elements into each column
-     * @param pos The position to insert at
-     * @param n The number of elements to insert
-     */
-    void insert(size_type pos, size_type n) {
-      DIALS_ASSERT(pos <= size_);
-      size_ += n;
-      insert_(pos, n);
-    }
-
-    /**
-     * Erase some elements from the columns
-     * @param pos The position to erase at
-     * @param n The number of elements to erase
-     */
-    void erase(size_type pos, size_type n) {
-      DIALS_ASSERT(pos + n <= size_);
-      size_ -= n;
-      erase_(pos, n);
-    }
-
-    /** @returns The size of the columns */
-    size_type size() const {
-      return size_;
-    }
-
-    /**
-     * Connect a slot to the resize signal
-     * @param slow The slow to connect.
-     * @returns The connection
-     */
-    connection connect_resize(resize_slot_type slot) {
-      return resize_.connect(slot);
-    }
-
-    /**
-     * Connect a slot to the insert signal
-     * @param slow The slow to connect.
-     * @returns The connection
-     */
-    connection connect_insert(insert_slot_type slot) {
-      return insert_.connect(slot);
-    }
-
-    /**
-     * Connect a slot to the erase signal
-     * @param slow The slow to connect.
-     * @returns The connection
-     */
-    connection connect_erase(erase_slot_type slot) {
-      return erase_.connect(slot);
-    }
-
-  protected:
-    size_type size_;
-    resize_signal_type resize_;
-    insert_signal_type insert_;
-    erase_signal_type erase_;
-  };
-
-  /**
-   * Class for synchronizing the sizes of the different columns. This class
-   * contains a shared pointer to the column_syncrhonizer_core class to ensure
-   * that all the columns see the same object.
-   */
-  class column_synchronizer {
-  public:
-
-    typedef column_synchronizer_core::size_type size_type;
-    typedef column_synchronizer_core::resize_signal_type resize_signal_type;
-    typedef column_synchronizer_core::insert_signal_type insert_signal_type;
-    typedef column_synchronizer_core::erase_signal_type erase_signal_type;
-    typedef column_synchronizer_core::resize_slot_type resize_slot_type;
-    typedef column_synchronizer_core::insert_slot_type insert_slot_type;
-    typedef column_synchronizer_core::erase_slot_type erase_slot_type;
-    typedef column_synchronizer_core::connection connection;
-    typedef column_synchronizer_core::connection_block connection_block;
-
-    column_synchronizer()
-      : core_(boost::make_shared<column_synchronizer_core>()) {}
-
-    column_synchronizer(size_type n)
-      : core_(boost::make_shared<column_synchronizer_core>(n)) {}
-
-    void resize(size_type n) {
-      core_->resize(n);
-    }
-
-    void insert(size_type pos, size_type n) {
-      core_->insert(pos, n);
-    }
-
-    void erase(size_type pos, size_type n) {
-      core_->erase(pos, n);
-    }
-
-    size_type size() const {
-      return core_->size();
-    }
-
-    connection connect_resize(resize_slot_type slot) {
-      return core_->connect_resize(slot);
-    }
-
-    connection connect_insert(insert_slot_type slot) {
-      return core_->connect_insert(slot);
-    }
-
-    connection connect_erase(erase_slot_type slot) {
-      return core_->connect_erase(slot);
-    }
-
-  protected:
-
-    boost::shared_ptr<column_synchronizer_core> core_;
-  };
-
-
-  /**
-   * The base class for representing a column of data. The data is contained
-   * in contiguous memory and the size of the internal storage is modified
-   * automatically whenever another column with the same synchronization
-   * object is modified.
-   */
-  template <typename T>
-  class column_data_core {
-    struct resizer;
-    struct inserter;
-    struct eraser;
-
-  public:
-
-    typedef std::vector<T> storage_type;
-    typedef typename storage_type::value_type value_type;
-    typedef typename storage_type::reference reference;
-    typedef typename storage_type::const_reference const_reference;
-    typedef typename storage_type::iterator iterator;
-    typedef typename storage_type::const_iterator const_iterator;
-    typedef typename storage_type::size_type size_type;
-    typedef typename storage_type::difference_type difference_type;
-
-    column_data_core()
-      : sync_(0),
-        resize_conn_(sync_.connect_resize(resizer(&storage_))),
-        insert_conn_(sync_.connect_insert(inserter(&storage_))),
-        erase_conn_(sync_.connect_erase(eraser(&storage_))) {}
-
-    template <typename InputIterator>
-    column_data_core(InputIterator first, InputIterator last)
-      : storage_(first, last),
-        sync_(storage_.size()),
-        resize_conn_(sync_.connect_resize(resizer(&storage_))),
-        insert_conn_(sync_.connect_insert(inserter(&storage_))),
-        erase_conn_(sync_.connect_erase(eraser(&storage_))) {}
-
-    /**
-     * Initialise the column data class with the synchronization object.
-     * @param sync The syncrhonization object.
-     */
-    column_data_core(column_synchronizer sync)
-      : storage_(sync.size()),
-        sync_(sync),
-        resize_conn_(sync_.connect_resize(resizer(&storage_))),
-        insert_conn_(sync_.connect_insert(inserter(&storage_))),
-        erase_conn_(sync_.connect_erase(eraser(&storage_))) {}
-
-    /**
-     * Access an element at the given index.
-     * @param n The index of the element
-     * @returns A reference to the element
-     */
-    reference operator[](size_type n) {
-      return storage_[n];
-    }
-
-    /**
-     * Access an element at the given index.
-     * @param n The index of the element
-     * @returns A const reference to the element
-     */
-    const_reference operator[](size_type n) const {
-      return storage_[n];
-    }
-
-    /** @returns A const reference to the beginning of the column */
-    const_iterator begin() const {
-      return storage_.begin();
-    }
-
-    /** @returns A const reference to the end of the column */
-    const_iterator end() const {
-      return storage_.end();
-    }
-
-    /** @returns A reference to the beginning of the column */
-    iterator begin() {
-      return storage_.begin();
-    }
-
-    /** @returns A reference to the end of the column */
-    iterator end() {
-      return storage_.end();
-    }
-
-    /** @returns The size of the column */
-    size_type size() const {
-      DIALS_ASSERT(storage_.size() == sync_.size());
-      return sync_.size();
-    }
-
-    /**
-     * Resize the column
-     * @param n The size to resize to.
-     */
-    void resize(size_type n) {
-      sync_.resize(n);
-      DIALS_ASSERT(storage_.size() == sync_.size());
-    }
-
-    /**
-     * Append an element to the column
-     * @param v The value of the element.
-     */
-    void push_back(const value_type &v) {
-      insert(end(), v);
-    }
-
-    /**
-     * Insert an element at the given position
-     * @param position The position to insert
-     * @param v The value of the element to insert
-     * @returns An iterator to the new element
-     */
-    iterator insert(iterator position, const value_type &v) {
-      size_type pos = std::distance(begin(), position);
-      column_synchronizer::connection_block block(insert_conn_);
-      iterator result = storage_.insert(position, v);
-      sync_.insert(pos, 1);
-      DIALS_ASSERT(storage_.size() == sync_.size());
-      return result;
-    }
-
-    /**
-     * Insert multiple elements at the given position
-     * @param position The position to begin inserting
-     * @param n The number of elements to insert
-     * @param v The value of the element to insert
-     */
-    void insert(iterator position, size_type n, const value_type &v) {
-      size_type pos = std::distance(begin(), position);
-      column_synchronizer::connection_block block(insert_conn_);
-      storage_.insert(position, n, v);
-      sync_.insert(pos, n);
-      DIALS_ASSERT(storage_.size() == sync_.size());
-    }
-
-    /**
-     * Insert multiple elements at the given position
-     * @param position The position to begin inserting
-     * @param first The beginning of the sequence
-     * @param last The end of the sequence
-     */
-    template <typename InputIterator>
-    void insert(iterator position, InputIterator first, InputIterator last) {
-      size_type n = std::distance(first, last);
-      size_type pos = std::distance(begin(), position);
-      column_synchronizer::connection_block block(insert_conn_);
-      storage_.insert(position, first, last);
-      sync_.insert(pos, n);
-      DIALS_ASSERT(storage_.size() == sync_.size());
-    }
-
-    /**
-     * Erase multiple elements from the column
-     * @param first The beginning of the sequence
-     * @param last The end of the sequence
-     * @returns The iterator to the element following the last erased element
-     */
-    iterator erase(iterator first, iterator last) {
-      size_type pos = std::distance(begin(), first);
-      size_type n = std::distance(first, last);
-      column_synchronizer::connection_block block(erase_conn_);
-      iterator result = storage_.erase(first, last);
-      sync_.erase(pos, n);
-      DIALS_ASSERT(storage_.size() == sync_.size());
-      return result;
-    }
-
-    /**
-     * Erase an element from the column
-     * @param position The beginning of the sequence
-     * @returns The iterator to the element following the erased element
-     */
-    iterator erase(iterator position) {
-      size_type pos = std::distance(begin(), position);
-      size_type n = 1;
-      column_synchronizer::connection_block block(erase_conn_);
-      iterator result = storage_.erase(position);
-      sync_.erase(pos, n);
-      DIALS_ASSERT(storage_.size() == sync_.size());
-      return result;
-    }
-
-  private:
-
-    /**
-     * A functor handling resizing the column on a signal from the synchronizer
-     * class. This ensures that if another column is resized, this column
-     * is resized to match it.
-     */
-    struct resizer {
-      storage_type *storage;
-      resizer(storage_type *s)
-        : storage(s) {}
-      void operator()(size_type n) {
-        storage->resize(n);
-      }
-    };
-
-    /**
-     * A functor handling insertion in the column on a signal from the
-     * synchronizer class. When elements are inserted into another column,
-     * a default element is inserted into this column to ensure both columns
-     * remain the same size.
-     */
-    struct inserter {
-      storage_type *storage;
-      inserter(storage_type *s)
-        : storage(s) {}
-      void operator()(size_type pos, size_type n) {
-        storage->insert(storage->begin() + pos, n, value_type());
-      }
-    };
-
-    /**
-     * A functor handling erasing from the column on a signal from the
-     * synchronizer class. When elements are erased from another column,
-     * the corresponding element is erased from this column to ensure both
-     * columns remain the same size.
-     */
-    struct eraser {
-      storage_type *storage;
-      eraser(storage_type *s)
-        : storage(s) {}
-      void operator()(size_type pos, size_type n) {
-        iterator first = storage->begin()+pos;
-        iterator last = first + n;
-        storage->erase(first, last);
-      }
-    };
-
-    storage_type storage_;
-    column_synchronizer sync_;
-    column_synchronizer::connection resize_conn_;
-    column_synchronizer::connection insert_conn_;
-    column_synchronizer::connection erase_conn_;
-  };
-
-
-  /**
-   * Class representing a column of data. This class contains a shared pointer
-   * to the column_data_core class. It also provides a thin wrapper to the
-   * column_data_core interface.
-   */
-  template <typename T>
-  class column_data {
-  public:
-
-    typedef column_data_core<T> core_type;
-    typedef typename core_type::storage_type storage_type;
-    typedef typename core_type::value_type value_type;
-    typedef typename core_type::reference reference;
-    typedef typename core_type::const_reference const_reference;
-    typedef typename core_type::iterator iterator;
-    typedef typename core_type::const_iterator const_iterator;
-    typedef typename core_type::size_type size_type;
-    typedef typename core_type::difference_type difference_type;
-
-    column_data()
-      : core_(boost::make_shared<core_type>()) {}
-
-    template <typename InputIterator>
-    column_data(InputIterator first, InputIterator last)
-      : core_(boost::make_shared<core_type>(first, last)) {}
-
-    column_data(column_synchronizer sync)
-      : core_(boost::make_shared<core_type>(sync)) {}
-
-    reference operator[](size_type n) {
-      return (*core_)[n];
-    }
-
-    const_reference operator[](size_type n) const {
-      return (*core_)[n];
-    }
-
-    const_iterator begin() const {
-      return core_->begin();
-    }
-
-    const_iterator end() const {
-      return core_->end();
-    }
-
-    iterator begin() {
-      return core_->begin();
-    }
-
-    iterator end() {
-      return core_->end();
-    }
-
-    size_type size() const {
-      return core_->size();
-    }
-
-    void resize(size_type n) {
-      core_->resize(n);
-    }
-
-    void push_back(const value_type &v) {
-      core_->push_back(v);
-    }
-
-    iterator insert(iterator position, const value_type &v) {
-      return core_->insert(position, v);
-    }
-
-    void insert(iterator position, size_type n, const value_type &v) {
-      core_->insert(position, n, v);
-    }
-
-    template <typename InputIterator>
-    void insert(iterator pos, InputIterator first, InputIterator last) {
-      core_->insert(pos, first, last);
-    }
-
-    iterator erase(iterator position) {
-      return core_->erase(position);
-    }
-
-    iterator erase(iterator first, iterator last) {
-      return core_->erase(first, last);
-    }
-
-  private:
-
-    boost::shared_ptr<core_type> core_;
-  };
-
 
   /**
    * A class to represent a column-centric table. I.e. a table in which the
@@ -559,14 +72,15 @@ namespace dials { namespace framework {
        * an exception is raised.
        */
       template <typename T>
-      operator column_data<T>() const {
+      operator af::shared<T>() const {
+        size_type n = t_->sync_.size();
         boost::shared_ptr<map_type> table = t_->table_;
         iterator it = table->lower_bound(k_);
         if (it == table->end() || table->key_comp()(k_, it->first)) {
           it = table->insert(it, map_value_type(k_,
-            mapped_type(column_data<T>(t_->sync_))));
+            mapped_type(af::shared<T>(n))));
         }
-        return boost::get< column_data<T> >(it->second);
+        return boost::get< af::shared<T> >(it->second);
       }
 
       /**
@@ -577,12 +91,145 @@ namespace dials { namespace framework {
       }
     };
 
+
+    class column_synchronizer {
+    public:
+
+      typedef std::size_t size_type;
+
+      struct size_visitor : boost::static_visitor<size_type> {
+
+        template <typename T>
+        size_type operator()(const T &v) const {
+          return v.size();
+        }
+      };
+
+      struct resize_visitor : boost::static_visitor<void> {
+        size_type n_;
+        resize_visitor(size_type n)
+          : n_(n) {}
+        template <typename T>
+        void operator()(T &v) {
+          v.resize(n_);
+        }
+      };
+
+      struct insert_visitor : boost::static_visitor<void> {
+        size_type pos, n;
+        insert_visitor(size_type pos_, size_type n_)
+          : pos(pos_), n(n_) {}
+        template <typename T>
+        void operator()(T &v) {
+          v.insert(v.begin() + pos, n, typename T::value_type());
+        }
+      };
+
+      struct erase_visitor : boost::static_visitor<void> {
+        size_type pos, n;
+        erase_visitor(size_type pos_, size_type n_)
+          : pos(pos_), n(n_) {}
+        template <typename T>
+        void operator()(T &v) {
+          iterator first = v.begin() + pos;
+          iterator last = first + n;
+          v.erase(first, last);
+        }
+      };
+
+      /** Initialise the size to zero */
+      column_synchronizer(column_table *t)
+        : size_(0),
+          table_(t) {}
+
+      /**
+       * Initialise the columns to a given size
+       * @param n The size of the columns
+       */
+      column_synchronizer(size_type n, column_table *t)
+        : size_(n),
+          table_(t) {}
+
+      /**
+       * Resize all the columns to the given size
+       * @param n The new size to make the columns.
+       */
+      void resize(size_type n) {
+        size_ = n;
+        resize_(n);
+      }
+
+      /**
+       * Insert elements into each column
+       * @param pos The position to insert at
+       * @param n The number of elements to insert
+       */
+      void insert(size_type pos, size_type n) {
+        DIALS_ASSERT(pos <= size_);
+        size_ += n;
+        insert_(pos, n);
+      }
+
+      /**
+       * Erase some elements from the columns
+       * @param pos The position to erase at
+       * @param n The number of elements to erase
+       */
+      void erase(size_type pos, size_type n) {
+        DIALS_ASSERT(pos + n <= size_);
+        size_ -= n;
+        erase_(pos, n);
+      }
+
+      /* @returns The size of the columns */
+      size_type size() const {
+        DIALS_ASSERT(is_consistent());
+        return size_;
+      }
+
+      bool is_consistent() const {
+        size_visitor visitor;
+        for (iterator it = table_->begin(); it != table_->end(); ++it) {
+          if (it->second.apply_visitor(visitor) != size_) {
+            return false;
+          }
+        }
+        return true;
+      }
+
+    protected:
+
+      void resize_(size_type n) {
+        resize_visitor visitor(n);
+        for (iterator it = table_->begin(); it != table_->end(); ++it) {
+          it->second.apply_visitor(visitor);
+        }
+      }
+
+      void insert_(size_type pos, size_type n) {
+        insert_visitor visitor(pos, n);
+        for (iterator it = table_->begin(); it != table_->end(); ++it) {
+          it->second.apply_visitor(visitor);
+        }
+      }
+
+      void erase_(size_type pos, size_type n) {
+        erase_visitor visitor(pos, n);
+        for (iterator it = table_->begin(); it != table_->end(); ++it) {
+          it->second.apply_visitor(visitor);
+        }
+      }
+
+      size_type size_;
+      column_table *table_;
+    };
+
   public:
 
     /** Initialise the table */
     column_table()
       : table_(boost::make_shared<map_type>()),
-        sync_() {}
+        sync_(this) {}
 
     /**
      * Initialise the table to a certain size
@@ -590,7 +237,7 @@ namespace dials { namespace framework {
      */
     column_table(size_type n)
       : table_(boost::make_shared<map_type>()),
-        sync_(n) {}
+        sync_(n, this) {}
 
     /**
      * Access a column by key
@@ -650,9 +297,14 @@ namespace dials { namespace framework {
       return nrows() ;
     }
 
+    bool is_consistent() const {
+      return sync_.is_consistent();
+    }
+
     /** Clear the table */
     void clear() {
       table_->clear();
+      sync_.resize(0);
     }
 
     /** @returns The number of columns matching the key (0 or 1) */
@@ -744,7 +396,7 @@ namespace dials { namespace framework {
   /**
    * A class to help in generating a variant type for use in the column_table
    * class. Given a variadic template list of types it will convert the list
-   * into list of column_data<T> types and then export a variant.
+   * into list of af::shared<T> types and then export a variant.
    *
    * For example:
    *  column_type_generator<int, double, std::string>::type
@@ -752,9 +404,9 @@ namespace dials { namespace framework {
    * Becomes:
    *
    *  variant<
-   *    column_data<int>,
-   *    column_data<double>,
-   *    column_data<std::string>
+   *    af::shared<int>,
+   *    af::shared<double>,
+   *    af::shared<std::string>
    *  >
    */
   template <typename T0,
@@ -766,7 +418,7 @@ namespace dials { namespace framework {
 
     template <typename T>
     struct create_column_type {
-      typedef column_data<T> type;
+      typedef af::shared<T> type;
     };
 
     // MPL List of all input types

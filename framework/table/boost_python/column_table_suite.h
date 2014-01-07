@@ -263,8 +263,8 @@ namespace column_table_suite {
       const typename T::key_type &key,
       const af::const_ref<U> &data) {
     self.erase(key);
-    column_data<U> col = self[key];
-    col.resize(data.size());
+    af::shared<U> col = self[key];
+    self.resize(data.size());
     std::copy(data.begin(), data.end(), col.begin());
   }
 
@@ -415,6 +415,75 @@ namespace column_table_suite {
       update_column_visitor<T> visitor(self, it->first);
       it->second.apply_visitor(visitor);
     }
+  }
+
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param index The index array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
+  T select_rows_index(const T &self, const af::const_ref<std::size_t> &index) {
+    T other;
+    return other;
+  }
+
+  /**
+   * Select a number of rows from the table via an index array
+   * @param self The current table
+   * @param flags The flag array
+   * @returns The new table with the requested rows
+   */
+  template <typename T>
+  T select_rows_flags(const T &self, const af::const_ref<bool> &flags) {
+    T other;
+    return other;
+  }
+
+  /**
+   * Select a number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @returns The new table with the requested columns
+   */
+  template <typename T>
+  T select_cols_keys(const T &self, const af::const_ref<std::string> &keys) {
+    T other;
+    return other;
+  }
+
+  /**
+   * Set the selected number of rows from the table via an index array
+   * @param self The current table
+   * @param index The index array
+   * @param other The other table
+   */
+  template <typename T>
+  void set_selected_rows_index(const T &self,
+      const af::const_ref<std::size_t> &index, const T &other) {
+  }
+
+  /**
+   * Set the selected number of rows from the table via an index array
+   * @param self The current table
+   * @param flags The flag array
+   * @param other The other table
+   */
+  template <typename T>
+  void set_selected_rows_flags(const T &self, const af::const_ref<bool> &flags,
+      const T &other) {
+  }
+
+  /**
+   * Set the selected number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   * @param other The other table
+   */
+  template <typename T>
+  void set_selected_cols_keys(const T &self, const af::const_ref<std::string> &keys,
+      const T &other) {
   }
 
   /**
@@ -679,25 +748,6 @@ namespace column_table_suite {
   };
 
   /**
-   * Export the wrapped column data class to python
-   */
-  template <typename T>
-  struct column_data_wrapper {
-
-    typedef column_data<T> column_data_type;
-    typedef class_<column_data_type> class_type;
-
-    static
-    class_type wrap(const char *name) {
-      class_<column_data_type> column_data_class(name);
-      column_data_class
-        .def(vector_indexing_suite<column_data_type>())
-        .def("resize", &column_data_type::resize);
-      return column_data_class;
-    }
-  };
-
-  /**
    * Export the wrapped column table class to python
    */
   template <typename T>
@@ -726,6 +776,7 @@ namespace column_table_suite {
         .def("update", &update<column_table_type>)
         .def("nrows", &column_table_type::nrows)
         .def("ncols", &column_table_type::ncols)
+        .def("is_consistent", &column_table_type::is_consistent)
         .def("__len__", &column_table_type::size)
         .def("__contains__", &has_key<column_table_type>)
         .def("__getitem__", &getitem_column<column_table_type>)
@@ -741,6 +792,12 @@ namespace column_table_suite {
           row_iterator<column_table_type> >::range())
         .def("keys", make_iterator<
           key_iterator<column_table_type> >::range())
+        .def("select", &select_rows_index<column_table_type>)
+        .def("select", &select_rows_flags<column_table_type>)
+        .def("select", &select_cols_keys<column_table_type>)
+        .def("set_selected", &set_selected_rows_index<column_table_type>)
+        .def("set_selected", &set_selected_rows_flags<column_table_type>)
+        .def("set_selected", &set_selected_cols_keys<column_table_type>)
         .def("reorder", &reorder<column_table_type>)
 //        .def("sort", &sort<column_table_type>, (
 //          arg("column"),
