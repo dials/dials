@@ -659,11 +659,11 @@ class ExperimentListFactory(object):
           crystals.append((filename, load.crystal(filename)))
         except Exception:
           unhandled.append(filename)
-      if len(experiments) != 1:
-        print 'More than 1 experiment: can\'t match the following crystal(s):'
-        for c in crystals:
-          print ' %s' % c[0]
-          unhandled.append(c[0])
+      if len(crystals) > 0 and len(experiments) != 1:
+        if verbose:
+          print 'Unable to match crystal(s): requires 1 experiment'
+          for c in crystals: print ' %s' % c[0]
+        unhandled.extend([c[0] for c in crystals])
       else:
         for i in range(len(crystals)-1):
           experiments.append(experiments[-1])

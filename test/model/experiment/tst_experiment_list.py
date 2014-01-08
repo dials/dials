@@ -378,6 +378,7 @@ class TestExperimentListFactory(object):
     self.tst_from_json()
     self.tst_from_pickle()
     self.tst_from_args()
+    self.tst_from_sweep_and_crystal()
 
   def tst_from_json(self):
     from os.path import join
@@ -498,6 +499,56 @@ class TestExperimentListFactory(object):
     temp.seek(0)
     return pickle.load(temp)
 
+  def tst_from_sweep_and_crystal(self):
+
+    from os.path import join
+    import os
+    os.environ['DIALS_REGRESSION'] = self.path
+
+    sweep_filename = join(self.path, 'experiment_test_data', 'sweep.json')
+    crystal_filename = join(self.path, 'experiment_test_data', 'crystal.json')
+
+    # Get the experiments from a list of filenames
+    filenames = [sweep_filename, crystal_filename]
+    experiments = ExperimentListFactory.from_args(filenames)
+
+    # Have 1 experiment
+    print len(experiments)
+    assert(len(experiments) == 1)
+    assert(experiments[0].imageset is not None)
+    assert(experiments[0].beam is not None)
+    assert(experiments[0].detector is not None)
+    assert(experiments[0].goniometer is not None)
+    assert(experiments[0].scan is not None)
+    assert(experiments[0].crystal is not None)
+
+    # Get the experiments from a list of filenames
+    filenames = [sweep_filename, crystal_filename, crystal_filename]
+    experiments = ExperimentListFactory.from_args(filenames)
+
+    # Have 2 experiment
+    assert(len(experiments) == 2)
+    for i in range(len(experiments)):
+      assert(experiments[i].imageset is not None)
+      assert(experiments[i].beam is not None)
+      assert(experiments[i].detector is not None)
+      assert(experiments[i].goniometer is not None)
+      assert(experiments[i].scan is not None)
+      assert(experiments[i].crystal is not None)
+
+    # Get the experiments from a list of filenames
+    filenames = [sweep_filename, sweep_filename, crystal_filename]
+    experiments = ExperimentListFactory.from_args(filenames)
+
+    # Have 2 experiment
+    assert(len(experiments) == 2)
+    for i in range(len(experiments)):
+      assert(experiments[i].imageset is not None)
+      assert(experiments[i].beam is not None)
+      assert(experiments[i].detector is not None)
+      assert(experiments[i].goniometer is not None)
+      assert(experiments[i].scan is not None)
+      assert(experiments[i].crystal is None)
 
 class TestExperimentListDumper(object):
 
