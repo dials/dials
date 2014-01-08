@@ -100,7 +100,7 @@ class TestExperiment(object):
 
   def tst_consistent(self):
 
-    from dxtbx.imageset2 import ImageSetFactory
+    from dxtbx.imageset import ImageSetFactory
     from glob import glob
     from os.path import join
     from dxtbx.model import Scan

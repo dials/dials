@@ -138,14 +138,14 @@ class ExperimentListDict(object):
     raise RuntimeError('NullSet not yet supported')
 
   def _make_stills(self, imageset):
-    from dxtbx.imageset2 import ImageSetFactory
+    from dxtbx.imageset import ImageSetFactory
     return ImageSetFactory.make_imageset(imageset['images'])
 
   def _make_sweep(self, imageset, scan):
     from os.path import abspath, expanduser, expandvars
     from dxtbx.sweep_filenames import template_image_range
     from dxtbx.format.Registry import Registry
-    from dxtbx.imageset2 import ImageSetFactory
+    from dxtbx.imageset import ImageSetFactory
 
     # Get the template format
     template = abspath(expanduser(expandvars(imageset['template'])))

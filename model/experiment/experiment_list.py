@@ -61,7 +61,7 @@ class Experiment(object):
 
   def assert_is_consistent(self):
     ''' If a scan is present, check that it makes sense with the imageset. '''
-    from dxtbx.imageset2 import ImageSweep
+    from dxtbx.imageset import ImageSweep
     if self.scan:
       if isinstance(self.imageset, ImageSweep):
         assert(len(self.imageset) == self.scan.get_num_images())
@@ -206,7 +206,7 @@ class ExperimentList(object):
   def to_dict(self):
     ''' Serialize the experiment list to dictionary. '''
     from collections import OrderedDict
-    from dxtbx.imageset2 import ImageSet, ImageSweep
+    from dxtbx.imageset import ImageSet, ImageSweep
     from dials.model.serialize.crystal import crystal_to_dict
 
     # Check the experiment list is consistent
@@ -425,7 +425,7 @@ class ExperimentListDict(object):
 
   def _make_stills(self, imageset):
     ''' Make a still imageset. '''
-    from dxtbx.imageset2 import ImageSetFactory
+    from dxtbx.imageset import ImageSetFactory
     return ImageSetFactory.make_imageset(imageset['images'])
 
   def _make_sweep(self, imageset, scan):
@@ -433,7 +433,7 @@ class ExperimentListDict(object):
     from os.path import abspath, expanduser, expandvars
     from dxtbx.sweep_filenames import template_image_range
     from dxtbx.format.Registry import Registry
-    from dxtbx.imageset2 import ImageSetFactory
+    from dxtbx.imageset import ImageSetFactory
 
     # Get the template format
     template = abspath(expanduser(expandvars(imageset['template'])))
