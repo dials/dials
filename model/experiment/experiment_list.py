@@ -620,12 +620,14 @@ class ExperimentListFactory(object):
   def from_args(args, verbose=False, unhandled=None):
     ''' Try to load experiment from any recognised format. '''
     from dxtbx.datablock import DataBlockFactory
+    from dials.model.serialize import load
 
     # Create a list for unhandled arguments
     if unhandled is None:
       unhandled = []
     unhandled1 = []
     unhandled2 = []
+    unhandled3 = []
 
     # First try as image files
     experiments = ExperimentListFactory.from_datablock(
@@ -647,7 +649,26 @@ class ExperimentListFactory(object):
           experiments.extend(ExperimentListFactory.from_pickle_file(filename))
           if verbose: print 'Loaded experiments(s) from %s' % filename
         except Exception:
+          unhandled3.append(filename)
+
+    # Now try reading a crystal
+    if len(unhandled3) > 0:
+      crystals = []
+      for filename in unhandled3:
+        try:
+          crystals.append((filename, load.crystal(filename)))
+        except Exception:
           unhandled.append(filename)
+      if len(experiments) != 1:
+        print 'More than 1 experiment: can\'t match the following crystal(s):'
+        for c in crystals:
+          print ' %s' % c[0]
+          unhandled.append(c[0])
+      else:
+        for i in range(len(crystals)-1):
+          experiments.append(experiments[-1])
+        for c, e in zip(crystals, experiments):
+          e.crystal = c[1]
 
     # Return the experiments
     return experiments
