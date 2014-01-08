@@ -128,7 +128,8 @@ class ExtractSpots(object):
     else:
       twod = True
     for i, p in enumerate(pl):
-      shoeboxes.extend(flex.shoebox(p, i, 0, twod))
+      if p.num_pixels() > 0:
+        shoeboxes.extend(flex.shoebox(p, i, 0, twod))
     Command.end('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Return the shoeboxes
