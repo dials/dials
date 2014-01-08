@@ -207,6 +207,7 @@ class ExperimentList(object):
     ''' Serialize the experiment list to dictionary. '''
     from collections import OrderedDict
     from dxtbx.imageset2 import ImageSet, ImageSweep
+    from dials.model.serialize.crystal import crystal_to_dict
 
     # Check the experiment list is consistent
     assert(self.is_consistent())
@@ -271,7 +272,7 @@ class ExperimentList(object):
     result['detector']   = [d.to_dict() for d in dlist if d is not None]
     result['goniometer'] = [g.to_dict() for g in glist if g is not None]
     result['scan']       = [s.to_dict() for s in slist if s is not None]
-    result['crystal']    = [c.to_dict() for c in clist if c is not None]
+    result['crystal']    = [crystal_to_dict(c) for c in clist if c is not None]
 
     # Return the dictionary
     return result
@@ -507,6 +508,109 @@ class ExperimentListDict(object):
         return json.loads(infile.read(), object_hook=_decode_dict)
     except IOError, e:
       raise IOError('unable to read file, %s' % filename)
+
+
+class ExperimentListDumper(object):
+  ''' A class to help writing JSON files. '''
+
+  def __init__(self, experiment_list):
+    ''' Initialise '''
+    self._experiment_list = experiment_list
+
+  def as_json(self, filename=None, compact=False, split=False):
+    ''' Dump experiment list as json '''
+    import json
+    from os.path import splitext
+    from collections import OrderedDict
+
+    # Get the dictionary and get the JSON string
+    dictionary = self._experiment_list.to_dict()
+
+    # Split into separate files
+    if filename is not None and split:
+
+      # Get lists of models by filename
+      basepath = splitext(filename)[0]
+      ilist = [('%s_imageset_%d.json' % (basepath, i), d)
+                  for i, d in enumerate(dictionary['imageset'])]
+      blist = [('%s_beam_%d.json' % (basepath, i), d)
+                  for i, d in enumerate(dictionary['beam'])]
+      dlist = [('%s_detector_%d.json' % (basepath, i), d)
+                  for i, d in enumerate(dictionary['detector'])]
+      glist = [('%s_goniometer_%d.json' % (basepath, i), d)
+                  for i, d in enumerate(dictionary['goniometer'])]
+      slist = [('%s_scan_%d.json' % (basepath, i), d)
+                  for i, d in enumerate(dictionary['scan'])]
+      clist = [('%s_crystal_%d.json' % (basepath, i), d)
+                  for i, d in enumerate(dictionary['crystal'])]
+
+      # Get the list of experiments
+      edict = OrderedDict([
+        ( '__id__', 'ExperimentList' ),
+        ( 'experiment', dictionary['experiment'] )
+      ])
+
+      # Set paths rather than indices
+      for e in edict['experiment']:
+        if 'imageset' in e:
+          e['imageset'] = ilist[e['imageset']][0]
+        if 'beam' in e:
+          e['beam'] = blist[e['beam']][0]
+        if 'detector' in e:
+          e['detector'] = dlist[e['detector']][0]
+        if 'goniometer' in e:
+          e['goniometer'] = glist[e['goniometer']][0]
+        if 'scan' in e:
+          e['scan'] = slist[e['scan']][0]
+        if 'crystal' in e:
+          e['crystal'] = clist[e['crystal']][0]
+
+      to_write = ilist + blist + dlist + glist + \
+                 slist + clist + [(filename, edict)]
+    else:
+      to_write = [(filename, dictionary)]
+
+    for fname, obj  in to_write:
+      if compact:
+        text = json.dumps(obj, separators=(',',':'), ensure_ascii=True)
+      else:
+        text = json.dumps(obj, indent=2, ensure_ascii=True)
+
+      # If a filename is set then dump to file otherwise return string
+      if fname is not None:
+        with open(fname, 'w') as outfile:
+          outfile.write(text)
+      else:
+        return text
+
+  def as_pickle(self, filename=None, **kwargs):
+    ''' Dump experiment list as pickle. '''
+    import cPickle as pickle
+
+    # Get the pickle string
+    text = pickle.dumps(self._experiment_list,
+      protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Write the file
+    if filename is not None:
+      with open(filename, 'wb') as outfile:
+        outfile.write(text)
+    else:
+      return text
+
+  def as_file(self, filename, **kwargs):
+    ''' Dump experiment list as file. '''
+    from os.path import splitext
+    ext = splitext(filename)[1]
+    j_ext = ['.json']
+    p_ext = ['.p', '.pkl', '.pickle']
+    if ext in j_ext:
+      return self.as_json(filename, **kwargs)
+    elif ext in p_ext:
+      return self.as_pickle(filename, **kwargs)
+    else:
+      ext_str = '|'.join(j_ext + p_ext)
+      raise RuntimeError('expected extension {%s}, got %s' % (ext_str, ext))
 
 
 class ExperimentListFactory(object):

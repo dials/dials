@@ -3,7 +3,8 @@
 from __future__ import division
 
 from dials.model.experiment.experiment_list import \
-  ExperimentList, Experiment, ExperimentListFactory
+  ExperimentList, Experiment, ExperimentListFactory, \
+  ExperimentListDumper
 
 class TestExperiment(object):
 
@@ -367,6 +368,7 @@ class TestExperimentList(object):
     # Return the list of experiments
     return experiments
 
+
 class TestExperimentListFactory(object):
 
   def __init__(self, path):
@@ -496,6 +498,68 @@ class TestExperimentListFactory(object):
     temp.seek(0)
     return pickle.load(temp)
 
+
+class TestExperimentListDumper(object):
+
+  def __init__(self, path):
+    self.path = path
+
+  def run(self):
+    from uuid import uuid4
+    from os.path import join
+    import os
+
+    os.environ['DIALS_REGRESSION'] = self.path
+
+    # Get all the filenames
+    filename1 = join(self.path, 'experiment_test_data', 'experiment_1.json')
+
+    # Read all the experiment lists in
+    elist1 = ExperimentListFactory.from_json_file(filename1)
+
+    # Create the experiment list dumper
+    dump = ExperimentListDumper(elist1)
+
+    # Dump as JSON file and reload
+    filename = 'temp%s.json' % uuid4().hex
+    dump.as_json(filename)
+    elist2 = ExperimentListFactory.from_json_file(filename)
+    self.check(elist1, elist2)
+
+    # Dump as split JSON file and reload
+    filename = 'temp%s.json' % uuid4().hex
+    dump.as_json(filename, split=True)
+    elist2 = ExperimentListFactory.from_json_file(filename)
+    self.check(elist1, elist2)
+
+    # Dump as pickle and reload
+    filename = 'temp%s.pickle' % uuid4().hex
+    dump.as_pickle(filename)
+    elist2 = ExperimentListFactory.from_pickle_file(filename)
+    self.check(elist1, elist2)
+
+  def check(self, el1, el2):
+
+    # All the experiment lists should be the same length
+    assert(len(el1) == 1)
+    assert(len(el1) == len(el2))
+
+    # Check all the models are the same
+    for e1, e2 in zip(el1, el2):
+      assert(e1.imageset is not None)
+      assert(e1.beam is not None)
+      assert(e1.detector is not None)
+      assert(e1.goniometer is not None)
+      assert(e1.scan is not None)
+      assert(e1.crystal is not None)
+      assert(e1.imageset == e2.imageset)
+      assert(e1.beam == e2.beam)
+      assert(e1.detector == e2.detector)
+      assert(e1.goniometer == e2.goniometer)
+      assert(e1.scan == e2.scan)
+      assert(e1.crystal == e2.crystal)
+    print 'OK'
+
 class Test(object):
   def __init__(self):
     import libtbx
@@ -508,11 +572,13 @@ class Test(object):
     self.tst_experiment = TestExperiment(dials_regression)
     self.tst_list = TestExperimentList(dials_regression)
     self.tst_factory = TestExperimentListFactory(dials_regression)
+    self.tst_dumper = TestExperimentListDumper(dials_regression)
 
   def run(self):
     self.tst_experiment.run()
     self.tst_list.run()
     self.tst_factory.run()
+    self.tst_dumper.run()
 
 if __name__ == '__main__':
   test = Test()

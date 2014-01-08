@@ -1,5 +1,6 @@
 from __future__ import division
 from dials.model.experiment.experiment_list import ExperimentListFactory
+from dials.model.experiment.experiment_list import ExperimentListDumper
 
 if __name__ == '__main__':
 
@@ -27,6 +28,13 @@ if __name__ == '__main__':
     dest = "compact",
     action = "store_true", default = False,
     help = "For JSON output, use compact representation")
+
+  # Write the models to different JSON files
+  parser.add_option(
+    "-s", "--split",
+    dest = "split",
+    action = "store_true", default = False,
+    help = "For JSON output, split models into separate files")
 
   # Parse the command line arguments
   (options, args) = parser.parse_args()
@@ -77,20 +85,5 @@ if __name__ == '__main__':
   if options.output:
     print "-" * 80
     print 'Writing experiments to %s' % options.output
-    import os
-    import json
-    import cPickle as pickle
-    ext = os.path.splitext(options.output)[1]
-    if ext == '.json':
-      dictionary = experiments.to_dict()
-      if options.compact:
-        json.dump(dictionary, open(options.output, "w"),
-          separators=(',',':'), ensure_ascii=True)
-      else:
-        json.dump(dictionary, open(options.output, "w"),
-          indent=2, ensure_ascii=True)
-    elif ext == '.pickle':
-      pickle.dump(experiments, open(options.output, "wb"),
-        protocol=pickle.HIGHEST_PROTOCOL)
-    else:
-      raise RuntimeError('expected extension .json or .pickle, got %s' % ext)
+    dump = ExperimentListDumper(experiments)
+    dump.as_file(options.output, split=options.split, compact=options.compact)
