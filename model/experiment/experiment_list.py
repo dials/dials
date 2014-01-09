@@ -70,7 +70,6 @@ class Experiment(object):
         assert((self.scan.get_num_images() == 1 and
                 self.scan.get_oscillation()[1] == 0.0))
         assert(len(self.imageset.indices()) == 1)
-        assert(self.imageset.indices()[0] == self.scan.get_array_range()[0])
 
   def is_consistent(self):
     ''' If a scan is present, check that it makes sense with the imageset. '''
