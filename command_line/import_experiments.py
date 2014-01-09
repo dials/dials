@@ -55,6 +55,13 @@ if __name__ == '__main__':
     action = "store_true", default = False,
     help = "For JSON output, split models into separate files")
 
+  # Don't sort input filenames
+  parser.add_option(
+    "-n", "--no-sort",
+    dest = "sort",
+    action = "store_false", default = True,
+    help = "Don't sort input files (default is True)")
+
   # Import from XDS directory
   parser.add_option(
     '--xds',
@@ -101,6 +108,10 @@ if __name__ == '__main__':
     if len(args) == 0:
       parser.print_help()
       exit(0)
+
+    # Sort arguments
+    if options.sort:
+      args = sorted(args)
 
     # Get the experiments from the input files
     unhandled = []
