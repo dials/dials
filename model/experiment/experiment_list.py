@@ -748,3 +748,26 @@ class ExperimentListFactory(object):
       obj = pickle.load(infile)
       assert(isinstance(obj, ExperimentList))
       return obj
+
+  @staticmethod
+  def from_xds(xds_inp, xds_other):
+    ''' Generate an experiment list from XDS files. '''
+    from dials.model.serialize import xds
+    from dxtbx.datablock import DataBlockFactory
+
+    # Get the sweep from the XDS files
+    sweep = xds.to_sweep(xds_inp, xds_other)
+
+    # Get the crystal from the XDS files
+    crystal = xds.to_crystal(xds_other)
+
+    # Create the experiment list
+    experiments = ExperimentListFactory.from_datablock(
+      DataBlockFactory.from_sweep(sweep))
+
+    # Set the crystal in the experiment list
+    assert(len(experiments) == 1)
+    experiments[0].crystal = crystal
+
+    # Return the experiment list
+    return experiments
