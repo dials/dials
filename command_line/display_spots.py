@@ -17,26 +17,18 @@ from __future__ import division
 class ScriptRunner(object):
   '''Class to run script.'''
 
-  def __init__(self, sweep_filenames, reflections_filename):
+  def __init__(self, sweep_filenames, reflections):
     '''Setup the script.'''
 
     # Filename data
     self.sweep_filenames = sweep_filenames
-    self.reflections_filename = reflections_filename
+    self.reflections = reflections
 
   def __call__(self):
     '''Run the script.'''
     import cPickle as pickle
     from dials.model.data import ReflectionList # import dependency
     from dials.util.command_line import Command
-
-    # Read the pickle file
-    Command.start('Reading reflection file.')
-    with open(self.reflections_filename, 'rb') as f:
-      self.reflections = pickle.load(f)
-
-    Command.end('Read {0} spots from reflection file.'.format(
-        len(self.reflections)))
 
     self.view()
 
@@ -46,7 +38,7 @@ class ScriptRunner(object):
         sweep_filenames=self.sweep_filenames, reflections=self.reflections)
 
 if __name__ == '__main__':
-
+  import sys
   from optparse import OptionParser
 
   # Specify the command line options
@@ -65,9 +57,24 @@ if __name__ == '__main__':
     parser.print_help()
   else:
     # Initialise the script runner
+    from dials.util.command_line import Importer
+  
+    args = sys.argv[1:]
+    importer = Importer(args)
+    if len(importer.imagesets) == 0:
+      print "No sweep object could be constructed"
+      exit(0)
+    elif len(importer.imagesets) > 1:
+      raise RuntimeError("Only one imageset can be processed at a time")
+    paths = []
+    for imageset in importer.imagesets:
+      paths.extend(imageset.paths())
+    assert len(importer.reflections) > 0
+    assert len(importer.unhandled_arguments) == 0
+
     runner = ScriptRunner(
-        reflections_filename=args[0],
-        sweep_filenames=args[1:])
+        reflections=importer.reflections,
+        sweep_filenames=paths)
 
     # Run the script
     runner()
