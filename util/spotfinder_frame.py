@@ -16,6 +16,8 @@ class SpotFrame(XrayFrame) :
     self.shoebox_layer = None
     self.ctr_mass_layer = None
     self.max_pix_layer = None
+    self.predictions_layer = None
+    self.miller_indices_layer = None
 
   def OnShowSettings (self, event) :
     if (self.settings_frame is None) :
@@ -37,6 +39,8 @@ class SpotFrame(XrayFrame) :
       all_pix_data = spotfinder_data.all_pix_data
       ctr_mass_data = spotfinder_data.ctr_mass_data
       max_pix_data = spotfinder_data.max_pix_data
+      predictions_data = spotfinder_data.predictions_data
+      miller_indices_data = spotfinder_data.miller_indices_data
       if self.dials_spotfinder_layer is not None:
         self.pyslip.DeleteLayer(self.dials_spotfinder_layer)
         self.dials_spotfinder_layer = None
@@ -49,6 +53,25 @@ class SpotFrame(XrayFrame) :
       if self.max_pix_layer is not None:
         self.pyslip.DeleteLayer(self.max_pix_layer)
         self.max_pix_layer = None
+      if self.predictions_layer is not None:
+        self.pyslip.DeleteLayer(self.predictions_layer)
+        self.predictions_layer = None
+      if self.miller_indices_layer is not None:
+        self.pyslip.DeleteLayer(self.miller_indices_layer)
+        self.miller_indices_layer = None
+
+      if self.settings.show_predictions and len(miller_indices_data):
+        self.miller_indices_layer = self.pyslip.AddTextLayer(
+          miller_indices_data, map_rel=True, visible=True,
+          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
+          selectable=False,
+          name='<miller_indices_layer>')
+      if self.settings.show_predictions and len(predictions_data):
+        self.predictions_layer = self.pyslip.AddPointLayer(
+          predictions_data, color="yellow", name="<predictions_layer>",
+          radius=3,
+          renderer = self.pyslip.LightweightDrawPointLayer,
+          show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
       if self.settings.show_all_pix:
         self.dials_spotfinder_layer = self.pyslip.AddPointLayer(
           all_pix_data, color="green", name="<all_pix_layer>",
@@ -92,65 +115,81 @@ class SpotFrame(XrayFrame) :
     all_pix_data = []
     ctr_mass_data = []
     max_pix_data = []
-    for reflection in self.reflections:
-      x0, x1, y0, y1, z0, z1 = reflection.bounding_box
-      if i_frame >= z0 and i_frame < z1:
-        nx = x1 - x0 # size of reflection box in x-direction
-        ny = y1 - y0 # size of reflection box in y-direction
-        nz = z1 - z0 # number of frames this spot appears on
-        if self.settings.show_all_pix and reflection.shoebox_mask.size() > 0:
-          for ix in range(nx):
-            for iy in range(ny):
-              for iz in range(nz):
-                if iz + z0 != i_frame: continue
-                if reflection.shoebox_mask[iz, iy, ix] > 0:
-                  x_, y_ = map_coords(
-                    ix + x0 + 0.5, iy + y0 + 0.5, reflection.panel_number)
-                  all_pix_data.append((x_, y_))
+    predictions_data = []
+    miller_indices_data = []
+    for reflection_list in self.reflections:
+      for reflection in reflection_list:
+        x0, x1, y0, y1, z0, z1 = reflection.bounding_box
+        if i_frame >= z0 and i_frame < z1:
+          nx = x1 - x0 # size of reflection box in x-direction
+          ny = y1 - y0 # size of reflection box in y-direction
+          nz = z1 - z0 # number of frames this spot appears on
+          if self.settings.show_all_pix and reflection.shoebox_mask.size() > 0:
+            for ix in range(nx):
+              for iy in range(ny):
+                for iz in range(nz):
+                  if iz + z0 != i_frame: continue
+                  if reflection.shoebox_mask[iz, iy, ix] > 0:
+                    x_, y_ = map_coords(
+                      ix + x0 + 0.5, iy + y0 + 0.5, reflection.panel_number)
+                    all_pix_data.append((x_, y_))
 
-        if self.settings.show_shoebox:
-          x0_, y0_ = map_coords(x0, y0, reflection.panel_number)
-          x1_, y1_ = map_coords(x1, y1, reflection.panel_number)
-          lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
-                   (((x0_, y1_), (x1_, y1_)), shoebox_dict),
-                   (((x1_, y1_), (x1_, y0_)), shoebox_dict),
-                   (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
-          shoebox_data.extend(lines)
+          if self.settings.show_shoebox:
+            x0_, y0_ = map_coords(x0, y0, reflection.panel_number)
+            x1_, y1_ = map_coords(x1, y1, reflection.panel_number)
+            lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
+                     (((x0_, y1_), (x1_, y1_)), shoebox_dict),
+                     (((x1_, y1_), (x1_, y0_)), shoebox_dict),
+                     (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
+            shoebox_data.extend(lines)
 
-        if self.settings.show_max_pix and reflection.shoebox.size() > 0:
-          shoebox = reflection.shoebox
-          offset = flex.max_index(shoebox)
-          offset, k = divmod(offset, shoebox.all()[2])
-          offset, j = divmod(offset, shoebox.all()[1])
-          offset, i = divmod(offset, shoebox.all()[0])
-          assert offset == 0
-          max_index = (i, j, k)
-          assert shoebox[max_index] == flex.max(shoebox)
-          if z0 + max_index[0] == i_frame:
-            x, y = map_coords(x0 + max_index[2] + 0.5,
-                              y0 + max_index[1] + 0.5,
-                              reflection.panel_number)
-            max_pix_data.append((x, y))
+          if self.settings.show_max_pix and reflection.shoebox.size() > 0:
+            shoebox = reflection.shoebox
+            offset = flex.max_index(shoebox)
+            offset, k = divmod(offset, shoebox.all()[2])
+            offset, j = divmod(offset, shoebox.all()[1])
+            offset, i = divmod(offset, shoebox.all()[0])
+            assert offset == 0
+            max_index = (i, j, k)
+            assert shoebox[max_index] == flex.max(shoebox)
+            if z0 + max_index[0] == i_frame:
+              x, y = map_coords(x0 + max_index[2] + 0.5,
+                                y0 + max_index[1] + 0.5,
+                                reflection.panel_number)
+              max_pix_data.append((x, y))
 
-        if self.settings.show_ctr_mass:
-          centroid = reflection.centroid_position
-          import math
-          if math.floor(centroid[2]) == i_frame:
-            x,y = map_coords(
-              centroid[0], centroid[1], reflection.panel_number)
-            xm1,ym1 = map_coords(
-              centroid[0]-1, centroid[1]-1, reflection.panel_number)
-            xp1,yp1 = map_coords(
-              centroid[0]+1, centroid[1]+1, reflection.panel_number)
-            lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
-                     (((xm1, y), (xp1, y)), ctr_mass_dict)]
-            ctr_mass_data.extend(lines)
+          if self.settings.show_ctr_mass:
+            centroid = reflection.centroid_position
+            import math
+            if math.floor(centroid[2]) == i_frame:
+              x,y = map_coords(
+                centroid[0], centroid[1], reflection.panel_number)
+              xm1,ym1 = map_coords(
+                centroid[0]-1, centroid[1]-1, reflection.panel_number)
+              xp1,yp1 = map_coords(
+                centroid[0]+1, centroid[1]+1, reflection.panel_number)
+              lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
+                       (((xm1, y), (xp1, y)), ctr_mass_dict)]
+              ctr_mass_data.extend(lines)
+
+        if (reflection.image_coord_px != (0.0, 0.0) and
+            reflection.frame_number >= i_frame and
+            reflection.frame_number < (i_frame + 1)):
+          x, y = map_coords(reflection.image_coord_px[0]+ 0.5,
+                            reflection.image_coord_px[1] + 0.5,
+                            reflection.panel_number)
+          predictions_data.append((x, y))
+          if reflection.miller_index != (0,0,0):
+            miller_indices_data.append((x, y, str(reflection.miller_index),
+                                        {'placement':'ne'}))
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
                       shoebox_data=shoebox_data,
                       ctr_mass_data=ctr_mass_data,
-                      max_pix_data=max_pix_data)
+                      max_pix_data=max_pix_data,
+                      predictions_data=predictions_data,
+                      miller_indices_data=miller_indices_data)
 
 
 class SpotSettingsFrame (SettingsFrame) :
@@ -179,6 +218,8 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_max_pix = True
     self.settings.show_all_pix = True
     self.settings.show_shoebox = True
+    self.settings.show_predictions = True
+    self.settings.show_miller_indices = True
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
@@ -234,6 +275,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.shoebox.SetValue(self.settings.show_shoebox)
     s.Add(self.shoebox, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+    # Spot predictions control
+    self.predictions = wx.CheckBox(self, -1, "Show predictions")
+    self.predictions.SetValue(self.settings.show_predictions)
+    s.Add(self.predictions, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
     from wxtbx.phil_controls.intctrl import IntCtrl
@@ -258,6 +304,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.max_pix)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.all_pix)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.shoebox)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.predictions)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
 
     txt3 = wx.StaticText(self, -1, "Thumbnail view:")
@@ -278,6 +325,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_max_pix = self.max_pix.GetValue()
       self.settings.show_all_pix = self.all_pix.GetValue()
       self.settings.show_shoebox = self.shoebox.GetValue()
+      self.settings.show_predictions = self.predictions.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
 
   def OnUpdateCM (self, event) :
