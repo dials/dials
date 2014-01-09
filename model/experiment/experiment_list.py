@@ -418,24 +418,21 @@ class ExperimentListDict(object):
       crystal=crystal
     )
 
-  def _make_null(self):
-    ''' Make a null sweep. '''
-    raise RuntimeError('NullSet not yet supported')
-
   def _make_stills(self, imageset):
     ''' Make a still imageset. '''
     from dxtbx.imageset import ImageSetFactory
-    return ImageSetFactory.make_imageset(imageset['images'])
+    filenames = [load_path(p) for p in imageset['images']]
+    return ImageSetFactory.make_imageset(filenames)
 
   def _make_sweep(self, imageset, scan):
     ''' Make an image sweep. '''
-    from os.path import abspath, expanduser, expandvars
     from dxtbx.sweep_filenames import template_image_range
     from dxtbx.format.Registry import Registry
     from dxtbx.imageset import ImageSetFactory
+    from dxtbx.serialize.filename import load_path
 
     # Get the template format
-    template = abspath(expanduser(expandvars(imageset['template'])))
+    template = load_path(imageset['template'])
     pfx = template.split('#')[0]
     sfx = template.split('#')[-1]
     template_format = '%s%%0%dd%s' % (pfx, template.count('#'), sfx)
@@ -499,12 +496,14 @@ class ExperimentListDict(object):
   def _from_file(filename):
     ''' Load a model dictionary from a file. '''
     from dxtbx.serialize.load import _decode_dict
-    from os.path import expanduser, expandvars, abspath
+    from dxtbx.serialize.filename import load_path, temp_chdir
     import json
-    filename = abspath(expanduser(expandvars(filename)))
+    from os.path import dirname
+    filename = load_path(filename)
     try:
-      with open(filename, 'r') as infile:
-        return json.loads(infile.read(), object_hook=_decode_dict)
+      with temp_chdir(dirname(filename)):
+        with open(filename, 'r') as infile:
+          return json.loads(infile.read(), object_hook=_decode_dict)
     except IOError, e:
       raise IOError('unable to read file, %s' % filename)
 
