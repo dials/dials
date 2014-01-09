@@ -284,16 +284,8 @@ class indexer(object):
     # true multi-lattice refinement we can just refine a single sweep object
     # XXX copy.deepcopy(sweep) does not currently work
     import copy
-    from dxtbx.serialize.imageset import NullSweep
     from dxtbx.model import Detector
-    sweeps = []
-    for i in range(len(crystal_models)):
-      sweep = NullSweep(self.sweep.get_template())
-      sweep.set_beam(copy.deepcopy(self.beam))
-      sweep.set_goniometer(copy.deepcopy(self.goniometer))
-      sweep.set_scan(copy.deepcopy(self.scan))
-      sweep.set_detector(copy.deepcopy(self.detector))
-      sweeps.append(sweep)
+    sweeps = [copy.deepcopy(self.sweep) for i in range(len(crystal_models))]
 
     #for i_lattice in range(len(crystal_models)):
       #if self.target_symmetry_primitive is not None:
