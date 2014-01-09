@@ -327,20 +327,23 @@ class Importer(object):
     from dxtbx.serialize.load import _decode_dict
     from dials.model.serialize.imageset import imageset_from_dict
     from dials.model.serialize.crystal import crystal_from_dict
+    from dxtbx.serialize.filename import temp_chdir
+    from os.path import abspath, dirname
     import json
     try:
-      with open(argument, 'r') as inputfile:
-        obj = json.loads(inputfile.read(), object_hook=_decode_dict)
-        try:
-          self.imagesets.append(imageset_from_dict(obj))
-          return True
-        except Exception:
-          pass
-        try:
-          self.crystals.append(crystal_from_dict(obj))
-          return True
-        except Exception:
-          pass
+      with temp_chdir(abspath(dirname(argument))):
+        with open(argument, 'r') as inputfile:
+          obj = json.loads(inputfile.read(), object_hook=_decode_dict)
+          try:
+            self.imagesets.append(imageset_from_dict(obj))
+            return True
+          except Exception:
+            pass
+          try:
+            self.crystals.append(crystal_from_dict(obj))
+            return True
+          except Exception:
+            pass
     except Exception:
       pass
     return False
