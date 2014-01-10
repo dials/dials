@@ -31,17 +31,18 @@ def run(args):
   observed_xy = flex.vec2_double()
   predicted_xy = flex.vec2_double()
   for reflection_list in importer.reflections:
+    if len(params.scan_range):
+      sel = flex.bool(reflection_list.size(), False)
+      centroid_positions = reflection_list.centroid_position()
+      centroids_frame = centroid_positions.parts()[2]
+      reflections_in_range = False
+      for scan_range in params.scan_range:
+        if scan_range is None: continue
+        range_start, range_end = scan_range
+        sel |= ((centroids_frame >= range_start) & (centroids_frame < range_end))
+      reflection_list = reflection_list.select(sel)
+
     for refl in reflection_list:
-      if len(params.scan_range):
-        reflections_in_range = False
-        for scan_range in params.scan_range:
-          if scan_range is None: continue
-          range_start, range_end = scan_range
-          if refl.frame_number >= range_start and refl.frame_number < range_end:
-            reflections_in_range = True
-            break
-        if not reflections_in_range:
-          continue
       centroid_position = refl.centroid_position
       centroid_variance = refl.centroid_variance
       if centroid_position != (0,0,0):
