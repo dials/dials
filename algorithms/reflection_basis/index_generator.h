@@ -91,7 +91,10 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         const af::versa< vec3<double>, af::c_grid<2> > &s1_map)
       : coordinate_(cs, x0, y0, s1_map),
         step_size_(step_size),
-        grid_half_size_(grid_half_size) {}
+        grid_half_size_(grid_half_size) {
+      DIALS_ASSERT(step_size_.const_ref().all_gt(0.0));
+      DIALS_ASSERT(grid_half_size_ > 0.0);
+    }
 
     /**
      * Get the e1/e2 coordinate at i, j

@@ -58,7 +58,7 @@ if __name__ == '__main__':
   else:
     # Initialise the script runner
     from dials.util.command_line import Importer
-  
+
     args = sys.argv[1:]
     importer = Importer(args)
     if len(importer.imagesets) == 0:
