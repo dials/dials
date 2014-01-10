@@ -48,66 +48,13 @@ class RefinerFactory(object):
     # copy the reflections
     reflections = reflections.deep_copy()
 
-    # check that the beam vectors are stored: if not, compute them
-    from scitbx import matrix
-    for ref in reflections:
-      if ref.beam_vector != (0.0, 0.0, 0.0):
-        continue
-      panel = detector[ref.panel_number]
-      x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
-      ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
-          (x, y))).normalize() / beam.get_wavelength()
-
-    # create parameterisations
-    pred_param, param_reporter = \
-            RefinerFactory.config_parameterisation(
-                params, experiments)
-
-    if verbosity > 1:
-      print "Prediction equation parameterisation built\n"
-      print "Parameter order : name mapping"
-      for i, e in enumerate(pred_param.get_param_names()):
-        print "Parameter %03d : " % i + e
-      print
-
-    if verbosity > 1:
-      print "Building reflection manager"
-      print ("Input reflection list size = %d observations"
-             % len(reflections))
-
-    # create reflection manager
-    refman = RefinerFactory.config_refman(params, reflections,
-        experiments, sweep_range_rad, verbosity)
-
-    if verbosity > 1:
-      print ("Number of observations that pass initial inclusion criteria = %d"
-             % refman.get_accepted_refs_size())
-      print ("Working set size = %d observations"
-             % refman.get_sample_size())
-      print "Reflection manager built\n"
-
-    if verbosity > 1: print "Building target function"
-
-    # create target function
-    target = RefinerFactory.config_target(params, experiments, image_width_rad,
-                                          refman, pred_param)
-
-    if verbosity > 1: print "Target function built\n"
-
-    if verbosity > 1: print "Building refinement engine"
-
-    # create refinery
-    refinery = RefinerFactory.config_refinery(
-                    params, target, pred_param, verbosity)
-
-    if verbosity > 1: print "Refinement engine built\n"
-
-    # build refiner interface and return
-    return Refiner(reflections, beam, crystals, crystal_ids, detector,
-                    pred_param, param_reporter, refman, target, refinery,
-                    goniometer=goniometer,
-                    scan=scan,
-                    verbosity=verbosity)
+    return RefinerFactory._build_components(params,
+                                            reflections,
+                                            experiments,
+                                            image_width_rad,
+                                            sweep_range_rad,
+                                            crystal_ids=0,
+                                            verbosity=0)
 
   @staticmethod
   def from_parameters_data_models(params,
@@ -244,6 +191,27 @@ class RefinerFactory(object):
 
     # copy the reflections
     reflections = reflections.deep_copy()
+
+    # Build components and return
+    return RefinerFactory._build_components(params,
+                                            reflections,
+                                            experiments,
+                                            image_width_rad,
+                                            sweep_range_rad,
+                                            crystal_ids,
+                                            verbosity)
+
+  @staticmethod
+  def _build_components(params, reflections, experiments, image_width_rad,
+                        sweep_range_rad, crystal_ids, verbosity):
+    """low level build"""
+
+    # FIXME, assume here a single experiment
+    detector = experiments[0].detector
+    beam = experiments[0].beam
+    crystals = [experiments[0].crystal]
+    goniometer = experiments[0].goniometer
+    scan = experiments[0].scan
 
     # check that the beam vectors are stored: if not, compute them
     from scitbx import matrix
