@@ -359,10 +359,10 @@ class indexer(object):
         # XXX once david has implemented multi-lattice refinement there
         # should be one and only one sweep object to refine
         self.sweep = sweeps[0]
-        self.detector = self.sweep.detector
-        self.beam = self.sweep.beam
-        self.goniometer = self.sweep.goniometer
-        self.scan = self.sweep.scan
+        self.detector = self.sweep.get_detector()
+        self.beam = self.sweep.get_beam()
+        self.goniometer = self.sweep.get_goniometer()
+        self.scan = self.sweep.get_scan()
 
         if self.d_min == self.params.refinement_protocol.d_min_final:
           print "Target d_min_final reached: finished with refinement"
