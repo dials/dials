@@ -331,7 +331,8 @@ class Importer(object):
     from os.path import abspath, dirname
     import json
     try:
-      with temp_chdir(abspath(dirname(argument))):
+      argument = abspath(argument)
+      with temp_chdir(dirname(argument)):
         with open(argument, 'r') as inputfile:
           obj = json.loads(inputfile.read(), object_hook=_decode_dict)
           try:

@@ -737,7 +737,8 @@ class ExperimentListFactory(object):
     ''' Load an experiment list from a json file. '''
     from dxtbx.serialize.filename import temp_chdir
     from os.path import dirname, abspath
-    with temp_chdir(abspath(dirname(filename))):
+    filename = abspath(filename)
+    with temp_chdir(dirname(filename)):
       with open(filename, 'r') as infile:
         return ExperimentListFactory.from_json(infile.read())
 
