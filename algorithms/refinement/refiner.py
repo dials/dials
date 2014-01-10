@@ -20,11 +20,12 @@ from dials.model.experiment.experiment_list import ExperimentList, Experiment
 class RefinerFactory(object):
   """Factory class to create refiners"""
 
-  @staticmethod
-  def from_parameters_data_experiments(params,
-                                        reflections,
-                                        experiments,
-                                        verbosity=0):
+  @classmethod
+  def from_parameters_data_experiments(cls,
+                                       params,
+                                       reflections,
+                                       experiments,
+                                       verbosity=0):
 
     #TODO Checks on the input
     #E.g. does every experiment contain at least one overlapping model with at
@@ -48,16 +49,17 @@ class RefinerFactory(object):
     # copy the reflections
     reflections = reflections.deep_copy()
 
-    return RefinerFactory._build_components(params,
-                                            reflections,
-                                            experiments,
-                                            image_width_rad,
-                                            sweep_range_rad,
-                                            crystal_ids=0,
-                                            verbosity=0)
+    return cls._build_components(params,
+                                 reflections,
+                                 experiments,
+                                 image_width_rad,
+                                 sweep_range_rad,
+                                 crystal_ids=0,
+                                 verbosity=0)
 
-  @staticmethod
-  def from_parameters_data_models(params,
+  @classmethod
+  def from_parameters_data_models(cls,
+                                  params,
                                   reflections,
                                   sweep=None,
                                   beam=None,
@@ -193,16 +195,16 @@ class RefinerFactory(object):
     reflections = reflections.deep_copy()
 
     # Build components and return
-    return RefinerFactory._build_components(params,
-                                            reflections,
-                                            experiments,
-                                            image_width_rad,
-                                            sweep_range_rad,
-                                            crystal_ids,
-                                            verbosity)
+    return cls._build_components(params,
+                                 reflections,
+                                 experiments,
+                                 image_width_rad,
+                                 sweep_range_rad,
+                                 crystal_ids,
+                                 verbosity)
 
-  @staticmethod
-  def _build_components(params, reflections, experiments, image_width_rad,
+  @classmethod
+  def _build_components(cls, params, reflections, experiments, image_width_rad,
                         sweep_range_rad, crystal_ids, verbosity):
     """low level build"""
 
@@ -225,8 +227,7 @@ class RefinerFactory(object):
 
     # create parameterisations
     pred_param, param_reporter = \
-            RefinerFactory.config_parameterisation(
-                params, experiments)
+            cls.config_parameterisation(params, experiments)
 
     if verbosity > 1:
       print "Prediction equation parameterisation built\n"
@@ -241,8 +242,8 @@ class RefinerFactory(object):
              % len(reflections))
 
     # create reflection manager
-    refman = RefinerFactory.config_refman(params, reflections,
-        experiments, sweep_range_rad, verbosity)
+    refman = cls.config_refman(params, reflections, experiments,
+                               sweep_range_rad, verbosity)
 
     if verbosity > 1:
       print ("Number of observations that pass initial inclusion criteria = %d"
@@ -254,7 +255,7 @@ class RefinerFactory(object):
     if verbosity > 1: print "Building target function"
 
     # create target function
-    target = RefinerFactory.config_target(params, experiments, image_width_rad,
+    target = cls.config_target(params, experiments, image_width_rad,
                     refman, pred_param)
 
     if verbosity > 1: print "Target function built\n"
@@ -262,8 +263,7 @@ class RefinerFactory(object):
     if verbosity > 1: print "Building refinement engine"
 
     # create refinery
-    refinery = RefinerFactory.config_refinery(
-                    params, target, pred_param, verbosity)
+    refinery = cls.config_refinery(params, target, pred_param, verbosity)
 
     if verbosity > 1: print "Refinement engine built\n"
 
