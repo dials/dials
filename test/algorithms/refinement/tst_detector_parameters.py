@@ -319,7 +319,7 @@ if __name__ == '__main__':
 
       for k in range(6):
         try:
-          assert(approx_equal((fd_ds_dp[k] - an_ds_dp[k]),
+          assert(approx_equal((fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])),
                   matrix.sqr((0., 0., 0.,
                               0., 0., 0.,
                               0., 0., 0.)),
@@ -335,6 +335,6 @@ if __name__ == '__main__':
           print "and an_ds_dp = "
           print an_ds_dp[k]
           print "so that difference fd_ds_dp - an_ds_dp ="
-          print fd_ds_dp[k] - an_ds_dp[k]
+          print fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])
 
   if failures == 0: print "OK"
