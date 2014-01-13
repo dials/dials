@@ -94,7 +94,7 @@ def run(args):
   fig.set_size_inches(params.output.size_inches)
   fig.set_dpi(params.output.dpi)
   pyplot.axes().set_aspect('equal')
-  pyplot.scatter(obs_x, obs_y, marker='x', c='red', s=10, alpha=1)
+  pyplot.scatter(obs_x, obs_y, marker='o', c='white', s=10, alpha=1)
   pyplot.scatter(pred_x, pred_y, marker='+', c='blue')
   assert len(detector) == 1
   panel = detector[0]
