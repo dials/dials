@@ -423,14 +423,12 @@ class RefinerFactory(object):
         if detector_options.fix == "all":
           det_param.set_fixed([True] * det_param.num_total())
         elif detector_options.fix == "position":
-          det_params = det_param.get_params(only_free = False)
           to_fix = [e.param_type.startswith('length') \
-                    for e in det_params]
+                    for e in det_param.get_params(only_free = False)]
           det_param.set_fixed(to_fix)
         elif detector_options.fix == "orientation":
-          det_params = det_param.get_params(only_free = False)
           to_fix = [e.param_type.startswith('angle') \
-                    for e in det_params]
+                    for e in det_param.get_params(only_free = False)]
           det_param.set_fixed(to_fix)
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("detector_options.fix value not recognised")
