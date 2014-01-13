@@ -21,7 +21,7 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
   """A work-in-progress time-dependent parameterisation for crystal
   orientation, with angles expressed in mrad"""
 
-  def __init__(self, crystal, t_range, num_intervals):
+  def __init__(self, crystal, t_range, num_intervals, experiment_ids=[0]):
 
     # The state of a scan varying crystal orientation parameterisation
     # is an orientation
@@ -61,7 +61,8 @@ class ScanVaryingCrystalOrientationParameterisation(ScanVaryingModelParameterisa
 
     # Set up the base class
     ScanVaryingModelParameterisation.__init__(self, models, istate,
-                                              p_list, smoother)
+                                              p_list, smoother,
+                                              experiment_ids=experiment_ids)
 
     return
 
@@ -133,7 +134,7 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
   """A work-in-progress time-dependent parameterisation for the crystal
   unit cell"""
 
-  def __init__(self, crystal, t_range, num_intervals):
+  def __init__(self, crystal, t_range, num_intervals, experiment_ids=[0]):
 
     # The state of a scan-varying unit cell parameterisation is the
     # reciprocal space orthogonalisation matrix '[B](t)', expressed as a
@@ -165,7 +166,8 @@ class ScanVaryingCrystalUnitCellParameterisation(ScanVaryingModelParameterisatio
 
     # Set up the base class
     ScanVaryingModelParameterisation.__init__(self, models, istate,
-                                              p_list, smoother)
+                                              p_list, smoother,
+                                              experiment_ids=experiment_ids)
 
     return
 

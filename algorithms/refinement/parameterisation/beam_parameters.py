@@ -22,7 +22,7 @@ class BeamParameterisationOrientation(ModelParameterisation):
   Pass in a goniometer (if present) to ensure consistent definition of the
   beam rotation angles with respect to the spindle-beam plane."""
 
-  def __init__(self, beam, goniometer = None):
+  def __init__(self, beam, goniometer=None, experiment_ids=[0]):
 
     # The state of the beam model consists of the orientation of the
     # s0 vector that it is modelling. The initial state is a snapshot
@@ -59,7 +59,8 @@ class BeamParameterisationOrientation(ModelParameterisation):
     models = [beam]
 
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list)
+    ModelParameterisation.__init__(self, models, istate, p_list,
+                                   experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
     self.compose()

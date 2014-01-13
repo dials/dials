@@ -22,7 +22,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
   """Parameterisation for crystal orientation, with angles expressed in
   mrad"""
 
-  def __init__(self, crystal):
+  def __init__(self, crystal, experiment_ids=[0]):
 
     # The state of a crystal orientation parameterisation is an orientation
     # matrix '[U]'. The initial state is a snapshot of the crystal
@@ -48,7 +48,8 @@ class CrystalOrientationParameterisation(ModelParameterisation):
     models = [crystal]
 
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list)
+    ModelParameterisation.__init__(self, models, istate, p_list,
+                                   experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
     self.compose()
@@ -108,7 +109,7 @@ class CrystalOrientationParameterisation(ModelParameterisation):
 class CrystalUnitCellParameterisation(ModelParameterisation):
   """Parameterisation for the unit cell"""
 
-  def __init__(self, crystal):
+  def __init__(self, crystal, experiment_ids=[0]):
 
     # The state of the unit cell parameterisation is the reciprocal space
     # orthogonalisation matrix 'B'. The initial state is irrelevant for
@@ -137,7 +138,8 @@ class CrystalUnitCellParameterisation(ModelParameterisation):
     models = [crystal]
 
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list)
+    ModelParameterisation.__init__(self, models, istate, p_list,
+                                   experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
     self.compose()

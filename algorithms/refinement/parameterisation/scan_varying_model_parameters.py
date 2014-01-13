@@ -217,7 +217,8 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
 
   __metaclass__  = abc.ABCMeta
 
-  def __init__(self, models, initial_state, param_sets, smoother):
+  def __init__(self, models, initial_state, param_sets, smoother,
+               experiment_ids):
     assert(isinstance(param_sets, list))
     self._initial_state = initial_state
     self._models = models
@@ -225,6 +226,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     self._num_sets = len(self._param)
     self._set_len = len(param_sets[0])
     self._total_len = self._set_len * self._num_sets
+    self._exp_ids = experiment_ids
 
     # ensure all internal parameter sets have the same number of parameters
     for param in self._param[1:]: assert len(param) == self._set_len

@@ -92,8 +92,6 @@ class Parameter(object):
 
     return msg
 
-
-
 class ModelParameterisation(object):
   """An abstract interface that model elements, such as the detector
   model, the source model, etc. should adhere to in order to compose
@@ -109,7 +107,7 @@ class ModelParameterisation(object):
 
   __metaclass__  = abc.ABCMeta
 
-  def __init__(self, models, initial_state, param_list,
+  def __init__(self, models, initial_state, param_list, experiment_ids,
                is_multi_state=False):
     assert(isinstance(param_list, list))
     self._initial_state = initial_state
@@ -117,8 +115,8 @@ class ModelParameterisation(object):
     self._param = list(param_list)
     self._total_len = len(self._param)
     self._dstate_dp = [None] * len(param_list)
-
     self._is_multi_state = is_multi_state
+    self._exp_ids = experiment_ids
     return
 
   def num_free(self):
@@ -129,6 +127,10 @@ class ModelParameterisation(object):
   def num_total(self):
     """the total number of parameters, both fixed and free"""
     return self._total_len
+
+  def get_experiment_ids(self):
+    """the experiments parameterised by this ModelParameterisation"""
+    return self._exp_ids
 
   @abc.abstractmethod
   def compose(self):

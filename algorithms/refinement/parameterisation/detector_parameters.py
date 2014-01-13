@@ -20,7 +20,7 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
   """Parameterisation for a single abstract panel
   plane, with angles expressed in mrad"""
 
-  def __init__(self, detector):
+  def __init__(self, detector, experiment_ids=[0]):
 
     # The state of a single Panel is its detector matrix d = (d1|d2|d0).
     # However, for the purposes of parameterisation we choose a different
@@ -107,7 +107,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     models = [detector]
 
     # set up the base class
-    ModelParameterisation.__init__(self, models, istate, p_list)
+    ModelParameterisation.__init__(self, models, istate, p_list,
+                                   experiment_ids=experiment_ids)
 
     # call compose to calculate all the derivatives
     self.compose()
@@ -395,7 +396,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
   """Experimental implementation of parameterisation for a multiple
   panel detector, treated as a single rigid block."""
 
-  def __init__(self, detector, beam):
+  def __init__(self, detector, beam, experiment_ids=[0]):
 
     # The state of each Panel in the detector model is its matrix
     # d = (d1|d2|d0). We need to define a new coordinate system rigidly
@@ -499,6 +500,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
     # set up the base class
     ModelParameterisation.__init__(self, models, istate, p_list,
+                                   experiment_ids=experiment_ids,
                                    is_multi_state=True)
 
     # call compose to calculate all the derivatives

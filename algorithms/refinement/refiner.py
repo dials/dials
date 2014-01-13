@@ -320,7 +320,8 @@ class RefinerFactory(object):
       assert all(g is goniometer for g in assoc_gonios)
 
       # Parameterise, passing the goniometer (but accepts None)
-      beam_param = par.BeamParameterisationOrientation(beam, goniometer)
+      beam_param = par.BeamParameterisationOrientation(beam, goniometer,
+                                                       experiment_ids=exp_ids)
       if beam_options.fix:
         if beam_options.fix == "all":
           beam_param.set_fixed([True, True])
@@ -366,14 +367,18 @@ class RefinerFactory(object):
         xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
                                             crystal,
                                             scan.get_image_range(),
-                                            n_intervals)
+                                            n_intervals,
+                                            experiment_ids=exp_ids)
         xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
                                             crystal,
                                             scan.get_image_range(),
-                                            n_intervals)
+                                            n_intervals,
+                                            experiment_ids=exp_ids)
       else:
-        xl_ori_param = par.CrystalOrientationParameterisation(crystal)
-        xl_uc_param = par.CrystalUnitCellParameterisation(crystal)
+        xl_ori_param = par.CrystalOrientationParameterisation(crystal,
+                                                        experiment_ids=exp_ids)
+        xl_uc_param = par.CrystalUnitCellParameterisation(crystal,
+                                                        experiment_ids=exp_ids)
 
       if crystal_options.fix:
         if crystal_options.fix == "all":
@@ -400,13 +405,17 @@ class RefinerFactory(object):
       # Detector
       if detector_options.panels == "automatic":
         if len(detector) > 1:
-          det_param = par.DetectorParameterisationMultiPanel(detector, beam)
+          det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+                                                        experiment_ids=exp_ids)
         else:
-          det_param = par.DetectorParameterisationSinglePanel(detector)
+          det_param = par.DetectorParameterisationSinglePanel(detector,
+                                                        experiment_ids=exp_ids)
       elif detector_options.panels == "single":
-        det_param = DetectorParameterisationSinglePanel(detector)
+        det_param = par.DetectorParameterisationSinglePanel(detector,
+                                                        experiment_ids=exp_ids)
       elif self._detector_par_options == "multiple":
-        det_param = DetectorParameterisationMultiPanel(detector, beam)
+        det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+                                                        experiment_ids=exp_ids)
       else: # can only get here if refinement.phil is broken
         raise RuntimeError("detector_options.panels value not recognised")
 
@@ -451,6 +460,18 @@ class RefinerFactory(object):
       xl_ori_params = xl_ori_params_stills
       xl_uc_params = xl_uc_params_stills
       param_type = "stills"
+
+    # Experiment to parameterisation mappings
+    e2bp = dict([(ids, i) for i, dp in enumerate(beam_params) for ids in dp.get_experiment_ids()])
+    e2xop = dict([(ids, i) for i, dp in enumerate(xl_ori_params) for ids in dp.get_experiment_ids()])
+    e2xucp = dict([(ids, i) for i, dp in enumerate(xl_uc_params) for ids in dp.get_experiment_ids()])
+    e2dp = dict([(ids, i) for i, dp in enumerate(det_params) for ids in dp.get_experiment_ids()])
+
+    from collections import namedtuple
+    ParamSet = namedtuple('ParamSet', ['beam_param', 'xl_ori_param',
+                                         'xl_uc_param', 'det_param'])
+    exp_to_param = {i: ParamSet(e2bp[i], e2xop[i], e2xucp[i], e2dp[i]) \
+                    for i, _ in enumerate(experiments)}
 
     # Prediction equation parameterisation
     if param_type is "scans":
