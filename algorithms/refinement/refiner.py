@@ -300,101 +300,167 @@ class RefinerFactory(object):
     if len(experiments) > 1:
       raise RuntimeError("Multiple experiment parameterisation not"
                          "yet supported")
-    beam = experiments[0].beam
-    goniometer = experiments[0].goniometer
-    crystal = experiments[0].crystal
-    detector = experiments[0].detector
-    scan = experiments[0].scan
 
-    # Beam (accepts goniometer=None)
-    beam_param = par.BeamParameterisationOrientation(beam, goniometer)
-    if beam_options.fix:
-      if beam_options.fix == "all":
-        beam_param.set_fixed([True, True])
-      elif beam_options.fix == "in_spindle_plane":
-        beam_param.set_fixed([True, False])
-      else: # can only get here if refinement.phil is broken
-        raise RuntimeError("beam_options.fix value not recognised")
+    # Currently a refinement job can only have one parameterisation of the
+    # prediction equation. This can either be of the XY (stills) type, the
+    # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
+    # model
 
-    # Crystal
-    if crystal_options.scan_varying:
-      if crystal_options.num_intervals == "fixed_width":
-        sweep_range_deg = scan.get_oscillation_range(deg=True)
-        deg_per_interval = crystal_options.interval_width_degrees
-        n_intervals = int(
-          abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval)
+    # Parameterise unique Beams
+    beam_params_stills = []
+    beam_params_scans = []
+    for beam in experiments.beams():
+      # The Beam is parameterised with reference to a goniometer axis (or None).
+      # Therefore this Beam must always be found alongside the same Goniometer
+      # (otherwise it should be a different Beam as it will require a different
+      # parameterisation).
+      exp_ids = experiments.indices(beam)
+      assoc_gonios = [experiments[i].goniometer for i in exp_ids]
+      goniometer = assoc_gonios[0]
+      assert all(g is goniometer for g in assoc_gonios)
+
+      # Parameterise, passing the goniometer (but accepts None)
+      beam_param = par.BeamParameterisationOrientation(beam, goniometer)
+      if beam_options.fix:
+        if beam_options.fix == "all":
+          beam_param.set_fixed([True, True])
+        elif beam_options.fix == "in_spindle_plane":
+          beam_param.set_fixed([True, False])
+        else: # can only get here if refinement.phil is broken
+          raise RuntimeError("beam_options.fix value not recognised")
+
+      if goniometer is None:
+        beam_params_stills.append(beam_param)
       else:
-        n_intervals = crystal_options.absolute_num_intervals
-      assert [goniometer, scan].count(None) == 0
-      xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
-                                          crystal,
-                                          scan.get_image_range(),
-                                          n_intervals)
-      xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
-                                          crystal,
-                                          scan.get_image_range(),
-                                          n_intervals)
-    else:
-      xl_ori_param = par.CrystalOrientationParameterisation(crystal)
-      xl_uc_param = par.CrystalUnitCellParameterisation(crystal)
+        beam_params_scans.append(beam_param)
 
-    if crystal_options.fix:
-      if crystal_options.fix == "all":
-        xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
-        xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
-      elif crystal_options.fix == "cell":
-        xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
-      elif crystal_options.fix == "orientation":
-        xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
-      else: # can only get here if refinement.phil is broken
-        raise RuntimeError("crystal_options.fix value not recognised")
+    # Parameterise unique Crystals
+    xl_ori_params_stills = []
+    xl_ori_params_scans = []
+    xl_uc_params_stills = []
+    xl_uc_params_scans = []
+    for crystal in experiments.crystals():
+      # This crystal can only ever appear either in scans or in stills
+      # (otherwise it requires a different crystal model)
+      exp_ids = experiments.indices(crystal)
+      assoc_models = [(experiments[i].goniometer, experiments[i].scan) \
+                      for i in exp_ids]
+      goniometer, scan = assoc_models[0]
+      if goniometer is None:
+        assert all(g is None and s is None for (g, s) in assoc_models)
 
-    # Detector
-    if detector_options.panels == "automatic":
-      if len(detector) > 1:
-        det_param = par.DetectorParameterisationMultiPanel(detector, beam)
+      if crystal_options.scan_varying:
+        # If a crystal is scan-varying, then it must always be found alongside
+        # the same Scan and Goniometer in any Experiments in which it appears
+        assert [goniometer, scan].count(None) == 0
+        assert all(g is goniometer and s is scan for (s, g) in assoc_models)
+
+        if crystal_options.num_intervals == "fixed_width":
+          sweep_range_deg = scan.get_oscillation_range(deg=True)
+          deg_per_interval = crystal_options.interval_width_degrees
+          n_intervals = int(
+            abs(sweep_range_deg[1] - sweep_range_deg[0]) / deg_per_interval)
+        else:
+          n_intervals = crystal_options.absolute_num_intervals
+
+        xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
+                                            crystal,
+                                            scan.get_image_range(),
+                                            n_intervals)
+        xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
+                                            crystal,
+                                            scan.get_image_range(),
+                                            n_intervals)
       else:
-        det_param = par.DetectorParameterisationSinglePanel(detector)
-    elif detector_options.panels == "single":
-      det_param = DetectorParameterisationSinglePanel(detector)
-    elif self._detector_par_options == "multiple":
-      det_param = DetectorParameterisationMultiPanel(detector, beam)
-    else: # can only get here if refinement.phil is broken
-      raise RuntimeError("detector_options.panels value not recognised")
+        xl_ori_param = par.CrystalOrientationParameterisation(crystal)
+        xl_uc_param = par.CrystalUnitCellParameterisation(crystal)
 
-    if detector_options.fix:
-      if detector_options.fix == "all":
-        det_param.set_fixed([True] * det_param.num_total())
-      elif detector_options.fix == "position":
-        det_params = det_param.get_params(only_free = False)
-        to_fix = [e.param_type.startswith('length') \
-                  for e in det_params]
-        det_param.set_fixed(to_fix)
-      elif detector_options.fix == "orientation":
-        det_params = det_param.get_params(only_free = False)
-        to_fix = [e.param_type.startswith('angle') \
-                  for e in det_params]
-        det_param.set_fixed(to_fix)
+      if crystal_options.fix:
+        if crystal_options.fix == "all":
+          xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
+          xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+        elif crystal_options.fix == "cell":
+          xl_uc_param.set_fixed([True] * xl_uc_param.num_total())
+        elif crystal_options.fix == "orientation":
+          xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
+        else: # can only get here if refinement.phil is broken
+          raise RuntimeError("crystal_options.fix value not recognised")
+
+      if goniometer is None:
+        xl_ori_params_stills.append(xl_ori_param)
+        xl_uc_params_stills.append(xl_uc_param)
+      else:
+        xl_ori_params_scans.append(xl_ori_param)
+        xl_uc_params_scans.append(xl_uc_param)
+
+    # Parameterise unique Detectors
+    det_params = []
+    for detector in experiments.detectors():
+
+      # Detector
+      if detector_options.panels == "automatic":
+        if len(detector) > 1:
+          det_param = par.DetectorParameterisationMultiPanel(detector, beam)
+        else:
+          det_param = par.DetectorParameterisationSinglePanel(detector)
+      elif detector_options.panels == "single":
+        det_param = DetectorParameterisationSinglePanel(detector)
+      elif self._detector_par_options == "multiple":
+        det_param = DetectorParameterisationMultiPanel(detector, beam)
       else: # can only get here if refinement.phil is broken
-        raise RuntimeError("detector_options.fix value not recognised")
+        raise RuntimeError("detector_options.panels value not recognised")
+
+      if detector_options.fix:
+        if detector_options.fix == "all":
+          det_param.set_fixed([True] * det_param.num_total())
+        elif detector_options.fix == "position":
+          det_params = det_param.get_params(only_free = False)
+          to_fix = [e.param_type.startswith('length') \
+                    for e in det_params]
+          det_param.set_fixed(to_fix)
+        elif detector_options.fix == "orientation":
+          det_params = det_param.get_params(only_free = False)
+          to_fix = [e.param_type.startswith('angle') \
+                    for e in det_params]
+          det_param.set_fixed(to_fix)
+        else: # can only get here if refinement.phil is broken
+          raise RuntimeError("detector_options.fix value not recognised")
+
+      det_params.append(det_param)
 
     # Prediction equation parameterisation
     if crystal_options.scan_varying:
+      # make sure none of the experiments appear to be for stills
+      assert beam_params_stills == []
+      assert xl_ori_params_stills == []
+      assert xl_uc_params_stills == []
       pred_param = par.VaryingCrystalPredictionParameterisation(
           detector, beam, crystal, goniometer,
-          [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
+          det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
     elif goniometer is None:
+      # make sure none of the experiments appear to be for scans
+      assert beam_params_scans == []
+      assert xl_ori_params_scans == []
+      assert xl_uc_params_scans == []
       pred_param = par.XYPredictionParameterisation(
           detector, beam, crystal, goniometer,
-          [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
+          det_params, beam_params_stills, xl_ori_params_stills, xl_uc_params_stills)
     else:
+      # make sure none of the experiments appear to be for stills
+      assert beam_params_stills == []
+      assert xl_ori_params_stills == []
+      assert xl_uc_params_stills == []
       pred_param = par.XYPhiPredictionParameterisation(
           detector, beam, crystal, goniometer,
-          [det_param], [beam_param], [xl_ori_param], [xl_uc_param])
+          det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
 
     # Parameter reporting
-    param_reporter = par.ParameterReporter([det_param], [beam_param],
-        [xl_ori_param], [xl_uc_param])
+    if beam_params_stills == []:
+      param_reporter = par.ParameterReporter(det_params, beam_params_scans,
+        xl_ori_params_scans, xl_uc_params_scans)
+    else:
+      param_reporter = par.ParameterReporter(det_param_stills,
+        beam_params_stills, xl_ori_params_stills, xl_uc_params_stills)
 
     return pred_param, param_reporter
 
