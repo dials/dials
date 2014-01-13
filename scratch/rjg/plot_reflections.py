@@ -10,10 +10,21 @@ scan_range = None
           "(e.g. j0 <= j < j1)."
   .type = ints(size=2)
   .multiple = True
+first_n_reflections = None
+  .type = int(value_min=0)
+output {
+  file_name = centroids.png
+    .type = path
+  show_plot = False
+    .type = bool
+  dpi = 300
+    .type = int(value_min=0)
+  size_inches = 10,10
+    .type = floats(size=2, value_min=0)
+}
 """)
 
 def run(args):
-  from matplotlib import pyplot
   from dials.util.command_line import Importer
   from scitbx.array_family import flex
   from libtbx.phil import command_line
@@ -26,8 +37,6 @@ def run(args):
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil = cmd_line.process_and_fetch(args=args)
   params = working_phil.extract()
-  fig = pyplot.figure()
-  pyplot.axes().set_aspect('equal')
   observed_xy = flex.vec2_double()
   predicted_xy = flex.vec2_double()
   for reflection_list in importer.reflections:
@@ -41,6 +50,13 @@ def run(args):
         range_start, range_end = scan_range
         sel |= ((centroids_frame >= range_start) & (centroids_frame < range_end))
       reflection_list = reflection_list.select(sel)
+    if params.first_n_reflections is not None:
+      centroid_positions = reflection_list.centroid_position()
+      centroids_frame = centroid_positions.parts()[2]
+      perm = flex.sort_permutation(centroids_frame)
+      perm = perm[:min(reflection_list.size(), params.first_n_reflections)]
+      print flex.max(centroids_frame.select(perm))
+      reflection_list = reflection_list.select(perm)
 
     for refl in reflection_list:
       centroid_position = refl.centroid_position
@@ -63,14 +79,38 @@ def run(args):
         predicted_xy.append((x,y))
   obs_x, obs_y = observed_xy.parts()
   pred_x, pred_y = predicted_xy.parts()
-  pyplot.scatter(obs_x, obs_y, marker='o', c='red')
+
+  try:
+    import matplotlib
+
+    if not params.output.show_plot:
+      # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+      matplotlib.use('Agg') # use a non-interactive backend
+    from matplotlib import pyplot
+  except ImportError:
+    raise Sorry("matplotlib must be installed to generate a plot.")
+
+  fig = pyplot.figure()
+  fig.set_size_inches(params.output.size_inches)
+  fig.set_dpi(params.output.dpi)
+  pyplot.axes().set_aspect('equal')
+  pyplot.scatter(obs_x, obs_y, marker='x', c='red', s=10, alpha=1)
   pyplot.scatter(pred_x, pred_y, marker='+', c='blue')
   assert len(detector) == 1
   panel = detector[0]
   pyplot.xlim(0, panel.get_image_size_mm()[0])
   pyplot.ylim(0, panel.get_image_size_mm()[1])
   pyplot.gca().invert_yaxis()
-  pyplot.show()
+  pyplot.title('Centroid x,y-coordinates')
+  pyplot.xlabel('x-coordinate (mm)')
+  pyplot.ylabel('y-coordinate (mm)')
+  if params.output.file_name is not None:
+    pyplot.savefig(params.output.file_name,
+                   size_inches=params.output.size_inches,
+                   dpi=params.output.dpi,
+                   bbox_inches='tight')
+  if params.output.show_plot:
+    pyplot.show()
 
 
 if __name__ == '__main__':
