@@ -674,6 +674,7 @@ test/model/data/tst_reflection_table.py -text
 test/model/data/tst_shoebox.py -text
 test/model/experiment/tst_experiment_list.py -text
 test/model/serialize/tst_partial_shoebox.py -text
+test/tst_plot_reflections.py -text
 test/tst_spots_xds.py -text
 test/util/tst_command_line.py -text
 util/__init__.py -text

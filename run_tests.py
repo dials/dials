@@ -65,6 +65,7 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_helpers.py",
     "$D/test/algorithms/peak_finding/tst_spotfinder.py",
     "$D/test/algorithms/generate_test_reflections/tst_generate_test_refl.py",
+    "$D/test/tst_plot_reflections.py",
     ["$D/scratch/rjg/tst_index.py", "1"],
     ["$D/scratch/rjg/tst_index.py", "2"],
     ["$D/scratch/rjg/tst_index.py", "3"],
