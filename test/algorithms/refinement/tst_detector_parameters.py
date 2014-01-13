@@ -339,4 +339,5 @@ if __name__ == '__main__':
           print fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])
 
   if failures == 0: print "OK"
-  else: raise RuntimeError("test failure")
+  else: raise RuntimeError("Failure comparing analytical with finite difference"
+                           "derivatives. Check stdout for details.")
