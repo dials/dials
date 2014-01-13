@@ -98,6 +98,8 @@ def run(args):
   pyplot.scatter(pred_x, pred_y, marker='+', c='blue')
   assert len(detector) == 1
   panel = detector[0]
+  beam_centre = panel.get_beam_centre(imageset.get_beam().get_s0())
+  pyplot.scatter([beam_centre[0]], [beam_centre[1]], marker='+', c='blue', s=100)
   pyplot.xlim(0, panel.get_image_size_mm()[0])
   pyplot.ylim(0, panel.get_image_size_mm()[1])
   pyplot.gca().invert_yaxis()
