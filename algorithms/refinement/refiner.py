@@ -428,39 +428,49 @@ class RefinerFactory(object):
 
       det_params.append(det_param)
 
-    # Prediction equation parameterisation
-    if crystal_options.scan_varying:
-      # make sure none of the experiments appear to be for stills
-      assert beam_params_stills == []
+    # Determine whether this is a parameterisation for scans or for stills
+    if beam_params_stills == []:
+      # we expect scans
       assert xl_ori_params_stills == []
       assert xl_uc_params_stills == []
-      pred_param = par.VaryingCrystalPredictionParameterisation(
-          detector, beam, crystal, goniometer,
-          det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
-    elif goniometer is None:
-      # make sure none of the experiments appear to be for scans
+      assert beam_params_scans != []
+      assert xl_ori_params_scans != []
+      assert xl_uc_params_scans != []
+      beam_params = beam_params_scans
+      xl_ori_params = xl_ori_params_scans
+      xl_uc_params = xl_uc_params_scans
+      param_type = "scans"
+    else:
+      # we expect stills
       assert beam_params_scans == []
       assert xl_ori_params_scans == []
       assert xl_uc_params_scans == []
+      assert xl_ori_params_stills != []
+      assert xl_uc_params_stills != []
+      beam_params = beam_params_stills
+      xl_ori_params = xl_ori_params_stills
+      xl_uc_params = xl_uc_params_stills
+      param_type = "stills"
+
+    # Prediction equation parameterisation
+    if param_type is "scans":
+      if crystal_options.scan_varying:
+        pred_param = par.VaryingCrystalPredictionParameterisation(
+            detector, beam, crystal, goniometer,
+            det_params, beam_params, xl_ori_params, xl_uc_params)
+      else:
+        pred_param = par.XYPhiPredictionParameterisation(
+            detector, beam, crystal, goniometer,
+            det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
+    else:
+      assert param_type is "stills"
       pred_param = par.XYPredictionParameterisation(
           detector, beam, crystal, goniometer,
-          det_params, beam_params_stills, xl_ori_params_stills, xl_uc_params_stills)
-    else:
-      # make sure none of the experiments appear to be for stills
-      assert beam_params_stills == []
-      assert xl_ori_params_stills == []
-      assert xl_uc_params_stills == []
-      pred_param = par.XYPhiPredictionParameterisation(
-          detector, beam, crystal, goniometer,
-          det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
+          det_params, beam_params, xl_ori_params, xl_uc_params)
 
     # Parameter reporting
-    if beam_params_stills == []:
-      param_reporter = par.ParameterReporter(det_params, beam_params_scans,
-        xl_ori_params_scans, xl_uc_params_scans)
-    else:
-      param_reporter = par.ParameterReporter(det_param_stills,
-        beam_params_stills, xl_ori_params_stills, xl_uc_params_stills)
+    param_reporter = par.ParameterReporter(det_params, beam_params,
+                                           xl_ori_params, xl_uc_params)
 
     return pred_param, param_reporter
 
