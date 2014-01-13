@@ -312,9 +312,7 @@ def exercise_8():
                 "detector.fix=orientation",
                 #"max_cell=70", #XXX eventually this should not be needed
                 ]
-  expected_unit_cell = uctbx.unit_cell(
-    #(54.3, 58.3, 66.5, 90, 90, 90))
-    (58.3, 54.3, 66.5, 90, 90, 90)) # XXX why the permutation of axes?
+  expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
   expected_rmsds = (0.28, 0.30, 0.006)
   expected_hall_symbol = ' P 2ac 2ab'
   n_expected_lattices = 1
