@@ -285,6 +285,7 @@ command_line/integrate.py -text
 command_line/match_observed_with_predicted.py -text
 command_line/merge_spot_lists.py -text
 command_line/parameters.py -text
+command_line/plot_reflections.py -text
 command_line/predict.py -text
 command_line/print_reflection_stats.py -text
 command_line/print_test_reflections.py -text
@@ -583,7 +584,6 @@ scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/index_3D_FFT_simple.py -text
-scratch/rjg/plot_reflections.py -text
 scratch/rjg/run_indexing_api.py -text
 scratch/rjg/tst_index.py -text
 scratch/rjg/unit_cell_refinement.py -text
