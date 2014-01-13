@@ -326,10 +326,6 @@ namespace dials { namespace refinement {
                  detector.size() == origins.size());
 
     // now update the panels with their new position and orientation.
-    typedef Panel panel_type;
-    typedef boost::ptr_vector <panel_type> panel_list_type;
-    typedef panel_list_type::iterator iterator;
-
     for(std::size_t i = 0; i < detector.size(); i++)
       detector[i].set_frame(dir1s_new[i], dir2s_new[i], origins[i]);
     /*
@@ -440,7 +436,7 @@ namespace dials { namespace refinement {
     for (std::size_t panel_id = 0; panel_id < detector.size(); panel_id++) {
       vec3 <double> offset = offsets[panel_id];
       vec3 <double> dir1_new_basis = dir1s[panel_id];
-      vec3 <double> dir2_new_basis = dir1s[panel_id];
+      vec3 <double> dir2_new_basis = dir2s[panel_id];
 
       // Panel origin:
       // o = dorg + offset[0] * d1 + offset[1] * d2 + offset[2] * dn

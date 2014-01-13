@@ -544,8 +544,7 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
 
     # Store the results.  The results come back as a single array, convert it to a 2D array
 
-    #FIXME this should be a list of matrix.sqr
-    self._dstate_dp = [[ret[j*len(self._offsets)+i] for i in xrange(len(self._offsets))] for j in xrange(len(self._param))]
+    self._dstate_dp = [[matrix.sqr(ret[j*len(self._offsets)+i]) for i in xrange(len(self._offsets))] for j in xrange(len(self._param))]
 
     return
 
