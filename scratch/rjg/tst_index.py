@@ -310,6 +310,7 @@ def exercise_8():
                 "engine=LevMarIterations",
                 "beam.fix=all",
                 "detector.fix=orientation",
+                "maximum_spot_error=3",
                 #"max_cell=70", #XXX eventually this should not be needed
                 ]
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
