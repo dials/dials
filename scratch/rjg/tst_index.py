@@ -143,6 +143,7 @@ def exercise_2():
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
+                "bin_size_fraction=0.25",
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
@@ -299,7 +300,7 @@ def exercise_8():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
   sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3_4.json")
-  extra_args = ["real_space_grid_search=True",
+  extra_args = ["method=real_space_grid_search",
                 "use_all_reflections=True",
                 "n_macro_cycles=5",
                 "d_min=4",
