@@ -25,6 +25,7 @@ from dials.algorithms.refinement.refinement_helpers \
 from dials.algorithms.refinement.parameterisation.detector_parameters \
     import DetectorParameterisationSinglePanel, DetectorParameterisationMultiPanel
 
+
 def random_panel(lim = (0, 50)):
   """For testing, return a square panel with a randomised position
   and orientation"""
@@ -338,3 +339,4 @@ if __name__ == '__main__':
           print fd_ds_dp[k] - matrix.sqr(an_ds_dp[k])
 
   if failures == 0: print "OK"
+  else: raise RuntimeError("test failure")
