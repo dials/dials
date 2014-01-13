@@ -18,14 +18,14 @@ class TestExperiment(object):
 
   def tst_contains(self):
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from dials.model.experiment import Crystal
+    from cctbx.crystal.crystal_model import crystal_model
 
     # Create a load of models
     b1 = Beam()
     d1 = Detector()
     g1 = Goniometer()
     s1 = Scan()
-    c1 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
+    c1 = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
 
     # Create an experiment
     e = Experiment(
@@ -44,7 +44,7 @@ class TestExperiment(object):
     d2 = Detector()
     g2 = Goniometer()
     s2 = Scan()
-    c2 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
+    c2 = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
 
     # Check experiment doesn't contain model
     assert(b2 not in e)
@@ -59,21 +59,21 @@ class TestExperiment(object):
   def tst_equality(self):
 
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from dials.model.experiment import Crystal
+    from cctbx.crystal.crystal_model import crystal_model
 
     # Create a load of models
     b1 = Beam()
     d1 = Detector()
     g1 = Goniometer()
     s1 = Scan()
-    c1 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
+    c1 = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
 
     # Create a load of models that look the same but aren't
     b2 = Beam()
     d2 = Detector()
     g2 = Goniometer()
     s2 = Scan()
-    c2 = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
+    c2 = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), 0)
 
     # Create an experiment
     e1 = Experiment(
