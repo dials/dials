@@ -29,9 +29,6 @@ class indexer_fft3d(indexer_base):
     super(indexer_fft3d, self).__init__(reflections, sweep, params)
 
   def find_lattices(self):
-    return self.find_lattices_3d_fft()
-
-  def find_lattices_3d_fft(self):
     if self.params.reciprocal_space_grid.d_min is libtbx.Auto:
       # rough calculation of suitable d_min based on max cell
       # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.

@@ -103,7 +103,7 @@ class run_one_indexing(object):
   def get_rmsds_obs_pred(self, observations, sweep, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
     reflections = ray_intersection(sweep.get_detector(), observations)
-    from dials.scratch.rjg.index_3D_FFT_simple import master_params
+    from dials.algorithms.indexing.indexer2 import master_params
     from dials.algorithms.refinement import RefinerFactory
     refine = RefinerFactory.from_parameters_data_models(
       master_params, reflections, sweep=sweep, crystal=crystal_model,
@@ -328,7 +328,7 @@ def exercise_9():
   extra_args = ["multiple_lattice_search=False", # use older non-clustering version
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
-                "method=1d_fft"]
+                "method=fft1d"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.06, 0.05, 0.0005)

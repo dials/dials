@@ -123,7 +123,7 @@ multiple_lattice_search = False
   .type = bool
 max_lattices = None
   .type = int
-method = *3d_fft 1d_fft real_space_grid_search
+method = *fft3d fft1d real_space_grid_search
   .type = choice
 cluster_analysis {
   method = *dbscan hcluster
@@ -935,12 +935,6 @@ class indexer_base(object):
 
   def find_lattice(self):
     raise NotImplementedError()
-
-  def find_lattices(self):
-    if self.params.method == "real_space_grid_search":
-      return self.find_lattices_real_space_grid_search()
-    elif self.params.method == "3d_fft":
-      return self.find_lattices_3d_fft()
 
   def find_candidate_basis_vectors_nks(self, vectors):
     '''Find the candidate basis vectors from the Patterson peaks using code
