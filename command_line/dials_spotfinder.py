@@ -51,7 +51,6 @@ class Script(ScriptRunner):
     elif len(importer.imagesets) > 1:
       raise RuntimeError("Only one imageset can be processed at a time")
     sweep = importer.imagesets[0]
-    print sweep.get_detector()[0].get_trusted_range()
     # Get the integrator from the input parameters
     print 'Configuring spot finder from input parameters'
     find_spots = SpotFinderFactory.from_parameters(params)
