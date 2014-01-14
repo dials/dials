@@ -1384,6 +1384,13 @@ class indexer(object):
       crystal_model = crystal_model.change_basis(cb_op)
       self.candidate_crystal_models.append(crystal_model)
 
+    for i_lattice in range(len(self.candidate_crystal_models)):
+      if self.target_symmetry_primitive is not None:
+        symmetrized_model = self.apply_symmetry(
+          self.candidate_crystal_models[i_lattice], self.target_symmetry_primitive)
+        print symmetrized_model.get_unit_cell()
+        self.candidate_crystal_models[i_lattice] = symmetrized_model
+
     if self.params.debug:
       file_name = "vectors.pdb"
       a = self.params.max_cell
