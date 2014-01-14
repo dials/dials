@@ -210,6 +210,52 @@ class PowderRingFilter(object):
     return flags
 
 
+class polygon(object):
+  def __init__(self, vertices):
+    assert len(vertices) > 2
+    self.vertices = vertices
+
+  def is_inside(self, x, y):
+    # http://en.wikipedia.org/wiki/Point_in_polygon
+    # http://en.wikipedia.org/wiki/Even-odd_rule
+    poly = self.vertices
+    num = len(poly)
+    i = 0
+    j = num - 1
+    inside = False
+    for i in range(num):
+      if  ((poly[i][1] > y) != (poly[j][1] > y)) and \
+          (x < (poly[j][0] - poly[i][0]) * (y - poly[i][1]) / (poly[j][1] - poly[i][1]) + poly[i][0]):
+        inside = not inside
+      j = i
+    return inside
+
+
+class UntrustedPolygonFilter(object):
+
+  def __init__(self, polygons):
+    self.polygons = polygons
+
+  def run(self, flags, sweep=None, observations=None, **kwargs):
+    for i, centroid in enumerate(observations):
+      if not flags[i]: continue
+      x, y = centroid.centroid.px_xy
+      for poly in self.polygons:
+        if poly.is_inside(x, y):
+          flags[i] = False
+    return flags
+
+  def __call__(self, flags, **kwargs):
+    ''' Call the filter and print information. '''
+    from dials.util.command_line import Command
+    Command.start('Filtering {0} spots by untrusted polygons'.format(
+        flags.count(True)))
+    flags = self.run(flags, **kwargs)
+    Command.end('Filtered {0} spots by untrusted polygons'.format(
+        flags.count(True)))
+    return flags
+
+
 class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
@@ -313,6 +359,15 @@ class SpotFinderFactory(object):
         unit_cell=params.spotfinder.filter.ice_rings.unit_cell,
         space_group=params.spotfinder.filter.ice_rings.space_group.group())
       filters.append(PowderRingFilter(crystal_symmetry))
+    if len(params.spotfinder.filter.untrusted_polygon):
+      polygons = []
+      for vertices in params.spotfinder.filter.untrusted_polygon:
+        if vertices is not None:
+          assert len(vertices) % 2 == 0
+          vertices = [vertices[i*2:i*2+2] for i in range(len(vertices)//2)]
+          polygons.append(polygon(vertices))
+      if len(polygons):
+        filters.append(UntrustedPolygonFilter(polygons))
 
     # Return the filter runner with the list of filters
     return FilterRunner(filters)

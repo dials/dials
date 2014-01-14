@@ -90,10 +90,12 @@ spotfinder
               ""
               "Used by: xds."
       .type = float(value_min=0)
+
     d_min = None
       .help = "The high resolution limit in Angstrom for a spot to be"
               "accepted by the filtering algorithm."
       .type = float(value_min=0)
+
     d_max = None
       .help = "The low resolution limit in Angstrom for a spot to be"
               "accepted by the filtering algorithm."
@@ -110,6 +112,17 @@ spotfinder
         .help = "The space group used to generate d_spacings for powder rings."
     }
 
+    untrusted_polygon = None
+      .multiple = True
+      .type = ints(value_min=0)
+
+    #untrusted_ellipse = None
+    #  .multiple = True
+    #  .type = ints(size=4, value_min=0)
+
+    #untrusted_rectangle = None
+    #  .multiple = True
+    #  .type = ints(size=4, value_min=0)
   }
   save_shoeboxes = True
     .type = bool
