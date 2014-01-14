@@ -123,7 +123,7 @@ multiple_lattice_search = False
   .type = bool
 max_lattices = None
   .type = int
-method = *3d_fft real_space_grid_search
+method = *3d_fft 1d_fft real_space_grid_search
   .type = choice
 cluster_analysis {
   method = *dbscan hcluster

@@ -35,6 +35,8 @@ def run(args):
   params = working_phil.extract()
   if params.method == "3d_fft":
     from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
+  elif params.method == "1d_fft":
+    from dials.algorithms.indexing.fft1d import indexer_fft1d as indexer
   elif params.method == "real_space_grid_search":
     from dials.algorithms.indexing.real_space_grid_search \
          import indexer_real_space_grid_search as indexer

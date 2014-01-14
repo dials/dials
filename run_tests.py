@@ -72,6 +72,7 @@ tst_list = (
     ["$D/test/algorithms/indexing/tst_index.py", "4"],
     ["$D/test/algorithms/indexing/tst_index.py", "7"],
     ["$D/test/algorithms/indexing/tst_index.py", "8"],
+    ["$D/test/algorithms/indexing/tst_index.py", "9"],
     "$D/scratch/rjg/unit_cell_refinement.py",
     )
 

@@ -320,6 +320,23 @@ def exercise_8():
                             relative_length_tolerance=0.02,
                             absolute_angle_tolerance=1)
 
+def exercise_9():
+  # thaumatin
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+  pickle_path = os.path.join(data_dir, "full.pickle")
+  sweep_path = os.path.join(data_dir, "sweep_orig.json")
+  extra_args = ["multiple_lattice_search=False", # use older non-clustering version
+                "reflections_per_degree=5",
+                "n_macro_cycles=2",
+                "method=1d_fft"]
+  expected_unit_cell = uctbx.unit_cell(
+    (58, 58, 150, 90, 90, 90))
+  expected_rmsds = (0.06, 0.05, 0.0005)
+  expected_hall_symbol = ' P 1'
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                     expected_rmsds, expected_hall_symbol)
+
 
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
@@ -327,7 +344,7 @@ def run(args):
     return
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
-               exercise_6, exercise_7, exercise_8)
+               exercise_6, exercise_7, exercise_8, exercise_9)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
