@@ -77,7 +77,6 @@ class run_one_indexing(object):
     tmp_dir = open_tmp_directory(suffix="test_3DFFT_indexing")
     os.chdir(tmp_dir)
     command = " ".join(args)
-    print command
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
     for i in range(n_expected_lattices):
