@@ -78,7 +78,6 @@ algorithms/image/threshold/boost_python/unimodal.cc -text
 algorithms/image/threshold/local.h -text
 algorithms/image/threshold/unimodal.h -text
 algorithms/indexing/__init__.py -text
-algorithms/indexing/fft1d.py -text
 algorithms/indexing/fft3d.py -text
 algorithms/indexing/indexer.py -text
 algorithms/indexing/indexer2.py -text
