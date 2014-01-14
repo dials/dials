@@ -226,6 +226,7 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
     self._num_sets = len(self._param)
     self._set_len = len(param_sets[0])
     self._total_len = self._set_len * self._num_sets
+    self._num_free = None
     self._exp_ids = experiment_ids
 
     # ensure all internal parameter sets have the same number of parameters
@@ -240,7 +241,9 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
   def num_free(self):
     """the number of free parameters"""
 
-    return sum(not x.get_fixed() for x in self._param) * self._set_len
+    if self._num_free is None:
+      self._num_free = sum(not x.get_fixed() for x in self._param) * self._set_len
+    return self._num_free
 
   # def num_total(self): inherited unchanged from ModelParameterisation
 

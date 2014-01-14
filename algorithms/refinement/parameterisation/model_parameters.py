@@ -114,6 +114,7 @@ class ModelParameterisation(object):
     self._models = models
     self._param = list(param_list)
     self._total_len = len(self._param)
+    self._num_free = None
     self._dstate_dp = [None] * len(param_list)
     self._is_multi_state = is_multi_state
     self._exp_ids = experiment_ids
@@ -122,7 +123,9 @@ class ModelParameterisation(object):
   def num_free(self):
     """the number of free parameters"""
 
-    return sum(not x.get_fixed() for x in self._param)
+    if self._num_free is None:
+      self._num_free = sum(not x.get_fixed() for x in self._param)
+    return self._num_free
 
   def num_total(self):
     """the total number of parameters, both fixed and free"""
@@ -180,7 +183,6 @@ class ModelParameterisation(object):
     # ordered list?
 
     if only_free:
-
       return [x.name for x in self._param if not x.get_fixed()]
 
     else:
@@ -219,6 +221,9 @@ class ModelParameterisation(object):
     for f, p in zip(fix, self._param):
       if f: p.fix()
       else: p.unfix()
+
+    # reset the cached number of free parameters
+    self._num_free = None
 
     return
 
