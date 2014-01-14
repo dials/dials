@@ -46,7 +46,7 @@ class indexer_real_space_grid_search(indexer_base):
     #reciprocal_space_points = reciprocal_space_points.select(
       #1/reciprocal_space_points.norms() > self.params.refinement_protocol.d_min_start)
 
-    print "indexing from %i reflections" %len(reciprocal_space_points)
+    print "Indexing from %i reflections" %len(reciprocal_space_points)
 
     def compute_functional(vector):
       two_pi_S_dot_v = 2 * math.pi * reciprocal_space_points.dot(vector)
@@ -113,9 +113,9 @@ class indexer_real_space_grid_search(indexer_base):
 
     print "Number of unique vectors: %i" %len(unique_vectors)
 
-    for i in range(len(unique_vectors)):
-      print compute_functional(unique_vectors[i].elems), unique_vectors[i].length(), unique_vectors[i].elems
-      print
+    #for i in range(len(unique_vectors)):
+    #  print compute_functional(unique_vectors[i].elems), unique_vectors[i].length(), unique_vectors[i].elems
+    #  print
 
     crystal_models = []
     while True:
@@ -138,8 +138,8 @@ class indexer_real_space_grid_search(indexer_base):
                           verbosity=0)
         n_indexed.append((refl.crystal() > -1).count(True))
       perm = flex.sort_permutation(n_indexed, reverse=True)
-      print list(perm)
-      print list(n_indexed.select(perm))
+      #print list(perm)
+      #print list(n_indexed.select(perm))
       print candidate_orientation_matrices[perm[0]]
 
       if n_indexed[perm[0]] < 50:
