@@ -78,7 +78,10 @@ algorithms/image/threshold/boost_python/unimodal.cc -text
 algorithms/image/threshold/local.h -text
 algorithms/image/threshold/unimodal.h -text
 algorithms/indexing/__init__.py -text
+algorithms/indexing/fft3d.py -text
 algorithms/indexing/indexer.py -text
+algorithms/indexing/indexer2.py -text
+algorithms/indexing/real_space_grid_search.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/integration_ext.cc -text
@@ -583,9 +586,7 @@ scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plai
 scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
-scratch/rjg/index_3D_FFT_simple.py -text
 scratch/rjg/run_indexing_api.py -text
-scratch/rjg/tst_index.py -text
 scratch/rjg/unit_cell_refinement.py -text
 test/SConscript -text
 test/__init__.py -text
@@ -607,6 +608,7 @@ test/algorithms/image/filter/tst_median.py -text
 test/algorithms/image/filter/tst_summed_area.py -text
 test/algorithms/image/threshold/tst_local.py -text
 test/algorithms/image/tst_centroid.py -text
+test/algorithms/indexing/tst_index.py -text
 test/algorithms/integration/profile/__init__.py -text
 test/algorithms/integration/profile/tst_grid_sampler.py -text
 test/algorithms/integration/profile/tst_profile_fitting.py -text

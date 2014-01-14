@@ -67,16 +67,13 @@ class run_one_indexing(object):
                relative_length_tolerance=0.005,
                absolute_angle_tolerance=0.5):
 
-    py_script_path = libtbx.env.find_in_repositories(
-      relative_path="dials/scratch/rjg/index_3D_FFT_simple.py",
-      test=os.path.isfile)
-
-    args = ["dials.python", py_script_path, pickle_path, sweep_path] + extra_args
+    args = ["dials.index", pickle_path, sweep_path] + extra_args
 
     cwd = os.path.abspath(os.curdir)
     tmp_dir = open_tmp_directory(suffix="test_3DFFT_indexing")
     os.chdir(tmp_dir)
     command = " ".join(args)
+    #print command
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
     for i in range(n_expected_lattices):
