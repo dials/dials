@@ -1,4 +1,9 @@
 from __future__ import division
+try:
+  import scipy.linalg # import dependency
+except ImportError, e:
+  pass
+
 from libtbx.phil import command_line
 from dials.util.command_line import Importer
 from dials.algorithms.indexing.indexer2 import master_phil_scope
