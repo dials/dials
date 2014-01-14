@@ -79,10 +79,11 @@ def get_fd_gradients(pred_param, hkl, phi, frame, reflection_predictor,
   and contains the step size for the difference calculations for each
   parameter."""
 
-  gon = pred_param._gonio
-  src = pred_param._beam
-  det = pred_param._detector
-  xl = pred_param._crystal
+  # This is a bit nasty as we access 'private' attributes of pred_param
+  gon = pred_param._experiments[0].goniometer
+  src = pred_param._experiments[0].beam
+  det = pred_param._experiments[0].detector
+  xl = pred_param._experiments[0].crystal
   rp = reflection_predictor
 
   p_vals = pred_param.get_param_vals()
@@ -172,27 +173,26 @@ sigmas = [0.01 * p for p in p_vals]
 new_vals = random_param_shift(p_vals, sigmas)
 xluc_param.set_param_vals(new_vals)
 
-#### Unit tests
-
-# Build a prediction equation parameterisation
-pred_param = VaryingCrystalPredictionParameterisation(
-    mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
-    [xlo_param], [xluc_param])
-
-# Generate some indices
-resolution = 2.0
-index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-                      space_group(space_group_symbols(1).hall()).type(),
-                      resolution)
-indices = index_generator.to_array()
-
-# Generate list of reflections
+# Generate an ExperimentList
 experiments = ExperimentList()
 experiments.append(Experiment(
       beam=mybeam, detector=mydetector, goniometer=mygonio,
       crystal=mycrystal, imageset=None))
 sweep_range = myscan.get_oscillation_range(deg=False)
 ref_predictor = ReflectionPredictor(experiments, sweep_range)
+
+#### Unit tests
+
+# Build a prediction equation parameterisation
+pred_param = VaryingCrystalPredictionParameterisation(experiments, [det_param],
+                                        [s0_param], [xlo_param], [xluc_param])
+
+# Generate some reflections
+resolution = 2.0
+index_generator = IndexGenerator(mycrystal.get_unit_cell(),
+                      space_group(space_group_symbols(1).hall()).type(),
+                      resolution)
+indices = index_generator.to_array()
 ref_list = ref_predictor.predict(indices)
 
 # Pull out lists of required reflection data

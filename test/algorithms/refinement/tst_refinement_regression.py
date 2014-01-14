@@ -109,9 +109,23 @@ s0_param.set_fixed([True, False])
 # prediction equation                                                  #
 ########################################################################
 
-pred_param = XYPhiPredictionParameterisation(
-mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
-[xlo_param], [xluc_param])
+# Build a mock scan for a 180 degree sweep
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,1800),
+                      exposure_times = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(1800),
+                      deg = True)
+
+# Build an ExperimentList
+experiments = ExperimentList()
+experiments.append(Experiment(
+      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      scan=myscan, crystal=mycrystal, imageset=None))
+
+# Create the PredictionParameterisation
+pred_param = XYPhiPredictionParameterisation(experiments, [det_param],
+    [s0_param], [xlo_param], [xluc_param])
 
 ################################
 # Apply known parameter shifts #
@@ -158,13 +172,6 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices = index_generator.to_array()
 
-# Build a mock scan for a 180 degree sweep
-sf = scan_factory()
-myscan = sf.make_scan(image_range = (1,1800),
-                      exposure_times = 0.1,
-                      oscillation = (0, 0.1),
-                      epochs = range(1800),
-                      deg = True)
 sweep_range = myscan.get_oscillation_range(deg=False)
 temp = myscan.get_oscillation(deg=False)
 im_width = temp[1] - temp[0]
@@ -172,10 +179,6 @@ assert sweep_range == (0., pi)
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
 # Build a reflection predictor
-experiments = ExperimentList()
-experiments.append(Experiment(
-      beam=mybeam, detector=mydetector, goniometer=mygonio,
-      scan=myscan, crystal=mycrystal, imageset=None))
 ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)

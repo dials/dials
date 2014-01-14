@@ -75,10 +75,11 @@ def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
   and contains the step size for the difference calculations for each
   parameter."""
 
-  gon = pred_param._gonio
-  src = pred_param._beam
-  det = pred_param._detector
-  xl = pred_param._crystal
+  # This is a bit nasty as we access 'private' attributes of pred_param
+  gon = pred_param._experiments[0].goniometer
+  src = pred_param._experiments[0].beam
+  det = pred_param._experiments[0].detector
+  xl = pred_param._experiments[0].crystal
   rp = reflection_predictor
 
   p_vals = pred_param.get_param_vals()
@@ -134,41 +135,35 @@ s0_param = BeamParameterisationOrientation(mybeam, mygonio)
 xlo_param = CrystalOrientationParameterisation(mycrystal)
 xluc_param = CrystalUnitCellParameterisation(mycrystal)
 
-#### Unit tests
-
-# Build a prediction parameterisation with a single detector model
-pred_param = XYPhiPredictionParameterisation(mydetector,
-             mybeam, mycrystal, mygonio, [det_param])
-
-# Check the accessors
-assert len(pred_param) == 6
-for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
-  assert a==b
-
-pred_param.set_param_vals([100., 1.0, 1.0, 0., 0., 0.])
-for (a, b) in zip(pred_param.get_param_vals(), det_param.get_param_vals()):
-  assert a==b
-
-# Build a full global parameterisation
-pred_param = XYPhiPredictionParameterisation(
-    mydetector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
-    [xlo_param], [xluc_param])
-
-# Generate some indices
-resolution = 2.0
-index_generator = IndexGenerator(mycrystal.get_unit_cell(),
-                      space_group(space_group_symbols(1).hall()).type(),
-                      resolution)
-indices = index_generator.to_array()
-
-# Generate list of reflections
+# Create an ExperimentList
 experiments = ExperimentList()
 experiments.append(Experiment(
       beam=mybeam, detector=mydetector, goniometer=mygonio,
       crystal=mycrystal, imageset=None))
 sweep_range = (0., pi/5.)
+
+#### Unit tests
+
+# Build a prediction parameterisation
+pred_param = XYPhiPredictionParameterisation(experiments,
+               detector_parameterisations = [det_param],
+               beam_parameterisations = [s0_param],
+               xl_orientation_parameterisations = [xlo_param],
+               xl_unit_cell_parameterisations = [xluc_param])
+
+# Create a ReflectionPredictor
 ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
+# Rebuild a full global parameterisation
+pred_param = XYPhiPredictionParameterisation(experiments, [det_param],
+                                        [s0_param], [xlo_param], [xluc_param])
+
+# Generate reflections
+resolution = 2.0
+index_generator = IndexGenerator(mycrystal.get_unit_cell(),
+                      space_group(space_group_symbols(1).hall()).type(),
+                      resolution)
+indices = index_generator.to_array()
 ref_list = ref_predictor.predict(indices)
 
 # Pull out lists of required reflection data
