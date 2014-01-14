@@ -85,7 +85,11 @@ namespace dials { namespace algorithms {
     int ncol_tot=tmp_total.accessor()[1];
     int nrow_tot=tmp_total.accessor()[0];
 
-    af::versa< double, af::c_grid<2> > total(af::c_grid<2>(nrow_tot, ncol_tot),0);
+    if( ncol_tot < ncol_in or nrow_tot < nrow_in ){
+      std::cout << "\n WRONG SISE OF ARRAYS \n";
+    }
+
+    af::versa< double, af::c_grid<2> > total(af::c_grid<2>(nrow_tot,ncol_tot),0);
 
     for (int row = 0; row < nrow_tot; row++) {
       for (int col = 0; col < ncol_tot; col++) {

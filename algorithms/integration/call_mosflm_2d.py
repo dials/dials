@@ -4,7 +4,7 @@ from dials.algorithms.integration.mosflm_2D_profile import \
 
 from dials.model.data import Reflection, ReflectionList
 def mosflm_caller(rlist, xmax, ymax, n_div):
-  print "building profiles ...."
+  print "building table with ", n_div,"*",n_div,"profiles ...."
   ncol = n_div
   nrow = n_div
   arr_rlist = []
@@ -38,7 +38,7 @@ def mosflm_caller(rlist, xmax, ymax, n_div):
   for col in range(ncol):
     for row in range(nrow):
       arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col],
-                                           arr_proff, row, col)
+                                           arr_proff, row, col, xmax, ymax)
 
   new_rlist = ReflectionList()
   for numpos in lst_pos:

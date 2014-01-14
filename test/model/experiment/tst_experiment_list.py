@@ -513,6 +513,7 @@ class TestExperimentListFactory(object):
     experiments = ExperimentListFactory.from_args(filenames)
 
     # Have 1 experiment
+    print len(experiments)
     assert(len(experiments) == 1)
     assert(experiments[0].imageset is not None)
     assert(experiments[0].beam is not None)

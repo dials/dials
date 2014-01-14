@@ -38,8 +38,8 @@ def make_2d_profile(reflections):
   #print big_nrow, big_ncol
   big_nrow = big_nrow * 2 + 1
   big_ncol = big_ncol * 2 + 1
-  sumation = flex.double(flex.grid(big_nrow, big_ncol))
-  descr = flex.double(flex.grid(1, 3))
+  sumation = flex.double(flex.grid(big_nrow, big_ncol), 0)
+  descr = flex.double(flex.grid(1, 3), 0)
   for ref in select_rlist:
     shoebox = ref.shoebox
     #mask = ref.shoebox_mask                                 # may be needed soon
@@ -59,20 +59,138 @@ def make_2d_profile(reflections):
 
   return sumation, thold
 
-def fit_profile_2d(reflections, arr_proff, row, col):
+def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
+  import math
   local_average = arr_proff[row][col][0]
   thold = arr_proff[row][col][1]
 
-  if_you_want_to_see_how_the_profiles_look = '''
-  from matplotlib import pyplot as plt
-  data2d = average.as_numpy_array()
-  plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
-  plt.show()
-  '''
+  len_tabl = len(arr_proff)
   descr = flex.double(flex.grid(1, 3))
+  x_cuad_size = float(xmax) / len_tabl
+  x_half_cuad_size = (x_cuad_size) / 2.0
+  y_cuad_size = float(ymax) / len_tabl
+  y_half_cuad_size = (y_cuad_size) / 2.0
+
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:
-      average = local_average
+
+
+      x, y = ref.image_coord_px            # consider replasing with centroid pos
+
+      if (x > x_half_cuad_size        and y > y_half_cuad_size and
+          x < xmax - x_half_cuad_size and y < ymax - y_half_cuad_size):
+
+        x_centr_of_cuad = col * x_cuad_size + x_half_cuad_size
+        y_centr_of_cuad = row * y_cuad_size + y_half_cuad_size
+
+        if x < x_centr_of_cuad and y < y_centr_of_cuad:
+          tp_lf_pos = row - 1, col - 1
+          tp_rg_pos =row - 1, col
+          bt_lf_pos = row, col - 1
+          bt_rg_pos = row, col
+        elif x > x_centr_of_cuad and y < y_centr_of_cuad:
+          tp_lf_pos = row - 1, col
+          tp_rg_pos = row - 1, col + 1
+          bt_lf_pos = row, col
+          bt_rg_pos = row, col + 1
+        elif x < x_centr_of_cuad and y > y_centr_of_cuad:
+          tp_lf_pos = row, col - 1
+          tp_rg_pos = row, col
+          bt_lf_pos = row + 1, col - 1
+          bt_rg_pos = row + 1, col
+        else:
+          tp_lf_pos = row, col
+          tp_rg_pos = row, col + 1
+          bt_lf_pos = row + 1, col
+          bt_rg_pos = row + 1, col + 1
+
+        tp_lf_average = arr_proff[tp_lf_pos[0]][tp_lf_pos[1]][0]
+        tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
+        bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
+        bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
+
+
+
+        tp_lf_x = tp_lf_pos[1] * x_cuad_size + x_half_cuad_size
+        tp_lf_y = tp_lf_pos[0] * y_cuad_size + y_half_cuad_size
+        dx = abs(tp_lf_x - x)
+        dy = abs(tp_lf_y - y)
+        tp_lf_dist = math.sqrt(dx * dx + dy * dy)
+
+        tp_rg_x = tp_rg_pos[1] * x_cuad_size + x_half_cuad_size
+        tp_rg_y = tp_rg_pos[0] * y_cuad_size + y_half_cuad_size
+        dx = abs(tp_rg_x - x)
+        dy = abs(tp_rg_y - y)
+        tp_rg_dist = math.sqrt(dx * dx + dy * dy)
+
+        bt_lf_x = bt_lf_pos[1] * x_cuad_size + x_half_cuad_size
+        bt_lf_y = bt_lf_pos[0] * y_cuad_size + y_half_cuad_size
+        dx = abs(bt_lf_x - x)
+        dy = abs(bt_lf_y - y)
+        bt_lf_dist = math.sqrt(dx * dx + dy * dy)
+
+        bt_rg_x = bt_rg_pos[1] * x_cuad_size + x_half_cuad_size
+        bt_rg_y = bt_rg_pos[0] * y_cuad_size + y_half_cuad_size
+        dx = abs(bt_rg_x - x)
+        dy = abs(bt_rg_y - y)
+        bt_rg_dist = math.sqrt(dx * dx + dy * dy)
+
+        total_dist = tp_lf_dist + tp_rg_dist + bt_lf_dist + bt_rg_dist
+        tp_lf_contrib = (total_dist - tp_lf_dist) / (total_dist * 3)
+        tp_rg_contrib = (total_dist - tp_rg_dist) / (total_dist * 3)
+        bt_lf_contrib = (total_dist - bt_lf_dist) / (total_dist * 3)
+        bt_rg_contrib = (total_dist - bt_rg_dist) / (total_dist * 3)
+
+        total_contrib = tp_lf_contrib + tp_rg_contrib + bt_lf_contrib + bt_rg_contrib
+
+        big_nrow = tp_lf_average.all()[0]
+        if tp_rg_average.all()[0] > big_nrow:
+          big_nrow = tp_rg_average.all()[0]
+        if bt_lf_average.all()[0] > big_nrow:
+          big_nrow = bt_lf_average.all()[0]
+        if bt_rg_average.all()[0] > big_nrow:
+          big_nrow = bt_rg_average.all()[0]
+
+
+        big_ncol = tp_lf_average.all()[1]
+        if tp_rg_average.all()[1] > big_ncol:
+          big_ncol = tp_rg_average.all()[1]
+        if bt_lf_average.all()[1] > big_ncol:
+          big_ncol = bt_lf_average.all()[1]
+        if bt_rg_average.all()[1] > big_ncol:
+          big_ncol = bt_rg_average.all()[1]
+
+        average = flex.double(flex.grid(big_ncol, big_ncol), 0)
+
+        descr[0, 0] = float(tp_lf_average.all()[1])/2.0
+        descr[0, 1] = float(tp_lf_average.all()[0])/2.0
+        descr[0, 2] = float(tp_lf_contrib)
+        average = add_2d(descr, tp_lf_average, average)
+        descr[0, 0] = float(tp_rg_average.all()[1])/2.0
+        descr[0, 1] = float(tp_rg_average.all()[0])/2.0
+        descr[0, 2] = float(tp_rg_contrib)
+        average = add_2d(descr, tp_rg_average, average)
+        descr[0, 0] = float(bt_lf_average.all()[1])/2.0
+        descr[0, 1] = float(bt_lf_average.all()[0])/2.0
+        descr[0, 2] = float(bt_lf_contrib)
+        average = add_2d(descr, bt_lf_average, average)
+        descr[0, 0] = float(bt_rg_average.all()[1])/2.0
+        descr[0, 1] = float(bt_rg_average.all()[0])/2.0
+        descr[0, 2] = float(bt_rg_contrib)
+        average = add_2d(descr, bt_rg_average, average)
+
+      else:
+        #print "in else"
+        average = local_average
+
+
+      if_you_want_to_see_how_the_profiles_look = '''
+      from matplotlib import pyplot as plt
+      data2d = average.as_numpy_array()
+      plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
+      plt.show()
+      #'''
+
       shoebox = ref.shoebox
       #mask = ref.shoebox_mask                               # may be needed soon
       background = ref.shoebox_background
