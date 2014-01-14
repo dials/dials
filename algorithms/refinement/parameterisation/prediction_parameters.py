@@ -17,8 +17,16 @@ from scitbx import matrix
 from dials.array_family import flex
 from dials_refinement_helpers_ext import *
 
+from collections import namedtuple
+# A helper bucket to store cached values
+ModelCache = namedtuple('ModelCache',
+  ['D_mats', 's0', 'U', 'B', 'UB', 'axis'])
+
 class PredictionParameterisation(object):
   """
+
+  FIXME UPDATE THIS DOCSTRING
+
   Abstract interface for a class that groups together model parameterisations
   relating to diffraction geometry and provides:
 
@@ -63,20 +71,14 @@ class PredictionParameterisation(object):
   """
 
   def __init__(self,
-               detector_model,
-               beam_model,
-               crystal_model,
-               goniometer_model = None,
+               experiments,
                detector_parameterisations = None,
                beam_parameterisations = None,
                xl_orientation_parameterisations = None,
                xl_unit_cell_parameterisations = None):
 
     # References to the underlying models
-    self._detector = detector_model
-    self._beam = beam_model
-    self._crystal = crystal_model
-    self._gonio = goniometer_model
+    self._experiments = experiments
 
     # Keep references to all parameterised models
     self._detector_parameterisations = detector_parameterisations
@@ -87,6 +89,21 @@ class PredictionParameterisation(object):
         xl_unit_cell_parameterisations
 
     self._length = self._len()
+
+    # Calculate Experiment to parameterisation mapping
+    e2bp = dict([(ids, i) for i, dp in enumerate(beam_parameterisations) \
+                 for ids in dp.get_experiment_ids()])
+    e2xop = dict([(ids, i) for i, dp in enumerate(xl_orientation_parameterisations) \
+                 for ids in dp.get_experiment_ids()])
+    e2xucp = dict([(ids, i) for i, dp in enumerate(xl_unit_cell_parameterisations) \
+                  for ids in dp.get_experiment_ids()])
+    e2dp = dict([(ids, i) for i, dp in enumerate(detector_parameterisations) \
+                 for ids in dp.get_experiment_ids()])
+    from collections import namedtuple
+    ParamSet = namedtuple('ParamSet', ['beam_param', 'xl_ori_param',
+                                         'xl_uc_param', 'det_param'])
+    self._exp_to_param = {i: ParamSet(e2bp[i], e2xop[i], e2xucp[i], e2dp[i]) \
+                          for i, _ in enumerate(experiments)}
 
     # Fill out remaining attributes by a call to prepare
     self.prepare()
@@ -157,10 +174,10 @@ class PredictionParameterisation(object):
       param_names.extend(names)
 
     if self._beam_parameterisations:
-      src_param_name_lists = [x.get_param_names() for x in \
+      beam_param_name_lists = [x.get_param_names() for x in \
                          self._beam_parameterisations]
-      params = ["Source%d" % i + x for i, l \
-                in enumerate(src_param_name_lists) for x in l]
+      params = ["Beam%d" % i + x for i, l \
+                in enumerate(beam_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_orientation_parameterisations:
@@ -211,18 +228,25 @@ class PredictionParameterisation(object):
   def prepare(self):
     """Cache required quantities that are not dependent on hkl"""
 
-    # Obtain various quantities of interest from the experimental model
-    self._D_mats = [matrix.sqr(p.get_D_matrix()) for p in self._detector]
-    self._s0 = matrix.col(self._beam.get_s0())
-    self._U = self._crystal.get_U()
-    self._B = self._crystal.get_B()
-    self._UB = self._U * self._B
-    if self._gonio:
-      self._axis = matrix.col(self._gonio.get_rotation_axis())
-    else:
-      self._axis = None
+    self._cache = []
+    for e in self._experiments:
 
-  def get_gradients(self, h, s, phi, panel_id, obs_image_number = None):
+      D_mats=[matrix.sqr(p.get_D_matrix()) for p in e.detector]
+      s0 = matrix.col(e.beam.get_s0())
+      U = e.crystal.get_U()
+      B = e.crystal.get_B()
+      UB = U * B
+      if e.goniometer:
+        axis = matrix.col(e.goniometer.get_rotation_axis())
+      else:
+        axis = None
+
+      self._cache.append(ModelCache(D_mats, s0, U, B, UB, axis))
+
+    return
+
+  def get_gradients(self, h, s, phi, panel_id, obs_image_number=None,
+                    experiment_id=0):
     """
     Calculate gradients of the prediction formula with respect to each
     of the parameters of the contained models, for the reflection with
@@ -237,8 +261,13 @@ class PredictionParameterisation(object):
     varying version of the class
     """
 
-    # extract the right panel matrix
-    self._D = self._D_mats[panel_id]
+    # extract the right models
+    self._D = self._cache[experiment_id].D_mats[panel_id]
+    self._s0 = self._cache[experiment_id].s0
+    self._U = self._cache[experiment_id].U
+    self._B = self._cache[experiment_id].B
+    self._UB = self._cache[experiment_id].UB
+    self._axis = self._cache[experiment_id].axis
 
     return self._get_gradients_core(h, s, phi, panel_id)
 
@@ -296,7 +325,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       print "for reflection", h
       print "with scattering vector", s
       print "where r =", r
-      print "e =",matrix.col(self._gonio.get_rotation_axis())
+      print "e =",matrix.col(self._axis)
       print "s0 =",self._s0
       print "U =",self._U
       print ("this reflection forms angle with the equatorial plane "

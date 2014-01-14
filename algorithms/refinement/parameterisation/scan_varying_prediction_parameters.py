@@ -18,6 +18,10 @@ from dials_refinement_helpers_ext import *
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation
 
+# A helper bucket to store cached values
+from collections import namedtuple
+ModelCache = namedtuple('ModelCache', ['D_mats', 's0', 'axis'])
+
 class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
   """Support crystal parameterisations that vary with time (via the proxy of
   "observed image number")"""
@@ -29,9 +33,19 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     # Same as prepare for the parent class except we don't get
     # U and B from the model
-    self._D = matrix.sqr(self._detector[0].get_D_matrix())
-    self._s0 = matrix.col(self._beam.get_s0())
-    self._axis = matrix.col(self._gonio.get_rotation_axis())
+    self._cache = []
+    for e in self._experiments:
+
+      D_mats=[matrix.sqr(p.get_D_matrix()) for p in e.detector]
+      s0 = matrix.col(e.beam.get_s0())
+      if e.goniometer:
+        axis = matrix.col(e.goniometer.get_rotation_axis())
+      else:
+        axis = None
+
+      self._cache.append(ModelCache(D_mats, s0, axis=axis))
+
+    return
 
   def compose(self, obs_image_number):
     """Compose scan-varying crystal parameterisations at the specified
@@ -54,11 +68,17 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
          self._xl_unit_cell_parameterisations[0].get_state()
     return UB
 
-  def get_gradients(self, h, s, phi, panel_id, obs_image_number):
+  def get_gradients(self, h, s, phi, panel_id, obs_image_number,
+                    experiment_id=0):
 
     #self.prepare()
     if obs_image_number != self._obs_image_number:
       self.compose(obs_image_number)
+
+    # extract the right models for the requested experiment
+    self._D = self._cache[experiment_id].D_mats[panel_id]
+    self._s0 = self._cache[experiment_id].s0
+    self._axis = self._cache[experiment_id].axis
 
     return self._get_gradients_core(h, s, phi, panel_id)
 

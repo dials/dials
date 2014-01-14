@@ -354,7 +354,7 @@ class RefinerFactory(object):
         # If a crystal is scan-varying, then it must always be found alongside
         # the same Scan and Goniometer in any Experiments in which it appears
         assert [goniometer, scan].count(None) == 0
-        assert all(g is goniometer and s is scan for (s, g) in assoc_models)
+        assert all(g is goniometer and s is scan for (g, s) in assoc_models)
 
         if crystal_options.num_intervals == "fixed_width":
           sweep_range_deg = scan.get_oscillation_range(deg=True)
@@ -459,32 +459,20 @@ class RefinerFactory(object):
       xl_uc_params = xl_uc_params_stills
       param_type = "stills"
 
-    # Experiment to parameterisation mappings
-    e2bp = dict([(ids, i) for i, dp in enumerate(beam_params) for ids in dp.get_experiment_ids()])
-    e2xop = dict([(ids, i) for i, dp in enumerate(xl_ori_params) for ids in dp.get_experiment_ids()])
-    e2xucp = dict([(ids, i) for i, dp in enumerate(xl_uc_params) for ids in dp.get_experiment_ids()])
-    e2dp = dict([(ids, i) for i, dp in enumerate(det_params) for ids in dp.get_experiment_ids()])
-
-    from collections import namedtuple
-    ParamSet = namedtuple('ParamSet', ['beam_param', 'xl_ori_param',
-                                         'xl_uc_param', 'det_param'])
-    exp_to_param = {i: ParamSet(e2bp[i], e2xop[i], e2xucp[i], e2dp[i]) \
-                    for i, _ in enumerate(experiments)}
-
     # Prediction equation parameterisation
     if param_type is "scans":
       if crystal_options.scan_varying:
         pred_param = par.VaryingCrystalPredictionParameterisation(
-            detector, beam, crystal, goniometer,
+            experiments,
             det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
         pred_param = par.XYPhiPredictionParameterisation(
-            detector, beam, crystal, goniometer,
+            experiments,
             det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
     else:
       assert param_type is "stills"
       pred_param = par.XYPredictionParameterisation(
-          detector, beam, crystal, goniometer,
+          experiments,
           det_params, beam_params, xl_ori_params, xl_uc_params)
 
     # Parameter reporting
