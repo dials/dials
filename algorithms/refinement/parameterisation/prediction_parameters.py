@@ -269,7 +269,7 @@ class PredictionParameterisation(object):
     self._UB = self._cache[experiment_id].UB
     self._axis = self._cache[experiment_id].axis
 
-    return self._get_gradients_core(h, s, phi, panel_id)
+    return self._get_gradients_core(h, s, phi, panel_id, experiment_id)
 
 
 class XYPhiPredictionParameterisation(PredictionParameterisation):
@@ -281,7 +281,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
   Untested for multiple sensor detectors.
   """
 
-  def _get_gradients_core(self, h, s, phi, panel_id):
+  def _get_gradients_core(self, h, s, phi, panel_id, experiment_id):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     that reflects at rotation angle phi with scattering vector s that
@@ -345,24 +345,24 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # parameterisation only. All derivatives of phi are zero for detector
     # parameters
     if self._detector_parameterisations:
-      self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id)
+      self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id, experiment_id)
 
     # Calc derivatives of pv and phi wrt each parameter of each beam
     # parameterisation that is present.
     if self._beam_parameterisations:
-      self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0)
+      self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0, experiment_id)
 
     # Calc derivatives of pv and phi wrt each parameter of each crystal
     # orientation parameterisation that is present.
     if self._xl_orientation_parameterisations:
       self._xl_orientation_derivatives(dpv_dp, dphi_dp, R, h, s, \
-                                       e_X_r, e_r_s0)
+                                       e_X_r, e_r_s0, experiment_id)
 
     # Now derivatives of pv and phi wrt each parameter of each crystal unit
     # cell parameterisation that is present.
     if self._xl_unit_cell_parameterisations:
       self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, R, h, s, \
-                                       e_X_r, e_r_s0)
+                                       e_X_r, e_r_s0, experiment_id)
 
     # calculate positional derivatives from d[pv]/dp
     pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
@@ -371,7 +371,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return zip(dX_dp, dY_dp, dphi_dp)
 
-  def _detector_derivatives(self, dpv_dp, dphi_dp, pv, panel_id):
+  def _detector_derivatives(self, dpv_dp, dphi_dp, pv, panel_id, experiment_id):
     """helper function to extend the derivatives lists by
     derivatives of the detector parameterisations"""
     for idet, det in enumerate(self._detector_parameterisations):
@@ -405,7 +405,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0):
+  def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0, experiment_id):
     """helper function to extend the derivatives lists by
     derivatives of the beam parameterisations"""
 
@@ -427,7 +427,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     return
 
   def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
-                                  e_X_r, e_r_s0):
+                                  e_X_r, e_r_s0, experiment_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -456,7 +456,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     return
 
   def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
-                                  e_X_r, e_r_s0):
+                                  e_X_r, e_r_s0, experiment_id):
 
     for xluc in self._xl_unit_cell_parameterisations:
       dB_dxluc_p = xluc.get_ds_dp()
@@ -503,7 +503,7 @@ class XYPhiPredictionParameterisation_py(XYPhiPredictionParameterisation):
   """Python version, overloading functions to calc derivatives only.
   Slow, but somewhat easier to read."""
 
-  def _detector_derivatives(self, dpv_dp, dphi_dp, pv):
+  def _detector_derivatives(self, dpv_dp, dphi_dp, pv, experiment_id):
 
     """helper function to extend the derivatives lists by
     derivatives of the detector parameterisations"""
@@ -523,7 +523,7 @@ class XYPhiPredictionParameterisation_py(XYPhiPredictionParameterisation):
 
     return
 
-  def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0):
+  def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0, experiment_id):
     """helper function to extend the derivatives lists by
     derivatives of the beam parameterisations"""
 
@@ -540,7 +540,7 @@ class XYPhiPredictionParameterisation_py(XYPhiPredictionParameterisation):
     return
 
   def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
-                                  e_X_r, e_r_s0):
+                                  e_X_r, e_r_s0, experiment_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -561,7 +561,7 @@ class XYPhiPredictionParameterisation_py(XYPhiPredictionParameterisation):
     return
 
   def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
-                                  e_X_r, e_r_s0):
+                                  e_X_r, e_r_s0, experiment_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 

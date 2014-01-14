@@ -80,9 +80,9 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     self._s0 = self._cache[experiment_id].s0
     self._axis = self._cache[experiment_id].axis
 
-    return self._get_gradients_core(h, s, phi, panel_id)
+    return self._get_gradients_core(h, s, phi, panel_id, experiment_id)
 
-  def _get_gradients_core(self, h, s, phi, panel_id):
+  def _get_gradients_core(self, h, s, phi, panel_id, experiment_id):
 
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
@@ -137,7 +137,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       print "for reflection", h
       print "with scattering vector", s
       print "where r =", r
-      print "e =",matrix.col(self._gonio.get_rotation_axis())
+      print "e =",matrix.col(self._axis)
       print "s0 =",self._s0
       print "U(t) =",U
       print ("this reflection forms angle with the equatorial plane "
@@ -157,24 +157,24 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # parameterisation only. All derivatives of phi are zero for detector
     # parameters
     if self._detector_parameterisations:
-      self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id)
+      self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id, experiment_id)
 
     # Calc derivatives of pv and phi wrt each parameter of each beam
     # parameterisation that is present.
     if self._beam_parameterisations:
-      self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0)
+      self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0, experiment_id)
 
     # Calc derivatives of pv and phi wrt each parameter of each
     # scan-varying crystal orientation parameterisation
     if self._xl_orientation_parameterisations:
       self._xl_orientation_derivatives(dpv_dp, dphi_dp, \
-              self._obs_image_number, B, R, h, s, e_X_r, e_r_s0)
+              self._obs_image_number, B, R, h, s, e_X_r, e_r_s0, experiment_id)
 
     # Now derivatives of pv and phi wrt each parameter of each
     # scan-varying crystal unit cell parameterisation
     if self._xl_unit_cell_parameterisations:
       self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, \
-              self._obs_image_number, U, R, h, s, e_X_r, e_r_s0)
+              self._obs_image_number, U, R, h, s, e_X_r, e_r_s0, experiment_id)
 
     # calculate positional derivatives from d[pv]/dp
     pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
@@ -184,7 +184,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     return zip(dX_dp, dY_dp, dphi_dp)
 
   def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, \
-          obs_image_number, B, R, h, s, e_X_r, e_r_s0):
+          obs_image_number, B, R, h, s, e_X_r, e_r_s0, experiment_id):
     """Adds calculation at obs_image_number for scan-varying
     parameters"""
 
@@ -205,7 +205,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     return
 
   def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, \
-          obs_image_number, U, R, h, s, e_X_r, e_r_s0):
+          obs_image_number, U, R, h, s, e_X_r, e_r_s0, experiment_id):
     """Adds calculation at obs_image_number for scan-varying
     parameters"""
 
