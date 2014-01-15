@@ -28,15 +28,17 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
 
   rmsd_names = ["RMSD_X", "RMSD_Y"]
 
-  def __init__(self, reflection_predictor, detector, ref_man,
+  def __init__(self, experiments, reflection_predictor, ref_man,
                prediction_parameterisation,
                frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None):
 
-    Target.__init__(self, reflection_predictor, detector, ref_man,
+    Target.__init__(self, experiments, reflection_predictor, ref_man,
                     prediction_parameterisation)
 
     # Set up the RMSD achieved criterion
+    #FIXME take detector from the first Experiment only!
+    detector = experiments[0].detector
     if not absolute_cutoffs:
       pixel_sizes = [p.get_pixel_size() for p in detector]
       min_px_size_x = min(e[0] for e in pixel_sizes)

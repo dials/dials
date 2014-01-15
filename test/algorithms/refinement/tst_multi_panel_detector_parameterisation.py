@@ -115,10 +115,6 @@ if __name__ == '__main__':
   mycrystal = models.crystal
   mybeam = models.beam
 
-  ################################
-  # Build a multi-panel detector #
-  ################################
-
   # Make a 3x3 multi panel detector filling the same space as the existing
   # single panel detector. Each panel of the multi-panel detector has pixels with
   # 1/3 the length dimensions of the single panel.
@@ -128,6 +124,29 @@ if __name__ == '__main__':
     for y in range(3):
       new_panel = make_panel_in_array((x, y), single_panel_detector[0])
       multi_panel_detector.add_panel(new_panel)
+
+  # Build a mock scan for a 180 degree sweep
+  sf = scan_factory()
+  myscan = sf.make_scan(image_range = (1,1800),
+                        exposure_times = 0.1,
+                        oscillation = (0, 0.1),
+                        epochs = range(1800),
+                        deg = True)
+  sweep_range = myscan.get_oscillation_range(deg=False)
+  temp = myscan.get_oscillation(deg=False)
+  im_width = temp[1] - temp[0]
+  assert sweep_range == (0., pi)
+  assert approx_equal(im_width, 0.1 * pi / 180.)
+
+  # Build ExperimentLists
+  experiments_single_panel = ExperimentList()
+  experiments_multi_panel = ExperimentList()
+  experiments_single_panel.append(Experiment(
+        beam=mybeam, detector=single_panel_detector, goniometer=mygonio,
+        scan=myscan, crystal=mycrystal, imageset=None))
+  experiments_multi_panel.append(Experiment(
+        beam=mybeam, detector=multi_panel_detector, goniometer=mygonio,
+        scan=myscan, crystal=mycrystal, imageset=None))
 
   ###########################
   # Parameterise the models #
@@ -151,13 +170,11 @@ if __name__ == '__main__':
   # prediction equation                                                  #
   ########################################################################
 
-  pred_param = XYPhiPredictionParameterisation(
-      single_panel_detector, mybeam, mycrystal, mygonio, [det_param], [s0_param],
-      [xlo_param], [xluc_param])
+  pred_param = XYPhiPredictionParameterisation(experiments_single_panel,
+      [det_param], [s0_param], [xlo_param], [xluc_param])
 
-  pred_param2 = XYPhiPredictionParameterisation(
-      multi_panel_detector, mybeam, mycrystal, mygonio, [multi_det_param],
-      [s0_param], [xlo_param], [xluc_param])
+  pred_param2 = XYPhiPredictionParameterisation(experiments_multi_panel,
+      [multi_det_param], [s0_param], [xlo_param],[xluc_param])
 
   ################################
   # Apply known parameter shifts #
@@ -216,25 +233,9 @@ if __name__ == '__main__':
                   space_group(space_group_symbols(1).hall()).type(), resolution)
   indices = index_generator.to_array()
 
-  # Build a mock scan for a 180 degree sweep
-  sf = scan_factory()
-  myscan = sf.make_scan(image_range = (1,1800),
-                        exposure_times = 0.1,
-                        oscillation = (0, 0.1),
-                        epochs = range(1800),
-                        deg = True)
-  sweep_range = myscan.get_oscillation_range(deg=False)
-  temp = myscan.get_oscillation(deg=False)
-  im_width = temp[1] - temp[0]
-  assert sweep_range == (0., pi)
-  assert approx_equal(im_width, 0.1 * pi / 180.)
-
-  # build an ExperimentList for the ReflectionPredictor
-  experiments = ExperimentList()
-  experiments.append(Experiment(
-        beam=mybeam, detector=single_panel_detector, goniometer=mygonio,
-        scan=myscan, crystal=mycrystal, imageset=None))
-  ref_predictor = ReflectionPredictor(experiments, sweep_range)
+  # for the reflection predictor, it doesn't matter which experiment list is
+  # passed, as the detector is not used
+  ref_predictor = ReflectionPredictor(experiments_single_panel, sweep_range)
 
   # get two sets of identical reflections
   obs_refs = ref_predictor.predict(indices)
@@ -296,10 +297,10 @@ if __name__ == '__main__':
   # Set up the target functions #
   ###############################
 
-  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
-      single_panel_detector, refman, pred_param, im_width)
-  mytarget2 = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
-      multi_panel_detector, refman2, pred_param2, im_width)
+  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
+      experiments_single_panel, ref_predictor, refman, pred_param, im_width)
+  mytarget2 = LeastSquaresPositionalResidualWithRmsdCutoff(
+      experiments_multi_panel, ref_predictor, refman2, pred_param2, im_width)
 
   #################################
   # Set up the refinement engines #

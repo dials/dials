@@ -48,12 +48,12 @@ class Target(object):
   __metaclass__  = abc.ABCMeta
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
 
-  def __init__(self, reflection_predictor, detector,
+  def __init__(self, experiments, reflection_predictor,
                ref_manager,
                prediction_parameterisation):
 
     self._reflection_predictor = reflection_predictor
-    self._detector = detector
+    self._experiments = experiments
     self._reflection_manager = ref_manager
     self._prediction_parameterisation = prediction_parameterisation
 
@@ -111,7 +111,8 @@ class Target(object):
                                 h, experiment_id=experiment_id)
 
       # obtain the impact positions
-      impacts = ray_intersection(self._detector, predictions,
+      impacts = ray_intersection(self._experiments[experiment_id].detector,
+                                 predictions,
                                  panel=panel_id)
 
       # find the prediction with the right 'entering' flag
@@ -206,15 +207,17 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   in terms of detector impact position X, Y and phi, terminating on achieved
   rmsd (or on intrisic convergence of the chosen minimiser)"""
 
-  def __init__(self, reflection_predictor, detector, ref_man,
+  def __init__(self, experiments, reflection_predictor, ref_man,
                prediction_parameterisation,
                image_width, frac_binsize_cutoff=0.33333,
                absolute_cutoffs=None):
 
-    Target.__init__(self, reflection_predictor, detector, ref_man,
+    Target.__init__(self, experiments, reflection_predictor, ref_man,
                     prediction_parameterisation)
 
     # Set up the RMSD achieved criterion
+    #FIXME take detector from the first Experiment only!
+    detector = experiments[0].detector
     if not absolute_cutoffs:
       pixel_sizes = [p.get_pixel_size() for p in detector]
       min_px_size_x = min(e[0] for e in pixel_sizes)
