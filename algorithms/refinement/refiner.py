@@ -605,7 +605,6 @@ class RefinerFactory(object):
       raise RuntimeError("Multiple experiment parameterisation not"
                          "yet supported")
     goniometer = experiments[0].goniometer
-    detector = experiments[0].detector
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if goniometer:

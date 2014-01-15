@@ -48,8 +48,7 @@ class Target(object):
   __metaclass__  = abc.ABCMeta
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
 
-  def __init__(self, experiments, reflection_predictor,
-               ref_manager,
+  def __init__(self, experiments, reflection_predictor, ref_manager,
                prediction_parameterisation):
 
     self._reflection_predictor = reflection_predictor
@@ -138,7 +137,8 @@ class Target(object):
 
       # calculate gradients for this reflection
       grads = self._prediction_parameterisation.get_gradients(
-                                  h, s_calc, phi_calc, panel_id, frame_id)
+                                  h, s_calc, phi_calc, panel_id, frame_id,
+                                  experiment_id=experiment_id)
 
       # store all this information in the matched obs-pred pair
       obs.update_prediction(x_calc, y_calc, phi_calc, s_calc, grads)
