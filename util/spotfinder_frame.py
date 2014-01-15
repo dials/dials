@@ -60,7 +60,7 @@ class SpotFrame(XrayFrame) :
         self.pyslip.DeleteLayer(self.miller_indices_layer)
         self.miller_indices_layer = None
 
-      if self.settings.show_predictions and len(miller_indices_data):
+      if self.settings.show_miller_indices and len(miller_indices_data):
         self.miller_indices_layer = self.pyslip.AddTextLayer(
           miller_indices_data, map_rel=True, visible=True,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
@@ -172,16 +172,18 @@ class SpotFrame(XrayFrame) :
                        (((xm1, y), (xp1, y)), ctr_mass_dict)]
               ctr_mass_data.extend(lines)
 
-        if (reflection.image_coord_px != (0.0, 0.0) and
+        if (self.settings.show_predictions and
+            reflection.image_coord_px != (0.0, 0.0) and
             reflection.frame_number >= i_frame and
             reflection.frame_number < (i_frame + 1)):
           x, y = map_coords(reflection.image_coord_px[0]+ 0.5,
                             reflection.image_coord_px[1] + 0.5,
                             reflection.panel_number)
           predictions_data.append((x, y))
-          if reflection.miller_index != (0,0,0):
-            miller_indices_data.append((x, y, str(reflection.miller_index),
-                                        {'placement':'ne'}))
+        if (self.settings.show_miller_indices and
+            reflection.miller_index != (0,0,0)):
+          miller_indices_data.append((x, y, str(reflection.miller_index),
+                                      {'placement':'ne'}))
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
@@ -219,7 +221,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.settings.show_all_pix = True
     self.settings.show_shoebox = True
     self.settings.show_predictions = True
-    self.settings.show_miller_indices = True
+    self.settings.show_miller_indices = False
     self._sizer = wx.BoxSizer(wx.VERTICAL)
     s = self._sizer
     self.SetSizer(self._sizer)
@@ -280,6 +282,11 @@ class SpotSettingsPanel (SettingsPanel) :
     self.predictions.SetValue(self.settings.show_predictions)
     s.Add(self.predictions, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
 
+    # Spot predictions control
+    self.miller_indices = wx.CheckBox(self, -1, "Show hkl")
+    self.miller_indices.SetValue(self.settings.show_miller_indices)
+    s.Add(self.miller_indices, 0, wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5)
+
     # Minimum spot area control
     box = wx.BoxSizer(wx.HORIZONTAL)
     from wxtbx.phil_controls.intctrl import IntCtrl
@@ -326,6 +333,7 @@ class SpotSettingsPanel (SettingsPanel) :
       self.settings.show_all_pix = self.all_pix.GetValue()
       self.settings.show_shoebox = self.shoebox.GetValue()
       self.settings.show_predictions = self.predictions.GetValue()
+      self.settings.show_miller_indices = self.miller_indices.GetValue()
       self.settings.color_scheme = self.color_ctrl.GetSelection()
 
   def OnUpdateCM (self, event) :
