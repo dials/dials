@@ -58,7 +58,7 @@ def get_state(det, hkl, UB, angle, reflection_predictor):
   reflection_predictor.update()
 
   # predict for this hkl
-  refs = reflection_predictor.predict(hkl, UB)
+  refs = reflection_predictor.predict(hkl, UB=UB)
 
   # select which is nearest the observed angle
   deltas = [abs(ref.rotation_angle - angle) for ref in refs]
@@ -232,11 +232,11 @@ for iref in selection:
   hkl, angle, frame = hkls[iref], angles[iref], frames[iref]
 
   # re-predict this hkl based on the perturbed UB at its frame
-  pred_param.compose(frame)
+  pred_param.compose(frame, experiment_id=0)
 
   UB = xlo_param.get_state() * xluc_param.get_state()
 
-  ref_list = ref_predictor.predict(hkl, UB)
+  ref_list = ref_predictor.predict(hkl, UB=UB)
 
   if len(ref_list) == 0: continue
 
