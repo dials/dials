@@ -47,25 +47,25 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return
 
-  def compose(self, obs_image_number):
+  def compose(self, obs_image_number, experiment_id):
     """Compose scan-varying crystal parameterisations at the specified
-    image number"""
+    image number, for the specified experiment"""
 
     self._obs_image_number = obs_image_number
-    xl_op = self._xl_orientation_parameterisations[0]
-    xl_ucp = self._xl_unit_cell_parameterisations[0]
+    xl_op = self._xl_orientation_parameterisations[experiment_id]
+    xl_ucp = self._xl_unit_cell_parameterisations[experiment_id]
     xl_op.compose(obs_image_number)
     xl_ucp.compose(obs_image_number)
 
-  def get_UB(self, obs_image_number):
+  def get_UB(self, obs_image_number, experiment_id):
     """Extract the setting matrix from the contained scan
     dependent crystal parameterisations at specified image number"""
 
     if obs_image_number != self._obs_image_number:
       self.compose(obs_image_number)
 
-    UB = self._xl_orientation_parameterisations[0].get_state() * \
-         self._xl_unit_cell_parameterisations[0].get_state()
+    UB = self._xl_orientation_parameterisations[experiment_id].get_state() * \
+         self._xl_unit_cell_parameterisations[experiment_id].get_state()
     return UB
 
   def get_gradients(self, h, s, phi, panel_id, obs_image_number,

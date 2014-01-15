@@ -44,7 +44,7 @@ class ReflectionPredictor(object):
   required.
   """
 
-  def __init__(self, experiments, sweep_range = (0, 2.*pi)):
+  def __init__(self, experiments, sweep_range=(0, 2.*pi)):
     """Construct by linking to instances of experimental model classes"""
 
     self._experiments = experiments
@@ -60,7 +60,7 @@ class ReflectionPredictor(object):
                               self._sweep_range) for e in self._experiments]
     self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 
-  def predict(self, hkl, UB = None, experiment_id = 0):
+  def predict(self, hkl, experiment_id=0, UB=None):
     """
     Solve the prediction formula for the reflecting angle phi.
 
@@ -100,7 +100,7 @@ class StillsReflectionPredictor(object):
     self._s0_lengths = [s0.length() for s0 in self._s0s]
     self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
 
-  def predict(self, hkl, experiment_id = 0):
+  def predict(self, hkl, experiment_id=0):
     """Predict for hkl under the assumption it is in reflecting position"""
 
     s0 = self._s0s[experiment_id]

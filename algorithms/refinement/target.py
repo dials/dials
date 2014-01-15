@@ -79,31 +79,40 @@ class Target(object):
 
       # get data from the observation
       h = obs.miller_index
-      frame = obs.frame_obs
-      panel = obs.panel
+      frame_id = obs.frame_obs
+      panel_id = obs.panel
 
-      # duck-typing for scan varying version of
-      # prediction_parameterisation
+      # FIXME current reflection container does not track experiment id. Here
+      # we use the crystal_id as its proxy. User code must ensure that the order
+      # of experiments matches the index given by the crystal_id. Unless
+      # 'crystal_id' is abused, this effectively means that only multiple
+      # crystal experiments are supported, not a multiplicity of other models.
+      experiment_id = obs.crystal_id
+
+      # duck-typing for VaryingCrystalPredictionParameterisation. Only this
+      # class has a compose(frame_id) method
       try:
 
         # compose the prediction parameterisation at the
         # requested image number
-        self._prediction_parameterisation.compose(frame)
+        self._prediction_parameterisation.compose(frame_id, experiment_id)
 
         # extract UB matrix
-        UB = self._prediction_parameterisation.get_UB(frame)
+        UB = self._prediction_parameterisation.get_UB(frame_id, experiment_id)
 
         # predict for this hkl at setting UB
-        predictions = self._reflection_predictor.predict(h, UB)
+        predictions = self._reflection_predictor.predict(
+                                h, experiment_id=experiment_id, UB=UB)
 
       except AttributeError:
 
         # predict for this hkl
-        predictions = self._reflection_predictor.predict(h)
+        predictions = self._reflection_predictor.predict(
+                                h, experiment_id=experiment_id)
 
       # obtain the impact positions
       impacts = ray_intersection(self._detector, predictions,
-                                 panel=panel)
+                                 panel=panel_id)
 
       # find the prediction with the right 'entering' flag
       try:
@@ -128,7 +137,7 @@ class Target(object):
 
       # calculate gradients for this reflection
       grads = self._prediction_parameterisation.get_gradients(
-                                  h, s_calc, phi_calc, panel, frame)
+                                  h, s_calc, phi_calc, panel_id, frame_id)
 
       # store all this information in the matched obs-pred pair
       obs.update_prediction(x_calc, y_calc, phi_calc, s_calc, grads)
