@@ -615,7 +615,7 @@ class RefinerFactory(object):
       import dials.algorithms.refinement.target as targ
 
       target = targ.LeastSquaresPositionalResidualWithRmsdCutoff(
-                      ref_predictor, detector, refman, pred_param,
+                      experiments, ref_predictor, refman, pred_param,
                       image_width_rad, options.bin_size_fraction,
                       absolute_cutoffs)
     else:
@@ -626,7 +626,7 @@ class RefinerFactory(object):
       import dials.algorithms.refinement.target_stills as targ
 
       target = targ.LeastSquaresXYResidualWithRmsdCutoff(
-                      ref_predictor, detector, refman, pred_param,
+                      experiments, ref_predictor, refman, pred_param,
                       options.bin_size_fraction,
                       absolute_cutoffs)
 

@@ -231,8 +231,8 @@ refman = ReflectionManager(obs_refs, mybeam, mygonio, sweep_range,
 
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
-mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(ref_predictor,
-    mydetector, refman, pred_param, im_width)
+mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
+    ref_predictor, refman, pred_param, im_width)
 
 ######################################
 # Set up the LSTBX refinement engine #

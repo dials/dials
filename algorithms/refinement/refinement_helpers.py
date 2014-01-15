@@ -214,9 +214,8 @@ def refine(beam, goniometer, crystal, detector, scan,
   # prediction equation                                                  #
   ########################################################################
 
-  pred_param = XYPhiPredictionParameterisation(
-  detector, beam, crystal, goniometer, [det_param], [s0_param],
-  [xlo_param], [xluc_param])
+  pred_param = XYPhiPredictionParameterisation(experiments,
+      [det_param], [s0_param], [xlo_param], [xluc_param])
 
   if verbosity > 1:
     print "Prediction equation parameterisation built\n"
@@ -240,7 +239,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   ##############################
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      ref_predictor, detector, refman, pred_param, image_width)
+      experiments, ref_predictor, refman, pred_param, image_width)
 
   if verbosity > 1: print "Target function built\n"
 
@@ -348,9 +347,8 @@ def scan_varying_refine(
   # prediction equation                                                  #
   ########################################################################
 
-  pred_param = VaryingCrystalPredictionParameterisation(
-      detector, beam, crystal, goniometer, [det_param], [s0_param],
-      [xlo_param], [xluc_param])
+  pred_param = VaryingCrystalPredictionParameterisation(experiments,
+      [det_param], [s0_param], [xlo_param], [xluc_param])
 
   if verbosity > 1:
     print "Prediction equation parameterisation built\n"
@@ -376,8 +374,8 @@ def scan_varying_refine(
   # Set up the target function #
   ##############################
 
-  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      ref_predictor, detector, refman, pred_param, image_width)
+  mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
+      ref_predictor, refman, pred_param, image_width)
 
   if verbosity > 1: print "Target function built\n"
 
