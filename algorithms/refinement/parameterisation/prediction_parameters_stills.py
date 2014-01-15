@@ -27,7 +27,7 @@ class XYPredictionParameterisation(PredictionParameterisation):
   Untested for multiple sensor detectors.
   """
 
-  def _get_gradients_core(self, h, s, phi, panel_id):
+  def _get_gradients_core(self, h, s, phi, panel_id, experiment_id):
 
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
@@ -49,6 +49,13 @@ class XYPredictionParameterisation(PredictionParameterisation):
     # r is the reciprocal lattice vector, in the lab frame
     r = R * self._UB * h
 
+    # identify which parameterisations to use
+    param_set = self._exp_to_param[experiment_id]
+    beam_param_id = param_set.beam_param
+    xl_ori_param_id = param_set.xl_ori_param
+    xl_uc_param_id = param_set.xl_uc_param
+    det_param_id = param_set.det_param
+
     ### Work through the parameterisations, calculating their contributions
     ### to derivatives d[pv]/dp
 
@@ -58,22 +65,22 @@ class XYPredictionParameterisation(PredictionParameterisation):
     # Calculate derivatives of pv wrt each parameter of the FIRST detector
     # parameterisation only.
     if self._detector_parameterisations:
-      self._detector_derivatives(dpv_dp, pv, panel_id)
+      self._detector_derivatives(dpv_dp, pv, panel_id, det_param_id)
 
     # Calc derivatives of pv wrt each parameter of each beam
     # parameterisation that is present.
     if self._beam_parameterisations:
-      self._beam_derivatives(dpv_dp, r)
+      self._beam_derivatives(dpv_dp, r, beam_param_id)
 
     # Calc derivatives of pv wrt each parameter of each crystal
     # orientation parameterisation that is present.
     if self._xl_orientation_parameterisations:
-      self._xl_orientation_derivatives(dpv_dp, R, h)
+      self._xl_orientation_derivatives(dpv_dp, R, h, xl_ori_param_id)
 
     # Now derivatives of pv wrt each parameter of each crystal unit
     # cell parameterisation that is present.
     if self._xl_unit_cell_parameterisations:
-      self._xl_unit_cell_derivatives(dpv_dp, R, h)
+      self._xl_unit_cell_derivatives(dpv_dp, R, h, xl_uc_param_id)
 
     # calculate positional derivatives from d[pv]/dp
     pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e) for e in dpv_dp]
@@ -81,7 +88,7 @@ class XYPredictionParameterisation(PredictionParameterisation):
 
     return zip(dX_dp, dY_dp)
 
-  def _detector_derivatives(self, dpv_dp, pv, panel_id):
+  def _detector_derivatives(self, dpv_dp, pv, panel_id, det_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the detector parameterisations"""
 
@@ -96,58 +103,58 @@ class XYPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _beam_derivatives(self, dpv_dp, r):
+  def _beam_derivatives(self, dpv_dp, r, beam_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the beam parameterisations"""
 
-    for src in self._beam_parameterisations:
-      ds0_dsrc_p = src.get_ds_dp()
-      dpv_dsrc_p = [self._D * e for e in ds0_dsrc_p]
+    for ibeam, beam in enumerate(self._beam_parameterisations):
 
-      dpv_dp.extend(dpv_dsrc_p)
+      # Calculate gradients only for the correct beam parameterisation
+      if ibeam == beam_param_id:
+        ds0_dbeam_p = beam.get_ds_dp()
+        dpv_dbeam_p = [self._D * e for e in ds0_dbeam_p]
+      else:
+        dpv_dbeam_p = [matrix.col((0., 0., 0.))] * len(beam.num_free())
+
+      dpv_dp.extend(dpv_dbeam_p)
 
     return
 
-  def _xl_orientation_derivatives(self, dpv_dp, R, h):
+  def _xl_orientation_derivatives(self, dpv_dp, R, h, xl_ori_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
-    for xlo in self._xl_orientation_parameterisations:
-      dU_dxlo_p = xlo.get_ds_dp()
+    for ixlo, xlo in enumerate(self._xl_orientation_parameterisations):
 
-      dr_dxlo_p = [R * e * self._B * h for e in dU_dxlo_p]
+      # Calculate gradients only for the correct xl orientation parameterisation
+      if ixlo == xl_ori_param_id:
+        dU_dxlo_p = xlo.get_ds_dp()
 
-      dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
+        dr_dxlo_p = [R * e * self._B * h for e in dU_dxlo_p]
+
+        dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
+      else:
+        dpv_dxlo_p = [matrix.col((0., 0., 0.))] * len(xlo.num_free())
 
       dpv_dp.extend(dpv_dxlo_p)
 
     return
 
-  def _xl_orientation_derivatives(self, dpv_dp, R, h):
-    """helper function to extend the derivatives lists by
-    derivatives of the crystal orientation parameterisations"""
-
-    for xlo in self._xl_orientation_parameterisations:
-      dU_dxlo_p = xlo.get_ds_dp()
-
-      dr_dxlo_p = [R * e * self._B * h for e in dU_dxlo_p]
-
-      dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
-
-      dpv_dp.extend(dpv_dxlo_p)
-
-    return
-
-  def _xl_unit_cell_derivatives(self, dpv_dp, R, h):
+  def _xl_unit_cell_derivatives(self, dpv_dp, R, h, xl_uc_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
-    for xluc in self._xl_unit_cell_parameterisations:
-      dB_dxluc_p = xluc.get_ds_dp()
+    for ixluc, xluc in enumerate(self._xl_unit_cell_parameterisations):
 
-      dr_dxluc_p = [R * self._U * e * h for e in dB_dxluc_p]
+      # Calculate gradients only for the correct xl unit cell parameterisation
+      if ixluc == xl_uc_param_id:
+        dB_dxluc_p = xluc.get_ds_dp()
 
-      dpv_dxluc_p = [self._D * e for e in dr_dxluc_p]
+        dr_dxluc_p = [R * self._U * e * h for e in dB_dxluc_p]
+
+        dpv_dxluc_p = [self._D * e for e in dr_dxluc_p]
+      else:
+        dpv_dxluc_p = [matrix.col((0., 0., 0.))] * len(xlo.num_free())
 
       dpv_dp.extend(dpv_dxluc_p)
 
