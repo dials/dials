@@ -404,10 +404,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # For any other detector parameterisations, set derivatives to zero
       else:
-        dpv_ddet_p = [matrix.col((0., 0., 0.))] * len(det.num_free())
+        dpv_ddet_p = [matrix.col((0., 0., 0.))] * det.num_free()
 
       # Derivatives of phi wrt detector params are always zero
-      dphi_ddet_p = [0.] * len(dd_ddet_p)
+      dphi_ddet_p = [0.] * det.num_free()
 
       dpv_dp.extend(dpv_ddet_p)
       dphi_dp.extend(dphi_ddet_p)
@@ -439,8 +439,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # For any other beam parameterisations, set derivatives to zero
       else:
-        dphi_dbeam_p = [0.] * len(beam.num_free())
-        dpv_dbeam_p = [matrix.col((0., 0., 0.))] * len(beam.num_free())
+        dphi_dbeam_p = [0.] * beam.num_free()
+        dpv_dbeam_p = [matrix.col((0., 0., 0.))] * beam.num_free()
 
       dpv_dp.extend(dpv_dbeam_p)
       dphi_dp.extend(dphi_dbeam_p)
@@ -484,8 +484,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # For any other xl orientation parameterisations, set derivatives to zero
       else:
-        dphi_dxlo_p = [0.] * len(xlo.num_free())
-        dpv_dxlo_p = [matrix.col((0., 0., 0.))] * len(xlo.num_free())
+        dphi_dxlo_p = [0.] * xlo.num_free()
+        dpv_dxlo_p = [matrix.col((0., 0., 0.))] * xlo.num_free()
 
       dpv_dp.extend(dpv_dxlo_p)
       dphi_dp.extend(dphi_dxlo_p)
@@ -523,8 +523,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # For any other xl unit cell parameterisations, set derivatives to zero
       else:
-        dphi_dxluc_p = [0.] * len(xlo.num_free())
-        dpv_dxluc_p = [matrix.col((0., 0., 0.))] * len(xlo.num_free())
+        dphi_dxluc_p = [0.] * xluc.num_free()
+        dpv_dxluc_p = [matrix.col((0., 0., 0.))] * xluc.num_free()
 
       dpv_dp.extend(dpv_dxluc_p)
       dphi_dp.extend(dphi_dxluc_p)

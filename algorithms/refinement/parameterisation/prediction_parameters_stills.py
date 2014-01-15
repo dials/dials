@@ -93,11 +93,11 @@ class XYPredictionParameterisation(PredictionParameterisation):
     derivatives of the detector parameterisations"""
 
     for idet, det in enumerate(self._detector_parameterisations):
-      if idet == 0:
+      if idet == det_param_id:
         dd_ddet_p = det.get_ds_dp(multi_state_elt=panel_id)
         dpv_ddet_p = [- self._D * e * pv for e in dd_ddet_p]
       else:
-        dpv_ddet_p = [matrix.col((0., 0., 0.))] * len(dd_ddet_p)
+        dpv_ddet_p = [matrix.col((0., 0., 0.))] * det.num_free()
 
       dpv_dp.extend(dpv_ddet_p)
 
@@ -114,7 +114,7 @@ class XYPredictionParameterisation(PredictionParameterisation):
         ds0_dbeam_p = beam.get_ds_dp()
         dpv_dbeam_p = [self._D * e for e in ds0_dbeam_p]
       else:
-        dpv_dbeam_p = [matrix.col((0., 0., 0.))] * len(beam.num_free())
+        dpv_dbeam_p = [matrix.col((0., 0., 0.))] * beam.num_free()
 
       dpv_dp.extend(dpv_dbeam_p)
 
@@ -134,7 +134,7 @@ class XYPredictionParameterisation(PredictionParameterisation):
 
         dpv_dxlo_p = [self._D * e for e in dr_dxlo_p]
       else:
-        dpv_dxlo_p = [matrix.col((0., 0., 0.))] * len(xlo.num_free())
+        dpv_dxlo_p = [matrix.col((0., 0., 0.))] * xlo.num_free()
 
       dpv_dp.extend(dpv_dxlo_p)
 
@@ -154,7 +154,7 @@ class XYPredictionParameterisation(PredictionParameterisation):
 
         dpv_dxluc_p = [self._D * e for e in dr_dxluc_p]
       else:
-        dpv_dxluc_p = [matrix.col((0., 0., 0.))] * len(xlo.num_free())
+        dpv_dxluc_p = [matrix.col((0., 0., 0.))] * xlo.num_free()
 
       dpv_dp.extend(dpv_dxluc_p)
 

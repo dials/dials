@@ -33,6 +33,7 @@ class RefinerFactory(object):
     #or stills (the combination of both not yet supported)?
 
     # copy the experiments
+    import copy
     experiments = copy.deepcopy(experiments)
 
     # With this interface, assume that these come either from a scan, or
@@ -54,8 +55,8 @@ class RefinerFactory(object):
                                  experiments,
                                  image_width_rad,
                                  sweep_range_rad,
-                                 crystal_ids=0,
-                                 verbosity=0)
+                                 crystal_ids=range(len(experiments)),
+                                 verbosity=verbosity)
 
   @classmethod
   def from_parameters_data_models(cls,
@@ -211,7 +212,7 @@ class RefinerFactory(object):
     # FIXME, assume here a single experiment
     detector = experiments[0].detector
     beam = experiments[0].beam
-    crystals = [experiments[0].crystal]
+    crystals = experiments.crystals()
     goniometer = experiments[0].goniometer
     scan = experiments[0].scan
 
@@ -297,9 +298,9 @@ class RefinerFactory(object):
     import dials.algorithms.refinement.parameterisation as par
 
     # FIXME: Multiple Experiments not yet supported!
-    if len(experiments) > 1:
-      raise RuntimeError("Multiple experiment parameterisation not"
-                         "yet supported")
+    #if len(experiments) > 1:
+    #  raise RuntimeError("Multiple experiment parameterisation not"
+    #                     "yet supported")
 
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XY (stills) type, the
@@ -402,6 +403,7 @@ class RefinerFactory(object):
     det_params = []
     for detector in experiments.detectors():
 
+      exp_ids = experiments.indices(detector)
       # Detector
       if detector_options.panels == "automatic":
         if len(detector) > 1:
@@ -548,9 +550,9 @@ class RefinerFactory(object):
         print "Random seed set to %d\n" % options.random_seed
 
     #FIXME only single Experiment currently supported
-    if len(experiments) > 1:
-      raise RuntimeError("Multiple experiment parameterisation not"
-                         "yet supported")
+    #if len(experiments) > 1:
+    #  raise RuntimeError("Multiple experiment parameterisation not"
+    #                     "yet supported")
     goniometer = experiments[0].goniometer
     beam = experiments[0].beam
     if goniometer:
@@ -601,9 +603,9 @@ class RefinerFactory(object):
           options.rmsd_cutoff + " not recognised")
 
     # FIXME: Multiple Experiments not yet supported!
-    if len(experiments) > 1:
-      raise RuntimeError("Multiple experiment parameterisation not"
-                         "yet supported")
+    #if len(experiments) > 1:
+    #  raise RuntimeError("Multiple experiment parameterisation not"
+    #                     "yet supported")
     goniometer = experiments[0].goniometer
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
