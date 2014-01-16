@@ -71,6 +71,13 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
   y_cuad_size = float(ymax) / len_tabl
   y_half_cuad_size = (y_cuad_size) / 2.0
 
+  if_you_want_to_see_how_the_profiles_look = '''
+  from matplotlib import pyplot as plt
+  data2d = local_average.as_numpy_array()
+  plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
+  plt.show()
+  #'''
+
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:
 
@@ -135,13 +142,39 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         dy = abs(bt_rg_y - y)
         bt_rg_dist = math.sqrt(dx * dx + dy * dy)
 
+        old_way = '''
         total_dist = tp_lf_dist + tp_rg_dist + bt_lf_dist + bt_rg_dist
-        tp_lf_contrib = (total_dist - tp_lf_dist) / (total_dist * 3)
-        tp_rg_contrib = (total_dist - tp_rg_dist) / (total_dist * 3)
-        bt_lf_contrib = (total_dist - bt_lf_dist) / (total_dist * 3)
-        bt_rg_contrib = (total_dist - bt_rg_dist) / (total_dist * 3)
+        tp_lf_contr = (total_dist - tp_lf_dist) / (total_dist * 3)
+        tp_rg_contr = (total_dist - tp_rg_dist) / (total_dist * 3)
+        bt_lf_contr = (total_dist - bt_lf_dist) / (total_dist * 3)
+        bt_rg_contr = (total_dist - bt_rg_dist) / (total_dist * 3)
+        print "tdist =", total_dist
+        '''
+        max_dist = math.sqrt(
+        (x_cuad_size * x_cuad_size) + (y_cuad_size * y_cuad_size)
+        )
+        tp_lf_contr = (max_dist - tp_lf_dist) / max_dist
+        tp_rg_contr = (max_dist - tp_rg_dist) / max_dist
+        bt_lf_contr = (max_dist - bt_lf_dist) / max_dist
+        bt_rg_contr = (max_dist - bt_rg_dist) / max_dist
 
-        total_contrib = tp_lf_contrib + tp_rg_contrib + bt_lf_contrib + bt_rg_contrib
+        total_contr = tp_lf_contr + tp_rg_contr + bt_lf_contr + bt_rg_contr
+
+        re_scale = 1.0 / total_contr
+        tp_lf_contr = tp_lf_contr * re_scale
+        tp_rg_contr = tp_rg_contr * re_scale
+        bt_lf_contr = bt_lf_contr * re_scale
+        bt_rg_contr = bt_rg_contr * re_scale
+
+        debugging_code = '''
+        print "max_dist =", max_dist
+        print "tp_lf_dist =", tp_lf_dist
+        print "tp_rg_dist =", tp_rg_dist
+        print "bt_lf_dist =", bt_lf_dist
+        print "bt_rg_dist =", bt_rg_dist
+        total_contr = tp_lf_contr + tp_rg_contr + bt_lf_contr + bt_rg_contr
+        print "total_contr =", total_contr
+        '''
 
         big_nrow = tp_lf_average.all()[0]
         if tp_rg_average.all()[0] > big_nrow:
@@ -150,7 +183,6 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
           big_nrow = bt_lf_average.all()[0]
         if bt_rg_average.all()[0] > big_nrow:
           big_nrow = bt_rg_average.all()[0]
-
 
         big_ncol = tp_lf_average.all()[1]
         if tp_rg_average.all()[1] > big_ncol:
@@ -164,32 +196,50 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
 
         descr[0, 0] = float(tp_lf_average.all()[1])/2.0
         descr[0, 1] = float(tp_lf_average.all()[0])/2.0
-        descr[0, 2] = float(tp_lf_contrib)
+        descr[0, 2] = float(tp_lf_contr)
         average = add_2d(descr, tp_lf_average, average)
         descr[0, 0] = float(tp_rg_average.all()[1])/2.0
         descr[0, 1] = float(tp_rg_average.all()[0])/2.0
-        descr[0, 2] = float(tp_rg_contrib)
+        descr[0, 2] = float(tp_rg_contr)
         average = add_2d(descr, tp_rg_average, average)
         descr[0, 0] = float(bt_lf_average.all()[1])/2.0
         descr[0, 1] = float(bt_lf_average.all()[0])/2.0
-        descr[0, 2] = float(bt_lf_contrib)
+        descr[0, 2] = float(bt_lf_contr)
         average = add_2d(descr, bt_lf_average, average)
         descr[0, 0] = float(bt_rg_average.all()[1])/2.0
         descr[0, 1] = float(bt_rg_average.all()[0])/2.0
-        descr[0, 2] = float(bt_rg_contrib)
+        descr[0, 2] = float(bt_rg_contr)
         average = add_2d(descr, bt_rg_average, average)
+
+        if_you_want_to_see_interpolated_profiles = '''
+        if tp_lf_contr > 0.6 or tp_rg_contr > 0.6 \
+        or bt_lf_contr > 0.6 or bt_rg_contr > 0.6:
+          from matplotlib import pyplot# as plt
+          print "tp_lf_contr =", tp_lf_contr
+          data2d = tp_lf_average.as_numpy_array()
+          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          pyplot.show()
+          print "tp_rg_contr =", tp_rg_contr
+          data2d = tp_rg_average.as_numpy_array()
+          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          pyplot.show()
+          print "bt_lf_contr =", bt_lf_contr
+          data2d = bt_lf_average.as_numpy_array()
+          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          pyplot.show()
+          print "bt_rg_contr =", bt_rg_contr
+          data2d = bt_rg_average.as_numpy_array()
+          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          pyplot.show()
+          data2d = average.as_numpy_array()
+          data2d = average.as_numpy_array()
+          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          pyplot.show()
+        #'''
 
       else:
         #print "in else"
         average = local_average
-
-
-      if_you_want_to_see_how_the_profiles_look = '''
-      from matplotlib import pyplot as plt
-      data2d = average.as_numpy_array()
-      plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
-      plt.show()
-      #'''
 
       shoebox = ref.shoebox
       #mask = ref.shoebox_mask                               # may be needed soon

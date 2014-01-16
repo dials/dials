@@ -196,7 +196,9 @@ namespace dials { namespace algorithms {
         px_scl = i_exp[i] / i_mod[i];
         scale += px_scl * i_wgt[i];
       }
-      m = scale / cnt;
+      m = scale / double(cnt);
+    } else {
+      std::cout << "\n missing useful pixels for profile fitting\n";
     }
 
     return m;

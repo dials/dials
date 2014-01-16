@@ -20,13 +20,22 @@ pi = 3.14159265358
 
 for ypos in range(86):
   for xpos in range(80):
-    #if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3) :
+    #if xpos/12.0 == int(xpos/12) and ypos/12.0 == int(ypos/12):
+    #if ypos/6.0 == int(ypos/6):
       row_str = ypos * nrow
       col_str = xpos * ncol
       dx = col_str - 1200
       dy = row_str - 1300
+
+      if dx < 0 and dy < 0:
+        ref_ang = 0.25
+      elif dx > 0 and dy < 0:
+        ref_ang = 0.75
+      elif dx < 0 and dy > 0:
+        ref_ang = 0.75
+      else:
+        ref_ang = 0.20
       ref_ang = float( math.atan2(dx, dy) / pi)
-      #ref_ang = 0.5
       i_loc = random.randint(0,999)
       thold = i_loc/20
       ref2d = model_2d(nrow, ncol, 5, 1, ref_ang, i_loc, 0.5)
@@ -74,7 +83,6 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
 
-
 old_r_list = rlist[:]
 tmp='''
 print "adding noise ...."
@@ -95,7 +103,7 @@ layering_and_background_plane(rlist)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-rlist = mosflm_caller(rlist, xmax, ymax, 5)
+rlist = mosflm_caller(rlist, xmax, ymax, 3)
 paint_compare = []
 for i in range(len(rlist)):
   #paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
