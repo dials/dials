@@ -720,6 +720,11 @@ class indexer_base(object):
 
     params = self.params.refinement
 
+    # XXX Interim hack to make refinement work for multiple lattices
+    reflections_for_refinement = reflections_for_refinement.deep_copy()
+    reflections_for_refinement.set_crystal(
+      flex.int(reflections_for_refinement.size(), 0))
+
     if 0:
       from dials_regression.indexing_test_data.i04_weak_data.run_indexing_api \
            import outlier_main_procedure
