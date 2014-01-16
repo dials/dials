@@ -43,7 +43,10 @@ def run(args):
     if len(params.scan_range):
       sel = flex.bool(reflection_list.size(), False)
       centroid_positions = reflection_list.centroid_position()
-      centroids_frame = centroid_positions.parts()[2]
+      if centroid_positions.norms().all_eq(0):
+        centroids_frame = reflection_list.frame_number()
+      else:
+        centroids_frame = centroid_positions.parts()[2]
       reflections_in_range = False
       for scan_range in params.scan_range:
         if scan_range is None: continue
@@ -75,7 +78,7 @@ def run(args):
         x, y = centroid_position[:2]
         observed_xy.append((x,y))
       if refl.image_coord_px != (0, 0):
-        x, y = refl.image_coord_px
+        x, y = refl.image_coord_mm
         predicted_xy.append((x,y))
   obs_x, obs_y = observed_xy.parts()
   pred_x, pred_y = predicted_xy.parts()
