@@ -126,7 +126,7 @@ refinement
               "refinement."
       .type = float(value_min=0.)
 
-    sample_if_nref_greater_than = 1000
+    minimum_sample_size = 1000
       .help = "cutoff that determines whether subsetting of the input"
               "reflection list is done"
       .type = int

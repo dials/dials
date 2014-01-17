@@ -575,7 +575,7 @@ class RefinerFactory(object):
             nref_per_degree=nref_per_degree,
             min_num_obs=options.minimum_number_of_reflections,
             max_num_obs=options.maximum_number_of_reflections,
-            sample_if_nref_greater_than = options.minimum_sample_size,
+            minimum_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
             iqr_multiplier=iqr_multiplier,
             verbosity=verbosity)
