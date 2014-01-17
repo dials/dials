@@ -445,8 +445,7 @@ class ReflectionManager(object):
   reflections for refinement."""
 
   def __init__(self, reflections,
-                     beam, gonio,
-                     sweep_range_rad=None,
+                     experiments,
                      nref_per_degree=None,
                      min_num_obs=20,
                      max_num_obs=None,
@@ -459,6 +458,14 @@ class ReflectionManager(object):
 
     # set verbosity
     self._verbosity = verbosity
+
+    ####FIXME currently extracting quantities from the FIRST Experiment only
+    if experiments[0].scan:
+      sweep_range_rad = experiments[0].scan.get_oscillation_range(deg=False)
+    else: sweep_range_rad = None
+    gonio = experiments[0].goniometer
+    beam = experiments[0].beam
+    ####
 
     # keep references to the beam, goniometer and sweep range (for
     # reflection exclusion and subsetting)

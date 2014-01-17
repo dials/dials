@@ -271,6 +271,9 @@ sysconfig = SystemConfig()
 params = sysconfig.config()
 params = params.fetch().extract()
 
+# in case we want a plot
+params.refinement.refinery.track_parameter_correlation=True
+
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
   obs_refs, experiments, verbosity=2)
@@ -303,8 +306,14 @@ refiner = RefinerFactory.from_parameters_data_experiments(params,
 #print "Prior to refinement the experimental model is:"
 #print_model_geometry(mybeam, mydetector, mycrystal)
 
-refiner.run()
+history = refiner.run()
+plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
+#plt.show()
 
 #print
-#print "Refinement has completed with the following geometry:"
-#print_model_geometry(mybeam, mydetector, mycrystal)
+print "Refinement has completed with the following geometry:"
+print mybeam
+print mydetector
+print crystal1
+print crystal2
+

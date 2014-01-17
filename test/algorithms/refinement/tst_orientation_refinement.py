@@ -225,7 +225,7 @@ print
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(obs_refs, mybeam, mygonio, sweep_range)
+refman = ReflectionManager(obs_refs, experiments)
 
 ##############################
 # Set up the target function #

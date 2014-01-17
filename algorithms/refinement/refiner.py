@@ -571,9 +571,7 @@ class RefinerFactory(object):
       iqr_multiplier=None
 
     return refman(reflections=reflections,
-                  beam=beam,
-                  gonio=goniometer,
-                  sweep_range_rad=sweep_range_rad,
+                  experiments=experiments,
                   nref_per_degree=nref_per_degree,
                   min_num_obs=options.minimum_number_of_reflections,
                   max_num_obs=options.maximum_number_of_reflections,

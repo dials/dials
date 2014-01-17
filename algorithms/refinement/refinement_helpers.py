@@ -229,7 +229,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   #####################################
 
   refman = ReflectionManager(reflections,
-                             beam, goniometer, sweep_range,
+                             experiments,
                              nref_per_degree, verbosity=verbosity)
 
   if verbosity > 1: print "Reflection manager built\n"
@@ -363,7 +363,7 @@ def scan_varying_refine(
 
   sweep_range = scan.get_oscillation_range(deg=False)
   refman = ReflectionManager(reflections,
-                          beam, goniometer, sweep_range,
+                          experiments,
                           nref_per_degree, verbosity=verbosity)
 
   if verbosity > 1:
