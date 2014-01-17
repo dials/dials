@@ -632,7 +632,8 @@ class indexer_base(object):
         absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
         bmsd = unit_cell.bases_mean_square_difference(
           symm_target_sg.unit_cell())
-        if bmsd < min_bmsd:
+        eps = 1e-8
+        if (bmsd+eps) < min_bmsd:
           min_bmsd = bmsd
           best_perm = list(perm)
     if best_perm is None:
