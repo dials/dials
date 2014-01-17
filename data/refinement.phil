@@ -126,6 +126,11 @@ refinement
               "refinement."
       .type = float(value_min=0.)
 
+    sample_if_nref_greater_than = 1000
+      .help = "cutoff that determines whether subsetting of the input"
+              "reflection list is done"
+      .type = int
+
     maximum_number_of_reflections = None
       .help = "The maximum number of reflections to use in refinement."
               "Overrides reflections_per_degree if that produces a"

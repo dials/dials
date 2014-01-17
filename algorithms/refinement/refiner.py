@@ -571,13 +571,14 @@ class RefinerFactory(object):
       iqr_multiplier=None
 
     return refman(reflections=reflections,
-                  experiments=experiments,
-                  nref_per_degree=nref_per_degree,
-                  min_num_obs=options.minimum_number_of_reflections,
-                  max_num_obs=options.maximum_number_of_reflections,
-                  close_to_spindle_cutoff=options.close_to_spindle_cutoff,
-                  iqr_multiplier=iqr_multiplier,
-                  verbosity=verbosity)
+            experiments=experiments,
+            nref_per_degree=nref_per_degree,
+            min_num_obs=options.minimum_number_of_reflections,
+            max_num_obs=options.maximum_number_of_reflections,
+            sample_if_nref_greater_than = options.sample_if_nref_greater_than,
+            close_to_spindle_cutoff=options.close_to_spindle_cutoff,
+            iqr_multiplier=iqr_multiplier,
+            verbosity=verbosity)
 
   @staticmethod
   def config_target(params, experiments, refman, pred_param):

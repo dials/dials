@@ -449,6 +449,7 @@ class ReflectionManager(object):
                      nref_per_degree=None,
                      min_num_obs=20,
                      max_num_obs=None,
+                     sample_if_nref_greater_than=0,
                      close_to_spindle_cutoff=0.1,
                      iqr_multiplier=1.5,
                      verbosity=0):
@@ -487,9 +488,10 @@ class ReflectionManager(object):
 
     # choose a random subset of data for refinement
     self._sample_size = self._accepted_refs_size
-    self._nref_per_degree = nref_per_degree
-    self._max_num_obs = max_num_obs
-    refs_to_keep = self._create_working_set(refs_to_keep)
+    refs_to_keep = self._create_working_set(refs_to_keep,
+                                            nref_per_degree,
+                                            sample_if_nref_greater_than,
+                                            max_num_obs)
 
     # store observation information in a list of observation-prediction
     # pairs (prediction information will go in here later)
@@ -566,22 +568,26 @@ class ReflectionManager(object):
 
     return test
 
-  def _create_working_set(self, indices):
+  def _create_working_set(self, indices, nref_per_degree,
+                          sample_if_nref_greater_than, max_num_obs):
     """Make a subset of the indices of reflections to use in refinement"""
 
     working_indices = indices
     sample_size = len(working_indices)
 
     # set sample size according to nref_per_degree
-    if self._nref_per_degree:
+    if nref_per_degree:
       width = abs(self._sweep_range_rad[1] -
                   self._sweep_range_rad[0]) * RAD_TO_DEG
-      sample_size = int(self._nref_per_degree * width)
+      sample_size = int(nref_per_degree * width)
+
+    # adjust if this is below the chosen limit
+    sample_size = max(sample_size, sample_if_nref_greater_than)
 
     # set maximum sample size
-    if self._max_num_obs:
-      if sample_size > self._max_num_obs:
-        sample_size = self._max_num_obs
+    if max_num_obs:
+      if sample_size > max_num_obs:
+        sample_size = max_num_obs
 
     # sample the data and record the sample size
     if sample_size < len(working_indices):

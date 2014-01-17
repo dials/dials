@@ -194,7 +194,9 @@ class ReflectionManagerXY(ReflectionManager):
 
     return inc
 
-  def _create_working_set(self, indices):
+  def _create_working_set(self, indices, nref_per_degree,
+                                         sample_if_nref_greater_than,
+                                         max_num_obs):
     """Make a subset of the indices of reflections to use in refinement.
 
     This version ignores nref_per_degree"""
@@ -203,9 +205,9 @@ class ReflectionManagerXY(ReflectionManager):
     sample_size = len(working_indices)
 
     # set maximum sample size
-    if self._max_num_obs:
-      if sample_size > self._max_num_obs:
-        sample_size = self._max_num_obs
+    if max_num_obs:
+      if sample_size > max_num_obs:
+        sample_size = max_num_obs
 
     # sample the data and record the sample size
     if sample_size < len(working_indices):
