@@ -126,7 +126,7 @@ class indexer_real_space_grid_search(indexer_base):
         self.debug_show_candidate_basis_vectors()
       candidate_orientation_matrices \
         = self.find_candidate_orientation_matrices(
-          unique_vectors, return_first=False)
+          unique_vectors, return_first=False, apply_symmetry=False)
       if len(candidate_orientation_matrices) == 0: break
       n_indexed = flex.int()
       from dials.algorithms.indexing import index_reflections
@@ -167,13 +167,13 @@ class indexer_real_space_grid_search(indexer_base):
 
     candidate_orientation_matrices = crystal_models
 
-    for i in range(len(candidate_orientation_matrices)):
-      if self.target_symmetry_primitive is not None:
-        #print "symmetrizing model"
-        #self.target_symmetry_primitive.show_summary()
-        symmetrized_model = self.apply_symmetry(
-          candidate_orientation_matrices[i], self.target_symmetry_primitive)
-        candidate_orientation_matrices[i] = symmetrized_model
+    #for i in range(len(candidate_orientation_matrices)):
+      #if self.target_symmetry_primitive is not None:
+        ##print "symmetrizing model"
+        ##self.target_symmetry_primitive.show_summary()
+        #symmetrized_model = self.apply_symmetry(
+          #candidate_orientation_matrices[i], self.target_symmetry_primitive)
+        #candidate_orientation_matrices[i] = symmetrized_model
 
     self.candidate_crystal_models = candidate_orientation_matrices
 

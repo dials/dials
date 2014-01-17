@@ -329,8 +329,23 @@ class indexer_base(object):
         self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
         self.reflections.set_crystal(self.reflections_i_lattice)
 
+        if i_cycle == 0 and self.target_symmetry_primitive is not None:
+          # if a target cell is given make sure that we match any permutation
+          # of the cell dimensions
+          crystal_models = [self.apply_symmetry(
+            crystal_model, self.target_symmetry_primitive, cell_only=True)
+                           for crystal_model in crystal_models]
+
         hkl_tolerance = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
         self.index_reflections(crystal_models, tolerance=hkl_tolerance)
+
+        if (i_cycle == 0 and self.target_symmetry_primitive is not None
+            and self.target_symmetry_primitive.space_group() is not None):
+          # now apply the space group symmetry only after the first indexing
+          # need to make sure that the symmetrized orientation is similar to the P1 model
+          crystal_models = [self.apply_symmetry(
+            crystal_model, self.target_symmetry_primitive)
+                           for crystal_model in crystal_models]
 
         print
         print "#" * 80
@@ -514,7 +529,8 @@ class indexer_base(object):
     return reciprocal_space_points
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
-                                          return_first=False):
+                                          return_first=False,
+                                          apply_symmetry=True):
     candidate_crystal_models = []
     vectors = candidate_basis_vectors
 
@@ -557,11 +573,11 @@ class indexer_base(object):
                 symmetrized_model = self.apply_symmetry(
                 model, self.target_symmetry_centred,
                 return_primitive_setting=True)
-                if symmetrized_model is not None:
-                  model = symmetrized_model
-                  uc = model.get_unit_cell()
-              if symmetrized_model is None:
-                continue
+            if symmetrized_model is None:
+              continue
+            if apply_symmetry:
+              model = symmetrized_model
+              uc = model.get_unit_cell()
 
           params = uc.parameters()
           if uc.volume() > (params[0]*params[1]*params[2]/100):
@@ -572,10 +588,14 @@ class indexer_base(object):
     return candidate_crystal_models
 
   def apply_symmetry(self, crystal_model, target_symmetry,
-                     return_primitive_setting=False):
+                     return_primitive_setting=False,
+                     cell_only=False):
     unit_cell = crystal_model.get_unit_cell()
     target_unit_cell = target_symmetry.unit_cell()
-    target_space_group = target_symmetry.space_group()
+    if cell_only:
+      target_space_group = sgtbx.space_group('P 1')
+    else:
+      target_space_group = target_symmetry.space_group()
     A = crystal_model.get_A()
     A_inv = A.inverse()
     unit_cell_is_similar = False
