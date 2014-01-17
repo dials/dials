@@ -693,14 +693,6 @@ class indexer_base(object):
     self._ray_intersection_timer.stop()
     verbosity = self.params.refinement_protocol.verbosity
 
-    scan_range_min = max(
-      int(math.floor(flex.min(self.reflections.frame_number()))),
-      self.sweep.get_array_range()[0])
-    scan_range_max = min(
-      int(math.ceil(flex.max(self.reflections.frame_number()))),
-      self.sweep.get_array_range()[1])
-    sweep = self.sweep[scan_range_min:scan_range_max]
-
     if 0 and self.params.debug_plots:
       plot_centroid_weights_histograms(reflections_for_refinement)
 
@@ -800,7 +792,7 @@ class indexer_base(object):
           pyplot.show()
 
       if self.params.debug:
-        self.export_as_json(crystal_model, sweep, suffix="_debug")
+        self.export_as_json(crystal_model, self.sweep, suffix="_debug")
         with open("reflections_debug.pickle", 'wb') as f:
           pickle.dump(reflections_for_refinement, f)
 
