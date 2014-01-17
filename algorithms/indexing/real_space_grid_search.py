@@ -92,16 +92,17 @@ class indexer_real_space_grid_search(indexer_base):
         unique_vectors.append(v)
       i += 1
 
-    #for i in range(30):
-      #v = matrix.col(vectors[i])
-      #print v.elems, v.length(), function_values[i]
+    if self.params.debug:
+      for i in range(30):
+        v = matrix.col(vectors[i])
+        print v.elems, v.length(), function_values[i]
 
     basis_vectors = [v.elems for v in unique_vectors]
     self.candidate_basis_vectors = basis_vectors
 
     if self.params.optimise_initial_basis_vectors:
       optimised_basis_vectors = optimise_basis_vectors(
-        reciprocal_space_points, basis_vectors, n_multiples=1)
+        reciprocal_space_points, basis_vectors)
       optimised_function_values = flex.double([
         compute_functional(v) for v in optimised_basis_vectors])
 
@@ -113,9 +114,10 @@ class indexer_real_space_grid_search(indexer_base):
 
     print "Number of unique vectors: %i" %len(unique_vectors)
 
-    #for i in range(len(unique_vectors)):
-    #  print compute_functional(unique_vectors[i].elems), unique_vectors[i].length(), unique_vectors[i].elems
-    #  print
+    if self.params.debug:
+      for i in range(len(unique_vectors)):
+        print compute_functional(unique_vectors[i].elems), unique_vectors[i].length(), unique_vectors[i].elems
+        print
 
     crystal_models = []
     while True:
@@ -138,8 +140,9 @@ class indexer_real_space_grid_search(indexer_base):
                           verbosity=0)
         n_indexed.append((refl.crystal() > -1).count(True))
       perm = flex.sort_permutation(n_indexed, reverse=True)
-      #print list(perm)
-      #print list(n_indexed.select(perm))
+      if self.params.debug:
+        print list(perm)
+        print list(n_indexed.select(perm))
       print candidate_orientation_matrices[perm[0]]
 
       if n_indexed[perm[0]] < 50:
