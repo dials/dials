@@ -195,7 +195,7 @@ class ReflectionManagerXY(ReflectionManager):
     return inc
 
   def _create_working_set(self, indices, nref_per_degree,
-                                         sample_if_nref_greater_than,
+                                         minimum_sample_size,
                                          max_num_obs):
     """Make a subset of the indices of reflections to use in refinement.
 

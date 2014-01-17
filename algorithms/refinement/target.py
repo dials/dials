@@ -449,7 +449,7 @@ class ReflectionManager(object):
                      nref_per_degree=None,
                      min_num_obs=20,
                      max_num_obs=None,
-                     sample_if_nref_greater_than=0,
+                     minimum_sample_size=0,
                      close_to_spindle_cutoff=0.1,
                      iqr_multiplier=1.5,
                      verbosity=0):
@@ -490,7 +490,7 @@ class ReflectionManager(object):
     self._sample_size = self._accepted_refs_size
     refs_to_keep = self._create_working_set(refs_to_keep,
                                             nref_per_degree,
-                                            sample_if_nref_greater_than,
+                                            minimum_sample_size,
                                             max_num_obs)
 
     # store observation information in a list of observation-prediction
@@ -569,7 +569,7 @@ class ReflectionManager(object):
     return test
 
   def _create_working_set(self, indices, nref_per_degree,
-                          sample_if_nref_greater_than, max_num_obs):
+                          minimum_sample_size, max_num_obs):
     """Make a subset of the indices of reflections to use in refinement"""
 
     working_indices = indices
@@ -582,7 +582,7 @@ class ReflectionManager(object):
       sample_size = int(nref_per_degree * width)
 
     # adjust if this is below the chosen limit
-    sample_size = max(sample_size, sample_if_nref_greater_than)
+    sample_size = max(sample_size, minimum_sample_size)
 
     # set maximum sample size
     if max_num_obs:
