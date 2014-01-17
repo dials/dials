@@ -418,7 +418,7 @@ class indexer_base(object):
         self.refined_reflections[i_lattice],
         file_name='indexed%s.pickle' %suffix)
 
-    if 1 and self.params.debug:
+    if 1 and self.params.debug and self.goniometer is not None:
       for i_lattice, cm in enumerate(self.refined_crystal_models):
         suffix = ""
         if len(crystal_models) > 1:
@@ -491,19 +491,26 @@ class indexer_base(object):
 
   @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
-    assert(len(detector) == 1)
-    x, y, _ = spots_mm.centroid_position().parts()
-    s1 = detector[0].get_lab_coord(flex.vec2_double(x,y))
-    s1 = s1/s1.norms() * (1/beam.get_wavelength())
-    spots_mm.set_beam_vector(s1) # needed by refinement
-    S = s1 - beam.get_s0()
-    # XXX what about if goniometer fixed rotation is not identity?
-    if goniometer is not None:
-      reciprocal_space_points = S.rotate_around_origin(
-        goniometer.get_rotation_axis(),
-        -spots_mm.rotation_angle())
-    else:
-      reciprocal_space_points = S
+    panel_numbers = flex.size_t(spot.panel_number for spot in spots_mm)
+    reciprocal_space_points = flex.vec3_double()
+    for i_panel in range(len(detector)):
+      sel = (panel_numbers == i_panel)
+      isel = sel.iselection()
+      spots_panel = spots_mm.select(panel_numbers == i_panel)
+      x, y, _ = spots_panel.centroid_position().parts()
+      s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
+      s1 = s1/s1.norms() * (1/beam.get_wavelength())
+      for i in range(len(s1)):
+        spots_mm[isel[i]].beam_vector = s1[i] # needed by refinement
+      #spots_panel.set_beam_vector(s1) # needed by refinement
+      S = s1 - beam.get_s0()
+      # XXX what about if goniometer fixed rotation is not identity?
+      if goniometer is not None:
+        reciprocal_space_points.extend(S.rotate_around_origin(
+          goniometer.get_rotation_axis(),
+          -spots_panel.rotation_angle()))
+      else:
+        reciprocal_space_points.extend(S)
     return reciprocal_space_points
 
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
