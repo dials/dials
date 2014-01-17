@@ -585,11 +585,14 @@ class indexer_base(object):
     basis_vectors = [real_space_a, real_space_b, real_space_c]
     min_bmsd = 1e8
     best_perm = None
-    for perm in ((0,1,2), (1,2,0), (2,0,1)):
+    # for non-cyclic permutations one axis needs inverting to keep system right-handed
+    for perm, sign in zip(
+        ((0,1,2), (1,2,0), (2,0,1), (1,0,2), (0,2,1), (2,1,0)),
+        (1, 1, 1, -1, -1, -1)):
       crystal_model = Crystal(
         basis_vectors[perm[0]],
         basis_vectors[perm[1]],
-        basis_vectors[perm[2]],
+        [i * sign for i in basis_vectors[perm[2]]],
         space_group=target_space_group)
       unit_cell = crystal_model.get_unit_cell()
       uc = target_unit_cell
