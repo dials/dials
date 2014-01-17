@@ -36,25 +36,12 @@ class RefinerFactory(object):
     import copy
     experiments = copy.deepcopy(experiments)
 
-    # With this interface, assume that these come either from a scan, or
-    # are None. The from_parameters_data_models interface provides more control.
-    # We currently only support a single Experiment.
-    scan = experiments[0].scan
-    if scan:
-      image_width_rad = scan.get_oscillation(deg=False)[1]
-      sweep_range_rad = scan.get_oscillation_range(deg=False)
-    else:
-      image_width_rad = None
-      sweep_range_rad = None
-
     # copy the reflections
     reflections = reflections.deep_copy()
 
     return cls._build_components(params,
                                  reflections,
                                  experiments,
-                                 image_width_rad,
-                                 sweep_range_rad,
                                  crystal_ids=range(len(experiments)),
                                  verbosity=verbosity)
 
@@ -73,8 +60,8 @@ class RefinerFactory(object):
                                   crystals=None,
                                   crystal_ids=None,
                                   verbosity=0):
-    """Given a set of parameters, reflections and experimental models, construct
-    a refiner.
+    """Given a set of parameters, reflections and experimental models for a
+    single Experiment, construct a refiner.
 
     Mandatory arguments:
       params - The input parameters as a phil scope_extract object
@@ -157,17 +144,31 @@ class RefinerFactory(object):
 
     # only one of image_width_rad or scan should be provided (or neither)
     assert [image_width_rad, scan].count(None) >= 1
-    if scan:
-      image_width_rad = scan.get_oscillation(deg=False)[1]
-      sweep_range_rad = scan.get_oscillation_range(deg=False)
+    #if scan:
+      #image_width_rad = scan.get_oscillation(deg=False)[1]
+      #sweep_range_rad = scan.get_oscillation_range(deg=False)
+    if image_width_rad:
+      # create a dummy scan
+      from dxtbx.model.scan import scan_factory
+      sf = scan_factory()
+      sweep_width = abs(sweep_range_rad[1] - sweep_range_rad[0])
+      nimages = int(sweep_width / image_width_rad)
+      scan = sf.make_scan(image_range= (1, nimages),
+                          exposure_times = 0.,
+                          oscillation = (0, image_width_rad),
+                          epochs = range(nimages),
+                          deg = False)
 
-    if goniometer and not image_width_rad:
-      # if there is neither a scan nor the image width provided,
+    if goniometer and not image_width_rad and not scan:
+      # This is not to be supported any more. Now we state we must have enough
+      # information to make a scan
+      raise RuntimeError("Goniometer provided, but not enough information about a scan!")
+      # if there was neither a scan nor the image width provided,
       # the target rmsd must be provided in absolute terms
-      assert params.refinement.target.rmsd_cutoff == "absolute"
+      #assert params.refinement.target.rmsd_cutoff == "absolute"
       # also there is no sweep range, so the reflection manager
       # cannot sample by number of reflections per degree
-      assert params.refinement.reflections.reflections_per_degree is None
+      #assert params.refinement.reflections.reflections_per_degree is None
 
     # do we have the essential models?
     assert [beam, detector].count(None) == 0
@@ -199,14 +200,12 @@ class RefinerFactory(object):
     return cls._build_components(params,
                                  reflections,
                                  experiments,
-                                 image_width_rad,
-                                 sweep_range_rad,
                                  crystal_ids,
                                  verbosity)
 
   @classmethod
-  def _build_components(cls, params, reflections, experiments, image_width_rad,
-                        sweep_range_rad, crystal_ids, verbosity):
+  def _build_components(cls, params, reflections, experiments, crystal_ids,
+                        verbosity):
     """low level build"""
 
     # FIXME, assume here a single experiment
@@ -243,8 +242,7 @@ class RefinerFactory(object):
              % len(reflections))
 
     # create reflection manager
-    refman = cls.config_refman(params, reflections, experiments,
-                               sweep_range_rad, verbosity)
+    refman = cls.config_refman(params, reflections, experiments, verbosity)
 
     if verbosity > 1:
       print ("Number of observations that pass initial inclusion criteria = %d"
@@ -256,8 +254,7 @@ class RefinerFactory(object):
     if verbosity > 1: print "Building target function"
 
     # create target function
-    target = cls.config_target(params, experiments, image_width_rad,
-                    refman, pred_param)
+    target = cls.config_target(params, experiments, refman, pred_param)
 
     if verbosity > 1: print "Target function built\n"
 
@@ -522,8 +519,7 @@ class RefinerFactory(object):
             max_iterations = options.max_iterations)
 
   @staticmethod
-  def config_refman(params, reflections, experiments,
-                       sweep_range_rad, verbosity):
+  def config_refman(params, reflections, experiments, verbosity):
     """Given a set of parameters and models, build a reflection manager
 
     Params:
@@ -553,6 +549,12 @@ class RefinerFactory(object):
     #if len(experiments) > 1:
     #  raise RuntimeError("Multiple experiment parameterisation not"
     #                     "yet supported")
+    #FIXME currently still need sweep_range_rad, goniometer and beam, which
+    #we'll take from Experiment 0.
+    if experiments[0].scan:
+      sweep_range_rad = experiments[0].scan.get_oscillation_range(deg=False)
+    else:
+      sweep_range_rad = None
     goniometer = experiments[0].goniometer
     beam = experiments[0].beam
     if goniometer:
@@ -580,7 +582,7 @@ class RefinerFactory(object):
                   verbosity=verbosity)
 
   @staticmethod
-  def config_target(params, experiments, image_width_rad, refman, pred_param):
+  def config_target(params, experiments, refman, pred_param):
     """Given a set of parameters, configure a factory to build a
     target function
 
@@ -607,6 +609,11 @@ class RefinerFactory(object):
     #  raise RuntimeError("Multiple experiment parameterisation not"
     #                     "yet supported")
     goniometer = experiments[0].goniometer
+    if experiments[0].scan:
+      temp = experiments[0].scan.get_oscillation(deg=False)
+      image_width_rad = temp[1] - temp[0]
+    else:
+      image_width_rad = None
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if goniometer:
