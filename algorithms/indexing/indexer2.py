@@ -789,8 +789,10 @@ class indexer_base(object):
       if maximum_spot_error is not None:
         residuals = flex.vec3_double()
         matches = refiner.get_matches()
+        frame_obs = flex.double()
         for match in matches:
           residuals.append((match.x_resid, match.y_resid, match.phi_resid))
+          frame_obs.append(match.frame_obs)
         x_residuals, y_residuals, phi_residuals = residuals.parts()
         mm_residual_norms = flex.sqrt(
           flex.pow2(x_residuals) + flex.pow2(y_residuals))
@@ -820,6 +822,36 @@ class indexer_base(object):
           #r = maximum_spot_error * self.detector[0].get_pixel_size()
           #pyplot.Circle((r, r), 0.5, color='b', fill=False)
           pyplot.axes().set_aspect('equal')
+          pyplot.show()
+
+          min_frame = int(math.floor(flex.min(frame_obs)))
+          max_frame = int(math.ceil(flex.max(frame_obs)))
+          residuals_x = []
+          residuals_y = []
+          residuals_phi = []
+          frame = []
+          for i_frame in range(min_frame, max_frame):
+            sel = (frame_obs >= i_frame) & (frame_obs < (i_frame+1))
+            if sel.count(True) == 0:
+              continue
+            residuals_x.append(flex.mean(x_residuals.select(sel)))
+            residuals_y.append(flex.mean(y_residuals.select(sel)))
+            residuals_phi.append(flex.mean(phi_residuals.select(sel)))
+            frame.append(i_frame)
+
+          fig = pyplot.figure()
+          ax = fig.add_subplot(311)
+          ax.scatter(frame, residuals_x)
+          ax.set_xlabel('frame #')
+          ax.set_ylabel('mean residual_x')
+          ax = fig.add_subplot(312)
+          ax.scatter(frame, residuals_y)
+          ax.set_xlabel('frame #')
+          ax.set_ylabel('mean residual_y')
+          ax = fig.add_subplot(313)
+          ax.scatter(frame, residuals_phi)
+          ax.set_xlabel('frame #')
+          ax.set_ylabel('mean residual_phi')
           pyplot.show()
 
       if self.params.debug:
