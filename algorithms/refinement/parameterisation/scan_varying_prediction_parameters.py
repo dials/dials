@@ -97,8 +97,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
 
-    # Get U and B at the composed image number obs_image_number. Assume
-    # there is only one parameterisation of each type
+    # Get U and B at the composed image number obs_image_number.
+    #FIXME Assume there is only one parameterisation of each type
     xl_op = self._xl_orientation_parameterisations[0]
     xl_ucp = self._xl_unit_cell_parameterisations[0]
     U = xl_op.get_state()
@@ -199,7 +199,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # Calculate gradients only for the correct xl orientation parameterisation
       if ixlo == xl_ori_param_id:
-        dU_dxlo_p = xlo.get_ds_dp(obs_image_number)
+        dU_dxlo_p = xlo.get_ds_dp()
 
         dr_dxlo_p = [R * dU_dxlo_p[i] * B * h
                      for i in range(len(dU_dxlo_p))]
@@ -228,7 +228,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
       # Calculate gradients only for the correct xl unit cell parameterisation
       if ixluc == xl_uc_param_id:
-        dB_dxluc_p = xluc.get_ds_dp(obs_image_number)
+        dB_dxluc_p = xluc.get_ds_dp()
 
         dr_dxluc_p = [R * U * dB_dxluc_p[i] * h for i
                           in range(len(dB_dxluc_p))]
