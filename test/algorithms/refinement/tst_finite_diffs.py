@@ -216,7 +216,7 @@ refman = ReflectionManager(obs_refs, experiments)
 ##############################
 
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-    experiments, ref_predictor, refman, pred_param, im_width)
+    experiments, ref_predictor, refman, pred_param)
 
 # get the functional and gradients
 mytarget.predict()

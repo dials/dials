@@ -235,7 +235,7 @@ refman = ReflectionManager(obs_refs, experiments)
 # 1/3 the image width in radians. For the simulated data, these are just made up
 
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-    ref_predictor, refman, pred_param, im_width)
+    ref_predictor, refman, pred_param)
 
 ################################
 # Set up the refinement engine #

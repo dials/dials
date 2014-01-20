@@ -215,8 +215,8 @@ class RefinerFactory(object):
         continue
       #FIXME here, use 'crystal' as a proxy for the experiment id. Need a true
       #experiment id attribute
-      beam = experiment[ref.crystal].beam
-      detector = experiment[ref.crystal].detector
+      beam = experiments[ref.crystal].beam
+      detector = experiments[ref.crystal].detector
       panel = detector[ref.panel_number]
       x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
       ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
@@ -544,12 +544,17 @@ class RefinerFactory(object):
       if verbosity > 1:
         print "Random seed set to %d\n" % options.random_seed
 
-    if goniometer:
+    if all(e.goniometer is not None for e in experiments):
       from dials.algorithms.refinement.target import ReflectionManager as refman
 
-    else:
+    elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.target_stills import \
           ReflectionManagerXY as refman
+
+    else:
+      raise NotImplementedError("ExperimentList contains a mixture of "
+        "experiments with goniometers and those without. This is not currently "
+        "supported.")
 
     # do outlier rejection?
     if options.do_outlier_rejection:
@@ -590,39 +595,34 @@ class RefinerFactory(object):
       raise RuntimeError("Target function rmsd_cutoff option" +
           options.rmsd_cutoff + " not recognised")
 
-    # FIXME: Multiple Experiments not yet supported!
-    #if len(experiments) > 1:
-    #  raise RuntimeError("Multiple experiment parameterisation not"
-    #                     "yet supported")
+    # all goniometers
     goniometer = experiments[0].goniometer
-    if experiments[0].scan:
-      temp = experiments[0].scan.get_oscillation(deg=False)
-      image_width_rad = temp[1] - temp[0]
-    else:
-      image_width_rad = None
+    for e in experiments: assert e.goniometer is goniometer
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
-    if goniometer:
+    if all(e.goniometer is not None for e in experiments):
       from dials.algorithms.refinement.prediction import ReflectionPredictor
       ref_predictor = ReflectionPredictor(experiments)
 
-      import dials.algorithms.refinement.target as targ
+      from dials.algorithms.refinement.target \
+        import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
-      target = targ.LeastSquaresPositionalResidualWithRmsdCutoff(
-                      experiments, ref_predictor, refman, pred_param,
-                      image_width_rad, options.bin_size_fraction,
-                      absolute_cutoffs)
-    else:
+    elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.prediction import \
           StillsReflectionPredictor
       ref_predictor = StillsReflectionPredictor(experiments)
 
-      import dials.algorithms.refinement.target_stills as targ
+      from dials.algorithms.refinement.target_stills \
+        import LeastSquaresXYResidualWithRmsdCutoff as targ
 
-      target = targ.LeastSquaresXYResidualWithRmsdCutoff(
-                      experiments, ref_predictor, refman, pred_param,
-                      options.bin_size_fraction,
-                      absolute_cutoffs)
+    else:
+      raise NotImplementedError("ExperimentList contains a mixture of "
+        "experiments with goniometers and those without. This is not currently "
+        "supported.")
+
+    target = targ(experiments, ref_predictor, refman, pred_param,
+                    options.bin_size_fraction,
+                    absolute_cutoffs)
 
     return target
 

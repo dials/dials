@@ -298,9 +298,9 @@ if __name__ == '__main__':
   ###############################
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments_single_panel, ref_predictor, refman, pred_param, im_width)
+      experiments_single_panel, ref_predictor, refman, pred_param)
   mytarget2 = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments_multi_panel, ref_predictor, refman2, pred_param2, im_width)
+      experiments_multi_panel, ref_predictor, refman2, pred_param2)
 
   #################################
   # Set up the refinement engines #

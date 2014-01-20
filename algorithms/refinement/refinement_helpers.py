@@ -239,7 +239,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   ##############################
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments, ref_predictor, refman, pred_param, image_width)
+      experiments, ref_predictor, refman, pred_param)
 
   if verbosity > 1: print "Target function built\n"
 
@@ -375,7 +375,7 @@ def scan_varying_refine(
   ##############################
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-      ref_predictor, refman, pred_param, image_width)
+      ref_predictor, refman, pred_param)
 
   if verbosity > 1: print "Target function built\n"
 
