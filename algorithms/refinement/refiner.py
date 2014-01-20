@@ -208,18 +208,15 @@ class RefinerFactory(object):
                         verbosity):
     """low level build"""
 
-    # FIXME, assume here a single experiment
-    detector = experiments[0].detector
-    beam = experiments[0].beam
-    crystals = experiments.crystals()
-    goniometer = experiments[0].goniometer
-    scan = experiments[0].scan
-
     # check that the beam vectors are stored: if not, compute them
     from scitbx import matrix
     for ref in reflections:
       if ref.beam_vector != (0.0, 0.0, 0.0):
         continue
+      #FIXME here, use 'crystal' as a proxy for the experiment id. Need a true
+      #experiment id attribute
+      beam = experiment[ref.crystal].beam
+      detector = experiment[ref.crystal].detector
       panel = detector[ref.panel_number]
       x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
       ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
@@ -266,6 +263,13 @@ class RefinerFactory(object):
     if verbosity > 1: print "Refinement engine built\n"
 
     # build refiner interface and return
+    #FIXME Should be passing experiments rather than beam, crystals, detector,
+    #goniometer and scan
+    detector = experiments[0].detector
+    beam = experiments[0].beam
+    crystals = experiments.crystals()
+    goniometer = experiments[0].goniometer
+    scan = experiments[0].scan
     return Refiner(reflections, beam, crystals, crystal_ids, detector,
                     pred_param, param_reporter, refman, target, refinery,
                     goniometer=goniometer,
@@ -293,11 +297,6 @@ class RefinerFactory(object):
 
     # Shorten paths
     import dials.algorithms.refinement.parameterisation as par
-
-    # FIXME: Multiple Experiments not yet supported!
-    #if len(experiments) > 1:
-    #  raise RuntimeError("Multiple experiment parameterisation not"
-    #                     "yet supported")
 
     # Currently a refinement job can only have one parameterisation of the
     # prediction equation. This can either be of the XY (stills) type, the
@@ -545,18 +544,6 @@ class RefinerFactory(object):
       if verbosity > 1:
         print "Random seed set to %d\n" % options.random_seed
 
-    #FIXME only single Experiment currently supported
-    #if len(experiments) > 1:
-    #  raise RuntimeError("Multiple experiment parameterisation not"
-    #                     "yet supported")
-    #FIXME currently still need sweep_range_rad, goniometer and beam, which
-    #we'll take from Experiment 0.
-    if experiments[0].scan:
-      sweep_range_rad = experiments[0].scan.get_oscillation_range(deg=False)
-    else:
-      sweep_range_rad = None
-    goniometer = experiments[0].goniometer
-    beam = experiments[0].beam
     if goniometer:
       from dials.algorithms.refinement.target import ReflectionManager as refman
 

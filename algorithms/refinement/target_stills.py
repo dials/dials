@@ -36,8 +36,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     Target.__init__(self, experiments, reflection_predictor, ref_man,
                     prediction_parameterisation)
 
-    # Set up the RMSD achieved criterion
-    #FIXME take detector from the first Experiment only!
+    # Set up the RMSD achieved criterion. For simplicity, we take detector from
+    # the first Experiment only.
     detector = experiments[0].detector
     if not absolute_cutoffs:
       pixel_sizes = [p.get_pixel_size() for p in detector]
