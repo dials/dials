@@ -24,9 +24,6 @@ ModelCache = namedtuple('ModelCache',
 
 class PredictionParameterisation(object):
   """
-
-  FIXME UPDATE THIS DOCSTRING
-
   Abstract interface for a class that groups together model parameterisations
   relating to diffraction geometry and provides:
 
@@ -46,28 +43,23 @@ class PredictionParameterisation(object):
   * Crystal orientation parameterisation
   * Crystal unit cell parameterisation
 
-  One of each must be supplied, which could be satisfied by a dummy class if
-  no parameterisation is desired for some model.
+  One of each must be supplied for each Experiment. These could be satisfied by
+  a dummy class if no parameterisation is desired for some model.
 
   We also need access to the underlying models that are parameterised. The
   model parameterisation objects do not provide access to these models:
-  it is not their job to do so. Instead we construct this object with direct
-  access to each of the models. So, we also need each of:
+  it is not their job to do so. Instead we keep a reference to an
+  ExperimentList that allows access to the relevant models.
 
-  * A detector model (single point of reference for every sensor in the
-    experiment)
-  * A beam model
-  * A crystal model
-  * A goniometer model
-
-  The goniometer model is not yet parameterised, but we need it for the
-  equations if we are doing parameterisation in X, Y, Phi space. Conversely,
-  if parameterisation is only in X, Y space, the goniometer model is optional.
+  The goniometer is not yet parameterised, but we need it for the equations if
+  we are doing parameterisation in X, Y, Phi space. Conversely, if
+  parameterisation is only in X, Y space, the goniometer model is optional.
 
   A class implementing PredictionParameterisation is used by a Refinery
   object directly, which takes the list of parameters, and indirectly via a
   Target function object, which takes the list of derivatives and composes the
   derivatives of a Target function from them.
+
   """
 
   def __init__(self,
