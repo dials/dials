@@ -717,170 +717,39 @@ class indexer_base(object):
 
   def refine(self, crystal_model, maximum_spot_error=None):
     self._refine_timer.start()
-    self._ray_intersection_timer.start()
-    from dials.algorithms.spot_prediction import ray_intersection
-    reflections_for_refinement = ray_intersection(
-      self.detector, self.reflections.select(self.indexed_reflections))
-    self._ray_intersection_timer.stop()
+    from dials.algorithms.indexing.refinement import refine
+    reflections_for_refinement = self.reflections.select(
+      self.indexed_reflections)
+    refiner, refined = refine(
+      self.params, reflections_for_refinement, crystal_model,
+      self.sweep.get_detector(),
+      self.sweep.get_beam(),
+      scan=self.sweep.get_scan(),
+      goniometer=self.sweep.get_goniometer(),
+      maximum_spot_error=maximum_spot_error,
+      verbosity=self.params.refinement_protocol.verbosity,
+      debug_plots=self.params.debug_plots)
+    used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
 
-    if 0 and self.params.debug_plots:
-      plot_centroid_weights_histograms(reflections_for_refinement)
-
-    if self.params.refinement_protocol.weight_outlier_n_sigma is not None:
-      from libtbx.utils import plural_s
-      sel = reject_weight_outliers_selection(
-        reflections_for_refinement,
-        sigma_cutoff=self.params.refinement_protocol.weight_outlier_n_sigma)
-      reflections_for_refinement = reflections_for_refinement.select(sel)
-      n_reject = sel.count(False)
-      if n_reject > 0:
-        n_reject, suffix = plural_s(n_reject)
-        print "Rejected %i reflection%s (weight outlier%s)" %(
-          n_reject, suffix, suffix)
-    else:
-      sel = flex.bool(reflections_for_refinement.size(), True)
-
-    params = self.params.refinement
-
-    # XXX Interim hack to make refinement work for multiple lattices
-    reflections_for_refinement = reflections_for_refinement.deep_copy()
-    reflections_for_refinement.set_crystal(
-      flex.int(reflections_for_refinement.size(), 0))
-
-    if 0:
-      from dials_regression.indexing_test_data.i04_weak_data.run_indexing_api \
-           import outlier_main_procedure
-
-      from rstbx.phil.phil_preferences import indexing_api_defs
-      import iotbx.phil
-      hardcoded_phil = iotbx.phil.parse(
-        input_string=indexing_api_defs).extract()
-
-      from cctbx.crystal_orientation import crystal_orientation
-      triclinic_crystal = crystal_orientation(crystal_model.get_A(), True)
-
-      reflections = self.reflections_raw.select(self.indexed_reflections).select(sel)
-      refiner, refined_crystal, status = \
-        outlier_main_procedure(reflections,
-                               sweep.get_scan(), sweep.get_goniometer(),
-                               sweep.get_beam(), sweep.get_detector(),
-                               triclinic_crystal,
-        self.reciprocal_space_points.select(
-          self.indexed_reflections).select(sel),
-        hardcoded_phil)
-      self.sweep.set_goniometer(refiner.get_goniometer())
-      self.sweep.set_beam(refiner.get_beam())
-      self.sweep.set_detector(refiner.get_detector())
-      refined_crystal = refiner.get_crystal()
-
-    else:
-      self._refine_core_timer.start()
-      from dials.algorithms.refinement import RefinerFactory
-      refiner = RefinerFactory.from_parameters_data_models(
-        self.params, reflections_for_refinement,
-        beam=self.sweep.get_beam(),
-        goniometer=self.sweep.get_goniometer(),
-        detector=self.sweep.get_detector(),
-        scan=self.sweep.get_scan(),
-        crystal=crystal_model,
-        verbosity=verbosity)
-
-      if maximum_spot_error is not None:
-        residuals = flex.vec3_double()
-        matches = refiner.get_matches()
-        frame_obs = flex.double()
-        for match in matches:
-          residuals.append((match.x_resid, match.y_resid, match.phi_resid))
-          frame_obs.append(match.frame_obs)
-        x_residuals, y_residuals, phi_residuals = residuals.parts()
-        mm_residual_norms = flex.sqrt(
-          flex.pow2(x_residuals) + flex.pow2(y_residuals))
-        # hard cutoff, but this is essentially what XDS does by default
-        # assumes pixel size is same for all panels and same in x and y
-        inlier_sel = mm_residual_norms < (
-          maximum_spot_error * self.detector[0].get_pixel_size()[0])
-        reflections_for_refinement = reflections_for_refinement.select(
-          refiner.selection_used_for_refinement()).select(inlier_sel)
-        refiner = RefinerFactory.from_parameters_data_models(
-          self.params, reflections_for_refinement,
-          beam=self.sweep.get_beam(),
-          goniometer=self.sweep.get_goniometer(),
-          detector=self.sweep.get_detector(),
-          scan=self.sweep.get_scan(),
-          crystal=crystal_model,
-          verbosity=verbosity)
-
-        if self.params.debug_plots:
-          from matplotlib import pyplot
-          pyplot.scatter(x_residuals.select(inlier_sel).as_numpy_array(),
-                         y_residuals.select(inlier_sel).as_numpy_array(),
-                         c='b', alpha=0.5)
-          pyplot.scatter(x_residuals.select(~inlier_sel).as_numpy_array(),
-                         y_residuals.select(~inlier_sel).as_numpy_array(),
-                         c='r', alpha=0.5)
-          #r = maximum_spot_error * self.detector[0].get_pixel_size()
-          #pyplot.Circle((r, r), 0.5, color='b', fill=False)
-          pyplot.axes().set_aspect('equal')
-          pyplot.show()
-
-          min_frame = int(math.floor(flex.min(frame_obs)))
-          max_frame = int(math.ceil(flex.max(frame_obs)))
-          residuals_x = []
-          residuals_y = []
-          residuals_phi = []
-          frame = []
-          for i_frame in range(min_frame, max_frame):
-            sel = (frame_obs >= i_frame) & (frame_obs < (i_frame+1))
-            if sel.count(True) == 0:
-              continue
-            residuals_x.append(flex.mean(x_residuals.select(sel)))
-            residuals_y.append(flex.mean(y_residuals.select(sel)))
-            residuals_phi.append(flex.mean(phi_residuals.select(sel)))
-            frame.append(i_frame)
-
-          fig = pyplot.figure()
-          ax = fig.add_subplot(311)
-          ax.scatter(frame, residuals_x)
-          ax.set_xlabel('frame #')
-          ax.set_ylabel('mean residual_x')
-          ax = fig.add_subplot(312)
-          ax.scatter(frame, residuals_y)
-          ax.set_xlabel('frame #')
-          ax.set_ylabel('mean residual_y')
-          ax = fig.add_subplot(313)
-          ax.scatter(frame, residuals_phi)
-          ax.set_xlabel('frame #')
-          ax.set_ylabel('mean residual_phi')
-          pyplot.show()
-
-      if self.params.debug:
-        self.export_as_json(crystal_model, self.sweep, suffix="_debug")
-        with open("reflections_debug.pickle", 'wb') as f:
-          pickle.dump(reflections_for_refinement, f)
-
-
-      refined = refiner.run()
-      self._refine_core_timer.stop()
-
-      self.sweep.set_goniometer(refiner.get_goniometer())
-      self.sweep.set_beam(refiner.get_beam())
-      self.sweep.set_detector(refiner.get_detector())
-      refined_crystal = refiner.get_crystal()
+    self.sweep.set_goniometer(refiner.get_goniometer())
+    self.sweep.set_beam(refiner.get_beam())
+    self.sweep.set_detector(refiner.get_detector())
+    refined_crystal = refiner.get_crystal()
 
     crystal_model.set_B(refined_crystal.get_B())
     crystal_model.set_U(refined_crystal.get_U())
 
     #assert crystal_model == refined_crystal
 
-    if not (params.parameterisation.beam.fix == 'all'
-            and params.parameterisation.detector.fix == 'all'):
+    if not (self.params.refinement.parameterisation.beam.fix == 'all'
+            and self.params.refinement.parameterisation.detector.fix == 'all'):
       # Experimental geometry may have changed - re-map centroids to
       # reciprocal space
       self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
         self.reflections, self.detector, self.beam, self.goniometer)
     self._refine_timer.stop()
-    return crystal_model, reflections_for_refinement
+    return crystal_model, used_reflections
 
   def predict_reflections(self, crystal_model):
     from dials.algorithms.integration import ReflectionPredictor
