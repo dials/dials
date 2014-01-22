@@ -84,6 +84,7 @@ algorithms/indexing/indexer.py -text
 algorithms/indexing/indexer2.py -text
 algorithms/indexing/real_space_grid_search.py -text
 algorithms/indexing/refinement.py -text
+algorithms/indexing/symmetry.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/integration_ext.cc -text
@@ -296,6 +297,7 @@ command_line/print_reflection_stats.py -text
 command_line/print_test_reflections.py -text
 command_line/process.py -text
 command_line/refine.py -text
+command_line/refine_bravais_settings.py -text
 command_line/reflection_stats.py -text
 command_line/show_models.py -text
 command_line/show_profiles.py -text
