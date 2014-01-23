@@ -32,6 +32,21 @@ class refined_settings_list(list):
   def triclinic(self):
     return self[-1]
 
+  def as_dict(self):
+    result = { }
+
+    for item in self:
+      uc = item.refined_crystal.get_unit_cell()
+      result[item.setting_number] = {
+        'max_angular_difference':item['max_angular_difference'],
+        'rmsd':item.rmsd,
+        'nspots':item.Nmatches,
+        'bravais':item['bravais'],
+        'unit_cell':uc.parameters()
+        }
+
+    return result
+
   def labelit_printout(self,out=None):
     from libtbx import table_utils
     if out is None:
