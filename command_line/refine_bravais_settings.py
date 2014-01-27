@@ -54,11 +54,11 @@ def run(args):
   from json import dumps
   open('bravais_summary.json', 'wb').write(dumps(Lfat.as_dict()))
   from cctbx.crystal.crystal_model.serialize import dump_crystal
-  for i, subgroup in enumerate(Lfat):
-    with open('bravais_setting_%i.json' %(i+1), 'wb') as f:
+  for subgroup in Lfat:
+    with open('bravais_setting_%i.json' % (
+      int(subgroup.setting_number)), 'wb') as f:
       dump_crystal(subgroup.refined_crystal, f)
   return
-
 
 if __name__ == '__main__':
   import sys
