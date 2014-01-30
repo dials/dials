@@ -142,14 +142,6 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         dy = abs(bt_rg_y - y)
         bt_rg_dist = math.sqrt(dx * dx + dy * dy)
 
-        old_way = '''
-        total_dist = tp_lf_dist + tp_rg_dist + bt_lf_dist + bt_rg_dist
-        tp_lf_contr = (total_dist - tp_lf_dist) / (total_dist * 3)
-        tp_rg_contr = (total_dist - tp_rg_dist) / (total_dist * 3)
-        bt_lf_contr = (total_dist - bt_lf_dist) / (total_dist * 3)
-        bt_rg_contr = (total_dist - bt_rg_dist) / (total_dist * 3)
-        print "tdist =", total_dist
-        '''
         max_dist = math.sqrt(
         (x_cuad_size * x_cuad_size) + (y_cuad_size * y_cuad_size)
         )
@@ -211,35 +203,46 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         descr[0, 2] = float(bt_rg_contr)
         average = add_2d(descr, bt_rg_average, average)
 
-        if_you_want_to_see_interpolated_profiles = '''
-        if tp_lf_contr > 0.6 or tp_rg_contr > 0.6 \
-        or bt_lf_contr > 0.6 or bt_rg_contr > 0.6:
-          from matplotlib import pyplot# as plt
+        #if_you_want_to_see_interpolated_profiles = '''
+        if tp_lf_contr > 0.62 or tp_rg_contr > 0.62 \
+        or bt_lf_contr > 0.62 or bt_rg_contr > 0.62:
+          #from matplotlib import pyplot# as plt
           print "tp_lf_contr =", tp_lf_contr
           data2d = tp_lf_average.as_numpy_array()
-          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
-          pyplot.show()
+          #pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          #pyplot.show()
           print "tp_rg_contr =", tp_rg_contr
           data2d = tp_rg_average.as_numpy_array()
-          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
-          pyplot.show()
+          #pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          #pyplot.show()
           print "bt_lf_contr =", bt_lf_contr
           data2d = bt_lf_average.as_numpy_array()
-          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
-          pyplot.show()
+          #pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          #pyplot.show()
           print "bt_rg_contr =", bt_rg_contr
           data2d = bt_rg_average.as_numpy_array()
-          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
-          pyplot.show()
+          #pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          #pyplot.show()
+          print "final averaged profile"
           data2d = average.as_numpy_array()
           data2d = average.as_numpy_array()
-          pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
-          pyplot.show()
+          #pyplot.imshow(data2d, interpolation = "nearest", cmap = pyplot.gray())
+          #pyplot.show()
+          print "____________________________"
         #'''
 
+
+        if_you_want_to_see_how_the_profiles_look = '''
+        from matplotlib import pyplot as plt
+        data2d = average.as_numpy_array()
+        plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
+        plt.show()
+        #'''
       else:
         #print "in else"
         average = local_average
+
+
 
       shoebox = ref.shoebox
       #mask = ref.shoebox_mask                               # may be needed soon

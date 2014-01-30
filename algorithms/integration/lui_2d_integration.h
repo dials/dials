@@ -12,7 +12,7 @@
 #define DIALS_ALGORITHMS_LUI_INTEGRATION_2D_H
 #include <stdio.h>
 #include <iostream>
-#include <scitbx/vec2.h>
+//#include <scitbx/vec2.h>
 #include <scitbx/array_family/flex_types.h>
 #include <cmath>
 #include <cstdlib>
@@ -174,7 +174,7 @@ namespace dials { namespace algorithms {
     return total;
   }
 
-  double m_linear_scale(int cnt, double i_mod[], double i_exp[]){
+  double m_linear_scale(int & cnt, double i_mod[], double i_exp[]){
     double m = 0;
     if (cnt > 0){
       double i_wgt[cnt];
@@ -205,7 +205,7 @@ namespace dials { namespace algorithms {
   }
 
 
-  double m_least_squres_1d(int cnt, double i_mod[], double i_exp[]){
+  double m_least_squres_1d(int & cnt, double i_mod[], double i_exp[]){
     // least-squares scaling following the formula:
     // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
 
@@ -269,6 +269,11 @@ namespace dials { namespace algorithms {
 
     // finding the scale needed to fit profile list to experiment list
     double m, diff, df_sqr;
+
+
+    // this is how the algorithm for fitting must be chosen
+    // between linear or least squares
+    // ONE of the next two lines MUST be commented
 
     //m = m_linear_scale(counter, imodl_lst, iexpr_lst);
     m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);

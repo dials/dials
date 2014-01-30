@@ -22,6 +22,7 @@ for ypos in range(86):
   for xpos in range(80):
     #if xpos/12.0 == int(xpos/12) and ypos/12.0 == int(ypos/12):
     #if ypos/6.0 == int(ypos/6):
+    if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3):
       row_str = ypos * nrow
       col_str = xpos * ncol
       dx = col_str - 1200
