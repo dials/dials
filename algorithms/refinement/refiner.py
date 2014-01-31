@@ -363,12 +363,12 @@ class RefinerFactory(object):
 
         xl_ori_param = par.ScanVaryingCrystalOrientationParameterisation(
                                             crystal,
-                                            scan.get_image_range(),
+                                            scan.get_array_range(),
                                             n_intervals,
                                             experiment_ids=exp_ids)
         xl_uc_param = par.ScanVaryingCrystalUnitCellParameterisation(
                                             crystal,
-                                            scan.get_image_range(),
+                                            scan.get_array_range(),
                                             n_intervals,
                                             experiment_ids=exp_ids)
       else:
@@ -905,9 +905,9 @@ class Refiner(object):
       VaryingCrystalPredictionParameterisation
     if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
 
-      im_range = self._scan.get_image_range()
-      UBlist = [self._pred_param.get_UB(t) for t in range(im_range[0],
-                                                          im_range[1]+2)]
+      ar_range = self._scan.get_array_range()
+      UBlist = [self._pred_param.get_UB(t) for t in range(ar_range[0],
+                                                          ar_range[1]+2)]
       sv_predictor = ScanVaryingReflectionListGenerator(UBlist,
                             self._beam, self._goniometer, self._scan, dmin)
       refs = ReflectionList(sv_predictor())

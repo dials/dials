@@ -331,9 +331,9 @@ def scan_varying_refine(
   det_param = DetectorParameterisationSinglePanel(detector)
   s0_param = BeamParameterisationOrientation(beam, goniometer)
   xlo_param = ScanVaryingCrystalOrientationParameterisation(
-          crystal, scan.get_image_range(), 5)
+          crystal, scan.get_array_range(), 5)
   xluc_param = ScanVaryingCrystalUnitCellParameterisation(
-          crystal, scan.get_image_range(), 5)
+          crystal, scan.get_array_range(), 5)
 
   # Fix beam to the X-Z plane (imgCIF geometry)
   s0_param.set_fixed([True, False])

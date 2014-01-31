@@ -146,8 +146,8 @@ class ScanVaryingReflectionPredictor(object):
     self._gonio = gonio
     self._scan = scan
 
-    # get offset to convert image number to array index in UBlist
-    self._first_image = scan.get_image_range()[0]
+    # get offset to convert image array number to array index in UBlist
+    self._first_image = scan.get_array_range()[0]
 
     # resolution limit
     self._dmin = dmin
@@ -358,8 +358,8 @@ class ScanVaryingReflectionListGenerator(object):
     blocksizes[-1] += n_images % num_blocks
 
     blockranges = []
-    im_range = self._scan.get_image_range()
-    start = im_range[0]
+    ar_range = self._scan.get_image_range()
+    start = ar_range[0]
     for block in blocksizes:
       blockranges.append((start, start + block - 1))
       start += block

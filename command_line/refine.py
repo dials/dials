@@ -109,7 +109,7 @@ class Script(ScriptRunner):
       scan = refiner.get_scan()
       if scan:
         text = refiner.get_param_reporter().varying_params_vs_image_number(
-            scan.get_image_range())
+            scan.get_array_range())
         if text:
           print "Writing scan-varying parameter table to file"
           f = open("varying_params.dat","w")

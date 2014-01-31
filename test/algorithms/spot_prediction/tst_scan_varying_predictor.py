@@ -97,7 +97,7 @@ experiments.append(Experiment(
       scan=myscan, crystal=mycrystal, imageset=None))
 ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
-im_range = myscan.get_image_range()
+im_range = myscan.get_array_range()
 # We need a UB matrix at the beginning of every image, and at the end of the
 # last image. So start is the first image, stop is the last image plus one to
 # include that image in the range, and plus another one to move to the end of

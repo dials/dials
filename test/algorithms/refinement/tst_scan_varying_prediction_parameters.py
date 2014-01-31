@@ -154,9 +154,9 @@ myscan = sf.make_scan((1,360), 0.5, (0, 0.5), range(360))
 det_param = DetectorParameterisationSinglePanel(mydetector)
 s0_param = BeamParameterisationOrientation(mybeam, mygonio)
 xlo_param = ScanVaryingCrystalOrientationParameterisation(
-        mycrystal, myscan.get_image_range(), 5)
+        mycrystal, myscan.get_array_range(), 5)
 xluc_param = ScanVaryingCrystalUnitCellParameterisation(
-        mycrystal, myscan.get_image_range(), 5)
+        mycrystal, myscan.get_array_range(), 5)
 
 #### Cause the crystal U and B to vary over the scan
 
