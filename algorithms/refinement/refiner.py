@@ -496,7 +496,7 @@ class RefinerFactory(object):
 
     import dials.algorithms.refinement.engine as engine
 
-    if options.engine  == "SimpleLBFGS":
+    if options.engine == "SimpleLBFGS":
       from engine import SimpleLBFGS as refinery
     elif options.engine == "LBFGScurvs":
       from engine import LBFGScurvs as refinery
@@ -507,6 +507,8 @@ class RefinerFactory(object):
     else:
       raise RuntimeError("Refinement engine " + options.engine +
                          " not recognised")
+
+    if verbosity > 1: print "Selected refinement engine type:", options.engine
 
     return refinery(target = target,
             prediction_parameterisation = pred_param,
