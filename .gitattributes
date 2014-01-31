@@ -626,6 +626,7 @@ test/algorithms/polygon/clip/tst_clipping.py -text
 test/algorithms/polygon/tst_spatial_interpolation.py -text
 test/algorithms/refinement/__init__.py -text
 test/algorithms/refinement/params.py -text
+test/algorithms/refinement/run_tests.py -text
 test/algorithms/refinement/setup_geometry.py -text
 test/algorithms/refinement/setup_minimiser.py -text
 test/algorithms/refinement/tst_beam_parameters.py -text
