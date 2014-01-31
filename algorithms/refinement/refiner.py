@@ -905,7 +905,10 @@ class Refiner(object):
       VaryingCrystalPredictionParameterisation
     if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
 
-      sv_predictor = ScanVaryingReflectionListGenerator(self._pred_param,
+      im_range = self._scan.get_image_range()
+      UBlist = [self._pred_param.get_UB(t) for t in range(im_range[0],
+                                                          im_range[1]+2)]
+      sv_predictor = ScanVaryingReflectionListGenerator(UBlist,
                             self._beam, self._goniometer, self._scan, dmin)
       refs = ReflectionList(sv_predictor())
       new_reflections = ray_intersection(self._detector, refs)

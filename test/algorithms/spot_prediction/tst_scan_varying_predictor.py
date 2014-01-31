@@ -97,8 +97,14 @@ experiments.append(Experiment(
       scan=myscan, crystal=mycrystal, imageset=None))
 ref_predictor = ReflectionPredictor(experiments, sweep_range)
 
+im_range = myscan.get_image_range()
+# We need a UB matrix at the beginning of every image, and at the end of the
+# last image. So start is the first image, stop is the last image plus one to
+# include that image in the range, and plus another one to move to the end of
+# that image.
+UBlist = [pred_param.get_UB(t) for t in range(im_range[0], im_range[1]+2)]
 dmin = mydetector.get_max_resolution(mybeam.get_s0())
-sv_predictor = ScanVaryingReflectionListGenerator(pred_param, mybeam,
+sv_predictor = ScanVaryingReflectionListGenerator(UBlist, mybeam,
                                             mygonio, myscan, resolution)
 refs1 = ref_predictor.predict(indices)
 refs2 = sv_predictor()

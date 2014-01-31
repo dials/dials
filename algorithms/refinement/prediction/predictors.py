@@ -131,18 +131,23 @@ class ScanVaryingReflectionPredictor(object):
   the image is approximated by a general linear transformation (not just a
   rotation).
 
+  Temporarily, we initialise with a list of N+1 UB matrices, where N is the
+  total number of images. In future we will simple pass a crystal model,
+  which will store its own per-image UB matrix.
+
   Currently it is assumed that only the crystal model varies with image
-  number, whilst the other models remain static. The
-  prediction_parameterisation object is assumed to have a method
-  get_UB(image_number).
+  number, whilst the other models remain static.
   """
 
-  def __init__(self, prediction_parameterisation, beam, gonio, scan, dmin):
+  def __init__(self, UBlist, beam, gonio, scan, dmin):
 
-    self._pred_param = prediction_parameterisation
+    self._UBs = UBlist
     self._beam = beam
     self._gonio = gonio
     self._scan = scan
+
+    # get offset to convert image number to array index in UBlist
+    self._first_image = scan.get_image_range()[0]
 
     # resolution limit
     self._dmin = dmin
@@ -184,9 +189,9 @@ class ScanVaryingReflectionPredictor(object):
     r_end = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
         axis = self._axis, angle = phi_end, deg = False))
 
-    self._T1 = r_beg * self._pred_param.get_UB(image_number)
+    self._T1 = r_beg * self._UBs[image_number - self._first_image]
 
-    self._T2 = r_end * self._pred_param.get_UB(image_number + step)
+    self._T2 = r_end * self._UBs[image_number - self._first_image + step]
 
   def get_T1(self):
     """Get the setting matrix for the beginning of the step"""
@@ -292,9 +297,12 @@ class ScanVaryingReflectionListGenerator(object):
   Starting from the (0,0,0) reflection, known to be on the Ewald sphere, for a
   particular image t, generate indices using the Reeke algorithm, then predict
   using ScanVaryingReflectionPredictor to test each candidate.
+
+  Temporarily pass a UBlist (see docstring for ScanVaryingReflectionPredictor)
+  until we can store per-image UB matrices in a crystal model
   """
 
-  def __init__(self, prediction_parameterisation, beam,
+  def __init__(self, UBlist, beam,
                   gonio, scan, dmin):
 
     self._scan = scan
@@ -302,7 +310,7 @@ class ScanVaryingReflectionListGenerator(object):
     self._axis = matrix.col(gonio.get_rotation_axis())
     self._dmin = dmin
     self._predictor = ScanVaryingReflectionPredictor(
-                prediction_parameterisation, beam, gonio, scan, dmin)
+                        UBlist, beam, gonio, scan, dmin)
     self._reflections = []
 
   def __call__(self):
@@ -322,15 +330,15 @@ class ScanVaryingReflectionListGenerator(object):
     from libtbx import easy_mp
     from dials.util import mp
 
-    im_range = self._scan.get_image_range()
-    n_images = im_range[-1] - im_range[0] + 1
+
+    n_images = self._scan.get_num_images()
 
     # Change the number of processors if necessary
     nproc = mp.nproc
     if nproc > n_images:
       nproc = n_images
 
-    iterable = self._make_blocks(im_range, nproc)
+    iterable = self._make_blocks(n_images, nproc)
 
     ref_list_of_list = easy_mp.parallel_map(
         func=self._search_on_image_range,
@@ -342,15 +350,15 @@ class ScanVaryingReflectionListGenerator(object):
     self._reflections = [e for l in ref_list_of_list for e in l]
     return
 
-  def _make_blocks(self, im_range, num_blocks):
+  def _make_blocks(self, n_images, num_blocks):
 
-    n_images = im_range[-1] - im_range[0] + 1
     blocksizes = [n_images // num_blocks] * num_blocks
 
     # increase the final blocksize by the remainder
     blocksizes[-1] += n_images % num_blocks
 
     blockranges = []
+    im_range = self._scan.get_image_range()
     start = im_range[0]
     for block in blocksizes:
       blockranges.append((start, start + block - 1))
