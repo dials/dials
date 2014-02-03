@@ -270,15 +270,16 @@ namespace dials { namespace af { namespace boost_python {
     int i1 = std::min(result.bbox[1], (int)gain.accessor()[1]) - result.bbox[0];
     int j1 = std::min(result.bbox[3], (int)gain.accessor()[0]) - result.bbox[2];
     int zsize = result.zsize();
-    DIALS_ASSERT(i0 < i1 && j0 < j1);
-    for (std::size_t j = j0; j < j1; ++j) {
-      for (std::size_t i = i0; i < i1; ++i) {
-        double g = gain(j + y0, i + x0);
-        double d = dark(j + y0, i + x0);
-        int m    = mask(j + y0, i + x0) ? Valid : 0;
-        for (std::size_t k = 0; k < zsize; ++k) {
-          result.data(k, j, i) = g * (partial.data(k, j, i) - d);
-          result.mask(k, j, i) = m;
+    if (i0 < i1 && j0 < j1) {
+      for (std::size_t j = j0; j < j1; ++j) {
+        for (std::size_t i = i0; i < i1; ++i) {
+          double g = gain(j + y0, i + x0);
+          double d = dark(j + y0, i + x0);
+          int m    = mask(j + y0, i + x0) ? Valid : 0;
+          for (std::size_t k = 0; k < zsize; ++k) {
+            result.data(k, j, i) = g * (partial.data(k, j, i) - d);
+            result.mask(k, j, i) = m;
+          }
         }
       }
     }

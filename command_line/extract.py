@@ -44,37 +44,43 @@ class Script(ScriptRunner):
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
-    from dials.algorithms.integration import ReflectionPredictor
     from dials.algorithms.integration import ProfileBlockExtractor
     from dials.algorithms.shoebox import BBoxCalculator
-    from dials.model.data import ReflectionList
     from dials.array_family import flex
+    from dials.model.data import ReflectionList
 
-    # Try importing the command line arguments
-    importer = Importer(args)
-    if len(importer.imagesets) == 0 or len(importer.imagesets) == 0:
-      self.config().print_help()
+    # Check the unhandled arguments
+    importer = Importer(args, include=['experiments'])
+    if len(importer.unhandled_arguments) > 0:
+      print '-' * 80
+      print 'The following command line arguments weren\'t handled'
+      for arg in importer.unhandled_arguments:
+        print '  ' + arg
+
+    # Check the number of experiments
+    if importer.experiments is None or len(importer.experiments) == 0:
+      print 'Error: no experiment list specified'
       return
-    elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
+    elif len(importer.experiments) > 1:
+      print 'Error: only 1 experiment currently supported'
+      return
 
-    # Get the sweep and crystal
-    sweep = importer.imagesets[0]
-    crystal = importer.crystals[0]
-
-    # Predict a load of reflections
-    predict = ReflectionPredictor()
-    predicted = predict(sweep, crystal)
+    # Populate the reflection table with predictions
+    predicted = flex.reflection_table.from_predictions(importer.experiments)
+    predicted = ReflectionList.from_table(predicted)
 
     # Get the bbox nsigma
     n_sigma = params.integration.shoebox.n_sigma
 
+    # Loop through all the experiments
+    ex = importer.experiments[0]
+
     # Create the bbox calculator
     compute_bbox = BBoxCalculator(
-        sweep.get_beam(), sweep.get_detector(),
-        sweep.get_goniometer(), sweep.get_scan(),
-        n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
-        n_sigma * crystal.get_mosaicity(deg=False))
+        ex.beam, ex.detector,
+        ex.goniometer, ex.scan,
+        n_sigma * ex.beam.get_sigma_divergence(deg=False),
+        n_sigma * ex.crystal.get_mosaicity(deg=False))
 
     # Calculate the bounding boxes of all the reflections
     Command.start('Calculating bounding boxes')
@@ -82,12 +88,12 @@ class Script(ScriptRunner):
     Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
     # Create the profile block extractor
-    extract = ProfileBlockExtractor(sweep, predicted,
+    extract = ProfileBlockExtractor(ex.imageset, predicted,
         options.num_blocks, options.output_filename)
 
     # Read through the blocks
-    for indices, shoeboxes in extract:
-      print shoeboxes
+    #for indices, shoeboxes in extract:
+      #print indices, shoeboxes
 
 if __name__ == '__main__':
   script = Script()
