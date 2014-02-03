@@ -261,8 +261,8 @@ class Importer(object):
 
     These are the types we can import:
      - reflections : a list of reflections
-     - imagesets : a list of imagesets
-     - crystals : a list of crystals
+     - datablocks : a list of datablocks
+     - experiments: a list of experiments
      - extracted : a file with extracted shoeboxes
 
     Params:
@@ -276,16 +276,15 @@ class Importer(object):
 
     '''
     from dials.array_family import flex
-    from dxtbx.imageset import ImageSet
 
     # Initialise output
-    self.imagesets = []
-    self.crystals = []
+    self.datablocks = None
+    self.experiments = None
     self.reflections = flex.reflection_table()
     self.extracted = None
 
     # Get the list of items to try
-    totry = ['imagesets', 'crystals', 'reflections', 'extracted']
+    totry = ['datablocks', 'experiments', 'reflections', 'extracted']
     if include is not None:
       for item in include:
         assert(item in totry)
@@ -305,39 +304,38 @@ class Importer(object):
     ''' Try to import with the given item. '''
     return getattr(self, "try_import_%s" % item)(args, verbose)
 
-  def try_import_imagesets(self, args, verbose):
+  def try_import_datablocks(self, args, verbose):
     ''' Try to import imagesets. '''
-    from dxtbx.serialize.load import _decode_dict
-    from dials.model.serialize.imageset import imageset_from_dict
-    from dxtbx.serialize.filename import temp_chdir
-    from os.path import abspath, dirname
-    import json
-    args = self.try_as_imageset(args)
+    from dxtbx.datablock import DataBlockFactory
+    from os.path import abspath
     unhandled = []
     for argument in args:
       try:
         argument = abspath(argument)
-        with temp_chdir(dirname(argument)):
-          with open(argument, 'r') as inputfile:
-            obj = json.loads(inputfile.read(), object_hook=_decode_dict)
-            self.imagesets.append(imageset_from_dict(obj))
+        datablocks = DataBlockFactory.from_serialized_format(argument)
+        if verbose: print 'Loaded %s as datablock list' % argument
+        if self.datablocks == None:
+          self.datablocks = datablocks
+        else:
+          self.datablocks.extend(datablocks)
       except Exception:
         unhandled.append(argument)
     return unhandled
 
-  def try_import_crystals(self, args, verbose):
-    ''' Try to import crystals. '''
-    from dxtbx.serialize.load import _decode_dict
-    from dials.model.serialize.crystal import crystal_from_dict
-    from os.path import abspath, dirname
-    import json
+  def try_import_experiments(self, args, verbose):
+    ''' Try to import experiments. '''
+    from dials.model.experiment.experiment_list import ExperimentListFactory
+    from os.path import abspath
     unhandled = []
     for argument in args:
       try:
         argument = abspath(argument)
-        with open(argument, 'r') as inputfile:
-          obj = json.loads(inputfile.read(), object_hook=_decode_dict)
-          self.crystals.append(crystal_from_dict(obj))
+        experiments = ExperimentListFactory.from_serialized_format(argument)
+        if verbose: print 'Loaded %s as experiment list' % argument
+        if self.experiments == None:
+          self.experiments = experiments
+        else:
+          self.experiments.extend(experiments)
       except Exception:
         unhandled.append(argument)
     return unhandled
@@ -345,7 +343,6 @@ class Importer(object):
   def try_import_reflections(self, args, verbose):
     ''' Try to import reflections. '''
     from dials.array_family import flex
-    from dials.model.data import ReflectionList
     import cPickle as pickle
     unhandled = []
     for argument in args:
@@ -355,14 +352,6 @@ class Importer(object):
           if isinstance(obj, flex.reflection_table):
             if verbose:
               print 'Loaded %s as reflection table' % argument
-              for k in obj.keys():
-                if k in self.reflections:
-                  print 'Overwriting column %s' % k
-            self.reflections.update(obj)
-          elif isinstance(obj, ReflectionList):
-            obj = obj.to_table()
-            if verbose:
-              print 'Loaded %s as reflection list' % argument
               for k in obj.keys():
                 if k in self.reflections:
                   print 'Overwriting column %s' % k
@@ -385,24 +374,6 @@ class Importer(object):
       except Exception:
         unhandled.append(argument)
     return unhandled
-
-  def try_as_imageset(self, args):
-    ''' Try the remaining arguments as a list of filenames '''
-    from dxtbx.imageset import ImageSetFactory
-    try:
-      imagesets = ImageSetFactory.new(args, ignore_unknown=True)
-      unhandled = []
-      if len(imagesets) == 0:
-        return args
-      for imageset in imagesets:
-        for argument in args:
-          if argument not in imageset.paths():
-            unhandled.append(argument)
-      self.imagesets.extend(imagesets)
-      return unhandled
-    except Exception:
-      pass
-    return args
 
 
 if __name__ == '__main__':

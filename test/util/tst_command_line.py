@@ -30,33 +30,29 @@ class TestImporter:
     table['col3'] = flex.int(10)
     pickle.dump(table, open('test_reflections2.p', 'wb'))
 
-    table = ReflectionList(10)
-    pickle.dump(table, open('test_reflections3.p', 'wb'))
 
   def run(self):
     from glob import glob
     import os
 
     arguments = [
-        os.path.join(self.path, 'sweep.json'),
-        os.path.join(self.path, 'crystal.json'),
+        os.path.join(self.path, 'datablock.json'),
+        os.path.join(self.path, 'experiments.json'),
         os.path.join(self.path, 'non_existent.file'),
-        os.path.join(self.path, 'crystal.json'),
+        os.path.join(self.path, 'datablock.json'),
         'test_reflections1.p',
         'test_reflections2.p',
-        'test_reflections3.p',
         os.path.join(self.path, 'extracted.tar'),
         os.path.join(self.path, 'another_non_existent.file'),
-        os.path.join(self.path, 'sweep.json'),
+        os.path.join(self.path, 'experiments.json'),
     ]
-    arguments.extend(glob(os.path.join(self.path, 'centroid_*.cbf')))
 
     from dials.util.command_line import Importer
     importer = Importer(arguments, verbose=False)
-    assert(importer.reflections.ncols() == 18)
+    assert(importer.reflections.ncols() == 3)
     assert(importer.reflections.nrows() == 10)
-    assert(len(importer.imagesets) == 3)
-    assert(len(importer.crystals) == 2)
+    assert(len(importer.experiments) == 2)
+    assert(len(importer.datablocks) == 2)
 
     if os.path.exists(os.path.join(self.path, 'extracted.tar')):
       assert(importer.extracted != None)

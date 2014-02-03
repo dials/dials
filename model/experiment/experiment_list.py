@@ -652,49 +652,18 @@ class ExperimentListFactory(object):
     if unhandled is None:
       unhandled = []
     unhandled1 = []
-    unhandled2 = []
-    unhandled3 = []
 
     # First try as image files
     experiments = ExperimentListFactory.from_datablock(
       DataBlockFactory.from_args(args, verbose, unhandled1))
 
-    # Now try as JSON files
-    if len(unhandled1) > 0:
-      for filename in unhandled1:
-        try:
-          experiments.extend(ExperimentListFactory.from_json_file(filename))
-          if verbose: print 'Loaded experiment(s) from %s' % filename
-        except Exception, e:
-          unhandled2.append(filename)
-
-    # Now try as pickle files
-    if len(unhandled2) > 0:
-      for filename in unhandled2:
-        try:
-          experiments.extend(ExperimentListFactory.from_pickle_file(filename))
-          if verbose: print 'Loaded experiments(s) from %s' % filename
-        except Exception:
-          unhandled3.append(filename)
-
-    # Now try reading a crystal
-    if len(unhandled3) > 0:
-      crystals = []
-      for filename in unhandled3:
-        try:
-          crystals.append((filename, load.crystal(filename)))
-        except Exception:
-          unhandled.append(filename)
-      if len(crystals) > 0 and len(experiments) != 1:
-        if verbose:
-          print 'Unable to match crystal(s): requires 1 experiment'
-          for c in crystals: print ' %s' % c[0]
-        unhandled.extend([c[0] for c in crystals])
-      else:
-        for i in range(len(crystals)-1):
-          experiments.append(experiments[-1])
-        for c, e in zip(crystals, experiments):
-          e.crystal = c[1]
+    # Try to load from serialized formats
+    for filename in unhandled1:
+      try:
+        experiments.extend(DataBlockFactory.from_serialized_format(filename))
+        if verbose: print 'Loaded experiments from %s' % filename
+      except Exception:
+        unhandled.append(filename)
 
     # Return the experiments
     return experiments
@@ -801,3 +770,16 @@ class ExperimentListFactory(object):
 
     # Return the experiment list
     return experiments
+
+  @staticmethod
+  def from_serialized_format(filename):
+    ''' Try to load the experiment list from a serialized format. '''
+
+    # First try as a JSON file
+    try:
+      return ExperimentListFactory.from_json_file(filename)
+    except Exception, e:
+      pass
+
+    # Now try as a pickle file
+    return ExperimentListFactory.from_pickle_file(filename)
