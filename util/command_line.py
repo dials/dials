@@ -253,7 +253,8 @@ class Command(object):
 class Importer(object):
   ''' A class to import the command line arguments. '''
 
-  def __init__(self, args, include=None, exclude=None, verbose=False):
+  def __init__(self, args, include=None, exclude=None, verbose=False,
+               check_format=True):
     ''' Parse the arguments.
 
     If include is set, only those items set will be tried. If not, then if
@@ -297,14 +298,15 @@ class Importer(object):
     unhandled = args
     for item in totry:
       if verbose: print 'Try import as %s' % item
-      unhandled = self.try_import(unhandled, item, verbose)
+      unhandled = self.try_import(unhandled, item, verbose,
+                                  check_format)
     self.unhandled_arguments = unhandled
 
-  def try_import(self, args, item, verbose):
+  def try_import(self, args, item, verbose, **kwargs):
     ''' Try to import with the given item. '''
-    return getattr(self, "try_import_%s" % item)(args, verbose)
+    return getattr(self, "try_import_%s" % item)(args, verbose, **kwargs)
 
-  def try_import_datablocks(self, args, verbose):
+  def try_import_datablocks(self, args, verbose, check_format, **kwargs):
     ''' Try to import imagesets. '''
     from dxtbx.datablock import DataBlockFactory
     from os.path import abspath
@@ -312,7 +314,8 @@ class Importer(object):
     for argument in args:
       try:
         argument = abspath(argument)
-        datablocks = DataBlockFactory.from_serialized_format(argument)
+        datablocks = DataBlockFactory.from_serialized_format(
+          argument, check_format)
         if verbose: print 'Loaded %s as datablock list' % argument
         if self.datablocks == None:
           self.datablocks = datablocks
@@ -322,7 +325,7 @@ class Importer(object):
         unhandled.append(argument)
     return unhandled
 
-  def try_import_experiments(self, args, verbose):
+  def try_import_experiments(self, args, verbose, **kwargs):
     ''' Try to import experiments. '''
     from dials.model.experiment.experiment_list import ExperimentListFactory
     from os.path import abspath
@@ -340,7 +343,7 @@ class Importer(object):
         unhandled.append(argument)
     return unhandled
 
-  def try_import_reflections(self, args, verbose):
+  def try_import_reflections(self, args, verbose, **kwargs):
     ''' Try to import reflections. '''
     from dials.array_family import flex
     import cPickle as pickle
@@ -360,7 +363,7 @@ class Importer(object):
         unhandled.append(argument)
     return unhandled
 
-  def try_import_extracted(self, args, verbose):
+  def try_import_extracted(self, args, verbose, **kwargs):
     ''' Try to import extracted. '''
     from dials.model.serialize import partial_shoebox
     unhandled = []
