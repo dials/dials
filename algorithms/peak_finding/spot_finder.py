@@ -16,11 +16,11 @@ from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 class Extract(object):
   ''' Class to extract a batch of images '''
 
-  def __init__(self, sweep, threshold_image):
-      ''' Initialise with sweep and threshold function, both need to be
+  def __init__(self, imageset, threshold_image):
+      ''' Initialise with imageset and threshold function, both need to be
       picklable for this to be called using multiprocessing. '''
       self.threshold_image = threshold_image
-      self.sweep = sweep
+      self.imageset = imageset
 
   def __call__(self, index):
       ''' Extract pixels from a block of images. '''
@@ -28,10 +28,10 @@ class Extract(object):
 
       # Create the list of pixel lists
       plists = [PixelList(p.get_image_size()[::-1], index[0])
-        for p in self.sweep.get_detector()]
+        for p in self.imageset.get_detector()]
 
       # Iterate through the range of images
-      for image in self.sweep[index[0]:index[1]]:
+      for image in self.imageset[index[0]:index[1]]:
 
         # Ensure image is a tuple of images (for multi-panel support)
         if not isinstance(image, tuple):
@@ -109,7 +109,7 @@ class ExtractSpots(object):
       processes=nproc,
       method=mp.method,
       preserve_order=True,
-      asynchronous=True,
+      asynchronous=False,
       callback=progress)
     progress.finished()
 
