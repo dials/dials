@@ -14,7 +14,7 @@ from __future__ import division
 # Import to give access from here
 from dxtbx.serialize.dump import imageset as sweep
 from dxtbx.serialize.dump import imageset_to_string as sweep_to_string
-
+from dxtbx.serialize.dump import datablock
 
 # FIXME These are only temporary - they should be removed ASAP
 from cctbx.crystal.crystal_model.serialize import crystal_to_string

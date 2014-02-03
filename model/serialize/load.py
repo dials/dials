@@ -13,6 +13,7 @@ from __future__ import division
 
 # Import to give access from here
 from dxtbx.serialize.load import imageset as sweep
+from dxtbx.serialize.load import datablock
 
 # FIXME These are only temporary - they should be removed ASAP
 from cctbx.crystal.crystal_model.serialize import crystal_from_string
