@@ -672,6 +672,7 @@ test/command_line/tst_detector_max_resolution.py -text
 test/command_line/tst_import.py -text
 test/command_line/tst_integrate.py -text
 test/command_line/tst_parameters.py -text
+test/command_line/tst_predict.py -text
 test/command_line/tst_refine_bravais_settings.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text

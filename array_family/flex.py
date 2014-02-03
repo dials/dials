@@ -10,3 +10,21 @@ elif get_real_type() == "double":
   real = double
 else:
   raise TypeError('unknown "real" type')
+
+
+@staticmethod
+def reflection_table_from_predictions(exlist):
+  ''' Construct a reflection table from predictions. '''
+  from dials.algorithms.integration import ReflectionPredictor
+  from dials.array_family import flex
+  predict = ReflectionPredictor()
+  result = flex.reflection_table()
+  for idx, ex in enumerate(exlist):
+    rlist = predict(ex.imageset, ex.crystal)
+    rtable = rlist.to_table()
+    rtable['id'] = flex.size_t(len(rlist), idx)
+    result.extend(rtable)
+  return result
+
+
+reflection_table.from_predictions = reflection_table_from_predictions

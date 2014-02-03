@@ -37,22 +37,23 @@ class Script(ScriptRunner):
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
-    from dials.algorithms.integration import ReflectionPredictor
+    from dials.array_family import flex
 
-    # Try importing the command line arguments
-    importer = Importer(args)
-    if len(importer.imagesets) == 0 or len(importer.imagesets) == 0:
-      self.config().print_help()
+    # Check the unhandled arguments
+    importer = Importer(args, include=['experiments'])
+    if len(importer.unhandled_arguments) > 0:
+      print '-' * 80
+      print 'The following command line arguments weren\'t handled'
+      for arg in importer.unhandled_arguments:
+        print '  ' + arg
+
+    # Check the number of experiments
+    if importer.experiments is None or len(importer.experiments) == 0:
+      print 'Error: no experiment list specified'
       return
-    elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
 
-    sweep = importer.imagesets[0]
-    crystal = importer.crystals[0]
-
-    # Predict the reflections
-    predict = ReflectionPredictor()
-    predicted = predict(sweep, crystal)
+    # Populate the reflection table with predictions
+    predicted = flex.reflection_table.from_predictions(importer.experiments)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
