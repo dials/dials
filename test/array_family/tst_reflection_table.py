@@ -25,8 +25,7 @@ class Test(object):
     self.tst_del_selected()
 
   def tst_resizing(self):
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # Create a table with 2 empty columns
     table = ReflectionTable()
@@ -87,8 +86,7 @@ class Test(object):
     print 'OK'
 
   def tst_delete(self):
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # Test del item
     table = ReflectionTable()
@@ -128,8 +126,7 @@ class Test(object):
     print 'OK'
 
   def tst_row_operations(self):
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # The columns as lists
     c1 = list(range(10))
@@ -246,8 +243,7 @@ class Test(object):
 
   def tst_iteration(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # The columns as lists
     c1 = list(range(10))
@@ -291,8 +287,7 @@ class Test(object):
 
   def tst_slicing(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # The columns as lists
     c1 = list(range(10))
@@ -359,8 +354,7 @@ class Test(object):
 
   def tst_updating(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # The columns as lists
     c1 = list(range(10))
@@ -406,8 +400,7 @@ class Test(object):
 
   def tst_select(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # The columns as lists
     c1 = list(range(10))
@@ -462,8 +455,7 @@ class Test(object):
 
   def tst_set_selected(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     from copy import deepcopy
 
     # The columns as lists
@@ -538,8 +530,7 @@ class Test(object):
 
   def tst_del_selected(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     from copy import deepcopy
 
     # The columns as lists
@@ -614,8 +605,7 @@ class Test(object):
 
   def tst_serialize(self):
 
-    from dials.model.data import ReflectionTable
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # The columns as lists
     c1 = list(range(10))

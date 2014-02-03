@@ -8,8 +8,8 @@
  *  This code is distributed under the BSD license, a copy of which is
  *  included in the root directory of this package.
  */
-#ifndef DIALS_FRAMEWORK_TABLE_FLEX_TABLE_H
-#define DIALS_FRAMEWORK_TABLE_FLEX_TABLE_H
+#ifndef DIALS_ARRAY_FAMILY_FLEX_TABLE_H
+#define DIALS_ARRAY_FAMILY_FLEX_TABLE_H
 
 #include <algorithm>
 #include <vector>
@@ -23,7 +23,7 @@
 #include <dials/error.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 
-namespace dials { namespace framework {
+namespace dials { namespace af {
 
   /**
    * A class to represent a column-centric table. I.e. a table in which the
@@ -373,6 +373,6 @@ namespace dials { namespace framework {
     typedef typename boost::make_variant_over<flex_types>::type type;
   };
 
-}} // namespace dials::framework
+}} // namespace dials::af
 
-#endif // DIALS_FRAMEWORK_TABLE_FLEX_TABLE_H
+#endif // DIALS_ARRAY_FAMILY_FLEX_TABLE_H

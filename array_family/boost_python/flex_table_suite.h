@@ -24,11 +24,11 @@
 #include <scitbx/array_family/flex_types.h>
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/boost_python/slice.h>
-#include <dials/framework/table/flex_table.h>
+#include <dials/array_family/flex_table.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
-namespace dials { namespace framework { namespace boost_python {
+namespace dials { namespace af { namespace boost_python {
 namespace flex_table_suite {
 
   using namespace boost::python;
@@ -1185,6 +1185,6 @@ namespace flex_table_suite {
     }
   };
 
-}}}} // namespace dials::framework::boost_python::flex_table_suite
+}}}} // namespace dials::af::boost_python::flex_table_suite
 
 #endif // DIALS_FRAMEWORK_TABLE_BOOST_PYTHON_FLEX_TABLE_SUITE_H
