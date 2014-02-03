@@ -114,7 +114,7 @@ def exercise_1():
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_orig.json")
+  sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["multiple_lattice_search=False", # use older non-clustering version
                 "reflections_per_degree=5",
                 "n_macro_cycles=2"]
@@ -135,7 +135,7 @@ def exercise_2():
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_orig.json")
+  sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -158,7 +158,7 @@ def exercise_3():
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_orig.json")
+  sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -190,7 +190,7 @@ def exercise_4():
   # trypsin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1.json")
+  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -215,7 +215,7 @@ def exercise_5():
   # synthetic trypsin multi-lattice dataset (2 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2.json")
+  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -244,7 +244,7 @@ def exercise_6():
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3.json")
+  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -272,7 +272,7 @@ def exercise_7():
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3_4.json")
+  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
   extra_args = ["multiple_lattice_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -295,7 +295,7 @@ def exercise_8():
   # synthetic trypsin multi-lattice dataset (4 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3_4.json")
+  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
   extra_args = ["method=real_space_grid_search",
                 "use_all_reflections=True",
                 "n_macro_cycles=5",
@@ -322,7 +322,7 @@ def exercise_9():
   # thaumatin
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_orig.json")
+  sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["multiple_lattice_search=False", # use older non-clustering version
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
@@ -339,7 +339,7 @@ def exercise_10():
   # synthetic trypsin multi-lattice dataset (3 lattices)
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
-  sweep_path = os.path.join(data_dir, "sweep_P1_X6_1_2_3.json")
+  sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
   extra_args = ["method=real_space_grid_search",
                 "use_all_reflections=True",
                 "n_macro_cycles=3",
