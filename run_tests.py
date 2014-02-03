@@ -7,6 +7,7 @@ tst_list = (
     "$D/test/command_line/tst_parameters.py",
     "$D/test/command_line/tst_import.py",
     "$D/test/command_line/tst_integrate.py",
+    "$D/test/command_line/tst_detector_max_resolution.py",
     "$D/test/util/tst_command_line.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_flex_partial_shoebox.py",
