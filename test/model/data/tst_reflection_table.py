@@ -21,6 +21,8 @@ class Test(object):
     self.tst_select()
     self.tst_set_selected()
     self.tst_serialize()
+    self.tst_delete()
+    self.tst_del_selected()
 
   def tst_resizing(self):
     from dials.model.data import ReflectionTable
@@ -82,6 +84,47 @@ class Test(object):
     assert(table.empty())
     assert(table.nrows() == 0)
     assert(table.ncols() == 0)
+    print 'OK'
+
+  def tst_delete(self):
+    from dials.model.data import ReflectionTable
+    from scitbx.array_family import flex
+
+    # Test del item
+    table = ReflectionTable()
+    table['col1'] = flex.int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    table['col2'] = flex.int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    table['col3'] = flex.int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    del table['col3']
+    assert(table.is_consistent())
+    assert(table.nrows() == 10)
+    assert(table.ncols() == 2)
+    assert(not "col3" in table)
+    print 'OK'
+
+    # Test del row
+    del table[5]
+    assert(table.is_consistent())
+    assert(table.nrows() == 9)
+    assert(table.ncols() == 2)
+    assert(all(a==b for a, b in zip(list(table['col1']),
+      [0, 1, 2, 3, 4, 6, 7, 8, 9])))
+    print 'OK'
+
+    # Test del slice
+    del table[0:10:2]
+    assert(table.is_consistent())
+    assert(table.nrows() == 4)
+    assert(table.ncols() == 2)
+    assert(all(a==b for a, b in zip(list(table['col1']),
+      [1, 3, 6, 8])))
+    print 'OK'
+
+    # Test del slice
+    del table[:]
+    assert(table.is_consistent())
+    assert(table.nrows() == 0)
+    assert(table.ncols() == 2)
     print 'OK'
 
   def tst_row_operations(self):
@@ -493,6 +536,82 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
     print 'OK'
 
+  def tst_del_selected(self):
+
+    from dials.model.data import ReflectionTable
+    from scitbx.array_family import flex
+    from copy import deepcopy
+
+    # The columns as lists
+    c1 = list(range(10))
+    c2 = list(range(10))
+    c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
+
+    # Create a table with some elements
+    table1 = ReflectionTable()
+    table1['col1'] = flex.int(c1)
+    table1['col2'] = flex.double(c2)
+    table1['col3'] = flex.std_string(c3)
+
+    # Del selected columns
+    table1.del_selected(('col3', 'col2'))
+    assert(table1.nrows() == 10)
+    assert(table1.ncols() == 1)
+    assert("col1" in table1)
+    assert("col2" not in table1)
+    assert("col3" not in table1)
+    assert(all(a == b for a, b in zip(table1['col1'], c1)))
+    print 'OK'
+
+    # Del selected columns
+    table1 = ReflectionTable()
+    table1['col1'] = flex.int(c1)
+    table1['col2'] = flex.double(c2)
+    table1['col3'] = flex.std_string(c3)
+    table1.del_selected(flex.std_string(['col3', 'col2']))
+    assert(table1.nrows() == 10)
+    assert(table1.ncols() == 1)
+    assert("col1" in table1)
+    assert("col2" not in table1)
+    assert("col3" not in table1)
+    assert(all(a == b for a, b in zip(table1['col1'], c1)))
+    print 'OK'
+
+    # Del selected rows
+    table1 = ReflectionTable()
+    table1['col1'] = flex.int(c1)
+    table1['col2'] = flex.double(c2)
+    table1['col3'] = flex.std_string(c3)
+
+    index = flex.size_t([0, 1, 5, 8, 9])
+    index2 = range(10)
+    for i in index:
+      index2.remove(i)
+    ccc1 = [c1[i] for i in index2]
+    ccc2 = [c2[i] for i in index2]
+    ccc3 = [c3[i] for i in index2]
+    table1.del_selected(index)
+    assert(table1.nrows() == len(ccc1))
+    assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
+    assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
+    assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
+    print 'OK'
+
+    # Del selected rows
+    table1 = ReflectionTable()
+    table1['col1'] = flex.int(c1)
+    table1['col2'] = flex.double(c2)
+    table1['col3'] = flex.std_string(c3)
+
+    flags = flex.bool([True, True, False, False, False,
+                       True, False, False, True, True])
+    table1.del_selected(index)
+    assert(table1.nrows() == len(ccc1))
+    assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
+    assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
+    assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
+    print 'OK'
+
   def tst_serialize(self):
 
     from dials.model.data import ReflectionTable
@@ -524,4 +643,3 @@ class Test(object):
 if __name__ == '__main__':
   test = Test()
   test.run()
-

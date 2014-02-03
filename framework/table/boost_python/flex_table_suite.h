@@ -321,6 +321,25 @@ namespace flex_table_suite {
   };
 
   /**
+   * A visitor to remove elements by flag
+   */
+  struct remove_if_flag_visitor : public boost::static_visitor<void> {
+    af::const_ref<bool> flags;
+
+    remove_if_flag_visitor(const af::const_ref<bool> &flags_)
+      : flags(flags_) {}
+
+    template <typename T>
+    void operator() (T &col) {
+      for (std::size_t i = 0, j = 0; i < col.size(); ++i) {
+        if (!flags[i]) {
+          col[j++] = col[i];
+        }
+      }
+    }
+  };
+
+  /**
    * Initialise the column table from a list of (key, column) pairs
    * @param columns The list of columns
    * @returns The column table
@@ -346,6 +365,16 @@ namespace flex_table_suite {
     typename T::mapped_type column = self[key];
     column_to_object_visitor visitor;
     return column.apply_visitor(visitor);
+  }
+
+  /**
+   * Delete a column of data
+   * @param self The column table
+   * @param key The name of the column
+   */
+  template <typename T>
+  void delitem_column(T &self, const typename T::key_type &key) {
+    self.erase(key);
   }
 
   /**
@@ -383,6 +412,16 @@ namespace flex_table_suite {
   }
 
   /**
+   * Delete a row of data
+   * @param self The column table
+   * @param n The index of the row
+   */
+  template <typename T>
+  void delitem_row(T &self, typename T::size_type n) {
+    self.erase(n);
+  }
+
+  /**
    * Set a row of data in the table
    * @param self The table to modify
    * @param n The position of the row
@@ -410,7 +449,6 @@ namespace flex_table_suite {
   template <typename T>
   T getitem_slice(const T &self, slice s) {
     typedef typename T::const_iterator iterator;
-    DIALS_ASSERT(self.is_consistent());
     scitbx::boost_python::adapted_slice as(s, self.nrows());
     T result(as.size);
     for (iterator it = self.begin(); it != self.end(); ++it) {
@@ -418,6 +456,44 @@ namespace flex_table_suite {
       it->second.apply_visitor(visitor);
     }
     return result;
+  }
+
+  /**
+   * Remove elements if the flag is true
+   * @param self The table
+   * @param flags The list of flags
+   */
+  template <typename T>
+  void remove_if_flag(T &self, const af::const_ref<bool> &flags) {
+    DIALS_ASSERT(flags.size() == self.nrows());
+    std::size_t n = std::count(flags.begin(), flags.end(), false);
+    typedef typename T::iterator iterator;
+    remove_if_flag_visitor visitor(flags);
+    for (iterator it = self.begin(); it != self.end(); ++it) {
+      it->second.apply_visitor(visitor);
+    }
+    self.resize(n);
+  }
+
+  /**
+   * Delete a slice from the table
+   * @param self The table
+   * @param s The slice
+   */
+  template <typename T>
+  void delitem_slice(T &self, slice s) {
+    scitbx::boost_python::adapted_slice as(s, self.nrows());
+    if (as.step == 1) {
+      self.erase(as.start, as.size);
+    } else if (as.step == -1) {
+      self.erase(as.stop, as.size);
+    } else {
+      af::shared<bool> flags(self.nrows(), false);
+      for (std::size_t j = as.start; j < flags.size(); j += as.step) {
+        flags[j] = true;
+      }
+      remove_if_flag<T>(self, flags.const_ref());
+    }
   }
 
   /**
@@ -647,6 +723,58 @@ namespace flex_table_suite {
       keys_array.push_back(extract<std::string>(keys[i]));
     }
     set_selected_cols_keys(self, keys_array.const_ref(), other);
+  }
+
+  /**
+   * Delete selected items by flags
+   * @param self The table
+   * @param flags The array of boolean flags
+   */
+  template <typename T>
+  void del_selected_rows_flags(T &self, const af::const_ref<bool> &flags) {
+    remove_if_flag(self, flags);
+  }
+
+  /**
+   * Delete the selected rows from the table
+   * @param self The table
+   * @param index The index array
+   */
+  template <typename T>
+  void del_selected_rows_index(T &self,
+      const af::const_ref<std::size_t> &index) {
+    af::shared<bool> flags(self.nrows(), false);
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      DIALS_ASSERT(index[i] < flags.size());
+      flags[index[i]] = true;
+    }
+    del_selected_rows_flags(self, flags.const_ref());
+  }
+
+  /**
+   * Delete the selected columns
+   * @param self The table
+   * @param keys The columns to delete
+   */
+  template <typename T>
+  void del_selected_cols_keys(T &self, const af::const_ref<std::string> &keys) {
+    for (std::size_t i = 0; i < keys.size(); ++i) {
+      self.erase(keys[i]);
+    }
+  }
+
+  /**
+   * Delete the selected number of columns from the table via an key array
+   * @param self The current table
+   * @param keys The key array
+   */
+  template <typename T>
+  void del_selected_cols_tuple(T &self, boost::python::tuple keys) {
+    af::shared<std::string> keys_array;
+    for (std::size_t i = 0; i < len(keys); ++i) {
+      keys_array.push_back(extract<std::string>(keys[i]));
+    }
+    del_selected_cols_keys(self, keys_array.const_ref());
   }
 
   /**
@@ -1015,9 +1143,12 @@ namespace flex_table_suite {
         .def("__contains__", &has_key<flex_table_type>)
         .def("__getitem__", &getitem_column<flex_table_type>)
         .def("__getitem__", &getitem_row<flex_table_type>)
-        .def("__setitem__", &setitem_row<flex_table_type>)
         .def("__getitem__", &getitem_slice<flex_table_type>)
+        .def("__setitem__", &setitem_row<flex_table_type>)
         .def("__setitem__", &setitem_slice<flex_table_type>)
+        .def("__delitem__", &delitem_column<flex_table_type>)
+        .def("__delitem__", &delitem_row<flex_table_type>)
+        .def("__delitem__", &delitem_slice<flex_table_type>)
         .def("__iter__", make_iterator<
           row_iterator<flex_table_type> >::range())
         .def("cols", make_iterator<
@@ -1034,6 +1165,10 @@ namespace flex_table_suite {
         .def("set_selected", &set_selected_rows_flags<flex_table_type>)
         .def("set_selected", &set_selected_cols_keys<flex_table_type>)
         .def("set_selected", &set_selected_cols_tuple<flex_table_type>)
+        .def("del_selected", &del_selected_rows_index<flex_table_type>)
+        .def("del_selected", &del_selected_rows_flags<flex_table_type>)
+        .def("del_selected", &del_selected_cols_keys<flex_table_type>)
+        .def("del_selected", &del_selected_cols_tuple<flex_table_type>)
         .def("reorder", &reorder<flex_table_type>)
         //.def("sort", &sort<flex_table_type>, (
           //arg("column"),

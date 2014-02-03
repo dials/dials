@@ -126,8 +126,8 @@ namespace dials { namespace framework {
         : pos(pos_), n(n_) {}
       template <typename T>
       void operator()(T &v) const {
-        iterator first = v.begin() + pos;
-        iterator last = first + n;
+        typename T::iterator first = v.begin() + pos;
+        typename T::iterator last = first + n;
         v.erase(first, last);
       }
     };
