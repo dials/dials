@@ -299,7 +299,7 @@ class Importer(object):
     for item in totry:
       if verbose: print 'Try import as %s' % item
       unhandled = self.try_import(unhandled, item, verbose,
-                                  check_format)
+                                  check_format=check_format)
     self.unhandled_arguments = unhandled
 
   def try_import(self, args, item, verbose, **kwargs):
