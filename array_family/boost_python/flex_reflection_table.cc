@@ -50,6 +50,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<double>         irawv  = result["intensity.raw.variance"];
     af::shared<double>         icor   = result["intensity.cor.value"];
     af::shared<double>         icorv  = result["intensity.cor.variance"];
+    af::shared<int6>           bbox   = result["bbox"];
     af::shared< Shoebox<> >    sbox   = result["shoebox"];
 
     // Copy all the values
@@ -68,7 +69,7 @@ namespace dials { namespace af { namespace boost_python {
       icorv[i]  = o[i].intensity.corrected.variance;
 
       // Copy shoebox info
-      sbox[i].bbox = s[i].bbox;
+      bbox[i] = s[i].bbox;
       sbox[i].data = s[i].data;
       sbox[i].mask = s[i].mask;
       sbox[i].background = s[i].background;
@@ -122,6 +123,7 @@ namespace dials { namespace af { namespace boost_python {
       " Shoebox properties\n"
       " ------------------\n"
       "\n"
+      "  bbox:                   bounding box\n"
       "  shoebox:                shoebox data/mask/background struct\n"
       "\n"
       ;

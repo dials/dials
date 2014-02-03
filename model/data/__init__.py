@@ -84,6 +84,7 @@ def reflection_list_to_table(self):
     getattrlist(self, 'corrected_intensity_variance'))
 
   # Shoebox properties
+  table['bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
   table['shoebox'] = flex.shoebox(getshoebox(self))
 
   # Return the table
@@ -117,6 +118,8 @@ def reflection_list_from_table(table):
   if 'intensity.cor.variance' in table:
     setattrlist(rlist, 'corrected_intensity_variance',
                 table['intensity.cor.variance'])
+  if 'bbox' in table:
+    setattrlist(rlist, 'bounding_box', table['bbox'])
   if 'shoebox' in table:
     setshoebox(rlist, table['shoebox'])
   if 'xyzcal.px' in table:
