@@ -345,6 +345,7 @@ class Importer(object):
   def try_import_reflections(self, args, verbose):
     ''' Try to import reflections. '''
     from dials.array_family import flex
+    from dials.model.data import ReflectionList
     import cPickle as pickle
     unhandled = []
     for argument in args:
@@ -354,6 +355,14 @@ class Importer(object):
           if isinstance(obj, flex.reflection_table):
             if verbose:
               print 'Loaded %s as reflection table' % argument
+              for k in obj.keys():
+                if k in self.reflections:
+                  print 'Overwriting column %s' % k
+            self.reflections.update(obj)
+          elif isinstance(obj, ReflectionList):
+            obj = obj.to_table()
+            if verbose:
+              print 'Loaded %s as reflection list' % argument
               for k in obj.keys():
                 if k in self.reflections:
                   print 'Overwriting column %s' % k

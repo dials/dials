@@ -18,6 +18,7 @@ class TestImporter:
 
   def create_data(self):
     from dials.array_family import flex
+    from dials.model.data import ReflectionList
     import cPickle as pickle
     table = flex.reflection_table()
     table['col1'] = flex.int(10)
@@ -28,6 +29,9 @@ class TestImporter:
     table['col2'] = flex.int(10)
     table['col3'] = flex.int(10)
     pickle.dump(table, open('test_reflections2.p', 'wb'))
+
+    table = ReflectionList(10)
+    pickle.dump(table, open('test_reflections3.p', 'wb'))
 
   def run(self):
     from glob import glob
@@ -40,6 +44,7 @@ class TestImporter:
         os.path.join(self.path, 'crystal.json'),
         'test_reflections1.p',
         'test_reflections2.p',
+        'test_reflections3.p',
         os.path.join(self.path, 'extracted.tar'),
         os.path.join(self.path, 'another_non_existent.file'),
         os.path.join(self.path, 'sweep.json'),
@@ -48,8 +53,7 @@ class TestImporter:
 
     from dials.util.command_line import Importer
     importer = Importer(arguments, verbose=False)
-
-    assert(importer.reflections.ncols() == 3)
+    assert(importer.reflections.ncols() == 18)
     assert(importer.reflections.nrows() == 10)
     assert(len(importer.imagesets) == 3)
     assert(len(importer.crystals) == 2)
