@@ -44,13 +44,13 @@ namespace dials { namespace af { namespace boost_python {
     // The reflection table
     T result(o.size());
     af::shared<std::size_t>    panel  = result["panel"];
-    af::shared<int6>           bbox   = result["bbox"];
-    af::shared< vec3<double> > xyzval = result["xyzcal.value"];
-    af::shared< vec3<double> > xyzvar = result["xyzval.variance"];
+    af::shared< vec3<double> > xyzval = result["xyzobs.px.value"];
+    af::shared< vec3<double> > xyzvar = result["xyzobs.px.variance"];
     af::shared<double>         iraw   = result["intensity.raw.value"];
     af::shared<double>         irawv  = result["intensity.raw.variance"];
     af::shared<double>         icor   = result["intensity.cor.value"];
     af::shared<double>         icorv  = result["intensity.cor.variance"];
+    af::shared< Shoebox<> >    sbox   = result["shoebox"];
 
     // Copy all the values
     for (std::size_t i = 0; i < result.nrows(); ++i) {
@@ -68,10 +68,10 @@ namespace dials { namespace af { namespace boost_python {
       icorv[i]  = o[i].intensity.corrected.variance;
 
       // Copy shoebox info
-      bbox[i] = s[i].bbox;
-      //shoebox_data[i] = s[i].data;
-      //shoebox_mask[i] = s[i].mask;
-      //shoebox_bgrd[i] = s[i].background;
+      sbox[i].bbox = s[i].bbox;
+      sbox[i].data = s[i].data;
+      sbox[i].mask = s[i].mask;
+      sbox[i].background = s[i].background;
     }
 
     // Return the new reflection table
@@ -122,7 +122,8 @@ namespace dials { namespace af { namespace boost_python {
       vec2<double>,
       vec3<double>,
       int6,
-      cctbx::miller::index<>
+      cctbx::miller::index<>,
+      Shoebox<>
     >::type flex_types;
 
     // Export the reflection table

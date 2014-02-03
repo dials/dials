@@ -59,9 +59,9 @@ class Script(ScriptRunner):
     print 'Finding strong spots'
     reflections = find_spots(sweep)
 
+    # Dump the shoeboxes
     if not params.spotfinder.save_shoeboxes:
-      from dials.algorithms import shoebox
-      shoebox.deallocate(reflections)
+      del reflections['shoebox']
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(

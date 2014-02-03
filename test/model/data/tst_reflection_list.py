@@ -73,7 +73,6 @@ class Test:
       ('id', flex_rand_int(n)),
       ('panel', flex_rand_int(n)),
       ('entering', flex_rand_bool(n)),
-      ('shoebox.bbox', flex_rand_int6(n)),
       ('s1', flex_rand_vec3_double(n)),
       ('xyzcal.px', flex_rand_vec3_double(n)),
       ('xyzcal.mm', flex_rand_vec3_double(n)),
@@ -94,7 +93,6 @@ class Test:
       assert(r1['id'] == r2.crystal)
       assert(r1['panel'] == r2.panel_number)
       assert(r1['entering'] == r2.entering)
-      assert(r1['shoebox.bbox'] == r2.bounding_box)
       assert_almost(r1['s1'], r2.beam_vector)
       assert_almost(r1['xyzobs.px.value'], r2.centroid_position)
       assert_almost(r1['xyzobs.px.variance'], r2.centroid_variance)

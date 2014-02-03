@@ -18,6 +18,36 @@ def getxyzcalmm(self):
 def getxyzcalpx(self):
   return [r.image_coord_px + (r.frame_number,) for r in self]
 
+def getshoebox(self):
+  from dials.model.data import Shoebox
+  result = []
+  for r in self:
+    sbox = Shoebox(r.bounding_box)
+    sbox.data = r.shoebox
+    sbox.mask = r.shoebox_mask
+    sbox.background = r.shoebox_background
+    result.append(sbox)
+  return result
+
+def setxyzcalmm(self, data):
+  assert(len(self) == len(data))
+  for r, d in zip(self, data):
+    r.image_coord_mm = d[0:2]
+    r.rotation_angle = d[2]
+
+def setxyzcalpx(self, data):
+  assert(len(self) == len(data))
+  for r, d in zip(self, data):
+    r.image_coord_px = d[0:2]
+    r.frame_number = d[2]
+
+def setshoebox(self, data):
+  assert(len(self) == len(data))
+  for r, d in zip(self, data):
+    r.shoebox = data.data
+    r.shoebox_mask = data.mask
+    r.shoebox_background = data.background
+
 def reflection_list_to_table(self):
   ''' Convert a reflection list to a table. '''
   from dials.array_family import flex
@@ -54,7 +84,7 @@ def reflection_list_to_table(self):
     getattrlist(self, 'corrected_intensity_variance'))
 
   # Shoebox properties
-  table['shoebox.bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
+  table['shoebox'] = flex.shoebox(getshoebox(self))
 
   # Return the table
   return table
@@ -87,8 +117,12 @@ def reflection_list_from_table(table):
   if 'intensity.cor.variance' in table:
     setattrlist(rlist, 'corrected_intensity_variance',
                 table['intensity.cor.variance'])
-  if 'shoebox.bbox' in table:
-    setattrlist(rlist, 'bounding_box', table['shoebox.bbox'])
+  if 'shoebox' in table:
+    setshoebox(rlist, table['shoebox'])
+  if 'xyzcal.px' in table:
+    setxyzcalpx(rlist, table['xyzcal.px'])
+  if 'xyzcal.mm' in table:
+    setxyzcalmm(rlist, table['xyzcal.mm'])
   return rlist
 
 
