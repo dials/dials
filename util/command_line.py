@@ -251,103 +251,132 @@ class Command(object):
 
 
 class Importer(object):
-  ''' A class to import the command line arguments.
+  ''' A class to import the command line arguments. '''
 
-  The class is used as follows:
-      importer = Importer(args)
-      importer.imagesets
-      importer.crystals
-      importer.reflections
+  def __init__(self, args, include=None, exclude=None, verbose=False):
+    ''' Parse the arguments. 
+    
+    If include is set, only those items set will be tried. If not, then if
+    exclude is set, then those items will not be tested.
 
-  '''
+    These are the types we can import:
+     - reflections : a list of reflections
+     - imagesets : a list of imagesets
+     - crystals : a list of crystals
+     - extracted : a file with extracted shoeboxes
 
-  def __init__(self, args):
-    ''' Parse the arguments. '''
-    from dials.model.data import ReflectionList
+    Params:
+      args The arguments to parse
+      include types to try
+      exclude types not to try
+      verbose True/False print out some stuff
+   
+    Example:
+      import = Importer(argv, include=['reflections'])
+
+    '''
+    from dials.array_family import flex
     from dxtbx.imageset import ImageSet
 
     # Initialise output
     self.imagesets = []
     self.crystals = []
-    self.reflections = []
-    self.reference = None
+    self.reflections = flex.reflection_table()
     self.extracted = None
 
-    # First try to load known serialized formats. Then try to load
-    # the remaining arguments as an imageset. If this fails save
-    # the remaining arguments as a list of unhandled arguments
-    unhandled = self.try_as_imageset(args)
-    unhandled = self.try_serialized_formats(unhandled)
-    self.unhandled_arguments = []
-    for arg in unhandled:
-      if isinstance(arg, ReflectionList):
-        self.reflections.append(arg)
-      elif isinstance(arg, ImageSet):
-        self.imagesets.append(arg)
-      else:
-        self.unhandled_arguments.append(arg)
+    # Get the list of items to try
+    totry = ['imagesets', 'crystals', 'reflections', 'extracted'] 
+    if include is not None:
+      for item in include:
+        assert(item in totry)
+      totry = include
+    elif exclude is not None:
+      for item in exclude:
+        totry.remove(item)
 
-  def try_serialized_formats(self, args):
-    ''' Parse known serialized formats. '''
-    unhandled = []
-    for argument in args:
-      if not self.try_serialized_format_with_file(argument):
-        unhandled.append(argument)
+    # Try to import the items
+    unhandled = args
+    for item in totry:
+      if verbose: print 'Try import as %s' % item
+      unhandled = self.try_import(unhandled, item, verbose)
+    self.unhandled = unhandled
 
-    return unhandled
+  def try_import(self, args, item, verbose):
+    ''' Try to import with the given item. '''
+    return getattr(self, "try_import_%s" % item)(args, verbose)
 
-  def try_serialized_format_with_file(self, argument):
-    ''' Try as a pickle file, then as a json file. '''
-    result = False
-    if not result: result = self.try_pickle(argument)
-    if not result: result = self.try_json(argument)
-    if not result: result = self.try_extracted(argument)
-    return result
-
-  def try_pickle(self, argument):
-    ''' Try as a pickle file. '''
-    from dials.model.data import ReflectionList
-    from dials.algorithms.integration import profile
-    import cPickle as pickle
-    try:
-      with open(argument, 'rb') as inputfile:
-        obj = pickle.load(inputfile)
-        if isinstance(obj, ReflectionList):
-          self.reflections.append(obj)
-          return True
-        elif isinstance(obj, profile.XdsCircleReferenceLocator):
-          self.reference = obj
-          return True
-    except Exception:
-      pass
-    return False
-
-  def try_json(self, argument):
-    ''' Try as a json file. '''
+  def try_import_imagesets(self, args, verbose):
+    ''' Try to import imagesets. '''
     from dxtbx.serialize.load import _decode_dict
     from dials.model.serialize.imageset import imageset_from_dict
-    from dials.model.serialize.crystal import crystal_from_dict
     from dxtbx.serialize.filename import temp_chdir
     from os.path import abspath, dirname
     import json
-    try:
-      argument = abspath(argument)
-      with temp_chdir(dirname(argument)):
+    args = self.try_as_imageset(args)
+    unhandled = []
+    for argument in args:
+      try:
+        argument = abspath(argument)
+        with temp_chdir(dirname(argument)):
+          with open(argument, 'r') as inputfile:
+            obj = json.loads(inputfile.read(), object_hook=_decode_dict)
+            self.imagesets.append(imageset_from_dict(obj))
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_import_crystals(self, args, verbose):
+    ''' Try to import crystals. '''
+    from dxtbx.serialize.load import _decode_dict
+    from dials.model.serialize.crystal import crystal_from_dict
+    from os.path import abspath, dirname
+    import json
+    unhandled = []
+    for argument in args:
+      try:
+        argument = abspath(argument)
         with open(argument, 'r') as inputfile:
           obj = json.loads(inputfile.read(), object_hook=_decode_dict)
-          try:
-            self.imagesets.append(imageset_from_dict(obj))
-            return True
-          except Exception:
-            pass
-          try:
-            self.crystals.append(crystal_from_dict(obj))
-            return True
-          except Exception:
-            pass
-    except Exception:
-      pass
-    return False
+          self.crystals.append(crystal_from_dict(obj))
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_import_reflections(self, args, verbose):
+    ''' Try to import reflections. '''
+    from dials.array_family import flex
+    import cPickle as pickle
+    unhandled = []
+    for argument in args:
+      print argument
+      try:
+        with open(argument, 'rb') as inputfile:
+          obj = pickle.load(inputfile)
+          if isinstance(obj, flex.reflection_table):
+            if verbose: 
+              print 'Loaded %s as reflection table' % argument
+              for k in obj.keys():
+                if k in self.reflections:
+                  print 'Overwriting column %k' % k  
+            self.reflections.update(obj) 
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
+
+  def try_import_extracted(self, args, verbose):
+    ''' Try to import extracted. '''
+    from dials.model.serialize import partial_shoebox
+    unhandled = []
+    for argument in args:
+      try:
+        extracted = partial_shoebox.Reader(argument)
+        if self.extracted:
+          if verbose: print 'Loaded %s as extracted (overwriting)' % argument
+        else:
+          if verbose: print 'Loaded %s as extracted' % argument
+      except Exception:
+        unhandled.append(argument)
+    return unhandled
 
   def try_as_imageset(self, args):
     ''' Try the remaining arguments as a list of filenames '''
@@ -367,15 +396,6 @@ class Importer(object):
       pass
     return args
 
-  def try_extracted(self, argument):
-    ''' Try the filename as an extracted tarball. '''
-    from dials.model.serialize import partial_shoebox
-    try:
-      self.extracted = partial_shoebox.Reader(argument)
-      return True
-    except Exception:
-      pass
-    return False
 
 if __name__ == '__main__':
   import time

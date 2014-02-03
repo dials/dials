@@ -14,6 +14,15 @@ class TestImporter:
       exit(0)
 
     self.path = os.path.join(dials_regression, 'centroid_test_data')
+    self.create_data()
+
+  def create_data(self):
+    from dials.array_family import flex
+    import cPickle as pickle
+    table = flex.reflection_table()
+    table['col1'] = flex.int(10)
+    table['col2'] = flex.int(10)
+    pickle.dump(table, open('test_reflections.p', 'wb'))
 
   def run(self):
     from glob import glob
@@ -24,17 +33,20 @@ class TestImporter:
         os.path.join(self.path, 'crystal.json'),
         os.path.join(self.path, 'non_existent.file'),
         os.path.join(self.path, 'crystal.json'),
-        os.path.join(self.path, 'spot_xds.pickle'),
+        'test_reflections.p',
         os.path.join(self.path, 'extracted.tar'),
         os.path.join(self.path, 'another_non_existent.file'),
         os.path.join(self.path, 'sweep.json'),
     ]
     arguments.extend(glob(os.path.join(self.path, 'centroid_*.cbf')))
-
+    
     from dials.util.command_line import Importer
-    importer = Importer(arguments)
+    importer = Importer(arguments, verbose=True)
 
-    assert(len(importer.reflections) == 1 and len(importer.reflections[0]) == 664)
+    print importer.reflections.ncols()
+
+    assert(importer.reflections.ncols() == 2)
+    assert(importer.reflections.nrows() == 10)
     assert(len(importer.imagesets) == 3)
     assert(len(importer.crystals) == 2)
 
