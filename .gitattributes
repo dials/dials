@@ -290,7 +290,6 @@ command_line/import_xds_gain.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
 command_line/integrate.py -text
-command_line/match_observed_with_predicted.py -text
 command_line/merge_spot_lists.py -text
 command_line/parameters.py -text
 command_line/plot_reflections.py -text
