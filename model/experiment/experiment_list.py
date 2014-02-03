@@ -276,6 +276,34 @@ class ExperimentList(object):
     # Return the dictionary
     return result
 
+  def to_datablocks(self):
+    ''' Return the experiment list as a datablock list.
+    This assumes that the experiment contains 1 datablock.'''
+    from dxtbx.datablock import DataBlockFactory
+
+    # Convert the experiment list to dict
+    obj = self.to_dict()
+
+    # Convert the dictionary to a datablock dictionary
+    obj['__id__'] = 'DataBlock'
+    for e in obj['experiment']:
+      iid = e['imageset']
+      imageset = obj['imageset'][iid]
+      if 'beam' in e:
+        imageset['beam'] = e['beam']
+      if 'detector' in e:
+        imageset['detector'] = e['detector']
+      if 'goniometer' in e:
+        imageset['goniometer'] = e['goniometer']
+      if 'scan' in e:
+        imageset['scan'] = e['scan']
+
+    # Remove the experiments
+    del obj['experiment']
+
+    # Create the datablock
+    return DataBlockFactory.from_dict([obj])
+
 
 class ExperimentListDict(object):
   ''' A helper class for serializing the experiment list to dictionary (needed
@@ -602,9 +630,9 @@ class ExperimentListDumper(object):
     ext = splitext(filename)[1]
     j_ext = ['.json']
     p_ext = ['.p', '.pkl', '.pickle']
-    if ext in j_ext:
+    if ext.lower() in j_ext:
       return self.as_json(filename, **kwargs)
-    elif ext in p_ext:
+    elif ext.lower() in p_ext:
       return self.as_pickle(filename, **kwargs)
     else:
       ext_str = '|'.join(j_ext + p_ext)

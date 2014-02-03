@@ -286,7 +286,6 @@ command_line/extract_xds_integrate.py -text
 command_line/generate_process_test_reflections.py -text
 command_line/generate_test_reflections.py -text
 command_line/import.py -text
-command_line/import_experiments.py -text
 command_line/import_xds_gain.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
