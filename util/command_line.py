@@ -348,7 +348,6 @@ class Importer(object):
     import cPickle as pickle
     unhandled = []
     for argument in args:
-      print argument
       try:
         with open(argument, 'rb') as inputfile:
           obj = pickle.load(inputfile)
@@ -357,7 +356,7 @@ class Importer(object):
               print 'Loaded %s as reflection table' % argument
               for k in obj.keys():
                 if k in self.reflections:
-                  print 'Overwriting column %k' % k
+                  print 'Overwriting column %s' % k
             self.reflections.update(obj)
       except Exception:
         unhandled.append(argument)
