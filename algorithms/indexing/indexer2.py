@@ -206,6 +206,10 @@ deg_to_radians = math.pi/180
 class indexer_base(object):
 
   def __init__(self, reflections, sweep, params=None):
+    # XXX should use ReflectionTable internally instead of ReflectionList
+    from dials.model.data import ReflectionList
+    reflections = ReflectionList.from_table(reflections)
+
     self.reflections_raw = reflections
     self.reflections = reflections.deep_copy()
     # the lattice a given reflection belongs to: a value of -1 indicates

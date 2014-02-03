@@ -11,27 +11,28 @@ from dials.algorithms.indexing.indexer2 import master_phil_scope
 
 def run(args):
 
-  importer = Importer(args)
-  if len(importer.imagesets) == 0:
-    print "No sweep object could be constructed"
+  importer = Importer(args, check_format=False)
+  if len(importer.datablocks) == 0:
+    print "No DataBlock could be constructed"
     return
-  elif len(importer.imagesets) > 1:
+  elif len(importer.datablocks) > 1:
+    raise RuntimeError("Only one DataBlock can be processed at a time")
+  imagesets = importer.datablocks[0].extract_imagesets()
+  if len(imagesets) > 1:
     raise RuntimeError("Only one imageset can be processed at a time")
-  sweeps = importer.imagesets
-  assert(len(importer.reflections) == 1)
-  reflections = importer.reflections[0]
+  imageset = imagesets[0]
+  reflections = importer.reflections
   assert len(reflections) > 0
   args = importer.unhandled_arguments
 
-  sweep = sweeps[0]
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
 
-  gonio = sweep.get_goniometer()
-  detector = sweep.get_detector()
-  scan = sweep.get_scan()
-  beam = sweep.get_beam()
+  gonio = imageset.get_goniometer()
+  detector = imageset.get_detector()
+  scan = imageset.get_scan()
+  beam = imageset.get_beam()
   print detector
   print scan
   print gonio
@@ -45,7 +46,7 @@ def run(args):
   elif params.method == "real_space_grid_search":
     from dials.algorithms.indexing.real_space_grid_search \
          import indexer_real_space_grid_search as indexer
-  idxr = indexer(reflections, sweep, params=params)
+  idxr = indexer(reflections, imageset, params=params)
   idxr.index()
   return
 
