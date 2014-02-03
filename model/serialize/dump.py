@@ -56,3 +56,9 @@ def reference(obj, outfile):
   # Otherwise assume the input is a file and write to it
   else:
     pickle.dump(obj, outfile, pickle.HIGHEST_PROTOCOL)
+
+def experiment_list(obj, outfile):
+  ''' Dump an experiment list. '''
+  from dials.model.experiment.experiment_list import ExperimentListDumper
+  dumper = ExperimentListDumper(obj)
+  dumper.as_file(outfile)

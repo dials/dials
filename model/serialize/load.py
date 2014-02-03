@@ -60,3 +60,8 @@ def reference(infile):
   # Otherwise assume the input is a file and read from it
   else:
     return pickle.load(infile)
+
+def experiment_list(infile):
+  ''' Load an experiment list from a serialzied format. '''
+  from dials.model.experiment.experiment_list import ExperimentListFactory
+  return ExperimentListFactory.from_serialized_format(infile)
