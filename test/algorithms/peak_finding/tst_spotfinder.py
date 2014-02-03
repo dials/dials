@@ -23,12 +23,11 @@ def exercise_spotfinder():
     reflections = pickle.load(f)
     assert len(reflections) == 459
     refl = reflections[0]
-    assert approx_equal(refl.intensity, 142)
-    assert approx_equal(refl.frame_number, 0)
-    assert approx_equal(refl.bounding_box, (1258, 1260, 537, 541, 0, 1))
-    assert approx_equal(refl.centroid_position,
+    assert approx_equal(refl['intensity.raw.value'], 142)
+    assert approx_equal(refl['shoebox'].bbox, (1258, 1260, 537, 541, 0, 1))
+    assert approx_equal(refl['xyzobs.px.value'],
                         (1258.7957746478874, 539.112676056338, 0.5))
-    assert len(refl.shoebox) > 0
+    assert "shoebox" in reflections
 
   # now with a resolution filter
   args = ["dials.spotfinder", "d_min=2", "d_max=15",
@@ -39,7 +38,7 @@ def exercise_spotfinder():
     reflections = pickle.load(f)
     assert len(reflections) == 371
     refl = reflections[0]
-    assert len(refl.shoebox) == 0
+    assert "shoebox" not in reflections
 
   # now with more generous parameters
   args = ["dials.spotfinder", "min_spot_size=3", "max_separation=3",

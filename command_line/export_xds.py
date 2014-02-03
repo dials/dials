@@ -19,7 +19,7 @@ def run(args):
   imagesets = importer.imagesets
   crystals = importer.crystals
   assert len(imagesets) == len(crystals)
-  reflection_lists = importer.reflections
+  reflections = importer.reflections
   args = importer.unhandled_arguments
 
   from dxtbx.serialize import xds
@@ -49,29 +49,16 @@ def run(args):
         crystal_model.get_space_group().type().number(),
         out=f)
 
-  for i, reflections in enumerate(reflection_lists):
-    suffix = ""
-    if len(reflection_lists) > 1:
-      suffix = "_%i" %(i+1)
-
-    centroids = []
-    intensities = []
-    miller_indices = []
-    miller_indices_excluding_zero = []
-
-    for refl in reflections:
-      centroids.append(refl.centroid_position)
-      intensities.append(refl.intensity)
-      miller_indices_excluding_zero.append(refl.miller_index)
-      if refl.miller_index != (0,0,0):
-        miller_indices.append(refl.miller_index)
-
-    if len(miller_indices) == 0:
-      miller_indices = None
-    xds_writer = spot_xds.writer(centroids=centroids,
-                                 intensities=intensities,
-                                 miller_indices=miller_indices)
-    xds_writer.write_file(filename='SPOT%s.XDS' %suffix)
+  centroids = reflections['xyzobs.px.value']
+  intensities = reflections['intensity.raw.value']
+  miller_indices = reflections['hkl']
+  miller_indices = miller_indices.select(miller_indices != (0, 0, 0))
+  if len(miller_indices) == 0:
+    miller_indices = None
+  xds_writer = spot_xds.writer(centroids=centroids,
+                               intensities=intensities,
+                               miller_indices=miller_indices)
+  xds_writer.write_file(filename='SPOT%s.XDS' %suffix)
 
 
 if __name__ == '__main__':
