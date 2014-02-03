@@ -313,10 +313,10 @@ class Importer(object):
     unhandled = []
     for argument in args:
       try:
-        argument = abspath(argument)
+        abs_argument = abspath(argument)
         datablocks = DataBlockFactory.from_serialized_format(
-          argument, check_format)
-        if verbose: print 'Loaded %s as datablock list' % argument
+          abs_argument, check_format)
+        if verbose: print 'Loaded %s as datablock list' % abs_argument
         if self.datablocks == None:
           self.datablocks = datablocks
         else:
@@ -332,9 +332,9 @@ class Importer(object):
     unhandled = []
     for argument in args:
       try:
-        argument = abspath(argument)
-        experiments = ExperimentListFactory.from_serialized_format(argument)
-        if verbose: print 'Loaded %s as experiment list' % argument
+        abs_argument = abspath(argument)
+        experiments = ExperimentListFactory.from_serialized_format(abs_argument)
+        if verbose: print 'Loaded %s as experiment list' % abs_argument
         if self.experiments == None:
           self.experiments = experiments
         else:

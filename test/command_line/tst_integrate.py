@@ -24,7 +24,7 @@ class Test(object):
       'dials.integrate',
       join(self.path, 'experiments.json'),
       'integration.algorithm=sum3d',
-    ])
+    ]).raise_if_errors()
 
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
