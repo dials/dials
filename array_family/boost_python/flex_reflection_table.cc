@@ -78,6 +78,55 @@ namespace dials { namespace af { namespace boost_python {
     return new T(result);
   }
 
+  /**
+   * A function to print some help about keys
+   */
+  template <typename T>
+  std::string help_keys(const T &self) {
+    std::string result =
+      "Standard column names:\n"
+      "======================\n"
+      "\n"
+      " Columns in the reflection table can have any name and type;\n"
+      " however, it is helpful to have a set of standard data columns\n"
+      " which can be used by different algorithms. These are shown below.\n"
+      "\n"
+      " General properties\n"
+      " ------------------\n"
+      "\n"
+      "  flags:                  bit mask status flags\n"
+      "  id:                     experiment id\n"
+      "  panel:                  the detector panel index\n"
+      "\n"
+      " Predicted properties\n"
+      " --------------------\n"
+      "\n"
+      "  hkl:                    miller indices\n"
+      "  entering:               reflection entering/exiting\n"
+      "  s1:                     the diffracted beam vector\n"
+      "  xyzcal.mm:              the predicted location (mm, mm, rad)\n"
+      "  xyzcal.px:              the predicted location (px, px, frame)\n"
+      "\n"
+      " Observed properties\n"
+      " -------------------\n"
+      "\n"
+      "  xyzobs.px.value:        centroid pixel position\n"
+      "  xyzobs.px.variance:     centroid pixel variance\n"
+      "  xyzobs.mm.value:        centroid millimetre position\n"
+      "  xyzobs.mm.variance:     centroid millimetre variance\n"
+      "  intensity.raw.value:    raw intensity value\n"
+      "  intensity.raw.variance: raw intensity variance\n"
+      "  intensity.cor.value:    corrected intensity value\n"
+      "  intensity.cor.variance: corrected intensity variance\n"
+      "\n"
+      " Shoebox properties\n"
+      " ------------------\n"
+      "\n"
+      "  shoebox:                shoebox data/mask/background struct\n"
+      "\n"
+      ;
+    return result;
+  }
 
   /**
    * Struct to facilitate wrapping reflection table type
@@ -103,6 +152,8 @@ namespace dials { namespace af { namespace boost_python {
       result
         .def("__init__", make_constructor(
           &make_from_observation_and_shoebox<flex_table_type>))
+        .def("help_keys",
+          &help_keys<flex_table_type>)
         ;
 
       // return the wrapped class
