@@ -275,7 +275,6 @@ command_line/compare_mosflm_xds.py -text
 command_line/compare_xds_dials.py -text
 command_line/compare_xds_dials2.py -text
 command_line/detector_max_resolution.py -text
-command_line/dials_spotfinder.py -text
 command_line/display_spots.py -text
 command_line/export.py -text
 command_line/export_spot_xds.py -text
@@ -283,6 +282,7 @@ command_line/export_xds.py -text
 command_line/extract.py -text
 command_line/extract_spot_xds.py -text
 command_line/extract_xds_integrate.py -text
+command_line/find_spots.py -text
 command_line/generate_process_test_reflections.py -text
 command_line/generate_test_reflections.py -text
 command_line/import.py -text

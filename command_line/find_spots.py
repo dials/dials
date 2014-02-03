@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.dials_spotfinder.py
+# dials.find_spots.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -11,7 +11,6 @@
 
 from __future__ import division
 from dials.util.script import ScriptRunner
-# LIBTBX_SET_DISPATCHER_NAME dials.spotfinder
 
 class Script(ScriptRunner):
   '''A class for running the script.'''
@@ -42,6 +41,7 @@ class Script(ScriptRunner):
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSetFactory
     from dials.util.command_line import Importer
+    from dials.array_family import flex
 
     # Try importing the command line arguments
     importer = Importer(args, include=['datablocks'])
@@ -63,7 +63,6 @@ class Script(ScriptRunner):
 
     # Check the number of imagesets
     imagesets = importer.datablocks[0].extract_imagesets()
-    print imagesets
     if len(imagesets) == 0:
       print 'Error: no imageset specified'
       return
@@ -79,6 +78,10 @@ class Script(ScriptRunner):
     # Find the strong spots in the sweep
     print 'Finding strong spots'
     reflections = find_spots(imageset)
+
+    # Add the experiment ID
+    index = flex.size_t(reflections.nrows(), 0)
+    reflections['id'] = index
 
     # Dump the shoeboxes
     if not params.spotfinder.save_shoeboxes:
