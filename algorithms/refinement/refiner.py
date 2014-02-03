@@ -263,17 +263,8 @@ class RefinerFactory(object):
     if verbosity > 1: print "Refinement engine built\n"
 
     # build refiner interface and return
-    #FIXME Should be passing experiments rather than beam, crystals, detector,
-    #goniometer and scan
-    detector = experiments[0].detector
-    beam = experiments[0].beam
-    crystals = experiments.crystals()
-    goniometer = experiments[0].goniometer
-    scan = experiments[0].scan
-    return Refiner(reflections, beam, crystals, crystal_ids, detector,
+    return Refiner(reflections, experiments, crystal_ids,
                     pred_param, param_reporter, refman, target, refinery,
-                    goniometer=goniometer,
-                    scan=scan,
                     verbosity=verbosity)
 
   @staticmethod
@@ -659,10 +650,8 @@ class Refiner(object):
 
     """
 
-  def __init__(self, reflections, beam, crystals, crystal_ids, detector,
+  def __init__(self, reflections, experiments, crystal_ids,
                pred_param, param_reporter, refman, target, refinery,
-               goniometer=None,
-               scan=None,
                verbosity=0):
     """
     Mandatory arguments:
@@ -683,7 +672,15 @@ class Refiner(object):
 
     """
 
+    # FIXME only models from the first Experiment are kept here
+    detector = experiments[0].detector
+    beam = experiments[0].beam
+    crystals = experiments.crystals()
+    goniometer = experiments[0].goniometer
+    scan = experiments[0].scan
+
     # keep the data and models public for access after refinement
+    self._experiments = experiments
     self._reflections = reflections
     self._beam = beam
     self._crystals = crystals
@@ -853,6 +850,18 @@ class Refiner(object):
 
     self._refinery.run()
 
+    from dials.util.command_line import interactive_console
+    interactive_console(locals())
+    # write scan varying setting matrices back to crystal models
+    from dials.algorithms.refinement.parameterisation import \
+      VaryingCrystalPredictionParameterisation
+    if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
+      for iexp, exp in enumerate(self._experiments):
+        ar_range = exp.scan.get_array_range()
+        A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],
+                                                            ar_range[1]+2)]
+        exp.crystal.set_A_at_scan_points(A_list)
+
     if self._verbosity > 1:
       print
       print "Experimental models after refinement"
@@ -885,6 +894,9 @@ class Refiner(object):
   def predict_reflections(self):
     """Predict all reflection positions after refinement"""
 
+    #FIXME
+    raise NotImplementedError("predict_reflections is broken and to be deprecated")
+
     #FIXME only works for a single crystal
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.model.data import ReflectionList
@@ -906,6 +918,7 @@ class Refiner(object):
     if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
 
       ar_range = self._scan.get_array_range()
+
       UBlist = [self._pred_param.get_UB(t) for t in range(ar_range[0],
                                                           ar_range[1]+2)]
       sv_predictor = ScanVaryingReflectionListGenerator(UBlist,

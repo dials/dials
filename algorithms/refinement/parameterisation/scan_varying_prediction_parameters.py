@@ -62,7 +62,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     dependent crystal parameterisations at specified image number"""
 
     if obs_image_number != self._obs_image_number:
-      self.compose(obs_image_number)
+      self.compose(obs_image_number, experiment_id)
 
     UB = self._xl_orientation_parameterisations[experiment_id].get_state() * \
          self._xl_unit_cell_parameterisations[experiment_id].get_state()
