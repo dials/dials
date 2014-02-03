@@ -1,5 +1,5 @@
 /*
- * reflection_table.cc
+ * flex_reflection_table.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,22 +10,20 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
-#include <dials/framework/table/boost_python/flex_table_suite.h>
+#include <dials/array_family/boost_python/flex_table_suite.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/vec3.h>
 #include <scitbx/vec2.h>
 
-namespace dials { namespace model { namespace boost_python {
+namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
-  using namespace dials::framework;
-  using namespace dials::framework::boost_python;
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::int6;
 
-  void export_reflection_table() {
+  void export_flex_reflection_table() {
 
     // Define all the types we want to support in the table
     typedef flex_type_generator<
@@ -40,7 +38,7 @@ namespace dials { namespace model { namespace boost_python {
     >::type flex_types;
 
     // Export the reflection table
-    flex_table_suite::flex_table_wrapper<flex_types>::wrap("ReflectionTable");
+    flex_table_suite::flex_table_wrapper<flex_types>::wrap("reflection_table");
   }
 
-}}} // namespace dials::model::boost_python
+}}} // namespace dials::af::boost_python

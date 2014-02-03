@@ -28,7 +28,7 @@ class Test(object):
     from dials.array_family import flex
 
     # Create a table with 2 empty columns
-    table = ReflectionTable()
+    table = flex.reflection_table()
     assert(table.empty())
     table['col1'] = flex.int()
     table['col2'] = flex.double()
@@ -41,7 +41,7 @@ class Test(object):
     print 'OK'
 
     # Create a table with 2 columns and 10 rows
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int(10)
     table['col2'] = flex.double(10)
     assert(table.nrows() == 10)
@@ -89,7 +89,7 @@ class Test(object):
     from dials.array_family import flex
 
     # Test del item
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     table['col2'] = flex.int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
     table['col3'] = flex.int([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
@@ -134,7 +134,7 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int(c1)
     table['col2'] = flex.double(c2)
     table['col3'] = flex.std_string(c3)
@@ -251,7 +251,7 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int(c1)
     table['col2'] = flex.double(c2)
     table['col3'] = flex.std_string(c3)
@@ -295,7 +295,7 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int(c1)
     table['col2'] = flex.double(c2)
     table['col3'] = flex.std_string(c3)
@@ -362,8 +362,8 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table1 = ReflectionTable()
-    table2 = ReflectionTable()
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1['col2'] = flex.double(c2)
     table2['col3'] = flex.std_string(c3)
@@ -382,7 +382,7 @@ class Test(object):
     c3 = ['a', 'b', 'c']
 
     # Create a table with some elements
-    table2 = ReflectionTable()
+    table2 = flex.reflection_table()
     table2['col3'] = flex.std_string(c3)
     try:
       table1.update(table2)
@@ -408,7 +408,7 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int(c1)
     table['col2'] = flex.double(c2)
     table['col3'] = flex.std_string(c3)
@@ -464,8 +464,8 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table1 = ReflectionTable()
-    table2 = ReflectionTable()
+    table1 = flex.reflection_table()
+    table2 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table2['col2'] = flex.double(c2)
     table2['col3'] = flex.std_string(c3)
@@ -480,7 +480,7 @@ class Test(object):
     print 'OK'
 
     # Set selected columns
-    table1 = ReflectionTable()
+    table1 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1.set_selected(flex.std_string(['col3', 'col2']), table2)
     assert(table1.nrows() == 10)
@@ -495,7 +495,7 @@ class Test(object):
     cc3 = ['l', 'm', 'n', 'o', 'p']
 
     # Set selected rows
-    table2 = ReflectionTable()
+    table2 = flex.reflection_table()
     table2['col1'] = flex.int(cc1)
     table2['col2'] = flex.double(cc2)
     table2['col3'] = flex.std_string(cc3)
@@ -515,7 +515,7 @@ class Test(object):
     print 'OK'
 
     # Set selected rows
-    table2 = ReflectionTable()
+    table2 = flex.reflection_table()
     table2['col1'] = flex.int(cc1)
     table2['col2'] = flex.double(cc2)
     table2['col3'] = flex.std_string(cc3)
@@ -539,7 +539,7 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table1 = ReflectionTable()
+    table1 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1['col2'] = flex.double(c2)
     table1['col3'] = flex.std_string(c3)
@@ -555,7 +555,7 @@ class Test(object):
     print 'OK'
 
     # Del selected columns
-    table1 = ReflectionTable()
+    table1 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1['col2'] = flex.double(c2)
     table1['col3'] = flex.std_string(c3)
@@ -569,7 +569,7 @@ class Test(object):
     print 'OK'
 
     # Del selected rows
-    table1 = ReflectionTable()
+    table1 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1['col2'] = flex.double(c2)
     table1['col3'] = flex.std_string(c3)
@@ -589,7 +589,7 @@ class Test(object):
     print 'OK'
 
     # Del selected rows
-    table1 = ReflectionTable()
+    table1 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1['col2'] = flex.double(c2)
     table1['col3'] = flex.std_string(c3)
@@ -613,7 +613,7 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
-    table = ReflectionTable()
+    table = flex.reflection_table()
     table['col1'] = flex.int(c1)
     table['col2'] = flex.double(c2)
     table['col3'] = flex.std_string(c3)
