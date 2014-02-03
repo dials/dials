@@ -42,6 +42,7 @@ class Script(ScriptRunner):
 
   def main(self, params, options, args):
     '''Execute the script.'''
+    from dials.model.data import ReflectionList
     from dials.algorithms.integration import IntegratorFactory
     from dials.algorithms import shoebox
     from dials.model.serialize import load, dump
@@ -55,26 +56,33 @@ class Script(ScriptRunner):
     # Process the command line options
     Command.start('Processing command line options')
     importer = Importer(args)
-    if len(importer.imagesets) == 0 and len(importer.crystals) == 0:
-      self.config().print_help()
+
+    # Check the unhandled arguments
+    if len(importer.unhandled_arguments) > 0:
+      print '-' * 80
+      print 'The following command line arguments weren\'t handled'
+      for arg in importer.unhandled_arguments:
+        print '  ' + arg
+
+    # Check the number of experiments
+    if importer.experiments is None or len(importer.experiments) == 0:
+      print 'Error: no experiment list specified'
       return
-    if len(importer.imagesets) != 1:
-      raise RuntimeError('need 1 sweep: %d given' % len(importer.imagesets))
-    if len(importer.crystals) != 1:
-      raise RuntimeError('need 1 crystal: %d given' % len(importer.crystals))
-    sweep = importer.imagesets[0]
-    crystal = importer.crystals[0]
-    reference = None
-    predicted = None
-    for rlist in importer.reflections:
-      hkl = [r.miller_index for r in rlist]
-      if all(h == (0, 0, 0) for h in hkl):
-        assert(reference == None)
-        reference = rlist
-      else:
-        assert(predicted == None)
-        predicted = rlist
+    elif len(importer.experiments) != 1:
+      print 'Error: only 1 experiment can be processed at a time'
+      return
+    sweep = importer.experiments[0].imageset
+    crystal = importer.experiments[0].crystal
+    sweep.set_beam(importer.experiments[0].beam)
+    sweep.set_goniometer(importer.experiments[0].goniometer)
+    sweep.set_detector(importer.experiments[0].detector)
+    sweep.set_scan(importer.experiments[0].scan)
+
+    # Get the reference and extracted stuff
+    reference = importer.reflections
     extracted = importer.extracted
+    if reference:
+      reference = ReflectionList.from_table(reference)
     Command.end('Processed command line options')
 
     # Get the integrator from the input parameters
@@ -86,12 +94,15 @@ class Script(ScriptRunner):
     reflections = integrate(sweep, crystal,
         reference=reference, extracted=extracted)
 
+    # Get as a reflection table
+    reflections = reflections.to_table()
+
     # Save the reflections to file
-    nvalid = len([r for r in reflections if r.is_valid()])
+    nvalid = len([f for f in reflections['flags'] if f != 0])
     Command.start('Saving {0} reflections to {1}'.format(
         nvalid, options.output_filename))
     if options.save_profiles == False:
-      shoebox.deallocate(reflections)
+      del reflections['shoebox']
     dump.reflections(reflections, options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
         nvalid, options.output_filename))
