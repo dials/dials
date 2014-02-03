@@ -15,6 +15,7 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/vec3.h>
 #include <scitbx/vec2.h>
+#include <cctbx/miller.h>
 
 namespace dials { namespace af { namespace boost_python {
 
@@ -34,7 +35,8 @@ namespace dials { namespace af { namespace boost_python {
       std::string,
       vec2<double>,
       vec3<double>,
-      int6
+      int6,
+      cctbx::miller::index<>
     >::type flex_types;
 
     // Export the reflection table
