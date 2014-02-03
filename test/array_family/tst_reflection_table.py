@@ -13,6 +13,7 @@ class Test(object):
 
   def run(self):
 
+    self.tst_init()
     self.tst_resizing()
     self.tst_iteration()
     self.tst_row_operations()
@@ -23,6 +24,48 @@ class Test(object):
     self.tst_serialize()
     self.tst_delete()
     self.tst_del_selected()
+    self.tst_copy()
+
+  def tst_init(self):
+    from dials.array_family import flex
+
+    # test default
+    table = flex.reflection_table()
+    assert(table.is_consistent())
+    assert(table.nrows() == 0)
+    assert(table.ncols() == 0)
+    assert(table.empty())
+    print 'Ok'
+
+    # test with nrows
+    table = flex.reflection_table(10)
+    assert(table.is_consistent())
+    assert(table.nrows() == 10)
+    assert(table.ncols() == 0)
+    assert(table.empty())
+    print 'OK'
+
+    # test with valid columns
+    table = flex.reflection_table([
+      ('col1', flex.int(10)),
+      ('col2', flex.double(10)),
+      ('col3', flex.std_string(10))])
+    assert(table.is_consistent())
+    assert(table.nrows() == 10)
+    assert(table.ncols() == 3)
+    assert(not table.empty())
+    print 'OK'
+
+    # test with invalid columns
+    try:
+      table = flex.reflection_table([
+        ('col1', flex.int(10)),
+        ('col2', flex.double(20)),
+        ('col3', flex.std_string(10))])
+      assert(false)
+    except Exception:
+      pass
+    print 'OK'
 
   def tst_resizing(self):
     from dials.array_family import flex
@@ -637,6 +680,31 @@ class Test(object):
     assert(all(a == b for a, b in zip(new_table['col2'], c2)))
     assert(all(a == b for a, b in zip(new_table['col3'], c3)))
     print 'OK'
+
+  def tst_copy(self):
+    import copy
+    from dials.array_family import flex
+
+    # Create a table
+    table = flex.reflection_table([
+      ('col1', flex.int(range(10)))])
+
+    # Make a shallow copy of the table
+    shallow = copy.copy(table)
+    shallow['col2'] = flex.double(range(10))
+    assert(table.ncols() == 2)
+    assert(table.is_consistent())
+    print 'OK'
+
+    # Make a deep copy of the table
+    deep = copy.deepcopy(table)
+    deep['col3'] = flex.std_string(10)
+    assert(table.ncols() == 2)
+    assert(deep.ncols() == 3)
+    assert(table.is_consistent())
+    assert(deep.is_consistent())
+    print 'OK'
+
 
 if __name__ == '__main__':
   test = Test()

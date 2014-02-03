@@ -345,13 +345,14 @@ namespace flex_table_suite {
    * @returns The column table
    */
   template <typename T>
-  T* make_flex_table(object columns) {
-    T *self = new T();
+  T* make_flex_table(list columns) {
+    T self;
     object obj(self);
     for (std::size_t i = 0; i < len(columns); ++i) {
       obj[columns[i][0]] = columns[i][1];
     }
-    return self;
+    self = extract<T>(obj);
+    return new T(self);
   }
 
   /**
@@ -839,6 +840,28 @@ namespace flex_table_suite {
     reorder(self, index.const_ref());
   }
 
+  /**
+   * Perform a shallow copy
+   */
+  template <typename T>
+  T copy(const T &self) {
+    DIALS_ASSERT(self.is_consistent());
+    return T(self);
+  }
+
+  /**
+   * Perform a deep copy
+   */
+  template <typename T>
+  T deepcopy(const T &self, dict obj) {
+    typedef typename T::const_iterator iterator;
+    T result(self.nrows());
+    for (iterator it = self.begin(); it != self.end(); ++it) {
+      copy_column_visitor<T> visitor(result, it->first);
+      it->second.apply_visitor(visitor);
+    }
+    return result;
+  }
 
   /**
    * A proxy iterator to iterate over the table keys
@@ -1173,6 +1196,8 @@ namespace flex_table_suite {
         .def("del_selected", &del_selected_cols_keys<flex_table_type>)
         .def("del_selected", &del_selected_cols_tuple<flex_table_type>)
         .def("reorder", &reorder<flex_table_type>)
+        .def("__copy__", &copy<flex_table_type>)
+        .def("__deepcopy__", &deepcopy<flex_table_type>)
         //.def("sort", &sort<flex_table_type>, (
           //arg("column"),
           //arg("reverse")=false))
