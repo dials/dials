@@ -6,6 +6,9 @@ spotfinder
             "must be a factor of two. Specifying \"0 0\" will use all images"
             "by default. The given range follows C conventions"
             "(e.g. j0 <= j < j1)."
+            "For sweeps the scan range is interpreted as the literal scan"
+            "range. Whereas for imagesets the scan range is interpreted as"
+            "the image number in the imageset"
     .type = ints(size=2)
     .multiple = True
 

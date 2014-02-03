@@ -79,11 +79,11 @@ class ExtractSpots(object):
     # Set the required strategies
     self.threshold_image = threshold_image
 
-  def __call__(self, sweep):
-    ''' Find the spots in the sweep
+  def __call__(self, imageset):
+    ''' Find the spots in the imageset
 
     Params:
-        sweep The sweep to process
+        imageset The imageset to process
 
     Returns:
         The list of spot shoeboxes
@@ -98,14 +98,14 @@ class ExtractSpots(object):
 
     # Change the number of processors if necessary
     nproc = mp.nproc
-    if nproc > len(sweep):
-      nproc = len(sweep)
+    if nproc > len(imageset):
+      nproc = len(imageset)
 
     # Extract the pixels in blocks of images in parallel
     progress = ProgressUpdater(nproc)
     pl = easy_mp.parallel_map(
-      func=Extract(sweep, self.threshold_image),
-      iterable=self._calculate_blocks(sweep, nproc),
+      func=Extract(imageset, self.threshold_image),
+      iterable=self._calculate_blocks(imageset, nproc),
       processes=nproc,
       method=mp.method,
       preserve_order=True,
@@ -123,31 +123,33 @@ class ExtractSpots(object):
     # Extract the pixel lists into a list of reflections
     Command.start('Extracting spots')
     shoeboxes = flex.shoebox()
-    if isinstance(sweep, ImageSweep):
+    if isinstance(imageset, ImageSweep):
       twod = False
+      startz = imageset.get_array_range()[0]
     else:
       twod = True
+      startz = imageset.indices()[0]
     for i, p in enumerate(pl):
       if p.num_pixels() > 0:
-        shoeboxes.extend(flex.shoebox(p, i, 0, twod))
+        shoeboxes.extend(flex.shoebox(p, i, startz, twod))
     Command.end('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Return the shoeboxes
     return shoeboxes
 
-  def _calculate_blocks(self, sweep, nblocks):
+  def _calculate_blocks(self, imageset, nblocks):
     ''' Calculate the blocks. '''
     from math import ceil
     blocks = [0]
-    sweep_length = len(sweep)
-    assert(nblocks <= sweep_length)
-    block_length = int(ceil(sweep_length / nblocks))
+    imageset_length = len(imageset)
+    assert(nblocks <= imageset_length)
+    block_length = int(ceil(imageset_length / nblocks))
     for i in range(nblocks):
       frame = (i + 1) * block_length
-      if frame > sweep_length:
-        frame = sweep_length
+      if frame > imageset_length:
+        frame = imageset_length
       blocks.append(frame)
-      if frame == sweep_length:
+      if frame == imageset_length:
         break
     assert(all(b > a for a, b in zip(blocks, blocks[1:])))
     return [(i, j) for i, j in zip(blocks[0:-1], blocks[1:])]
@@ -167,18 +169,21 @@ class SpotFinder(object):
     # Set the scan range
     self.scan_range = scan_range
 
-  def __call__(self, sweep):
+  def __call__(self, imageset):
     ''' Do the spot finding '''
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep
 
+    # Get the max scan range
+    if isinstance(imageset, ImageSweep):
+      max_scan_range = imageset.get_array_range()
+    else:
+      max_scan_range = (0, len(imageset))
+
     # Get list of scan ranges
     if not self.scan_range:
-      if isinstance(sweep, ImageSweep):
-        scan_range = [sweep.get_array_range()]
-      else:
-        scan_range = [(0, len(sweep))]
+      scan_range = [max_scan_range]
     else:
       scan_range = self.scan_range
 
@@ -186,9 +191,12 @@ class SpotFinder(object):
     spots_all = []
     for scan in scan_range:
       j0, j1 = scan
-      assert(j1 > j0 and j0 >= 0 and j1 <= len(sweep))
+      assert(j1 > j0 and j0 >= max_scan_range[0] and j1 <= max_scan_range[1])
       print '\nFinding spots in image {0} to {1}...'.format(j0, j1)
-      spots_all.extend(self.find_spots(sweep[j0:j1]))
+      if isinstance(imageset, ImageSweep):
+        j0 -= imageset.get_array_range()[0]
+        j1 -= imageset.get_array_range()[0]
+      spots_all.extend(self.find_spots(imageset[j0:j1]))
 
     # Get the list of shoeboxes
     shoeboxes = flex.shoebox(spots_all)
@@ -208,7 +216,7 @@ class SpotFinder(object):
 
     # Filter the reflections and select only the desired spots
     flags = self.filter_spots(None,
-        sweep=sweep,
+        sweep=imageset,
         observations=observed,
         shoeboxes=shoeboxes)
     observed = observed.select(flags)
