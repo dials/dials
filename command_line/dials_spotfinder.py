@@ -44,20 +44,41 @@ class Script(ScriptRunner):
     from dials.util.command_line import Importer
 
     # Try importing the command line arguments
-    importer = Importer(args)
-    if len(importer.imagesets) == 0:
-      self.config().print_help()
+    importer = Importer(args, include=['datablocks'])
+
+    # Check the unhandled arguments
+    if len(importer.unhandled_arguments) > 0:
+      print '-' * 80
+      print 'The following command line arguments weren\'t handled'
+      for arg in importer.unhandled_arguments:
+        print '  ' + arg
+
+    # Ensure we have a data block
+    if importer.datablocks is None or len(importer.datablocks) == 0:
+      print 'Error: no datablock specified'
       return
-    elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
-    sweep = importer.imagesets[0]
+    elif len(importer.datablocks) != 1:
+      print 'Error: only 1 datablock can be processed at a time'
+      return
+
+    # Check the number of imagesets
+    imagesets = importer.datablocks[0].extract_imagesets()
+    print imagesets
+    if len(imagesets) == 0:
+      print 'Error: no imageset specified'
+      return
+    elif len(imagesets) != 1:
+      print 'Error: only 1 imageset can be processed at a time'
+      return
+    imageset = imagesets[0]
+
     # Get the integrator from the input parameters
     print 'Configuring spot finder from input parameters'
     find_spots = SpotFinderFactory.from_parameters(params)
 
     # Find the strong spots in the sweep
     print 'Finding strong spots'
-    reflections = find_spots(sweep)
+    reflections = find_spots(imageset)
 
     # Dump the shoeboxes
     if not params.spotfinder.save_shoeboxes:
