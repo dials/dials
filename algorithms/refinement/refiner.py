@@ -850,8 +850,6 @@ class Refiner(object):
 
     self._refinery.run()
 
-    from dials.util.command_line import interactive_console
-    interactive_console(locals())
     # write scan varying setting matrices back to crystal models
     from dials.algorithms.refinement.parameterisation import \
       VaryingCrystalPredictionParameterisation
@@ -859,7 +857,7 @@ class Refiner(object):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
         A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],
-                                                            ar_range[1]+2)]
+                                                            ar_range[1]+1)]
         exp.crystal.set_A_at_scan_points(A_list)
 
     if self._verbosity > 1:
@@ -920,7 +918,7 @@ class Refiner(object):
       ar_range = self._scan.get_array_range()
 
       UBlist = [self._pred_param.get_UB(t) for t in range(ar_range[0],
-                                                          ar_range[1]+2)]
+                                                          ar_range[1]+1)]
       sv_predictor = ScanVaryingReflectionListGenerator(UBlist,
                             self._beam, self._goniometer, self._scan, dmin)
       refs = ReflectionList(sv_predictor())
