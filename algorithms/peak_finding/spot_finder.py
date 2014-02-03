@@ -31,7 +31,10 @@ class Extract(object):
       if isinstance(self.imageset, ImageSweep):
         startz = self.imageset.get_array_range()[0] + index[0]
       else:
-        startz = self.imageset.indices()[index[0]]
+        ind = self.imageset.indices()
+        if len(ind) > 1:
+           assert(all(i1+1 == i2 for i1, i2 in zip(ind[0:-1], ind[1:-1])))
+        startz = ind[index[0]]
 
       # Create the list of pixel lists
       plists = [PixelList(p.get_image_size()[::-1], startz)
@@ -170,8 +173,6 @@ class SpotFinder(object):
     assert(find_spots != None and filter_spots != None)
     self.find_spots = find_spots
     self.filter_spots = filter_spots
-
-    # Set the scan range
     self.scan_range = scan_range
 
   def __call__(self, imageset):
