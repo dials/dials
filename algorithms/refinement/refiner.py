@@ -894,6 +894,7 @@ class Refiner(object):
 
     #FIXME
     raise NotImplementedError("predict_reflections is broken and to be deprecated")
+    # code left here as a template for use of e.g. ScanVaryingReflectionListGenerator
 
     #FIXME only works for a single crystal
     from dials.algorithms.spot_prediction import ray_intersection
@@ -915,11 +916,7 @@ class Refiner(object):
       VaryingCrystalPredictionParameterisation
     if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
 
-      ar_range = self._scan.get_array_range()
-
-      UBlist = [self._pred_param.get_UB(t) for t in range(ar_range[0],
-                                                          ar_range[1]+1)]
-      sv_predictor = ScanVaryingReflectionListGenerator(UBlist,
+      sv_predictor = ScanVaryingReflectionListGenerator(self._crystal,
                             self._beam, self._goniometer, self._scan, dmin)
       refs = ReflectionList(sv_predictor())
       new_reflections = ray_intersection(self._detector, refs)

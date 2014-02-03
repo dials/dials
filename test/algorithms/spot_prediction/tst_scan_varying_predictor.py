@@ -101,8 +101,9 @@ ar_range = myscan.get_array_range()
 # We need a UB matrix at the beginning of every image, and at the end of the
 # last image.
 UBlist = [pred_param.get_UB(t) for t in range(ar_range[0], ar_range[1]+1)]
+mycrystal.set_A_at_scan_points(UBlist)
 dmin = mydetector.get_max_resolution(mybeam.get_s0())
-sv_predictor = ScanVaryingReflectionListGenerator(UBlist, mybeam,
+sv_predictor = ScanVaryingReflectionListGenerator(mycrystal, mybeam,
                                             mygonio, myscan, resolution)
 refs1 = ref_predictor.predict(indices)
 refs2 = sv_predictor()

@@ -179,6 +179,10 @@ assert approx_equal(im_width, 0.1 * pi / 180.)
 tst = myscan.get_image_index_from_angle(0.5, deg=False)
 assert myscan.get_angle_from_image_index(tst, deg=False) == 0.5
 
+# actually we use the array index usually, so test that too
+tst = myscan.get_array_index_from_angle(0.5, deg=False)
+assert myscan.get_angle_from_array_index(tst, deg=False) == 0.5
+
 # Note frame numbers start from 1.0, so the start of a frame is int n, its
 # centre is n + 0.5 and the start of the next frame is n + 1.0
 assert myscan.get_image_index_from_angle(0.0, deg=False) == 1.0

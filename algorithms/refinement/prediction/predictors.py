@@ -139,14 +139,17 @@ class ScanVaryingReflectionPredictor(object):
   number, whilst the other models remain static.
   """
 
-  def __init__(self, UBlist, beam, gonio, scan, dmin):
+  def __init__(self, crystal, beam, gonio, scan, dmin):
 
-    self._UBs = UBlist
+    if crystal.num_scan_points == 0:
+      raise TypeError("The provided crystal has no scan point samples of the setting matrix")
+
+    self._crystal = crystal
     self._beam = beam
     self._gonio = gonio
     self._scan = scan
 
-    # get offset to convert image array number to array index in UBlist
+    # get offset to convert image array number to array index in crystal
     self._first_image = scan.get_array_range()[0]
 
     # resolution limit
@@ -180,39 +183,43 @@ class ScanVaryingReflectionPredictor(object):
     self._image_number = image_number
     self._step = step
 
-    phi_beg = self._scan.get_angle_from_image_index(image_number,
+    phi_beg = self._scan.get_angle_from_array_index(image_number,
                                                     deg = False)
-    phi_end = self._scan.get_angle_from_image_index(image_number + step,
+    phi_end = self._scan.get_angle_from_array_index(image_number + step,
                                                     deg = False)
     r_beg = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
         axis = self._axis, angle = phi_beg, deg = False))
     r_end = matrix.sqr(scitbx.math.r3_rotation_axis_and_angle_as_matrix(
         axis = self._axis, angle = phi_end, deg = False))
 
-    self._T1 = r_beg * self._UBs[image_number - self._first_image]
+    self._A1 = r_beg * self._crystal.get_A_at_scan_point(image_number - \
+                                                         self._first_image)
 
-    self._T2 = r_end * self._UBs[image_number - self._first_image + step]
+    self._A2 = r_end * self._crystal.get_A_at_scan_point(image_number - \
+                                                      self._first_image + step)
 
-  def get_T1(self):
+    return
+
+  def get_A1(self):
     """Get the setting matrix for the beginning of the step"""
 
-    return self._T1
+    return self._A1
 
-  def get_T2(self):
+  def get_A2(self):
     """Get the setting matrix for the end of the step"""
 
-    return self._T2
+    return self._A2
 
   def predict(self, hkl):
     """
-    Predict for hkl during the passage from T1*h to T2*h.
+    Predict for hkl during the passage from A1*h to A2*h.
 
     If a prediction is found, return the predicted Reflection. Otherwise
     return None.
     """
 
-    self._r1 = self._T1 * matrix.col(hkl)
-    self._r2 = self._T2 * matrix.col(hkl)
+    self._r1 = self._A1 * matrix.col(hkl)
+    self._r2 = self._A2 * matrix.col(hkl)
 
     dr = self._r2 - self._r1
     s0pr1 = self._s0 + self._r1
@@ -249,7 +256,7 @@ class ScanVaryingReflectionPredictor(object):
 
     # calculate approximate frame and rotation angle
     frame = self._image_number + self._step * alpha
-    angle = self._scan.get_angle_from_image_index(frame, deg = False)
+    angle = self._scan.get_angle_from_array_index(frame, deg = False)
 
     # create the Reflection and set properties
     r = Reflection(hkl)
@@ -302,7 +309,7 @@ class ScanVaryingReflectionListGenerator(object):
   until we can store per-image UB matrices in a crystal model
   """
 
-  def __init__(self, UBlist, beam,
+  def __init__(self, crystal, beam,
                   gonio, scan, dmin):
 
     self._scan = scan
@@ -310,7 +317,7 @@ class ScanVaryingReflectionListGenerator(object):
     self._axis = matrix.col(gonio.get_rotation_axis())
     self._dmin = dmin
     self._predictor = ScanVaryingReflectionPredictor(
-                        UBlist, beam, gonio, scan, dmin)
+                        crystal, beam, gonio, scan, dmin)
     self._reflections = []
 
   def __call__(self):
@@ -358,7 +365,7 @@ class ScanVaryingReflectionListGenerator(object):
     blocksizes[-1] += n_images % num_blocks
 
     blockranges = []
-    ar_range = self._scan.get_image_range()
+    ar_range = self._scan.get_array_range()
     start = ar_range[0]
     for block in blocksizes:
       blockranges.append((start, start + block - 1))
@@ -376,10 +383,10 @@ class ScanVaryingReflectionListGenerator(object):
 
     self._predictor.prepare(t)
 
-    T1 = self._predictor.get_T1()
-    T2 = self._predictor.get_T2()
+    A1 = self._predictor.get_A1()
+    A2 = self._predictor.get_A2()
 
-    index_generator = reeke_model(T1, T2, self._axis, self._s0,
+    index_generator = reeke_model(A1, A2, self._axis, self._s0,
                                   self._dmin, margin = 1)
 
     indices = index_generator.generate_indices()
