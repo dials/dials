@@ -44,9 +44,9 @@ def setxyzcalpx(self, data):
 def setshoebox(self, data):
   assert(len(self) == len(data))
   for r, d in zip(self, data):
-    r.shoebox = data.data
-    r.shoebox_mask = data.mask
-    r.shoebox_background = data.background
+    r.shoebox = d.data
+    r.shoebox_mask = d.mask
+    r.shoebox_background = d.background
 
 def reflection_list_to_table(self):
   ''' Convert a reflection list to a table. '''
