@@ -169,7 +169,6 @@ class SpotFinder(object):
 
   def __call__(self, sweep):
     ''' Do the spot finding '''
-    from dials.model.data import ReflectionList
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep
@@ -216,4 +215,4 @@ class SpotFinder(object):
     shoeboxes = shoeboxes.select(flags)
 
     # Return as a reflection list
-    return ReflectionList(observed, shoeboxes)
+    return flex.reflection_table(observed, shoeboxes)
