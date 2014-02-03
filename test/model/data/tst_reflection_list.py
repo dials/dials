@@ -48,6 +48,43 @@ class Test:
 
     return rlist
 
+  def generate_reflection_table(self, n):
+    from dials.array_family import flex
+    import random
+    rand_int = lambda: random.randint(0, 100)
+    rand_double = lambda: random.uniform(0, 100)
+    rand_bool = lambda: random.choice([True, False])
+    rand_vec3_int = lambda: (rand_int(), rand_int(), rand_int())
+    rand_vec3_double = lambda: (rand_double(), rand_double(), rand_double())
+    rand_int6 = lambda: rand_vec3_int() + rand_vec3_int()
+    rand_vec2_double = lambda: (rand_double(), rand_double())
+
+    flex_rand_int = lambda n: flex.int([rand_int() for i in range(n)])
+    flex_rand_double = lambda n:flex.double([rand_double() for i in range(n)])
+    flex_rand_bool = lambda n:flex.bool([rand_bool() for i in range(n)])
+    flex_rand_vec3_int = lambda n:flex.miller_index([rand_vec3_int() for i in range(n)])
+    flex_rand_vec3_double = lambda n:flex.vec3_double([rand_vec3_double() for i in range(n)])
+    flex_rand_int6 = lambda n:flex.int6([rand_int6() for i in range(n)])
+    flex_rand_vec2_double = lambda n:flex.vec2_double([rand_vec2_double() for i in range(n)])
+
+    return flex.reflection_table([
+      ('hkl', flex_rand_vec3_int(n)),
+      ('flags', flex_rand_int(n)),
+      ('id', flex_rand_int(n)),
+      ('panel', flex_rand_int(n)),
+      ('entering', flex_rand_bool(n)),
+      ('shoebox.bbox', flex_rand_int6(n)),
+      ('s1', flex_rand_vec3_double(n)),
+      ('xyzcal.px', flex_rand_vec3_double(n)),
+      ('xyzcal.mm', flex_rand_vec3_double(n)),
+      ('xyzobs.px.value', flex_rand_vec3_double(n)),
+      ('xyzobs.px.variance', flex_rand_vec3_double(n)),
+      ('intensity.raw.value', flex_rand_double(n)),
+      ('intensity.raw.variance', flex_rand_double(n)),
+      ('intensity.cor.value', flex_rand_double(n)),
+      ('intensity.cor.variance', flex_rand_double(n))
+    ])
+
   def check_values(self, t, l):
 
     assert(t.nrows() == len(l))
@@ -67,7 +104,6 @@ class Test:
       assert_almost(r1['intensity.cor.variance'], r2.corrected_intensity_variance)
 
   def tst_to_table(self):
-    from dials.array_family import flex
 
     # Create a reflection list
     n = 100
@@ -80,8 +116,12 @@ class Test:
     print 'OK'
 
   def tst_from_table(self):
-    pass
-
+    from dials.model.data import ReflectionList
+    n = 100
+    table = self.generate_reflection_table(n)
+    rlist = ReflectionList.from_table(table)
+    self.check_values(table, rlist)
+    print 'OK'
 
 if __name__ == '__main__':
   test = Test()

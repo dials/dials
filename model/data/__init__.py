@@ -7,6 +7,11 @@ from dials_model_data_ext import *
 def getattrlist(self, name):
   return [getattr(r, name) for r in self]
 
+def setattrlist(self, name, data):
+  assert(len(self) == len(data))
+  for r, d in zip(self, data):
+    setattr(r, name, d)
+
 def getxyzcalmm(self):
   return [r.image_coord_mm + (r.rotation_angle,) for r in self]
 
@@ -54,4 +59,39 @@ def reflection_list_to_table(self):
   # Return the table
   return table
 
+@staticmethod
+def reflection_list_from_table(table):
+  rlist = ReflectionList(table.nrows())
+  if 'flags' in table:
+    setattrlist(rlist, 'status', table['flags'])
+  if 'id' in table:
+    setattrlist(rlist, 'crystal', table['id'])
+  if 'panel' in table:
+    setattrlist(rlist, 'panel_number', table['panel'])
+  if 'hkl' in table:
+    setattrlist(rlist, 'miller_index', table['hkl'])
+  if 'entering' in table:
+    setattrlist(rlist, 'entering', table['entering'])
+  if 's1' in table:
+    setattrlist(rlist, 'beam_vector', table['s1'])
+  if 'xyzobs.px.value' in table:
+    setattrlist(rlist, 'centroid_position', table['xyzobs.px.value'])
+  if 'xyzobs.px.variance' in table:
+    setattrlist(rlist, 'centroid_variance', table['xyzobs.px.variance'])
+  if 'intensity.raw.value' in table:
+    setattrlist(rlist, 'intensity', table['intensity.raw.value'])
+  if 'intensity.raw.variance' in table:
+    setattrlist(rlist, 'intensity_variance', table['intensity.raw.variance'])
+  if 'intensity.cor.value' in table:
+    setattrlist(rlist, 'corrected_intensity', table['intensity.cor.value'])
+  if 'intensity.cor.variance' in table:
+    setattrlist(rlist, 'corrected_intensity_variance',
+                table['intensity.cor.variance'])
+  if 'shoebox.bbox' in table:
+    setattrlist(rlist, 'bounding_box', table['shoebox.bbox'])
+  return rlist
+
+
 ReflectionList.to_table = reflection_list_to_table
+ReflectionList.from_table = reflection_list_from_table
+
