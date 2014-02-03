@@ -362,11 +362,19 @@ class Test(object):
     c3 = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'i', 'j', 'k']
 
     # Create a table with some elements
+    table0 = flex.reflection_table()
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
     table1['col1'] = flex.int(c1)
     table1['col2'] = flex.double(c2)
     table2['col3'] = flex.std_string(c3)
+
+    # Update from zero columns
+    table0.update(table1)
+    assert(table0.is_consistent())
+    assert(table0.nrows() == 10)
+    assert(table0.ncols() == 2)
+    print 'OK'
 
     # Update table1 with table2 columns
     table1.update(table2)

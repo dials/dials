@@ -39,11 +39,9 @@ class TestImporter:
         os.path.join(self.path, 'sweep.json'),
     ]
     arguments.extend(glob(os.path.join(self.path, 'centroid_*.cbf')))
-    
+
     from dials.util.command_line import Importer
     importer = Importer(arguments, verbose=True)
-
-    print importer.reflections.ncols()
 
     assert(importer.reflections.ncols() == 2)
     assert(importer.reflections.nrows() == 10)
@@ -52,9 +50,9 @@ class TestImporter:
 
     if os.path.exists(os.path.join(self.path, 'extracted.tar')):
       assert(importer.extracted != None)
-      assert(len(importer.unhandled_arguments) == 2)
+      assert(len(importer.unhandled) == 2)
     else:
-      assert(len(importer.unhandled_arguments) == 3)
+      assert(len(importer.unhandled) == 3)
 
     print 'OK'
 

@@ -575,6 +575,9 @@ namespace flex_table_suite {
   template <typename T>
   void update(T &self, const T &other) {
     typedef typename T::const_iterator iterator;
+    if (self.ncols() == 0) {
+      self.resize(other.nrows());
+    }
     DIALS_ASSERT(self.nrows() == other.nrows());
     for (iterator it = other.begin(); it != other.end(); ++it) {
       update_column_visitor<T> visitor(self, it->first);

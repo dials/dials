@@ -254,8 +254,8 @@ class Importer(object):
   ''' A class to import the command line arguments. '''
 
   def __init__(self, args, include=None, exclude=None, verbose=False):
-    ''' Parse the arguments. 
-    
+    ''' Parse the arguments.
+
     If include is set, only those items set will be tried. If not, then if
     exclude is set, then those items will not be tested.
 
@@ -270,7 +270,7 @@ class Importer(object):
       include types to try
       exclude types not to try
       verbose True/False print out some stuff
-   
+
     Example:
       import = Importer(argv, include=['reflections'])
 
@@ -285,7 +285,7 @@ class Importer(object):
     self.extracted = None
 
     # Get the list of items to try
-    totry = ['imagesets', 'crystals', 'reflections', 'extracted'] 
+    totry = ['imagesets', 'crystals', 'reflections', 'extracted']
     if include is not None:
       for item in include:
         assert(item in totry)
@@ -353,12 +353,12 @@ class Importer(object):
         with open(argument, 'rb') as inputfile:
           obj = pickle.load(inputfile)
           if isinstance(obj, flex.reflection_table):
-            if verbose: 
+            if verbose:
               print 'Loaded %s as reflection table' % argument
               for k in obj.keys():
                 if k in self.reflections:
-                  print 'Overwriting column %k' % k  
-            self.reflections.update(obj) 
+                  print 'Overwriting column %k' % k
+            self.reflections.update(obj)
       except Exception:
         unhandled.append(argument)
     return unhandled
