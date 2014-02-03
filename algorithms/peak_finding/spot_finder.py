@@ -25,9 +25,16 @@ class Extract(object):
   def __call__(self, index):
       ''' Extract pixels from a block of images. '''
       from dials.model.data import PixelList
+      from dxtbx.imageset import ImageSweep
+
+      # Get the starting z
+      if isinstance(self.imageset, ImageSweep):
+        startz = self.imageset.get_array_range()[0] + index[0]
+      else:
+        startz = self.imageset.indices()[index[0]]
 
       # Create the list of pixel lists
-      plists = [PixelList(p.get_image_size()[::-1], index[0])
+      plists = [PixelList(p.get_image_size()[::-1], startz)
         for p in self.imageset.get_detector()]
 
       # Iterate through the range of images
@@ -125,13 +132,11 @@ class ExtractSpots(object):
     shoeboxes = flex.shoebox()
     if isinstance(imageset, ImageSweep):
       twod = False
-      startz = imageset.get_array_range()[0]
     else:
       twod = True
-      startz = imageset.indices()[0]
     for i, p in enumerate(pl):
       if p.num_pixels() > 0:
-        shoeboxes.extend(flex.shoebox(p, i, startz, twod))
+        shoeboxes.extend(flex.shoebox(p, i, 0, twod))
     Command.end('Extracted {0} spots'.format(len(shoeboxes)))
 
     # Return the shoeboxes
