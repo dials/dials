@@ -299,7 +299,7 @@ class Importer(object):
     for item in totry:
       if verbose: print 'Try import as %s' % item
       unhandled = self.try_import(unhandled, item, verbose)
-    self.unhandled = unhandled
+    self.unhandled_arguments = unhandled
 
   def try_import(self, args, item, verbose):
     ''' Try to import with the given item. '''

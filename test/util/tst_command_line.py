@@ -60,9 +60,9 @@ class TestImporter:
 
     if os.path.exists(os.path.join(self.path, 'extracted.tar')):
       assert(importer.extracted != None)
-      assert(len(importer.unhandled) == 2)
+      assert(len(importer.unhandled_arguments) == 2)
     else:
-      assert(len(importer.unhandled) == 3)
+      assert(len(importer.unhandled_arguments) == 3)
 
     print 'OK'
 
