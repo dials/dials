@@ -27,16 +27,20 @@ class Test(object):
     image_files = ' '.join(image_files)
 
     # Import from the image files
-    call('dials.import %s -o datablock.json' % image_files, shell=True)
+    call('dials.import %s -o datablock.json > /dev/null' % image_files, shell=True)
 
     # Get the expected output
     expected = self.expected_import_from_image_files()
 
     # Read the created file and do a diff
     with open("datablock.json", "r") as infile:
-      diff = difflib.context_diff(infile.read().splitlines(), expected.splitlines())
+      diff = list(difflib.context_diff(
+          [l.strip() for l in infile.read().splitlines()],
+          [l.strip() for l in expected.splitlines()]))
+      n = len(diff)
       for i, line in enumerate(diff):
         print line
+      assert(n == 0)
 
     print 'OK'
 
@@ -49,16 +53,20 @@ class Test(object):
     # Import from the image files
     path = abspath(self.path)
     chdir(path)
-    call('dials.import --xds=./ -o experiments.json', shell=True)
+    call('dials.import --xds=./ -o experiments.json > /dev/null', shell=True)
 
     # Get the expected output
     expected = self.expected_import_from_xds_files()
 
     # Read the created file and do a diff
     with open("experiments.json", "r") as infile:
-      diff = difflib.context_diff(infile.read().splitlines(), expected.splitlines())
+      diff = list(difflib.context_diff(
+        [l.strip() for l in infile.read().splitlines()],
+        [l.strip() for l in expected.splitlines()]))
+      n = len(diff)
       for i, line in enumerate(diff):
         print line
+      assert(n == 0)
 
     print 'OK'
 
