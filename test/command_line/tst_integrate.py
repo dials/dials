@@ -28,7 +28,7 @@ class Test(object):
 
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
-    assert(len(table) == 361)
+    assert(len(table) == 360)
     print 'OK'
 
 if __name__ == '__main__':
