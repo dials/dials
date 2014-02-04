@@ -222,6 +222,9 @@ class Test(object):
               2463,
               2527
             ],
+            "px_mm_strategy": {
+              "type": "ParallaxCorrectedPxMmStrategy"
+            },
             "type": "SENSOR_PAD",
             "pixel_size": [
               0.17200000000000001,
@@ -355,6 +358,9 @@ class Test(object):
             2463,
             2527
           ],
+          "px_mm_strategy": {
+            "type": "ParallaxCorrectedPxMmStrategy"
+          },
           "type": "SENSOR_UNKNOWN",
           "pixel_size": [
             0.172,
