@@ -261,6 +261,7 @@ class Importer(object):
     exclude is set, then those items will not be tested.
 
     These are the types we can import:
+     - images: a list of images
      - reflections : a list of reflections
      - datablocks : a list of datablocks
      - experiments: a list of experiments
@@ -285,7 +286,7 @@ class Importer(object):
     self.extracted = None
 
     # Get the list of items to try
-    totry = ['datablocks', 'experiments', 'reflections', 'extracted']
+    totry = ['images', 'datablocks', 'experiments', 'reflections', 'extracted']
     if include is not None:
       for item in include:
         assert(item in totry)
@@ -305,6 +306,19 @@ class Importer(object):
   def try_import(self, args, item, verbose, **kwargs):
     ''' Try to import with the given item. '''
     return getattr(self, "try_import_%s" % item)(args, verbose, **kwargs)
+
+  def try_import_images(self, args, verbose, **kwargs):
+    ''' Try to import images. '''
+    from dxtbx.datablock import DataBlockFactory
+    unhandled = []
+    datablocks = DataBlockFactory.from_args(
+      args, verbose=verbose, unhandled=unhandled)
+    if len(datablocks) > 0:
+      if self.datablocks == None:
+        self.datablocks = datablocks
+      else:
+        self.datablocks.extend(datablocks)
+    return unhandled
 
   def try_import_datablocks(self, args, verbose, check_format, **kwargs):
     ''' Try to import imagesets. '''
@@ -374,6 +388,7 @@ class Importer(object):
           if verbose: print 'Loaded %s as extracted (overwriting)' % argument
         else:
           if verbose: print 'Loaded %s as extracted' % argument
+        self.extracted = extracted
       except Exception:
         unhandled.append(argument)
     return unhandled

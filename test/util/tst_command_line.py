@@ -35,7 +35,9 @@ class TestImporter:
     from glob import glob
     import os
 
-    arguments = [
+    arguments = glob(os.path.join(self.path, 'centroid*.cbf'))
+
+    arguments = list(arguments) + [
         os.path.join(self.path, 'datablock.json'),
         os.path.join(self.path, 'experiments.json'),
         os.path.join(self.path, 'non_existent.file'),
@@ -52,8 +54,7 @@ class TestImporter:
     assert(importer.reflections.ncols() == 3)
     assert(importer.reflections.nrows() == 10)
     assert(len(importer.experiments) == 2)
-    assert(len(importer.datablocks) == 2)
-
+    assert(len(importer.datablocks) == 3)
     if os.path.exists(os.path.join(self.path, 'extracted.tar')):
       assert(importer.extracted != None)
       assert(len(importer.unhandled_arguments) == 2)
