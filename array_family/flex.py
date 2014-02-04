@@ -39,6 +39,24 @@ def reflection_table_from_pickle(filename):
   with open(filename, 'rb') as infile:
     return pickle.load(infile)
 
+def reflection_table_as_h5(self, filename):
+  ''' Write the reflection table as a HDF5 file. '''
+  from dials.util.nexus import NexusFile
+  handle = NexusFile(filename, 'w')
+  handle.set_reflections(self)
+  handle.close()
+
+@staticmethod
+def reflection_table_from_h5(filename):
+  ''' Read the reflections table from a HDF5 file. '''
+  from dials.util.nexus import NexusFile
+  handle = NexusFile(filename, 'r')
+  self = handle.get_reflections()
+  handle.close()
+  return self
+
 reflection_table.from_predictions = reflection_table_from_predictions
 reflection_table.from_pickle = reflection_table_from_pickle
 reflection_table.as_pickle = reflection_table_as_pickle
+reflection_table.from_h5 = reflection_table_from_h5
+reflection_table.as_h5 = reflection_table_as_h5

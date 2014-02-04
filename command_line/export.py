@@ -39,8 +39,9 @@ class ScriptRunner(object):
 
 
 if __name__ == '__main__':
-
+  from dials.array_family import flex
   from optparse import OptionParser
+  from dials.util.command_line import Command
 
   # Specify the command line options
   usage  = "usage: %prog [options] " \
@@ -58,8 +59,12 @@ if __name__ == '__main__':
 
   else:
 
-    # Run the script
-    script = ScriptRunner(
-        pickle_filename=args[0],
-        nexus_filename=args[1])
-    script.run()
+    # Load the reflections from the pickle file
+    Command.start('Loading reflections from %s' % args[0])
+    table = flex.reflection_table.from_pickle(args[0])
+    Command.end('Loaded %d reflections from %s' % (len(table), args[0]))
+
+    # Save the reflections to the HDF5 file
+    Command.start('Saving %d reflections to %s' % (len(table), args[1]))
+    table.as_h5(args[1])
+    Command.end('Saved %d reflections to %s' % (len(table), args[1]))
