@@ -24,12 +24,12 @@ def run(args):
 
   if experiments is not None:
     assert len(experiments) > 0
-  
+
     for i in range(len(experiments)):
       suffix = ""
       if len(experiments) > 1:
         suffix = "_%i" %(i+1)
-  
+
       imageset = experiments[i].imageset
       crystal_model = experiments[i].crystal
       crystal_model = crystal_model.change_basis(
