@@ -109,7 +109,7 @@ class Test:
     table = rlist.to_table()
     assert(table.is_consistent())
     assert(table.nrows() == n)
-    assert(table.ncols() == 15)
+    assert(table.ncols() == 16)
     self.check_values(table, rlist)
     print 'OK'
 
