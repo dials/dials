@@ -81,11 +81,13 @@ class run_one_indexing(object):
       if n_expected_lattices > 1:
         suffix = "_%i" %(i+1)
       assert os.path.exists(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
-      assert os.path.exists(os.path.join(tmp_dir, "crystal%s.json" %suffix))
-      assert os.path.exists(os.path.join(tmp_dir, "sweep%s.json" %suffix))
+      assert os.path.exists(os.path.join(tmp_dir, "experiments%s.json" %suffix))
       self.reflections = load.reflections(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
-      self.crystal_model = load.crystal(os.path.join(tmp_dir, "crystal%s.json" %suffix))
-      self.sweep = load.sweep(os.path.join(tmp_dir, "sweep%s.json" %suffix))
+      experiments_list = load.experiment_list(
+        os.path.join(tmp_dir, "experiments%s.json" %suffix), check_format=False)
+      assert len(experiments_list) == 1
+      experiment = experiments_list[0]
+      self.crystal_model = experiment.crystal
       assert self.crystal_model.get_unit_cell().is_similar_to(
         expected_unit_cell,
         relative_length_tolerance=relative_length_tolerance,
@@ -96,18 +98,18 @@ class run_one_indexing(object):
       assert (mi != (0,0,0)).count(False) == 0
       self.reflections = self.reflections.select(mi != (0,0,0))
       self.rmsds = self.get_rmsds_obs_pred(
-        self.reflections, self.sweep, self.crystal_model)
+        self.reflections, experiment, self.crystal_model)
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected
 
-  def get_rmsds_obs_pred(self, observations, sweep, crystal_model):
+  def get_rmsds_obs_pred(self, observations, experiment, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
-    reflections = ray_intersection(sweep.get_detector(), observations)
+    reflections = ray_intersection(experiment.detector, observations)
     from dials.algorithms.indexing.indexer2 import master_params
     from dials.algorithms.refinement import RefinerFactory
-    refine = RefinerFactory.from_parameters_data_models(
-      master_params, reflections, sweep=sweep, crystal=crystal_model,
-      verbosity=0)
+    from dials.model.experiment.experiment_list import ExperimentList
+    refine = RefinerFactory.from_parameters_data_experiments(
+      master_params, reflections, ExperimentList([experiment]), verbosity=0)
     return refine.rmsds()
 
 def exercise_1():

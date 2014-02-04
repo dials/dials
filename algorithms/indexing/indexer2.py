@@ -833,14 +833,15 @@ class indexer_base(object):
       labels=flex.std_string(labels))
 
   def export_as_json(self, crystal_model, sweep, suffix=None, compact=False):
-    from cctbx.crystal.crystal_model.serialize import dump_crystal
-    from dxtbx.serialize import dump
-    if suffix is None:
-      suffix = ''
-    with open('crystal%s.json' %suffix, 'wb') as f:
-      dump_crystal(crystal_model, f, compact=compact)
-    with open('sweep%s.json' %suffix, 'wb') as f:
-      dump.imageset(sweep, f, compact=compact)
+    from dials.model.serialize import dump
+    from dials.model.experiment.experiment_list import ExperimentList, Experiment
+    experiments = ExperimentList()
+    experiments.append(Experiment(
+      imageset=sweep, beam=sweep.get_beam(), detector=sweep.get_detector(),
+      goniometer=sweep.get_goniometer(), scan=sweep.get_scan(),
+      crystal=crystal_model))
+    assert experiments.is_consistent()
+    dump.experiment_list(experiments, 'experiments%s.json' %suffix)
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
     with open(file_name, 'wb') as f:
