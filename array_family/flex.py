@@ -32,5 +32,13 @@ def reflection_table_as_pickle(self, filename):
   with open(filename, 'wb') as outfile:
     pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
+@staticmethod
+def reflection_table_from_pickle(filename):
+  ''' Read the reflection table from pickle file. '''
+  import cPickle as pickle
+  with open(filename, 'rb') as infile:
+    return pickle.load(infile)
+
 reflection_table.from_predictions = reflection_table_from_predictions
+reflection_table.from_pickle = reflection_table_from_pickle
 reflection_table.as_pickle = reflection_table_as_pickle

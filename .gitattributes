@@ -289,7 +289,7 @@ command_line/import_xds_gain.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
 command_line/integrate.py -text
-command_line/merge_spot_lists.py -text
+command_line/merge_reflection_lists.py -text
 command_line/parameters.py -text
 command_line/plot_reflections.py -text
 command_line/predict.py -text
@@ -671,6 +671,7 @@ test/command_line/tst_extract.py -text
 test/command_line/tst_import.py -text
 test/command_line/tst_import_xds.py -text
 test/command_line/tst_integrate.py -text
+test/command_line/tst_merge_reflection_lists.py -text
 test/command_line/tst_parameters.py -text
 test/command_line/tst_predict.py -text
 test/command_line/tst_refine_bravais_settings.py -text
