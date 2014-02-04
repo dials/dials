@@ -19,45 +19,38 @@ master_params = master_phil_scope.fetch().extract()
 
 
 def run(args):
-  importer = Importer(args)
-  if len(importer.imagesets) == 0:
-    print "No sweep object could be constructed"
+  importer = Importer(args, check_format=False)
+  if len(importer.experiments) == 0:
+    print "No ExperimentList could be constructed"
     return
-  elif len(importer.imagesets) > 1:
-    raise RuntimeError("Only one imageset can be processed at a time")
-  sweeps = importer.imagesets
-  assert(len(importer.reflections) == 1)
-  reflections = importer.reflections[0]
+  elif len(importer.experiments) > 1:
+    raise RuntimeError("Only one Experiment can be processed at a time")
+  experiments = importer.experiments
+  experiment = experiments[0]
+  reflections = importer.reflections
   assert len(reflections) > 0
-  crystals = importer.crystals
-  assert len(crystals) == 1
   args = importer.unhandled_arguments
-
-  sweep = sweeps[0]
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
   working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
   params = working_phil.extract()
 
-  goniometer = sweep.get_goniometer()
-  detector = sweep.get_detector()
-  scan = sweep.get_scan()
-  beam = sweep.get_beam()
-
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic
 
   Lfat = refined_settings_factory_from_refined_triclinic(
-    params, scan, goniometer, beam, detector, crystals[0], reflections,
+    params, experiment, reflections,
     nproc=params.nproc, refiner_verbosity=params.verbosity)
   Lfat.labelit_printout()
   from json import dumps
   open('bravais_summary.json', 'wb').write(dumps(Lfat.as_dict()))
-  from cctbx.crystal.crystal_model.serialize import dump_crystal
+  from dials.model.serialize import dump
+  import copy
   for subgroup in Lfat:
-    with open('bravais_setting_%i.json' % (
-      int(subgroup.setting_number)), 'wb') as f:
-      dump_crystal(subgroup.refined_crystal, f)
+    expts = copy.deepcopy(experiments)
+    expts[0].crystal = subgroup.refined_crystal
+    dump.experiment_list(
+      expts, 'bravais_setting_%i.json' % (int(subgroup.setting_number)))
   return
 
 if __name__ == '__main__':

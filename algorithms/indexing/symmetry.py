@@ -71,8 +71,17 @@ class refined_settings_list(list):
 
 
 def refined_settings_factory_from_refined_triclinic(
-  params, scan, goniometer, beam, detector, crystal, reflections,
-  nproc=1, i_setting=None, refiner_verbosity=0):
+  params, experiment, reflections, nproc=1, i_setting=None,
+  refiner_verbosity=0):
+  from dials.model.data import ReflectionList
+  reflections = ReflectionList.from_table(reflections)
+
+  detector = experiment.detector
+  beam = experiment.beam
+  scan = experiment.scan
+  goniometer = experiment.goniometer
+  crystal = experiment.crystal
+  
   used_reflections = reflections.deep_copy()
   UC = crystal.get_unit_cell()
 
