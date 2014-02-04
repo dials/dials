@@ -3,7 +3,7 @@ from libtbx import test_utils
 import libtbx.load_env
 
 tst_list = (
-    "$D/test/tst_spots_xds.py",
+    "$D/test/tst_export_xds.py",
     "$D/test/command_line/tst_parameters.py",
     "$D/test/command_line/tst_import.py",
     "$D/test/command_line/tst_integrate.py",

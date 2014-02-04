@@ -108,7 +108,7 @@ class IntegrateHKLImporter(object):
 
 def select_importer(args):
   from os.path import split
-
+  import libtbx.load_env
   path, filename = split(args[0])
   if filename == 'SPOT.XDS':
     return SpotXDSImporter(args[0])
