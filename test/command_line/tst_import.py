@@ -34,9 +34,11 @@ class Test(object):
 
     # Read the created file and do a diff
     with open("datablock.json", "r") as infile:
+      lines_a = infile.read().splitlines()
+      lines_a = [l.strip() for l in lines_a if "\"template\"" not in l]
       diff = list(difflib.context_diff(
-          [l.strip() for l in infile.read().splitlines()],
-          [l.strip() for l in expected.splitlines()]))
+        lines_a,
+        [l.strip() for l in expected.splitlines()]))
       n = len(diff)
       for i, line in enumerate(diff):
         print line
@@ -60,8 +62,10 @@ class Test(object):
 
     # Read the created file and do a diff
     with open("experiments.json", "r") as infile:
+      lines_a = infile.read().splitlines()
+      lines_a = [l.strip() for l in lines_a if "\"template\"" not in l]
       diff = list(difflib.context_diff(
-        [l.strip() for l in infile.read().splitlines()],
+        lines_a,
         [l.strip() for l in expected.splitlines()]))
       n = len(diff)
       for i, line in enumerate(diff):
@@ -77,7 +81,6 @@ class Test(object):
     "imageset": [
       {
         "__id__": "ImageSweep",
-        "template": "/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data/centroid_####.cbf",
         "beam": 0,
         "detector": 0,
         "goniometer": 0,
@@ -308,7 +311,6 @@ class Test(object):
   "imageset": [
     {
       "__id__": "ImageSweep",
-      "template": "/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data/centroid_####.cbf"
     }
   ],
   "beam": [
