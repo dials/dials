@@ -8,6 +8,8 @@ class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
     self.sweep_filenames = kwds["sweep_filenames"]
     self.reflections = kwds["reflections"]
+    from dials.model.data import ReflectionList
+    self.reflections = ReflectionList.from_table(self.reflections)
     del kwds["sweep_filenames"]; del kwds["reflections"] #otherwise wx complains
     super(SpotFrame, self).__init__(*args, **kwds)
     self.viewer.reflections = self.reflections
@@ -117,73 +119,72 @@ class SpotFrame(XrayFrame) :
     max_pix_data = []
     predictions_data = []
     miller_indices_data = []
-    for reflection_list in self.reflections:
-      for reflection in reflection_list:
-        x0, x1, y0, y1, z0, z1 = reflection.bounding_box
-        if i_frame >= z0 and i_frame < z1:
-          nx = x1 - x0 # size of reflection box in x-direction
-          ny = y1 - y0 # size of reflection box in y-direction
-          nz = z1 - z0 # number of frames this spot appears on
-          if self.settings.show_all_pix and reflection.shoebox_mask.size() > 0:
-            for ix in range(nx):
-              for iy in range(ny):
-                for iz in range(nz):
-                  if iz + z0 != i_frame: continue
-                  if reflection.shoebox_mask[iz, iy, ix] > 0:
-                    x_, y_ = map_coords(
-                      ix + x0 + 0.5, iy + y0 + 0.5, reflection.panel_number)
-                    all_pix_data.append((x_, y_))
+    for reflection in self.reflections:
+      x0, x1, y0, y1, z0, z1 = reflection.bounding_box
+      if i_frame >= z0 and i_frame < z1:
+        nx = x1 - x0 # size of reflection box in x-direction
+        ny = y1 - y0 # size of reflection box in y-direction
+        nz = z1 - z0 # number of frames this spot appears on
+        if self.settings.show_all_pix and reflection.shoebox_mask.size() > 0:
+          for ix in range(nx):
+            for iy in range(ny):
+              for iz in range(nz):
+                if iz + z0 != i_frame: continue
+                if reflection.shoebox_mask[iz, iy, ix] > 0:
+                  x_, y_ = map_coords(
+                    ix + x0 + 0.5, iy + y0 + 0.5, reflection.panel_number)
+                  all_pix_data.append((x_, y_))
 
-          if self.settings.show_shoebox:
-            x0_, y0_ = map_coords(x0, y0, reflection.panel_number)
-            x1_, y1_ = map_coords(x1, y1, reflection.panel_number)
-            lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
-                     (((x0_, y1_), (x1_, y1_)), shoebox_dict),
-                     (((x1_, y1_), (x1_, y0_)), shoebox_dict),
-                     (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
-            shoebox_data.extend(lines)
+        if self.settings.show_shoebox:
+          x0_, y0_ = map_coords(x0, y0, reflection.panel_number)
+          x1_, y1_ = map_coords(x1, y1, reflection.panel_number)
+          lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
+                   (((x0_, y1_), (x1_, y1_)), shoebox_dict),
+                   (((x1_, y1_), (x1_, y0_)), shoebox_dict),
+                   (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
+          shoebox_data.extend(lines)
 
-          if self.settings.show_max_pix and reflection.shoebox.size() > 0:
-            shoebox = reflection.shoebox
-            offset = flex.max_index(shoebox)
-            offset, k = divmod(offset, shoebox.all()[2])
-            offset, j = divmod(offset, shoebox.all()[1])
-            offset, i = divmod(offset, shoebox.all()[0])
-            assert offset == 0
-            max_index = (i, j, k)
-            assert shoebox[max_index] == flex.max(shoebox)
-            if z0 + max_index[0] == i_frame:
-              x, y = map_coords(x0 + max_index[2] + 0.5,
-                                y0 + max_index[1] + 0.5,
-                                reflection.panel_number)
-              max_pix_data.append((x, y))
+        if self.settings.show_max_pix and reflection.shoebox.size() > 0:
+          shoebox = reflection.shoebox
+          offset = flex.max_index(shoebox)
+          offset, k = divmod(offset, shoebox.all()[2])
+          offset, j = divmod(offset, shoebox.all()[1])
+          offset, i = divmod(offset, shoebox.all()[0])
+          assert offset == 0
+          max_index = (i, j, k)
+          assert shoebox[max_index] == flex.max(shoebox)
+          if z0 + max_index[0] == i_frame:
+            x, y = map_coords(x0 + max_index[2] + 0.5,
+                              y0 + max_index[1] + 0.5,
+                              reflection.panel_number)
+            max_pix_data.append((x, y))
 
-          if self.settings.show_ctr_mass:
-            centroid = reflection.centroid_position
-            import math
-            if math.floor(centroid[2]) == i_frame:
-              x,y = map_coords(
-                centroid[0], centroid[1], reflection.panel_number)
-              xm1,ym1 = map_coords(
-                centroid[0]-1, centroid[1]-1, reflection.panel_number)
-              xp1,yp1 = map_coords(
-                centroid[0]+1, centroid[1]+1, reflection.panel_number)
-              lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
-                       (((xm1, y), (xp1, y)), ctr_mass_dict)]
-              ctr_mass_data.extend(lines)
+        if self.settings.show_ctr_mass:
+          centroid = reflection.centroid_position
+          import math
+          if math.floor(centroid[2]) == i_frame:
+            x,y = map_coords(
+              centroid[0], centroid[1], reflection.panel_number)
+            xm1,ym1 = map_coords(
+              centroid[0]-1, centroid[1]-1, reflection.panel_number)
+            xp1,yp1 = map_coords(
+              centroid[0]+1, centroid[1]+1, reflection.panel_number)
+            lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
+                     (((xm1, y), (xp1, y)), ctr_mass_dict)]
+            ctr_mass_data.extend(lines)
 
-        if (self.settings.show_predictions and
-            reflection.image_coord_px != (0.0, 0.0) and
-            reflection.frame_number >= i_frame and
-            reflection.frame_number < (i_frame + 1)):
-          x, y = map_coords(reflection.image_coord_px[0]+ 0.5,
-                            reflection.image_coord_px[1] + 0.5,
-                            reflection.panel_number)
-          predictions_data.append((x, y))
-        if (self.settings.show_miller_indices and
-            reflection.miller_index != (0,0,0)):
-          miller_indices_data.append((x, y, str(reflection.miller_index),
-                                      {'placement':'ne'}))
+      if (self.settings.show_predictions and
+          reflection.image_coord_px != (0.0, 0.0) and
+          reflection.frame_number >= i_frame and
+          reflection.frame_number < (i_frame + 1)):
+        x, y = map_coords(reflection.image_coord_px[0]+ 0.5,
+                          reflection.image_coord_px[1] + 0.5,
+                          reflection.panel_number)
+        predictions_data.append((x, y))
+      if (self.settings.show_miller_indices and
+          reflection.miller_index != (0,0,0)):
+        miller_indices_data.append((x, y, str(reflection.miller_index),
+                                    {'placement':'ne'}))
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,

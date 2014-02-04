@@ -60,21 +60,20 @@ if __name__ == '__main__':
     from dials.util.command_line import Importer
 
     args = sys.argv[1:]
-    importer = Importer(args)
-    if len(importer.imagesets) == 0:
-      print "No sweep object could be constructed"
-      exit(0)
-    elif len(importer.imagesets) > 1:
-      raise RuntimeError("Only one imageset can be processed at a time")
-    paths = []
-    for imageset in importer.imagesets:
-      paths.extend(imageset.paths())
-    assert len(importer.reflections) > 0
-    assert len(importer.unhandled_arguments) == 0
+  importer = Importer(args, check_format=False)
+  if len(importer.datablocks) == 0:
+    raise RuntimeError("No DataBlock could be constructed")
+  elif len(importer.datablocks) > 1:
+    raise RuntimeError("Only one DataBlock can be processed at a time")
+  imagesets = importer.datablocks[0].extract_imagesets()
+  paths = []
+  for imageset in imagesets:
+    paths.extend(imageset.paths())
+  assert len(importer.unhandled_arguments) == 0
 
-    runner = ScriptRunner(
-        reflections=importer.reflections,
-        sweep_filenames=paths)
+  runner = ScriptRunner(
+      reflections=importer.reflections,
+      sweep_filenames=paths)
 
-    # Run the script
-    runner()
+  # Run the script
+  runner()
