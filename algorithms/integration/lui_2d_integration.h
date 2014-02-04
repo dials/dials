@@ -12,9 +12,10 @@
 #define DIALS_ALGORITHMS_LUI_INTEGRATION_2D_H
 #include <stdio.h>
 #include <iostream>
-//#include <scitbx/vec2.h>
-#include <scitbx/array_family/flex_types.h>
+#include <scitbx/vec2.h>
 #include <cmath>
+#include <scitbx/array_family/flex_types.h>
+
 #include <cstdlib>
 #include <scitbx/array_family/versa_matrix.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
@@ -112,8 +113,8 @@ namespace dials { namespace algorithms {
       for (int col = 0; col < ncol_in; col++) {
         tot_row = row + tot_row_centr - centr_row + 1;
         tot_col = col + tot_col_centr - centr_col + 1;
-        if (tot_row >= 0 and tot_col >= 0 and tot_row < nrow_tot
-          and tot_col < ncol_tot) {
+        if (tot_row > 0 and tot_col > 0 and
+          tot_row < nrow_tot and tot_col < ncol_tot) {
 
           // interpolating and finding contributions of each pixel
           // to the four surrounding  pixels in the other shoe box
@@ -204,7 +205,19 @@ namespace dials { namespace algorithms {
     return m;
   }
 
+  double w_m_least_squres_1d(int & cnt, double m_in, double i_mod[], double i_exp[]){
 
+    double sum_xy = 0, sum_x_sq = 0, m;
+    for (int i = 0; i < cnt; i++){
+
+      sum_xy += i_exp[i];// / m_in;
+      sum_x_sq += i_mod[i];// / m_in;
+    }
+    m = sum_xy / sum_x_sq;
+    return m;
+  }
+
+  /*
   double m_least_squres_1d(int & cnt, double i_mod[], double i_exp[]){
     // least-squares scaling following the formula:
     // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
@@ -217,6 +230,8 @@ namespace dials { namespace algorithms {
     m = sum_xy / sum_x_sq;
     return m;
   }
+  */
+
 
   // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
   vec2<double> fitting_2d(
@@ -273,10 +288,12 @@ namespace dials { namespace algorithms {
 
     // this is how the algorithm for fitting must be chosen
     // between linear or least squares
-    // ONE of the next two lines MUST be commented
 
-    //m = m_linear_scale(counter, imodl_lst, iexpr_lst);
-    m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
+    m = m_linear_scale(counter, imodl_lst, iexpr_lst);
+    //m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
+    double tmp_m = m;
+    m = w_m_least_squres_1d(counter, tmp_m, imodl_lst, iexpr_lst);
+
 
     //measuring R
     sum = 0;

@@ -22,7 +22,7 @@ for ypos in range(86):
   for xpos in range(80):
     #if xpos/12.0 == int(xpos/12) and ypos/12.0 == int(ypos/12):
     #if ypos/6.0 == int(ypos/6):
-    if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3):
+    #if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3):
       row_str = ypos * nrow
       col_str = xpos * ncol
       dx = col_str - 1200
@@ -84,8 +84,7 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
 
-old_r_list = rlist[:]
-tmp='''
+#tmp='''
 print "adding noise ...."
 for r in rlist:
     for x_loc in range(ncol):
@@ -98,6 +97,9 @@ for r in rlist:
           r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
 print "adding noise .... done"
 #'''
+
+old_r_list = rlist[:]
+
 from dials.algorithms.background.inclined_background_subtractor \
   import layering_and_background_plane
 layering_and_background_plane(rlist)
