@@ -286,6 +286,7 @@ command_line/find_spots.py -text
 command_line/generate_process_test_reflections.py -text
 command_line/generate_test_reflections.py -text
 command_line/import.py -text
+command_line/import_xds.py -text
 command_line/import_xds_gain.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
@@ -670,6 +671,7 @@ test/array_family/tst_reflection_table.py -text
 test/command_line/tst_detector_max_resolution.py -text
 test/command_line/tst_extract.py -text
 test/command_line/tst_import.py -text
+test/command_line/tst_import_xds.py -text
 test/command_line/tst_integrate.py -text
 test/command_line/tst_parameters.py -text
 test/command_line/tst_predict.py -text

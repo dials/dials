@@ -26,5 +26,11 @@ def reflection_table_from_predictions(exlist):
     result.extend(rtable)
   return result
 
+def reflection_table_as_pickle(self, filename):
+  ''' Write the reflection table as a pickle file. '''
+  import cPickle as pickle
+  with open(filename, 'wb') as outfile:
+    pickle.dump(self, outfile, protocol=pickle.HIGHEST_PROTOCOL)
 
 reflection_table.from_predictions = reflection_table_from_predictions
+reflection_table.as_pickle = reflection_table_as_pickle
