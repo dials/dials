@@ -452,6 +452,7 @@ class ExperimentListDict(object):
     ''' Make a still imageset. '''
     from dxtbx.datablock import NullFormat
     from dxtbx.imageset import ImageSetFactory
+    from dxtbx.serialize.filename import load_path
     filenames = [load_path(p) for p in imageset['images']]
     if self._check_format:
       format_class = Registry.find(filenames[0])
