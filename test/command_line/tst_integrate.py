@@ -14,7 +14,7 @@ class Test(object):
       exit(0)
 
     self.path = join(dials_regression, "centroid_test_data")
-
+    #self.path = join(dials_regression, "integration_test_data")
   def run(self):
     from os.path import abspath, join
     from libtbx import easy_run
