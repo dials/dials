@@ -369,16 +369,27 @@ def exercise_10():
 def exercise_11():
   image_path = os.path.join(dials_regression, "spotfinding_test_data",
                             "idx-s00-20131106040304531.cbf")
-  args = ["dials.spotfinder",
-          image_path,
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = os.path.abspath(open_tmp_directory(suffix="test_dials_index"))
+  os.chdir(tmp_dir)
+  print tmp_dir
+
+  args = ["dials.import", image_path,
+          "--output=datablock.json"]
+  command = " ".join(args)
+  #print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+
+  datablock_json = os.path.join(tmp_dir, "datablock.json")
+
+  args = ["dials.find_spots",
+          datablock_json,
           "threshold.sigma_strong=7",
           "min_spot_size=6",
           ]
 
-  cwd = os.path.abspath(os.curdir)
-  tmp_dir = os.path.abspath(open_tmp_directory(suffix="test_dials_index"))
-  os.chdir(tmp_dir)
   command = " ".join(args)
+  #print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
   pickle_path = os.path.join(tmp_dir, "strong.pickle")
   assert os.path.exists(pickle_path)
@@ -403,7 +414,7 @@ def exercise_11():
   expected_hall_symbol = ' P 4nw 2abw'
   n_expected_lattices = 1
 
-  result = run_one_indexing(pickle_path, image_path, extra_args, expected_unit_cell,
+  result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol,
                             n_expected_lattices=n_expected_lattices,
                             relative_length_tolerance=0.03,
