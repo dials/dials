@@ -309,10 +309,11 @@ class ExperimentListDict(object):
   ''' A helper class for serializing the experiment list to dictionary (needed
   to save the experiment list to JSON format. '''
 
-  def __init__(self, obj):
+  def __init__(self, obj, check_format=True):
     ''' Initialise. Copy the dictionary. '''
     from copy import deepcopy
     self._obj = deepcopy(obj)
+    self._check_format = check_format
 
   def decode(self):
     ''' Decode the dictionary into a list of experiments. '''
@@ -448,9 +449,14 @@ class ExperimentListDict(object):
 
   def _make_stills(self, imageset):
     ''' Make a still imageset. '''
+    from dxtbx.datablock import NullFormat
     from dxtbx.imageset import ImageSetFactory
     filenames = [load_path(p) for p in imageset['images']]
-    return ImageSetFactory.make_imageset(filenames)
+    if self._check_format:
+      format_class = Registry.find(filenames[0])
+    else:
+      format_class = NullFormat
+    return ImageSetFactory.make_imageset(filenames, format_class)
 
   def _make_sweep(self, imageset, scan):
     ''' Make an image sweep. '''
@@ -458,6 +464,7 @@ class ExperimentListDict(object):
     from dxtbx.format.Registry import Registry
     from dxtbx.imageset import ImageSetFactory
     from dxtbx.serialize.filename import load_path
+    from dxtbx.datablock import NullFormat
 
     # Get the template format
     template = load_path(imageset['template'])
@@ -473,7 +480,10 @@ class ExperimentListDict(object):
       i0, i1 = scan.get_image_range()
 
     # Get the format class from the first image
-    format_class = Registry.find(template_format % i0)
+    if self._check_format:
+      format_class = Registry.find(template_format % i0)
+    else:
+      format_class = NullFormat
 
     # Make a sweep from the input data
     return ImageSetFactory.make_sweep(template,
@@ -709,11 +719,11 @@ class ExperimentListFactory(object):
     return experiments
 
   @staticmethod
-  def from_dict(obj):
+  def from_dict(obj, check_format=True):
     ''' Load an experiment list from a dictionary. '''
 
     # Decode the experiments from the dictionary
-    experiments = ExperimentListDict(obj).decode()
+    experiments = ExperimentListDict(obj, check_format).decode()
 
     # Check the list is consistent
     assert(experiments.is_consistent())
@@ -722,22 +732,23 @@ class ExperimentListFactory(object):
     return experiments
 
   @staticmethod
-  def from_json(text):
+  def from_json(text, check_format=True):
     ''' Load an experiment list from JSON. '''
     from dxtbx.serialize.load import _decode_dict
     import json
     return ExperimentListFactory.from_dict(
-      json.loads(text, object_hook=_decode_dict))
+      json.loads(text, object_hook=_decode_dict),
+      check_format)
 
   @staticmethod
-  def from_json_file(filename):
+  def from_json_file(filename, check_format=True):
     ''' Load an experiment list from a json file. '''
     from dxtbx.serialize.filename import temp_chdir
     from os.path import dirname, abspath
     filename = abspath(filename)
     with temp_chdir(dirname(filename)):
       with open(filename, 'r') as infile:
-        return ExperimentListFactory.from_json(infile.read())
+        return ExperimentListFactory.from_json(infile.read(), check_format)
 
   @staticmethod
   def from_pickle_file(filename):
@@ -772,12 +783,12 @@ class ExperimentListFactory(object):
     return experiments
 
   @staticmethod
-  def from_serialized_format(filename):
+  def from_serialized_format(filename, check_format):
     ''' Try to load the experiment list from a serialized format. '''
 
     # First try as a JSON file
     try:
-      return ExperimentListFactory.from_json_file(filename)
+      return ExperimentListFactory.from_json_file(filename, check_format)
     except Exception, e:
       pass
 

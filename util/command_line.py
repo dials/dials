@@ -279,6 +279,9 @@ class Importer(object):
     '''
     from dials.array_family import flex
 
+    # Check the format in data block and experiment list
+    self._check_format = check_format
+
     # Initialise output
     self.datablocks = None
     self.experiments = None
@@ -299,15 +302,14 @@ class Importer(object):
     unhandled = args
     for item in totry:
       if verbose: print 'Try import as %s' % item
-      unhandled = self.try_import(unhandled, item, verbose,
-                                  check_format=check_format)
+      unhandled = self.try_import(unhandled, item, verbose)
     self.unhandled_arguments = unhandled
 
-  def try_import(self, args, item, verbose, **kwargs):
+  def try_import(self, args, item, verbose):
     ''' Try to import with the given item. '''
-    return getattr(self, "try_import_%s" % item)(args, verbose, **kwargs)
+    return getattr(self, "try_import_%s" % item)(args, verbose)
 
-  def try_import_images(self, args, verbose, **kwargs):
+  def try_import_images(self, args, verbose):
     ''' Try to import images. '''
     from dxtbx.datablock import DataBlockFactory
     unhandled = []
@@ -320,7 +322,7 @@ class Importer(object):
         self.datablocks.extend(datablocks)
     return unhandled
 
-  def try_import_datablocks(self, args, verbose, check_format, **kwargs):
+  def try_import_datablocks(self, args, verbose):
     ''' Try to import imagesets. '''
     from dxtbx.datablock import DataBlockFactory
     from os.path import abspath
@@ -329,7 +331,7 @@ class Importer(object):
       try:
         abs_argument = abspath(argument)
         datablocks = DataBlockFactory.from_serialized_format(
-          abs_argument, check_format)
+          abs_argument, self._check_format)
         if verbose: print 'Loaded %s as datablock list' % abs_argument
         if self.datablocks == None:
           self.datablocks = datablocks
@@ -339,7 +341,7 @@ class Importer(object):
         unhandled.append(argument)
     return unhandled
 
-  def try_import_experiments(self, args, verbose, **kwargs):
+  def try_import_experiments(self, args, verbose):
     ''' Try to import experiments. '''
     from dials.model.experiment.experiment_list import ExperimentListFactory
     from os.path import abspath
@@ -347,7 +349,8 @@ class Importer(object):
     for argument in args:
       try:
         abs_argument = abspath(argument)
-        experiments = ExperimentListFactory.from_serialized_format(abs_argument)
+        experiments = ExperimentListFactory.from_serialized_format(
+          abs_argument, self._check_format)
         if verbose: print 'Loaded %s as experiment list' % abs_argument
         if self.experiments == None:
           self.experiments = experiments
@@ -357,7 +360,7 @@ class Importer(object):
         unhandled.append(argument)
     return unhandled
 
-  def try_import_reflections(self, args, verbose, **kwargs):
+  def try_import_reflections(self, args, verbose):
     ''' Try to import reflections. '''
     from dials.array_family import flex
     import cPickle as pickle
@@ -377,7 +380,7 @@ class Importer(object):
         unhandled.append(argument)
     return unhandled
 
-  def try_import_extracted(self, args, verbose, **kwargs):
+  def try_import_extracted(self, args, verbose):
     ''' Try to import extracted. '''
     from dials.model.serialize import partial_shoebox
     unhandled = []
