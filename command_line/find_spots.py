@@ -44,7 +44,7 @@ class Script(ScriptRunner):
     from dials.array_family import flex
 
     # Try importing the command line arguments
-    importer = Importer(args, include=['datablocks'])
+    importer = Importer(args, include=['images', 'datablocks'])
 
     # Check the unhandled arguments
     if len(importer.unhandled_arguments) > 0:

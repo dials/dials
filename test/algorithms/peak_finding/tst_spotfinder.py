@@ -14,8 +14,8 @@ def exercise_spotfinder():
   data_dir = libtbx.env.find_in_repositories(
     relative_path="dials_regression/centroid_test_data",
     test=os.path.isdir)
-  template = os.path.join(data_dir, "centroid_00*.cbf")
-  args = ["dials.spotfinder", template, "-o spotfinder.pickle", "--nproc=1",
+  template = os.path.join(data_dir, "centroid*.cbf")
+  args = ["dials.find_spots", template, "-o spotfinder.pickle", "--nproc=1",
           "save_shoeboxes=True"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
@@ -24,13 +24,13 @@ def exercise_spotfinder():
     assert len(reflections) == 459
     refl = reflections[0]
     assert approx_equal(refl['intensity.raw.value'], 142)
-    assert approx_equal(refl['shoebox'].bbox, (1258, 1260, 537, 541, 0, 1))
+    assert approx_equal(refl['bbox'], (1258, 1260, 537, 541, 0, 1))
     assert approx_equal(refl['xyzobs.px.value'],
                         (1258.7957746478874, 539.112676056338, 0.5))
     assert "shoebox" in reflections
 
   # now with a resolution filter
-  args = ["dials.spotfinder", "d_min=2", "d_max=15",
+  args = ["dials.find_spots", "d_min=2", "d_max=15",
           template, "-o spotfinder.pickle", "--nproc=1", "save_shoeboxes=False"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
@@ -41,7 +41,7 @@ def exercise_spotfinder():
     assert "shoebox" not in reflections
 
   # now with more generous parameters
-  args = ["dials.spotfinder", "min_spot_size=3", "max_separation=3",
+  args = ["dials.find_spots", "min_spot_size=3", "max_separation=3",
           template, "-o spotfinder.pickle", "--nproc=1"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
@@ -54,7 +54,7 @@ def exercise_spotfinder():
     relative_path="dials_regression/spotfinding_test_data",
     test=os.path.isdir)
   template = os.path.join(data_dir, "idx-s00-20131106040302615.cbf")
-  args = ["dials.spotfinder", template, "-o spotfinder.pickle", "--nproc=1"]
+  args = ["dials.find_spots", template, "-o spotfinder.pickle", "--nproc=1"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
