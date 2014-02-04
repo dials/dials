@@ -70,6 +70,7 @@ namespace dials { namespace af { namespace boost_python {
 
       // Copy shoebox info
       bbox[i] = s[i].bbox;
+      sbox[i].bbox = s[i].bbox;
       sbox[i].data = s[i].data;
       sbox[i].mask = s[i].mask;
       sbox[i].background = s[i].background;
