@@ -661,6 +661,8 @@ test/algorithms/spatial_indexing/tst_spatial_index.py -text
 test/algorithms/spot_prediction/tst_index_generator.py -text
 test/algorithms/spot_prediction/tst_ray_predictor.py -text
 test/algorithms/spot_prediction/tst_reeke.py -text
+test/algorithms/spot_prediction/tst_reeke_index_generator.py -text
+test/algorithms/spot_prediction/tst_reeke_model.cc -text
 test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_scan_varying_predictor.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
