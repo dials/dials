@@ -625,6 +625,7 @@ class Refiner(object):
   Public methods:
     run
     rmsds
+    get_experiments
     get_beam
     get_crystal
     get_crystals
@@ -640,8 +641,10 @@ class Refiner(object):
 
   Notes:
     * The return value of run is a recorded history of the refinement
+    * The experiments accessor provides a copy of the experiments used by
+      refinement
     * The model accessors provide copies of those models that might be modified
-      by refinement (beam, crystal and detector)
+      by refinement (beam, crystal and detector) TO BE DEPRECATED
     * get_matches exposes the function of the same name from the privately
       stored reflection manager
     * The return value of selection_used_for_refinement is a flex.bool
@@ -705,6 +708,11 @@ class Refiner(object):
     self._verbosity = verbosity
 
     return
+
+  def get_experiments(self):
+
+    from copy import deepcopy
+    return deepcopy(experiments)
 
   def get_beam(self):
     """Return a copy of the beam model"""
