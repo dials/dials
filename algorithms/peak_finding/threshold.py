@@ -99,6 +99,8 @@ class XDSThresholdStrategy(ThresholdStrategy):
     if self._mask:
       mask = self._mask.__and__(image >= 0)
     else:
+      # FIXME this value should not always be zero - it should come from
+      # the underload value of the image format class
       mask = image >= 0
 
     # Do the thresholding, if gain is given then use gain threshold,
