@@ -9,6 +9,7 @@ class Test(object):
     from dials.array_family import flex
     import libtbx.load_env
     from libtbx import easy_run
+    from dials.array_family import flex
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
     except KeyError, e:
@@ -17,12 +18,11 @@ class Test(object):
 
     self.path = join(dials_regression, "centroid_test_data")
 
-    # Call dials.integrate
-    easy_run.fully_buffered([
-      'dials.integrate',
-      join(self.path, 'experiments.json'),
-      'integration.algorithm=sum3d',
-    ]).raise_if_errors()
+    table = flex.reflection_table()
+    table['hkl'] = flex.miller_index(360)
+    table['id'] = flex.size_t(360)
+    table['intensity.raw.value'] = flex.double(360)
+    table.as_pickle("temp.pickle")
 
   def run(self):
     from os.path import abspath, join
@@ -32,8 +32,8 @@ class Test(object):
     # Call dials.integrate
     easy_run.fully_buffered([
       'dials.merge_reflection_lists',
-      'integrated.pickle',
-      'integrated.pickle',
+      'temp.pickle',
+      'temp.pickle',
       '-m', 'update'
     ]).raise_if_errors()
 
@@ -44,8 +44,8 @@ class Test(object):
     # Call dials.integrate
     easy_run.fully_buffered([
       'dials.merge_reflection_lists',
-      'integrated.pickle',
-      'integrated.pickle',
+      'temp.pickle',
+      'temp.pickle',
       '-m', 'extend'
     ]).raise_if_errors()
 
