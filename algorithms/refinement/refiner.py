@@ -712,7 +712,7 @@ class Refiner(object):
   def get_experiments(self):
 
     from copy import deepcopy
-    return deepcopy(experiments)
+    return deepcopy(self._experiments)
 
   def get_beam(self):
     """Return a copy of the beam model"""
