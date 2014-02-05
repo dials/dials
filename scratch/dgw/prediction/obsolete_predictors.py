@@ -1,5 +1,3 @@
-#!/usr/bin/env cctbx.python
-
 #
 #  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
 #
@@ -9,50 +7,36 @@
 #  included in the root directory of this package.
 #
 
+"""Reflection prediction for refinement.
+
+Various deprecated classes that I still want to keep a visible record of
+
+"""
+
 from __future__ import division
 
-from math import pi, sin, cos, sqrt, acos, atan2, fabs
+from math import pi, sqrt, acos, atan2, fabs
 from scitbx import matrix
+import scitbx.math
 from cctbx.array_family import flex
 from dials.algorithms.spot_prediction import RayPredictor
 from rstbx.diffraction import reflection_prediction
 from rstbx.diffraction import rotation_angles
 
-class ReflectionPredictor(object):
-  """Predict for a relp based on the current states of models in the
-  experimental geometry model. This is a wrapper for DIALS' C++
-  RayPredictor class, which does the real work. This class keeps track
-  of the experimental geometry, and instantiates a RayPredictor when
-  required.
-  """
+from dials.model.data import Reflection, ReflectionList
 
-  def __init__(self, crystal, beam, gonio, sweep_range = (0, 2.*pi)):
-    """Construct by linking to instances of experimental model classes"""
-
-    self._crystal = crystal
-    self._beam = beam
-    self._gonio = gonio
-    self._sweep_range = sweep_range
-    self.update()
-
-  def update(self):
-    """Build a RayPredictor object for the current geometry"""
-
-    self._ray_predictor = RayPredictor(self._beam.get_s0(),
-                    self._gonio.get_rotation_axis(),
-                    self._crystal.get_U() * self._crystal.get_B(),
-                    self._sweep_range)
-
-  def predict(self, hkl):
-    """Solve the prediction formula for the reflecting angle phi"""
-
-    return self._ray_predictor(hkl)
+from dials.algorithms.spot_prediction.reeke import solve_quad
+from dials.algorithms.spot_prediction import ReekeIndexGenerator
 
 class AnglePredictor_rstbx(object):
-  """Predict the reflecting angles for a relp based on the current states
+  """
+  Predict the reflecting angles for a relp based on the current states
   of models in the experimental geometry model. This version is a wrapper
   for rstbx's C++ rotation_angles so is faster than the pure Python class
-  AnglePredictor_py"""
+  AnglePredictor_py.
+
+  This is essentially deprecated by DIALS reflection prediction code.
+  """
 
   def __init__(self, crystal, beam, gonio, dmin):
     """Construct by linking to instances of experimental model classes"""
@@ -62,21 +46,20 @@ class AnglePredictor_rstbx(object):
     self._gonio = gonio
 
     self._dmin = dmin
-    #self._dstarmax = 1. / dmin
-    #self._dstarmax_sq = self._dstarmax**2
 
-  # To convert from the Rossmann frame we use two of Graeme's
-  # functions taken from use_case_xds_method/tdi.py
-  def orthogonal_component(self, reference, changing):
-    """Return unit vector corresponding to component of changing orthogonal to
-    reference."""
+  # To convert from the Rossmann frame we use two of Graeme's functions
+  @staticmethod
+  def orthogonal_component(reference, changing):
+    """Return unit vector corresponding to component of changing orthogonal
+    to reference."""
 
     r = reference.normalize()
     c = changing.normalize()
 
     return (c - c.dot(r) * r).normalize()
 
-  def align_reference_frame(self, primary_axis, primary_target,
+  @staticmethod
+  def align_reference_frame(primary_axis, primary_target,
                             secondary_axis, secondary_target):
     """Compute a rotation matrix R: R x primary_axis = primary_target and
     R x secondary_axis places the secondary_axis in the plane perpendicular
@@ -123,14 +106,13 @@ class AnglePredictor_rstbx(object):
     else:
       Rprimary = matrix.identity(3)
 
-    axis_r = secondary_target.cross(Rprimary * secondary_axis)
+    Rpsa = Rprimary * secondary_axis
+    axis_r = secondary_target.cross(Rpsa)
     axis_s = primary_target
-    if (axis_r.angle(primary_target) > 0.5 * pi):
-      angle_s = self.orthogonal_component(axis_s, secondary_target).angle(
-          self.orthogonal_component(axis_s, Rprimary * secondary_axis))
-    else:
-      angle_s = - self.orthogonal_component(axis_s, secondary_target).angle(
-          self.orthogonal_component(axis_s, Rprimary * secondary_axis))
+    oc = AnglePredictor_rstbx.orthogonal_component
+    angle_s = oc(axis_s, secondary_target).angle(oc(axis_s, Rpsa))
+    if axis_r.angle(primary_target) <= 0.5 * pi:
+      angle_s *= -1.
 
     Rsecondary = axis_s.axis_and_angle_as_r3_rotation_matrix(angle_s)
 
@@ -152,7 +134,8 @@ class AnglePredictor_rstbx(object):
              self._beam.get_wavelength(),
              R_to_rossmann * matrix.col(self._gonio.get_rotation_axis()))
 
-    obs_indices, obs_angles = ra.observed_indices_and_angles_from_angle_range(
+    (obs_indices,
+     obs_angles) = ra.observed_indices_and_angles_from_angle_range(
         phi_start_rad = 0.0, phi_end_rad = pi, indices = indices)
 
     # convert to integer miller indices
@@ -307,14 +290,16 @@ class AnglePredictor_py(object):
 class ImpactPredictor(object):
   """Predict observation position for supplied reflections and angles.
 
-  This class is just a wrapper for RSTBX's reflection_prediction class (in
-  future that class should be replaced). A wrapper is necessary because
-  reflection_prediction does not use the experimental models. This class
-  keeps track of those models and instantiates a reflection_prediction object
-  when required with the correct geometry.
+  This class is just a wrapper for RSTBX's reflection_prediction class (which
+  is superseded by DIALS' ray_intersection function). A wrapper is necessary
+  because reflection_prediction does not use the experimental models. This
+  class keeps track of those models and instantiates a reflection_prediction
+  object when required with the correct geometry.
 
   It is called ImpactPredictor, because ReflectionPredictor does not imply
-  that the hkl is actually observed, whereas ImpactPredictor does"""
+  that the hkl is actually observed, whereas ImpactPredictor does
+
+  """
 
   def __init__(self, detector, goniometer, beam, crystal):
     self._detector = detector
@@ -340,7 +325,6 @@ class ImpactPredictor(object):
     for hkl in indices:
       hkl = matrix.col(hkl)
       temp.append(hkl)
-    #Hc, Xc, Yc, Phic, Sc = rp.predict(indices, angles)
     Hc, Xc, Yc, Phic, Sc = rp.predict(temp, angles)
 
     # Hc is now an an array of floating point vec3. How annoying! We want
