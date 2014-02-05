@@ -15,6 +15,12 @@ class Test(object):
       print 'FAIL: dials_regression not configured'
       exit(0)
 
+    try:
+      import h5py
+    except ImportError:
+      print "Skipping: can't import module h5py"
+      exit(0)
+
     self.path = join(dials_regression, "centroid_test_data")
 
     # Call dials.integrate
