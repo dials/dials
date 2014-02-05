@@ -175,7 +175,6 @@ algorithms/refinement/prediction/__init__.py -text
 algorithms/refinement/prediction/ap_indices.dat -text
 algorithms/refinement/prediction/predictors.py -text
 algorithms/refinement/prediction/ra_indices.dat -text
-algorithms/refinement/prediction/reeke.py -text
 algorithms/refinement/prediction/rscript.R -text
 algorithms/refinement/prediction_parameter_helpers.h -text
 algorithms/refinement/refinement_helpers.py -text
@@ -245,6 +244,7 @@ algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
 algorithms/spot_prediction/index_generator.h -text
 algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
+algorithms/spot_prediction/reeke.py -text
 algorithms/spot_prediction/reeke_index_generator.h -text
 algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/rotation_angles.h -text

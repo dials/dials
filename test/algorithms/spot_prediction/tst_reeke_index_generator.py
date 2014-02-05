@@ -65,7 +65,7 @@ class Test:
     return ub_beg, ub_end
 
   def generate_python(self, frame):
-    from dials.algorithms.refinement.prediction.reeke import reeke_model
+    from dials.algorithms.spot_prediction.reeke import reeke_model
     ub_beg, ub_end = self.get_ub(frame)
     r = reeke_model(ub_beg, ub_end, self.axis, self.s0, self.dmin, self.margin)
     hkl = r.generate_indices()

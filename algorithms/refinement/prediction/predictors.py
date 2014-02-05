@@ -32,8 +32,8 @@ from rstbx.diffraction import rotation_angles
 
 from dials.model.data import Reflection, ReflectionList
 
-from dials.algorithms.refinement.prediction.reeke import solve_quad
-from dials.algorithms.refinement.prediction.reeke import reeke_model
+from dials.algorithms.spot_prediction.reeke import solve_quad
+from dials.algorithms.spot_prediction.reeke import reeke_model
 
 class ReflectionPredictor(object):
   """
