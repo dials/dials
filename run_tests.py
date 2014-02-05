@@ -47,6 +47,7 @@ tst_list = (
     "$B/test/algorithms/spatial_indexing/tst_octree",
     "$B/test/algorithms/spatial_indexing/tst_collision_detection",
     "$D/test/algorithms/spatial_indexing/tst_spatial_index.py",
+    "$D/test/algorithms/refinement/tst_refine.py",
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/refinement/tst_ref_passage_categorisation.py",
     "$D/test/algorithms/refinement/tst_prediction_parameters.py",

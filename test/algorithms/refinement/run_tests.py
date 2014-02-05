@@ -14,6 +14,7 @@ param_tsts = (
     )
 
 refinement_tsts = (
+    "$D/test/algorithms/refinement/tst_refine.py"
     "$D/test/algorithms/refinement/tst_orientation_refinement.py",
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/refinement/tst_multi_experiment_refinement.py",
