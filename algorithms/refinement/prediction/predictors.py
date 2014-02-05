@@ -33,7 +33,7 @@ from rstbx.diffraction import rotation_angles
 from dials.model.data import Reflection, ReflectionList
 
 from dials.algorithms.spot_prediction.reeke import solve_quad
-from dials.algorithms.spot_prediction.reeke import reeke_model
+from dials.algorithms.spot_prediction import ReekeIndexGenerator
 
 class ReflectionPredictor(object):
   """
@@ -386,10 +386,10 @@ class ScanVaryingReflectionListGenerator(object):
     A1 = self._predictor.get_A1()
     A2 = self._predictor.get_A2()
 
-    index_generator = reeke_model(A1, A2, self._axis, self._s0,
+    index_generator = ReekeIndexGenerator(A1, A2, self._axis, self._s0,
                                   self._dmin, margin = 1)
 
-    indices = index_generator.generate_indices()
+    indices = index_generator.to_array()
 
     reflections = []
     for hkl in indices:
