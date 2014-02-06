@@ -227,7 +227,7 @@ xluc_param.set_param_vals(xluc_p_vals)
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(obs_refs, experiments, iqr_multiplier=None)
+refman = ReflectionManager(obs_refs.to_table(), experiments, iqr_multiplier=None)
 
 ##############################
 # Set up the target function #

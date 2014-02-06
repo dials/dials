@@ -209,7 +209,7 @@ print msg % tuple(pred_param.get_param_vals()), "\n"
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(obs_refs, experiments)
+refman = ReflectionManager(obs_refs.to_table(), experiments)
 
 ##############################
 # Set up the target function #

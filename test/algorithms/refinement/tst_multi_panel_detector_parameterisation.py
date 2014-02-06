@@ -290,8 +290,8 @@ if __name__ == '__main__':
   # Select reflections for refinement #
   #####################################
 
-  refman = ReflectionManager(obs_refs, experiments_single_panel)
-  refman2 = ReflectionManager(obs_refs2, experiments_multi_panel)
+  refman = ReflectionManager(obs_refs.to_table(), experiments_single_panel)
+  refman2 = ReflectionManager(obs_refs.to_table(), experiments_multi_panel)
 
   ###############################
   # Set up the target functions #
