@@ -61,9 +61,9 @@ def reflection_list_to_table(self):
   table['panel'] = flex.size_t(getattrlist(self, 'panel_number'))
 
   # Predicted properties
-  table['hkl']       = flex.miller_index(getattrlist(self, 'miller_index'))
+  table['miller_index']       = flex.miller_index(getattrlist(self, 'miller_index'))
   table['entering']  = flex.bool(getattrlist(self, 'entering'))
-  table['s1']        = flex.vec3_double(getattrlist(self, 'beam_vector'))
+  table['beam_vector']        = flex.vec3_double(getattrlist(self, 'beam_vector'))
   table['xyzcal.mm'] = flex.vec3_double(getxyzcalmm(self))
   table['xyzcal.px'] = flex.vec3_double(getxyzcalpx(self))
 
@@ -86,6 +86,9 @@ def reflection_list_to_table(self):
   # Shoebox properties
   table['bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
   table['shoebox'] = flex.shoebox(getshoebox(self))
+
+  # frame numbers
+  table['frame_number'] = flex.double(getattrlist(self, 'frame_number'))
 
   # Return the table
   return table
