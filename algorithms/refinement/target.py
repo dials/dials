@@ -503,25 +503,30 @@ class ReflectionManager(object):
     # store observation information in a list of observation-prediction
     # pairs (prediction information will go in here later)
     self._obs_pred_pairs = []
+
+    key = 'mm' if reflections.has_key('xyzobs.mm.value') else 'px'
+    key_val = "xyzobs.%s.value"%key
+    key_var = "xyzobs.%s.variance"%key
+
     for i in refs_to_keep:
 
       ref = reflections[i]
-      crystal = ref.crystal
-      h = ref.miller_index
-      s = matrix.col(ref.beam_vector)
+      exp_id = ref['id']
+      h = ref['miller_index']
+      s = matrix.col(ref['beam_vector'])
       entering = s.dot(self._vecn) < 0.
-      frame = ref.frame_number
-      panel = ref.panel_number
-      x = ref.centroid_position[0]
-      y = ref.centroid_position[1]
-      phi = ref.centroid_position[2]
-      sig_x, sig_y, sig_phi = [sqrt(e) for e in ref.centroid_variance]
+      frame = ref['frame_number']
+      panel = ref['panel']
+      x = ref[key_val][0]
+      y = ref[key_val][1]
+      phi = ref[key_val][2]
+      sig_x, sig_y, sig_phi = [sqrt(e) for e in ref[key_var]]
       w_x = w_y = w_phi = 0
-      if ref.centroid_variance[0] != 0: w_x   = 1. / ref.centroid_variance[0]
-      if ref.centroid_variance[1] != 0: w_y   = 1. / ref.centroid_variance[1]
-      if ref.centroid_variance[2] != 0: w_phi = 1. / ref.centroid_variance[2]
+      if ref[key_var][0] != 0: w_x   = 1. / ref[key_var][0]
+      if ref[key_var][1] != 0: w_y   = 1. / ref[key_var][1]
+      if ref[key_var][2] != 0: w_phi = 1. / ref[key_var][2]
 
-      self._obs_pred_pairs.append(ObsPredMatch(i, crystal, h,
+      self._obs_pred_pairs.append(ObsPredMatch(i, exp_id, h,
                                                entering, frame, panel,
                                                x, sig_x, w_x,
                                                y, sig_y, w_y,
@@ -556,8 +561,8 @@ class ReflectionManager(object):
     axis = matrix.col(self._gonio.get_rotation_axis())
     s0 = matrix.col(self._beam.get_s0())
 
-    inc = [i for i, ref in enumerate(obs_data) if ref.miller_index != (0,0,0) \
-           and self._inclusion_test(matrix.col(ref.beam_vector), axis, s0)]
+    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0) \
+           and self._inclusion_test(matrix.col(ref['beam_vector']), axis, s0)]
 
     return inc
 

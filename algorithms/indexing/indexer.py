@@ -15,6 +15,7 @@ import math
 from scitbx import matrix
 
 from rstbx.array_family import flex
+import copy
 
 
 # we need these things
@@ -54,15 +55,15 @@ def discover_better_experimental_model(spot_positions, detector, beam,
 
   data = flex.vec3_double()
   for spot in spots_mm:
-    data.append((spot.centroid_position[0],
-                 spot.centroid_position[1],
-                 spot.centroid_position[2]*180./math.pi))
+    data.append((spot['xyzobs.mm.value'][0],
+                 spot['xyzobs.mm.value'][1],
+                 spot['xyzobs.mm.value'][2]*180./math.pi))
 
   #from matplotlib import pyplot as plt
   #plt.plot([spot.centroid_position[0] for spot in spots_mm] , [spot.centroid_position[1] for spot in spots_mm], 'ro')
   #plt.show()
 
-  DPS.index(raw_spot_input = data, panel_addresses = flex.int([s.panel_number for s in spots_mm]))
+  DPS.index(raw_spot_input = data, panel_addresses = flex.int([s['panel'] for s in spots_mm]))
 
   # for development, we want an exhaustive plot of beam probability map:
   params.indexing.plot_search_scope = False
@@ -90,7 +91,7 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
     spots=spot_positions, detector=detector, scan=scan)
 
   if len(detector) > 1:
-    panel_ids = [spot.panel_number for spot in spot_positions]
+    panel_ids = [spot['panel'] for spot in spot_positions]
   else:
     panel_ids = None
 
@@ -119,9 +120,9 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
 
   data = flex.vec3_double()
   for spot in spots_mm:
-    data.append((spot.centroid_position[0],
-                 spot.centroid_position[1],
-                 spot.centroid_position[2]*180./math.pi))
+    data.append((spot['xyzobs.mm.value'][0],
+                 spot['xyzobs.mm.value'][1],
+                 spot['xyzobs.mm.value'][2]*180./math.pi))
 
   DPS.index(raw_spot_input = data, panel_addresses = panel_ids)
   solutions = DPS.getSolutions()
@@ -172,9 +173,9 @@ def determine_basis_set(candidate_basis_vectors_one_lattice,
 
   data = flex.vec3_double()
   for spot in spots_mm:
-    data.append((spot.centroid_position[0],
-                 spot.centroid_position[1],
-                 spot.centroid_position[2]*180./math.pi))
+    data.append((spot['xyzobs.mm.value'][0],
+                 spot['xyzobs.mm.value'][1],
+                 spot['xyzobs.mm.value'][2]*180./math.pi))
   BCA.raw_spot_input = data
 
   from rstbx.dps_core import Direction
@@ -362,32 +363,37 @@ class Indexer(object):
   @staticmethod
   def _map_spots_pixel_to_mm_rad(spots, detector, scan):
     from dials.algorithms.centroid import centroid_px_to_mm_panel
-    # ideally don't copy, but have separate spot attributes for mm and pixel
-    spots_mm = spots.deep_copy()
-    for i_spot, spot in enumerate(spots_mm):
+
+    if not spots.has_key('xyzobs.mm.value'):    spots['xyzobs.mm.value']    = flex.vec3_double(len(spots))
+    if not spots.has_key('xyzobs.mm.variance'): spots['xyzobs.mm.variance'] = flex.vec3_double(len(spots))
+    if not spots.has_key('frame_number'):       spots['frame_number']       = flex.double(len(spots))
+    if not spots.has_key('rotation_angle'):     spots['rotation_angle']     = flex.double(len(spots))
+
+    for i_spot, spot in enumerate(spots):
       # just a quick check for now that the reflections haven't come from
       # somewhere else
-      assert spot.image_coord_mm == (0,0)
+      #assert spot['xyzobs.mm.value'] == (0,0,0)
 
       # set reflection properties that might be needed by the dials refinement
       # engine, and convert values from pixels and image number to mm/rads
-      spot.frame_number = spot.centroid_position[2]
+      spot['frame_number'] = spot['xyzobs.px.value'][2]
       # XXX nasty hack - why are the centroid variances ever zero in the
       # first place?
-      centroid_variance = list(spot.centroid_variance)
+      centroid_variance = list(spot['xyzobs.px.variance'])
       for i in range(3):
         if centroid_variance[i] == 0:
           centroid_variance[i] = 0.25
-      spot.centroid_variance = centroid_variance
+      spot['xyzobs.px.variance'] = centroid_variance
       centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-        detector[spot.panel_number], scan,
-        spot.centroid_position,
-        spot.centroid_variance,
+        detector[spot['panel']], scan,
+        spot['xyzobs.px.value'],
+        spot['xyzobs.px.variance'],
         (1,1,1))
-      spot.centroid_position = centroid_position
-      spot.centroid_variance = centroid_variance
-      spot.rotation_angle = centroid_position[2]
-    return spots_mm
+      spot['xyzobs.mm.value'] = centroid_position
+      spot['xyzobs.mm.variance'] = centroid_variance
+      spot['rotation_angle'] = centroid_position[2]
+      spots[i_spot] = spot
+    return spots
 
   @staticmethod
   def _map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):

@@ -37,7 +37,7 @@ class RefinerFactory(object):
     experiments = copy.deepcopy(experiments)
 
     # copy the reflections
-    reflections = reflections.deep_copy()
+    reflections = copy.deepcopy(reflections)
 
     return cls._build_components(params,
                                  reflections,
@@ -194,7 +194,7 @@ class RefinerFactory(object):
         scan=scan, crystal=crystal, imageset=None))
 
     # copy the reflections
-    reflections = reflections.deep_copy()
+    reflections = copy.deepcopy(reflections)
 
     # Build components and return
     return cls._build_components(params,
@@ -211,15 +211,13 @@ class RefinerFactory(object):
     # check that the beam vectors are stored: if not, compute them
     from scitbx import matrix
     for ref in reflections:
-      if ref.beam_vector != (0.0, 0.0, 0.0):
+      if ref['beam_vector'] != (0.0, 0.0, 0.0):
         continue
-      #FIXME here, use 'crystal' as a proxy for the experiment id. Need a true
-      #experiment id attribute
-      beam = experiments[ref.crystal].beam
-      detector = experiments[ref.crystal].detector
-      panel = detector[ref.panel_number]
-      x, y = panel.millimeter_to_pixel(ref.image_coord_mm)
-      ref.beam_vector = matrix.col(panel.get_pixel_lab_coord(
+      beam = experiments[ref['id']].beam
+      detector = experiments[ref['id']].detector
+      panel = detector[ref['panel']]
+      x, y = panel.millimeter_to_pixel(ref['xyzobs.mm.value'])
+      ref['beam_vector'] = matrix.col(panel.get_pixel_lab_coord(
           (x, y))).normalize() / beam.get_wavelength()
 
     # create parameterisations

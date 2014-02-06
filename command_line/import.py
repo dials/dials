@@ -289,5 +289,7 @@ if __name__ == '__main__':
   else:
     importer = ImageFileImporter(options)
 
+  importer.parser = parse.parser
+
   # Import the data
   importer(args)
