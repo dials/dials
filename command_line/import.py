@@ -62,7 +62,7 @@ class ImageFileImporter(object):
       print "-" * 80
       print "DataBlock %d" % i
       print "  format: %s" % str(datablock.format_class())
-      print "  num images: %d" % len(datablock)
+      print "  num images: %d" % datablock.num_images()
       print "  num sweeps: %d" % len(sweeps)
       print "  num stills: %d" % num_stills
 

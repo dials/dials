@@ -450,15 +450,11 @@ class ExperimentListDict(object):
 
   def _make_stills(self, imageset):
     ''' Make a still imageset. '''
-    from dxtbx.datablock import NullFormat
     from dxtbx.imageset import ImageSetFactory
     from dxtbx.serialize.filename import load_path
     filenames = [load_path(p) for p in imageset['images']]
-    if self._check_format:
-      format_class = Registry.find(filenames[0])
-    else:
-      format_class = NullFormat
-    return ImageSetFactory.make_imageset(filenames, format_class)
+    return ImageSetFactory.make_imageset(
+      filenames, None, check_format=self._check_format)
 
   def _make_sweep(self, imageset, scan):
     ''' Make an image sweep. '''
@@ -466,7 +462,6 @@ class ExperimentListDict(object):
     from dxtbx.format.Registry import Registry
     from dxtbx.imageset import ImageSetFactory
     from dxtbx.serialize.filename import load_path
-    from dxtbx.datablock import NullFormat
 
     # Get the template format
     template = load_path(imageset['template'])
@@ -481,15 +476,9 @@ class ExperimentListDict(object):
     else:
       i0, i1 = scan.get_image_range()
 
-    # Get the format class from the first image
-    if self._check_format:
-      format_class = Registry.find(template_format % i0)
-    else:
-      format_class = NullFormat
-
     # Make a sweep from the input data
     return ImageSetFactory.make_sweep(template,
-      list(range(i0, i1+1)), format_class)
+      list(range(i0, i1+1)), None, check_format=self._check_format)
 
   @staticmethod
   def model_or_none(mlist, eobj, name):
@@ -775,7 +764,7 @@ class ExperimentListFactory(object):
 
     # Create the experiment list
     experiments = ExperimentListFactory.from_datablock(
-      DataBlockFactory.from_sweep(sweep))
+      DataBlockFactory.from_imageset(sweep))
 
     # Set the crystal in the experiment list
     assert(len(experiments) == 1)
