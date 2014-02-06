@@ -184,7 +184,7 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         if bt_rg_average.all()[1] > big_ncol:
           big_ncol = bt_rg_average.all()[1]
 
-        average = flex.double(flex.grid(big_ncol, big_ncol), 0)
+        average = flex.double(flex.grid(big_nrow, big_ncol), 0)
 
         descr[0, 0] = float(tp_lf_average.all()[1])/2.0
         descr[0, 1] = float(tp_lf_average.all()[0])/2.0

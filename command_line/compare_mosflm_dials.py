@@ -73,7 +73,10 @@ def integrate_mtz_to_unit_cell(integrate_mtz):
 def pull_calculated(integrate_pkl):
   from dials.model.data import ReflectionList # import dependency
   import cPickle as pickle
+  #import cPickle as pickle
   import math
+
+  #table = pickle.load(open('integrated.pickle', 'rb'))
 
   r_list = pickle.load(open(integrate_pkl, 'rb'))
 
@@ -226,9 +229,10 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
 
     c = cc(dials, mos)
     r, s = R(dials, mos)
+    uncomment_me = '''
     print '%7d %4d %.3f %.3f %.3f %.3f %.3f' % (chunk[0], len(mos),
                                                 min(resols), max(resols),
-                                                c, r, s)
+                                                c, r, s)'''
     ccs.append(c)
     rs.append(r)
     ss.append(s)
@@ -246,9 +250,10 @@ def compare_chunks(integrate_mtz, integrate_pkl, crystal_json, sweep_json):
   pyplot.plot(chunks, ccs, label = 'CC')
   pyplot.plot(chunks, rs, label = 'R')
   pyplot.plot(chunks, ss, label = 'K')
-  pyplot.legend()
-  pyplot.savefig('plot-vs-mosflm.png')
-  pyplot.close()
+  pyplot.show()
+  #pyplot.legend()
+  #pyplot.savefig('plot-vs-mosflm.png')
+  #pyplot.close()
 
   return
 
@@ -302,4 +307,5 @@ def derive_reindex_matrix(crystal_json, sweep_json, integrate_mtz):
 
 if __name__ == '__main__':
   import sys
+
   compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])

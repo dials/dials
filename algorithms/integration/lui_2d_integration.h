@@ -175,7 +175,7 @@ namespace dials { namespace algorithms {
     return total;
   }
 
-  double m_linear_scale(int & cnt, double i_mod[], double i_exp[]){
+  double m_linear_scale_1d(int & cnt, double i_mod[], double i_exp[]){
     double m = 0;
     if (cnt > 0){
       double i_wgt[cnt];
@@ -205,32 +205,30 @@ namespace dials { namespace algorithms {
     return m;
   }
 
-  double w_m_least_squres_1d(int & cnt, double m_in, double i_mod[], double i_exp[]){
+  double w_m_least_squres_1d(int & cnt, double i_mod[], double i_exp[]){
 
     double sum_xy = 0, sum_x_sq = 0, m;
     for (int i = 0; i < cnt; i++){
-
-      sum_xy += i_exp[i];// / m_in;
-      sum_x_sq += i_mod[i];// / m_in;
+      sum_xy += (i_mod[i] * i_exp[i]) / (i_exp[i]);
+      sum_x_sq += (i_mod[i] * i_mod[i]) / (i_exp[i]);
     }
     m = sum_xy / sum_x_sq;
     return m;
   }
 
-  /*
+
   double m_least_squres_1d(int & cnt, double i_mod[], double i_exp[]){
     // least-squares scaling following the formula:
     // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
 
     double sum_xy = 0, sum_x_sq = 0, m;
     for (int i = 0; i < cnt; i++){
-      sum_xy += i_exp[i] * i_mod[i];
+      sum_xy += i_mod[i] * i_exp[i];
       sum_x_sq += i_mod[i] * i_mod[i];
     }
     m = sum_xy / sum_x_sq;
     return m;
   }
-  */
 
 
   // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
@@ -289,10 +287,9 @@ namespace dials { namespace algorithms {
     // this is how the algorithm for fitting must be chosen
     // between linear or least squares
 
-    m = m_linear_scale(counter, imodl_lst, iexpr_lst);
+    m = m_linear_scale_1d(counter, imodl_lst, iexpr_lst);
     //m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
-    double tmp_m = m;
-    m = w_m_least_squres_1d(counter, tmp_m, imodl_lst, iexpr_lst);
+    //m = w_m_least_squres_1d(counter, imodl_lst, iexpr_lst);
 
 
     //measuring R

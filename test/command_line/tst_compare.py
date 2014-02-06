@@ -19,10 +19,6 @@ class Test(object):
     from os.path import abspath, join
     from libtbx import easy_run
 
-
-    print "path =", self.path
-
-
     # Call dials.compare_mosflm_dials
     easy_run.fully_buffered([
       'dials.compare_mosflm_dials',
@@ -32,9 +28,6 @@ class Test(object):
       join(self.path, 'sweep.json'),
     ]).raise_if_errors()
 
-
-    #import cPickle as pickle
-    #table = pickle.load(open('integrated.pickle', 'rb'))
 
     # remember to uncomment the next line
     #assert(len(table) == 361)
