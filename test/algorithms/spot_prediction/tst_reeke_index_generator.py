@@ -46,18 +46,17 @@ class Test:
       print 'OK'
 
   def get_ub(self, frame):
-    import scitbx
-    from scitbx import matrix
+    from scitbx import math, matrix
 
     angle_beg = frame * 1
     angle_end = (frame+1) * 1
 
     r_osc_beg = matrix.sqr(
-      scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+      math.r3_rotation_axis_and_angle_as_matrix(
       axis = self.axis, angle = angle_beg, deg=True))
 
     r_osc_end = matrix.sqr(
-      scitbx.math.r3_rotation_axis_and_angle_as_matrix(
+      math.r3_rotation_axis_and_angle_as_matrix(
       axis = self.axis, angle = angle_end, deg=True))
 
     ub_beg = r_osc_beg * self.ub
