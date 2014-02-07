@@ -378,6 +378,9 @@ class TestExperimentListFactory(object):
     self.tst_from_json()
     self.tst_from_pickle()
     self.tst_from_args()
+    self.tst_from_imageset()
+    self.tst_from_sweep()
+    self.tst_from_datablock()
 
   def tst_from_json(self):
     from os.path import join
@@ -465,22 +468,105 @@ class TestExperimentListFactory(object):
     from glob import glob
 
     # Get all the filenames
-    filenames = sorted(glob(join(
-      self.path, 'centroid_test_data', 'centroid*.cbf')))
+    filenames = [
+      join(self.path, 'experiment_test_data', 'experiment_1.json'),
+      join(self.path, 'experiment_test_data', 'experiment_2.json'),
+      join(self.path, 'experiment_test_data', 'experiment_3.json'),
+      join(self.path, 'experiment_test_data', 'experiment_4.json')]
 
     # Get the experiments from a list of filenames
     experiments = ExperimentListFactory.from_args(filenames)
 
-    # Have 1 experiment
+    # Have 4 experiment
+    assert(len(experiments) == 4)
+    for i in range(4):
+      assert(experiments[i].imageset is not None)
+      assert(experiments[i].beam is not None)
+      assert(experiments[i].detector is not None)
+      assert(experiments[i].goniometer is not None)
+      assert(experiments[i].scan is not None)
+
+    # Test passed
+    print 'OK'
+
+  def tst_from_imageset(self):
+    from dxtbx.imageset import ImageSet, NullReader
+    from dxtbx.model import Beam, Detector, Goniometer, Scan
+    from dials.model.experiment import Crystal
+
+    imageset = ImageSet(NullReader(["filename.cbf"]))
+    imageset.set_beam(Beam(), 0)
+    imageset.set_detector(Detector(), 0)
+
+    crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
+
+    experiments = ExperimentListFactory.from_imageset_and_crystal(
+      imageset, crystal)
+
+
+    assert(len(experiments) == 1)
+    assert(experiments[0].imageset is not None)
+    assert(experiments[0].beam is not None)
+    assert(experiments[0].detector is not None)
+    assert(experiments[0].crystal is not None)
+
+    print 'OK'
+
+  def tst_from_sweep(self):
+    from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
+    from dxtbx.model import Beam, Detector, Goniometer, Scan
+    from dials.model.experiment import Crystal
+
+    imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 2))))
+    imageset.set_beam(Beam())
+    imageset.set_detector(Detector())
+    imageset.set_goniometer(Goniometer())
+    imageset.set_scan(Scan())
+
+    crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
+
+    experiments = ExperimentListFactory.from_imageset_and_crystal(
+      imageset, crystal)
+
     assert(len(experiments) == 1)
     assert(experiments[0].imageset is not None)
     assert(experiments[0].beam is not None)
     assert(experiments[0].detector is not None)
     assert(experiments[0].goniometer is not None)
     assert(experiments[0].scan is not None)
+    assert(experiments[0].crystal is not None)
 
-    # Test passed
     print 'OK'
+
+  def tst_from_datablock(self):
+    from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
+    from dxtbx.model import Beam, Detector, Goniometer, Scan
+    from dxtbx.datablock import DataBlockFactory
+    from dials.model.experiment import Crystal
+
+    imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 2))))
+    imageset.set_beam(Beam())
+    imageset.set_detector(Detector())
+    imageset.set_goniometer(Goniometer())
+    imageset.set_scan(Scan())
+
+    crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
+
+    datablock = DataBlockFactory.from_imageset(imageset)
+
+    experiments = ExperimentListFactory.from_datablock_and_crystal(
+      datablock, crystal)
+
+    assert(len(experiments) == 1)
+    assert(experiments[0].imageset is not None)
+    assert(experiments[0].beam is not None)
+    assert(experiments[0].detector is not None)
+    assert(experiments[0].goniometer is not None)
+    assert(experiments[0].scan is not None)
+    assert(experiments[0].crystal is not None)
+
+    print 'OK'
+    pass
 
   def pickle_then_unpickle(self, obj):
     '''Pickle to a temp file then un-pickle.'''
@@ -497,6 +583,7 @@ class TestExperimentListFactory(object):
     temp.flush()
     temp.seek(0)
     return pickle.load(temp)
+
 
 class TestExperimentListDumper(object):
 

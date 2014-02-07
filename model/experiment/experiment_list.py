@@ -652,16 +652,16 @@ class ExperimentListFactory(object):
     # Create a list for unhandled arguments
     if unhandled is None:
       unhandled = []
-    unhandled1 = []
 
-    # First try as image files
-    experiments = ExperimentListFactory.from_datablock(
-      DataBlockFactory.from_args(args, verbose, unhandled1))
+    experiments = ExperimentList()
+    ## First try as image files
+    #experiments = ExperimentListFactory.from_datablock(
+      #DataBlockFactory.from_args(args, verbose, unhandled1))
 
     # Try to load from serialized formats
-    for filename in unhandled1:
+    for filename in args:
       try:
-        experiments.extend(DataBlockFactory.from_serialized_format(filename))
+        experiments.extend(ExperimentListFactory.from_serialized_format(filename))
         if verbose: print 'Loaded experiments from %s' % filename
       except Exception:
         unhandled.append(filename)
@@ -670,7 +670,66 @@ class ExperimentListFactory(object):
     return experiments
 
   @staticmethod
-  def from_datablock(datablock):
+  def from_imageset_and_crystal(imageset, crystal):
+    ''' Load an experiment list from an imageset and crystal. '''
+    from dxtbx.imageset import ImageSweep
+    if isinstance(imageset, ImageSweep):
+      return ExperimentListFactory.from_sweep_and_crystal(imageset, crystal)
+    else:
+      return ExperimentListFactory.from_stills_and_crystal(imageset, crystal)
+
+  @staticmethod
+  def from_sweep_and_crystal(imageset, crystal):
+    ''' Create an experiment list from sweep and crystal. '''
+    return ExperimentList([
+      Experiment(
+        imageset=imageset,
+        beam=imageset.get_beam(),
+        detector=imageset.get_detector(),
+        goniometer=imageset.get_goniometer(),
+        scan=imageset.get_scan(),
+        crystal=crystal)])
+
+  @staticmethod
+  def from_stills_and_crystal(imageset, crystal):
+    ''' Create an experiment list from stills and crystal. '''
+    from itertools import groupby
+
+    # Get a list of models for each image
+    beam, detector, gonio, scan = ([], [], [], [])
+    for i in range(len(imageset)):
+      try:
+        beam.append(imageset.get_beam(i))
+      except:
+        beam.append(None)
+      try:
+        detector.append(imageset.get_detector(i))
+      except:
+        detector.append(None)
+      try:
+        gonio.append(imageset.get_goniometer(i))
+      except:
+        gonio.append(None)
+      try:
+        scan.append(imageset.get_scan(i))
+      except:
+        scan.append(None)
+    models = zip(beam, detector, gonio, scan)
+
+    # Find subsets where all the models are the same
+    experiments = ExperimentList()
+    for m, indices in groupby(range(len(models)), lambda i: models[i]):
+      indices = list(indices)
+      experiments.append(Experiment(
+        imageset=imageset[indices[0]: indices[-1]+1],
+        beam=m[0], detector=m[1],
+        goniometer=m[2], scan=m[3], crystal=crystal))
+
+    # Return experiments
+    return experiments
+
+  @staticmethod
+  def from_datablock_and_crystal(datablock, crystal):
     ''' Load an experiment list from a datablock. '''
 
     # Initialise the experiment list
@@ -679,29 +738,14 @@ class ExperimentListFactory(object):
     # If we have a list, loop through
     if isinstance(datablock, list):
       for db in datablock:
-        experiments.extend(ExperimentListFactory.from_datablock(db))
+        experiments.extend(ExperimentListFactory.from_datablock_and_crystal(
+          db, crystal))
       return experiments
 
-    # Extract the sweeps
-    for sweep in datablock.extract_sweeps():
-      experiments.append(Experiment(
-        imageset=sweep,
-        beam=sweep.get_beam(),
-        detector=sweep.get_detector(),
-        goniometer=sweep.get_goniometer(),
-        scan=sweep.get_scan()))
-
-    # Extract the stills
-    stills = datablock.extract_stills()
-    if stills is not None:
-      for i in range(len(stills)):
-        still = stills[i:i+1]
-        experiments.append(Experiment(
-          imageset=still,
-          beam=still.get_beam(),
-          detector=still.get_detector(),
-          goniometer=still.get_goniometer(),
-          scan=still.get_scan()))
+    # Add all the imagesets
+    for imageset in datablock.extract_imagesets():
+      experiments.extend(ExperimentListFactory.from_imageset_and_crystal(
+        imageset, crystal))
 
     # Check the list is consistent
     assert(experiments.is_consistent())
@@ -763,18 +807,17 @@ class ExperimentListFactory(object):
     crystal = xds.to_crystal(xds_other)
 
     # Create the experiment list
-    experiments = ExperimentListFactory.from_datablock(
-      DataBlockFactory.from_imageset(sweep))
+    experiments = ExperimentListFactory.from_imageset_and_crystal(
+      sweep, crystal)
 
     # Set the crystal in the experiment list
     assert(len(experiments) == 1)
-    experiments[0].crystal = crystal
 
     # Return the experiment list
     return experiments
 
   @staticmethod
-  def from_serialized_format(filename, check_format):
+  def from_serialized_format(filename, check_format=True):
     ''' Try to load the experiment list from a serialized format. '''
 
     # First try as a JSON file
