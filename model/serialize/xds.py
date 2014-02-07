@@ -24,7 +24,7 @@ def to_crystal(filename):
   '''
   from rstbx.cftbx.coordinate_frame_converter import \
       coordinate_frame_converter
-  from dials.model.experiment import Crystal
+  from cctbx.crystal.crystal_model import crystal_model
   from cctbx.sgtbx import space_group, space_group_symbols
 
   # Get the real space coordinate frame
@@ -37,7 +37,7 @@ def to_crystal(filename):
   mosaicity = cfc.get('mosaicity')
 
   # Return the crystal model
-  return Crystal(
+  return crystal_model(
       real_space_a=real_space_a,
       real_space_b=real_space_b,
       real_space_c=real_space_c,

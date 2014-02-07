@@ -301,6 +301,7 @@ class indexer_base(object):
     had_refinement_error = False
 
     while True:
+      self.d_min = self.params.refinement_protocol.d_min_start
       if had_refinement_error:
         break
       if self.params.max_lattices is not None and len(crystal_models) >= self.params.max_lattices:
