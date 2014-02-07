@@ -673,46 +673,6 @@ class indexer_base(object):
       a, b, c, space_group=target_space_group)
     return model
 
-  def index_reflections_given_orientation_matix(
-      self, crystal_model, tolerance=0.2, verbose=0):
-
-    self._index_reflections_timer.start()
-
-    if verbose > 1:
-      print "Candidate crystal model:"
-      print crystal_model
-
-    n_rejects = 0
-
-    miller_indices = flex.miller_index()
-    indexed_reflections = flex.size_t()
-
-    A = crystal_model.get_A()
-    A_inv = A.inverse()
-
-    d_spacings = 1/self.reciprocal_space_points.norms()
-    inside_resolution_limit = d_spacings > self.d_min
-    sel = inside_resolution_limit & (self.reflections.crystal() == -1)
-    isel = sel.iselection()
-    rlps = self.reciprocal_space_points.select(isel)
-    hkl_float = tuple(A_inv) * rlps
-    hkl_int = hkl_float.iround()
-
-    for i_hkl in range(hkl_int.size()):
-      max_difference = max([abs(hkl_float[i_hkl][i] - hkl_int[i_hkl][i]) for i in range(3)])
-      if max_difference > tolerance:
-        n_rejects += 1
-        continue
-      miller_index = hkl_int[i_hkl]
-      miller_indices.append(miller_index)
-      i_ref = isel[i_hkl]
-      self.reflections[i_ref].miller_index = miller_index
-      indexed_reflections.append(i_ref)
-
-    self._index_reflections_timer.stop()
-
-    return indexed_reflections, miller_indices
-
   def index_reflections(self, crystal_models, tolerance=0.3):
     self._index_reflections_timer.start()
     from dials.algorithms.indexing import index_reflections
