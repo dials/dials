@@ -642,12 +642,14 @@ class indexer_base(object):
         if (bmsd+eps) < min_bmsd:
           min_bmsd = bmsd
           best_perm = list(perm)
+          best_sign = sign
     if best_perm is None:
       return None
+    #print best_perm, best_sign
     crystal_model = Crystal(
       basis_vectors[best_perm[0]],
       basis_vectors[best_perm[1]],
-      basis_vectors[best_perm[2]],
+      [i * best_sign for i in basis_vectors[best_perm[2]]],
       space_group=target_space_group)
     model = crystal_model
     #cb_op_target_ref = symm_target_sg.space_group_info().type().cb_op()
