@@ -46,7 +46,6 @@ class indexer_fft3d(indexer_base):
       (self.reciprocal_space_grid>0).count(True))
     self.fft()
     if self.params.debug:
-      self.debug_write_reciprocal_lattice_points_as_pdb()
       self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
     self.find_peaks()
     if self.params.multiple_lattice_search:

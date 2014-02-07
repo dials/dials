@@ -291,6 +291,9 @@ class indexer_base(object):
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
 
+    if self.params.debug:
+      self.debug_write_reciprocal_lattice_points_as_pdb()
+
     self.reflections.set_crystal(flex.int(self.reflections.size(), -1))
 
     crystal_models = []
