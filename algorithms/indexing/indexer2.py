@@ -213,9 +213,6 @@ class indexer_base(object):
 
     self.reflections_raw = reflections
     self.reflections = reflections.deep_copy()
-    # the lattice a given reflection belongs to: a value of -1 indicates
-    # that a reflection doesn't belong to any lattice so far
-    self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
     self.sweep = sweep
 
     from dxtbx.serialize import load
@@ -329,8 +326,9 @@ class indexer_base(object):
           print "Increasing resolution to %.1f Angstrom" %self.d_min
 
         # reset reflection lattice flags
-        self.reflections_i_lattice = flex.int(self.reflections.size(), -1)
-        self.reflections.set_crystal(self.reflections_i_lattice)
+        # the lattice a given reflection belongs to: a value of -1 indicates
+        # that a reflection doesn't belong to any lattice so far
+        self.reflections.set_crystal(flex.int(self.reflections.size(), -1))
 
         if i_cycle == 0 and self.target_symmetry_primitive is not None:
           # if a target cell is given make sure that we match any permutation
@@ -367,7 +365,7 @@ class indexer_base(object):
           lengths = 1/self.reciprocal_space_points.norms()
           isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
-          sel.set_selected(self.reflections_i_lattice > -1, False)
+          sel.set_selected(self.reflections.crystal() > -1, False)
           unindexed = self.reflections_raw.select(sel)
           with open("unindexed.pickle", 'wb') as f:
             pickle.dump(unindexed.to_table(), f)
@@ -450,7 +448,7 @@ class indexer_base(object):
     print "Final refined crystal models:"
     for i, crystal_model in enumerate(self.refined_crystal_models):
       print "model %i (%i reflections):" %(
-        i+1, (self.reflections_i_lattice == i).count(True))
+        i+1, (self.reflections.crystal() == i).count(True))
       print crystal_model
 
     if self.params.show_timing:
@@ -694,7 +692,7 @@ class indexer_base(object):
 
     d_spacings = 1/self.reciprocal_space_points.norms()
     inside_resolution_limit = d_spacings > self.d_min
-    sel = inside_resolution_limit & (self.reflections_i_lattice == -1)
+    sel = inside_resolution_limit & (self.reflections.crystal() == -1)
     isel = sel.iselection()
     rlps = self.reciprocal_space_points.select(isel)
     hkl_float = tuple(A_inv) * rlps
