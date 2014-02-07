@@ -65,17 +65,8 @@ class Script(ScriptRunner):
     print 'Configuring spot finder from input parameters'
     find_spots = SpotFinderFactory.from_parameters(params)
 
-    # Loop through all the imagesets and find the strong spots
-    reflections = flex.reflection_table()
-    for i, imageset in enumerate(importer.datablocks[0].extract_imagesets()):
-
-      # Find the strong spots in the sweep
-      print '-' * 80
-      print 'Finding strong spots in imageset %d' % i
-      print '-' * 80
-      table = find_spots(imageset)
-      table['id'] = flex.size_t(table.nrows(), i)
-      reflections.extend(table)
+    # Find the spots
+    reflections = find_spots(importer.datablocks[0])
 
     # Dump the shoeboxes
     if not params.spotfinder.save_shoeboxes:
