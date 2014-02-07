@@ -190,7 +190,7 @@ class ReflectionManagerXY(ReflectionManager):
     We don't want to exclude reflections close to the spindle, as the spindle
     may not exist"""
 
-    inc = [i for i, ref in enumerate(obs_data) if ref.miller_index != (0,0,0)]
+    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0)]
 
     return inc
 

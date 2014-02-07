@@ -324,10 +324,16 @@ class Importer(object):
 
   def try_import_datablocks(self, args, verbose):
     ''' Try to import imagesets. '''
-    from dxtbx.datablock import DataBlockFactory
+    from dxtbx.datablock import DataBlockFactory, DataBlock
     from os.path import abspath
     unhandled = []
     for argument in args:
+      if isinstance(argument, DataBlock):
+        if self.datablocks == None:
+          self.datablocks = [argument]
+        else:
+          self.datablocks.append(argument)
+        continue
       try:
         abs_argument = abspath(argument)
         datablocks = DataBlockFactory.from_serialized_format(
@@ -367,15 +373,19 @@ class Importer(object):
     unhandled = []
     for argument in args:
       try:
-        with open(argument, 'rb') as inputfile:
-          obj = pickle.load(inputfile)
-          if isinstance(obj, flex.reflection_table):
-            if verbose:
-              print 'Loaded %s as reflection table' % argument
-              for k in obj.keys():
-                if k in self.reflections:
-                  print 'Overwriting column %s' % k
-            self.reflections.update(obj)
+        if isinstance(argument, flex.reflection_table):
+          obj = argument
+        else:
+          with open(argument, 'rb') as inputfile:
+            obj = pickle.load(inputfile)
+            if not isinstance(obj, flex.reflection_table):
+              continue
+        if verbose:
+          print 'Loaded %s as reflection table' % argument
+          for k in obj.keys():
+            if k in self.reflections:
+              print 'Overwriting column %s' % k
+        self.reflections.update(obj)
       except Exception:
         unhandled.append(argument)
     return unhandled
