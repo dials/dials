@@ -211,13 +211,13 @@ class RefinerFactory(object):
     # check that the beam vectors are stored: if not, compute them
     from scitbx import matrix
     for ref in reflections:
-      if ref['beam_vector'] != (0.0, 0.0, 0.0):
+      if ref['s1'] != (0.0, 0.0, 0.0):
         continue
       beam = experiments[ref['id']].beam
       detector = experiments[ref['id']].detector
       panel = detector[ref['panel']]
       x, y = panel.millimeter_to_pixel(ref['xyzobs.mm.value'])
-      ref['beam_vector'] = matrix.col(panel.get_pixel_lab_coord(
+      ref['s1'] = matrix.col(panel.get_pixel_lab_coord(
           (x, y))).normalize() / beam.get_wavelength()
 
     # create parameterisations

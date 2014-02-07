@@ -61,11 +61,11 @@ def reflection_list_to_table(self):
   table['panel'] = flex.size_t(getattrlist(self, 'panel_number'))
 
   # Predicted properties
-  table['miller_index']       = flex.miller_index(getattrlist(self, 'miller_index'))
-  table['entering']  = flex.bool(getattrlist(self, 'entering'))
-  table['beam_vector']        = flex.vec3_double(getattrlist(self, 'beam_vector'))
-  table['xyzcal.mm'] = flex.vec3_double(getxyzcalmm(self))
-  table['xyzcal.px'] = flex.vec3_double(getxyzcalpx(self))
+  table['miller_index'] = flex.miller_index(getattrlist(self, 'miller_index'))
+  table['entering']     = flex.bool(getattrlist(self, 'entering'))
+  table['s1']           = flex.vec3_double(getattrlist(self, 'beam_vector'))
+  table['xyzcal.mm']    = flex.vec3_double(getxyzcalmm(self))
+  table['xyzcal.px']    = flex.vec3_double(getxyzcalpx(self))
 
   # Observed centroid properties
   table['xyzobs.px.value']    = flex.vec3_double(
@@ -87,9 +87,6 @@ def reflection_list_to_table(self):
   table['bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
   table['shoebox'] = flex.shoebox(getshoebox(self))
 
-  # frame numbers
-  table['frame_number'] = flex.double(getattrlist(self, 'frame_number'))
-
   # Return the table
   return table
 
@@ -102,8 +99,8 @@ def reflection_list_from_table(table):
     setattrlist(rlist, 'crystal', table['id'])
   if 'panel' in table:
     setattrlist(rlist, 'panel_number', table['panel'])
-  if 'hkl' in table:
-    setattrlist(rlist, 'miller_index', table['hkl'])
+  if 'miller_index' in table:
+    setattrlist(rlist, 'miller_index', table['miller_index'])
   if 'entering' in table:
     setattrlist(rlist, 'entering', table['entering'])
   if 's1' in table:

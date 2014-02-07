@@ -33,7 +33,7 @@ class Test(object):
 
     # Check the reflection IDs
     assert('id' in table)
-    assert('hkl' in table)
+    assert('miller_index' in table)
     assert('s1' in table)
     assert('xyzcal.px' in table)
     assert('xyzcal.mm' in table)

@@ -68,7 +68,7 @@ class Test:
     flex_rand_vec2_double = lambda n:flex.vec2_double([rand_vec2_double() for i in range(n)])
 
     return flex.reflection_table([
-      ('hkl', flex_rand_vec3_int(n)),
+      ('miller_index', flex_rand_vec3_int(n)),
       ('flags', flex_rand_int(n)),
       ('id', flex_rand_int(n)),
       ('panel', flex_rand_int(n)),
@@ -88,7 +88,7 @@ class Test:
 
     assert(t.nrows() == len(l))
     for r1, r2 in zip(t.rows(), l):
-      assert(r1['hkl'] == r2.miller_index)
+      assert(r1['miller_index'] == r2.miller_index)
       assert(r1['flags'] == r2.status)
       assert(r1['id'] == r2.crystal)
       assert(r1['panel'] == r2.panel_number)

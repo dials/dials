@@ -513,9 +513,9 @@ class ReflectionManager(object):
       ref = reflections[i]
       exp_id = ref['id']
       h = ref['miller_index']
-      s = matrix.col(ref['beam_vector'])
+      s = matrix.col(ref['s1'])
       entering = s.dot(self._vecn) < 0.
-      frame = ref['frame_number']
+      frame = ref['xyzcal.px'][2]
       panel = ref['panel']
       x = ref[key_val][0]
       y = ref[key_val][1]
@@ -562,7 +562,7 @@ class ReflectionManager(object):
     s0 = matrix.col(self._beam.get_s0())
 
     inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0) \
-           and self._inclusion_test(matrix.col(ref['beam_vector']), axis, s0)]
+           and self._inclusion_test(matrix.col(ref['s1']), axis, s0)]
 
     return inc
 
