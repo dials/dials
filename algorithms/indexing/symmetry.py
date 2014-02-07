@@ -76,10 +76,6 @@ def refined_settings_factory_from_refined_triclinic(
   from dials.model.data import ReflectionList
   reflections = ReflectionList.from_table(reflections)
 
-  detector = experiment.detector
-  beam = experiment.beam
-  scan = experiment.scan
-  goniometer = experiment.goniometer
   crystal = experiment.crystal
 
   used_reflections = reflections.deep_copy()
@@ -114,11 +110,8 @@ def refined_settings_factory_from_refined_triclinic(
 
   args = []
   for subgroup in Lfat:
-    args.append((params, subgroup,
-                used_reflections,
-                detector, beam, scan,
-                goniometer,
-                refiner_verbosity))
+    args.append((
+      params, subgroup, used_reflections, experiment, refiner_verbosity))
 
   results = easy_mp.parallel_map(
     func=refine_subgroup,
@@ -134,22 +127,21 @@ def refined_settings_factory_from_refined_triclinic(
   return Lfat
 
 def refine_subgroup(args):
-  assert len(args) == 8
-  (params, subgroup, used_reflections,
-   detector, beam, scan, goniometer, refiner_verbosity) = args
+  assert len(args) == 5
+  params, subgroup, used_reflections, experiment, refiner_verbosity = args
 
   used_reflections = used_reflections.deep_copy()
   triclinic_miller = used_reflections.miller_index()
   cb_op = subgroup['cb_op_inp_best']
   higher_symmetry_miller = cb_op.apply(triclinic_miller)
   used_reflections.set_miller_index(higher_symmetry_miller)
+  experiment.crystal = copy.deepcopy(subgroup.unrefined_crystal)
 
   from dials.algorithms.indexing.refinement import refine
+  from dials.model.experiment.experiment_list import ExperimentList
+  experiments = ExperimentList([experiment])
   refinery, refined = refine(
-    params, used_reflections, copy.deepcopy(subgroup.unrefined_crystal),
-    detector, beam, scan=scan,
-    goniometer=goniometer,
-    verbosity=refiner_verbosity)
+    params, used_reflections, experiments, verbosity=refiner_verbosity)
 
   dall = refinery.rmsds()
   dx = dall[0]; dy = dall[1]

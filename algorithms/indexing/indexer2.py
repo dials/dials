@@ -396,8 +396,18 @@ class indexer_base(object):
               maximum_spot_error *= 2
 
           try:
-            crystal_model, refined_reflections = self.refine(
-              crystal_model, maximum_spot_error=maximum_spot_error)
+            from dials.model.experiment.experiment_list \
+                 import Experiment, ExperimentList
+            experiments = ExperimentList([Experiment(
+              imageset=self.sweep,
+              beam=self.sweep.get_beam(),
+              detector=self.sweep.get_detector(),
+              scan=self.sweep.get_scan(),
+              goniometer=self.sweep.get_goniometer(),
+              crystal=crystal_model)])
+            refined_experiments, refined_reflections = self.refine(
+              experiments, maximum_spot_error=maximum_spot_error)
+            crystal_model = refined_experiments.crystals()[0]
           except RuntimeError, e:
             s = str(e)
             if "below the configured limit" in s:
@@ -409,15 +419,27 @@ class indexer_base(object):
             raise
 
           self.refined_reflections.append(refined_reflections)
+          crystal_models[i_lattice] = crystal_model
 
+          self.sweep.set_detector(refined_experiments[0].detector)
+          self.sweep.set_beam(refined_experiments[0].beam)
+          self.sweep.set_goniometer(refined_experiments[0].goniometer)
+          self.sweep.set_scan(refined_experiments[0].scan)
           # these may have been updated in refinement
           # XXX once david has implemented multi-lattice refinement there
           # should be one and only one sweep object to refine
-          self.sweep = sweeps[0]
+          #self.sweep = sweeps[0]
           self.detector = self.sweep.get_detector()
           self.beam = self.sweep.get_beam()
           self.goniometer = self.sweep.get_goniometer()
           self.scan = self.sweep.get_scan()
+
+          if not (self.params.refinement.parameterisation.beam.fix == 'all'
+                  and self.params.refinement.parameterisation.detector.fix == 'all'):
+            # Experimental geometry may have changed - re-map centroids to
+            # reciprocal space
+            self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+              self.reflections, self.detector, self.beam, self.goniometer)
 
           if self.d_min == self.params.refinement_protocol.d_min_final:
             print "Target d_min_final reached: finished with refinement"
@@ -722,41 +744,21 @@ class indexer_base(object):
                       verbosity=self.params.refinement_protocol.verbosity)
     self._index_reflections_timer.stop()
 
-  def refine(self, crystal_model, maximum_spot_error=None):
+  def refine(self, experiments, maximum_spot_error=None):
     self._refine_timer.start()
     from dials.algorithms.indexing.refinement import refine
     reflections_for_refinement = self.reflections.select(
       self.indexed_reflections)
     refiner, refined = refine(
-      self.params, reflections_for_refinement, crystal_model,
-      self.sweep.get_detector(),
-      self.sweep.get_beam(),
-      scan=self.sweep.get_scan(),
-      goniometer=self.sweep.get_goniometer(),
+      self.params, reflections_for_refinement, experiments,
       maximum_spot_error=maximum_spot_error,
       verbosity=self.params.refinement_protocol.verbosity,
       debug_plots=self.params.debug_plots)
     used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
 
-    self.sweep.set_goniometer(refiner.get_goniometer())
-    self.sweep.set_beam(refiner.get_beam())
-    self.sweep.set_detector(refiner.get_detector())
-    refined_crystal = refiner.get_crystal()
-
-    crystal_model.set_B(refined_crystal.get_B())
-    crystal_model.set_U(refined_crystal.get_U())
-
-    #assert crystal_model == refined_crystal
-
-    if not (self.params.refinement.parameterisation.beam.fix == 'all'
-            and self.params.refinement.parameterisation.detector.fix == 'all'):
-      # Experimental geometry may have changed - re-map centroids to
-      # reciprocal space
-      self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
-        self.reflections, self.detector, self.beam, self.goniometer)
     self._refine_timer.stop()
-    return crystal_model, used_reflections
+    return refiner.get_experiments(), used_reflections
 
   def predict_reflections(self, crystal_model):
     from dials.algorithms.integration import ReflectionPredictor

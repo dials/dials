@@ -14,9 +14,10 @@ from __future__ import division
 from cctbx.array_family import flex
 
 
-def refine(params, reflections, crystal_model, detector, beam,
-           scan=None, goniometer=None, maximum_spot_error=None,
+def refine(params, reflections, experiments, maximum_spot_error=None,
            verbosity=0, debug_plots=False):
+  detector = experiments.detectors()[0]
+  assert len(experiments.detectors()) == 1
   from dials.algorithms.spot_prediction import ray_intersection
   reflections_for_refinement = ray_intersection(
     detector, reflections)
@@ -27,13 +28,8 @@ def refine(params, reflections, crystal_model, detector, beam,
     flex.int(reflections_for_refinement.size(), 0))
 
   from dials.algorithms.refinement import RefinerFactory
-  refiner = RefinerFactory.from_parameters_data_models(
-    params, reflections_for_refinement,
-    beam=beam,
-    goniometer=goniometer,
-    detector=detector,
-    scan=scan,
-    crystal=crystal_model,
+  refiner = RefinerFactory.from_parameters_data_experiments(
+    params, reflections_for_refinement, experiments,
     verbosity=verbosity)
 
   if maximum_spot_error is not None:
@@ -54,13 +50,8 @@ def refine(params, reflections, crystal_model, detector, beam,
       maximum_spot_error * detector[0].get_pixel_size()[0])
     reflections_for_refinement = reflections_for_refinement.select(
       refiner.selection_used_for_refinement()).select(inlier_sel)
-    refiner = RefinerFactory.from_parameters_data_models(
-      params, reflections_for_refinement,
-      beam=beam,
-      goniometer=goniometer,
-      detector=detector,
-      scan=scan,
-      crystal=crystal_model,
+    refiner = RefinerFactory.from_parameters_data_experiments(
+      params, reflections_for_refinement, experiments,
       verbosity=verbosity)
 
     if debug_plots:
