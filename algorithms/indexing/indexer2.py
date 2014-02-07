@@ -209,10 +209,8 @@ class indexer_base(object):
   def __init__(self, reflections, sweep, params=None):
     # XXX should use ReflectionTable internally instead of ReflectionList
     from dials.model.data import ReflectionList
-    reflections = ReflectionList.from_table(reflections)
 
-    self.reflections_raw = reflections
-    self.reflections = reflections.deep_copy()
+    self.reflections = reflections
     self.sweep = sweep
 
     from dxtbx.serialize import load
@@ -292,7 +290,7 @@ class indexer_base(object):
     if self.params.debug:
       self.debug_write_reciprocal_lattice_points_as_pdb()
 
-    self.reflections.set_crystal(flex.int(self.reflections.size(), -1))
+    self.reflections['id'] = flex.int(len(self.reflections), -1)
 
     experiments = ExperimentList()
 
@@ -305,7 +303,9 @@ class indexer_base(object):
       if self.params.max_lattices is not None and len(experiments) >= self.params.max_lattices:
         break
       min_reflections_for_indexing = 40
-      if (self.reflections.crystal() == -1).count(True) < min_reflections_for_indexing:
+      d_spacings = 1/self.reciprocal_space_points.norms()
+      crystal_ids = self.reflections.select(d_spacings > self.d_min)['id']
+      if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
         break
 
       n_lattices_previous_cycle = len(experiments)
@@ -328,7 +328,7 @@ class indexer_base(object):
         # reset reflection lattice flags
         # the lattice a given reflection belongs to: a value of -1 indicates
         # that a reflection doesn't belong to any lattice so far
-        self.reflections.set_crystal(flex.int(self.reflections.size(), -1))
+        self.reflections['id'] = flex.int(len(self.reflections), -1)
 
         if i_cycle == 0 and self.target_symmetry_primitive is not None:
           # if a target cell is given make sure that we match any permutation
@@ -358,17 +358,17 @@ class indexer_base(object):
         print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
         print "#" * 80
         print
-        self.indexed_reflections = (self.reflections.crystal() > -1)
+        self.indexed_reflections = (self.reflections['id'] > -1)
 
         if self.params.debug:
-          sel = flex.bool(self.reflections.size(), False)
+          sel = flex.bool(len(self.reflections), False)
           lengths = 1/self.reciprocal_space_points.norms()
           isel = (lengths >= self.d_min).iselection()
           sel.set_selected(isel, True)
-          sel.set_selected(self.reflections.crystal() > -1, False)
-          unindexed = self.reflections_raw.select(sel)
+          sel.set_selected(self.reflections['id'] > -1, False)
+          unindexed = self.reflections.select(sel)
           with open("unindexed.pickle", 'wb') as f:
-            pickle.dump(unindexed.to_table(), f)
+            pickle.dump(unindexed, f)
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
@@ -433,7 +433,7 @@ class indexer_base(object):
       if self.params.export_xds_files:
         self.export_xds_files(crystal_model, self.sweep, suffix=suffix)
       reflections = self.refined_reflections.select(
-        self.refined_reflections.crystal() == i_lattice)
+        self.refined_reflections['id'] == i_lattice)
       self.export_reflections(
         reflections, file_name='indexed%s.pickle' %suffix)
 
@@ -448,7 +448,7 @@ class indexer_base(object):
     print "Final refined crystal models:"
     for i, crystal_model in enumerate(self.refined_crystal_models):
       print "model %i (%i reflections):" %(
-        i+1, (self.reflections.crystal() == i).count(True))
+        i+1, (self.reflections['id'] == i).count(True))
       print crystal_model
 
     if self.params.show_timing:
@@ -466,7 +466,7 @@ class indexer_base(object):
   def filter_reflections_by_scan_range(self):
     reflections_in_scan_range = flex.size_t()
     for i_ref, refl in enumerate(self.reflections):
-      frame_number = refl.frame_number
+      frame_number = refl['xyzobs.px.value'][2]
 
       if len(self.params.scan_range):
         reflections_in_range = False
@@ -480,7 +480,6 @@ class indexer_base(object):
           continue
       reflections_in_scan_range.append(i_ref)
     self.reflections = self.reflections.select(reflections_in_scan_range)
-    self.reflections_raw = self.reflections_raw.select(reflections_in_scan_range)
 
   @staticmethod
   def map_spots_pixel_to_mm_rad(spots, detector, scan):
@@ -488,46 +487,49 @@ class indexer_base(object):
     position and variance set, """
 
     from dials.algorithms.centroid import centroid_px_to_mm_panel
-    # ideally don't copy, but have separate spot attributes for mm and pixel
-    spots_mm = spots.deep_copy()
-    for i_spot, spot in enumerate(spots_mm):
+    ## ideally don't copy, but have separate spot attributes for mm and pixel
+    import copy
+    spots = copy.deepcopy(spots)
+    spots['xyzobs.mm.value'] = flex.vec3_double(len(spots))
+    spots['xyzobs.mm.variance'] = flex.vec3_double(len(spots))
+    for i_spot, spot in enumerate(spots):
       # just a quick check for now that the reflections haven't come from
       # somewhere else
-      assert spot.image_coord_mm == (0,0)
+      #assert spot.image_coord_mm == (0,0)
 
       # set reflection properties that might be needed by the dials refinement
       # engine, and convert values from pixels and image number to mm/rads
-      spot.frame_number = spot.centroid_position[2]
+      #spot.frame_number = spot.centroid_position[2]
       centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-        detector[spot.panel_number], scan,
-        spot.centroid_position,
-        spot.centroid_variance,
+        detector[spot['panel']], scan,
+        spot['xyzobs.px.value'],
+        spot['xyzobs.px.variance'],
         (1,1,1))
-      spot.centroid_position = centroid_position
-      spot.centroid_variance = centroid_variance
-      spot.rotation_angle = centroid_position[2]
-    return spots_mm
+      spots['xyzobs.mm.value'][i_spot] = centroid_position
+      spots['xyzobs.mm.variance'][i_spot] = centroid_variance
+      #spot.rotation_angle = centroid_position[2]
+    return spots
 
   @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
-    panel_numbers = flex.size_t(spot.panel_number for spot in spots_mm)
+    panel_numbers = flex.size_t(spot['panel'] for spot in spots_mm)
     reciprocal_space_points = flex.vec3_double()
     for i_panel in range(len(detector)):
       sel = (panel_numbers == i_panel)
       isel = sel.iselection()
       spots_panel = spots_mm.select(panel_numbers == i_panel)
-      x, y, _ = spots_panel.centroid_position().parts()
+      x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
       s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
       s1 = s1/s1.norms() * (1/beam.get_wavelength())
       for i in range(len(s1)):
-        spots_mm[isel[i]].beam_vector = s1[i] # needed by refinement
+        spots_mm['s1'][isel[i]] = s1[i] # needed by refinement
       #spots_panel.set_beam_vector(s1) # needed by refinement
       S = s1 - beam.get_s0()
       # XXX what about if goniometer fixed rotation is not identity?
       if goniometer is not None:
         reciprocal_space_points.extend(S.rotate_around_origin(
           goniometer.get_rotation_axis(),
-          -spots_panel.rotation_angle()))
+          -rot_angle))
       else:
         reciprocal_space_points.extend(S)
     return reciprocal_space_points
@@ -781,7 +783,7 @@ class indexer_base(object):
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
     with open(file_name, 'wb') as f:
-      pickle.dump(reflections.to_table(), f)
+      pickle.dump(reflections, f)
 
   def export_xds_files(self, crystal_model, sweep, suffix=None):
     from dxtbx.serialize import xds

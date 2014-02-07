@@ -99,7 +99,7 @@ class indexer_fft3d(indexer_base):
     reflections_used_for_indexing = flex.size_t()
 
     for i_ref, point in enumerate(self.reciprocal_space_points):
-      if self.reflections[i_ref].crystal != -1:
+      if self.reflections[i_ref]['id'] != -1:
         continue
       point = matrix.col(point)
       spot_resolution = 1/point.length()

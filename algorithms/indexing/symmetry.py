@@ -73,12 +73,10 @@ class refined_settings_list(list):
 def refined_settings_factory_from_refined_triclinic(
   params, experiment, reflections, nproc=1, i_setting=None,
   refiner_verbosity=0):
-  from dials.model.data import ReflectionList
-  reflections = ReflectionList.from_table(reflections)
 
   crystal = experiment.crystal
 
-  used_reflections = reflections.deep_copy()
+  used_reflections = copy.deepcopy(reflections)
   UC = crystal.get_unit_cell()
 
   from rstbx.dps_core.lepage import iotbx_converter
@@ -89,7 +87,7 @@ def refined_settings_factory_from_refined_triclinic(
 
   supergroup = Lfat.supergroup()
   triclinic = Lfat.triclinic()
-  triclinic_miller = used_reflections.miller_index()
+  triclinic_miller = used_reflections['miller_index']
 
   # assert no transformation between indexing and bravais list
   assert str(triclinic['cb_op_inp_best'])=="a,b,c"
@@ -130,11 +128,11 @@ def refine_subgroup(args):
   assert len(args) == 5
   params, subgroup, used_reflections, experiment, refiner_verbosity = args
 
-  used_reflections = used_reflections.deep_copy()
-  triclinic_miller = used_reflections.miller_index()
+  used_reflections = copy.deepcopy(used_reflections)
+  triclinic_miller = used_reflections['miller_index']
   cb_op = subgroup['cb_op_inp_best']
   higher_symmetry_miller = cb_op.apply(triclinic_miller)
-  used_reflections.set_miller_index(higher_symmetry_miller)
+  used_reflections['miller_index'] = higher_symmetry_miller
   experiment.crystal = copy.deepcopy(subgroup.unrefined_crystal)
 
   from dials.algorithms.indexing.refinement import refine

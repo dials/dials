@@ -11,6 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import copy
 import math
 
 from scitbx import matrix
@@ -45,7 +46,7 @@ class indexer_real_space_grid_search(indexer_base):
     d_min = self.params.refinement_protocol.d_min_start
 
     reciprocal_space_points = self.reciprocal_space_points.select(
-      (self.reflections.crystal() == -1) &
+      (self.reflections['id'] == -1) &
       (1/self.reciprocal_space_points.norms() > d_min))
     #reciprocal_space_points = reciprocal_space_points.select(
       #1/reciprocal_space_points.norms() > self.params.refinement_protocol.d_min_start)
@@ -135,14 +136,14 @@ class indexer_real_space_grid_search(indexer_base):
       n_indexed = flex.int()
       from dials.algorithms.indexing import index_reflections
       for cm in candidate_orientation_matrices:
-        refl = self.reflections.deep_copy().select(
-          (self.reflections.crystal() == -1) &
+        refl = copy.deepcopy(self.reflections).select(
+          (self.reflections['id'] == -1) &
           (1/self.reciprocal_space_points.norms() > d_min))
-        refl.set_crystal(flex.int(refl.size(), -1))
+        #refl['id'] = flex.int(refl.size(), -1)
         index_reflections(refl, reciprocal_space_points,
                           [cm], self.d_min, tolerance=0.25,
                           verbosity=0)
-        n_indexed.append((refl.crystal() > -1).count(True))
+        n_indexed.append((refl['id'] > -1).count(True))
       perm = flex.sort_permutation(n_indexed, reverse=True)
       if self.params.debug:
         print list(perm)

@@ -20,8 +20,14 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
   detector = experiments.detectors()[0]
   assert len(experiments.detectors()) == 1
   from dials.algorithms.spot_prediction import ray_intersection
-  reflections_for_refinement = ray_intersection(
-    detector, reflections)
+  from dials.model.data import ReflectionList
+  ref_list = ReflectionList.from_table(reflections)
+  ref_list = ray_intersection(detector, ref_list)
+  ref_table = ref_list.to_table()
+  import copy
+  reflections_for_refinement = copy.deepcopy(reflections)
+  reflections_for_refinement['xyzcal.mm'] = ref_table['xyzcal.mm']
+  reflections_for_refinement['xyzcal.px'] = ref_table['xyzcal.px']
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(

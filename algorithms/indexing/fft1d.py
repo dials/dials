@@ -31,7 +31,7 @@ class indexer_fft1d(indexer_base):
       input_string=indexing_api_defs).extract()
 
     solutions = candidate_basis_vectors_fft1d(
-      self.reflections_raw, self.detector, self.beam,
+      self.reflections, self.detector, self.beam,
       self.goniometer, self.scan, hardcoded_phil)
     self.candidate_basis_vectors = solutions[0]
     if self.params.debug:

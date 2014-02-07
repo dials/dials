@@ -86,8 +86,6 @@ class run_one_indexing(object):
         suffix = "_%i" %(i+1)
       assert os.path.exists(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
       self.reflections = load.reflections(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
-      from dials.model.data import ReflectionList
-      self.reflections = ReflectionList.from_table(self.reflections)
       experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
       assert self.crystal_model.get_unit_cell().is_similar_to(
@@ -96,7 +94,7 @@ class run_one_indexing(object):
         absolute_angle_tolerance=absolute_angle_tolerance)
       sg = self.crystal_model.get_space_group()
       assert sg.type().hall_symbol() == expected_hall_symbol
-      mi = self.reflections.miller_index()
+      mi = self.reflections['miller_index']
       assert (mi != (0,0,0)).count(False) == 0
       self.reflections = self.reflections.select(mi != (0,0,0))
       self.rmsds = self.get_rmsds_obs_pred(
@@ -110,9 +108,17 @@ class run_one_indexing(object):
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.experiment.experiment_list import ExperimentList
 
-    reflections = ray_intersection(experiment.detector, observations)
+    from dials.model.data import ReflectionList
+    ref_list = ReflectionList.from_table(observations)
+    ref_list = ray_intersection(experiment.detector, ref_list)
+    ref_table = ref_list.to_table()
+    import copy
+    reflections = copy.deepcopy(observations)
+    reflections['xyzcal.mm'] = ref_table['xyzcal.mm']
+    reflections['xyzcal.px'] = ref_table['xyzcal.px']
+
     # XXX hack to make it work for a single lattice
-    reflections.set_crystal(flex.int(reflections.size(), 0))
+    reflections['id'] = flex.int(len(reflections), 0)
     refine = RefinerFactory.from_parameters_data_experiments(
       master_params, reflections, ExperimentList([experiment]), verbosity=0)
     return refine.rmsds()
