@@ -83,6 +83,8 @@ class run_one_indexing(object):
       assert os.path.exists(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
       assert os.path.exists(os.path.join(tmp_dir, "experiments%s.json" %suffix))
       self.reflections = load.reflections(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
+      from dials.model.data import ReflectionList
+      self.reflections = ReflectionList.from_table(self.reflections)
       experiments_list = load.experiment_list(
         os.path.join(tmp_dir, "experiments%s.json" %suffix), check_format=False)
       assert len(experiments_list) == 1

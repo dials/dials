@@ -385,7 +385,7 @@ class indexer_base(object):
             sel.set_selected(self.reflections_i_lattice > -1, False)
             unindexed = self.reflections_raw.select(sel)
             with open("unindexed.pickle", 'wb') as f:
-              pickle.dump(unindexed, f)
+              pickle.dump(unindexed.to_table(), f)
 
           maximum_spot_error \
             = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
@@ -776,7 +776,7 @@ class indexer_base(object):
 
   def export_predicted_reflections(self, file_name='predictions.pickle'):
     from dials.model.serialize import dump
-    dump.reflections(self.predicted_reflections, file_name)
+    dump.reflections(self.predicted_reflections.to_table(), file_name)
 
   def debug_show_candidate_basis_vectors(self):
 
@@ -848,7 +848,7 @@ class indexer_base(object):
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
     with open(file_name, 'wb') as f:
-      pickle.dump(reflections, f)
+      pickle.dump(reflections.to_table(), f)
 
   def export_xds_files(self, crystal_model, sweep, suffix=None):
     from dxtbx.serialize import xds
