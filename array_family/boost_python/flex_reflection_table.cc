@@ -103,7 +103,7 @@ namespace dials { namespace af { namespace boost_python {
       " Predicted properties\n"
       " --------------------\n"
       "\n"
-      "  hkl:                    miller indices\n"
+      "  miller_index:           miller indices\n"
       "  entering:               reflection entering/exiting\n"
       "  s1:                     the diffracted beam vector\n"
       "  xyzcal.mm:              the predicted location (mm, mm, rad)\n"
