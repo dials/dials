@@ -492,13 +492,14 @@ class TestExperimentListFactory(object):
   def tst_from_imageset(self):
     from dxtbx.imageset import ImageSet, NullReader
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from dials.model.experiment import Crystal
+    from cctbx.crystal.crystal_model import crystal_model
 
     imageset = ImageSet(NullReader(["filename.cbf"]))
     imageset.set_beam(Beam(), 0)
     imageset.set_detector(Detector(), 0)
 
-    crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
+    crystal = crystal_model(
+      (1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
 
     experiments = ExperimentListFactory.from_imageset_and_crystal(
       imageset, crystal)
@@ -515,7 +516,7 @@ class TestExperimentListFactory(object):
   def tst_from_sweep(self):
     from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from dials.model.experiment import Crystal
+    from cctbx.crystal.crystal_model import crystal_model
 
     imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 2))))
     imageset.set_beam(Beam())
@@ -523,7 +524,7 @@ class TestExperimentListFactory(object):
     imageset.set_goniometer(Goniometer())
     imageset.set_scan(Scan())
 
-    crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
+    crystal = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
 
     experiments = ExperimentListFactory.from_imageset_and_crystal(
       imageset, crystal)
@@ -542,7 +543,7 @@ class TestExperimentListFactory(object):
     from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
     from dxtbx.model import Beam, Detector, Goniometer, Scan
     from dxtbx.datablock import DataBlockFactory
-    from dials.model.experiment import Crystal
+    from cctbx.crystal.crystal_model import crystal_model
 
     imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 2))))
     imageset.set_beam(Beam())
@@ -550,7 +551,7 @@ class TestExperimentListFactory(object):
     imageset.set_goniometer(Goniometer())
     imageset.set_scan(Scan())
 
-    crystal = Crystal((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
+    crystal = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
 
     datablock = DataBlockFactory.from_imageset(imageset)
 
