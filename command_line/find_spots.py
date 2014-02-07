@@ -34,12 +34,7 @@ class Script(ScriptRunner):
 
   def main(self, params, options, args):
     '''Execute the script.'''
-    from dials.algorithms.peak_finding.spotfinder_factory \
-        import SpotFinderFactory
-    from dials.algorithms import shoebox
-    from dials.model.serialize import load, dump
     from dials.util.command_line import Command
-    from dxtbx.imageset import ImageSetFactory
     from dials.util.command_line import Importer
     from dials.array_family import flex
 
@@ -53,20 +48,9 @@ class Script(ScriptRunner):
       for arg in importer.unhandled_arguments:
         print '  ' + arg
 
-    # Ensure we have a data block
-    if importer.datablocks is None or len(importer.datablocks) == 0:
-      print 'Error: no datablock specified'
-      return
-    elif len(importer.datablocks) != 1:
-      print 'Error: only 1 datablock can be processed at a time'
-      return
-
-    # Get the integrator from the input parameters
-    print 'Configuring spot finder from input parameters'
-    find_spots = SpotFinderFactory.from_parameters(params)
-
-    # Find the spots
-    reflections = find_spots(importer.datablocks[0])
+    # Get the observed reflections
+    reflections = flex.reflection_table.from_observations(
+      importer.datablocks, params)
 
     # Dump the shoeboxes
     if not params.spotfinder.save_shoeboxes:
@@ -76,7 +60,7 @@ class Script(ScriptRunner):
     print '\n' + '-' * 80
     Command.start('Saving {0} reflections to {1}'.format(
         len(reflections), options.output_filename))
-    dump.reflections(reflections, options.output_filename)
+    reflections.as_pickle(options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
         len(reflections), options.output_filename))
 

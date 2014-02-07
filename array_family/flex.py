@@ -26,6 +26,23 @@ def reflection_table_from_predictions(exlist):
     result.extend(rtable)
   return result
 
+@staticmethod
+def reflection_table_from_observations(datablocks, params):
+  ''' Construct a reflection table from observations. '''
+  from dials.algorithms.peak_finding.spotfinder_factory \
+    import SpotFinderFactory
+
+  # Ensure we have a data block
+  if len(datablocks) != 1:
+    raise RuntimeError('only 1 datablock can be processed at a time')
+
+  # Get the integrator from the input parameters
+  print 'Configuring spot finder from input parameters'
+  find_spots = SpotFinderFactory.from_parameters(params)
+
+  # Find the spots
+  return find_spots(datablocks[0])
+
 def reflection_table_as_pickle(self, filename):
   ''' Write the reflection table as a pickle file. '''
   import cPickle as pickle
@@ -56,6 +73,7 @@ def reflection_table_from_h5(filename):
   return self
 
 reflection_table.from_predictions = reflection_table_from_predictions
+reflection_table.from_observations = reflection_table_from_observations
 reflection_table.from_pickle = reflection_table_from_pickle
 reflection_table.as_pickle = reflection_table_as_pickle
 reflection_table.from_h5 = reflection_table_from_h5
