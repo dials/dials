@@ -24,9 +24,13 @@ class ImageFileImporter(object):
   def __call__(self, args):
 
     # Check we have some filenames
-    if len(args) == 0:
+    if len(args) == 0 and not self.options.stdin:
       self.parser.print_help()
       exit(0)
+
+    if self.options.stdin:
+      import sys
+      args.extend([l.strip() for l in sys.stdin.readlines()])
 
     # Sort arguments
     if self.options.sort:
@@ -201,6 +205,14 @@ class ParseOptions(object):
       dest = "output",
       type = "string", default = None,
       help = "The output JSON or pickle file (filename.json | filename.pickle)")
+
+    # Standard input read files, rather than from the command-line
+    self.parser.add_option(
+      "-i", "--stdin",
+      dest = "stdin",
+      action = "store_true",
+      default = True,
+      help = "Read filenames from standard input rather than command-line")
 
     # Write the datablock to JSON or Pickle
     self.parser.add_option(
