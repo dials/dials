@@ -81,7 +81,7 @@ def refined_settings_factory_from_refined_triclinic(
   scan = experiment.scan
   goniometer = experiment.goniometer
   crystal = experiment.crystal
-  
+
   used_reflections = reflections.deep_copy()
   UC = crystal.get_unit_cell()
 
