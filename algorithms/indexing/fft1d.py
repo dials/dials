@@ -13,6 +13,7 @@
 from __future__ import division
 
 from dials.algorithms.indexing.indexer2 import indexer_base
+from dials.model.experiment.experiment_list import Experiment, ExperimentList
 
 class indexer_fft1d(indexer_base):
 
@@ -42,4 +43,11 @@ class indexer_fft1d(indexer_base):
       crystal_models = [
         self.apply_symmetry(cm, self.target_symmetry_primitive)
         for cm in crystal_models]
-    return crystal_models
+    experiments = ExperimentList()
+    for cm in crystal_models:
+      experiments.append(Experiment(beam=self.beam,
+                                    detector=self.detector,
+                                    goniometer=self.goniometer,
+                                    scan=self.scan,
+                                    crystal=cm))
+    return experiments

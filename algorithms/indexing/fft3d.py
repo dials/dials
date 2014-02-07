@@ -22,6 +22,7 @@ from dials.algorithms.indexing.indexer2 \
      import indexer_base, optimise_basis_vectors
 from dials.algorithms.indexing.indexer2 \
      import vector_group, is_approximate_integer_multiple
+from dials.model.experiment.experiment_list import Experiment, ExperimentList
 
 class indexer_fft3d(indexer_base):
 
@@ -67,7 +68,14 @@ class indexer_fft3d(indexer_base):
       crystal_models = [
         self.apply_symmetry(cm, self.target_symmetry_primitive)
         for cm in crystal_models]
-    return crystal_models
+    experiments = ExperimentList()
+    for cm in crystal_models:
+      experiments.append(Experiment(beam=self.beam,
+                                    detector=self.detector,
+                                    goniometer=self.goniometer,
+                                    scan=self.scan,
+                                    crystal=cm))
+    return experiments
 
   def map_centroids_to_reciprocal_space_grid(self):
     self._map_to_grid_timer.start()
@@ -504,7 +512,7 @@ class indexer_fft3d(indexer_base):
   def debug_plot_clusters(self, vectors, labels, min_cluster_size=1):
     assert len(vectors) == len(labels)
     from matplotlib import pyplot
-    #from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D
     import numpy
 
     # Black removed and is used for noise instead.

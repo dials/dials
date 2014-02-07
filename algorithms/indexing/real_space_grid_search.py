@@ -19,6 +19,7 @@ from dials.algorithms.indexing.indexer2 import \
      indexer_base, optimise_basis_vectors
 from dials.algorithms.indexing.indexer2 import \
      is_approximate_integer_multiple
+from dials.model.experiment.experiment_list import Experiment, ExperimentList
 
 
 
@@ -29,13 +30,16 @@ class indexer_real_space_grid_search(indexer_base):
       reflections, sweep, params)
 
   def find_lattices(self):
-    return self.find_lattices_real_space_grid_search()
-
-  def find_lattices_real_space_grid_search(self):
-    self.d_min = self.params.refinement_protocol.d_min_start # XXX this should be another parameter
     self.real_space_grid_search()
     crystal_models = self.candidate_crystal_models
-    return crystal_models
+    experiments = ExperimentList()
+    for cm in crystal_models:
+      experiments.append(Experiment(beam=self.beam,
+                                    detector=self.detector,
+                                    goniometer=self.goniometer,
+                                    scan=self.scan,
+                                    crystal=cm))
+    return experiments
 
   def real_space_grid_search(self):
     d_min = self.params.refinement_protocol.d_min_start

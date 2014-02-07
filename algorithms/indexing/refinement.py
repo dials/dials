@@ -12,6 +12,7 @@ from __future__ import division
 #  included in the root directory of this package.
 
 from cctbx.array_family import flex
+import math
 
 
 def refine(params, reflections, experiments, maximum_spot_error=None,
@@ -21,11 +22,6 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
   from dials.algorithms.spot_prediction import ray_intersection
   reflections_for_refinement = ray_intersection(
     detector, reflections)
-
-  # XXX Interim hack to make refinement work for multiple lattices
-  reflections_for_refinement = reflections_for_refinement.deep_copy()
-  reflections_for_refinement.set_crystal(
-    flex.int(reflections_for_refinement.size(), 0))
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(
@@ -37,10 +33,12 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     matches = refiner.get_matches()
     frame_obs = flex.double()
     panel_ids = flex.size_t()
+    crystal_ids = flex.int()
     for match in matches:
       residuals.append((match.x_resid, match.y_resid, match.phi_resid))
       frame_obs.append(match.frame_obs)
       panel_ids.append(match.panel)
+      crystal_ids.append(match.crystal_id)
     x_residuals, y_residuals, phi_residuals = residuals.parts()
     mm_residual_norms = flex.sqrt(
       flex.pow2(x_residuals) + flex.pow2(y_residuals))

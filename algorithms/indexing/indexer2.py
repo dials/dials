@@ -29,6 +29,7 @@ from cctbx.array_family import flex
 from cctbx import crystal, sgtbx, xray
 
 from cctbx.crystal.crystal_model import crystal_model as Crystal
+from dials.model.experiment.experiment_list import Experiment, ExperimentList
 
 import libtbx.load_env
 dials_path = libtbx.env.dist_path('dials')
@@ -296,7 +297,7 @@ class indexer_base(object):
 
     self.reflections.set_crystal(flex.int(self.reflections.size(), -1))
 
-    crystal_models = []
+    experiments = ExperimentList()
 
     had_refinement_error = False
 
@@ -304,26 +305,20 @@ class indexer_base(object):
       self.d_min = self.params.refinement_protocol.d_min_start
       if had_refinement_error:
         break
-      if self.params.max_lattices is not None and len(crystal_models) >= self.params.max_lattices:
+      if self.params.max_lattices is not None and len(experiments) >= self.params.max_lattices:
         break
       min_reflections_for_indexing = 40
       if (self.reflections.crystal() == -1).count(True) < min_reflections_for_indexing:
         break
 
-      n_lattices_previous_cycle = len(crystal_models)
+      n_lattices_previous_cycle = len(experiments)
 
-      crystal_models.extend(self.find_lattices())
-      if len(crystal_models) == n_lattices_previous_cycle:
+      experiments.extend(self.find_lattices())
+      if len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
         break
 
       self.refined_crystal_models = []
-
-      # for now refine a separate sweep object for each lattice - once we have
-      # true multi-lattice refinement we can just refine a single sweep object
-      # XXX copy.deepcopy(sweep) does not currently work
-      import copy
-      sweeps = [copy.deepcopy(self.sweep) for i in range(len(crystal_models))]
 
       for i_cycle in range(self.params.refinement_protocol.n_macro_cycles):
         if i_cycle > 0:
@@ -340,133 +335,114 @@ class indexer_base(object):
         if i_cycle == 0 and self.target_symmetry_primitive is not None:
           # if a target cell is given make sure that we match any permutation
           # of the cell dimensions
-          crystal_models = [self.apply_symmetry(
-            crystal_model, self.target_symmetry_primitive, cell_only=True)
-                           for crystal_model in crystal_models]
+          for expt in experiments:
+            expt.crystal = self.apply_symmetry(
+              expt.crystal, self.target_symmetry_primitive, cell_only=True)
 
         hkl_tolerance = self.params.refinement_protocol.outlier_rejection.hkl_tolerance
-        self.index_reflections(crystal_models, tolerance=hkl_tolerance)
+        self.index_reflections(experiments.crystals(), tolerance=hkl_tolerance)
 
         if (i_cycle == 0 and self.target_symmetry_primitive is not None
             and self.target_symmetry_primitive.space_group() is not None):
           # now apply the space group symmetry only after the first indexing
           # need to make sure that the symmetrized orientation is similar to the P1 model
-          crystal_models = [self.apply_symmetry(
-            crystal_model, self.target_symmetry_primitive)
-                           for crystal_model in crystal_models]
+          for expt in experiments:
+            expt.crystal = self.apply_symmetry(
+              expt.crystal, self.target_symmetry_primitive)
+
+        #if len(experiments) > 1:
+          #from dials.command_line.compare_orientation_matrices \
+               #import show_rotation_matrix_differences
+          #show_rotation_matrix_differences(crystal_models)
 
         print
         print "#" * 80
         print "Starting refinement (macro-cycle %i)" %(i_cycle+1)
         print "#" * 80
         print
+        self.indexed_reflections = (self.reflections.crystal() > -1)
 
-        self.refined_reflections = []
+        if self.params.debug:
+          sel = flex.bool(self.reflections.size(), False)
+          lengths = 1/self.reciprocal_space_points.norms()
+          isel = (lengths >= self.d_min).iselection()
+          sel.set_selected(isel, True)
+          sel.set_selected(self.reflections_i_lattice > -1, False)
+          unindexed = self.reflections_raw.select(sel)
+          with open("unindexed.pickle", 'wb') as f:
+            pickle.dump(unindexed.to_table(), f)
 
-        for i_lattice, crystal_model in enumerate(crystal_models):
-          self.sweep = sweeps[i_lattice] # XXX
+        maximum_spot_error \
+          = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
+        if 0 and i_cycle == 0:
+          maximum_spot_error = None
+        elif i_cycle == 1:
+          if maximum_spot_error is not None:
+            maximum_spot_error *= 2
 
-
-          self.i_lattice = i_lattice
-
-          print
-          print "Starting refinement of crystal model %i" %(i_lattice+1)
-          print "Starting crystal model:"
-          print crystal_model
-          print
-
-          self.reflections_i_lattice = self.reflections.crystal()
-          self.indexed_reflections = (self.reflections_i_lattice == i_lattice)
-
-          if self.params.debug:
-            sel = flex.bool(self.reflections.size(), False)
-            lengths = 1/self.reciprocal_space_points.norms()
-            isel = (lengths >= self.d_min).iselection()
-            sel.set_selected(isel, True)
-            sel.set_selected(self.reflections_i_lattice > -1, False)
-            unindexed = self.reflections_raw.select(sel)
-            with open("unindexed.pickle", 'wb') as f:
-              pickle.dump(unindexed.to_table(), f)
-
-          maximum_spot_error \
-            = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
-          if i_cycle == 0:
-            maximum_spot_error = None
-          elif i_cycle == 1:
-            if maximum_spot_error is not None:
-              maximum_spot_error *= 2
-
-          try:
-            from dials.model.experiment.experiment_list \
-                 import Experiment, ExperimentList
-            experiments = ExperimentList([Experiment(
-              imageset=self.sweep,
-              beam=self.sweep.get_beam(),
-              detector=self.sweep.get_detector(),
-              scan=self.sweep.get_scan(),
-              goniometer=self.sweep.get_goniometer(),
-              crystal=crystal_model)])
-            refined_experiments, refined_reflections = self.refine(
-              experiments, maximum_spot_error=maximum_spot_error)
-            crystal_model = refined_experiments.crystals()[0]
-          except RuntimeError, e:
-            s = str(e)
-            if "below the configured limit" in s:
-              had_refinement_error = True
-              print "Refinement failed:"
-              print s
-              del crystal_models[i_lattice]
-              break
-            raise
-
-          self.refined_reflections.append(refined_reflections)
-          crystal_models[i_lattice] = crystal_model
-
-          self.sweep.set_detector(refined_experiments[0].detector)
-          self.sweep.set_beam(refined_experiments[0].beam)
-          self.sweep.set_goniometer(refined_experiments[0].goniometer)
-          self.sweep.set_scan(refined_experiments[0].scan)
-          # these may have been updated in refinement
-          # XXX once david has implemented multi-lattice refinement there
-          # should be one and only one sweep object to refine
-          #self.sweep = sweeps[0]
-          self.detector = self.sweep.get_detector()
-          self.beam = self.sweep.get_beam()
-          self.goniometer = self.sweep.get_goniometer()
-          self.scan = self.sweep.get_scan()
-
-          if not (self.params.refinement.parameterisation.beam.fix == 'all'
-                  and self.params.refinement.parameterisation.detector.fix == 'all'):
-            # Experimental geometry may have changed - re-map centroids to
-            # reciprocal space
-            self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
-              self.reflections, self.detector, self.beam, self.goniometer)
-
-          if self.d_min == self.params.refinement_protocol.d_min_final:
-            print "Target d_min_final reached: finished with refinement"
+        try:
+          refined_experiments, refined_reflections = self.refine(
+            experiments, maximum_spot_error=maximum_spot_error)
+        except RuntimeError, e:
+          s = str(e)
+          if "below the configured limit" in s:
+            had_refinement_error = True
+            print "Refinement failed:"
+            print s
             break
+          raise
+
+        self.refined_reflections = refined_reflections
+
+        self.sweep.set_detector(refined_experiments[0].detector)
+        self.sweep.set_beam(refined_experiments[0].beam)
+        self.sweep.set_goniometer(refined_experiments[0].goniometer)
+        self.sweep.set_scan(refined_experiments[0].scan)
+        # these may have been updated in refinement
+        self.detector = self.sweep.get_detector()
+        self.beam = self.sweep.get_beam()
+        self.goniometer = self.sweep.get_goniometer()
+        self.scan = self.sweep.get_scan()
+
+        if not (self.params.refinement.parameterisation.beam.fix == 'all'
+                and self.params.refinement.parameterisation.detector.fix == 'all'):
+          # Experimental geometry may have changed - re-map centroids to
+          # reciprocal space
+          self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
+            self.reflections, self.detector, self.beam, self.goniometer)
+
+        if self.d_min == self.params.refinement_protocol.d_min_final:
+          print "Target d_min_final reached: finished with refinement"
+          break
+
+        # update for next cycle
+        experiments = refined_experiments
 
       if not (self.params.multiple_lattice_search and
               self.params.method == "real_space_grid_search"):
         break
 
-    for i_lattice, crystal_model in enumerate(crystal_models):
+    # XXX currently need to store the imageset otherwise we can't read the experiment list back in
+    for expt in refined_experiments:
+      expt.imageset = self.sweep
+
+    self.export_as_json(refined_experiments)
+    for i_lattice, crystal_model in enumerate(refined_experiments.crystals()):
       self.refined_crystal_models.append(crystal_model)
       suffix = ""
-      if len(crystal_models) > 1:
+      if len(refined_experiments) > 1:
         suffix = "_%i" %(i_lattice+1)
-      self.export_as_json(crystal_model, sweeps[i_lattice], suffix=suffix)
       if self.params.export_xds_files:
-        self.export_xds_files(crystal_model, sweeps[i_lattice], suffix=suffix)
+        self.export_xds_files(crystal_model, self.sweep, suffix=suffix)
+      reflections = self.refined_reflections.select(
+        self.refined_reflections.crystal() == i_lattice)
       self.export_reflections(
-        #self.reflections_raw.select(self.reflections_i_lattice == i_lattice),
-        self.refined_reflections[i_lattice],
-        file_name='indexed%s.pickle' %suffix)
+        reflections, file_name='indexed%s.pickle' %suffix)
 
     if 1 and self.params.debug and self.goniometer is not None:
       for i_lattice, cm in enumerate(self.refined_crystal_models):
         suffix = ""
-        if len(crystal_models) > 1:
+        if len(refined_experiments) > 1:
           suffix = "_%i" %(i_lattice+1)
         self.predict_reflections(cm)
         self.export_predicted_reflections(file_name='predictions%s.pickle' %suffix)
@@ -757,7 +733,6 @@ class indexer_base(object):
       debug_plots=self.params.debug_plots)
     used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
-
     self._refine_timer.stop()
     return refiner.get_experiments(), used_reflections
 
@@ -838,14 +813,9 @@ class indexer_base(object):
       map_data=map_data,
       labels=flex.std_string(labels))
 
-  def export_as_json(self, crystal_model, sweep, suffix=None, compact=False):
+  def export_as_json(self, experiments, suffix=None, compact=False):
+    if suffix is None: suffix = ""
     from dials.model.serialize import dump
-    from dials.model.experiment.experiment_list import ExperimentList, Experiment
-    experiments = ExperimentList()
-    experiments.append(Experiment(
-      imageset=sweep, beam=sweep.get_beam(), detector=sweep.get_detector(),
-      goniometer=sweep.get_goniometer(), scan=sweep.get_scan(),
-      crystal=crystal_model))
     assert experiments.is_consistent()
     dump.experiment_list(experiments, 'experiments%s.json' %suffix)
 

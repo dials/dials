@@ -76,19 +76,19 @@ class run_one_indexing(object):
     #print command
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
+    assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
+    experiments_list = load.experiment_list(
+      os.path.join(tmp_dir, "experiments.json"), check_format=False)
+    assert len(experiments_list) == n_expected_lattices
     for i in range(n_expected_lattices):
       suffix = ""
       if n_expected_lattices > 1:
         suffix = "_%i" %(i+1)
       assert os.path.exists(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
-      assert os.path.exists(os.path.join(tmp_dir, "experiments%s.json" %suffix))
       self.reflections = load.reflections(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
       from dials.model.data import ReflectionList
       self.reflections = ReflectionList.from_table(self.reflections)
-      experiments_list = load.experiment_list(
-        os.path.join(tmp_dir, "experiments%s.json" %suffix), check_format=False)
-      assert len(experiments_list) == 1
-      experiment = experiments_list[0]
+      experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
       assert self.crystal_model.get_unit_cell().is_similar_to(
         expected_unit_cell,
@@ -106,10 +106,13 @@ class run_one_indexing(object):
 
   def get_rmsds_obs_pred(self, observations, experiment, crystal_model):
     from dials.algorithms.spot_prediction import ray_intersection
-    reflections = ray_intersection(experiment.detector, observations)
     from dials.algorithms.indexing.indexer2 import master_params
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.experiment.experiment_list import ExperimentList
+
+    reflections = ray_intersection(experiment.detector, observations)
+    # XXX hack to make it work for a single lattice
+    reflections.set_crystal(flex.int(reflections.size(), 0))
     refine = RefinerFactory.from_parameters_data_experiments(
       master_params, reflections, ExperimentList([experiment]), verbosity=0)
     return refine.rmsds()
@@ -124,11 +127,11 @@ def exercise_1():
                 "n_macro_cycles=2"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.06, 0.05, 0.0005)
+  expected_rmsds = (0.04, 0.04, 0.0003)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
-                     expected_rmsds, expected_hall_symbol)
+                            expected_rmsds, expected_hall_symbol)
 
 def exercise_2():
   missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
@@ -147,7 +150,7 @@ def exercise_2():
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.06, 0.05, 0.0005)
+  expected_rmsds = (0.04, 0.04, 0.0003)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -169,7 +172,7 @@ def exercise_3():
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
-  expected_rmsds = (0.06, 0.05, 0.0005)
+  expected_rmsds = (0.04, 0.04, 0.0003)
 
   # now enforce symmetry
   extra_args.append("space_group=P4")
@@ -204,7 +207,7 @@ def exercise_4():
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.08, 0.06, 0.002)
+  expected_rmsds = (0.06, 0.06, 0.002)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -229,7 +232,7 @@ def exercise_5():
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.17, 0.20, 0.004)
+  expected_rmsds = (0.1, 0.1, 0.003)
   expected_hall_symbol = ' P 1'
   n_expected_lattices = 2
 
