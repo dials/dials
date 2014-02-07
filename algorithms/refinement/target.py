@@ -515,7 +515,7 @@ class ReflectionManager(object):
       h = ref['miller_index']
       s = matrix.col(ref['s1'])
       entering = s.dot(self._vecn) < 0.
-      frame = ref['xyzcal.px'][2]
+      frame = ref['xyzcal.px'][2] if ref.has_key('xyzcal.px') else 0
       panel = ref['panel']
       x = ref[key_val][0]
       y = ref[key_val][1]
