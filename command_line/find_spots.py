@@ -61,33 +61,28 @@ class Script(ScriptRunner):
       print 'Error: only 1 datablock can be processed at a time'
       return
 
-    # Check the number of imagesets
-    imagesets = importer.datablocks[0].extract_imagesets()
-    if len(imagesets) == 0:
-      print 'Error: no imageset specified'
-      return
-    elif len(imagesets) != 1:
-      print 'Error: only 1 imageset can be processed at a time'
-      return
-    imageset = imagesets[0]
-
     # Get the integrator from the input parameters
     print 'Configuring spot finder from input parameters'
     find_spots = SpotFinderFactory.from_parameters(params)
 
-    # Find the strong spots in the sweep
-    print 'Finding strong spots'
-    reflections = find_spots(imageset)
+    # Loop through all the imagesets and find the strong spots
+    reflections = flex.reflection_table()
+    for i, imageset in enumerate(importer.datablocks[0].extract_imagesets()):
 
-    # Add the experiment ID
-    index = flex.size_t(reflections.nrows(), 0)
-    reflections['id'] = index
+      # Find the strong spots in the sweep
+      print '-' * 80
+      print 'Finding strong spots in imageset %d' % i
+      print '-' * 80
+      table = find_spots(imageset)
+      table['id'] = flex.size_t(table.nrows(), i)
+      reflections.extend(table)
 
     # Dump the shoeboxes
     if not params.spotfinder.save_shoeboxes:
       del reflections['shoebox']
 
     # Save the reflections to file
+    print '\n' + '-' * 80
     Command.start('Saving {0} reflections to {1}'.format(
         len(reflections), options.output_filename))
     dump.reflections(reflections, options.output_filename)

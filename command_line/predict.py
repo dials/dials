@@ -58,7 +58,7 @@ class Script(ScriptRunner):
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
         len(predicted), options.output_filename))
-    dump.reflections(predicted, options.output_filename)
+    predicted.as_pickle(options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
         len(predicted), options.output_filename))
 
