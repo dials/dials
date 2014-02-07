@@ -14,7 +14,6 @@ class Test(object):
 
   def run(self):
     self.tst_from_image_files()
-    self.tst_from_xds_files()
 
   def tst_from_image_files(self):
     from subprocess import call
@@ -35,36 +34,6 @@ class Test(object):
     assert(exists("import_datablock.json"))
     ## Read the created file and do a diff
     #with open("datablock.json", "r") as infile:
-      #lines_a = infile.read().splitlines()
-      #lines_a = [l.strip() for l in lines_a if "\"template\"" not in l]
-      #diff = list(difflib.context_diff(
-        #lines_a,
-        #[l.strip() for l in expected.splitlines()]))
-      #n = len(diff)
-      #for i, line in enumerate(diff):
-        #print line
-      #assert(n == 0)
-
-    print 'OK'
-
-  def tst_from_xds_files(self):
-    from subprocess import call
-    import difflib
-    from os.path import join, abspath, exists
-    from os import chdir
-
-    # Import from the image files
-    path = abspath(self.path)
-    chdir(path)
-    call('dials.import --xds=./ -o import_experiments.json > /dev/null', shell=True)
-
-    assert(exists("import_experiments.json"))
-
-    # Get the expected output
-    #expected = self.expected_import_from_xds_files()
-
-    ## Read the created file and do a diff
-    #with open("experiments.json", "r") as infile:
       #lines_a = infile.read().splitlines()
       #lines_a = [l.strip() for l in lines_a if "\"template\"" not in l]
       #diff = list(difflib.context_diff(
