@@ -207,7 +207,7 @@ class ExperimentList(object):
     ''' Serialize the experiment list to dictionary. '''
     from collections import OrderedDict
     from dxtbx.imageset import ImageSet, ImageSweep
-    from dials.model.serialize.crystal import crystal_to_dict
+    from cctbx.crystal.crystal_model.serialize import crystal_to_dict
 
     # Check the experiment list is consistent
     assert(self.is_consistent())
