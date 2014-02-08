@@ -15,9 +15,6 @@ from __future__ import division
 from dxtbx.serialize.load import imageset as sweep
 from dxtbx.serialize.load import datablock
 
-# FIXME These are only temporary - they should be removed ASAP
-from cctbx.crystal.crystal_model.serialize import crystal_from_string
-from cctbx.crystal.crystal_model.serialize import load_crystal as crystal
 
 def reflections(infile):
   ''' Load the given reflection file.

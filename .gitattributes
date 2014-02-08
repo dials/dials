@@ -412,7 +412,6 @@ model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/experiment_list.py -text
 model/serialize/__init__.py -text
-model/serialize/crystal.py -text
 model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text

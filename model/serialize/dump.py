@@ -16,10 +16,6 @@ from dxtbx.serialize.dump import imageset as sweep
 from dxtbx.serialize.dump import imageset_to_string as sweep_to_string
 from dxtbx.serialize.dump import datablock
 
-# FIXME These are only temporary - they should be removed ASAP
-from cctbx.crystal.crystal_model.serialize import crystal_to_string
-from cctbx.crystal.crystal_model.serialize import dump_crystal as crystal
-
 
 def reflections(obj, outfile):
   ''' Dump the given object to file
