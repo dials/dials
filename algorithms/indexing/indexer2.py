@@ -512,6 +512,7 @@ class indexer_base(object):
 
   @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
+    if 's1' not in spots_mm: spots_mm['s1'] = flex.vec3_double(len(spots_mm))
     panel_numbers = flex.size_t(spot['panel'] for spot in spots_mm)
     reciprocal_space_points = flex.vec3_double()
     for i_panel in range(len(detector)):
