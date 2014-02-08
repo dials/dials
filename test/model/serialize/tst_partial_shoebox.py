@@ -13,9 +13,10 @@ class Test(object):
 
     import os
     from dials.model.serialize import load, dump
+    from cctbx.crystal.crystal_model.serialize import load_crystal
     path = os.path.join(dials_regression, 'centroid_test_data')
     self.sweep = load.sweep(os.path.join(path, 'sweep.json'))
-    self.crystal = load.crystal(os.path.join(path, 'crystal.json'))
+    self.crystal = load_crystal(os.path.join(path, 'crystal.json'))
 
   def run(self):
     from dials.algorithms.integration import PartialProfileExtractor

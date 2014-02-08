@@ -22,11 +22,12 @@ class Test(object):
   def run(self):
     from dials.model.serialize import load
     from dials.algorithms import shoebox
+    from cctbx.crystal.crystal_model.serialize import load_crystal
     from scitbx.array_family import flex
 
     # Load the sweep and crystal
     self.sweep = load.sweep(self.sweep_filename)
-    self.crystal = load.crystal(self.crystal_filename)
+    self.crystal = load_crystal(self.crystal_filename)
 
     # Get the reflections and overlaps
     reflections, adjacency_list = self.predict_reflections()

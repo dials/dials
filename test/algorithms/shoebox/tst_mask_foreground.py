@@ -5,6 +5,7 @@ class Test(object):
   def __init__(self):
     import os
     import libtbx.load_env
+    from cctbx.crystal.crystal_model.serialize import load_crystal
     from dials.model.serialize import load
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.algorithms.shoebox import MaskForeground
@@ -23,7 +24,7 @@ class Test(object):
 
     # Load the sweep
     self.sweep = load.sweep(sweep_filename)
-    self.crystal = load.crystal(crystal_filename)
+    self.crystal = load_crystal(crystal_filename)
     self.beam = self.sweep.get_beam()
     self.detector = self.sweep.get_detector()
     self.goniometer = self.sweep.get_goniometer()
