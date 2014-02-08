@@ -372,7 +372,7 @@ class indexer_base(object):
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
-        if 0 and i_cycle == 0:
+        if i_cycle == 0:
           maximum_spot_error = None
         elif i_cycle == 1:
           if maximum_spot_error is not None:
