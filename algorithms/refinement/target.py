@@ -511,13 +511,14 @@ class ReflectionManager(object):
       h = ref['miller_index']
       s = matrix.col(ref['s1'])
       entering = s.dot(self._vecn) < 0.
-      #FIXME the following is supposed to be the observed array index of the centroid,
-      #not the calculated value!
-      frame = ref['xyzcal.px'][2] if ref.has_key('xyzcal.px') else 0
       panel = ref['panel']
       x = ref["xyzobs.mm.value"][0]
       y = ref["xyzobs.mm.value"][1]
       phi = ref["xyzobs.mm.value"][2]
+      if experiments[exp_id].scan:
+        frame = experiments[exp_id].scan.get_array_index_from_angle(phi, deg=False)
+      else
+        frame = 0
       sig_x, sig_y, sig_phi = [sqrt(e) for e in ref["xyzobs.mm.variance"]]
       w_x = w_y = w_phi = 0
       if ref["xyzobs.mm.variance"][0] != 0: w_x   = 1./ref["xyzobs.mm.variance"][0]
