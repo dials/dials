@@ -46,7 +46,7 @@ def test1():
 
   # work in a temporary directory
   cwd = os.path.abspath(os.curdir)
-  tmp_dir = open_tmp_directory(suffix="test_dials_index")
+  tmp_dir = open_tmp_directory(suffix="test_dials_refine")
   os.chdir(tmp_dir)
   result = easy_run.fully_buffered(command=cmd).raise_if_errors()
   os.chdir(cwd)
