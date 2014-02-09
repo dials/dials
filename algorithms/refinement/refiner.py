@@ -211,7 +211,8 @@ class RefinerFactory(object):
 
     # check that the beam vectors are stored: if not, compute them
     from scitbx import matrix
-    for ref in reflections:
+    for i in xrange(reflections.nrows()):
+      ref = reflections[i]
       if ref['s1'] != (0.0, 0.0, 0.0):
         continue
       beam = experiments[ref['id']].beam
@@ -219,10 +220,10 @@ class RefinerFactory(object):
       panel = detector[ref['panel']]
       impact = ref['xyzobs.mm.value'][0:2]
       x, y = panel.millimeter_to_pixel(impact)
-      # FIXME, this does not work. We cannot iterate over the reflection table
-      # and set properties in this way
-      ref['s1'] = matrix.col(panel.get_pixel_lab_coord(
+      s1 = matrix.col(panel.get_pixel_lab_coord(
           (x, y))).normalize() / beam.get_wavelength()
+      row = { 's1' : s1 }
+      reflections[i] = row
 
     # create parameterisations
     pred_param, param_reporter = \
