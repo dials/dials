@@ -217,7 +217,10 @@ class RefinerFactory(object):
       beam = experiments[ref['id']].beam
       detector = experiments[ref['id']].detector
       panel = detector[ref['panel']]
-      x, y = panel.millimeter_to_pixel(ref['xyzobs.mm.value'])
+      impact = ref['xyzobs.mm.value'][0:2]
+      x, y = panel.millimeter_to_pixel(impact)
+      # FIXME, this does not work. We cannot iterate over the reflection table
+      # and set properties in this way
       ref['s1'] = matrix.col(panel.get_pixel_lab_coord(
           (x, y))).normalize() / beam.get_wavelength()
 
