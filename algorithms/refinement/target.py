@@ -517,7 +517,7 @@ class ReflectionManager(object):
       phi = ref["xyzobs.mm.value"][2]
       if experiments[exp_id].scan:
         frame = experiments[exp_id].scan.get_array_index_from_angle(phi, deg=False)
-      else
+      else:
         frame = 0
       sig_x, sig_y, sig_phi = [sqrt(e) for e in ref["xyzobs.mm.variance"]]
       w_x = w_y = w_phi = 0
