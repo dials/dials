@@ -76,6 +76,7 @@ class Script(ScriptRunner):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.serialize import load, dump
+    from cctbx.crystal.crystal_model.serialize import load_crystal
     import cPickle as pickle
 
     # Check the number of arguments is correct
@@ -89,7 +90,7 @@ class Script(ScriptRunner):
     # Try to load the models
     print 'Loading models from {0} and {1}'.format(args[0], args[1])
     sweep = load.sweep(args[0])
-    crystal = load.crystal(args[1])
+    crystal = load_crystal(args[1])
     reflections = pickle.load(open(args[2], 'rb'))
 
     refiner = RefinerFactory.from_parameters_data_models(params,
