@@ -276,7 +276,7 @@ params.refinement.refinery.track_parameter_correlation=True
 
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(), experiments, verbosity=2)
+  obs_refs.to_table(centroid_is_mm=True), experiments, verbosity=2)
 
 #####################################
 # Select reflections for refinement #
