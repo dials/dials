@@ -16,6 +16,7 @@ what should usually be used to construct a Refiner."""
 from __future__ import division
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 from dials.model.experiment.experiment_list import ExperimentList, Experiment
+from dials.array_family import flex # import dependency
 
 class RefinerFactory(object):
   """Factory class to create refiners"""
