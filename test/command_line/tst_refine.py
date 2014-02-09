@@ -53,11 +53,12 @@ def test1():
 
   # load results
   from dials.model.serialize import load
+  from cctbx.crystal.crystal_model.serialize import load_crystal
   reg_sweep = load.sweep(os.path.join(data_dir, "regression_sweep.json"))
-  reg_crystal = load.crystal(os.path.join(data_dir, "regression_crystal.json"))
+  reg_crystal = load_crystal(os.path.join(data_dir, "regression_crystal.json"))
 
   sweep = load.sweep(os.path.join(tmp_dir, "refined_sweep.json"))
-  crystal = load.crystal(os.path.join(tmp_dir, "refined_crystal.json"))
+  crystal = load_crystal(os.path.join(tmp_dir, "refined_crystal.json"))
 
   # test refined models against expected
   assert crystal == reg_crystal
