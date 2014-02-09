@@ -634,7 +634,6 @@ test/algorithms/refinement/tst_multi_panel_detector_parameterisation.py -text
 test/algorithms/refinement/tst_orientation_refinement.py -text
 test/algorithms/refinement/tst_prediction_parameters.py -text
 test/algorithms/refinement/tst_ref_passage_categorisation.py -text
-test/algorithms/refinement/tst_refine.py -text
 test/algorithms/refinement/tst_refinement_regression.py -text
 test/algorithms/refinement/tst_scan_varying_model_parameters.py -text
 test/algorithms/refinement/tst_scan_varying_prediction_parameters.py -text
@@ -678,6 +677,7 @@ test/command_line/tst_integrate.py -text
 test/command_line/tst_merge_reflection_lists.py -text
 test/command_line/tst_parameters.py -text
 test/command_line/tst_predict.py -text
+test/command_line/tst_refine.py -text
 test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
