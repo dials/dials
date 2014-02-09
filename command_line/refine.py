@@ -76,7 +76,7 @@ class Script(ScriptRunner):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.serialize import load, dump
-    from cctbx.crystal.crystal_model.serialize import load_crystal
+    from cctbx.crystal.crystal_model.serialize import load_crystal, dump_crystal
     import cPickle as pickle
 
     # Check the number of arguments is correct
@@ -130,7 +130,7 @@ class Script(ScriptRunner):
     # Save the refined crystal to file
     output_crystal_filename = options.output_crystal_filename
     print 'Saving refined geometry to {0}'.format(output_crystal_filename)
-    dump.crystal(refiner.get_crystal(), open(output_crystal_filename, 'w'))
+    dump_crystal(refiner.get_crystal(), open(output_crystal_filename, 'w'))
 
     # Predict reflections and save to file
     output_reflections_filename = options.output_reflections_filename
