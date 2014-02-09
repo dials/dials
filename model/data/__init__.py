@@ -48,7 +48,7 @@ def setshoebox(self, data):
     r.shoebox_mask = d.mask
     r.shoebox_background = d.background
 
-def reflection_list_to_table(self):
+def reflection_list_to_table(self, centroid_is_mm=False):
   ''' Convert a reflection list to a table. '''
   from dials.array_family import flex
 
@@ -68,10 +68,16 @@ def reflection_list_to_table(self):
   table['xyzcal.px']    = flex.vec3_double(getxyzcalpx(self))
 
   # Observed centroid properties
-  table['xyzobs.px.value']    = flex.vec3_double(
-    getattrlist(self, 'centroid_position'))
-  table['xyzobs.px.variance'] = flex.vec3_double(
-    getattrlist(self, 'centroid_variance'))
+  if centroid_is_mm:
+    table['xyzobs.mm.value']    = flex.vec3_double(
+      getattrlist(self, 'centroid_position'))
+    table['xyzobs.mm.variance'] = flex.vec3_double(
+      getattrlist(self, 'centroid_variance'))
+  else:
+    table['xyzobs.px.value']    = flex.vec3_double(
+      getattrlist(self, 'centroid_position'))
+    table['xyzobs.px.variance'] = flex.vec3_double(
+      getattrlist(self, 'centroid_variance'))
 
   # Observed intensity properties
   table['intensity.raw.value']    = flex.double(
