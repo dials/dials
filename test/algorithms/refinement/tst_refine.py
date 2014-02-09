@@ -37,7 +37,7 @@ def test1():
   data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
   sweep_path = os.path.join(data_dir, "sweep.json")
   crystal_path = os.path.join(data_dir, "crystal.json")
-  pickle_path = os.path.join(data_dir, "indexed_strong.pickle")
+  pickle_path = os.path.join(data_dir, "indexed_strong_converted.pickle")
 
   for pth in ():
     assert os.path.exists(pth)
