@@ -504,10 +504,6 @@ class ReflectionManager(object):
     # pairs (prediction information will go in here later)
     self._obs_pred_pairs = []
 
-    key = 'mm' if reflections.has_key('xyzobs.mm.value') else 'px'
-    key_val = "xyzobs.%s.value"%key
-    key_var = "xyzobs.%s.variance"%key
-
     for i in refs_to_keep:
 
       ref = reflections[i]
@@ -515,16 +511,18 @@ class ReflectionManager(object):
       h = ref['miller_index']
       s = matrix.col(ref['s1'])
       entering = s.dot(self._vecn) < 0.
+      #FIXME the following is supposed to be the observed array index of the centroid,
+      #not the calculated value!
       frame = ref['xyzcal.px'][2] if ref.has_key('xyzcal.px') else 0
       panel = ref['panel']
-      x = ref[key_val][0]
-      y = ref[key_val][1]
-      phi = ref[key_val][2]
-      sig_x, sig_y, sig_phi = [sqrt(e) for e in ref[key_var]]
+      x = ref["xyzobs.mm.value"][0]
+      y = ref["xyzobs.mm.value"][1]
+      phi = ref["xyzobs.mm.value"][2]
+      sig_x, sig_y, sig_phi = [sqrt(e) for e in ref["xyzobs.mm.variance"]]
       w_x = w_y = w_phi = 0
-      if ref[key_var][0] != 0: w_x   = 1. / ref[key_var][0]
-      if ref[key_var][1] != 0: w_y   = 1. / ref[key_var][1]
-      if ref[key_var][2] != 0: w_phi = 1. / ref[key_var][2]
+      if ref["xyzobs.mm.variance"][0] != 0: w_x   = 1./ref["xyzobs.mm.variance"][0]
+      if ref["xyzobs.mm.variance"][1] != 0: w_y   = 1./ref["xyzobs.mm.variance"][1]
+      if ref["xyzobs.mm.variance"][2] != 0: w_phi = 1./ref["xyzobs.mm.variance"][2]
 
       self._obs_pred_pairs.append(ObsPredMatch(i, exp_id, h,
                                                entering, frame, panel,
