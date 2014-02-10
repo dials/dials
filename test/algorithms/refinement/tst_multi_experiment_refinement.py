@@ -189,9 +189,9 @@ index_generator = IndexGenerator(crystal1.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices1 = index_generator.to_array()
 
-# All indices in a 2.0 Angstrom sphere for crystal1
+# All indices in a 2.0 Angstrom sphere for crystal2
 resolution = 2.0
-index_generator = IndexGenerator(crystal1.get_unit_cell(),
+index_generator = IndexGenerator(crystal2.get_unit_cell(),
                 space_group(space_group_symbols(1).hall()).type(), resolution)
 indices2 = index_generator.to_array()
 
