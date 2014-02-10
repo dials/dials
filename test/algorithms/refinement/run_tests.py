@@ -18,6 +18,7 @@ refinement_tsts = (
     "$D/test/algorithms/refinement/tst_orientation_refinement.py",
     "$D/test/algorithms/refinement/tst_refinement_regression.py",
     "$D/test/algorithms/refinement/tst_multi_experiment_refinement.py",
+    "$D/test/algorithms/refinement/tst_stills_refinement.py",
     )
 
 misc_tsts = (
