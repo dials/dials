@@ -36,7 +36,7 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('integrate_hkl.pickle', 'rb'))
 
-    assert('hkl' in table)
+    assert('miller_index' in table)
     assert('id' in table)
     assert('panel' in table)
     assert('xyzcal.px' in table)
@@ -60,7 +60,7 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('spot_xds.pickle', 'rb'))
 
-    assert('hkl' in table)
+    assert('miller_index' in table)
     assert('id' in table)
     assert('panel' in table)
     assert('xyzobs.px.value' in table)
@@ -79,7 +79,7 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('spot_xds.pickle', 'rb'))
 
-    assert('hkl' in table)
+    assert('miller_index' in table)
     assert('id' in table)
     assert('panel' in table)
     assert('xyzobs.px.value' in table)
