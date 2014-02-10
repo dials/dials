@@ -33,7 +33,13 @@ def run(args):
       sub_dir = "xds%s" %suffix
       if not os.path.isdir(sub_dir):
         os.makedirs(sub_dir)
+      # XXX imageset is getting the experimental geometry from the image files
+      # rather than the input experiments.json file
       imageset = experiments[i].imageset
+      imageset.set_detector(experiments[i].detector)
+      imageset.set_beam(experiments[i].beam)
+      imageset.set_goniometer(experiments[i].goniometer)
+      imageset.set_scan(experiments[i].scan)
       crystal_model = experiments[i].crystal
       crystal_model = crystal_model.change_basis(
         crystal_model.get_space_group().info()\
@@ -52,7 +58,7 @@ def run(args):
           crystal_model.get_space_group().type().number(),
           out=f)
       
-      if reflections is not None:
+      if reflections is not None and len(reflections) > 0:
         ref_cryst = reflections.select(reflections['id'] == i)
         export_spot_xds(ref_cryst, os.path.join(sub_dir, 'SPOT.XDS'))
 
