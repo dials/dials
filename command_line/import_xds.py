@@ -41,7 +41,7 @@ class SpotXDSImporter(object):
     table['id'] = flex.size_t(len(centroid), 0)
     table['panel'] = flex.size_t(len(centroid), 0)
     if miller_index:
-      table['hkl'] = flex.miller_index(miller_index)
+      table['miller_index'] = flex.miller_index(miller_index)
     table['xyzobs.px.value'] = flex.vec3_double(centroid)
     table['intensity.raw.value'] = flex.double(intensity)
     Command.end('Created reflection list')
@@ -49,7 +49,7 @@ class SpotXDSImporter(object):
     # Remove invalid reflections
     Command.start('Removing invalid reflections')
     if miller_index and options.remove_invalid:
-      flags = flex.bool([h != (0, 0, 0) for h in table['hkl']])
+      flags = flex.bool([h != (0, 0, 0) for h in table['miller_index']])
       table = table.select(flags)
     Command.end('Removed invalid reflections, %d remaining' % len(table))
 
@@ -92,7 +92,7 @@ class IntegrateHKLImporter(object):
     table = flex.reflection_table()
     table['id'] = flex.size_t(len(hkl), 0)
     table['panel'] = flex.size_t(len(hkl), 0)
-    table['hkl'] = flex.miller_index(hkl)
+    table['miller_index'] = flex.miller_index(hkl)
     table['xyzcal.px'] = flex.vec3_double(xyzcal)
     table['xyzobs.px.value'] = flex.vec3_double(xyzobs)
     table['intensity.cor.value'] = flex.double(iobs)

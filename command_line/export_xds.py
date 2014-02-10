@@ -52,10 +52,12 @@ def run(args):
   if reflections is not None and len(reflections) > 0:
     centroids = reflections['xyzobs.px.value']
     intensities = reflections['intensity.raw.value']
-    miller_indices = reflections['hkl']
-    miller_indices = miller_indices.select(miller_indices != (0, 0, 0))
-    if len(miller_indices) == 0:
-      miller_indices = None
+    miller_indices = None
+    if 'miller_index' in reflections:
+      miller_indices = reflections['miller_index']
+      miller_indices = miller_indices.select(miller_indices != (0, 0, 0))
+      if len(miller_indices) == 0:
+        miller_indices = None
     xds_writer = spot_xds.writer(centroids=centroids,
                                  intensities=intensities,
                                  miller_indices=miller_indices)

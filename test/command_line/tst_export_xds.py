@@ -21,7 +21,7 @@ def exercise_spots_xds():
  1090.27 1199.47 41.49 114. -2 3 -13
 """
 
-  tmp_dir = open_tmp_directory()
+  tmp_dir = os.path.abspath(open_tmp_directory())
   f = open(os.path.join(tmp_dir, "SPOT.XDS"), mode="wb")
   f.write(txt)
   f.close()
@@ -69,17 +69,31 @@ def export_xds():
     print "skipping exercise_export_xds: dials_regression not available"
     return
 
+  cwd = os.path.abspath(os.curdir)
+  tmp_dir = os.path.abspath(open_tmp_directory(suffix="export_xds"))
+  os.chdir(tmp_dir)
+
+  args = ["dials.find_spots",
+          os.path.join(dials_regression, "centroid_test_data",
+                       "datablock.json")]
+
+  command = " ".join(args)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  pickle_path = os.path.join(tmp_dir, "strong.pickle")
+  assert os.path.exists(pickle_path)
+
   args = ["dials.export_xds",
           os.path.join(dials_regression, "centroid_test_data",
                        "experiments.json"),
-          os.path.join(dials_regression, "centroid_test_data",
-                       "spot_all_xds.pickle")]
+          pickle_path]
   command = " ".join(args)
   print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
   assert os.path.exists("XDS.INP")
   assert os.path.exists("XPARM.XDS")
   assert os.path.exists("SPOT.XDS")
+  os.chdir(cwd)
 
 
 def run():
