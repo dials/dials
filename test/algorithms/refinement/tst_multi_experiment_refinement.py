@@ -310,10 +310,10 @@ history = refiner.run()
 plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
 #plt.show()
 
-#print
 print "Refinement has completed with the following geometry:"
-print mybeam
-print mydetector
-print crystal1
-print crystal2
+expts = refiner.get_experiments()
+for beam in expts.beams(): print beam
+for detector in expts.detectors(): print detector
+for crystal in  expts.crystals(): print crystal
+
 
