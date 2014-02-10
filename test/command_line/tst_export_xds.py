@@ -90,9 +90,9 @@ def export_xds():
   command = " ".join(args)
   print command
   result = easy_run.fully_buffered(command=command).raise_if_errors()
-  assert os.path.exists("XDS.INP")
-  assert os.path.exists("XPARM.XDS")
-  assert os.path.exists("SPOT.XDS")
+  assert os.path.exists("xds/XDS.INP")
+  assert os.path.exists("xds/XPARM.XDS")
+  assert os.path.exists("xds/SPOT.XDS")
   os.chdir(cwd)
 
 

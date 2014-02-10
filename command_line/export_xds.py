@@ -12,10 +12,10 @@ from __future__ import division
 
 
 def run(args):
+  import os
   from libtbx.phil import command_line
   from dials.util.command_line import Importer
   from dxtbx.serialize import xds
-  from iotbx.xds import spot_xds
 
   importer = Importer(args)
   experiments = importer.experiments
@@ -30,6 +30,9 @@ def run(args):
       if len(experiments) > 1:
         suffix = "_%i" %(i+1)
 
+      sub_dir = "xds%s" %suffix
+      if not os.path.isdir(sub_dir):
+        os.makedirs(sub_dir)
       imageset = experiments[i].imageset
       crystal_model = experiments[i].crystal
       crystal_model = crystal_model.change_basis(
@@ -41,14 +44,23 @@ def run(args):
       real_space_b = A_inv.elems[3:6]
       real_space_c = A_inv.elems[6:9]
       to_xds = xds.to_xds(imageset)
-      with open('XDS%s.INP' %suffix, 'wb') as f:
+      with open(os.path.join(sub_dir, 'XDS.INP'), 'wb') as f:
         to_xds.XDS_INP(out=f, job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
-      with open('XPARM%s.XDS' %suffix, 'wb') as f:
+      with open(os.path.join(sub_dir, 'XPARM.XDS'), 'wb') as f:
         to_xds.xparm_xds(
           real_space_a, real_space_b, real_space_c,
           crystal_model.get_space_group().type().number(),
           out=f)
+      
+      if reflections is not None:
+        ref_cryst = reflections.select(reflections['id'] == i)
+        export_spot_xds(ref_cryst, os.path.join(sub_dir, 'SPOT.XDS'))
 
+  else:
+    export_spot_xds(reflections, 'SPOT.XDS')
+
+def export_spot_xds(reflections, filename):
+  from iotbx.xds import spot_xds
   if reflections is not None and len(reflections) > 0:
     centroids = reflections['xyzobs.px.value']
     intensities = reflections['intensity.raw.value']
@@ -61,7 +73,7 @@ def run(args):
     xds_writer = spot_xds.writer(centroids=centroids,
                                  intensities=intensities,
                                  miller_indices=miller_indices)
-    xds_writer.write_file(filename='SPOT.XDS')
+    xds_writer.write_file(filename=filename)
 
 
 if __name__ == '__main__':
