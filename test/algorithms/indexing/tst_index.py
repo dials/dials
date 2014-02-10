@@ -421,14 +421,14 @@ def exercise_11():
                 ]
 
   expected_unit_cell = uctbx.unit_cell((78, 78, 39, 90, 90, 90))
-  expected_rmsds = (0.45, 0.42) # XXX these rmsds really aren't great
+  expected_rmsds = (0.35, 0.36) # XXX these rmsds really aren't great
   expected_hall_symbol = ' P 4nw 2abw'
   n_expected_lattices = 1
 
   result = run_one_indexing(pickle_path, datablock_json, extra_args, expected_unit_cell,
                             expected_rmsds, expected_hall_symbol,
                             n_expected_lattices=n_expected_lattices,
-                            relative_length_tolerance=0.03,
+                            relative_length_tolerance=0.05,
                             absolute_angle_tolerance=1)
 
 
