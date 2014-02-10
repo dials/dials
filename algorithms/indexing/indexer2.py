@@ -389,10 +389,12 @@ class indexer_base(object):
             experiments, maximum_spot_error=maximum_spot_error)
         except RuntimeError, e:
           s = str(e)
-          if "below the configured limit" in s:
+          if ("below the configured limit" in s or
+              "Insufficient matches for crystal" in s):
             had_refinement_error = True
             print "Refinement failed:"
             print s
+            del experiments[-1]
             break
           raise
 
