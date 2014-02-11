@@ -173,6 +173,7 @@ algorithms/refinement/prediction/.Rhistory -text
 algorithms/refinement/prediction/README -text
 algorithms/refinement/prediction/__init__.py -text
 algorithms/refinement/prediction/ap_indices.dat -text
+algorithms/refinement/prediction/managed_predictors.py -text
 algorithms/refinement/prediction/predictors.py -text
 algorithms/refinement/prediction/ra_indices.dat -text
 algorithms/refinement/prediction/rscript.R -text

@@ -45,7 +45,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -196,7 +196,7 @@ index_generator = IndexGenerator(crystal2.get_unit_cell(),
 indices2 = index_generator.to_array()
 
 # Build a reflection predictor
-ref_predictor = ReflectionPredictor(experiments, sweep_range)
+ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 obs_refs1 = ref_predictor.predict(indices1, experiment_id=0)
 obs_refs2 = ref_predictor.predict(indices1, experiment_id=1)

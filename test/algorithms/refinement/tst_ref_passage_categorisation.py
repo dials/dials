@@ -26,7 +26,7 @@ from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # We will set up a mock scan
@@ -73,7 +73,7 @@ temp = myscan.get_oscillation(deg=False)
 im_width = temp[1] - temp[0]
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
-# Create an ExperimentList for ReflectionPredictor
+# Create an ExperimentList for ScansRayPredictor
 experiments = ExperimentList()
 experiments.append(Experiment(
         beam=mybeam, detector=mydetector, goniometer=mygonio,
@@ -81,7 +81,7 @@ experiments.append(Experiment(
 
 # Select those that are excited in a 30 degree sweep and get angles
 UB = mycrystal.get_U() * mycrystal.get_B()
-ref_predictor = ReflectionPredictor(experiments, sweep_range)
+ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 

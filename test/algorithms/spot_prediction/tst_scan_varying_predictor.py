@@ -31,7 +31,7 @@ from dials.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.refinement.prediction import \
     ScanVaryingReflectionListGenerator
 from cctbx.sgtbx import space_group, space_group_symbols
@@ -95,7 +95,7 @@ experiments = ExperimentList()
 experiments.append(Experiment(
       beam=mybeam, detector=mydetector, goniometer=mygonio,
       scan=myscan, crystal=mycrystal, imageset=None))
-ref_predictor = ReflectionPredictor(experiments, sweep_range)
+ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 ar_range = myscan.get_array_range()
 # We need a UB matrix at the beginning of every image, and at the end of the

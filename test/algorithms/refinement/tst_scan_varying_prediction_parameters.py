@@ -29,7 +29,7 @@ from dxtbx.model.scan import scan_factory
 
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.model.experiment.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations
 
@@ -179,7 +179,7 @@ experiments.append(Experiment(
       beam=mybeam, detector=mydetector, goniometer=mygonio,
       crystal=mycrystal, imageset=None))
 sweep_range = myscan.get_oscillation_range(deg=False)
-ref_predictor = ReflectionPredictor(experiments, sweep_range)
+ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 #### Unit tests
 

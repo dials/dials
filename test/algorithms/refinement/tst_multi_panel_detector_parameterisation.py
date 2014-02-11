@@ -56,7 +56,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -235,7 +235,7 @@ if __name__ == '__main__':
 
   # for the reflection predictor, it doesn't matter which experiment list is
   # passed, as the detector is not used
-  ref_predictor = ReflectionPredictor(experiments_single_panel, sweep_range)
+  ref_predictor = ScansRayPredictor(experiments_single_panel, sweep_range)
 
   # get two sets of identical reflections
   obs_refs = ref_predictor.predict(indices)

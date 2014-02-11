@@ -132,7 +132,7 @@ def refine(beam, goniometer, crystal, detector, scan,
 
   # Reflection prediction
   from dials.model.experiment.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ReflectionPredictor
+  from dials.algorithms.refinement.prediction import ScansRayPredictor
 
   # Model parameterisations
   from dials.algorithms.refinement.parameterisation.detector_parameters import \
@@ -185,7 +185,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   experiments.append(Experiment(
       beam=beam, detector=detector, goniometer=goniometer,
       scan=scan, crystal=crystal, imageset=None))
-  ref_predictor = ReflectionPredictor(experiments)
+  ref_predictor = ScansRayPredictor(experiments)
 
   ###########################
   # Parameterise the models #
@@ -287,7 +287,7 @@ def scan_varying_refine(
 
   # Reflection prediction
   from dials.model.experiment.experiment_list import ExperimentList, Experiment
-  from dials.algorithms.refinement.prediction import ReflectionPredictor
+  from dials.algorithms.refinement.prediction import ScansRayPredictor
   from dials.algorithms.refinement.prediction import \
       ScanVaryingReflectionListGenerator
 
@@ -322,7 +322,7 @@ def scan_varying_refine(
   experiments.append(Experiment(
       beam=beam, detector=detector, goniometer=goniometer,
       scan=scan, crystal=crystal, imageset=None))
-  ref_predictor = ReflectionPredictor(experiments)
+  ref_predictor = ScansRayPredictor(experiments)
 
   ###########################
   # Parameterise the models #

@@ -597,16 +597,16 @@ class RefinerFactory(object):
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if all(e.goniometer is not None for e in experiments):
-      from dials.algorithms.refinement.prediction import ReflectionPredictor
-      ref_predictor = ReflectionPredictor(experiments)
+      from dials.algorithms.refinement.prediction import ScansRayPredictor
+      ref_predictor = ScansRayPredictor(experiments)
 
       from dials.algorithms.refinement.target \
         import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
     elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.prediction import \
-          StillsReflectionPredictor
-      ref_predictor = StillsReflectionPredictor(experiments)
+          StillsRayPredictor
+      ref_predictor = StillsRayPredictor(experiments)
 
       from dials.algorithms.refinement.target_stills \
         import LeastSquaresXYResidualWithRmsdCutoff as targ

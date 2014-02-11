@@ -29,7 +29,7 @@ from setup_geometry import Extract
 
 from dials.algorithms.spot_prediction import IndexGenerator
 from dials.model.experiment.experiment_list import ExperimentList, Experiment
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations
 
@@ -151,8 +151,8 @@ pred_param = XYPhiPredictionParameterisation(experiments,
                xl_orientation_parameterisations = [xlo_param],
                xl_unit_cell_parameterisations = [xluc_param])
 
-# Create a ReflectionPredictor
-ref_predictor = ReflectionPredictor(experiments, sweep_range)
+# Create a ScansRayPredictor
+ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 # Rebuild a full global parameterisation
 pred_param = XYPhiPredictionParameterisation(experiments, [det_param],

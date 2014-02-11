@@ -45,7 +45,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
@@ -184,7 +184,7 @@ assert sweep_range == (0., pi)
 assert approx_equal(im_width, 0.1 * pi / 180.)
 
 # Build a reflection predictor
-ref_predictor = ReflectionPredictor(experiments, sweep_range)
+ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices)
 

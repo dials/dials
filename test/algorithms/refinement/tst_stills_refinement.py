@@ -46,7 +46,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ReflectionPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -136,21 +136,21 @@ s0_param.set_fixed([True, False])
 #p_vals[0] += 2.
 #s0_param.set_param_vals(p_vals)
 
-# rotate crystal a bit (=2 mrad each rotation)
+# rotate crystal a bit (=5 mrad each rotation)
 xlo_p_vals = []
 p_vals = xlo_param.get_param_vals()
 xlo_p_vals.append(p_vals)
-new_p_vals = [a + b for a, b in zip(p_vals, [2., 2., 2.])]
+new_p_vals = [a + b for a, b in zip(p_vals, [5., 5., 5.])]
 xlo_param.set_param_vals(new_p_vals)
 
-# change unit cell a bit (=0.1 Angstrom length upsets, 0.1 degree of
+# change unit cell a bit (=1.0 Angstrom length upsets, 0.5 degree of
 # gamma angle)
 xluc_p_vals = []
 p_vals = xluc_param.get_param_vals()
 xluc_p_vals.append(p_vals)
 cell_params = crystal.get_unit_cell().parameters()
-cell_params = [a + b for a, b in zip(cell_params, [0.1, 0.1, 0.1, 0.0,
-                                                   0.0, 0.1])]
+cell_params = [a + b for a, b in zip(cell_params, [1.0, 1.0, 1.0, 0.0,
+                                                   0.0, 0.5])]
 new_uc = unit_cell(cell_params)
 newB = matrix.sqr(new_uc.fractionalization_matrix()).transpose()
 S = symmetrize_reduce_enlarge(crystal.get_space_group())
@@ -174,7 +174,7 @@ index_generator = IndexGenerator(crystal.get_unit_cell(),
 indices = index_generator.to_array()
 
 # Build a reflection predictor
-ref_predictor = ReflectionPredictor(scans_experiments, sweep_range)
+ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices, experiment_id=0)
 
@@ -236,7 +236,7 @@ params.refinement.parameterisation.detector.fix="all"
 
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=0)
+  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=1)
 
 #####################################
 # Select reflections for refinement #
