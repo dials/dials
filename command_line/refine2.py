@@ -12,7 +12,9 @@
 
 from __future__ import division
 from dials.util.script import ScriptRunner
-
+from dials.util.command_line import Importer
+from dials.model.experiment.experiment_list import \
+  ExperimentList, ExperimentListDumper
 
 class Script(ScriptRunner):
   '''A class for running the script.'''
@@ -29,17 +31,10 @@ class Script(ScriptRunner):
 
     # Output filename option
     self.config().add_option(
-        '--output-sweep-filename',
-        dest = 'output_sweep_filename',
-        type = 'string', default = 'refined_sweep.json',
+        '--output-experiments-filename',
+        dest = 'output_experiments_filename',
+        type = 'string', default = 'refined_experiments.json',
         help = 'Set the filename for refined experimental models.')
-
-    # Output filename option
-    self.config().add_option(
-        '--output-crystal-filename',
-        dest = 'output_crystal_filename',
-        type = 'string', default = 'refined_crystal.json',
-        help = 'Set the filename for refined crystal model.')
 
     # Add a verbosity option
     self.config().add_option(
@@ -68,26 +63,21 @@ class Script(ScriptRunner):
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.algorithms.refinement import RefinerFactory
-    from dials.model.serialize import load, dump
-    from cctbx.crystal.crystal_model.serialize import load_crystal, dump_crystal
     import cPickle as pickle
 
-    # Check the number of arguments is correct
-    if len(args) != 3:
-      self.config().print_help()
-      return
+    importer = Importer(args, check_format=False, verbose=True)
 
     # Get the refiner
     print 'Configuring refiner'
 
-    # Try to load the models
-    print 'Loading models from {0} and {1}'.format(args[0], args[1])
-    sweep = load.sweep(args[0])
-    crystal = load_crystal(args[1])
-    reflections = pickle.load(open(args[2], 'rb'))
+    # Try to load the models and data
+    experiments = importer.experiments
+    assert len(experiments) > 0
+    reflections = importer.reflections
+    assert len(reflections) > 0
 
-    refiner = RefinerFactory.from_parameters_data_models(params,
-        reflections, sweep, crystal=crystal, verbosity=options.verbosity)
+    refiner = RefinerFactory.from_parameters_data_experiments(params,
+        reflections, experiments verbosity=options.verbosity)
 
     # Refine the geometry
     print 'Performing refinement'
@@ -110,29 +100,14 @@ class Script(ScriptRunner):
           f.write(text)
           f.close()
 
-    # update the input sweep
-    sweep.set_beam(refiner.get_beam())
-    sweep.set_detector(refiner.get_detector())
-    sweep.set_goniometer(refiner.get_goniometer())
+    # get the refined experiments
+    experiments = refiner.get_experiments()
 
-    # Save the refined geometry to file
-    output_sweep_filename = options.output_sweep_filename
-    print 'Saving refined geometry to {0}'.format(output_sweep_filename)
-    dump.sweep(sweep, open(output_sweep_filename, 'w'))
-
-    # Save the refined crystal to file
-    output_crystal_filename = options.output_crystal_filename
-    print 'Saving refined geometry to {0}'.format(output_crystal_filename)
-    dump_crystal(refiner.get_crystal(), open(output_crystal_filename, 'w'))
-
-    # Predict reflections and save to file
-    output_reflections_filename = options.output_reflections_filename
-    if output_reflections_filename:
-      print "Predicting reflections with the refined model"
-      rlist = refiner.predict_reflections()
-      print "Saving reflections to {0}".format(output_reflections_filename)
-      pickle.dump(rlist, open(output_reflections_filename, 'wb'),
-          pickle.HIGHEST_PROTOCOL)
+    # Save the refined experiments to file
+    output_experiments_filename = options.output_experiments_filename
+    print 'Saving refined experiments to {0}'.format(output_experiments_filename)
+    dump = ExperimentListDumper(experiments)
+    dump.as_json(output_experiments_filename)
 
     return
 

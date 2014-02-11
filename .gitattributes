@@ -300,6 +300,7 @@ command_line/print_reflection_stats.py -text
 command_line/print_test_reflections.py -text
 command_line/process.py -text
 command_line/refine.py -text
+command_line/refine2.py -text
 command_line/refine_bravais_settings.py -text
 command_line/reflection_stats.py -text
 command_line/show_models.py -text
