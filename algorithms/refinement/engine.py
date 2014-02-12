@@ -301,7 +301,9 @@ class AdaptLbfgs(Refinery):
     if self.minimizer.error:
       self.history.reason_for_termination = self.minimizer.error
 
-    if self._verbosity > 0: self.print_table()
+    if self._verbosity > 0:
+      print
+      self.print_table()
 
     return
 
@@ -503,6 +505,7 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
 
     # print output table
     if self._verbosity > 0:
+      print
       self.print_table()
 
     # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
@@ -622,6 +625,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
     # print output table
     if self._verbosity > 0:
+      print
       self.print_table()
 
     #FIXME

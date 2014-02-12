@@ -859,6 +859,10 @@ class Refiner(object):
       if self._scan: print self._scan
       for i, x in zip(self._crystal_ids, self._crystals): print i, x
 
+    if self._verbosity > 0:
+      print ""
+      print "Running refinement"
+      print "------------------"
     self._refinery.run()
 
     # write scan varying setting matrices back to crystal models
