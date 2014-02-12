@@ -248,6 +248,7 @@ algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reeke.py -text
 algorithms/spot_prediction/reeke_index_generator.h -text
 algorithms/spot_prediction/reflection_frames.h -text
+algorithms/spot_prediction/reflection_predictor.py -text
 algorithms/spot_prediction/rotation_angles.h -text
 array_family/SConscript -text
 array_family/__init__.py -text
