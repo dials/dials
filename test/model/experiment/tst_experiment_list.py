@@ -518,11 +518,11 @@ class TestExperimentListFactory(object):
     from dxtbx.model import Beam, Detector, Goniometer, Scan
     from cctbx.crystal.crystal_model import crystal_model
 
-    imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 2))))
+    imageset = ImageSweep(NullReader(SweepFileList("filename%01d.cbf", (0, 2))))
     imageset.set_beam(Beam())
     imageset.set_detector(Detector())
     imageset.set_goniometer(Goniometer())
-    imageset.set_scan(Scan())
+    imageset.set_scan(Scan((1,2),(0,1)))
 
     crystal = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
 
@@ -545,11 +545,11 @@ class TestExperimentListFactory(object):
     from dxtbx.datablock import DataBlockFactory
     from cctbx.crystal.crystal_model import crystal_model
 
-    imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 2))))
+    imageset = ImageSweep(NullReader(SweepFileList("filename%01d.cbf", (0, 2))))
     imageset.set_beam(Beam())
     imageset.set_detector(Detector())
     imageset.set_goniometer(Goniometer())
-    imageset.set_scan(Scan())
+    imageset.set_scan(Scan((1, 2), (0, 1)))
 
     crystal = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=0)
 
@@ -635,7 +635,7 @@ class TestExperimentListDumper(object):
     from cctbx.crystal.crystal_model import crystal_model
     from uuid import uuid4
 
-    imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 3))))
+    imageset = ImageSweep(NullReader(SweepFileList("filename%01d.cbf", (0, 3))))
     imageset.set_beam(Beam((1, 0, 0)))
     imageset.set_detector(Detector())
     imageset.set_goniometer(Goniometer())
