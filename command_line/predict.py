@@ -32,6 +32,13 @@ class Script(ScriptRunner):
         type = 'string', default = 'predicted.pickle',
         help = 'Set the filename for the predicted spots.')
 
+    # Output filename option
+    self.config().add_option(
+        '--force-static',
+        dest = 'force_static',
+        action = "store_true", default = False,
+        help = 'For a scan varying model force static prediction.')
+
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.model.serialize import load, dump
@@ -40,7 +47,7 @@ class Script(ScriptRunner):
     from dials.array_family import flex
 
     # Check the unhandled arguments
-    importer = Importer(args, include=['experiments'])
+    importer = Importer(args, include=['experiments'], check_format=False)
     if len(importer.unhandled_arguments) > 0:
       print '-' * 80
       print 'The following command line arguments weren\'t handled'
@@ -53,7 +60,9 @@ class Script(ScriptRunner):
       return
 
     # Populate the reflection table with predictions
-    predicted = flex.reflection_table.from_predictions(importer.experiments)
+    predicted = flex.reflection_table.from_predictions(
+      importer.experiments,
+      force_static=options.force_static)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(

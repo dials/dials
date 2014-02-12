@@ -23,12 +23,17 @@ class ReflectionPredictor(object):
     from dials.algorithms.spot_prediction import StillsReflectionPredictor
     from dxtbx.imageset import ImageSweep
 
+    # Get the force static flag
+    force_static = kwargs.get("force_static", False)
+
     # Create all the reflection predictors
     self._predict = []
     for e in experiments:
       # Select the predictor class
       if isinstance(e.imageset, ImageSweep):
-        if e.crystal.num_scan_points == e.scan.get_num_images() + 1:
+        nsp = e.crystal.num_scan_points
+        nim = e.scan.get_num_images()
+        if not force_static and nsp == nim + 1:
           Predictor = ScanVaryingReflectionPredictor
         else:
           Predictor = ScanStaticReflectionPredictor
