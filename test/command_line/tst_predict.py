@@ -28,7 +28,7 @@ class Test(object):
 
     import cPickle as pickle
     table = pickle.load(open('predicted.pickle', 'rb'))
-    assert(len(table) == 1986)
+    assert(len(table) == 1994)
     print 'OK'
 
     # Check the reflection IDs
