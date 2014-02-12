@@ -25,6 +25,82 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dials::model::Reflection;
 
+
+  //class ray_intersection2 {
+  //public:
+
+    //ray_intersection2(
+        //const Detector &detector,
+        //const af::const_ref< vec3<double> > &s1)
+      //: xy_mm_(s1.size()),
+        //xy_px_(s1.size()),
+        //panel_(s1.size()) {
+
+      //// Loop through and calculate the intersections
+      //for (std::size_t i = 0; i < s1.size(); ++i) {
+        //Detector::coord_type coord = detector.get_ray_intersection(s1[i]);
+        //panel_[i] = coord.first;
+        //xy_mm_[i] = coord.second;
+        //xy_px_[i] = detector[panel_[i]].millimeter_to_pixel(xy_mm_[i]);
+      //}
+    //}
+
+    //ray_intersection2(
+        //const Detector &detector,
+        //const af::const_ref< vec3<double> > &s1,
+        //std::size_t panel)
+      //: xy_mm_(s1.size()),
+        //xy_px_(s1.size()),
+        //panel_(s1.size(), panel) {
+
+      //// Loop through and calculate the intersections
+      //for (std::size_t i = 0; i < s1.size(); ++i) {
+        //vec2<double> coord = detector[panel].get_ray_intersection(s1[i]);
+        //xy_mm_[i] = coord;
+        //xy_px_[i] = detector[panel_[i]].millimeter_to_pixel(xy_mm_[i]);
+      //}
+    //}
+
+    //ray_intersection2(
+        //const Detector &detector,
+        //const af::const_ref< vec3<double> > &s1,
+        //const af::const_ref< std::size_t > &panel)
+      //: xy_mm_(s1.size()),
+        //xy_px_(s1.size()),
+        //panel_(panel) {
+
+      //// Loop through and calculate the intersections
+      //for (std::size_t i = 0; i < s1.size(); ++i) {
+        //vec2<double> coord = detector[panel[i]].get_ray_intersection(s1[i]);
+        //xy_mm_[i] = coord;
+        //xy_px_[i] = detector[panel_[i]].millimeter_to_pixel(xy_mm_[i]);
+      //}
+    //}
+
+    //af::shared< vec2<double> > xy_mm() const {
+      //return xy_mm_;
+    //}
+
+    //af::shared< vec2<double> > xy_px() const {
+      //return xy_px_;
+    //}
+
+    //af::shared< std::size_t > panel() const {
+      //return panel_;
+    //}
+
+  //private:
+    //af::shared< vec2<double> > xy_mm_;
+    //af::shared< vec2<double> > xy_px_;
+    //af::shared< std::size_t > panel_;
+  //};
+
+
+  struct Impact {
+    vec3<double> px;
+    vec3<double> mm;
+  };
+
   /**
    * Calculate the intersection of a ray (given by the reflection object) with
    * the detector. Return as a new reflection object.

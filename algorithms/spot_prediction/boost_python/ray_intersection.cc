@@ -30,6 +30,28 @@ namespace dials { namespace algorithms { namespace boost_python {
     af::shared<Reflection> (*ray_intersection_array_w_panel)(const Detector&,
       const af::const_ref<Reflection>&, std::size_t) = &ray_intersection;
 
+    //init<
+      //const Detector&,
+      //const af::const_ref< vec3<double> >&
+    //> from_s1_any_panel((arg("detector"), arg("s1")));
+
+    //init<
+      //const Detector&,
+      //const af::const_ref< vec3<double> >&,
+      //std::size_t
+    //> from_s1_single_panel((arg("detector"), arg("s1"), arg("panel")));
+
+    //init<
+      //const Detector&,
+      //const af::const_ref< vec3<double> >&,
+      //const af::const_ref<std::size_t>&
+    //> from_s1_panel_array((arg("detector"), arg("s1"), arg("panel")));
+
+    //class_<ray_intersection2>("ray_intersection2", no_init)
+      //.def(from_s1_any_panel)
+      //.def(from_s1_single_panel)
+      //.def(from_s1_panel_array);
+
     // Export all the ray intersection functions
     def("ray_intersection", ray_intersection_single,
       (arg("detector"), arg("reflection")));

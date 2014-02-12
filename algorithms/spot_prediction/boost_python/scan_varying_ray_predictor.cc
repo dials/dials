@@ -1,0 +1,45 @@
+/*
+ * scan_varying_ray_predictor.cc
+ *
+ *  Copyright (C) 2013 Diamond Light Source
+ *
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
+#include <boost/python.hpp>
+#include <boost/python/def.hpp>
+#include <dials/algorithms/spot_prediction/scan_varying_ray_predictor.h>
+#include <dxtbx/model/scan.h>
+#include <dxtbx/model/beam.h>
+#include <dxtbx/model/goniometer.h>
+#include <dxtbx/model/detector.h>
+#include <dials/model/data/reflection.h>
+
+namespace dials { namespace algorithms { namespace boost_python {
+
+  using namespace boost::python;
+
+  void export_scan_varying_ray_predictor()
+  {
+    // Create and return the wrapper for the spot predictor object
+    class_ <ScanVaryingRayPredictor> ("ScanVaryingRayPredictor", no_init)
+      .def(init <vec3<double>,
+                 vec3<double>,
+                 vec2<double>,
+                 double> ((
+        arg("s0"),
+        arg("m2"),
+        arg("dphi"),
+        arg("dmin"))))
+      .def("__call__", &ScanVaryingRayPredictor::operator(), (
+        arg("hkl"),
+        arg("A1"),
+        arg("A2"),
+        arg("image"),
+        arg("step") = 1));
+  }
+
+}}} // namespace = dials::spot_prediction::boost_python
+
