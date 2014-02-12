@@ -18,6 +18,12 @@ class Test(object):
   def run(self):
     from os.path import abspath, join
     from libtbx import easy_run
+    import os
+    from uuid import uuid4
+
+    dirname ='tmp_%s' % uuid4().hex
+    os.mkdir(dirname)
+    os.chdir(dirname)
 
     # Call dials.integrate
     easy_run.fully_buffered([
@@ -30,6 +36,7 @@ class Test(object):
     table = pickle.load(open('integrated.pickle', 'rb'))
     assert(len(table) == 360)
     print 'OK'
+
 
 if __name__ == '__main__':
   test = Test()
