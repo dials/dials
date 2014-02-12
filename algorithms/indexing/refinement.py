@@ -79,7 +79,7 @@ def debug_plot_residuals(refiner, inlier_sel=None):
   if inlier_sel is None:
     inlier_sel = flex.bool(len(residuals), True)
   print inlier_sel.size(), panel_ids.size()
-  for i_crystal in range(flex.max(crystal_ids)):
+  for i_crystal in range(flex.max(crystal_ids)+1):
     crystal_sel = (crystal_ids == i_crystal)
     for i_panel in range(len(refiner.get_experiments().detectors()[0])):
       panel_sel = (panel_ids == i_panel)
@@ -100,35 +100,35 @@ def debug_plot_residuals(refiner, inlier_sel=None):
       pyplot.axes().set_aspect('equal')
       pyplot.show()
 
-    min_frame = int(math.floor(flex.min(frame_obs)))
-    max_frame = int(math.ceil(flex.max(frame_obs)))
-    mean_residuals_x = []
-    mean_residuals_y = []
-    mean_residuals_phi = []
-    frame = []
-    for i_frame in range(min_frame, max_frame):
-      sel = (frame_obs >= i_frame) & (frame_obs < (i_frame+1))
-      if sel.count(True) == 0:
-        continue
-      mean_residuals_x.append(flex.mean(x_residuals.select(sel)))
-      mean_residuals_y.append(flex.mean(y_residuals.select(sel)))
-      mean_residuals_phi.append(flex.mean(phi_residuals.select(sel)))
-      frame.append(i_frame)
+  min_frame = int(math.floor(flex.min(frame_obs)))
+  max_frame = int(math.ceil(flex.max(frame_obs)))
+  mean_residuals_x = []
+  mean_residuals_y = []
+  mean_residuals_phi = []
+  frame = []
+  for i_frame in range(min_frame, max_frame):
+    sel = (frame_obs >= i_frame) & (frame_obs < (i_frame+1))
+    if sel.count(True) == 0:
+      continue
+    mean_residuals_x.append(flex.mean(x_residuals.select(sel)))
+    mean_residuals_y.append(flex.mean(y_residuals.select(sel)))
+    mean_residuals_phi.append(flex.mean(phi_residuals.select(sel)))
+    frame.append(i_frame)
 
-    fig = pyplot.figure()
-    ax = fig.add_subplot(311)
-    pyplot.axhline(0, color='grey')
-    ax.scatter(frame, mean_residuals_x)
-    ax.set_xlabel('frame #')
-    ax.set_ylabel('mean residual_x')
-    ax = fig.add_subplot(312)
-    pyplot.axhline(0, color='grey')
-    ax.scatter(frame, mean_residuals_y)
-    ax.set_xlabel('frame #')
-    ax.set_ylabel('mean residual_y')
-    ax = fig.add_subplot(313)
-    pyplot.axhline(0, color='grey')
-    ax.scatter(frame, mean_residuals_phi)
-    ax.set_xlabel('frame #')
-    ax.set_ylabel('mean residual_phi')
-    pyplot.show()
+  fig = pyplot.figure()
+  ax = fig.add_subplot(311)
+  pyplot.axhline(0, color='grey')
+  ax.scatter(frame, mean_residuals_x)
+  ax.set_xlabel('frame #')
+  ax.set_ylabel('mean residual_x')
+  ax = fig.add_subplot(312)
+  pyplot.axhline(0, color='grey')
+  ax.scatter(frame, mean_residuals_y)
+  ax.set_xlabel('frame #')
+  ax.set_ylabel('mean residual_y')
+  ax = fig.add_subplot(313)
+  pyplot.axhline(0, color='grey')
+  ax.scatter(frame, mean_residuals_phi)
+  ax.set_xlabel('frame #')
+  ax.set_ylabel('mean residual_phi')
+  pyplot.show()
