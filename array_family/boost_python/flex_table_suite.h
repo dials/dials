@@ -68,6 +68,7 @@ namespace flex_table_suite {
 
     template <typename T>
     void operator () (T &column) {
+      DIALS_ASSERT(index < column.size());
       column[index] = extract<typename T::value_type>(item);
     }
   };
@@ -95,6 +96,8 @@ namespace flex_table_suite {
     template <typename U>
     void operator () (const U &other_column) {
       U self_column = self[key];
+      DIALS_ASSERT(nb == other_column.size());
+      DIALS_ASSERT(na + nb == self_column.size());
       for (typename T::size_type i = 0; i < nb; ++i) {
         self_column[na + i] = other_column[i];
       }
@@ -118,6 +121,7 @@ namespace flex_table_suite {
     void operator () (const U &other_column) {
       self.erase(key);
       U self_column = self[key];
+      DIALS_ASSERT(self_column.size() == other_column.size());
       for (std::size_t i = 0; i < other_column.size(); ++i) {
         self_column[i] = other_column[i];
       }
@@ -206,6 +210,7 @@ namespace flex_table_suite {
     template <typename U>
     void operator()(const U &other_column) {
       U result_column = result[key];
+      DIALS_ASSERT(result_column.size() == other_column.size());
       for (std::size_t i = 0; i < other_column.size(); ++i) {
         result_column[i] = other_column[i];
       }
@@ -233,6 +238,7 @@ namespace flex_table_suite {
     template <typename U>
     void operator()(const U &other_column) {
       U result_column = result[key];
+      DIALS_ASSERT(result_column.size() == index.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
         result_column[i] = other_column[index[i]];
       }
@@ -260,6 +266,7 @@ namespace flex_table_suite {
     template <typename U>
     void operator()(const U &other_column) {
       U result_column = result[key];
+      DIALS_ASSERT(other_column.size() == index.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
         result_column[index[i]] = other_column[i];
       }
@@ -279,6 +286,7 @@ namespace flex_table_suite {
     template <typename T>
     void operator () (T &column) {
       std::vector<typename T::value_type> temp(column.begin(), column.end());
+      DIALS_ASSERT(index.size() == column.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
         column[i] = temp[index[i]];
       }

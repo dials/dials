@@ -266,7 +266,8 @@ namespace dials { namespace af {
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
-      default_nrows_ = nrows();
+      DIALS_ASSERT(is_consistent());
+      default_nrows_ = n;
     }
 
     /**
@@ -283,12 +284,14 @@ namespace dials { namespace af {
      * @param n The number of elements to insert
      */
     void insert(size_type pos, size_type n) {
-      DIALS_ASSERT(pos <= nrows());
+      size_type nr = nrows();
+      DIALS_ASSERT(pos <= nr);
       insert_visitor visitor(pos, n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
-      default_nrows_ = nrows();
+      DIALS_ASSERT(is_consistent());
+      default_nrows_ = nr + n;
     }
 
     /**
@@ -305,12 +308,14 @@ namespace dials { namespace af {
      * @param n The number of elements to erase
      */
     void erase(size_type pos, size_type n) {
-      DIALS_ASSERT(pos + n <= nrows());
+      size_type nr = nrows();
+      DIALS_ASSERT(pos + n <= nr);
       erase_visitor visitor(pos, n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
-      default_nrows_ = nrows();
+      DIALS_ASSERT(is_consistent());
+      default_nrows_ = nr - n;
     }
 
     /**

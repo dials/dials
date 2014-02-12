@@ -17,7 +17,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   ''' An injector class to add additional methods to the reflection table. '''
 
   @staticmethod
-  def from_predictions(exlist):
+  def from_predictions2(exlist):
     ''' Construct a reflection table from predictions. '''
     from dials.algorithms.integration import ReflectionPredictor
     from dials.array_family import flex
@@ -31,17 +31,12 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return result
 
   @staticmethod
-  def from_predictions2(exlist, hkl=None, idx=None, panel=None):
+  def from_predictions(exlist):
     ''' Construct a reflection table from predictions. '''
-    from dials.algorithms.spot_prediction import ReflectionPredictor
+    from dials.algorithms.spot_prediction.reflection_predictor \
+      import ReflectionPredictor
     predict = ReflectionPredictor(exlist)
-    count = [hkl, idx].count(None)
-    if count == 2:
-      return predict.all_possible()
-    elif count == 0:
-      return predict.selected(hkl, idx, panel)
-    else:
-      raise RuntimeError('Must give both hkl and idx or neither')
+    return predict()
 
   @staticmethod
   def from_observations(datablocks, params):
