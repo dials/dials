@@ -125,15 +125,6 @@ class Script(ScriptRunner):
     print 'Saving refined geometry to {0}'.format(output_crystal_filename)
     dump_crystal(refiner.get_crystal(), open(output_crystal_filename, 'w'))
 
-    # Predict reflections and save to file
-    output_reflections_filename = options.output_reflections_filename
-    if output_reflections_filename:
-      print "Predicting reflections with the refined model"
-      rlist = refiner.predict_reflections()
-      print "Saving reflections to {0}".format(output_reflections_filename)
-      pickle.dump(rlist, open(output_reflections_filename, 'wb'),
-          pickle.HIGHEST_PROTOCOL)
-
     return
 
 if __name__ == '__main__':
