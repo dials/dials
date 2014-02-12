@@ -26,6 +26,7 @@ import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
+from dials.model.experiment.experiment_list import ExperimentListFactory
 
 def test1():
 
@@ -51,16 +52,17 @@ def test1():
   os.chdir(cwd)
 
   # load results
-  from dials.model.experiment import ExperimentListFactory
-  reg_exp = ExperimentListFactory.from_json(
-              os.path.join(data_dir, "regression_experiment.json"))
-  ref_exp = ExperimentListFactory.from_json(
-              os.path.join(data_dir, "refined_experiment.json"))
+  reg_exp = ExperimentListFactory.from_json_file(
+              os.path.join(data_dir, "regression_experiments.json"),
+              check_format=False)[0]
+  ref_exp = ExperimentListFactory.from_json_file(
+              os.path.join(data_dir, "refined_experiments.json"),
+              check_format=False)[0]
 
   # test refined models against expected
   assert reg_exp.crystal == ref_exp.crystal
-  assert sweep.get_detector() == reg_sweep.get_detector()
-  assert sweep.get_beam() == reg_sweep.get_beam()
+  assert reg_exp.detector == ref_exp.detector
+  assert reg_exp.beam == ref_exp.beam
 
   print "OK"
   return
