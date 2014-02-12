@@ -96,7 +96,6 @@ namespace flex_table_suite {
     template <typename U>
     void operator () (const U &other_column) {
       U self_column = self[key];
-      DIALS_ASSERT(nb == other_column.size());
       DIALS_ASSERT(na + nb == self_column.size());
       for (typename T::size_type i = 0; i < nb; ++i) {
         self_column[na + i] = other_column[i];
