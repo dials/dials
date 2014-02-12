@@ -21,6 +21,16 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
 
+  static
+  object predict(const ScanVaryingRayPredictor &predictor,
+      const cctbx::miller::index<> &h,
+      const mat3<double> &A1, const mat3<double> A2,
+      int image, std::size_t step) {
+    boost::optional<Ray> result = predictor(h, A1, A2, image, step);
+    return !result ? object() : object(*result);
+  }
+
+
   void export_scan_varying_ray_predictor()
   {
     // Create and return the wrapper for the spot predictor object
@@ -33,7 +43,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("m2"),
         arg("dphi"),
         arg("dmin"))))
-      .def("__call__", &ScanVaryingRayPredictor::operator(), (
+      .def("__call__", &predict, (
         arg("hkl"),
         arg("A1"),
         arg("A2"),
@@ -42,4 +52,3 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
 }}} // namespace = dials::spot_prediction::boost_python
-

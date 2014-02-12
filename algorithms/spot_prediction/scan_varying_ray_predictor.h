@@ -1,5 +1,5 @@
 /*
- * scan_varying_ray_predictor.cc
+ * scan_varying_ray_predictor.h
  *
  *  Copyright (C) 2013 Diamond Light Source, CCP4
  *
@@ -29,27 +29,62 @@ namespace dials { namespace algorithms {
   using scitbx::mat3;
   using dials::model::Ray;
 
+  /**
+   * Reflection prediction for a relp within a small segment of a scan, which we
+   * assume to be a single image.
+   *
+   * The path of the relp through reciprocal space between the start and end of
+   * the image is approximated by a general linear transformation (not just a
+   * rotation).
+   *
+   * Temporarily, we initialise with a list of N+1 UB matrices, where N is the
+   * total number of images. In future we will simple pass a crystal model,
+   * which will store its own per-image UB matrix.
+   *
+   * Currently it is assumed that only the crystal model varies with image
+   * number, whilst the other models remain static.
+   */
   class ScanVaryingRayPredictor {
   public:
 
     // Typedef the miller_index type
     typedef cctbx::miller::index <> miller_index;
 
+    /**
+     * Initialise the predictor.
+     * @param s0 The beam vector
+     * @param m2 The rotation axis
+     * @param dphi The oscillation (phi0, dphi)
+     * @param dmin The resolution limit
+     */
     ScanVaryingRayPredictor(
           vec3<double> s0, vec3<double> m2,
           vec2<double> dphi, double dmin)
       : s0_(s0),
-        m2_(m2),
+        m2_(m2.normalize()),
         dphi_(dphi),
         s0_mag_(s0.length()),
         dmin_(dmin) {
+      DIALS_ASSERT(std::abs(dphi_[1]) > 0.0);
+      DIALS_ASSERT(s0_mag_ > 0.0);
       DIALS_ASSERT(dmin_ > 0.0);
       dstarmax_ = 1.0 / dmin_;
       dstarmax_sq_ = dstarmax_ * dstarmax_;
     }
 
-    boost::optional<Ray> operator()(const miller_index &h,
-        const mat3<double> &A1, const mat3<double> A2, int image, std::size_t step) const {
+    /**
+     * Predict the ray for the given hkl on the given image.
+     * @param h The miller index
+     * @param A1 The setting matrix for the beginning of the step.
+     * @param A2 The setting matrix for the end of the step.
+     * @param image The image index
+     * @param step The step to predict over.
+     * @returns The ray if predicted
+     */
+    boost::optional<Ray> operator()(
+        const miller_index &h,
+        const mat3<double> &A1, const mat3<double> A2,
+        int image, std::size_t step) const {
 
       // Calculate the reciprocal space vectors
       vec3<double> r1 = A1 * h;

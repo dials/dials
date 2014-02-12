@@ -675,6 +675,7 @@ test/algorithms/spot_prediction/tst_reeke_index_generator.py -text
 test/algorithms/spot_prediction/tst_reeke_model.cc -text
 test/algorithms/spot_prediction/tst_rotation_angles.py -text
 test/algorithms/spot_prediction/tst_scan_varying_predictor.py -text
+test/algorithms/spot_prediction/tst_scan_varying_ray_predictor.py -text
 test/algorithms/spot_prediction/tst_spot_prediction.py -text
 test/array_family/tst_flex_partial_shoebox.py -text
 test/array_family/tst_flex_pixel_list.py -text
