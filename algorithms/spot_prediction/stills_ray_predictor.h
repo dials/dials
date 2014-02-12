@@ -19,6 +19,7 @@
 #include <scitbx/mat3.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/ray.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
@@ -44,7 +45,9 @@ namespace dials { namespace algorithms {
     typedef cctbx::miller::index<> miller_index;
 
     StillsRayPredictor(vec3<double> s0)
-      : s0_(s0) {}
+      : s0_(s0) {
+      DIALS_ASSERT(s0_.length() > 0.0);
+    }
 
     af::small<Ray,2> operator()(miller_index h, mat3<double> ub) const {
 
