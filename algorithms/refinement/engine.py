@@ -15,6 +15,7 @@ from __future__ import division
 from scitbx import lbfgs
 from cctbx.array_family import flex
 import libtbx
+import sys
 
 # use lstbx classes
 from scitbx.lstbx import normal_eqns, normal_eqns_solving
@@ -200,18 +201,6 @@ class Refinery(object):
 
     return l1 > l2 and n1 <= n2
 
-  def print_step(self):
-    """print information about the current step"""
-
-    print "Function evaluation"
-    msg = "  Params: " + "%.5f " * len(self._parameters)
-    print msg % tuple(self._parameters.get_param_vals())
-    print "  L: %.5f" % self._f
-    msg = "  dL/dp: " + "%.5f " * len(tuple(self._g))
-    print msg % tuple(self._g)
-
-    return
-
   def print_table(self):
     """print useful output in the form of a space-separated table"""
 
@@ -272,8 +261,6 @@ class AdaptLbfgs(Refinery):
     # compute target function and its gradients
     self._f, self._g = self._target.compute_functional_and_gradients()
 
-    if self._verbosity > 1: self.print_step()
-
     return self._f, flex.double(self._g)
 
   def callback_after_step(self, minimizer):
@@ -284,7 +271,8 @@ class AdaptLbfgs(Refinery):
 
     self.update_journal()
     if self._verbosity > 0:
-      print "Step", self.history._step
+      print self.history._step,
+      sys.stdout.flush()
 
     return self.test_for_termination()
 
@@ -414,6 +402,15 @@ class AdaptLstbx(
       self.x, self.old_x = self.old_x, None
       return True
 
+  def _print_normal_matrix(self):
+    """Print the full normal matrix at the current step. For debugging only"""
+    print "The normal matrix for the current step is:"
+    print self.normal_matrix_packed_u().\
+        matrix_packed_u_as_symmetric().\
+        as_scitbx_matrix().matlab_form(format=None,
+        one_row_per_line=True)
+    print
+
 class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
   """Refinery implementation, using lstbx Gauss Newton iterations"""
 
@@ -456,21 +453,17 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       self.history.gradient_norm.append(
         self.opposite_of_gradient().norm_inf())
 
-      if self._verbosity > 3:
-        print "The normal matrix for the current step is:"
-        print self.normal_matrix_packed_u().\
-            matrix_packed_u_as_symmetric().\
-            as_scitbx_matrix().matlab_form(format=None,
-            one_row_per_line=True)
-        print
+      # debugging
+      #if self._verbosity > 3: self._print_normal_matrix()
 
       # solve the normal equations
       self.solve()
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0: print "Step", self.history._step
-      if self._verbosity > 1: self.print_step()
+      if self._verbosity > 0:
+        print self.history._step,
+        sys.stdout.flush()
 
       # extra journalling post solve
       if self.history.solution is not None:
@@ -570,13 +563,8 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       self.history.gradient_norm.append(
           self.opposite_of_gradient().norm_inf())
 
-      if self._verbosity > 3:
-        print "The normal matrix for the current step is:"
-        print self.normal_matrix_packed_u().\
-            matrix_packed_u_as_symmetric().\
-            as_scitbx_matrix().matlab_form(format=None,
-            one_row_per_line=True)
-        print
+      # debugging
+      #if self._verbosity > 3: self._print_normal_matrix()
 
       a.matrix_packed_u_diagonal_add_in_place(self.mu)
 
@@ -585,8 +573,9 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # standard journalling
       self.update_journal()
-      if self._verbosity > 0: print "Step", self.history._step
-      if self._verbosity > 1: self.print_step()
+      if self._verbosity > 0:
+        print self.history._step,
+        sys.stdout.flush()
 
       # extra journalling post solve
       if self.history.solution is not None:
