@@ -77,7 +77,7 @@ class Script(ScriptRunner):
     assert len(reflections) > 0
 
     refiner = RefinerFactory.from_parameters_data_experiments(params,
-        reflections, experiments verbosity=options.verbosity)
+        reflections, experiments, verbosity=options.verbosity)
 
     # Refine the geometry
     print 'Performing refinement'
