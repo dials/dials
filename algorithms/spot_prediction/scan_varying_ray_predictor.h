@@ -1,3 +1,14 @@
+/*
+ * scan_varying_ray_predictor.cc
+ *
+ *  Copyright (C) 2013 Diamond Light Source, CCP4
+ *
+ *  Author: David Waterman
+ *  Author: James Parkhurst
+ *
+ *  This code is distributed under the BSD license, a copy of which is
+ *  included in the root directory of this package.
+ */
 
 #ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H

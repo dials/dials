@@ -1,8 +1,9 @@
 /*
  * stills_ray_predictor.h
  *
- *  Copyright (C) 2013 Diamond Light Source
+ *  Copyright (C) 2013 Diamond Light Source, CCP4
  *
+ *  Author: David Waterman
  *  Author: James Parkhurst
  *
  *  This code is distributed under the BSD license, a copy of which is
