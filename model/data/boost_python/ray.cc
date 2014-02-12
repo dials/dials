@@ -20,10 +20,20 @@ namespace dials { namespace model { namespace boost_python {
   using scitbx::vec2;
   using scitbx::vec3;
 
+  static
+  vec3<double> get_s1(const Ray &ray) {
+    return ray.s1;
+  }
+
+  static
+  void set_s1(Ray &ray, const vec3<double> &s1) {
+    ray.s1 = s1;
+  }
+
   void export_ray()
   {
     class_<Ray>("Ray")
-      .def_readwrite("s1", &Ray::s1)
+      .add_property("s1", get_s1, set_s1)
       .def_readwrite("angle", &Ray::angle)
       .def_readwrite("entering", &Ray::entering);
   }

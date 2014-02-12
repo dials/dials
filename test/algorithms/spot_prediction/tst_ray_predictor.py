@@ -136,10 +136,40 @@ class TestRayPredictor:
 
     print "OK"
 
+  def test_new(self):
+
+    from dials.algorithms.spot_prediction import RayPredictor2
+    from dials.algorithms.spot_prediction import IndexGenerator
+    # Create the index generator
+    self.generate_indices = IndexGenerator(self.unit_cell,
+        self.space_group_type, self.d_min)
+
+    s0 = self.beam.get_s0()
+    m2 = self.gonio.get_rotation_axis()
+    UB = self.ub_matrix
+    dphi = self.scan.get_oscillation_range(deg=False)
+
+    # Create the ray predictor
+    self.predict_rays = RayPredictor2(s0, m2, dphi)
+
+    # Predict the spot locations
+    self.reflections2 = []
+    for h in self.generate_indices.to_array():
+      self.reflections2.extend(self.predict_rays(h, UB))
+
+    eps = 1e-7
+    assert(len(self.reflections) == len(self.reflections2))
+    for r1, r2 in zip(self.reflections, self.reflections2):
+      assert(all(abs(a - b) < eps for a, b in zip(r1.beam_vector, r2.s1)))
+      assert(abs(r1.rotation_angle - r2.angle) < eps)
+      assert(r1.entering == r2.entering)
+    print 'OK'
+
   def run(self):
     self.test_miller_index_set()
     self.test_rotation_angles()
     self.test_beam_vectors()
+    self.test_new()
 
 if __name__ == '__main__':
   test = TestRayPredictor()
