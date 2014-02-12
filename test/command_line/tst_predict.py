@@ -14,16 +14,21 @@ class Test(object):
       print 'FAIL: dials_regression not configured'
       exit(0)
 
-    self.path = join(dials_regression, "centroid_test_data")
+    self.path = join(dials_regression, "prediction_test_data")
 
   def run(self):
+
+    self.tst_static_prediction()
+    self.tst_scan_varying_prediction()
+
+  def tst_static_prediction(self):
     from os.path import abspath, join
     from libtbx import easy_run
 
     # Call dials.integrate
     easy_run.fully_buffered([
       'dials.predict',
-      join(self.path, 'experiments.json'),
+      join(self.path, 'experiments_scan_static_crystal.json'),
     ]).raise_if_errors()
 
     import cPickle as pickle
@@ -41,6 +46,33 @@ class Test(object):
       assert(r['id'] == 0)
 
     print 'OK'
+
+  def tst_scan_varying_prediction(self):
+    from os.path import abspath, join
+    from libtbx import easy_run
+
+    # Call dials.integrate
+    easy_run.fully_buffered([
+      'dials.predict',
+      join(self.path, 'experiments_scan_varying_crystal.json'),
+    ]).raise_if_errors()
+
+    import cPickle as pickle
+    table = pickle.load(open('predicted.pickle', 'rb'))
+    assert(len(table) == 1934)
+    print 'OK'
+
+    # Check the reflection IDs
+    assert('id' in table)
+    assert('miller_index' in table)
+    assert('s1' in table)
+    assert('xyzcal.px' in table)
+    assert('xyzcal.mm' in table)
+    for r in table:
+      assert(r['id'] == 0)
+
+    print 'OK'
+
 
 if __name__ == '__main__':
   test = Test()
