@@ -50,3 +50,16 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1):
     flex.mat3_double(A),
     dmin,
     margin)
+
+
+# Override constructor with factory
+_StillsReflectionPredictor = StillsReflectionPredictor
+
+def StillsReflectionPredictor(experiment):
+  ''' A constructor for the reflection predictor. '''
+
+  # Create the reflection predictor
+  return _StillsReflectionPredictor(
+    experiment.beam,
+    experiment.detector,
+    experiment.crystal.get_A())

@@ -531,59 +531,112 @@ namespace dials { namespace algorithms {
   };
 
 
+  /**
+   * A class to do naive stills prediction.
+   */
   class StillsReflectionPredictor {
 
     typedef cctbx::miller::index<> miller_index;
 
   public:
 
+    /**
+     * Initialise the predictor
+     */
     StillsReflectionPredictor(
-        shared_ptr<Beam> beam,
-        shared_ptr<Detector> detector,
+        const Beam &beam,
+        const Detector &detector,
         mat3<double> ub)
       : beam_(beam),
         detector_(detector),
-        ub_(ub) { }
+        ub_(ub),
+        predict_rays_(beam.get_s0()) {}
 
-    af::reflection_table all_observable() const {
+    /**
+     * Predict all reflection.
+     * @returns reflection table.
+     */
+    af::reflection_table operator()() const {
       DIALS_ERROR("Not implemented");
       return af::reflection_table();
     }
 
-    af::reflection_table observed(
-        const af::const_ref< miller_index > &h,
-        const af::const_ref< std::size_t > id) const {
+    /**
+     * Predict the reflections with given HKL.
+     * @param h The miller index
+     * @returns The reflection list
+     */
+    af::reflection_table operator()(
+        const af::const_ref< miller_index > &h) const {
       af::reflection_table table;
       prediction_data predictions(table);
-      StillsRayPredictor predict_rays = init_ray_predictor();
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predict_rays, predictions, h[i]);
+        append_for_index(predictions, h[i]);
+      }
+      return table;
+    }
+
+    /**
+     * Predict for given hkl and panel.
+     * @param h The miller index
+     * @param panel The panel
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(
+        const af::const_ref< miller_index > &h,
+        std::size_t panel) const {
+      af::shared<std::size_t> panels(h.size(), panel);
+      return (*this)(h, panels.const_ref());
+    }
+
+    /**
+     * Predict for given hkl and panel.
+     * @param h The miller index
+     * @param panel The panel
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(
+        const af::const_ref< miller_index > &h,
+        const af::const_ref<std::size_t> &panel) const {
+      DIALS_ASSERT(h.size() == panel.size());
+      af::reflection_table table;
+      prediction_data predictions(table);
+      for (std::size_t i = 0; i < h.size(); ++i) {
+        append_for_index(predictions, h[i], (int)panel[i]);
       }
       return table;
     }
 
   private:
 
-    StillsRayPredictor init_ray_predictor() const {
-      return StillsRayPredictor(beam_->get_s0());
-    }
-
-    void append_for_index(const StillsRayPredictor &predict_rays,
-        prediction_data &p, const miller_index &h) const {
-      af::small<Ray, 2> rays = predict_rays(h, ub_);
+    /**
+     * Predict reflections for the given HKL.
+     * @param p The reflection data
+     * @param h The miller index
+     */
+    void append_for_index(prediction_data &p,
+        const miller_index &h, int panel=-1) const {
+      af::small<Ray, 2> rays = predict_rays_(h, ub_);
       for (std::size_t i = 0; i < rays.size(); ++i) {
-        append_for_ray(p, h, rays[i]);
+        append_for_ray(p, h, rays[i], panel);
       }
     }
 
-    void append_for_ray(prediction_data &p, const miller_index &h, const Ray &ray) const {
+    /**
+     * Predict the reflection for the given ray data.
+     * @param p The reflection data
+     * @param h The miller index
+     * @param ray The ray data
+     */
+    void append_for_ray(prediction_data &p,
+        const miller_index &h, const Ray &ray, int panel) const {
       try {
 
         // Get the impact on the detector
-        Detector::coord_type impact = (*detector_).get_ray_intersection(ray.s1);
+        Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
         std::size_t panel = impact.first;
         vec2<double> mm = impact.second;
-        vec2<double> px = (*detector_)[panel].millimeter_to_pixel(mm);
+        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
 
         // Add the reflections to the table
         p.hkl.push_back(h);
@@ -598,9 +651,24 @@ namespace dials { namespace algorithms {
       }
     }
 
-    shared_ptr<Beam> beam_;
-    shared_ptr<Detector> detector_;
+    /**
+     * Helper function to do ray intersection with/without panel set.
+     */
+    Detector::coord_type get_ray_intersection(vec3<double> s1, int panel) const {
+      Detector::coord_type coord;
+      if (panel < 0) {
+        coord = detector_.get_ray_intersection(s1);
+      } else {
+        coord.first = panel;
+        coord.second = detector_[panel].get_ray_intersection(s1);
+      }
+      return coord;
+    }
+
+    Beam beam_;
+    Detector detector_;
     mat3<double> ub_;
+    StillsRayPredictor predict_rays_;
   };
 }} // namespace dials::algorithms
 
