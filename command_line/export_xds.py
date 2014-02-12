@@ -57,7 +57,7 @@ def run(args):
           real_space_a, real_space_b, real_space_c,
           crystal_model.get_space_group().type().number(),
           out=f)
-      
+
       if reflections is not None and len(reflections) > 0:
         ref_cryst = reflections.select(reflections['id'] == i)
         export_spot_xds(ref_cryst, os.path.join(sub_dir, 'SPOT.XDS'))

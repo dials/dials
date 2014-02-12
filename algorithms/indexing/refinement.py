@@ -96,7 +96,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
       ax.set_ylabel('mean residual_phi')
       pyplot.show()
 
-    
+
   matches = refiner.get_matches()
   crystal_ids = flex.int([match.crystal_id for match in matches])
   for i_cryst in range(flex.max(crystal_ids) + 1):

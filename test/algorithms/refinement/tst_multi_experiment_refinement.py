@@ -315,5 +315,3 @@ expts = refiner.get_experiments()
 for beam in expts.beams(): print beam
 for detector in expts.detectors(): print detector
 for crystal in  expts.crystals(): print crystal
-
-
