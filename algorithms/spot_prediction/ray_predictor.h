@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
   using model::Reflection;
   using model::Ray;
 
-  class RayPredictor2 {
+  class ScanStaticRayPredictor {
   public:
 
     // Typedef the miller_index type
@@ -45,8 +45,8 @@ namespace dials { namespace algorithms {
      * @param m2 The rotation axis
      * @param dphi The total oscillation range
      */
-    RayPredictor2(vec3 <double> s0, vec3 <double> m2,
-                 vec2 <double> dphi)
+    ScanStaticRayPredictor(vec3 <double> s0, vec3 <double> m2,
+                           vec2 <double> dphi)
       : calculate_rotation_angles_(s0, m2),
         dphi_(dphi),
         s0_(s0),
@@ -54,7 +54,7 @@ namespace dials { namespace algorithms {
         s0_m2_plane(s0.cross(m2).normalize()){}
 
     /** Virtual destructor to allow inheritance */
-    virtual ~RayPredictor2() {}
+    virtual ~ScanStaticRayPredictor() {}
 
     /**
      * Predict the spot locations on the image detector.

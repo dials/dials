@@ -243,7 +243,7 @@ namespace dials { namespace algorithms {
     cctbx::sgtbx::space_group_type space_group_type_;
     mat3<double> ub_;
     double dmin_;
-    RayPredictor2 predict_rays_;
+    ScanStaticRayPredictor predict_rays_;
   };
 
 

@@ -138,7 +138,7 @@ class TestRayPredictor:
 
   def test_new(self):
 
-    from dials.algorithms.spot_prediction import RayPredictor2
+    from dials.algorithms.spot_prediction import ScanStaticRayPredictor
     from dials.algorithms.spot_prediction import IndexGenerator
     # Create the index generator
     self.generate_indices = IndexGenerator(self.unit_cell,
@@ -150,7 +150,7 @@ class TestRayPredictor:
     dphi = self.scan.get_oscillation_range(deg=False)
 
     # Create the ray predictor
-    self.predict_rays = RayPredictor2(s0, m2, dphi)
+    self.predict_rays = ScanStaticRayPredictor(s0, m2, dphi)
 
     # Predict the spot locations
     self.reflections2 = []
