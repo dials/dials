@@ -18,9 +18,22 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_reflection_predictor()
   {
+    af::reflection_table (ScanStaticReflectionPredictor::*predict_all)()const = &ScanStaticReflectionPredictor::operator();
+    af::reflection_table (ScanStaticReflectionPredictor::*predict_observed)(const af::const_ref< cctbx::miller::index<> >&)const = &ScanStaticReflectionPredictor::operator();
+
+
     class_<ScanStaticReflectionPredictor>("ScanStaticReflectionPredictor", no_init)
-      .def("all_observable", &ScanStaticReflectionPredictor::all_observable)
-      .def("observed", &ScanStaticReflectionPredictor::observed);
+      .def(init<
+          const Beam&,
+          const Detector&,
+          const Goniometer&,
+          const Scan&,
+          const cctbx::uctbx::unit_cell&,
+          const cctbx::sgtbx::space_group_type&,
+          mat3<double>,
+          double>())
+      .def("all_observable", predict_all)
+      .def("observed", predict_observed);
 
     class_<ScanVaryingReflectionPredictor>("ScanVaryingReflectionPredictor", no_init)
       .def("all_observable", &ScanVaryingReflectionPredictor::all_observable);
