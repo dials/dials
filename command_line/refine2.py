@@ -74,10 +74,10 @@ class Script(ScriptRunner):
 
     # Try to load the models and data
     experiments = importer.experiments
-    if len(experiments) <= 1:
+    if experiments is None:
       raise RuntimeError("No Experiments found in the input")
     reflections = importer.reflections
-    if len(reflections) < 1:
+    if reflections is None:
       raise RuntimeError("No reflection data found in the input")
 
     # Get the refiner
