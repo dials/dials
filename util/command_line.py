@@ -28,11 +28,16 @@ def parse_range_list_string(string):
   items = [item for sublist in items for item in sublist]
   return set(items)
 
-def interactive_console(namespace):
+def interactive_console():
   """ Enter an interactive console session. """
   try:
     from IPython import embed
-    embed(user_ns = namespace)
+    import inspect
+    frame = inspect.currentframe()
+    try:
+      embed(user_ns = frame.f_back.f_locals)
+    finally:
+        del frame
   except ImportError:
     print "IPython not available"
 
