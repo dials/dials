@@ -27,6 +27,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::mat3;
+  using dials::model::Ray;
 
   class ScanVaryingRayPredictor {
   public:

@@ -13,7 +13,7 @@
 
 #include <scitbx/vec3.h>
 
-namespace dials { namespace algorithms {
+namespace dials { namespace model {
 
   using scitbx::vec3;
 
@@ -33,7 +33,7 @@ namespace dials { namespace algorithms {
         entering(entering_) {}
   };
 
-}} // namespace dials::algorithms
+}} // namespace dials::model
 
 #endif // DIALS_MODEL_DATA_RAY_H
 

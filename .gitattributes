@@ -409,6 +409,7 @@ model/data/boost_python/partial_shoebox.cc -text
 model/data/boost_python/pickle.h -text
 model/data/boost_python/pixel_list.cc -text
 model/data/boost_python/prediction.cc -text
+model/data/boost_python/ray.cc -text
 model/data/boost_python/reflection.cc -text
 model/data/boost_python/shoebox.cc -text
 model/data/boost_python/table.cc -text

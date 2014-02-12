@@ -23,6 +23,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
+  using dials::model::Ray;
 
   class ScanStaticReflectionPredictor {
 
@@ -184,17 +185,6 @@ namespace dials { namespace algorithms {
       }
       return table;
     }
-
-    //af::reflection_table observed(
-        //const af::const_ref< miller_index > &h) const {
-      //af::reflection_table table;
-      //prediction_data predictions(table);
-      //ScanVaryingRayPredictor predict_rays = init_ray_predictor();
-      //for (std::size_t i = 0; i < h.size(); ++i) {
-        //append_for_index(predict_rays, predictions, h[i]);
-      //}
-      //return table;
-    //}
 
   private:
 

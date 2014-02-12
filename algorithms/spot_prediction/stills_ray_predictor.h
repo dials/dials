@@ -24,6 +24,7 @@ namespace dials { namespace algorithms {
 
   using scitbx::vec3;
   using scitbx::mat3;
+  using dials::model::Ray;
 
   /**
    *  Predict for a relp based on the current states of models of the

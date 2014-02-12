@@ -31,6 +31,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::mod_2pi;
   using dxtbx::model::is_angle_in_range;
   using model::Reflection;
+  using model::Ray;
 
   class RayPredictor2 {
   public:
