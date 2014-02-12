@@ -277,7 +277,6 @@ class Importer(object):
       import = Importer(argv, include=['reflections'])
 
     '''
-    from dials.array_family import flex
 
     # Check the format in data block and experiment list
     self._check_format = check_format
@@ -285,7 +284,7 @@ class Importer(object):
     # Initialise output
     self.datablocks = None
     self.experiments = None
-    self.reflections = flex.reflection_table()
+    self.reflections = None
     self.extracted = None
 
     # Get the list of items to try
@@ -382,10 +381,10 @@ class Importer(object):
               continue
         if verbose:
           print 'Loaded %s as reflection table' % argument
-          for k in obj.keys():
-            if k in self.reflections:
-              print 'Overwriting column %s' % k
-        self.reflections.update(obj)
+        if self.reflections is None:
+          self.reflections = [obj]
+        else:
+          self.reflections.append(obj)
       except Exception:
         unhandled.append(argument)
     return unhandled

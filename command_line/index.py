@@ -21,8 +21,8 @@ def run(args):
   if len(imagesets) > 1:
     raise RuntimeError("Only one imageset can be processed at a time")
   imageset = imagesets[0]
-  reflections = importer.reflections
-  assert len(reflections) > 0
+  assert len(importer.reflections) == 1
+  reflections = importer.reflections[0]
   args = importer.unhandled_arguments
 
   cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)

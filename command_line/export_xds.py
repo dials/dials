@@ -19,7 +19,8 @@ def run(args):
 
   importer = Importer(args)
   experiments = importer.experiments
-  reflections = importer.reflections
+  assert(len(importer.reflections) == 1)
+  reflections = importer.reflections[0]
   args = importer.unhandled_arguments
 
   if experiments is not None:

@@ -51,8 +51,12 @@ class TestImporter:
 
     from dials.util.command_line import Importer
     importer = Importer(arguments, verbose=False)
-    assert(importer.reflections.ncols() == 3)
-    assert(importer.reflections.nrows() == 10)
+    assert(importer.reflections is not None)
+    assert(len(importer.reflections) == 2)
+    assert(importer.reflections[0].ncols() == 2)
+    assert(importer.reflections[1].ncols() == 2)
+    assert(importer.reflections[0].nrows() == 10)
+    assert(importer.reflections[1].nrows() == 10)
     assert(len(importer.experiments) == 2)
     assert(len(importer.datablocks) == 3)
     if os.path.exists(os.path.join(self.path, 'extracted.tar')):

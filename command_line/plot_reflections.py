@@ -30,8 +30,9 @@ def run(args):
   from scitbx import matrix
   from libtbx.phil import command_line
   importer = Importer(args, check_format=False)
-  assert len(importer.reflections) > 0
+  assert len(importer.reflections) == 1
   assert len(importer.datablocks) == 1
+  reflections = importer.reflections[0]
   imageset = importer.datablocks[0].extract_imagesets()[0]
   detector = imageset.get_detector()
   scan = imageset.get_scan()
@@ -51,7 +52,7 @@ def run(args):
       - matrix.col(detector[i_panel].get_origin())
     panel_origin_shifts[i_panel] = origin_shift
   from dials.model.data import ReflectionList
-  reflection_list = ReflectionList.from_table(importer.reflections)
+  reflection_list = ReflectionList.from_table(reflections)
   if len(params.scan_range):
     sel = flex.bool(reflection_list.size(), False)
     centroid_positions = reflection_list.centroid_position()

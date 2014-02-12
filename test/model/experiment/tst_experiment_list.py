@@ -592,6 +592,10 @@ class TestExperimentListDumper(object):
     self.path = path
 
   def run(self):
+    self.tst_dump_formats()
+    self.tst_dump_empty_sweep()
+
+  def tst_dump_formats(self):
     from uuid import uuid4
     from os.path import join
     import os
@@ -624,6 +628,32 @@ class TestExperimentListDumper(object):
     dump.as_pickle(filename)
     elist2 = ExperimentListFactory.from_pickle_file(filename)
     self.check(elist1, elist2)
+
+  def tst_dump_empty_sweep(self):
+    from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
+    from dxtbx.model import Beam, Detector, Goniometer, Scan
+    from cctbx.crystal.crystal_model import crystal_model
+    from uuid import uuid4
+
+    imageset = ImageSweep(NullReader(SweepFileList("filename%d.cbf", (0, 3))))
+    imageset.set_beam(Beam((1, 0, 0)))
+    imageset.set_detector(Detector())
+    imageset.set_goniometer(Goniometer())
+    imageset.set_scan(Scan((1, 3), (0.0, 1.0)))
+
+    crystal = crystal_model((1, 0, 0), (0, 1, 0), (0, 0, 1), space_group_symbol=1)
+
+    experiments = ExperimentListFactory.from_imageset_and_crystal(
+      imageset, crystal)
+
+    dump = ExperimentListDumper(experiments)
+    filename = 'temp%s.json' % uuid4().hex
+    dump.as_json(filename)
+    experiments2 = ExperimentListFactory.from_json_file(filename,
+                                                        check_format=False)
+    self.check(experiments, experiments2)
+
+    print 'OK'
 
   def check(self, el1, el2):
 
