@@ -47,16 +47,31 @@ class ReflectionPredictor(object):
     '''
     from dials.array_family import flex
     from dials.util.command_line import Command
+    Command.indent = 1
     table = flex.reflection_table()
     for i, predict in enumerate(self._predict):
-      Command.start('Predicting reflections for experiment %d' % i)
+      print 'Experiment %d' % i
+      print ' Prediction type: %s' % self._predictor_type(predict)
+      Command.start('Predicting reflections')
       temp = predict()
       temp['id'] = flex.size_t(temp.nrows(), i)
       table.extend(temp)
-      Command.end('Predicted %d reflections for experiment %s' % (len(temp), i))
+      Command.end('Predicted %d reflections' % len(temp))
+    Command.indent = 0
     return table
 
   def predictor(self, index):
     ''' Get the predictor for the given experiment index. '''
     return self._predict[index]
 
+  def _predictor_type(self, obj):
+    from dials.algorithms.spot_prediction import _ScanStaticReflectionPredictor
+    from dials.algorithms.spot_prediction import _ScanVaryingReflectionPredictor
+    from dials.algorithms.spot_prediction import _StillsReflectionPredictor
+    if isinstance(obj, _ScanStaticReflectionPredictor):
+      return "static scan prediction"
+    elif isinstance(obj, _ScanVaryingReflectionPredictor):
+      return "scan varying prediction"
+    elif isinstance(obj, _StillsReflectionPredictor):
+      return "stills prediction"
+    return "Unknown prediction"

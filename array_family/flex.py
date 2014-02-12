@@ -17,20 +17,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   ''' An injector class to add additional methods to the reflection table. '''
 
   @staticmethod
-  def from_predictions2(exlist):
-    ''' Construct a reflection table from predictions. '''
-    from dials.algorithms.integration import ReflectionPredictor
-    from dials.array_family import flex
-    predict = ReflectionPredictor()
-    result = flex.reflection_table()
-    for idx, ex in enumerate(exlist):
-      rlist = predict(ex.imageset, ex.crystal)
-      rtable = rlist.to_table()
-      rtable['id'] = flex.size_t(len(rlist), idx)
-      result.extend(rtable)
-    return result
-
-  @staticmethod
   def from_predictions(exlist):
     ''' Construct a reflection table from predictions. '''
     from dials.algorithms.spot_prediction.reflection_predictor \

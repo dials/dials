@@ -419,6 +419,7 @@ class ExperimentListDict(object):
   def _create_experiment(self, imageset, beam, detector,
       goniometer, scan, crystal):
     ''' Helper function. Create an experiment. '''
+    from dxtbx.imageset import ImageSweep
 
     # Create the imageset from the input data
     if imageset is not None:
@@ -436,6 +437,19 @@ class ExperimentListDict(object):
       goniometer = imageset.get_goniometer()
     if scan is None:
       scan = imageset.get_scan()
+
+    # Update the imageset models
+    if isinstance(imageset, ImageSweep):
+      imageset.set_beam(beam)
+      imageset.set_detector(detector)
+      imageset.set_goniometer(goniometer)
+      imageset.set_scan(scan)
+    else:
+      for i in range(len(imageset)):
+        imageset.set_beam(beam, i)
+        imageset.set_detector(detector, i)
+        imageset.set_goniometer(goniometer, i)
+        imageset.set_scan(scan, i)
 
     # Return the experiment instance
     return Experiment(
