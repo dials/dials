@@ -35,14 +35,13 @@ def test1():
 
   # use the i04_weak_data for this test
   data_dir = os.path.join(dials_regression, "refinement_test_data", "i04_weak_data")
-  sweep_path = os.path.join(data_dir, "sweep.json")
-  crystal_path = os.path.join(data_dir, "crystal.json")
+  experiments_path = os.path.join(data_dir, "experiments.json")
   pickle_path = os.path.join(data_dir, "indexed_strong.pickle")
 
   for pth in ():
     assert os.path.exists(pth)
 
-  cmd = "dials.refine " + sweep_path + " " + crystal_path + " " + pickle_path
+  cmd = "dials.refine " + experiments_path + " " + pickle_path
 
   # work in a temporary directory
   cwd = os.path.abspath(os.curdir)
@@ -52,16 +51,14 @@ def test1():
   os.chdir(cwd)
 
   # load results
-  from dials.model.serialize import load
-  from cctbx.crystal.crystal_model.serialize import load_crystal
-  reg_sweep = load.sweep(os.path.join(data_dir, "regression_sweep.json"))
-  reg_crystal = load_crystal(os.path.join(data_dir, "regression_crystal.json"))
-
-  sweep = load.sweep(os.path.join(tmp_dir, "refined_sweep.json"))
-  crystal = load_crystal(os.path.join(tmp_dir, "refined_crystal.json"))
+  from dials.model.experiment import ExperimentListFactory
+  reg_exp = ExperimentListFactory.from_json(
+              os.path.join(data_dir, "regression_experiment.json"))
+  ref_exp = ExperimentListFactory.from_json(
+              os.path.join(data_dir, "refined_experiment.json"))
 
   # test refined models against expected
-  assert crystal == reg_crystal
+  assert reg_exp.crystal == ref_exp.crystal
   assert sweep.get_detector() == reg_sweep.get_detector()
   assert sweep.get_beam() == reg_sweep.get_beam()
 

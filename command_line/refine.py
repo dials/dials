@@ -79,6 +79,9 @@ class Script(ScriptRunner):
     reflections = importer.reflections
     if reflections is None:
       raise RuntimeError("No reflection data found in the input")
+    if len(reflections) > 1:
+      raise RuntimeError("Only one reflections list can be imported at present")
+    reflections = importer.reflections[0]
 
     # Get the refiner
     print 'Configuring refiner'
