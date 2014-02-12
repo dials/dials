@@ -266,6 +266,7 @@ array_family/boost_python/flex_table_suite.h -text
 array_family/flex.py -text
 array_family/flex_table.h -text
 array_family/import_scitbx_af.h -text
+array_family/reflection_table.h -text
 array_family/scitbx_shared_and_versa.h -text
 array_family/shared.py -text
 array_family/sort_index.h -text

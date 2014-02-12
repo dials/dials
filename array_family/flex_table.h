@@ -156,6 +156,17 @@ namespace dials { namespace af {
       return proxy(this, key);
     }
 
+    /**
+     * Access a column by key
+     * @param key The column name
+     * @returns The column.
+     */
+    template <typename T>
+    af::shared<T> get(const key_type &key) {
+      af::shared<T> result = proxy(this, key);
+      return result;
+    }
+
     /** @returns An iterator to the beginning of the column map */
     iterator begin() {
       return table_->begin();
