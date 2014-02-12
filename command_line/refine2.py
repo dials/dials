@@ -24,7 +24,7 @@ class Script(ScriptRunner):
 
     # The script usage
     usage  = "usage: %prog [options] [param.phil] " \
-             "sweep.json crystal.json reflections.pickle"
+             "experiments.json reflections.pickle"
 
     # Initialise the base class
     ScriptRunner.__init__(self, usage=usage)
@@ -65,17 +65,23 @@ class Script(ScriptRunner):
     from dials.algorithms.refinement import RefinerFactory
     import cPickle as pickle
 
-    importer = Importer(args, check_format=False, verbose=True)
+    # Check the number of arguments is correct
+    if len(args) != 2:
+      self.config().print_help()
+      return
 
-    # Get the refiner
-    print 'Configuring refiner'
+    importer = Importer(args, check_format=False, verbose=True)
 
     # Try to load the models and data
     experiments = importer.experiments
-    assert len(experiments) > 0
+    if len(experiments) <= 1:
+      raise RuntimeError("No Experiments found in the input")
     reflections = importer.reflections
-    assert len(reflections) > 0
+    if len(reflections) < 1:
+      raise RuntimeError("No reflection data found in the input")
 
+    # Get the refiner
+    print 'Configuring refiner'
     refiner = RefinerFactory.from_parameters_data_experiments(params,
         reflections, experiments, verbosity=options.verbosity)
 
