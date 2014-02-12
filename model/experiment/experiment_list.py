@@ -421,12 +421,11 @@ class ExperimentListDict(object):
     ''' Helper function. Create an experiment. '''
 
     # Create the imageset from the input data
-    if imageset is None:
-      imageset = self._make_null()
-    elif imageset['__id__'] == 'ImageSet':
-      imageset = self._make_stills(imageset)
-    elif imageset['__id__'] == 'ImageSweep':
-      imageset = self._make_sweep(imageset, scan)
+    if imageset is not None:
+      if imageset['__id__'] == 'ImageSet':
+        imageset = self._make_stills(imageset)
+      elif imageset['__id__'] == 'ImageSweep':
+        imageset = self._make_sweep(imageset, scan)
 
     # Fill in any models if they aren't already there
     if beam is None:
