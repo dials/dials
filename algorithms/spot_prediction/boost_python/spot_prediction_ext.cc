@@ -19,6 +19,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_reeke_index_generator();
   void export_rotation_angles();
   void export_ray_predictor();
+  void export_scan_varying_ray_predictor();
+  void export_stills_ray_predictor();
   void export_ray_intersection();
   void export_reflection_frames();
   void export_reflection_predictor();
@@ -29,6 +31,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_reeke_index_generator();
     export_rotation_angles();
     export_ray_predictor();
+    export_scan_varying_ray_predictor();
+    export_stills_ray_predictor();
     export_ray_intersection();
     export_reflection_frames();
     export_reflection_predictor();
