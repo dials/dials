@@ -12,6 +12,7 @@
 #ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_REFLECTION_PREDICTOR_H
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_REFLECTION_PREDICTOR_H
 
+#include <algorithm>
 #include <scitbx/math/r3_rotation.h>
 #include <dxtbx/model/beam.h>
 #include <dxtbx/model/detector.h>
@@ -246,86 +247,251 @@ namespace dials { namespace algorithms {
   };
 
 
-
+  /**
+   * A reflection predictor for scan varying prediction.
+   */
   class ScanVaryingReflectionPredictor {
 
     typedef cctbx::miller::index<> miller_index;
 
+    /** Struct to help with sorting. */
+    struct sort_by_frame {
+      af::const_ref<int> frame;
+      sort_by_frame(af::const_ref<int> frame_)
+        : frame(frame_) {}
+
+      template <typename T>
+      bool operator()(T a, T b) {
+        return frame[a] < frame[b];
+      }
+    };
+
   public:
 
+    /**
+     * Initialise the predictor
+     */
     ScanVaryingReflectionPredictor(
-        shared_ptr<Beam> beam,
-        shared_ptr<Detector> detector,
-        shared_ptr<Goniometer> goniometer,
-        shared_ptr<Scan> scan)
+        const Beam &beam,
+        const Detector &detector,
+        const Goniometer &goniometer,
+        const Scan &scan,
+        const af::const_ref< mat3<double> > A,
+        double dmin,
+        std::size_t margin)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
-        scan_(scan) {}
+        scan_(scan),
+        A_(A.begin(), A.end()),
+        dmin_(dmin),
+        margin_(margin),
+        predict_rays_(
+            beam.get_s0(),
+            goniometer.get_rotation_axis(),
+            scan.get_oscillation(),
+            dmin) {
+      DIALS_ASSERT(A_.size() == scan_.get_num_images() + 1);
+    }
 
-    af::reflection_table all_observable() const {
+    /**
+     * Predict all the reflections for this model.
+     * @returns The reflection table
+     */
+    af::reflection_table operator()() const {
+
+      // Create the table and local stuff
       af::reflection_table table;
       prediction_data predictions(table);
-      ScanVaryingRayPredictor predict_rays = init_ray_predictor();
-      vec2<int> array_range = scan_->get_array_range();
+
+      // Get the array range and loop through all the images
+      vec2<int> array_range = scan_.get_array_range();
       for (int frame = array_range[0]; frame < array_range[1]; ++frame) {
-        append_for_image(predict_rays, predictions, frame);
+        append_for_image(predictions, frame);
       }
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
+     * Do the predictions for the given miller indices on the given frames.
+     * @param h The miller indices
+     * @param frame The frames
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<int> &frame) const {
+      DIALS_ASSERT(h.size() == frame.size());
+
+      // Create the table and local stuff
+      af::reflection_table table;
+      prediction_data predictions(table);
+
+      // Sort the miller indices by frame
+      af::shared<std::size_t> index(frame.size());
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        index[i] = i;
+      }
+      std::sort(index.begin(), index.end(), sort_by_frame(frame));
+
+      // For each hkl, do the prediction on the frame, because all the indices
+      // are now sorted, we can calculate the matrix only once
+      std::size_t i = 0;
+      while (i < index.size()) {
+        int current_frame = frame[index[i]];
+        mat3<double> A1, A2;
+        compute_setting_matrices(A1, A2, current_frame);
+        while (i < index.size() && frame[index[i]] == current_frame) {
+          append_for_index(predictions, A1, A2, current_frame, h[index[i]]);
+          ++i;
+        }
+      }
+
+      // Return the reflection table
+      return table;
+    }
+
+    /**
+     * Do the predictions for the given miller indices on the given frames.
+     * @param h The miller indices
+     * @param frame The frames
+     * @param panel The panel
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<int> &frame,
+        std::size_t panel) const {
+      af::shared<std::size_t> panels(h.size(), panel);
+      return (*this)(h, frame, panels.const_ref());
+    }
+
+    /**
+     * Do the predictions for the given miller indices on the given frames.
+     * @param h The miller indices
+     * @param frame The frames
+     * @param panel The panel
+     * @returns The reflection table
+     */
+    af::reflection_table operator()(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<int> &frame,
+        const af::const_ref<std::size_t> &panel) const {
+      DIALS_ASSERT(h.size() == frame.size());
+      DIALS_ASSERT(h.size() == panel.size());
+
+      // Create the table and local stuff
+      af::reflection_table table;
+      prediction_data predictions(table);
+
+      // Sort the miller indices by frame
+      af::shared<std::size_t> index(frame.size());
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        index[i] = i;
+      }
+      std::sort(index.begin(), index.end(), sort_by_frame(frame));
+
+      // For each hkl, do the prediction on the frame, because all the indices
+      // are now sorted, we can calculate the matrix only once
+      std::size_t i = 0;
+      while (i < index.size()) {
+        int current_frame = frame[index[i]];
+        mat3<double> A1, A2;
+        compute_setting_matrices(A1, A2, current_frame);
+        while (i < index.size() && frame[index[i]] == current_frame) {
+          append_for_index(predictions, A1, A2, current_frame,
+              h[index[i]], (int)panel[index[i]]);
+          ++i;
+        }
+      }
+
+      // Return the reflection table
       return table;
     }
 
   private:
 
-    ScanVaryingRayPredictor init_ray_predictor() const {
-      return ScanVaryingRayPredictor(
-          beam_->get_s0(),
-          goniometer_->get_rotation_axis(),
-          scan_->get_oscillation(),
-          dmin_);
-    }
+    /**
+     * Helper function to compute the setting matrix and the beginning and end
+     * of a frame.
+     */
+    void compute_setting_matrices(
+        mat3<double> &A1, mat3<double> &A2,
+        int frame) const {
 
-    void append_for_image(const ScanVaryingRayPredictor &predict_rays,
-        prediction_data &p, int frame) const {
+      // Get the rotation axis and beam vector
+      vec3<double> m2 = goniometer_.get_rotation_axis();
+      int frame_0 = scan_.get_array_range()[0];
 
-      vec3<double> m2 = goniometer_->get_rotation_axis();
-      vec3<double> s0 = beam_->get_s0();
-
-      int frame_0 = scan_->get_array_range()[0];
-      double phi_beg = scan_->get_angle_from_array_index(frame);
-      double phi_end = scan_->get_angle_from_array_index(frame + 1);
+      // Calculate the setting matrix at the beginning and end
+      double phi_beg = scan_.get_angle_from_array_index(frame);
+      double phi_end = scan_.get_angle_from_array_index(frame + 1);
       mat3<double> r_beg = axis_and_angle_as_matrix(m2, phi_beg);
       mat3<double> r_end = axis_and_angle_as_matrix(m2, phi_end);
-      mat3<double> A1 = r_beg * A_[frame - frame_0];
-      mat3<double> A2 = r_end * A_[frame - frame_0 + 1];
+      A1 = r_beg * A_[frame - frame_0];
+      A2 = r_end * A_[frame - frame_0 + 1];
+    }
+
+    /**
+     * For the given image, generate the indices and do the prediction.
+     * @param p The reflection data
+     * @param frame The image frame to predict on.
+     */
+    void append_for_image(prediction_data &p, int frame) const {
+
+      // Get the rotation axis and beam vector
+      vec3<double> m2 = goniometer_.get_rotation_axis();
+      vec3<double> s0 = beam_.get_s0();
+      mat3<double> A1, A2;
+      compute_setting_matrices(A1, A2, frame);
+
+      // Construct the index generator and do the predictions for each index
       ReekeIndexGenerator indices(A1, A2, m2, s0, dmin_, margin_);
       for (;;) {
         miller_index h = indices.next();
         if (h.is_zero()) {
           break;
         }
-        append_for_index(predict_rays, p, A1, A2, frame, h);
+        append_for_index(p, A1, A2, frame, h);
       }
     }
 
-    void append_for_index(const ScanVaryingRayPredictor &predict_rays,
-        prediction_data &p, mat3<double> A1, mat3<double> A2, std::size_t frame,
-        const miller_index &h) const {
-      boost::optional<Ray> ray = predict_rays(h, A1, A2, frame, 1);
+    /**
+     * Do the prediction for a miller index on a frame.
+     * @param p The reflection data
+     * @param A1 The beginning setting matrix.
+     * @param A2 The end setting matrix
+     * @param frame The frame to predict on
+     * @param h The miller index
+     */
+    void append_for_index(prediction_data &p, mat3<double> A1, mat3<double> A2,
+        std::size_t frame, const miller_index &h, int panel=-1) const {
+      boost::optional<Ray> ray = predict_rays_(h, A1, A2, frame, 1);
       if (ray) {
-        append_for_ray(p, h, *ray);
+        append_for_ray(p, h, *ray, panel);
       }
     }
 
-    void append_for_ray(prediction_data &p, const miller_index &h, const Ray &ray) const {
+    /**
+     * Do the prediction for a given ray.
+     * @param p The reflection data
+     * @param h The miller index
+     * @param ray The ray
+     */
+    void append_for_ray(prediction_data &p,
+        const miller_index &h, const Ray &ray, int panel) const {
       try {
 
         // Get the impact on the detector
-        Detector::coord_type impact = (*detector_).get_ray_intersection(ray.s1);
+        Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
         std::size_t panel = impact.first;
         vec2<double> mm = impact.second;
-        vec2<double> px = (*detector_)[panel].millimeter_to_pixel(mm);
+        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
 
-        double frame = scan_->get_array_index_from_angle(ray.angle);
+        // Get the frame
+        double frame = scan_.get_array_index_from_angle(ray.angle);
 
         // Get the frames that a reflection with this angle will be observed at
         p.hkl.push_back(h);
@@ -340,15 +506,28 @@ namespace dials { namespace algorithms {
       }
     }
 
-    cctbx::uctbx::unit_cell unit_cell_;
-    cctbx::sgtbx::space_group_type space_group_type_;
+    /**
+     * Helper function to do ray intersection with/without panel set.
+     */
+    Detector::coord_type get_ray_intersection(vec3<double> s1, int panel) const {
+      Detector::coord_type coord;
+      if (panel < 0) {
+        coord = detector_.get_ray_intersection(s1);
+      } else {
+        coord.first = panel;
+        coord.second = detector_[panel].get_ray_intersection(s1);
+      }
+      return coord;
+    }
+
+    Beam beam_;
+    Detector detector_;
+    Goniometer goniometer_;
+    Scan scan_;
     af::shared< mat3<double> > A_;
     double dmin_;
-    shared_ptr<Beam> beam_;
-    shared_ptr<Detector> detector_;
-    shared_ptr<Goniometer> goniometer_;
-    shared_ptr<Scan> scan_;
     std::size_t margin_;
+    ScanVaryingRayPredictor predict_rays_;
   };
 
 
