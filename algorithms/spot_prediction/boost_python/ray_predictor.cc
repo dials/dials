@@ -49,6 +49,18 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__call__", predict_array, (
         arg("miller_indices"),
         arg("UB")));
+
+    // Create and return the wrapper for the spot predictor object
+    class_ <RayPredictor2> ("RayPredictor2", no_init)
+      .def(init <vec3<double>,
+                 vec3<double>,
+                 vec2<double> > ((
+        arg("s0"),
+        arg("m2"),
+        arg("dphi"))))
+      .def("__call__", &RayPredictor2::operator(), (
+        arg("miller_index"),
+        arg("UB")));
   }
 
 }}} // namespace = dials::spot_prediction::boost_python

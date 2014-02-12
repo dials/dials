@@ -21,6 +21,12 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<ScanStaticReflectionPredictor>("ScanStaticReflectionPredictor", no_init)
       .def("all_observable", &ScanStaticReflectionPredictor::all_observable)
       .def("observed", &ScanStaticReflectionPredictor::observed);
+
+    class_<ScanVaryingReflectionPredictor>("ScanVaryingReflectionPredictor", no_init)
+      .def("all_observable", &ScanVaryingReflectionPredictor::all_observable);
+
+    class_<StillsReflectionPredictor>("StillsReflectionPredictor", no_init)
+      .def("observed", &StillsReflectionPredictor::observed);
   }
 
 }}} // namespace = dials::algorithms::boost_python
