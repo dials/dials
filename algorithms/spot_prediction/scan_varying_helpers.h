@@ -21,8 +21,8 @@ namespace dials { namespace algorithms { namespace reeke_detail {
   /* Robust solution, for real roots only, of a quadratic in the form  (ax^2 +
    * bx + c)*/
   inline
-  af::small<double, 2> solve_quad(double a, double b, double c) {
-    af::small<double, 2> result;
+  scitbx::af::small<double, 2> solve_quad(double a, double b, double c) {
+    scitbx::af::small<double, 2> result;
     double discriminant = b*b - 4 * a * c;
     if (discriminant > 0.0) {
       int sign = (b >= 0 ? 1 : -1);

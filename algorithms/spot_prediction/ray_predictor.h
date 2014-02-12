@@ -17,6 +17,7 @@
 #include <scitbx/mat3.h>
 #include <cctbx/miller.h>
 #include <dxtbx/model/scan_helpers.h>
+#include <dials/model/data/ray.h>
 #include <dials/model/data/reflection.h>
 #include "rotation_angles.h"
 
@@ -30,19 +31,6 @@ namespace dials { namespace algorithms {
   using dxtbx::model::mod_2pi;
   using dxtbx::model::is_angle_in_range;
   using model::Reflection;
-
-  struct Ray {
-    vec3<double> s1;
-    double angle;
-    bool entering;
-
-    Ray() {}
-
-    Ray(vec3<double> s1_, double angle_, bool entering_)
-      : s1(s1_),
-        angle(angle_),
-        entering(entering_) {}
-  };
 
   class RayPredictor2 {
   public:

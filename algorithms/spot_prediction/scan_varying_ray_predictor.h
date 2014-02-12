@@ -2,13 +2,26 @@
 #ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H
 
-#include <dials/algorithms/spot_prediction/ray_predictor.h>
+#include <scitbx/vec2.h>
+#include <scitbx/vec3.h>
+#include <scitbx/mat3.h>
+#include <cctbx/miller.h>
+#include <dials/model/data/ray.h>
 #include <dials/algorithms/spot_prediction/scan_varying_helpers.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
+#include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
+  using scitbx::vec2;
+  using scitbx::vec3;
+  using scitbx::mat3;
+
   class ScanVaryingRayPredictor {
   public:
+
+    // Typedef the miller_index type
+    typedef cctbx::miller::index <> miller_index;
 
     ScanVaryingRayPredictor(
           vec3<double> s0, vec3<double> m2,
