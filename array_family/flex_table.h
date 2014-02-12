@@ -137,7 +137,7 @@ namespace dials { namespace af {
     /** Initialise the table */
     flex_table()
       : table_(boost::make_shared<map_type>()),
-        nrows_(0) {}
+        default_nrows_(0) {}
 
     /**
      * Initialise the table to a certain size
@@ -145,7 +145,7 @@ namespace dials { namespace af {
      */
     flex_table(size_type n)
       : table_(boost::make_shared<map_type>()),
-        nrows_(n) {}
+        default_nrows_(n) {}
 
     /**
      * Access a column by key
@@ -189,8 +189,18 @@ namespace dials { namespace af {
 
     /** @returns The number of rows in the table */
     size_type nrows() const {
-      DIALS_ASSERT(is_consistent());
-      return nrows_;
+      size_type size = default_nrows_;
+      if (!empty()) {
+        size_visitor visitor;
+        const_iterator it = begin();
+        size = it->second.apply_visitor(visitor);
+        for (++it ; it != end(); ++it) {
+          if (it->second.apply_visitor(visitor) != size) {
+            DIALS_ERROR("Column sizes are inconsistent");
+          }
+        }
+      }
+      return size;
     }
 
     /** @returns The number of columns in the table */
@@ -210,10 +220,14 @@ namespace dials { namespace af {
 
     /** @returns Are the column sizes consistent */
     bool is_consistent() const {
-      size_visitor visitor;
-      for (const_iterator it = begin(); it != end(); ++it) {
-        if (it->second.apply_visitor(visitor) != nrows_) {
-          return false;
+      if (!empty()) {
+        size_visitor visitor;
+        const_iterator it = begin();
+        size_type size = it->second.apply_visitor(visitor);
+        for (++it; it != end(); ++it) {
+          if (it->second.apply_visitor(visitor) != size) {
+            return false;
+          }
         }
       }
       return true;
@@ -252,8 +266,7 @@ namespace dials { namespace af {
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
-      nrows_ = n;
-      DIALS_ASSERT(is_consistent());
+      default_nrows_ = nrows();
     }
 
     /**
@@ -270,14 +283,12 @@ namespace dials { namespace af {
      * @param n The number of elements to insert
      */
     void insert(size_type pos, size_type n) {
-      DIALS_ASSERT(is_consistent());
-      DIALS_ASSERT(pos <= nrows_);
+      DIALS_ASSERT(pos <= nrows());
       insert_visitor visitor(pos, n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
-      nrows_ += n;
-      DIALS_ASSERT(is_consistent());
+      default_nrows_ = nrows();
     }
 
     /**
@@ -294,14 +305,12 @@ namespace dials { namespace af {
      * @param n The number of elements to erase
      */
     void erase(size_type pos, size_type n) {
-      DIALS_ASSERT(is_consistent());
-      DIALS_ASSERT(pos + n <= nrows_);
+      DIALS_ASSERT(pos + n <= nrows());
       erase_visitor visitor(pos, n);
       for (iterator it = begin(); it != end(); ++it) {
         it->second.apply_visitor(visitor);
       }
-      nrows_ -= n;
-      DIALS_ASSERT(is_consistent());
+      default_nrows_ = nrows();
     }
 
     /**
@@ -322,7 +331,7 @@ namespace dials { namespace af {
   private:
 
     boost::shared_ptr<map_type> table_;
-    size_type nrows_;
+    size_type default_nrows_;
   };
 
 
