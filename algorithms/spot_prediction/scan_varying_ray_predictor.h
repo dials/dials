@@ -122,7 +122,7 @@ namespace dials { namespace algorithms {
       } else if (0.0 <= roots[1] && roots[1] <= 1.0) {
         alpha = roots[1];
       } else {
-        DIALS_ASSERT(false);
+        return boost::optional<Ray>();
       }
 
       // Calculate the scattering vector and rotation angle
