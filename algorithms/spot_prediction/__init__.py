@@ -7,7 +7,7 @@ from dials_algorithms_spot_prediction_ext import *
 # Override constructor with factory
 _ScanStaticReflectionPredictor = ScanStaticReflectionPredictor
 
-def ScanStaticReflectionPredictor(experiment, dmin=None):
+def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
   ''' A constructor for the reflection predictor. '''
 
   # Get dmin if it is not set
@@ -29,7 +29,7 @@ def ScanStaticReflectionPredictor(experiment, dmin=None):
 # Override constructor with factory
 _ScanVaryingReflectionPredictor = ScanVaryingReflectionPredictor
 
-def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1):
+def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
   ''' A constructor for the reflection predictor. '''
   from dials.array_family import flex
 
@@ -55,7 +55,7 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1):
 # Override constructor with factory
 _StillsReflectionPredictor = StillsReflectionPredictor
 
-def StillsReflectionPredictor(experiment):
+def StillsReflectionPredictor(experiment, **kwargs):
   ''' A constructor for the reflection predictor. '''
 
   # Create the reflection predictor

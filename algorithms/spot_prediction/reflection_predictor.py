@@ -16,19 +16,19 @@ class ReflectionPredictor(object):
   ''' A reflection predictor that takes a number of experiments and does the
   proper prediction for each type of experiment. '''
 
-  def __init__(self, experiments):
+  def __init__(self, experiments, **kwargs):
     ''' Initialise a predictor for each experiment. '''
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
     from dials.algorithms.spot_prediction import ScanVaryingReflectionPredictor
-    from dials.algorithms.spot_prediction import ScanStillsReflectionPredictor
+    from dials.algorithms.spot_prediction import StillsReflectionPredictor
+    from dxtbx.imageset import ImageSweep
 
     # Create all the reflection predictors
     self._predict = []
     for e in experiments:
-
       # Select the predictor class
       if isinstance(e.imageset, ImageSweep):
-        if e.crystal.is_scan_varying():
+        if e.crystal.num_scan_points == e.scan.get_num_images() + 1:
           Predictor = ScanVaryingReflectionPredictor
         else:
           Predictor = ScanStaticReflectionPredictor
@@ -36,10 +36,9 @@ class ReflectionPredictor(object):
         Predictor = StillsReflectionPredictor
 
       # Create and add the predictor class
-      self._predict.append(Predictor(beam, detector,
-        goniometer, scan, crystal))
+      self._predict.append(Predictor(e, **kwargs))
 
-  def all_possible(self):
+  def __call__(self):
     ''' Predict all the observable reflections.
 
     Returns:
@@ -47,33 +46,17 @@ class ReflectionPredictor(object):
 
     '''
     from dials.array_family import flex
+    from dials.util.command_line import Command
     table = flex.reflection_table()
     for i, predict in enumerate(self._predict):
-      temp = predict.all_possible()
+      Command.start('Predicting reflections for experiment %d' % i)
+      temp = predict()
       temp['id'] = flex.size_t(temp.nrows(), i)
       table.extend(temp)
+      Command.end('Predicted %d reflections for experiment %s' % (len(temp), i))
     return table
 
-  def selected(self, hkl, experiment, panel=None):
-    ''' Predict the given reflections.
+  def predictor(self, index):
+    ''' Get the predictor for the given experiment index. '''
+    return self._predict[index]
 
-    Params:
-      hkl The miller indices to predict for.
-      experiment The experiment of each hkl.
-      panel The panel number of each hkl (optional)
-
-    Returns
-      A reflection table
-
-    '''
-    from dials.array_family import flex
-    table = flex.reflection_table()
-    for i, predict in enumerate(self._predict):
-      mask = experiment == i
-      if panel:
-        temp = predict.selected(hkl.select(mask), panel.select(mask))
-      else:
-        temp = predict.selected(hkl.select(mask))
-      temp['id'] = flex.size_t(temp.nrows(), i)
-      table.extend(temp)
-    return table
