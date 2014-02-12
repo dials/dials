@@ -31,6 +31,19 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return result
 
   @staticmethod
+  def from_predictions2(exlist, hkl=None, idx=None, panel=None):
+    ''' Construct a reflection table from predictions. '''
+    from dials.algorithms.spot_prediction import ReflectionPredictor
+    predict = ReflectionPredictor(exlist)
+    count = [hkl, idx].count(None)
+    if count == 2:
+      return predict.all_possible()
+    elif count == 0:
+      return predict.selected(hkl, idx, panel)
+    else:
+      raise RuntimeError('Must give both hkl and idx or neither')
+
+  @staticmethod
   def from_observations(datablocks, params):
     ''' Construct a reflection table from observations. '''
     from dials.algorithms.peak_finding.spotfinder_factory \
@@ -75,4 +88,3 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     handle = NexusFile(filename, 'w')
     handle.set_reflections(self)
     handle.close()
-

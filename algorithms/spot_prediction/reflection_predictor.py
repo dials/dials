@@ -25,14 +25,19 @@ class ReflectionPredictor(object):
     # Create all the reflection predictors
     self._predict = []
     for e in experiments:
+
+      # Select the predictor class
       if isinstance(e.imageset, ImageSweep):
         if e.crystal.is_scan_varying():
-          predictor = ScanVaryingReflectionPredictor()
+          Predictor = ScanVaryingReflectionPredictor
         else:
-          predictor = ScanStaticReflectionPredictor()
+          Predictor = ScanStaticReflectionPredictor
       else:
-        predictor = StillsReflectionPredictor()
-      self._predict.append(predictor)
+        Predictor = StillsReflectionPredictor
+
+      # Create and add the predictor class
+      self._predict.append(Predictor(beam, detector,
+        goniometer, scan, crystal))
 
   def all_possible(self):
     ''' Predict all the observable reflections.
