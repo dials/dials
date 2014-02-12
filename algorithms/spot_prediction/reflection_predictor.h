@@ -169,7 +169,7 @@ namespace dials { namespace algorithms {
       // Create the ray predictor and loop through all the reflection
       // and predict the rays.
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, h[i], panel[i]);
+        append_for_index(predictions, h[i], (int)panel[i]);
       }
 
       // Return the reflection table
@@ -185,6 +185,7 @@ namespace dials { namespace algorithms {
         const miller_index &h, int panel=-1) const {
       af::small<Ray, 2> rays = predict_rays_(h, ub_);
       for (std::size_t i = 0; i < rays.size(); ++i) {
+        DIALS_ASSERT(panel < (int)detector_.size());
         append_for_ray(p, h, rays[i], panel);
       }
     }
@@ -193,14 +194,14 @@ namespace dials { namespace algorithms {
      * For each ray, get the impact and append to the reflection table.
      */
     void append_for_ray(prediction_data &p, const miller_index &h,
-        const Ray &ray, int panel=-1) const {
+        const Ray &ray, int panel) const {
       try {
 
         // Get the impact on the detector
         Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
-        std::size_t panel = impact.first;
+        std::size_t pid = impact.first;
         vec2<double> mm = impact.second;
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+        vec2<double> px = detector_[pid].millimeter_to_pixel(mm);
 
         // Get the frames that a reflection with this angle will be observed at
         af::shared<double> frames =
@@ -211,7 +212,7 @@ namespace dials { namespace algorithms {
           p.s1.push_back(ray.s1);
           p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
           p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[i]));
-          p.panel.push_back(panel);
+          p.panel.push_back(pid);
         }
 
       } catch(dxtbx::error) {
