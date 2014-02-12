@@ -39,6 +39,13 @@ class Script(ScriptRunner):
         type = 'string', default = 'extracted.tar',
         help = 'Set the filename for the extracted spots.')
 
+    # Output filename option
+    self.config().add_option(
+        '--force-static',
+        dest = 'force_static',
+        action = "store_true", default = False,
+        help = 'For a scan varying model force static prediction.')
+
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.model.serialize import load, dump
@@ -66,7 +73,9 @@ class Script(ScriptRunner):
       return
 
     # Populate the reflection table with predictions
-    predicted = flex.reflection_table.from_predictions(importer.experiments)
+    predicted = flex.reflection_table.from_predictions(
+      importer.experiments,
+      force_static=options.force_static)
     predicted = ReflectionList.from_table(predicted)
 
     # Get the bbox nsigma

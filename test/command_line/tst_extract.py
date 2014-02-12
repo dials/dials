@@ -18,7 +18,7 @@ class Test(object):
     self.path = join(dials_regression, "centroid_test_data")
 
   def run(self):
-    from os.path import abspath, join
+    from os.path import abspath, join, exists
     from libtbx import easy_run
 
     # Call dials.integrate
@@ -26,6 +26,8 @@ class Test(object):
       'dials.extract',
       join(self.path, 'experiments.json'),
     ]).raise_if_errors()
+
+    assert(exists("extracted.tar"))
 
     print 'OK'
 
