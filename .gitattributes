@@ -253,6 +253,7 @@ algorithms/spot_prediction/reflection_frames.h -text
 algorithms/spot_prediction/reflection_predictor.h -text
 algorithms/spot_prediction/reflection_predictor.py -text
 algorithms/spot_prediction/rotation_angles.h -text
+algorithms/spot_prediction/scan_varying_helpers.h -text
 algorithms/spot_prediction/scan_varying_ray_predictor.h -text
 array_family/SConscript -text
 array_family/__init__.py -text

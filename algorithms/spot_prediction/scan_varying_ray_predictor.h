@@ -3,7 +3,7 @@
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_SCAN_VARYING_RAY_PREDICTOR_H
 
 #include <dials/algorithms/spot_prediction/ray_predictor.h>
-#include <dials/algorithms/spot_prediction/reeke_index_generator.h>
+#include <dials/algorithms/spot_prediction/scan_varying_helpers.h>
 
 namespace dials { namespace algorithms {
 
