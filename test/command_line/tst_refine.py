@@ -22,6 +22,7 @@ have not changed format and so on.
 # python imports
 from __future__ import division
 import os
+import shutil
 import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
@@ -48,16 +49,18 @@ def test1():
   cwd = os.path.abspath(os.curdir)
   tmp_dir = open_tmp_directory(suffix="test_dials_refine")
   os.chdir(tmp_dir)
-  result = easy_run.fully_buffered(command=cmd).raise_if_errors()
-  os.chdir(cwd)
-
-  # load results
-  reg_exp = ExperimentListFactory.from_json_file(
-              os.path.join(data_dir, "regression_experiments.json"),
-              check_format=False)[0]
-  ref_exp = ExperimentListFactory.from_json_file(
-              os.path.join(tmp_dir, "refined_experiments.json"),
-              check_format=False)[0]
+  try:
+    result = easy_run.fully_buffered(command=cmd).raise_if_errors()
+    # load results
+    reg_exp = ExperimentListFactory.from_json_file(
+                os.path.join(data_dir, "regression_experiments.json"),
+                check_format=False)[0]
+    ref_exp = ExperimentListFactory.from_json_file("refined_experiments.json",
+                check_format=False)[0]
+  finally:
+    os.chdir(cwd)
+    # clean up tmp dir
+    shutil.rmtree(tmp_dir)
 
   # test refined models against expected
   assert reg_exp.crystal == ref_exp.crystal
