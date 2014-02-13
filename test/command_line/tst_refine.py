@@ -56,7 +56,7 @@ def test1():
               os.path.join(data_dir, "regression_experiments.json"),
               check_format=False)[0]
   ref_exp = ExperimentListFactory.from_json_file(
-              os.path.join(data_dir, "refined_experiments.json"),
+              os.path.join(tmp_dir, "refined_experiments.json"),
               check_format=False)[0]
 
   # test refined models against expected
