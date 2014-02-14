@@ -44,6 +44,22 @@ namespace dials { namespace af { namespace boost_python {
   using dials::algorithms::LabelPixels;
 
   /**
+   * Construct from an array of panels and bounding boxes.
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_panel_and_bbox(
+      const af::const_ref<std::size_t> panel,
+      const af::const_ref<int6> bbox) {
+    DIALS_ASSERT(panel.size() == bbox.size());
+    af::shared< Shoebox<FloatType> > result(panel.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = Shoebox<FloatType>(panel[i], bbox[i]);
+    }
+    return new typename af::flex< Shoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /**
    * Construct an array of shoebxoes from a spot labelling class
    */
   template <typename FloatType>
@@ -354,6 +370,26 @@ namespace dials { namespace af { namespace boost_python {
     // Return the array
     return new typename af::flex< Shoebox<FloatType> >::type(
       result, af::flex_grid<>(result.size()));
+  }
+
+  /**
+   * Allocate the shoeboxes
+   */
+  template <typename FloatType>
+  void allocate(af::ref<Shoebox<FloatType> > a) {
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      a[i].allocate();
+    }
+  }
+
+  /**
+   * Deallocate the shoeboxes
+   */
+  template <typename FloatType>
+  void deallocate(af::ref<Shoebox<FloatType> > a) {
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      a[i].deallocate();
+    }
   }
 
   /**
@@ -808,6 +844,15 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("gain"),
             boost::python::arg("dark"),
             boost::python::arg("mask"))))
+        .def("__init__", make_constructor(
+          from_panel_and_bbox<FloatType>,
+          default_call_policies(), (
+            boost::python::arg("panel"),
+            boost::python::arg("bbox"))))
+        .def("allocate",
+          &allocate<FloatType>)
+        .def("deallocate",
+          &deallocate<FloatType>)
         .def("is_consistent",
           &is_consistent<FloatType>)
         .def("panels",

@@ -75,6 +75,7 @@ namespace dials { namespace model { namespace boost_python {
           return_value_policy<return_by_value>()))
       .def_readwrite("panel", &shoebox_type::panel)
       .def("allocate", &shoebox_type::allocate)
+      .def("allocate", &shoebox_type::allocate_with_value)
       .def("deallocate", &shoebox_type::deallocate)
       .def("xoffset", &shoebox_type::xoffset)
       .def("yoffset", &shoebox_type::yoffset)
