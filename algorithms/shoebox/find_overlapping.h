@@ -13,7 +13,8 @@
 
 #include <vector>
 #include <boost/shared_ptr.hpp>
-#include <dials/model/data/reflection.h>
+#include <scitbx/array_family/tiny_types.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/adjacency_list.h>
 #include <dials/algorithms/spatial_indexing/detect_collisions.h>
 #include <dials/error.h>
@@ -36,7 +37,6 @@ namespace dials { namespace algorithms {
 namespace dials { namespace algorithms { namespace shoebox {
 
   using scitbx::af::int6;
-  using dials::model::Reflection;
   using dials::model::AdjacencyList;
 
   /**
@@ -50,25 +50,18 @@ namespace dials { namespace algorithms { namespace shoebox {
    */
   inline
   boost::shared_ptr<AdjacencyList> find_overlapping(
-      const af::ref<Reflection> reflections) {
+      const af::const_ref<int6> &bboxes) {
 
-    // Ensure we have a valid number of reflections
-    DIALS_ASSERT(reflections.size() > 0);
-
-    // Copy all the reflection bounding_boxes into their own array
-    std::vector<int6> bounding_boxes(reflections.size());
-    for (std::size_t i = 0; i < reflections.size(); ++i) {
-      bounding_boxes[i] = reflections[i].get_bounding_box();
-    }
+    // Ensure we have a valid number of bboxes
+    DIALS_ASSERT(bboxes.size() > 0);
 
     // Create a list of all the pairs of collisions between bouding boxes.
     std::vector<std::pair<int, int> > collisions;
-    detect_collisions3d(bounding_boxes.begin(), bounding_boxes.end(),
-                        collisions);
+    detect_collisions3d(bboxes.begin(), bboxes.end(), collisions);
 
     // Put all the collisions into an adjacency list
     boost::shared_ptr<AdjacencyList> list(new AdjacencyList);
-    for (std::size_t i = 0; i < bounding_boxes.size(); ++i) {
+    for (std::size_t i = 0; i < bboxes.size(); ++i) {
       add_vertex(*list);
     }
     for (std::size_t i = 0; i < collisions.size(); ++i) {

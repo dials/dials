@@ -23,7 +23,7 @@ class Test(object):
     from dials.model.serialize import load
     from dials.algorithms import shoebox
     from cctbx.crystal.crystal_model.serialize import load_crystal
-    from scitbx.array_family import flex
+    from dials.array_family import flex
 
     # Load the sweep and crystal
     self.sweep = load.sweep(self.sweep_filename)
@@ -31,15 +31,18 @@ class Test(object):
 
     # Get the reflections and overlaps
     reflections, adjacency_list = self.predict_reflections()
-
-    # Allocate memory for reflection profiles
-    shoebox.allocate(reflections)
+    reflections['shoebox'] = flex.shoebox(
+      reflections['panel'],
+      reflections['bbox'])
+    reflections['shoebox'].allocate()
 
     # If the adjacency list is given, then create the reflection mask
     assert(len(self.detector) == 1)
     image_size = self.detector[0].get_image_size()
+    shoeboxes = reflections['shoebox']
+    coords = reflections['xyzcal.px']
     shoebox_masker = shoebox.MaskOverlapping()
-    shoebox_masker(reflections, adjacency_list)
+    shoebox_masker(shoeboxes, coords, adjacency_list)
 
     # Loop through all edges
     overlapping = []
@@ -70,8 +73,9 @@ class Test(object):
     from dials.algorithms import shoebox
 
     # Check that all elements in non_overlapping masks are 1
+    shoeboxes = reflections['shoebox']
     for i in non_overlapping:
-      mask = reflections[i].shoebox_mask
+      mask = shoeboxes[i].mask
       assert(mask.all_eq(shoebox.MaskCode.Valid))
 
     # Passed that test
@@ -85,10 +89,12 @@ class Test(object):
     from dials.algorithms import shoebox
 
     # Loop through all overlaps
+    shoeboxes = reflections['shoebox']
+    coord = reflections['xyzcal.px']
     for i in overlapping:
-      r1 = reflections[i]
-      bbox_1 = r1.bounding_box
-      r1_coord = matrix.col(r1.image_coord_px + (r1.frame_number,))
+      r1 = shoeboxes[i]
+      bbox_1 = r1.bbox
+      r1_coord = matrix.col(coord[i])
 
       # Create a mask that we expect
       r1_size = (bbox_1[5] - bbox_1[4],
@@ -99,9 +105,9 @@ class Test(object):
 
       # Loop through all reflections which this reflection overlaps
       for j in adjacency_list.adjacent_vertices(i):
-        r2 = reflections[j]
-        bbox_2 = r2.bounding_box
-        r2_coord = matrix.col(r2.image_coord_px + (r2.frame_number,))
+        r2 = shoeboxes[j]
+        bbox_2 = r2.bbox
+        r2_coord = matrix.col(coord[j])
 
         # Get bounding box of intersection
         bbox_3 = (max(bbox_1[0], bbox_2[0]), min(bbox_1[1], bbox_2[1]),
@@ -138,7 +144,7 @@ class Test(object):
         expected_mask[k0:k1, j0:j1, i0:i1] = intersect_mask
 
       # Check the masks are the same
-      calculated_mask = r1.shoebox_mask.as_numpy_array()
+      calculated_mask = r1.mask.as_numpy_array()
       assert(numpy.all(calculated_mask == expected_mask))
 
     # Passed the test
@@ -171,11 +177,10 @@ class Test(object):
 
     predicted = flex.reflection_table.from_predictions(exlist)
     predicted.compute_bbox(exlist[0], nsigma=5)
-    predicted = ReflectionList.from_table(predicted)
 
 
     # Find overlapping reflections
-    overlaps = shoebox.find_overlapping(predicted)
+    overlaps = shoebox.find_overlapping(predicted['bbox'])
 
     # Return the reflections and overlaps
     return predicted, overlaps

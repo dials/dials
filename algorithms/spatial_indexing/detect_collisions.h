@@ -14,6 +14,7 @@
 #include <cstdlib>
 #include <vector>
 #include <algorithm>
+#include <iterator>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/range_c.hpp>
 #include <cmath>
@@ -117,7 +118,8 @@ namespace dials { namespace algorithms {
    */
   template <typename BoxType, typename Iterator>
   BoxType get_bounding_box(Iterator first, Iterator last) {
-    typedef typename Iterator::value_type ObjectType;
+    typedef std::iterator_traits<Iterator> traits;
+    typedef typename traits::value_type ObjectType;
     BoxType box;
     for_each<range_c<int, 0, BoxType::size> >(
       init_bounding_box<BoxType, ObjectType>(*first, box));
@@ -185,7 +187,8 @@ namespace dials { namespace algorithms {
   /** Loop through objects and find minimum size in each dimension */
   template <typename SizeType, typename Iterator>
   SizeType get_minimum_box_size(Iterator first, Iterator last) {
-    typedef typename Iterator::value_type ObjectType;
+    typedef std::iterator_traits<Iterator> traits;
+    typedef typename traits::value_type ObjectType;
     SizeType size;
     for_each<range_c<int, 0, SizeType::size> >(
       init_box_size<SizeType, ObjectType>(*first, size));
@@ -313,7 +316,8 @@ namespace dials { namespace algorithms {
 
     // Types derived from data iterator
     typedef Iterator DataIterator;
-    typedef typename DataIterator::value_type ObjectType;
+    typedef std::iterator_traits<DataIterator> traits;
+    typedef typename traits::value_type ObjectType;
     typedef typename bound_coord_type<ObjectType>::type CoordType;
 
     // Types derived from index list

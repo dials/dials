@@ -22,7 +22,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_find_overlapping()
   {
     def("find_overlapping",
-      &find_overlapping, (arg("reflection_list")));
+      &find_overlapping, (arg("bboxes")));
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python

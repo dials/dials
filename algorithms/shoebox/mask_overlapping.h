@@ -23,7 +23,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   using scitbx::vec3;
   using scitbx::af::int3;
   using scitbx::af::int6;
-  using dials::model::Reflection;
+  using dials::model::Shoebox;
   using dials::model::AdjacencyList;
 
   /** Class to calculate the shoebox masks for all reflections */
@@ -49,24 +49,27 @@ namespace dials { namespace algorithms { namespace shoebox {
      * reflection whose predicted central location is closer to the pixel
      * will gain ownership of the pixel (mask value 1).
      *
-     * @param reflections The list of reflections
+     * @param shoeboxes The list of shoeboxes
      * @param adjacency_list The adjacency_list
      */
-    void operator()(af::ref<Reflection> reflections,
+    void operator()(
+        af::ref<Shoebox<> > shoeboxes,
+        const af::const_ref< vec3<double> > &coords,
         const boost::shared_ptr<AdjacencyList> &adjacency_list) const {
 
       // Loop through all the reflections
       if (adjacency_list) {
-        for (std::size_t i = 0; i < reflections.size(); ++i) {
+        for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
 
           // Get a reference to the reflection
-          Reflection &r = reflections[i];
+          Shoebox<> &s = shoeboxes[i];
+          vec3<double> c = coords[i];
 
-          // Get the list of overlapping reflectionss
+          // Get the list of overlapping shoeboxes
           adjacency_iterator_range range = adjacent_vertices(i, *adjacency_list);
           for (adjacency_iterator it = range.first; it != range.second; ++it) {
             if (i < *it) {
-              assign_ownership(r, reflections[*it]);
+              assign_ownership(s, c, shoeboxes[*it], coords[*it]);
             }
           }
         }
@@ -86,18 +89,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     /**
-     * Get a coordinate from the reflection.
-     * @param r The reflection
-     * @returns An (x, y, z) coordinate
-     */
-    vec3<double> reflection_coord(Reflection &r) const {
-      return vec3<double>(
-        r.get_image_coord_px()[0],
-        r.get_image_coord_px()[1],
-        r.get_frame_number());
-    }
-
-    /**
      * Get a coordinate from the voxel.
      * @param i The voxel x index
      * @param j The voxel y index
@@ -114,27 +105,21 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param b Reflection b
      * @throws RuntimeError if reflections to do overlap.
      */
-    void assign_ownership(Reflection &a, Reflection &b) const {
+    void assign_ownership(
+        Shoebox<> &a, vec3<double> coord_a,
+        Shoebox<> &b, vec3<double> coord_b) const {
 
       // Get the reflection mask arrays
-      af::ref< int, af::c_grid<3> > mask_a = a.get_shoebox_mask().ref();
-      af::ref< int, af::c_grid<3> > mask_b = b.get_shoebox_mask().ref();
+      af::ref< int, af::c_grid<3> > mask_a = a.mask.ref();
+      af::ref< int, af::c_grid<3> > mask_b = b.mask.ref();
 
       // Get the sizes of the masks
       int3 size_a = mask_a.accessor();
       int3 size_b = mask_b.accessor();
 
       // Get the bounding boxes
-      int6 bbox_a = a.get_bounding_box();
-      int6 bbox_b = b.get_bounding_box();
-
-      // Get the reflection coordinates in pixels
-      vec3<double> coord_a = reflection_coord(a);
-      vec3<double> coord_b = reflection_coord(b);
-
-      // Get the status for each reflection
-      bool a_status = a.is_valid();
-      bool b_status = b.is_valid();
+      int6 bbox_a = a.bbox;
+      int6 bbox_b = b.bbox;
 
       // Get range to iterate over
       int i0 = std::max(bbox_a[0], bbox_b[0]);
@@ -147,16 +132,13 @@ namespace dials { namespace algorithms { namespace shoebox {
       // Ensure ranges are valid
       DIALS_ASSERT(k1 > k0 && j1 > j0 && i1 > i0);
 
-      if (a_status == true) {
-        DIALS_ASSERT(i0 - bbox_a[0] >= 0 && i1 - bbox_a[0] <= size_a[2]);
-        DIALS_ASSERT(j0 - bbox_a[2] >= 0 && j1 - bbox_a[2] <= size_a[1]);
-        DIALS_ASSERT(k0 - bbox_a[4] >= 0 && k1 - bbox_a[4] <= size_a[0]);
-      }
-      if (b_status == true) {
-        DIALS_ASSERT(i0 - bbox_b[0] >= 0 && i1 - bbox_b[0] <= size_b[2]);
-        DIALS_ASSERT(j0 - bbox_b[2] >= 0 && j1 - bbox_b[2] <= size_b[1]);
-        DIALS_ASSERT(k0 - bbox_b[4] >= 0 && k1 - bbox_b[4] <= size_b[0]);
-      }
+      DIALS_ASSERT(i0 - bbox_a[0] >= 0 && i1 - bbox_a[0] <= size_a[2]);
+      DIALS_ASSERT(j0 - bbox_a[2] >= 0 && j1 - bbox_a[2] <= size_a[1]);
+      DIALS_ASSERT(k0 - bbox_a[4] >= 0 && k1 - bbox_a[4] <= size_a[0]);
+
+      DIALS_ASSERT(i0 - bbox_b[0] >= 0 && i1 - bbox_b[0] <= size_b[2]);
+      DIALS_ASSERT(j0 - bbox_b[2] >= 0 && j1 - bbox_b[2] <= size_b[1]);
+      DIALS_ASSERT(k0 - bbox_b[4] >= 0 && k1 - bbox_b[4] <= size_b[0]);
 
       // Iterate over range of indices
       for (int k = k0; k < k1; ++k) {
@@ -175,13 +157,9 @@ namespace dials { namespace algorithms { namespace shoebox {
             // set the mask for a to 1 and b to 0, otherwise set
             // b to 1 and a to 0.
             if (distance(coord_a, coord_c) < distance(coord_b, coord_c)) {
-              if (b_status == true) {
-                mask_b(kb, jb, ib) = 0;
-              }
+              mask_b(kb, jb, ib) = 0;
             } else {
-              if (a_status == true) {
-                mask_a(ka, ja, ia) = 0;
-              }
+              mask_a(ka, ja, ia) = 0;
             }
           }
         }

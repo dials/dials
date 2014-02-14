@@ -22,7 +22,8 @@ namespace dials { namespace algorithms { namespace shoebox {
     class_ <MaskOverlapping> ("MaskOverlapping")
       .def("__call__",
         &MaskOverlapping::operator(), (
-          arg("reflection_list"),
+          arg("shoeboxes"),
+          arg("coords"),
           arg("adjacency_list")));
   }
 
