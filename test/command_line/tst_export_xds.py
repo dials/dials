@@ -93,6 +93,20 @@ def export_xds():
   assert os.path.exists("xds/XDS.INP")
   assert os.path.exists("xds/XPARM.XDS")
   assert os.path.exists("xds/SPOT.XDS")
+
+  os.remove("xds/XDS.INP")
+  os.remove("xds/XPARM.XDS")
+  assert not os.path.exists("xds/XDS.INP")
+  assert not os.path.exists("xds/XPARM.XDS")
+  args = ["dials.export_xds",
+          os.path.join(dials_regression, "centroid_test_data",
+                       "experiments.json")]
+  command = " ".join(args)
+  print command
+  result = easy_run.fully_buffered(command=command).raise_if_errors()
+  assert os.path.exists("xds/XDS.INP")
+  assert os.path.exists("xds/XPARM.XDS")
+
   os.chdir(cwd)
 
 
