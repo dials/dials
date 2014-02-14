@@ -19,14 +19,14 @@
 #include <dials/algorithms/integration/profile/reference_locator.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/model/data/shoebox.h>
-#include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/model/data/transformed_shoebox.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
   using dials::model::Shoebox;
-  using dials::algorithms::reflection_basis::transform::Forward;
+  using dials::model::TransformedShoebox;
 
   /**
    * A class to perform profile fitting on reflections.
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms {
      * @param reflections The reflection list
      */
     af::shared< vec2<double> > operator()(
-        const af::const_ref< Forward<> > &profiles,
+        const af::const_ref<TransformedShoebox> &profiles,
         const af::const_ref< vec3<double> > &coords) const {
       DIALS_ASSERT(profiles.size() == coords.size());
       af::shared< vec2<double> > result(profiles.size());
@@ -73,14 +73,14 @@ namespace dials { namespace algorithms {
      * Perform the profile fitting on a reflection
      * @param reflection The reflection to process
      */
-    vec2<double> operator()(const Forward<> &profile, vec3<double> coord) const {
+    vec2<double> operator()(const TransformedShoebox &profile, vec3<double> coord) const {
 
       typedef af::versa < FloatType, af::c_grid<3> > profile_type;
       typedef af::const_ref< FloatType, af::c_grid<3> > profile_ref_type;
 
       // Get the transformed shoebox
-      profile_ref_type c = profile.profile().const_ref();
-      profile_ref_type b = profile.background().const_ref();
+      profile_ref_type c = profile.data.const_ref();
+      profile_ref_type b = profile.background.const_ref();
       profile_type p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance

@@ -11,7 +11,9 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LEARNER_H
 #define DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LEARNER_H
 
-#include <dials/algorithms/reflection_basis/transform.h>
+#include <scitbx/vec3.h>
+#include <scitbx/vec2.h>
+#include <dials/model/data/transformed_shoebox.h>
 #include <dials/algorithms/integration/profile/reference_locator.h>
 #include <dials/error.h>
 
@@ -21,7 +23,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::af::int3;
   using scitbx::af::int4;
-  using algorithms::reflection_basis::transform::Forward;
+  using model::TransformedShoebox;
 
   /**
    * Class to learn the reference profiles
@@ -30,7 +32,7 @@ namespace dials { namespace algorithms {
   class ReferenceLearner {
   public:
 
-    typedef Forward<>::float_type float_type;
+    typedef double float_type;
     typedef Sampler sampler_type;
     typedef ReferenceLocator<float_type, sampler_type> locator_type;
 
@@ -57,7 +59,7 @@ namespace dials { namespace algorithms {
      * Learn the reference profiles from the reflection list.
      * @param profiles The list of profiles
      */
-    void learn(const af::const_ref< Forward<> > profiles,
+    void learn(const af::const_ref< TransformedShoebox > profiles,
                const af::const_ref< vec3<double> > coords) {
       // Add the contributions of all the profiles to the references
       DIALS_ASSERT(profiles.size() == coords.size());
@@ -100,8 +102,8 @@ namespace dials { namespace algorithms {
      * Add a reflection to add to the reference profile learning.
      * @param profile The profile to add
      */
-    void add_profile(const Forward<> &profile, vec3<double> coord) {
-      add_profile(profile.profile().const_ref(), coord);
+    void add_profile(const TransformedShoebox &profile, vec3<double> coord) {
+      add_profile(profile.data.const_ref(), coord);
     }
 
     /**
