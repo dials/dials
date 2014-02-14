@@ -203,7 +203,6 @@ class IntegratorFactory(object):
     '''
     from dials.algorithms.integration import Summation2d
     from dials.algorithms.integration import Summation3d
-    from dials.algorithms.integration import SummationReciprocalSpace
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
     from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
 
@@ -217,12 +216,6 @@ class IntegratorFactory(object):
     # Configure the 3D summation algorithm
     elif integration.algorithm == 'sum3d':
       algorithm = Summation3d()
-
-    # Configure the reciprocal space summation algorithm
-    elif params.integration.algorithm == 'sum_rs':
-      algorithm = SummationReciprocalSpace(
-          n_sigma = integration.shoebox.n_sigma,
-          grid_size = integration.reciprocal_space.grid_size)
 
     # Configure the 2D profile fitting algorithm
     elif integration.algorithm == 'fit_2d':
