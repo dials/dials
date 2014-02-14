@@ -23,7 +23,7 @@ namespace dials { namespace model { namespace boost_python {
   /** Set the data array as a flex array */
   static
   void set_data(TransformedShoebox &obj,
-      typename flex<double>::type &data) {
+       flex<double>::type &data) {
     DIALS_ASSERT(data.accessor().all().size() == 3);
     obj.data = af::versa<double, af::c_grid<3> >(
       data.handle(), af::c_grid<3>(data.accessor()));
@@ -32,7 +32,7 @@ namespace dials { namespace model { namespace boost_python {
   /** Set the bgrd array as a flex array */
   static
   void set_background(TransformedShoebox &obj,
-      typename flex<double>::type &background) {
+      flex<double>::type &background) {
     DIALS_ASSERT(background.accessor().all().size() == 3);
     obj.background = af::versa<double, af::c_grid<3> >(
       background.handle(), af::c_grid<3>(background.accessor()));
