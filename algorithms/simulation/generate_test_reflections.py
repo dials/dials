@@ -107,7 +107,7 @@ def random_background_plane(sbox, a, b, c, d):
   return
 
 def simple_gaussian_spots(params):
-  from dials.model.data import ReflectionList
+  from dials.array_family import flex
   from dials.algorithms import shoebox
   import random
   import math
@@ -126,41 +126,42 @@ def simple_gaussian_spots(params):
   mask_peak = MaskCode.Valid|MaskCode.Foreground
   mask_back = MaskCode.Valid|MaskCode.Background
 
-  rlist = ReflectionList(params.nrefl)
-
   from dials.util.command_line import ProgressBar
   p = ProgressBar(title = 'Generating reflections')
 
+  rlist = flex.reflection_table(params.nrefl)
+  hkl = flex.miller_index(params.nrefl)
+  s1 = flex.vec3_double(params.nrefl)
+  xyzmm = flex.vec3_double(params.nrefl)
+  xyzpx = flex.vec3_double(params.nrefl)
+  panel = flex.size_t(params.nrefl)
+  bbox = flex.int6(params.nrefl)
+
   for j in range(params.nrefl):
     p.update(j * 100.0 / params.nrefl)
-    rlist[j].miller_index = (random.randint(0, 20),
-                             random.randint(0, 20),
-                             random.randint(0, 20))
-    rlist[j].rotation_angle = 2 * math.pi * random.random()
-    rlist[j].beam_vector = (0, 0, 0)
-    rlist[j].image_coord_px = (0, 0)
-    rlist[j].image_coord_mm = (0, 0)
-    rlist[j].frame_number = 0
-    rlist[j].panel_number = 0
-    rlist[j].bounding_box = (0, params.shoebox_size.x, 0, params.shoebox_size.y,
-                             0, params.shoebox_size.z)
-    rlist[j].centroid_position = (0, 0, 0)
-    rlist[j].centroid_variance = (0, 0, 0)
-    rlist[j].centroid_sq_width = (0, 0, 0)
-    rlist[j].intensity = 0
-    rlist[j].intensity_variance = 0
-    rlist[j].corrected_intensity = 0
-    rlist[j].corrected_intensity_variance = 0
+    hkl[j] = (random.randint(0, 20),
+           random.randint(0, 20),
+           random.randint(0, 20))
+    phi = 2 * math.pi * random.random()
+    s1[j] = (0, 0, 0)
+    xyzpx[j] = (0, 0, 0)
+    xyzmm[j] = (0, 0, phi)
+    panel[j] = 0
+    bbox[j] = (0, params.shoebox_size.x,
+               0, params.shoebox_size.y,
+               0, params.shoebox_size.z)
 
   p.finished('Generating %d reflections' % params.nrefl)
-  shoebox.allocate(rlist)
+  intensity = flex.double(params.nrefl)
+  shoebox = flex.shoebox(panel, bbox)
+  shoebox.allocate()
 
   p = ProgressBar(title = 'Generating shoeboxes')
 
-  for _, refl in enumerate(rlist):
+  for i in range(len(rlist)):
 
-    p.update(_ * 100.0 / params.nrefl)
-    mask = refl.shoebox_mask
+    p.update(i * 100.0 / params.nrefl)
+    mask = shoebox[i].mask
 
     if params.pixel_mask == 'precise':
       # flag everything as background: peak will me assigned later
@@ -198,7 +199,7 @@ def simple_gaussian_spots(params):
       mask.set_selected(index, MaskCode.Valid | MaskCode.Foreground)
       mask.set_selected(index != True, MaskCode.Valid | MaskCode.Background)
 
-    sbox = refl.shoebox
+    sbox = shoebox[i].data
 
     # reflection itself, including setting the peak region if we're doing that
     # FIXME use flex arrays to make the rotation bit more efficient as this is
@@ -227,7 +228,7 @@ def simple_gaussian_spots(params):
       if params.pixel_mask == 'precise':
         mask[z, y, x] = mask_peak
 
-    refl.intensity = counts_true
+    intensity[i] = counts_true
 
     if params.background:
       # background:flat;
@@ -241,6 +242,15 @@ def simple_gaussian_spots(params):
       random_background_plane(sbox, params.background_a, params.background_b,
                               params.background_c, params.background_d)
 
+
+  rlist['miller_index'] = hkl
+  rlist['s1'] = s1
+  rlist['xyzcal.px'] = xyzpx
+  rlist['xyzcal.mm'] = xyzmm
+  rlist['bbox'] = bbox
+  rlist['panel'] = panel
+  rlist['shoebox'] = shoebox
+  rlist['intensity.raw.value'] = intensity
   p.finished('Generating %d shoeboxes' % params.nrefl)
 
   return rlist
@@ -283,9 +293,8 @@ def integrate_3d_summation(rlist):
 def main(params):
   # first generate the reflections - this could be called from elsewhere
   rlist = simple_gaussian_spots(params)
-  correct_intensities = [r.intensity for r in rlist]
-  for r in rlist:
-    r.intensity = 0
+  correct_intensities = [r['intensity.raw.value'] for r in rlist]
+  del r['intensity.raw.value']
 
   # now integrate those reflections using code from elsewhere
   if params.background_method == 'xds':
@@ -296,29 +305,31 @@ def main(params):
 
   integrate_3d_summation(rlist)
 
-  integrated_intensities = [r.intensity for r in rlist]
+  integrated_intensities = [r['intensity.raw.value'] for r in rlist]
 
   # now scan through the reflection list and find those where the integration
   # gave an apparently duff answer i.e. outside of 3 sigma from correct value
 
-  from dials.model.data import ReflectionList
+  from dials.array_family import flex
   import math
 
-  overestimates = ReflectionList()
-  underestimates = ReflectionList()
+  overestimates = []
+  underestimates = []
 
   for j, (c, i) in enumerate(zip(correct_intensities, integrated_intensities)):
     sigma = math.sqrt(c)
     if math.fabs(c - i) < 3 * sigma:
       continue
     if i > params.counts:
-      overestimates.append(rlist[j])
+      overestimates.append(j)
     else:
-      underestimates.append(rlist[j])
+      underestimates.append(j)
 
   print '%d overestimates, %d underestimates' % (len(overestimates),
                                                  len(underestimates))
 
+  overestimates = rlist.select(flex.size_t(overestimates))
+  underestimates = rlist.select(flex.size_t(underestimates))
   # now pickle these, perhaps
 
   import cPickle as pickle

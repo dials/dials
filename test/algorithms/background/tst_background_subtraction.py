@@ -26,8 +26,8 @@ class TestSimulated:
     I = []
     S = []
     for r in rlist:
-      I.append(r.intensity)
-      S.append(sqrt(r.intensity_variance))
+      I.append(r['intensity.raw.value'])
+      S.append(sqrt(r['intensity.raw.variance']))
     Z = [(i - counts) / s for i, s in zip(I, S)]
     mv = flex.mean_and_variance(flex.double(Z))
     meanz = mv.mean()
