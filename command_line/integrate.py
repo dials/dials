@@ -71,12 +71,6 @@ class Script(ScriptRunner):
     elif len(importer.experiments) != 1:
       print 'Error: only 1 experiment can be processed at a time'
       return
-    sweep = importer.experiments[0].imageset
-    crystal = importer.experiments[0].crystal
-    sweep.set_beam(importer.experiments[0].beam)
-    sweep.set_goniometer(importer.experiments[0].goniometer)
-    sweep.set_detector(importer.experiments[0].detector)
-    sweep.set_scan(importer.experiments[0].scan)
 
     # Get the reference and extracted stuff
     reference = importer.reflections
@@ -91,19 +85,16 @@ class Script(ScriptRunner):
 
     # Intregate the sweep's reflections
     print 'Integrating reflections'
-    reflections = integrate(sweep, crystal,
+    reflections = integrate(importer.experiments,
         reference=reference, extracted=extracted)
 
-    # Get as a reflection table
-    reflections = reflections.to_table()
-
     # Save the reflections to file
-    nvalid = len([f for f in reflections['flags'] if f != 0])
+    nvalid = len(reflections) - reflections['flags'].count(0)
     Command.start('Saving {0} reflections to {1}'.format(
         nvalid, options.output_filename))
     if options.save_profiles == False:
       del reflections['shoebox']
-    dump.reflections(reflections, options.output_filename)
+    reflections.as_pickle(options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
         nvalid, options.output_filename))
 

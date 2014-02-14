@@ -35,7 +35,7 @@ class Integrator(object):
     self.compute_intensity = compute_intensity
     self.correct_intensity = correct_intensity
 
-  def __call__(self, sweep, crystal, reference=None, extracted=None):
+  def __call__(self, experiments, reference=None, extracted=None):
     ''' Call to integrate.
 
     Params:
@@ -48,25 +48,29 @@ class Integrator(object):
         A reflection list
 
     '''
-    from dials.algorithms.integration import ReflectionPredictor
     from dials.algorithms.shoebox import ReflectionBlockExtractor
     from dials.model.data import ReflectionList
     from dials.array_family import flex
     from dials.util.command_line import Command
 
+    assert(len(experiments) == 1)
+
     # Predict a load of reflections
     if extracted == None:
-      predict = ReflectionPredictor()
-      predicted = predict(sweep, crystal)
+      predicted = flex.reflection_table.from_predictions(experiments)
+      predicted = ReflectionList.from_table(predicted)
     else:
       predicted = None
 
+    sweep = experiments[0].imageset
+    crystal = experiments[0].crystal
+
     # Get the extractor
     extract = ReflectionBlockExtractor(sweep, crystal, predicted,
-        self.n_sigma, self.n_blocks, self.filter_by_zeta, extracted)
+      self.n_sigma, self.n_blocks, self.filter_by_zeta, extracted)
 
     # Loop through all the blocks
-    result = ReflectionList()
+    result = flex.reflection_table()
     print ''
     for reflections in extract:
 
@@ -75,18 +79,17 @@ class Integrator(object):
       self.compute_intensity(sweep, crystal, reflections, reference)
       self.correct_intensity(sweep, crystal, reflections)
 
-      # Remove the profiles from the reflections
-      for r in reflections:
-        r.shoebox = flex.double(flex.grid(0, 0, 0))
-        r.shoebox_mask = flex.int(flex.grid(0, 0, 0))
-        r.shoebox_background = flex.double(flex.grid(0, 0, 0))
-        r.transformed_shoebox = flex.double(flex.grid(0, 0, 0))
-        r.transformed_shoebox_background = flex.double(flex.grid(0, 0, 0))
+      reflections = reflections.to_table()
+      del reflections['shoebox']
       result.extend(reflections)
       print ''
 
     # Return the reflections
-    return ReflectionList(sorted(result, key=lambda x: x.miller_index))
+    miller_index = result['miller_index']
+    indices = flex.size_t(sorted(range(len(result)), key=lambda x:
+                                 miller_index[x]))
+    result.reorder(indices)
+    return result
 
 
 class IntegratorFactory(object):
