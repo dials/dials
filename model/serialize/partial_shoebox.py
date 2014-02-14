@@ -146,8 +146,9 @@ class Writer(object):
     ''' Split the shoeboxes based on the target block. '''
     from collections import defaultdict
     sperb = defaultdict(list)
+    frames = self._predicted['xyzcal.px'].parts()[2]
     for i in range(len(indices)):
-      frame = int(self._predicted[indices[i]].frame_number)
+      frame = int(frames[indices[i]])
       sperb[self.block(frame)].append(i)
     return sperb
 

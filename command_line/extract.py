@@ -82,7 +82,6 @@ class Script(ScriptRunner):
 
     # Calculate the bounding boxes
     predicted.compute_bbox(importer.experiments[0], n_sigma)
-    predicted = ReflectionList.from_table(predicted)
 
     # Create the profile block extractor
     extract = ProfileBlockExtractor(

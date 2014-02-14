@@ -108,8 +108,8 @@ class ProfileBlockExtractor(object):
       writer = partial_shoebox.Writer(filename, predicted, self.blocks)
 
       # Extract the frames and write to an intermediate format
-      panels = flex.size_t([p.panel_number for p in predicted])
-      bboxes = flex.int6([p.bounding_box for p in predicted])
+      panels = predicted['panel']
+      bboxes = predicted['bbox']
       for i, (b0, b1) in enumerate(zip(self.blocks[:-1], self.blocks[1:])):
         extract = PartialProfileExtractor(sweep[b0:b1])
         writer.write(i, *extract(panels, bboxes))
@@ -201,6 +201,7 @@ class ProfileBlockExtractor(object):
 
     return gain, dark, mask
 
+
 class ReflectionBlockExtractor(object):
 
   def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks,
@@ -266,6 +267,7 @@ class ReflectionBlockExtractor(object):
       Command.end('Found {0} overlaps'.format(len(overlaps)))
 
     # Create the profile block extractor
+    predicted = predicted.to_table()
     self._extractor = ProfileBlockExtractor(sweep, predicted, n_blocks, reader=reader)
 
     # Get the parameters
@@ -290,11 +292,10 @@ class ReflectionBlockExtractor(object):
 
   def extract(self, index):
     ''' Extract a block of reflections. '''
+    from dials.model.data import ReflectionList
     indices, shoeboxes = self._extractor.extract(index)
     reflections = self._extractor.predictions().select(indices)
-    for r, s in zip(reflections, shoeboxes):
-      r.shoebox = s.data
-      r.shoebox_mask = s.mask
-      r.shoebox_background = s.background
+    reflections['shoebox'] = shoeboxes
+    reflections = ReflectionList.from_table(reflections)
     self._mask_profiles(reflections, None)
     return reflections
