@@ -30,9 +30,8 @@ def run(args):
   from scitbx import matrix
   from libtbx.phil import command_line
   importer = Importer(args, check_format=False)
-  assert len(importer.reflections) == 1
   assert len(importer.datablocks) == 1
-  reflections = importer.reflections[0]
+  reflections = importer.reflections
   imageset = importer.datablocks[0].extract_imagesets()[0]
   detector = imageset.get_detector()
   scan = imageset.get_scan()
@@ -52,7 +51,8 @@ def run(args):
       - matrix.col(detector[i_panel].get_origin())
     panel_origin_shifts[i_panel] = origin_shift
   from dials.model.data import ReflectionList
-  reflection_list = ReflectionList.from_table(reflections)
+  reflections = [
+    ReflectionList.from_table(ref_table) for ref_table in reflections]
   if len(params.scan_range):
     sel = flex.bool(reflection_list.size(), False)
     centroid_positions = reflection_list.centroid_position()
@@ -75,34 +75,35 @@ def run(args):
     print flex.max(centroids_frame.select(perm))
     reflection_list = reflection_list.select(perm)
 
-  for refl in reflection_list:
-    centroid_position = refl.centroid_position
-    centroid_variance = refl.centroid_variance
-    if centroid_position != (0,0,0):
-      if refl.miller_index is not None and refl.image_coord_mm != (0,0):
+  for reflection_list in reflections:
+    for refl in reflection_list:
+      centroid_position = refl.centroid_position
+      centroid_variance = refl.centroid_variance
+      if centroid_position != (0,0,0):
+        if refl.miller_index is not None and refl.image_coord_mm != (0,0):
+          x, y = refl.image_coord_mm
+        else:
+          # just a quick check for now that the reflections haven't come from
+          # somewhere else
+          assert refl.image_coord_mm == (0,0)
+          # this assumes the centroids are given in pixel coordinates
+          from dials.algorithms.centroid import centroid_px_to_mm_panel
+          centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
+            detector[refl.panel_number], scan,
+            centroid_position,
+            centroid_variance,
+            (1,1,1))
+          if refl.panel_number > 0:
+            s1 = detector[refl.panel_number].get_lab_coord(centroid_position[:2])
+            if hierarchy is not None:
+              centroid_position = hierarchy.get_ray_intersection(s1)
+            else:
+              centroid_position = detector[0].get_ray_intersection(s1)
+          x, y = centroid_position[:2]
+        observed_xy.append((x,y))
+      elif refl.image_coord_px != (0, 0):
         x, y = refl.image_coord_mm
-      else:
-        # just a quick check for now that the reflections haven't come from
-        # somewhere else
-        assert refl.image_coord_mm == (0,0)
-        # this assumes the centroids are given in pixel coordinates
-        from dials.algorithms.centroid import centroid_px_to_mm_panel
-        centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-          detector[refl.panel_number], scan,
-          centroid_position,
-          centroid_variance,
-          (1,1,1))
-        if refl.panel_number > 0:
-          s1 = detector[refl.panel_number].get_lab_coord(centroid_position[:2])
-          if hierarchy is not None:
-            centroid_position = hierarchy.get_ray_intersection(s1)
-          else:
-            centroid_position = detector[0].get_ray_intersection(s1)
-        x, y = centroid_position[:2]
-      observed_xy.append((x,y))
-    elif refl.image_coord_px != (0, 0):
-      x, y = refl.image_coord_mm
-      predicted_xy.append((x,y))
+        predicted_xy.append((x,y))
   obs_x, obs_y = observed_xy.parts()
   pred_x, pred_y = predicted_xy.parts()
 
