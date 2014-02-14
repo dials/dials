@@ -9,6 +9,7 @@ class Test(object):
     from dials.model.serialize import load
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.algorithms.shoebox import MaskForeground
+    from dials.model.experiment.experiment_list import Experiment
 
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')
@@ -29,21 +30,26 @@ class Test(object):
     self.detector = self.sweep.get_detector()
     self.goniometer = self.sweep.get_goniometer()
     self.scan = self.sweep.get_scan()
+    self.experiment = Experiment(
+      imageset = self.sweep,
+      beam = self.beam,
+      detector = self.detector,
+      goniometer = self.goniometer,
+      scan = self.scan,
+      crystal = self.crystal)
     self.delta_d = 5 * self.beam.get_sigma_divergence(deg=False)
     self.delta_m = 5 * self.crystal.get_mosaicity(deg=False)
+    self.nsigma = 5
     assert(len(self.detector) == 1)
 
     # Get the function object to mask the foreground
     self.mask_foreground = MaskForeground(self.beam, self.detector,
         self.goniometer, self.scan, self.delta_d, self.delta_m)
 
-    # Get the function object to calcyulate the bounding box
-    self.calculate_bbox = BBoxCalculator(self.beam, self.detector,
-        self.goniometer, self.scan, self.delta_d, self.delta_m)
 
   def run(self):
     from scitbx import matrix
-    from dials.algorithms import shoebox
+    from dials.algorithms.shoebox import MaskCode
     from dials.algorithms.reflection_basis import CoordinateSystem
     assert(len(self.detector) == 1)
     s0 = self.beam.get_s0()
@@ -55,14 +61,20 @@ class Test(object):
     reflections = self.generate_reflections(100)
 
     # Mask the foreground in each
-    self.mask_foreground(reflections)
+    self.mask_foreground(
+      reflections['shoebox'],
+      reflections['s1'],
+      reflections['xyzcal.px'].parts()[2])
 
     # Loop through all the reflections and check the mask values
-    for r in reflections:
-      mask = r.shoebox_mask[0:1,:,:]
-      x0, x1, y0, y1, z0, z1 = r.bounding_box
-      s1 = r.beam_vector
-      phi = r.rotation_angle
+    shoebox = reflections['shoebox']
+    beam_vector = reflections['s1']
+    rotation_angle = reflections['xyzcal.mm'].parts()[2]
+    for i in range(len(reflections)):
+      mask = shoebox[i].mask[0:1,:,:]
+      x0, x1, y0, y1, z0, z1 = shoebox[i].bbox
+      s1 = beam_vector[i]
+      phi = rotation_angle[i]
       cs = CoordinateSystem(m2, s0, s1, phi)
       for j in range(y1 - y0):
         for i in range(x1 - x0):
@@ -75,24 +87,26 @@ class Test(object):
           bb = (e2 / self.delta_d)**2
           if (x0 + i < 0 or y0 + j < 0 or
               x0 + i > width or y0 + j > height):
-            value2 = 0
+            value2 = MaskCode.Valid
           else:
             if (aa + bb <= 1.0):
-              value2 = shoebox.MaskCode.Foreground
+              value2 = MaskCode.Valid | MaskCode.Foreground
             else:
-              value2 = shoebox.MaskCode.Background
+              value2 = MaskCode.Valid | MaskCode.Background
           assert(value1 == value2)
 
     # Test passed
     print 'OK'
 
   def generate_reflections(self, num):
-    from dials.model.data import ReflectionList
     from random import randint
     from scitbx import matrix
     from dials.array_family import flex
     assert(len(self.detector) == 1)
-    rlist = ReflectionList(num)
+    beam_vector = flex.vec3_double(num)
+    xyzcal_px = flex.vec3_double(num)
+    xyzcal_mm = flex.vec3_double(num)
+    panel = flex.size_t(num)
     s0_length = matrix.col(self.beam.get_s0()).length()
     for i in range(num):
       x = randint(0, 2000)
@@ -101,22 +115,21 @@ class Test(object):
       s1 = self.detector[0].get_pixel_lab_coord((x, y))
       s1 = matrix.col(s1).normalize() * s0_length
       phi = self.scan.get_angle_from_array_index(z, deg=False)
-      rlist[i].beam_vector = s1
-      rlist[i].rotation_angle = phi
-      rlist[i].frame_number = z
-      rlist[i].image_coord_px = (x, y)
-    s1 = flex.vec3_double([r.beam_vector for r in rlist])
-    phi = flex.double([r.rotation_angle for r in rlist])
-    panel = flex.size_t([r.panel_number for r in rlist])
-    bbox = self.calculate_bbox(s1, phi, panel)
-    for b, r in zip(bbox, rlist):
-      r.bounding_box = b
-    for i in range(num):
-      bbox = rlist[i].bounding_box
-      xsize = bbox[1] - bbox[0]
-      ysize = bbox[3] - bbox[2]
-      zsize = bbox[5] - bbox[4]
-      rlist[i].shoebox_mask = flex.int(flex.grid(zsize, ysize, xsize))
+      beam_vector[i] = s1
+      xyzcal_px[i] = (x, y, z)
+      (x, y)  = self.detector[0].pixel_to_millimeter((x, y))
+      xyzcal_mm[i] = (x, y, phi)
+      panel[i] = 0
+
+    rlist = flex.reflection_table()
+    rlist['s1'] = beam_vector
+    rlist['panel'] = panel
+    rlist['xyzcal.px'] = xyzcal_px
+    rlist['xyzcal.mm'] = xyzcal_mm
+    rlist.compute_bbox(self.experiment, self.nsigma)
+    rlist['shoebox'] = flex.shoebox(
+      rlist['panel'], rlist['bbox'])
+    rlist['shoebox'].allocate()
     return rlist
 
 if __name__ == '__main__':

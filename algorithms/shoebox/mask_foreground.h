@@ -17,7 +17,7 @@
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/scan.h>
-#include <dials/model/data/reflection.h>
+#include <dials/model/data/shoebox.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/algorithms/shoebox/mask_code.h>
@@ -32,7 +32,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-  using dials::model::Reflection;
+  using dials::model::Shoebox;
   using dials::algorithms::reflection_basis::CoordinateSystem;
   using dials::algorithms::reflection_basis::transform::beam_vector_map;
 
@@ -102,19 +102,20 @@ namespace dials { namespace algorithms { namespace shoebox {
     }
 
     /**
-     * Set all the foreground/background pixels in the reflection mask.
-     * @param reflection The reflection to mask
+     * Set all the foreground/background pixels in the shoebox mask.
+     * @param shoebox The shoebox to mask
+     * @param s1 The beam vector
+     * @param frame The frame number
      */
-    void operator()(Reflection &reflection) const {
+    void single(Shoebox<> &shoebox, vec3<double> s1, double frame) const {
 
-      // Ensure the reflection is valid
-      if (reflection.is_valid()) {
+      // Ensure the shoebox is valid
+      //if (shoebox.is_valid()) {
 
-        // Get some bits from the reflection
-        af::ref< int, af::c_grid<3> > mask = reflection.get_shoebox_mask().ref();
-        vec3<double> s1 = reflection.get_beam_vector();
-        double phi = reflection.get_rotation_angle();
-        int6 bbox = reflection.get_bounding_box();
+        // Get some bits from the shoebox
+        af::ref< int, af::c_grid<3> > mask = shoebox.mask.ref();
+        int6 bbox = shoebox.bbox;
+        double phi = phi0_ + (frame - index0_) * dphi_;
         int x0 = bbox[0], x1 = bbox[1];
         int y0 = bbox[2], y1 = bbox[3];
         int z0 = bbox[4], z1 = bbox[5];
@@ -122,8 +123,9 @@ namespace dials { namespace algorithms { namespace shoebox {
         int ysize = y1 - y0;
         int zsize = z1 - z0;
 
-        int z = (int)floor(reflection.get_frame_number());
+        int z = (int)floor(frame);
         DIALS_ASSERT(z >= 0 && z < delta_b_r_.size());
+        DIALS_ASSERT(z >= z0 && z < z1);
         double delta_b_r = delta_b_r_[z];
         //double delta_m_r = delta_m_r_[z];
 
@@ -159,16 +161,23 @@ namespace dials { namespace algorithms { namespace shoebox {
             }
           }
         }
-      }
+      //}
     }
 
     /**
-     * Mask all the foreground/background pixels for all the reflections
-     * @param reflections The reflection list
+     * Mask all the foreground/background pixels for all the shoeboxes
+     * @param shoeboxes The shoebox list
+     * @param s1 The list of beam vectors
+     * @param frame The list of frame numbers
      */
-    void operator()(af::ref<Reflection> reflections) const {
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
-        this->operator()(reflections[i]);
+    void array(
+        af::ref<Shoebox<> > shoeboxes,
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref< double > &frame) const {
+      DIALS_ASSERT(shoeboxes.size() == s1.size());
+      DIALS_ASSERT(shoeboxes.size() == frame.size());
+      for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+        this->single(shoeboxes[i], s1[i], frame[i]);
       }
     }
 
