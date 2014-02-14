@@ -34,7 +34,7 @@ class Test(object):
     reflections['shoebox'] = flex.shoebox(
       reflections['panel'],
       reflections['bbox'])
-    reflections['shoebox'].allocate()
+    reflections['shoebox'].allocate_with_value(shoebox.MaskCode.Valid)
 
     # If the adjacency list is given, then create the reflection mask
     assert(len(self.detector) == 1)

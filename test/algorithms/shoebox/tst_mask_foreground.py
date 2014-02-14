@@ -102,6 +102,7 @@ class Test(object):
     from random import randint
     from scitbx import matrix
     from dials.array_family import flex
+    from dials.algorithms.shoebox import MaskCode
     assert(len(self.detector) == 1)
     beam_vector = flex.vec3_double(num)
     xyzcal_px = flex.vec3_double(num)
@@ -129,7 +130,7 @@ class Test(object):
     rlist.compute_bbox(self.experiment, self.nsigma)
     rlist['shoebox'] = flex.shoebox(
       rlist['panel'], rlist['bbox'])
-    rlist['shoebox'].allocate()
+    rlist['shoebox'].allocate_with_value(MaskCode.Valid)
     return rlist
 
 if __name__ == '__main__':
