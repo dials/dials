@@ -20,20 +20,30 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     typedef ScanStaticReflectionPredictor Predictor;
 
-    af::reflection_table (Predictor::*predict_all)() const =
+
+    af::reflection_table (Predictor::*predict_from_model)() const =
       &Predictor::operator();
 
-    af::reflection_table (Predictor::*predict_observed)(
+    af::reflection_table (Predictor::*predict_all)(
+        const mat3<double>&) const = &Predictor::operator();
+
+    af::reflection_table (Predictor::*predict_with_hkl)(
+        const af::const_ref< mat3<double> >&,
         const af::const_ref< cctbx::miller::index<> >&) const =
       &Predictor::operator();
 
-    af::reflection_table (Predictor::*predict_observed_with_panel)(
+    af::reflection_table (Predictor::*predict_with_hkl_and_panel)(
+        const af::const_ref< mat3<double> >&,
         const af::const_ref< cctbx::miller::index<> >&,
-        std::size_t) const = &Predictor::operator();
+        const af::const_ref< std::size_t >&) const =
+      &Predictor::operator();
 
-    af::reflection_table (Predictor::*predict_observed_with_panel_list)(
+    af::reflection_table (Predictor::*predict_with_hkl_panel_and_entering)(
+        const af::const_ref< mat3<double> >&,
         const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref<std::size_t>&) const = &Predictor::operator();
+        const af::const_ref< std::size_t >&,
+        const af::const_ref< bool >&) const =
+      &Predictor::operator();
 
     class_<Predictor>("ScanStaticReflectionPredictor", no_init)
       .def(init<
@@ -43,12 +53,13 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Scan&,
           const cctbx::uctbx::unit_cell&,
           const cctbx::sgtbx::space_group_type&,
-          mat3<double>,
+          const mat3<double>&,
           double>())
+      .def("__call__", predict_from_model)
       .def("__call__", predict_all)
-      .def("__call__", predict_observed)
-      .def("__call__", predict_observed_with_panel)
-      .def("__call__", predict_observed_with_panel_list);
+      .def("__call__", predict_with_hkl)
+      .def("__call__", predict_with_hkl_and_panel)
+      .def("__call__", predict_with_hkl_panel_and_entering);
   }
 
   void export_scan_varying_reflection_predictor() {
