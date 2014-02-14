@@ -45,6 +45,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     # assumes pixel size is same for all panels and same in x and y
     inlier_sel = mm_residual_norms < (
       maximum_spot_error * detector[0].get_pixel_size()[0])
+    print "Rejecting %i outliers" %(inlier_sel.count(False))
     if debug_plots:
       debug_plot_residuals(refiner, inlier_sel=inlier_sel)
 
@@ -58,7 +59,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
   crystal_ids = flex.int([match.crystal_id for match in matches])
   for i_cryst in range(flex.max(crystal_ids) + 1):
     if (crystal_ids == i_cryst).count(True) < params.refinement.reflections.minimum_number_of_reflections:
-      raise RuntimeError("Insufficient matches for crystal %i" %i_cryst)
+      raise RuntimeError("Insufficient matches for crystal %i" %(i_cryst+1))
   refined = refiner.run()
   return refiner, refined
 
