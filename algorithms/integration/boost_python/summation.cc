@@ -11,14 +11,11 @@
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
 #include <dials/algorithms/integration/summation.h>
-#include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 
 using namespace boost::python;
 
 namespace dials { namespace algorithms { namespace boost_python {
-
-  using dials::model::Reflection;
 
   template <typename FloatType>
   void summation_wrapper(const char *name)
@@ -186,56 +183,12 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("n_background")));
   }
 
-  void summation_with_reflection(Reflection &r) {
-
-    af::const_ref< int, af::c_grid<3> > shoebox_mask =
-      r.get_shoebox_mask().const_ref();
-    af::versa< bool, af::c_grid<3> > mask(shoebox_mask.accessor(),
-      af::init_functor_null<bool>());
-    std::size_t n_background = 0;
-    for (std::size_t i = 0; i < mask.size(); ++i) {
-      mask[i] = (shoebox_mask[i] & shoebox::Valid &&
-                 shoebox_mask[i] & shoebox::Foreground) ? true : false;
-
-      if (shoebox_mask[i] & shoebox::BackgroundUsed) {
-        n_background++;
-      }
-    }
-
-    // Integrate the reflection
-    Summation<Reflection::float_type> result(
-      r.get_shoebox().const_ref(),
-      r.get_shoebox_background().const_ref(),
-      mask.const_ref(),
-      n_background);
-
-    // Set the intensity and variance
-    r.set_intensity(result.intensity());
-    r.set_intensity_variance(result.variance());
-  }
-
-  void summation_with_reflection_list(af::ref<Reflection> reflections) {
-    #pragma omp parallel for
-    for (std::size_t i = 0; i < reflections.size(); ++i) {
-      try {
-        if (reflections[i].is_valid()) {
-          summation_with_reflection(reflections[i]);
-        }
-      } catch (dials::error) {
-        reflections[i].set_valid(false);
-      }
-    }
-  }
-
   void export_summation() {
     summation_wrapper<float>("SummationFloat");
     summation_wrapper<double>("SummationDouble");
 
     summation_suite<float>();
     summation_suite<double>();
-
-    def("integrate_by_summation", &summation_with_reflection);
-    def("integrate_by_summation", &summation_with_reflection_list);
   }
 
 }}} // namespace = dials::algorithms::boost_python

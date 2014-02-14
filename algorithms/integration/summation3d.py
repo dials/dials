@@ -35,7 +35,8 @@ class Summation3d(IntegrationInterface):
 
     # Integrate and return the reflections
     Command.start('Integrating reflections')
-    integrate_by_summation(reflections)
-    Command.end('Integrated {0} reflections'.format(
-        len([r for r in reflections if r.is_valid()])))
+    intensity = reflections['shoebox'].summed_intensity_foreground()
+    reflections['intensity.raw.value'] = intensity.observed_value()
+    reflections['intensity.raw.variance'] = intensity.observed_variance()
+    Command.end('Integrated {0} reflections'.format(len(reflections)))
     return reflections
