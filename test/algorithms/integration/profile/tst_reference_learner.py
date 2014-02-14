@@ -34,7 +34,9 @@ class Test(object):
         self.grid_size, self.threshold)
 
     # Learn from the reflections
-    learner.learn(reflections)
+    learner.learn(
+      reflections['transformed_shoebox'],
+      reflections['xyzcal.px'])
 
     # Get the reference locator
     locate = learner.locate()
@@ -70,7 +72,9 @@ class Test(object):
         self.grid_size, self.threshold)
 
     # Learn from the reflections
-    learner.learn(reflections)
+    learner.learn(
+      reflections['transformed_shoebox'],
+      reflections['xyzcal.px'])
 
     # Get the reference locator
     locate = learner.locate()
@@ -114,7 +118,9 @@ class Test(object):
         self.grid_size, self.threshold)
 
     # Learn from the reflections
-    learner.learn(reflections)
+    learner.learn(
+      reflections['transformed_shoebox'],
+      reflections['xyzcal.px'])
 
     # Get the reference locator
     locate = learner.locate()
@@ -124,7 +130,7 @@ class Test(object):
     zero = flex.double(profile.accessor(), 0)
 
     assert(len(reflections) == 1)
-    coord = reflections[0].image_coord_px + (reflections[0].frame_number,)
+    coord = reflections[0]['xyzcal.px']
     ind = locate.indices(coord)
 
     nind = set(range(locate.size())).difference(ind)
@@ -155,52 +161,55 @@ class Test(object):
 
 
   def generate_single_central_non_negative_profiles(self):
-    from dials.model.data import ReflectionList, Reflection
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     from random import uniform
     from tst_profile_helpers import gaussian
-    rlist = ReflectionList(1)
+    rlist = flex.reflection_table(1)
 
     profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
 
     x = 500
     y = 500
     z = 5
-    rlist[0].set_strong(True)
-    rlist[0].image_coord_px = (x, y)
-    rlist[0].frame_number = z
-    rlist[0].transformed_shoebox = profile.deep_copy()
+    xyz = flex.vec3_double(1)
+    xyz[0] = (x, y, z)
+    profiles = flex.transformed_shoebox(1)
+    profiles[0].data = profile.deep_copy()
+    rlist['xyzcal.px'] = xyz
+    rlist['transformed_shoebox'] = profiles
 
     return rlist, profile
 
 
   def generate_identical_non_negative_profiles(self):
-    from dials.model.data import ReflectionList, Reflection
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     from random import uniform
     from tst_profile_helpers import gaussian
-    rlist = ReflectionList(1000)
+    rlist = flex.reflection_table(1000)
 
     profile = gaussian(self.grid_size, 1000, (4, 4, 4), (1.5, 1.5, 1.5))
 
+    xyz = flex.vec3_double(1000)
+    profiles = flex.transformed_shoebox(1000)
     for i in range(1000):
       x = uniform(0, 1000)
       y = uniform(0, 1000)
       z = uniform(0, 10)
-      rlist[i].set_strong(True)
-      rlist[i].image_coord_px = (x, y)
-      rlist[i].frame_number = z
-      rlist[i].transformed_shoebox = profile.deep_copy()
+      xyz[i] = (x, y, z)
+      profiles[i].data = profile.deep_copy()
+    rlist['xyzcal.px'] = xyz
+    rlist['transformed_shoebox'] = profiles
 
     return rlist, profile
 
   def generate_systematically_offset_profiles(self):
-    from dials.model.data import ReflectionList, Reflection
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     from random import uniform
     from tst_profile_helpers import gaussian
-    rlist = ReflectionList(1000)
+    rlist = flex.reflection_table(1000)
 
+    xyz = flex.vec3_double(1000)
+    profiles = flex.transformed_shoebox(1000)
     for i in range(1000):
       x = uniform(0, 1000)
       y = uniform(0, 1000)
@@ -210,11 +219,11 @@ class Test(object):
 
       profile = gaussian(self.grid_size, 1000,
           (4 + offset, 4, 4), (1.5, 1.5, 1.5))
-      rlist[i].set_strong(True)
-      rlist[i].image_coord_px = (x, y)
-      rlist[i].frame_number = z
-      rlist[i].transformed_shoebox = profile
+      xyz[i] = (x, y, z)
+      profiles[i].data = profile
 
+    rlist['xyzcal.px'] = xyz
+    rlist['transformed_shoebox'] = profiles
     return rlist
 
 if __name__ == '__main__':
