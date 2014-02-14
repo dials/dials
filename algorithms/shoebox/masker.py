@@ -50,15 +50,21 @@ class Masker(object):
     # Mask the overlaps if an adjacency list is given
     if adjacency_list:
       Command.start('Masking overlapping reflections')
-      self.mask_overlapping(reflections, adjacency_list)
+      self.mask_overlapping(
+        reflections['shoebox'],
+        reflections['xyzcal.px'],
+        adjacency_list)
       Command.end('Masked {0} overlapping reflections'.format(
           len(adjacency_list)))
 
     # Mask the foreground region
     Command.start('Masking foreground pixels')
-    self.mask_foreground(reflections)
+    self.mask_foreground(
+      reflections['shoebox'],
+      reflections['s1'],
+      reflections['xyzcal.px'].parts()[2])
     Command.end('Masked foreground pixels for {0} reflections'.format(
-        len([r for r in reflections if r.is_valid()])))
+      len(reflections)))
 
     # Return the reflections
     return reflections

@@ -50,6 +50,7 @@ namespace dials { namespace algorithms { namespace shoebox {
      * will gain ownership of the pixel (mask value 1).
      *
      * @param shoeboxes The list of shoeboxes
+     * @param coords The pixel coordinate
      * @param adjacency_list The adjacency_list
      */
     void operator()(
@@ -101,8 +102,10 @@ namespace dials { namespace algorithms { namespace shoebox {
 
     /**
      * Assign ownership of all the pixels in the overlapping range.
-     * @param a Reflection a
-     * @param b Reflection b
+     * @param a Shoebox a
+     * @param coord_a The coordinate of a
+     * @param b Shoebox b
+     * @param coord_b The coordinate of b
      * @throws RuntimeError if reflections to do overlap.
      */
     void assign_ownership(

@@ -58,7 +58,6 @@ class Integrator(object):
     # Predict a load of reflections
     if extracted == None:
       predicted = flex.reflection_table.from_predictions(experiments)
-      predicted = ReflectionList.from_table(predicted)
     else:
       predicted = None
 
@@ -74,6 +73,7 @@ class Integrator(object):
     print ''
     for reflections in extract:
 
+      reflections = ReflectionList.from_table(reflections)
       self.compute_background(sweep, crystal, reflections)
       self.compute_centroid(sweep, crystal, reflections)
       self.compute_intensity(sweep, crystal, reflections, reference)
