@@ -132,7 +132,7 @@ namespace dials { namespace model {
      * Allocate the mask and data with mask code valid.
      */
     void allocate() {
-      allocate_with_value(Valid);
+      allocate_with_value(0);
     }
 
     /**

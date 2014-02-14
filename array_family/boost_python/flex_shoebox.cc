@@ -383,6 +383,16 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Allocate the shoeboxes
+   */
+  template <typename FloatType>
+  void allocate_with_value(af::ref<Shoebox<FloatType> > a, int mask_code) {
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      a[i].allocate_with_value(mask_code);
+    }
+  }
+
+  /**
    * Deallocate the shoeboxes
    */
   template <typename FloatType>
@@ -851,6 +861,8 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("bbox"))))
         .def("allocate",
           &allocate<FloatType>)
+        .def("allocate_with_value",
+          &allocate_with_value<FloatType>)
         .def("deallocate",
           &deallocate<FloatType>)
         .def("is_consistent",

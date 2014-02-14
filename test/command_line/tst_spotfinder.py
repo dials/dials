@@ -28,6 +28,7 @@ def exercise_spotfinder():
     assert approx_equal(refl['xyzobs.px.value'],
                         (1258.7957746478874, 539.112676056338, 0.5))
     assert "shoebox" in reflections
+  print 'OK'
 
   # now with a resolution filter
   args = ["dials.find_spots", "d_min=2", "d_max=15",
@@ -39,6 +40,7 @@ def exercise_spotfinder():
     assert len(reflections) == 371
     refl = reflections[0]
     assert "shoebox" not in reflections
+  print 'OK'
 
   # now with more generous parameters
   args = ["dials.find_spots", "min_spot_size=3", "max_separation=3",
@@ -48,6 +50,7 @@ def exercise_spotfinder():
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 679
+  print 'OK'
 
   # now with XFEL stills
   data_dir = libtbx.env.find_in_repositories(
@@ -60,6 +63,7 @@ def exercise_spotfinder():
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
     assert len(reflections) == 2989
+  print 'OK'
 
 def exercise_polygon():
   from dials.algorithms.peak_finding.spotfinder_factory import polygon
