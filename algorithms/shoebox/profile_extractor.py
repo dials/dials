@@ -261,10 +261,10 @@ class ReflectionBlockExtractor(object):
       # Get only those reflections which are valid
       predicted = predicted.select(predicted.is_valid())
 
-      # Find overlapping reflections
-      Command.start('Finding overlapping reflections')
-      overlaps = shoebox.find_overlapping(predicted)
-      Command.end('Found {0} overlaps'.format(len(overlaps)))
+      # Find overlapping reflections FIXME uncomment
+      #Command.start('Finding overlapping reflections')
+      #overlaps = shoebox.find_overlapping(predicted['bbox'])
+      #Command.end('Found {0} overlaps'.format(len(overlaps)))
 
     # Create the profile block extractor
     predicted = predicted.to_table()
@@ -296,6 +296,6 @@ class ReflectionBlockExtractor(object):
     indices, shoeboxes = self._extractor.extract(index)
     reflections = self._extractor.predictions().select(indices)
     reflections['shoebox'] = shoeboxes
-    reflections = ReflectionList.from_table(reflections)
-    self._mask_profiles(reflections, None)
+    coords = reflections['xyzcal.px']
+    self._mask_profiles(shoeboxes, coords, None)
     return reflections
