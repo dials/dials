@@ -1,6 +1,9 @@
 from __future__ import division
 from dials.model.data import Reflection, ReflectionList
-from dials.algorithms.integration import add_2d, subtrac_bkg_2d, fitting_2d
+from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
+              fitting_2d, fitting_2d_multile_var_build_mat, sigma_2d
+
+
 from scitbx.array_family import flex
 
 def make_2d_profile(reflections):
@@ -203,7 +206,7 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         descr[0, 2] = float(bt_rg_contr)
         average = add_2d(descr, bt_rg_average, average)
 
-        #if_you_want_to_see_interpolated_profiles = '''
+        if_you_want_to_see_interpolated_profiles = '''
         if tp_lf_contr > 0.62 or tp_rg_contr > 0.62 \
         or bt_lf_contr > 0.62 or bt_rg_contr > 0.62:
           #from matplotlib import pyplot# as plt
@@ -245,17 +248,20 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
 
 
       shoebox = ref.shoebox
-      #mask = ref.shoebox_mask                               # may be needed soon
+      mask = ref.shoebox_mask                               # may be needed soon
       background = ref.shoebox_background
+      tmp_i = ref.intensity
+      tmp_v = ref.intensity_variance
       ref.intensity = 0.0
       ref.intensity_variance = 0.0
+
       for i in range(shoebox.all()[0]):
         data2d = shoebox[i:i + 1, :, :]
-        #mask2d = mask[i:i + 1, :, :]                        # may be needed soon
+        mask2d = mask[i:i + 1, :, :]                        # may be needed soon
         background2d = background[i:i + 1, :, :]
         try:
           data2d.reshape(flex.grid(shoebox.all()[1:]))
-          #mask2d.reshape(flex.grid(shoebox.all()[1:]))      # may be needed soon
+          mask2d.reshape(flex.grid(shoebox.all()[1:]))      # may be needed soon
           background2d.reshape(flex.grid(shoebox.all()[1:]))
 
         except:
@@ -266,9 +272,41 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
         descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
         descr[0, 2] = 1.0 #/ (ref.intensity * counter)
+        #fully_record = 'yes'
+        if(ref.status == 0):
+        #if(fully_record == 'yes'):
+          vec_data = (tmp_i, tmp_v)
+          a_mat_flx = flex.double(flex.grid(4, 4))
+          b_vec_flx = flex.double(flex.grid(4, 1))
+          ok_lg = fitting_2d_multile_var_build_mat(descr, data2d, background2d, \
+                                        average, vec_data, a_mat_flx, b_vec_flx)
 
-        I_R = fitting_2d(descr, data2d, background2d, average)
-        ref.intensity += I_R[0]
-        ref.intensity_variance += I_R[1]
+          #if ok_lg == 0:
+          a_mat = a_mat_flx.as_scitbx_matrix()
+          b_mat = b_vec_flx.as_scitbx_matrix()
+          try:
+            x_mat = a_mat.inverse() * b_mat
+            k_abc_vec = x_mat.as_flex_double_matrix()
+          except:
+            print "fail to do profile fitting  <<<<<<<<"
+            k_abc_vec=(0,0,0,0)
+          #else:
+          #  print "ok_lg != 0"
+          #  k_abc_vec=(0,0,0,0)
+
+          ref.intensity += k_abc_vec[0]
+          ref.intensity_variance += k_abc_vec[1]
+        else:
+          I_R = fitting_2d(descr, data2d, background2d, average, tmp_i)
+          ref.intensity += I_R[0]
+          ref.intensity_variance += I_R[1]
+
+
+
+        reslt = sigma_2d(ref.intensity, mask2d, background2d)
+        #ref.intensity += reslt[0]
+        ref.intensity_variance += reslt[1]
+
+
 
   return reflections

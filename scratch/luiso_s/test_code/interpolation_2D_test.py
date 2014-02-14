@@ -56,6 +56,9 @@ for ypos in range(86):
 
       new_r.shoebox = fl_shoebox
       new_r.shoebox_background = fl_shoebox_bkg
+      new_r.status = 0
+      # fix me in a double way
+      # the way status in bein used and
       mask = flex.int(flex.grid(1, ncol, nrow), 3)
       for x_loc in range(ncol):
         for y_loc in range(nrow):
@@ -84,7 +87,7 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
 
-tmp='''
+#tmp='''
 print "adding noise ...."
 for r in rlist:
     for x_loc in range(ncol):
@@ -95,6 +98,7 @@ for r in rlist:
           r.shoebox_mask[0, y_loc, x_loc] = 0
         else:
           r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
+
 print "adding noise .... done"
 #'''
 
@@ -110,7 +114,8 @@ rlist = mosflm_caller(rlist, xmax, ymax, 3)
 paint_compare = []
 for i in range(len(rlist)):
   #paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
-  paint_compare.append([old_r_list[i].intensity, rlist[i].intensity])
+  paint_compare.append([rlist[i].intensity, rlist[i].intensity_variance, \
+              old_r_list[i].intensity, old_r_list[i].intensity_variance])
 
 paint_compare_sort = sorted(paint_compare)
 from matplotlib import pylab

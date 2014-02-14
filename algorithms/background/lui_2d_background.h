@@ -95,7 +95,6 @@ namespace dials { namespace algorithms {
 
         /////////////////////////////////////////////////////////////
 
-
         // Counting how many pixels are in Background area
         int counter = 0;
         for (int row = 0; row<nrow;row++) {

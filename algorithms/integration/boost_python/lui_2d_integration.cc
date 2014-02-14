@@ -19,11 +19,21 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_luiso_s_2d_integration() {
     def("raw_2d_cut", &raw_2d_cut, (arg("data2d")), (arg("mask2d")),
             (arg("background2d")));
+
+    def("sigma_2d", &sigma_2d, (arg("intensity")),
+        (arg("mask2d")), (arg("background2d")));
+
     def("add_2d", &add_2d, arg("descriptor"), arg("data2d"), arg("tmp_total"));
 
+    def("fitting_2d_multile_var_build_mat", &fitting_2d_multile_var_build_mat,
+        (arg("descriptor"), arg("data2d"), arg("background2d"),
+         arg("profile2d"), arg("vec_data") ,  arg("mat_a"), arg("vec_b")));
+
     def("fitting_2d", &fitting_2d, (arg("descriptor"), arg("data2d"),
-                                    arg("background2d"), arg("profile2d") ));
+                  arg("background2d"), arg("profile2d"), arg("sum_its") ));
     def("subtrac_bkg_2d", &subtrac_bkg_2d, (arg("data2d"), arg("background2d")));
+
+
   }
 
 }}}

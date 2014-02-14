@@ -22,6 +22,7 @@
 #include <dials/model/data/shoebox.h>
 #include <scitbx/array_family/accessors/mat_grid.h>
 
+
 namespace dials { namespace algorithms {
 
   using scitbx::vec2;
@@ -30,6 +31,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::flex_grid;
   using dials::model::Foreground;
   using dials::model::Background;
+  using std::sqrt;
   // using dials::model::Valid;
 
   vec2<double> raw_2d_cut(
@@ -71,11 +73,70 @@ namespace dials { namespace algorithms {
       var_i = i_s;
     }
 
+    integr_data[0] = i_s;            // intensity summation
+    integr_data[1]=var_i;          // intensity variance
+    //integr_data[1] = 0.0;          // intensity variance
+    return integr_data;
+
+  }
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+
+  vec2<double> sigma_2d(
+    const float intensity,
+    const af::const_ref< int, af::c_grid<2> > &mask2d,
+    const af::const_ref< double, af::c_grid<2> > &background2d) {
+
+    // classic and simple integration summation
+
+    double i_s = intensity, i_bg = 0, rho_j = 0;
+    double n = 0, m = 0;
+    int cont = 0;
+    double var_i;
+    std::size_t ncol=background2d.accessor()[1];
+    std::size_t nrow=background2d.accessor()[0];
+    vec2<double> integr_data(0,1);
+
+    // looping thru each pixel
+    for (int row = 0; row<nrow;row++) {
+      for (int col = 0; col<ncol;col++) {
+        if ( mask2d(row,col) & Foreground ) {
+
+          i_bg += background2d(row,col);
+          m++;
+        } else if(mask2d(row,col) & Background) {
+          rho_j += background2d(row,col);
+          n++;
+        }
+        cont++;
+      }
+    }
+    if( i_bg>0 && cont>0 && m>0 && n>0 ){
+      // Calculation of variance, by following:
+      // A. G. W. Leslie
+      // Acta Cryst. (1999). D55, 1696-1702
+      // eq # 9
+      var_i = i_s + i_bg + (m / n) * ( m / n) * rho_j;
+    } else {
+      var_i = i_s;
+    }
+
     integr_data[0]=i_s;            // intensity summation
     integr_data[1]=var_i;          // intensity variance
     return integr_data;
 
   }
+
+
+//////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
+
+  // function used repeatedly for adding and interpolation
+  // of 2D images with a reflection on it
+  //
+  // is possible to position and scale the reflection to be added
+  // By managing the values in the descriptor variable
 
   af::versa< double, af::c_grid<2> > add_2d(
     const af::const_ref< double, af::c_grid<2> > &descriptor,
@@ -98,8 +159,6 @@ namespace dials { namespace algorithms {
       }
     }
 
-    //double total[nrow_tot, ncol_tot];
-    //flex_double total(tmp_total);
     double centr_col = descriptor(0,0);
     double centr_row = descriptor(0,1);
     double scale = descriptor(0,2);
@@ -108,6 +167,7 @@ namespace dials { namespace algorithms {
     int xpos_ex, ypos_ex;
     int tot_row_centr=int(nrow_tot / 2);
     int tot_col_centr=int(ncol_tot / 2);
+
     // looping thru each pixel
     for (int row = 0; row < nrow_in; row++) {
       for (int col = 0; col < ncol_in; col++) {
@@ -143,6 +203,7 @@ namespace dials { namespace algorithms {
           }
           int pos_tot_row = int(tot_row);
           int pos_tot_col = int(tot_col);
+
           // Adding corresponding contributions to each pixel
           total(pos_tot_row, pos_tot_col) += data2d(row, col) * scale
             * x_contrib * y_contrib;
@@ -174,69 +235,28 @@ namespace dials { namespace algorithms {
 
     return total;
   }
-
-  double m_linear_scale_1d(int & cnt, double i_mod[], double i_exp[]){
-    double m = 0;
-    if (cnt > 0){
-      double i_wgt[cnt];
-      double avg = 0;
-      for (int i = 0; i < cnt; i++){
-        avg += i_mod[i];
-      }
-      avg = avg/double(cnt);
-      for (int i = 0; i < cnt; i++){
-        i_wgt[i] = i_mod[i] / avg;
-      }
-      avg = 0;
-      for (int i = 0; i < cnt; i++){
-        avg += i_wgt[i];
-      }
-      avg = avg/double(cnt);
-      double scale = 0, px_scl;
-      for (int i = 0; i < cnt; i++){
-        px_scl = i_exp[i] / i_mod[i];
-        scale += px_scl * i_wgt[i];
-      }
-      m = scale / double(cnt);
-    } else {
-      std::cout << "\n missing useful pixels for profile fitting\n";
-    }
-
-    return m;
-  }
-
-  double w_m_least_squres_1d(int & cnt, double i_mod[], double i_exp[]){
+  // 1D weighted least squares for partially recorded reflections
+  double w_least_squares_1d(int & cnt, double i_mod[],
+                            double i_exp[], double w[]){
 
     double sum_xy = 0, sum_x_sq = 0, m;
     for (int i = 0; i < cnt; i++){
-      sum_xy += (i_mod[i] * i_exp[i]) / (i_exp[i]);
-      sum_x_sq += (i_mod[i] * i_mod[i]) / (i_exp[i]);
+      sum_xy += i_mod[i] * i_exp[i] * w[i];
+      sum_x_sq += i_mod[i] * i_mod[i] * w[i];
     }
     m = sum_xy / sum_x_sq;
     return m;
   }
-
-
-  double m_least_squres_1d(int & cnt, double i_mod[], double i_exp[]){
-    // least-squares scaling following the formula:
-    // m = ( sum(X(i) * Y(i) ) / sum( X(i)**2) )
-
-    double sum_xy = 0, sum_x_sq = 0, m;
-    for (int i = 0; i < cnt; i++){
-      sum_xy += i_mod[i] * i_exp[i];
-      sum_x_sq += i_mod[i] * i_mod[i];
-    }
-    m = sum_xy / sum_x_sq;
-    return m;
-  }
-
 
   // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
+  // used in partially recorded reflections where should not
+  // be refined the background plane
   vec2<double> fitting_2d(
     const af::const_ref< double, af::c_grid<2> > &descriptor,
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< double, af::c_grid<2> > &backg2d,
-    const af::const_ref< double, af::c_grid<2> > &profile2d) {
+    const af::const_ref< double, af::c_grid<2> > &profile2d,
+    double sum_its) {
 
     int ncol = profile2d.accessor()[1];
     int nrow = profile2d.accessor()[0];
@@ -248,7 +268,6 @@ namespace dials { namespace algorithms {
     af::versa< double, af::c_grid<2> > data2dmov(af::c_grid<2>(nrow, ncol),0);
     af::versa< double, af::c_grid<2> > backg2dmov(af::c_grid<2>(nrow, ncol),0);
 
-    //descriptor(0,2) = 1;
     data2dmov = add_2d(descriptor, data2d, data2dmov_01.const_ref());
     backg2dmov = add_2d(descriptor, backg2d, backg2dmov_01.const_ref());
 
@@ -265,6 +284,7 @@ namespace dials { namespace algorithms {
 
     double iexpr_lst[counter];
     double imodl_lst[counter];
+    double w_lst[counter];
     double sum = 0, i_var;
 
     counter = 0;
@@ -275,7 +295,9 @@ namespace dials { namespace algorithms {
 
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;
-          counter++ ;
+          w_lst[counter] = 1.0 /
+                        (backg2dmov(row,col) + imodl_lst[counter] * sum_its);
+          counter++;
         }
       }
     }
@@ -283,14 +305,7 @@ namespace dials { namespace algorithms {
     // finding the scale needed to fit profile list to experiment list
     double m, diff, df_sqr;
 
-
-    // this is how the algorithm for fitting must be chosen
-    // between linear or least squares
-
-    m = m_linear_scale_1d(counter, imodl_lst, iexpr_lst);
-    //m = m_least_squres_1d(counter, imodl_lst, iexpr_lst);
-    //m = w_m_least_squres_1d(counter, imodl_lst, iexpr_lst);
-
+    m = w_least_squares_1d(counter, imodl_lst, iexpr_lst, w_lst);
 
     //measuring R
     sum = 0;
@@ -319,6 +334,118 @@ namespace dials { namespace algorithms {
     return integr_data;
   }
 
+  // Given a 2D shoebox and a 2D profile, builds the matrix to solve
+  vec2<double> fitting_2d_multile_var_build_mat(
+    const af::const_ref< double, af::c_grid<2> > &descriptor,
+    const af::const_ref< double, af::c_grid<2> > &data2d,
+    const af::const_ref< double, af::c_grid<2> > &backg2d,
+    const af::const_ref< double, af::c_grid<2> > &profile2d,
+    vec2<double> vec_data,
+    af::ref< double, af::c_grid<2> > mat_a,
+    af::ref< double, af::c_grid<2> > vec_b){
+
+    int ncol = profile2d.accessor()[1];
+    int nrow = profile2d.accessor()[0];
+
+    af::versa< double, af::c_grid<2> > data2dmov_01(af::c_grid<2>(nrow, ncol),0);
+    af::versa< double, af::c_grid<2> > backg2dmov_01(af::c_grid<2>(nrow, ncol),0);
+
+    af::versa< double, af::c_grid<2> > data2dmov(af::c_grid<2>(nrow, ncol),0);
+    af::versa< double, af::c_grid<2> > backg2dmov(af::c_grid<2>(nrow, ncol),0);
+
+    //descriptor(0,2) = 1;
+    data2dmov = add_2d(descriptor, data2d, data2dmov_01.const_ref());
+    backg2dmov = add_2d(descriptor, backg2d, backg2dmov_01.const_ref());
+
+    //elements of the matrix
+    double sum_pr_sqr = 0.0;
+    double sum_p_pr   = 0.0;
+    double sum_q_pr   = 0.0;
+    double sum_pr     = 0.0;
+    double sum_p_sqr  = 0.0;
+    double sum_p_q    = 0.0;
+    double sum_p      = 0.0;
+    double sum_q_sqr  = 0.0;
+    double sum_q      = 0.0;
+
+    double sum_one    = 0.0;
+
+    double sum_pr_ro  = 0.0;
+    double sum_p_ro   = 0.0;
+    double sum_q_ro   = 0.0;
+    double sum_ro     = 0.0;
+    double p, q , pr, ro, pd_it, w;
+
+    //looping trough lists and building the elements of the matrix to solve
+    for (int row = 0; row<nrow; row++) {
+      for (int col = 0; col<ncol; col++) {
+        //                          fix me     (the mask should be considered)
+        //if (( mask2d(row, col) & Background) or
+        //                          fix me     (the mask should be considered)
+        //    ( mask2d(row, col) & Foreground) ) {
+          p = col + 0.5;
+          q = row + 0.5;
+          pr = profile2d(row, col);
+          ro = data2dmov(row, col);
+
+          pd_it = backg2dmov(row, col);
+          if(pr > 0){
+            pd_it += pr * vec_data[0];
+          }
+
+          if(pd_it < 1.0){
+            pd_it = 1.0;
+          }
+
+          w = 1.0 / pd_it;
+
+          sum_pr_sqr += w * pr * pr;
+          sum_p_pr   += w * p * pr;
+          sum_q_pr   += w * q * pr;
+          sum_pr     += w * pr;
+          sum_p_sqr  += w * p * p;
+          sum_p_q    += w * p * q;
+          sum_p      += w * p;
+          sum_q_sqr  += w * q * q;
+          sum_q      += w * q;
+          sum_one    += w;
+
+          sum_pr_ro  += w * pr * ro;
+          sum_p_ro   += w * p * ro;
+          sum_q_ro   += w * q * ro;
+          sum_ro     += w * ro;
+        //}  // fix me (the mask should be considered)
+      }
+    }
+
+    mat_a(0,0) = sum_pr_sqr;
+    mat_a(0,1) = sum_p_pr;
+    mat_a(0,2) = sum_q_pr;
+    mat_a(0,3) = sum_pr;
+
+    mat_a(1,0) = sum_p_pr;
+    mat_a(1,1) = sum_p_sqr;
+    mat_a(1,2) = sum_p_q;
+    mat_a(1,3) = sum_p;
+
+    mat_a(2,0) = sum_q_pr;
+    mat_a(2,1) = sum_p_q;
+    mat_a(2,2) = sum_q_sqr;
+    mat_a(2,3) = sum_q;
+
+    mat_a(3,0) = sum_pr;
+    mat_a(3,1) = sum_p;
+    mat_a(3,2) = sum_q;
+    mat_a(3,3) = sum_one;
+
+    vec_b(0,0) = sum_pr_ro;
+    vec_b(0,1) = sum_p_ro;
+    vec_b(0,2) = sum_q_ro;
+    vec_b(0,3) = sum_ro;
+
+    int ok = 0;
+  return ok;
+  }
   flex_double subtrac_bkg_2d(flex_double data2d, flex_double backg2d) {
     // given a 2D shoebox and a 2D background,
     // it subtract the background from the shoebox
@@ -336,6 +463,7 @@ namespace dials { namespace algorithms {
     }
     return data2dreturn;
   }
+
 
 
 } }
