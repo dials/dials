@@ -28,8 +28,8 @@ class Test(object):
     filename = 'extracted.tar'
     writer = Writer(filename, predicted, blocks)
 
-    panels = flex.size_t([p.panel_number for p in predicted])
-    bboxes = flex.int6([p.bounding_box for p in predicted])
+    panels = predicted['panel']
+    bboxes = predicted['bbox']
 
     # Extract the frames
     for i, (b0, b1) in enumerate(zip(blocks[:-1], blocks[1:])):
@@ -68,7 +68,6 @@ class Test(object):
     from dials.util.command_line import Command
     from dials.algorithms.integration import ReflectionPredictor
     from dials.algorithms.shoebox import BBoxCalculator
-    from dials.model.data import ReflectionList
     from dials.array_family import flex
     from dials.model.experiment.experiment_list import Experiment
     from dials.model.experiment.experiment_list import ExperimentList
@@ -84,8 +83,7 @@ class Test(object):
 
     predicted = flex.reflection_table.from_predictions(exlist)
     predicted.compute_bbox(exlist[0], nsigma=3)
-
-    return ReflectionList.from_table(predicted)
+    return predicted
 
 
 
