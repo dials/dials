@@ -531,8 +531,8 @@ class ExperimentListDict(object):
   @staticmethod
   def _crystal_from_dict(obj):
     ''' Get the crystal from a dictionary. '''
-    from dials.model.serialize import crystal
-    return crystal.crystal_from_dict(obj)
+    from cctbx.crystal.crystal_model.serialize import crystal_from_dict
+    return crystal_from_dict(obj)
 
   @staticmethod
   def _from_file(filename):
