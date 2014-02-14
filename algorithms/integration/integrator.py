@@ -85,10 +85,7 @@ class Integrator(object):
       print ''
 
     # Return the reflections
-    miller_index = result['miller_index']
-    indices = flex.size_t(sorted(range(len(result)), key=lambda x:
-                                 miller_index[x]))
-    result.reorder(indices)
+    result.sort('miller_index')
     return result
 
 

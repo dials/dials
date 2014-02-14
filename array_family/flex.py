@@ -1,14 +1,15 @@
 from __future__ import division
 import boost.python
-from cctbx.array_family.flex import *
 from dials.model import data
 from dials_array_family_flex_ext import *
+from cctbx.array_family.flex import *
+from cctbx.array_family import flex
 
 # Set the 'real' type to either float or double
 if get_real_type() == "float":
-  real = float
+  real = flex.float
 elif get_real_type() == "double":
-  real = double
+  real = flex.double
 else:
   raise TypeError('unknown "real" type')
 
@@ -69,6 +70,16 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     handle = NexusFile(filename, 'w')
     handle.set_reflections(self)
     handle.close()
+
+  def sort(self, name, reverse=False):
+    ''' Sort the reflection table by a key. '''
+    import __builtin__
+    column = self[name]
+    indices = __builtin__.sorted(
+      range(len(self)),
+      key=lambda x: column[x],
+      reverse=reverse)
+    self.reorder(flex.size_t(indices))
 
   def compute_bbox(self, experiment, nsigma):
     ''' Compute the bounding boxes. '''
