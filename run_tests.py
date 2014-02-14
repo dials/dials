@@ -77,7 +77,6 @@ tst_list = (
     "$D/test/algorithms/shoebox/tst_bbox_calculator.py",
     "$D/test/algorithms/shoebox/tst_mask_foreground.py",
     "$D/test/algorithms/shoebox/tst_mask_overlapping.py",
-    "$D/test/algorithms/shoebox/tst_extractor.py",
     "$D/test/algorithms/shoebox/tst_partial_extractor.py",
     "$D/test/algorithms/shoebox/tst_helpers.py",
     "$D/test/algorithms/generate_test_reflections/tst_generate_test_refl.py",

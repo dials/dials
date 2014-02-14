@@ -9,7 +9,6 @@ sources = [
     'boost_python/mask_overlapping.cc',
     'boost_python/mask_builder.cc',
     'boost_python/partial_extractor.cc',
-    'boost_python/extractor.cc',
     'boost_python/helpers.cc',
     'boost_python/shoebox_ext.cc']
 

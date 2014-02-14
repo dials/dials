@@ -49,7 +49,7 @@ class Integrator(object):
 
     '''
     from dials.algorithms.integration import ReflectionPredictor
-    from dials.algorithms.integration import ReflectionBlockExtractor
+    from dials.algorithms.shoebox import ReflectionBlockExtractor
     from dials.model.data import ReflectionList
     from dials.array_family import flex
     from dials.util.command_line import Command

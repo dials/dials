@@ -112,7 +112,6 @@ algorithms/integration/profile/grid_sampler.h -text
 algorithms/integration/profile/reference_learner.h -text
 algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
-algorithms/integration/profile_extractor.py -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
 algorithms/integration/reflection_extractor.py -text
@@ -203,7 +202,6 @@ algorithms/shoebox/SConscript -text
 algorithms/shoebox/__init__.py -text
 algorithms/shoebox/bbox_calculator.h -text
 algorithms/shoebox/boost_python/bbox_calculator.cc -text
-algorithms/shoebox/boost_python/extractor.cc -text
 algorithms/shoebox/boost_python/find_overlapping.cc -text
 algorithms/shoebox/boost_python/helpers.cc -text
 algorithms/shoebox/boost_python/mask_builder.cc -text svneol=unset#text/plain
@@ -212,7 +210,6 @@ algorithms/shoebox/boost_python/mask_foreground.cc -text
 algorithms/shoebox/boost_python/mask_overlapping.cc -text
 algorithms/shoebox/boost_python/partial_extractor.cc -text
 algorithms/shoebox/boost_python/shoebox_ext.cc -text
-algorithms/shoebox/extractor.h -text
 algorithms/shoebox/find_overlapping.h -text
 algorithms/shoebox/helpers.h -text
 algorithms/shoebox/mask_builder.h -text svneol=unset#text/plain
@@ -221,6 +218,7 @@ algorithms/shoebox/mask_foreground.h -text
 algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
 algorithms/shoebox/partial_extractor.h -text
+algorithms/shoebox/profile_extractor.py -text
 algorithms/simulation/__init__.py -text
 algorithms/simulation/generate_test_reflections.py -text
 algorithms/simulation/utils.py -text
@@ -658,7 +656,6 @@ test/algorithms/reflection_basis/tst_map_frames.py -text
 test/algorithms/reflection_basis/tst_rebin_pixels.py -text
 test/algorithms/reflection_basis/tst_transform.py -text
 test/algorithms/shoebox/tst_bbox_calculator.py -text
-test/algorithms/shoebox/tst_extractor.py -text
 test/algorithms/shoebox/tst_helpers.py -text
 test/algorithms/shoebox/tst_mask_foreground.py -text
 test/algorithms/shoebox/tst_mask_overlapping.py -text

@@ -51,7 +51,7 @@ class Script(ScriptRunner):
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
-    from dials.algorithms.integration import ProfileBlockExtractor
+    from dials.algorithms.shoebox import ProfileBlockExtractor
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.array_family import flex
     from dials.model.data import ReflectionList

@@ -22,7 +22,6 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_mask_foreground();
   void export_mask_overlapping();
   void export_mask_builder();
-  void export_extractor();
   void export_partial_extractor();
   void export_helpers();
 
@@ -34,7 +33,6 @@ namespace dials { namespace algorithms { namespace shoebox {
     export_mask_foreground();
     export_mask_overlapping();
     export_mask_builder();
-    export_extractor();
     export_partial_extractor();
     export_helpers();
   }

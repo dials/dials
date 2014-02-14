@@ -90,7 +90,7 @@ class Test(object):
     from dials.model.data import ReflectionList
     from random import randint
     from scitbx import matrix
-    from scitbx.array_family import flex
+    from dials.array_family import flex
     assert(len(self.detector) == 1)
     rlist = ReflectionList(num)
     s0_length = matrix.col(self.beam.get_s0()).length()
@@ -105,7 +105,12 @@ class Test(object):
       rlist[i].rotation_angle = phi
       rlist[i].frame_number = z
       rlist[i].image_coord_px = (x, y)
-    self.calculate_bbox(rlist)
+    s1 = flex.vec3_double([r.beam_vector for r in rlist])
+    phi = flex.double([r.rotation_angle for r in rlist])
+    panel = flex.size_t([r.panel_number for r in rlist])
+    bbox = self.calculate_bbox(s1, phi, panel)
+    for b, r in zip(bbox, rlist):
+      r.bounding_box = b
     for i in range(num):
       bbox = rlist[i].bounding_box
       xsize = bbox[1] - bbox[0]

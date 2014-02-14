@@ -19,7 +19,7 @@ class Test(object):
     self.crystal = load_crystal(os.path.join(path, 'crystal.json'))
 
   def run(self):
-    from dials.algorithms.integration import PartialProfileExtractor
+    from dials.algorithms.shoebox import PartialProfileExtractor
     from dials.array_family import flex
 
     predicted = self.predict_reflections()
@@ -70,25 +70,22 @@ class Test(object):
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.model.data import ReflectionList
     from dials.array_family import flex
+    from dials.model.experiment.experiment_list import Experiment
+    from dials.model.experiment.experiment_list import ExperimentList
 
-    predict = ReflectionPredictor()
-    predicted = predict(self.sweep, self.crystal)
+    exlist = ExperimentList()
+    exlist.append(Experiment(
+      imageset=self.sweep,
+      beam=self.sweep.get_beam(),
+      detector=self.sweep.get_detector(),
+      goniometer=self.sweep.get_goniometer(),
+      scan=self.sweep.get_scan(),
+      crystal=self.crystal))
 
-    n_sigma = 3
+    predicted = flex.reflection_table.from_predictions(exlist)
+    predicted.compute_bbox(exlist[0], nsigma=3)
 
-    # Create the bbox calculator
-    compute_bbox = BBoxCalculator(
-        self.sweep.get_beam(), self.sweep.get_detector(),
-        self.sweep.get_goniometer(), self.sweep.get_scan(),
-        n_sigma * self.sweep.get_beam().get_sigma_divergence(deg=False),
-        n_sigma * self.crystal.get_mosaicity(deg=False))
-
-    # Calculate the bounding boxes of all the reflections
-    Command.start('Calculating bounding boxes')
-    compute_bbox(predicted)
-    Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
-
-    return predicted
+    return ReflectionList.from_table(predicted)
 
 
 

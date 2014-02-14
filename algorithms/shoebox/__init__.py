@@ -3,3 +3,4 @@ from dials.model.data import ReflectionList
 from dials.array_family import flex
 from dials_algorithms_shoebox_ext import *
 from dials.algorithms.shoebox.masker import *
+from dials.algorithms.shoebox.profile_extractor import *

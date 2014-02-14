@@ -10,99 +10,6 @@
 
 from __future__ import division
 
-class ProfileExtractor(object):
-  ''' A class to extract the profiles from the sweep '''
-
-  def __init__(self, sweep, crystal, mask=None, gain=None, dark=None):
-    ''' Initialise the class with the sweep etc
-
-    Params:
-        sweep The sweep to process
-        crystal The crystal to process
-        mask The detector mask
-        gain The gain map
-        dark The dark map
-
-    '''
-    from dials.algorithms import shoebox
-    from scitbx.array_family import flex
-
-    # Save the sweep
-    self.sweep = sweep
-
-    # Ensure image is a tuple
-    image = sweep[0]
-    if not isinstance(image, tuple):
-      image = (image,)
-
-    # Get the mask in tuple of masks form
-    if mask:
-      if not isinstance(mask, tuple):
-        mask = (mask,)
-    else:
-      mask = tuple([im >= 0 for im in image])
-
-    # Get the gain in tuple of gains form
-    if gain:
-      if not isinstance(gain, tuple):
-        gain = (gain,)
-    else:
-      gain = tuple([flex.double(flex.grid(im.all()), 1) for im in image])
-
-    # Get the dark in tuple of darks form
-    if dark:
-      if not isinstance(dark, tuple):
-        dark = (dark,)
-    else:
-      dark = tuple([flex.double(flex.grid(im.all()), 0) for im in image])
-
-    # Set the mask, gain and dark maps
-    self.mask = mask
-    self.gain = gain
-    self.dark = dark
-
-  def __call__(self, panels, bboxes):
-    ''' Extract the profiles from the sweep
-
-    Params:
-        panels The panel numbers
-        bboxes The bounding boxes
-
-    Returns:
-        The reflection list
-
-    '''
-    from dials.util.command_line import ProgressBar
-    from dials.algorithms.shoebox import Extractor
-
-    # Create the class to set all the shoebox pixels
-    extractor = Extractor(panels, bboxes, self.mask, self.gain, self.dark)
-
-    # For each image in the sweep, get the reflections predicted to have
-    # been recorded on the image and copy the pixels from the image to
-    # the reflection profile image. Update a progress bar as we go along
-    progress = ProgressBar(title = "Extracting reflections")
-    first_array_index = self.sweep.get_array_range()[0]
-    for index, image in enumerate(self.sweep, start=first_array_index):
-
-      # Ensure the image is a tuple
-      if not isinstance(image, tuple):
-        image = (image,)
-
-      # Loop through all the images and add to the extractor
-      for panel, im in enumerate(image):
-        extractor.add_image(panel, index, im)
-
-      # Update the progress bar
-      progress.update(100*(index-first_array_index+1) / len(self.sweep))
-
-    # Get the shoeboxes from the extractor
-    shoeboxes = extractor.shoeboxes()
-
-    # Finish the progress bar and return the profiles
-    progress.finished("Extracted {0} profiles".format(len(shoeboxes)))
-    return shoeboxes
-
 
 class PartialProfileExtractor(object):
   ''' A class to extract the profiles from the sweep '''
@@ -293,3 +200,101 @@ class ProfileBlockExtractor(object):
       dark = tuple([flex.double(flex.grid(im.all()), 0) for im in image])
 
     return gain, dark, mask
+
+class ReflectionBlockExtractor(object):
+
+  def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks,
+      filter_by_zeta=0, reader=None, sigma_b=None, sigma_m=None):
+    ''' Initialise and extract the reflections. '''
+    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.util.command_line import Command
+    from dials.algorithms import shoebox
+    from dials.algorithms import filtering
+    from dials.array_family import flex
+
+    if reader == None:
+
+      # These are arrays the length of the sweep
+      if sigma_b is not None and sigma_m is not None:
+        assert(len(sigma_b) == len(sweep))
+        assert(len(sigma_m) == len(sweep))
+        compute_bbox = BBoxCalculator(
+          sweep.get_beam(), sweep.get_detector(),
+          sweep.get_goniometer(), sweep.get_scan(),
+          n_sigma * sigma_b, n_sigma * sigma_m)
+      else:
+
+        # Create the bbox calculator
+        compute_bbox = BBoxCalculator(
+          sweep.get_beam(), sweep.get_detector(),
+          sweep.get_goniometer(), sweep.get_scan(),
+          n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
+          n_sigma * crystal.get_mosaicity(deg=False))
+
+      # Calculate the bounding boxes of all the reflections
+      Command.start('Calculating bounding boxes')
+      s1 = flex.vec3_double([ r.beam_vector for r in predicted ])
+      angle = flex.double([ r.rotation_angle for r in predicted ])
+      panel = flex.size_t([ r.panel_number for r in predicted ])
+      bbox = compute_bbox(s1, angle, panel)
+      for b, r in zip(bbox, predicted):
+        r.bounding_box = b
+      Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
+
+      # Set all reflections which overlap bad pixels to zero
+      Command.start('Filtering reflections by detector mask')
+      array_range = sweep.get_scan().get_array_range()
+      filtering.by_detector_mask(predicted, sweep[0] >= 0, array_range)
+      Command.end('Filtered {0} reflections by detector mask'.format(
+          len([r for r in predicted if r.is_valid()])))
+
+      # Filter the reflections by zeta
+      if filter_by_zeta > 0:
+        Command.start('Filtering reflections by zeta >= {0}'.format(
+            filter_by_zeta))
+        filtering.by_zeta(sweep.get_goniometer(), sweep.get_beam(),
+            predicted, filter_by_zeta)
+        Command.end('Filtered {0} reflections by zeta >= {1}'.format(
+            len([r for r in predicted if r.is_valid()]), filter_by_zeta))
+
+      # Get only those reflections which are valid
+      predicted = predicted.select(predicted.is_valid())
+
+      # Find overlapping reflections
+      Command.start('Finding overlapping reflections')
+      overlaps = shoebox.find_overlapping(predicted)
+      Command.end('Found {0} overlaps'.format(len(overlaps)))
+
+    # Create the profile block extractor
+    self._extractor = ProfileBlockExtractor(sweep, predicted, n_blocks, reader=reader)
+
+    # Get the parameters
+    delta_d = n_sigma * sweep.get_beam().get_sigma_divergence(deg=False)
+    delta_m = n_sigma * crystal.get_mosaicity(deg=False)
+
+    # Create the function to mask the shoebox profiles
+    self._mask_profiles = shoebox.Masker(sweep, delta_d, delta_m)
+
+  def __getitem__(self, index):
+    ''' Extract a reflection block. '''
+    return self.extract(index)
+
+  def __len__(self):
+    ''' Get the number of blocks. '''
+    return len(self._extractor)
+
+  def __iter__(self):
+    ''' Iterate through the blocks. '''
+    for i in range(len(self)):
+      yield self.extract(i)
+
+  def extract(self, index):
+    ''' Extract a block of reflections. '''
+    indices, shoeboxes = self._extractor.extract(index)
+    reflections = self._extractor.predictions().select(indices)
+    for r, s in zip(reflections, shoeboxes):
+      r.shoebox = s.data
+      r.shoebox_mask = s.mask
+      r.shoebox_background = s.background
+    self._mask_profiles(reflections, None)
+    return reflections

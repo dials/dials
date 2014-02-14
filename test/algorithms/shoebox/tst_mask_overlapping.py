@@ -145,14 +145,14 @@ class Test(object):
     print "OK"
 
   def predict_reflections(self):
-    from dials.algorithms.spot_prediction import ray_intersection
-    from dials.algorithms.spot_prediction import reflection_frames
     from dials.algorithms import shoebox
     from dials.algorithms import filtering
     from cctbx import sgtbx
-    from dials.algorithms.spot_prediction import IndexGenerator
-    from dials.algorithms.spot_prediction import RayPredictor
     from math import sqrt
+    from dials.array_family import flex
+    from dials.model.data import ReflectionList
+    from dials.model.experiment.experiment_list import ExperimentList
+    from dials.model.experiment.experiment_list import Experiment
 
     # Get models from the sweep
     self.beam = self.sweep.get_beam()
@@ -160,44 +160,25 @@ class Test(object):
     self.gonio = self.sweep.get_goniometer()
     self.scan = self.sweep.get_scan()
 
-    # Create the index generator
-    self.generate_hkl = IndexGenerator(
-        self.crystal.get_unit_cell(),
-        sgtbx.space_group_type(self.crystal.get_space_group()),
-        self.detector.get_max_resolution(self.beam.get_s0()))
+    exlist = ExperimentList()
+    exlist.append(Experiment(
+      imageset=self.sweep,
+      beam=self.beam,
+      detector=self.detector,
+      goniometer=self.gonio,
+      scan=self.scan,
+      crystal=self.crystal))
 
-    # Create the spot predictor
-    self.predict_rays = RayPredictor(
-        self.beam.get_s0(),
-        self.gonio.get_rotation_axis(),
-        self.scan.get_oscillation_range(deg=False))
+    predicted = flex.reflection_table.from_predictions(exlist)
+    predicted.compute_bbox(exlist[0], nsigma=5)
+    predicted = ReflectionList.from_table(predicted)
 
-    # Create the bbox calculator
-    self.compute_bbox = shoebox.BBoxCalculator(
-        self.beam, self.detector, self.gonio, self.scan,
-        5 * self.beam.get_sigma_divergence(deg=False),
-        5 * self.crystal.get_mosaicity(deg=False))
-
-    # Generate Indices
-    miller_indices = self.generate_hkl.to_array()
-
-    # Predict reflections
-    reflections = self.predict_rays(miller_indices, self.crystal.get_A())
-
-    # Get detector coordinates (mm)
-    reflections = ray_intersection(self.detector, reflections)
-
-    # Calculate the frame numbers of all the reflections
-    reflections = reflection_frames(self.scan, reflections)
-
-    # Calculate the bounding boxes of all the reflections
-    self.compute_bbox(reflections)
 
     # Find overlapping reflections
-    overlaps = shoebox.find_overlapping(reflections)
+    overlaps = shoebox.find_overlapping(predicted)
 
     # Return the reflections and overlaps
-    return reflections, overlaps
+    return predicted, overlaps
 
 if __name__ == '__main__':
   test = Test()

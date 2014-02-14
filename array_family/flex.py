@@ -77,10 +77,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
     # Create the bbox calculator
     calculate = BBoxCalculator(
-        experiment.beam, experiment.detector,
-        experiment.goniometer, experiment.scan,
-        nsigma * experiment.beam.get_sigma_divergence(deg=False),
-        nsigma * experiment.crystal.get_mosaicity(deg=False))
+      experiment.beam, experiment.detector,
+      experiment.goniometer, experiment.scan,
+      nsigma * experiment.beam.get_sigma_divergence(deg=False),
+      nsigma * experiment.crystal.get_mosaicity(deg=False))
 
     # Calculate the bounding boxes of all the reflections
     Command.start('Calculating bounding boxes')
