@@ -23,7 +23,6 @@
 #include <dials/algorithms/reflection_basis/map_frames.h>
 #include <dials/algorithms/reflection_basis/beam_vector_map.h>
 #include <dials/model/data/shoebox.h>
-#include <dials/model/data/reflection.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
     namespace transform {
@@ -38,9 +37,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-  using dials::model::Reflection;
   using dials::model::Foreground;
   using dials::model::Valid;
+  using dials::model::Shoebox;
   using dials::algorithms::polygon::spatial_interpolation::vert4;
   using dials::algorithms::polygon::spatial_interpolation::Match;
   using dials::algorithms::polygon::spatial_interpolation::quad_to_grid;
@@ -160,6 +159,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     typedef FloatType float_type;
     typedef TransformSpec<FloatType> transform_spec_type;
 
+    Forward() {}
+
     Forward(const TransformSpec<FloatType> &spec,
             const vec3<double> &s1, double phi, int6 bbox,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
@@ -178,6 +179,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     }
 
     Forward(const TransformSpec<FloatType> &spec,
+            const vec3<double> &s1, double phi,
+            const Shoebox<FloatType> &shoebox) {
+      init(spec, s1, phi, shoebox.bbox);
+      call(shoebox);
+    }
+
+    Forward(const TransformSpec<FloatType> &spec,
             const CoordinateSystem &cs, int6 bbox,
             const af::const_ref< FloatType, af::c_grid<3> > &image,
             const af::const_ref< bool, af::c_grid<3> > &mask) {
@@ -192,6 +200,13 @@ namespace dials { namespace algorithms { namespace reflection_basis {
             const af::const_ref< bool, af::c_grid<3> > &mask) {
       init(spec, cs, bbox);
       call(image, bkgrd, mask);
+    }
+
+    Forward(const TransformSpec<FloatType> &spec,
+            const CoordinateSystem &cs,
+            const Shoebox<FloatType> &shoebox) {
+      init(spec, cs, shoebox.bbox);
+      call(shoebox);
     }
 
     /** @returns The transformed profile */
@@ -342,6 +357,19 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           }
         }
       }
+    }
+
+    /**
+     * Call the transform with the shoebox
+     */
+    void call(const Shoebox<> &shoebox) {
+      af::versa< bool, af::c_grid<3> > mask(shoebox.mask.accessor());
+      af::ref< bool, af::c_grid<3> > mask_ref = mask.ref();
+      af::const_ref< int, af::c_grid<3> > temp_ref = shoebox.mask.const_ref();
+      for (std::size_t i = 0; i < mask_ref.size(); ++i) {
+        mask_ref[i] = (temp_ref[i] & Valid && temp_ref[i] & Foreground);
+      }
+      call(shoebox.data.const_ref(), shoebox.background.const_ref(), mask_ref);
     }
 
     /**

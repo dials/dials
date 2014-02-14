@@ -22,7 +22,7 @@
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
-#include <dials/model/data/reflection.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {

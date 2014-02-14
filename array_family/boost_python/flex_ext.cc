@@ -31,6 +31,7 @@ namespace dials { namespace af { namespace boost_python {
   void export_flex_observation();
   void export_flex_prediction();
   void export_flex_pixel_list();
+  void export_flex_reflection_basis_transform();
   void export_flex_reflection_table();
 
   template <typename FloatType>
@@ -57,6 +58,7 @@ namespace dials { namespace af { namespace boost_python {
     export_flex_observation();
     export_flex_prediction();
     export_flex_pixel_list();
+    export_flex_reflection_basis_transform();
     export_flex_reflection_table();
 
     def("get_real_type", &get_real_type<ProfileFloatType>);
