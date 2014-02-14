@@ -76,33 +76,19 @@ class Script(ScriptRunner):
     predicted = flex.reflection_table.from_predictions(
       importer.experiments,
       force_static=options.force_static)
-    predicted = ReflectionList.from_table(predicted)
 
     # Get the bbox nsigma
     n_sigma = params.integration.shoebox.n_sigma
 
-    # Loop through all the experiments
-    ex = importer.experiments[0]
-
-    # Create the bbox calculator
-    compute_bbox = BBoxCalculator(
-        ex.beam, ex.detector,
-        ex.goniometer, ex.scan,
-        n_sigma * ex.beam.get_sigma_divergence(deg=False),
-        n_sigma * ex.crystal.get_mosaicity(deg=False))
-
-    # Calculate the bounding boxes of all the reflections
-    Command.start('Calculating bounding boxes')
-    compute_bbox(predicted)
-    Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
+    # Calculate the bounding boxes
+    predicted.compute_bbox(importer.experiments[0], n_sigma)
+    predicted = ReflectionList.from_table(predicted)
 
     # Create the profile block extractor
-    extract = ProfileBlockExtractor(ex.imageset, predicted,
-        options.num_blocks, options.output_filename)
+    extract = ProfileBlockExtractor(
+      importer.experiments[0].imageset, predicted,
+      options.num_blocks, options.output_filename)
 
-    # Read through the blocks
-    #for indices, shoeboxes in extract:
-      #print indices, shoeboxes
 
 if __name__ == '__main__':
   script = Script()

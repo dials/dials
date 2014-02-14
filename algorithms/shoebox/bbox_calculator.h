@@ -20,7 +20,7 @@
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
-#include <dials/model/data/reflection.h>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
 namespace dials { namespace algorithms { namespace shoebox {
@@ -39,7 +39,6 @@ namespace dials { namespace algorithms { namespace shoebox {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
-  using dials::model::Reflection;
 
   /** Calculate the bounding box for each reflection */
   class BBoxCalculator {
@@ -170,36 +169,17 @@ namespace dials { namespace algorithms { namespace shoebox {
      * @param s1 The array of diffracted beam vectors
      * @param phi The array of rotation angles.
      */
-    af::shared<int6> operator()(const af::const_ref< vec3<double> > &s1,
-        const af::const_ref<double> &phi, std::size_t panel) const {
+    af::shared<int6> operator()(
+        const af::const_ref< vec3<double> > &s1,
+        const af::const_ref<double> &phi,
+        const af::const_ref<std::size_t> &panel) const {
       DIALS_ASSERT(s1.size() == phi.size());
+      DIALS_ASSERT(s1.size() == panel.size());
       af::shared<int6> result(s1.size(), af::init_functor_null<int6>());
       for (std::size_t i = 0; i < s1.size(); ++i) {
-        result[i] = operator()(s1[i], phi[i], panel);
+        result[i] = operator()(s1[i], phi[i], panel[i]);
       }
       return result;
-    }
-
-    /**
-     * Calculate the rois for a reflection given by reflection struct
-     * @param reflection The reflection data
-     */
-    void operator()(Reflection &reflection) const {
-      reflection.set_bounding_box(
-        operator()(reflection.get_beam_vector(),
-                   reflection.get_rotation_angle(),
-                   reflection.get_panel_number()));
-    }
-
-    /**
-     * Calculate the rois for an array of reflections given by the array of
-     * reflections
-     * @param reflections The list of reflections
-     */
-    void operator()(af::ref<Reflection> reflections) const {
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
-        operator()(reflections[i]);
-      }
     }
 
   private:

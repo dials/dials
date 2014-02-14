@@ -69,3 +69,23 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     handle = NexusFile(filename, 'w')
     handle.set_reflections(self)
     handle.close()
+
+  def compute_bbox(self, experiment, nsigma):
+    ''' Compute the bounding boxes. '''
+    from dials.algorithms.shoebox import BBoxCalculator
+    from dials.util.command_line import Command
+
+    # Create the bbox calculator
+    calculate = BBoxCalculator(
+        experiment.beam, experiment.detector,
+        experiment.goniometer, experiment.scan,
+        nsigma * experiment.beam.get_sigma_divergence(deg=False),
+        nsigma * experiment.crystal.get_mosaicity(deg=False))
+
+    # Calculate the bounding boxes of all the reflections
+    Command.start('Calculating bounding boxes')
+    self['bbox'] = calculate(
+      self['s1'],
+      self['xyzcal.mm'].parts()[2],
+      self['panel'])
+    Command.end('Calculated {0} bounding boxes'.format(len(self)))

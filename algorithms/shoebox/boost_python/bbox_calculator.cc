@@ -24,12 +24,9 @@ namespace dials { namespace algorithms { namespace shoebox {
         &BBoxCalculator::operator();
     af::shared<int6> (BBoxCalculator::*calculate_array) (
       const af::const_ref< vec3<double> >&,
-      const af::const_ref<double> &, std::size_t) const =
+      const af::const_ref<double> &,
+      const af::const_ref<std::size_t>&) const =
         &BBoxCalculator::operator();
-    void (BBoxCalculator::*calculate_reflection)(Reflection &) const =
-      &BBoxCalculator::operator();
-    void (BBoxCalculator::*calculate_reflection_list)(
-      af::ref<Reflection>) const = &BBoxCalculator::operator();
 
     class_ <BBoxCalculator> ("BBoxCalculator", no_init)
       .def(init <const Beam&,
@@ -59,11 +56,7 @@ namespace dials { namespace algorithms { namespace shoebox {
       .def("__call__", calculate_single, (
         arg("s1"), arg("phi")))
       .def("__call__", calculate_array, (
-        arg("s1"), arg("phi")))
-      .def("__call__", calculate_reflection, (
-        arg("reflection")))
-      .def("__call__", calculate_reflection_list, (
-        arg("reflections")));
+        arg("s1"), arg("phi")));
   }
 
 }}}} // namespace = dials::algorithms::shoebox::boost_python
