@@ -76,10 +76,8 @@ class Integrator(object):
       self.compute_background(sweep, crystal, reflections)
       self.compute_centroid(sweep, crystal, reflections)
       self.compute_intensity(sweep, crystal, reflections, reference)
-      reflections = ReflectionList.from_table(reflections)
       self.correct_intensity(sweep, crystal, reflections)
 
-      reflections = reflections.to_table()
       del reflections['shoebox']
       result.extend(reflections)
       print ''
