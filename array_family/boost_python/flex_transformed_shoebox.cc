@@ -1,5 +1,5 @@
 /*
- * flex_reflection_basis_transform.cc
+ * flex_transformed_shoebox.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -17,6 +17,7 @@
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/model/data/transformed_shoebox.h>
 
 namespace dials { namespace af { namespace boost_python {
 
@@ -25,46 +26,46 @@ namespace dials { namespace af { namespace boost_python {
   using algorithms::reflection_basis::transform::Forward;
   using algorithms::reflection_basis::transform::TransformSpec;
   using model::Shoebox;
+  using model::TransformedShoebox;
   using scitbx::vec3;
 
   /**
    * Perform a list of transforms and construct a flex array
    */
-  template <typename FloatType>
-  typename af::flex< Forward<FloatType> >::type* from_shoeboxes(
-      const TransformSpec<FloatType> &spec,
+  static
+  af::flex<TransformedShoebox>::type* from_shoeboxes(
+      const TransformSpec<> &spec,
       const af::const_ref< vec3<double> > &s1,
       const af::const_ref< double > &phi,
-      const af::const_ref< Shoebox<FloatType> > &shoebox) {
+      const af::const_ref< Shoebox<> > &shoebox) {
     DIALS_ASSERT(s1.size() == phi.size());
     DIALS_ASSERT(s1.size() == shoebox.size());
-    af::shared< Forward<FloatType> > result(s1.size());
+    af::shared<TransformedShoebox> result(s1.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = Forward<FloatType>(spec, s1[i], phi[i], shoebox[i]);
+      Forward<> transform(spec, s1[i], phi[i], shoebox[i]);
+      result[i].data = transform.profile();
+      result[i].background = transform.background();
     }
-    return new typename af::flex< Forward<FloatType> >::type(
-        result, result.size());
+    return new af::flex<TransformedShoebox>::type(result, result.size());
   }
 
   /**
    * A class to convert the transform class to a string for pickling
    */
-  template <typename FloatType>
-  struct reflection_basis_transform_to_string : pickle_double_buffered::to_string
+  struct transformed_shoebox_to_string : pickle_double_buffered::to_string
   {
     using pickle_double_buffered::to_string::operator<<;
 
-    typedef Forward<FloatType> forward_type;
-
     /** Initialise with the version for checking */
-    reflection_basis_transform_to_string() {
+    transformed_shoebox_to_string() {
       unsigned int version = 1;
       *this << version;
     }
 
     /** Convert a single shoebox instance to string */
-    reflection_basis_transform_to_string& operator<<(const forward_type &val) {
-      DIALS_ERROR("Not Implemented");
+    transformed_shoebox_to_string& operator<<(const TransformedShoebox &val) {
+      profile_to_string(val.data);
+      profile_to_string(val.background);
       return *this;
     }
 
@@ -84,23 +85,22 @@ namespace dials { namespace af { namespace boost_python {
   /**
    * A class to convert a string to a shoebox for unpickling
    */
-  template <typename FloatType>
-  struct reflection_basis_transform_from_string : pickle_double_buffered::from_string
+  struct transformed_shoebox_from_string : pickle_double_buffered::from_string
   {
     using pickle_double_buffered::from_string::operator>>;
 
-    typedef Forward<FloatType> forward_type;
-
     /** Initialise the class with the string. Get the version and check */
-    reflection_basis_transform_from_string(const char* str_ptr)
+    transformed_shoebox_from_string(const char* str_ptr)
     : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
       DIALS_ASSERT(version == 1);
     }
 
     /** Get a single shoebox instance from a string */
-    reflection_basis_transform_from_string& operator>>(forward_type &val) {
-      DIALS_ERROR("Not Implemented");
+    transformed_shoebox_from_string& operator>>(TransformedShoebox &val) {
+      typedef af::versa< double, af::c_grid<3> > profile_type;
+      val.data = profile_from_string<profile_type>();
+      val.background = profile_from_string<profile_type>();
       return *this;
     }
 
@@ -124,33 +124,30 @@ namespace dials { namespace af { namespace boost_python {
     unsigned int version;
   };
 
-  template <typename FloatType>
-  typename scitbx::af::boost_python::flex_wrapper<
-    Forward<FloatType>,
+  scitbx::af::boost_python::flex_wrapper<
+    TransformedShoebox,
     return_internal_reference<> >::class_f_t
-  flex_reflection_basis_transform_wrapper(const char *name)
+  flex_transformed_shoebox_wrapper(const char *name)
   {
-    typedef Forward<FloatType> forward_type;
-
     return scitbx::af::boost_python::flex_wrapper <
-      forward_type, return_internal_reference<> >::plain(name)
+      TransformedShoebox, return_internal_reference<> >::plain(name)
         .def("__init__", make_constructor(
-          from_shoeboxes<FloatType>,
+          from_shoeboxes,
           default_call_policies(), (
             boost::python::arg("spec"),
             boost::python::arg("s1"),
             boost::python::arg("phi"),
             boost::python::arg("shoebox"))))
-        .def_pickle(flex_pickle_double_buffered<forward_type,
-          reflection_basis_transform_to_string<FloatType>,
-          reflection_basis_transform_from_string<FloatType> >())
+        .def_pickle(flex_pickle_double_buffered<
+          TransformedShoebox,
+          transformed_shoebox_to_string,
+          transformed_shoebox_from_string>())
         ;
   }
 
-  void export_flex_reflection_basis_transform() {
-    typedef Shoebox<>::float_type float_type;
-    flex_reflection_basis_transform_wrapper<float_type>(
-        "reflection_basis_transform");
+  void export_flex_transformed_shoebox() {
+    flex_transformed_shoebox_wrapper("transformed_shoebox");
   }
 
 }}} // namespace dials::af::boost_python
+

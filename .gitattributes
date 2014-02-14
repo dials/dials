@@ -259,10 +259,10 @@ array_family/boost_python/flex_observation.cc -text
 array_family/boost_python/flex_partial_shoebox.cc -text
 array_family/boost_python/flex_pixel_list.cc -text
 array_family/boost_python/flex_prediction.cc -text
-array_family/boost_python/flex_reflection_basis_transform.cc -text
 array_family/boost_python/flex_reflection_table.cc -text
 array_family/boost_python/flex_shoebox.cc -text
 array_family/boost_python/flex_table_suite.h -text
+array_family/boost_python/flex_transformed_shoebox.cc -text
 array_family/flex.py -text
 array_family/flex_table.h -text
 array_family/import_scitbx_af.h -text
@@ -404,6 +404,7 @@ model/data/boost_python/ray.cc -text
 model/data/boost_python/reflection.cc -text
 model/data/boost_python/shoebox.cc -text
 model/data/boost_python/table.cc -text
+model/data/boost_python/transformed_shoebox.cc -text
 model/data/observation.h -text
 model/data/partial_shoebox.h -text
 model/data/pixel_list.h -text
@@ -411,6 +412,7 @@ model/data/prediction.h -text
 model/data/ray.h -text
 model/data/reflection.h -text
 model/data/shoebox.h -text
+model/data/transformed_shoebox.h -text
 model/experiment/SConscript -text
 model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text
