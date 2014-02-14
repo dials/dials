@@ -11,23 +11,24 @@
 #ifndef DIALS_ALGORITHMS_BACKGROUND_HELPERS_H
 #define DIALS_ALGORITHMS_BACKGROUND_HELPERS_H
 
-#include <dials/model/data/reflection.h>
+#include <dials/model/data/shoebox.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
-  using dials::model::Reflection;
+  using dials::model::Shoebox;
 
   /**
    * Set the shoebox background value.
    * @param reflections The reflection list
    * @param value The value to set the background pixels to
    */
+  inline
   void set_shoebox_background_value(
-      af::ref<Reflection> reflections, Reflection::float_type value) {
-    for (std::size_t i = 0; i < reflections.size(); ++i) {
-      af::ref< Reflection::float_type, af::c_grid<3> > background =
-        reflections[i].get_shoebox_background().ref();
+      af::ref< Shoebox<> > shoeboxes, Shoebox<>::float_type value) {
+    for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
+      af::ref< Shoebox<>::float_type, af::c_grid<3> > background =
+        shoeboxes[i].background.ref();
       for (std::size_t j = 0; j < background.size(); ++j) {
         background[j] = value;
       }

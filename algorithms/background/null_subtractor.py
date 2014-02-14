@@ -31,5 +31,5 @@ class NullSubtractor(BackgroundSubtractionInterface):
 
     '''
     from dials.algorithms.background import set_shoebox_background_value
-    set_shoebox_background_value(reflections, 0)
+    set_shoebox_background_value(reflections['shoebox'], 0)
     return reflections

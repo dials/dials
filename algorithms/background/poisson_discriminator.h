@@ -15,7 +15,6 @@
 #include <scitbx/array_family/ref_reductions.h>
 #include <scitbx/math/mean_and_variance.h>
 #include <dials/array_family/sort_index.h>
-#include <dials/model/data/reflection.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 
@@ -24,7 +23,6 @@ namespace dials { namespace algorithms {
   using std::sqrt;
   using scitbx::math::mean_and_variance;
   using dials::af::sort_index;
-  using dials::model::Reflection;
 
   /**
    * Calculate the kth central moment.

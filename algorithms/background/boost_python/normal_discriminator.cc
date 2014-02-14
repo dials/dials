@@ -57,8 +57,6 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_normal_discriminator()
   {
-    typedef Reflection::float_type FloatType;
-
     def("normal_expected_n_sigma",
       &normal_expected_n_sigma, (
         arg("n_obs")));

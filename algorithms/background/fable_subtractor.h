@@ -12,13 +12,13 @@
 #define DIALS_ALGORITHMS_BACKGROUND_FABLE_SUBTRACTOR_H
 
 #include <omptbx/omp_or_stubs.h>
-#include <dials/model/data/reflection.h>
 #include <dials/error.h>
+#include <dials/model/data/shoebox.h>
 #include <dials/algorithms/background/poisson_discriminator.h>
 
 namespace dials { namespace algorithms {
 
-  using dials::model::Reflection;
+  using model::Shoebox;
 
   /** The fable background subtraction algorithm */
   class FableSubtractor {
