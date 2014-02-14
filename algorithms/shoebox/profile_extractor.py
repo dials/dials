@@ -251,24 +251,24 @@ class ReflectionBlockExtractor(object):
         #r.bounding_box = b
       #Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
-      ## Set all reflections which overlap bad pixels to zero
-      #Command.start('Filtering reflections by detector mask')
-      #array_range = sweep.get_scan().get_array_range()
-      #filtering.by_detector_mask(predicted, sweep[0] >= 0, array_range)
-      #Command.end('Filtered {0} reflections by detector mask'.format(
-          #len([r for r in predicted if r.is_valid()])))
+      # Set all reflections which overlap bad pixels to zero
+      Command.start('Filtering reflections by detector mask')
+      array_range = sweep.get_scan().get_array_range()
+      mask = filtering.by_detector_mask(
+        predicted['bbox'], sweep[0] >= 0, array_range)
+      predicted.del_selected(mask != True)
+      Command.end('Filtered {0} reflections by detector mask'.format(
+        len(predicted)))
 
-      ## Filter the reflections by zeta
-      #if filter_by_zeta > 0:
-        #Command.start('Filtering reflections by zeta >= {0}'.format(
-            #filter_by_zeta))
-        #filtering.by_zeta(sweep.get_goniometer(), sweep.get_beam(),
-            #predicted, filter_by_zeta)
-        #Command.end('Filtered {0} reflections by zeta >= {1}'.format(
-            #len([r for r in predicted if r.is_valid()]), filter_by_zeta))
-
-      ## Get only those reflections which are valid
-      #predicted = predicted.select(predicted.is_valid())
+      # Filter the reflections by zeta
+      if filter_by_zeta > 0:
+        Command.start('Filtering reflections by zeta >= {0}'.format(
+            filter_by_zeta))
+        mask = filtering.by_zeta(sweep.get_goniometer(), sweep.get_beam(),
+            predicted['s1'], filter_by_zeta)
+        predicted.del_selected(mask != True)
+        Command.end('Filtered {0} reflections by zeta >= {1}'.format(
+          len(predicted), filter_by_zeta))
 
       # Find overlapping reflections
       Command.start('Finding overlapping reflections')

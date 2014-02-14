@@ -89,7 +89,7 @@ class Script(ScriptRunner):
         reference=reference, extracted=extracted)
 
     # Save the reflections to file
-    nvalid = len(reflections) - reflections['flags'].count(0)
+    nvalid = len(reflections)
     Command.start('Saving {0} reflections to {1}'.format(
         nvalid, options.output_filename))
     if options.save_profiles == False:
