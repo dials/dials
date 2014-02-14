@@ -29,15 +29,12 @@ class Centroider(object):
         The list of reflections
 
     '''
-    from dials.algorithms.centroid import ComputeCentroid
     from dials.util.command_line import Command
 
     # Compute the reflections
     Command.start('Calculating reflection centroids')
-    centroid = ComputeCentroid()
-    centroid(reflections)
-    Command.end('Calculated {0} reflection centroids'.format(
-        len([r for r in reflections if r.is_valid()])))
+    reflections['shoebox'].centroid_valid()
+    Command.end('Calculated {0} reflection centroids'.format(len(reflections)))
 
     # Return the reflections
     return reflections

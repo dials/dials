@@ -74,8 +74,8 @@ class Integrator(object):
     for reflections in extract:
 
       self.compute_background(sweep, crystal, reflections)
-      reflections = ReflectionList.from_table(reflections)
       self.compute_centroid(sweep, crystal, reflections)
+      reflections = ReflectionList.from_table(reflections)
       self.compute_intensity(sweep, crystal, reflections, reference)
       self.correct_intensity(sweep, crystal, reflections)
 
