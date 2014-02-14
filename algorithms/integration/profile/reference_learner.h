@@ -11,7 +11,7 @@
 #ifndef DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LEARNER_H
 #define DIALS_ALGORITHMS_INTEGRATION_PROFILE_REFERENCE_LEARNER_H
 
-#include <dials/model/data/reflection.h>
+#include <dials/algorithms/reflection_basis/transform.h>
 #include <dials/algorithms/integration/profile/reference_locator.h>
 #include <dials/error.h>
 
@@ -21,7 +21,7 @@ namespace dials { namespace algorithms {
   using scitbx::vec3;
   using scitbx::af::int3;
   using scitbx::af::int4;
-  using dials::model::Reflection;
+  using algorithms::reflection_basis::transform::Forward;
 
   /**
    * Class to learn the reference profiles
@@ -30,7 +30,7 @@ namespace dials { namespace algorithms {
   class ReferenceLearner {
   public:
 
-    typedef Reflection::float_type float_type;
+    typedef Forward<>::float_type float_type;
     typedef Sampler sampler_type;
     typedef ReferenceLocator<float_type, sampler_type> locator_type;
 
@@ -55,14 +55,14 @@ namespace dials { namespace algorithms {
 
     /**
      * Learn the reference profiles from the reflection list.
-     * @param reflections The list of reflections
+     * @param profiles The list of profiles
      */
-    void learn(const af::const_ref<Reflection> reflections) {
-      // Add the contributions of all the reflections to the references
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
-        if (reflections[i].is_valid()) {
-          add_reflection(reflections[i]);
-        }
+    void learn(const af::const_ref< Forward<> > profiles,
+               const af::const_ref< vec3<double> > coords) {
+      // Add the contributions of all the profiles to the references
+      DIALS_ASSERT(profiles.size() == coords.size());
+      for (std::size_t i = 0; i < profiles.size(); ++i) {
+        add_profile(profiles[i], coords[i]);
       }
 
       // Normalize the reference profiles
@@ -98,13 +98,10 @@ namespace dials { namespace algorithms {
 
     /**
      * Add a reflection to add to the reference profile learning.
-     * @param reflection The reflection to add
+     * @param profile The profile to add
      */
-    void add_reflection(const Reflection &reflection) {
-      vec2<double> image_coord = reflection.get_image_coord_px();
-      double frame_number = reflection.get_frame_number();
-      vec3<double> coord(image_coord[0], image_coord[1], frame_number);
-      add_reflection(reflection.get_transformed_shoebox().const_ref(), coord);
+    void add_profile(const Forward<> &profile, vec3<double> coord) {
+      add_profile(profile.profile().const_ref(), coord);
     }
 
     /**
@@ -112,7 +109,7 @@ namespace dials { namespace algorithms {
      * @param profile The reflection profile
      * @param coord The coordinate of the reflection
      */
-    void add_reflection(const af::const_ref< float_type, af::c_grid<3> > profile,
+    void add_profile(const af::const_ref< float_type, af::c_grid<3> > profile,
         vec3<double> coord) {
 
       // Get the expected profile size

@@ -19,10 +19,13 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_profile_fitting_reciprocal_space()
   {
-    void (ProfileFittingReciprocalSpace::*call_single)(
-      Reflection&) const = &ProfileFittingReciprocalSpace::operator();
-    void (ProfileFittingReciprocalSpace::*call_array)(
-      af::ref<Reflection>) const = &ProfileFittingReciprocalSpace::operator();
+    vec2<double> (ProfileFittingReciprocalSpace::*call_single)(
+      const Forward<>&, vec3<double>) const =
+        &ProfileFittingReciprocalSpace::operator();
+    af::shared< vec2<double> > (ProfileFittingReciprocalSpace::*call_array)(
+      const af::const_ref< Forward<> >&,
+      const af::const_ref< vec3<double> >&) const =
+        &ProfileFittingReciprocalSpace::operator();
 
     class_<ProfileFittingReciprocalSpace>(
         "ProfileFittingReciprocalSpaceAlgorithm", no_init)

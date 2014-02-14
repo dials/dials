@@ -14,17 +14,19 @@
 #include <omptbx/omp_or_stubs.h>
 #include <boost/shared_ptr.hpp>
 #include <scitbx/array_family/ref_reductions.h>
-#include <dials/model/data/reflection.h>
 #include <dials/algorithms/integration/profile/fitting.h>
 #include <dials/algorithms/integration/profile/xds_circle_sampler.h>
 #include <dials/algorithms/integration/profile/reference_locator.h>
 #include <dials/algorithms/shoebox/mask_code.h>
+#include <dials/model/data/shoebox.h>
+#include <dials/algorithms/reflection_basis/transform.h>
 #include <dials/error.h>
 
 namespace dials { namespace algorithms {
 
   using boost::shared_ptr;
-  using dials::model::Reflection;
+  using dials::model::Shoebox;
+  using dials::algorithms::reflection_basis::transform::Forward;
 
   /**
    * A class to perform profile fitting on reflections.
@@ -32,7 +34,7 @@ namespace dials { namespace algorithms {
   class ProfileFittingReciprocalSpace {
   public:
 
-    typedef Reflection::float_type FloatType;
+    typedef Shoebox<>::float_type FloatType;
     typedef ReferenceLocator<FloatType, XdsCircleSampler> locator_type;
 
     /**
@@ -52,42 +54,39 @@ namespace dials { namespace algorithms {
      * Perform the profile fitting on all the reflections
      * @param reflections The reflection list
      */
-    void operator()(af::ref<Reflection> reflections) const {
-      #pragma omp parallel for
-      for (std::size_t i = 0; i < reflections.size(); ++i) {
-        if (reflections[i].is_valid()) {
-          try {
-            this->operator()(reflections[i]);
-          } catch (dials::error) {
-            reflections[i].set_valid(false);
-          }
+    af::shared< vec2<double> > operator()(
+        const af::const_ref< Forward<> > &profiles,
+        const af::const_ref< vec3<double> > &coords) const {
+      DIALS_ASSERT(profiles.size() == coords.size());
+      af::shared< vec2<double> > result(profiles.size());
+      for (std::size_t i = 0; i < profiles.size(); ++i) {
+        try {
+          result[i] = this->operator()(profiles[i], coords[i]);
+        } catch (dials::error) {
+          result[i] = vec2<double>(0.0, -1.0);
         }
       }
+      return result;
     }
 
     /**
      * Perform the profile fitting on a reflection
      * @param reflection The reflection to process
      */
-    void operator()(Reflection &reflection) const {
+    vec2<double> operator()(const Forward<> &profile, vec3<double> coord) const {
+
+      typedef af::versa < FloatType, af::c_grid<3> > profile_type;
+      typedef af::const_ref< FloatType, af::c_grid<3> > profile_ref_type;
 
       // Get the transformed shoebox
-      af::const_ref<FloatType, af::c_grid<3> > c =
-        reflection.get_transformed_shoebox().const_ref();
-      af::const_ref<FloatType, af::c_grid<3> > b =
-        reflection.get_transformed_shoebox_background().const_ref();
-
-      // Get the reference profile at the reflection coordinate
-      double3 coord(reflection.get_image_coord_px()[0],
-                    reflection.get_image_coord_px()[1],
-                    reflection.get_frame_number());
-      af::versa<FloatType, af::c_grid<3> > p = locate_->profile(coord);
+      profile_ref_type c = profile.profile().const_ref();
+      profile_ref_type b = profile.background().const_ref();
+      profile_type p = locate_->profile(coord);
 
       // Do the profile fitting and set the intensity and variance
       ProfileFitting<FloatType> fit(p.const_ref(), c, b, max_iter_);
       DIALS_ASSERT(fit.niter() < max_iter_);
-      reflection.set_intensity(fit.intensity());
-      reflection.set_intensity_variance(fit.variance());
+      return vec2<double>(fit.intensity(), fit.variance());
     }
 
   private:
