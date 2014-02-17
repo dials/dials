@@ -591,6 +591,7 @@ scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plai
 scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
+scratch/rjg/plot_virtual_powder_pattern.py -text
 scratch/rjg/unit_cell_refinement.py -text
 test/SConscript -text
 test/__init__.py -text
