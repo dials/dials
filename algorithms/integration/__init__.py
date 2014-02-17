@@ -8,5 +8,4 @@ from integrator import *
 from summation3d import *
 from summation2d import *
 from call_mosflm_2d import *
-from summation_reciprocal_space import *
 from profile_fitting_reciprocal_space import *
