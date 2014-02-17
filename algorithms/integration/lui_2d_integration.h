@@ -75,7 +75,6 @@ namespace dials { namespace algorithms {
 
     integr_data[0] = i_s;            // intensity summation
     integr_data[1]=var_i;          // intensity variance
-    //integr_data[1] = 0.0;          // intensity variance
     return integr_data;
 
   }
@@ -252,7 +251,7 @@ namespace dials { namespace algorithms {
   // Given a 2D shoebox and a 2D profile, fits the profile to find the scale
   // used in partially recorded reflections where should not
   // be refined the background plane
-  vec2<double> fitting_2d(
+  vec2<double> fitting_2d_partials(
     const af::const_ref< double, af::c_grid<2> > &descriptor,
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< double, af::c_grid<2> > &backg2d,

@@ -317,7 +317,7 @@ big_nrow = 41
 big_ncol = 41
 sumation = flex.double(flex.grid(big_nrow, big_ncol))
 descr = flex.double(flex.grid(1, 3))
-from dials.algorithms.integration import add_2d, subtrac_bkg_2d, fitting_2d
+
 for ref in r_lst:
   shoebox = ref.shoebox
   background = ref.shoebox_background

@@ -1,6 +1,6 @@
 from __future__ import division
 from dials.model.data import Reflection, ReflectionList
-from dials.scratch.luiso_s import add_2d, subtrac_bkg_2d, fitting_2d
+from dials.scratch.luiso_s import add_2d, subtrac_bkg_2d, fitting_2d_partials
 from dials.algorithms.background import curved_background_flex_2d
 from scitbx.array_family import flex
 
@@ -114,7 +114,7 @@ def fit_profile_2d(reflections, average, thold):
       descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
       descr[0, 2] = 1.0 #/ (ref.intensity * counter)
 
-      I_R = fitting_2d(descr, data2d, background2d, average)
+      I_R = fitting_2d_partials(descr, data2d, background2d, average)
       ref.intensity = I_R[0]
       ref.intensity_variance = I_R[1]
 

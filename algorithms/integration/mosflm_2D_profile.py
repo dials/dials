@@ -1,7 +1,7 @@
 from __future__ import division
 from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
-              fitting_2d, fitting_2d_multile_var_build_mat, sigma_2d
+              fitting_2d_partials, fitting_2d_multile_var_build_mat, sigma_2d
 
 
 from scitbx.array_family import flex
@@ -297,7 +297,7 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
           ref.intensity += k_abc_vec[0]
           ref.intensity_variance += k_abc_vec[1]
         else:
-          I_R = fitting_2d(descr, data2d, background2d, average, tmp_i)
+          I_R = fitting_2d_partials(descr, data2d, background2d, average, tmp_i)
           ref.intensity += I_R[0]
           ref.intensity_variance += I_R[1]
 
