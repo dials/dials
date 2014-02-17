@@ -53,29 +53,30 @@ def run(args):
   from dials.model.data import ReflectionList
   reflections = [
     ReflectionList.from_table(ref_table) for ref_table in reflections]
-  if len(params.scan_range):
-    sel = flex.bool(reflection_list.size(), False)
-    centroid_positions = reflection_list.centroid_position()
-    if (centroid_positions.norms().all_eq(0) or
-        not reflection_list.miller_index().all_eq((0,0,0))):
-      centroids_frame = reflection_list.frame_number()
-    else:
-      centroids_frame = centroid_positions.parts()[2]
-    reflections_in_range = False
-    for scan_range in params.scan_range:
-      if scan_range is None: continue
-      range_start, range_end = scan_range
-      sel |= ((centroids_frame >= range_start) & (centroids_frame < range_end))
-    reflection_list = reflection_list.select(sel)
-  if params.first_n_reflections is not None:
-    centroid_positions = reflection_list.centroid_position()
-    centroids_frame = centroid_positions.parts()[2]
-    perm = flex.sort_permutation(centroids_frame)
-    perm = perm[:min(reflection_list.size(), params.first_n_reflections)]
-    print flex.max(centroids_frame.select(perm))
-    reflection_list = reflection_list.select(perm)
 
   for reflection_list in reflections:
+    if len(params.scan_range):
+      sel = flex.bool(reflection_list.size(), False)
+      centroid_positions = reflection_list.centroid_position()
+      if (centroid_positions.norms().all_eq(0) or
+          not reflection_list.miller_index().all_eq((0,0,0))):
+        centroids_frame = reflection_list.frame_number()
+      else:
+        centroids_frame = centroid_positions.parts()[2]
+      reflections_in_range = False
+      for scan_range in params.scan_range:
+        if scan_range is None: continue
+        range_start, range_end = scan_range
+        sel |= ((centroids_frame >= range_start) & (centroids_frame < range_end))
+      reflection_list = reflection_list.select(sel)
+    if params.first_n_reflections is not None:
+      centroid_positions = reflection_list.centroid_position()
+      centroids_frame = centroid_positions.parts()[2]
+      perm = flex.sort_permutation(centroids_frame)
+      perm = perm[:min(reflection_list.size(), params.first_n_reflections)]
+      #print flex.max(centroids_frame.select(perm))
+      reflection_list = reflection_list.select(perm)
+
     for refl in reflection_list:
       centroid_position = refl.centroid_position
       centroid_variance = refl.centroid_variance
