@@ -83,27 +83,28 @@ namespace dials { namespace algorithms {
 //////////////////////////////////////////////////////////////////////////////////
 
 
-  vec2<double> sigma_2d(
+  double sigma_2d(
     const float intensity,
     const af::const_ref< int, af::c_grid<2> > &mask2d,
     const af::const_ref< double, af::c_grid<2> > &background2d) {
 
     // classic and simple integration summation
 
-    double i_s = intensity, i_bg = 0, rho_j = 0;
+    double itst_bkg = 0, rho_j = 0;
     double n = 0, m = 0;
     int cont = 0;
     double var_i;
     std::size_t ncol=background2d.accessor()[1];
     std::size_t nrow=background2d.accessor()[0];
-    vec2<double> integr_data(0,1);
+    //vec2<double> integr_data(0,1);
+    double integr_data;
 
     // looping thru each pixel
     for (int row = 0; row<nrow;row++) {
       for (int col = 0; col<ncol;col++) {
         if ( mask2d(row,col) & Foreground ) {
 
-          i_bg += background2d(row,col);
+          itst_bkg += background2d(row,col);
           m++;
         } else if(mask2d(row,col) & Background) {
           rho_j += background2d(row,col);
@@ -112,18 +113,18 @@ namespace dials { namespace algorithms {
         cont++;
       }
     }
-    if( i_bg>0 && cont>0 && m>0 && n>0 ){
+    if( itst_bkg>0 && cont>0 && m>0 && n>0 ){
       // Calculation of variance, by following:
       // A. G. W. Leslie
       // Acta Cryst. (1999). D55, 1696-1702
       // eq # 9
-      var_i = i_s + i_bg + (m / n) * ( m / n) * rho_j;
+      var_i = intensity + itst_bkg + (m / n) * ( m / n) * rho_j;
     } else {
-      var_i = i_s;
+      var_i = intensity;
     }
 
-    integr_data[0]=i_s;            // intensity summation
-    integr_data[1]=var_i;          // intensity variance
+    integr_data = var_i;          // intensity variance
+
     return integr_data;
 
   }

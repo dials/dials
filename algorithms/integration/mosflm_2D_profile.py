@@ -303,9 +303,10 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
 
 
 
-        reslt = sigma_2d(ref.intensity, mask2d, background2d)
+        var = sigma_2d(ref.intensity, mask2d, background2d)
+        #reslt = sigma_2d(ref.intensity, mask2d, background2d)
         #ref.intensity += reslt[0]
-        ref.intensity_variance += reslt[1]
+        ref.intensity_variance += var
 
 
 
