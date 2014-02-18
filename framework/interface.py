@@ -33,10 +33,10 @@ class Interface(object):
   name = ''
 
   @classmethod
-  def create(cls, name, *args, **kwargs):
-    ''' Create an extension for the interface with the given name. '''
+  def extension(cls, name):
+    ''' Get the requested extension class by name. '''
     choices = dict((ex.name, ex) for ex in cls.extensions())
-    return choices[name](*args, **kwargs)
+    return choices[name]
 
   @classmethod
   def extensions(cls):

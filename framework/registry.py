@@ -12,6 +12,7 @@ from __future__ import division
 
 
 def singleton(cls):
+  ''' Make a class a singleton. '''
   import functools
   instance = cls()
   @functools.wraps(cls)
@@ -23,10 +24,17 @@ def singleton(cls):
 class Registry(object):
 
   def __init__(self):
+
+    # Load the interfaces and extensions
     from dials.framework.interface import Interface
     import dials.interfaces
     import dials.extensions
     self._interface = Interface
+
+    # Read the system config
+    from dials.util.options import SystemConfig
+    self._config = SystemConfig()
+    self._params = self._config.config().extract()
 
   def __iter__(self):
     return self.interfaces()
@@ -52,5 +60,11 @@ class Registry(object):
     return dict((iface.name, iface) for iface in self.interfaces())[name]
 
   def __getitem__(self, key):
-    return self.interface(key)
+    name = getattr(self._params, key).algorithm
+    return self.interface(key).extension(name)
+
+
+def init_ext(iface, *args, **kwargs):
+  ''' Helper function to instantiate an extension. '''
+  return Registry()[iface](self._params, *args, **kwargs)
 

@@ -1,42 +1,93 @@
-integration
-  .help = "Parameters used in the integration"
+
+shoebox
+  .help = "Parameters used in the integration shoebox"
 {
-  algorithm = sum2d *sum3d sum_rs fit_2d fit_3d fit_rs
-    .help = "The integration algorithm to use."
+  n_sigma = 3
+    .help = "The number of standard deviations of the beam divergence and the"
+            "mosaicity to use for the bounding box size."
+    .type = float
+}
+
+centroid
+  .help = "Configure the centroid algorithm."
+{
+  algorithm = *simple
+    .help = "The centroid algorithm."
+    .type = choice
+}
+
+background
+  .help = "Configure the background algorithm."
+{
+  algorithm = null *xds fable
+    .help = "The background algorithm."
     .type = choice
 
-  shoebox
-    .help = "Parameters used in the integration shoebox"
+  xds
+    .help = "Parameters for xds background subtraction."
   {
-    n_blocks = 1
-      .help = "The number of blocks"
+    min_pixels = 10
+      .help = "The minimum number of pixels to use in calculating the"
+              "background intensity."
       .type = int
-  
-    n_sigma = 3
-      .help = "The number of standard deviations of the beam divergence and the"
-              "mosaicity to use for the bounding box size."
-      .type = float
-      
-    kernel_size = 3 3
-      .help = "The size of the local area around the spot in which"
-              "to calculate the mean and variance. The kernel is"
-              "given as a box of size (2 * nx + 1, 2 * ny + 1) centred"
-              "at the pixel."
-      .type = ints(size=2)
 
-    sigma_background = 6
-      .help = "The number of standard deviations of the coefficient of"
-              "variation (variance / mean) in the local area below"
-              "which the pixel will be classified as background."
+    n_sigma = 3.0
+      .help = "The number of standard deviations above the mean pixel intensity"
+              "below which the pixel will be classified as background."
       .type = float
-
-    sigma_strong = 3
-      .help = "The number of standard deviations above the mean in the"
-              "local area above which the pixel will be classified as"
-              "strong."
-      .type = float      
   }
-   
+  
+  fable
+    .help = "Parameters for fable background subtraction."
+  {
+    min_pixels = 10
+      .help = "The minimum number of pixels to use in calculating the"
+              "background intensity."
+      .type = int
+
+    n_sigma = 3.0
+      .help = "The number of standard deviations above the mean pixel intensity"
+              "below which the pixel will be classified as background."
+      .type = float
+  }
+}
+
+integration
+  .help = "Configure the integration algorithm."
+{
+  algorithm = sum2d *sum3d mosflm fitrs
+    .help = "The integration algorithm"
+    .type = choice
+
+  fitrs
+    .help = "Parameters for reciprocal space profile fitting."
+  {
+    profile
+      .help = "Parameters for profile fitting"
+    {
+      grid_size = 5
+        .help = "The size of the reciprocal space grid for each reflection."
+                "The size is the same in each dimensions"
+        .type = int
+      
+      reference_frame_interval = 10
+        .help = "The oscillation at which to learn new reference profiles"
+        .type = int
+      
+      reference_signal_threshold = 0.02
+        .help = "The threshold to use in reference profile"
+        .type = float
+    }
+  }
+
+  mosflm
+    .help = "Parameters for mosflm profile fitting"
+  {
+    nblocks = 4
+      .help = "number of block per coordinate"
+      .type = int
+  }
+
   filter
     .help = "Parameters for filtering reflections"
   {
@@ -63,52 +114,4 @@ integration
               "transform allows a reflection to be transformed."
       .type = bool
   }
-   
-  background
-    .help = "Parameters used in the background subtraction algorithm."
-  {
-    algorithm = none *xds fable flat inclined esmeralda
-        .help = "The background subtraction algorithm."
-        .type = choice
-
-    min_pixels = 10
-      .help = "The minimum number of pixels to use in calculating the"
-              "background intensity."
-      .type = int
-
-    n_sigma = 3.0
-      .help = "The number of standard deviations above the mean pixel intensity"
-              "below which the pixel will be classified as background."
-      .type = float
-  }
-  
-  reciprocal_space
-    .help = "Parameters for the reciprocal space transform."
-  {
-    grid_size = 5
-      .help = "The size of the reciprocal space grid for each reflection."
-              "The size is the same in each dimensions"
-      .type = int
-  }
-  
-  profile
-    .help = "Parameters for profile fitting"
-  {
-    reference_frame_interval = 10
-      .help = "The oscillation at which to learn new reference profiles"
-      .type = int
-    
-    reference_signal_threshold = 0.02
-      .help = "The threshold to use in reference profile"
-      .type = float
-  }
-  
-  mosflm
-    .help = "Parameters for mosflm profile fitting"
-  {
-    nblocks = 4
-      .help = "number of block per coordinate"
-      .type = int
-  }
 }
-

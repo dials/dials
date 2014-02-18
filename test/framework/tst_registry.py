@@ -64,9 +64,9 @@ class Test:
     from dials.framework.registry import Registry
     registry = Registry()
 
-    centroid_iface = registry['centroid']
-    background_iface = registry['background']
-    integration_iface = registry['integration']
+    centroid_iface = registry.interface('centroid')
+    background_iface = registry.interface('background')
+    integration_iface = registry.interface('integration')
 
     from dials.interfaces import IntegrationIface
     from dials.interfaces import BackgroundIface
@@ -76,6 +76,20 @@ class Test:
     assert(background_iface == BackgroundIface)
     assert(centroid_iface == CentroidIface)
 
+    centroid_ext = registry['centroid']
+    background_ext = registry['background']
+    integration_ext = registry['integration']
+
+    from dials.extensions.simple_centroid_ext import SimpleCentroidExt
+    from dials.extensions.null_background_ext import NullBackgroundExt
+    from dials.extensions.fable_background_ext import FableBackgroundExt
+    from dials.extensions.xds_background_ext import XdsBackgroundExt
+    from dials.extensions.summation_3d_integration_ext import Summation3dIntegrationExt
+    from dials.extensions.profile_fitting_rs_integration_ext import ProfileFittingRSIntegrationExt
+
+    assert(integration_ext == Summation3dIntegrationExt)
+    assert(background_ext == XdsBackgroundExt)
+    assert(centroid_ext == SimpleCentroidExt)
     print 'OK'
 
 if __name__ == '__main__':
