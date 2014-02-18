@@ -563,6 +563,24 @@ class indexer_base(object):
         reciprocal_space_points.extend(S)
     return reciprocal_space_points
 
+  def discover_better_experimental_model(self, reflections, detector, beam,
+                                         goniometer, scan):
+    from rstbx.phil.phil_preferences import indexing_api_defs
+    import iotbx.phil
+    hardcoded_phil = iotbx.phil.parse(
+      input_string=indexing_api_defs).extract()
+    params = hardcoded_phil
+    import copy
+
+    from dials.algorithms.indexing import indexer
+    opt_detector, opt_beam = indexer.discover_better_experimental_model(
+      copy.deepcopy(reflections), detector, beam,
+      goniometer=goniometer, scan=scan, params=hardcoded_phil)
+    print "DISCOVERED BETTER MODEL:"
+    print opt_detector
+    print opt_beam
+    return opt_detector, opt_beam
+
   def find_candidate_orientation_matrices(self, candidate_basis_vectors,
                                           return_first=False,
                                           apply_symmetry=True):
