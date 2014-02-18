@@ -383,6 +383,7 @@ framework/dftbx/tst_dftbx.py -text
 framework/interface.py -text
 framework/plugin.py -text
 framework/plugin_example.py -text
+framework/registry.py -text
 framework/toplevel.py -text
 framework/toplevel_example.py -text
 interfaces/__init__.py -text
@@ -693,6 +694,8 @@ test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
+test/framework/tst_interface.py -text
+test/framework/tst_registry.py -text
 test/model/data/tst_observation.py -text
 test/model/data/tst_partial_shoebox.py -text
 test/model/data/tst_pixel_list.py -text

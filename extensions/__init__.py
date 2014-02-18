@@ -23,8 +23,7 @@ def import_sub_modules():
 
   # Walk through, importing the packages
   for importer, modname, ispkg in walker:
-    loader = importer.find_module(modname)
-    module = loader.load_module(modname)
+    __import__(modname, globals())
 
 # Import sub modules
 import_sub_modules()
