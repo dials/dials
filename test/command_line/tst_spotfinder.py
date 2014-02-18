@@ -62,7 +62,7 @@ def exercise_spotfinder():
   assert os.path.exists("spotfinder.pickle")
   with open("spotfinder.pickle", "rb") as f:
     reflections = pickle.load(f)
-    assert len(reflections) == 2989
+    assert len(reflections) == 2643
   print 'OK'
 
 def exercise_polygon():

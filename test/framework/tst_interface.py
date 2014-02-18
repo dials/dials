@@ -33,13 +33,15 @@ class Test(object):
 
     # Should have three interfaces
     interfaces = list(Interface.interfaces())
-    assert(len(interfaces) == 3)
+    assert(len(interfaces) == 4)
 
     # Ensure all the interfaces we expect are there
+    from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import IntegrationIface
 
+    assert(SpotFinderThresholdIface in interfaces)
     assert(CentroidIface in interfaces)
     assert(BackgroundIface in interfaces)
     assert(IntegrationIface in interfaces)
@@ -54,15 +56,18 @@ class Test(object):
 
   def tst_after_import_extensions(self):
     import dials.extensions
+    from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import IntegrationIface
 
     # Should have three interfaces
     interfaces = list(Interface.interfaces())
-    assert(len(interfaces) == 3)
+    assert(len(interfaces) == 4)
 
     # Check we have the expected number of extensions for each interface
+    extensions = list(SpotFinderThresholdIface.extensions())
+    assert(len(extensions) == 1)
     extensions = list(CentroidIface.extensions())
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
@@ -71,6 +76,7 @@ class Test(object):
     assert(len(extensions) == 4)
 
     # Check the interface contain the expected extensions
+    from dials.extensions import KabschSpotFinderThresholdExt
     from dials.extensions import SimpleCentroidExt
     from dials.extensions import NullBackgroundExt
     from dials.extensions import FlatBackgroundExt
@@ -83,6 +89,8 @@ class Test(object):
     from dials.extensions import ProfileFittingRSIntegrationExt
     from dials.extensions import ProfileFittingMosflmIntegrationExt
 
+    extensions = list(SpotFinderThresholdIface.extensions())
+    assert(KabschSpotFinderThresholdExt in extensions)
     extensions = list(CentroidIface.extensions())
     assert(SimpleCentroidExt in extensions)
     extensions = list(BackgroundIface.extensions())

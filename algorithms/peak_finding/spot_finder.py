@@ -51,7 +51,7 @@ class Extract(object):
 
         # Add the images to the pixel lists
         for pl, tr, im in zip(plists, trange, image):
-          mask = im >= int(tr[0])
+          mask = im > int(tr[0])
           pl.add_image(im, self.threshold_image.compute_threshold(im, mask))
 
       # Return the pixel lists

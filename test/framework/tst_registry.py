@@ -24,15 +24,17 @@ class Test:
     from dials.framework.registry import Registry
     registry = Registry()
 
-    assert(len(registry) == 3)
+    assert(len(registry) == 4)
     interfaces = list(registry.interfaces())
-    assert(len(list(interfaces)) == 3)
+    assert(len(list(interfaces)) == 4)
 
+    from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import IntegrationIface
 
     assert(CentroidIface in interfaces)
+    assert(SpotFinderThresholdIface in interfaces)
     assert(BackgroundIface in interfaces)
     assert(IntegrationIface in interfaces)
 
