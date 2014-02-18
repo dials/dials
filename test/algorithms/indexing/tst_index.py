@@ -130,7 +130,8 @@ def exercise_1():
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["multiple_lattice_search=False", # use older non-clustering version
                 "reflections_per_degree=5",
-                "n_macro_cycles=2"]
+                "n_macro_cycles=2",
+                "discover_better_experimental_model=True"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
   expected_rmsds = (0.04, 0.04, 0.0003)

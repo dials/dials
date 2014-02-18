@@ -43,7 +43,8 @@ reference {
     .type = path
     .help = "Use beam model from the given reference sweep."
 }
-
+discover_better_experimental_model = False
+  .type = bool
 min_cell = 20
   .type = float(value_min=0)
   .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
@@ -301,6 +302,14 @@ class indexer_base(object):
     experiments = ExperimentList()
 
     had_refinement_error = False
+
+    if self.params.discover_better_experimental_model:
+      opt_detector, opt_beam = self.discover_better_experimental_model(
+        self.reflections, self.detector, self.beam, self.goniometer, self.scan)
+      self.sweep.set_detector(opt_detector)
+      self.sweep.set_beam(opt_beam)
+      self.detector = opt_detector
+      self.beam = opt_beam
 
     while True:
       self.d_min = self.params.refinement_protocol.d_min_start
