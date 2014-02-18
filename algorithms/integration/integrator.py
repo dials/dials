@@ -16,7 +16,7 @@ class Integrator(object):
 
   def __init__(self, n_sigma, n_blocks, filter_by_zeta,
                compute_background, compute_centroid,
-               compute_intensity, correct_intensity):
+               compute_intensity):
     ''' Initialise the integrator base class.
 
     Params:
@@ -24,7 +24,6 @@ class Integrator(object):
         compute_background The background strategy
         compute_centroid The centroid strategy
         compute_intensity The intensity strategy
-        correct_intensity The intensity correction strategy
 
     '''
     self.n_sigma = n_sigma
@@ -33,7 +32,6 @@ class Integrator(object):
     self.compute_background = compute_background
     self.compute_centroid = compute_centroid
     self.compute_intensity = compute_intensity
-    self.correct_intensity = correct_intensity
 
   def __call__(self, experiments, reference=None, extracted=None):
     ''' Call to integrate.
@@ -52,6 +50,7 @@ class Integrator(object):
     from dials.model.data import ReflectionList
     from dials.array_family import flex
     from dials.util.command_line import Command
+    from dials.algorithms.integration.lp_correction import correct_intensity
 
     assert(len(experiments) == 1)
 
@@ -76,7 +75,7 @@ class Integrator(object):
       self.compute_background(experiments[0], reflections)
       self.compute_centroid(experiments[0], reflections)
       self.compute_intensity(experiments[0], reflections, reference)
-      self.correct_intensity(experiments[0], reflections)
+      correct_intensity(experiments[0], reflections)
 
       del reflections['shoebox']
       result.extend(reflections)
@@ -87,109 +86,10 @@ class Integrator(object):
     return result
 
 
-class IntegratorFactory(object):
-  ''' Factory class to create integrators '''
+class IntensityFactory(object):
 
   @staticmethod
   def from_parameters(params):
-    ''' Given a set of parameters, construct the integrator
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The integrator instance
-
-    '''
-    # Configure the algorithms to extract reflections, compute the
-    # background intensity and integrate the reflection intensity
-    compute_background = IntegratorFactory.configure_background(params)
-    compute_centroid = IntegratorFactory.configure_centroid(params)
-    compute_intensity = IntegratorFactory.configure_intensity(params)
-    correct_intensity = IntegratorFactory.configure_correction(params)
-
-    # Return the integrator with the given strategies
-    return Integrator(n_sigma = params.integration.shoebox.n_sigma,
-                      n_blocks = params.integration.shoebox.n_blocks,
-                      filter_by_zeta = params.integration.filter.by_zeta,
-                      compute_background = compute_background,
-                      compute_centroid = compute_centroid,
-                      compute_intensity = compute_intensity,
-                      correct_intensity = correct_intensity)
-
-  @staticmethod
-  def configure_background(params):
-    ''' Given a set of parameters, configure the background calculator
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The background calculator instance
-
-    '''
-    from dials.algorithms.background import NullSubtractor
-    from dials.algorithms.background import XdsSubtractor
-    from dials.algorithms.background import FableSubtractor
-    from dials.algorithms.background import FlatSubtractor
-    from dials.algorithms.background import CurvedSubtractor
-    from dials.algorithms.background import InclinedSubtractor
-
-    # Shorten parameter path
-    integration = params.integration
-
-    # Configure the NULL subtractor
-    if (integration.background.algorithm == 'none' or
-        integration.background.algorithm == None):
-      algorithm = NullSubtractor()
-
-    # Configure the XDS subtractor
-    elif integration.background.algorithm == 'xds':
-      algorithm = XdsSubtractor(
-          min_data = integration.background.min_pixels,
-          n_sigma = integration.background.n_sigma)
-
-    # Configure the Fable subtractor
-    elif params.integration.background.algorithm == 'fable':
-      algorithm = FableSubtractor(
-          min_data = integration.background.min_pixels,
-          n_sigma = integration.background.n_sigma)
-
-    # Configure the flat subtractor
-    elif integration.background.algorithm == 'flat':
-      algorithm = FlatSubtractor()
-
-    # Configure the inclined plane subtractor
-    elif integration.background.algorithm == 'inclined':
-      algorithm = InclinedSubtractor()
-
-    # Configure the esmerelda curved subtractor
-    elif integration.background.algorithm == 'esmeralda':
-      algorithm = CurvedSubtractor()
-
-    # Unknown subtractor
-    else:
-      raise RuntimeError('Unknown background algorithm')
-
-    # Return the algorithm
-    return algorithm
-
-  @staticmethod
-  def configure_centroid(params):
-    ''' Given a set of parameters, configure the centroid calculator
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The centroid calculator instance
-
-    '''
-    from dials.algorithms.centroid.centroider import Centroider
-    return Centroider()
-
-  @staticmethod
-  def configure_intensity(params):
     ''' Given a set of parameters, configure the intensity calculator
 
     Params:
@@ -239,38 +139,33 @@ class IntegratorFactory(object):
     # Return the algorithm
     return algorithm
 
+class IntegratorFactory(object):
+  ''' Factory class to create integrators '''
+
   @staticmethod
-  def configure_correction(params):
-    ''' Given a set of parameters, configure the intensity correction
+  def from_parameters(params):
+    ''' Given a set of parameters, construct the integrator
 
     Params:
         params The input parameters
 
     Returns:
-        The intensity corrector instance
+        The integrator instance
 
     '''
-    from dials.algorithms.integration.lp_correction import correct_intensity
-    return correct_intensity
+    from dials.algorithms.background.background_factory import BackgroundFactory
+    from dials.algorithms.centroid.centroid_factory import CentroidFactory
+    # Configure the algorithms to extract reflections, compute the
+    # background intensity and integrate the reflection intensity
+    compute_background = BackgroundFactory.from_parameters(params)
+    compute_centroid = CentroidFactory.from_parameters(params)
+    compute_intensity = IntensityFactory.from_parameters(params)
 
-  @staticmethod
-  def load_image(filename):
-    ''' Given a filename, load an image
+    # Return the integrator with the given strategies
+    return Integrator(n_sigma = params.integration.shoebox.n_sigma,
+                      n_blocks = params.integration.shoebox.n_blocks,
+                      filter_by_zeta = params.integration.filter.by_zeta,
+                      compute_background = compute_background,
+                      compute_centroid = compute_centroid,
+                      compute_intensity = compute_intensity)
 
-    Params:
-        filename The input filename
-
-    Returns:
-        The image or None
-
-    '''
-    from dials.util import image
-
-    # If no filename is set then return None
-    if not filename:
-      return None
-
-    # Read the image and return the image data
-    handle = image.reader()
-    handle.read_file(filename)
-    return handle.get_data()

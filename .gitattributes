@@ -5,6 +5,7 @@ algorithms/SConscript -text
 algorithms/__init__.py -text
 algorithms/background/SConscript -text
 algorithms/background/__init__.py -text
+algorithms/background/background_factory.py -text
 algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/fable_subtractor.cc -text

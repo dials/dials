@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dials.algorithms.integration.integrator.py
+# dials.algorithms.centroid.centroid_factory.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -12,35 +12,20 @@
 from __future__ import division
 
 
-class CentroidRunner(object):
-  ''' The centroid runner class. '''
+class CentroidFactory(object):
+  ''' Factory class to create integrators '''
 
-  def __init__(self, compute_spots, compute_centroid):
-    ''' Initialise the integrator base class.
-
-    Params:
-        compute_spots The spot extractor strategy
-        compute_centroid The centroid strategy
-
-    '''
-    self.compute_spots = compute_spots
-    self.compute_centroid = compute_centroid
-
-  def __call__(self, experiment, predicted=None):
-    ''' Call to calculate centroids.
+  @staticmethod
+  def from_parameters(params):
+    ''' Given a set of parameters, configure the centroid calculator
 
     Params:
-        sweep The sweep to process
-        crystal The crystal to process
-        predicted The predicted reflection list
+        params The input parameters
 
     Returns:
-        A reflection list
+        The centroid calculator instance
 
     '''
-    # Extract the reflections from the sweep
-    if predicted == None:
-      predicted = self.compute_spots(experiment)
+    from dials.algorithms.centroid.centroider import Centroider
+    return Centroider()
 
-    # Calculate the reflection centroids
-    return self.compute_centroid(experiment, predicted)
