@@ -13,8 +13,19 @@ from __future__ import division
 from dials.interfaces import IntegrationIface
 
 class ProfileFittingRSIntegrationExt(IntegrationIface):
-
+  ''' Extension providing reciprocal space profile fitting. '''
   name = 'fitrs'
 
+  def __init__(self, params, experiments):
+    ''' Initialise the algorithm. '''
+    from dials.algorithms.integration import ProfileFittingReciprocalSpace
+
+    self._algorithm = ProfileFittingReciprocalSpace(
+      n_sigma = params.integration.shoebox.n_sigma,
+      grid_size = params.integration.fitrs.profile.grid_size,
+      frame_interval = params.integration.fitrs.profile.frame_interval,
+      threshold = params.integration.fitrs.profile.reference_signal_threshold)
+
   def compute_intensity(self, reflections):
-    pass
+    ''' Compute the intensity. '''
+    self._algorithm(reflections)

@@ -13,9 +13,15 @@ from __future__ import division
 from dials.interfaces import IntegrationIface
 
 class Summation3dIntegrationExt(IntegrationIface):
+  ''' Extension class to provide 3d summation integration. '''
 
   name = 'sum3d'
 
+  def __init__(self, params, reflections):
+    ''' Initialise the algorithm. '''
+    self._algorithm = Summation3d()
+
   def compute_intensity(self, reflections):
-    pass
+    ''' Compute the intensity. '''
+    self._algorithm(reflections)
 

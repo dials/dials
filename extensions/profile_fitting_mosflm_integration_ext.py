@@ -13,8 +13,16 @@ from __future__ import division
 from dials.interfaces import IntegrationIface
 
 class ProfileFittingMosflmIntegrationExt(IntegrationIface):
+  ''' Extension class to provide mosflm profile fitting. '''
 
   name = 'mosflm'
 
+  def __init__(self, params, experiment):
+    ''' Initialise the algorithhm. '''
+    from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
+    self._algorithm = MosflmProfileFitting(
+        nblocks = params.integration.mosflm.nblocks)
+
   def compute_intensity(self, reflections):
-    pass
+    ''' Compute the intensity. '''
+    self._algorithm(reflections)

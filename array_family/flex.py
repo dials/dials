@@ -106,7 +106,7 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       self['panel'])
     Command.end('Calculated {0} bounding boxes'.format(len(self)))
 
-  def compute_background(self, experiment, parameters):
+  def compute_background(self, experiment):
     ''' Helper function to compute the background. '''
     from dials.framework.registry import init_ext
     init_ext("background", experiment).compute_background(self)
@@ -116,22 +116,21 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     from dials.framework.registry import init_ext
     init_ext("centroid", experiment).compute_centroid(self)
 
-  def compute_intensity(self, experiment, parameters):
+  def compute_intensity(self, experiment):
     ''' Helper function to compute the intensity. '''
-    from dials.algorithms.integration.integrator import IntensityFactory
-    function = IntensityFactory.from_parameters(parameters)
-    function(experiment, self)
+    from dials.framework.registry import init_ext
+    init_ext("integration", experiment).compute_intensity(self)
 
   def correct_intensity(self, experiment):
     ''' Helper function to correct the intensity. '''
     from dials.algorithms.integration.lp_correction import correct_intensity
     correct_intensity(experiment, self)
 
-  def integrate(self, experiment, parameters, save_profiles=False):
+  def integrate(self, experiment, save_profiles=False):
     ''' Helper function to integrate reflections. '''
-    self.compute_background(experiment, parameters)
-    self.compute_centroid(experiment, parameters)
-    self.compute_intensity(experiment, parameters)
+    self.compute_background(experiment)
+    self.compute_centroid(experiment)
+    self.compute_intensity(experiment)
     self.correct_intensity(experiment)
     if save_profiles == False:
       del self['shoebox']

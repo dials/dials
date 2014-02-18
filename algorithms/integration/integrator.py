@@ -70,58 +70,6 @@ class Integrator(object):
     return result
 
 
-class IntensityFactory(object):
-
-  @staticmethod
-  def from_parameters(params):
-    ''' Given a set of parameters, configure the intensity calculator
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The intensity calculator instance
-
-    '''
-    from dials.algorithms.integration import Summation2d
-    from dials.algorithms.integration import Summation3d
-    from dials.algorithms.integration import ProfileFittingReciprocalSpace
-    from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
-
-    # Shorten parameter path
-    integration = params.integration
-
-    # Configure the 2D summation algorithm
-    if integration.algorithm == 'sum2d':
-      algorithm = Summation2d()
-
-    # Configure the 3D summation algorithm
-    elif integration.algorithm == 'sum3d':
-      algorithm = Summation3d()
-
-    # Configure the 2D profile fitting algorithm
-    elif integration.algorithm == 'fit_2d':
-      algorithm = MosflmProfileFitting(
-          nblocks = integration.mosflm.nblocks)
-
-    # Configure the 3D profile fitting algorithm
-    elif integration.algorithm == 'fit_3d':
-      raise RuntimeError('Not implemented yet')
-
-    # Configure the reciprocal space profile fitting algorithm
-    elif integration.algorithm == 'fit_rs':
-      algorithm = ProfileFittingReciprocalSpace(
-          n_sigma = integration.shoebox.n_sigma,
-          grid_size = integration.reciprocal_space.grid_size,
-          frame_interval = integration.profile.reference_frame_interval,
-          threshold = integration.profile.reference_signal_threshold)
-
-    # Unknown algorithm
-    else:
-      raise RuntimeError('Unknown integration algorithm')
-
-    # Return the algorithm
-    return algorithm
 
 class IntegratorFactory(object):
   ''' Factory class to create integrators '''
