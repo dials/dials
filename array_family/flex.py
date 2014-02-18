@@ -105,3 +105,35 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       self['xyzcal.mm'].parts()[2],
       self['panel'])
     Command.end('Calculated {0} bounding boxes'.format(len(self)))
+
+  def compute_background(self, experiment, parameters):
+    ''' Helper function to compute the background. '''
+    from dials.algorithms.background.background_factory import BackgroundFactory
+    function = BackgroundFactory.from_parameters(parameters)
+    function(experiment, self)
+
+  def compute_centroid(self, experiment, parameters):
+    ''' Helper function to compute the centroid. '''
+    from dials.algorithms.centroid.centroid_factory import CentroidFactory
+    function = CentroidFactory.from_parameters(parameters)
+    function(experiment, self)
+
+  def compute_intensity(self, experiment, parameters):
+    ''' Helper function to compute the intensity. '''
+    from dials.algorithms.integration.integrator import IntensityFactory
+    function = IntensityFactory.from_parameters(parameters)
+    function(experiment, self)
+
+  def correct_intensity(self, experiment):
+    ''' Helper function to correct the intensity. '''
+    from dials.algorithms.integration.lp_correction import correct_intensity
+    correct_intensity(experiment, self)
+
+  def integrate(self, experiment, parameters, save_profiles=False):
+    ''' Helper function to integrate reflections. '''
+    self.compute_background(experiment, parameters)
+    self.compute_centroid(experiment, parameters)
+    self.compute_intensity(experiment, parameters)
+    self.correct_intensity(experiment)
+    if save_profiles == False:
+      del self['shoebox']

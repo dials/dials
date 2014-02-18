@@ -14,24 +14,16 @@ from __future__ import division
 class Integrator(object):
   ''' The integrator base class. '''
 
-  def __init__(self, n_sigma, n_blocks, filter_by_zeta,
-               compute_background, compute_centroid,
-               compute_intensity):
+  def __init__(self, n_sigma, n_blocks, filter_by_zeta, params):
     ''' Initialise the integrator base class.
 
     Params:
-        compute_spots The spot extractor strategy
-        compute_background The background strategy
-        compute_centroid The centroid strategy
-        compute_intensity The intensity strategy
 
     '''
     self.n_sigma = n_sigma
     self.n_blocks = n_blocks
     self.filter_by_zeta = filter_by_zeta
-    self.compute_background = compute_background
-    self.compute_centroid = compute_centroid
-    self.compute_intensity = compute_intensity
+    self.params = params
 
   def __call__(self, experiments, reference=None, extracted=None):
     ''' Call to integrate.
@@ -60,9 +52,6 @@ class Integrator(object):
     else:
       predicted = None
 
-    sweep = experiments[0].imageset
-    crystal = experiments[0].crystal
-
     # Get the extractor
     extract = ReflectionBlockExtractor(experiments[0], predicted,
       self.n_sigma, self.n_blocks, self.filter_by_zeta, extracted)
@@ -72,12 +61,7 @@ class Integrator(object):
     print ''
     for reflections in extract:
 
-      self.compute_background(experiments[0], reflections)
-      self.compute_centroid(experiments[0], reflections)
-      self.compute_intensity(experiments[0], reflections, reference)
-      correct_intensity(experiments[0], reflections)
-
-      del reflections['shoebox']
+      reflections.integrate(experiments[0], self.params)#, reference
       result.extend(reflections)
       print ''
 
@@ -153,19 +137,9 @@ class IntegratorFactory(object):
         The integrator instance
 
     '''
-    from dials.algorithms.background.background_factory import BackgroundFactory
-    from dials.algorithms.centroid.centroid_factory import CentroidFactory
-    # Configure the algorithms to extract reflections, compute the
-    # background intensity and integrate the reflection intensity
-    compute_background = BackgroundFactory.from_parameters(params)
-    compute_centroid = CentroidFactory.from_parameters(params)
-    compute_intensity = IntensityFactory.from_parameters(params)
 
     # Return the integrator with the given strategies
     return Integrator(n_sigma = params.integration.shoebox.n_sigma,
                       n_blocks = params.integration.shoebox.n_blocks,
                       filter_by_zeta = params.integration.filter.by_zeta,
-                      compute_background = compute_background,
-                      compute_centroid = compute_centroid,
-                      compute_intensity = compute_intensity)
-
+                      params=params)
