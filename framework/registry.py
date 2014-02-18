@@ -77,7 +77,11 @@ class Registry(object):
 
   def __getitem__(self, key):
     ''' Get an algorithm. '''
-    name = getattr(self.params(), key).algorithm
+    path = key.split('.')
+    obj = self.params()
+    for p in path:
+      obj = getattr(obj, p)
+    name = obj.algorithm
     return self.interface(key).extension(name)
 
 

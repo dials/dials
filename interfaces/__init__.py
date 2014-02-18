@@ -12,6 +12,20 @@
 from __future__ import division
 from dials.framework import interface
 
+
+class SpotFinderThresholdIface(interface.Interface):
+  ''' Interface for spot finder threshold algorithms. '''
+
+  name = 'spotfinder.threshold'
+
+  def __init__(self, params, imageset):
+    pass
+
+  @interface.abstractmethod
+  def compute_threshold(self, image):
+    pass
+
+
 class CentroidIface(interface.Interface):
   ''' Interface for centroid calculation algorithms. '''
 

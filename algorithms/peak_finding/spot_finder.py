@@ -48,7 +48,7 @@ class Extract(object):
 
         # Add the images to the pixel lists
         for pl, im in zip(plists, image):
-          pl.add_image(im, self.threshold_image(im))
+          pl.add_image(im, self.threshold_image.compute_threshold(im))
 
       # Return the pixel lists
       return plists
@@ -174,27 +174,8 @@ class SpotFinder(object):
     self.filter_spots = filter_spots
     self.scan_range = scan_range
 
-  def __call__(self, datablock):
+  def __call__(self, imageset):
     ''' Do the spot finding. '''
-    from dials.array_family import flex
-
-    # Loop through all the imagesets and find the strong spots
-    reflections = flex.reflection_table()
-    for i, imageset in enumerate(datablock.extract_imagesets()):
-
-      # Find the strong spots in the sweep
-      print '-' * 80
-      print 'Finding strong spots in imageset %d' % i
-      print '-' * 80
-      table = self._find_in_imageset(imageset)
-      table['id'] = flex.size_t(table.nrows(), i)
-      reflections.extend(table)
-
-    # Return the reflections
-    return reflections
-
-  def _find_in_imageset(self, imageset):
-    ''' Do the spot finding '''
     from dials.array_family import flex
     from dials.util.command_line import Command
     from dxtbx.imageset import ImageSweep

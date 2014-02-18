@@ -26,21 +26,18 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     return predict()
 
   @staticmethod
-  def from_observations(datablocks, params):
+  def from_observations(imageset):
     ''' Construct a reflection table from observations. '''
     from dials.algorithms.peak_finding.spotfinder_factory \
       import SpotFinderFactory
 
-    # Ensure we have a data block
-    if len(datablocks) != 1:
-      raise RuntimeError('only 1 datablock can be processed at a time')
-
     # Get the integrator from the input parameters
     print 'Configuring spot finder from input parameters'
-    find_spots = SpotFinderFactory.from_parameters(params)
+    from dials.framework.registry import Registry
+    find_spots = SpotFinderFactory.from_parameters(Registry().params(), imageset)
 
     # Find the spots
-    return find_spots(datablocks[0])
+    return find_spots(imageset)
 
   @staticmethod
   def from_pickle(filename):

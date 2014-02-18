@@ -260,7 +260,7 @@ class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
   @staticmethod
-  def from_parameters(params):
+  def from_parameters(params, imageset):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -272,8 +272,16 @@ class SpotFinderFactory(object):
     '''
     from dials.algorithms.peak_finding import SpotFinder
 
+    # Read in the lookup files
+    gain_map = SpotFinderFactory.load_image(params.lookup.gain_map)
+    dark_map = SpotFinderFactory.load_image(params.lookup.dark_map)
+    mask = SpotFinderFactory.load_image(params.lookup.mask)
+    params.lookup.gain_map = gain_map
+    params.lookup.dark_map = dark_map
+    params.lookup.mask = mask
+
     # Configure the algorithm and wrap it up
-    find_spots = SpotFinderFactory.configure_algorithm(params)
+    find_spots = SpotFinderFactory.configure_algorithm(imageset)
     filter_spots = SpotFinderFactory.configure_filter(params)
     return SpotFinder(
       find_spots=find_spots,
@@ -281,7 +289,7 @@ class SpotFinderFactory(object):
       scan_range=params.spotfinder.scan_range)
 
   @staticmethod
-  def configure_algorithm(params):
+  def configure_algorithm(imageset):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -294,38 +302,17 @@ class SpotFinderFactory(object):
     from dials.util.command_line import Command
     from dials.algorithms.peak_finding.spot_finder import ExtractSpots
 
-    # Read in the lookup files
-    gain_map = SpotFinderFactory.load_image(params.lookup.gain_map)
-    dark_map = SpotFinderFactory.load_image(params.lookup.dark_map)
-    mask = SpotFinderFactory.load_image(params.lookup.mask)
-
     # Create the threshold strategy
-    threshold = SpotFinderFactory.configure_threshold(params, gain_map, mask)
+    threshold = SpotFinderFactory.configure_threshold(imageset)
 
     # Setup the spot finder
     return ExtractSpots(threshold_image=threshold)
 
   @staticmethod
-  def configure_threshold(params, gain_map, mask):
+  def configure_threshold(imageset):
     ''' Get the threshold strategy'''
-    from dials.algorithms.peak_finding.threshold \
-        import UnimodalThresholdStrategy, XDSThresholdStrategy
-
-    # Chose the strategy
-    if params.spotfinder.threshold.algorithm == 'xds':
-      return XDSThresholdStrategy(
-          kernel_size=params.spotfinder.threshold.kernel_size,
-          gain=gain_map,
-          mask=mask,
-          n_sigma_b=params.spotfinder.threshold.sigma_background,
-          n_sigma_s=params.spotfinder.threshold.sigma_strong,
-          min_count=params.spotfinder.threshold.min_local)
-
-    elif params.spotfinder.threshold.algorithm == 'unimodal':
-      return UnimodalThresholdStrategy()
-
-    else:
-      raise RuntimeError('Unknown threshold strategy')
+    from dials.framework.registry import init_ext
+    return init_ext('spotfinder.threshold', imageset)
 
   @staticmethod
   def configure_filter(params):
