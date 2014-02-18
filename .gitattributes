@@ -298,6 +298,7 @@ command_line/process.py -text
 command_line/refine.py -text
 command_line/refine_bravais_settings.py -text
 command_line/reflection_stats.py -text
+command_line/show_extensions.py -text
 command_line/show_models.py -text
 command_line/show_profiles.py -text
 command_line/simulate.py -text
