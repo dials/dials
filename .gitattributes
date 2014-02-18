@@ -382,8 +382,6 @@ framework/dftbx/dftbx.h -text
 framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
 framework/interface.py -text
-framework/plugin.py -text
-framework/plugin_example.py -text
 framework/registry.py -text
 framework/toplevel.py -text
 framework/toplevel_example.py -text
