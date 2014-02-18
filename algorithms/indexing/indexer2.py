@@ -59,6 +59,10 @@ reciprocal_space_grid {
     .help = "The high resolution limit in Angstrom for spots to include in "
             "the initial indexing."
 }
+sigma_phi_deg = None
+  .type = float(value_min=0)
+  .help = "Override the phi sigmas for refinement. Mainly intended for single-shot"
+          "rotation images where the phi sigma is almost certainly incorrect."
 b_iso = 200
   .type = float(value_min=0)
 rmsd_cutoff = 15
@@ -293,6 +297,13 @@ class indexer_base(object):
     self.filter_reflections_by_scan_range()
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
+
+    if self.params.sigma_phi_deg is not None:
+      var_x, var_y, _ = self.reflections['xyzobs.mm.variance'].parts()
+      var_phi_rad = flex.double(
+        var_x.size(), (math.pi/180 * self.params.sigma_phi_deg)**2)
+      self.reflections['xyzobs.mm.variance'] = flex.vec3_double(
+        var_x, var_y, var_phi_rad)
 
     if self.params.debug:
       self.debug_write_reciprocal_lattice_points_as_pdb()
