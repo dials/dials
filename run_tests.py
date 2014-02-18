@@ -4,7 +4,8 @@ import libtbx.load_env
 
 tst_list = (
     "$D/test/framework/tst_interface.py",
-    "$D/test/framework/tst_interface.py",
+    "$D/test/framework/tst_registry.py",
+    "$D/test/framework/tst_config.py",
     "$D/test/command_line/tst_parameters.py",
     "$D/test/command_line/tst_import.py",
     "$D/test/command_line/tst_integrate.py",

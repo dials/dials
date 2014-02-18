@@ -374,6 +374,7 @@ extensions/summation_2d_integration_ext.py -text
 extensions/summation_3d_integration_ext.py -text
 extensions/xds_background_ext.py -text
 framework/__init__.py -text
+framework/config.py -text
 framework/dftbx/SConscript -text
 framework/dftbx/__init__.py -text
 framework/dftbx/dftbx.cpp -text
@@ -694,6 +695,7 @@ test/command_line/tst_refine_bravais_settings.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
+test/framework/tst_config.py -text
 test/framework/tst_interface.py -text
 test/framework/tst_registry.py -text
 test/model/data/tst_observation.py -text
