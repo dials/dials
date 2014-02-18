@@ -373,12 +373,12 @@ framework/dftbx/dftbx.cpp -text
 framework/dftbx/dftbx.h -text
 framework/dftbx/notes.txt -text
 framework/dftbx/tst_dftbx.py -text
+framework/interface.py -text
 framework/plugin.py -text
 framework/plugin_example.py -text
 framework/toplevel.py -text
 framework/toplevel_example.py -text
 interfaces/__init__.py -text
-interfaces/standard_interfaces.py -text
 /libtbx_config -text
 /libtbx_refresh.py -text
 /license.txt -text
