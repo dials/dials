@@ -112,11 +112,10 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     function = BackgroundFactory.from_parameters(parameters)
     function(experiment, self)
 
-  def compute_centroid(self, experiment, parameters):
+  def compute_centroid(self, experiment):
     ''' Helper function to compute the centroid. '''
-    from dials.algorithms.centroid.centroid_factory import CentroidFactory
-    function = CentroidFactory.from_parameters(parameters)
-    function(experiment, self)
+    from dials.framework.registry import init_ext
+    init_ext("centroid", experiment).compute_centroid(self)
 
   def compute_intensity(self, experiment, parameters):
     ''' Helper function to compute the intensity. '''

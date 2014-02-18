@@ -12,9 +12,17 @@ from __future__ import division
 
 from dials.interfaces import CentroidIface
 
+
 class SimpleCentroidExt(CentroidIface):
+  ''' An extension class implementing a simple centroid algorithm. '''
 
   name = 'simple'
 
   def compute_centroid(self, reflections):
-    pass
+    ''' Compute the centroid. '''
+    from dials.util.command_line import Command
+
+    # Compute the reflections
+    Command.start('Calculating reflection centroids')
+    reflections['shoebox'].centroid_valid()
+    Command.end('Calculated %d reflection centroids' % len(reflections))
