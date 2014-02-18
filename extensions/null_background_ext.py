@@ -12,9 +12,13 @@ from __future__ import division
 
 from dials.interfaces import BackgroundIface
 
+
 class NullBackgroundExt(BackgroundIface):
+  ''' An extension class implementing Null background subtraction. '''
 
   name = 'null'
 
   def compute_background(self, reflections):
-    pass
+    ''' Compute the background. '''
+    from dials.algorithms.background import set_shoebox_background_value
+    set_shoebox_background_value(reflections['shoebox'], 0)

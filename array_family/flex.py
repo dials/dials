@@ -108,9 +108,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
 
   def compute_background(self, experiment, parameters):
     ''' Helper function to compute the background. '''
-    from dials.algorithms.background.background_factory import BackgroundFactory
-    function = BackgroundFactory.from_parameters(parameters)
-    function(experiment, self)
+    from dials.framework.registry import init_ext
+    init_ext("background", experiment).compute_background(self)
 
   def compute_centroid(self, experiment):
     ''' Helper function to compute the centroid. '''

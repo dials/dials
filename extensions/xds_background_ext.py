@@ -12,10 +12,25 @@ from __future__ import division
 
 from dials.interfaces import BackgroundIface
 
+
 class XdsBackgroundExt(BackgroundIface):
+  ''' An extension class implementing XDS background subtraction. '''
 
   name = 'xds'
 
-  def compute_background(self, reflections):
-    pass
+  def __init__(self, params, experiment):
+    ''' Initialise the algorithm. '''
+    from dials.algorithms.background import XdsSubtractorAlgorithm
 
+    self._subtractor = XdsSubtractorAlgorithm(
+      min_data = params.background.xds.min_data)
+
+  def compute_background(self, reflections):
+    ''' Compute the backgrond. '''
+    from dials.util.command_line import Command
+
+    # Do the background subtraction
+    Command.start('Calculating reflection background')
+    mask = self._subtractor(reflections['shoebox'])
+    reflections.del_selected(mask != True)
+    Command.end('Calculated {0} background values'.format(len(reflections)))

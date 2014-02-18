@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# fable_background_ext.py
+# inclined_background_ext.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -13,20 +13,19 @@ from __future__ import division
 from dials.interfaces import BackgroundIface
 
 
-class FableBackgroundExt(BackgroundIface):
-  ''' An extension implementing background algorithm in fable. '''
+class InclinedBackgroundExt(BackgroundIface):
+  ''' An extension class implementing inclined background subtraction. '''
 
-  name = 'fable'
+  name = 'inclined'
 
   def __init__(self, params, experiment):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.background import FableSubtractorAlgorithm
-    self._subtractor = FableSubtractorAlgorithm(
-      min_data = params.background.fable.min_data,
-      n_sigma = params.background.fable.n_sigma)
+    from dials.algorithms.background import InclinedSubtractor
+
+    self._subtractor = InclinedSubtractor()
 
   def compute_background(self, reflections):
-    ''' Compute the background. '''
+    ''' Compute the backgrond. '''
     from dials.util.command_line import Command
 
     # Do the background subtraction

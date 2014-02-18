@@ -5,7 +5,6 @@ algorithms/SConscript -text
 algorithms/__init__.py -text
 algorithms/background/SConscript -text
 algorithms/background/__init__.py -text
-algorithms/background/background_factory.py -text
 algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/fable_subtractor.cc -text
@@ -16,7 +15,6 @@ algorithms/background/boost_python/poisson_discriminator.cc -text
 algorithms/background/boost_python/xds_subtractor.cc -text
 algorithms/background/curved_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/fable_subtractor.h -text
-algorithms/background/fable_subtractor.py -text
 algorithms/background/flat_background_subtraction.py -text svneol=unset#text/plain
 algorithms/background/flat_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/helpers.h -text
@@ -26,7 +24,6 @@ algorithms/background/normal_discriminator.h -text
 algorithms/background/null_subtractor.py -text
 algorithms/background/poisson_discriminator.h -text
 algorithms/background/xds_subtractor.h -text
-algorithms/background/xds_subtractor.py -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text
 algorithms/background_lookup/detector_noise.py -text
@@ -365,7 +362,10 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tif
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 /error.h -text
 extensions/__init__.py -text
+extensions/curved_background_ext.py -text
 extensions/fable_background_ext.py -text
+extensions/flat_background_ext.py -text
+extensions/inclined_background_ext.py -text
 extensions/null_background_ext.py -text
 extensions/profile_fitting_mosflm_integration_ext.py -text
 extensions/profile_fitting_rs_integration_ext.py -text
