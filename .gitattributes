@@ -369,8 +369,10 @@ doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
 extensions/__init__.py -text
 extensions/fable_background_ext.py -text
 extensions/null_background_ext.py -text
+extensions/profile_fitting_mosflm_integration_ext.py -text
 extensions/profile_fitting_rs_integration_ext.py -text
 extensions/simple_centroid_ext.py -text
+extensions/summation_2d_integration_ext.py -text
 extensions/summation_3d_integration_ext.py -text
 extensions/xds_background_ext.py -text
 framework/__init__.py -text

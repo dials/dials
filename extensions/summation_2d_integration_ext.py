@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# profile_fitting_rs_integration_ext.py
+# summation_2d_integration_ext.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -12,9 +12,10 @@ from __future__ import division
 
 from dials.interfaces import IntegrationIface
 
-class ProfileFittingRSIntegrationExt(IntegrationIface):
+class Summation2dIntegrationExt(IntegrationIface):
 
-  name = 'fitrs'
+  name = 'sum2d'
 
   def compute_intensity(self, reflections):
     pass
+

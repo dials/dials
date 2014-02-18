@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# summation_3d_ext.py
+# summation_3d_integration_ext.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -14,7 +14,7 @@ from dials.interfaces import IntegrationIface
 
 class Summation3dIntegrationExt(IntegrationIface):
 
-  name = 'summation_3d'
+  name = 'sum3d'
 
   def compute_intensity(self, reflections):
     pass

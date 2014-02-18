@@ -17,6 +17,9 @@ class CentroidIface(interface.Interface):
 
   name = 'centroid'
 
+  def __init__(self, params, experiment):
+    pass
+
   @interface.abstractmethod
   def compute_centroid(self, reflections):
     pass
@@ -27,6 +30,9 @@ class BackgroundIface(interface.Interface):
 
   name = 'background'
 
+  def __init__(self, params, experiment):
+    pass
+
   @interface.abstractmethod
   def compute_background(self, reflections):
     pass
@@ -35,6 +41,9 @@ class BackgroundIface(interface.Interface):
 class IntegrationIface(interface.Interface):
   ''' Interface for intensity calculation algorithms. '''
   name = 'integration'
+
+  def __init__(self, params, experiment):
+    pass
 
   @interface.abstractmethod
   def compute_intensity(self, reflections):

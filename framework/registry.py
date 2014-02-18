@@ -45,6 +45,9 @@ class Registry(object):
   def __contains__(self, iface):
     return iface in list(self)
 
+  def params(self):
+    return self._params
+
   def interfaces(self):
     return self._interface.interfaces()
 
@@ -66,5 +69,6 @@ class Registry(object):
 
 def init_ext(iface, *args, **kwargs):
   ''' Helper function to instantiate an extension. '''
-  return Registry()[iface](self._params, *args, **kwargs)
+  registry = Registry()
+  return registry[iface](registry.params(), *args, **kwargs)
 

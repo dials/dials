@@ -10,6 +10,7 @@ class Test:
     self.tst_get_interfaces()
     self.tst_get_extensions()
     self.tst_dict_access()
+    self.tst_init_ext()
 
   def tst_singleton(self):
     from dials.framework.registry import Registry
@@ -90,6 +91,22 @@ class Test:
     assert(integration_ext == Summation3dIntegrationExt)
     assert(background_ext == XdsBackgroundExt)
     assert(centroid_ext == SimpleCentroidExt)
+    print 'OK'
+
+  def tst_init_ext(self):
+
+    from dials.interfaces import CentroidIface
+    from dials.interfaces import BackgroundIface
+    from dials.interfaces import IntegrationIface
+    from dials.framework.registry import init_ext
+    algorithm1 = init_ext("centroid", None)
+    algorithm2 = init_ext("background", None)
+    algorithm3 = init_ext("integration", None)
+
+    assert(isinstance(algorithm1, CentroidIface))
+    assert(isinstance(algorithm2, BackgroundIface))
+    assert(isinstance(algorithm3, IntegrationIface))
+
     print 'OK'
 
 if __name__ == '__main__':

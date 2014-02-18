@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# profile_fitting_rs_integration_ext.py
+# profile_fitting_mosflm_integration_ext.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -12,9 +12,9 @@ from __future__ import division
 
 from dials.interfaces import IntegrationIface
 
-class ProfileFittingRSIntegrationExt(IntegrationIface):
+class ProfileFittingMosflmIntegrationExt(IntegrationIface):
 
-  name = 'fitrs'
+  name = 'mosflm'
 
   def compute_intensity(self, reflections):
     pass
