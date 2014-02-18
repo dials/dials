@@ -11,7 +11,21 @@
 from __future__ import division
 
 if __name__ == '__main__':
+  from optparse import OptionParser
   from dials.framework.registry import Registry
+
+  usage = "usage: %prog [options] /path/to/image/files"
+  parser = OptionParser(usage)
+
+  # Print verbose output
+  parser.add_option(
+    "-v", "--verbose",
+    dest = "verbose",
+    action = "count", default = 0,
+    help = "Set the verbosity level (-vv gives a verbosity level of 2)")
+
+  # Parse the command line arguments
+  options, args = parser.parse_args()
 
   # Get the registry
   registry = Registry()
@@ -24,3 +38,5 @@ if __name__ == '__main__':
     # Loop through all the extensions
     for ext in iface.extensions():
       print ' Extension: %s' % ext.__name__
+      if options.verbose:
+        print '  name = %s' % ext.name
