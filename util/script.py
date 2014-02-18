@@ -106,8 +106,8 @@ class ScriptRunner(object):
   def run(self):
     '''Run the script. This function calls the 'main' method that
     should be overloaded in your script.'''
-    from dials.util.options import ConfigWriter
     from dials.util import HalError, halraiser
+    from dials.framework.registry import Registry
     import sys
 
     # Parse the configuration parameters
@@ -142,8 +142,7 @@ class ScriptRunner(object):
     # If the save_config flag is set, then save the configuration
     try:
       if options.output_config_file:
-        writer = ConfigWriter(self._config.system_phil())
-        writer.write(self.working_params, options.output_config_file)
+        registry().config().write(options.output_config_file)
     except AttributeError:
       pass
 

@@ -20,8 +20,10 @@ def singleton(cls):
     return instance
   return wrapper
 
+
 @singleton
 class Registry(object):
+  ''' Registry to help loading extensions. '''
 
   def __init__(self):
 
@@ -32,38 +34,50 @@ class Registry(object):
     self._interface = Interface
 
     # Read the system config
-    from dials.util.options import SystemConfig
-    self._config = SystemConfig()
-    self._params = self._config.config().extract()
+    from dials.framework.config import Config
+    self._config = Config()
 
   def __iter__(self):
+    ''' Iterate through the interfaces. '''
     return self.interfaces()
 
   def __len__(self):
+    ''' Get the number of interfaces. '''
     return len(list(self.interfaces()))
 
   def __contains__(self, iface):
+    ''' Check the registry contains the interface. '''
     return iface in list(self)
 
+  def config(self):
+    ''' Get the configuration. '''
+    return self._config
+
   def params(self):
-    return self._params
+    ''' Get the parameters. '''
+    return self._config.params()
 
   def interfaces(self):
+    ''' Get the interfaces. '''
     return self._interface.interfaces()
 
   def extensions(self, iface):
+    ''' Get the extensions for an interface. '''
     return iface.extensions()
 
   def all_extensions(self):
+    ''' Get a list of all extensions. '''
     for iface in self:
       for ext in self.extensions(iface):
         yield ext
 
   def interface(self, name):
+    ''' Get an interface. '''
     return dict((iface.name, iface) for iface in self.interfaces())[name]
 
   def __getitem__(self, key):
-    name = getattr(self._params, key).algorithm
+    ''' Get an algorithm. '''
+    name = getattr(self.params(), key).algorithm
     return self.interface(key).extension(name)
 
 
