@@ -20,7 +20,7 @@ class FlatBackgroundExt(BackgroundIface):
 
   def __init__(self, params, experiment):
     ''' Initialise the algorithm. '''
-    from dials.algorithms.background import FlatSubtractor()
+    from dials.algorithms.background import FlatSubtractor
 
     self._subtractor = FlatSubtractor()
 

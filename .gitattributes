@@ -21,7 +21,6 @@ algorithms/background/helpers.h -text
 algorithms/background/inclined_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/normal_discriminator.h -text
-algorithms/background/null_subtractor.py -text
 algorithms/background/poisson_discriminator.h -text
 algorithms/background/xds_subtractor.h -text
 algorithms/background_lookup/__init__.py -text

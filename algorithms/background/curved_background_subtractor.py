@@ -9,12 +9,11 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.interfaces.background import BackgroundSubtractionInterface
 
 from dials.algorithms.background.background_subtraction_2d \
           import curved_background_calc_2d
 
-class CurvedSubtractor(BackgroundSubtractionInterface):
+class CurvedSubtractor(object):
   ''' The Flat background subtractor '''
 
   def __init__(self, **kwargs):

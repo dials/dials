@@ -14,7 +14,7 @@ from __future__ import division
 class Integrator(object):
   ''' The integrator base class. '''
 
-  def __init__(self, n_sigma, n_blocks, filter_by_zeta, params):
+  def __init__(self, n_sigma, n_blocks, filter_by_zeta):
     ''' Initialise the integrator base class.
 
     Params:
@@ -23,7 +23,6 @@ class Integrator(object):
     self.n_sigma = n_sigma
     self.n_blocks = n_blocks
     self.filter_by_zeta = filter_by_zeta
-    self.params = params
 
   def __call__(self, experiments, reference=None, extracted=None):
     ''' Call to integrate.
@@ -39,10 +38,7 @@ class Integrator(object):
 
     '''
     from dials.algorithms.shoebox import ReflectionBlockExtractor
-    from dials.model.data import ReflectionList
     from dials.array_family import flex
-    from dials.util.command_line import Command
-    from dials.algorithms.integration.lp_correction import correct_intensity
 
     assert(len(experiments) == 1)
 
@@ -60,8 +56,7 @@ class Integrator(object):
     result = flex.reflection_table()
     print ''
     for reflections in extract:
-
-      reflections.integrate(experiments[0], self.params)#, reference
+      reflections.integrate(experiments[0])#, reference
       result.extend(reflections)
       print ''
 
@@ -69,25 +64,3 @@ class Integrator(object):
     result.sort('miller_index')
     return result
 
-
-
-class IntegratorFactory(object):
-  ''' Factory class to create integrators '''
-
-  @staticmethod
-  def from_parameters(params):
-    ''' Given a set of parameters, construct the integrator
-
-    Params:
-        params The input parameters
-
-    Returns:
-        The integrator instance
-
-    '''
-
-    # Return the integrator with the given strategies
-    return Integrator(n_sigma = params.integration.shoebox.n_sigma,
-                      n_blocks = params.integration.shoebox.n_blocks,
-                      filter_by_zeta = params.integration.filter.by_zeta,
-                      params=params)

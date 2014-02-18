@@ -9,22 +9,11 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.interfaces.background import BackgroundSubtractionInterface
 
 from dials.algorithms.background.background_subtraction_2d \
           import curved_background_calc_2d
-#
-# dials.algorithms.background.flat_subtractor.py
-#
-#  Copyright (C) 2013 Diamond Light Source
-#
-#  Author: Luis Fuentes-Montero "luiso"
-#
-#  This code is distributed under the BSD license, a copy of which is
-#  included in the root directory of this package.
-
-class InclinedSubtractor(BackgroundSubtractionInterface):
-  ''' The inclined background subtractor '''
+class InclinedSubtractor(object):
+  ''' The Flat background subtractor '''
 
   def __init__(self, **kwargs):
     pass

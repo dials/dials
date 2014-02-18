@@ -9,9 +9,8 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.interfaces.integration import IntegrationInterface
 
-class Summation3d(IntegrationInterface):
+class Summation3d(object):
   '''A class to perform 3D summation integration'''
 
   def __init__(self, **kwargs):

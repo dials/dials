@@ -216,33 +216,7 @@ class ReflectionBlockExtractor(object):
 
     if reader == None:
 
-      ## These are arrays the length of the sweep
-      #if sigma_b is not None and sigma_m is not None:
-        #assert(len(sigma_b) == len(sweep))
-        #assert(len(sigma_m) == len(sweep))
-        #compute_bbox = BBoxCalculator(
-          #sweep.get_beam(), sweep.get_detector(),
-          #sweep.get_goniometer(), sweep.get_scan(),
-          #n_sigma * sigma_b, n_sigma * sigma_m)
-      #else:
-
       predicted.compute_bbox(experiment, n_sigma, sigma_b, sigma_m)
-        ## Create the bbox calculator
-        #compute_bbox = BBoxCalculator(
-          #sweep.get_beam(), sweep.get_detector(),
-          #sweep.get_goniometer(), sweep.get_scan(),
-          #n_sigma * sweep.get_beam().get_sigma_divergence(deg=False),
-          #n_sigma * crystal.get_mosaicity(deg=False))
-
-      ## Calculate the bounding boxes of all the reflections
-      #Command.start('Calculating bounding boxes')
-      #s1 = flex.vec3_double([ r.beam_vector for r in predicted ])
-      #angle = flex.double([ r.rotation_angle for r in predicted ])
-      #panel = flex.size_t([ r.panel_number for r in predicted ])
-      #bbox = compute_bbox(s1, angle, panel)
-      #for b, r in zip(bbox, predicted):
-        #r.bounding_box = b
-      #Command.end('Calculated {0} bounding boxes'.format(len(predicted)))
 
       # Set all reflections which overlap bad pixels to zero
       Command.start('Filtering reflections by detector mask')

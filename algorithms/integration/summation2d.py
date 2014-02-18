@@ -10,8 +10,8 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.interfaces.integration import IntegrationInterface
-class Summation2d(IntegrationInterface):
+
+class Summation2d(object):
   '''A class to perform 2D integration'''
 
   def __init__(self, **kwargs):
