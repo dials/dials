@@ -35,7 +35,6 @@ for xpos in range(3):
     data2d[row_str:row_str + nrow, col_str:col_str + ncol] += numpy.float64(data2d_tmp)
 
     sumation = add_2d(descr, ref2d, sumation)
-    #sumation = add_2d(descr, flex.double (numpy.float64 (data2d_tmp)), sumation)
     write_2d(sumation)
 
 

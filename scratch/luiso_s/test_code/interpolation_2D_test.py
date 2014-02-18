@@ -87,7 +87,7 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
 
-#tmp='''
+tmp='''
 print "adding noise ...."
 for r in rlist:
     for x_loc in range(ncol):

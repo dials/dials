@@ -555,7 +555,6 @@ scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test_f.f90 -text
-scratch/luiso_s/test_code/mosflm_2D.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/mosflm_test.py -text
 scratch/luiso_s/test_code/my_mosflm.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_centoid.py -text svneol=unset#text/plain
@@ -566,7 +565,6 @@ scratch/luiso_s/test_code/numpy_integr_3d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d_single_pixel.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/pickle_toy.py -text
 scratch/luiso_s/test_code/pickle_toy_01.py -text
-scratch/luiso_s/test_code/ref_data_01_Ints.py -text
 scratch/luiso_s/test_code/simulate_ref_lst.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/sort_exers.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/table_toy.py -text

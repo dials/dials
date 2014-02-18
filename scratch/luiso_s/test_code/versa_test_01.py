@@ -4,8 +4,6 @@ from scitbx.array_family import flex
 from dials.scratch.luiso_s import model_2d, write_2d, test_compare_2d
 from matplotlib import pyplot as plt
 
-#from dials.scratch.luiso_s import add_2d
-
 from dials.algorithms.integration import add_2d
 
 nrow = 10
