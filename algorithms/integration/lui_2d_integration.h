@@ -74,13 +74,10 @@ namespace dials { namespace algorithms {
     }
 
     integr_data[0] = i_s;            // intensity summation
-    integr_data[1]=var_i;          // intensity variance
+    integr_data[1] = var_i;          // intensity variance
     return integr_data;
 
   }
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-
 
   double sigma_2d(
     const float intensity,
@@ -128,10 +125,6 @@ namespace dials { namespace algorithms {
 
   }
 
-
-//////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////
-
   // function used repeatedly for adding and interpolation
   // of 2D images with a reflection on it
   //
@@ -146,6 +139,7 @@ namespace dials { namespace algorithms {
     int nrow_in=data2d.accessor()[0];
     int ncol_tot=tmp_total.accessor()[1];
     int nrow_tot=tmp_total.accessor()[0];
+
 
     if( ncol_tot < ncol_in or nrow_tot < nrow_in ){
       std::cout << "\n WRONG SISE OF ARRAYS \n";
@@ -340,7 +334,7 @@ namespace dials { namespace algorithms {
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< double, af::c_grid<2> > &backg2d,
     const af::const_ref< double, af::c_grid<2> > &profile2d,
-    vec2<double> vec_data,
+    double tmp_scale,
     af::ref< double, af::c_grid<2> > mat_a,
     af::ref< double, af::c_grid<2> > vec_b){
 
@@ -390,7 +384,7 @@ namespace dials { namespace algorithms {
 
           pd_it = backg2dmov(row, col);
           if(pr > 0){
-            pd_it += pr * vec_data[0];
+            pd_it += pr * tmp_scale;
           }
 
           if(pd_it < 1.0){

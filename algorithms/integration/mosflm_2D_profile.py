@@ -251,7 +251,6 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
       mask = ref.shoebox_mask                               # may be needed soon
       background = ref.shoebox_background
       tmp_i = ref.intensity
-      tmp_v = ref.intensity_variance
       ref.intensity = 0.0
       ref.intensity_variance = 0.0
 
@@ -275,11 +274,11 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         #fully_record = 'yes'
         if(ref.status == 0):
         #if(fully_record == 'yes'):
-          vec_data = (tmp_i, tmp_v)
+          tmp_scale = tmp_i
           a_mat_flx = flex.double(flex.grid(4, 4))
           b_vec_flx = flex.double(flex.grid(4, 1))
           ok_lg = fitting_2d_multile_var_build_mat(descr, data2d, background2d, \
-                                        average, vec_data, a_mat_flx, b_vec_flx)
+                                        average, tmp_scale, a_mat_flx, b_vec_flx)
 
           #if ok_lg == 0:
           a_mat = a_mat_flx.as_scitbx_matrix()
