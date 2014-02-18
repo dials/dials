@@ -17,7 +17,7 @@ class InterfaceMeta(ABCMeta):
   def __init__(self, name, bases, attrs):
     ''' Check each class has the name attribute. '''
     super(InterfaceMeta, self).__init__(name, bases, attrs)
-    
+
     if 'name' not in self.__dict__:
       raise RuntimeError("%s has no member 'name'" % name)
 

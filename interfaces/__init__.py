@@ -1,7 +1,6 @@
-from __future__ import division
 #!/usr/bin/env python
 #
-# standard_interfaces.py
+# __init__.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -10,84 +9,33 @@ from __future__ import division
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
-from dials.framework import plugin
+from __future__ import division
+from dials.framework import interface
 
-class SpotFinderThreshold(object):
-  '''The threshold for the spotfinding algorithm.'''
-
-  __metaclass__ = plugin.Interface
-
-  name = 'threshold'
-
-  @plugin.abstractmethod
-  def __call__(self, image):
-    pass
-
-
-class SpotFinderFilter(object):
-  '''The filtering for the spotfinding algorithm.'''
-
-  __metaclass__ = plugin.Interface
-
-  name = 'filter'
-  multi = True
-
-  @plugin.abstractmethod
-  def __call__(self, flags, **kwargs):
-    pass
-
-
-class RefinementParameterisation(object):
-  '''The refinement parameterisation.'''
-
-  __metaclass__ = plugin.Interface
-
-  name = 'parameterisation'
-
-
-class IntegrationBoundingBox(object):
-  '''The bounding box algorithm.'''
-
-  __metaclass__ = plugin.Interface
-
-  name = 'bounding_box'
-
-  @plugin.abstractmethod
-  def __call__(self):
-    pass
-
-
-class IntegrationCentroids(object):
-  '''The centroid algorithm.'''
-
-  __metaclass__ = plugin.Interface
+class CentroidIface(interface.Interface):
+  ''' Interface for centroid calculation algorithms. '''
 
   name = 'centroid'
 
-  @plugin.abstractmethod
-  def __call__(self):
+  @interface.abstractmethod
+  def compute_centroid(self, reflections):
     pass
 
 
-class IntegrationBackground(object):
-  '''The background modelling algorithm.'''
-
-  __metaclass__ = plugin.Interface
+class BackgroundIface(interface.Interface):
+  ''' Interface for background calculation algorithms. '''
 
   name = 'background'
 
-  @plugin.abstractmethod
-  def __call__(self):
+  @interface.abstractmethod
+  def compute_background(self, reflections):
     pass
 
 
-class IntegrationIntensity(object):
-  '''The intensity algorithm.'''
+class IntegrationIface(interface.Interface):
+  ''' Interface for intensity calculation algorithms. '''
+  name = 'integration'
 
-  __metaclass__ = plugin.Interface
-
-  name = 'intensity'
-
-  @plugin.abstractmethod
-  def __call__(self):
+  @interface.abstractmethod
+  def compute_intensity(self, reflections):
     pass
