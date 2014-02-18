@@ -24,12 +24,11 @@ class FableSubtractor(BackgroundSubtractionInterface):
         min_data=kwargs.get("min_data", 10),
         n_sigma=kwargs.get("n_sigma", 3.0))
 
-  def __call__(self, sweep, crystal, reflections):
+  def __call__(self, experiment, reflections):
     ''' Do the background subtraction as in XDS
 
     Params:
-        sweep The sweep to process
-        crystal The crystal to use
+        experiment The experiment data
         reflections The reflections to process
 
     Returns:

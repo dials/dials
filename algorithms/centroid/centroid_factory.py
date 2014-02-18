@@ -26,7 +26,7 @@ class CentroidRunner(object):
     self.compute_spots = compute_spots
     self.compute_centroid = compute_centroid
 
-  def __call__(self, sweep, crystal, predicted=None):
+  def __call__(self, experiment, predicted=None):
     ''' Call to calculate centroids.
 
     Params:
@@ -40,7 +40,7 @@ class CentroidRunner(object):
     '''
     # Extract the reflections from the sweep
     if predicted == None:
-      predicted = self.compute_spots(sweep, crystal)
+      predicted = self.compute_spots(experiment)
 
     # Calculate the reflection centroids
-    return self.compute_centroid(sweep, crystal, predicted)
+    return self.compute_centroid(experiment, predicted)

@@ -13,11 +13,11 @@ from __future__ import division
 class Masker(object):
   '''A class to perform all the shoebox masking.'''
 
-  def __init__(self, sweep, delta_d, delta_m):
+  def __init__(self, experiment, delta_d, delta_m):
     ''' Initialise the masking algorithms
 
     Params:
-        sweep The sweep object
+        experiment The experiment data
         delta_d The extent of the reflection in reciprocal space
         delta_m The extent of the reflection in reciprocal space
 
@@ -30,8 +30,8 @@ class Masker(object):
 
     # Construct the foreground pixel mask
     self.mask_foreground = MaskForeground(
-        sweep.get_beam(), sweep.get_detector(),
-        sweep.get_goniometer(), sweep.get_scan(),
+        experiment.beam, experiment.detector,
+        experiment.goniometer, experiment.scan,
         delta_d, delta_m)
 
   def __call__(self, reflections, adjacency_list=None):

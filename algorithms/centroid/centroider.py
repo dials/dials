@@ -17,12 +17,11 @@ class Centroider(object):
     ''' Init the class '''
     pass
 
-  def __call__(self, sweep, crystal, reflections):
+  def __call__(self, experiment, reflections):
     ''' Centroid the reflections.
 
     Params:
-        sweep The sweep class
-        crystal The crystal class
+        experiment The experiment data
         reflections The reflection list
 
     Returns:

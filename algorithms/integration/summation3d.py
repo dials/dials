@@ -18,12 +18,11 @@ class Summation3d(IntegrationInterface):
     '''Initialise algorithm.'''
     pass
 
-  def __call__(self, sweep, crystal, reflections, reference=None):
+  def __call__(self, experiment, reflections, reference=None):
     '''Process the reflections.
 
     Params:
-        sweep The sweep to process
-        crystal The crystal to process
+        experiment The experiment data
         reflections The reflections to process
 
     Returns:

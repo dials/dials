@@ -23,12 +23,11 @@ class XdsSubtractor(BackgroundSubtractionInterface):
     self._subtractor = XdsSubtractorAlgorithm(
         min_data=kwargs.get("min_data", 10))
 
-  def __call__(self, sweep, crystal, reflections):
+  def __call__(self, experiment, reflections):
     ''' Do the background subtraction as in XDS
 
     Params:
-        sweep The sweep to process
-        crystal The crystal to use
+        experiment The experiment data
         reflections The reflections to process
 
     Returns:

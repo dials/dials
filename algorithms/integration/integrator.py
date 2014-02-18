@@ -65,7 +65,7 @@ class Integrator(object):
     crystal = experiments[0].crystal
 
     # Get the extractor
-    extract = ReflectionBlockExtractor(sweep, crystal, predicted,
+    extract = ReflectionBlockExtractor(experiments[0], predicted,
       self.n_sigma, self.n_blocks, self.filter_by_zeta, extracted)
 
     # Loop through all the blocks
@@ -73,10 +73,10 @@ class Integrator(object):
     print ''
     for reflections in extract:
 
-      self.compute_background(sweep, crystal, reflections)
-      self.compute_centroid(sweep, crystal, reflections)
-      self.compute_intensity(sweep, crystal, reflections, reference)
-      self.correct_intensity(sweep, crystal, reflections)
+      self.compute_background(experiments[0], reflections)
+      self.compute_centroid(experiments[0], reflections)
+      self.compute_intensity(experiments[0], reflections, reference)
+      self.correct_intensity(experiments[0], reflections)
 
       del reflections['shoebox']
       result.extend(reflections)

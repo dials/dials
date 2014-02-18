@@ -204,7 +204,7 @@ class ProfileBlockExtractor(object):
 
 class ReflectionBlockExtractor(object):
 
-  def __init__(self, sweep, crystal, predicted, n_sigma, n_blocks,
+  def __init__(self, experiment, predicted, n_sigma, n_blocks,
       filter_by_zeta=0, reader=None, sigma_b=None, sigma_m=None):
     ''' Initialise and extract the reflections. '''
     from dials.algorithms.shoebox import BBoxCalculator
@@ -226,14 +226,7 @@ class ReflectionBlockExtractor(object):
           #n_sigma * sigma_b, n_sigma * sigma_m)
       #else:
 
-      experiment = Experiment(
-        imageset=sweep,
-        beam=sweep.get_beam(),
-        detector=sweep.get_detector(),
-        goniometer=sweep.get_goniometer(),
-        scan=sweep.get_scan(),
-        crystal=crystal)
-      predicted.compute_bbox(experiment, n_sigma)
+      predicted.compute_bbox(experiment, n_sigma, sigma_b, sigma_m)
         ## Create the bbox calculator
         #compute_bbox = BBoxCalculator(
           #sweep.get_beam(), sweep.get_detector(),
@@ -253,9 +246,9 @@ class ReflectionBlockExtractor(object):
 
       # Set all reflections which overlap bad pixels to zero
       Command.start('Filtering reflections by detector mask')
-      array_range = sweep.get_scan().get_array_range()
+      array_range = experiment.scan.get_array_range()
       mask = filtering.by_detector_mask(
-        predicted['bbox'], sweep[0] >= 0, array_range)
+        predicted['bbox'], experiment.imageset[0] >= 0, array_range)
       predicted.del_selected(mask != True)
       Command.end('Filtered {0} reflections by detector mask'.format(
         len(predicted)))
@@ -264,7 +257,7 @@ class ReflectionBlockExtractor(object):
       if filter_by_zeta > 0:
         Command.start('Filtering reflections by zeta >= {0}'.format(
             filter_by_zeta))
-        mask = filtering.by_zeta(sweep.get_goniometer(), sweep.get_beam(),
+        mask = filtering.by_zeta(experiment.goniometer, experiment.beam,
             predicted['s1'], filter_by_zeta)
         predicted.del_selected(mask != True)
         Command.end('Filtered {0} reflections by zeta >= {1}'.format(
@@ -276,14 +269,15 @@ class ReflectionBlockExtractor(object):
       Command.end('Found {0} overlaps'.format(len(overlaps)))
 
     # Create the profile block extractor
-    self._extractor = ProfileBlockExtractor(sweep, predicted, n_blocks, reader=reader)
+    self._extractor = ProfileBlockExtractor(experiment.imageset,
+      predicted, n_blocks, reader=reader)
 
     # Get the parameters
-    delta_d = n_sigma * sweep.get_beam().get_sigma_divergence(deg=False)
-    delta_m = n_sigma * crystal.get_mosaicity(deg=False)
+    delta_d = n_sigma * experiment.beam.get_sigma_divergence(deg=False)
+    delta_m = n_sigma * experiment.crystal.get_mosaicity(deg=False)
 
     # Create the function to mask the shoebox profiles
-    self._mask_profiles = shoebox.Masker(sweep, delta_d, delta_m)
+    self._mask_profiles = shoebox.Masker(experiment, delta_d, delta_m)
 
   def __getitem__(self, index):
     ''' Extract a reflection block. '''

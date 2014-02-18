@@ -1,5 +1,5 @@
 from __future__ import division
-def correct_intensity(sweep, crystal, reflections):
+def correct_intensity(experiment, reflections):
   from dials.util.command_line import Command
   from dials.array_family import flex
   Command.start('Performing LP-correction')
@@ -9,7 +9,7 @@ def correct_intensity(sweep, crystal, reflections):
   corrected_I = flex.double(len(I))
   corrected_varI = flex.double(len(I))
   for i in range(len(reflections)):
-    lp = LP_calculations(sweep, crystal, s1[i])
+    lp = LP_calculations(experiment, s1[i])
     corrected_I[i] = I[i] * lp
     corrected_varI[i] = varI[i] * lp
   reflections['intensity.cor.value'] = corrected_I
@@ -18,14 +18,14 @@ def correct_intensity(sweep, crystal, reflections):
     len(reflections)))
   return reflections
 
-def LP_calculations(sweep, crystal, s1):
+def LP_calculations(experiment, s1):
   '''See Kabsch, J. Appl. Cryst 1988 21 916-924.'''
 
-  tpl_n = sweep.get_beam().get_polarization_normal()
-  tpl_s0 = sweep.get_beam().get_s0()
-  tpl_m2 = sweep.get_goniometer().get_rotation_axis()
+  tpl_n = experiment.beam.get_polarization_normal()
+  tpl_s0 = experiment.beam.get_s0()
+  tpl_m2 = experiment.goniometer.get_rotation_axis()
   tpl_s1 = s1
-  p = sweep.get_beam().get_polarization_fraction()
+  p = experiment.beam.get_polarization_fraction()
 
   # FIXME hack for testing
   # p = 0.5

@@ -28,7 +28,7 @@ class ProfileFittingReciprocalSpace(object):
     # Create the spot matcher
     self.match = SpotMatcher(max_separation=1)
 
-  def __call__(self, sweep, crystal, reflections, strong):
+  def __call__(self, experiment, reflections, strong):
     ''' Do the integration.
 
     Transform the profiles to reciprocal space. Select the reflections
@@ -36,18 +36,18 @@ class ProfileFittingReciprocalSpace(object):
     integrate the intensities via profile fitting.
 
     '''
-    self._transform_profiles(sweep, crystal, reflections)
-    learner = self._learn_references(sweep, crystal, reflections, strong)
+    self._transform_profiles(experiment, reflections)
+    learner = self._learn_references(experiment, reflections, strong)
     return self._integrate_intensities(learner, reflections)
 
-  def _transform_profiles(self, sweep, crystal, reflections):
+  def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''
     from dials.util.command_line import Command
     from dials.algorithms.reflection_basis import transform as rbt
 
     # Initialise the reciprocal space transform
     Command.start('Initialising reciprocal space transform')
-    spec = rbt.TransformSpec(sweep, crystal, self.bbox_nsigma, self.grid_size)
+    spec = rbt.TransformSpec(experiment, self.bbox_nsigma, self.grid_size)
     Command.end('Initialised reciprocal space transform')
 
     # Transform the reflections to reciprocal space
@@ -56,7 +56,7 @@ class ProfileFittingReciprocalSpace(object):
     Command.end('Transformed {0} reflections'.format(
         len([r for r in reflections if r.is_valid()])))
 
-  def _learn_references(self, sweep, crystal, reflections, strong):
+  def _learn_references(self, experiment, reflections, strong):
     ''' Learn the reference profiles. '''
     from dials.algorithms.integration.profile import XdsCircleSampler
     from dials.algorithms.integration.profile import XdsCircleReferenceLearner

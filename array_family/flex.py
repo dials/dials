@@ -81,17 +81,22 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       reverse=reverse)
     self.reorder(flex.size_t(indices))
 
-  def compute_bbox(self, experiment, nsigma):
+  def compute_bbox(self, experiment, nsigma, sigma_d=None, sigma_m=None):
     ''' Compute the bounding boxes. '''
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.util.command_line import Command
+
+    # Get the beam divergence and mosaicity
+    if sigma_d is None or sigma_m is None:
+      sigma_d = experiment.beam.get_sigma_divergence(deg=False)
+      sigma_m = experiment.crystal.get_mosaicity(deg=False)
 
     # Create the bbox calculator
     calculate = BBoxCalculator(
       experiment.beam, experiment.detector,
       experiment.goniometer, experiment.scan,
-      nsigma * experiment.beam.get_sigma_divergence(deg=False),
-      nsigma * experiment.crystal.get_mosaicity(deg=False))
+      nsigma * sigma_d,
+      nsigma * sigma_m)
 
     # Calculate the bounding boxes of all the reflections
     Command.start('Calculating bounding boxes')
