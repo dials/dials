@@ -14,10 +14,12 @@ from abc import ABCMeta, abstractmethod
 
 class InterfaceMeta(ABCMeta):
   ''' The interface meta class. '''
+
   def __init__(self, name, bases, attrs):
     ''' Check each class has the name attribute. '''
     super(InterfaceMeta, self).__init__(name, bases, attrs)
 
+    # Ensure interfaces and extensions have a name
     if 'name' not in self.__dict__:
       raise RuntimeError("%s has no member 'name'" % name)
 
@@ -27,6 +29,7 @@ class Interface(object):
 
   __metaclass__ = InterfaceMeta
 
+  # Dummy attribute
   name = ''
 
   @classmethod
@@ -38,8 +41,14 @@ class Interface(object):
   @classmethod
   def extensions(cls):
     ''' Iterate through the extensions '''
+
+    # Check the given class is an interface
     if cls == Interface:
       raise RuntimeError('"Interface" has no extensions')
+    elif Interface not in cls.__bases__:
+      raise RuntimeError('%s is not an interface' % str(cls))
+
+    # Get all the subclasses
     stack = list(cls.__subclasses__())
     while len(stack) > 0:
       cls = stack.pop()
