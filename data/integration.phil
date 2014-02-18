@@ -23,7 +23,7 @@ centroid
 background
   .help = "Configure the background algorithm."
 {
-  algorithm = null *xds fable
+  algorithm = null *xds fable flat inclined curved
     .help = "The background algorithm."
     .type = choice
 

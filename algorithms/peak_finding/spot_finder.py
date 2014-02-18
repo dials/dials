@@ -9,7 +9,6 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-from dials.interfaces.peak_finding import SpotFinderInterface
 from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 
 

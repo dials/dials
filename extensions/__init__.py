@@ -22,8 +22,26 @@ def import_sub_modules():
   walker = walk_packages(path=[path], onerror=lambda x: None)
 
   # Walk through, importing the packages
+  modules = []
   for importer, modname, ispkg in walker:
-    __import__(modname, globals())
+    modules.append(__import__(modname, globals()))
+  return modules
+
+def grab_extensions(modules):
+  ''' Get a list of extensions. '''
+  from dials.framework.interface import Interface
+  from inspect import getmembers, isclass
+  ext = []
+  for mod in modules:
+    for name, obj in getmembers(mod):
+      if isclass(obj) and issubclass(obj, Interface):
+        ext.append((name, obj))
+  return ext
+
 
 # Import sub modules
-import_sub_modules()
+_modules = import_sub_modules()
+
+# Add this extensions to the current namespace
+for name, obj in grab_extensions(_modules):
+  globals()[name] = obj

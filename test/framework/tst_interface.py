@@ -66,27 +66,37 @@ class Test(object):
     extensions = list(CentroidIface.extensions())
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
-    assert(len(extensions) == 3)
+    assert(len(extensions) == 6)
     extensions = list(IntegrationIface.extensions())
-    assert(len(extensions) == 2)
+    assert(len(extensions) == 4)
 
     # Check the interface contain the expected extensions
-    from dials.extensions.simple_centroid_ext import SimpleCentroidExt
-    from dials.extensions.null_background_ext import NullBackgroundExt
-    from dials.extensions.fable_background_ext import FableBackgroundExt
-    from dials.extensions.xds_background_ext import XdsBackgroundExt
-    from dials.extensions.summation_3d_integration_ext import Summation3dIntegrationExt
-    from dials.extensions.profile_fitting_rs_integration_ext import ProfileFittingRSIntegrationExt
+    from dials.extensions import SimpleCentroidExt
+    from dials.extensions import NullBackgroundExt
+    from dials.extensions import FlatBackgroundExt
+    from dials.extensions import InclinedBackgroundExt
+    from dials.extensions import CurvedBackgroundExt
+    from dials.extensions import FableBackgroundExt
+    from dials.extensions import XdsBackgroundExt
+    from dials.extensions import Summation2dIntegrationExt
+    from dials.extensions import Summation3dIntegrationExt
+    from dials.extensions import ProfileFittingRSIntegrationExt
+    from dials.extensions import ProfileFittingMosflmIntegrationExt
 
     extensions = list(CentroidIface.extensions())
     assert(SimpleCentroidExt in extensions)
     extensions = list(BackgroundIface.extensions())
     assert(NullBackgroundExt in extensions)
+    assert(FlatBackgroundExt in extensions)
+    assert(CurvedBackgroundExt in extensions)
+    assert(InclinedBackgroundExt in extensions)
     assert(FableBackgroundExt in extensions)
     assert(XdsBackgroundExt in extensions)
     extensions = list(IntegrationIface.extensions())
+    assert(Summation2dIntegrationExt in extensions)
     assert(Summation3dIntegrationExt in extensions)
     assert(ProfileFittingRSIntegrationExt in extensions)
+    assert(ProfileFittingMosflmIntegrationExt in extensions)
 
     # Test passed
     print 'OK'

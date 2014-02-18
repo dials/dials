@@ -22,8 +22,12 @@ class XdsBackgroundExt(BackgroundIface):
     ''' Initialise the algorithm. '''
     from dials.algorithms.background import XdsSubtractorAlgorithm
 
-    self._subtractor = XdsSubtractorAlgorithm(
-      min_data = params.background.xds.min_pixels)
+    if params:
+      min_data = params.background.xds.min_pixels
+    else:
+      min_data = 10
+
+    self._subtractor = XdsSubtractorAlgorithm(min_data)
 
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''

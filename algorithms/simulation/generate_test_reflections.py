@@ -273,21 +273,21 @@ def simple_gaussian_spots(params):
 #    parameters and generating an image of a spot...
 
 def background_xds(rlist):
-  from dials.algorithms.background import XdsSubtractor
-  background = XdsSubtractor()
-  background(None, None, rlist)
+  from dials.extensions import XdsBackgroundExt
+  background = XdsBackgroundExt(None, None)
+  background.compute_background(rlist)
   return
 
 def background_inclined(rlist):
   from dials.algorithms.background import InclinedSubtractor
   background = InclinedSubtractor()
-  background(None, None, rlist)
+  background(None, rlist)
   return
 
 def integrate_3d_summation(rlist):
   from dials.algorithms.integration import Summation3d
   integration = Summation3d()
-  integration(None, None, rlist)
+  integration(None, rlist)
   return
 
 def main(params):
