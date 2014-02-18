@@ -53,19 +53,12 @@ class Script(ScriptRunner):
       raise RuntimeError('only 1 datablock can be processed at a time')
 
     # Loop through all the imagesets and find the strong spots
-    datablock = importer.datablocks[0]
-    reflections = flex.reflection_table()
-    for i, imageset in enumerate(datablock.extract_imagesets()):
+    reflections = flex.reflection_table.from_observations(
+      importer.datablocks[0])
 
-      # Find the strong spots in the sweep
-      print '-' * 80
-      print 'Finding strong spots in imageset %d' % i
-      print '-' * 80
-      table = flex.reflection_table.from_observations(imageset)
-      table['id'] = flex.size_t(table.nrows(), i)
-      if not params.spotfinder.save_shoeboxes:
-        del table['shoebox']
-      reflections.extend(table)
+    # Delete the shoeboxes
+    if not params.spotfinder.save_shoeboxes:
+      del reflections['shoebox']
 
     # Save the reflections to file
     print '\n' + '-' * 80

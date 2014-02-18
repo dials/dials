@@ -78,12 +78,11 @@ class XDSThresholdStrategy(ThresholdStrategy):
     # Get the parameters
     self._kernel_size = kwargs.get('kernel_size', (3, 3))
     self._gain        = kwargs.get('gain')
-    self._mask        = kwargs.get('mask')
     self._n_sigma_b   = kwargs.get('n_sigma_b', 6)
     self._n_sigma_s   = kwargs.get('n_sigma_s', 3)
     self._min_count   = kwargs.get('min_count', 2)
 
-  def __call__(self, image):
+  def __call__(self, image, mask):
     '''Call the thresholding function
 
     Params:
@@ -95,25 +94,26 @@ class XDSThresholdStrategy(ThresholdStrategy):
     '''
     from dials.algorithms.image import threshold
 
-    # Set the mask
-    if self._mask:
-      mask = self._mask.__and__(image >= 0)
-    else:
-      # FIXME this value should not always be zero - it should come from
-      # the underload value of the image format class
-      mask = image >= 0
-
     # Do the thresholding, if gain is given then use gain threshold,
     # otherwise do normal poisson exclusion (fano) threshold
     result = None
     if self._gain:
-      result = threshold.kabsch_w_gain(image.as_double(), mask,
-          self._gain, self._kernel_size, self._n_sigma_b, self._n_sigma_s,
-          self._min_count)
+      result = threshold.kabsch_w_gain(
+        image.as_double(),
+        mask,
+        self._gain,
+        self._kernel_size,
+        self._n_sigma_b,
+        self._n_sigma_s,
+        self._min_count)
     else:
-      result = threshold.kabsch(image.as_double(), mask,
-          self._kernel_size, self._n_sigma_b, self._n_sigma_s,
-          self._min_count)
+      result = threshold.kabsch(
+        image.as_double(),
+        mask,
+        self._kernel_size,
+        self._n_sigma_b,
+        self._n_sigma_s,
+        self._min_count)
 
     # Return the result
     return result

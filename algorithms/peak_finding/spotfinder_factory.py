@@ -260,7 +260,7 @@ class SpotFinderFactory(object):
   ''' Factory class to create spot finders '''
 
   @staticmethod
-  def from_parameters(params, imageset):
+  def from_parameters(params):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -281,7 +281,7 @@ class SpotFinderFactory(object):
     params.lookup.mask = mask
 
     # Configure the algorithm and wrap it up
-    find_spots = SpotFinderFactory.configure_algorithm(imageset)
+    find_spots = SpotFinderFactory.configure_algorithm()
     filter_spots = SpotFinderFactory.configure_filter(params)
     return SpotFinder(
       find_spots=find_spots,
@@ -289,7 +289,7 @@ class SpotFinderFactory(object):
       scan_range=params.spotfinder.scan_range)
 
   @staticmethod
-  def configure_algorithm(imageset):
+  def configure_algorithm():
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -303,16 +303,16 @@ class SpotFinderFactory(object):
     from dials.algorithms.peak_finding.spot_finder import ExtractSpots
 
     # Create the threshold strategy
-    threshold = SpotFinderFactory.configure_threshold(imageset)
+    threshold = SpotFinderFactory.configure_threshold()
 
     # Setup the spot finder
     return ExtractSpots(threshold_image=threshold)
 
   @staticmethod
-  def configure_threshold(imageset):
+  def configure_threshold():
     ''' Get the threshold strategy'''
     from dials.framework.registry import init_ext
-    return init_ext('spotfinder.threshold', imageset)
+    return init_ext('spotfinder.threshold')
 
   @staticmethod
   def configure_filter(params):
