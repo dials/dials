@@ -3,7 +3,6 @@ from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
               fitting_2d_partials, fitting_2d_multile_var_build_mat, sigma_2d
 
-
 from scitbx.array_family import flex
 
 def make_2d_profile(reflections):
