@@ -36,6 +36,16 @@ if __name__ == '__main__':
   reflections = importer.reflections[0]
   print 'Imported %d reflections' % len(reflections)
 
+  #xy = reflections.compute_ray_intersections(experiments[0].detector)
+  #from dials.algorithms.spot_prediction import RotationAngles
+
+  #s0 = experiments[0].beam.get_s0()
+  #m2 = experiments[0].goniometer.get_rotation_axis()
+  #compute_angles = RotationAngles(s0, m2)
+  #phis = [compute_angles(h, ub) for h in reflections['miller_index']]
+  #obsphis = reflections['
+  reflections['xyzcal.mm'] = reflections['xyzobs.mm.value']
+
   # Create the profile model
   profile_model = ProfileModel(experiments[0], reflections)
   print 'Sigma B: %f' % profile_model.sigma_b()
