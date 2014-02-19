@@ -543,7 +543,6 @@ class DetectorParameterisationMultiPanel(ModelParameterisation):
                               Tau1, dTau1_dtau1, Tau2, dTau2_dtau2, Tau3, dTau3_dtau3)
 
     # Store the results.  The results come back as a single array, convert it to a 2D array
-
     self._dstate_dp = [[matrix.sqr(ret[j*len(self._offsets)+i]) for i in xrange(len(self._offsets))] for j in xrange(len(self._param))]
 
     return
@@ -899,7 +898,11 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       raise
 
     # list the panel groups at the chosen level
-    groups = get_panel_groups_at_depth(h, level)
+    try:
+      groups = get_panel_groups_at_depth(h, level)
+    except AttributeError:
+      print "Cannot access the hierarchy at the depth level={0}".format(level)
+      raise
 
     # collect the panel ids for each Panel within the groups
     panels = [p for p in detector]
@@ -1007,9 +1010,12 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     from dials_refinement_helpers_ext import multi_panel_compose
     from scitbx.array_family import flex
 
+    # reset the list that holds derivatives
+    for i in range(len(self._dstate_dp)):
+      self._dstate_dp[i] = [matrix.sqr((0,0,0,0,0,0,0,0,0))] * len(self._models[0])
+
     # loop over groups of panels collecting derivatives of the state wrt
     # parameters
-    dstate_dp = []
     param = iter(self._param)
     for igp, pnl_ids in enumerate(self._panel_ids_by_group):
 
@@ -1050,23 +1056,31 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # Compose the new state
       initial_state = self._initial_state[igp]
       ret = multi_panel_compose(flex.vec3_double([initial_state[tag] for tag in ('d1','d2','dn')]),
-                                  param_vals,
-                                  param_axes,
-                                  self._models[0],
-                                  flex.int(pnl_ids),
-                                  offsets,
-                                  dir1s,
-                                  dir2s,
-                                  Tau1, dTau1_dtau1,
-                                  Tau2, dTau2_dtau2,
-                                  Tau3, dTau3_dtau3)
+                                param_vals,
+                                param_axes,
+                                self._models[0],
+                                flex.int(pnl_ids),
+                                offsets,
+                                dir1s,
+                                dir2s,
+                                Tau1, dTau1_dtau1,
+                                Tau2, dTau2_dtau2,
+                                Tau3, dTau3_dtau3)
 
-      # Store the results.  The results come back as a single array, convert it to a 2D array
+      # The results come back as a single array, convert it to a 2D array
+      result = ([[matrix.sqr(ret[j*len(offsets)+i]) for i in xrange(len(offsets))] for j in xrange(6)])
 
-      dstate_dp.append([[matrix.sqr(ret[j*len(self._offsets)+i]) \
-                          for i in xrange(len(self._offsets))] for j in xrange(len(self._param))])
+      # Store the results
+      # extract this particular block of parameters
+      dstate_dp = self._dstate_dp[(igp*6):(igp*6 + 6)]
+      # we set the derivatives for those panels that are in this group
 
-    print dstate_dp
-    self._dstate_dp#####
+      # loop over the 6 parameters of this block. i is the index to assign to,
+      # res are the derivatives for that particular parameter
+      for i, res in zip(range((igp*6), (igp*6 + 6)), result):
+
+        # loop over the panels in this group
+        for j, pnl_id in enumerate(pnl_ids):
+          self._dstate_dp[i][pnl_id] = res[j]
 
     return
