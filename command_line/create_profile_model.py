@@ -34,6 +34,7 @@ if __name__ == '__main__':
   # Get the reflections
   assert(len(importer.reflections) == 1)
   reflections = importer.reflections[0]
+  print 'Imported %d reflections' % len(reflections)
 
   # Create the profile model
   profile_model = ProfileModel(experiments[0], reflections)
