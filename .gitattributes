@@ -136,6 +136,8 @@ algorithms/polygon/clip/cohen_sutherland.h -text
 algorithms/polygon/clip/sutherland_hodgman.h -text
 algorithms/polygon/spatial_interpolation.h -text
 algorithms/polygon/spatial_interpolation.py -text
+algorithms/profile_model/__init__.py -text
+algorithms/profile_model/profile_model.py -text
 algorithms/refinement/README -text
 algorithms/refinement/SConscript -text
 algorithms/refinement/__init__.py -text
@@ -272,6 +274,7 @@ command_line/compare_mosflm_dials.py -text
 command_line/compare_mosflm_xds.py -text
 command_line/compare_xds_dials.py -text
 command_line/compare_xds_dials2.py -text
+command_line/create_profile_model.py -text
 command_line/detector_max_resolution.py -text
 command_line/display_spots.py -text
 command_line/export.py -text
