@@ -167,6 +167,17 @@ namespace dials { namespace af {
       return result;
     }
 
+    /**
+     * Access a column by key
+     * @param key The column name
+     * @returns The column.
+     */
+    template <typename T>
+    af::shared<T> get(const key_type &key) const {
+      const_iterator it = find(key);
+      return boost::get< af::shared<T> >(it->second);
+    }
+
     /** @returns An iterator to the beginning of the column map */
     iterator begin() {
       return table_->begin();

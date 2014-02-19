@@ -133,6 +133,23 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Do ray intersections for all items
+   */
+  template <typename T>
+  af::shared< vec2<double> > compute_ray_intersections(
+      const T &self, const model::Detector &detector) {
+    af::shared< vec2<double> > result(self.nrows());
+    af::const_ref< vec3<double> > s1 =
+      self.template get< vec3<double> >("s1").const_ref();
+    af::const_ref< std::size_t > panel =
+      self.template get< std::size_t >("panel").const_ref();
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = detector[panel[i]].get_ray_intersection(s1[i]);
+    }
+    return result;
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -158,6 +175,8 @@ namespace dials { namespace af { namespace boost_python {
           &make_from_observation_and_shoebox<flex_table_type>))
         .def("help_keys",
           &help_keys<flex_table_type>)
+        .def("compute_ray_intersections",
+          &compute_ray_intersections<flex_table_type>)
         ;
 
       // return the wrapped class
