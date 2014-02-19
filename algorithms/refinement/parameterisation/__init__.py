@@ -4,6 +4,7 @@ from crystal_parameters import CrystalOrientationParameterisation # import depen
 from crystal_parameters import CrystalUnitCellParameterisation # import dependency
 from detector_parameters import DetectorParameterisationSinglePanel # import dependency
 from detector_parameters import DetectorParameterisationMultiPanel # import dependency
+from detector_parameters import DetectorParameterisationHierarchical # import dependency
 from prediction_parameters import PredictionParameterisation # import dependency
 from prediction_parameters import XYPhiPredictionParameterisation # import dependency
 from prediction_parameters_stills import XYPredictionParameterisation # import dependency

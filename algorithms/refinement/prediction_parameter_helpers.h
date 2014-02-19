@@ -246,11 +246,12 @@ namespace dials { namespace refinement {
   }
 
   af::shared < mat3 <double> >
-  multi_panel_compose(
+  selected_multi_panel_compose(
       const af::const_ref< vec3 <double> > &initial_state,
       const af::const_ref< double> &params_vals,
       const af::const_ref< vec3 <double> > &params_axes,
       Detector &detector,
+      const af::const_ref<int> &selection,
       const af::const_ref< vec3 <double> > &offsets,
       const af::const_ref< vec3 <double> > &dir1s,
       const af::const_ref< vec3 <double> > &dir2s,
@@ -258,7 +259,7 @@ namespace dials { namespace refinement {
       const mat3 <double> & Tau2, const mat3 <double> & dTau2_dtau2,
       const mat3 <double> & Tau3, const mat3 <double> & dTau3_dtau3) {
 
-    af::shared < mat3 <double> >  ret(6*detector.size(),af::init_functor_null< mat3<double> >());
+    af::shared < mat3 <double> >  ret(6*selection.size(),af::init_functor_null< mat3<double> >());
 
     // extract items from the initial state
     vec3<double> id1 = initial_state[0];
@@ -321,13 +322,13 @@ namespace dials { namespace refinement {
                      dir2s[i][1] * d2 + \
                      dir2s[i][2] * dn;
 
-    DIALS_ASSERT(detector.size() == dir1s_new.size() &&
-                 detector.size() == dir2s_new.size() &&
-                 detector.size() == origins.size());
+    DIALS_ASSERT(selection.size() == dir1s_new.size() &&
+                 selection.size() == dir2s_new.size() &&
+                 selection.size() == origins.size());
 
     // now update the panels with their new position and orientation.
-    for(std::size_t i = 0; i < detector.size(); i++)
-      detector[i].set_frame(dir1s_new[i], dir2s_new[i], origins[i]);
+    for(std::size_t i = 0; i < selection.size(); i++)
+      detector[selection[i]].set_frame(dir1s_new[i], dir2s_new[i], origins[i]);
     /*
     # calculate derivatives of the state wrt parameters
     # =================================================
@@ -433,10 +434,10 @@ namespace dials { namespace refinement {
 
     // calculate derivatives of the attached Panel matrices
     //====================================================
-    for (std::size_t panel_id = 0; panel_id < detector.size(); panel_id++) {
-      vec3 <double> offset = offsets[panel_id];
-      vec3 <double> dir1_new_basis = dir1s[panel_id];
-      vec3 <double> dir2_new_basis = dir2s[panel_id];
+    for (std::size_t sel_id = 0; sel_id < selection.size(); sel_id++) {
+      vec3 <double> offset = offsets[sel_id];
+      vec3 <double> dir1_new_basis = dir1s[sel_id];
+      vec3 <double> dir2_new_basis = dir2s[sel_id];
 
       // Panel origin:
       // o = dorg + offset[0] * d1 + offset[1] * d2 + offset[2] * dn
@@ -545,36 +546,59 @@ namespace dials { namespace refinement {
       // matrix d and return them, converting angles back to mrad
 
       // derivative wrt dist
-      ret[0*detector.size() + panel_id] = mat3<double>(ddir1_ddist[0],ddir1_ddist[1],ddir1_ddist[2],
-                                                       ddir2_ddist[0],ddir2_ddist[1],ddir2_ddist[2],
-                                                          do_ddist[0],   do_ddist[1],   do_ddist[2]).transpose();
+      ret[0*selection.size() + sel_id] = mat3<double>(ddir1_ddist[0],ddir1_ddist[1],ddir1_ddist[2],
+                                                      ddir2_ddist[0],ddir2_ddist[1],ddir2_ddist[2],
+                                                      do_ddist[0],   do_ddist[1],   do_ddist[2]).transpose();
 
       // derivative wrt shift1
-      ret[1*detector.size() + panel_id] = mat3<double>(ddir1_dshift1[0],ddir1_dshift1[1],ddir1_dshift1[2],
-                                                       ddir2_dshift1[0],ddir2_dshift1[1],ddir2_dshift1[2],
-                                                          do_dshift1[0],   do_dshift1[1],   do_dshift1[2]).transpose();
+      ret[1*selection.size() + sel_id] = mat3<double>(ddir1_dshift1[0],ddir1_dshift1[1],ddir1_dshift1[2],
+                                                      ddir2_dshift1[0],ddir2_dshift1[1],ddir2_dshift1[2],
+                                                      do_dshift1[0],   do_dshift1[1],   do_dshift1[2]).transpose();
 
       // derivative wrt shift2
-      ret[2*detector.size() + panel_id] = mat3<double>(ddir1_dshift2[0],ddir1_dshift2[1],ddir1_dshift2[2],
-                                                       ddir2_dshift2[0],ddir2_dshift2[1],ddir2_dshift2[2],
-                                                          do_dshift2[0],   do_dshift2[1],   do_dshift2[2]).transpose();
+      ret[2*selection.size() + sel_id] = mat3<double>(ddir1_dshift2[0],ddir1_dshift2[1],ddir1_dshift2[2],
+                                                      ddir2_dshift2[0],ddir2_dshift2[1],ddir2_dshift2[2],
+                                                      do_dshift2[0],   do_dshift2[1],   do_dshift2[2]).transpose();
 
       // derivative wrt tau1
-      ret[3*detector.size() + panel_id] = mat3<double>(ddir1_dtau1[0],ddir1_dtau1[1],ddir1_dtau1[2],
-                                                       ddir2_dtau1[0],ddir2_dtau1[1],ddir2_dtau1[2],
-                                                          do_dtau1[0],   do_dtau1[1],   do_dtau1[2]).transpose() / 1000.;
+      ret[3*selection.size() + sel_id] = mat3<double>(ddir1_dtau1[0],ddir1_dtau1[1],ddir1_dtau1[2],
+                                                      ddir2_dtau1[0],ddir2_dtau1[1],ddir2_dtau1[2],
+                                                      do_dtau1[0],   do_dtau1[1],   do_dtau1[2]).transpose() / 1000.;
 
       // derivative wrt tau2
-      ret[4*detector.size() + panel_id] = mat3<double>(ddir1_dtau2[0],ddir1_dtau2[1],ddir1_dtau2[2],
-                                                       ddir2_dtau2[0],ddir2_dtau2[1],ddir2_dtau2[2],
-                                                          do_dtau2[0],   do_dtau2[1],   do_dtau2[2]).transpose() / 1000.;
+      ret[4*selection.size() + sel_id] = mat3<double>(ddir1_dtau2[0],ddir1_dtau2[1],ddir1_dtau2[2],
+                                                      ddir2_dtau2[0],ddir2_dtau2[1],ddir2_dtau2[2],
+                                                      do_dtau2[0],   do_dtau2[1],   do_dtau2[2]).transpose() / 1000.;
 
       // derivative wrt tau3
-      ret[5*detector.size() + panel_id] = mat3<double>(ddir1_dtau3[0],ddir1_dtau3[1],ddir1_dtau3[2],
-                                                       ddir2_dtau3[0],ddir2_dtau3[1],ddir2_dtau3[2],
-                                                          do_dtau3[0],   do_dtau3[1],   do_dtau3[2]).transpose() / 1000.;
+      ret[5*selection.size() + sel_id] = mat3<double>(ddir1_dtau3[0],ddir1_dtau3[1],ddir1_dtau3[2],
+                                                      ddir2_dtau3[0],ddir2_dtau3[1],ddir2_dtau3[2],
+                                                      do_dtau3[0],   do_dtau3[1],   do_dtau3[2]).transpose() / 1000.;
     }
     return ret;
+  }
+
+  af::shared < mat3 <double> >
+  multi_panel_compose(
+      const af::const_ref< vec3 <double> > &initial_state,
+      const af::const_ref< double> &params_vals,
+      const af::const_ref< vec3 <double> > &params_axes,
+      Detector &detector,
+      const af::const_ref< vec3 <double> > &offsets,
+      const af::const_ref< vec3 <double> > &dir1s,
+      const af::const_ref< vec3 <double> > &dir2s,
+      const mat3 <double> & Tau1, const mat3 <double> & dTau1_dtau1,
+      const mat3 <double> & Tau2, const mat3 <double> & dTau2_dtau2,
+      const mat3 <double> & Tau3, const mat3 <double> & dTau3_dtau3) {
+
+    af::shared<int> selection;
+    selection.reserve(detector.size());
+    for (int i = 0; i < detector.size(); i++) {
+      selection.push_back(i);
+    }
+    return selected_multi_panel_compose(initial_state, params_vals, params_axes,
+      detector, selection.const_ref(), offsets, dir1s, dir2s, Tau1, dTau1_dtau1,
+      Tau2, dTau2_dtau2, Tau3, dTau3_dtau3);
   }
 
 }} // namespace dials::refinement

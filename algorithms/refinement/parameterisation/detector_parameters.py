@@ -393,8 +393,8 @@ class DetectorParameterisationSinglePanel(ModelParameterisation):
     return matrix.sqr(panel.get_d_matrix())
 
 class DetectorParameterisationMultiPanel(ModelParameterisation):
-  """Experimental implementation of parameterisation for a multiple
-  panel detector, treated as a single rigid block."""
+  """Parameterisation for a multiple panel detector, treated as a single
+  rigid block with 6 DOF."""
 
   def __init__(self, detector, beam, experiment_ids=[0]):
 
@@ -866,5 +866,207 @@ class PyDetectorParameterisationMultiPanel(DetectorParameterisationMultiPanel):
       # derivative wrt tau3
       self._dstate_dp[5][panel_id] = matrix.sqr(ddir1_dtau3.elems +
                   ddir2_dtau3.elems + do_dtau3.elems).transpose() / 1000.
+
+    return
+
+def get_panel_groups_at_depth(group, depth=0):
+  assert depth >= 0
+  if depth == 0:
+    return [group]
+  else:
+    return [p for gp in group.children() for p in get_panel_groups_at_depth(gp, depth-1)]
+
+def get_panel_ids_at_root(panel_list, group):
+  try:
+    return [p for gp in group.children() for p in get_panel_ids_at_root(panel_list, gp)]
+  except AttributeError: # we got down to Panels
+    return [panel_list.index(group)]
+
+class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
+  """Parameterisation for a multiple panel detector with a hierarchy, where
+  panel groups selected at some level of the hierarchy are treated as single
+  rigid blocks with 6 DOF."""
+
+  def __init__(self, detector, beam, experiment_ids=[0], level=0):
+    """The additional 'level' argument selects which level of the detector
+    hierarchy is chosen to determine panel groupings that are treated as
+    separate rigid blocks."""
+
+    try:
+      h = detector.hierarchy()
+    except AttributeError:
+      print "This detector does not have a hierarchy"
+      raise
+
+    # list the panel groups at the chosen level
+    groups = get_panel_groups_at_depth(h, level)
+
+    # collect the panel ids for each Panel within the groups
+    panels = [p for p in detector]
+    self._panel_ids_by_group = [get_panel_ids_at_root(panels, g) for g in groups]
+
+    p_list = []
+    istate = []
+    self._offsets = []
+    self._dir1s = []
+    self._dir2s = []
+    # loop over the groups, collecting initial parameters and states
+    for igp, pnl_ids in enumerate(self._panel_ids_by_group):
+
+      # determine which panel in the group is nearest to the direct beam. Call
+      # this the reference panel for this group
+      beam_centres = [matrix.col(detector[i].get_beam_centre(beam.get_unit_s0())) \
+                      for i in pnl_ids]
+      panel_centres = [0.5 * matrix.col(detector[i].get_image_size_mm())
+                       for i in pnl_ids]
+      beam_to_centres = [(a - b).length() for a, b in \
+                        zip(beam_centres, panel_centres)]
+      ref_panel_id = beam_to_centres.index(min(beam_to_centres))
+      ref_panel = detector[ref_panel_id]
+
+      # get some vectors we need from the ref_panel
+      so = matrix.col(ref_panel.get_origin())
+      d1 = matrix.col(ref_panel.get_fast_axis())
+      d2 = matrix.col(ref_panel.get_slow_axis())
+      dn = matrix.col(ref_panel.get_normal())
+
+      # we choose the dorg vector for this group to terminate in the centre of
+      # the ref_panel, and the offset between the end of the dorg vector and
+      # each Panel origin is a coordinate matrix with elements in the basis d1,
+      # d2, dn. We need also each Panel's plane directions dir1 and dir2 in
+      # terms of d1, d2 and dn.
+      ref_panel_centre = panel_centres[ref_panel_id]
+      dorg = so + ref_panel_centre[0] * d1 + ref_panel_centre[1] * d2
+
+      offsets, dir1s, dir2s = [], [], []
+      for p in [detector[i] for i in pnl_ids]:
+        offset = matrix.col(p.get_origin()) - dorg
+        offsets.append(matrix.col((offset.dot(d1),
+                                   offset.dot(d2),
+                                   offset.dot(dn))))
+        dir1 = matrix.col(p.get_fast_axis())
+        dir1_new_basis = matrix.col((dir1.dot(d1),
+                                     dir1.dot(d2),
+                                     dir1.dot(dn)))
+        dir1s.append(dir1_new_basis)
+        dir2 = matrix.col(p.get_slow_axis())
+        dir2_new_basis = matrix.col((dir2.dot(d1),
+                                     dir2.dot(d2),
+                                     dir2.dot(dn)))
+        dir2s.append(dir2_new_basis)
+
+      # The offsets and directions in the d1, d2, dn basis are fixed
+      # quantities, not dependent on parameter values. Keep these as separate
+      # sub-lists for each group
+      self._offsets.append(offsets)
+      self._dir1s.append(dir1s)
+      self._dir2s.append(dir2s)
+
+      # Set up the initial state for this group. This is the basis d1, d2, dn.
+      istate.append({'d1':d1, 'd2':d2, 'dn':dn})
+
+      # set up the parameters.
+      # distance from lab origin to ref_panel plane along its normal,
+      # in initial orientation
+      distance = ref_panel.get_distance()
+      dist = Parameter(distance, dn, 'length (mm)', 'Group{0}Dist'.format(igp))
+
+      # shift in the detector model plane to locate dorg, in initial
+      # orientation
+      shift = dorg - dn * distance
+      shift1 = Parameter(shift.dot(d1), d1, 'length (mm)', 'Group{0}Shift1'.format(igp))
+      shift2 = Parameter(shift.dot(d2), d2, 'length (mm)', 'Group{0}Shift2'.format(igp))
+
+      # rotations of the plane through its origin about:
+      # 1) axis normal to initial orientation
+      # 2) d1 axis of initial orientation
+      # 3) d2 axis of initial orientation
+      tau1 = Parameter(0, dn, 'angle (mrad)', 'Group{0}Tau1'.format(igp))
+      tau2 = Parameter(0, d1, 'angle (mrad)', 'Group{0}Tau2'.format(igp))
+      tau3 = Parameter(0, d2, 'angle (mrad)', 'Group{0}Tau3'.format(igp))
+
+      # extend the parameter list with those pertaining to this group
+      p_list.extend([dist, shift1, shift2, tau1, tau2, tau3])
+
+    # set up the list of model objects being parameterised (here just a single
+    # detector containing multiple panels in groups)
+    models = [detector]
+
+    # set up the base class
+    ModelParameterisation.__init__(self, models, istate, p_list,
+                                   experiment_ids=experiment_ids,
+                                   is_multi_state=True)
+
+    # call compose to calculate all the derivatives
+    self.compose()
+
+    return
+
+  def compose(self):
+
+    from dials_refinement_helpers_ext import multi_panel_compose
+    from scitbx.array_family import flex
+
+    # loop over groups of panels collecting derivatives of the state wrt
+    # parameters
+    dstate_dp = []
+    param = iter(self._param)
+    for igp, pnl_ids in enumerate(self._panel_ids_by_group):
+
+      # extract parameters from the internal list
+      dist = param.next()
+      shift1 = param.next()
+      shift2 = param.next()
+      tau1 = param.next()
+      tau2 = param.next()
+      tau3 = param.next()
+
+      param_vals = flex.double((dist.value, shift1.value, shift2.value,
+                                  tau1.value, tau2.value, tau3.value))
+      param_axes = flex.vec3_double((dist.axis, shift1.axis, shift2.axis,
+                                      tau1.axis, tau2.axis, tau3.axis))
+      offsets = flex.vec3_double(self._offsets[igp])
+      dir1s = flex.vec3_double(self._dir1s[igp])
+      dir2s = flex.vec3_double(self._dir2s[igp])
+
+      # convert angles to radians
+      tau1rad = tau1.value / 1000.
+      tau2rad = tau2.value / 1000.
+      tau3rad = tau3.value / 1000.
+
+      # compose rotation matrices and their first order derivatives
+      Tau1 = (tau1.axis).axis_and_angle_as_r3_rotation_matrix(tau1rad,
+                                                              deg=False)
+      dTau1_dtau1 = dR_from_axis_and_angle(tau1.axis, tau1rad, deg=False)
+
+      Tau2 = (tau2.axis).axis_and_angle_as_r3_rotation_matrix(tau2rad,
+                                                              deg=False)
+      dTau2_dtau2 = dR_from_axis_and_angle(tau2.axis, tau2rad, deg=False)
+
+      Tau3 = (tau3.axis).axis_and_angle_as_r3_rotation_matrix(tau3rad,
+                                                              deg=False)
+      dTau3_dtau3 = dR_from_axis_and_angle(tau3.axis, tau3rad, deg=False)
+
+      # Compose the new state
+      initial_state = self._initial_state[igp]
+      ret = multi_panel_compose(flex.vec3_double([initial_state[tag] for tag in ('d1','d2','dn')]),
+                                  param_vals,
+                                  param_axes,
+                                  self._models[0],
+                                  flex.int(pnl_ids),
+                                  offsets,
+                                  dir1s,
+                                  dir2s,
+                                  Tau1, dTau1_dtau1,
+                                  Tau2, dTau2_dtau2,
+                                  Tau3, dTau3_dtau3)
+
+      # Store the results.  The results come back as a single array, convert it to a 2D array
+
+      dstate_dp.append([[matrix.sqr(ret[j*len(self._offsets)+i]) \
+                          for i in xrange(len(self._offsets))] for j in xrange(len(self._param))])
+
+    print dstate_dp
+    self._dstate_dp#####
 
     return
