@@ -80,12 +80,12 @@ class run_one_indexing(object):
     experiments_list = load.experiment_list(
       os.path.join(tmp_dir, "experiments.json"), check_format=False)
     assert len(experiments_list) == n_expected_lattices
+    assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
+    indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
     for i in range(n_expected_lattices):
       suffix = ""
       if n_expected_lattices > 1:
         suffix = "_%i" %(i+1)
-      assert os.path.exists(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
-      self.reflections = load.reflections(os.path.join(tmp_dir, "indexed%s.pickle" %suffix))
       experiment = experiments_list[i]
       self.crystal_model = experiment.crystal
       assert self.crystal_model.get_unit_cell().is_similar_to(
@@ -94,11 +94,12 @@ class run_one_indexing(object):
         absolute_angle_tolerance=absolute_angle_tolerance)
       sg = self.crystal_model.get_space_group()
       assert sg.type().hall_symbol() == expected_hall_symbol
-      mi = self.reflections['miller_index']
+      reflections = indexed_reflections.select(indexed_reflections['id'] == i)
+      mi = reflections['miller_index']
       assert (mi != (0,0,0)).count(False) == 0
-      self.reflections = self.reflections.select(mi != (0,0,0))
+      reflections = reflections.select(mi != (0,0,0))
       self.rmsds = self.get_rmsds_obs_pred(
-        self.reflections, experiment, self.crystal_model)
+        reflections, experiment, self.crystal_model)
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected
 

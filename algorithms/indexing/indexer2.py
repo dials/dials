@@ -453,7 +453,9 @@ class indexer_base(object):
     for expt in refined_experiments:
       expt.imageset = self.sweep
 
-    self.export_as_json(refined_experiments)
+    if len(refined_experiments):
+      self.export_as_json(refined_experiments)
+      self.export_reflections(refined_reflections, file_name='indexed.pickle')
     for i_lattice, crystal_model in enumerate(refined_experiments.crystals()):
       self.refined_crystal_models.append(crystal_model)
       suffix = ""
@@ -461,10 +463,6 @@ class indexer_base(object):
         suffix = "_%i" %(i_lattice+1)
       if self.params.export_xds_files:
         self.export_xds_files(crystal_model, self.sweep, suffix=suffix)
-      reflections = self.refined_reflections.select(
-        self.refined_reflections['id'] == i_lattice)
-      self.export_reflections(
-        reflections, file_name='indexed%s.pickle' %suffix)
 
     if 1 and self.params.debug and self.goniometer is not None:
       for i_lattice, expt in enumerate(refined_experiments):
