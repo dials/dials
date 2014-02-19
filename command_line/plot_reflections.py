@@ -102,7 +102,7 @@ def run(args):
               centroid_position = detector[0].get_ray_intersection(s1)
           x, y = centroid_position[:2]
         observed_xy.append((x,y))
-      elif refl.image_coord_px != (0, 0):
+      if refl.image_coord_mm != (0, 0):
         x, y = refl.image_coord_mm
         predicted_xy.append((x,y))
   obs_x, obs_y = observed_xy.parts()
