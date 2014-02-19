@@ -572,6 +572,7 @@ scratch/luiso_s/test_code/pickle_toy_01.py -text
 scratch/luiso_s/test_code/simulate_ref_lst.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/sort_exers.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/table_toy.py -text
+scratch/luiso_s/test_code/table_toy_01.py -text
 scratch/luiso_s/test_code/test_add_2d.py -text
 scratch/luiso_s/test_code/test_flex_integr_2d_single_pixel.py -text
 scratch/luiso_s/test_code/treshold_2d_smooth_masker_caller.py -text svneol=unset#text/plain
