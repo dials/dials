@@ -31,6 +31,4 @@ class InclinedBackgroundExt(BackgroundIface):
     # Do the background subtraction
     Command.start('Calculating reflection background')
     self._subtractor(reflections)
-    #mask = self._subtractor(reflections['shoebox'])
-    #reflections.del_selected(mask != True)
     Command.end('Calculated {0} background values'.format(len(reflections)))
