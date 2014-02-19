@@ -466,12 +466,13 @@ class indexer_base(object):
         reflections, file_name='indexed%s.pickle' %suffix)
 
     if 1 and self.params.debug and self.goniometer is not None:
-      for i_lattice, cm in enumerate(self.refined_crystal_models):
+      for i_lattice, expt in enumerate(refined_experiments):
         suffix = ""
         if len(refined_experiments) > 1:
           suffix = "_%i" %(i_lattice+1)
-        self.predict_reflections(cm)
-        self.export_predicted_reflections(file_name='predictions%s.pickle' %suffix)
+        predictions = self.predict_reflections(expt)
+        self.export_reflections(
+          predictions, file_name='predictions%s.pickle' %suffix)
 
     print "Final refined crystal models:"
     for i, crystal_model in enumerate(self.refined_crystal_models):
@@ -745,25 +746,20 @@ class indexer_base(object):
     self._refine_timer.stop()
     return refiner.get_experiments(), used_reflections
 
-  def predict_reflections(self, crystal_model):
-    from dials.algorithms.integration import ReflectionPredictor
-    predictor = ReflectionPredictor()
+  def predict_reflections(self, experiment):
+    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
+    predictor = ScanStaticReflectionPredictor(experiment)
 
-    sigma_divergence = self.beam.get_sigma_divergence()
-    mosaicity = crystal_model.get_mosaicity()
+    #sigma_divergence = self.beam.get_sigma_divergence()
+    #mosaicity = crystal_model.get_mosaicity()
 
-    if sigma_divergence == 0.0:
-      self.beam.set_sigma_divergence(0.02) # degrees
-    if mosaicity == 0.0:
-      crystal_model.set_mosaicity(0.139) # degrees
+    #if sigma_divergence == 0.0:
+      #self.beam.set_sigma_divergence(0.02) # degrees
+    #if mosaicity == 0.0:
+      #crystal_model.set_mosaicity(0.139) # degrees
 
-    reflections = predictor(self.sweep, crystal_model)
-    self.predicted_reflections = reflections
-    return self.predicted_reflections
-
-  def export_predicted_reflections(self, file_name='predictions.pickle'):
-    from dials.model.serialize import dump
-    dump.reflections(self.predicted_reflections.to_table(), file_name)
+    predicted_reflections = predictor()
+    return predicted_reflections
 
   def debug_show_candidate_basis_vectors(self):
 
