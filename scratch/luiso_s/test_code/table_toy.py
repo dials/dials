@@ -1,9 +1,25 @@
 from dials.array_family import flex
 
 
+
+working_code = '''
+# Create a table with 2 columns and 10 rows
+table = flex.reflection_table()
+table['col1'] = flex.int(10)
+table['col2'] = flex.double(10)
+assert(table.nrows() == 10)
+assert(table.ncols() == 2)
+print 'OK'
+
+'''
+#not_working_code = '''
 ref_table = flex.reflection_table()
+ref_table['col1'] = flex.int(5)
+ref_table['col2'] = flex.double(5)
+
 row = { 'col1' : 10 }
 ref_table.append(row)
+#'''
 
 example_from_other_code = '''
 for row in table.rows():

@@ -5,7 +5,6 @@ x = hello_tst()
 print x
 import numpy
 
-#data2d = numpy.zeros((5, 5), dtype = numpy.float64)
 data2d = numpy.zeros((5, 5), dtype = numpy.int32)
 data2d[0, 1] = data2d[1, 0] = 1
 data2d[0, 2] = data2d[2, 0] = 3

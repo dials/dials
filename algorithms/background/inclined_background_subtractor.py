@@ -12,13 +12,15 @@ from __future__ import division
 
 from dials.algorithms.background.background_subtraction_2d \
           import curved_background_calc_2d
+
 class InclinedSubtractor(object):
   ''' The Flat background subtractor '''
 
   def __init__(self, **kwargs):
     pass
 
-  def __call__(self, sweep, crystal, reflections):
+  def __call__(self, reflections):
+
     layering_and_background_plane(reflections)
 
     return reflections
@@ -29,19 +31,20 @@ def layering_and_background_plane(reflections):
   from scitbx.array_family import flex
 
   plane_constants = []
-  for ref in reflections:
-    if ref.is_valid():
-      shoebox = ref.shoebox
-      mask = ref.shoebox_mask
-      background = ref.shoebox_background
+  shoeboxes = reflections['shoebox']
+  for shoebox in shoeboxes:
+    #if ref.is_valid():
+      data = shoebox.data
+      mask = shoebox.mask
+      background = shoebox.background
       tot_sigma = 0.0
-      for i in range(shoebox.all()[0]):
-        data2d = shoebox[i:i + 1, :, :]
+      for i in range(data.all()[0]):
+        data2d = data[i:i + 1, :, :]
         mask2d = mask[i:i + 1, :, :]
         background2d = background[i:i + 1, :, :]
 
-        data2d.reshape(flex.grid(shoebox.all()[1:]))
-        mask2d.reshape(flex.grid(shoebox.all()[1:]))
+        data2d.reshape(flex.grid(data.all()[1:]))
+        mask2d.reshape(flex.grid(data.all()[1:]))
         background2d.reshape(flex.grid(background2d.all()[1:]))
 
         a_mat_flx = flex.double(flex.grid(3, 3))
@@ -71,10 +74,10 @@ def layering_and_background_plane(reflections):
         variance = variance_n_background_from_plane \
                     (data2d, mask2d, abc_plane, background2d)
         plane_constants.append(abc_plane)
-        tot_sigma += variance
+        #tot_sigma += variance
         background2d.reshape(flex.grid(1, background2d.all()[0], \
                                           background2d.all()[1]))
         background[i:i + 1, :, :] = background2d.as_double()
-      ref.intensity_variance = tot_sigma
+      #ref.intensity_variance = tot_sigma
 
-  return reflections#, plane_constants
+  return reflections
