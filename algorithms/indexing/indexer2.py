@@ -372,7 +372,8 @@ class indexer_base(object):
           # need to make sure that the symmetrized orientation is similar to the P1 model
           for expt in experiments:
             expt.crystal = self.apply_symmetry(
-              expt.crystal, self.target_symmetry_primitive)
+              expt.crystal, self.target_symmetry_primitive,
+              space_group_only=True)
 
         #if len(experiments) > 1:
           #from dials.command_line.compare_orientation_matrices \
@@ -643,7 +644,9 @@ class indexer_base(object):
 
   def apply_symmetry(self, crystal_model, target_symmetry,
                      return_primitive_setting=False,
-                     cell_only=False):
+                     cell_only=False,
+                     space_group_only=False):
+    assert [cell_only, space_group_only].count(True) < 2
     unit_cell = crystal_model.get_unit_cell()
     target_unit_cell = target_symmetry.unit_cell()
     if cell_only:
@@ -658,41 +661,50 @@ class indexer_base(object):
     real_space_c = A_inv[6:9]
     basis_vectors = [real_space_a, real_space_b, real_space_c]
     min_bmsd = 1e8
-    best_perm = None
-    # for non-cyclic permutations one axis needs inverting to keep system right-handed
-    for perm, sign in zip(
-        ((0,1,2), (1,2,0), (2,0,1), (1,0,2), (0,2,1), (2,1,0)),
-        (1, 1, 1, -1, -1, -1)):
-      crystal_model = Crystal(
-        basis_vectors[perm[0]],
-        basis_vectors[perm[1]],
-        [i * sign for i in basis_vectors[perm[2]]],
-        space_group=target_space_group)
-      unit_cell = crystal_model.get_unit_cell()
-      uc = target_unit_cell
-      if uc is None:
-        uc = unit_cell
-      # XXX what about permuting the target_unit_cell (if not None)?
-      symm_target_sg = crystal.symmetry(
-        unit_cell=uc,
-        space_group=target_space_group,
-        assert_is_compatible_unit_cell=False)
-      # this assumes that the initial basis vectors are good enough that
-      # we can tell which should be the unique axis - probably not a robust
-      # solution
-      if unit_cell.is_similar_to(
-        symm_target_sg.unit_cell(),
-        relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
-        absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
-        bmsd = unit_cell.bases_mean_square_difference(
-          symm_target_sg.unit_cell())
-        eps = 1e-8
-        if (bmsd+eps) < min_bmsd:
-          min_bmsd = bmsd
-          best_perm = list(perm)
-          best_sign = sign
-    if best_perm is None:
-      return None
+    if space_group_only:
+      best_perm = (0,1,2)
+      best_sign = 1
+    else:
+      best_perm = None
+      # for non-cyclic permutations one axis needs inverting to keep system right-handed
+      for perm, sign in zip(
+          ((0,1,2), (1,2,0), (2,0,1), (1,0,2), (0,2,1), (2,1,0)),
+          (1, 1, 1, -1, -1, -1)):
+        crystal_model = Crystal(
+          basis_vectors[perm[0]],
+          basis_vectors[perm[1]],
+          [i * sign for i in basis_vectors[perm[2]]],
+          space_group=target_space_group)
+        unit_cell = crystal_model.get_unit_cell()
+        uc = target_unit_cell
+        if uc is None:
+          uc = unit_cell
+        # XXX what about permuting the target_unit_cell (if not None)?
+        symm_target_sg = crystal.symmetry(
+          unit_cell=uc,
+          space_group=target_space_group,
+          assert_is_compatible_unit_cell=False)
+        # this assumes that the initial basis vectors are good enough that
+        # we can tell which should be the unique axis - probably not a robust
+        # solution
+        if unit_cell.is_similar_to(
+          symm_target_sg.unit_cell(),
+          relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+          absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
+          bmsd = unit_cell.bases_mean_square_difference(
+            symm_target_sg.unit_cell())
+          bmsd = unit_cell.change_basis(
+            symm_target_sg.change_of_basis_op_to_reference_setting())\
+            .bases_mean_square_difference(
+              symm_target_sg.as_reference_setting().unit_cell())
+
+          eps = 1e-8
+          if (bmsd+eps) < min_bmsd:
+            min_bmsd = bmsd
+            best_perm = list(perm)
+            best_sign = sign
+      if best_perm is None:
+        return None
     #print best_perm, best_sign
     crystal_model = Crystal(
       basis_vectors[best_perm[0]],
