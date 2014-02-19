@@ -754,6 +754,16 @@ class indexer_base(object):
     used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
     self._refine_timer.stop()
+    matches = refiner.get_matches()
+    selection_used_for_refinement = refiner.selection_used_for_refinement()
+    xyzcal_mm = flex.vec3_double(len(used_reflections))
+    i_match = -1
+    for i_ref in range(len(used_reflections)):
+      if selection_used_for_refinement[i_ref]:
+        i_match += 1
+        match = matches[i_match]
+        xyzcal_mm[i_ref] = (match.x_calc, match.y_calc, match.phi_calc)
+    used_reflections['xyzcal.mm'] = xyzcal_mm
     return refiner.get_experiments(), used_reflections
 
   def predict_reflections(self, experiment):
