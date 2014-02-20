@@ -76,5 +76,3 @@ example_from_other_code = '''
     # Test passed
     print 'OK'
 '''
-
-

@@ -45,6 +45,7 @@ iterate = ref_table['shoebox']
 for arr in iterate:
   np_img = arr.data.as_numpy_array()
   print np_img
+<<<<<<< Updated upstream
   np_img = arr.background.as_numpy_array()
   print np_img
   np_img = arr.mask.as_numpy_array()
@@ -96,3 +97,5 @@ print ">>>"
 iterate = ref_table['intensity.raw.variance']
 for n_i_v in iterate:
   print n_i_v
+=======
+>>>>>>> Stashed changes
