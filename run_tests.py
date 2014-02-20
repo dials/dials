@@ -18,6 +18,7 @@ tst_list = (
     "$D/test/command_line/tst_export.py",
     "$D/test/command_line/tst_export_xds.py",
     "$D/test/command_line/tst_refine.py",
+    "$D/test/command_line/tst_create_profile_model.py",
     "$D/test/util/tst_command_line.py",
     "$D/test/array_family/tst_flex_shoebox.py",
     "$D/test/array_family/tst_flex_partial_shoebox.py",

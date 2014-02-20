@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
   # Import the items
   Command.start('Importing Data')
-  importer = Importer(args)
+  importer = Importer(args, check_format=False)
   experiments = importer.experiments
   assert(len(experiments) == 1)
   assert(len(importer.reflections) == 1)
