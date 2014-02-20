@@ -46,6 +46,122 @@ namespace dials { namespace model { namespace boost_python {
       background.handle(), af::c_grid<3>(background.accessor()));
   }
 
+  /** Get a list of shoebox pixel coordinates. */
+  template <typename ShoeboxType>
+  af::shared< vec3<double> > coords(const ShoeboxType &self) {
+    af::shared< vec3<double> > result;
+    for (std::size_t k = 0; k < self.zsize(); ++k) {
+      for (std::size_t j = 0; j < self.ysize(); ++j) {
+        for (std::size_t i = 0; i < self.xsize(); ++i) {
+          double x = i + self.xoffset() + 0.5;
+          double y = j + self.yoffset() + 0.5;
+          double z = k + self.zoffset() + 0.5;
+          result.push_back(vec3<double>(x, y, z));
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Get a list of shoebox pixel coordinates. */
+  template <typename ShoeboxType>
+  af::shared< vec3<double> > coords_with_mask(
+      const ShoeboxType &self,
+      const af::const_ref< bool, af::c_grid<3> > mask) {
+    DIALS_ASSERT(mask.accessor().all_eq(self.size()));
+    af::shared< vec3<double> > result;
+    for (std::size_t k = 0; k < self.zsize(); ++k) {
+      for (std::size_t j = 0; j < self.ysize(); ++j) {
+        for (std::size_t i = 0; i < self.xsize(); ++i) {
+          if (mask(k,j,i)) {
+            double x = i + self.xoffset() + 0.5;
+            double y = j + self.yoffset() + 0.5;
+            double z = k + self.zoffset() + 0.5;
+            result.push_back(vec3<double>(x, y, z));
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Get a list of shoebox pixel values. */
+  template <typename ShoeboxType>
+  af::shared<double> values(const ShoeboxType &self) {
+    DIALS_ASSERT(self.is_consistent());
+    af::shared<double> result;
+    for (std::size_t k = 0; k < self.zsize(); ++k) {
+      for (std::size_t j = 0; j < self.ysize(); ++j) {
+        for (std::size_t i = 0; i < self.xsize(); ++i) {
+          result.push_back(self.data(k, j, i));
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Get a list of shoebox pixel values. */
+  template <typename ShoeboxType>
+  af::shared<double> values_with_mask(
+      const ShoeboxType &self,
+      const af::const_ref< bool, af::c_grid<3> > mask) {
+    DIALS_ASSERT(mask.accessor().all_eq(self.size()));
+    DIALS_ASSERT(self.is_consistent());
+    af::shared<double> result;
+    for (std::size_t k = 0; k < self.zsize(); ++k) {
+      for (std::size_t j = 0; j < self.ysize(); ++j) {
+        for (std::size_t i = 0; i < self.xsize(); ++i) {
+          if (mask(k,j,i)) {
+            result.push_back(self.data(k, j, i));
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Get a list of shoebox pixel coordinates. */
+  template <typename ShoeboxType>
+  af::shared< vec3<double> > beam_vectors(
+      const ShoeboxType &self,
+      const Detector &detector) {
+    af::shared< vec3<double> > result;
+    for (std::size_t k = 0; k < self.zsize(); ++k) {
+      for (std::size_t j = 0; j < self.ysize(); ++j) {
+        for (std::size_t i = 0; i < self.xsize(); ++i) {
+          double x = i + self.xoffset() + 0.5;
+          double y = j + self.yoffset() + 0.5;
+          vec2<double> c(x, y);
+          result.push_back(detector[self.panel].get_pixel_lab_coord(c));
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Get a list of shoebox pixel coordinates. */
+  template <typename ShoeboxType>
+  af::shared< vec3<double> > beam_vectors_with_mask(
+      const ShoeboxType &self,
+      const Detector &detector,
+      const af::const_ref< bool, af::c_grid<3> > mask) {
+    DIALS_ASSERT(mask.accessor().all_eq(self.size()));
+    af::shared< vec3<double> > result;
+    for (std::size_t k = 0; k < self.zsize(); ++k) {
+      for (std::size_t j = 0; j < self.ysize(); ++j) {
+        for (std::size_t i = 0; i < self.xsize(); ++i) {
+          if (mask(k,j,i)) {
+            double x = i + self.xoffset() + 0.5;
+            double y = j + self.yoffset() + 0.5;
+            vec2<double> c(x, y);
+            result.push_back(detector[self.panel].get_pixel_lab_coord(c));
+          }
+        }
+      }
+    }
+    return result;
+  }
+
   template <typename FloatType>
   class_< Shoebox<FloatType> > shoebox_wrapper(const char *name)
   {
@@ -124,6 +240,12 @@ namespace dials { namespace model { namespace boost_python {
         &shoebox_type::summed_intensity_foreground)
       .def("summed_intensity_strong",
         &shoebox_type::summed_intensity_strong)
+      .def("coords", &coords<shoebox_type>)
+      .def("coords", &coords_with_mask<shoebox_type>)
+      .def("values", &values<shoebox_type>)
+      .def("values", &values_with_mask<shoebox_type>)
+      .def("beam_vectors", &beam_vectors<shoebox_type>)
+      .def("beam_vectors", &beam_vectors_with_mask<shoebox_type>)
       .def("__eq__", &shoebox_type::operator==)
       .def("__ne__", &shoebox_type::operator!=);
 

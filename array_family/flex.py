@@ -78,6 +78,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       reverse=reverse)
     self.reorder(flex.size_t(indices))
 
+  def compute_zeta(self, experiment):
+    ''' Compute zeta for each reflection. '''
+    from dials.algorithms.reflection_basis import zeta_factor
+    m2 = experiment.goniometer.get_rotation_axis()
+    s0 = experiment.beam.get_s0()
+    self['zeta'] = zeta_factor(m2, s0, self['s1'])
+    return self['zeta']
+
   def compute_bbox(self, experiment, nsigma, sigma_d=None, sigma_m=None):
     ''' Compute the bounding boxes. '''
     from dials.algorithms.shoebox import BBoxCalculator

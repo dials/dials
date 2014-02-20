@@ -10,12 +10,26 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
 namespace dials { namespace algorithms { namespace reflection_basis {
   namespace boost_python {
 
   using namespace boost::python;
+
+  /**
+   * Helper function to calculate zeta for an array of s1.
+   */
+  af::shared<double> zeta_factor_array(
+      vec3<double> m2, vec3<double> s0,
+      const af::const_ref< vec3<double> > &s1) {
+    af::shared<double> result(s1.size());
+    for (std::size_t i = 0; i < s1.size(); ++i) {
+      result[i] = zeta_factor(m2, s0, s1[i]);
+    }
+    return result;
+  }
 
   void export_coordinate_system()
   {
@@ -26,6 +40,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     def("zeta_factor",
       (double (*)(vec3<double>, vec3<double>))&zeta_factor,
       (arg("m2"), arg("e1")));
+    def("zeta_factor", &zeta_factor_array, (
+      arg("m2"), arg("s0"), arg("s1")));
 
     // Export coordinate system
     class_<CoordinateSystem>("CoordinateSystem", no_init)

@@ -36,17 +36,30 @@ if __name__ == '__main__':
   reflections = importer.reflections[0]
   print 'Imported %d reflections' % len(reflections)
 
-  #xy = reflections.compute_ray_intersections(experiments[0].detector)
-  #from dials.algorithms.spot_prediction import RotationAngles
+  from dials.array_family import flex
+  xyz = reflections['xyzcal.mm']
+  mask = flex.bool([x == (0, 0, 0) for x in xyz])
+  reflections.del_selected(mask)
+  reflections_all = reflections
+  print 'Have %d reflections remaining' % len(reflections)
 
-  #s0 = experiments[0].beam.get_s0()
-  #m2 = experiments[0].goniometer.get_rotation_axis()
-  #compute_angles = RotationAngles(s0, m2)
-  #phis = [compute_angles(h, ub) for h in reflections['miller_index']]
-  #obsphis = reflections['
-  reflections['xyzcal.mm'] = reflections['xyzobs.mm.value']
+  sigma_b = []
+  sigma_m = []
+  for i in range(1):
+    import random
+    #index = random.sample(range(len(reflections_all)), 5000)
+    #reflections = reflections_all.select(flex.size_t(index))
 
-  # Create the profile model
-  profile_model = ProfileModel(experiments[0], reflections)
-  print 'Sigma B: %f' % profile_model.sigma_b()
-  print 'Sigma M: %f' % profile_model.sigma_m()
+    # Create the profile model
+    profile_model = ProfileModel(experiments[0], reflections)
+    print 'Sigma B: %f' % profile_model.sigma_b()
+    print 'Sigma M: %f' % profile_model.sigma_m()
+    sigma_b.append(profile_model.sigma_b())
+    sigma_m.append(profile_model.sigma_m())
+
+  #from matplotlib import pylab
+  #pylab.subplot(121)
+  #pylab.hist(sigma_b)
+  #pylab.subplot(122)
+  #pylab.hist(sigma_m)
+  #pylab.show()
