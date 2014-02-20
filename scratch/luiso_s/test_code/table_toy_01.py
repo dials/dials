@@ -39,7 +39,7 @@ for i in range(num_ref):
   its[i] = (i + 1) * 11
   i_var[i] = (i + 1) * 12
 
-print ">>>>>>>>>>>>>>>>>>>>>>>>>    printing before integrrating         <<<<<<<<"
+print ">>>>>>>>>>>>>>>>>>>>>>>>>    printing before integrating         <<<<<<<<"
 
 iterate = ref_table['shoebox']
 for arr in iterate:
@@ -52,9 +52,30 @@ for arr in iterate:
 
   print ">>"
 
+iterate = ref_table['intensity.raw.value']
+for n_its in iterate:
+  print n_its
+print ">>>"
+iterate = ref_table['intensity.raw.variance']
+for n_i_v in iterate:
+  print n_i_v
 
+from dials.algorithms.background.curved_background_subtractor \
+ import layering_and_background_modl
+layering_and_background_modl(ref_table)
 
+print ">>>>>>>>>>>>>>>>>>>>>>>>>    printing during integrating         <<<<<<<<"
+print ">>>>>>>>>>>>>>>>>>>>>>>>>      printing with background           <<<<<<<<"
+iterate = ref_table['shoebox']
+for arr in iterate:
+  np_img = arr.data.as_numpy_array()
+  print np_img
+  np_img = arr.background.as_numpy_array()
+  print np_img
+  np_img = arr.mask.as_numpy_array()
+  print np_img
 
+  print ">>"
 
 iterate = ref_table['intensity.raw.value']
 for n_its in iterate:

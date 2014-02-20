@@ -62,14 +62,12 @@ r.shoebox_background = flex.double(background2d)
 rlist = ReflectionList()
 rlist.append(r)
 from dials.algorithms.background.flat_background_subtractor \
- import tmp_numpy_layering_n_bkgr_avg, layering_and_background_avg
+ import layering_and_background_avg
 #layering_and_background_avg(rlist)
-#tmp_numpy_layering_n_bkgr_avg(rlist)
 
 from dials.algorithms.background.curved_background_subtractor \
- import tmp_numpy_layering_n_bkgr_modl, layering_and_background_modl \
+ import layering_and_background_modl \
 #tmp_numpy_layering_n_bkgr_modl(rlist)
-#layering_and_background_modl(rlist)
 
 
 from dials.algorithms.background.inclined_background_subtractor \
