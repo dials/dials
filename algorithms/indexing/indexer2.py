@@ -210,22 +210,31 @@ class indexer_base(object):
     self.reflections = reflections
     self.sweep = sweep
 
-    from dials.model.serialize import load
+    from dials.model.serialize.load import experiment_list as load_experiment_list
+    from dxtbx.serialize.load import imageset as load_imageset
     if params.reference.detector is not None:
-      experiments = load.experiment_list(
-        params.reference.detector, check_format=False)
-      assert len(experiments.detectors()) == 1
-      reference_detector = experiments.detectors()[0]
+      try:
+        experiments = load_experiment_list(
+          params.reference.detector, check_format=False)
+        assert len(experiments.detectors()) == 1
+        reference_detector = experiments.detectors()[0]
+      except Exception, e:
+        imageset = load_imageset(params.reference.detector)
+        reference_detector = imageset.get_detector()
       print "Replacing detector:"
       print self.sweep.get_detector()
       print "with:"
       print reference_detector
       self.sweep.set_detector(reference_detector)
     if params.reference.beam is not None:
-      experiments = load.experiment_list(
-        params.reference.detector, check_format=False)
-      assert len(experiments.beams()) == 1
-      reference_beam = experiments.beams()[0]
+      try:
+        experiments = load_experiment_list(
+          params.reference.detector, check_format=False)
+        assert len(experiments.beams()) == 1
+        reference_beam = experiments.beams()[0]
+      except Exception, e:
+        imageset = load_imageset(params.reference.beam)
+        reference_beam = imageset.get_beam()
       print "Replacing beam:"
       print self.sweep.get_beam()
       print "with:"
