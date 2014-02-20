@@ -35,7 +35,7 @@ def layering_and_background_avg(reflections):
         mask2d = mask[i:i + 1, :, :]
         data2d.reshape(flex.grid(data.all()[1:]))
         mask2d.reshape(flex.grid(data.all()[1:]))
-        background2d = flat_background_flex_2d(data2d.as_double(), mask2d)
+        background2d = flat_background_flex_2d(data2d, mask2d)
         background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
         background[i:i + 1, :, :] = background2d.as_double()
 

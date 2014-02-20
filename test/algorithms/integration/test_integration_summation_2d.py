@@ -88,13 +88,18 @@ def run():
    import layering_and_background_plane
   layering_and_background_plane(ref_table)
 
-  to_be_fixed = '''
+
   from dials.algorithms.integration.summation2d \
    import  flex_2d_layering_n_integrating
   flex_2d_layering_n_integrating(ref_table)
 
 
+  iterate = ref_table['intensity.raw.value']
+  for n_its in iterate:
+    print n_its
+    print ">>>"
 
+  to_be_fixed = '''
   for r in rlist:
 
     if r.intensity > 50 - rnd_siz and r.intensity < 50 + rnd_siz:

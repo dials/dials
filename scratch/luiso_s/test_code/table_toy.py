@@ -34,7 +34,7 @@ for arr in its:
 #'''
 
 example_from_other_code = '''
-stron_ref_table = flex.reflection_table()
+strong_ref_table = flex.reflection_table()
 for row in table.rows():
   h = row['miller_index']
   i_c = row['intensity.cor.value']
@@ -43,7 +43,7 @@ for row in table.rows():
   i_c_var = row['intensity.cor.variance']
   i_r_var = row['intensity.raw.variance']
   if( i_c > math.sqrt(i_c_var) and i_r > math.sqrt(i_r_var) ):
-    stron_ref_table.append(row)
+    strong_ref_table.append(row)
 '''
 
 example_from_other_code = '''
