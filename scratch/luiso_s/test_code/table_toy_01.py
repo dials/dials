@@ -65,12 +65,17 @@ for n_i_v in iterate:
 from dials.algorithms.background.curved_background_subtractor \
  import layering_and_background_modl
 layering_and_background_modl(ref_table)
-'''
 
 
 from dials.algorithms.background.inclined_background_subtractor \
  import layering_and_background_plane
 layering_and_background_plane(ref_table)
+'''
+
+from dials.algorithms.background.flat_background_subtractor \
+ import layering_and_background_avg
+layering_and_background_avg(rlist)
+
 
 print ">>>>>>>>>>>>>>>>>>>>>>>>>    printing during integrating         <<<<<<<<"
 print ">>>>>>>>>>>>>>>>>>>>>>>>>      printing with background           <<<<<<<<"
