@@ -22,7 +22,7 @@ for arr in iterate:
     for col in range(3):
       for fra in range(3):
         img[row, col, fra] = row + col + fra + n * 9
-  arr.data[:,:,:] = img
+  arr.data = img[:,:,:]
 
 its = ref_table['intensity.raw.value']
 i_var = ref_table['intensity.raw.variance']
