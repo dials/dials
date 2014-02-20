@@ -40,7 +40,7 @@ def test1():
   experiments_path = os.path.join(data_dir, "experiments.json")
   pickle_path = os.path.join(data_dir, "indexed_strong.pickle")
 
-  for pth in ():
+  for pth in (experiments_path, pickle_path):
     assert os.path.exists(pth)
 
   cmd = "dials.refine " + experiments_path + " " + pickle_path
