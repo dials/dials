@@ -74,7 +74,7 @@ layering_and_background_plane(ref_table)
 
 from dials.algorithms.background.flat_background_subtractor \
  import layering_and_background_avg
-layering_and_background_avg(rlist)
+layering_and_background_avg(ref_table)
 
 
 print ">>>>>>>>>>>>>>>>>>>>>>>>>    printing during integrating         <<<<<<<<"
