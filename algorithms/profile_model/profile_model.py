@@ -230,7 +230,6 @@ class ProfileModel(object):
   def __init__(self, experiment, reflections, min_zeta=0.05):
     ''' Calculate the profile model. '''
     from dials.util.command_line import Command
-    from math import pi
 
     # Check input has what we want
     assert(experiment is not None)
@@ -243,8 +242,13 @@ class ProfileModel(object):
 
     # Compute the zeta factory and filter based on zeta
     zeta = reflections.compute_zeta(experiment)
+
+    # Filter based on zeta value
+    Command.start('Filtering reflections with zeta < %f' % min_zeta)
     mask = zeta < min_zeta
     reflections.del_selected(mask)
+    Command.end('Filtered %d reflections with zeta > %f' %
+      (len(reflections), min_zeta))
 
     # Calculate the E.S.D of the beam divergence
     Command.start('Calculating E.S.D Beam Divergence.')
@@ -257,8 +261,8 @@ class ProfileModel(object):
     Command.end('Calculated E.S.D Reflecting Range.')
 
     # Set the sigmas
-    self._sigma_b = beam_divergence.sigma() * 180.0 / pi
-    self._sigma_m = reflecting_range.sigma() * 180.0 / pi
+    self._sigma_b = beam_divergence.sigma()
+    self._sigma_m = reflecting_range.sigma()
 
   def sigma_b(self):
     ''' Return the E.S.D beam divergence. '''
