@@ -279,6 +279,9 @@ class SpotFinderFactory(object):
     params.lookup.gain_map = gain_map
     params.lookup.dark_map = dark_map
     params.lookup.mask = mask
+    from dials.framework.registry import Registry
+    registry = Registry()
+    registry.params().spotfinder = params.spotfinder
 
     # Configure the algorithm and wrap it up
     find_spots = SpotFinderFactory.configure_algorithm()
