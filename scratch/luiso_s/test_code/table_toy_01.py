@@ -14,15 +14,23 @@ ref_table['intensity.raw.variance'] = intensity_var
 iterate = ref_table['shoebox']
 n = 0
 for arr in iterate:
-  n += 1
-  img = arr.data
   img = flex.double(flex.grid(3, 3, 3))
-
+  bkg = flex.double(flex.grid(3, 3, 3))
+  msk = flex.int(flex.grid(3, 3, 3))
   for row in range(3):
     for col in range(3):
       for fra in range(3):
         img[row, col, fra] = row + col + fra + n * 9
-  arr.data = img[:,:,:]
+        bkg[row, col, fra] = 0.0
+        msk[row, col, fra] = 3
+  n += 1
+  msk[1, 1, 1] = 5
+  tmp_i = n * n * n * 3
+  img[1, 1, 1] += tmp_i
+  print "intensity must be =", tmp_i
+  arr.data = img[:, :, :]
+  arr.background = bkg[:, :, :]
+  arr.mask = msk[:, :, :]
 
 its = ref_table['intensity.raw.value']
 i_var = ref_table['intensity.raw.variance']
@@ -37,7 +45,16 @@ iterate = ref_table['shoebox']
 for arr in iterate:
   np_img = arr.data.as_numpy_array()
   print np_img
+  np_img = arr.background.as_numpy_array()
+  print np_img
+  np_img = arr.mask.as_numpy_array()
+  print np_img
+
   print ">>"
+
+
+
+
 
 iterate = ref_table['intensity.raw.value']
 for n_its in iterate:

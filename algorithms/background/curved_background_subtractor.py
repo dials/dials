@@ -10,9 +10,6 @@
 
 from __future__ import division
 
-from dials.algorithms.background.background_subtraction_2d \
-          import curved_background_calc_2d
-
 class CurvedSubtractor(object):
   ''' The Flat background subtractor '''
 
@@ -38,7 +35,6 @@ def layering_and_background_modl(reflections):
         mask2d = mask[i:i + 1, :, :]
         data2d.reshape(flex.grid(data.all()[1:]))
         mask2d.reshape(flex.grid(data.all()[1:]))
-        #background2d = curved_background_flex_2d(data2d.as_double(), mask2d)
         background2d = curved_background_flex_2d(data2d, mask2d)
         background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
         background[i:i + 1, :, :] = background2d.as_double()

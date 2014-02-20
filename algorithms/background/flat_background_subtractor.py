@@ -10,9 +10,6 @@
 
 from __future__ import division
 
-from dials.algorithms.background.background_subtraction_2d \
-          import flat_background_calc_2d
-
 class FlatSubtractor(object):
   ''' The Flat background subtractor '''
 
@@ -41,4 +38,5 @@ def layering_and_background_avg(reflections):
         background2d = flat_background_flex_2d(data2d.as_double(), mask2d)
         background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
         background[i:i + 1, :, :] = background2d.as_double()
+
   return reflections

@@ -10,9 +10,6 @@
 
 from __future__ import division
 
-from dials.algorithms.background.background_subtraction_2d \
-          import curved_background_calc_2d
-
 class InclinedSubtractor(object):
   ''' The Flat background subtractor '''
 
@@ -55,7 +52,6 @@ def layering_and_background_plane(reflections):
         if ok_logic == 0:
           a_mat = a_mat_flx.as_scitbx_matrix()
           b_mat = b_vec_flx.as_scitbx_matrix()
-
 
           try:
             x_mat = a_mat.inverse() * b_mat
