@@ -321,6 +321,11 @@ class RefinerFactory(object):
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("beam_options.fix value not recognised")
 
+      if beam_options.fix_list:
+        to_fix = [True if i in beam_options.fix_list else False \
+                  for i in range(beam_param.num_total())]
+        beam_param.set_fixed(to_fix)
+
       if goniometer is None:
         beam_params_stills.append(beam_param)
       else:
@@ -381,6 +386,16 @@ class RefinerFactory(object):
           xl_ori_param.set_fixed([True] * xl_ori_param.num_total())
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("crystal_options.fix value not recognised")
+
+      if crystal_options.cell_fix_list:
+        to_fix = [True if i in crystal_options.cell_fix_list else False \
+                  for i in range(xl_uc_param.num_total())]
+        xl_uc_param.set_fixed(to_fix)
+
+      if crystal_options.orientation_fix_list:
+        to_fix = [True if i in crystal_options.orientation_fix_list else False \
+                  for i in range(xl_ori_param.num_total())]
+        xl_ori_param.set_fixed(to_fix)
 
       if goniometer is None:
         xl_ori_params_stills.append(xl_ori_param)
