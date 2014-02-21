@@ -40,24 +40,30 @@ refinement
       absolute_num_intervals = 5
         .help = "Number of intervals between checkpoints if scan_varying"
                 "refinement is requested"
-      .type = int(value_min=1)
+        .type = int(value_min=1)
      }
 
     detector
       .help = "detector parameters"
     {
-      panels = *automatic single multiple
-        .help = "Select appropriate detector parameterisation. Currently the"
-                "choice is between a single or multiple panel detector, in"
-                "either case treated as a rigid body. The default choice"
-                "automatically chooses multiple if the number of panels > 1"
+      panels = *automatic single multiple hierarchical
+        .help = "Select appropriate detector parameterisation. Both the"
+                "single and multiple panel detector options treat the whole"
+                "detector as a rigid body. The hierarchical parameterisation"
+                "treats groups of panels as separate rigid bodies."
         .type = choice
+      hierarchy_level = 0
+        .help = "Level of the detector hierarchy (starting from the root at 0)"
+                "at which to determine panel groups to parameterise independently"
+        .type = int(value_min=0)
       fix = all position orientation
         .help = "Fix detector parameters. The translational parameters"
                 "(position) may be set separately to the orientation."
         .type = choice
+      fix_list = None
+        .type = ints(value_min=0)
+        .help = "Fix specified parameters by a list of indices"
     }
-
   }
 
   refinery

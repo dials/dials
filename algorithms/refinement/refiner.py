@@ -397,7 +397,12 @@ class RefinerFactory(object):
       # Detector
       if detector_options.panels == "automatic":
         if len(detector) > 1:
-          det_param = par.DetectorParameterisationMultiPanel(detector, beam,
+          try:
+            h = detector.hierarchy()
+            det_param = par.DetectorParameterisationHierarchical(detector, beam,
+                experiment_ids=exp_ids, level=detector_options.hierarchy_level)
+          except AttributeError:
+            det_param = par.DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
         else:
           det_param = par.DetectorParameterisationSinglePanel(detector,
@@ -405,9 +410,12 @@ class RefinerFactory(object):
       elif detector_options.panels == "single":
         det_param = par.DetectorParameterisationSinglePanel(detector,
                                                         experiment_ids=exp_ids)
-      elif self._detector_par_options == "multiple":
+      elif detector_options.panels == "multiple":
         det_param = par.DetectorParameterisationMultiPanel(detector, beam,
                                                         experiment_ids=exp_ids)
+      elif detector_options.panels == "hierarchical":
+        det_param = par.DetectorParameterisationHierarchical(detector, beam,
+                experiment_ids=exp_ids, level=detector_options.hierarchy_level)
       else: # can only get here if refinement.phil is broken
         raise RuntimeError("detector_options.panels value not recognised")
 
@@ -424,6 +432,11 @@ class RefinerFactory(object):
           det_param.set_fixed(to_fix)
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("detector_options.fix value not recognised")
+
+      if detector_options.fix_list:
+        to_fix = [True if i in detector_options.fix_list else False \
+                  for i in range(det_param.num_total())]
+        det_param.set_fixed(to_fix)
 
       det_params.append(det_param)
 
