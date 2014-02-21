@@ -685,6 +685,7 @@ test/array_family/tst_reflection_table.py -text
 test/command_line/tst_compare.py -text
 test/command_line/tst_create_profile_model.py -text
 test/command_line/tst_detector_max_resolution.py -text
+test/command_line/tst_discover_better_experimental_model.py -text
 test/command_line/tst_export.py -text
 test/command_line/tst_export_xds.py -text
 test/command_line/tst_extract.py -text
