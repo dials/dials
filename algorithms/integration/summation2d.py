@@ -26,12 +26,16 @@ class Summation2d(object):
     flex_2d_layering_n_integrating(reflections)
 
 def flex_2d_layering_n_integrating(ref_table):
+  '''
+  integrated via summation-integration by layering ,
+  frame per frame, each reflection in the table
+  '''
   from scitbx.array_family import flex
   from dials.algorithms.integration import raw_2d_cut
   print "Performing summation integration .... "
 
   from dials.array_family import flex
-
+  # extracting needed info from table
   col_of_shoebox = ref_table['shoebox']
   col_of_its = ref_table['intensity.raw.value']
   col_of_var = ref_table['intensity.raw.variance']
@@ -55,6 +59,7 @@ def flex_2d_layering_n_integrating(ref_table):
         mask2d.reshape(flex.grid(data.all()[1:]))
         background2d.reshape(flex.grid(data.all()[1:]))
 
+        # boosted c++ function
         reslt = raw_2d_cut(data2d, mask2d, background2d)
 
         i_r += reslt[0]
