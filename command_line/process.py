@@ -20,109 +20,74 @@ class Script(ScriptRunner):
     '''Initialise the script.'''
 
     # The script usage
-    usage = "usage: %prog [options] [param.phil] sweep.json crystal.json"
+    usage = "usage: %prog [options] [param.phil] datablock.json"
 
     # Initialise the base class
     ScriptRunner.__init__(self, usage=usage)
 
-    # Output filename option
-    self.config().add_option(
-        '--sweep-filename',
-        dest = 'sweep_filename',
-        type = 'string', default = 'refined_sweep.json',
-        help = 'Set the filename for refined experimental models.')
-
-    # Output filename option
-    self.config().add_option(
-        '--crystal-filename',
-        dest = 'crystal_filename',
-        type = 'string', default = 'refined_crystal.json',
-        help = 'Set the filename for refined crystal model.')
-
-    # Output filename option
-    self.config().add_option(
-        '--observed-filename',
-        dest = 'observed_filename',
-        type = 'string', default = 'observed.pickle',
-        help = 'Set the filename for observed reflections.')
-
-    # Output filename option
-    self.config().add_option(
-        '--reference-filename',
-        dest = 'reference_filename',
-        type = 'string', default = 'reference.pickle',
-        help = 'Set the filename for reference profiles.')
-
-    # Output filename option
-    self.config().add_option(
-        '--integrated-filename',
-        dest = 'integrated_filename',
-        type = 'string', default = 'integrated.pickle',
-        help = 'Set the filename for integrated reflections.')
-
     # Add a verbosity option
     self.config().add_option(
-        "-v", "--verbosity",
+        "-v",
         action="count", default=1,
         help="set verbosity level; -vv gives verbosity level 2")
 
-
   def main(self, params, options, args):
     '''Execute the script.'''
-    from dials.model.serialize import load, dump
-    from dials.process import ProcessFactory
+    from dials.util.command_line import Importer
     from dials.util.command_line import Command
-    from dials.algorithms import shoebox
 
-    # Get the filenames
-    if len(args) == 2:
-      sweep = load.sweep(args[0])
-      crystal = load.crystal(args[1])
-    else:
-      self.config().print_help()
-      return
+    # Preamble stuff
+    print '*' * 80
+    print ''
+    print '                       mmmm   mmmmm    mm   m       mmmm            '
+    print '                       #   "m   #      ##   #      #"   "           '
+    print '                      m#mm  #   #     #  #  #      "#mmm            '
+    print '                       #    #   #     #mm#  #          "#           '
+    print '                       #mmm"  mm#mm  #    # #mmmmm "mmm#"           '
+    print ''
+    print 'Launching dials.process'
+    print ''
+    print 'The following tasks will be performed:'
+    print ' 1) Strong spots will be found (dials.find_spots)'
+    print ' 2) The strong spots will be indexed (dials.index)'
+    print ' 3) A profile model will be created (dials.create_profile_model)'
+    print ' 4) The reflections will be integrated (dials.integrate)'
+    print ''
+    print 'Please be patient, this may take a few minutes'
+    print ''
+    print '*' * 80
+    print ''
 
-    # Creating the processing function
-    pipeline = ProcessFactory.from_parameters(params, options.verbosity)
+    # Import stuff
+    Command.start('Importing datablocks')
+    importer = Importer(args)
+    assert(len(importer.datablocks) == 1)
+    datablock = importer.datablocks[0]
+    Command.end('Imported datablocks')
 
-    # Process the data
-    pipeline.run(sweep, crystal)
-    observed = pipeline.observed
-    reference = pipeline.reference
-    integrated = pipeline.integrated
+    # Find the strong spots
+    observed = self.find_spots(datablock)
 
-    # Print some help
-    print '\n' + '=' * 80
-    print 'Writing results to file'
-    print '=' * 80 + '\n'
+    # Index the strong spots
+    experiments, indexed = self.index(datablock, observed)
 
-    # Save the refined geometry to file
-    sweep_filename = options.sweep_filename
-    Command.start('Saving refined geometry to {0}'.format(sweep_filename))
-    dump.sweep(sweep, open(sweep_filename, 'w'))
-    Command.end('Saved refined geometry to {0}'.format(sweep_filename))
+    # Create the profile model
+    profile = self.create_profile_model(experiments, indexed)
 
-    # Save the refined crystal to file
-    crystal_filename = options.crystal_filename
-    Command.start('Saving refined geometry to {0}'.format(crystal_filename))
-    dump.crystal(crystal, open(crystal_filename, 'w'))
-    Command.end('Saved refined geometry to {0}'.format(crystal_filename))
+    # Integrate the reflections
+    integrated = self.integrate(experiments, profile, indexed)
 
-    # Save the observed reflections to file
-    Command.start('Saving observed to {0}'.format(options.observed_filename))
-    dump.reflections(observed, options.observed_filename)
-    Command.end('Saved observed to {0}'.format(options.observed_filename))
+  def find_spots(self, datablock):
+    return None
 
-    # Save the reference profiles to file
-    Command.start('Saving reference to {0}'.format(options.reference_filename))
-    dump.reference(reference, options.reference_filename)
-    Command.end('Saved reference to {0}'.format(options.reference_filename))
+  def index(self, datablock, observed):
+    return None, None
 
-    # Save the integrated reflections to file
-    Command.start('Saving integrated to {0}'.format(options.integrated_filename))
-    shoebox.deallocate(integrated)
-    dump.reflections(integrated, options.integrated_filename)
-    Command.end('Saved integrated to {0}'.format(options.integrated_filename))
+  def create_profile_model(self, experiments, indexed):
+    return None
+
+  def integrate(self, experiments, profile, indexed):
+    return None
 
 
 if __name__ == '__main__':
