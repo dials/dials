@@ -32,7 +32,6 @@ def flex_2d_layering_n_integrating(ref_table):
 
   from dials.array_family import flex
 
-
   row_of_shoebox = ref_table['shoebox']
   row_of_its = ref_table['intensity.raw.value']
   row_of_var = ref_table['intensity.raw.variance']
