@@ -65,8 +65,7 @@ class Script(ScriptRunner):
     print 'The following tasks will be performed:'
     print ' 1) Strong spots will be found (dials.find_spots)'
     print ' 2) The strong spots will be indexed (dials.index)'
-    print ' 3) A profile model will be created (dials.create_profile_model)'
-    print ' 4) The reflections will be integrated (dials.integrate)'
+    print ' 3) The reflections will be integrated (dials.integrate)'
     print ''
     print 'Please be patient, this may take a few minutes'
     print ''
@@ -80,6 +79,10 @@ class Script(ScriptRunner):
     datablock = importer.datablocks[0]
     Command.end('Imported datablocks')
 
+    from dxtbx.datablock import DataBlockDumper
+    dump = DataBlockDumper(datablock)
+    dump.as_json("datablock.json")
+
     # Check the unhandled arguments
     if len(importer.unhandled_arguments) > 0:
       print '-' * 80
@@ -91,8 +94,7 @@ class Script(ScriptRunner):
     # Do the processing
     observed = self.find_spots(datablock)
     experiments, indexed = self.index(datablock, observed)
-    profile = self.create_profile_model(experiments, indexed)
-    integrated = self.integrate(experiments, profile, indexed)
+    integrated = self.integrate(experiments, indexed)
 
     # Total Time
     print ""
@@ -119,6 +121,8 @@ class Script(ScriptRunner):
       observed.as_pickle(self.options.strong_filename)
       Command.end('Saved {0} observed to {1}'.format(
           len(observed), self.options.strong_filename))
+
+    observed.as_pickle("strong.pickle")
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
@@ -153,7 +157,6 @@ class Script(ScriptRunner):
     print beam
 
     params = working_phil.extract()
-    params.refinement.reflections.use_all_reflections=True
     if params.method == "fft3d":
       from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
     elif params.method == "fft1d":
@@ -173,59 +176,24 @@ class Script(ScriptRunner):
     print 'Time Taken = %f seconds' % (time() - st)
     return experiments, indexed
 
-  def create_profile_model(self, experiments, reflections):
-    from dials.algorithms.profile_model.profile_model import ProfileModel
-    from time import time
-    from dials.util.command_line import Command
-    from math import pi
-    st = time()
-
-    print '*' * 80
-    print 'Creating Profile Model'
-    print '*' * 80
-
-    print 'Starting with %d reflections' % len(reflections)
-
-    from dials.array_family import flex
-    Command.start('Removing invalid coordinates')
-    xyz = reflections['xyzcal.mm']
-    mask = flex.bool([x == (0, 0, 0) for x in xyz])
-    reflections.del_selected(mask)
-    Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
-
-    # Create the profile model
-    profile_model = ProfileModel(experiments[0], reflections)
-    sigma_b = profile_model.sigma_b() * 180.0 / pi
-    sigma_m = profile_model.sigma_m() * 180.0 / pi
-    print 'Sigma B: %f' % sigma_b
-    print 'Sigma M: %f' % sigma_m
-
-    # Write the parameters
-    from dials.framework.registry import Registry
-    registry = Registry()
-
-    # Get the parameters
-    params = registry.config().params()
-    params.shoebox.sigma_b = sigma_b
-    params.shoebox.sigma_m = sigma_m
-
-    print ''
-    print 'Time Taken = %f seconds' % (time() - st)
-    return (sigma_b, sigma_m)
-
-  def integrate(self, experiments, profile, indexed):
+  def integrate(self, experiments, indexed):
     from dials.algorithms.integration import Integrator
     from time import time
-    from dials.framework.registry import Registry
-    registry = Registry()
-    assert(registry.params().shoebox.sigma_b > 0)
-    assert(registry.params().shoebox.sigma_m > 0)
+    from dials.util.command_line import Command
 
     st = time()
 
     print '*' * 80
     print 'Integrating Reflections'
     print '*' * 80
+
+
+    from dials.array_family import flex
+    Command.start('Removing invalid coordinates')
+    xyz = indexed['xyzcal.mm']
+    mask = flex.bool([x == (0, 0, 0) for x in xyz])
+    indexed.del_selected(mask)
+    Command.end('Removed invalid coordinates, %d remaining' % len(indexed))
 
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'
@@ -236,6 +204,8 @@ class Script(ScriptRunner):
     # Intregate the sweep's reflections
     print 'Integrating reflections'
     reflections = integrate(experiments, reference=indexed, extracted=None)
+
+    reflections.as_pickle("integrated.pickle")
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
