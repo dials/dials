@@ -65,6 +65,8 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     if (crystal_ids == i_cryst).count(True) < params.refinement.reflections.minimum_number_of_reflections:
       raise RuntimeError("Insufficient matches for crystal %i" %(i_cryst+1))
   refined = refiner.run()
+  if debug_plots:
+    debug_plot_residuals(refiner)
   return refiner, refined
 
 
@@ -75,11 +77,13 @@ def debug_plot_residuals(refiner, inlier_sel=None):
   frame_obs = flex.double()
   panel_ids = flex.size_t()
   crystal_ids = flex.int()
+  phi_obs = flex.double()
   for match in matches:
     residuals.append((match.x_resid, match.y_resid, match.phi_resid))
     frame_obs.append(match.frame_obs)
     panel_ids.append(match.panel)
     crystal_ids.append(match.crystal_id)
+    phi_obs.append(match.phi_obs)
   x_residuals, y_residuals, phi_residuals = residuals.parts()
   if inlier_sel is None:
     inlier_sel = flex.bool(len(residuals), True)
@@ -111,29 +115,33 @@ def debug_plot_residuals(refiner, inlier_sel=None):
   mean_residuals_y = []
   mean_residuals_phi = []
   frame = []
-  for i_frame in range(min_frame, max_frame):
-    sel = (frame_obs >= i_frame) & (frame_obs < (i_frame+1))
+  phi_obs_deg = (180/math.pi) * phi_obs
+  phi = []
+
+  for i_phi in range(int(math.floor(flex.min(phi_obs_deg))),
+                 int(math.ceil(flex.max(phi_obs_deg)))):
+    sel = (phi_obs_deg >= i_phi) & (phi_obs_deg < (i_phi+1))
     if sel.count(True) == 0:
       continue
     mean_residuals_x.append(flex.mean(x_residuals.select(sel)))
     mean_residuals_y.append(flex.mean(y_residuals.select(sel)))
     mean_residuals_phi.append(flex.mean(phi_residuals.select(sel)))
-    frame.append(i_frame)
+    phi.append(i_phi)
 
   fig = pyplot.figure()
   ax = fig.add_subplot(311)
   pyplot.axhline(0, color='grey')
-  ax.scatter(frame, mean_residuals_x)
-  ax.set_xlabel('frame #')
+  ax.scatter(phi, mean_residuals_x)
+  ax.set_xlabel('phi (deg)')
   ax.set_ylabel('mean residual_x')
   ax = fig.add_subplot(312)
   pyplot.axhline(0, color='grey')
-  ax.scatter(frame, mean_residuals_y)
-  ax.set_xlabel('frame #')
+  ax.scatter(phi, mean_residuals_y)
+  ax.set_xlabel('phi (deg)')
   ax.set_ylabel('mean residual_y')
   ax = fig.add_subplot(313)
   pyplot.axhline(0, color='grey')
-  ax.scatter(frame, mean_residuals_phi)
-  ax.set_xlabel('frame #')
+  ax.scatter(phi, mean_residuals_phi)
+  ax.set_xlabel('phi (deg)')
   ax.set_ylabel('mean residual_phi')
   pyplot.show()
