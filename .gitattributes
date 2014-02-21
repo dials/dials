@@ -68,6 +68,7 @@ algorithms/image/threshold/boost_python/unimodal.cc -text
 algorithms/image/threshold/local.h -text
 algorithms/image/threshold/unimodal.h -text
 algorithms/indexing/__init__.py -text
+algorithms/indexing/compare_orientation_matrices.py -text
 algorithms/indexing/fft1d.py -text
 algorithms/indexing/fft3d.py -text
 algorithms/indexing/indexer.py -text
@@ -270,6 +271,7 @@ command_line/assign_indices.py -text
 command_line/background_lookup.py -text
 command_line/compare_mosflm_dials.py -text
 command_line/compare_mosflm_xds.py -text
+command_line/compare_orientation_matrices.py -text
 command_line/compare_xds_dials.py -text
 command_line/compare_xds_dials2.py -text
 command_line/create_profile_model.py -text
@@ -618,6 +620,7 @@ test/algorithms/image/filter/tst_median.py -text
 test/algorithms/image/filter/tst_summed_area.py -text
 test/algorithms/image/threshold/tst_local.py -text
 test/algorithms/image/tst_centroid.py -text
+test/algorithms/indexing/tst_compare_orientation_matrices.py -text
 test/algorithms/indexing/tst_index.py -text
 test/algorithms/integration/profile/__init__.py -text
 test/algorithms/integration/profile/tst_grid_sampler.py -text
