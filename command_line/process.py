@@ -27,15 +27,27 @@ class Script(ScriptRunner):
 
     # Add a verbosity option
     self.config().add_option(
-        "-v",
-        action="count", default=1,
-        help="set verbosity level; -vv gives verbosity level 2")
+      "-v",
+      dest="verbosity",
+      action="count", default=1,
+      help="set verbosity level; -vv gives verbosity level 2")
+
+    # Add an options for spot finder output
+    self.config().add_option(
+      "--strong-filename",
+      dest="strong_filename",
+      type="str", default=None,
+      help="The output filename for found spots")
 
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.util.command_line import Importer
     from dials.util.command_line import Command
     from time import time
+
+    # Save the options
+    self.options = options
+
     st = time()
 
     # Preamble stuff
@@ -62,10 +74,17 @@ class Script(ScriptRunner):
 
     # Import stuff
     Command.start('Importing datablocks')
-    importer = Importer(args)
+    importer = Importer(args, include=["images", "datablocks"])
     assert(len(importer.datablocks) == 1)
     datablock = importer.datablocks[0]
     Command.end('Imported datablocks')
+
+    # Check the unhandled arguments
+    if len(importer.unhandled_arguments) > 0:
+      print '-' * 80
+      print 'The following command line arguments weren\'t handled'
+      for arg in importer.unhandled_arguments:
+        print '  ' + arg
     print ''
 
     # Find the strong spots
@@ -86,15 +105,29 @@ class Script(ScriptRunner):
 
   def find_spots(self, datablock):
     from time import time
+    from dials.array_family import flex
+    from dials.util.command_line import Command
     st = time()
 
     print '*' * 80
     print 'Finding Strong Spots'
     print '*' * 80
 
+    # Find the strong spots
+    observed = flex.reflection_table.from_observations(datablock)
+
+    # Save the reflections to file
+    print '\n' + '-' * 80
+    if self.options.strong_filename:
+      Command.start('Saving {0} reflections to {1}'.format(
+          len(observed), self.options.strong_filename))
+      observed.as_pickle(self.options.strong_filename)
+      Command.end('Saved {0} observed to {1}'.format(
+          len(observed), self.options.strong_filename))
+
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
-    return None
+    return observed
 
   def index(self, datablock, observed):
     from time import time
