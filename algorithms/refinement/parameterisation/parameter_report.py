@@ -166,66 +166,64 @@ class ParameterReporter(object):
     else:
       return None
 
-  # FIXME Don't need this?
-  def get_params(self):
+  def get_params(self, only_free=True):
     """return a concatenated list of parameters from each of the components
     in the global model"""
 
     global_p_list = []
     if self._detector_parameterisations:
-      det_plists = [x.get_params()
+      det_plists = [x.get_params(only_free)
                     for x in self._detector_parameterisations]
       params = [x for l in det_plists for x in l]
       global_p_list.extend(params)
 
     if self._beam_parameterisations:
-      src_plists = [x.get_params()
+      src_plists = [x.get_params(only_free)
                     for x in self._beam_parameterisations]
       params = [x for l in src_plists for x in l]
       global_p_list.extend(params)
 
     if self._xl_orientation_parameterisations:
-      xlo_plists = [x.get_params()
+      xlo_plists = [x.get_params(only_free)
                     for x in self._xl_orientation_parameterisations]
       params = [x for l in xlo_plists for x in l]
       global_p_list.extend(params)
 
     if self._xl_unit_cell_parameterisations:
-      xluc_plists = [x.get_params()
+      xluc_plists = [x.get_params(only_free)
                      for x in self._xl_unit_cell_parameterisations]
       params = [x for l in xluc_plists for x in l]
       global_p_list.extend(params)
 
     return global_p_list
 
-  # FIXME Don't need this?
-  def get_param_names(self):
+  def get_param_names(self, only_free=True):
     """Return a list of the names of parameters in the order they are
     concatenated. Useful for output to log files and debugging."""
     param_names = []
     if self._detector_parameterisations:
-      det_param_name_lists = [x.get_param_names() for x in \
+      det_param_name_lists = [x.get_param_names(only_free) for x in \
                          self._detector_parameterisations]
       names = ["Detector%d" % i + x for i, l \
                in enumerate(det_param_name_lists) for x in l]
       param_names.extend(names)
 
     if self._beam_parameterisations:
-      src_param_name_lists = [x.get_param_names() for x in \
+      src_param_name_lists = [x.get_param_names(only_free) for x in \
                          self._beam_parameterisations]
       params = ["Source%d" % i + x for i, l \
                 in enumerate(src_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_orientation_parameterisations:
-      xlo_param_name_lists = [x.get_param_names() for x
+      xlo_param_name_lists = [x.get_param_names(only_free) for x
                     in self._xl_orientation_parameterisations]
       params = ["Crystal%d" % i + x for i, l \
                 in enumerate(xlo_param_name_lists) for x in l]
       param_names.extend(params)
 
     if self._xl_unit_cell_parameterisations:
-      xluc_param_name_lists = [x.get_param_names() for x
+      xluc_param_name_lists = [x.get_param_names(only_free) for x
                      in self._xl_unit_cell_parameterisations]
       params = ["Crystal%d" % i + x for i, l \
                 in enumerate(xluc_param_name_lists) for x in l]
