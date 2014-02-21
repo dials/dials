@@ -32,11 +32,11 @@ def flex_2d_layering_n_integrating(ref_table):
 
   from dials.array_family import flex
 
-  row_of_shoebox = ref_table['shoebox']
-  row_of_its = ref_table['intensity.raw.value']
-  row_of_var = ref_table['intensity.raw.variance']
+  col_of_shoebox = ref_table['shoebox']
+  col_of_its = ref_table['intensity.raw.value']
+  col_of_var = ref_table['intensity.raw.variance']
   for row_num in range(ref_table.nrows()):
-      local_shoebox = row_of_shoebox[row_num]
+      local_shoebox = col_of_shoebox[row_num]
 
       i_r = 0
       i_v = 0
@@ -60,8 +60,8 @@ def flex_2d_layering_n_integrating(ref_table):
         i_r += reslt[0]
         i_v += reslt[1]
 
-      row_of_its[row_num] = i_r
-      row_of_var[row_num] = i_v
+      col_of_its[row_num] = i_r
+      col_of_var[row_num] = i_v
 
   print "summation integration      ....       Done"
 
