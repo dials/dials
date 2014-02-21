@@ -758,12 +758,11 @@ class indexer_base(object):
     matches = refiner.get_matches()
     selection_used_for_refinement = refiner.selection_used_for_refinement()
     xyzcal_mm = flex.vec3_double(len(used_reflections))
-    i_match = -1
-    for i_ref in range(len(used_reflections)):
-      if selection_used_for_refinement[i_ref]:
-        i_match += 1
-        match = matches[i_match]
-        xyzcal_mm[i_ref] = (match.x_calc, match.y_calc, match.phi_calc)
+    for match in matches:
+      #assert match.miller_index == used_reflections[match.iobs]['miller_index']
+      #assert (match.x_obs, match.y_obs, match.phi_obs) == used_reflections[match.iobs]['xyzobs.mm.value']
+      xyzcal_mm[match.iobs] = (match.x_calc, match.y_calc, match.phi_calc)
+      #print xyzcal_mm[match.iobs], used_reflections['xyzobs.mm.value'][match.iobs]
     used_reflections['xyzcal.mm'] = xyzcal_mm
     return refiner.get_experiments(), used_reflections
 
