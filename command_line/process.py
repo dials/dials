@@ -35,6 +35,8 @@ class Script(ScriptRunner):
     '''Execute the script.'''
     from dials.util.command_line import Importer
     from dials.util.command_line import Command
+    from time import time
+    st = time()
 
     # Preamble stuff
     print '*' * 80
@@ -64,6 +66,7 @@ class Script(ScriptRunner):
     assert(len(importer.datablocks) == 1)
     datablock = importer.datablocks[0]
     Command.end('Imported datablocks')
+    print ''
 
     # Find the strong spots
     observed = self.find_spots(datablock)
@@ -77,16 +80,56 @@ class Script(ScriptRunner):
     # Integrate the reflections
     integrated = self.integrate(experiments, profile, indexed)
 
+    # Total Time
+    print ""
+    print "Total Time Taken = %f seconds" % (time() - st)
+
   def find_spots(self, datablock):
+    from time import time
+    st = time()
+
+    print '*' * 80
+    print 'Finding Strong Spots'
+    print '*' * 80
+
+    print ''
+    print 'Time Taken = %f seconds' % (time() - st)
     return None
 
   def index(self, datablock, observed):
+    from time import time
+    st = time()
+
+    print '*' * 80
+    print 'Indexing Strong Spots'
+    print '*' * 80
+
+    print ''
+    print 'Time Taken = %f seconds' % (time() - st)
     return None, None
 
   def create_profile_model(self, experiments, indexed):
+    from time import time
+    st = time()
+
+    print '*' * 80
+    print 'Creating Profile Model'
+    print '*' * 80
+
+    print ''
+    print 'Time Taken = %f seconds' % (time() - st)
     return None
 
   def integrate(self, experiments, profile, indexed):
+    from time import time
+    st = time()
+
+    print '*' * 80
+    print 'Integrating Reflections'
+    print '*' * 80
+
+    print ''
+    print 'Time Taken = %f seconds' % (time() - st)
     return None
 
 
