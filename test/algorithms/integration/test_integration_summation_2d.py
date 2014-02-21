@@ -69,23 +69,14 @@ def run():
   resl_its = ref_table['intensity.raw.value']
   resl_var = ref_table['intensity.raw.variance']
   for n_its in range(len(resl_its)):
+    print "resl_its[n_its] =", resl_its[n_its]
+    print "i_to_compare[n_its] =", i_to_compare[n_its]
     if(resl_its[n_its] == i_to_compare[n_its] and \
        resl_var[n_its] > resl_its[n_its] ):
       print "Ok ", n_its
     else:
       print "Wrong num", n_its
       result = "wrong"
-
-  to_be_fixed = '''
-  for r in rlist:
-
-    if r.intensity > 50 - rnd_siz and r.intensity < 50 + rnd_siz:
-      print "Summation integration  ...  OK"
-
-    else:
-      print "Summation integration algorithm is not giving the espected result"
-      result = "wrong number"
-  '''
 
   return result
 
