@@ -10,38 +10,7 @@
 from __future__ import division
 
 def run():
-  old_way = '''
-  import random
-  rnd_siz = 10
-  from scitbx.array_family import flex
-  data2d = flex.double(flex.grid(1, 3, 3),15)
 
-  for row in range(3):
-    for col in range(3):
-      data2d[0,row, col] += row * 2
-      data2d[0,row, col] += col * 2
-
-  mask2d = flex.int(flex.grid(1, 3, 3),3)
-  mask2d[0, 1, 1] = 5
-  data2d[0, 1, 1] += 50
-
-  for row in range(3):
-    for col in range(3):
-      rnd_no = random.randint(0,rnd_siz)
-      data2d[0,row, col] += rnd_no
-
-  background2d = flex.double(flex.grid(1, 3, 3),0)
-
-  from dials.model.data import Reflection, ReflectionList
-
-  r = Reflection()
-  r.shoebox = data2d
-  r.shoebox_mask = mask2d
-  r.shoebox_background = background2d
-  rlist = ReflectionList()
-  rlist.append(r)
-
-  '''
   #from scitbx.array_family import flex
   from dials.array_family import flex
   num_ref = 3
@@ -57,6 +26,8 @@ def run():
   ref_table['intensity.raw.variance'] = intensity_var
 
   iterate = ref_table['shoebox']
+  i_to_compare = []
+
   n = 0
   for arr in iterate:
     img = flex.double(flex.grid(3, 3, 3))
@@ -71,18 +42,19 @@ def run():
     n += 1
     msk[1, 1, 1] = 5
     tmp_i = n * n * n * 3
+    i_to_compare.append(tmp_i)
     img[1, 1, 1] += tmp_i
-    print "intensity must be =", tmp_i
+
     arr.data = img[:, :, :]
     arr.background = bkg[:, :, :]
     arr.mask = msk[:, :, :]
 
-  its = ref_table['intensity.raw.value']
-  i_var = ref_table['intensity.raw.variance']
+  #its = ref_table['intensity.raw.value']
+  #i_var = ref_table['intensity.raw.variance']
 
-  for i in range(num_ref):
-    its[i] = (i + 1) * 11
-    i_var[i] = (i + 1) * 12
+  #for i in range(num_ref):
+  #  its[i] = (i + 1) * 11
+  #  i_var[i] = (i + 1) * 12
 
   from dials.algorithms.background.inclined_background_subtractor \
    import layering_and_background_plane
@@ -93,11 +65,14 @@ def run():
    import  flex_2d_layering_n_integrating
   flex_2d_layering_n_integrating(ref_table)
 
-
-  iterate = ref_table['intensity.raw.value']
-  for n_its in iterate:
-    print n_its
-    print ">>>"
+  result = "OK"
+  resl_its = ref_table['intensity.raw.value']
+  for n_its in range(len(resl_its)):
+    if(resl_its[n_its] == i_to_compare[n_its]):
+      print "Ok ", n_its
+    else:
+      print "Wrong num", n_its
+      result = "wrong"
 
   to_be_fixed = '''
   for r in rlist:
@@ -109,7 +84,7 @@ def run():
       print "Summation integration algorithm is not giving the espected result"
       result = "wrong number"
   '''
-  result = "OK"
+
   return result
 
 
