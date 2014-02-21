@@ -11,11 +11,11 @@ shoebox
             "mosaicity to use for the bounding box size."
     .type = float
 
-  sigma_b = 0
+  sigma_b = None
     .help = "The E.S.D. of the beam divergence"
     .type = float
 
-  sigma_m = 0
+  sigma_m = None
     .help = "The E.S.D. of the reflecting range"
     .type = float
 }

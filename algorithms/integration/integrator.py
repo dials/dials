@@ -48,6 +48,19 @@ class Integrator(object):
     else:
       predicted = None
 
+    from dials.framework.registry import Registry
+    registry = Registry()
+    params = registry.params()
+    if params.shoebox.sigma_b is None or params.shoebox.sigma_m is None:
+      assert(reference is not None)
+      from dials.algorithms.profile_model.profile_model import ProfileModel
+      from math import pi
+      profile_model = ProfileModel(experiments[0], reference)
+      params.shoebox.sigma_b = profile_model.sigma_b() * 180.0 / pi
+      params.shoebox.sigma_m = profile_model.sigma_m() * 180.0 / pi
+      print 'Sigma B: %f' % params.shoebox.sigma_b
+      print 'Sigma M: %f' % params.shoebox.sigma_m
+
     # Get the extractor
     extract = ReflectionBlockExtractor(experiments[0], predicted,
       self.n_sigma, self.n_blocks, self.filter_by_zeta, extracted)

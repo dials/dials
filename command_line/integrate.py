@@ -72,11 +72,21 @@ class Script(ScriptRunner):
       print 'Error: only 1 experiment can be processed at a time'
       return
 
+    if importer.reflections is not None:
+      assert(len(importer.reflections) == 1)
+      reference = importer.reflections[0]
+
+      from dials.array_family import flex
+      Command.start('Removing invalid coordinates')
+      xyz = reference['xyzcal.mm']
+      mask = flex.bool([x == (0, 0, 0) for x in xyz])
+      reference.del_selected(mask)
+      Command.end('Removed invalid coordinates, %d remaining' % len(reference))
+    else:
+      reference = None
+
     # Get the reference and extracted stuff
-    reference = importer.reflections
     extracted = importer.extracted
-    if reference:
-      reference = ReflectionList.from_table(reference)
     Command.end('Processed command line options')
 
     # Get the integrator from the input parameters

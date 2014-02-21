@@ -128,7 +128,8 @@ class FractionOfObservedIntensity(object):
     tau = []
     zeta2 = []
     scan = experiment.scan
-    for b, p, z in zip(bbox, phi, zeta):
+    xyzobs = reflections['xyzobs.mm.value']
+    for b, p, z, xyz in zip(bbox, phi, zeta, xyzobs):
       for f in range(b[4], b[5]):
         phi0 = scan.get_angle_from_array_index(int(f), deg=False)
         phi1 = scan.get_angle_from_array_index(int(f)+1, deg=False)
@@ -154,6 +155,7 @@ class FractionOfObservedIntensity(object):
 
     # Tiny value
     TINY = 1e-10
+    assert(sigma_m > TINY)
 
     # Calculate the denominator to the fraction
     den =  sqrt(2.0) * sigma_m

@@ -153,6 +153,7 @@ class Script(ScriptRunner):
     print beam
 
     params = working_phil.extract()
+    params.refinement.reflections.use_all_reflections=True
     if params.method == "fft3d":
       from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
     elif params.method == "fft1d":
@@ -183,6 +184,8 @@ class Script(ScriptRunner):
     print 'Creating Profile Model'
     print '*' * 80
 
+    print 'Starting with %d reflections' % len(reflections)
+
     from dials.array_family import flex
     Command.start('Removing invalid coordinates')
     xyz = reflections['xyzcal.mm']
@@ -211,16 +214,32 @@ class Script(ScriptRunner):
     return (sigma_b, sigma_m)
 
   def integrate(self, experiments, profile, indexed):
+    from dials.algorithms.integration import Integrator
     from time import time
+    from dials.framework.registry import Registry
+    registry = Registry()
+    assert(registry.params().shoebox.sigma_b > 0)
+    assert(registry.params().shoebox.sigma_m > 0)
+
     st = time()
 
     print '*' * 80
     print 'Integrating Reflections'
     print '*' * 80
 
+    # Get the integrator from the input parameters
+    print 'Configurating integrator from input parameters'
+    integrate = Integrator(self.params.shoebox.n_sigma,
+                           self.params.shoebox.n_blocks,
+                           self.params.integration.filter.by_zeta)
+
+    # Intregate the sweep's reflections
+    print 'Integrating reflections'
+    reflections = integrate(experiments, reference=indexed, extracted=None)
+
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
-    return None
+    return reflections
 
 
 if __name__ == '__main__':

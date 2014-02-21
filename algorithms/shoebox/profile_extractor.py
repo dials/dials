@@ -212,6 +212,7 @@ class ReflectionBlockExtractor(object):
     from dials.algorithms import shoebox
     from dials.algorithms import filtering
     from dials.array_family import flex
+    from math import pi
     from dials.model.experiment.experiment_list import Experiment
 
     if reader == None:
@@ -247,8 +248,12 @@ class ReflectionBlockExtractor(object):
       predicted, n_blocks, reader=reader)
 
     # Get the parameters
-    delta_d = n_sigma * experiment.beam.get_sigma_divergence(deg=False)
-    delta_m = n_sigma * experiment.crystal.get_mosaicity(deg=False)
+    from dials.framework.registry import Registry
+    registry = Registry()
+    delta_d = n_sigma * registry.params().shoebox.sigma_b * pi / 180.0
+    delta_m = n_sigma * registry.params().shoebox.sigma_m * pi / 180.0
+    #delta_d = n_sigma * experiment.beam.get_sigma_divergence(deg=False)
+    #delta_m = n_sigma * experiment.crystal.get_mosaicity(deg=False)
 
     # Create the function to mask the shoebox profiles
     self._mask_profiles = shoebox.Masker(experiment, delta_d, delta_m)

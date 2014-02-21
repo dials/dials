@@ -90,11 +90,14 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     ''' Compute the bounding boxes. '''
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.util.command_line import Command
+    from dials.framework.registry import Registry
+    from math import pi
 
     # Get the beam divergence and mosaicity
     if sigma_d is None or sigma_m is None:
-      sigma_d = experiment.beam.get_sigma_divergence(deg=False)
-      sigma_m = experiment.crystal.get_mosaicity(deg=False)
+      registry = Registry()
+      sigma_d = registry.params().shoebox.sigma_b * pi / 180.0
+      sigma_m = registry.params().shoebox.sigma_m * pi / 180.0
 
     # Create the bbox calculator
     calculate = BBoxCalculator(

@@ -11,13 +11,13 @@
 
 from __future__ import division
 
-
 if __name__ == '__main__':
   from optparse import OptionParser
   from dials.util.command_line import Importer
   from dials.algorithms.profile_model.profile_model import ProfileModel
   from math import pi
   from dials.util.command_line import Command
+  from dials.array_family import flex
 
   # The script usage
   usage  = "usage: %prog [options] experiments.json spots.pickle"
