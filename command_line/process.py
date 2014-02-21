@@ -166,23 +166,49 @@ class Script(ScriptRunner):
     from dials.array_family import flex
     from dials.model.experiment.experiment_list import ExperimentListFactory
     indexed = flex.reflection_table.from_pickle("indexed.pickle")
-    experiments = ExperimentList.from_json_file("experiments.json")
+    experiments = ExperimentListFactory.from_json_file("experiments.json")
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
     return experiments, indexed
 
-  def create_profile_model(self, experiments, indexed):
+  def create_profile_model(self, experiments, reflections):
+    from dials.algorithms.profile_model.profile_model import ProfileModel
     from time import time
+    from dials.util.command_line import Command
+    from math import pi
     st = time()
 
     print '*' * 80
     print 'Creating Profile Model'
     print '*' * 80
 
+    from dials.array_family import flex
+    Command.start('Removing invalid coordinates')
+    xyz = reflections['xyzcal.mm']
+    mask = flex.bool([x == (0, 0, 0) for x in xyz])
+    reflections.del_selected(mask)
+    Command.end('Removed invalid coordinates, %d remaining' % len(reflections))
+
+    # Create the profile model
+    profile_model = ProfileModel(experiments[0], reflections)
+    sigma_b = profile_model.sigma_b() * 180.0 / pi
+    sigma_m = profile_model.sigma_m() * 180.0 / pi
+    print 'Sigma B: %f' % sigma_b
+    print 'Sigma M: %f' % sigma_m
+
+    # Write the parameters
+    from dials.framework.registry import Registry
+    registry = Registry()
+
+    # Get the parameters
+    params = registry.config().params()
+    params.shoebox.sigma_b = sigma_b
+    params.shoebox.sigma_m = sigma_m
+
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
-    return None
+    return (sigma_b, sigma_m)
 
   def integrate(self, experiments, profile, indexed):
     from time import time
