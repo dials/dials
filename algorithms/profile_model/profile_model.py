@@ -8,6 +8,13 @@
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
+#
+# FIXME Mosaicity seems to be overestimated
+# FIXME Don't know how XDS REFLECTING_RANGE is calculated
+# FIXME Don't know what XDS REFLECTION_RANGE is used for
+# FIXME Don't know what XDS BEAM_DIVERGENCE is used for
+# FIXME Should maybe be scan varying
+# FIXME Don't know how XDS calculated the n_sigma
 
 from __future__ import division
 
