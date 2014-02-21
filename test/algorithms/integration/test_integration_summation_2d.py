@@ -67,8 +67,10 @@ def run():
 
   result = "OK"
   resl_its = ref_table['intensity.raw.value']
+  resl_var = ref_table['intensity.raw.variance']
   for n_its in range(len(resl_its)):
-    if(resl_its[n_its] == i_to_compare[n_its]):
+    if(resl_its[n_its] == i_to_compare[n_its] and \
+       resl_var[n_its] > resl_its[n_its] ):
       print "Ok ", n_its
     else:
       print "Wrong num", n_its

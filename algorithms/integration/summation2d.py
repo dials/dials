@@ -28,7 +28,7 @@ class Summation2d(object):
 def flex_2d_layering_n_integrating(ref_table):
   from scitbx.array_family import flex
   from dials.algorithms.integration import raw_2d_cut
-  print "performing summation integration .... "
+  print "Performing summation integration .... "
 
   from dials.array_family import flex
 
@@ -38,7 +38,6 @@ def flex_2d_layering_n_integrating(ref_table):
   row_of_var = ref_table['intensity.raw.variance']
   for row_num in range(ref_table.nrows()):
       local_shoebox = row_of_shoebox[row_num]
-
 
       i_r = 0
       i_v = 0
@@ -65,6 +64,6 @@ def flex_2d_layering_n_integrating(ref_table):
       row_of_its[row_num] = i_r
       row_of_var[row_num] = i_v
 
-  print "summation integration .... done"
+  print "summation integration      ....       Done"
 
   return ref_table
