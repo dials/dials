@@ -175,8 +175,11 @@ class Test(object):
       scan=self.scan,
       crystal=self.crystal))
 
+    sigma_b = exlist[0].beam.get_sigma_divergence(deg=False)
+    sigma_m = exlist[0].crystal.get_mosaicity(deg=False)
+
     predicted = flex.reflection_table.from_predictions(exlist)
-    predicted.compute_bbox(exlist[0], nsigma=5)
+    predicted.compute_bbox(exlist[0], 5, sigma_b, sigma_m)
 
 
     # Find overlapping reflections

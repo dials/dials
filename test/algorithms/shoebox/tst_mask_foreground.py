@@ -122,12 +122,15 @@ class Test(object):
       xyzcal_mm[i] = (x, y, phi)
       panel[i] = 0
 
+    sigma_b = self.experiment.beam.get_sigma_divergence(deg=False)
+    sigma_m = self.experiment.crystal.get_mosaicity(deg=False)
+
     rlist = flex.reflection_table()
     rlist['s1'] = beam_vector
     rlist['panel'] = panel
     rlist['xyzcal.px'] = xyzcal_px
     rlist['xyzcal.mm'] = xyzcal_mm
-    rlist.compute_bbox(self.experiment, self.nsigma)
+    rlist.compute_bbox(self.experiment, self.nsigma, sigma_b, sigma_m)
     rlist['shoebox'] = flex.shoebox(
       rlist['panel'], rlist['bbox'])
     rlist['shoebox'].allocate_with_value(MaskCode.Valid)

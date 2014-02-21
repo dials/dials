@@ -113,10 +113,7 @@ class CommandLineConfig(object):
         except Exception:
           positionals.append(arg)
       elif arg.find('=') > 0:
-        try:
-          phils.append(self._interpretor.process_arg(arg))
-        except Exception, e:
-          raise HalError(e)
+        phils.append(self._interpretor.process_arg(arg))
 
     # Return positional arguments and phils
     return positionals, phils
