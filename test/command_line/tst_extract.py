@@ -21,7 +21,7 @@ class Test(object):
     from os.path import abspath, join, exists
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.extract
     easy_run.fully_buffered([
       'dials.extract',
       join(self.path, 'experiments.json'),

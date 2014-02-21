@@ -26,7 +26,7 @@ class Test(object):
     from os.path import abspath, join
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.import_xds
     easy_run.fully_buffered([
       'dials.import_xds',
       '-i', 'reflections',
@@ -50,7 +50,7 @@ class Test(object):
     from os.path import abspath, join
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.import_xds
     easy_run.fully_buffered([
       'dials.import_xds',
       '-i', 'reflections',
@@ -68,7 +68,7 @@ class Test(object):
     assert(len(table) == 742)
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.import_xds
     easy_run.fully_buffered([
       'dials.import_xds',
       '-i', 'reflections',

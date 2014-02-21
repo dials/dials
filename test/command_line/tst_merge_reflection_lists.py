@@ -29,7 +29,7 @@ class Test(object):
     from libtbx import easy_run
     from dials.array_family import flex
 
-    # Call dials.integrate
+    # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
       'dials.merge_reflection_lists',
       'temp.pickle',
@@ -41,7 +41,7 @@ class Test(object):
     assert(len(table) == 360)
     print 'OK'
 
-    # Call dials.integrate
+    # Call dials.merge_reflection_lists
     easy_run.fully_buffered([
       'dials.merge_reflection_lists',
       'temp.pickle',

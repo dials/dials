@@ -17,7 +17,7 @@ class Test(object):
     from os.path import abspath, join
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.detector_max_resolution
     easy_run.fully_buffered([
       'dials.detector_max_resolution',
       join(self.path, 'datablock.json'),

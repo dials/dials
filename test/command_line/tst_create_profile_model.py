@@ -21,7 +21,7 @@ class Test(object):
     import os
     from uuid import uuid4
 
-    # Call dials.integrate
+    # Call dials.create_profile_model
     easy_run.fully_buffered([
       'dials.create_profile_model',
       join(self.path, 'experiments.json'),

@@ -25,7 +25,7 @@ class Test(object):
     from os.path import abspath, join
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.predict
     easy_run.fully_buffered([
       'dials.predict',
       join(self.path, 'experiments_scan_static_crystal.json'),
@@ -51,7 +51,7 @@ class Test(object):
     from os.path import abspath, join
     from libtbx import easy_run
 
-    # Call dials.integrate
+    # Call dials.predict
     easy_run.fully_buffered([
       'dials.predict',
       join(self.path, 'experiments_scan_varying_crystal.json'),
