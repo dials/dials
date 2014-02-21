@@ -33,11 +33,13 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     frame_obs = flex.double()
     panel_ids = flex.size_t()
     crystal_ids = flex.int()
+    match_iobs = flex.size_t()
     for match in matches:
       residuals.append((match.x_resid, match.y_resid, match.phi_resid))
       frame_obs.append(match.frame_obs)
       panel_ids.append(match.panel)
       crystal_ids.append(match.crystal_id)
+      match_iobs.append(match.iobs)
     x_residuals, y_residuals, phi_residuals = residuals.parts()
     mm_residual_norms = flex.sqrt(
       flex.pow2(x_residuals) + flex.pow2(y_residuals))
@@ -49,8 +51,10 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     if debug_plots:
       debug_plot_residuals(refiner, inlier_sel=inlier_sel)
 
+    # sort the inliers so they are in the same order
+    perm = flex.sort_permutation(match_iobs)
     reflections_for_refinement = reflections_for_refinement.select(
-      refiner.selection_used_for_refinement()).select(inlier_sel)
+      refiner.selection_used_for_refinement()).select(inlier_sel.select(perm))
     refiner = RefinerFactory.from_parameters_data_experiments(
       params, reflections_for_refinement, experiments,
       verbosity=verbosity)
