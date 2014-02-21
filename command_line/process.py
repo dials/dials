@@ -47,6 +47,7 @@ class Script(ScriptRunner):
 
     # Save the options
     self.options = options
+    self.params = params
 
     st = time()
 
@@ -87,16 +88,10 @@ class Script(ScriptRunner):
         print '  ' + arg
     print ''
 
-    # Find the strong spots
+    # Do the processing
     observed = self.find_spots(datablock)
-
-    # Index the strong spots
     experiments, indexed = self.index(datablock, observed)
-
-    # Create the profile model
     profile = self.create_profile_model(experiments, indexed)
-
-    # Integrate the reflections
     integrated = self.integrate(experiments, profile, indexed)
 
     # Total Time
@@ -129,7 +124,9 @@ class Script(ScriptRunner):
     print 'Time Taken = %f seconds' % (time() - st)
     return observed
 
-  def index(self, datablock, observed):
+  def index(self, datablock, reflections):
+    from dials.algorithms.indexing.indexer2 import master_phil_scope
+    from libtbx.phil import command_line
     from time import time
     st = time()
 
@@ -137,9 +134,43 @@ class Script(ScriptRunner):
     print 'Indexing Strong Spots'
     print '*' * 80
 
+    imagesets = datablock.extract_imagesets()
+    if len(imagesets) > 1:
+      raise RuntimeError("Only one imageset can be processed at a time")
+    imageset = imagesets[0]
+
+    cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
+    working_phil = cmd_line.process_and_fetch(args=[])
+    working_phil.show()
+
+    gonio = imageset.get_goniometer()
+    detector = imageset.get_detector()
+    scan = imageset.get_scan()
+    beam = imageset.get_beam()
+    print detector
+    print scan
+    print gonio
+    print beam
+
+    params = working_phil.extract()
+    if params.method == "fft3d":
+      from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
+    elif params.method == "fft1d":
+      from dials.algorithms.indexing.fft1d import indexer_fft1d as indexer
+    elif params.method == "real_space_grid_search":
+      from dials.algorithms.indexing.real_space_grid_search \
+           import indexer_real_space_grid_search as indexer
+    idxr = indexer(reflections, imageset, params=params)
+    idxr.index()
+
+    from dials.array_family import flex
+    from dials.model.experiment.experiment_list import ExperimentListFactory
+    indexed = flex.reflection_table.from_pickle("indexed.pickle")
+    experiments = ExperimentList.from_json_file("experiments.json")
+
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
-    return None, None
+    return experiments, indexed
 
   def create_profile_model(self, experiments, indexed):
     from time import time
