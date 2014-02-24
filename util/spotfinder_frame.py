@@ -100,6 +100,7 @@ class SpotFrame(XrayFrame) :
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
+    import math
 
     def map_coords(x, y, p):
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
@@ -118,6 +119,9 @@ class SpotFrame(XrayFrame) :
     max_pix_data = []
     predictions_data = []
     miller_indices_data = []
+    detector = self.pyslip.tiles.raw_image.get_detector()
+    scan = self.pyslip.tiles.raw_image.get_scan()
+    to_degrees = 180 / math.pi
     for ref_list in self.reflections:
       for reflection in ref_list:
         x0, x1, y0, y1, z0, z1 = reflection['bbox']
@@ -161,7 +165,6 @@ class SpotFrame(XrayFrame) :
 
           if self.settings.show_ctr_mass:
             centroid = reflection['xyzobs.px.value']
-            import math
             if math.floor(centroid[2]) == i_frame:
               x,y = map_coords(
                 centroid[0], centroid[1], reflection['panel'])
@@ -172,7 +175,6 @@ class SpotFrame(XrayFrame) :
               lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
                        (((xm1, y), (xp1, y)), ctr_mass_dict)]
               ctr_mass_data.extend(lines)
-
         if (self.settings.show_predictions and
             reflection.has_key('xyzcal.px') and
             reflection['xyzcal.px'] != (0.0, 0.0, 0.0) and
@@ -181,6 +183,16 @@ class SpotFrame(XrayFrame) :
           x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
                             reflection['xyzcal.px'][1] + 0.5,
                             reflection['panel'])
+          predictions_data.append((x, y))
+        elif (self.settings.show_predictions and
+            reflection.has_key('xyzcal.mm') and
+            reflection['xyzcal.mm'] != (0.0, 0.0, 0.0) and
+            scan.get_array_index_from_angle(
+              reflection['xyzcal.mm'][2] * to_degrees) >= i_frame and
+            scan.get_array_index_from_angle(
+              reflection['xyzcal.mm'][2] * to_degrees) < (i_frame + 1)):
+          x, y = detector[reflection['panel']].millimeter_to_pixel(reflection['xyzcal.mm'][:2])
+          x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
           predictions_data.append((x, y))
         if (self.settings.show_miller_indices and
             reflection['miller_index'] != (0,0,0)):
