@@ -31,5 +31,5 @@ def run(args):
 
 
 if __name__ == '__main__':
-import sys
+  import sys
   run(sys.argv[1:])
