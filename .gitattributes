@@ -601,6 +601,7 @@ scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/plot_residuals.py -text
 scratch/rjg/plot_virtual_powder_pattern.py -text
+scratch/rjg/run_dials_index.py -text
 scratch/rjg/unit_cell_refinement.py -text
 test/SConscript -text
 test/__init__.py -text
