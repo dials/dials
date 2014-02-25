@@ -61,11 +61,14 @@ if __name__ == '__main__':
 
     args = sys.argv[1:]
   importer = Importer(args, check_format=False)
-  if len(importer.datablocks) == 0:
-    raise RuntimeError("No DataBlock could be constructed")
-  elif len(importer.datablocks) > 1:
-    raise RuntimeError("Only one DataBlock can be processed at a time")
-  imagesets = importer.datablocks[0].extract_imagesets()
+  if importer.datablocks is not None and len(importer.datablocks) == 1:
+    imagesets = importer.datablocks[0].extract_imagesets()
+  elif importer.datablocks is not None and len(importer.datablocks) > 1:
+    raise RuntimeError("Only one DataBlock can be processed at a time") 
+  elif len(importer.experiments.imagesets()) == 1:
+    imagesets = importer.experiments.imagesets()
+  else:
+    raise RuntimeError("No imageset could be constructed")
   paths = []
   for imageset in imagesets:
     paths.extend(imageset.paths())
