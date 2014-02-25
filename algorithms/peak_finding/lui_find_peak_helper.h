@@ -3,10 +3,8 @@
 #include <iostream>
 namespace dials { namespace algorithms {
   void hello() {
-        std::cout << "hi there \n";
+        std::cout << "hi there 01 \n";
   }
-
-
 
 }}
 
