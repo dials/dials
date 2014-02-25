@@ -39,11 +39,11 @@ data2d = flex.double(np_data2d)
 #    from data2d flex array that contains an image
 #    it should return a flex array with the mask
 from dials.algorithms.peak_finding import smooth_2d
-from dials.algorithms.peak_finding import hello
+from dials.algorithms.peak_finding import find_mask
 n_times = 15
 data2dsmoth = smooth_2d(data2d, n_times)
 
-hello()
+find_mask()
 
 
 

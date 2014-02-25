@@ -2,8 +2,8 @@
 #define DIALS_ALGORITHMS_PEAK_FINDING_LUI_HELPER_H
 #include <iostream>
 namespace dials { namespace algorithms {
-  void hello() {
-        std::cout << "hi there 01 \n";
+  void find_mask() {
+        std::cout << "finding mask \n";
   }
 
 }}
