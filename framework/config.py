@@ -102,21 +102,10 @@ class CommandLineConfig(object):
     '''Get the configuration.'''
     import os
 
-    # For each command line option, try to parse using phil, if an
-    # exception occurs, then append to positional arguments, otherwise
-    # append to phils
-    positionals, phils = [], []
-    for arg in argv:
-      if os.path.isfile(arg):
-        try:
-          phils.append(file_name=self._interpretor.process_arg(arg))
-        except Exception:
-          positionals.append(arg)
-      elif arg.find('=') > 0:
-        phils.append(self._interpretor.process_arg(arg))
-
+    phils, positionals = self._interpretor.process_and_fetch(
+      argv, custom_processor="collect_remaining")
     # Return positional arguments and phils
-    return positionals, phils
+    return positionals, [phils]
 
 
 class ConfigWriter(object):
