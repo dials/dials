@@ -48,9 +48,13 @@ mask2d = find_mask_2d(data2d, data2dsmoth, n_times)
 
 
 # end code that will become production code
+
 print "Plotting data2dsmoth"
 np_data2dsmoth = data2dsmoth.as_numpy_array()
-#np_data2dsmoth = numpy.float64(np_data2dsmoth)
 plt.imshow(np_data2dsmoth, interpolation = "nearest")#, cmap = pylab.gray())
 plt.show()
 
+print "Plotting data2d mask"
+np_data2dmask = mask2d.as_numpy_array()
+plt.imshow(np_data2dmask, interpolation = "nearest")#, cmap = pylab.gray())
+plt.show()
