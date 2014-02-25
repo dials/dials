@@ -14,16 +14,17 @@
 namespace dials { namespace algorithms { namespace boost_python {
 
   using namespace boost::python;
-
-  void export_lui_find_peak_helper();
+  void export_lui_find_peak_masking();
+//void export_lui_find_peak_helper();
   void export_lui_integrate_helper();
   void export_lui_find_peak_smoothing();
 
   BOOST_PYTHON_MODULE(dials_algorithms_peak_finding_ext)
   {
-    export_lui_find_peak_helper();
+    export_lui_find_peak_masking();
+  //export_lui_find_peak_helper();
     export_lui_integrate_helper();
     export_lui_find_peak_smoothing();
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}
