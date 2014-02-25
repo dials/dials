@@ -370,6 +370,7 @@ extensions/fable_background_ext.py -text
 extensions/flat_background_ext.py -text
 extensions/inclined_background_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
+extensions/lui_spotfinder_threshold_ext.py -text
 extensions/null_background_ext.py -text
 extensions/profile_fitting_mosflm_integration_ext.py -text
 extensions/profile_fitting_rs_integration_ext.py -text
