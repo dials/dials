@@ -98,12 +98,11 @@ class run_one_indexing(object):
       mi = reflections['miller_index']
       assert (mi != (0,0,0)).count(False) == 0
       reflections = reflections.select(mi != (0,0,0))
-      self.rmsds = self.get_rmsds_obs_pred(
-        reflections, experiment, self.crystal_model)
+      self.rmsds = self.get_rmsds_obs_pred(reflections, experiment)
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected
 
-  def get_rmsds_obs_pred(self, observations, experiment, crystal_model):
+  def get_rmsds_obs_pred(self, observations, experiment):
     from dials.algorithms.spot_prediction import ray_intersection
     from dials.algorithms.indexing.indexer2 import master_params
     from dials.algorithms.refinement import RefinerFactory
@@ -320,7 +319,7 @@ def exercise_8():
                 "beam.fix=all",
                 "detector.fix=orientation",
                 "maximum_spot_error=3",
-                #"max_cell=70", #XXX eventually this should not be needed
+                "max_cell=70", #XXX eventually this should not be needed
                 ]
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
   expected_rmsds = (0.28, 0.30, 0.006)

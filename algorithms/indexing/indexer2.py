@@ -40,7 +40,7 @@ discover_better_experimental_model = False
 min_cell = 20
   .type = float(value_min=0)
   .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
-max_cell = 160
+max_cell = Auto
   .type = float(value_min=0)
   .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
 reciprocal_space_grid {
@@ -293,11 +293,17 @@ class indexer_base(object):
           self.params.known_symmetry.unit_cell))
 
   def index(self):
+    import libtbx
     self.reflections = self.map_spots_pixel_to_mm_rad(
       self.reflections, self.detector, self.scan)
     self.filter_reflections_by_scan_range()
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
+
+    if self.params.max_cell is libtbx.Auto:
+      from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
+      NN = neighbor_analysis(self.reciprocal_space_points)
+      self.params.max_cell = NN.max_cell
 
     if self.params.sigma_phi_deg is not None:
       var_x, var_y, _ = self.reflections['xyzobs.mm.variance'].parts()
