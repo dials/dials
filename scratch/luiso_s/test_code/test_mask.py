@@ -38,15 +38,16 @@ data2d = flex.double(np_data2d)
 #    code that will become production code:
 #    from data2d flex array that contains an image
 #    it should return a flex array with the mask
+
 from dials.algorithms.peak_finding import smooth_2d
-from dials.algorithms.peak_finding import find_mask
+from dials.algorithms.peak_finding import find_mask_2d
 n_times = 15
 data2dsmoth = smooth_2d(data2d, n_times)
 
-find_mask()
+mask2d = find_mask_2d(data2d, data2dsmoth, n_times)
 
 
-
+# end code that will become production code
 print "Plotting data2dsmoth"
 np_data2dsmoth = data2dsmoth.as_numpy_array()
 #np_data2dsmoth = numpy.float64(np_data2dsmoth)

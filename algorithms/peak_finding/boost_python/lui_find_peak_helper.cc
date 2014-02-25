@@ -7,8 +7,14 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   void export_lui_find_peak_helper() {
-    def("find_mask", &find_mask);
+    def("find_mask_2d", &find_mask_2d, (
+    arg("data2d")
+    ,arg("data2dsmoth")
+    ,arg("a") = 5
 
+    )
+
+    );
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}
