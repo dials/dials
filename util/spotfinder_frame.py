@@ -105,7 +105,7 @@ class SpotFrame(XrayFrame) :
     def map_coords(x, y, p):
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
         y, x = self.pyslip.tiles.flex_image.tile_readout_to_picture(
-          reflection.panel_number, y - 0.5, x - 0.5)
+          reflection['panel'], y - 0.5, x - 0.5)
       return self.pyslip.tiles.picture_fast_slow_to_map_relative(
         x, y)
 

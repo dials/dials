@@ -212,6 +212,7 @@ class ReflectionManagerXY(ReflectionManager):
     # sample the data and record the sample size
     if sample_size < len(working_indices):
       self._sample_size = sample_size
+      1/0
       working_indices = random.sample(working_indices,
                                       self._sample_size)
     return(working_indices)
