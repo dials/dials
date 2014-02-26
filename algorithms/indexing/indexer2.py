@@ -93,7 +93,7 @@ refinement_protocol {
     .type = float(value_min=0)
   n_macro_cycles = 3
     .type = int(value_min=0)
-  d_min_step = 0.5
+  d_min_step = 1.0
     .type = float(value_min=0.0)
     .help = "Reduction per step in d_min for reflections to include in refinement."
   d_min_start = 3.0
