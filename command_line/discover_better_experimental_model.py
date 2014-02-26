@@ -287,7 +287,7 @@ def run(args):
   hardcoded_phil = iotbx.phil.parse(
     input_string=indexing_api_defs).extract()
   # for development, we want an exhaustive plot of beam probability map:
-  hardcoded_phil.indexing.plot_search_scope = False
+  hardcoded_phil.indexing.plot_search_scope = params.plot_search_scope
 
   new_detector, new_beam = discover_better_experimental_model(
     imagesets, reflections, hardcoded_phil, nproc=params.nproc)
