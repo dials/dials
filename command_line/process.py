@@ -94,6 +94,7 @@ class Script(ScriptRunner):
     # Do the processing
     observed = self.find_spots(datablock)
     experiments, indexed = self.index(datablock, observed)
+    experiments = self.refine(experiments, indexed)
     integrated = self.integrate(experiments, indexed)
 
     # Total Time
@@ -130,7 +131,7 @@ class Script(ScriptRunner):
 
   def index(self, datablock, reflections):
     from dials.algorithms.indexing.indexer2 import master_phil_scope
-    from libtbx.phil import command_line
+    from libtbx.phil import command_line, parse
     from time import time
     st = time()
 
@@ -144,7 +145,11 @@ class Script(ScriptRunner):
     imageset = imagesets[0]
 
     cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-    working_phil = cmd_line.process_and_fetch(args=[])
+    # switch off scan-varying refinement for indexing, leaving it set (if
+    # requested) for the refinement step
+    extra_src = parse(
+      "refinement.parameterisation.crystal.scan_varying=False")
+    working_phil = cmd_line.process_and_fetch(args=[],extra_sources=[extra_src])
     working_phil.show()
 
     gonio = imageset.get_goniometer()
@@ -176,6 +181,26 @@ class Script(ScriptRunner):
     print 'Time Taken = %f seconds' % (time() - st)
     return experiments, indexed
 
+  def refine(self, experiments, centroids):
+    from dials.algorithms.refinement import RefinerFactory
+    from time import time
+    st = time()
+
+    refiner = RefinerFactory.from_parameters_data_experiments(
+      self.params, centroids, experiments, self.options.verbosity)
+
+    print '*' * 80
+    print 'Refining Model'
+    print '*' * 80
+
+    refiner.run()
+    experiments = refiner.get_experiments()
+
+    print ''
+    print 'Time Taken = %f seconds' % (time() - st)
+
+    return experiments
+
   def integrate(self, experiments, indexed):
     from dials.algorithms.integration import Integrator
     from time import time
@@ -201,7 +226,7 @@ class Script(ScriptRunner):
                            self.params.shoebox.n_blocks,
                            self.params.integration.filter.by_zeta)
 
-    # Intregate the sweep's reflections
+    # Integrate the sweep's reflections
     print 'Integrating reflections'
     reflections = integrate(experiments, reference=indexed, extracted=None)
 
