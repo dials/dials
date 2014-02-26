@@ -13,10 +13,10 @@ from __future__ import division
 from dials.interfaces import SpotFinderThresholdIface
 
 
-class LuiSpotFinderThresholdExt(SpotFinderThresholdIface):
+class SmoothingSpotFinderThresholdExt(SpotFinderThresholdIface):
   ''' Extensions to do luiso's' threshold. '''
 
-  name = 'lui'
+  name = 'Smoothing'
 
   def __init__(self, params):
     ''' Initialise the algorithm. '''
