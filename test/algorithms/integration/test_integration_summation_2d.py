@@ -98,7 +98,7 @@ def run(i, imp):
       print "resl_var[n_its] =", resl_var[n_its]
 
       result = "wrong"
-
+      raise RuntimeError('wrong result')
   return result
 
 
