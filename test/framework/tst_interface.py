@@ -61,7 +61,7 @@ class Test(object):
     from dials.interfaces import BackgroundIface
     from dials.interfaces import IntegrationIface
 
-    # Should have three interfaces
+    # Should have four interfaces
     interfaces = list(Interface.interfaces())
     assert(len(interfaces) == 4)
 
