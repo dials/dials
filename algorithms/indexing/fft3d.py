@@ -49,13 +49,14 @@ class indexer_fft3d(indexer_base):
     if self.params.debug:
       self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
     self.find_peaks()
-    if self.params.multiple_lattice_search:
+    if self.params.multiple_lattice_search.cluster_analysis_search:
       self.find_basis_vector_combinations_cluster_analysis()
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
       crystal_models = self.candidate_crystal_models
-      if self.params.max_lattices is not None:
-        crystal_models = crystal_models[:self.params.max_lattices]
+      if self.params.multiple_lattice_search.max_lattices is not None:
+        crystal_models = \
+          crystal_models[:self.params.multiple_lattice_search.max_lattices]
     else:
       self.find_candidate_basis_vectors()
       # self.find_candidate_basis_vectors_nks()
@@ -323,13 +324,14 @@ class indexer_fft3d(indexer_base):
         diff_vec = -diff_vec
       difference_vectors.append(diff_vec)
 
-    if self.params.cluster_analysis.method == 'dbscan':
+    params = self.params.multiple_lattice_search.cluster_analysis
+    if params.method == 'dbscan':
       i_cluster = self.cluster_analysis_dbscan(difference_vectors)
       min_cluster_size = 1
-    elif self.params.cluster_analysis.method == 'hcluster':
+    elif params.method == 'hcluster':
       i_cluster = self.cluster_analysis_hcluster(difference_vectors)
       i_cluster -= 1 # hcluster starts counting at 1
-      min_cluster_size = self.params.cluster_analysis.min_cluster_size
+      min_cluster_size = params.min_cluster_size
 
     if self.params.debug_plots:
       self.debug_plot_clusters(
@@ -337,7 +339,7 @@ class indexer_fft3d(indexer_base):
 
 
     clusters = []
-    min_cluster_size = self.params.cluster_analysis.min_cluster_size
+    min_cluster_size = params.min_cluster_size
     for i in range(max(i_cluster)+1):
       isel = (i_cluster == i).iselection()
       if len(isel) < min_cluster_size:
@@ -471,7 +473,7 @@ class indexer_fft3d(indexer_base):
     from hcluster import linkage, fcluster
     import numpy
 
-    params = self.params.cluster_analysis.hcluster
+    params = self.params.multiple_lattice_search.cluster_analysis.hcluster
     X = numpy.array(vectors)
     linkage_method = params.linkage.method
     linkage_metric = params.linkage.metric
@@ -495,7 +497,7 @@ class indexer_fft3d(indexer_base):
     X = StandardScaler().fit_transform(X)
 
     # Compute DBSCAN
-    params = self.params.cluster_analysis.dbscan
+    params = self.params.multiple_lattice_search.cluster_analysis.dbscan
     db = DBSCAN(eps=params.eps, min_samples=params.min_samples).fit(X)
     core_samples = db.core_sample_indices_
     # core_samples is a list of numpy.int64 objects

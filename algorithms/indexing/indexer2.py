@@ -114,41 +114,50 @@ refinement_protocol {
       .type = float(value_min=0, value_max=0.5)
   }
 }
-export_xds_files = False
-  .type = bool
-  .help = "Export results as XDS.INP, XPARM.XDS for integration with XDS."
-multiple_lattice_search = False
-  .type = bool
-max_lattices = None
-  .type = int
 method = *fft3d fft1d real_space_grid_search
   .type = choice
-cluster_analysis {
-  method = *dbscan hcluster
-    .type = choice
-  hcluster {
-    linkage {
-      method = *ward
-        .type = choice
-      metric = *euclidean
+multiple_lattice_search {
+  cluster_analysis_search = False
+    .type = bool
+    .help = "Perform cluster analysis search for multiple lattices."
+  recycle_unindexed_reflections = False
+    .type = bool
+    .help = "Attempt another cycle of indexing on the unindexed reflections "
+            "if enough reflections are unindexed."
+  recycle_unindexed_reflections_cutoff = 0.1
+    .type = float(value_min=0, value_max=1)
+    .help = "Attempt another cycle of indexing on the unindexed reflections "
+            "if more than the fraction of input reflections are unindexed."
+  max_lattices = None
+    .type = int
+  cluster_analysis {
+    method = *dbscan hcluster
+      .type = choice
+    hcluster {
+      linkage {
+        method = *ward
+          .type = choice
+        metric = *euclidean
+          .type = choice
+      }
+      cutoff = 15
+        .type = float(value_min=0)
+      cutoff_criterion = *distance inconsistent
         .type = choice
     }
-    cutoff = 15
-      .type = float(value_min=0)
-    cutoff_criterion = *distance inconsistent
-      .type = choice
+    dbscan {
+      eps = 0.05
+        .type = float(value_min=0.0)
+      min_samples = 30
+        .type = int(value_min=1)
+    }
+    min_cluster_size = 20
+      .type = int(value_min=0)
+    intersection_union_ratio_cutoff = 0.4
+      .type = float(value_min=0.0, value_max=1.0)
   }
-  dbscan {
-    eps = 0.05
-      .type = float(value_min=0.0)
-    min_samples = 30
-      .type = int(value_min=1)
-  }
-  min_cluster_size = 20
-    .type = int(value_min=0)
-  intersection_union_ratio_cutoff = 0.4
-    .type = float(value_min=0.0, value_max=1.0)
 }
+
 """ %dials_path, process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
@@ -333,12 +342,18 @@ class indexer_base(object):
       self.d_min = self.params.refinement_protocol.d_min_start
       if had_refinement_error:
         break
-      if self.params.max_lattices is not None and len(experiments) >= self.params.max_lattices:
+      max_lattices = self.params.multiple_lattice_search.max_lattices
+      if max_lattices is not None and len(experiments) >= max_lattices:
         break
-      min_reflections_for_indexing = 40
+      cutoff_fraction = \
+        self.params.multiple_lattice_search.recycle_unindexed_reflections_cutoff
       d_spacings = 1/self.reciprocal_space_points.norms()
+      min_reflections_for_indexing = \
+        cutoff_fraction * len(self.reflections.select(d_spacings > self.d_min))
       crystal_ids = self.reflections.select(d_spacings > self.d_min)['id']
       if (crystal_ids == -1).count(True) < min_reflections_for_indexing:
+        print "Finish searching for more lattices: %i unindexed reflections remaining." %(
+          min_reflections_for_indexing)
         break
 
       n_lattices_previous_cycle = len(experiments)
@@ -452,8 +467,7 @@ class indexer_base(object):
         # update for next cycle
         experiments = refined_experiments
 
-      if not (self.params.multiple_lattice_search and
-              self.params.method == "real_space_grid_search"):
+      if not self.params.multiple_lattice_search.recycle_unindexed_reflections:
         break
 
     # XXX currently need to store the imageset otherwise we can't read the experiment list back in
@@ -468,8 +482,6 @@ class indexer_base(object):
       suffix = ""
       if len(refined_experiments) > 1:
         suffix = "_%i" %(i_lattice+1)
-      if self.params.export_xds_files:
-        self.export_xds_files(crystal_model, self.sweep, suffix=suffix)
 
     if 1 and self.params.debug and self.goniometer is not None:
       for i_lattice, expt in enumerate(refined_experiments):
@@ -853,26 +865,6 @@ class indexer_base(object):
   def export_reflections(self, reflections, file_name="reflections.pickle"):
     with open(file_name, 'wb') as f:
       pickle.dump(reflections, f)
-
-  def export_xds_files(self, crystal_model, sweep, suffix=None):
-    from dxtbx.serialize import xds
-    if suffix is None:
-      suffix = ''
-    crystal_model = crystal_model.change_basis(
-      crystal_model.get_space_group().info().change_of_basis_op_to_reference_setting())
-    A = crystal_model.get_A()
-    A_inv = A.inverse()
-    real_space_a = A_inv.elems[:3]
-    real_space_b = A_inv.elems[3:6]
-    real_space_c = A_inv.elems[6:9]
-    to_xds = xds.to_xds(sweep)
-    with open('XDS%s.INP' %suffix, 'wb') as f:
-      to_xds.XDS_INP(out=f, job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
-    with open('XPARM%s.XDS' %suffix, 'wb') as f:
-      to_xds.xparm_xds(
-        real_space_a, real_space_b, real_space_c,
-        crystal_model.get_space_group().type().number(),
-        out=f)
 
   def find_lattice(self):
     raise NotImplementedError()

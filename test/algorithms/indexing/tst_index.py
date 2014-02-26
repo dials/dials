@@ -128,8 +128,7 @@ def exercise_1():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["multiple_lattice_search=False", # use older non-clustering version
-                "reflections_per_degree=5",
+  extra_args = ["reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "discover_better_experimental_model=True"]
   expected_unit_cell = uctbx.unit_cell(
@@ -150,7 +149,7 @@ def exercise_2():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["multiple_lattice_search=True",
+  extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "bin_size_fraction=0.25",
@@ -173,7 +172,7 @@ def exercise_3():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["multiple_lattice_search=True",
+  extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4"]
@@ -205,7 +204,7 @@ def exercise_4():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1.json")
-  extra_args = ["multiple_lattice_search=True",
+  extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
@@ -230,7 +229,7 @@ def exercise_5():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2.json")
-  extra_args = ["multiple_lattice_search=True",
+  extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
@@ -259,7 +258,7 @@ def exercise_6():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
-  extra_args = ["multiple_lattice_search=True",
+  extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
@@ -287,7 +286,7 @@ def exercise_7():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "trypsin")
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
-  extra_args = ["multiple_lattice_search=True",
+  extra_args = ["cluster_analysis_search=True",
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
@@ -337,8 +336,7 @@ def exercise_9():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["multiple_lattice_search=False", # use older non-clustering version
-                "reflections_per_degree=5",
+  extra_args = ["reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "method=fft1d"]
   expected_unit_cell = uctbx.unit_cell(
@@ -363,7 +361,7 @@ def exercise_10():
                 "beam.fix=all",
                 "detector.fix=orientation",
                 "maximum_spot_error=3",
-                "multiple_lattice_search=True",
+                "recycle_unindexed_reflections=True",
                 "max_lattices=3", #XXX eventually this should not be needed
                 ]
 
@@ -417,7 +415,7 @@ def exercise_11():
                 #"maximum_spot_error=3",
                 "maximum_spot_error=None",
                 "hkl_tolerance=0.5",
-                "multiple_lattice_search=True",
+                "recycle_unindexed_reflections=True",
                 "max_lattices=3", #XXX eventually this should not be needed
                 ]
 
