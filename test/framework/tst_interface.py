@@ -67,7 +67,7 @@ class Test(object):
 
     # Check we have the expected number of extensions for each interface
     extensions = list(SpotFinderThresholdIface.extensions())
-    assert(len(extensions) == 1)
+    assert(len(extensions) == 2)
     extensions = list(CentroidIface.extensions())
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
