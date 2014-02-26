@@ -554,6 +554,7 @@ scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plai
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_helper.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/interpolation_2D_test.py -text
+scratch/luiso_s/test_code/interpolation_2D_test_single_displ.py -text
 scratch/luiso_s/test_code/mask_test.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matplotlib_cut.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matr_opr.py -text svneol=unset#text/plain
@@ -570,6 +571,7 @@ scratch/luiso_s/test_code/numpy_integr_2d_plot_hist.py -text
 scratch/luiso_s/test_code/numpy_integr_2d_single_pixel.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_3d_single_pixel.py -text svneol=unset#text/plain
+scratch/luiso_s/test_code/old_table_toy.py -text
 scratch/luiso_s/test_code/pickle_toy.py -text
 scratch/luiso_s/test_code/pickle_toy_01.py -text
 scratch/luiso_s/test_code/simulate_ref_lst.py -text svneol=unset#text/plain

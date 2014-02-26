@@ -6,7 +6,7 @@ from matplotlib import pylab
 
 import numpy
 import math
-
+import random
 
 xmax = 2400
 ymax = 2600
@@ -21,8 +21,7 @@ pi = 3.14159265358
 for ypos in range(86):
   for xpos in range(80):
     #if xpos/12.0 == int(xpos/12) and ypos/12.0 == int(ypos/12):
-    #if ypos/6.0 == int(ypos/6):
-    if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3):
+    if ypos/24.0 == int(ypos/24):
       row_str = ypos * nrow
       col_str = xpos * ncol
       dx = col_str - 1200
@@ -36,7 +35,7 @@ for ypos in range(86):
         ref_ang = 0.75
       else:
         ref_ang = 0.20
-      ref_ang = float( math.atan2(dx, dy) / pi)
+      #ref_ang = float( math.atan2(dx, dy) / pi)
       i_loc = random.randint(0,999)
       thold = i_loc/20
       ref2d = model_2d(nrow, ncol, 5, 1, ref_ang, i_loc, 0.5)
@@ -56,9 +55,6 @@ for ypos in range(86):
 
       new_r.shoebox = fl_shoebox
       new_r.shoebox_background = fl_shoebox_bkg
-      new_r.status = 0
-      # fix me in a double way
-      # the way status in bein used and
       mask = flex.int(flex.grid(1, ncol, nrow), 3)
       for x_loc in range(ncol):
         for y_loc in range(nrow):
@@ -87,8 +83,8 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 
 
+old_r_list = rlist[:]
 tmp='''
-import random
 print "adding noise ...."
 for r in rlist:
     for x_loc in range(ncol):
@@ -99,12 +95,8 @@ for r in rlist:
           r.shoebox_mask[0, y_loc, x_loc] = 0
         else:
           r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
-
 print "adding noise .... done"
 #'''
-
-old_r_list = rlist[:]
-
 from dials.algorithms.background.inclined_background_subtractor \
   import layering_and_background_plane
 layering_and_background_plane(rlist)
@@ -112,36 +104,10 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(rlist)
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 rlist = mosflm_caller(rlist, xmax, ymax, 3)
-
 paint_compare = []
 for i in range(len(rlist)):
   #paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
-  paint_compare.append([rlist[i].intensity, rlist[i].intensity_variance, \
-              old_r_list[i].intensity, old_r_list[i].intensity_variance])
-
-paint_compare_sort = sorted(paint_compare)
-from matplotlib import pylab
-import numpy
-data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-data1d_var = numpy.zeros(len(rlist), dtype = numpy.float64)
-new_data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-for i in range(len(rlist)):
-  data1d[i] = paint_compare_sort[i][0]
-  try:
-    new_data1d[i] = paint_compare_sort[i][1] / paint_compare_sort[i][0]
-  except:
-    print ">>>>>>>>>>", paint_compare_sort[i][1] , paint_compare_sort[i][0]
-  data1d_var[i] = paint_compare_sort[i][1]
-
-pylab.plot(data1d)
-pylab.plot(new_data1d)
-pylab.plot(data1d_var)
-pylab.show()
-###########################################################################
-paint_compare = []
-paint_compare_sort = []
-for i in range(len(rlist)):
-  paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
+  paint_compare.append([old_r_list[i].intensity, rlist[i].intensity])
 
 paint_compare_sort = sorted(paint_compare)
 from matplotlib import pylab
