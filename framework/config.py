@@ -11,26 +11,6 @@
 from __future__ import division
 
 
-class SystemConfig(object):
-  '''A class to read the system configuration.'''
-
-  def parse(self):
-    '''Get the configuration.'''
-    from libtbx.phil import parse
-    master_phil_scope = parse(
-    '''
-      include scope dials.data.logging.phil_scope
-      include scope dials.data.lookup.phil_scope
-      include scope dials.data.spotfinding.phil_scope
-      include scope dials.data.shoebox.phil_scope
-      include scope dials.data.centroid.phil_scope
-      include scope dials.data.background.phil_scope
-      include scope dials.data.integration.phil_scope
-      include scope dials.data.refinement.phil_scope
-    ''', process_includes=True)
-    return master_phil_scope
-
-
 class CommandLineConfig(object):
   '''A class to read the commandline configuration.'''
 
@@ -73,8 +53,21 @@ class Config(object):
 
   def __init__(self):
     ''' Initialise by reading the system phil. '''
-    self._system_config = SystemConfig()
-    self._system_phil = self._system_config.parse()
+    from libtbx.phil import parse
+
+    # Parse all the phil files
+    self._system_phil = parse(
+    '''
+      include scope dials.data.logging.phil_scope
+      include scope dials.data.lookup.phil_scope
+      include scope dials.data.spotfinding.phil_scope
+      include scope dials.data.shoebox.phil_scope
+      include scope dials.data.centroid.phil_scope
+      include scope dials.data.background.phil_scope
+      include scope dials.data.integration.phil_scope
+      include scope dials.data.refinement.phil_scope
+    ''', process_includes=True)
+
     self._phil = self._system_phil
     self._params = self._phil.extract()
 
