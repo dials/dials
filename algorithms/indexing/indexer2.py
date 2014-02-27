@@ -326,6 +326,7 @@ class indexer_base(object):
     experiments = ExperimentList()
 
     had_refinement_error = False
+    have_similar_crystal_models = False
 
     if self.params.discover_better_experimental_model:
       opt_detector, opt_beam = self.discover_better_experimental_model(
@@ -337,7 +338,7 @@ class indexer_base(object):
 
     while True:
       self.d_min = self.params.refinement_protocol.d_min_start
-      if had_refinement_error:
+      if had_refinement_error or have_similar_crystal_models:
         break
       max_lattices = self.params.multiple_lattice_search.max_lattices
       if max_lattices is not None and len(experiments) >= max_lattices:
