@@ -43,7 +43,8 @@ for x_loc in range(950):
       r.shoebox_mask[0, y_loc, x_loc] = 0
     else:
     #'''
-    data2d[y_loc, x_loc] += roll_the_dice
+    data2d[y_loc, x_loc] += ((roll_the_dice / 50.0) / 10.0) \
+                            * data2d[y_loc, x_loc]
 
 print "adding noise .... done"
 
