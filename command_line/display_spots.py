@@ -64,7 +64,7 @@ if __name__ == '__main__':
   if importer.datablocks is not None and len(importer.datablocks) == 1:
     imagesets = importer.datablocks[0].extract_imagesets()
   elif importer.datablocks is not None and len(importer.datablocks) > 1:
-    raise RuntimeError("Only one DataBlock can be processed at a time") 
+    raise RuntimeError("Only one DataBlock can be processed at a time")
   elif len(importer.experiments.imagesets()) == 1:
     imagesets = importer.experiments.imagesets()
   else:
