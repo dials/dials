@@ -1,68 +1,17 @@
+#!/usr/bin/env python
+#
+# integration.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+from __future__ import division
+from libtbx.phil import parse
 
-shoebox
-  .help = "Parameters used in the integration shoebox"
-{
-  n_blocks = 1
-    .help = "The number of blocks to integrate in."
-    .type = int
-
-  n_sigma = 3
-    .help = "The number of standard deviations of the beam divergence and the"
-            "mosaicity to use for the bounding box size."
-    .type = float
-
-  sigma_b = None
-    .help = "The E.S.D. of the beam divergence"
-    .type = float
-
-  sigma_m = None
-    .help = "The E.S.D. of the reflecting range"
-    .type = float
-}
-
-centroid
-  .help = "Configure the centroid algorithm."
-{
-  algorithm = *simple
-    .help = "The centroid algorithm."
-    .type = choice
-}
-
-background
-  .help = "Configure the background algorithm."
-{
-  algorithm = null *xds fable flat inclined curved
-    .help = "The background algorithm."
-    .type = choice
-
-  xds
-    .help = "Parameters for xds background subtraction."
-  {
-    min_pixels = 10
-      .help = "The minimum number of pixels to use in calculating the"
-              "background intensity."
-      .type = int
-
-    n_sigma = 3.0
-      .help = "The number of standard deviations above the mean pixel intensity"
-              "below which the pixel will be classified as background."
-      .type = float
-  }
-  
-  fable
-    .help = "Parameters for fable background subtraction."
-  {
-    min_pixels = 10
-      .help = "The minimum number of pixels to use in calculating the"
-              "background intensity."
-      .type = int
-
-    n_sigma = 3.0
-      .help = "The number of standard deviations above the mean pixel intensity"
-              "below which the pixel will be classified as background."
-      .type = float
-  }
-}
+phil_scope = parse('''
 
 integration
   .help = "Configure the integration algorithm."
@@ -81,11 +30,11 @@ integration
         .help = "The size of the reciprocal space grid for each reflection."
                 "The size is the same in each dimensions"
         .type = int
-      
+
       reference_frame_interval = 10
         .help = "The oscillation at which to learn new reference profiles"
         .type = int
-      
+
       reference_signal_threshold = 0.02
         .help = "The threshold to use in reference profile"
         .type = float
@@ -109,21 +58,23 @@ integration
               "Reflections with bounding box volume above the threshold value"
               "are not used in intergration."
       .type = bool
-      
+
     by_zeta = 0.05
       .help = "Filter the reflections by the value of zeta. A value of less"
-              "than or equal to zero indicates that this will not be used. A" 
+              "than or equal to zero indicates that this will not be used. A"
               "positive value is used as the minimum permissable value."
       .type = float
-    
+
     by_xds_small_angle = False
       .help = "Filter the reflections by whether the XDS small angle"
               "approximation holds for the reflection."
       .type = bool
-    
+
     by_xds_angle = False
       .help = "Filter the reflections by whether the geometry of the XDS"
               "transform allows a reflection to be transformed."
       .type = bool
   }
 }
+
+''')

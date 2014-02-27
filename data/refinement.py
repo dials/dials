@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+#
+# refinement.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+from __future__ import division
+from libtbx.phil import parse
+
+phil_scope = parse('''
+
 refinement
   .help = "Parameters to configure the refinement"
 {
@@ -190,3 +205,5 @@ refinement
       .type = float(value_min = 0.)
   }
 }
+
+''')

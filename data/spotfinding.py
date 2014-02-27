@@ -1,3 +1,18 @@
+#!/usr/bin/env python
+#
+# spotfinding.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+from __future__ import division
+from iotbx.phil import parse
+
+phil_scope = parse('''
+
 spotfinder
   .help = "Parameters used in the spot finding algorithm."
 {
@@ -82,7 +97,7 @@ spotfinder
   {
     min_spot_size = 6
       .help = "The minimum number of contiguous pixels for a spot"
-              "to be accepted by the filtering algorithm·"
+              "to be accepted by the filtering algorithm."
               ""
               "Used by: xds."
       .type = int(value_min=0)
@@ -135,3 +150,5 @@ spotfinder
             "viewer."
     .type = bool
 }
+
+''')

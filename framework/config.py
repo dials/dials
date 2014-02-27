@@ -11,84 +11,24 @@
 from __future__ import division
 
 
-class SystemConfigReader(object):
-  '''Class to read system configuration.'''
-
-  def __init__(self):
-    '''Initialise the class.'''
-    pass
-
-  def master(self):
-    '''Get the master config text.'''
-    return '\n'.join([self._read_file(filename, True)
-        for filename in self.master_filenames()])
-
-  def user(self):
-    '''Get the user config text.'''
-    return self._read_file(self.user_filename(), False)
-
-  def _read_file(self, filename, fail=False):
-    '''Read the config file.'''
-
-    # Try to read the phil file
-    text = ''
-    if filename:
-      try:
-        with open(filename, 'r') as f:
-          text = f.read()
-      except IOError:
-        if fail:
-          raise RuntimeError('error reading {0}'.format(filename))
-
-    # Return the text
-    return text
-
-  def master_filenames(self):
-    '''Get the master filename.'''
-    import libtbx.load_env
-    import os
-
-    # Find the dials distribution directory
-    path = libtbx.env.dist_path('dials')
-
-    # Get the location of the master file
-    return [os.path.join(path, 'data', 'logging.phil'),
-            os.path.join(path, 'data', 'lookup.phil'),
-            os.path.join(path, 'data', 'spotfinding.phil'),
-            os.path.join(path, 'data', 'integration.phil'),
-            os.path.join(path, 'data', 'refinement.phil')]
-
-  def user_filename(self):
-    '''Get the user filename.'''
-    import os
-
-    # Get the location of the user filename
-    return os.path.join(os.path.expanduser('~'), '.dialsrc')
-
-
 class SystemConfig(object):
   '''A class to read the system configuration.'''
 
-  def __init__(self):
-    '''Initialise the class.'''
-
-    # Create the config file reader
-    self._files = SystemConfigReader()
-
   def parse(self):
     '''Get the configuration.'''
-    from iotbx.phil import parse
-
-    # Read the master and user files
-    master_text = self._files.master()
-    user_text   = self._files.user()
-
-    # Parse the files with phil
-    self.master_phil  = parse(master_text)
-    self.user_phil = parse(user_text)
-
-    # Fetch the working phil from all the system sources
-    return self.master_phil.fetch(sources = [self.user_phil])
+    from libtbx.phil import parse
+    master_phil_scope = parse(
+    '''
+      include scope dials.data.logging.phil_scope
+      include scope dials.data.lookup.phil_scope
+      include scope dials.data.spotfinding.phil_scope
+      include scope dials.data.shoebox.phil_scope
+      include scope dials.data.centroid.phil_scope
+      include scope dials.data.background.phil_scope
+      include scope dials.data.integration.phil_scope
+      include scope dials.data.refinement.phil_scope
+    ''', process_includes=True)
+    return master_phil_scope
 
 
 class CommandLineConfig(object):
