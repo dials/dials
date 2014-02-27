@@ -57,6 +57,9 @@ def run(args):
         to_xds.XDS_INP(
           out=f, 
           space_group_number=crystal_model.get_space_group().type().number(),
+          real_space_a=real_space_a,
+          real_space_b=real_space_b,
+          real_space_c=real_space_c,
           job_card="XYCORR INIT DEFPIX INTEGRATE CORRECT")
       with open(os.path.join(sub_dir, 'XPARM.XDS'), 'wb') as f:
         to_xds.xparm_xds(
