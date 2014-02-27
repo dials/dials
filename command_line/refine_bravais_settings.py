@@ -4,16 +4,13 @@ from libtbx.phil import command_line
 import iotbx.phil
 from dials.util.command_line import Importer
 
-import libtbx.load_env
-dials_path = libtbx.env.dist_path('dials')
-
 master_phil_scope = iotbx.phil.parse("""
-include file %s/data/refinement.phil
+include scope dials.data.refinement.phil_scope
 verbosity = 0
   .type = int(value_min=0)
 nproc = Auto
   .type = int(value_min=1)
-""" %dials_path, process_includes=True)
+""", process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
 
