@@ -45,11 +45,6 @@ namespace dials { namespace algorithms { namespace boost_python {
       &is_normally_distributed_wrapper<FloatType>, (
         arg("data"),
         arg("n_sigma") = -1));
-
-    def("ks_is_normally_distributed",
-      &ks_is_normally_distributed, (
-        arg("data"),
-        arg("alpha")));
   }
 
   template <typename FloatType>
