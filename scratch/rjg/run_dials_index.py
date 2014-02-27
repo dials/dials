@@ -50,6 +50,7 @@ def run(args):
   from dxtbx.imageset import ImageSetFactory
   imagesets = ImageSetFactory.new(filenames, check_headers=False)
   for i, imageset in enumerate(imagesets):
+    print imageset.get_template()
     args.append((imageset.paths(), i+1, params))
 
   from libtbx import easy_mp
@@ -70,7 +71,7 @@ def run(args):
 
 def run_once(args):
   filenames, sweep_id, params = args
-  print filenames
+  #print filenames
 
   orig_dir = os.path.abspath(os.curdir)
 
