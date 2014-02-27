@@ -394,10 +394,27 @@ class indexer_base(object):
               expt.crystal, self.target_symmetry_primitive,
               space_group_only=True)
 
-        #if len(experiments) > 1:
-          #from dials.command_line.compare_orientation_matrices \
-               #import show_rotation_matrix_differences
-          #show_rotation_matrix_differences(crystal_models)
+        if len(experiments) > 1:
+          from dials.algorithms.indexing.compare_orientation_matrices \
+               import difference_rotation_matrix_and_euler_angles
+          cryst_b = experiments.crystals()[-1]
+          have_similar_crystal_models = False
+          for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
+            R_ab, euler_angles, cb_op_ab = \
+              difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
+            if max([abs(ea) for ea in euler_angles]) < 5: # degrees
+              print "Crystal models too similar, rejecting crystal %i:" %(
+                len(experiments))
+              print "Rotation matrix to transform crystal %i to crystal %i" %(
+                i_a+1, len(experiments))
+              print R_ab
+              print "Euler angles (xyz): %.2f, %.2f, %.2f" %euler_angles
+              #show_rotation_matrix_differences([cryst_a, cryst_b])
+              have_similar_crystal_models = True
+              del experiments[-1]
+              break
+          if have_similar_crystal_models:
+            break
 
         print
         print "#" * 80
