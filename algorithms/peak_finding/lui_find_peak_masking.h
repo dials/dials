@@ -34,7 +34,7 @@ namespace dials { namespace algorithms {
         int row_end;
         int row_block_num;
 
-        double dif, tot, c, var;
+        double dif, tot, c, var[10][10];
 
         for(
         col_ini = 0,
@@ -74,9 +74,10 @@ namespace dials { namespace algorithms {
                 c++;
               }
             }
-            var = tot/c;
-            std::cout << "\n" << "tot = "<< tot << "\n" << "var =" << var
-             << "\n____________________\n";
+            var[row_block_num][col_block_num] = tot/c;
+            std::cout << "\n" << "tot = "<< tot << "\n" <<
+            "var[" << row_block_num << "][" << col_block_num << "] =" <<
+            var[row_block_num][col_block_num] << "\n____________________\n";
           }
 
 
