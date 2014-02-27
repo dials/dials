@@ -23,6 +23,8 @@ output {
     .type = int(value_min=0)
   size_inches = 10,10
     .type = floats(size=2, value_min=0)
+  marker_size = 10
+    .type = float(value_min=0)
 }
 """)
 
@@ -127,8 +129,9 @@ def run(args):
   fig.set_size_inches(params.output.size_inches)
   fig.set_dpi(params.output.dpi)
   pyplot.axes().set_aspect('equal')
-  pyplot.scatter(obs_x, obs_y, marker='o', c='white', s=10, alpha=1)
-  pyplot.scatter(pred_x, pred_y, marker='+', c='blue')
+  marker_size = params.output.marker_size
+  pyplot.scatter(obs_x, obs_y, marker='o', c='white', s=marker_size, alpha=1)
+  pyplot.scatter(pred_x, pred_y, marker='+', s=marker_size, c='blue')
   #assert len(detector) == 1
   panel = detector[0]
   #if len(detector) > 1:
