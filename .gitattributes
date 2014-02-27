@@ -509,6 +509,7 @@ scratch/jmp/misc/clip_line3.py -text
 scratch/jmp/misc/framework_binding.py -text
 scratch/jmp/misc/generic_tree.h -text
 scratch/jmp/misc/generic_tree2.h -text
+scratch/jmp/misc/kolmogorov_smirnov.py -text
 scratch/jmp/misc/line_clip.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
