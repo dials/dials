@@ -12,15 +12,6 @@ namespace dials { namespace algorithms {
         af::versa< double, af::c_grid<2> > mask2d(data2d.accessor(),0);
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
-        for (int row = 1; row<nrow - 1;row++) {
-          for (int col = 1; col<ncol - 1;col++){
-            if (data2d(row,col) > data2dsmoth(row,col) + 15.0){
-              mask2d(row,col) = 1;
-            }else{
-              mask2d(row,col) = 0;
-            }
-          }
-        }
 
         int nblock = 10;
         int col_block_size = int(double(ncol)/double(nblock));
@@ -80,8 +71,25 @@ namespace dials { namespace algorithms {
             var[row_block_num][col_block_num] << "\n____________________\n";
           }
 
-
         }
+
+        for (int row = 1; row<nrow - 1;row++) {
+          for (int col = 1; col<ncol - 1;col++){
+            col_block_num = int(double(col) / double(col_block_size));
+            row_block_num = int(double(row) / double(row_block_size));
+            /*
+            std::cout << "var[" << row_block_num << "][" << col_block_num << "] ="
+            << var[row_block_num][col_block_num] << "\n____________________\n";
+            */
+            if (data2d(row,col) > data2dsmoth(row,col)
+               + var[row_block_num][col_block_num] * 3.0 ){
+              mask2d(row,col) = 1;
+            }else{
+              mask2d(row,col) = 0;
+            }
+          }
+        }
+
 
 
     return mask2d;
