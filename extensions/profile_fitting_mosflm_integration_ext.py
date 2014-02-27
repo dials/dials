@@ -17,6 +17,15 @@ class ProfileFittingMosflmIntegrationExt(IntegrationIface):
 
   name = 'mosflm'
 
+  phil = '''
+    .help = "Parameters for mosflm profile fitting"
+    {
+      nblocks = 4
+        .help = "number of block per coordinate"
+        .type = int
+    }
+  '''
+
   def __init__(self, params, experiment):
     ''' Initialise the algorithhm. '''
     from dials.algorithms.integration.mosflm_like import MosflmProfileFitting

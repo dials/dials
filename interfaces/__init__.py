@@ -54,6 +54,7 @@ class BackgroundIface(interface.Interface):
 
 class IntegrationIface(interface.Interface):
   ''' Interface for intensity calculation algorithms. '''
+
   name = 'integration'
 
   def __init__(self, params, experiment):
