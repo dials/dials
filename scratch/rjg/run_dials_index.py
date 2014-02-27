@@ -15,10 +15,14 @@ find_spots_phil = None
   .type = path
 index_phil = None
   .type = path
-run_xds = False
-  .type = bool
 nproc = 1
   .type = int(value_min=1)
+run_xds = False
+  .type = bool
+xds {
+  include_resolution_range = (20, 0)
+    .type = ints(size=2)
+}
 """)
 
 
@@ -142,15 +146,14 @@ def run_once(args):
 
     no_scale = True
 
-    include_resolution_range = (d_max,0)
-
     # only refine crystal parameters since we probably know the detector,
     # beam and rotation axis parameters much more accurately from the
     # reference dataset
     with open("XDS.INP", "ab") as f:
       print >> f, "REFINE(INTEGRATE)= ORIENTATION CELL"
       print >> f, "REFINE(CORRECT)= ORIENTATION CELL"
-      print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %include_resolution_range
+      print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %tuple(
+        params.xds.include_resolution_range)
 
       #if no_scale:
         #print >> f, "MINIMUM_I/SIGMA=50"
@@ -175,7 +178,8 @@ def run_once(args):
       with open("XDS.INP", "ab") as f:
         print >> f, "REFINE(INTEGRATE)="
         print >> f, "REFINE(CORRECT)="
-        print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %include_resolution_range
+        print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %tuple(
+        params.xds.include_resolution_range)
 
         if no_scale:
           print >> f, "MINIMUM_I/SIGMA=50"
