@@ -12,6 +12,8 @@ scan_range = None
   .multiple = True
 first_n_reflections = None
   .type = int(value_min=0)
+crystal_id = None
+  .type = int
 output {
   file_name = centroids.png
     .type = path
@@ -76,6 +78,9 @@ def run(args):
       perm = perm[:min(reflection_list.size(), params.first_n_reflections)]
       #print flex.max(centroids_frame.select(perm))
       reflection_list = reflection_list.select(perm)
+    if params.crystal_id is not None:
+      reflection_list = reflection_list.select(
+        reflection_list.crystal() == params.crystal_id)
 
     for refl in reflection_list:
       centroid_position = refl.centroid_position
