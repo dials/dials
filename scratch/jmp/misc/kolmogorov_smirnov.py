@@ -14,7 +14,11 @@ def distance(t, f):
 def supremum(x):
   return max([abs(xx) for xx in x])
 
-def kolmogorov_smirnov_test(t, f):
+def kolmogorov_smirnov_test(data):
+
+  data = standardize(data)
+
+  t, f = empirical_distribution_function(data)
   return supremum(distance(t, f))
 
 
@@ -47,30 +51,31 @@ def calculate_dcritical(n, x):
 
 if __name__ == '__main__':
 
-  n = 100000
-  alpha = 0.9
-  print 1.0 - calculate_dcritical(n, alpha)
+  #n = 100000
+  #alpha = 0.9
+  #print 1.0 - calculate_dcritical(n, alpha)
 
-  #from random import gauss, uniform
-  #from matplotlib import pylab
+  from random import gauss, uniform
+  from matplotlib import pylab
 
-  #mean = 10
-  #sigma = 1
-  #data = [uniform(mean, sigma) for i in range(1000)]
+  mean = 20
+  sigma = 5
+  n = 1000
+  data = [uniform(mean, sigma) for i in range(n)]
 
-  #data = standardize(data)
+  data = standardize(data)
 
-  #t, f = empirical_distribution_function(data)
+  t, f = empirical_distribution_function(data)
 
-  #d = distance(t, f)
+  d = distance(t, f)
 
 
-  #from math import sqrt
-  #D = kolmogorov_smirnov_test(t, f)
-  #n = len(data)
-  #Dc = 1.36 / sqrt(n)
-  #print D, Dc, D < Dc
+  from math import sqrt
+  D = kolmogorov_smirnov_test(t, f)
+  n = len(data)
+  Dc = 1.36 / sqrt(n)
+  print D, Dc, D < Dc
 
-  #pylab.plot(t, f)
-  #pylab.plot(t, [standard_normal_cdf(tt) for tt in t])
-  #pylab.show()
+  pylab.plot(t, f)
+  pylab.plot(t, [standard_normal_cdf(tt) for tt in t])
+  pylab.show()

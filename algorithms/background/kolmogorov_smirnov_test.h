@@ -180,14 +180,14 @@ namespace dials { namespace algorithms {
     // Calculate the EDF
     af::shared<double> edf(x.size());
     for (std::size_t i = 0; i < x.size(); ++i) {
-      edf[i] = (i + 1) / x.size();
+      edf[i] = (i + 1) / (double)x.size();
     }
 
     // Compute the maximum distance between each point and the normal cdf
     double dn = 0.0;
-    double rt = std::sqrt(2.0);
+    double r2 = std::sqrt(2.0);
     for (std::size_t i = 0; i < data.size(); ++i) {
-      double d = std::abs(edf[i] - (erf(x[i] / rt) + 1.0) / 2.0);
+      double d = std::abs(edf[i] - (erf(x[i] / r2) + 1.0) / 2.0);
       if (d > dn) {
         dn = d;
       }
