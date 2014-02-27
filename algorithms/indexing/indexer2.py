@@ -23,9 +23,6 @@ from cctbx import crystal, sgtbx, xray
 from cctbx.crystal.crystal_model import crystal_model as Crystal
 from dials.model.experiment.experiment_list import Experiment, ExperimentList
 
-import libtbx.load_env
-dials_path = libtbx.env.dist_path('dials')
-
 master_phil_scope = iotbx.phil.parse("""
 reference {
   detector = None
@@ -158,7 +155,7 @@ multiple_lattice_search {
   }
 }
 
-""" %dials_path, process_includes=True)
+""", process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
 
