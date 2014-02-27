@@ -87,7 +87,7 @@ debug_plots = False
   .help = "Requires matplotlib"
 show_timing = False
   .type = bool
-include file %s/data/refinement.phil
+include scope dials.data.refinement.phil_scope
 refinement_protocol {
   weight_outlier_n_sigma = 5
     .type = float(value_min=0)
