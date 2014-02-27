@@ -1,0 +1,9 @@
+
+Import('env')
+
+sources = [
+    'boost_python/statistics_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_statistics_ext', 
+    source=sources)
+
