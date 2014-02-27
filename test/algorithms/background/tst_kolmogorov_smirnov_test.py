@@ -40,11 +40,11 @@ class Test(object):
     pass
 
   def run(self):
-    for i in range(100, 1000):
+    for i in range(10, 1000):
       self.tst_normal_for_sample_size(i)
     print 'OK'
 
-    for i in range(500, 1000):
+    for i in range(300, 1000):
       self.tst_uniform_for_sample_size(i)
     print 'OK'
 
@@ -77,16 +77,16 @@ class Test(object):
     except Exception:
       from math import sqrt
       n = len(uniform_data)
-      print kolmogorov_smirnov_test(uniform_data), 1.36 / sqrt(n)
-      #from matplotlib import pylab
+      print n, kolmogorov_smirnov_test(uniform_data), 1.07 / sqrt(n)
+      from matplotlib import pylab
 
-      #uniform_data = standardize(uniform_data)
+      uniform_data = standardize(uniform_data)
 
-      #t, f = empirical_distribution_function(uniform_data)
+      t, f = empirical_distribution_function(uniform_data)
 
-      #pylab.plot(t, f)
-      #pylab.plot(t, [standard_normal_cdf(tt) for tt in t])
-      #pylab.show()
+      pylab.plot(t, f)
+      pylab.plot(t, [standard_normal_cdf(tt) for tt in t])
+      pylab.show()
 
 if __name__ == '__main__':
   test = Test()

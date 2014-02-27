@@ -23,123 +23,139 @@ namespace dials { namespace algorithms {
   using scitbx::math::mean_and_variance;
 
   /**
+   * Find the interval containing b
+   * @param a The array of descending values
+   * @param n The number of values
+   * @param b The value to find
+   * @returns The lower bound of the interval
+   */
+  inline
+  std::size_t ks_critical_find_interval(double *a, std::size_t n, double b) {
+    for (std::size_t i = 0; i < n - 1; ++i) {
+      if (a[i] >= b && b >= a[i+1]) {
+        return i;
+      }
+    }
+    DIALS_ASSERT(false);
+    return 0;
+  }
+
+  /**
    * Get the critical value to test against. These are approximate values.
-   * Tables from https://www.utdallas.edu/~herve/MolinAbdi1998-LillieforsTechReport.pdf
+   * @param n The number of points in the sample
+   * @param a The probability (1 - a)
+   * @returns The critical value
+   */
+  inline
+  double ks_critical_large_sample(std::size_t n, double a) {
+
+    // Setup the tables
+    const std::size_t NALPHA = 5;
+    double alpha[NALPHA] = { 0.20, 0.10, 0.05, 0.02, 0.01 };
+    double apprx[NALPHA] = { 1.07, 1.22, 1.36, 1.52, 1.63 };
+
+    // Find the lower bound of the interval
+    std::size_t i1 = ks_critical_find_interval(alpha, NALPHA, a);
+
+    // Compute the critical value. If N is less than 50 then
+    // interpolate using the large sample approximation, otherwise,
+    // lookup the values from the table and interpolate
+    DIALS_ASSERT(n > 0);
+    double sqrt_n = std::sqrt((double)n);
+    double d1 = apprx[i1] / sqrt_n;
+    double d2 = apprx[i1+1] / sqrt_n;
+    double a1 = alpha[i1];
+    double a2 = alpha[i1+1];
+    return d1 + (d2 - d1) * (a - a1) / (a2 - a1);
+  }
+
+  /**
+   * Get the critical value to test against. These are approximate values.
+   * @param n The number of points in the sample
+   * @param a The probability (1 - a)
+   * @returns The critical value
+   */
+  inline
+  double ks_critical_small_sample(std::size_t n, double a) {
+
+    // Setup the tables
+    const std::size_t NALPHA = 5;
+    const std::size_t NAPPRX = 40;
+
+    // The alpha values
+    double alpha[NALPHA] = { 0.20, 0.10, 0.05, 0.02, 0.01 };
+
+    // The apprixmate critical values
+    double apprx[NAPPRX][NALPHA] = {
+      { 0.900, 0.950, 0.975, 0.990, 0.995, },
+      { 0.684, 0.776, 0.842, 0.900, 0.929, },
+      { 0.565, 0.636, 0.708, 0.785, 0.829, },
+      { 0.493, 0.565, 0.624, 0.689, 0.734, },
+      { 0.447, 0.509, 0.563, 0.627, 0.669, },
+      { 0.410, 0.468, 0.519, 0.577, 0.617, },
+      { 0.381, 0.436, 0.483, 0.538, 0.576, },
+      { 0.358, 0.410, 0.454, 0.507, 0.542, },
+      { 0.339, 0.387, 0.430, 0.480, 0.513, },
+      { 0.323, 0.369, 0.409, 0.457, 0.489, },
+      { 0.308, 0.352, 0.391, 0.437, 0.468, },
+      { 0.296, 0.338, 0.375, 0.419, 0.449, },
+      { 0.285, 0.325, 0.361, 0.404, 0.432, },
+      { 0.275, 0.314, 0.349, 0.390, 0.418, },
+      { 0.266, 0.304, 0.338, 0.377, 0.404, },
+      { 0.258, 0.295, 0.327, 0.366, 0.392, },
+      { 0.250, 0.286, 0.318, 0.355, 0.381, },
+      { 0.244, 0.279, 0.309, 0.346, 0.371, },
+      { 0.237, 0.271, 0.301, 0.337, 0.361, },
+      { 0.232, 0.265, 0.294, 0.329, 0.352, },
+      { 0.226, 0.259, 0.287, 0.321, 0.344, },
+      { 0.221, 0.253, 0.281, 0.314, 0.337, },
+      { 0.216, 0.247, 0.275, 0.307, 0.330, },
+      { 0.212, 0.242, 0.269, 0.301, 0.323, },
+      { 0.208, 0.238, 0.264, 0.295, 0.317, },
+      { 0.204, 0.233, 0.259, 0.290, 0.311, },
+      { 0.200, 0.229, 0.254, 0.284, 0.305, },
+      { 0.197, 0.225, 0.250, 0.279, 0.300, },
+      { 0.193, 0.221, 0.246, 0.275, 0.295, },
+      { 0.190, 0.218, 0.242, 0.270, 0.290, },
+      { 0.187, 0.214, 0.238, 0.266, 0.285, },
+      { 0.184, 0.211, 0.234, 0.262, 0.281, },
+      { 0.182, 0.208, 0.231, 0.258, 0.277, },
+      { 0.179, 0.205, 0.227, 0.254, 0.273, },
+      { 0.177, 0.202, 0.224, 0.251, 0.269, },
+      { 0.174, 0.199, 0.221, 0.247, 0.265, },
+      { 0.172, 0.196, 0.218, 0.244, 0.262, },
+      { 0.170, 0.194, 0.215, 0.241, 0.258, },
+      { 0.168, 0.191, 0.213, 0.238, 0.255, },
+      { 0.165, 0.189, 0.210, 0.235, 0.252, },
+    };
+
+    // Ensure n is valid
+    DIALS_ASSERT(n > 0 && n <= 40);
+
+    // Find the lower bound of the interval
+    std::size_t i1 = ks_critical_find_interval(alpha, NALPHA, a);
+
+    // Compute the critical value. If N is less than 50 then
+    // interpolate using the large sample approximation, otherwise,
+    // lookup the values from the table and interpolate
+    double d1 = apprx[n-1][i1];
+    double d2 = apprx[n-1][i1+1];
+    double a1 = alpha[i1];
+    double a2 = alpha[i1+1];
+    return d1 + (d2 - d1) * (a - a1) / (a2 - a1);
+  }
+
+  /**
+   * Get the critical value to test against. These are approximate values.
    * @param n The number of points in the sample
    * @param a The probability (1 - a)
    * @returns The critical value
    */
   inline
   double ks_critical(std::size_t n, double a) {
-
-    const std::size_t NALPHA = 5;
-    const std::size_t NSAMPLE = 39;
-
-    // The alpha values
-    double alpha[NALPHA] = { 0.01, 0.05, 0.1, 0.15, 0.2 };
-
-    // Scaling values to use with large n approximation c / sqrt(n)
-    double large_approx[NALPHA] = { 1.63, 1.36, 1.22, 1.14, 1.07 };
-
-    // The values of n at which the values are specified
-    std::size_t num[NSAMPLE] = {
-       4,  5,  6,  7,  8,  9, 10, 11, 12, 13,
-      14, 15, 16, 17, 18, 19, 20, 25, 30, 31,
-      32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
-      42, 43, 44, 45, 46, 47, 48, 49, 50
-    };
-
-    // Table of small approximations
-    double small_approx[NSAMPLE][NALPHA] = {
-      { 0.3027, 0.3216, 0.3456, 0.3754, 0.4129 },
-      { 0.2893, 0.3027, 0.3188, 0.3427, 0.3959 },
-      { 0.2694, 0.2816, 0.2982, 0.3245, 0.3728 },
-      { 0.2521, 0.2641, 0.2802, 0.3041, 0.3504 },
-      { 0.2387, 0.2502, 0.2649, 0.2875, 0.3331 },
-      { 0.2273, 0.2382, 0.2522, 0.2744, 0.3162 },
-      { 0.2171, 0.2273, 0.2410, 0.2616, 0.3037 },
-      { 0.2080, 0.2179, 0.2306, 0.2506, 0.2905 },
-      { 0.2004, 0.2101, 0.2228, 0.2426, 0.2812 },
-      { 0.1932, 0.2025, 0.2147, 0.2337, 0.2714 },
-      { 0.1869, 0.1959, 0.2077, 0.2257, 0.2627 },
-      { 0.1811, 0.1899, 0.2016, 0.2196, 0.2545 },
-      { 0.1758, 0.1843, 0.1956, 0.2128, 0.2477 },
-      { 0.1711, 0.1794, 0.1902, 0.2071, 0.2408 },
-      { 0.1666, 0.1747, 0.1852, 0.2018, 0.2345 },
-      { 0.1624, 0.1700, 0.1803, 0.1965, 0.2285 },
-      { 0.1589, 0.1666, 0.1764, 0.1920, 0.2226 },
-      { 0.1429, 0.1498, 0.1589, 0.1726, 0.2010 },
-      { 0.1315, 0.1378, 0.1460, 0.1590, 0.1848 },
-      { 0.1291, 0.1353, 0.1432, 0.1559, 0.1820 },
-      { 0.1274, 0.1336, 0.1415, 0.1542, 0.1798 },
-      { 0.1254, 0.1314, 0.1392, 0.1518, 0.1770 },
-      { 0.1236, 0.1295, 0.1373, 0.1497, 0.1747 },
-      { 0.1220, 0.1278, 0.1356, 0.1478, 0.1720 },
-      { 0.1203, 0.1260, 0.1336, 0.1454, 0.1695 },
-      { 0.1188, 0.1245, 0.1320, 0.1436, 0.1677 },
-      { 0.1174, 0.1230, 0.1303, 0.1421, 0.1653 },
-      { 0.1159, 0.1214, 0.1288, 0.1402, 0.1634 },
-      { 0.1147, 0.1204, 0.1275, 0.1386, 0.1616 },
-      { 0.1131, 0.1186, 0.1258, 0.1373, 0.1599 },
-      { 0.1119, 0.1172, 0.1244, 0.1353, 0.1573 },
-      { 0.1106, 0.1159, 0.1228, 0.1339, 0.1556 },
-      { 0.1095, 0.1148, 0.1216, 0.1322, 0.1542 },
-      { 0.1083, 0.1134, 0.1204, 0.1309, 0.1525 },
-      { 0.1071, 0.1123, 0.1189, 0.1293, 0.1512 },
-      { 0.1062, 0.1113, 0.1180, 0.1282, 0.1499 },
-      { 0.1047, 0.1098, 0.1165, 0.1269, 0.1476 },
-      { 0.1040, 0.1089, 0.1153, 0.1256, 0.1463 },
-      { 0.1030, 0.1079, 0.1142, 0.1246, 0.1457 },
-    };
-
-    DIALS_ASSERT(n >= 4);
-    DIALS_ASSERT(a >= 0.01 && a <= 0.2);
-
-    // Find the 2 alpha values to interpolate within
-    std::size_t i1 = NALPHA, i2 = NALPHA;
-    for (std::size_t i = 1 ; i < NALPHA; ++i) {
-      if (alpha[i] >= a) {
-        i1 = i - 1;
-        i2 = i;
-      }
-    }
-    DIALS_ASSERT(i1 < NALPHA && i2 < NALPHA);
-
-    // Compute the critical value. If N is less than 50 then
-    // interpolate using the large sample approximation, otherwise,
-    // lookup the values from the table and interpolate
-    double result = 0.0;
-    if (n > 50) {
-      double sqrt_n = std::sqrt((double)n);
-      double d1 = large_approx[i1] / sqrt_n;
-      double d2 = large_approx[i2] / sqrt_n;
-      double a1 = (double)alpha[i1];
-      double a2 = (double)alpha[i2];
-      result = d1 + (d2 - d1) * (a - a1) / (a2 - a1);
-    } else {
-      std::size_t j1 = 0, j2 = 1;
-      for (std::size_t j = 1; j < NALPHA; ++j) {
-        if (num[j] >= n) {
-          j1 = j-1;
-          j2 = j;
-        }
-      }
-      double d11 = small_approx[j1][i1];
-      double d12 = small_approx[j1][i2];
-      double d21 = small_approx[j2][i1];
-      double d22 = small_approx[j2][i2];
-      double a1 = (double)alpha[i1];
-      double a2 = (double)alpha[i2];
-      double n1 = (double)num[j1];
-      double n2 = (double)num[j2];
-      result = (
-          d11 * (a2 - a)*(n2 - n) +
-          d21 * (a - a1)*(n2 - n) +
-          d12 * (a2 - a)*(n - n1) +
-          d22 * (a - a1)*(n - n1)
-          ) / ((a2 - a1) * (n2 - n1));
-    }
-    return result;
+    return (n > 40 ?
+        ks_critical_large_sample(n, a) :
+        ks_critical_small_sample(n, a));
   }
 
   /**
