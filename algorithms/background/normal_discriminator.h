@@ -16,6 +16,7 @@
 #include <boost/math/special_functions/erf.hpp>
 #include <scitbx/math/mean_and_variance.h>
 #include <dials/array_family/sort_index.h>
+#include <dials/algorithms/background/kolmogorov_smirnov_test.h>
 #include <dials/algorithms/shoebox/mask_code.h>
 #include <dials/error.h>
 

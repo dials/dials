@@ -34,28 +34,43 @@ def standardize(data):
   sdev = sqrt((sum_x2 - sum_x*sum_x / n) / (n-1))
   return [(d - mean) / sdev for d in data]
 
+def calculate_dcritical(n, x):
+  from math import sqrt, pi, exp
+  result = 0.0
+  for k in range(1, n):
+    a = (2.0 * k - 1)**2
+    b = exp(-a * pi**2 / (8*x**2))
+    result += b
+
+  result *= sqrt(2.0 * pi) / x
+  return result
+
 if __name__ == '__main__':
 
-  from random import gauss, uniform
-  from matplotlib import pylab
+  n = 100000
+  alpha = 0.9
+  print 1.0 - calculate_dcritical(n, alpha)
 
-  mean = 10
-  sigma = 1
-  data = [uniform(mean, sigma) for i in range(1000)]
+  #from random import gauss, uniform
+  #from matplotlib import pylab
 
-  data = standardize(data)
+  #mean = 10
+  #sigma = 1
+  #data = [uniform(mean, sigma) for i in range(1000)]
 
-  t, f = empirical_distribution_function(data)
+  #data = standardize(data)
 
-  d = distance(t, f)
+  #t, f = empirical_distribution_function(data)
+
+  #d = distance(t, f)
 
 
-  from math import sqrt
-  D = kolmogorov_smirnov_test(t, f)
-  n = len(data)
-  Dc = 1.36 / sqrt(n)
-  print D, Dc, D < Dc
+  #from math import sqrt
+  #D = kolmogorov_smirnov_test(t, f)
+  #n = len(data)
+  #Dc = 1.36 / sqrt(n)
+  #print D, Dc, D < Dc
 
-  pylab.plot(t, f)
-  pylab.plot(t, [standard_normal_cdf(tt) for tt in t])
-  pylab.show()
+  #pylab.plot(t, f)
+  #pylab.plot(t, [standard_normal_cdf(tt) for tt in t])
+  #pylab.show()
