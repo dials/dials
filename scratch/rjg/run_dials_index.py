@@ -21,7 +21,7 @@ run_xds = False
   .type = bool
 xds {
   include_resolution_range = (20, 0)
-    .type = ints(size=2)
+    .type = floats(size=2)
 }
 """)
 
