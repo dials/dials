@@ -4,6 +4,7 @@ Import('env')
 sources = [
     'boost_python/index_generator.cc',
     'boost_python/reeke_index_generator.cc',
+    'boost_python/scan_varying_helpers.cc',
     'boost_python/rotation_angles.cc',
     'boost_python/ray_predictor.cc',
     'boost_python/scan_varying_ray_predictor.cc',
