@@ -49,6 +49,12 @@ class Script(ScriptRunner):
         print '  ' + arg
 
     # Ensure we have a data block
+    if not importer.datablocks:
+      print "Usage:"
+      print self.config().usage
+      print
+      raise RuntimeError('No datablock found')
+
     if len(importer.datablocks) != 1:
       raise RuntimeError('only 1 datablock can be processed at a time')
 
