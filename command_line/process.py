@@ -65,7 +65,8 @@ class Script(ScriptRunner):
     print 'The following tasks will be performed:'
     print ' 1) Strong spots will be found (dials.find_spots)'
     print ' 2) The strong spots will be indexed (dials.index)'
-    print ' 3) The reflections will be integrated (dials.integrate)'
+    print ' 3) The model will be further refined (dials.refine)'
+    print ' 4) The reflections will be integrated (dials.integrate)'
     print ''
     print 'Please be patient, this may take a few minutes'
     print ''
@@ -186,12 +187,12 @@ class Script(ScriptRunner):
     from time import time
     st = time()
 
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      self.params, centroids, experiments, self.options.verbosity)
-
     print '*' * 80
     print 'Refining Model'
     print '*' * 80
+
+    refiner = RefinerFactory.from_parameters_data_experiments(
+      self.params, centroids, experiments, self.options.verbosity)
 
     refiner.run()
     experiments = refiner.get_experiments()
