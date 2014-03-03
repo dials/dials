@@ -18,22 +18,18 @@ class ProfileFittingRSIntegrationExt(IntegrationIface):
   name = 'fitrs'
 
   phil = '''
-    fitrs
-      .help = "Parameters for reciprocal space profile fitting."
-    {
-      grid_size = 5
-        .help = "The size of the reciprocal space grid for each reflection."
-                "The size is the same in each dimensions"
-        .type = int
+    grid_size = 5
+      .help = "The size of the reciprocal space grid for each reflection."
+              "The size is the same in each dimensions"
+      .type = int
 
-      reference_frame_interval = 10
-        .help = "The oscillation at which to learn new reference profiles"
-        .type = int
+    reference_frame_interval = 10
+      .help = "The oscillation at which to learn new reference profiles"
+      .type = int
 
-      reference_signal_threshold = 0.02
-        .help = "The threshold to use in reference profile"
-        .type = float
-    }
+    reference_signal_threshold = 0.02
+      .help = "The threshold to use in reference profile"
+      .type = float
   '''
 
   def __init__(self, params, experiments):

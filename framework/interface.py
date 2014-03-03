@@ -65,21 +65,33 @@ class Interface(object):
   def phil_scope(cls):
     ''' Get the phil scope for the interface or extension. '''
     from libtbx.phil import parse
-
-    # Make sure we have an interface or extension
     if cls == Interface:
       raise RuntimeError('"Interface has no phil parameters"')
     elif not issubclass(cls, Interface):
       raise RuntimeError('%s is not an interface or extension' % str(cls))
-
-    # Get the master phil scope
-    if 'phil' in cls.__dict__:
-      master_scope = parse(cls.phil)
-    else:
-      master_scope = parse('')
-
-    # If this is an interface, get for all extensions
     if Interface in cls.__bases__:
-      for ext in cls.extensions():
-        master_scope.adopt_scope(ext.phil_scope())
+      master_scope = parse('%s .help=%s {}' % (cls.name, cls.__doc__))
+      main_scope = master_scope.get_without_substitution(cls.name)
+      assert(len(main_scope) == 1)
+      main_scope = main_scope[0]
+      if 'phil' in cls.__dict__:
+        main_scope.adopt_scope(parse(cls.phil))
+      if Interface in cls.__bases__:
+        algorithm = parse('''
+          algorithm = *%s
+            .help = "The choice of algorithm"
+            .type = choice
+        ''' % ' '.join([ext.name for ext in cls.extensions()]))
+        main_scope.adopt_scope(algorithm)
+        for ext in cls.extensions():
+          main_scope.adopt_scope(ext.phil_scope())
+    else:
+      if 'phil' in cls.__dict__:
+        master_scope = parse('%s .help=%s {}' % (cls.name, cls.__doc__))
+        main_scope = master_scope.get_without_substitution(cls.name)
+        assert(len(main_scope) == 1)
+        main_scope = main_scope[0]
+        main_scope.adopt_scope(parse(cls.phil))
+      else:
+        master_scope = parse('')
     return master_scope

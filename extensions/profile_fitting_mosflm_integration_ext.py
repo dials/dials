@@ -19,13 +19,9 @@ class ProfileFittingMosflmIntegrationExt(IntegrationIface):
   name = 'mosflm'
 
   phil = '''
-    mosflm
-      .help = "Parameters for mosflm profile fitting"
-    {
-      nblocks = 4
-        .help = "number of block per coordinate"
-        .type = int
-    }
+    nblocks = 4
+      .help = "number of block per coordinate"
+      .type = int
   '''
 
   def __init__(self, params, experiment):

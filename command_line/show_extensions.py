@@ -19,6 +19,13 @@ if __name__ == '__main__':
 
   # Print verbose output
   parser.add_option(
+    "-i", "--interfaces",
+    dest = "interfaces",
+    action = "store_true", default = False,
+    help = "Show only information about interfaces")
+
+  # Print verbose output
+  parser.add_option(
     "-v", "--verbose",
     dest = "verbose",
     action = "count", default = 0,
@@ -35,13 +42,30 @@ if __name__ == '__main__':
     print '-' * 80
     print 'Interface: %s' % iface.__name__
 
-    # Loop through all the extensions
-    for ext in iface.extensions():
-      print ' Extension: %s' % ext.__name__
+    # Either just show information about interfaces or show some about
+    # extensions depending on user input
+    if options.interfaces:
+
+      # Print info about interface
       if options.verbose > 0:
-        print '  name = %s' % ext.name
+        print ' name = %s' % iface.name
         if options.verbose > 1:
           level = options.verbose - 2
-          phil = ext.phil_scope().as_str(print_width=80-4, attributes_level=level)
-          phil = '\n'.join((' ' * 4) + l for l in phil.split('\n'))
-          print '  phil:\n%s' % phil
+          scope = iface.phil_scope()
+          phil = scope.as_str(print_width=80-3, attributes_level=level)
+          phil = '\n'.join((' ' * 2) + l for l in phil.split('\n'))
+          print ' phil:\n%s' % phil
+
+    else:
+
+      # Loop through all the extensions
+      for ext in iface.extensions():
+        print ' Extension: %s' % ext.__name__
+        if options.verbose > 0:
+          print '  name = %s' % ext.name
+          if options.verbose > 1:
+            level = options.verbose - 2
+            scope = ext.phil_scope()
+            phil = scope.as_str(print_width=80-3, attributes_level=level)
+            phil = '\n'.join((' ' * 3) + l for l in phil.split('\n'))
+            print '  phil:\n%s' % phil

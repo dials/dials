@@ -14,9 +14,9 @@ from dials.framework import interface
 
 
 class SpotFinderThresholdIface(interface.Interface):
-  ''' Interface for spot finder threshold algorithms. '''
+  ''' Configure the spot finder threshold algorithms. '''
 
-  name = 'spotfinder.threshold'
+  name = 'threshold'
 
   def __init__(self, params, imageset):
     pass
@@ -27,7 +27,7 @@ class SpotFinderThresholdIface(interface.Interface):
 
 
 class CentroidIface(interface.Interface):
-  ''' Interface for centroid calculation algorithms. '''
+  ''' Configure the centroid calculation algorithms. '''
 
   name = 'centroid'
 
@@ -40,7 +40,7 @@ class CentroidIface(interface.Interface):
 
 
 class BackgroundIface(interface.Interface):
-  ''' Interface for background calculation algorithms. '''
+  ''' Configure the background calculation algorithms. '''
 
   name = 'background'
 
@@ -53,7 +53,7 @@ class BackgroundIface(interface.Interface):
 
 
 class IntegrationIface(interface.Interface):
-  ''' Interface for intensity calculation algorithms. '''
+  ''' Configure the intensity calculation algorithms. '''
 
   name = 'integration'
 

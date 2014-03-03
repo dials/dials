@@ -19,14 +19,10 @@ class XdsBackgroundExt(BackgroundIface):
   name = 'xds'
 
   phil = '''
-    xds
-      .help = "Parameters for xds background subtraction."
-    {
-      min_pixels = 10
-        .help = "The minimum number of pixels to use in calculating the"
-                "background intensity."
-        .type = int
-    }
+    min_pixels = 10
+      .help = "The minimum number of pixels to use in calculating the"
+              "background intensity."
+      .type = int
   '''
 
   def __init__(self, params, experiment):

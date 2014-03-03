@@ -19,20 +19,16 @@ class FableBackgroundExt(BackgroundIface):
   name = 'fable'
 
   phil = '''
-    fable
-      .help = "Parameters for fable background subtraction."
-    {
-      min_pixels = 10
-        .help = "The minimum number of pixels to use in calculating the"
-                "background intensity."
-        .type = int
+    min_pixels = 10
+      .help = "The minimum number of pixels to use in calculating the"
+              "background intensity."
+      .type = int
 
-      n_sigma = 3.0
-        .help = "The number of standard deviations above the mean pixel"
-                "intensity below which the pixel will be classified as"
-                "background."
-        .type = float
-    }
+    n_sigma = 3.0
+      .help = "The number of standard deviations above the mean pixel"
+              "intensity below which the pixel will be classified as"
+              "background."
+      .type = float
   '''
 
   def __init__(self, params, experiment):
