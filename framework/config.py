@@ -58,8 +58,6 @@ class Config(object):
     # Parse all the phil files
     self._system_phil = parse(
     '''
-      include scope dials.data.logging.phil_scope
-      include scope dials.data.lookup.phil_scope
       include scope dials.data.spotfinding.phil_scope
       include scope dials.data.integration.phil_scope
       include scope dials.data.refinement.phil_scope

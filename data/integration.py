@@ -22,6 +22,8 @@ def generate_phil_scope():
   integration
     .help = "Configure the integration algorithm."
   {
+    include scope dials.data.lookup.phil_scope
+
     shoebox
       .help = "Parameters used in the integration shoebox"
     {
@@ -71,7 +73,7 @@ def generate_phil_scope():
     }
   }
 
-  ''')
+  ''', process_includes=True)
 
   main_scope = phil_scope.get_without_substitution("integration")
   assert(len(main_scope) == 1)

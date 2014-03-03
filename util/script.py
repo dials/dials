@@ -114,7 +114,7 @@ class ScriptRunner(object):
     params, options, args = self._config.parse_args()
 
     # Configure the logging
-    self._configure_logging(self._config.phil())
+    #self._configure_logging(self._config.phil())
 
     # Save the working parameters
     self.working_params = params
