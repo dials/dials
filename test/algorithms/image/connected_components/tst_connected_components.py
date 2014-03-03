@@ -206,8 +206,10 @@ class Test3d:
 
 
 if __name__ == '__main__':
-  test = Test3d()
-  test.run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    test = Test3d()
+    test.run()
 
-  test = Test2d()
-  test.run()
+    test = Test2d()
+    test.run()

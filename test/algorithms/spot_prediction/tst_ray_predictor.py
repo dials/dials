@@ -172,5 +172,7 @@ class TestRayPredictor:
     self.test_new()
 
 if __name__ == '__main__':
-  test = TestRayPredictor()
-  test.run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    test = TestRayPredictor()
+    test.run()

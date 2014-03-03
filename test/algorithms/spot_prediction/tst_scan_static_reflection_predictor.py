@@ -133,6 +133,8 @@ class Test(object):
 
 
 if __name__ == '__main__':
+  from dials.test import cd_auto
+  with cd_auto(__file__):
 
-  test = Test()
-  test.run()
+    test = Test()
+    test.run()

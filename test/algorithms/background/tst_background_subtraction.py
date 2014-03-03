@@ -87,5 +87,7 @@ class TestSimulated:
     return pickle.load(open("all_refl.pickle", "rb"))
 
 if __name__ == '__main__':
-  test = TestSimulated()
-  test.run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    test = TestSimulated()
+    test.run()

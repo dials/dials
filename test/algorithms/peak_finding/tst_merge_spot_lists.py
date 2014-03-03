@@ -55,4 +55,6 @@ def exercise_merge_spot_lists():
   print 'OK'
 
 if __name__ == '__main__':
-  exercise_merge_spot_lists()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    exercise_merge_spot_lists()

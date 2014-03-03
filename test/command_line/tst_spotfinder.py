@@ -114,5 +114,7 @@ def run():
   exercise_spotfinder()
 
 if __name__ == '__main__':
-  run()
-  print 'OK'
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    run()
+    print 'OK'

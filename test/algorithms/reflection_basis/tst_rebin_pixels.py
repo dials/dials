@@ -234,5 +234,7 @@ class Test(object):
     print 'OK'
 
 if __name__ == '__main__':
-  test = Test()
-  test.run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    test = Test()
+    test.run()

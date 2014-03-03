@@ -65,4 +65,6 @@ def run():
   print "OK"
 
 if __name__ == '__main__':
-  run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    run()

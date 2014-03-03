@@ -303,5 +303,7 @@ class CentroidTest(object):
                                          zc.gsl_stats_wvariance()))
 
 if __name__ == '__main__':
-  test = CentroidTest()
-  test.run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    test = CentroidTest()
+    test.run()

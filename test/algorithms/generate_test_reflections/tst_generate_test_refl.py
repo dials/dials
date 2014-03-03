@@ -49,5 +49,7 @@ rotation {
   print 'OK'
 
 if __name__ == '__main__':
-  tst_generate_test_reflections()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    tst_generate_test_reflections()
 

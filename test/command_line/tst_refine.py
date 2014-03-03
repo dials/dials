@@ -78,7 +78,9 @@ def run():
   test1()
 
 if __name__ == '__main__':
-  import sys
-  from libtbx.utils import show_times_at_exit
-  show_times_at_exit()
-  run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    import sys
+    from libtbx.utils import show_times_at_exit
+    show_times_at_exit()
+    run()

@@ -197,5 +197,7 @@ class TestSpotPredictor:
     print "OK"
 
 if __name__ == '__main__':
-  test = TestSpotPredictor()
-  test.run()
+  from dials.test import cd_auto
+  with cd_auto(__file__):
+    test = TestSpotPredictor()
+    test.run()
