@@ -77,11 +77,22 @@ class Interface(object):
       if 'phil' in cls.__dict__:
         main_scope.adopt_scope(parse(cls.phil))
       if Interface in cls.__bases__:
+        def ext_names(extensions):
+          names = []
+          default_index = -1
+          for ext in extensions:
+            if 'default' in ext.__dict__:
+              default_index = len(names)
+            names.append(ext.name)
+          if default_index < 0:
+            default_index = 0
+          names[default_index] = '*' + names[default_index]
+          return names
         algorithm = parse('''
-          algorithm = *%s
+          algorithm = %s
             .help = "The choice of algorithm"
             .type = choice
-        ''' % ' '.join([ext.name for ext in cls.extensions()]))
+        ''' % ' '.join(ext_names(cls.extensions())))
         main_scope.adopt_scope(algorithm)
         for ext in cls.extensions():
           main_scope.adopt_scope(ext.phil_scope())

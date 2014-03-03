@@ -46,6 +46,8 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
       .type = int
   '''
 
+  default = True
+
   def __init__(self, params, gain, mask):
     ''' Initialise the algorithm. '''
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy

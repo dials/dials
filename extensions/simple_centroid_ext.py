@@ -18,6 +18,8 @@ class SimpleCentroidExt(CentroidIface):
 
   name = 'simple'
 
+  default = True
+
   def compute_centroid(self, reflections):
     ''' Compute the centroid. '''
     from dials.util.command_line import Command

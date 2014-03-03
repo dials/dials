@@ -25,6 +25,8 @@ class XdsBackgroundExt(BackgroundIface):
       .type = int
   '''
 
+  default=True
+
   def __init__(self, params, experiment):
     ''' Initialise the algorithm. '''
     from dials.algorithms.background import XdsSubtractorAlgorithm
