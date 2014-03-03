@@ -30,7 +30,7 @@ class XdsBackgroundExt(BackgroundIface):
     from dials.algorithms.background import XdsSubtractorAlgorithm
 
     if params:
-      min_data = params.background.xds.min_pixels
+      min_data = params.integration.background.xds.min_pixels
     else:
       min_data = 10
 

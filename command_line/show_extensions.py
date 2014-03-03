@@ -54,7 +54,8 @@ if __name__ == '__main__':
           scope = iface.phil_scope()
           phil = scope.as_str(print_width=80-3, attributes_level=level)
           phil = '\n'.join((' ' * 2) + l for l in phil.split('\n'))
-          print ' phil:\n%s' % phil
+          if phil.strip() != '':
+            print ' phil:\n%s' % phil
 
     else:
 
@@ -68,4 +69,5 @@ if __name__ == '__main__':
             scope = ext.phil_scope()
             phil = scope.as_str(print_width=80-3, attributes_level=level)
             phil = '\n'.join((' ' * 3) + l for l in phil.split('\n'))
-            print '  phil:\n%s' % phil
+            if phil.strip() != '':
+              print '  phil:\n%s' % phil

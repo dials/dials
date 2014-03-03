@@ -37,10 +37,10 @@ class ProfileFittingRSIntegrationExt(IntensityIface):
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
 
     self._algorithm = ProfileFittingReciprocalSpace(
-      n_sigma = params.integration.shoebox.n_sigma,
-      grid_size = params.integration.fitrs.profile.grid_size,
-      frame_interval = params.integration.fitrs.profile.frame_interval,
-      threshold = params.integration.fitrs.profile.reference_signal_threshold)
+      n_sigma = params.intengration.shoebox.n_sigma,
+      grid_size = params.integration.intensity.fitrs.grid_size,
+      frame_interval = params.integration.intensity.fitrs.frame_interval,
+      threshold = params.integration.intensity.fitrs.reference_signal_threshold)
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''

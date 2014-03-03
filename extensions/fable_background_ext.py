@@ -35,8 +35,8 @@ class FableBackgroundExt(BackgroundIface):
     ''' Initialise the algorithm. '''
     from dials.algorithms.background import FableSubtractorAlgorithm
     self._subtractor = FableSubtractorAlgorithm(
-      min_data = params.background.fable.min_pixels,
-      n_sigma = params.background.fable.n_sigma)
+      min_data = params.integration.background.fable.min_pixels,
+      n_sigma = params.integration.background.fable.n_sigma)
 
   def compute_background(self, reflections):
     ''' Compute the background. '''

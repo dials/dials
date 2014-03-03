@@ -39,15 +39,11 @@ def generate_phil_scope():
       min_spot_size = 6
         .help = "The minimum number of contiguous pixels for a spot"
                 "to be accepted by the filtering algorithm."
-                ""
-                "Used by: xds."
         .type = int(value_min=0)
 
       max_separation = 2
         .help = "The maximum peak-to-centroid separation (in pixels)"
                 "for a spot to be accepted by the filtering algorithm."
-                ""
-                "Used by: xds."
         .type = float(value_min=0)
 
       d_min = None
@@ -86,10 +82,6 @@ def generate_phil_scope():
     save_shoeboxes = True
       .type = bool
       .help = "Save the raw pixel values inside the reflection shoeboxes."
-    image_viewer = False
-      .help = "Display the results of spot finding in an interactive image"
-              "viewer."
-      .type = bool
   }
 
   ''', process_includes=True)
