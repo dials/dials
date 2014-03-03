@@ -16,7 +16,7 @@ from dials.interfaces import SpotFinderThresholdIface
 class SmoothingSpotFinderThresholdExt(SpotFinderThresholdIface):
   ''' Extensions to do luiso's' threshold. '''
 
-  name = 'Smoothing'
+  name = 'smoothing'
 
   def __init__(self, params):
     ''' Initialise the algorithm. '''
