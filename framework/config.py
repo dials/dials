@@ -61,9 +61,6 @@ class Config(object):
       include scope dials.data.logging.phil_scope
       include scope dials.data.lookup.phil_scope
       include scope dials.data.spotfinding.phil_scope
-      include scope dials.data.shoebox.phil_scope
-      include scope dials.data.centroid.phil_scope
-      include scope dials.data.background.phil_scope
       include scope dials.data.integration.phil_scope
       include scope dials.data.refinement.phil_scope
     ''', process_includes=True)

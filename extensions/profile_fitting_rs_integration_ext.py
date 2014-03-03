@@ -10,9 +10,9 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import IntegrationIface
+from dials.interfaces import IntensityIface
 
-class ProfileFittingRSIntegrationExt(IntegrationIface):
+class ProfileFittingRSIntegrationExt(IntensityIface):
   ''' Extension providing reciprocal space profile fitting. '''
 
   name = 'fitrs'

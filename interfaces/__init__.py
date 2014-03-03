@@ -52,10 +52,10 @@ class BackgroundIface(interface.Interface):
     pass
 
 
-class IntegrationIface(interface.Interface):
+class IntensityIface(interface.Interface):
   ''' Configure the intensity calculation algorithms. '''
 
-  name = 'integration'
+  name = 'intensity'
 
   def __init__(self, params, experiment):
     pass

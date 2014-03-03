@@ -10,9 +10,9 @@
 #  included in the root directory of this package.
 from __future__ import division
 
-from dials.interfaces import IntegrationIface
+from dials.interfaces import IntensityIface
 
-class Summation2dIntegrationExt(IntegrationIface):
+class Summation2dIntegrationExt(IntensityIface):
   ''' Extension to provide 2d summation integration. '''
 
   name = 'sum2d'

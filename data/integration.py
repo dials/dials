@@ -9,72 +9,77 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 from __future__ import division
-from libtbx.phil import parse
 
-phil_scope = parse('''
+def generate_phil_scope():
 
-integration
-  .help = "Configure the integration algorithm."
-{
-  algorithm = sum2d *sum3d mosflm fitrs
-    .help = "The integration algorithm"
-    .type = choice
+  from libtbx.phil import parse
+  from dials.interfaces import CentroidIface
+  from dials.interfaces import BackgroundIface
+  from dials.interfaces import IntensityIface
 
-  fitrs
-    .help = "Parameters for reciprocal space profile fitting."
+  phil_scope = parse('''
+
+  integration
+    .help = "Configure the integration algorithm."
   {
-    profile
-      .help = "Parameters for profile fitting"
+    shoebox
+      .help = "Parameters used in the integration shoebox"
     {
-      grid_size = 5
-        .help = "The size of the reciprocal space grid for each reflection."
-                "The size is the same in each dimensions"
+      n_blocks = 1
+        .help = "The number of blocks to integrate in."
         .type = int
 
-      reference_frame_interval = 10
-        .help = "The oscillation at which to learn new reference profiles"
-        .type = int
-
-      reference_signal_threshold = 0.02
-        .help = "The threshold to use in reference profile"
+      n_sigma = 3
+        .help = "The number of standard deviations of the beam divergence and the"
+                "mosaicity to use for the bounding box size."
         .type = float
+
+      sigma_b = None
+        .help = "The E.S.D. of the beam divergence"
+        .type = float
+
+      sigma_m = None
+        .help = "The E.S.D. of the reflecting range"
+        .type = float
+    }
+
+    filter
+      .help = "Parameters for filtering reflections"
+    {
+      by_bbox = False
+        .help = "Filter the reflections by the volume of the bounding box."
+                "A threshold value is chosen from a histogram of the volumes."
+                "Reflections with bounding box volume above the threshold value"
+                "are not used in intergration."
+        .type = bool
+
+      by_zeta = 0.05
+        .help = "Filter the reflections by the value of zeta. A value of less"
+                "than or equal to zero indicates that this will not be used. A"
+                "positive value is used as the minimum permissable value."
+        .type = float
+
+      by_xds_small_angle = False
+        .help = "Filter the reflections by whether the XDS small angle"
+                "approximation holds for the reflection."
+        .type = bool
+
+      by_xds_angle = False
+        .help = "Filter the reflections by whether the geometry of the XDS"
+                "transform allows a reflection to be transformed."
+        .type = bool
     }
   }
 
-  mosflm
-    .help = "Parameters for mosflm profile fitting"
-  {
-    nblocks = 4
-      .help = "number of block per coordinate"
-      .type = int
-  }
+  ''')
 
-  filter
-    .help = "Parameters for filtering reflections"
-  {
-    by_bbox = False
-      .help = "Filter the reflections by the volume of the bounding box."
-              "A threshold value is chosen from a histogram of the volumes."
-              "Reflections with bounding box volume above the threshold value"
-              "are not used in intergration."
-      .type = bool
+  main_scope = phil_scope.get_without_substitution("integration")
+  assert(len(main_scope) == 1)
+  main_scope = main_scope[0]
+  main_scope.adopt_scope(CentroidIface.phil_scope())
+  main_scope.adopt_scope(BackgroundIface.phil_scope())
+  main_scope.adopt_scope(IntensityIface.phil_scope())
 
-    by_zeta = 0.05
-      .help = "Filter the reflections by the value of zeta. A value of less"
-              "than or equal to zero indicates that this will not be used. A"
-              "positive value is used as the minimum permissable value."
-      .type = float
+  return phil_scope
 
-    by_xds_small_angle = False
-      .help = "Filter the reflections by whether the XDS small angle"
-              "approximation holds for the reflection."
-      .type = bool
-
-    by_xds_angle = False
-      .help = "Filter the reflections by whether the geometry of the XDS"
-              "transform allows a reflection to be transformed."
-      .type = bool
-  }
-}
-
-''')
+phil_scope = generate_phil_scope()
