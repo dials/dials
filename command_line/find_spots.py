@@ -20,7 +20,7 @@ class Script(ScriptRunner):
 
     # The script usage
     usage = "usage: %prog [options] [param.phil] "\
-            "{sweep.json | image1.file [image2.file ...]}"
+            "{datablock.json | image1.file [image2.file ...]}"
 
     # Initialise the base class
     ScriptRunner.__init__(self, usage=usage)
