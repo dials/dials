@@ -49,7 +49,7 @@ logging {
 
   loggers {
     default {
-      handlers = *console *file
+      handlers = console file
         .type = choice(multi=True)
       level = *DEBUG INFO WARN ERROR CRITICAL NOTSET
         .type = choice
