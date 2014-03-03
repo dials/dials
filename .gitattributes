@@ -439,7 +439,6 @@ model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/partial_shoebox.py -text
 model/serialize/xds.py -text
-/process.py -text
 /run_tests.py -text
 scratch/__init__.py -text
 scratch/dgw/__init__.py -text

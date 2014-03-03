@@ -56,10 +56,10 @@ class Integrator(object):
       from dials.algorithms.profile_model.profile_model import ProfileModel
       from math import pi
       profile_model = ProfileModel(experiments[0], reference)
-      params.shoebox.sigma_b = profile_model.sigma_b() * 180.0 / pi
-      params.shoebox.sigma_m = profile_model.sigma_m() * 180.0 / pi
-      print 'Sigma B: %f' % params.shoebox.sigma_b
-      print 'Sigma M: %f' % params.shoebox.sigma_m
+      params.integration.shoebox.sigma_b = profile_model.sigma_b() * 180.0 / pi
+      params.integration.shoebox.sigma_m = profile_model.sigma_m() * 180.0 / pi
+      print 'Sigma B: %f' % params.integration.shoebox.sigma_b
+      print 'Sigma M: %f' % params.integration.shoebox.sigma_m
 
     # Get the extractor
     extract = ReflectionBlockExtractor(experiments[0], predicted,
