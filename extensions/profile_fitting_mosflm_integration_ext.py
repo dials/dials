@@ -19,7 +19,8 @@ class ProfileFittingMosflmIntegrationExt(IntegrationIface):
   name = 'mosflm'
 
   phil = '''
-    .help = "Parameters for mosflm profile fitting"
+    mosflm
+      .help = "Parameters for mosflm profile fitting"
     {
       nblocks = 4
         .help = "number of block per coordinate"

@@ -19,7 +19,8 @@ class XdsBackgroundExt(BackgroundIface):
   name = 'xds'
 
   phil = '''
-    .help = "Parameters for xds background subtraction."
+    xds
+      .help = "Parameters for xds background subtraction."
     {
       min_pixels = 10
         .help = "The minimum number of pixels to use in calculating the"

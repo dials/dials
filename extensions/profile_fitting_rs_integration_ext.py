@@ -18,7 +18,8 @@ class ProfileFittingRSIntegrationExt(IntegrationIface):
   name = 'fitrs'
 
   phil = '''
-    .help = "Parameters for reciprocal space profile fitting."
+    fitrs
+      .help = "Parameters for reciprocal space profile fitting."
     {
       grid_size = 5
         .help = "The size of the reciprocal space grid for each reflection."

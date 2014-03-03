@@ -38,5 +38,10 @@ if __name__ == '__main__':
     # Loop through all the extensions
     for ext in iface.extensions():
       print ' Extension: %s' % ext.__name__
-      if options.verbose:
+      if options.verbose > 0:
         print '  name = %s' % ext.name
+        if options.verbose > 1:
+          level = options.verbose - 2
+          phil = ext.phil_scope().as_str(print_width=80-4, attributes_level=level)
+          phil = '\n'.join((' ' * 4) + l for l in phil.split('\n'))
+          print '  phil:\n%s' % phil

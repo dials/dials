@@ -60,3 +60,26 @@ class Interface(object):
     ''' Iterate through the interfaces. '''
     for iface in Interface.__subclasses__():
       yield iface
+
+  @classmethod
+  def phil_scope(cls):
+    ''' Get the phil scope for the interface or extension. '''
+    from libtbx.phil import parse
+
+    # Make sure we have an interface or extension
+    if cls == Interface:
+      raise RuntimeError('"Interface has no phil parameters"')
+    elif not issubclass(cls, Interface):
+      raise RuntimeError('%s is not an interface or extension' % str(cls))
+
+    # Get the master phil scope
+    if 'phil' in cls.__dict__:
+      master_scope = parse(cls.phil)
+    else:
+      master_scope = parse('')
+
+    # If this is an interface, get for all extensions
+    if Interface in cls.__bases__:
+      for ext in cls.extensions():
+        master_scope.adopt_scope(ext.phil_scope())
+    return master_scope

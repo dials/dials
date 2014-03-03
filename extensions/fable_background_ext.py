@@ -19,7 +19,8 @@ class FableBackgroundExt(BackgroundIface):
   name = 'fable'
 
   phil = '''
-    .help = "Parameters for fable background subtraction."
+    fable
+      .help = "Parameters for fable background subtraction."
     {
       min_pixels = 10
         .help = "The minimum number of pixels to use in calculating the"
