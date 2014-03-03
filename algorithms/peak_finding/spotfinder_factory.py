@@ -273,12 +273,12 @@ class SpotFinderFactory(object):
     from dials.algorithms.peak_finding import SpotFinder
 
     # Read in the lookup files
-    gain_map = SpotFinderFactory.load_image(params.lookup.gain_map)
-    dark_map = SpotFinderFactory.load_image(params.lookup.dark_map)
-    mask = SpotFinderFactory.load_image(params.lookup.mask)
-    params.lookup.gain_map = gain_map
-    params.lookup.dark_map = dark_map
-    params.lookup.mask = mask
+    gain_map = SpotFinderFactory.load_image(params.spotfinder.lookup.gain_map)
+    dark_map = SpotFinderFactory.load_image(params.spotfinder.lookup.dark_map)
+    mask = SpotFinderFactory.load_image(params.spotfinder.lookup.mask)
+    params.spotfinder.lookup.gain_map = gain_map
+    params.spotfinder.lookup.dark_map = dark_map
+    params.spotfinder.lookup.mask = mask
     from dials.framework.registry import Registry
     registry = Registry()
     registry.params().spotfinder = params.spotfinder

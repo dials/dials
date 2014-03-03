@@ -86,7 +86,8 @@ class Interface(object):
             names.append(ext.name)
           if default_index < 0:
             default_index = 0
-          names[default_index] = '*' + names[default_index]
+          if len(names) > 0:
+            names[default_index] = '*' + names[default_index]
           return names
         algorithm = parse('''
           algorithm = %s

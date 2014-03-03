@@ -96,8 +96,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     # Get the beam divergence and mosaicity
     if sigma_d is None or sigma_m is None:
       registry = Registry()
-      sigma_d = registry.params().shoebox.sigma_b * pi / 180.0
-      sigma_m = registry.params().shoebox.sigma_m * pi / 180.0
+      sigma_d = registry.params().integration.shoebox.sigma_b * pi / 180.0
+      sigma_m = registry.params().integration.shoebox.sigma_m * pi / 180.0
 
     # Create the bbox calculator
     calculate = BBoxCalculator(
@@ -117,17 +117,17 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   def compute_background(self, experiment):
     ''' Helper function to compute the background. '''
     from dials.framework.registry import init_ext
-    init_ext("background", experiment).compute_background(self)
+    init_ext("integration.background", experiment).compute_background(self)
 
   def compute_centroid(self, experiment):
     ''' Helper function to compute the centroid. '''
     from dials.framework.registry import init_ext
-    init_ext("centroid", experiment).compute_centroid(self)
+    init_ext("integration.centroid", experiment).compute_centroid(self)
 
   def compute_intensity(self, experiment):
     ''' Helper function to compute the intensity. '''
     from dials.framework.registry import init_ext
-    init_ext("integration", experiment).compute_intensity(self)
+    init_ext("integration.intensity", experiment).compute_intensity(self)
 
   def correct_intensity(self, experiment):
     ''' Helper function to correct the intensity. '''

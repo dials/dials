@@ -55,7 +55,7 @@ def run(args):
       to_xds = xds.to_xds(imageset)
       with open(os.path.join(sub_dir, 'XDS.INP'), 'wb') as f:
         to_xds.XDS_INP(
-          out=f, 
+          out=f,
           space_group_number=crystal_model.get_space_group().type().number(),
           real_space_a=real_space_a,
           real_space_b=real_space_b,

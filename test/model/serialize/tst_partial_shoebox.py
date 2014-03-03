@@ -24,8 +24,8 @@ class Test(object):
     from dials.framework.registry import Registry
     registry = Registry()
     params = registry.params()
-    params.shoebox.sigma_b = 0.058
-    params.shoebox.sigma_m = 0.157
+    params.integration.shoebox.sigma_b = 0.058
+    params.integration.shoebox.sigma_m = 0.157
 
     predicted = self.predict_reflections()
     blocks = self.calculate_blocks(self.sweep, 5)

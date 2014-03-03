@@ -31,12 +31,12 @@ class Test:
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
-    from dials.interfaces import IntegrationIface
+    from dials.interfaces import IntensityIface
 
     assert(CentroidIface in interfaces)
     assert(SpotFinderThresholdIface in interfaces)
     assert(BackgroundIface in interfaces)
-    assert(IntegrationIface in interfaces)
+    assert(IntensityIface in interfaces)
 
     print 'OK'
 
@@ -67,21 +67,21 @@ class Test:
     from dials.framework.registry import Registry
     registry = Registry()
 
-    centroid_iface = registry.interface('centroid')
-    background_iface = registry.interface('background')
-    integration_iface = registry.interface('integration')
+    centroid_iface = registry.interface('integration.centroid')
+    background_iface = registry.interface('integration.background')
+    integration_iface = registry.interface('integration.intensity')
 
-    from dials.interfaces import IntegrationIface
+    from dials.interfaces import IntensityIface
     from dials.interfaces import BackgroundIface
     from dials.interfaces import CentroidIface
 
-    assert(integration_iface == IntegrationIface)
+    assert(integration_iface == IntensityIface)
     assert(background_iface == BackgroundIface)
     assert(centroid_iface == CentroidIface)
 
-    centroid_ext = registry['centroid']
-    background_ext = registry['background']
-    integration_ext = registry['integration']
+    centroid_ext = registry['integration.centroid']
+    background_ext = registry['integration.background']
+    integration_ext = registry['integration.intensity']
 
     from dials.extensions.simple_centroid_ext import SimpleCentroidExt
     from dials.extensions.null_background_ext import NullBackgroundExt
@@ -99,15 +99,15 @@ class Test:
 
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
-    from dials.interfaces import IntegrationIface
+    from dials.interfaces import IntensityIface
     from dials.framework.registry import init_ext
-    algorithm1 = init_ext("centroid", None)
-    algorithm2 = init_ext("background", None)
-    algorithm3 = init_ext("integration", None)
+    algorithm1 = init_ext("integration.centroid", None)
+    algorithm2 = init_ext("integration.background", None)
+    algorithm3 = init_ext("integration.intensity", None)
 
     assert(isinstance(algorithm1, CentroidIface))
     assert(isinstance(algorithm2, BackgroundIface))
-    assert(isinstance(algorithm3, IntegrationIface))
+    assert(isinstance(algorithm3, IntensityIface))
 
     print 'OK'
 

@@ -51,7 +51,7 @@ class Integrator(object):
     from dials.framework.registry import Registry
     registry = Registry()
     params = registry.params()
-    if params.shoebox.sigma_b is None or params.shoebox.sigma_m is None:
+    if params.integration.shoebox.sigma_b is None or params.integration.shoebox.sigma_m is None:
       assert(reference is not None)
       from dials.algorithms.profile_model.profile_model import ProfileModel
       from math import pi

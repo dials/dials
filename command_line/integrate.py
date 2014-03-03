@@ -91,8 +91,8 @@ class Script(ScriptRunner):
 
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'
-    integrate = Integrator(params.shoebox.n_sigma,
-                           params.shoebox.n_blocks,
+    integrate = Integrator(params.integration.shoebox.n_sigma,
+                           params.integration.shoebox.n_blocks,
                            params.integration.filter.by_zeta)
 
     # Intregate the sweep's reflections

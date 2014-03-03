@@ -2,15 +2,15 @@
 class Test(object):
 
   def __init__(self):
-    from dials.framework.config import Config
-    self.config = Config()
+    from dials.framework.registry import Registry
+    self.config = Registry().config()
 
   def run(self):
 
-    self.config.parse("integration.algorithm=sum3d")
+    self.config.parse("integration.intensity.algorithm=sum3d")
 
     params = self.config.params()
-    assert(params.integration.algorithm == 'sum3d')
+    assert(params.integration.intensity.algorithm == 'sum3d')
 
     print 'OK'
 

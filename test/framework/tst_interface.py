@@ -39,12 +39,12 @@ class Test(object):
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
-    from dials.interfaces import IntegrationIface
+    from dials.interfaces import IntensityIface
 
     assert(SpotFinderThresholdIface in interfaces)
     assert(CentroidIface in interfaces)
     assert(BackgroundIface in interfaces)
-    assert(IntegrationIface in interfaces)
+    assert(IntensityIface in interfaces)
 
     # Should have no extensions
     for iface in interfaces:
@@ -59,7 +59,7 @@ class Test(object):
     from dials.interfaces import SpotFinderThresholdIface
     from dials.interfaces import CentroidIface
     from dials.interfaces import BackgroundIface
-    from dials.interfaces import IntegrationIface
+    from dials.interfaces import IntensityIface
 
     # Should have four interfaces
     interfaces = list(Interface.interfaces())
@@ -72,7 +72,7 @@ class Test(object):
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
     assert(len(extensions) == 6)
-    extensions = list(IntegrationIface.extensions())
+    extensions = list(IntensityIface.extensions())
     assert(len(extensions) == 4)
 
     # Check the interface contain the expected extensions
@@ -100,7 +100,7 @@ class Test(object):
     assert(InclinedBackgroundExt in extensions)
     assert(FableBackgroundExt in extensions)
     assert(XdsBackgroundExt in extensions)
-    extensions = list(IntegrationIface.extensions())
+    extensions = list(IntensityIface.extensions())
     assert(Summation2dIntegrationExt in extensions)
     assert(Summation3dIntegrationExt in extensions)
     assert(ProfileFittingRSIntegrationExt in extensions)

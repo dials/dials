@@ -48,16 +48,16 @@ class KabschSpotFinderThresholdExt(SpotFinderThresholdIface):
 
   default = True
 
-  def __init__(self, params, gain, mask):
+  def __init__(self, params):
     ''' Initialise the algorithm. '''
     from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
     self._algorithm = XDSThresholdStrategy(
-      kernel_size=params.spotfinder.threshold.kabsch.kernel_size,
+      kernel_size=params.spotfinder.threshold.xds.kernel_size,
       gain=params.spotfinder.lookup.gain_map,
       mask=params.spotfinder.lookup.mask,
-      n_sigma_b=params.spotfinder.threshold.kabsch.sigma_background,
-      n_sigma_s=params.spotfinder.threshold.kabsch.sigma_strong,
-      min_count=params.spotfinder.threshold.kabsch.min_local)
+      n_sigma_b=params.spotfinder.threshold.xds.sigma_background,
+      n_sigma_s=params.spotfinder.threshold.xds.sigma_strong,
+      min_count=params.spotfinder.threshold.xds.min_local)
 
   def compute_threshold(self, image, mask):
     ''' Compute the threshold. '''

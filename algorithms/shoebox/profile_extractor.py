@@ -250,8 +250,8 @@ class ReflectionBlockExtractor(object):
     # Get the parameters
     from dials.framework.registry import Registry
     registry = Registry()
-    delta_d = n_sigma * registry.params().shoebox.sigma_b * pi / 180.0
-    delta_m = n_sigma * registry.params().shoebox.sigma_m * pi / 180.0
+    delta_d = n_sigma * registry.params().integration.shoebox.sigma_b * pi / 180.0
+    delta_m = n_sigma * registry.params().integration.shoebox.sigma_m * pi / 180.0
     #delta_d = n_sigma * experiment.beam.get_sigma_divergence(deg=False)
     #delta_m = n_sigma * experiment.crystal.get_mosaicity(deg=False)
 

@@ -73,7 +73,8 @@ class Registry(object):
 
   def interface(self, name):
     ''' Get an interface. '''
-    return dict((iface.name, iface) for iface in self.interfaces())[name]
+    return dict((iface.scope + '.' + iface.name, iface)
+                for iface in self.interfaces())[name]
 
   def __getitem__(self, key):
     ''' Get an algorithm. '''
@@ -89,4 +90,3 @@ def init_ext(iface, *args, **kwargs):
   ''' Helper function to instantiate an extension. '''
   registry = Registry()
   return registry[iface](registry.params(), *args, **kwargs)
-

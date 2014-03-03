@@ -78,7 +78,7 @@ class Script(ScriptRunner):
       force_static=options.force_static)
 
     # Get the bbox nsigma
-    n_sigma = params.shoebox.n_sigma
+    n_sigma = params.integration.shoebox.n_sigma
 
     # Calculate the bounding boxes
     predicted.compute_bbox(importer.experiments[0], n_sigma)

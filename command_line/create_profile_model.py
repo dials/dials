@@ -62,8 +62,8 @@ if __name__ == '__main__':
 
   # Get the parameters
   params = registry.config().params()
-  params.shoebox.sigma_b = sigma_b
-  params.shoebox.sigma_m = sigma_m
+  params.integration.shoebox.sigma_b = sigma_b
+  params.integration.shoebox.sigma_m = sigma_m
 
   # Get the diff phil to save
   master_phil = registry.config().phil()
