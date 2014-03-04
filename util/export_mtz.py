@@ -127,9 +127,11 @@ def export_mtz(integrated_data, experiment_list, hklout):
   batch = flex.floor(zdet).iround() + 1
 
   # compute M/ISYM
+  mi = integrated_data['miller_index']
+  h, k, l = zip(*integrated_data['miller_index'])
   isym = flex.int(len(integrated_data['miller_index']))
   misym = flex.int(len(isym))
-  map_to_asu_isym(experiment.crystal.get_space_group().type(), False,
+  map_to_asu_isym(experiment.crystal.get_space_group().type(), True,
                   integrated_data['miller_index'], isym)
 
   for j, i in enumerate(isym):
