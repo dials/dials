@@ -67,6 +67,7 @@ class Script(ScriptRunner):
     print ' 2) The strong spots will be indexed (dials.index)'
     print ' 3) The model will be further refined (dials.refine)'
     print ' 4) The reflections will be integrated (dials.integrate)'
+    print ' 5) The data will be exported as MTZ (dials.export_mtz)'
     print ''
     print 'Please be patient, this may take a few minutes'
     print ''
@@ -97,6 +98,8 @@ class Script(ScriptRunner):
     experiments, indexed = self.index(datablock, observed)
     experiments = self.refine(experiments, indexed)
     integrated = self.integrate(experiments, indexed)
+    mtz = self.mtz(integrated, experiments)
+    mtz.show_summary()
 
     # Total Time
     print ""
@@ -237,6 +240,9 @@ class Script(ScriptRunner):
     print 'Time Taken = %f seconds' % (time() - st)
     return reflections
 
+  def mtz(self, integrated, experiments):
+    from dials.util.export_mtz import export_mtz
+    return export_mtz(integrated, experiments, 'integrated.mtz')
 
 if __name__ == '__main__':
   script = Script()
