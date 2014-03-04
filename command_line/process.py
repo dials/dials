@@ -242,7 +242,15 @@ class Script(ScriptRunner):
 
   def mtz(self, integrated, experiments):
     from dials.util.export_mtz import export_mtz
-    return export_mtz(integrated, experiments, 'integrated.mtz')
+    from time import time
+    st = time()
+    print '*' * 80
+    print 'Exporting measurements to integrated.mtz'
+    print '*' * 80
+    m = export_mtz(integrated, experiments, 'integrated.mtz')
+    print ''
+    print 'Time Taken = %f seconds' % (time() - st)
+    return m
 
 if __name__ == '__main__':
   script = Script()
