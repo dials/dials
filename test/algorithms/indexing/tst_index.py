@@ -394,7 +394,7 @@ def exercise_11():
 
   args = ["dials.find_spots",
           datablock_json,
-          "threshold.sigma_strong=7",
+          "threshold.xds.sigma_strong=7",
           "min_spot_size=6",
           ]
 
