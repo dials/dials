@@ -1,3 +1,4 @@
+from __future__ import division
 from dials.util.export_mtz import export_mtz
 
 if __name__ == '__main__':
