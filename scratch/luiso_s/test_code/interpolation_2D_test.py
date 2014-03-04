@@ -1,12 +1,12 @@
 from __future__ import division
-from scitbx.array_family import flex
+from dials.array_family import flex
 from dials.scratch.luiso_s import model_2d
 from dials.model.data import Reflection, ReflectionList
 from matplotlib import pylab
 
 import numpy
 import math
-
+import random
 
 xmax = 2400
 ymax = 2600
@@ -18,6 +18,23 @@ ncol = 30
 rlist = ReflectionList()
 pi = 3.14159265358
 
+num_ref = 86 * 80
+ref_table = flex.reflection_table()
+t_shoebox = flex.shoebox(num_ref)
+ref_table['shoebox'] = t_shoebox
+
+
+t_intensity = flex.double(num_ref)
+ref_table['intensity.raw.value'] = t_intensity
+
+t_intensity_var = flex.double(num_ref)
+ref_table['intensity.raw.variance'] = t_intensity_var
+
+#box_itr = ref_table['shoebox']
+
+print "dir(ref_table) =", dir(ref_table)
+
+t_row = 0
 for ypos in range(86):
   for xpos in range(80):
     #if xpos/12.0 == int(xpos/12) and ypos/12.0 == int(ypos/12):
@@ -55,17 +72,21 @@ for ypos in range(86):
       fl_shoebox_bkg=fl_shoebox[:,:,:]
 
       new_r.shoebox = fl_shoebox
+      t_shoebox[t_row].data = fl_shoebox
       new_r.shoebox_background = fl_shoebox_bkg
+      t_shoebox[t_row].background = fl_shoebox_bkg
       new_r.status = 0
       # fix me in a double way
       # the way status in bein used and
-      mask = flex.int(flex.grid(1, ncol, nrow), 3)
+      # inside the algorithm imself
+      lc_mask = flex.int(flex.grid(1, ncol, nrow), 3)
       for x_loc in range(ncol):
         for y_loc in range(nrow):
           if ref2d[y_loc,x_loc]>thold:
-            mask[0, y_loc, x_loc] = 5
-      new_r.shoebox_mask = mask
-
+            lc_mask[0, y_loc, x_loc] = 5
+      new_r.shoebox_mask = lc_mask
+      t_shoebox[t_row].mask = lc_mask
+      t_row += 1
       rlist.append(new_r)
 
 ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)
@@ -82,13 +103,15 @@ plt.show()
 
 from dials.algorithms.background.inclined_background_subtractor \
   import layering_and_background_plane
-layering_and_background_plane(rlist)
+#layering_and_background_plane(rlist)
+layering_and_background_plane(ref_table)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
-flex_2d_layering_n_integrating(rlist)
+#flex_2d_layering_n_integrating(rlist)
+flex_2d_layering_n_integrating(ref_table)
 
-
+print "_____________________________________________________ here"
 tmp='''
-import random
+
 print "adding noise ...."
 for r in rlist:
     for x_loc in range(ncol):
@@ -161,111 +184,3 @@ pylab.plot(data1d)
 pylab.plot(new_data1d)
 pylab.plot(data1d_var)
 pylab.show()
-imported_code = '''
-
-from __future__ import division
-
-def run(i, imp):
-  from random import randint
-  from dials.array_family import flex
-
-  #building a reflection table
-  num_ref = 5
-  ref_table = flex.reflection_table()
-
-  shoebox = flex.shoebox(num_ref)
-  ref_table['shoebox'] = shoebox
-
-  intensity = flex.double(num_ref)
-  ref_table['intensity.raw.value'] = intensity
-
-  intensity_var = flex.double(num_ref)
-  ref_table['intensity.raw.variance'] = intensity_var
-
-  iterate = ref_table['shoebox']
-  i_to_compare = []
-
-  # bulding the shoebox with a desired content
-  # which is a reflection with noise included
-
-  n = 0
-  for arr in iterate:
-    img = flex.double(flex.grid(3, 3, 3))
-    bkg = flex.double(flex.grid(3, 3, 3))
-    msk = flex.int(flex.grid(3, 3, 3))
-    for row in range(3):
-      for col in range(3):
-        for fra in range(3):
-          img[row, col, fra] = row + col + fra + n * 9 + randint(0, i)
-          bkg[row, col, fra] = 0.0
-          msk[row, col, fra] = 3
-    n += 1
-    msk[1, 1, 1] = 5
-    tmp_i = n * n * n * 3
-    i_to_compare.append(tmp_i)
-    img[1, 1, 1] += tmp_i
-
-    arr.data = img[:, :, :]
-    arr.background = bkg[:, :, :]
-    arr.mask = msk[:, :, :]
-
-  # calling the functions that we need to test
-  # first select the algorithm for background calculation
-
-  if(imp == "inclined"):
-    print "testing inclined_background_subtractor"
-    from dials.algorithms.background.inclined_background_subtractor \
-     import layering_and_background_plane
-    layering_and_background_plane(ref_table)
-  elif(imp == "flat"):
-    print "teting flat_background_subtractor"
-    from dials.algorithms.background.flat_background_subtractor \
-     import layering_and_background_avg
-    layering_and_background_avg(ref_table)
-  elif(imp == "curved" ):
-    print "testing curved_background_subtractor"
-    from dials.algorithms.background.curved_background_subtractor \
-     import layering_and_background_modl
-    layering_and_background_modl(ref_table)
-
-  # no matter which algorithm was used for background calculation
-  # the integration summation must remain compatible
-
-  from dials.algorithms.integration.summation2d \
-    import  flex_2d_layering_n_integrating
-  flex_2d_layering_n_integrating(ref_table)
-
-  # comparing results
-
-  result = "OK"
-  resl_its = ref_table['intensity.raw.value']
-  resl_var = ref_table['intensity.raw.variance']
-  for n_its in range(len(resl_its)):
-    if(resl_its[n_its] <= i_to_compare[n_its] + i and \
-       resl_its[n_its] >= i_to_compare[n_its] - i and \
-       resl_var[n_its] > resl_its[n_its] ):
-      print "Ok ", n_its
-    else:
-      print "Wrong num", n_its
-
-      print "i =", i
-      print "resl_its[n_its] =", resl_its[n_its]
-      print "i_to_compare[n_its] =", i_to_compare[n_its]
-      print "resl_var[n_its] =", resl_var[n_its]
-
-      result = "wrong"
-      raise RuntimeError('wrong result')
-  return result
-
-
-if __name__ == '__main__':
-  for i in range(5):
-    res1 = run(i, "flat")
-    print res1
-    res2 = run(i, "inclined")
-    print res2
-    res3 = run(i, "curved")
-    print res3
-
-
-'''
