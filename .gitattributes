@@ -730,6 +730,7 @@ test/util/tst_command_line.py -text
 util/__init__.py -text
 util/command_line.py -text
 util/config.py -text
+util/export_mtz.py -text
 util/image.py -text
 util/ioutil.py -text
 util/nexus.py -text
