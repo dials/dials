@@ -37,7 +37,7 @@ discover_better_experimental_model = False
 min_cell = 20
   .type = float(value_min=0)
   .help = "Minimum length of candidate unit cell basis vectors (in Angstrom)."
-max_cell = 200
+max_cell = Auto
   .type = float(value_min=0)
   .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
 reciprocal_space_grid {
@@ -307,9 +307,32 @@ class indexer_base(object):
       self.reflections, self.detector, self.beam, self.goniometer)
 
     if self.params.max_cell is libtbx.Auto:
+      # The nearest neighbour analysis gets fooled when the same part of
+      # reciprocal space has been measured twice as this introduced small
+      # random differences in position between reflections measured twice.
+      # Therefore repeat the nearest neighbour analysis several times in small
+      # wedges where there shouldn't be any overlap in reciprocal space
       from rstbx.indexing_api.nearest_neighbor import neighbor_analysis
-      NN = neighbor_analysis(self.reciprocal_space_points)
-      self.params.max_cell = NN.max_cell
+      phi_deg = self.reflections['xyzobs.mm.value'].parts()[2] * (180/math.pi)
+      if (flex.max(phi_deg) - flex.min(phi_deg)) < 1e-3:
+        NN = neighbor_analysis(self.reciprocal_space_points)
+        self.params.max_cell = NN.max_cell
+      else:
+        phi_min = flex.min(phi_deg)
+        phi_max = flex.max(phi_deg)
+        step_size = 5 #degrees
+        d_phi = phi_max - phi_min
+        n_steps = int(math.ceil(d_phi / step_size))
+        max_cell = flex.double()
+        for n in range(n_steps):
+          sel = (phi_deg > (phi_min+n*step_size)) & (phi_deg < (phi_min+(n+1)*step_size))
+          rlp = self.reciprocal_space_points.select(sel)
+          if len(rlp) == 0:
+            continue
+          NN = neighbor_analysis(rlp)
+          max_cell.append(NN.max_cell)
+          #print NN.max_cell
+        self.params.max_cell = flex.mean(max_cell) # or max or median?
       print "Found max_cell: %.1f Angstrom" %(self.params.max_cell)
 
     if self.params.sigma_phi_deg is not None:

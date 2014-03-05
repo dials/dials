@@ -233,6 +233,7 @@ def exercise_5():
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
+                "max_cell=70",
                 "scan_range=0,50",
                 "scan_range=450,500",
                 "scan_range=850,900"]
@@ -262,7 +263,7 @@ def exercise_6():
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
-                "max_cell=70", #XXX eventually this should not be needed
+                "max_cell=70",
                 ]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
@@ -290,7 +291,7 @@ def exercise_7():
                 "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
-                "max_cell=70", #XXX eventually this should not be needed
+                "max_cell=70",
                 ]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
@@ -318,7 +319,7 @@ def exercise_8():
                 "beam.fix=all",
                 "detector.fix=orientation",
                 "maximum_spot_error=3",
-                "max_cell=70", #XXX eventually this should not be needed
+                "max_cell=70",
                 ]
   expected_unit_cell = uctbx.unit_cell((54.3, 58.3, 66.5, 90, 90, 90))
   expected_rmsds = (0.28, 0.30, 0.006)
@@ -354,6 +355,7 @@ def exercise_10():
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
   extra_args = ["method=real_space_grid_search",
                 "use_all_reflections=True",
+                "max_cell=70",
                 "n_macro_cycles=3",
                 "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
                 "known_symmetry.space_group=P212121",
