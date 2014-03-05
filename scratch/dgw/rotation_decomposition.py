@@ -150,11 +150,19 @@ if __name__ == '__main__':
   for i in range(10):
 
     e1 = random_vector()
-    e2 = e1.rotate_around_origin(e1.ortho(), random.uniform(math.pi/2, 0.55*math.pi))
-    e3 = e2.rotate_around_origin(e2.ortho(), random.uniform(math.pi/2, 0.55*math.pi))
+    print "Vectors:"
+    print "e1", e1.elems
+    e2 = e1.rotate_around_origin(e1.ortho(), random.uniform(math.pi/2, 0.7*math.pi))
+    print "e2", e2.elems
+    e3 = e2.rotate_around_origin(e2.ortho(), random.uniform(math.pi/2, 0.7*math.pi))
+    print "e3", e3.elems
     phi1 = random.uniform(-math.pi/9, math.pi/9)
     phi2 = random.uniform(-math.pi/9, math.pi/9)
     phi3 = random.uniform(-math.pi/9, math.pi/9)
+    print "Angles:"
+    print "phi1", phi1
+    print "phi2", phi2
+    print "phi3", phi3
     R1 = e1.axis_and_angle_as_r3_rotation_matrix(phi1, deg=False)
     R2 = e2.axis_and_angle_as_r3_rotation_matrix(phi2, deg=False)
     R3 = e3.axis_and_angle_as_r3_rotation_matrix(phi3, deg=False)
@@ -165,10 +173,12 @@ if __name__ == '__main__':
       dphi1a = a[0] - phi1
       dphi2a = a[1] - phi2
       dphi3a = a[2] - phi3
+      print "Solution a differences"
       print dphi1a, dphi2a, dphi3a
     if b:
       dphi1b = b[0] - phi1
       dphi2b = b[1] - phi2
       dphi3b = b[2] - phi3
+      print "Solution b differences"
       print dphi1b, dphi2b, dphi3b
     print

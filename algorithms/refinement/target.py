@@ -1,5 +1,5 @@
 #
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
+#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
 #
 #  Author: David Waterman.
 #

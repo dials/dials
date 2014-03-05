@@ -200,6 +200,11 @@ class Script(ScriptRunner):
     refiner.run()
     experiments = refiner.get_experiments()
 
+    # Dump experiments to disk
+    from dials.model.experiment.experiment_list import ExperimentListDumper
+    dump = ExperimentListDumper(experiments)
+    dump.as_json("refined_experiments.json")
+
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
 
