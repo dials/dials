@@ -117,9 +117,6 @@ def export_mtz(integrated_data, experiment_list, hklout):
   ydet = flex.double(y_px)
   zdet = flex.double(z_px)
 
-  lp = integrated_data['intensity.cor.value'] / \
-    integrated_data['intensity.raw.value']
-
   # compute ROT values
   rot = flex.double([experiment.scan.get_angle_from_image_index(z) for z in zdet])
 
@@ -186,7 +183,6 @@ def export_mtz(integrated_data, experiment_list, hklout):
   d.add_column('XDET', type_table['XDET']).set_values(xdet.as_float())
   d.add_column('YDET', type_table['YDET']).set_values(ydet.as_float())
   d.add_column('ROT', type_table['ROT']).set_values(rot.as_float())
-  d.add_column('LP', type_table['LP']).set_values(lp.as_float())
 
   m.write(hklout)
 
