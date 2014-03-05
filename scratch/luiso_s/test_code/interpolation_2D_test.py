@@ -30,6 +30,9 @@ ref_table['intensity.raw.value'] = t_intensity
 t_intensity_var = flex.double(num_ref)
 ref_table['intensity.raw.variance'] = t_intensity_var
 
+t_bbox = flex.int6(num_ref)
+ref_table['bbox'] = t_bbox
+
 #box_itr = ref_table['shoebox']
 
 print "dir(ref_table) =", dir(ref_table)
@@ -62,8 +65,13 @@ for ypos in range(86):
       data2d[col_str:col_str + ncol, row_str:row_str + nrow] += numpy.float64(data2d_tmp)
 
       new_r = Reflection()
+      
       new_r.bounding_box = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
+      #  table['bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
+      t_bbox[t_row] = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
+      
       new_r.centroid_position = [col_str + 14.5, row_str + 14.5, 0.5]
+      
       new_r.image_coord_px = [col_str + 14.5, row_str + 14.5]
 
       np_shoebox = numpy.copy(data2d[col_str:col_str + ncol, row_str:row_str + nrow])
