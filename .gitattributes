@@ -168,6 +168,7 @@ algorithms/refinement/prediction/rscript.R -text
 algorithms/refinement/prediction_parameter_helpers.h -text
 algorithms/refinement/refinement_helpers.py -text
 algorithms/refinement/refiner.py -text
+algorithms/refinement/reflection_manager.py -text
 algorithms/refinement/target.py -text
 algorithms/refinement/target_stills.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
@@ -467,6 +468,7 @@ scratch/dgw/rotation_decomposition.py -text
 scratch/dgw/source_model/__init__.py -text
 scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
+scratch/dgw/tst_new_reflection_manager.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/biostruct-25.py -text
 scratch/gw/plotintensity.py -text
