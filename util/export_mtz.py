@@ -52,7 +52,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
     o.set_divhd(0.0).set_divvd(0.0)
 
     # FIXME hard-coded assumption on indealized beam vector below...
-    o.set_so(flex.float(s0)).set_source(flex.float((0, 0, 1)))
+    o.set_so(flex.float(s0)).set_source(flex.float((0, 0, -1)))
 
     # these are probably 0, 1 respectively, also flags for how many are set, sd
     o.set_bbfac(0.0).set_bscale(1.0)
