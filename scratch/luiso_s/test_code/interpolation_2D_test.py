@@ -33,6 +33,9 @@ ref_table['intensity.raw.variance'] = t_intensity_var
 t_bbox = flex.int6(num_ref)
 ref_table['bbox'] = t_bbox
 
+t_xyzobs = flex.vec3_double(num_ref)
+ref_table['xyzobs'] = t_xyzobs
+
 #box_itr = ref_table['shoebox']
 
 print "dir(ref_table) =", dir(ref_table)
@@ -71,6 +74,11 @@ for ypos in range(86):
       t_bbox[t_row] = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
       
       new_r.centroid_position = [col_str + 14.5, row_str + 14.5, 0.5]
+      #    table['xyzobs.px.value']    = flex.vec3_double(
+      #getattrlist(self, 'centroid_position'))
+      t_xyzobs[t_row].px.value = (col_str + 14.5, row_str + 14.5, 0.5)
+      
+      
       
       new_r.image_coord_px = [col_str + 14.5, row_str + 14.5]
 
