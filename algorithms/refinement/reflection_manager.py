@@ -192,9 +192,16 @@ class ReflectionManager(object):
     # flag potential outliers
     rejection_occurred = self._reject_outliers()
 
-    # delete all obs-pred pairs from the manager that do not
-    # have a prediction or were flagged as outliers
-    self._reflection_manager.strip_unmatched_observations()
+    # delete all reflections from the manager that do not have a prediction
+    # or were flagged as outliers
+    if self._verbosity > 1:
+      print "Removing reflections not matched to predictions"
+
+    self._reflections = self._reflections.select[self._reflections['is_matched']]
+    self._check_too_few()
+
+    if self._verbosity > 1:
+      print len(self._reflections), "reflections remain in the manager"
 
     # print summary after outlier rejection
     if rejection_occurred: self._reflection_manager.print_stats_on_matches()
@@ -206,8 +213,7 @@ class ReflectionManager(object):
     self._check_too_few()
 
     if self._verbosity > 1:
-      print ("Working set size = %d observations"
-             % self.get_sample_size())
+      print "Working set size = %d observations" % self.get_sample_size()
 
     return
 
@@ -236,7 +242,7 @@ class ReflectionManager(object):
 
     # Set entering flags. These are always False for experiments that have no
     # rotation axis.
-    enterings = [ref['s1'].dot(vecn[ref['id']]) < 0. if vecn[ref['id']] \
+    enterings = [ref['s1'].dot(vecn[ref['id']]) < 0. if vecs[ref['id']] \
                  else False for ref in self._reflections]
 
     self._reflections['entering'] = flex.bool(enterings)
@@ -284,6 +290,8 @@ class ReflectionManager(object):
     rejection of the (0,0,0) Miller index. Outlier rejection is done later."""
 
     #TODO Should be possible to 'vectorise' this using flex array operations
+    #FIXME Allow inclusion test to pass if there is no rotation axis for
+    # a particular experiment
 
     inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0) \
            and self._inclusion_test(matrix.col(ref['s1']),
@@ -293,7 +301,7 @@ class ReflectionManager(object):
     return inc
 
   def _inclusion_test(self, s1, axis, s0):
-    """Test scattering vector s for inclusion"""
+    """Test scattering vector s1 for inclusion"""
 
     # reject reflections for which the parallelepiped formed between
     # the gonio axis, s0 and s1 has a volume of less than the cutoff.
@@ -308,8 +316,6 @@ class ReflectionManager(object):
 
   def _create_working_set(self):
     """Make a subset of the indices of reflections to use in refinement"""
-
-    #working_indices = indices
 
     working_isel = flex.size_t()
     for iexp, exp in self._experiments:
@@ -390,6 +396,7 @@ class ReflectionManager(object):
     """Print some basic statistics on the matches"""
 
     l = self.get_matches()
+
     if self._verbosity > 1:
 
       from scitbx.math import five_number_summary
@@ -424,12 +431,12 @@ class ReflectionManager(object):
         fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
         for i in xrange(20):
           e = sl[i]
-          msg = fmt % tuple(e.miller_index + (e.x_resid,
-                           e.y_resid,
-                           e.phi_resid,
-                           e.weight_x_obs,
-                           e.weight_y_obs,
-                           e.weight_phi_obs))
+          msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
+                                                 e['y_resid'],
+                                                 e['phi_resid'],
+                                                 e['weight_x_obs]',
+                                                 e['weight_y_obs'],
+                                                 e['weight_phi_obs']))
           print msg
         print
         sl = self._sort_obs_by_residual(sl, angular=True)
@@ -439,12 +446,12 @@ class ReflectionManager(object):
         fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
         for i in xrange(20):
           e = sl[i]
-          msg = fmt % tuple(e.miller_index + (e.x_resid,
-                           e.y_resid,
-                           e.phi_resid,
-                           e.weight_x_obs,
-                           e.weight_y_obs,
-                           e.weight_phi_obs))
+          msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
+                                                 e['y_resid'],
+                                                 e['phi_resid'],
+                                                 e['weight_x_obs]',
+                                                 e['weight_y_obs'],
+                                                 e['weight_phi_obs']))
           print msg
         print
 
@@ -497,26 +504,6 @@ class ReflectionManager(object):
 
     return True
 
-  def strip_unmatched_observations(self):
-    """Delete observations from the manager that are not matched to a
-    prediction. Typically used once, after the first update of
-    predictions."""
-
-    if self._verbosity > 1:
-      print "Removing reflections not matched to predictions"
-
-    self._obs_pred_pairs = [e for e in self._obs_pred_pairs if e.is_matched]
-
-    if len(self._obs_pred_pairs) < self._min_num_obs:
-      msg = ('Remaining number of reflections = {0}, which is below '+ \
-          'the configured limit for this reflection manager').format(
-              len(self._obs_pred_pairs))
-      raise RuntimeError(msg)
-
-    if self._verbosity > 1:
-      print len(self._obs_pred_pairs), "reflections remain in the manager"
-
-    return
 
   def reset_accepted_reflections(self):
     """Reset all observations to use=False in preparation for a new set of
@@ -528,7 +515,7 @@ class ReflectionManager(object):
   def get_obs(self):
     """Get the list of managed observations"""
 
-    return self._obs_pred_pairs
+    return self._reflections
 
 
 class ReflectionManagerXY(ReflectionManager):
@@ -536,41 +523,20 @@ class ReflectionManagerXY(ReflectionManager):
   reflections too close to the spindle, and reports only information
   about X, Y residuals"""
 
-  def _spindle_beam_plane_normal(self):
-    """There is no goniometer, so overload to return None"""
-
-    return None
-
   def _id_refs_to_keep(self, obs_data):
     """For this version of the class, only reject the (0,0,0) reflections.
     We don't want to exclude reflections close to the spindle, as the spindle
     may not exist"""
 
+    #FIXME Should not need to overload, if original version is fixed to
+    # return true for inclusion whenever there is no rotation axis
     inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0)]
 
     return inc
 
-  def _create_working_set(self, indices, nref_per_degree,
-                                         minimum_sample_size,
-                                         max_num_obs):
-    """Make a subset of the indices of reflections to use in refinement.
-
-    This version ignores nref_per_degree"""
-
-    working_indices = indices
-    sample_size = len(working_indices)
-
-    # set maximum sample size
-    if max_num_obs:
-      if sample_size > max_num_obs:
-        sample_size = max_num_obs
-
-    # sample the data and record the sample size
-    if sample_size < len(working_indices):
-      self._sample_size = sample_size
-      working_indices = random.sample(working_indices,
-                                      self._sample_size)
-    return(working_indices)
+  # No need to overload the following. The nref_per_degree sampling won't be
+  # done anyway if there is no scan
+  # def _create_working_set(self):
 
   def print_stats_on_matches(self):
     """Print some basic statistics on the matches"""
@@ -580,10 +546,9 @@ class ReflectionManagerXY(ReflectionManager):
     if self._verbosity > 1:
 
       from scitbx.math import five_number_summary
-      x_resid = [e.x_resid for e in l]
-      y_resid = [e.y_resid for e in l]
-      w_x = [e.weight_x_obs for e in l]
-      w_y = [e.weight_y_obs for e in l]
+      x_resid = l['x_resid']
+      y_resid = l['y_resid']
+      w_x, w_y, _ = l['xyzobs.mm.weights'].parts()
 
       print "\nSummary statistics for observations matched to predictions:"
       print ("                      "
@@ -607,15 +572,15 @@ class ReflectionManagerXY(ReflectionManager):
         for i in xrange(20):
           e = sl[i]
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                           e['y_resid'],
-                           e['weight_x_obs'],
-                           e['weight_y_obs']))
+                                                 e['y_resid'],
+                                                 e['weight_x_obs'],
+                                                 e['weight_y_obs']))
           print msg
         print
 
     return
 
-  def reject_outliers(self):
+  def _reject_outliers(self):
     """Unset the use flag on matches with extreme (outlying) residuals.
 
     Outlier detection finds values more than _iqr_multiplier times the
@@ -627,10 +592,10 @@ class ReflectionManagerXY(ReflectionManager):
     if self._iqr_multiplier is None: return False
 
     from scitbx.math import five_number_summary
-    matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+    matches = self._reflections.select(self._reflections['is_matched'])
 
-    x_resid = [e.x_resid for e in matches]
-    y_resid = [e.y_resid for e in matches]
+    x_resid = matches['x_resid']
+    y_resid = matches['y_resid']
 
     min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
     min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
@@ -642,12 +607,12 @@ class ReflectionManagerXY(ReflectionManager):
     cut_y = self._iqr_multiplier * iqr_y
 
     for m in matches:
-      if m.x_resid > q3_x + cut_x: m.is_matched = False
-      if m.x_resid < q1_x - cut_x: m.is_matched = False
-      if m.y_resid > q3_y + cut_y: m.is_matched = False
-      if m.y_resid < q1_y - cut_y: m.is_matched = False
+      if m['x_resid'] > q3_x + cut_x: m['is_matched'] = False
+      if m['x_resid'] < q1_x - cut_x: m['is_matched'] = False
+      if m['y_resid'] > q3_y + cut_y: m['is_matched'] = False
+      if m['y_resid'] < q1_y - cut_y: m['is_matched'] = False
 
-    nreject = [m.is_matched for m in matches].count(False)
+    nreject = matches['is_matched'].count(False)
 
     if nreject == 0: return False
 
