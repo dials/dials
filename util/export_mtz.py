@@ -172,10 +172,12 @@ def export_mtz(integrated_data, experiment_list, hklout):
   d.add_column('I', type_table['I']).set_values(
     integrated_data['intensity.cor.value'].as_float())
 
-  # FIXME properly handle negative variance estimates... like don't make them
-  # in the first place...
+  # Trap negative variances
+  
+  assert ((integrated_data['intensity.cor.variance'] < 0).count(True) == 0)
+
   d.add_column('SIGI', type_table['SIGI']).set_values(
-    flex.sqrt(integrated_data['intensity.cor.value']).as_float())
+    flex.sqrt(integrated_data['intensity.cor.variance']).as_float())
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())
