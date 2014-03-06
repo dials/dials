@@ -175,7 +175,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # FIXME properly handle negative variance estimates... like don't make them
   # in the first place...
   d.add_column('SIGI', type_table['SIGI']).set_values(
-    flex.sqrt(flex.fabs(integrated_data['intensity.cor.value'])).as_float())
+    flex.sqrt(integrated_data['intensity.cor.value']).as_float())
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())

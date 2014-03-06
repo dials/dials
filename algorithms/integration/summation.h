@@ -215,8 +215,8 @@ namespace dials { namespace algorithms {
       }
 
       // Set the signal and background variance
-      signal_variance_ = signal_intensity_;
-      background_variance_ = background_intensity_;
+      signal_variance_ = std::abs(signal_intensity_);
+      background_variance_ = std::abs(background_intensity_);
     }
 
     /**
@@ -251,8 +251,8 @@ namespace dials { namespace algorithms {
       }
 
       // Set the signal and background variance
-      signal_variance_ = signal_intensity_;
-      background_variance_ = background_intensity_;
+      signal_variance_ = std::abs(signal_intensity_);
+      background_variance_ = std::abs(background_intensity_);
     }
 
     FloatType signal_intensity_;
