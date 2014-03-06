@@ -32,12 +32,22 @@ class Script(ScriptRunner):
       action="count", default=1,
       help="set verbosity level; -vv gives verbosity level 2")
 
+    # read image files from stdin
+    self.config().add_option(
+      "-i", "--stdin",
+      dest = "stdin",
+      action = "store_true",
+      default = False,
+      help = "Read filenames from standard input rather than command-line")
+
     # Add an options for spot finder output
     self.config().add_option(
       "--strong-filename",
       dest="strong_filename",
       type="str", default=None,
       help="The output filename for found spots")
+
+    return
 
   def main(self, params, options, args):
     '''Execute the script.'''
@@ -48,6 +58,13 @@ class Script(ScriptRunner):
     # Save the options
     self.options = options
     self.params = params
+
+    # if options.stdin, add in extra images from the standard input (to work
+    # around limits in number of command-line arguments)
+
+    if options.stdin:
+      import sys
+      args.extend([l.strip() for l in sys.stdin.readlines()])
 
     st = time()
 
