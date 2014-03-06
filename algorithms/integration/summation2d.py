@@ -30,7 +30,7 @@ def flex_2d_layering_n_integrating(ref_table):
   integrated via summation-integration by layering ,
   frame per frame, each reflection in the table
   '''
-  from scitbx.array_family import flex
+  #from scitbx.array_family import flex
   from dials.algorithms.integration import raw_2d_cut
   print "Performing summation integration .... "
 

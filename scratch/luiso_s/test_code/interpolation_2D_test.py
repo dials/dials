@@ -18,34 +18,29 @@ ncol = 30
 rlist = ReflectionList()
 pi = 3.14159265358
 
-num_ref = 86 * 80
+n_x = 40
+n_y = 50
+
+#n_x = 80
+#n_y = 86
+num_ref = n_y * n_x
 ref_table = flex.reflection_table()
+
 t_shoebox = flex.shoebox(num_ref)
-ref_table['shoebox'] = t_shoebox
-
-
 t_intensity = flex.double(num_ref)
-ref_table['intensity.raw.value'] = t_intensity
-
 t_intensity_var = flex.double(num_ref)
-ref_table['intensity.raw.variance'] = t_intensity_var
-
 t_bbox = flex.int6(num_ref)
-ref_table['bbox'] = t_bbox
-
 t_xyzobs = flex.vec3_double(num_ref)
-ref_table['xyzobs'] = t_xyzobs
+t_xyzcal = flex.vec3_double(num_ref)
 
-#box_itr = ref_table['shoebox']
-
-print "dir(ref_table) =", dir(ref_table)
 
 t_row = 0
-for ypos in range(86):
-  for xpos in range(80):
-    #if xpos/12.0 == int(xpos/12) and ypos/12.0 == int(ypos/12):
+for ypos in range(n_y):
+  for xpos in range(n_x):
+
+    #if xpos/32.0 == int(xpos/32) and ypos/32.0 == int(ypos/32):
     #if ypos/6.0 == int(ypos/6):
-    if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3):
+    #if xpos/3.0 == int(xpos/3) and ypos/3.0 == int(ypos/3):
       row_str = ypos * nrow
       col_str = xpos * ncol
       dx = col_str - 1200
@@ -68,18 +63,15 @@ for ypos in range(86):
       data2d[col_str:col_str + ncol, row_str:row_str + nrow] += numpy.float64(data2d_tmp)
 
       new_r = Reflection()
-      
+
       new_r.bounding_box = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
-      #  table['bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
       t_bbox[t_row] = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
-      
+
       new_r.centroid_position = [col_str + 14.5, row_str + 14.5, 0.5]
-      #    table['xyzobs.px.value']    = flex.vec3_double(
-      #getattrlist(self, 'centroid_position'))
-      t_xyzobs[t_row].px.value = (col_str + 14.5, row_str + 14.5, 0.5)
-      
-      
-      
+      t_xyzobs[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
+
+
+      t_xyzcal[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
       new_r.image_coord_px = [col_str + 14.5, row_str + 14.5]
 
       np_shoebox = numpy.copy(data2d[col_str:col_str + ncol, row_str:row_str + nrow])
@@ -105,6 +97,18 @@ for ypos in range(86):
       t_row += 1
       rlist.append(new_r)
 
+
+print "t_row =", t_row
+ref_table['shoebox'] = t_shoebox
+ref_table['intensity.raw.value'] = t_intensity
+ref_table['intensity.raw.variance'] = t_intensity_var
+ref_table['bbox'] = t_bbox
+ref_table['xyzobs.px.value'] = t_xyzobs
+ref_table['xyzcal.px'] = t_xyzcal
+
+
+
+
 ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)
 data2d_tmp = ref2d.as_numpy_array()
 data2d[:, :] += numpy.float64(data2d_tmp)
@@ -125,10 +129,18 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 #flex_2d_layering_n_integrating(rlist)
 flex_2d_layering_n_integrating(ref_table)
 
-print "_____________________________________________________ here"
-tmp='''
 
+print "_____________________________________________________ here"
+
+t_intensity = ref_table['intensity.raw.value']
+
+old_i_table = t_intensity[:]
+
+for tmp_i in (t_intensity):
+  print "tmp_i = ", tmp_i
+#tmp='''
 print "adding noise ...."
+t_row = 0
 for r in rlist:
     for x_loc in range(ncol):
       for y_loc in range(nrow):
@@ -136,12 +148,41 @@ for r in rlist:
         if roll_the_dice <=5:
           r.shoebox[0, y_loc, x_loc] = -1
           r.shoebox_mask[0, y_loc, x_loc] = 0
-        else:
-          r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
 
+          t_shoebox[t_row].data[0, y_loc, x_loc] = -1
+          t_shoebox[t_row].mask[0, y_loc, x_loc] = 0
+        else:
+          t_shoebox[t_row].data[0, y_loc, x_loc] += random.randint(0,10)
+
+          r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
+    t_row += 1
 print "adding noise .... done"
 #'''
 
+
+#layering_and_background_plane(rlist)
+layering_and_background_plane(ref_table)
+#flex_2d_layering_n_integrating(rlist)
+flex_2d_layering_n_integrating(ref_table)
+
+
+paint_compare = []
+for i in range(len(t_intensity)):
+  paint_compare.append([ t_intensity[i], old_i_table[i]])
+paint_compare_sort = sorted(paint_compare)
+
+data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
+new_data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
+for i in range(len(rlist)):
+  data1d[i] = paint_compare_sort[i][0]
+  new_data1d[i] = paint_compare_sort[i][1]
+
+from matplotlib import pylab
+pylab.plot(data1d)
+pylab.plot(new_data1d)
+pylab.show()
+
+temp = '''
 old_r_list = rlist[:]
 
 from dials.algorithms.background.inclined_background_subtractor \
@@ -200,3 +241,4 @@ pylab.plot(data1d)
 pylab.plot(new_data1d)
 pylab.plot(data1d_var)
 pylab.show()
+'''
