@@ -26,7 +26,6 @@ class ScriptRunner(object):
 
   def __call__(self):
     '''Run the script.'''
-    import cPickle as pickle
     from dials.model.data import ReflectionList # import dependency
     from dials.util.command_line import Command
 
@@ -39,27 +38,8 @@ class ScriptRunner(object):
 
 if __name__ == '__main__':
   import sys
-  from optparse import OptionParser
-
-  # Specify the command line options
-  usage  = "usage: %prog [options] " \
-           "/path/to/reflections.pickle " \
-           "/path/to/image/files "
-
-  # Create an option parser
-  parser = OptionParser(usage)
-
-  # Parse the arguments
-  options, args = parser.parse_args()
-
-  # Print help if no arguments specified, otherwise call function
-  if len(args) < 1:
-    parser.print_help()
-  else:
-    # Initialise the script runner
-    from dials.util.command_line import Importer
-
-    args = sys.argv[1:]
+  from dials.util.command_line import Importer
+  args = sys.argv[1:]
   importer = Importer(args, check_format=False)
   if importer.datablocks is not None and len(importer.datablocks) == 1:
     imagesets = importer.datablocks[0].extract_imagesets()
