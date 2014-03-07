@@ -1,7 +1,7 @@
 from __future__ import division
 from dials.array_family import flex
 from dials.scratch.luiso_s import model_2d
-from dials.model.data import Reflection, ReflectionList
+#from dials.model.data import Reflection, ReflectionList
 from matplotlib import pylab
 
 import numpy
@@ -15,11 +15,11 @@ data2d = numpy.zeros((xmax, ymax), dtype = numpy.float64)
 nrow = 30
 ncol = 30
 
-rlist = ReflectionList()
+#rlist = ReflectionList()
 pi = 3.14159265358
 
-n_x = 40
-n_y = 50
+n_x = 80
+n_y = 86
 
 #n_x = 80
 #n_y = 86
@@ -62,28 +62,28 @@ for ypos in range(n_y):
       data2d_tmp = ref2d.as_numpy_array()
       data2d[col_str:col_str + ncol, row_str:row_str + nrow] += numpy.float64(data2d_tmp)
 
-      new_r = Reflection()
+      #new_r = Reflection()
 
-      new_r.bounding_box = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
+      #new_r.bounding_box = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
       t_bbox[t_row] = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
 
-      new_r.centroid_position = [col_str + 14.5, row_str + 14.5, 0.5]
+      #new_r.centroid_position = [col_str + 14.5, row_str + 14.5, 0.5]
       t_xyzobs[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
 
 
       t_xyzcal[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
-      new_r.image_coord_px = [col_str + 14.5, row_str + 14.5]
+      #new_r.image_coord_px = [col_str + 14.5, row_str + 14.5]
 
       np_shoebox = numpy.copy(data2d[col_str:col_str + ncol, row_str:row_str + nrow])
       fl_shoebox = flex.double(np_shoebox)
       fl_shoebox.reshape(flex.grid(1, ncol, nrow))
       fl_shoebox_bkg=fl_shoebox[:,:,:]
 
-      new_r.shoebox = fl_shoebox
+      #new_r.shoebox = fl_shoebox
       t_shoebox[t_row].data = fl_shoebox
-      new_r.shoebox_background = fl_shoebox_bkg
+      #new_r.shoebox_background = fl_shoebox_bkg
       t_shoebox[t_row].background = fl_shoebox_bkg
-      new_r.status = 0
+      #new_r.status = 0
       # fix me in a double way
       # the way status in bein used and
       # inside the algorithm imself
@@ -92,10 +92,10 @@ for ypos in range(n_y):
         for y_loc in range(nrow):
           if ref2d[y_loc,x_loc]>thold:
             lc_mask[0, y_loc, x_loc] = 5
-      new_r.shoebox_mask = lc_mask
+      #new_r.shoebox_mask = lc_mask
       t_shoebox[t_row].mask = lc_mask
       t_row += 1
-      rlist.append(new_r)
+      #rlist.append(new_r)
 
 
 print "t_row =", t_row
@@ -113,7 +113,7 @@ ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)
 data2d_tmp = ref2d.as_numpy_array()
 data2d[:, :] += numpy.float64(data2d_tmp)
 
-print "created ", len(rlist), "reflections"
+#print "created ", len(rlist), "reflections"
 
 from matplotlib import pyplot as plt
 print "Plotting data2d"
@@ -141,20 +141,22 @@ for tmp_i in (t_intensity):
 #tmp='''
 print "adding noise ...."
 t_row = 0
-for r in rlist:
+#for r in rlist:
+for count in range(num_ref):
     for x_loc in range(ncol):
       for y_loc in range(nrow):
         roll_the_dice = random.randint(1,50)
         if roll_the_dice <=5:
-          r.shoebox[0, y_loc, x_loc] = -1
-          r.shoebox_mask[0, y_loc, x_loc] = 0
+          #r.shoebox[0, y_loc, x_loc] = -1
+          #r.shoebox_mask[0, y_loc, x_loc] = 0
 
           t_shoebox[t_row].data[0, y_loc, x_loc] = -1
           t_shoebox[t_row].mask[0, y_loc, x_loc] = 0
         else:
+          #r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
+
           t_shoebox[t_row].data[0, y_loc, x_loc] += random.randint(0,10)
 
-          r.shoebox[0, y_loc, x_loc] += random.randint(0,10)
     t_row += 1
 print "adding noise .... done"
 #'''
@@ -171,9 +173,9 @@ for i in range(len(t_intensity)):
   paint_compare.append([ t_intensity[i], old_i_table[i]])
 paint_compare_sort = sorted(paint_compare)
 
-data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-new_data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-for i in range(len(rlist)):
+data1d = numpy.zeros(num_ref, dtype = numpy.float64)
+new_data1d = numpy.zeros(num_ref, dtype = numpy.float64)
+for i in range(num_ref):
   data1d[i] = paint_compare_sort[i][0]
   new_data1d[i] = paint_compare_sort[i][1]
 
