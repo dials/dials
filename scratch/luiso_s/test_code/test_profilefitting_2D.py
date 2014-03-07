@@ -99,12 +99,9 @@ flex_2d_layering_n_integrating(ref_table)
 
 print "_____________________________________________________ here"
 
-#t_intensity = ref_table['intensity.raw.value']
-
+t_intensity = ref_table['intensity.raw.value']
 old_i_table = t_intensity[:]
 
-for tmp_i in (t_intensity):
-  print "tmp_i = ", tmp_i
 #tmp='''
 print "adding noise ...."
 t_row = 0
