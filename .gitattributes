@@ -170,6 +170,7 @@ algorithms/refinement/refinement_helpers.py -text
 algorithms/refinement/refiner.py -text
 algorithms/refinement/reflection_manager.py -text
 algorithms/refinement/target.py -text
+algorithms/refinement/target_new.py -text
 algorithms/refinement/target_stills.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
 algorithms/reflection_basis/SConscript -text
