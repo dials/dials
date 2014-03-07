@@ -10,86 +10,91 @@
 """Contains classes used to manage the reflections used during refinement,
 principally ReflectionManager."""
 
+from math import pi
+
+from scitbx import matrix
+from dials.array_family import flex
+
 # constants
 TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
 
-class ObsPredMatch:
-  """
-  A bucket class containing data for a prediction that has been
-  matched to an observation.
-
-  This contains all the raw material needed to calculate the target function
-  value and gradients
-  """
-
-  # initialise with an observation
-  def __init__(self, iobs, crystal, hkl, entering, frame, panel,
-                     x_obs, sigx_obs, weight_x_obs,
-                     y_obs, sigy_obs, weight_y_obs,
-                     phi_obs, sigphi_obs, weight_phi_obs):
-
-    self.iobs = iobs
-    self.crystal_id = crystal
-    self.miller_index = hkl
-    self.entering = entering
-    self.frame_obs = frame
-    self.panel = panel
-    self.x_obs = x_obs
-    self.sigx_obs = sigx_obs
-    self.weight_x_obs = weight_x_obs
-
-    self.y_obs = y_obs
-    self.sigy_obs = sigy_obs
-    self.weight_y_obs = weight_y_obs
-
-    self.phi_obs = phi_obs
-    self.sigphi_obs = sigphi_obs
-    self.weight_phi_obs = weight_phi_obs
-
-    self.x_calc = None
-    self.y_calc = None
-    self.phi_calc = None
-    self.s_calc = None
-
-    # gradients will be a list, of length equal to the number of free
-    # parameters, whose elements are the gradients in the space of
-    # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
-    self.gradients = None
-
-    self.y_resid = None
-    self.y_resid2 = None
-    self.x_resid = None
-    self.x_resid2 = None
-    self.phi_resid = None
-    self.phi_resid2 = None
-
-    self.is_matched = False
-
-  # update with a prediction
-  def update_prediction(self, x_calc, y_calc, phi_calc, s_calc, gradients):
-
-    self.x_calc = x_calc
-    self.y_calc = y_calc
-    self.phi_calc = phi_calc
-    self.s_calc = s_calc
-
-    self.gradients = gradients
-
-    # calculate residuals
-    self.x_resid = x_calc - self.x_obs
-    self.x_resid2 = self.x_resid**2
-    self.y_resid = y_calc - self.y_obs
-    self.y_resid2 = self.y_resid**2
-    self.phi_resid = phi_calc - self.phi_obs
-    self.phi_resid2 = self.phi_resid**2
-
-    self.is_matched = True
-
-  def reset(self):
-
-    """Flag this observation to not be used"""
-    self.is_matched = False
+#class ObsPredMatch:
+#  """
+#  A bucket class containing data for a prediction that has been
+#  matched to an observation.
+#
+#  This contains all the raw material needed to calculate the target function
+#  value and gradients
+#  """
+#
+#  # initialise with an observation
+#  def __init__(self, iobs, crystal, hkl, entering, frame, panel,
+#                     x_obs, sigx_obs, weight_x_obs,
+#                     y_obs, sigy_obs, weight_y_obs,
+#                     phi_obs, sigphi_obs, weight_phi_obs):
+#
+#    self.iobs = iobs
+#    self.crystal_id = crystal
+#    self.miller_index = hkl
+#    self.entering = entering
+#    self.frame_obs = frame
+#    self.panel = panel
+#    self.x_obs = x_obs
+#    self.sigx_obs = sigx_obs
+#    self.weight_x_obs = weight_x_obs
+#
+#    self.y_obs = y_obs
+#    self.sigy_obs = sigy_obs
+#    self.weight_y_obs = weight_y_obs
+#
+#    self.phi_obs = phi_obs
+#    self.sigphi_obs = sigphi_obs
+#    self.weight_phi_obs = weight_phi_obs
+#
+#    self.x_calc = None
+#    self.y_calc = None
+#    self.phi_calc = None
+#    self.s_calc = None
+#
+#    # gradients will be a list, of length equal to the number of free
+#    # parameters, whose elements are the gradients in the space of
+#    # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
+#    self.gradients = None
+#
+#    self.y_resid = None
+#    self.y_resid2 = None
+#    self.x_resid = None
+#    self.x_resid2 = None
+#    self.phi_resid = None
+#    self.phi_resid2 = None
+#
+#    self.is_matched = False
+#
+#  # update with a prediction
+#  def update_prediction(self, x_calc, y_calc, phi_calc, s_calc, gradients):
+#
+#    self.x_calc = x_calc
+#    self.y_calc = y_calc
+#    self.phi_calc = phi_calc
+#    self.s_calc = s_calc
+#
+#    self.gradients = gradients
+#
+#    # calculate residuals
+#    self.x_resid = x_calc - self.x_obs
+#    self.x_resid2 = self.x_resid**2
+#    self.y_resid = y_calc - self.y_obs
+#    self.y_resid2 = self.y_resid**2
+#    self.phi_resid = phi_calc - self.phi_obs
+#    self.phi_resid2 = self.phi_resid**2
+#
+#    self.is_matched = True
+#
+#  def reset(self):
+#
+#    """Flag this observation to not be used"""
+#    self.is_matched = False
 
 
 class ReflectionManager(object):
@@ -119,8 +124,9 @@ class ReflectionManager(object):
     self._verbosity = verbosity
 
     self._experiments = experiments
+    goniometers = [e.goniometer for e in self._experiments]
     self._axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
-    self._s0vecs = [matrix.col(e.beam.get_s0()) for e in self.experiments]
+    self._s0vecs = [matrix.col(e.beam.get_s0()) for e in self._experiments]
     # keep references to the beam, goniometer and sweep range (for
     # reflection exclusion and subsetting)
     # DEPRECATED - USE THE EXPERIMENTS
@@ -217,7 +223,7 @@ class ReflectionManager(object):
 
     return
 
-  def _check_too_few():
+  def _check_too_few(self):
     # fail if any of the experiments has too few reflections
     for iexp in range(len(self._experiments)):
       nref = (self._reflections['id'] == iexp).count(True)
@@ -242,8 +248,8 @@ class ReflectionManager(object):
 
     # Set entering flags. These are always False for experiments that have no
     # rotation axis.
-    enterings = [ref['s1'].dot(vecn[ref['id']]) < 0. if vecs[ref['id']] \
-                 else False for ref in self._reflections]
+    enterings = [matrix.col(ref['s1']).dot(vecs[ref['id']]) < 0. \
+                 if vecs[ref['id']] else False for ref in self._reflections]
 
     self._reflections['entering'] = flex.bool(enterings)
 
@@ -263,7 +269,8 @@ class ReflectionManager(object):
     if self._reflections.has_key('xyzobs.px.value'):
       from libtbx.test_utils import approx_equal
       for a, b in zip(frames, self._reflections['xyzobs.px.value']):
-        assert a = b[2]
+        print a, b[2]
+        assert a == b[2]
     else: # Frames are not set, so set them, with dummy observed pixel values
       xyzobs = [(0., 0., f) for f in frames]
       self._reflections['xyzobs.px.value'] = flex.vec3_double(xyzobs)
@@ -274,12 +281,13 @@ class ReflectionManager(object):
     """set 'statistical weights', that is w(x) = 1/var(x)"""
     # TODO Plug-in to allow different weighting schemes
 
-    weights = ref['xyzobs.mm.variance'].deepcopy()
+    from copy import deepcopy
+    weights = deepcopy(self._reflections['xyzobs.mm.variance'])
     parts = weights.parts()
     for w in parts:
       sel = w >= 0.
       w.set_selected(sel, 1./w)
-    ref['xyzobs.mm.weights'] = flex.vec3_double(*parts)
+    self._reflections['xyzobs.mm.weights'] = flex.vec3_double(*parts)
 
     return
 
@@ -432,11 +440,11 @@ class ReflectionManager(object):
         for i in xrange(20):
           e = sl[i]
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
-                                                 e['y_resid'],
-                                                 e['phi_resid'],
-                                                 e['weight_x_obs]',
-                                                 e['weight_y_obs'],
-                                                 e['weight_phi_obs']))
+                           e['y_resid'],
+                           e['phi_resid'],
+                           e['weight_x_obs'],
+                           e['weight_y_obs'],
+                           e['weight_phi_obs']))
           print msg
         print
         sl = self._sort_obs_by_residual(sl, angular=True)
@@ -449,7 +457,7 @@ class ReflectionManager(object):
           msg = fmt % tuple(e['miller_index'] + (e['x_resid'],
                                                  e['y_resid'],
                                                  e['phi_resid'],
-                                                 e['weight_x_obs]',
+                                                 e['weight_x_obs'],
                                                  e['weight_y_obs'],
                                                  e['weight_phi_obs']))
           print msg

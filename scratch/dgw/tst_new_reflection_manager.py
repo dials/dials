@@ -23,8 +23,8 @@ from libtbx.phil import parse
 from libtbx.test_utils import approx_equal
 
 # Get modules to build models and minimiser using PHIL
-import setup_geometry
-import setup_minimiser
+from dials.test.algorithms.refinement import setup_geometry
+from dials.test.algorithms.refinement import setup_minimiser
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
