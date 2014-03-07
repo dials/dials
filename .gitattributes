@@ -610,6 +610,7 @@ scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plai
 scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/close_to_spindle_contour_plot.py -text
+scratch/rjg/combine_experiments.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/plot_residuals.py -text
 scratch/rjg/plot_virtual_powder_pattern.py -text
