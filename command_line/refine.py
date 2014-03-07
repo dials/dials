@@ -83,7 +83,7 @@ class Script(ScriptRunner):
       self.config().print_help()
       return
 
-    importer = Importer(args, check_format=False, verbose=True)
+    importer = Importer(args, check_format=False, verbose=False)
 
     # Try to load the models and data
     experiments = importer.experiments

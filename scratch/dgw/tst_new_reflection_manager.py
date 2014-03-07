@@ -270,5 +270,3 @@ xl2uc_param.set_param_vals(xluc_p_vals[1])
 #####################################
 
 refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True), experiments)
-
-

@@ -5,6 +5,10 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # for the moment assume (and assert) that we will convert data from exactly
   # one lattice...
 
+  # FIXME test to see if the model is scan varying, and if it is (which it can be)
+  # write out a different U matrix for each batch... This should be easy. N.B.
+  # should use U matrix from middle of batch (probably)
+
   assert(len(experiment_list) == 1)
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
@@ -173,7 +177,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
     integrated_data['intensity.cor.value'].as_float())
 
   # Trap negative variances
-  
+
   assert ((integrated_data['intensity.cor.variance'] < 0).count(True) == 0)
 
   d.add_column('SIGI', type_table['SIGI']).set_values(

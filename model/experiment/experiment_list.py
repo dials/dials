@@ -208,6 +208,7 @@ class ExperimentList(object):
     from collections import OrderedDict
     from dxtbx.imageset import ImageSet, ImageSweep
     from cctbx.crystal.crystal_model.serialize import crystal_to_dict
+    from dxtbx.format.FormatMultiImage import FormatMultiImage
 
     # Check the experiment list is consistent
     assert(self.is_consistent())
@@ -257,9 +258,18 @@ class ExperimentList(object):
     result['imageset'] = []
     for imset in ilist:
       if isinstance(imset, ImageSweep):
+
+        # FIXME_HACK
+        if imset.reader().get_format_class() is None:
+          template = 'none'
+        elif issubclass(imset.reader().get_format_class(), FormatMultiImage):
+          template = imset.reader().get_path()
+        else:
+          template = imset.get_template()
+
         result['imageset'].append(OrderedDict([
           ('__id__', 'ImageSweep'),
-          ('template', imset.get_template())]))
+          ('template', template)]))
       elif isinstance(imset, ImageSet):
         result['imageset'].append(OrderedDict([
           ('__id__', 'ImageSet'),
@@ -417,7 +427,7 @@ class ExperimentListDict(object):
     return el
 
   def _create_experiment(self, imageset, beam, detector,
-      goniometer, scan, crystal):
+                         goniometer, scan, crystal):
     ''' Helper function. Create an experiment. '''
     from dxtbx.imageset import ImageSweep
 
@@ -478,9 +488,6 @@ class ExperimentListDict(object):
 
     # Get the template format
     template = load_path(imageset['template'])
-    pfx = template.split('#')[0]
-    sfx = template.split('#')[-1]
-    template_format = '%s%%0%dd%s' % (pfx, template.count('#'), sfx)
 
     # Get the number of images (if no scan is given we'll try
     # to find all the images matching the template
