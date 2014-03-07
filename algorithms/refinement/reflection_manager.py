@@ -281,8 +281,7 @@ class ReflectionManager(object):
     """set 'statistical weights', that is w(x) = 1/var(x)"""
     # TODO Plug-in to allow different weighting schemes
 
-    from copy import deepcopy
-    weights = deepcopy(self._reflections['xyzobs.mm.variance'])
+    weights = (self._reflections['xyzobs.mm.variance']).deep_copy()
     parts = weights.parts()
     for w in parts:
       sel = w >= 0.
