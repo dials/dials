@@ -123,8 +123,8 @@ layering_and_background_plane(ref_table)
 flex_2d_layering_n_integrating(ref_table)
 
 
-from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-rlist = mosflm_caller(rlist, xmax, ymax, 3)
+#from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
+#rlist = mosflm_caller(rlist, xmax, ymax, 3)
 
 paint_compare = []
 for i in range(len(t_intensity)):
