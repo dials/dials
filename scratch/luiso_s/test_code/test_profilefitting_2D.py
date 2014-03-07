@@ -122,6 +122,10 @@ print "adding noise .... done"
 layering_and_background_plane(ref_table)
 flex_2d_layering_n_integrating(ref_table)
 
+
+from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
+rlist = mosflm_caller(rlist, xmax, ymax, 3)
+
 paint_compare = []
 for i in range(len(t_intensity)):
   paint_compare.append([ t_intensity[i], old_i_table[i]])
@@ -137,64 +141,3 @@ from matplotlib import pylab
 pylab.plot(data1d)
 pylab.plot(new_data1d)
 pylab.show()
-
-temp = '''
-old_r_list = rlist[:]
-
-from dials.algorithms.background.inclined_background_subtractor \
-  import layering_and_background_plane
-layering_and_background_plane(rlist)
-from dials.algorithms.integration import flex_2d_layering_n_integrating
-flex_2d_layering_n_integrating(rlist)
-from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-rlist = mosflm_caller(rlist, xmax, ymax, 3)
-
-paint_compare = []
-for i in range(len(rlist)):
-  #paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
-  paint_compare.append([rlist[i].intensity, rlist[i].intensity_variance, \
-              old_r_list[i].intensity, old_r_list[i].intensity_variance])
-
-paint_compare_sort = sorted(paint_compare)
-from matplotlib import pylab
-import numpy
-data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-data1d_var = numpy.zeros(len(rlist), dtype = numpy.float64)
-new_data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-for i in range(len(rlist)):
-  data1d[i] = paint_compare_sort[i][0]
-  try:
-    new_data1d[i] = paint_compare_sort[i][1] / paint_compare_sort[i][0]
-  except:
-    print ">>>>>>>>>>", paint_compare_sort[i][1] , paint_compare_sort[i][0]
-  data1d_var[i] = paint_compare_sort[i][1]
-
-pylab.plot(data1d)
-pylab.plot(new_data1d)
-pylab.plot(data1d_var)
-pylab.show()
-###########################################################################
-paint_compare = []
-paint_compare_sort = []
-for i in range(len(rlist)):
-  paint_compare.append([ rlist[i].intensity, old_r_list[i].intensity])
-
-paint_compare_sort = sorted(paint_compare)
-from matplotlib import pylab
-import numpy
-data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-data1d_var = numpy.zeros(len(rlist), dtype = numpy.float64)
-new_data1d = numpy.zeros(len(rlist), dtype = numpy.float64)
-for i in range(len(rlist)):
-  data1d[i] = paint_compare_sort[i][0]
-  try:
-    new_data1d[i] = paint_compare_sort[i][1] / paint_compare_sort[i][0]
-  except:
-    print ">>>>>>>>>>", paint_compare_sort[i][1] , paint_compare_sort[i][0]
-  data1d_var[i] = paint_compare_sort[i][1]
-
-pylab.plot(data1d)
-pylab.plot(new_data1d)
-pylab.plot(data1d_var)
-pylab.show()
-'''
