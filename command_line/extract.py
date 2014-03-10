@@ -76,6 +76,7 @@ class Script(ScriptRunner):
     predicted = flex.reflection_table.from_predictions(
       importer.experiments[0],
       force_static=options.force_static)
+    predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Get the bbox nsigma
     n_sigma = params.integration.shoebox.n_sigma

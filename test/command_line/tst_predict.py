@@ -37,10 +37,13 @@ class Test(object):
     print 'OK'
 
     # Check the reflection IDs
+    assert('id' in table)
     assert('miller_index' in table)
     assert('s1' in table)
     assert('xyzcal.px' in table)
     assert('xyzcal.mm' in table)
+    for row in table:
+      assert(row['id'] == 0)
 
     print 'OK'
 
@@ -60,10 +63,13 @@ class Test(object):
     print 'OK'
 
     # Check the reflection IDs
+    assert('id' in table)
     assert('miller_index' in table)
     assert('s1' in table)
     assert('xyzcal.px' in table)
     assert('xyzcal.mm' in table)
+    for row in table:
+      assert(row['id'] == 0)
 
     print 'OK'
 

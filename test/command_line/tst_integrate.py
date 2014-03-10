@@ -37,6 +37,9 @@ class Test(object):
     import cPickle as pickle
     table = pickle.load(open('integrated.pickle', 'rb'))
     assert(len(table) == 360)
+    assert('id' in table)
+    for row in table:
+      assert(row['id'] == 0)
     print 'OK'
 
 

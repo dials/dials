@@ -64,6 +64,7 @@ class Script(ScriptRunner):
     predicted = flex.reflection_table.from_predictions(
       importer.experiments[0],
       force_static=options.force_static)
+    predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
