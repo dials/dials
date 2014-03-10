@@ -178,7 +178,7 @@ class Test(object):
     sigma_b = exlist[0].beam.get_sigma_divergence(deg=False)
     sigma_m = exlist[0].crystal.get_mosaicity(deg=False)
 
-    predicted = flex.reflection_table.from_predictions(exlist)
+    predicted = flex.reflection_table.from_predictions(exlist[0])
     predicted.compute_bbox(exlist[0], 5, sigma_b, sigma_m)
 
 
