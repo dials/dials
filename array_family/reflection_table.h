@@ -43,6 +43,15 @@ namespace dials { namespace af {
 
   typedef flex_table<reflection_table_types> reflection_table;
 
+  enum Flags {
+    Predicted        = (1 << 0),
+    Observed         = (1 << 1),
+    Indexed          = (1 << 2),
+    UsedInRefinement = (1 << 3),
+    ReferenceSpot    = (1 << 4),
+    Integrated       = (1 << 5),
+  };
+
 }} // namespace dials::af
 
 #endif // DIALS_ARRAY_FAMILY_REFLECTION_TABLE_H

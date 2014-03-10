@@ -24,6 +24,7 @@ class Test(object):
     self.tst_serialize()
     self.tst_delete()
     self.tst_del_selected()
+    self.tst_flags()
     self.tst_copy()
 
   def tst_init(self):
@@ -652,6 +653,57 @@ class Test(object):
     assert(all(a == b for a, b in zip(table1['col1'], ccc1)))
     assert(all(a == b for a, b in zip(table1['col2'], ccc2)))
     assert(all(a == b for a, b in zip(table1['col3'], ccc3)))
+    print 'OK'
+
+  def tst_flags(self):
+
+    from dials.array_family import flex
+
+    # Create a table with flags all 0
+    table = flex.reflection_table()
+    table['flags'] = flex.size_t(5, 0)
+
+    # Get all the flags
+    f1 = table.get_flags(table.flags.predicted)
+    assert(f1.count(True) == 0)
+    print 'OK'
+
+    # Set some flags
+    mask = flex.bool([True, True, False, False, True])
+    table.set_flags(mask, table.flags.predicted)
+    f1 = table.get_flags(table.flags.predicted)
+    assert(f1.count(True) == 3)
+    assert(all(f11 == f22 for f11, f22 in zip(f1, mask)))
+    f2 = table.get_flags(table.flags.predicted | table.flags.observed)
+    assert(f2.count(True) == 0)
+    print 'OK'
+
+    # Unset the flags
+    mask = flex.bool(5, True)
+    table.unset_flags(mask, table.flags.predicted | table.flags.observed)
+    f1 = table.get_flags(table.flags.predicted)
+    assert(f1.count(True) == 0)
+    flags = table['flags']
+    assert(all(f == 0 for f in flags))
+    print 'OK'
+
+    # Set multiple flags
+    mask = flex.bool([True, True, False, False, True])
+    table.set_flags(mask, table.flags.predicted | table.flags.observed)
+    f1 = table.get_flags(table.flags.predicted)
+    f2 = table.get_flags(table.flags.observed)
+    assert(f1.count(True) == 3)
+    assert(f2.count(True) == 3)
+    mask = flex.bool([False, True, True, True, False])
+    table.set_flags(mask, table.flags.integrated)
+    f1 = table.get_flags(table.flags.predicted)
+    f2 = table.get_flags(table.flags.observed)
+    f3 = table.get_flags(table.flags.integrated)
+    f4 = table.get_flags(table.flags.integrated | table.flags.predicted)
+    assert(f1.count(True) == 3)
+    assert(f2.count(True) == 3)
+    assert(f3.count(True) == 3)
+    assert(f4.count(True) == 1)
     print 'OK'
 
   def tst_serialize(self):

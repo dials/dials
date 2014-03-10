@@ -150,6 +150,47 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Get where the flag value is set
+   */
+  template <typename T>
+  af::shared<bool> get_flags(const T &self, std::size_t value) {
+    af::shared<bool> result(self.nrows());
+    af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = (flags[i] & value) == value;
+    }
+    return result;
+  }
+
+  /**
+   * Set the flags.
+   */
+  template <typename T>
+  void set_flags(T self, const af::const_ref<bool> mask, std::size_t value) {
+    DIALS_ASSERT(mask.size() == self.nrows());
+    af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
+    for (std::size_t i = 0; i < mask.size(); ++i) {
+      if (mask[i]) {
+        flags[i] |= value;
+      }
+    }
+  }
+
+  /**
+   * Unset the flags.
+   */
+  template <typename T>
+  void unset_flags(T self, const af::const_ref<bool> mask, std::size_t value) {
+    DIALS_ASSERT(mask.size() == self.nrows());
+    af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
+    for (std::size_t i = 0; i < mask.size(); ++i) {
+      if (mask[i]) {
+        flags[i] &= ~value;
+      }
+    }
+  }
+
+  /**
    * Struct to facilitate wrapping reflection table type
    */
   template <typename T>
@@ -177,7 +218,23 @@ namespace dials { namespace af { namespace boost_python {
           &help_keys<flex_table_type>)
         .def("compute_ray_intersections",
           &compute_ray_intersections<flex_table_type>)
+        .def("get_flags",
+          &get_flags<flex_table_type>)
+        .def("set_flags",
+          &set_flags<flex_table_type>)
+        .def("unset_flags",
+          &unset_flags<flex_table_type>)
         ;
+
+      // Create the flags enum in the reflection table scope
+      scope in_table = result;
+      enum_<Flags>("flags")
+        .value("predicted", Predicted)
+        .value("observed", Observed)
+        .value("indexed", Indexed)
+        .value("used_in_refinement", UsedInRefinement)
+        .value("reference_spot", ReferenceSpot)
+        .value("integrated", Integrated);
 
       // return the wrapped class
       return result;
