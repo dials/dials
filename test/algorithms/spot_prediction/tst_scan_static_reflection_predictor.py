@@ -43,7 +43,7 @@ class Test(object):
     from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
     predict = ScanStaticReflectionPredictor(self.experiments[0])
     if hkl is None:
-      return predict()
+      return predict.for_ub(self.experiments[0].crystal.get_A())
     else:
       if panel is None:
         return predict(hkl)

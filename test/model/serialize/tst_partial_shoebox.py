@@ -86,7 +86,7 @@ class Test(object):
       scan=self.sweep.get_scan(),
       crystal=self.crystal))
 
-    predicted = flex.reflection_table.from_predictions(exlist)
+    predicted = flex.reflection_table.from_predictions(exlist[0])
     predicted.compute_bbox(exlist[0], nsigma=3)
     return predicted
 

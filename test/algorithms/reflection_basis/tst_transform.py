@@ -70,7 +70,8 @@ class TestForward(object):
     # Initialise the transform
     self.spec = transform.TransformSpec(
         self.beam, self.detector, self.gonio, self.scan,
-        self.mosaicity, self.n_sigma, self.grid_size)
+        self.sigma_divergence, self.mosaicity,
+        self.n_sigma, self.grid_size)
 
   def __call__(self):
     self.tst_conservation_of_counts()
