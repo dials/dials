@@ -61,26 +61,28 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @param detector The detector model
      * @param gonio The goniometer model
      * @param scan The scan model
-     * @param mosaicity The crystal mosaicity
+     * @param sigma_b The beam divergence
+     * @param sigma_m The crystal mosaicity
      * @param n_sigma The number of standard deviations
      * @param grid_size The size of the reflection basis grid
      */
     TransformSpec(const Beam &beam, const Detector &detector,
                   const Goniometer &gonio, const Scan &scan,
-                  double mosaicity, double n_sigma, std::size_t grid_size)
+                  double sigma_b, double sigma_m, double n_sigma,
+                  std::size_t grid_size)
       : s0_(beam.get_s0()),
         m2_(gonio.get_rotation_axis().normalize()),
         image_size_(detector[0].get_image_size()[1],
                     detector[0].get_image_size()[0]),
         grid_size_(2*grid_size+1, 2*grid_size+1, 2*grid_size+1),
-        step_size_(mosaicity * n_sigma / grid_size,
-                   beam.get_sigma_divergence() * n_sigma / grid_size,
-                   beam.get_sigma_divergence() * n_sigma / grid_size),
+        step_size_(sigma_m * n_sigma / grid_size,
+                   sigma_b * n_sigma / grid_size,
+                   sigma_b * n_sigma / grid_size),
         grid_centre_(grid_size + 0.5, grid_size + 0.5, grid_size + 0.5),
         s1_map_(beam_vector_map(detector, beam, true)),
         map_frames_(scan.get_oscillation()[0],
                     scan.get_oscillation()[1],
-                    mosaicity, n_sigma, grid_size) {
+                    sigma_m, n_sigma, grid_size) {
       DIALS_ASSERT(detector.size() == 1);
       DIALS_ASSERT(image_size_.all_gt(0));
       DIALS_ASSERT(step_size_.all_gt(0));

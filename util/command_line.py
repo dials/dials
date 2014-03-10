@@ -293,7 +293,7 @@ class Importer(object):
     self.extracted = None
 
     # Get the list of items to try
-    totry = ['images', 'datablocks', 'experiments', 'reflections', 'extracted']
+    totry = ['extracted', 'images', 'datablocks', 'experiments', 'reflections']
     if include is not None:
       for item in include:
         assert(item in totry)

@@ -42,7 +42,6 @@ class Script(ScriptRunner):
 
   def main(self, params, options, args):
     '''Execute the script.'''
-    from dials.model.data import ReflectionList
     from dials.algorithms.integration import Integrator
     from dials.algorithms import shoebox
     from dials.model.serialize import load, dump
@@ -56,6 +55,7 @@ class Script(ScriptRunner):
     # Process the command line options
     Command.start('Processing command line options')
     importer = Importer(args)
+    Command.end('Processed command line options')
 
     # Check the unhandled arguments
     if len(importer.unhandled_arguments) > 0:
@@ -87,7 +87,6 @@ class Script(ScriptRunner):
 
     # Get the reference and extracted stuff
     extracted = importer.extracted
-    Command.end('Processed command line options')
 
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'

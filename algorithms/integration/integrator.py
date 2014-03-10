@@ -69,11 +69,41 @@ class Integrator(object):
     result = flex.reflection_table()
     print ''
     for reflections in extract:
-      reflections.integrate(experiments[0])#, reference
+      from dials.algorithms import filtering
+      from dials.util.command_line import Command
+      # Set all reflections which overlap bad pixels to zero
+      Command.start('Filtering reflections by detector mask')
+      array_range = experiments[0].scan.get_array_range()
+      mask = filtering.by_detector_mask(
+        reflections['bbox'], experiments[0].imageset[0] >= 0, array_range)
+      reflections.del_selected(mask != True)
+      Command.end('Filtered {0} reflections by detector mask'.format(
+        len(reflections)))
+
+      # Filter the reflections by zeta
+      if self.filter_by_zeta > 0:
+        Command.start('Filtering reflections by zeta >= {0}'.format(
+            self.filter_by_zeta))
+        mask = filtering.by_zeta(experiments[0].goniometer, experiments[0].beam,
+            reflections['s1'], self.filter_by_zeta)
+        reflections.del_selected(mask != True)
+        Command.end('Filtered {0} reflections by zeta >= {1}'.format(
+          len(reflections), self.filter_by_zeta))
+
+      if reference:
+        from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
+        match = SpotMatcher(max_separation=1)
+        sind, pind = match(reference, reflections)
+        flags = flex.int(len(reflections))
+        flags.set_selected(pind, (1 << 1))
+        reflections['flags'] = flags
+
+      reflections.integrate(experiments[0])
+      del reflections['shoebox']
+      del reflections['rs_shoebox']
       result.extend(reflections)
       print ''
 
     # Return the reflections
     result.sort('miller_index')
     return result
-

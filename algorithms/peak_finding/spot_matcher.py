@@ -75,19 +75,14 @@ class SpotMatcher(object):
     from math import sqrt
 
     # Get the predicted coordinates
-    predicted_xyz = []
-    for r in predicted:
-      x, y = r.image_coord_px
-      z = r.frame_number
-      predicted_xyz.append((x, y, z))
-
-    observed_xyz = [r.centroid_position for r in observed]
+    predicted_xyz = predicted['xyzcal.px']
+    observed_xyz = observed['xyzobs.px.value']
 
     # Create the KD Tree
-    ann = AnnAdaptor(flex.double(predicted_xyz).as_1d(), 3)
+    ann = AnnAdaptor(predicted_xyz.as_double().as_1d(), 3)
 
     # Query to find all the nearest neighbours
-    ann.query(flex.double(observed_xyz).as_1d())
+    ann.query(observed_xyz.as_double().as_1d())
 
     # Return the nearest neighbours and distances
     return ann.nn, flex.sqrt(ann.distances)

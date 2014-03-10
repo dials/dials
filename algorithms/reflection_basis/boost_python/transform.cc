@@ -19,17 +19,16 @@ namespace dials { namespace algorithms { namespace reflection_basis {
 
   template <typename FloatType>
   boost::shared_ptr< TransformSpec<FloatType> >
-    init_forward_from_sweep_and_crystal(
-      PyObject *sweep, PyObject *crystal,
+    init_forward_from_experiment(
+      object experiment, double sigma_b, double sigma_m,
       double nsigma, std::size_t grid_size) {
     return boost::shared_ptr< TransformSpec<FloatType> >(
       new TransformSpec<FloatType>(
-        call_method<Beam>(sweep, "get_beam"),
-        call_method<Detector>(sweep, "get_detector"),
-        call_method<Goniometer>(sweep, "get_goniometer"),
-        call_method<Scan>(sweep, "get_scan"),
-        call_method<double>(crystal, "get_mosaicity", false),
-        nsigma, grid_size));
+        extract<Beam>(experiment.attr("beam")),
+        extract<Detector>(experiment.attr("detector")),
+        extract<Goniometer>(experiment.attr("goniometer")),
+        extract<Scan>(experiment.attr("scan")),
+        sigma_b, sigma_m, nsigma, grid_size));
   }
 
   template <typename FloatType>
@@ -41,9 +40,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     class_<TransformSpecType>("TransformSpec", no_init)
       .def(init<const Beam &, const Detector &,
                 const Goniometer &, const Scan &,
-                double, double, std::size_t>())
+                double, double, double, std::size_t>())
       .def("__init__", make_constructor(
-        &init_forward_from_sweep_and_crystal<FloatType>))
+        &init_forward_from_experiment<FloatType>))
       .def("m2", &TransformSpecType::m2)
       .def("s0", &TransformSpecType::s0)
       .def("image_size", &TransformSpecType::image_size)

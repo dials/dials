@@ -23,11 +23,13 @@ class ProfileFittingReciprocalSpace(object):
     self.threshold = kwargs['threshold']
     self.frame_interval = kwargs['frame_interval']
     self.bbox_nsigma = kwargs['n_sigma']
+    self.sigma_b = kwargs['sigma_b']
+    self.sigma_m = kwargs['sigma_m']
 
     # Create the spot matcher
     self.match = SpotMatcher(max_separation=1)
 
-  def __call__(self, experiment, reflections, strong):
+  def __call__(self, experiment, reflections):
     ''' Do the integration.
 
     Transform the profiles to reciprocal space. Select the reflections
@@ -35,45 +37,67 @@ class ProfileFittingReciprocalSpace(object):
     integrate the intensities via profile fitting.
 
     '''
+    assert("flags" in reflections)
     self._transform_profiles(experiment, reflections)
-    learner = self._learn_references(experiment, reflections, strong)
+    learner = self._learn_references(experiment, reflections)
     return self._integrate_intensities(learner, reflections)
 
   def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''
     from dials.util.command_line import Command
     from dials.algorithms.reflection_basis import transform as rbt
+    from dials.array_family import flex
 
     # Initialise the reciprocal space transform
     Command.start('Initialising reciprocal space transform')
-    spec = rbt.TransformSpec(experiment, self.bbox_nsigma, self.grid_size)
+    spec = rbt.TransformSpec(experiment, self.sigma_b, self.sigma_m,
+                             self.bbox_nsigma, self.grid_size)
     Command.end('Initialised reciprocal space transform')
 
     # Transform the reflections to reciprocal space
     Command.start('Transforming reflections to reciprocal space')
-    rbt.forward_batch(spec, reflections, True)
-    Command.end('Transformed {0} reflections'.format(
-        len([r for r in reflections if r.is_valid()])))
+    s1 = reflections['s1']
+    phi = reflections['xyzcal.mm'].parts()[2]
+    shoebox = reflections['shoebox']
 
-  def _learn_references(self, experiment, reflections, strong):
+    bbox = reflections['bbox']
+    bbox2 = [s.bbox for s in shoebox]
+    image_size = experiment.detector[0].get_image_size()
+
+    from dials.algorithms import filtering
+    array_range = experiment.scan.get_array_range()
+    mask = filtering.by_detector_mask(
+      reflections['bbox'], experiment.imageset[0] >= 0, array_range)
+    #for b1, b2 in zip(bbox, bbox2):
+      #if b2[3] > image_size[1]:
+        #print b1, b2, image_size
+    rs_shoebox = flex.transformed_shoebox(spec, s1, phi, shoebox)
+    reflections['rs_shoebox'] = rs_shoebox
+    Command.end('Transformed {0} reflections'.format(len(reflections)))
+
+  def _learn_references(self, experiment, reflections):
     ''' Learn the reference profiles. '''
     from dials.algorithms.integration.profile import XdsCircleSampler
     from dials.algorithms.integration.profile import XdsCircleReferenceLearner
+    from dials.array_family import flex
 
     # Match the predictions with the strong spots
-    sind, pind = self.match(strong, reflections)
+    #sind, pind = self.match(strong, reflections)
+    pind = flex.bool([f & (1 << 1) != 0 for f in reflections['flags']])
 
     # Create the reference profile sampler
-    assert(len(sweep.get_detector()) == 1)
-    image_size = sweep.get_detector()[0].get_image_size()
-    num_frames = sweep.get_scan().get_num_images()
+    assert(len(experiment.detector) == 1)
+    image_size = experiment.detector[0].get_image_size()
+    num_frames = experiment.scan.get_num_images()
     volume_size = image_size + (num_frames,)
     sampler = XdsCircleSampler(volume_size, 1)
 
     # Configure the reference learner
     grid_size = (self.grid_size * 2 + 1,) * 3
     learner = XdsCircleReferenceLearner(sampler, grid_size, self.threshold)
-    learner.learn(reflections.select(pind))
+    profiles = reflections['rs_shoebox'].select(pind)
+    coords = reflections['xyzcal.px'].select(pind)
+    learner.learn(profiles, coords)
 
     # Return the learner
     return learner
@@ -88,8 +112,13 @@ class ProfileFittingReciprocalSpace(object):
 
     # Perform the integration
     Command.start('Integrating reflections in reciprocal space')
-    integrate(reflections)
-    Command.end('Integrated {0} reflections'.format(
-        len([r for r in reflections if r.is_valid()])))
+    profiles = reflections['rs_shoebox']
+    coords = reflections['xyzcal.px']
+    intensity = integrate(profiles, coords)
+    mask = intensity.parts()[1] < 0
+    reflections['intensity.raw.value'] = intensity.parts()[0]
+    reflections['intensity.raw.variance'] = intensity.parts()[1]
+    reflections.del_selected(mask)
+    Command.end('Integrated {0} reflections'.format(len(reflections)))
 
     return reflections
