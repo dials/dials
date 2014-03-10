@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost_adaptbx/std_pair_conversion.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/reflection_basis/coordinate_system.h>
 
@@ -82,6 +83,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         &CoordinateSystem::to_rotation_angle_fast)
       .def("to_beam_vector_and_rotation_angle",
         &CoordinateSystem::to_beam_vector_and_rotation_angle);
+
+    boost_adaptbx::std_pair_conversions::to_tuple<vec3<double>,double>();
   }
 
   BOOST_PYTHON_MODULE(dials_algorithms_reflection_basis_ext)

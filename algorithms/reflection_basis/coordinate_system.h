@@ -279,7 +279,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
         vec3<double> c) const {
       return std::make_pair(
         to_beam_vector(vec2<double>(c[0], c[1])),
-        to_rotation_angle_fast(c[3]));
+        to_rotation_angle_fast(c[2]));
     }
 
   private:
