@@ -80,6 +80,24 @@ namespace dials { namespace af {
       }
 
       /**
+       * Helper to convert shared to ref
+       */
+      template <typename T>
+      operator af::ref<T>() const {
+        af::shared<T> result = (af::shared<T>)(*this);
+        return result.ref();
+      }
+
+      /**
+       * Helper to convert shared to const ref
+       */
+      template <typename T>
+      operator af::const_ref<T>() const {
+        af::shared<T> result = (af::shared<T>)(*this);
+        return result.const_ref();
+      }
+
+      /**
        * Return the mapped variant type at the given element directly.
        */
       operator mapped_type() const {
