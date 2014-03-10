@@ -191,10 +191,16 @@ namespace dials { namespace algorithms {
       table["miller_index"] = new_table["miller_index"];
       table["entering"] = new_table["entering"];
       table["panel"] = new_table["panel"];
-      table["flags"] = new_table["flags"];
       table["s1"] = new_table["s1"];
       table["xyzcal.px"] = new_table["xyzcal.px"];
       table["xyzcal.mm"] = new_table["xyzcal.mm"];
+      af::shared<std::size_t> flags = table["flags"];
+      af::shared<std::size_t> new_flags = new_table["flags"];
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        flags[i] &= ~af::Predicted;
+        flags[i] |= new_flags[i];
+      }
+      DIALS_ASSERT(table.is_consistent());
     }
 
   private:
