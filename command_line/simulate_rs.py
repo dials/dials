@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+#
+# reciprocal_space.py
+#
+#  Copyright (C) 2014 Diamond Light Source, James Parkhurst
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+
+from __future__ import division
+
+if __name__ == '__main__':
+
+  from optparse import OptionParser
+  from dials.algorithms.simulation.reciprocal_space import Simulator
+  from dials.model.experiment.experiment_list import ExperimentListFactory
+  from dials.util.command_line import Command
+  from math import pi
+
+  usage = "usage: %prog [options] experiment.json"
+  parser = OptionParser(usage)
+
+  # Write the datablock to JSON or Pickle
+  parser.add_option(
+    "-o", "--output",
+    dest = "output",
+    type = "string", default = "simulated.pickle",
+    help = "The output pickle file")
+
+  # Write the datablock to JSON or Pickle
+  parser.add_option(
+    "-n", "--num",
+    dest = "num",
+    type = "int", default = 1000,
+    help = "The number of reflections (default 1000)")
+
+  # Write the datablock to JSON or Pickle
+  parser.add_option(
+    "-i", "--intensity",
+    dest = "intensity",
+    type = "int", default = 1000,
+    help = "The intensity (default 1000)")
+
+  # Write the datablock to JSON or Pickle
+  parser.add_option(
+    "-b", "--background",
+    dest = "background",
+    type = "int", default = 0,
+    help = "The background (default 0)")
+
+  # Write the datablock to JSON or Pickle
+  parser.add_option(
+    "-r", "--random",
+    dest = "random",
+    action = "store_true", default=False,
+    help = "Random intensities and backgrounds")
+
+  # The profile parameters
+  parser.add_option(
+    "--sigma_b",
+    dest = "sigma_b",
+    type = "float", default = None,
+    help = "Sigma B")
+
+  parser.add_option(
+    "--sigma_m",
+    dest = "sigma_m",
+    type = "float", default = None,
+    help = "Sigma M")
+
+  parser.add_option(
+    "--n_sigma",
+    dest = "n_sigma",
+    type = "float", default = 3,
+    help = "Number of standard deviations for profile")
+
+  # Parse the command line arguments
+  (options, args) = parser.parse_args()
+
+  # Ensure we have enough arguments
+  if len(args) != 1:
+    parser.show_help()
+    exit(0)
+
+  # Check we have some profile parameters
+  if options.sigma_b is None or options.sigma_m is None:
+    print 'Need to set profile parameters'
+    exit(0)
+
+  # Get the experiments
+  experiments = ExperimentListFactory.from_json_file(args[0])
+  assert(len(experiments) == 1)
+  experiment = experiments[0]
+
+  # Do the simulation
+  sigma_b = options.sigma_b * pi / 180
+  sigma_m = options.sigma_m * pi / 180
+  n_sigma = options.n_sigma
+  N = options.num
+  I = options.intensity
+  B = options.background
+  simulate = Simulator(experiment, sigma_b, sigma_m, n_sigma)
+  if options.random:
+    refl = simulate.with_random_intensity(N, I, B)
+  else:
+    refl = simulate.with_given_intensity(N, I, B)
+
+  # Save the reflections to file
+  Command.start('Writing reflections to %s' % options.output)
+  refl.as_pickle(options.output)
+  Command.end('Write reflections to %s' % options.output)

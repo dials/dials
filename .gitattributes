@@ -212,6 +212,7 @@ algorithms/shoebox/partial_extractor.h -text
 algorithms/shoebox/profile_extractor.py -text
 algorithms/simulation/__init__.py -text
 algorithms/simulation/generate_test_reflections.py -text
+algorithms/simulation/reciprocal_space.py -text
 algorithms/simulation/utils.py -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text
@@ -318,6 +319,7 @@ command_line/show_extensions.py -text
 command_line/show_models.py -text
 command_line/show_profiles.py -text
 command_line/simulate.py -text
+command_line/simulate_rs.py -text
 command_line/sort_reflections.py -text
 /config.h -text
 data/__init__.py -text
