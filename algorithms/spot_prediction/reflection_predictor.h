@@ -307,29 +307,26 @@ namespace dials { namespace algorithms {
         const Detector &detector,
         const Goniometer &goniometer,
         const Scan &scan,
-        const af::const_ref< mat3<double> > A,
         double dmin,
         std::size_t margin)
       : beam_(beam),
         detector_(detector),
         goniometer_(goniometer),
         scan_(scan),
-        A_(A.begin(), A.end()),
         dmin_(dmin),
         margin_(margin),
         predict_rays_(
             beam.get_s0(),
             goniometer.get_rotation_axis(),
             scan.get_oscillation(),
-            dmin) {
-      DIALS_ASSERT(A_.size() == scan_.get_num_images() + 1);
-    }
+            dmin) {}
 
     /**
      * Predict all the reflections for this model.
      * @returns The reflection table
      */
-    af::reflection_table operator()() const {
+    af::reflection_table for_ub(const af::const_ref< mat3<double> > &A) const {
+      DIALS_ASSERT(A.size() == scan_.get_num_images() + 1);
 
       // Create the table and local stuff
       af::reflection_table table;
@@ -338,7 +335,7 @@ namespace dials { namespace algorithms {
       // Get the array range and loop through all the images
       vec2<int> array_range = scan_.get_array_range();
       for (int frame = array_range[0]; frame < array_range[1]; ++frame) {
-        append_for_image(predictions, frame);
+        append_for_image(predictions, frame, A[frame], A[frame+1]);
       }
 
       // Return the reflection table
@@ -346,97 +343,22 @@ namespace dials { namespace algorithms {
     }
 
     /**
-     * Do the predictions for the given miller indices on the given frames.
-     * @param h The miller indices
-     * @param frame The frames
+     * Predict all the reflections for this model.
      * @returns The reflection table
      */
-    af::reflection_table operator()(
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<int> &frame) const {
-      DIALS_ASSERT(h.size() == frame.size());
+    af::reflection_table for_ub_on_single_image(
+        int frame,
+        const mat3<double> &A1,
+        const mat3<double> &A2) const {
+      vec2<int> array_range = scan_.get_array_range();
+      DIALS_ASSERT(frame >= array_range[0] && frame < array_range[1]);
 
       // Create the table and local stuff
       af::reflection_table table;
       prediction_data predictions(table);
 
-      // Sort the miller indices by frame
-      af::shared<std::size_t> index(frame.size());
-      for (std::size_t i = 0; i < index.size(); ++i) {
-        index[i] = i;
-      }
-      std::sort(index.begin(), index.end(), sort_by_frame(frame));
-
-      // For each hkl, do the prediction on the frame, because all the indices
-      // are now sorted, we can calculate the matrix only once
-      std::size_t i = 0;
-      while (i < index.size()) {
-        int current_frame = frame[index[i]];
-        mat3<double> A1, A2;
-        compute_setting_matrices(A1, A2, current_frame);
-        while (i < index.size() && frame[index[i]] == current_frame) {
-          append_for_index(predictions, A1, A2, current_frame, h[index[i]]);
-          ++i;
-        }
-      }
-
-      // Return the reflection table
-      return table;
-    }
-
-    /**
-     * Do the predictions for the given miller indices on the given frames.
-     * @param h The miller indices
-     * @param frame The frames
-     * @param panel The panel
-     * @returns The reflection table
-     */
-    af::reflection_table operator()(
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<int> &frame,
-        std::size_t panel) const {
-      af::shared<std::size_t> panels(h.size(), panel);
-      return (*this)(h, frame, panels.const_ref());
-    }
-
-    /**
-     * Do the predictions for the given miller indices on the given frames.
-     * @param h The miller indices
-     * @param frame The frames
-     * @param panel The panel
-     * @returns The reflection table
-     */
-    af::reflection_table operator()(
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<int> &frame,
-        const af::const_ref<std::size_t> &panel) const {
-      DIALS_ASSERT(h.size() == frame.size());
-      DIALS_ASSERT(h.size() == panel.size());
-
-      // Create the table and local stuff
-      af::reflection_table table;
-      prediction_data predictions(table);
-
-      // Sort the miller indices by frame
-      af::shared<std::size_t> index(frame.size());
-      for (std::size_t i = 0; i < index.size(); ++i) {
-        index[i] = i;
-      }
-      std::sort(index.begin(), index.end(), sort_by_frame(frame));
-
-      // For each hkl, do the prediction on the frame, because all the indices
-      // are now sorted, we can calculate the matrix only once
-      std::size_t i = 0;
-      while (i < index.size()) {
-        int current_frame = frame[index[i]];
-        mat3<double> A1, A2;
-        compute_setting_matrices(A1, A2, current_frame);
-        while (i < index.size() && frame[index[i]] == current_frame) {
-          append_for_index(predictions, A1, A2, current_frame,
-              h[index[i]], (int)panel[index[i]]);
-          ++i;
-        }
-      }
+      // Get the array range and loop through all the images
+      append_for_image(predictions, frame, A1, A2);
 
       // Return the reflection table
       return table;
@@ -454,15 +376,14 @@ namespace dials { namespace algorithms {
 
       // Get the rotation axis and beam vector
       vec3<double> m2 = goniometer_.get_rotation_axis();
-      int frame_0 = scan_.get_array_range()[0];
 
       // Calculate the setting matrix at the beginning and end
       double phi_beg = scan_.get_angle_from_array_index(frame);
       double phi_end = scan_.get_angle_from_array_index(frame + 1);
       mat3<double> r_beg = axis_and_angle_as_matrix(m2, phi_beg);
       mat3<double> r_end = axis_and_angle_as_matrix(m2, phi_end);
-      A1 = r_beg * A_[frame - frame_0];
-      A2 = r_end * A_[frame - frame_0 + 1];
+      A1 = r_beg * A1;
+      A2 = r_end * A2;
     }
 
     /**
@@ -470,12 +391,14 @@ namespace dials { namespace algorithms {
      * @param p The reflection data
      * @param frame The image frame to predict on.
      */
-    void append_for_image(prediction_data &p, int frame) const {
+    void append_for_image(
+        prediction_data &p, int frame,
+        mat3<double> A1,
+        mat3<double> A2) const {
 
       // Get the rotation axis and beam vector
       vec3<double> m2 = goniometer_.get_rotation_axis();
       vec3<double> s0 = beam_.get_s0();
-      mat3<double> A1, A2;
       compute_setting_matrices(A1, A2, frame);
 
       // Construct the index generator and do the predictions for each index
@@ -516,7 +439,7 @@ namespace dials { namespace algorithms {
       try {
 
         // Get the impact on the detector
-        Detector::coord_type impact = get_ray_intersection(ray.s1, panel);
+        Detector::coord_type impact = detector_.get_ray_intersection(ray.s1);
         std::size_t panel = impact.first;
         vec2<double> mm = impact.second;
         vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
@@ -531,31 +454,17 @@ namespace dials { namespace algorithms {
         p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
         p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
         p.panel.push_back(panel);
+        p.flags.push_back(af::Predicted);
 
       } catch(dxtbx::error) {
         // do nothing
       }
     }
 
-    /**
-     * Helper function to do ray intersection with/without panel set.
-     */
-    Detector::coord_type get_ray_intersection(vec3<double> s1, int panel) const {
-      Detector::coord_type coord;
-      if (panel < 0) {
-        coord = detector_.get_ray_intersection(s1);
-      } else {
-        coord.first = panel;
-        coord.second = detector_[panel].get_ray_intersection(s1);
-      }
-      return coord;
-    }
-
     Beam beam_;
     Detector detector_;
     Goniometer goniometer_;
     Scan scan_;
-    af::shared< mat3<double> > A_;
     double dmin_;
     std::size_t margin_;
     ScanVaryingRayPredictor predict_rays_;

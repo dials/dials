@@ -44,36 +44,16 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     typedef ScanVaryingReflectionPredictor Predictor;
 
-    af::reflection_table (Predictor::*predict_all)() const =
-      &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_observed)(
-        const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref<int>&) const = &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_observed_with_panel)(
-        const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref<int>&,
-        std::size_t) const = &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_observed_with_panel_list)(
-        const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref<int>&,
-        const af::const_ref<std::size_t>&) const = &Predictor::operator();
-
     class_<Predictor>("ScanVaryingReflectionPredictor", no_init)
       .def(init<
           const Beam&,
           const Detector&,
           const Goniometer&,
           const Scan&,
-          const af::const_ref< mat3<double> > &,
           double,
           std::size_t>())
-      .def("__call__", predict_all)
-      .def("__call__", predict_observed)
-      .def("__call__", predict_observed_with_panel)
-      .def("__call__", predict_observed_with_panel_list);
+      .def("for_ub", &Predictor::for_ub)
+      .def("for_ub_on_single_image", &Predictor::for_ub_on_single_image);
   }
 
   void export_stills_reflection_predictor() {
