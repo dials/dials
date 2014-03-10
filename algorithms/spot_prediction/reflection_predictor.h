@@ -47,6 +47,7 @@ namespace dials { namespace algorithms {
     af::shared< vec3<double> > s1;
     af::shared< vec3<double> > xyz_px;
     af::shared< vec3<double> > xyz_mm;
+    af::shared< std::size_t > flags;
 
     prediction_data(af::reflection_table &table) {
       hkl    = table.get< miller_index >("miller_index");
@@ -55,6 +56,7 @@ namespace dials { namespace algorithms {
       s1     = table.get< vec3<double> >("s1");
       xyz_px = table.get< vec3<double> >("xyzcal.px");
       xyz_mm = table.get< vec3<double> >("xyzcal.mm");
+      flags  = table.get< std::size_t >("flags");
     }
   };
 
@@ -77,7 +79,6 @@ namespace dials { namespace algorithms {
           const Scan &scan,
           const cctbx::uctbx::unit_cell &unit_cell,
           const cctbx::sgtbx::space_group_type &space_group_type,
-          const mat3<double>& ub,
           double dmin)
       : beam_(beam),
         detector_(detector),
@@ -85,7 +86,6 @@ namespace dials { namespace algorithms {
         scan_(scan),
         unit_cell_(unit_cell),
         space_group_type_(space_group_type),
-        ub_(ub),
         dmin_(dmin),
         predict_rays_(
             beam.get_s0(),
@@ -98,16 +98,7 @@ namespace dials { namespace algorithms {
      * @param ub The UB matrix
      * @returns A reflection table.
      */
-    af::reflection_table operator()() const {
-      return (*this)(ub_);
-    }
-
-    /**
-     * Predict reflections for UB
-     * @param ub The UB matrix
-     * @returns A reflection table.
-     */
-    af::reflection_table operator()(const mat3<double> &ub) const {
+    af::reflection_table for_ub(const mat3<double> &ub) const {
 
       // Create the reflection table and the local container
       af::reflection_table table;
@@ -130,66 +121,80 @@ namespace dials { namespace algorithms {
 
     /**
      * Predict reflections for UB
-     * @param ub The array of UB matrices
      * @param h The array of miller indices
-     * @returns A reflection table.
-     */
-    af::reflection_table operator()(
-        const af::const_ref< mat3<double> > &ub,
-        const af::const_ref<miller_index> &h) const {
-      DIALS_ASSERT(ub.size() == h.size());
-      af::reflection_table table;
-      prediction_data predictions(table);
-      for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, ub[i], h[i]);
-      }
-      return table;
-    }
-
-
-    /**
-     * Predict reflections for UB
-     * @param ub The array of UB matrices
-     * @param h The array of miller indices
-     * @param panel The array of panels
-     * @returns A reflection table.
-     */
-    af::reflection_table operator()(
-        const af::const_ref< mat3<double> >&ub,
-        const af::const_ref<miller_index> &h,
-        const af::const_ref<std::size_t> &panel) const {
-      DIALS_ASSERT(ub.size() == h.size());
-      DIALS_ASSERT(ub.size() == panel.size());
-      af::reflection_table table;
-      prediction_data predictions(table);
-      for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, ub[i], h[i], panel[i]);
-      }
-      return table;
-    }
-
-    /**
-     * Predict reflections for UB
-     * @param ub The array of UB matrices
-     * @param h The array of miller indices
-     * @param panel The array of panels
      * @param entering The array of entering flags
+     * @param panel The array of panels
+     * @param ub The array of UB matrices
      * @returns A reflection table.
      */
-    af::reflection_table operator()(
-        const af::const_ref< mat3<double> >&ub,
+    af::reflection_table for_hkl(
         const af::const_ref<miller_index> &h,
+        const af::const_ref<bool> &entering,
         const af::const_ref<std::size_t> &panel,
-        const af::const_ref<bool> &entering) const {
+        const mat3<double> &ub) const {
+      af::shared< mat3<double> > uba(h.size(), ub);
+      return for_hkl_with_individual_ub(h, entering, panel, uba.const_ref());
+    }
+
+    /**
+     * Predict reflections for UB
+     * @param h The array of miller indices
+     * @param entering The array of entering flags
+     * @param panel The array of panels
+     * @param ub The array of UB matrices
+     * @returns A reflection table.
+     */
+    af::reflection_table for_hkl_with_individual_ub(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<bool> &entering,
+        const af::const_ref<std::size_t> &panel,
+        const af::const_ref< mat3<double> >&ub) const {
       DIALS_ASSERT(ub.size() == h.size());
       DIALS_ASSERT(ub.size() == panel.size());
       DIALS_ASSERT(ub.size() == entering.size());
       af::reflection_table table;
       prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, ub[i], h[i], panel[i], entering[i]);
+        append_for_index(predictions, ub[i], h[i], entering[i], panel[i]);
       }
+      DIALS_ASSERT(table.nrows() == h.size());
       return table;
+    }
+
+    /**
+     * Predict reflections to the entries in the table.
+     * @param table The reflection table
+     * @param ub The ub matrix
+     */
+    void for_reflection_table(
+        af::reflection_table table,
+        const mat3<double> &ub) const {
+      af::shared< mat3<double> > uba(table.nrows(), ub);
+      for_reflection_table_with_individual_ub(table, uba.const_ref());
+    }
+
+    /**
+     * Predict reflections to the entries in the table.
+     * @param table The reflection table
+     * @param ub The list of ub matrices
+     */
+    void for_reflection_table_with_individual_ub(
+        af::reflection_table table,
+        const af::const_ref< mat3<double> > &ub) const {
+      DIALS_ASSERT(ub.size() == table.nrows());
+      af::reflection_table new_table = for_hkl_with_individual_ub(
+        table["miller_index"],
+        table["entering"],
+        table["panel"],
+        ub);
+      DIALS_ASSERT(new_table.nrows() == table.nrows());
+      table["miller_index"] = new_table["miller_index"];
+      table["entering"] = new_table["entering"];
+      table["panel"] = new_table["panel"];
+      table["flags"] = new_table["flags"];
+      table["s1"] = new_table["s1"];
+      table["xyzcal.px"] = new_table["xyzcal.px"];
+      table["xyzcal.mm"] = new_table["xyzcal.mm"];
     }
 
   private:
@@ -200,82 +205,61 @@ namespace dials { namespace algorithms {
         const miller_index &h) const {
       af::small<Ray, 2> rays = predict_rays_(h, ub);
       for (std::size_t i = 0; i < rays.size(); ++i) {
-        append_for_ray(p, h, rays[i]);
-      }
-    }
-
-    void append_for_index(
-        prediction_data &p,
-        const mat3<double> ub,
-        const miller_index &h,
-        std::size_t panel) const {
-      af::small<Ray, 2> rays = predict_rays_(h, ub);
-      for (std::size_t i = 0; i < rays.size(); ++i) {
-        append_for_ray(p, h, rays[i], panel);
-      }
-    }
-
-    void append_for_index(
-        prediction_data &p,
-        const mat3<double> ub,
-        const miller_index &h,
-        std::size_t panel,
-        bool entering) const {
-      af::small<Ray, 2> rays = predict_rays_(h, ub);
-      for (std::size_t i = 0; i < rays.size(); ++i) {
-        if (rays[i].entering == entering) {
-          append_for_ray(p, h, rays[i], panel);
+        try {
+          Detector::coord_type impact = detector_.get_ray_intersection(rays[i].s1);
+          std::size_t panel = impact.first;
+          vec2<double> mm = impact.second;
+          vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+          af::shared<double> frames =
+            scan_.get_array_indices_with_angle(rays[i].angle);
+          for (std::size_t j = 0; j < frames.size(); ++j) {
+            p.hkl.push_back(h);
+            p.enter.push_back(rays[i].entering);
+            p.s1.push_back(rays[i].s1);
+            p.panel.push_back(panel);
+            p.flags.push_back(af::Predicted);
+            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle)); // FIXME
+            p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j]));
+          }
+        } catch(dxtbx::error) {
+          // do nothing
         }
       }
     }
 
-    /**
-     * For each ray, get the impact and append to the reflection table.
-     */
-    void append_for_ray(prediction_data &p, const miller_index &h,
-        const Ray &ray) const {
-      try {
-        Detector::coord_type impact = detector_.get_ray_intersection(ray.s1);
-        std::size_t panel = impact.first;
-        vec2<double> mm = impact.second;
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-        append_for_impact(p, h, ray, panel, mm, px);
-      } catch(dxtbx::error) {
-        // do nothing
+    void append_for_index(
+        prediction_data &p,
+        const mat3<double> ub,
+        const miller_index &h,
+        bool entering,
+        std::size_t panel) const {
+      p.hkl.push_back(h);
+      p.enter.push_back(entering);
+      p.panel.push_back(panel);
+      af::small<Ray, 2> rays = predict_rays_(h, ub);
+      for (std::size_t i = 0; i < rays.size(); ++i) {
+        if (rays[i].entering == entering) {
+          p.s1.push_back(rays[i].s1);
+          double frame = scan_.get_array_index_from_angle(rays[i].angle);
+          try {
+            vec2<double> mm = detector_[panel].get_ray_intersection(rays[i].s1);
+            vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
+            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle));
+            p.xyz_px.push_back(vec3<double>(px[0], px[1], frame));
+            p.flags.push_back(af::Predicted);
+          } catch(dxtbx::error) {
+            p.xyz_mm.push_back(vec3<double>(0, 0, rays[i].angle));
+            p.xyz_px.push_back(vec3<double>(0, 0, frame));
+            p.flags.push_back(0);
+          }
+          return;
+        }
       }
+      p.s1.push_back(vec3<double>(0, 0, 0));
+      p.xyz_mm.push_back(vec3<double>(0, 0, 0));
+      p.xyz_px.push_back(vec3<double>(0, 0, 0));
+      p.flags.push_back(0);
     }
-
-    /**
-     * For each ray, get the impact and append to the reflection table.
-     */
-    void append_for_ray(prediction_data &p, const miller_index &h,
-        const Ray &ray, std::size_t panel) const {
-      try {
-        vec2<double> mm = detector_[panel].get_ray_intersection(ray.s1);
-        vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-        append_for_impact(p, h, ray, panel, mm, px);
-      } catch(dxtbx::error) {
-        // do nothing
-      }
-    }
-
-   void append_for_impact(prediction_data &p,
-       const miller_index &h,
-       const Ray &ray,
-       std::size_t panel,
-       vec2<double> mm,
-       vec2<double> px) const {
-      af::shared<double> frames =
-        scan_.get_array_indices_with_angle(ray.angle);
-      for (std::size_t i = 0; i < frames.size(); ++i) {
-        p.hkl.push_back(h);
-        p.enter.push_back(ray.entering);
-        p.s1.push_back(ray.s1);
-        p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], ray.angle));
-        p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[i]));
-        p.panel.push_back(panel);
-      }
-   }
 
     Beam beam_;
     Detector detector_;
@@ -283,7 +267,6 @@ namespace dials { namespace algorithms {
     Scan scan_;
     cctbx::uctbx::unit_cell unit_cell_;
     cctbx::sgtbx::space_group_type space_group_type_;
-    mat3<double> ub_;
     double dmin_;
     ScanStaticRayPredictor predict_rays_;
   };

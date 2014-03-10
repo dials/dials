@@ -21,30 +21,6 @@ namespace dials { namespace algorithms { namespace boost_python {
     typedef ScanStaticReflectionPredictor Predictor;
 
 
-    af::reflection_table (Predictor::*predict_from_model)() const =
-      &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_all)(
-        const mat3<double>&) const = &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_with_hkl)(
-        const af::const_ref< mat3<double> >&,
-        const af::const_ref< cctbx::miller::index<> >&) const =
-      &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_with_hkl_and_panel)(
-        const af::const_ref< mat3<double> >&,
-        const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref< std::size_t >&) const =
-      &Predictor::operator();
-
-    af::reflection_table (Predictor::*predict_with_hkl_panel_and_entering)(
-        const af::const_ref< mat3<double> >&,
-        const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref< std::size_t >&,
-        const af::const_ref< bool >&) const =
-      &Predictor::operator();
-
     class_<Predictor>("ScanStaticReflectionPredictor", no_init)
       .def(init<
           const Beam&,
@@ -53,13 +29,15 @@ namespace dials { namespace algorithms { namespace boost_python {
           const Scan&,
           const cctbx::uctbx::unit_cell&,
           const cctbx::sgtbx::space_group_type&,
-          const mat3<double>&,
           double>())
-      .def("__call__", predict_from_model)
-      .def("__call__", predict_all)
-      .def("__call__", predict_with_hkl)
-      .def("__call__", predict_with_hkl_and_panel)
-      .def("__call__", predict_with_hkl_panel_and_entering);
+      .def("for_ub", &Predictor::for_ub)
+      .def("for_hkl", &Predictor::for_hkl)
+      .def("for_hkl", &Predictor::for_hkl_with_individual_ub)
+      .def("for_reflection_table",
+          &Predictor::for_reflection_table)
+      .def("for_reflection_table",
+          &Predictor::for_reflection_table_with_individual_ub)
+      ;
   }
 
   void export_scan_varying_reflection_predictor() {
