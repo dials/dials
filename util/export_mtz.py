@@ -10,7 +10,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # should use U matrix from middle of batch (probably)
 
   assert(len(experiment_list) == 1)
-  assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
+  if 'id' in integrated_data:
+    assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
   experiment = experiment_list[0]
 
