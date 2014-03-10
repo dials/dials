@@ -58,10 +58,11 @@ class Script(ScriptRunner):
     if importer.experiments is None or len(importer.experiments) == 0:
       print 'Error: no experiment list specified'
       return
+    assert(len(importer.experiments) == 1)
 
     # Populate the reflection table with predictions
     predicted = flex.reflection_table.from_predictions(
-      importer.experiments,
+      importer.experiments[0],
       force_static=options.force_static)
 
     # Save the reflections to file

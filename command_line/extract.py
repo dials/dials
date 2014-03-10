@@ -74,7 +74,7 @@ class Script(ScriptRunner):
 
     # Populate the reflection table with predictions
     predicted = flex.reflection_table.from_predictions(
-      importer.experiments,
+      importer.experiments[0],
       force_static=options.force_static)
 
     # Get the bbox nsigma

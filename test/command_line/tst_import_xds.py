@@ -31,6 +31,7 @@ class Test(object):
       'dials.import_xds',
       '-i', 'reflections',
       join(self.path, 'INTEGRATE.HKL'),
+      join(self.path, "experiments.json")
     ]).raise_if_errors()
 
     import cPickle as pickle

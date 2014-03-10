@@ -128,17 +128,17 @@ class IntegrateHKLImporter(object):
     dA = self._experiment.crystal.get_A()
     dbeam = matrix.col(self._experiment.beam.get_direction())
     daxis = matrix.col(self._experiment.goniometer.get_rotation_axis())
-    xbeam = matrix.col(handle.beam_vector)
-    xaxis = matrix.col(handle.rotation_axis)
+    xbeam = matrix.col(handle.beam_vector).normalize()
+    xaxis = matrix.col(handle.rotation_axis).normalize()
 
     # want to align XDS -s0 vector...
     from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
     R = align_reference_frame(- xbeam, dbeam, xaxis, daxis)
-    A = matrix.sqr(
+    xA = matrix.sqr(
       handle.unit_cell_a_axis +
       handle.unit_cell_b_axis +
       handle.unit_cell_c_axis).inverse()
-    xA = R * A
+    xA = R * xA
 
     # assert that this should just be a simple integer rotation matrix
     # i.e. reassignment of a, b, c so...

@@ -22,7 +22,6 @@ def ScanStaticReflectionPredictor(experiment, dmin=None, **kwargs):
     experiment.scan,
     experiment.crystal.get_unit_cell(),
     experiment.crystal.get_space_group().type(),
-    experiment.crystal.get_A(),
     dmin)
 
 
@@ -37,17 +36,12 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
   if dmin is None:
     dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
-  # Get the list of A matrices
-  A = [experiment.crystal.get_A_at_scan_point(i) for i in
-       range(experiment.crystal.num_scan_points)]
-
   # Create the reflection predictor
   return _ScanVaryingReflectionPredictor(
     experiment.beam,
     experiment.detector,
     experiment.goniometer,
     experiment.scan,
-    flex.mat3_double(A),
     dmin,
     margin)
 

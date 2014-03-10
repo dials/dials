@@ -44,7 +44,7 @@ class Integrator(object):
 
     # Predict a load of reflections
     if extracted == None:
-      predicted = flex.reflection_table.from_predictions(experiments)
+      predicted = flex.reflection_table.from_predictions(experiments[0])
     else:
       predicted = None
 

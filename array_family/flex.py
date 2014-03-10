@@ -18,11 +18,11 @@ class reflection_table_aux(boost.python.injector, reflection_table):
   ''' An injector class to add additional methods to the reflection table. '''
 
   @staticmethod
-  def from_predictions(exlist, force_static=False):
+  def from_predictions(experiment, force_static=False):
     ''' Construct a reflection table from predictions. '''
     from dials.algorithms.spot_prediction.reflection_predictor \
       import ReflectionPredictor
-    predict = ReflectionPredictor(exlist, force_static=force_static)
+    predict = ReflectionPredictor(experiment, force_static=force_static)
     return predict()
 
   @staticmethod
