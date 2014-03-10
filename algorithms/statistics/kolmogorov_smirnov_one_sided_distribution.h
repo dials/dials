@@ -93,10 +93,12 @@ namespace dials { namespace algorithms {
       RealType b = boost::math::lgamma(n + 1);
       for (int j = 0; j <= m; ++j) {
         RealType a = x + (RealType)j / (RealType)n;
-        RealType c = b
-          - boost::math::lgamma(j + 1) - boost::math::lgamma(n - j + 1)
-          + (n - j)*std::log(1.0 - a) + (j - 1)*std::log(a);
-        s += std::exp(c);
+        if (1.0 - a > 0 && a > 0) {
+          RealType c = b
+            - boost::math::lgamma(j + 1) - boost::math::lgamma(n - j + 1)
+            + (n - j)*std::log(1.0 - a) + (j - 1)*std::log(a);
+          s += std::exp(c);
+        }
       }
       return 1.0 - x * s;
     }

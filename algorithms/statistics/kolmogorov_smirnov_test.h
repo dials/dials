@@ -94,7 +94,7 @@ namespace dials { namespace algorithms {
     RealType Dm = kolmogorov_smirnov_test_d_minus(cdfv);
     RealType Dp = kolmogorov_smirnov_test_d_plus(cdfv);
     RealType D = std::max(Dm, Dp);
-    RealType pa = 1.0 - cdf(ks_dist2(), (D * std::sqrt(n)));
+    RealType pa = 1.0 - cdf(ks_dist2(), (D * std::sqrt((RealType)n)));
     if (n > 2666 || pa > 0.8 - n * 0.3 / 1000.0) {
       return std::make_pair(D, pa);
     }
