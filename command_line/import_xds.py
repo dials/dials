@@ -63,8 +63,9 @@ class SpotXDSImporter(object):
 class IntegrateHKLImporter(object):
   ''' Class to import an integrate.hkl file to a reflection table. '''
 
-  def __init__(self, integrate_hkl):
+  def __init__(self, integrate_hkl, experiment):
     self._integrate_hkl = integrate_hkl
+    self._experiment = experiment
 
   def __call__(self, options):
     ''' Import the integrate.hkl file. '''
@@ -80,23 +81,37 @@ class IntegrateHKLImporter(object):
     Command.start('Reading INTEGRATE.HKL')
     handle = integrate_hkl.reader()
     handle.read_file(self._integrate_hkl)
-    hkl    = handle.hkl
-    xyzcal = handle.xyzcal
-    xyzobs = handle.xyzobs
-    iobs   = handle.iobs
-    sigma  = handle.sigma
+    hkl    = flex.miller_index(handle.hkl)
+    xyzcal = flex.vec3_double(handle.xyzcal)
+    xyzobs = flex.vec3_double(handle.xyzobs)
+    iobs   = flex.double(handle.iobs)
+    sigma  = flex.double(handle.sigma)
+    rlp = flex.double(handle.rlp)
+    peak = flex.double(handle.peak)
     Command.end('Read %d reflections from INTEGRATE.HKL file.' % len(hkl))
+
+    # Derive the reindex matrix
+    rdx = self.derive_reindex_matrix(handle)
+    print 'Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems)
+
+    # Reindex the reflections
+    Command.start('Reindexing reflections')
+    hkl = flex.miller_index([rdx * h for h in hkl])
+    Command.end('Reindexed %d reflections' % len(hkl))
 
     # Create the reflection list
     Command.start('Creating reflection table')
     table = flex.reflection_table()
     table['id'] = flex.size_t(len(hkl), 0)
     table['panel'] = flex.size_t(len(hkl), 0)
-    table['miller_index'] = flex.miller_index(hkl)
-    table['xyzcal.px'] = flex.vec3_double(xyzcal)
-    table['xyzobs.px.value'] = flex.vec3_double(xyzobs)
-    table['intensity.cor.value'] = flex.double(iobs)
-    table['intensity.cor.variance'] = flex.double(sigma)**2
+    table['miller_index'] = hkl
+    table['xyzcal.px'] = xyzcal
+    table['xyzobs.px.value'] = xyzobs
+    table['intensity.cor.value'] = iobs
+    table['intensity.cor.variance'] = sigma**2
+    table['intensity.raw.value'] = iobs * peak / rlp
+    table['intensity.raw.variance'] = sigma**2 * peak / rlp
+    table['lp'] = rlp
     Command.end('Created table with {0} reflections'.format(len(table)))
 
     # Output the table to pickle file
@@ -104,6 +119,31 @@ class IntegrateHKLImporter(object):
     Command.start('Saving reflection table to %s' % options.output)
     table.as_pickle(options.output)
     Command.end('Saved reflection table to %s' % options.output)
+
+  def derive_reindex_matrix(self, handle):
+    '''Derive a reindexing matrix to go from the orientation matrix used
+    for XDS integration to the one used for DIALS integration.'''
+    from scitbx import matrix
+
+    dA = self._experiment.crystal.get_A()
+    dbeam = matrix.col(self._experiment.beam.get_direction())
+    daxis = matrix.col(self._experiment.goniometer.get_rotation_axis())
+    xbeam = matrix.col(handle.beam_vector)
+    xaxis = matrix.col(handle.rotation_axis)
+
+    # want to align XDS -s0 vector...
+    from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
+    R = align_reference_frame(- xbeam, dbeam, xaxis, daxis)
+    A = matrix.sqr(
+      handle.unit_cell_a_axis +
+      handle.unit_cell_b_axis +
+      handle.unit_cell_c_axis).inverse()
+    xA = R * A
+
+    # assert that this should just be a simple integer rotation matrix
+    # i.e. reassignment of a, b, c so...
+
+    return matrix.sqr(map(int, map(round, (dA.inverse() * xA).elems)))
 
 
 class XDSFileImporter(object):
@@ -204,12 +244,16 @@ class XDSFileImporter(object):
 
 def select_importer(args):
   from os.path import split
+  from dials.model.experiment.experiment_list import ExperimentListFactory
   import libtbx.load_env
   path, filename = split(args[0])
   if filename == 'SPOT.XDS':
     return SpotXDSImporter(args[0])
   elif filename == 'INTEGRATE.HKL':
-    return IntegrateHKLImporter(args[0])
+    assert(len(args) == 2)
+    experiments = ExperimentListFactory.from_json_file(args[1])
+    assert(len(experiments) == 1)
+    return IntegrateHKLImporter(args[0], experiments[0])
   else:
     raise RuntimeError('expected (SPOT.XDS|INTEGRATE.HKL), got %s' % filename)
 
@@ -269,7 +313,7 @@ if __name__ == '__main__':
   (options, args) = parser.parse_args()
 
   # Check number of arguments
-  if len(args) != 1:
+  if len(args) == 0:
     parser.print_help()
     exit(0)
 
