@@ -54,6 +54,7 @@ class Script(ScriptRunner):
     from dials.util.command_line import Importer
     from dials.util.command_line import Command
     from time import time
+    import sys
 
     # Save the options
     self.options = options
@@ -87,6 +88,10 @@ class Script(ScriptRunner):
     print ' 5) The data will be exported as MTZ (dials.export_mtz)'
     print ''
     print 'Please be patient, this may take a few minutes'
+    print ''
+    print '*' * 80
+    print ''
+    print 'Command-line: %s' % ' '.join(sys.argv[1:])
     print ''
     print '*' * 80
     print ''
