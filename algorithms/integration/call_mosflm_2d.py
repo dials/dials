@@ -26,11 +26,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
   print "arr_proff =", arr_proff
   print "arr_rlist =", arr_rlist
 
-
   col_xyzcal = ref_table_in['xyzcal.px']
-
-  #ncnt = 0
-  #lst_pos = []
 
   #for r in rlist:
   for t_row in range(len(ref_table_in)):
@@ -48,9 +44,6 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       print "___________________________end table row #", t_row
       #'''
       arr_rlist[row][col].append([t_row])
-      #ncnt += 1
-      #pos = [row, col, len(arr_rlist[row][col]) - 1]
-      #lst_pos.append(pos)
 
   for col in range(ncol):
     for row in range(nrow):

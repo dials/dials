@@ -13,7 +13,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     #if ref.is_valid():
       if col_intensity[t_row] > max_i_01:
         max_i_01 = col_intensity[t_row]
-  print "max_i_01 =", max_i_01
 
   max_i = 0.0
   for t_row in reflection_pointers:
@@ -21,9 +20,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
       if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.95:
         max_i = col_intensity[t_row]
   thold = 0.5 * max_i
-  print "max_i =", max_i
-  print "thold =", thold
-
 
   select_pointers = []
   for t_row in reflection_pointers:
@@ -31,7 +27,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
       if col_intensity[t_row] > thold and col_intensity[t_row] < max_i:
         select_pointers.append(t_row)
   counter = 0
-  print "len(select_pointers) =", len(select_pointers)
+
   big_nrow = 0
   big_ncol = 0
   col_shoebox = ref_table_in['shoebox']
@@ -43,7 +39,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     if local_ncol > big_ncol:
       big_ncol = local_ncol
     counter += 1
-  print big_nrow, big_ncol
+
   big_nrow = big_nrow * 2 + 1
   big_ncol = big_ncol * 2 + 1
 
@@ -53,7 +49,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
   sumation = flex.double(flex.grid(big_nrow, big_ncol), 0)
   descr = flex.double(flex.grid(1, 3), 0)
   for t_row in select_pointers:
-
 
     shoebox = col_shoebox[t_row].data
     background = col_shoebox[t_row].background
@@ -108,9 +103,9 @@ def fit_profile_2d(reflection_pointers, ref_table
   col_bbox = ref_table['bbox']
   #for ref in reflections:
   for t_row in range(len(ref_table)):
+
     #in the future consider searcing for is_valid logical
     #if r.is_valid():
-
     if col_intensity[t_row] < thold:
 
       #x, y = ref.image_coord_px       # consider replasing with centroid pos
@@ -118,9 +113,6 @@ def fit_profile_2d(reflection_pointers, ref_table
 
       if (x > x_half_cuad_size        and y > y_half_cuad_size and
           x < xmax - x_half_cuad_size and y < ymax - y_half_cuad_size):
-
-
-
 
         x_centr_of_cuad = col * x_cuad_size + x_half_cuad_size
         y_centr_of_cuad = row * y_cuad_size + y_half_cuad_size
@@ -150,8 +142,6 @@ def fit_profile_2d(reflection_pointers, ref_table
         tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
         bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
         bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
-
-
 
         tp_lf_x = tp_lf_pos[1] * x_cuad_size + x_half_cuad_size
         tp_lf_y = tp_lf_pos[0] * y_cuad_size + y_half_cuad_size
