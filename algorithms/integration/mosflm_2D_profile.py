@@ -3,63 +3,97 @@ from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
               fitting_2d_partials, fitting_2d_multile_var_build_mat, sigma_2d
 
-from scitbx.array_family import flex
+from dials.array_family import flex
 
-def make_2d_profile(reflections):
-  #print "len(reflections) =", len(reflections)
+def make_2d_profile(reflection_pointers, ref_table_in):
+  '''
+  t_shoebox = flex.shoebox(num_ref)
+  t_intensity = flex.double(num_ref)
+  t_xyzobs = flex.vec3_double(num_ref)
+  '''
+  #t_xyzcal = flex.vec3_double(num_ref)
 
+  t_intensity = ref_table_in['intensity.raw.value']
   max_i_01 = 0.0
-  for ref in reflections:
-    if ref.is_valid():
-      if ref.intensity > max_i_01:
-        max_i_01 = ref.intensity
-  #print "max_i_01 =", max_i_01
-  max_i = 0.0
-  for ref in reflections:
-    if ref.is_valid():
-      if ref.intensity > max_i and ref.intensity < max_i_01 * 0.95:
-        max_i = ref.intensity
-  thold = 0.5 * max_i
+  for ref in reflection_pointers:
+    #if ref.is_valid():
+      if t_intensity[ref] > max_i_01:
+        max_i_01 = t_intensity[ref]
+  print "max_i_01 =", max_i_01
 
-  select_rlist = ReflectionList()
-  for ref in reflections:
-    if ref.is_valid() and ref.intensity > thold and ref.intensity < max_i:
-      select_rlist.append(ref)
+  max_i = 0.0
+  for ref in reflection_pointers:
+    #if ref.is_valid():
+      if t_intensity[ref] > max_i and t_intensity[ref] < max_i_01 * 0.95:
+        max_i = t_intensity[ref]
+  thold = 0.5 * max_i
+  print "max_i =", max_i
+  print "thold =", thold
+
+
+  select_pointers = []
+  for ref in reflection_pointers:
+    #if ref.is_valid():
+      if t_intensity[ref] > thold and t_intensity[ref] < max_i:
+        select_pointers.append(ref)
   counter = 0
-  #print "len(select_rlist) =", len(select_rlist)
+  print "len(select_pointers) =", len(select_pointers)
   big_nrow = 0
   big_ncol = 0
-  for ref in select_rlist:
-    local_nrow = ref.shoebox.all()[1]
-    local_ncol = ref.shoebox.all()[2]
+  t_shoebox = ref_table_in['shoebox']
+  for ref in select_pointers:
+    local_nrow = t_shoebox[ref].data.all()[1]
+    local_ncol = t_shoebox[ref].data.all()[2]
     if local_nrow > big_nrow:
       big_nrow = local_nrow
     if local_ncol > big_ncol:
       big_ncol = local_ncol
     counter += 1
-  #print big_nrow, big_ncol
+  print big_nrow, big_ncol
   big_nrow = big_nrow * 2 + 1
   big_ncol = big_ncol * 2 + 1
+
+  t_xyzobs = ref_table_in['xyzobs.px.value']
+  t_bbox = ref_table_in['bbox']
+
   sumation = flex.double(flex.grid(big_nrow, big_ncol), 0)
   descr = flex.double(flex.grid(1, 3), 0)
-  for ref in select_rlist:
-    shoebox = ref.shoebox
-    #mask = ref.shoebox_mask                                 # may be needed soon
-    background = ref.shoebox_background
-    data2d = shoebox[0:1, :, :]
-    #mask2d = mask[0:1, :, :]                                # may be needed soon
-    background2d = background[0:1, :, :]
-    data2d.reshape(flex.grid(shoebox.all()[1:]))
-    #mask2d.reshape(flex.grid(shoebox.all()[1:]))            # may be needed soon
-    background2d.reshape(flex.grid(shoebox.all()[1:]))
+  for ref in select_pointers:
 
-    descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
-    descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
-    descr[0, 2] = 1.0 / (ref.intensity * counter)
+
+    shoebox = t_shoebox[ref].data
+    background = t_shoebox[ref].background
+
+    data2d = shoebox[0:1, :, :]
+    background2d = background[0:1, :, :]
+
+    data2d.reshape(flex.grid(shoebox.all()[1:]))
+    background2d.reshape(flex.grid(background.all()[1:]))
+
+    #mask =t_shoebox[ref].mask                      # may be needed soon
+    #mask2d = mask[0:1, :, :]                       # may be needed soon
+    #mask2d.reshape(flex.grid(mask.all()[1:]))      # may be needed soon
+
+    cntr_pos = t_xyzobs[ref]
+    bnd_box = t_bbox[ref]
+
+    descr[0, 0] = cntr_pos[0] - bnd_box[0]
+    descr[0, 1] = cntr_pos[1] - bnd_box[2]
+    descr[0, 2] = 1.0 / (t_intensity[ref] * counter)
     peak2d = subtrac_bkg_2d(data2d, background2d)
     sumation = add_2d(descr, peak2d, sumation)
 
+
+
+  #if_you_want_to_see_how_the_profiles_look = '''
+  from matplotlib import pyplot as plt
+  data2d_np = sumation.as_numpy_array()
+  plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
+  plt.show()
+  #'''
+
   return sumation, thold
+
 
 def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
   import math
@@ -73,12 +107,7 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
   y_cuad_size = float(ymax) / len_tabl
   y_half_cuad_size = (y_cuad_size) / 2.0
 
-  if_you_want_to_see_how_the_profiles_look = '''
-  from matplotlib import pyplot as plt
-  data2d = local_average.as_numpy_array()
-  plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
-  plt.show()
-  #'''
+
 
   for ref in reflections:
     if ref.is_valid() and ref.intensity < thold:

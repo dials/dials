@@ -18,6 +18,10 @@ pi = 3.14159265358
 
 n_x = 80
 n_y = 86
+
+#n_x = 10
+#n_y = 16
+
 num_ref = n_y * n_x
 ref_table = flex.reflection_table()
 
@@ -84,11 +88,12 @@ ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)
 data2d_tmp = ref2d.as_numpy_array()
 data2d[:, :] += numpy.float64(data2d_tmp)
 
+tmp = '''
 from matplotlib import pyplot as plt
 print "Plotting data2d"
 plt.imshow(data2d, interpolation = "nearest")
 plt.show()
-
+#'''
 
 from dials.algorithms.background.inclined_background_subtractor \
   import layering_and_background_plane
@@ -102,7 +107,7 @@ print "_____________________________________________________ here"
 t_intensity = ref_table['intensity.raw.value']
 old_i_table = t_intensity[:]
 
-#tmp='''
+tmp='''
 print "adding noise ...."
 t_row = 0
 for count in range(num_ref):
@@ -122,9 +127,14 @@ print "adding noise .... done"
 layering_and_background_plane(ref_table)
 flex_2d_layering_n_integrating(ref_table)
 
+print "len(ref_table) =",len(ref_table)
 
-#from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
+
+from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 #rlist = mosflm_caller(rlist, xmax, ymax, 3)
+pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 3)
+
+
 
 paint_compare = []
 for i in range(len(t_intensity)):
