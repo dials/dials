@@ -91,7 +91,7 @@ class Script(ScriptRunner):
     print ''
     print '*' * 80
     print ''
-    print 'Command-line: %s' % ' '.join(sys.argv[1:])
+    print 'Command-line: %s' % (' '.join(sys.argv[1:]))[:65]
     print ''
     print '*' * 80
     print ''
