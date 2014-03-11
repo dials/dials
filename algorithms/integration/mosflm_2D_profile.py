@@ -6,44 +6,38 @@ from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
 from dials.array_family import flex
 
 def make_2d_profile(reflection_pointers, ref_table_in):
-  '''
-  t_shoebox = flex.shoebox(num_ref)
-  t_intensity = flex.double(num_ref)
-  t_xyzobs = flex.vec3_double(num_ref)
-  '''
-  #t_xyzcal = flex.vec3_double(num_ref)
 
-  t_intensity = ref_table_in['intensity.raw.value']
+  col_intensity = ref_table_in['intensity.raw.value']
   max_i_01 = 0.0
-  for ref in reflection_pointers:
+  for t_row in reflection_pointers:
     #if ref.is_valid():
-      if t_intensity[ref] > max_i_01:
-        max_i_01 = t_intensity[ref]
+      if col_intensity[t_row] > max_i_01:
+        max_i_01 = col_intensity[t_row]
   print "max_i_01 =", max_i_01
 
   max_i = 0.0
-  for ref in reflection_pointers:
+  for t_row in reflection_pointers:
     #if ref.is_valid():
-      if t_intensity[ref] > max_i and t_intensity[ref] < max_i_01 * 0.95:
-        max_i = t_intensity[ref]
+      if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.95:
+        max_i = col_intensity[t_row]
   thold = 0.5 * max_i
   print "max_i =", max_i
   print "thold =", thold
 
 
   select_pointers = []
-  for ref in reflection_pointers:
+  for t_row in reflection_pointers:
     #if ref.is_valid():
-      if t_intensity[ref] > thold and t_intensity[ref] < max_i:
-        select_pointers.append(ref)
+      if col_intensity[t_row] > thold and col_intensity[t_row] < max_i:
+        select_pointers.append(t_row)
   counter = 0
   print "len(select_pointers) =", len(select_pointers)
   big_nrow = 0
   big_ncol = 0
-  t_shoebox = ref_table_in['shoebox']
-  for ref in select_pointers:
-    local_nrow = t_shoebox[ref].data.all()[1]
-    local_ncol = t_shoebox[ref].data.all()[2]
+  col_shoebox = ref_table_in['shoebox']
+  for t_row in select_pointers:
+    local_nrow = col_shoebox[t_row].data.all()[1]
+    local_ncol = col_shoebox[t_row].data.all()[2]
     if local_nrow > big_nrow:
       big_nrow = local_nrow
     if local_ncol > big_ncol:
@@ -53,16 +47,16 @@ def make_2d_profile(reflection_pointers, ref_table_in):
   big_nrow = big_nrow * 2 + 1
   big_ncol = big_ncol * 2 + 1
 
-  t_xyzobs = ref_table_in['xyzobs.px.value']
-  t_bbox = ref_table_in['bbox']
+  col_xyzobs = ref_table_in['xyzobs.px.value']
+  col_bbox = ref_table_in['bbox']
 
   sumation = flex.double(flex.grid(big_nrow, big_ncol), 0)
   descr = flex.double(flex.grid(1, 3), 0)
-  for ref in select_pointers:
+  for t_row in select_pointers:
 
 
-    shoebox = t_shoebox[ref].data
-    background = t_shoebox[ref].background
+    shoebox = col_shoebox[t_row].data
+    background = col_shoebox[t_row].background
 
     data2d = shoebox[0:1, :, :]
     background2d = background[0:1, :, :]
@@ -70,20 +64,18 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     data2d.reshape(flex.grid(shoebox.all()[1:]))
     background2d.reshape(flex.grid(background.all()[1:]))
 
-    #mask =t_shoebox[ref].mask                      # may be needed soon
+    #mask =col_shoebox[t_row].mask                  # may be needed soon
     #mask2d = mask[0:1, :, :]                       # may be needed soon
     #mask2d.reshape(flex.grid(mask.all()[1:]))      # may be needed soon
 
-    cntr_pos = t_xyzobs[ref]
-    bnd_box = t_bbox[ref]
+    cntr_pos = col_xyzobs[t_row]
+    bnd_box = col_bbox[t_row]
 
     descr[0, 0] = cntr_pos[0] - bnd_box[0]
     descr[0, 1] = cntr_pos[1] - bnd_box[2]
-    descr[0, 2] = 1.0 / (t_intensity[ref] * counter)
+    descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
     peak2d = subtrac_bkg_2d(data2d, background2d)
     sumation = add_2d(descr, peak2d, sumation)
-
-
 
   #if_you_want_to_see_how_the_profiles_look = '''
   from matplotlib import pyplot as plt

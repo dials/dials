@@ -27,10 +27,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
   print "arr_rlist =", arr_rlist
 
 
-  t_xyzcal = ref_table_in['xyzcal.px']
-  #t_xyzcal[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
-
-
+  col_xyzcal = ref_table_in['xyzcal.px']
 
   #ncnt = 0
   #lst_pos = []
@@ -41,7 +38,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
     #if r.is_valid():
 
       # consider replasing xyzcal with centroid pos
-      x, y =t_xyzcal[t_row][0:2]# r.image_coord_px
+      x, y = col_xyzcal[t_row][0:2]# r.image_coord_px
 
       col = int(float(x) / float(xmax) * n_div)
       row = int(float(y) / float(ymax) * n_div)
@@ -61,40 +58,6 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       #profile, tr_hold = make_2d_profile(arr_rlist[row][col])
       make_2d_profile(arr_rlist[row][col], ref_table_in)
       #arr_proff[row][col] = [profile, tr_hold]
-
-  to_be_fixed_now = '''
-  print "building table with ", n_div,"*",n_div,"profiles ...."
-  ncol = n_div
-  nrow = n_div
-  arr_rlist = []
-  arr_proff = []
-  for col in range(ncol):
-    b = []
-    tmp_empty = []
-    for row in range(nrow):
-      b.append(ReflectionList())
-      tmp_empty.append([])
-    #arr_rlist.append(b)
-    arr_proff.append(tmp_empty)
-  ncnt = 0
-  lst_pos = []
-  for r in rlist:
-    if r.is_valid():
-      x, y = r.image_coord_px              # consider replasing with centroid pos
-      col = int(float(x) / float(xmax) * n_div)
-      row = int(float(y) / float(ymax) * n_div)
-      #arr_rlist[row][col].append(r)
-      ncnt += 1
-      #pos = [row, col, len(arr_rlist[row][col]) - 1]
-      lst_pos.append(pos)
-
-  for col in range(ncol):
-    for row in range(nrow):
-      #profile, tr_hold = make_2d_profile(arr_rlist[row][col])
-      profile, tr_hold = make_2d_profile(ref_table_in)
-      arr_proff[row][col] = [profile, tr_hold]
-  print "building profiles .... done"
-  #'''
 
 
 
