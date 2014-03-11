@@ -86,8 +86,9 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
   return sumation, thold
 
+def fit_profile_2d(reflection_pointers, ref_table
+                   , arr_proff, row, col, xmax, ymax):
 
-def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
   import math
   local_average = arr_proff[row][col][0]
   thold = arr_proff[row][col][1]
@@ -99,16 +100,27 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
   y_cuad_size = float(ymax) / len_tabl
   y_half_cuad_size = (y_cuad_size) / 2.0
 
+  col_xyzcal = ref_table['xyzcal.px']
+  col_intensity = ref_table['intensity.raw.value']
+  col_variance = ref_table['intensity.raw.variance']
+  col_shoebox = ref_table['shoebox']
+  col_xyzobs = ref_table['xyzobs.px.value']
+  col_bbox = ref_table['bbox']
+  #for ref in reflections:
+  for t_row in range(len(ref_table)):
+    #in the future consider searcing for is_valid logical
+    #if r.is_valid():
 
+    if col_intensity[t_row] < thold:
 
-  for ref in reflections:
-    if ref.is_valid() and ref.intensity < thold:
-
-
-      x, y = ref.image_coord_px            # consider replasing with centroid pos
+      #x, y = ref.image_coord_px       # consider replasing with centroid pos
+      x, y = col_xyzcal[t_row][0:2]    # r.image_coord_px
 
       if (x > x_half_cuad_size        and y > y_half_cuad_size and
           x < xmax - x_half_cuad_size and y < ymax - y_half_cuad_size):
+
+
+
 
         x_centr_of_cuad = col * x_cuad_size + x_half_cuad_size
         y_centr_of_cuad = row * y_cuad_size + y_half_cuad_size
@@ -226,33 +238,50 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
         #print "in else"
         average = local_average
 
+      shoebox = col_shoebox[t_row].data
+      #shoebox = ref.shoebox
 
+      background = col_shoebox[t_row].background
+      #background = ref.shoebox_background
 
-      shoebox = ref.shoebox
-      mask = ref.shoebox_mask                               # may be needed soon
-      background = ref.shoebox_background
-      tmp_i = ref.intensity
-      ref.intensity = 0.0
-      ref.intensity_variance = 0.0
+      mask = col_shoebox[t_row].mask
+      #mask = ref.shoebox_mask
+
+      tmp_i = col_intensity[t_row]
+      #tmp_i = ref.intensity
+
+      col_intensity[t_row] = 0.0
+      #ref.intensity = 0.0
+
+      col_variance[t_row] = 0.0
+      #ref.intensity_variance = 0.0
 
       for i in range(shoebox.all()[0]):
         data2d = shoebox[i:i + 1, :, :]
-        mask2d = mask[i:i + 1, :, :]                        # may be needed soon
+        mask2d = mask[i:i + 1, :, :]
         background2d = background[i:i + 1, :, :]
         try:
           data2d.reshape(flex.grid(shoebox.all()[1:]))
-          mask2d.reshape(flex.grid(shoebox.all()[1:]))      # may be needed soon
+          mask2d.reshape(flex.grid(shoebox.all()[1:]))
           background2d.reshape(flex.grid(shoebox.all()[1:]))
 
         except:
           print "error reshaping flex-array"
-          print "ref.bounding_box", ref.bounding_box
+          #print "ref.bounding_box", ref.bounding_box
           break
 
-        descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
-        descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
+        cntr_pos = col_xyzobs[t_row]
+        bnd_box = col_bbox[t_row]
+
+        descr[0, 0] = cntr_pos[0] - bnd_box[0]
+        #descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
+
+        descr[0, 1] = cntr_pos[1] - bnd_box[2]
+        #descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
+
         descr[0, 2] = 1.0 #/ (ref.intensity * counter)
         #fully_record = 'yes'
+        tmp_comment = '''
         if(ref.status == 0):
         #if(fully_record == 'yes'):
           tmp_scale = tmp_i
@@ -277,17 +306,19 @@ def fit_profile_2d(reflections, arr_proff, row, col, xmax, ymax):
           ref.intensity += k_abc_vec[0]
           ref.intensity_variance += k_abc_vec[1]
         else:
-          I_R = fitting_2d_partials(descr, data2d, background2d, average, tmp_i)
-          ref.intensity += I_R[0]
-          ref.intensity_variance += I_R[1]
+        #'''
 
+        I_R = fitting_2d_partials(descr, data2d, background2d, average, tmp_i)
+        col_intensity[t_row] += I_R[0]
+        #ref.intensity += I_R[0]
+        col_variance[t_row] += I_R[1]
+        #ref.intensity_variance += I_R[1]
 
+        var = sigma_2d(col_intensity[t_row], mask2d, background2d)
+        col_variance[t_row] += var
+        #ref.intensity_variance += var
 
-        var = sigma_2d(ref.intensity, mask2d, background2d)
-        #reslt = sigma_2d(ref.intensity, mask2d, background2d)
-        #ref.intensity += reslt[0]
-        ref.intensity_variance += var
+  ref_table['intensity.raw.value'] = col_intensity
+  ref_table['intensity.raw.variance'] = col_variance
 
-
-
-  return reflections
+  return ref_table

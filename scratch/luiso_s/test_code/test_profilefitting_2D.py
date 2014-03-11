@@ -83,7 +83,6 @@ ref_table['bbox'] = t_bbox
 ref_table['xyzobs.px.value'] = t_xyzobs
 ref_table['xyzcal.px'] = t_xyzcal
 
-
 ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)
 data2d_tmp = ref2d.as_numpy_array()
 data2d[:, :] += numpy.float64(data2d_tmp)
@@ -101,8 +100,6 @@ layering_and_background_plane(ref_table)
 from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(ref_table)
 
-
-print "_____________________________________________________ here"
 
 t_intensity = ref_table['intensity.raw.value']
 old_i_table = t_intensity[:]
@@ -129,16 +126,12 @@ flex_2d_layering_n_integrating(ref_table)
 
 print "len(ref_table) =",len(ref_table)
 
-
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-#rlist = mosflm_caller(rlist, xmax, ymax, 3)
 pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 3)
-
-
 
 paint_compare = []
 for i in range(len(t_intensity)):
-  paint_compare.append([ t_intensity[i], old_i_table[i]])
+  paint_compare.append([ old_i_table[i], t_intensity[i]])
 paint_compare_sort = sorted(paint_compare)
 
 data1d = numpy.zeros(num_ref, dtype = numpy.float64)

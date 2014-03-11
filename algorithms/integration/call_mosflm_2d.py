@@ -51,24 +51,22 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       #ncnt += 1
       #pos = [row, col, len(arr_rlist[row][col]) - 1]
       #lst_pos.append(pos)
-  print "here again"
 
   for col in range(ncol):
     for row in range(nrow):
       #profile, tr_hold = make_2d_profile(arr_rlist[row][col])
-      make_2d_profile(arr_rlist[row][col], ref_table_in)
-      #arr_proff[row][col] = [profile, tr_hold]
+      profile, tr_hold = make_2d_profile(arr_rlist[row][col], ref_table_in)
+      arr_proff[row][col] = [profile, tr_hold]
 
-
-
-
-  to_be_fixed_later = '''
   print "performing profile fitting  ...."
   for col in range(ncol):
     for row in range(nrow):
-      arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col],
-                                           arr_proff, row, col, xmax, ymax)
+      ref_table_in = fit_profile_2d(arr_rlist[row][col], ref_table_in
+                                    , arr_proff, row, col,  xmax, ymax)
+      #arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], ref_table_in
+      #                      arr_proff, row, col,  xmax, ymax)
 
+  to_be_fixed_later = '''
   new_rlist = ReflectionList()
   for numpos in lst_pos:
     row = numpos[0]
