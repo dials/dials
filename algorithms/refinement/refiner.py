@@ -318,6 +318,8 @@ class RefinerFactory(object):
           beam_param.set_fixed([True, True])
         elif beam_options.fix == "in_spindle_plane":
           beam_param.set_fixed([True, False])
+        elif beam_options.fix == "out_spindle_plane":
+          beam_param.set_fixed([False, True])
         else: # can only get here if refinement.phil is broken
           raise RuntimeError("beam_options.fix value not recognised")
 

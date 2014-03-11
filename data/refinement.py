@@ -23,7 +23,7 @@ refinement
     beam
       .help = "beam parameters"
     {
-      fix = all *in_spindle_plane
+      fix = all *in_spindle_plane out_spindle_plane
         .help = "Whether to fix beam parameters. By default,"
                 "in_spindle_plane is selected, and one of the two"
                 "parameters is fixed. If a goniometer is present"
