@@ -24,6 +24,10 @@ from dials.algorithms.spot_prediction import RayPredictor
 
 from dials.model.data import Reflection, ReflectionList
 
+from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
+from dials.algorithms.spot_prediction import StillsReflectionPredictor
+
+
 class ScansRayPredictor(object):
   """
   Predict for a relp based on the current states of models of the
@@ -110,4 +114,52 @@ class StillsRayPredictor(object):
     rl[0] = ref1
     rl[1] = ref2
     return rl
+
+class ExperimentsPredictor(object):
+  """
+  Predict for relps based on the current states of models of the experimental
+  geometry. This version manages multiple experiments, selecting the correct
+  predictor in each case.
+  """
+
+  def __init__(self, experiments):
+    """Construct by linking to instances of experimental model classes"""
+
+    self._experiments = experiments
+    self.update()
+
+  def update(self):
+    """Build predictor objects for the current geometry of each Experiment"""
+
+    sc = ScanStaticReflectionPredictor
+    st = StillsReflectionPredictor
+    self._predictors = [sc(e) if e.goniometer else st(e) \
+                        for e in self._experiments]
+    self._UBs = [e.crystal.get_U() * e.crystal.get_B() for e in self._experiments]
+
+  def predict(self, reflections):
+    """
+    Predict for all reflections
+    """
+
+    for iexp, e in enumerate(self._experiments):
+
+      # select the reflections for this experiment only
+      sel = reflections['id'] == iexp
+      refs = reflections.select(sel)
+
+      # determine whether to try scan-varying prediction
+      if e.crystal.num_scan_points > 0:
+        # Assume per reflection UB has been set
+        UBs = refs['ub_matrix']
+        # predict and assign in place
+        self._predictors[iexp].for_reflection_table(refs, UBs)
+      else:
+        # predict and assign in place
+        self._predictors[iexp].for_reflection_table(refs, self._UBs[iexp])
+
+      # write predictions back to overall reflections
+      reflections.set_selected(sel, refs)
+
+    return reflections
 
