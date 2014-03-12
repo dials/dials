@@ -10,7 +10,7 @@
 #
 
 """
-A simple test of refinement using two crystals.
+A simple test of the new reflection manager.
 
 """
 
@@ -136,10 +136,10 @@ s0_param.set_fixed([True, False])
 # Apply known parameter shifts #
 ################################
 
-# shift detector by 1.0 mm each translation and 2 mrad each rotation
+# shift detector by 2.0 mm each translation and 5 mrad each rotation
 det_p_vals = det_param.get_param_vals()
 p_vals = [a + b for a, b in zip(det_p_vals,
-                                [1.0, 1.0, 1.0, 2., 2., 2.])]
+                                [2.0, 2.0, 2.0, 5., 5., 5.])]
 det_param.set_param_vals(p_vals)
 
 # shift beam by 2 mrad in free axis
@@ -253,12 +253,14 @@ obs_refs = obs_refs1.concatenate(obs_refs2)
 # Undo known parameter shifts #
 ###############################
 
+#print experiments[0].crystal
 s0_param.set_param_vals(s0_p_vals)
 det_param.set_param_vals(det_p_vals)
 xl1o_param.set_param_vals(xlo_p_vals[0])
 xl2o_param.set_param_vals(xlo_p_vals[1])
 xl1uc_param.set_param_vals(xluc_p_vals[0])
 xl2uc_param.set_param_vals(xluc_p_vals[1])
+#print experiments[0].crystal
 
 #print "Initial values of parameters are"
 #msg = "Parameters: " + "%.5f " * len(pred_param)
@@ -269,4 +271,27 @@ xl2uc_param.set_param_vals(xluc_p_vals[1])
 # Select reflections for refinement #
 #####################################
 
-refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True), experiments)
+reflections = obs_refs.to_table(centroid_is_mm=True)
+from copy import deepcopy
+old_reflections = deepcopy(reflections)
+refman = ReflectionManager(reflections, experiments)
+
+# make a new reflection predictor
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
+ref_predictor = ExperimentsPredictor(experiments)
+
+import pprint
+pp = pprint.PrettyPrinter()
+for i in range(2):
+  pp.pprint(old_reflections[i])
+
+#print dir(reflections.flags)
+#print (reflections.get_flags(reflections.flags.predicted).count(True))
+ref_predictor.predict(reflections)
+#print dir(reflections.flags)
+#print (reflections.get_flags(reflections.flags.predicted).count(True))
+
+
+for i in range(2):
+  pp.pprint(reflections[i])
+
