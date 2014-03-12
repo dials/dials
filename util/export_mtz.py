@@ -9,9 +9,12 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # write out a different U matrix for each batch... This should be easy. N.B.
   # should use U matrix from middle of batch (probably)
 
+  # FIXME allow for more than one experiment in here: this is fine just add
+  # multiple MTZ data sets (DIALS1...DIALSN) and multiple batch headers: one
+  # range of batches for each experiment
+  
   assert(len(experiment_list) == 1)
-  if 'id' in integrated_data:
-    assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
+  assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
   experiment = experiment_list[0]
 
