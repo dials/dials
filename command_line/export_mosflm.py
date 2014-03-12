@@ -102,12 +102,12 @@ def run(args):
     # defined by Busing & Levy apart from the extra factors of 1/w and w.
     B = matrix.sqr((
       astar/w, bstar/w * cos_gamma_star,  cstar/w * cos_beta_star,
-          0, bstar/w * sin_gamma_star,     -cstar/w * sin_alpha,
-          0,                      0,                    w/c))
+            0, bstar/w * sin_gamma_star,     -cstar/w * sin_alpha,
+            0,                        0,                      w/c))
     U_mosflm = A_mosflm * B.inverse()
 
     with open(os.path.join(sub_dir, "index.mat"), "wb") as f:
-      print >> f, format_mosflm_mat((1/w)*A_mosflm, U_mosflm, cryst.get_unit_cell())
+      print >> f, format_mosflm_mat(w*A_mosflm, U_mosflm, cryst.get_unit_cell())
 
     directory, template = os.path.split(imageset.get_template())
     symmetry = cryst_mosflm.get_space_group().type().number()
