@@ -127,7 +127,7 @@ flex_2d_layering_n_integrating(ref_table)
 print "len(ref_table) =",len(ref_table)
 
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 3)
+pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 6)
 
 paint_compare = []
 for i in range(len(t_intensity)):

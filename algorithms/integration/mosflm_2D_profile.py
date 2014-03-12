@@ -58,10 +58,10 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
     data2d.reshape(flex.grid(shoebox.all()[1:]))
     background2d.reshape(flex.grid(background.all()[1:]))
-
-    #mask =col_shoebox[t_row].mask                  # may be needed soon
-    #mask2d = mask[0:1, :, :]                       # may be needed soon
-    #mask2d.reshape(flex.grid(mask.all()[1:]))      # may be needed soon
+    # mask may be needed soon
+    #mask =col_shoebox[t_row].mask
+    #mask2d = mask[0:1, :, :]
+    #mask2d.reshape(flex.grid(mask.all()[1:]))
 
     cntr_pos = col_xyzobs[t_row]
     bnd_box = col_bbox[t_row]
@@ -270,43 +270,49 @@ def fit_profile_2d(reflection_pointers, ref_table
         #descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
 
         descr[0, 2] = 1.0 #/ (ref.intensity * counter)
-        #fully_record = 'yes'
+        ##fully_record = 'yes'
+
+        #if(ref.status == 0):
+        ##if(fully_record == 'yes'):
+        tmp_scale = tmp_i
+        a_mat_flx = flex.double(flex.grid(4, 4))
+        b_vec_flx = flex.double(flex.grid(4, 1))
+        ok_lg = fitting_2d_multile_var_build_mat(descr, data2d, background2d, \
+                                      average, tmp_scale, a_mat_flx, b_vec_flx)
+
+        #if ok_lg == 0:
+        a_mat = a_mat_flx.as_scitbx_matrix()
+        b_mat = b_vec_flx.as_scitbx_matrix()
+        try:
+          x_mat = a_mat.inverse() * b_mat
+          k_abc_vec = x_mat.as_flex_double_matrix()
+        except:
+          print "fail to do profile fitting  <<<<<<<<"
+          k_abc_vec=(0,0,0,0)
+        #else:
+        #  print "ok_lg != 0"
+        #  k_abc_vec=(0,0,0,0)
+
+        col_intensity[t_row] += k_abc_vec[0]
+        #ref.intensity += k_abc_vec[0]
+        col_variance[t_row] += k_abc_vec[1]
+        #ref.intensity_variance += k_abc_vec[1]
+        var = sigma_2d(col_intensity[t_row], mask2d, background2d)
+        col_variance[t_row] += var
+      else:
         tmp_comment = '''
-        if(ref.status == 0):
-        #if(fully_record == 'yes'):
-          tmp_scale = tmp_i
-          a_mat_flx = flex.double(flex.grid(4, 4))
-          b_vec_flx = flex.double(flex.grid(4, 1))
-          ok_lg = fitting_2d_multile_var_build_mat(descr, data2d, background2d, \
-                                        average, tmp_scale, a_mat_flx, b_vec_flx)
-
-          #if ok_lg == 0:
-          a_mat = a_mat_flx.as_scitbx_matrix()
-          b_mat = b_vec_flx.as_scitbx_matrix()
-          try:
-            x_mat = a_mat.inverse() * b_mat
-            k_abc_vec = x_mat.as_flex_double_matrix()
-          except:
-            print "fail to do profile fitting  <<<<<<<<"
-            k_abc_vec=(0,0,0,0)
-          #else:
-          #  print "ok_lg != 0"
-          #  k_abc_vec=(0,0,0,0)
-
-          ref.intensity += k_abc_vec[0]
-          ref.intensity_variance += k_abc_vec[1]
-        else:
-        #'''
 
         I_R = fitting_2d_partials(descr, data2d, background2d, average, tmp_i)
         col_intensity[t_row] += I_R[0]
         #ref.intensity += I_R[0]
+
         col_variance[t_row] += I_R[1]
         #ref.intensity_variance += I_R[1]
 
         var = sigma_2d(col_intensity[t_row], mask2d, background2d)
         col_variance[t_row] += var
         #ref.intensity_variance += var
+        #'''
 
   ref_table['intensity.raw.value'] = col_intensity
   ref_table['intensity.raw.variance'] = col_variance
