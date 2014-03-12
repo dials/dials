@@ -32,7 +32,8 @@ class indexer_fft1d(indexer_base):
 
     solutions = candidate_basis_vectors_fft1d(
       self.reflections, self.detector, self.beam,
-      self.goniometer, self.scan, hardcoded_phil)
+      self.goniometer, self.scan, hardcoded_phil,
+      max_cell=self.params.max_cell)
     self.candidate_basis_vectors = solutions[0]
     if self.params.debug:
       self.debug_show_candidate_basis_vectors()

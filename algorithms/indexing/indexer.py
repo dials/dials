@@ -82,7 +82,8 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   #NKS TO DO: implement rigorous scope instead of local scope.
 
 def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
-                                       goniometer, scan, params):
+                                  goniometer, scan, params,
+                                  max_cell=None):
 
   # Spot_positions: Centroid positions for spotfinder spots, in pixels
   # Return value: Corrected for parallax, converted to mm
@@ -103,7 +104,7 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
   # max_cell: max possible cell in Angstroms; set to None, determine from data
   # recommended_grid_sampling_rad: grid sampling in radians; guess for now
 
-  DPS = DPS_primitive_lattice(max_cell = None,
+  DPS = DPS_primitive_lattice(max_cell=max_cell,
                               recommended_grid_sampling_rad = None,
                               horizon_phil = params)
   from scitbx import matrix
