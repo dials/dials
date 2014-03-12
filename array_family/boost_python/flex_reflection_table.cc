@@ -109,6 +109,7 @@ namespace dials { namespace af { namespace boost_python {
       "  s1:                     the diffracted beam vector\n"
       "  xyzcal.mm:              the predicted location (mm, mm, rad)\n"
       "  xyzcal.px:              the predicted location (px, px, frame)\n"
+      "  ub_matrix:              predicted crystal setting\n"
       "\n"
       " Observed properties\n"
       " -------------------\n"
