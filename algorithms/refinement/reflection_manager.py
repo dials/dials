@@ -19,84 +19,6 @@ from dials.array_family import flex
 TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
 
-#class ObsPredMatch:
-#  """
-#  A bucket class containing data for a prediction that has been
-#  matched to an observation.
-#
-#  This contains all the raw material needed to calculate the target function
-#  value and gradients
-#  """
-#
-#  # initialise with an observation
-#  def __init__(self, iobs, crystal, hkl, entering, frame, panel,
-#                     x_obs, sigx_obs, weight_x_obs,
-#                     y_obs, sigy_obs, weight_y_obs,
-#                     phi_obs, sigphi_obs, weight_phi_obs):
-#
-#    self.iobs = iobs
-#    self.crystal_id = crystal
-#    self.miller_index = hkl
-#    self.entering = entering
-#    self.frame_obs = frame
-#    self.panel = panel
-#    self.x_obs = x_obs
-#    self.sigx_obs = sigx_obs
-#    self.weight_x_obs = weight_x_obs
-#
-#    self.y_obs = y_obs
-#    self.sigy_obs = sigy_obs
-#    self.weight_y_obs = weight_y_obs
-#
-#    self.phi_obs = phi_obs
-#    self.sigphi_obs = sigphi_obs
-#    self.weight_phi_obs = weight_phi_obs
-#
-#    self.x_calc = None
-#    self.y_calc = None
-#    self.phi_calc = None
-#    self.s_calc = None
-#
-#    # gradients will be a list, of length equal to the number of free
-#    # parameters, whose elements are the gradients in the space of
-#    # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
-#    self.gradients = None
-#
-#    self.y_resid = None
-#    self.y_resid2 = None
-#    self.x_resid = None
-#    self.x_resid2 = None
-#    self.phi_resid = None
-#    self.phi_resid2 = None
-#
-#    self.is_matched = False
-#
-#  # update with a prediction
-#  def update_prediction(self, x_calc, y_calc, phi_calc, s_calc, gradients):
-#
-#    self.x_calc = x_calc
-#    self.y_calc = y_calc
-#    self.phi_calc = phi_calc
-#    self.s_calc = s_calc
-#
-#    self.gradients = gradients
-#
-#    # calculate residuals
-#    self.x_resid = x_calc - self.x_obs
-#    self.x_resid2 = self.x_resid**2
-#    self.y_resid = y_calc - self.y_obs
-#    self.y_resid2 = self.y_resid**2
-#    self.phi_resid = phi_calc - self.phi_obs
-#    self.phi_resid2 = self.phi_resid**2
-#
-#    self.is_matched = True
-#
-#  def reset(self):
-#
-#    """Flag this observation to not be used"""
-#    self.is_matched = False
-
-
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted
   reflections for refinement.
@@ -495,6 +417,17 @@ class ReflectionManager(object):
     cut_phi = self._iqr_multiplier * iqr_phi
 
     for m in matches:
+    # bit mask examples from James:
+    #  m['flags'] |= flex.reflection_table.flags.predicted # Set
+    #  m['flags'] |= m.flags.predicted # Set (use instance
+    #  m['flags'] & flex.reflection_table.flags.predicted # Check
+    #  m['flags'] &= ~flex.reflection_table.flags.predicted #Unset
+    #
+    #  mask = flex.bool(n)
+    #  for i in rangen):
+    #    if whatever > 0:
+    #      mask[i] = True
+
       if m['x_resid'] > q3_x + cut_x: m['is_matched'] = False
       if m['x_resid'] < q1_x - cut_x: m['is_matched'] = False
       if m['y_resid'] > q3_y + cut_y: m['is_matched'] = False
