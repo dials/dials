@@ -106,7 +106,8 @@ def fit_profile_2d(reflection_pointers, ref_table
 
     #in the future consider searcing for is_valid logical
     #if r.is_valid():
-    if col_intensity[t_row] < thold:
+    use_thold = 'no'
+    if use_thold == 'no' or (col_intensity[t_row] < thold and use_thold == 'yes'):
 
       #x, y = ref.image_coord_px       # consider replasing with centroid pos
       x, y = col_xyzcal[t_row][0:2]    # r.image_coord_px

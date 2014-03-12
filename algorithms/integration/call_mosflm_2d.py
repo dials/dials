@@ -12,7 +12,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
   nrow = n_div
   arr_rlist = []
   arr_proff = []
-
+  print "Performing profile fitting  ...."
   for col in range(ncol):
     tmp_empty_ref_data = []
     tmp_empty_prof = []
@@ -21,10 +21,6 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       tmp_empty_prof.append([])
     arr_rlist.append(tmp_empty_ref_data)
     arr_proff.append(tmp_empty_prof)
-
-  print "empty 3D list done"
-  print "arr_proff =", arr_proff
-  print "arr_rlist =", arr_rlist
 
   col_xyzcal = ref_table_in['xyzcal.px']
 
@@ -44,6 +40,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       print "___________________________end table row #", t_row
       #'''
       arr_rlist[row][col].append([t_row])
+  print "Building profiles  ...."
 
   for col in range(ncol):
     for row in range(nrow):
@@ -51,22 +48,14 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col], ref_table_in)
       arr_proff[row][col] = [profile, tr_hold]
 
-  print "performing profile fitting  ...."
+  print "Building profiles          ....       Done"
   for col in range(ncol):
     for row in range(nrow):
       ref_table_in = fit_profile_2d(arr_rlist[row][col], ref_table_in
                                     , arr_proff, row, col,  xmax, ymax)
       #arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], ref_table_in
       #                      arr_proff, row, col,  xmax, ymax)
+  print "profile fitting            ....       Done"
 
-  to_be_fixed_later = '''
-  new_rlist = ReflectionList()
-  for numpos in lst_pos:
-    row = numpos[0]
-    col = numpos[1]
-    deep = numpos[2]
-    new_rlist.append(arr_rlist[row][col][deep])
-  print "profile fitting  .... done"
-  #'''
   new_ref_table = flex.reflection_table()
   return new_ref_table

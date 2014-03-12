@@ -51,7 +51,7 @@ for ypos in range(n_y):
         ref_ang = 0.20
       ref_ang = float( math.atan2(dx, dy) / pi)
       i_loc = random.randint(0,999)
-      thold = i_loc/20
+      thold = i_loc / 8
       ref2d = model_2d(nrow, ncol, 5, 1, ref_ang, i_loc, 0.5)
 
       data2d_tmp = ref2d.as_numpy_array()
@@ -70,7 +70,7 @@ for ypos in range(n_y):
       lc_mask = flex.int(flex.grid(1, ncol, nrow), 3)
       for x_loc in range(ncol):
         for y_loc in range(nrow):
-          if ref2d[y_loc,x_loc]>thold:
+          if ref2d[y_loc,x_loc] > thold:
             lc_mask[0, y_loc, x_loc] = 5
       t_shoebox[t_row].mask = lc_mask
       t_row += 1
@@ -123,8 +123,6 @@ print "adding noise .... done"
 
 layering_and_background_plane(ref_table)
 flex_2d_layering_n_integrating(ref_table)
-
-print "len(ref_table) =",len(ref_table)
 
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 6)
