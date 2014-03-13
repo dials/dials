@@ -27,6 +27,7 @@ class Test(object):
 
   def run(self):
     self.tst_vs_old()
+    self.tst_with_reflection_table()
     #self.tst_with_hkl()
     #self.tst_with_hkl_and_panel()
     #self.tst_with_hkl_and_panel_list()
@@ -54,6 +55,26 @@ class Test(object):
     r_old = self.predict_old()
     r_new = self.predict_new()
     assert(len(r_old) == len(r_new))
+    eps = 1e-7
+    for r1, r2 in zip(r_old.rows(), r_new.rows()):
+      assert(r1['miller_index'] == r2['miller_index'])
+      assert(r1['panel'] == r2['panel'])
+      assert(r1['entering'] == r2['entering'])
+      assert(all(abs(a-b) < eps for a, b in zip(r1['s1'], r2['s1'])))
+      assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.px'], r2['xyzcal.px'])))
+      assert(all(abs(a-b) < eps for a, b in zip(r1['xyzcal.mm'], r2['xyzcal.mm'])))
+    print 'OK'
+
+  def tst_with_reflection_table(self):
+    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
+    from dials.array_family import flex
+    r_old = self.predict_old()
+    r_new = flex.reflection_table()
+    r_new['miller_index'] = r_old['miller_index']
+    r_new['panel'] = r_old['panel']
+    r_new['entering'] = r_old['entering']
+    predict = ScanStaticReflectionPredictor(self.experiments[0])
+    predict.for_reflection_table(r_new, self.experiments[0].crystal.get_A())
     eps = 1e-7
     for r1, r2 in zip(r_old.rows(), r_new.rows()):
       assert(r1['miller_index'] == r2['miller_index'])

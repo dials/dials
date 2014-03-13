@@ -52,6 +52,29 @@ namespace dials { namespace af {
   private:
 
     /**
+     * Visitor to copy a column from mapped type
+     */
+    struct copy_column_visitor : public boost::static_visitor<void> {
+      flex_table *t_;
+      key_type k_;
+      copy_column_visitor(flex_table *t, key_type &k): t_(t), k_(k) {}
+      template <typename T>
+      void operator()(const af::shared<T> &other_column) const {
+        size_type n = t_->nrows();
+        boost::shared_ptr<map_type> table = t_->table_;
+        iterator it = table->lower_bound(k_);
+        if (it == table->end() || table->key_comp()(k_, it->first)) {
+          it = table->insert(it, map_value_type(k_,
+            mapped_type(af::shared<T>(n))));
+        }
+        af::shared<T> this_column = boost::get< af::shared<T> >(it->second);
+        for (std::size_t i = 0; i < this_column.size(); ++i) {
+          this_column[i] = other_column[i];
+        }
+      }
+    };
+
+    /**
      * operator[] proxy to aid in returning and casting elements.
      */
     struct proxy {
@@ -60,6 +83,34 @@ namespace dials { namespace af {
 
       proxy(flex_table *t, key_type k)
         : t_(t), k_(k) {}
+
+      /**
+       * Assign a column.
+       */
+      template <typename T>
+      void operator=(const af::shared<T> other_column) {
+        DIALS_ASSERT(other_column.size() == t_->nrows());
+        af::shared<T> this_column = (af::shared<T>)(*this);
+        for (std::size_t i = 0; i < this_column.size(); ++i) {
+          this_column[i] = other_column[i];
+        }
+      }
+
+      /**
+       * Assign a column
+       */
+      void operator=(const mapped_type &item) {
+        copy_column_visitor visitor(t_, k_);
+        item.apply_visitor(visitor);
+      }
+
+      /**
+       * Assign from another proxy
+       */
+      void operator=(const proxy &p) {
+        mapped_type item = p;
+        (*this) = item;
+      }
 
       /**
        * Cast the element to the desired column data type. If no element is
