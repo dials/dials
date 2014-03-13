@@ -62,7 +62,7 @@ def run(i, imp):
      import layering_and_background_plane
     layering_and_background_plane(ref_table)
   elif(imp == "flat"):
-    print "teting flat_background_subtractor"
+    print "testing flat_background_subtractor"
     from dials.algorithms.background.flat_background_subtractor \
      import layering_and_background_avg
     layering_and_background_avg(ref_table)
