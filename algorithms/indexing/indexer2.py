@@ -835,7 +835,7 @@ class indexer_base(object):
     #if mosaicity == 0.0:
       #crystal_model.set_mosaicity(0.139) # degrees
 
-    predicted_reflections = predictor()
+    predicted_reflections = predictor.for_ub(experiment.crystal.get_A())
     return predicted_reflections
 
   def debug_show_candidate_basis_vectors(self):
