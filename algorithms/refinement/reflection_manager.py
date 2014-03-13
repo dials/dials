@@ -429,12 +429,12 @@ class ReflectionManager(object):
 
     # get positions of outliers from the original matches
     ioutliers = imatches.select(sel)
-    mask = flex.bool(len(self._reflections))
-    mask.fill(False) # probably don't need this
-    mask.set_selected(ioutliers, True)
+    #mask = flex.bool(len(self._reflections))
+    #mask.fill(False) # probably don't need this
+    #mask.set_selected(ioutliers, True)
 
     # set those reflections to not be used
-    self._reflections.unset_flags(mask,
+    self._reflections.unset_flags(ioutliers,
       self._reflections.flags.used_in_refinement)
 
     nreject = sel.count(True)
@@ -558,12 +558,12 @@ class ReflectionManagerXY(ReflectionManager):
 
     # get positions of outliers from the original matches
     ioutliers = imatches.select(sel)
-    mask = flex.bool(len(self._reflections))
-    mask.fill(False) # probably don't need this
-    mask.set_selected(ioutliers, True)
+    #mask = flex.bool(len(self._reflections))
+    #mask.fill(False) # probably don't need this
+    #mask.set_selected(ioutliers, True)
 
     # set those reflections to not be used
-    self._reflections.unset_flags(mask,
+    self._reflections.unset_flags(ioutliers,
       self._reflections.flags.used_in_refinement)
 
     nreject = sel.count(True)
