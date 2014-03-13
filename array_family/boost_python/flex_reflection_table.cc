@@ -167,7 +167,8 @@ namespace dials { namespace af { namespace boost_python {
    * Set the flags.
    */
   template <typename T>
-  void set_flags(T self, const af::const_ref<bool> mask, std::size_t value) {
+  void set_flags_by_mask(T self, const af::const_ref<bool> mask,
+      std::size_t value) {
     DIALS_ASSERT(mask.size() == self.nrows());
     af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
     for (std::size_t i = 0; i < mask.size(); ++i) {
@@ -178,16 +179,43 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
+   * Set the flags.
+   */
+  template <typename T>
+  void set_flags_by_index(T self, const af::const_ref<std::size_t> index,
+      std::size_t value) {
+    af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      DIALS_ASSERT(index[i] < flags.size());
+      flags[index[i]] |= value;
+    }
+  }
+
+  /**
    * Unset the flags.
    */
   template <typename T>
-  void unset_flags(T self, const af::const_ref<bool> mask, std::size_t value) {
+  void unset_flags_by_mask(T self, const af::const_ref<bool> mask,
+      std::size_t value) {
     DIALS_ASSERT(mask.size() == self.nrows());
     af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
     for (std::size_t i = 0; i < mask.size(); ++i) {
       if (mask[i]) {
         flags[i] &= ~value;
       }
+    }
+  }
+
+  /**
+   * Unset the flags.
+   */
+  template <typename T>
+  void unset_flags_by_index(T self, const af::const_ref<std::size_t> index,
+      std::size_t value) {
+    af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
+    for (std::size_t i = 0; i < index.size(); ++i) {
+      DIALS_ASSERT(index[i] < flags.size());
+      flags[index[i]] &= ~value;
     }
   }
 
@@ -222,9 +250,13 @@ namespace dials { namespace af { namespace boost_python {
         .def("get_flags",
           &get_flags<flex_table_type>)
         .def("set_flags",
-          &set_flags<flex_table_type>)
+          &set_flags_by_mask<flex_table_type>)
+        .def("set_flags",
+          &set_flags_by_index<flex_table_type>)
         .def("unset_flags",
-          &unset_flags<flex_table_type>)
+          &unset_flags_by_mask<flex_table_type>)
+        .def("unset_flags",
+          &unset_flags_by_index<flex_table_type>)
         ;
 
       // Create the flags enum in the reflection table scope
