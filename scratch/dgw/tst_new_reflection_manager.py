@@ -271,6 +271,8 @@ xl2uc_param.set_param_vals(xluc_p_vals[1])
 # Select reflections for refinement #
 #####################################
 
+#from dials.util.command_line import interactive_console; interactive_console()
+
 reflections = obs_refs.to_table(centroid_is_mm=True)
 from copy import deepcopy
 old_reflections = deepcopy(reflections)

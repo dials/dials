@@ -88,8 +88,7 @@ class ReflectionManager(object):
     # set weights for all reflections
     self._calculate_weights()
 
-    # create a 'use' flag
-    self._reflections['is_matched'] = flex.bool(len(self._reflections))
+    # reset all use flags
     self.reset_accepted_reflections()
 
     # not known until the manager is finalised
@@ -125,7 +124,8 @@ class ReflectionManager(object):
     if self._verbosity > 1:
       print "Removing reflections not matched to predictions"
 
-    self._reflections = self._reflections.select[self._reflections['is_matched']]
+    self._reflections = self._reflections.select(self._reflections.get_flags(
+                      self._reflections.flags.used_in_refinement))
     self._check_too_few()
 
     if self._verbosity > 1:
@@ -317,9 +317,10 @@ class ReflectionManager(object):
     return sort_obs
 
   def get_matches(self):
-    """For every observation matched with a prediction return all data"""
+    """For every observation used in refinement return (a copy of) all data"""
 
-    return self._reflections.select[self._reflections['is_matched']]
+    return self._reflections.select(self._reflections.get_flags(
+      self._reflections.flags.used_in_refinement))
 
   def print_stats_on_matches(self):
     """Print some basic statistics on the matches"""
@@ -398,7 +399,9 @@ class ReflectionManager(object):
     if self._iqr_multiplier is None: return False
 
     from scitbx.math import five_number_summary
-    matches = self._reflections.select(self._reflections['is_matched'])
+    matches = self._reflections.select(self._reflections.get_flags(
+      self._reflections.flags.used_in_refinement))
+    imatches = matches.iselection()
 
     x_resid = matches['x_resid']
     y_resid = matches['y_resid']
@@ -416,27 +419,25 @@ class ReflectionManager(object):
     cut_y = self._iqr_multiplier * iqr_y
     cut_phi = self._iqr_multiplier * iqr_phi
 
-    for m in matches:
-    # bit mask examples from James:
-    #  m['flags'] |= flex.reflection_table.flags.predicted # Set
-    #  m['flags'] |= m.flags.predicted # Set (use instance
-    #  m['flags'] & flex.reflection_table.flags.predicted # Check
-    #  m['flags'] &= ~flex.reflection_table.flags.predicted #Unset
-    #
-    #  mask = flex.bool(n)
-    #  for i in rangen):
-    #    if whatever > 0:
-    #      mask[i] = True
+    # accumulate a selection of outliers
+    sel = matches.select(matches['x_resid'] > q3_x + cut_x)
+    sel.set_selected(matches.select(matches['x_resid'] < q1_x - cut_x))
+    sel.set_selected(matches.select(matches['y_resid'] > q3_y + cut_y))
+    sel.set_selected(matches.select(matches['y_resid'] < q1_y - cut_y))
+    sel.set_selected(matches.select(matches['phi_resid'] > q3_phi + cut_phi))
+    sel.set_selected(matches.select(matches['phi_resid'] < q1_phi - cut_phi))
 
-      if m['x_resid'] > q3_x + cut_x: m['is_matched'] = False
-      if m['x_resid'] < q1_x - cut_x: m['is_matched'] = False
-      if m['y_resid'] > q3_y + cut_y: m['is_matched'] = False
-      if m['y_resid'] < q1_y - cut_y: m['is_matched'] = False
-      if m['phi_resid'] > q3_phi + cut_phi: m['is_matched'] = False
-      if m['phi_resid'] < q1_phi - cut_phi: m['is_matched'] = False
+    # get positions of outliers from the original matches
+    ioutliers = imatches.select(sel)
+    mask = flex.bool(len(self._reflections))
+    mask.fill(False) # probably don't need this
+    mask.set_selected(ioutliers, True)
 
-    nreject = matches['is_matched'].count(False)
+    # set those reflections to not be used
+    self._reflections.unset_flags(mask,
+      self._reflections.flags.used_in_refinement)
 
+    nreject = sel.count(True)
     if nreject == 0: return False
 
     if self._verbosity > 1:
@@ -446,10 +447,11 @@ class ReflectionManager(object):
 
 
   def reset_accepted_reflections(self):
-    """Reset all observations to use=False in preparation for a new set of
+    """Reset use flags for all observations in preparation for a new set of
     predictions"""
 
-    self._reflections['is_matched'].fill(False)
+    mask = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+    self._reflections.unset_flags(mask, self._reflections.flags.used_in_refinement)
     return
 
   def get_obs(self):
@@ -532,7 +534,9 @@ class ReflectionManagerXY(ReflectionManager):
     if self._iqr_multiplier is None: return False
 
     from scitbx.math import five_number_summary
-    matches = self._reflections.select(self._reflections['is_matched'])
+    matches = self._reflections.select(self._reflections.get_flags(
+      self._reflections.flags.used_in_refinement))
+    imatches = matches.iselection()
 
     x_resid = matches['x_resid']
     y_resid = matches['y_resid']
@@ -546,14 +550,23 @@ class ReflectionManagerXY(ReflectionManager):
     cut_x = self._iqr_multiplier * iqr_x
     cut_y = self._iqr_multiplier * iqr_y
 
-    for m in matches:
-      if m['x_resid'] > q3_x + cut_x: m['is_matched'] = False
-      if m['x_resid'] < q1_x - cut_x: m['is_matched'] = False
-      if m['y_resid'] > q3_y + cut_y: m['is_matched'] = False
-      if m['y_resid'] < q1_y - cut_y: m['is_matched'] = False
+    # accumulate a selection of outliers
+    sel = matches.select(matches['x_resid'] > q3_x + cut_x)
+    sel.set_selected(matches.select(matches['x_resid'] < q1_x - cut_x))
+    sel.set_selected(matches.select(matches['y_resid'] > q3_y + cut_y))
+    sel.set_selected(matches.select(matches['y_resid'] < q1_y - cut_y))
 
-    nreject = matches['is_matched'].count(False)
+    # get positions of outliers from the original matches
+    ioutliers = imatches.select(sel)
+    mask = flex.bool(len(self._reflections))
+    mask.fill(False) # probably don't need this
+    mask.set_selected(ioutliers, True)
 
+    # set those reflections to not be used
+    self._reflections.unset_flags(mask,
+      self._reflections.flags.used_in_refinement)
+
+    nreject = sel.count(True)
     if nreject == 0: return False
 
     if self._verbosity > 1:
