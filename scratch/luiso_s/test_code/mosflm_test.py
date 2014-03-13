@@ -14,14 +14,12 @@ data2d = numpy.zeros((40, 60), dtype = numpy.float64)
 nrow = 10
 ncol = 10
 
-
 sumation = flex.double(flex.grid(21, 21))
 descr = flex.double(flex.grid(1, 3))
 descr[0, 0] = .5
 descr[0, 1] = 5
 descr[0, 2] = 5
 print "____________________________________________________________________"
-
 
 for xpos in range(3):
   for ypos in range(3):
@@ -36,7 +34,6 @@ for xpos in range(3):
 
     sumation = add_2d(descr, ref2d, sumation)
     write_2d(sumation)
-
 
 print "Plotting data2d"
 plt.imshow(data2d, interpolation = "nearest")
