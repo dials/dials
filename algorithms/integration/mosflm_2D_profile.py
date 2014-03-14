@@ -1,3 +1,13 @@
+#
+# mosflm_like.py
+#
+#  Copyright (C) 2013 Diamond Light Source
+#
+#  Author: Luis Fuentes-Montero (Luiso)
+#
+#  This code is distributed under the BSD license, a copy of which is
+#  included in the root directory of this package.
+
 from __future__ import division
 from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
@@ -271,7 +281,7 @@ def fit_profile_2d(reflection_pointers, ref_table
         #descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
 
         descr[0, 2] = 1.0 #/ (ref.intensity * counter)
-        fully_record = 'yes'
+        fully_record = 'no'
 
         if(fully_record == 'yes'):
 
