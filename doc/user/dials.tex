@@ -32,6 +32,181 @@ I have used all of these options and they appear to do sensible things. Importan
 
 \section{Results}
 
+At the start you will see:
+
+{\small
+\begin{verbatim}
+********************************************************************************
+
+                       mmmm   mmmmm    mm   m       mmmm            
+                       #   "m   #      ##   #      #"   "           
+                      m#mm  #   #     #  #  #      "#mmm            
+                       #    #   #     #mm#  #          "#           
+                       #mmm"  mm#mm  #    # #mmmmm "mmm#"           
+
+Launching dials.process
+
+The following tasks will be performed:
+ 1) Strong spots will be found (dials.find_spots)
+ 2) The strong spots will be indexed (dials.index)
+ 3) The model will be further refined (dials.refine)
+ 4) The reflections will be integrated (dials.integrate)
+ 5) The data will be exported as MTZ (dials.export_mtz)
+
+Please be patient, this may take a few minutes
+
+********************************************************************************
+
+Command-line: scan_varying=true /Users/graeme/data/i04-BAG-training/th_8_2_0001
+
+********************************************************************************
+\end{verbatim}
+}
+
+\noindent
+and depending on the size of your data set you may be looking at this
+for a while. The first thing to happen is the peak finding, which
+happens for every image in the set (this will probably be changed in
+the future.)
+
+{\small
+\begin{verbatim}
+********************************************************************************
+Finding Strong Spots
+********************************************************************************
+Configuring spot finder from input parameters
+--------------------------------------------------------------------------------
+Finding strong spots in imageset 0
+--------------------------------------------------------------------------------
+
+Finding spots in image 0 to 540...
+Extracted strong pixels from images......................................210.62s
+Merged 8 pixel lists with 922661 pixels....................................0.03s
+Extracted 219127 spots.....................................................1.02s
+Calculated 219127 spot centroids...........................................0.98s
+Calculated 219127 spot intensities.........................................0.06s
+Filtered 58009 spots by number of pixels...................................0.02s
+Filtered 57769 spots by peak-centroid distance.............................0.05s
+\end{verbatim}
+}
+
+\noindent
+The next step will be indexing, using by default 3D FFT indexing on
+peaks randomly drawn from the entire set:
+
+{\small
+\begin{verbatim}
+Found max_cell: 230.8 Angstrom
+FFT gridding: (256,256,256)
+Number of centroids used: 9104
+model 1 (9100 reflections):
+Crystal:
+    Unit cell: (57.933, 57.953, 150.052, 90.237, 89.675, 90.287)
+    Space group: P 1
+    U matrix:  {{-0.3452, -0.2600,  0.9018},
+                {-0.8909,  0.3929, -0.2278},
+                {-0.2951, -0.8820, -0.3673}}
+    B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                { 0.0001,  0.0173,  0.0000},
+                {-0.0001,  0.0001,  0.0067}}
+    A = UB:    {{-0.0061, -0.0044,  0.0060},
+                {-0.0153,  0.0068, -0.0015},
+                {-0.0051, -0.0152, -0.0024}}
+\end{verbatim}
+}
+
+\noindent
+after which some refinement will be performed - this will currently
+take a little while, particularly if scan varying refinement was
+specified. The main thing to look for is the RMSD values in X, Y and
+Phi (in mm, mm and radians respectively) are going down and ideally
+converging. Several cycles of refinement are performed with increasing
+resolution limits, thus trying to achieve an increasingly accurate
+result:
+
+{\small
+\begin{verbatim}
+################################################################################
+Starting refinement (macro-cycle 3)
+################################################################################
+
+
+Running refinement
+------------------
+0 1 2 3 4 5 6 7 8 9 10
+
+Refinement steps
+----------------
+Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
+0 4049 1049.9 0.047277 0.03654 0.00026327 
+1 4049 929.44 0.043631 0.03471 0.00027018 
+2 4049 922.78 0.043567 0.034537 0.00026713 
+3 4049 913.33 0.043471 0.034256 0.00026399 
+4 4049 901.65 0.043308 0.033923 0.00026122 
+5 4049 890.14 0.043155 0.033532 0.00025993 
+6 4049 882.6 0.043147 0.033145 0.0002593 
+7 4049 879.67 0.04323 0.032888 0.00025882 
+8 4049 879.32 0.043279 0.032808 0.00025867 
+9 4049 879.31 0.043288 0.032797 0.00025865 
+10 4049 879.31 0.043288 0.032796 0.00025865 
+RMSD no longer decreasing
+Final refined crystal models:
+model 1 (48411 reflections):
+Crystal:
+    Unit cell: (57.809, 57.772, 150.015, 89.981, 89.997, 90.010)
+    Space group: P 1
+    U matrix:  {{-0.3455, -0.2589,  0.9020},
+                {-0.8914,  0.3909, -0.2293},
+                {-0.2932, -0.8833, -0.3658}}
+    B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                { 0.0000,  0.0173,  0.0000},
+                {-0.0000, -0.0000,  0.0067}}
+    A = UB:    {{-0.0060, -0.0045,  0.0060},
+                {-0.0154,  0.0068, -0.0015},
+                {-0.0051, -0.0153, -0.0024}}
+\end{verbatim}
+}
+
+\noindent
+After all of the refinement is complete the integration is performed -
+curretly the output of integration is rather terse and includes little
+in the way of diagnostics or information. In the future this will be improved:
+
+{\small
+\begin{verbatim}
+********************************************************************************
+Integrating Reflections
+********************************************************************************
+Removed invalid coordinates, 4049 remaining................................0.09s
+Configurating integrator from input parameters
+Integrating reflections
+ Prediction type: Unknown prediction
+Predicted 373210 reflections...............................................2.06s
+Filtered 1847 reflections with zeta > 0.050000.............................0.00s
+Calculated E.S.D Beam Divergence...........................................0.06s
+Calculated E.S.D Reflecting Range..........................................0.07s
+Sigma B: 0.022247
+Sigma M: 0.080272
+Calculated 373210 bounding boxes...........................................0.21s
+Filtered 319044 reflections by detector mask...............................0.32s
+Filtered 318767 reflections by zeta >= 0.05................................0.02s
+Found 19 overlaps..........................................................0.08s
+Extracted 318767 profiles from frames 0 -> 540...........................107.21s
+
+Extracted 318767 profiles from block 0.....................................6.68s
+Masked foreground pixels for 318767 reflections............................1.03s
+Filtered 318767 reflections by detector mask...............................0.25s
+Filtered 318767 reflections by zeta >= 0.05................................0.03s
+Found nearest neighbours...................................................0.25s
+Filtered 1757 matches by distance..........................................0.00s
+Removed 0 duplicate match(es)..............................................0.00s
+Calculated 318767 background values........................................6.10s
+Calculated 318767 reflection centroids.....................................2.50s
+Integrated 318767 reflections..............................................0.59s
+Performed LP-correction on 318767 reflections.............................13.58s
+\end{verbatim}
+}
+
 At the end of processing you will see something like:
 
 {\small
@@ -86,6 +261,38 @@ aimless hklin sorted.mtz hklout scaled.mtz
 }
 
 \noindent
-to get merged data for downstream analysis. The output from this will include the merging statistics which will give some idea of the data quality. Often passing in a sensible resolution limit to aimless is also helpful...
+to get merged data for downstream analysis. The output from this will
+include the merging statistics which will give some idea of the data
+quality. Often passing in a sensible resolution limit to aimless is
+also helpful... this should give you something like:
+
+{\small
+\begin{verbatim}
+Summary data for        Project: DIALS Crystal: XTAL Dataset: FROMDIALS
+
+                                           Overall  InnerShell  OuterShell
+Low resolution limit                      149.83    149.83      1.53
+High resolution limit                       1.50      8.22      1.50
+
+Rmerge  (within I+/I-)                     0.074     0.027     0.246
+Rmerge  (all I+ and I-)                    0.082     0.029     0.287
+Rmeas (within I+/I-)                       0.090     0.034     0.301
+Rmeas (all I+ & I-)                        0.091     0.035     0.316
+Rpim (within I+/I-)                        0.051     0.020     0.171
+Rpim (all I+ & I-)                         0.038     0.017     0.132
+Rmerge in top intensity bin                0.028        -         - 
+Total number of observations              229869      1388     11411
+Total number unique                        41559       333      2036
+Mean((I)/sd(I))                             17.9      37.7       6.5
+Mn(I) half-set correlation CC(1/2)         0.998     0.982     0.840
+Completeness                               100.0      99.7      99.9
+Multiplicity                                 5.5       4.2       5.6
+
+Anomalous completeness                      99.5     100.0      99.9
+Anomalous multiplicity                       2.8       2.8       2.8
+DelAnom correlation between half-sets     -0.002     0.124    -0.001
+Mid-Slope of Anom Normal Probability       0.972       -         -  
+\end{verbatim}
+}
 
 \end{document}
