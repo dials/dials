@@ -78,7 +78,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
       _U = U
 
     o.set_cell(flex.float(_unit_cell.parameters()))
-    o.set_lbcell(flex.int((-1, -1, -1, 0, 0, 0)))
+    o.set_lbcell(flex.int((-1, -1, -1, -1, -1, -1)))
     o.set_umat(flex.float(_U.transpose().elems))
 
     # sadly we don't record the mosaic spread at the moment (by design)
