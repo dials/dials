@@ -177,11 +177,11 @@ for xluc, xl in ((xl1uc_param, crystal1),((xl2uc_param, crystal2))):
 # Generate some reflections #
 #############################
 
-print "Reflections will be generated with the following geometry:"
-print mybeam
-print mydetector
-print crystal1
-print crystal2
+#print "Reflections will be generated with the following geometry:"
+#print mybeam
+#print mydetector
+#print crystal1
+#print crystal2
 
 # All indices in a 2.0 Angstrom sphere for crystal1
 resolution = 2.0
@@ -201,8 +201,8 @@ ref_predictor = ScansRayPredictor(experiments, sweep_range)
 obs_refs1 = ref_predictor.predict(indices1, experiment_id=0)
 obs_refs2 = ref_predictor.predict(indices1, experiment_id=1)
 
-print "Total number of reflections excited for crystal1", len(obs_refs1)
-print "Total number of reflections excited for crystal2", len(obs_refs2)
+#print "Total number of reflections excited for crystal1", len(obs_refs1)
+#print "Total number of reflections excited for crystal2", len(obs_refs2)
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
@@ -243,8 +243,8 @@ for ref in obs_refs2:
   # ensure the crystal number is set to one
   ref.crystal = 1
 
-print "Total number of observations made for crystal1", len(obs_refs1)
-print "Total number of observations made for crystal2", len(obs_refs2)
+#print "Total number of observations made for crystal1", len(obs_refs1)
+#print "Total number of observations made for crystal2", len(obs_refs2)
 
 # concatenate reflection lists
 obs_refs = obs_refs1.concatenate(obs_refs2)
@@ -275,42 +275,15 @@ params.refinement.refinery.track_parameter_correlation=True
 
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(centroid_is_mm=True), experiments, verbosity=2)
-
-#####################################
-# Select reflections for refinement #
-#####################################
-
-#refman = ReflectionManager(obs_refs, mybeam, mygonio, sweep_range)
-
-##############################
-# Set up the target function #
-##############################
-
-# The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
-# 1/3 the image width in radians. For the simulated data, these are just made up
-
-#mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-#    ref_predictor, refman, pred_param, im_width)
-
-################################
-# Set up the refinement engine #
-################################
-
-#refiner = setup_minimiser.Extract(master_phil,
-#                                  mytarget,
-#                                  pred_param,
-#                                  cmdline_args = args).refiner
-
-#print "Prior to refinement the experimental model is:"
-#print_model_geometry(mybeam, mydetector, mycrystal)
+  obs_refs.to_table(centroid_is_mm=True), experiments, verbosity=0)
 
 history = refiner.run()
 plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
 #plt.show()
 
-print "Refinement has completed with the following geometry:"
-expts = refiner.get_experiments()
-for beam in expts.beams(): print beam
-for detector in expts.detectors(): print detector
-for crystal in  expts.crystals(): print crystal
+#print "Refinement has completed with the following geometry:"
+#expts = refiner.get_experiments()
+#for beam in expts.beams(): print beam
+#for detector in expts.detectors(): print detector
+#for crystal in  expts.crystals(): print crystal
+print "OK"
