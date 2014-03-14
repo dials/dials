@@ -14,6 +14,7 @@ from __future__ import division
 import cPickle as pickle
 import math
 
+from libtbx.utils import Sorry
 import iotbx.phil
 from scitbx import matrix
 
@@ -381,7 +382,9 @@ class indexer_base(object):
       n_lattices_previous_cycle = len(experiments)
 
       experiments.extend(self.find_lattices())
-      if len(experiments) == n_lattices_previous_cycle:
+      if len(experiments) == 0:
+        raise Sorry("No suitable lattice could be found.")
+      elif len(experiments) == n_lattices_previous_cycle:
         # no more lattices found
         break
 
@@ -473,6 +476,8 @@ class indexer_base(object):
           s = str(e)
           if ("below the configured limit" in s or
               "Insufficient matches for crystal" in s):
+            if len(experiments) == 1:
+              raise Sorry(e)
             had_refinement_error = True
             print "Refinement failed:"
             print s
