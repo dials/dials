@@ -681,6 +681,8 @@ class indexer_base(object):
             #assert a.cross(b).dot(c) > 0
           model = Crystal(a, b, c, space_group_symbol="P 1")
           uc = model.get_unit_cell()
+          cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
+          model = model.change_basis(cb_op_to_niggli)
           if self.target_symmetry_primitive is not None:
             symmetrized_model = self.apply_symmetry(
               model, self.target_symmetry_primitive)
