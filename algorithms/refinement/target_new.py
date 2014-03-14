@@ -73,92 +73,45 @@ class Target(object):
     # reset the 'use' flag for all observations
     self._reflection_manager.reset_accepted_reflections()
 
-    # loop over all reflections in the manager
-    for obs in self._reflection_manager.get_obs():
+    # duck-typing for VaryingCrystalPredictionParameterisation. Only this
+    # class has a compose(reflections) method. Sets ub_matrix (and caches
+    # derivatives).
+    try:
+      self._prediction_parameterisation.compose(
+        self._reflection_manager.get_obs())
+    except AttributeError:
+      pass
 
-      # get data from the observation
-      h = obs.miller_index
-      frame_id = obs.frame_obs
-      panel_id = obs.panel
+    # do prediction (updates reflection table in situ). Scan-varying prediction
+    # is done automatically if the crystal has scan-points (assuming reflections
+    # have ub_matrix set)
+    reflections = self._reflection_manager.get_obs()
+    self._reflection_predictor.predict(reflections)
 
-      # FIXME current reflection container does not track experiment id. Here
-      # we use the crystal_id as its proxy. User code must ensure that the order
-      # of experiments matches the index given by the crystal_id. Unless
-      # 'crystal_id' is abused, this effectively means that only multiple
-      # crystal experiments are supported, not a multiplicity of other models.
-      experiment_id = obs.crystal_id
+    x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
+    # do not wrap around multiples of 2*pi; keep the full rotation
+    # from zero to differentiate repeat observations.
+    resid = phi_calc - (flex.fmod(phi_obs, TWO_PI))
+    # ensure this is the smaller of two possibilities
+    resid = flex.fmod((resid + pi), TWO_PI) - pi
+    phi_calc = phi_calc + resid
+    # put back in the reflections
+    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
 
-      # duck-typing for VaryingCrystalPredictionParameterisation. Only this
-      # class has a compose(frame_id) method
-      try:
+    # calculate residuals and assign columns
+    reflections['x_resid'] = x_calc - x_obs
+    reflections['x_resid2'] = reflections['x_resid']**2
+    reflections['y_resid'] = y_calc - y_obs
+    reflections['y_resid2'] = reflections['y_resid']**2
+    reflections['phi_resid'] = phi_calc - phi_obs
+    reflections['phi_resid2'] = reflections['phi_resid']**2
 
-        # compose the prediction parameterisation at the
-        # requested image number
-        self._prediction_parameterisation.compose(frame_id, experiment_id)
-
-        # extract UB matrix
-        UB = self._prediction_parameterisation.get_UB(frame_id, experiment_id)
-
-        # predict for this hkl at setting UB
-        predictions = self._reflection_predictor.predict(
-                                h, experiment_id=experiment_id, UB=UB)
-
-      except AttributeError:
-
-        # predict for this hkl
-        predictions = self._reflection_predictor.predict(
-                                h, experiment_id=experiment_id)
-
-      # obtain the impact positions
-      impacts = ray_intersection(self._experiments[experiment_id].detector,
-                                 predictions,
-                                 panel=panel_id)
-
-      # find the prediction with the right 'entering' flag
-      try:
-        i = [x.entering == obs.entering \
-             for x in impacts].index(True)
-      except ValueError:
-        # we don't have a prediction for this obs
-        continue
-
-      ref = impacts[i]
-      x_calc, y_calc = ref.image_coord_mm
-
-      # do not wrap around multiples of 2*pi; keep the full rotation
-      # from zero to differentiate repeat observations.
-      resid = ref.rotation_angle - (obs.phi_obs % TWO_PI)
-
-      # ensure this is the smaller of two possibilities
-      resid = (resid + pi) % TWO_PI - pi
-
-      phi_calc = obs.phi_obs + resid
-      s_calc = matrix.col(ref.beam_vector)
-
-      # calculate gradients for this reflection
-      grads = self._prediction_parameterisation.get_gradients(
-                                  h, s_calc, phi_calc, panel_id, frame_id,
-                                  experiment_id=experiment_id)
-
-      # store all this information in the matched obs-pred pair
-      obs.update_prediction(x_calc, y_calc, phi_calc, s_calc, grads)
-
-    if self._reflection_manager.first_update:
-
-      # print summary before outlier rejection
-      self._reflection_manager.print_stats_on_matches()
-
-      # flag potential outliers
-      rejection_occurred = self._reflection_manager.reject_outliers()
-
-      # delete all obs-pred pairs from the manager that do not
-      # have a prediction or were flagged as outliers
-      self._reflection_manager.strip_unmatched_observations()
-
-      # print summary after outlier rejection
-      if rejection_occurred: self._reflection_manager.print_stats_on_matches()
-
-      self._reflection_manager.first_update = False
+    #FIXME
+    # calculate gradients for all reflections
+    #grads = self._prediction_parameterisation.get_gradients(
+    #                            h, s_calc, phi_calc, panel_id, frame_id,
+    #                            experiment_id=experiment_id)
 
     return
 

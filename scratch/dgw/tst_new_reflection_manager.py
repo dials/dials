@@ -111,12 +111,18 @@ assert len(experiments.detectors()) == 1
 # Parameterise the models (only for perturbing geometry) #
 ##########################################################
 
-det_param = DetectorParameterisationSinglePanel(mydetector)
-s0_param = BeamParameterisationOrientation(mybeam, mygonio)
-xl1o_param = CrystalOrientationParameterisation(crystal1)
-xl1uc_param = CrystalUnitCellParameterisation(crystal1)
-xl2o_param = CrystalOrientationParameterisation(crystal2)
-xl2uc_param = CrystalUnitCellParameterisation(crystal2)
+det_param = DetectorParameterisationSinglePanel(mydetector,
+  experiments.indices(mydetector))
+s0_param = BeamParameterisationOrientation(mybeam, mygonio,
+  experiments.indices(mybeam))
+xl1o_param = CrystalOrientationParameterisation(crystal1,
+  experiments.indices(crystal1))
+xl1uc_param = CrystalUnitCellParameterisation(crystal1,
+  experiments.indices(crystal1))
+xl2o_param = CrystalOrientationParameterisation(crystal2,
+  experiments.indices(crystal2))
+xl2uc_param = CrystalUnitCellParameterisation(crystal2,
+  experiments.indices(crystal2))
 
 # Fix beam to the X-Z plane (imgCIF geometry)
 s0_param.set_fixed([True, False])
@@ -271,9 +277,8 @@ xl2uc_param.set_param_vals(xluc_p_vals[1])
 # Select reflections for refinement #
 #####################################
 
-#from dials.util.command_line import interactive_console; interactive_console()
-
 reflections = obs_refs.to_table(centroid_is_mm=True)
+#from dials.util.command_line import interactive_console; interactive_console()
 from copy import deepcopy
 old_reflections = deepcopy(reflections)
 refman = ReflectionManager(reflections, experiments)
@@ -293,7 +298,21 @@ ref_predictor.predict(reflections)
 #print dir(reflections.flags)
 #print (reflections.get_flags(reflections.flags.predicted).count(True))
 
+# Parameterisation of the prediction equation
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
+    XYPhiPredictionParameterisation
+
+pred_param = XYPhiPredictionParameterisation(experiments,
+  [det_param], [s0_param], [xl1o_param, xl2o_param], [xl1uc_param, xl2uc_param])
+
+# make a new target class
+from dials.algorithms.refinement.target_new import LeastSquaresPositionalResidualWithRmsdCutoff
+new_target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments, ref_predictor, refman,
+               prediction_parameterisation=pred_param)
+
+#see if we can use the target to predict
+new_target.predict()
 
 for i in range(2):
-  pp.pprint(reflections[i])
+  pp.pprint(refman.get_obs()[i])
 
