@@ -53,7 +53,11 @@ def make_2d_profile(reflection_pointers, ref_table_in):
   big_nrow = big_nrow * 2 + 1
   big_ncol = big_ncol * 2 + 1
 
-  col_xyzobs = ref_table_in['xyzobs.px.value']
+  #from dials.util.command_line import interactive_console; interactive_console()
+
+  #col_xyzobs = ref_table_in['xyzobs.px.value']
+  col_xyzcal = ref_table_in['xyzcal.px']
+
   col_bbox = ref_table_in['bbox']
 
   sumation = flex.double(flex.grid(big_nrow, big_ncol), 0)
@@ -73,7 +77,9 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     #mask2d = mask[0:1, :, :]
     #mask2d.reshape(flex.grid(mask.all()[1:]))
 
-    cntr_pos = col_xyzobs[t_row]
+    #cntr_pos = col_xyzobs[t_row]
+    cntr_pos = col_xyzcal[t_row]
+
     bnd_box = col_bbox[t_row]
 
     descr[0, 0] = cntr_pos[0] - bnd_box[0]
@@ -82,7 +88,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     peak2d = subtrac_bkg_2d(data2d, background2d)
     sumation = add_2d(descr, peak2d, sumation)
 
-  if_you_want_to_see_how_the_profiles_look = '''
+  #if_you_want_to_see_how_the_profiles_look = '''
   from matplotlib import pyplot as plt
   data2d_np = sumation.as_numpy_array()
   plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
@@ -109,7 +115,10 @@ def fit_profile_2d(reflection_pointers, ref_table
   col_intensity = ref_table['intensity.raw.value']
   col_variance = ref_table['intensity.raw.variance']
   col_shoebox = ref_table['shoebox']
-  col_xyzobs = ref_table['xyzobs.px.value']
+
+  #col_xyzobs = ref_table['xyzobs.px.value']
+  col_xyzcal = ref_table['xyzcal.px']
+
   col_bbox = ref_table['bbox']
   #for ref in reflections:
   for t_row in range(len(ref_table)):
@@ -271,7 +280,9 @@ def fit_profile_2d(reflection_pointers, ref_table
           #print "ref.bounding_box", ref.bounding_box
           break
 
-        cntr_pos = col_xyzobs[t_row]
+        #cntr_pos = col_xyzobs[t_row]
+        cntr_pos = col_xyzcal[t_row]
+
         bnd_box = col_bbox[t_row]
 
         descr[0, 0] = cntr_pos[0] - bnd_box[0]

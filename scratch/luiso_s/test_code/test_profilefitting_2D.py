@@ -80,7 +80,7 @@ ref_table['shoebox'] = t_shoebox
 ref_table['intensity.raw.value'] = t_intensity
 ref_table['intensity.raw.variance'] = t_intensity_var
 ref_table['bbox'] = t_bbox
-ref_table['xyzobs.px.value'] = t_xyzobs
+#ref_table['xyzobs.px.value'] = t_xyzobs
 ref_table['xyzcal.px'] = t_xyzcal
 
 ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)

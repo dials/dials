@@ -26,8 +26,9 @@ class ProfileFittingMosflmIntegrationExt(IntensityIface):
   def __init__(self, params, experiment):
     ''' Initialise the algorithhm. '''
     from dials.algorithms.integration.mosflm_like import MosflmProfileFitting
-    self._algorithm = MosflmProfileFitting(
+    self._algorithm = MosflmProfileFitting(experiment,
         nblocks = params.integration.intensity.mosflm.nblocks)
+
 
   def compute_intensity(self, reflections):
     ''' Compute the intensity. '''
