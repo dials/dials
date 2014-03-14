@@ -1,0 +1,91 @@
+\documentclass[a4paper, 11pt]{article}
+\usepackage{graphicx}
+\title{Using DIALS}
+\author{Graeme Winter, Diamond Light Source}
+
+\begin{document}
+
+\maketitle
+
+\section{Caveat Lector}
+
+These are my notes on how to run elements of the DIALS processing suite. I make no promises that anything described in here will work, or will give sensible results, or will in fact do anything. You have been warned.
+
+\section{Introduction}
+
+DIALS processing may be performed by either running the individual tools (spot finding, indexing, refinement, integration, exporting to MTZ) or you can run the whole lot through \verb|dials.process|, which just chains them together (and incidentally does all of the processing in P1.)
+
+\section{dials.process}
+
+In the simplest case, \verb|dials.process /here/are/all/images*.cbf| will do  sensible processing, with a static model of the experiment and sample, and will output a reflection file \verb|integrated.mtz| containing the intensity measurements assuming everything works correctly. Some sensible options to use are:
+
+\begin{itemize}
+\item{\verb|scan_varying=true| - allow the crystal orientation and unit cell constants to vary during the scan}
+\item{\verb|--nproc=1| - only use one processor (necessary currently for data in NeXus files}
+\item{\verb|intensity.algorithm=sum2d| - use 2D summation integtration rather than the default 3D summation, other algorithms are being added}
+\item{\verb|shoebox.n_blocks=N| - for some N, split the data set into N blocks for integration, so as not to overload the computer}
+\item{\verb|-i| - pass the images to process through the standard input e.g. from \verb|find . -name '*.cbf'| to avoid issues with limited command-line lengths}
+\end{itemize}
+
+\noindent
+I have used all of these options and they appear to do sensible things. Important to make sure that what is passed in is exactly one sweep.
+
+\section{Results}
+
+At the end of processing you will see something like:
+
+{\small
+\begin{verbatim}
+Space group symbol from file: P1
+Space group number from file: 1
+Space group from matrices: P 1 (No. 1)
+Point group symbol from file: 1
+Number of batches: 540
+Number of crystals: 1
+Number of Miller indices: 318767
+Resolution range: 150.015 1.169
+History:
+Crystal 1:
+  Name: XTAL
+  Project: DIALS
+  Id: 1
+  Unit cell: (57.8091, 57.7715, 150.015, 89.9809, 89.9967, 90.01)
+  Number of datasets: 1
+  Dataset 1:
+    Name: FROMDIALS
+    Id: 1
+    Wavelength: 0.97625
+    Number of columns: 11
+    label        #valid  %valid     min     max type
+    H            318767 100.00%  -47.00   39.00 H: index h,k,l
+    K            318767 100.00%  -34.00   43.00 H: index h,k,l
+    L            318767 100.00% -114.00  114.00 H: index h,k,l
+    M_ISYM       318767 100.00%    1.00    1.00 Y: M/ISYM, packed partial/reject flag and symmetry number
+    BATCH        318767 100.00%    2.00  538.00 B: BATCH number
+    I            318767 100.00%   -8.34 3032.36 J: intensity
+    SIGI         318767 100.00%    0.00   55.21 Q: standard deviation
+    FRACTIONCALC 318767 100.00%    1.00    1.00 R: real
+    XDET         318767 100.00%    3.38 2458.38 R: real
+    YDET         318767 100.00%    2.97 2522.77 R: real
+    ROT          318767 100.00%   82.09  162.45 R: real
+\end{verbatim}
+}
+
+\noindent
+which just shows the summary of what is in the output MTZ file. There are also indexing and refinement results which I need to add FIXME.
+
+\section{What to do Next}
+
+The output MTZ file \verb|integrated.mtz| may be read by pointless wich will assign the correct symmetry and so on, and may then be scaled with aimless. I have been running:
+
+{\small
+\begin{verbatim}
+pointless hklin integrated.mtz hklout sorted.mtz
+aimless hklin sorted.mtz hklout scaled.mtz
+\end{verbatim}
+}
+
+\noindent
+to get merged data for downstream analysis. The output from this will include the merging statistics which will give some idea of the data quality. Often passing in a sensible resolution limit to aimless is also helpful...
+
+\end{document}

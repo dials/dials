@@ -380,6 +380,7 @@ doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_slices.png -t
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.png -text
 doc/developer/jmp_notes/dials_integration/Figures/transformed_spot_wireframe.tiff -text
 doc/developer/jmp_notes/dials_integration/dials_integration.tex -text
+doc/user/dials.tex -text
 /error.h -text
 extensions/__init__.py -text
 extensions/curved_background_ext.py -text
