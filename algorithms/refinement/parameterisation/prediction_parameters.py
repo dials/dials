@@ -218,7 +218,8 @@ class PredictionParameterisation(object):
         model.set_param_vals(tmp)
 
   def prepare(self):
-    """Cache required quantities that are not dependent on hkl"""
+    """Cache required quantities for each experiment that are not dependent on
+    hkl"""
 
     self._cache = []
     for e in self._experiments:
