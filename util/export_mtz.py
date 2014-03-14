@@ -12,7 +12,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # FIXME allow for more than one experiment in here: this is fine just add
   # multiple MTZ data sets (DIALS1...DIALSN) and multiple batch headers: one
   # range of batches for each experiment
-  
+
   assert(len(experiment_list) == 1)
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
@@ -38,7 +38,6 @@ def export_mtz(integrated_data, experiment_list, hklout):
   fast *= pixel_size[0]
   slow *= pixel_size[1]
 
-  # FIXME this may want to be time-dependent in the future...
   U = experiment.crystal.get_U()
   unit_cell = experiment.crystal.get_unit_cell()
   from iotbx import mtz
@@ -67,12 +66,23 @@ def export_mtz(integrated_data, experiment_list, hklout):
     o.set_sdbfac(0.0).set_sdbscale(0.0).set_nbscal(0)
 
     # unit cell (this is fine) and the what-was-refined-flags FIXME hardcoded
-    o.set_cell(flex.float(unit_cell.parameters()))
+
+    # take time-varying parameters from the *end of the frame* unlikely to
+    # be much different at the end - however only exist if time-varying refinement
+    # was used
+    if experiment.crystal.num_scan_points:
+      _unit_cell = experiment.crystal.get_unit_cell_at_scan_point(b)
+      _U = experiment.crystal.get_U_at_scan_point(b)
+    else:
+      _unit_cell = unit_cell
+      _U = U
+
+    o.set_cell(flex.float(_unit_cell.parameters()))
     o.set_lbcell(flex.int((-1, -1, -1, 0, 0, 0)))
-    o.set_umat(flex.float(U.transpose().elems))
+    o.set_umat(flex.float(_U.transpose().elems))
 
     # sadly we don't record the mosaic spread at the moment (by design)
-    mosaic = 0.0
+    mosaic = experiment.crystal.get_mosaicity()
     o.set_crydat(flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0,
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
 
