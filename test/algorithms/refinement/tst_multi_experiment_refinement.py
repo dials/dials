@@ -266,10 +266,9 @@ xl2uc_param.set_param_vals(xluc_p_vals[1])
 #print
 
 # make a refiner
-from dials.util.options import SystemConfig
-sysconfig = SystemConfig()
-params = sysconfig.config()
-params = params.fetch().extract()
+from dials.framework.registry import Registry
+sysconfig = Registry().config()
+params = sysconfig.params()
 
 # in case we want a plot
 params.refinement.refinery.track_parameter_correlation=True
