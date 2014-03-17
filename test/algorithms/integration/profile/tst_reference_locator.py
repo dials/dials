@@ -10,6 +10,9 @@ class Test(object):
     self.profiles = flex.double(flex.grid(
       len(self.sampler),
       9, 9, 9))
+    self.masks = flex.bool(flex.grid(
+      len(self.sampler),
+      9, 9, 9), True)
 
     for i in range(len(self.sampler) * 9 * 9 * 9):
       self.profiles[i] = i
@@ -22,7 +25,7 @@ class Test(object):
     import cPickle as pickle
 
     # Create the reference locator
-    locator = XdsCircleReferenceLocator(self.profiles, self.sampler)
+    locator = XdsCircleReferenceLocator(self.profiles, self.masks, self.sampler)
 
     # Test basic access
     assert(locator.size() == len(self.sampler))

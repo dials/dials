@@ -27,7 +27,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     static
     boost::python::tuple getinitargs(const locator_type &r) {
-      return boost::python::make_tuple(r.profile(), r.sampler());
+      return boost::python::make_tuple(r.profile(), r.mask(), r.sampler());
     }
   };
 

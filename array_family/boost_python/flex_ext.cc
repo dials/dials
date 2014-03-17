@@ -63,6 +63,7 @@ namespace dials { namespace af { namespace boost_python {
 
     def("get_real_type", &get_real_type<ProfileFloatType>);
 
+    scitbx::af::boost_python::c_grid_flex_conversions<bool, af::c_grid<4> >();
     scitbx::af::boost_python::c_grid_flex_conversions<double, af::c_grid<4> >();
 
     tuple_mapping_fixed_capacity<af::small<model::Ray, 2> >();

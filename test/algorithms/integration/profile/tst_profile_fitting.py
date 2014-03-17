@@ -25,9 +25,10 @@ class Test(object):
     # Copy profile
     c = p.deep_copy()
     b = flex.double(flex.grid(9, 9, 9), 0)
+    m = flex.bool(flex.grid(9,9,9), True)
 
     # Fit
-    fit = fit_profile(p, c, b)
+    fit = fit_profile(p, m, c, b)
     I = fit.intensity()
     V = fit.variance()
 
@@ -52,9 +53,10 @@ class Test(object):
     # Copy profile
     c = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
     b = flex.double(flex.grid(9, 9, 9), 0)
+    m = flex.bool(flex.grid(9,9,9), True)
 
     # Fit
-    fit = fit_profile(p, c, b)
+    fit = fit_profile(p, m, c, b)
     I = fit.intensity()
     V = fit.variance()
 
@@ -79,10 +81,11 @@ class Test(object):
     # Copy profile
     c0 = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
     b = flex.double(flex.grid(9, 9, 9), 5)
+    m = flex.bool(flex.grid(9,9,9), True)
     c = c0 + b
 
     # Fit
-    fit = fit_profile(p, c, b)
+    fit = fit_profile(p, m, c, b)
     I = fit.intensity()
     V = fit.variance()
 
@@ -108,10 +111,11 @@ class Test(object):
     c0 = gaussian((9, 9, 9), 1, (4, 4, 4), (2, 2, 2))
     n = flex.random_double(9 * 9 * 9)
     b = flex.double(flex.grid(9, 9, 9), 5) + n
+    m = flex.bool(flex.grid(9,9,9), True)
     c = c0 + b
 
     # Fit
-    fit = fit_profile(p, c, b)
+    fit = fit_profile(p, m, c, b)
     I = fit.intensity()
     V = fit.variance()
 

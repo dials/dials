@@ -101,7 +101,6 @@ class Test(object):
       threshold=0.02,
       frame_interval=100,
       n_sigma=5,
-      mask_n_sigma=3,
       sigma_b=0.024 * pi / 180.0,
       sigma_m=0.044 * pi / 180.0
     )
@@ -256,7 +255,6 @@ class Test(object):
       threshold=0.00,
       frame_interval=0,
       n_sigma=5,
-      mask_n_sigma=3,
       sigma_b=0.024 * pi / 180.0,
       sigma_m=0.044 * pi / 180.0
     )
