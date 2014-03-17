@@ -163,19 +163,19 @@ namespace dials { namespace model {
     /** @returns The x size */
     std::size_t xsize() const {
       DIALS_ASSERT(bbox[1] >= bbox[0]);
-      return bbox[1] - bbox[0];
+      return (std::size_t)(bbox[1] - bbox[0]);
     }
 
     /** @returns The y size */
     std::size_t ysize() const {
       DIALS_ASSERT(bbox[3] >= bbox[2]);
-      return bbox[3] - bbox[2];
+      return (std::size_t)(bbox[3] - bbox[2]);
     }
 
     /** @returns The z size */
     std::size_t zsize() const {
       DIALS_ASSERT(bbox[5] >= bbox[4]);
-      return bbox[5] - bbox[4];
+      return (std::size_t)(bbox[5] - bbox[4]);
     }
 
     /** @returns The offset */
