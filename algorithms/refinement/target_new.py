@@ -111,12 +111,6 @@ class Target(object):
     mask = reflections.get_flags(reflections.flags.predicted)
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
-    #FIXME
-    # calculate gradients for all reflections
-    #grads = self._prediction_parameterisation.get_gradients(
-    #                            h, s_calc, phi_calc, panel_id, frame_id,
-    #                            experiment_id=experiment_id)
-
     return
 
   def calculate_gradients(self):
