@@ -94,7 +94,7 @@ refinement_protocol {
   d_min_step = 1.0
     .type = float(value_min=0.0)
     .help = "Reduction per step in d_min for reflections to include in refinement."
-  d_min_start = 3.0
+  d_min_start = 4.0
     .type = float(value_min=0.0)
   d_min_final = None
     .type = float(value_min=0.0)
