@@ -106,12 +106,12 @@ namespace dials { namespace algorithms {
       if (iz >= grid_size_[2]) iz = grid_size_[2] - 1;
       af::shared<std::size_t> result;
       result.push_back(index(ix, iy, iz));
-      if (ix > 0) result.push_back(index(ix-1, iy, iz));
-      if (iy > 0) result.push_back(index(ix, iy-1, iz));
-      if (iz > 0) result.push_back(index(ix, iy, iz-1));
-      if (ix < grid_size_[0]-1) result.push_back(index(ix+1, iy, iz));
-      if (iy < grid_size_[1]-1) result.push_back(index(ix, iy+1, iz));
-      if (iz < grid_size_[2]-1) result.push_back(index(ix, iy, iz+1));
+      //if (ix > 0) result.push_back(index(ix-1, iy, iz));
+      //if (iy > 0) result.push_back(index(ix, iy-1, iz));
+      //if (iz > 0) result.push_back(index(ix, iy, iz-1));
+      //if (ix < grid_size_[0]-1) result.push_back(index(ix+1, iy, iz));
+      //if (iy < grid_size_[1]-1) result.push_back(index(ix, iy+1, iz));
+      //if (iz < grid_size_[2]-1) result.push_back(index(ix, iy, iz+1));
       return result;
     }
 
