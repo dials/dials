@@ -40,7 +40,7 @@ namespace dials { namespace algorithms {
    * Simulate a gaussian in reciprocal space and transform back to detector
    * space.
    */
-  void simulate_reciprocal_space_gaussian(
+  int simulate_reciprocal_space_gaussian(
       const Beam &beam,
       const Detector &detector,
       const Goniometer &goniometer,
@@ -51,7 +51,8 @@ namespace dials { namespace algorithms {
       double phi,
       const int6 &bbox,
       std::size_t I,
-      af::ref< double, af::c_grid<3> > shoebox) {
+      af::ref< double, af::c_grid<3> > shoebox,
+      const af::const_ref<int, af::c_grid<3> > &mask) {
 
     vec3<double> s0 = beam.get_s0();
     vec3<double> m2 = goniometer.get_rotation_axis();
@@ -63,6 +64,7 @@ namespace dials { namespace algorithms {
     boost::random::normal_distribution<double> dist_z(0, sigma_m);
 
     // Do the simulation
+    int counts = 0;
     CoordinateSystem cs(m2, s0, s1, phi);
     for (std::size_t i = 0; i < I; ++i) {
 
@@ -96,7 +98,12 @@ namespace dials { namespace algorithms {
 
       // Add the count
       shoebox(z, y, x) += 1;
+
+      if (mask(z, y, x) & Foreground) {
+        counts += 1;
+      }
     }
+    return counts;
   }
 
   /**

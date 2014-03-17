@@ -66,9 +66,10 @@ class Simulator(object):
     bbox = refl['bbox']
     shoebox = refl['shoebox']
     m = int(len(refl) / 100)
+    I_exp = flex.double(len(refl), 0)
     for i in range(len(refl)):
       if I[i] > 0:
-        simulate_reciprocal_space_gaussian(
+        I_exp[i] = simulate_reciprocal_space_gaussian(
           self.experiment.beam,
           self.experiment.detector,
           self.experiment.goniometer,
@@ -79,7 +80,8 @@ class Simulator(object):
           phi[i],
           bbox[i],
           I[i],
-          shoebox[i].data)
+          shoebox[i].data,
+          shoebox[i].mask)
       if i % m == 0:
         progress.update(100.0 * float(i) / len(refl))
     progress.finished('Calculated signal impacts for %d reflections' % len(refl))
@@ -100,36 +102,36 @@ class Simulator(object):
       progress.update(100.0 * float(l) / len(refl))
     progress.finished('Calculated background for %d reflections' % len(refl))
 
-    # Calculate the expected intensity by monte-carlo integration
-    progress = ProgressBar(title='Integrating expected signal for %d reflections' % len(refl))
-    s1 = refl['s1']
-    phi = refl['xyzcal.mm'].parts()[2]
-    bbox = refl['bbox']
-    shoebox = refl['shoebox']
-    I_exp = flex.double(len(refl), 0)
-    m = int(len(refl) / 100)
-    for i in range(len(refl)):
-      if I[i] > 0:
-        I_exp[i] = integrate_reciprocal_space_gaussian(
-          self.experiment.beam,
-          self.experiment.detector,
-          self.experiment.goniometer,
-          self.experiment.scan,
-          self.sigma_b,
-          self.sigma_m,
-          s1[i],
-          phi[i],
-          bbox[i],
-          10000,
-          shoebox[i].mask) / 10000.0
-      if i % m == 0:
-        progress.update(100.0 * float(i) / len(refl))
-    progress.finished('Integrated expected signal impacts for %d reflections' % len(refl))
+    ## Calculate the expected intensity by monte-carlo integration
+    #progress = ProgressBar(title='Integrating expected signal for %d reflections' % len(refl))
+    #s1 = refl['s1']
+    #phi = refl['xyzcal.mm'].parts()[2]
+    #bbox = refl['bbox']
+    #shoebox = refl['shoebox']
+    #I_exp = flex.double(len(refl), 0)
+    #m = int(len(refl) / 100)
+    #for i in range(len(refl)):
+      #if I[i] > 0:
+        #I_exp[i] = integrate_reciprocal_space_gaussian(
+          #self.experiment.beam,
+          #self.experiment.detector,
+          #self.experiment.goniometer,
+          #self.experiment.scan,
+          #self.sigma_b,
+          #self.sigma_m,
+          #s1[i],
+          #phi[i],
+          #bbox[i],
+          #10000,
+          #shoebox[i].mask) / 10000.0
+      #if i % m == 0:
+        #progress.update(100.0 * float(i) / len(refl))
+    #progress.finished('Integrated expected signal impacts for %d reflections' % len(refl))
 
     # Save the expected intensity and background
     refl['intensity.sim'] = I
     refl['background.sim'] = B
-    refl['intensity.exp'] = I_exp * I.as_double()
+    refl['intensity.exp'] = I_exp
 
     # Return the reflections
     return refl
