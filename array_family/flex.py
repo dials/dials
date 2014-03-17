@@ -78,6 +78,15 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       reverse=reverse)
     self.reorder(flex.size_t(indices))
 
+  #def is_bbox_inside_image_range(self, experiment):
+    #''' Check if bbox is within image range. '''
+    #from dials.algorithms import filtering
+    #assert(len(experiment.detector) == 1)
+    #return filtering.is_bbox_outside_image_range(
+      #self['bbox'],
+      #experiment.detector[0].get_image_size()[::-1],
+      #experiment.scan.get_array_range()) != True
+
   def compute_zeta(self, experiment):
     ''' Compute zeta for each reflection. '''
     from dials.algorithms.reflection_basis import zeta_factor
