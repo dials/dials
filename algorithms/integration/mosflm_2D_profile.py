@@ -88,7 +88,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     peak2d = subtrac_bkg_2d(data2d, background2d)
     sumation = add_2d(descr, peak2d, sumation)
 
-  #if_you_want_to_see_how_the_profiles_look = '''
+  if_you_want_to_see_how_the_profiles_look = '''
   from matplotlib import pyplot as plt
   data2d_np = sumation.as_numpy_array()
   plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
@@ -122,7 +122,6 @@ def fit_profile_2d(reflection_pointers, ref_table
   col_bbox = ref_table['bbox']
   #for ref in reflections:
   for t_row in range(len(ref_table)):
-
     #in the future consider searcing for is_valid logical
     #if r.is_valid():
     use_thold = 'no'
