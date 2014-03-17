@@ -10,7 +10,7 @@
 #
 
 """
-A simple test of the new reflection manager.
+Simple tests of the new reflection manager in comparison with the old version.
 
 """
 
@@ -127,17 +127,6 @@ xl2uc_param = CrystalUnitCellParameterisation(crystal2,
 # Fix beam to the X-Z plane (imgCIF geometry)
 s0_param.set_fixed([True, False])
 
-# Fix crystal parameters
-#xluc_param.set_fixed([True, True, True, True, True, True])
-
-########################################################################
-# Link model parameterisations together into a parameterisation of the #
-# prediction equation                                                  #
-########################################################################
-
-#pred_param = XYPhiPredictionParameterisation(experiments,
-#  [det_param], [s0_param], [xlo_param], [xluc_param])
-
 ################################
 # Apply known parameter shifts #
 ################################
@@ -151,7 +140,6 @@ det_param.set_param_vals(p_vals)
 # shift beam by 2 mrad in free axis
 s0_p_vals = s0_param.get_param_vals()
 p_vals = list(s0_p_vals)
-
 p_vals[0] += 2.
 s0_param.set_param_vals(p_vals)
 
@@ -205,7 +193,7 @@ indices2 = index_generator.to_array()
 ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
 obs_refs1 = ref_predictor.predict(indices1, experiment_id=0)
-obs_refs2 = ref_predictor.predict(indices1, experiment_id=1)
+obs_refs2 = ref_predictor.predict(indices2, experiment_id=1)
 
 print "Total number of reflections excited for crystal1", len(obs_refs1)
 print "Total number of reflections excited for crystal2", len(obs_refs2)
@@ -219,6 +207,7 @@ var_phi = (im_width / 2.)**2
 
 obs_refs1 = ray_intersection(experiments[0].detector, obs_refs1)
 obs_refs2 = ray_intersection(experiments[1].detector, obs_refs2)
+
 for ref in obs_refs1:
 
   # set the 'observed' centroids
@@ -259,44 +248,34 @@ obs_refs = obs_refs1.concatenate(obs_refs2)
 # Undo known parameter shifts #
 ###############################
 
-#print experiments[0].crystal
 s0_param.set_param_vals(s0_p_vals)
 det_param.set_param_vals(det_p_vals)
 xl1o_param.set_param_vals(xlo_p_vals[0])
 xl2o_param.set_param_vals(xlo_p_vals[1])
 xl1uc_param.set_param_vals(xluc_p_vals[0])
 xl2uc_param.set_param_vals(xluc_p_vals[1])
-#print experiments[0].crystal
-
-#print "Initial values of parameters are"
-#msg = "Parameters: " + "%.5f " * len(pred_param)
-#print msg % tuple(pred_param.get_param_vals())
-#print
 
 #####################################
 # Select reflections for refinement #
 #####################################
 
 reflections = obs_refs.to_table(centroid_is_mm=True)
-#from dials.util.command_line import interactive_console; interactive_console()
 from copy import deepcopy
 old_reflections = deepcopy(reflections)
-refman = ReflectionManager(reflections, experiments)
+
+# make a new ReflectionManager
+refman = ReflectionManager(reflections, experiments, verbosity=2)
 
 # make a new reflection predictor
 from dials.algorithms.refinement.prediction import ExperimentsPredictor
 ref_predictor = ExperimentsPredictor(experiments)
 
-import pprint
-pp = pprint.PrettyPrinter()
-for i in range(2):
-  pp.pprint(old_reflections[i])
+#import pprint
+#pp = pprint.PrettyPrinter()
+#for i in range(2):
+#  pp.pprint(old_reflections[i])
 
-#print dir(reflections.flags)
-#print (reflections.get_flags(reflections.flags.predicted).count(True))
-ref_predictor.predict(reflections)
-#print dir(reflections.flags)
-#print (reflections.get_flags(reflections.flags.predicted).count(True))
+#ref_predictor.predict(reflections)
 
 # Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import \
@@ -305,7 +284,9 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 pred_param = XYPhiPredictionParameterisation(experiments,
   [det_param], [s0_param], [xl1o_param, xl2o_param], [xl1uc_param, xl2uc_param])
 
-# make a new target class
+print "NEW CLASSES"
+
+# make a new target object
 from dials.algorithms.refinement.target_new import LeastSquaresPositionalResidualWithRmsdCutoff
 new_target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments, ref_predictor, refman,
                prediction_parameterisation=pred_param)
@@ -313,6 +294,29 @@ new_target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments, ref_predi
 #see if we can use the target to predict
 new_target.predict()
 
-for i in range(2):
-  pp.pprint(refman.get_obs()[i])
+# can we now finalise the reflection manager?
+refman.finalise()
+
+# see if we can calculate gradients
+temp = new_target.calculate_gradients()
+
+print "OLD CLASSES"
+
+# Are the value what we expect? Test versus the old classes
+old_ref_predictor = ScansRayPredictor(experiments, sweep_range)
+
+from dials.algorithms.refinement.target import \
+      LeastSquaresPositionalResidualWithRmsdCutoff as OldTarget
+from dials.algorithms.refinement.target import \
+      ReflectionManager as OldReflectionManager
+old_refman = OldReflectionManager(old_reflections, experiments,
+                               nref_per_degree=20, verbosity=2)
+old_target = OldTarget(experiments,
+    old_ref_predictor, old_refman, pred_param)
+old_target.predict()
+
+#from dials.util.command_line import interactive_console; interactive_console()
+
+#for i in range(2):
+#  pp.pprint(refman.get_obs()[i])
 
