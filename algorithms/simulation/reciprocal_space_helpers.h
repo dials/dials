@@ -74,10 +74,15 @@ namespace dials { namespace algorithms {
       double phi_dash = cs.to_rotation_angle(e3);
 
       // Get the pixel coordinate
-      std::pair<int, vec2<double> > coord = detector.get_ray_intersection(s1_dash);
-      int panel = coord.first;
-      vec2<double> mm = coord.second;
-      vec2<double> px = detector[panel].millimeter_to_pixel(mm);
+      vec2<double> px(0,0);
+      try {
+        std::pair<int, vec2<double> > coord = detector.get_ray_intersection(s1_dash);
+        int panel = coord.first;
+        vec2<double> mm = coord.second;
+        px = detector[panel].millimeter_to_pixel(mm);
+      } catch(dxtbx::error) {
+        continue;
+      }
 
       // Get the frame
       double frame = scan.get_array_index_from_angle(phi_dash);
