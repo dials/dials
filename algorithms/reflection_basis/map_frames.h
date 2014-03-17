@@ -108,8 +108,9 @@ namespace dials { namespace algorithms { namespace reflection_basis {
     // The range of data frames and grid points to iterate over
     int j0 = frames[0];
     int j1 = frames[1];
-    int v30 = - (int)grid_size_e3_;
-    int v31 = + (int)grid_size_e3_ + 1;
+    int v30 = 0;
+    int v31 = 2 * grid_size_e3_ + 1;
+    int offset = grid_size_e3_;
 
     // Create an array to contain the intensity fractions
     af::versa< FloatType, af::c_grid<2> > fraction(af::c_grid<2>(
@@ -145,8 +146,8 @@ namespace dials { namespace algorithms { namespace reflection_basis {
           // The grid coordinate v3 cover the range phi such that
           // rv3 = {phi':(v3 - 0.5)d3 <= (phi' - phi)zeta <= (v3 + 0.5)d3}
           // Therefore the range of phi for v3 is given as follows.
-          double bv3 = ((v3 - 0.5) * step_size_e3_) / zeta + phi;
-          double av3 = ((v3 + 0.5) * step_size_e3_) / zeta + phi;
+          double bv3 = ((v3 - offset - 0.5) * step_size_e3_) / zeta + phi;
+          double av3 = ((v3 - offset + 0.5) * step_size_e3_) / zeta + phi;
           if (av3 > bv3) std::swap(av3, bv3);
 
           // We need to integrate over the intersection of sets rv3 and rj

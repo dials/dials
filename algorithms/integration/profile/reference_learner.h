@@ -44,7 +44,10 @@ namespace dials { namespace algorithms {
      */
     ReferenceLearner(const sampler_type &sampler,
                      int3 grid_size, double threshold)
-      : locator_(allocate_profiles(sampler.size(), grid_size), sampler),
+      : locator_(
+          allocate_profiles<float_type>(sampler.size(), grid_size, 0.0),
+          allocate_profiles<bool>(sampler.size(), grid_size, true),
+          sampler),
         threshold_(threshold),
         counts_(sampler.size(), 0) {}
 
@@ -90,12 +93,13 @@ namespace dials { namespace algorithms {
      * @param grid_size The size of each profile
      * @returns The array of reference profiles
      */
-    af::versa< float_type, af::c_grid<4> > allocate_profiles(
-        std::size_t num, int3 grid_size) {
+    template <typename T>
+    af::versa< T, af::c_grid<4> > allocate_profiles(
+        std::size_t num, int3 grid_size, T value) {
       DIALS_ASSERT(num > 0);
       DIALS_ASSERT(grid_size.all_gt(0));
-      return af::versa< float_type, af::c_grid<4> >(af::c_grid<4>(
-        int4(num, grid_size[0], grid_size[1], grid_size[2])), 0);
+      return af::versa< T, af::c_grid<4> >(af::c_grid<4>(
+        int4(num, grid_size[0], grid_size[1], grid_size[2])), value);
     }
 
     /**
@@ -169,6 +173,7 @@ namespace dials { namespace algorithms {
 
       // Get the reference profile at the index
       af::ref<float_type> reference = reference_profile(index);
+      af::ref<bool> mask = reference_mask(index);
 
       // Calculate the profile maximum and signal threshold
       double profile_maximum = max(reference);
@@ -181,6 +186,7 @@ namespace dials { namespace algorithms {
           signal_sum += reference[i];
         } else {
           reference[i] = 0.0;
+          mask[i] = false;
         }
       }
 
@@ -203,6 +209,19 @@ namespace dials { namespace algorithms {
       int4 size = all_profiles.accessor();
       int offset = size[1] * size[2] * size[3];
       return af::ref<float_type>(&all_profiles[index * offset], offset);
+    }
+
+    /**
+     * Get a reference to the reflection profile
+     * @param index The index of the profile to get
+     * @returns The reference to the profile.
+     */
+
+    af::ref<bool> reference_mask(std::size_t index) {
+      af::versa<bool, af::c_grid<4> > all_masks = locator_.mask();
+      int4 size = all_masks.accessor();
+      int offset = size[1] * size[2] * size[3];
+      return af::ref<bool>(&all_masks[index * offset], offset);
     }
 
     locator_type locator_;
