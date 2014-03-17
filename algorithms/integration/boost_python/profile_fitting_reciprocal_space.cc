@@ -19,10 +19,10 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   void export_profile_fitting_reciprocal_space()
   {
-    vec2<double> (ProfileFittingReciprocalSpace::*call_single)(
+    vec3<double> (ProfileFittingReciprocalSpace::*call_single)(
       const TransformedShoebox&, vec3<double>) const =
         &ProfileFittingReciprocalSpace::operator();
-    af::shared< vec2<double> > (ProfileFittingReciprocalSpace::*call_array)(
+    af::shared< vec3<double> > (ProfileFittingReciprocalSpace::*call_array)(
       const af::const_ref<TransformedShoebox>&,
       const af::const_ref< vec3<double> >&) const =
         &ProfileFittingReciprocalSpace::operator();
@@ -30,8 +30,10 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<ProfileFittingReciprocalSpace>(
         "ProfileFittingReciprocalSpaceAlgorithm", no_init)
       .def(init<shared_ptr<ProfileFittingReciprocalSpace::locator_type>,
+                double,
                 std::size_t>((
         arg("locate"),
+        arg("mask_range"),
         arg("max_iter") = 10)))
       .def("__call__", call_single)
       .def("__call__", call_array);
