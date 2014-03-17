@@ -24,11 +24,13 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     class_<ProfileFittingType>(name, no_init)
       .def(init<const af::const_ref<FloatType, af::c_grid<3> >&,
+                const af::const_ref<bool, af::c_grid<3> >&,
                 const af::const_ref<FloatType, af::c_grid<3> >&,
                 const af::const_ref<FloatType, af::c_grid<3> >&,
                 double,
                 std::size_t>((
         arg("profile"),
+        arg("mask"),
         arg("contents"),
         arg("background"),
         arg("bits") = 1e-3,
@@ -42,11 +44,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   template <typename FloatType>
   ProfileFitting<FloatType> make_profile_fitting(
       const af::const_ref<FloatType, af::c_grid<3> > &p,
+      const af::const_ref<bool, af::c_grid<3> > &m,
       const af::const_ref<FloatType, af::c_grid<3> > &c,
       const af::const_ref<FloatType, af::c_grid<3> > &b,
       double eps,
       std::size_t max_iter) {
-    return ProfileFitting<FloatType>(p, c, b, eps, max_iter);
+    return ProfileFitting<FloatType>(p, m, c, b, eps, max_iter);
   }
 
   template <typename FloatType>
