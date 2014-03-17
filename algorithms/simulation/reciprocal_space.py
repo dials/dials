@@ -60,8 +60,6 @@ class Simulator(object):
 
     # Calculate the signal
     progress = ProgressBar(title='Calculating signal for %d reflections' % len(refl))
-    m2 = self.experiment.goniometer.get_rotation_axis()
-    s0 = self.experiment.beam.get_s0()
     s1 = refl['s1']
     phi = refl['xyzcal.mm'].parts()[2]
     bbox = refl['bbox']
@@ -80,23 +78,6 @@ class Simulator(object):
         bbox[i],
         I[i],
         shoebox[i].data)
-      #cs = CoordinateSystem(m2, s0, s1[i], phi[i])
-      #for j in range(I[i]):
-        #e = (random.gauss(0, self.sigma_b),
-             #random.gauss(0, self.sigma_b),
-             #random.gauss(0, self.sigma_m))
-        #s1_dash, phi_dash = cs.to_beam_vector_and_rotation_angle(e)
-        #x, y = self.experiment.detector[0].get_ray_intersection(s1_dash)
-        #x, y = self.experiment.detector[0].millimeter_to_pixel((x, y))
-        #z = self.experiment.scan.get_array_index_from_angle(phi_dash, deg=False)
-        #if (x < bbox[i][0] or x > bbox[i][1] or
-            #y < bbox[i][2] or y > bbox[i][3] or
-            #z < bbox[i][4] or z > bbox[i][5]):
-          #continue
-        #x = int(x - bbox[i][0])
-        #y = int(y - bbox[i][2])
-        #z = int(z - bbox[i][4])
-        #shoebox[i].data[z,y,x] += 1
       if i % m == 0:
         progress.update(100.0 * float(i) / len(refl))
     progress.finished('Calculated signal impacts for %d reflections' % len(refl))
