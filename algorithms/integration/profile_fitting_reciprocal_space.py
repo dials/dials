@@ -26,9 +26,6 @@ class ProfileFittingReciprocalSpace(object):
     self.sigma_b = kwargs['sigma_b']
     self.sigma_m = kwargs['sigma_m']
 
-    # Create the spot matcher
-    self.match = SpotMatcher(max_separation=1)
-
   def __call__(self, experiment, reflections):
     ''' Do the integration.
 
@@ -39,8 +36,8 @@ class ProfileFittingReciprocalSpace(object):
     '''
     assert("flags" in reflections)
     self._transform_profiles(experiment, reflections)
-    learner = self._learn_references(experiment, reflections)
-    return self._integrate_intensities(learner, reflections)
+    self.learner = self._learn_references(experiment, reflections)
+    return self._integrate_intensities(self.learner, reflections)
 
   def _transform_profiles(self, experiment, reflections):
     ''' Transform the reflection profiles to reciprocal space. '''
@@ -59,18 +56,6 @@ class ProfileFittingReciprocalSpace(object):
     s1 = reflections['s1']
     phi = reflections['xyzcal.mm'].parts()[2]
     shoebox = reflections['shoebox']
-
-    bbox = reflections['bbox']
-    bbox2 = [s.bbox for s in shoebox]
-    image_size = experiment.detector[0].get_image_size()
-
-    from dials.algorithms import filtering
-    array_range = experiment.scan.get_array_range()
-    mask = filtering.by_detector_mask(
-      reflections['bbox'], experiment.imageset[0] >= 0, array_range)
-    #for b1, b2 in zip(bbox, bbox2):
-      #if b2[3] > image_size[1]:
-        #print b1, b2, image_size
     rs_shoebox = flex.transformed_shoebox(spec, s1, phi, shoebox)
     reflections['rs_shoebox'] = rs_shoebox
     Command.end('Transformed {0} reflections'.format(len(reflections)))
@@ -83,7 +68,7 @@ class ProfileFittingReciprocalSpace(object):
 
     # Match the predictions with the strong spots
     #sind, pind = self.match(strong, reflections)
-    pind = flex.bool([f & (1 << 1) != 0 for f in reflections['flags']])
+    pind = reflections.get_flags(reflections.flags.reference_spot)
 
     # Create the reference profile sampler
     assert(len(experiment.detector) == 1)
@@ -115,10 +100,10 @@ class ProfileFittingReciprocalSpace(object):
     profiles = reflections['rs_shoebox']
     coords = reflections['xyzcal.px']
     intensity = integrate(profiles, coords)
-    mask = intensity.parts()[1] < 0
+    mask = intensity.parts()[1] > 0
     reflections['intensity.raw.value'] = intensity.parts()[0]
     reflections['intensity.raw.variance'] = intensity.parts()[1]
-    reflections.del_selected(mask)
+    reflections.set_flags(mask, reflections.flags.integrated)
     Command.end('Integrated {0} reflections'.format(len(reflections)))
 
     return reflections
