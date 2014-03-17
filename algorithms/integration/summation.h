@@ -112,14 +112,18 @@ namespace dials { namespace algorithms {
      * @returns The reflection intensity
      */
     FloatType intensity() const {
-      return signal_intensity() - background_intensity();
+      return sum_p_ - sum_b_;
     }
 
     /**
      * @returns the variance on the integrated intensity
      */
     FloatType variance() const {
-      return signal_variance() + background_variance();
+      FloatType Is = intensity();
+      FloatType Ib = sum_b_;
+      FloatType m_n = n_background_ > 0 ?
+        (FloatType)n_signal_ / (FloatType)n_background_ : 0.0;
+      return std::abs(Is) + std::abs(Ib) * (1.0 + m_n);
     }
 
     /**
@@ -127,57 +131,6 @@ namespace dials { namespace algorithms {
      */
     FloatType standard_deviation() const {
       return std::sqrt(variance());
-    }
-
-    /**
-     * @returns the signal intensity
-     */
-    FloatType signal_intensity() const {
-      return signal_intensity_;
-    }
-
-    /**
-     * @returns the variance on the signal intensity
-     */
-    FloatType signal_variance() const {
-      return signal_variance_;
-    }
-
-    /**
-     * @returns the standard deviation on the signal intensity
-     */
-    FloatType signal_standard_deviation() const {
-      return std::sqrt(signal_variance());
-    }
-
-    /**
-     * @returns the background intensity
-     */
-    FloatType background_intensity() const {
-      return background_intensity_;
-    }
-
-    /**
-     * @returns the variance on the background intensity
-     */
-    FloatType background_variance() const {
-      double m_n = n_background_ > 0 ?
-        (double)n_signal_ / (double)n_background_ : 0.0;
-      return background_variance_ * m_n;
-    }
-
-    /**
-     * @returns the standard deviation on the background intensity
-     */
-    FloatType background_standard_deviation() const {
-      return std::sqrt(background_variance());
-    }
-
-    /**
-     * @returns the number of background pixels
-     */
-    std::size_t n_background() const {
-      return n_background_;
     }
 
     /**
@@ -207,16 +160,12 @@ namespace dials { namespace algorithms {
 
       // Calculate the signal and background intensity
       n_signal_ = signal.size();
-      signal_intensity_ = 0.0;
-      background_intensity_ = 0.0;
+      sum_p_ = 0.0;
+      sum_b_ = 0.0;
       for (std::size_t i = 0; i < signal.size(); ++i) {
-        signal_intensity_ += signal[i];
-        background_intensity_ += background[i];
+        sum_p_ += signal[i];
+        sum_b_ += background[i];
       }
-
-      // Set the signal and background variance
-      signal_variance_ = std::abs(signal_intensity_);
-      background_variance_ = std::abs(background_intensity_);
     }
 
     /**
@@ -240,25 +189,19 @@ namespace dials { namespace algorithms {
 
       // Calculate the signal and background intensity
       n_signal_ = 0;
-      signal_intensity_ = 0.0;
-      background_intensity_ = 0.0;
+      sum_p_ = 0.0;
+      sum_b_ = 0.0;
       for (std::size_t i = 0; i < signal.size(); ++i) {
         if (mask[i]) {
-          signal_intensity_ += signal[i];
-          background_intensity_ += background[i];
+          sum_p_ += signal[i];
+          sum_b_ += background[i];
           n_signal_++;
         }
       }
-
-      // Set the signal and background variance
-      signal_variance_ = std::abs(signal_intensity_);
-      background_variance_ = std::abs(background_intensity_);
     }
 
-    FloatType signal_intensity_;
-    FloatType signal_variance_;
-    FloatType background_intensity_;
-    FloatType background_variance_;
+    FloatType sum_p_;
+    FloatType sum_b_;
     std::size_t n_background_;
     std::size_t n_signal_;
   };
