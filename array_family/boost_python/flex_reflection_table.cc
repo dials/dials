@@ -122,6 +122,7 @@ namespace dials { namespace af { namespace boost_python {
       "  intensity.raw.variance: raw intensity variance\n"
       "  intensity.cor.value:    corrected intensity value\n"
       "  intensity.cor.variance: corrected intensity variance\n"
+      "  profile.correlation:    correlation in profile fitting\n"
       "\n"
       " Shoebox properties\n"
       " ------------------\n"
