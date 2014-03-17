@@ -16,7 +16,6 @@ from scitbx import matrix
 from dials.array_family import flex
 
 # constants
-TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
 
 class ReflectionManager(object):
@@ -38,23 +37,14 @@ class ReflectionManager(object):
                      iqr_multiplier=1.5,
                      verbosity=0):
 
-    # track whether this is the first update of predictions or not
-    # DEPRECATED
-    #self.first_update = True
-
     # set verbosity
     self._verbosity = verbosity
 
+    # keep track of models
     self._experiments = experiments
     goniometers = [e.goniometer for e in self._experiments]
     self._axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
     self._s0vecs = [matrix.col(e.beam.get_s0()) for e in self._experiments]
-    # keep references to the beam, goniometer and sweep range (for
-    # reflection exclusion and subsetting)
-    # DEPRECATED - USE THE EXPERIMENTS
-    #self._beam = beam
-    #self._gonio = gonio
-    #self._sweep_range_rad = sweep_range_rad
 
     # set up the reflection inclusion cutoffs
     self._close_to_spindle_cutoff = close_to_spindle_cutoff #too close to spindle
@@ -100,21 +90,10 @@ class ReflectionManager(object):
     """Complete initialisation by performing outlier rejection and any
     requested subsetting. This function to be called by a Target object"""
 
-    # choose a random subset of data for refinement
-    # DO THIS LATER, AFTER PREDICTION AND OUTLIER REJECTION
-    #self._sample_size = self._accepted_refs_size
-    #refs_to_keep = self._create_working_set(refs_to_keep,
-    #                                        nref_per_degree,
-    #                                        minimum_sample_size,
-    #                                        max_num_obs)
-
     if self._verbosity > 1: print "Finalising the Reflection Manager"
 
-    # NB This function does the job previously handled by the first_update clause in
-    # Target.predict()
-
     # print summary before outlier rejection
-    self._reflection_manager.print_stats_on_matches()
+    self.print_stats_on_matches()
 
     # flag potential outliers
     rejection_occurred = self._reject_outliers()
@@ -132,7 +111,7 @@ class ReflectionManager(object):
       print len(self._reflections), "reflections remain in the manager"
 
     # print summary after outlier rejection
-    if rejection_occurred: self._reflection_manager.print_stats_on_matches()
+    if rejection_occurred: self.print_stats_on_matches()
 
     # form working subset
     refs_to_keep = self._create_working_set()
@@ -247,7 +226,7 @@ class ReflectionManager(object):
     """Make a subset of the indices of reflections to use in refinement"""
 
     working_isel = flex.size_t()
-    for iexp, exp in self._experiments:
+    for iexp, exp in enumerate(self._experiments):
 
       sel = self._reflections['id'] == iexp
       isel = sel.iselection()
@@ -399,9 +378,9 @@ class ReflectionManager(object):
     if self._iqr_multiplier is None: return False
 
     from scitbx.math import five_number_summary
-    matches = self._reflections.select(self._reflections.get_flags(
-      self._reflections.flags.used_in_refinement))
-    imatches = matches.iselection()
+    sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+    matches = self._reflections.select(sel)
+    imatches = sel.iselection()
 
     x_resid = matches['x_resid']
     y_resid = matches['y_resid']
@@ -420,18 +399,15 @@ class ReflectionManager(object):
     cut_phi = self._iqr_multiplier * iqr_phi
 
     # accumulate a selection of outliers
-    sel = matches.select(matches['x_resid'] > q3_x + cut_x)
-    sel.set_selected(matches.select(matches['x_resid'] < q1_x - cut_x))
-    sel.set_selected(matches.select(matches['y_resid'] > q3_y + cut_y))
-    sel.set_selected(matches.select(matches['y_resid'] < q1_y - cut_y))
-    sel.set_selected(matches.select(matches['phi_resid'] > q3_phi + cut_phi))
-    sel.set_selected(matches.select(matches['phi_resid'] < q1_phi - cut_phi))
+    sel = matches['x_resid'] > q3_x + cut_x
+    sel.set_selected((matches['x_resid'] < q1_x - cut_x), True)
+    sel.set_selected((matches['y_resid'] > q3_y + cut_y), True)
+    sel.set_selected((matches['y_resid'] < q1_y - cut_y), True)
+    sel.set_selected((matches['phi_resid'] > q3_phi + cut_phi), True)
+    sel.set_selected((matches['phi_resid'] < q1_phi - cut_phi), True)
 
     # get positions of outliers from the original matches
     ioutliers = imatches.select(sel)
-    #mask = flex.bool(len(self._reflections))
-    #mask.fill(False) # probably don't need this
-    #mask.set_selected(ioutliers, True)
 
     # set those reflections to not be used
     self._reflections.unset_flags(ioutliers,
