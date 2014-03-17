@@ -20,15 +20,16 @@ class Simulator(object):
     self.sigma_m = sigma_m
     self.n_sigma = n_sigma
 
-  def with_given_intensity(self, N, I, B):
+  def with_given_intensity(self, N, I, B, refl=None):
     ''' Generate reflections with a given intensity and background. '''
     from dials.array_family import flex
     return self.with_individual_given_intensity(
       N,
       flex.int(N, I),
-      flex.int(N, B))
+      flex.int(N, B),
+      refl)
 
-  def with_random_intensity(self, N, Imax, Bmax):
+  def with_random_intensity(self, N, Imax, Bmax, refl=None):
     ''' Generate reflections with a random intensity and background. '''
     from dials.array_family import flex
     if Imax == 0:
@@ -39,9 +40,9 @@ class Simulator(object):
       B = flex.size_t(N).as_int()
     else:
       B = flex.random_size_t(N, Bmax).as_int()
-    return self.with_individual_given_intensity(N, I, B)
+    return self.with_individual_given_intensity(N, I, B, refl)
 
-  def with_individual_given_intensity(self, N, I, B):
+  def with_individual_given_intensity(self, N, I, B, refl=None):
     ''' Generate reflections with given intensity and background. '''
     from dials.algorithms.shoebox import MaskForeground
     from dials.array_family import flex
@@ -56,7 +57,8 @@ class Simulator(object):
     assert(N == len(B))
 
     # Generate some predictions
-    refl = self.generate_predictions(N)
+    if refl is None:
+      refl = self.generate_predictions(N)
 
     # Calculate the signal
     progress = ProgressBar(title='Calculating signal for %d reflections' % len(refl))
@@ -66,18 +68,19 @@ class Simulator(object):
     shoebox = refl['shoebox']
     m = int(len(refl) / 100)
     for i in range(len(refl)):
-      simulate_reciprocal_space_gaussian(
-        self.experiment.beam,
-        self.experiment.detector,
-        self.experiment.goniometer,
-        self.experiment.scan,
-        self.sigma_b,
-        self.sigma_m,
-        s1[i],
-        phi[i],
-        bbox[i],
-        I[i],
-        shoebox[i].data)
+      if I[i] > 0:
+        simulate_reciprocal_space_gaussian(
+          self.experiment.beam,
+          self.experiment.detector,
+          self.experiment.goniometer,
+          self.experiment.scan,
+          self.sigma_b,
+          self.sigma_m,
+          s1[i],
+          phi[i],
+          bbox[i],
+          I[i],
+          shoebox[i].data)
       if i % m == 0:
         progress.update(100.0 * float(i) / len(refl))
     progress.finished('Calculated signal impacts for %d reflections' % len(refl))
@@ -85,13 +88,14 @@ class Simulator(object):
     # Calculate the background
     progress = ProgressBar(title='Calculating background for %d reflections' % len(refl))
     for l in range(len(refl)):
-      background = flex.double(flex.grid(shoebox[l].size()), 0.0)
-      g = variate(poisson_distribution(mean = B[l]))
-      for k in range(background.all()[0]):
-        for j in range(background.all()[1]):
-          for i in range(background.all()[2]):
-            background[k, j, i] += g.next()
-      shoebox[l].data += background
+      if B[l] > 0:
+        background = flex.double(flex.grid(shoebox[l].size()), 0.0)
+        g = variate(poisson_distribution(mean = B[l]))
+        for k in range(background.all()[0]):
+          for j in range(background.all()[1]):
+            for i in range(background.all()[2]):
+              background[k, j, i] += g.next()
+        shoebox[l].data += background
       if l % m == 0:
         progress.update(100.0 * float(l) / len(refl))
       progress.update(100.0 * float(l) / len(refl))
