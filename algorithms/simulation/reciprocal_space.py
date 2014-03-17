@@ -126,13 +126,25 @@ class Simulator(object):
     refl.del_selected(mask != True)
     Command.end('Filtered %d reflections by zeta >= %f' % (len(refl), zeta))
 
+    # Compute the bounding box
+    refl.compute_bbox(self.experiment, self.n_sigma, self.sigma_b, self.sigma_m)
+    index = []
+    image_size = self.experiment.detector[0].get_image_size()
+    array_range = self.experiment.scan.get_array_range()
+    bbox = refl['bbox']
+    for i in range(len(refl)):
+      x0, x1, y0, y1, z0, z1 = bbox[i]
+      if (x0 < 0 or x1 > image_size[0] or
+          y0 < 0 or y1 > image_size[1] or
+          z0 < array_range[0] or z1 > array_range[1]):
+        index.append(i)
+    refl.del_selected(flex.size_t(index))
+
     # Sample if specified
     index = random.sample(range(len(refl)), N)
     refl = refl.select(flex.size_t(index))
 
     # Compute the bounding box
-    refl.compute_bbox(self.experiment, self.n_sigma, self.sigma_b, self.sigma_m)
-
     # Create a load of shoeboxes
     Command.start('Creating shoeboxes for %d reflections' % len(refl))
     refl['shoebox'] = flex.shoebox(refl['panel'], refl['bbox'])
