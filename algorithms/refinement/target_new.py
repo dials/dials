@@ -95,7 +95,7 @@ class Target(object):
     resid = phi_calc - (flex.fmod(phi_obs, TWO_PI))
     # ensure this is the smaller of two possibilities
     resid = flex.fmod((resid + pi), TWO_PI) - pi
-    phi_calc = phi_calc + resid
+    phi_calc = phi_obs + resid
     # put back in the reflections
     reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
 
@@ -107,6 +107,10 @@ class Target(object):
     reflections['phi_resid'] = phi_calc - phi_obs
     reflections['phi_resid2'] = reflections['phi_resid']**2
 
+    # set used_in_refinement flag to all those that had predictions
+    mask = reflections.get_flags(reflections.flags.predicted)
+    reflections.set_flags(mask, reflections.flags.used_in_refinement)
+
     #FIXME
     # calculate gradients for all reflections
     #grads = self._prediction_parameterisation.get_gradients(
@@ -114,6 +118,28 @@ class Target(object):
     #                            experiment_id=experiment_id)
 
     return
+
+  def calculate_gradients(self):
+    """delegate to the prediction_parameterisation object to calculate
+    gradients for all reflections.
+
+    This version just loops over the existing way of calculation gradients. A
+    new version will make changes to the prediction_parameterisation to make
+    the loop in C++"""
+
+    grads = []
+    for obs in self._reflection_manager.get_obs():
+      h = obs['miller_index']
+      s_calc = obs['s1']
+      phi_calc = obs['xyzcal.mm'][2]
+      panel_id = obs['panel']
+      frame_id = obs['xyzobs.px.value'][2]
+      experiment_id = obs['id']
+      grads.append(self._prediction_parameterisation.get_gradients(
+                                h, s_calc, phi_calc, panel_id, frame_id,
+                                experiment_id=experiment_id))
+
+    return grads
 
   def get_num_matches(self):
     """return the number of reflections currently used in the calculation"""
