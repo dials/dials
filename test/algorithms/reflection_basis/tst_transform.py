@@ -71,7 +71,7 @@ class TestForward(object):
     self.spec = transform.TransformSpec(
         self.beam, self.detector, self.gonio, self.scan,
         self.sigma_divergence, self.mosaicity,
-        self.n_sigma, self.grid_size)
+        self.n_sigma+1, self.grid_size)
 
   def __call__(self):
     self.tst_conservation_of_counts()
@@ -137,8 +137,8 @@ class TestForward(object):
           maxgx = max([gx00, gx01, gx10, gx11])
           mingy = min([gy00, gy01, gy10, gy11])
           maxgy = max([gy00, gy01, gy10, gy11])
-          if (mingx >= 0 and maxgx <= 2 * self.grid_size + 1 and
-              mingy >= 0 and maxgy <= 2 * self.grid_size + 1):
+          if (mingx >= 0 and maxgx < 2 * self.grid_size + 1 and
+              mingy >= 0 and maxgy < 2 * self.grid_size + 1):
             inside = True
           for k in range(1, z1 - z0 - 1):
             mask[k,j,i] = inside
