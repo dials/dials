@@ -16,6 +16,16 @@ def export_mtz(integrated_data, experiment_list, hklout):
   assert(len(experiment_list) == 1)
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
+  # FIXME TODO for more than one experiment into an MTZ file:
+  #
+  # - add an epoch (or recover an epoch) from the scan and add this as an extra
+  #   column to the MTZ file for scaling, so we know that the two lattices were
+  #   integrated at the same time
+  # - decide a sensible BATCH increment to apply to the BATCH value between
+  #   experiments and add this
+  #
+  # At the moment this is probably enough to be working on.
+
   experiment = experiment_list[0]
 
   # also only work with one panel(for the moment)
@@ -58,7 +68,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
     o.set_alambd(wavelength).set_delamb(0.0).set_delcor(0.0)
     o.set_divhd(0.0).set_divvd(0.0)
 
-    # FIXME hard-coded assumption on indealized beam vector below...
+    # FIXME hard-coded assumption on indealized beam vector below... this may be
+    # broken when we come to process data from a non-imgCIF frame
     o.set_so(flex.float(s0)).set_source(flex.float((0, 0, -1)))
 
     # these are probably 0, 1 respectively, also flags for how many are set, sd
@@ -77,11 +88,13 @@ def export_mtz(integrated_data, experiment_list, hklout):
       _unit_cell = unit_cell
       _U = U
 
+    # FIXME need to get what was refined and what was constrained from the
+    # crystal model
     o.set_cell(flex.float(_unit_cell.parameters()))
     o.set_lbcell(flex.int((-1, -1, -1, -1, -1, -1)))
     o.set_umat(flex.float(_U.transpose().elems))
 
-    # sadly we don't record the mosaic spread at the moment (by design)
+    # get the mosaic spread though today it may not actually be set
     mosaic = experiment.crystal.get_mosaicity()
     o.set_crydat(flex.float([mosaic, 0.0, 0.0, 0.0, 0.0, 0.0,
                              0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
