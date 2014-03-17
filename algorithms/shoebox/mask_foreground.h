@@ -55,7 +55,7 @@ namespace dials { namespace algorithms { namespace shoebox {
                    const Goniometer &gonio, const Scan &scan,
                    const af::const_ref<double> &delta_b,
                    const af::const_ref<double> &delta_m)
-      : s1_map_(beam_vector_map(detector, beam, false)),
+      : s1_map_(beam_vector_map(detector, beam, true)),
         m2_(gonio.get_rotation_axis()),
         s0_(beam.get_s0()),
         phi0_(scan.get_oscillation()[0]),
@@ -127,7 +127,7 @@ namespace dials { namespace algorithms { namespace shoebox {
         DIALS_ASSERT(z >= 0 && z < delta_b_r_.size());
         DIALS_ASSERT(z >= z0 && z < z1);
         double delta_b_r = delta_b_r_[z];
-        //double delta_m_r = delta_m_r_[z];
+        double delta_m_r = delta_m_r_[z];
 
         // Check the size of the mask
         DIALS_ASSERT(mask.accessor()[0] == zsize);
@@ -147,15 +147,67 @@ namespace dials { namespace algorithms { namespace shoebox {
         // (c1 / delta_b)^2 + (c2 / delta_b)^2 <= 1
         // Mark those points within as Foreground and those without as
         // Background.
+        //for (int j = 0; j < ysize; ++j) {
+          //for (int i = 0; i < xsize; ++i) {
+            //if (x0 + i >= 0 && y0 + j >= 0 &&
+                //x0 + i < width && y0 + j < height) {
+              //vec2<double> gxy = cs.from_beam_vector(s1_map_(y0 + j, x0 + i));
+              //double gxa2 = (gxy[0] * delta_b_r)*(gxy[0] * delta_b_r);
+              //double gyb2 = (gxy[1] * delta_b_r)*(gxy[1] * delta_b_r);
+              //for (std::size_t k = 0; k < zsize; ++k) {
+                //double gz = cs.from_rotation_angle(phi0_ + (z0 + k + 0.5 - index0_) * dphi_);
+                //double gzc2 = (gz * delta_m_r)*(gz * delta_m_r);
+                //int mask_value = (gxa2 + gyb2 + gzc2 <= 1.0) ? Foreground : Background;
+                //mask(k, j, i) |= mask_value;
+              //}
+            //}
+          //}
+        //}
         for (int j = 0; j < ysize; ++j) {
           for (int i = 0; i < xsize; ++i) {
             if (x0 + i >= 0 && y0 + j >= 0 &&
                 x0 + i < width && y0 + j < height) {
-              vec2<double> gxy = cs.from_beam_vector(s1_map_(y0 + j, x0 + i));
-              double gxa2 = (gxy[0] * delta_b_r)*(gxy[0] * delta_b_r);
-              double gyb2 = (gxy[1] * delta_b_r)*(gxy[1] * delta_b_r);
-              int mask_value = (gxa2 + gyb2 <= 1.0) ? Foreground : Background;
+              vec2<double> gxy1 = cs.from_beam_vector(s1_map_(y0 + j, x0 + i));
+              vec2<double> gxy2 = cs.from_beam_vector(s1_map_(y0 + j + 1, x0 + i));
+              vec2<double> gxy3 = cs.from_beam_vector(s1_map_(y0 + j, x0 + i + 1));
+              vec2<double> gxy4 = cs.from_beam_vector(s1_map_(y0 + j + 1, x0 + i + 1));
+              double gx, gy;
+              if (std::abs(gxy1[0]) < std::abs(gxy2[0])) {
+                if (std::abs(gxy1[0]) < std::abs(gxy3[0])) {
+                  gx = std::abs(gxy1[0]) < std::abs(gxy4[0]) ? gxy1[0] : gxy4[0];
+                } else {
+                  gx = std::abs(gxy3[0]) < std::abs(gxy4[0]) ? gxy3[0] : gxy4[0];
+                }
+              } else {
+                if (std::abs(gxy2[0]) < std::abs(gxy3[0])) {
+                  gx = std::abs(gxy2[0]) < std::abs(gxy4[0]) ? gxy2[0] : gxy4[0];
+                } else {
+                  gx = std::abs(gxy3[0]) < std::abs(gxy4[0]) ? gxy3[0] : gxy4[0];
+                }
+              }
+
+              if (std::abs(gxy1[1]) < std::abs(gxy2[1])) {
+                if (std::abs(gxy1[1]) < std::abs(gxy3[1])) {
+                  gy = std::abs(gxy1[1]) < std::abs(gxy4[1]) ? gxy1[1] : gxy4[1];
+                } else {
+                  gy = std::abs(gxy3[1]) < std::abs(gxy4[1]) ? gxy3[1] : gxy4[1];
+                }
+              } else {
+                if (std::abs(gxy2[1]) < std::abs(gxy3[1])) {
+                  gy = std::abs(gxy2[1]) < std::abs(gxy4[1]) ? gxy2[1] : gxy4[1];
+                } else {
+                  gy = std::abs(gxy3[1]) < std::abs(gxy4[1]) ? gxy3[1] : gxy4[1];
+                }
+              }
+
+              double gxa2 = (gx * delta_b_r)*(gx * delta_b_r);
+              double gyb2 = (gy * delta_b_r)*(gy * delta_b_r);
               for (std::size_t k = 0; k < zsize; ++k) {
+                double gz1 = cs.from_rotation_angle(phi0_ + (z0 + k - index0_) * dphi_);
+                double gz2 = cs.from_rotation_angle(phi0_ + (z0 + k + 1 - index0_) * dphi_);
+                double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2;
+                double gzc2 = (gz * delta_m_r)*(gz * delta_m_r);
+                int mask_value = (gxa2 + gyb2 + gzc2 <= 1.0) ? Foreground : Background;
                 mask(k, j, i) |= mask_value;
               }
             }
