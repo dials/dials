@@ -113,7 +113,11 @@ class Test(object):
     D, p  = kolmogorov_smirnov_test_standard_normal(Z)
     print "KS: D: %f, p-value: %f" % (D, p)
 
-
+    # FIXME Z score should be a standard normal distribution. When background is
+    # the main component, we do indeed see that the z score is in a standard
+    # normal distribution. When the intensity dominates, the variance of the Z
+    # scores decreases indicating that for increasing intensity of the signal,
+    # the variance is over estimated.
     assert(abs(Z_mean) <= 3 * Z_var)
 
 
