@@ -1,0 +1,9 @@
+
+Import('env')
+
+sources = [
+    'boost_python/simulation_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_simulation_ext', 
+    source=sources)
+    

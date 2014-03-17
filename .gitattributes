@@ -210,9 +210,12 @@ algorithms/shoebox/mask_overlapping.h -text
 algorithms/shoebox/masker.py -text
 algorithms/shoebox/partial_extractor.h -text
 algorithms/shoebox/profile_extractor.py -text
+algorithms/simulation/SConscript -text
 algorithms/simulation/__init__.py -text
+algorithms/simulation/boost_python/simulation_ext.cc -text
 algorithms/simulation/generate_test_reflections.py -text
 algorithms/simulation/reciprocal_space.py -text
+algorithms/simulation/reciprocal_space_helpers.h -text
 algorithms/simulation/utils.py -text
 algorithms/spatial_indexing/SConscript -text
 algorithms/spatial_indexing/__init__.py -text

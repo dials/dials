@@ -42,6 +42,8 @@ class Simulator(object):
     from dials.array_family import flex
     from dials.util.command_line import Command, ProgressBar
     from dials.algorithms.reflection_basis import CoordinateSystem
+    from scitbx.random import variate, poisson_distribution
+    from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
     import random
 
     # Check the lengths
@@ -59,34 +61,53 @@ class Simulator(object):
     phi = refl['xyzcal.mm'].parts()[2]
     bbox = refl['bbox']
     shoebox = refl['shoebox']
+    m = int(len(refl) / 100)
     for i in range(len(refl)):
-      cs = CoordinateSystem(m2, s0, s1[i], phi[i])
-      for j in range(I[i]):
-        e = (random.gauss(0, self.sigma_b),
-             random.gauss(0, self.sigma_b),
-             random.gauss(0, self.sigma_m))
-        s1_dash, phi_dash = cs.to_beam_vector_and_rotation_angle(e)
-        x, y = self.experiment.detector[0].get_ray_intersection(s1_dash)
-        x, y = self.experiment.detector[0].millimeter_to_pixel((x, y))
-        z = self.experiment.scan.get_array_index_from_angle(phi_dash, deg=False)
-        if (x < bbox[i][0] or x > bbox[i][1] or
-            y < bbox[i][2] or y > bbox[i][3] or
-            z < bbox[i][4] or z > bbox[i][5]):
-          continue
-        x = int(x - bbox[i][0])
-        y = int(y - bbox[i][2])
-        z = int(z - bbox[i][4])
-        shoebox[i].data[z,y,x] += 1
-      progress.update(100.0 * float(i) / len(refl))
+      simulate_reciprocal_space_gaussian(
+        self.experiment.beam,
+        self.experiment.detector,
+        self.experiment.goniometer,
+        self.experiment.scan,
+        self.sigma_b,
+        self.sigma_m,
+        s1[i],
+        phi[i],
+        bbox[i],
+        I[i],
+        shoebox[i].data)
+      #cs = CoordinateSystem(m2, s0, s1[i], phi[i])
+      #for j in range(I[i]):
+        #e = (random.gauss(0, self.sigma_b),
+             #random.gauss(0, self.sigma_b),
+             #random.gauss(0, self.sigma_m))
+        #s1_dash, phi_dash = cs.to_beam_vector_and_rotation_angle(e)
+        #x, y = self.experiment.detector[0].get_ray_intersection(s1_dash)
+        #x, y = self.experiment.detector[0].millimeter_to_pixel((x, y))
+        #z = self.experiment.scan.get_array_index_from_angle(phi_dash, deg=False)
+        #if (x < bbox[i][0] or x > bbox[i][1] or
+            #y < bbox[i][2] or y > bbox[i][3] or
+            #z < bbox[i][4] or z > bbox[i][5]):
+          #continue
+        #x = int(x - bbox[i][0])
+        #y = int(y - bbox[i][2])
+        #z = int(z - bbox[i][4])
+        #shoebox[i].data[z,y,x] += 1
+      if i % m == 0:
+        progress.update(100.0 * float(i) / len(refl))
     progress.finished('Calculated signal impacts for %d reflections' % len(refl))
 
     # Calculate the background
     progress = ProgressBar(title='Calculating background for %d reflections' % len(refl))
-    for i in range(len(refl)):
-      n = len(shoebox[i].data)
-      for k in flex.random_size_t(n * B[i], n):
-        shoebox[i].data[k] += 1
-      progress.update(100.0 * float(i) / len(refl))
+    m = int(len(refl) / 100)
+    for l in range(len(refl)):
+      g = variate(poisson_distribution(mean=B[l]))
+      size = shoebox[l].size()
+      for k in range(size[0]):
+        for j in range(size[1]):
+          for i in range(size[2]):
+            shoebox[l].data[k,j,i] += g.next()
+      if l % m == 0:
+        progress.update(100.0 * float(l) / len(refl))
     progress.finished('Calculated background for %d reflections' % len(refl))
 
     # Save the expected intensity and background
@@ -106,7 +127,7 @@ class Simulator(object):
     import random
 
     # Generate a list of reflections
-    refl = flex.reflection_table.from_predictions([self.experiment])
+    refl = flex.reflection_table.from_predictions(self.experiment)
 
     # Filter by zeta
     zeta = 0.05
@@ -157,7 +178,8 @@ if __name__ == '__main__':
   from math import pi
   from dials.model.experiment.experiment_list import ExperimentListFactory
   experiments = ExperimentListFactory.from_json_file(
-    "/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data/experiments.json")
+    "/home/upc86896/Projects/cctbx/sources/dials_regression/centroid_test_data/experiments.json",
+  check_format=False)
   sigma_b = 0.058 * pi / 180
   sigma_m = 0.157 * pi / 180
   n_sigma = 3

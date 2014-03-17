@@ -88,7 +88,7 @@ if __name__ == '__main__':
     exit(0)
 
   # Get the experiments
-  experiments = ExperimentListFactory.from_json_file(args[0])
+  experiments = ExperimentListFactory.from_json_file(args[0], check_format=False)
   assert(len(experiments) == 1)
   experiment = experiments[0]
 
