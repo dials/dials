@@ -34,17 +34,17 @@ class Test(object):
       #join(path, 'simulated_n10000_i1000_b0.pickle'),
       #join(path, 'simulated_r_n10000_i10000_b0.pickle'),
 
-      join(path, 'simulated_n10000_i10_b10.pickle'),
-      join(path, 'simulated_n10000_i100_b10.pickle'),
-      join(path, 'simulated_n10000_i1000_b10.pickle'),
-      join(path, 'simulated_n10000_i10000_b10.pickle'),
-      join(path, 'simulated_r_n10000_i10000_b10.pickle'),
+      #join(path, 'simulated_n10000_i10_b10.pickle'),
+      #join(path, 'simulated_n10000_i100_b10.pickle'),
+      #join(path, 'simulated_n10000_i1000_b10.pickle'),
+      #join(path, 'simulated_n10000_i10000_b10.pickle'),
+      #join(path, 'simulated_r_n10000_i10000_b10.pickle'),
 
-      join(path, 'simulated_n10000_i10_b100.pickle'),
-      join(path, 'simulated_n10000_i100_b100.pickle'),
-      join(path, 'simulated_n10000_i1000_b100.pickle'),
-      join(path, 'simulated_n10000_i10000_b100.pickle'),
-      join(path, 'simulated_r_n10000_i10000_b100.pickle'),
+      #join(path, 'simulated_n10000_i10_b100.pickle'),
+      #join(path, 'simulated_n10000_i100_b100.pickle'),
+      #join(path, 'simulated_n10000_i1000_b100.pickle'),
+      #join(path, 'simulated_n10000_i10000_b100.pickle'),
+      #join(path, 'simulated_r_n10000_i10000_b100.pickle'),
     ]
 
     # Check the files exist
@@ -98,7 +98,7 @@ class Test(object):
     # Integrate
     integration = ProfileFittingReciprocalSpace(
       grid_size=4,
-      threshold=0.02,
+      threshold=0.00,
       frame_interval=100,
       n_sigma=5,
       mask_n_sigma=3,
@@ -108,7 +108,54 @@ class Test(object):
 
     # Integrate the reference profiles
     integration(self.experiment, self.reference)
+
+    p = integration.learner.locate().profile(0)
+    m = integration.learner.locate().mask(0)
+
     locator = integration.learner.locate()
+
+    cor = locator.correlations()
+    for j in range(cor.all()[0]):
+      print ' '.join([str(cor[j,i]) for i in range(cor.all()[1])])
+    #exit(0)
+    #from matplotlib import pylab
+    #pylab.imshow(cor.as_numpy_array(), interpolation='none', vmin=-1, vmax=1)
+    #pylab.show()
+
+
+    #n = locator.size()
+    #for i in range(n):
+      #c = locator.coord(i)
+      #p = locator.profile(i)
+      #vmax = flex.max(p)
+      #from matplotlib import pylab
+      #for j in range(9):
+        #pylab.subplot(3, 3, j+1)
+        #pylab.imshow(p.as_numpy_array()[j], vmin=0, vmax=vmax,
+        #interpolation='none')
+      #pylab.show()
+
+    #print "NRef: ", n
+    #x = []
+    #y = []
+    #for i in range(n):
+      #c = locator.coord(i)
+      #x.append(c[0])
+      #y.append(c[1])
+    #from matplotlib import pylab
+    #pylab.scatter(x,y)
+    #pylab.show()
+
+    #exit(0)
+    import numpy
+    #pmax = flex.max(p)
+    #scale = 100 / pmax
+    #print "Scale: ", 100 / pmax
+    #p = p.as_numpy_array() *100 / pmax
+    #p = p.astype(numpy.int)
+    #print p
+    #print m.as_numpy_array()
+
     # Check the reference profiles and spots are ok
     #self.check_profiles(integration.learner)
 
@@ -121,7 +168,6 @@ class Test(object):
 
     # Only select variances greater than zero
     mask = self.reference.get_flags(self.reference.flags.integrated)
-    assert(mask.count(True) > 0)
     I_cal = self.reference['intensity.raw.value']
     I_var = self.reference['intensity.raw.variance']
     B_sim = self.reference['background.sim'].as_double()
@@ -135,69 +181,176 @@ class Test(object):
     I_exp = I_exp.select(mask)
     P_cor = P_cor.select(mask)
 
-    max_ind = flex.max_index(flex.abs(I_cal-I_sim))
+    max_ind = flex.max_index(I_cal)
     max_I = I_cal[max_ind]
     max_P = self.reference[max_ind]['rs_shoebox'].data
     max_C = self.reference[max_ind]['xyzcal.px']
     max_S = self.reference[max_ind]['shoebox'].data
 
+
+    min_ind = flex.min_index(P_cor)
+    min_I = I_cal[min_ind]
+    min_P = self.reference[min_ind]['rs_shoebox'].data
+    min_C = self.reference[min_ind]['xyzcal.px']
+    min_S = self.reference[min_ind]['shoebox'].data
+
+    ##for k in range(max_S.all()[0]):
+    #if False:
+      #for j in range(max_S.all()[1]):
+        #for i in range(max_S.all()[2]):
+          #max_S[k,j,i] = 0
+          #if (abs(i - max_S.all()[2] // 2) < 2 and
+              #abs(j - max_S.all()[1] // 2) < 2 and
+              #abs(k - max_S.all()[0] // 2) < 2):
+            #max_S[k,j,i] = 100
+
+    #p = max_P.as_numpy_array() * 100 / flex.max(max_P)
+    #p = p.astype(numpy.int)
+    #print p
+
+    #from dials.scratch.jmp.misc.test_transform import test_transform
+    #grid_size = 4
+    #ndiv = 5
+    #sigma_b = 0.024 * pi / 180.0
+    #sigma_m = 0.044 * pi / 180.0
+    #n_sigma = 4.0
+    #max_P2 = test_transform(
+      #self.experiment,
+      #self.reference[max_ind]['shoebox'],
+      #self.reference[max_ind]['s1'],
+      #self.reference[max_ind]['xyzcal.mm'][2],
+      #grid_size,
+      #sigma_m,
+      #sigma_b,
+      #n_sigma,
+      #ndiv)
+    #max_P = max_P2
+
     ref_ind = locator.index(max_C)
     ref_P = locator.profile(ref_ind)
     ref_C = locator.coord(ref_ind)
 
-    #def f(I):
-      #mask = flex.bool(flex.grid(9,9,9), False)
-      #for k in range(9):
-        #for j in range(9):
-          #for i in range(9):
-            #dx = 5 * (i - 4.5) / 4.5
-            #dy = 5 * (j - 4.5) / 4.5
-            #dz = 5 * (k - 4.5) / 4.5
-            #dd = sqrt(dx**2 + dy**2 + dz**2)
-            #if dd <= 3:
-              #mask[k,j,i] = True
+    print "Max Index: ", max_ind, max_I, flex.sum(max_P), flex.sum(max_S)
+    print "Coord: ", max_C, "Ref Coord: ", ref_C
 
-      #mask = mask.as_1d() & (ref_P.as_1d() > 0)
-      #p = ref_P.as_1d().select(mask)
-      #c = max_P.as_1d().select(mask)
-      #return flex.sum((c - I * p)**2 / (I * p))
+    print "Min Index: ", min_ind, min_I, flex.sum(min_P), flex.sum(min_S)
+    print "Coord: ", min_C, "Ref Coord: ", ref_C
 
-    #ff = []
-    #for I in range(9500, 11500):
-      #ff.append(f(I))
-    #print 'Old I: ', sorted(range(len(ff)), key=lambda x: ff[x])[0] + 9500
-
-    #from matplotlib import pylab
-    #pylab.plot(range(9500, 11500), ff)
+    #vmax = flex.max(max_P)
+    #print sum(max_S)
+    #print sum(max_P)
+    #from matplotlib import pylab, cm
+    #for j in range(9):
+      #pylab.subplot(3, 3, j+1)
+      #pylab.imshow(max_P.as_numpy_array()[j], vmin=0, vmax=vmax,
+      #interpolation='none', cmap=cm.Greys_r)
     #pylab.show()
 
-    #def estI(I):
-      #mask = flex.bool(flex.grid(9,9,9), False)
-      #for k in range(9):
-        #for j in range(9):
-          #for i in range(9):
-            #dx = 5 * (i - 4.5) / 4.5
-            #dy = 5 * (j - 4.5) / 4.5
-            #dz = 5 * (k - 4.5) / 4.5
-            #dd = sqrt(dx**2 + dy**2 + dz**2)
-            #if dd <= 3:
-              #mask[k,j,i] = True
+    #vmax = flex.max(min_P)
+    #print sum(min_S)
+    #print sum(min_P)
+    #from matplotlib import pylab, cm
+    #for j in range(9):
+      #pylab.subplot(3, 3, j+1)
+      #pylab.imshow(min_P.as_numpy_array()[j], vmin=0, vmax=vmax,
+      #interpolation='none', cmap=cm.Greys_r)
+    #pylab.show()
 
-      #mask = mask.as_1d() & (ref_P.as_1d() > 0)
-      #p = ref_P.as_1d().select(mask)
-      #c = max_P.as_1d().select(mask)
-      #v = I * p
-      #return flex.sum(c * p / v) / flex.sum(p*p/v)
+    #for k in range(max_S.all()[0]):
+      #print ''
+      #print 'Slice %d' % k
+      #for j in range(max_S.all()[1]):
+        #print ' '.join(["%-4d" % int(max_S[k,j,i]) for i in range(max_S.all()[2])])
 
-    #def iterI(I0):
-      #I = estI(I0)
-      #print I
-      #if abs(I - I0) < 1e-3:
-        #return I
-      #return iterI(I)
+    print "Testing"
 
-    #newI = iterI(10703)#flex.sum(max_P))
-    #print "New I: ", newI
+    def f(I):
+      mask = flex.bool(flex.grid(9,9,9), False)
+      for k in range(9):
+        for j in range(9):
+          for i in range(9):
+            dx = 5 * (i - 4.5) / 4.5
+            dy = 5 * (j - 4.5) / 4.5
+            dz = 5 * (k - 4.5) / 4.5
+            dd = sqrt(dx**2 + dy**2 + dz**2)
+            if dd <= 3:
+              mask[k,j,i] = True
+
+      mask = mask.as_1d() & (ref_P.as_1d() > 0)
+      p = ref_P.as_1d().select(mask)
+      c = max_P.as_1d().select(mask)
+      return flex.sum((c - I * p)**2 / (I * p))
+
+    def df(I):
+      mask = flex.bool(flex.grid(9,9,9), False)
+      for k in range(9):
+        for j in range(9):
+          for i in range(9):
+            dx = 5 * (i - 4.5) / 4.5
+            dy = 5 * (j - 4.5) / 4.5
+            dz = 5 * (k - 4.5) / 4.5
+            dd = sqrt(dx**2 + dy**2 + dz**2)
+            if dd <= 3:
+              mask[k,j,i] = True
+      mask = mask.as_1d() & (ref_P.as_1d() > 0)
+      p = ref_P.as_1d().select(mask)
+      c = max_P.as_1d().select(mask)
+      b = 0
+      return flex.sum(p) - flex.sum(c*c / (I*I*p))
+      #return flex.sum(p - p*c*c / ((b + I*p)**2))
+      #return flex.sum(3*p*p + (c*c*p*p - 4*b*p*p) / ((b + I*p)**2))
+      #return flex.sum(p - c*c / (I*I*p))
+      #return flex.sum(p * (-c+p*I)*(c+p*I)/((p*I)**2))
+
+    def d2f(I):
+      mask = flex.bool(flex.grid(9,9,9), False)
+      for k in range(9):
+        for j in range(9):
+          for i in range(9):
+            dx = 5 * (i - 4.5) / 4.5
+            dy = 5 * (j - 4.5) / 4.5
+            dz = 5 * (k - 4.5) / 4.5
+            dd = sqrt(dx**2 + dy**2 + dz**2)
+            if dd <= 3:
+              mask[k,j,i] = True
+
+      mask = mask.as_1d() & (ref_P.as_1d() > 0)
+      p = ref_P.as_1d().select(mask)
+      c = max_P.as_1d().select(mask)
+      return flex.sum(2*c*c*p*p / (p*I)**3)
+
+    I = 10703#flex.sum(max_P)
+    mask = ref_P.as_1d() > 0
+    p = ref_P.as_1d().select(mask)
+    c = max_P.as_1d().select(mask)
+    for i in range(10):
+      I = I - df(I) / d2f(I)
+      #v = I*p
+      #I = flex.sum(c * p / v) / flex.sum(p*p / v)
+      print I
+
+
+    from math import log
+    ff = []
+    for I in range(9500, 11500):
+      ff.append(f(I))
+    print sorted(range(len(ff)), key=lambda x: ff[x])[0] + 9500
+    from matplotlib import pylab
+    pylab.plot(range(9500,11500), ff)
+    pylab.show()
+    #exit(0)
+
+    #I = 10000
+    #print flex.sum((max_P - I * ref_P)**2) / flex.sum(I * ref_P)
+
+
+    #I = 10100
+    #print flex.sum((max_P - I * ref_P)**2) / flex.sum(I * ref_P)
+    #exit(0)
+
+
+    print flex.sum(self.reference[0]['rs_shoebox'].data)
+    print I_cal[0]
 
     # Calculate the z score
     perc = self.mv3n_tolerance_interval(3*3)
@@ -206,6 +359,8 @@ class Test(object):
     Z_mean = mv.mean()
     Z_var = mv.unweighted_sample_variance()
     print "Z: mean: %f, var: %f, sig: %f" % (Z_mean, Z_var, sqrt(Z_var))
+
+    print len(I_cal)
 
     from matplotlib import pylab
     from mpl_toolkits.mplot3d import Axes3D
@@ -216,12 +371,68 @@ class Test(object):
     #pylab.scatter(X_pos, P_cor)
     #pylab.scatter(Y_pos, P_cor)
     #pylab.scatter(Z_pos, P_cor)
-    pylab.hist(P_cor,100)
+    #pylab.hist(P_cor,100)
     #pylab.scatter(P_cor, (I_cal - I_exp) / I_exp)
-    #pylab.hist(Z, 100)
+    pylab.hist(Z, 100)
     #pylab.hist(I_cal,100)
     #pylab.hist(I_cal - I_sim, 100)
     pylab.show()
+
+    #print "Calc I: ", self.reference[0]['intensity.raw.value']
+
+    #c = profiles[0].data.as_1d()
+    #xyz = self.reference[0]['xyzcal.px']
+    #i = integration.learner.locate().index(xyz)
+    #p = integration.learner.locate().profile(i).as_1d()
+    #b = profiles[0].background.as_1d()
+    #mask = p > 0
+    #c = c.select(mask)
+    #p = p.select(mask)
+    #b = b.select(mask)
+
+    #I0 = flex.sum(c)
+    #while (True):
+      #v = I0 * p
+      #I = flex.sum(c * p / v) / flex.sum(p*p/v)
+      #if abs(I - I0) < 1e-3:
+        #break
+      #I0 = I
+    #print "I: ", I
+
+    #def f(I):
+      #return flex.sum((c - I*p - b)**2 / (b + I*p))
+
+    #def df(I):
+      #return flex.sum(p*(b-c+p*I)*(b+c+p*I)/((b+p*I)**2))
+
+    #def d2f(I):
+      #return flex.sum(2*c*c*p*p / (b+I*p)**3)
+
+    #I0 = flex.sum(c)
+    #I = 0
+    #while (True):
+      #fI = f(I0)
+      #dfI = df(I0)
+      #d2fI = d2f(I0)
+      #print I0, fI, dfI, d2fI
+      #if d2fI == 0:
+        #break
+      #I = I0 - dfI / d2fI
+      #if abs(I - I0) < 1e-3:
+        #break
+      #I0 = I
+    #print "I: ", I
+
+
+    #from math import log
+    #psi = []
+    #for I in range(1, 15000):
+      #psi.append((flex.sum((c - I*p)**2 / (I*p))))
+    #from matplotlib import pylab
+    #print "Min: ", sorted(range(0,15000-1), key=lambda x: psi[x])[0]+1
+    #pylab.plot(range(1, 15000), psi)
+    #pylab.show()
+
 
   def test_for_reflections(self, refl, filename):
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
@@ -253,10 +464,9 @@ class Test(object):
     # Integrate
     integration = ProfileFittingReciprocalSpace(
       grid_size=4,
-      threshold=0.00,
+      threshold=0.02,
       frame_interval=0,
-      n_sigma=5,
-      mask_n_sigma=3,
+      n_sigma=4,
       sigma_b=0.024 * pi / 180.0,
       sigma_m=0.044 * pi / 180.0
     )
@@ -272,8 +482,8 @@ class Test(object):
     I_var = refl['intensity.raw.variance']
 
     # Check the reference profiles and spots are ok
-    #self.check_profiles(integration.learner)
-    #self.check_reference(reference)
+    self.check_profiles(integration.learner)
+    self.check_reference(reference)
 
     #reference = integration.learner
 
@@ -288,7 +498,6 @@ class Test(object):
 
     # Only select variances greater than zero
     mask = refl.get_flags(refl.flags.integrated)
-    assert(mask.count(True) > 0)
     I_cal = I_cal.select(mask)
     I_var = I_var.select(mask)
     I_sim = I_sim.select(mask)
@@ -296,7 +505,7 @@ class Test(object):
 
     # Calculate the z score
     perc = self.mv3n_tolerance_interval(3*3)
-    Z = (I_cal - I_sim) / flex.sqrt(I_var)
+    Z = (I_cal - I_exp) / flex.sqrt(I_var)
     mv = flex.mean_and_variance(Z)
     Z_mean = mv.mean()
     Z_var = mv.unweighted_sample_variance()
@@ -314,9 +523,9 @@ class Test(object):
     #assert(abs(Z_mean) <= 3 * Z_var)
 
 
-    from matplotlib import pylab
-    pylab.hist(Z, 20)
-    pylab.show()
+    #from matplotlib import pylab
+    #pylab.hist(Z, 20)
+    #pylab.show()
 
     #Z_I = sorted(Z)
     ##n = int(0.05 * len(Z_I))
@@ -338,7 +547,8 @@ class Test(object):
     locator = learner.locate()
     np = locator.size()
     assert(np == 9)
-    assert(flex.sum(learner.counts()) == 10000)
+    cexp = [10000, 3713, 3817, 5023, 3844, 3723, 3768, 4886, 3781]
+    assert(all(c1 == c2 for c1, c2 in zip(cexp, learner.counts())))
 
     #profile = locator.profile(0)
     #pmax = flex.max(profile)
@@ -348,12 +558,12 @@ class Test(object):
     #profile = profile.astype(numpy.int)
     #print profile
 
+
     # Check all the profiles
     eps = 1e-7
     n_sigma = 3
-    n_sigma2 = 5
     grid_size = 4
-    step_size = n_sigma2 / (grid_size + 0.5)
+    step_size = n_sigma / (grid_size + 0.5)
     for i in range(np):
       profile = locator.profile(i)
       assert(abs(flex.sum(profile) - 1.0) < eps)
@@ -363,11 +573,7 @@ class Test(object):
       s1 = tuple(sqrt(vv) for vv in v)
       s2 = tuple(ss * step_size for ss in s1)
       assert(all(abs(mm - (grid_size + 0.5)) < 0.25 for mm in m))
-      assert(all(abs(ss2 - n_sigma / n_sigma2) < 0.25 for ss2 in s2))
-
-    # Check all the profiles have good correlation coefficients
-    cor = locator.correlations()
-    assert(all(cor > 0.99))
+      assert(all(abs(ss2 - 1.0) < 0.25 for ss2 in s2))
 
     # Test passed
     print 'OK'
@@ -387,11 +593,10 @@ class Test(object):
     # Get the transformed shoeboxes
     profiles = reference['rs_shoebox']
     n_sigma = 3
-    n_sigma2 = 5
     grid_size = 4
-    step_size = n_sigma2 / (grid_size + 0.5)
+    step_size = n_sigma / (grid_size + 0.5)
     eps = 1e-7
-    for i in range(len(profiles)):
+    for i in range(1):#len(profiles)):
       import numpy
       data = profiles[i].data
       #dmax = flex.max(data)
@@ -407,7 +612,7 @@ class Test(object):
       s1 = tuple(sqrt(vv) for vv in v)
       s2 = tuple(ss * step_size for ss in s1)
       assert(all(abs(mm - (grid_size + 0.5)) < 0.25 for mm in m))
-      assert(all(abs(ss2 - n_sigma / n_sigma2) < 0.25 for ss2 in s2))
+      assert(all(abs(ss2 - 1.0) < 0.25 for ss2 in s2))
 
     # Calculate Z
     Z = (I_cal - I_exp) / flex.sqrt(I_var)

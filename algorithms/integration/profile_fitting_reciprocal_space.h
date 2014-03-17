@@ -45,11 +45,9 @@ namespace dials { namespace algorithms {
      */
     ProfileFittingReciprocalSpace(
         shared_ptr<locator_type> locate,
-        double mask_range,
         std::size_t max_iter)
      : locate_(locate),
-       max_iter_(max_iter),
-       mask_range_(mask_range) {
+       max_iter_(max_iter) {
       DIALS_ASSERT(locate != NULL);
       DIALS_ASSERT(max_iter_ > 0);
     }
@@ -89,28 +87,8 @@ namespace dials { namespace algorithms {
       profile_type p = locate_->profile(coord);
       profile_mask_type m = locate_->mask(coord);
 
-      af::versa< bool, af::c_grid<3> > mask(m.accessor());
-      double zc = mask.accessor()[0] / 2.0;
-      double yc = mask.accessor()[1] / 2.0;
-      double xc = mask.accessor()[2] / 2.0;
-      for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
-        for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
-          for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
-            double dz = (k - zc) / zc;
-            double dy = (j - yc) / yc;
-            double dx = (i - xc) / xc;
-            double dd = std::sqrt(dx*dx + dy*dy + dz*dz);
-            if (dd < mask_range_) {
-              mask(k,j,i) = m(k,j,i);
-            } else {
-              mask(k,j,i) = false;
-            }
-          }
-        }
-      }
-
       // Do the profile fitting and set the intensity and variance
-      ProfileFitting<FloatType> fit(p.const_ref(), mask.const_ref(), c, b, max_iter_);
+      ProfileFitting<FloatType> fit(p.const_ref(), m.const_ref(), c, b, 1e-3, max_iter_);
       DIALS_ASSERT(fit.niter() < max_iter_);
       return vec3<double>(fit.intensity(), fit.variance(), fit.correlation());
     }
@@ -118,7 +96,6 @@ namespace dials { namespace algorithms {
   private:
     shared_ptr<locator_type> locate_;
     std::size_t max_iter_;
-    double mask_range_;
   };
 
 }} // namespace dials::algorithms

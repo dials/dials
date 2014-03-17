@@ -23,6 +23,7 @@ class ProfileFittingReciprocalSpace(object):
     self.threshold = kwargs['threshold']
     self.frame_interval = kwargs['frame_interval']
     self.bbox_nsigma = kwargs['n_sigma']
+    self.mask_nsigma = kwargs['mask_n_sigma']
     self.sigma_b = kwargs['sigma_b']
     self.sigma_m = kwargs['sigma_m']
 
@@ -62,8 +63,10 @@ class ProfileFittingReciprocalSpace(object):
 
   def _learn_references(self, experiment, reflections):
     ''' Learn the reference profiles. '''
-    from dials.algorithms.integration.profile import XdsCircleSampler
-    from dials.algorithms.integration.profile import XdsCircleReferenceLearner
+    from dials.algorithms.integration.profile import GridSampler
+    from dials.algorithms.integration.profile import GridReferenceLearner
+    #from dials.algorithms.integration.profile import XdsCircleSampler
+    #from dials.algorithms.integration.profile import XdsCircleReferenceLearner
     from dials.array_family import flex
 
     # Match the predictions with the strong spots
@@ -75,11 +78,13 @@ class ProfileFittingReciprocalSpace(object):
     image_size = experiment.detector[0].get_image_size()
     num_frames = experiment.scan.get_num_images()
     volume_size = image_size + (num_frames,)
-    sampler = XdsCircleSampler(volume_size, 1)
+    sampler = GridSampler(volume_size, (3, 3, 1))
+    #sampler = XdsCircleSampler(volume_size, 1)
 
     # Configure the reference learner
     grid_size = (self.grid_size * 2 + 1,) * 3
-    learner = XdsCircleReferenceLearner(sampler, grid_size, self.threshold)
+    learner = GridReferenceLearner(sampler, grid_size, self.threshold)
+    #learner = XdsCircleReferenceLearner(sampler, grid_size, self.threshold)
     profiles = reflections['rs_shoebox'].select(pind)
     coords = reflections['xyzcal.px'].select(pind)
     learner.learn(profiles, coords)
@@ -103,6 +108,7 @@ class ProfileFittingReciprocalSpace(object):
     mask = intensity.parts()[1] > 0
     reflections['intensity.raw.value'] = intensity.parts()[0]
     reflections['intensity.raw.variance'] = intensity.parts()[1]
+    reflections['profile.correlation'] = intensity.parts()[2]
     reflections.set_flags(mask, reflections.flags.integrated)
     Command.end('Integrated {0} reflections'.format(len(reflections)))
 

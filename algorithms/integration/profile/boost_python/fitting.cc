@@ -55,6 +55,10 @@ namespace dials { namespace algorithms { namespace boost_python {
   template <typename FloatType>
   void profile_fitting_suite() {
     def("fit_profile", &make_profile_fitting<FloatType>, (
+      arg("profile"),
+      arg("mask"),
+      arg("contents"),
+      arg("background"),
       arg("bits") = 1e-3,
       arg("max_iter") = 10));
   }

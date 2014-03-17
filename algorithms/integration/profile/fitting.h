@@ -53,16 +53,16 @@ namespace dials { namespace algorithms {
 
       // Iterate to calculate the intensity. Exit if intensity goes less
       // than zero or if the tolerance or number of iteration is reached.
-      double I0 = sum(c);
+      double I0 = sum(c) - sum(b);
       vec2<double> I(0.0, 0.0);
       for (niter_ = 0; niter_ < max_iter; ++niter_) {
         I = estimate_intensity(p, m, c, b, I0);
-        DIALS_ASSERT(I[0] >= 0.0);
         if ((error_ = std::abs(I[0] - I0)) < eps) {
           break;
         }
         I0 = I[0];
       }
+      DIALS_ASSERT(I[1] >= 0);
 
       // Set the intensity and variance
       intensity_ = I[0];
@@ -117,22 +117,37 @@ namespace dials { namespace algorithms {
                        const af::const_ref<FloatType, af::c_grid<3> > &c,
                        const af::const_ref<FloatType, af::c_grid<3> > &b,
                        double I) const {
-      double df = 0.0, d2f = 0.0, sum_v = 0.0;
+      double sum1 = 0.0;
+      double sum2 = 0.0;
+      double sumv = 0.0;
       for (std::size_t i = 0; i < p.size(); ++i) {
         if (m[i]) {
-          double v = b[i] + p[i] * I;
-          double v2 = v*v;
-          double v3 = v2*v;
-          double c2 = c[i] * c[i];
-          double p2 = p[i] * p[i];
-          if (v2 > 0) {
-            df  += p[i] * (1.0 - c2 / v2);
-            d2f += 2.0 * p2 * c2 / v3;
-            sum_v += v;
+          double v = std::abs(b[i]) + std::abs(I * p[i]);
+          sumv += v;
+          if (v > 0) {
+            sum1 += (c[i] - b[i]) * p[i] / v;
+            sum2 += p[i] * p[i] / v;
           }
         }
       }
-      return vec2<double>(I - (d2f != 0 ? df / d2f : 0.0), sum_v);
+      return vec2<double>(sum2 != 0 ? sum1 / sum2 : 0.0, sumv);
+
+      //double df = 0.0, d2f = 0.0, sum_v = 0.0;
+      //for (std::size_t i = 0; i < p.size(); ++i) {
+        //if (m[i]) {
+          //double v = std::abs(b[i]) + std::abs(p[i] * I);
+          //double v2 = v*v;
+          //double v3 = v2*v;
+          //double c2 = c[i] * c[i];
+          //double p2 = p[i] * p[i];
+          //if (v > 0) {
+            //df  += p[i] * (1.0 - c2 / v2);
+            //d2f += 2.0 * p2 * c2 / v3;
+            //sum_v += v;
+          //}
+        //}
+      //}
+      /*return vec2<double>(I - (d2f != 0 ? df / d2f : 0.0), sum_v);*/
     }
 
     /**

@@ -541,11 +541,13 @@ scratch/jmp/misc/test_output.py -text
 scratch/jmp/misc/test_overlapping.py -text
 scratch/jmp/misc/test_pool.py -text
 scratch/jmp/misc/test_problem.py -text
+scratch/jmp/misc/test_profile_fitting_rs.py -text
 scratch/jmp/misc/test_reference.py -text
 scratch/jmp/misc/test_reflection -text
 scratch/jmp/misc/test_sweep_pickle.py -text
 scratch/jmp/misc/test_table.py -text
 scratch/jmp/misc/test_to_dict.py -text
+scratch/jmp/misc/test_transform.py -text
 scratch/jmp/new_extract/new_extract.py -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain

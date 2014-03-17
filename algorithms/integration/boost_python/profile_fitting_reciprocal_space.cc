@@ -30,10 +30,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<ProfileFittingReciprocalSpace>(
         "ProfileFittingReciprocalSpaceAlgorithm", no_init)
       .def(init<shared_ptr<ProfileFittingReciprocalSpace::locator_type>,
-                double,
                 std::size_t>((
         arg("locate"),
-        arg("mask_range"),
         arg("max_iter") = 10)))
       .def("__call__", call_single)
       .def("__call__", call_array);
