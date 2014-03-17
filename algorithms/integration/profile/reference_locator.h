@@ -38,9 +38,12 @@ namespace dials { namespace algorithms {
      * @param sampler The sampler object.
      */
     ReferenceLocator(const af::versa< FloatType, af::c_grid<4> > &profiles,
+                     const af::versa< bool, af::c_grid<4> > &masks,
                      const ImageSampler &sampler)
       : profiles_(profiles),
+        masks_(masks),
         sampler_(sampler) {
+      DIALS_ASSERT(profiles.accessor().all_eq(masks.accessor()));
       DIALS_ASSERT(profiles.accessor().all_gt(0));
       DIALS_ASSERT(profiles.accessor()[0] == sampler_.size());
     }
@@ -78,6 +81,11 @@ namespace dials { namespace algorithms {
       return profiles_;
     }
 
+    /** @returns The profile masks */
+    af::versa< bool, af::c_grid<4> > mask() const {
+      return masks_;
+    }
+
     /**
      * Get the profile at the given index
      * @param index The profile index
@@ -104,12 +112,46 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Get the mask at the given index
+     * @param index The profile index
+     * @returns The mask array
+     */
+    af::versa< bool, af::c_grid<3> > mask(std::size_t index) const {
+
+      // Check the index and size of the profile array
+      DIALS_ASSERT(index < sampler_.size());
+      int4 mask_size = masks_.accessor();
+
+      // Unfortunately, you can't take a reference from a versa array and
+      // return to python so we'll just have to make a copy.
+      af::versa< bool, af::c_grid<3> > result(
+        af::c_grid<3>(mask_size[1], mask_size[2], mask_size[2]),
+        af::init_functor_null<bool>());
+      std::size_t j = index*mask_size[3]*mask_size[2]*mask_size[1];
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = masks_[j + i];
+      }
+
+      // Return the result
+      return result;
+    }
+
+    /**
      * Get the profile at the given detector coordinate
      * @param xyz The detector coordinate
      * @returns The profile array
      */
     af::versa< FloatType, af::c_grid<3> > profile(double3 xyz) const {
       return profile(sampler_.nearest(xyz));
+    }
+
+    /**
+     * Get the profile at the given detector coordinate
+     * @param xyz The detector coordinate
+     * @returns The profile array
+     */
+    af::versa< bool, af::c_grid<3> > mask(double3 xyz) const {
+      return mask(sampler_.nearest(xyz));
     }
 
     /**
@@ -130,8 +172,53 @@ namespace dials { namespace algorithms {
       return sampler_[sampler_.nearest(xyz)];
     }
 
+    /**
+     * @returns The correlations between the reference profiles
+     */
+    af::versa< double, af::c_grid<2> > correlations() const {
+      af::versa< double, af::c_grid<2> > result(af::c_grid<2>(size(), size()));
+      for (std::size_t j = 0; j < size(); ++j) {
+        af::versa<FloatType, af::c_grid<3> > pj = profile(j);
+        for (std::size_t i = 0; i < size(); ++i) {
+          af::versa<FloatType, af::c_grid<3> > pi = profile(i);
+          result(j,i) = compute_correlation(pj.const_ref(), pi.const_ref());
+        }
+      }
+      return result;
+    }
+
   private:
+
+    /*
+     * Compute the correlation coefficient between the profile and reference
+     */
+    double
+    compute_correlation(const af::const_ref<FloatType, af::c_grid<3> > &x,
+                        const af::const_ref<FloatType, af::c_grid<3> > &y) const {
+      double xb = 0.0, yb = 0.0;
+      std::size_t count = 0;
+      for (std::size_t i = 0; i < x.size(); ++i) {
+        xb += x[i];
+        yb += y[i];
+        count++;
+      }
+      DIALS_ASSERT(count > 0);
+      xb /= count;
+      yb /= count;
+      double sdxdy = 0.0, sdx2 = 0.0, sdy2 = 0.0;
+      for (std::size_t i = 0; i < x.size(); ++i) {
+        double dx = x[i] - xb;
+        double dy = y[i] - yb;
+        sdxdy += dx*dy;
+        sdx2 += dx*dx;
+        sdy2 += dy*dy;
+      }
+      DIALS_ASSERT(sdx2 > 0.0 && sdy2 > 0.0);
+      return sdxdy / (std::sqrt(sdx2) * std::sqrt(sdy2));
+    }
+
     af::versa< FloatType, af::c_grid<4> > profiles_;
+    af::versa< bool, af::c_grid<4> > masks_;
     ImageSampler sampler_;
   };
 
