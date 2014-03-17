@@ -87,6 +87,15 @@ if __name__ == '__main__':
     print 'Need to set profile parameters'
     exit(0)
 
+  print 'Simulating with the following parameters:'
+  print ' # Reflections: %d' % options.num
+  print ' Intensity: %d' % options.intensity
+  print ' Background: %d' % options.background
+  print ' Sigma B: %f degrees' % options.sigma_b
+  print ' Sigma M: %f degrees' % options.sigma_m
+  print ' N Sigma: %f degrees' % options.n_sigma
+  print ' Random: %s' % str(options.random)
+
   # Get the experiments
   experiments = ExperimentListFactory.from_json_file(args[0], check_format=False)
   assert(len(experiments) == 1)

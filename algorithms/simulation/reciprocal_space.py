@@ -31,10 +31,15 @@ class Simulator(object):
   def with_random_intensity(self, N, Imax, Bmax):
     ''' Generate reflections with a random intensity and background. '''
     from dials.array_family import flex
-    return self.with_individual_given_intensity(
-      N,
-      flex.random_size_t(N, Imax).as_int(),
-      flex.random_size_t(N, Bmax).as_int())
+    if Imax == 0:
+      I = flex.size_t(N).as_int()
+    else:
+      I = flex.random_size_t(N, Imax).as_int()
+    if Bmax == 0:
+      B = flex.size_t(N).as_int()
+    else:
+      B = flex.random_size_t(N, Bmax).as_int()
+    return self.with_individual_given_intensity(N, I, B)
 
   def with_individual_given_intensity(self, N, I, B):
     ''' Generate reflections with given intensity and background. '''
@@ -98,16 +103,17 @@ class Simulator(object):
 
     # Calculate the background
     progress = ProgressBar(title='Calculating background for %d reflections' % len(refl))
-    m = int(len(refl) / 100)
     for l in range(len(refl)):
-      g = variate(poisson_distribution(mean=B[l]))
-      size = shoebox[l].size()
-      for k in range(size[0]):
-        for j in range(size[1]):
-          for i in range(size[2]):
-            shoebox[l].data[k,j,i] += g.next()
+      background = flex.double(flex.grid(shoebox[l].size()), 0.0)
+      g = variate(poisson_distribution(mean = B[l]))
+      for k in range(background.all()[0]):
+        for j in range(background.all()[1]):
+          for i in range(background.all()[2]):
+            background[k, j, i] += g.next()
+      shoebox[l].data += background
       if l % m == 0:
         progress.update(100.0 * float(l) / len(refl))
+      progress.update(100.0 * float(l) / len(refl))
     progress.finished('Calculated background for %d reflections' % len(refl))
 
     # Save the expected intensity and background
