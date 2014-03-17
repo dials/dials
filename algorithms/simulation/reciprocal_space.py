@@ -20,16 +20,15 @@ class Simulator(object):
     self.sigma_m = sigma_m
     self.n_sigma = n_sigma
 
-  def with_given_intensity(self, N, I, B, refl=None):
+  def with_given_intensity(self, N, I, B):
     ''' Generate reflections with a given intensity and background. '''
     from dials.array_family import flex
     return self.with_individual_given_intensity(
       N,
       flex.int(N, I),
-      flex.int(N, B),
-      refl)
+      flex.int(N, B))
 
-  def with_random_intensity(self, N, Imax, Bmax, refl=None):
+  def with_random_intensity(self, N, Imax, Bmax):
     ''' Generate reflections with a random intensity and background. '''
     from dials.array_family import flex
     if Imax == 0:
@@ -40,9 +39,9 @@ class Simulator(object):
       B = flex.size_t(N).as_int()
     else:
       B = flex.random_size_t(N, Bmax).as_int()
-    return self.with_individual_given_intensity(N, I, B, refl)
+    return self.with_individual_given_intensity(N, I, B)
 
-  def with_individual_given_intensity(self, N, I, B, refl=None):
+  def with_individual_given_intensity(self, N, I, B):
     ''' Generate reflections with given intensity and background. '''
     from dials.algorithms.shoebox import MaskForeground
     from dials.array_family import flex
@@ -50,6 +49,7 @@ class Simulator(object):
     from dials.algorithms.reflection_basis import CoordinateSystem
     from scitbx.random import variate, poisson_distribution
     from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
+    from dials.algorithms.simulation import integrate_reciprocal_space_gaussian
     import random
 
     # Check the lengths
@@ -57,8 +57,7 @@ class Simulator(object):
     assert(N == len(B))
 
     # Generate some predictions
-    if refl is None:
-      refl = self.generate_predictions(N)
+    refl = self.generate_predictions(N)
 
     # Calculate the signal
     progress = ProgressBar(title='Calculating signal for %d reflections' % len(refl))
@@ -101,9 +100,36 @@ class Simulator(object):
       progress.update(100.0 * float(l) / len(refl))
     progress.finished('Calculated background for %d reflections' % len(refl))
 
+    # Calculate the expected intensity by monte-carlo integration
+    progress = ProgressBar(title='Integrating expected signal for %d reflections' % len(refl))
+    s1 = refl['s1']
+    phi = refl['xyzcal.mm'].parts()[2]
+    bbox = refl['bbox']
+    shoebox = refl['shoebox']
+    I_exp = flex.double(len(refl), 0)
+    m = int(len(refl) / 100)
+    for i in range(len(refl)):
+      if I[i] > 0:
+        I_exp[i] = integrate_reciprocal_space_gaussian(
+          self.experiment.beam,
+          self.experiment.detector,
+          self.experiment.goniometer,
+          self.experiment.scan,
+          self.sigma_b,
+          self.sigma_m,
+          s1[i],
+          phi[i],
+          bbox[i],
+          10000,
+          shoebox[i].mask) / 10000.0
+      if i % m == 0:
+        progress.update(100.0 * float(i) / len(refl))
+    progress.finished('Integrated expected signal impacts for %d reflections' % len(refl))
+
     # Save the expected intensity and background
     refl['intensity.sim'] = I
     refl['background.sim'] = B
+    refl['intensity.exp'] = I_exp * I.as_double()
 
     # Return the reflections
     return refl
