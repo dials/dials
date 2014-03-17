@@ -494,7 +494,9 @@ scratch/gw/x2tbx/x2tbx.cpp -text
 scratch/gw/x2tbx/x2tbx.h -text
 scratch/gw/x2tbx/x2tbx_ol.cpp -text
 scratch/gw/x2tbx/x2tbx_rl.cpp -text
+scratch/jmp/analysis/average_intensity_per_image.py -text
 scratch/jmp/analysis/centroid_difference.py -text
+scratch/jmp/analysis/counts_per_image.py -text
 scratch/jmp/analysis/show_reference_profiles.py -text
 scratch/jmp/analysis/test_parallax.py -text
 scratch/jmp/analysis/xds/extract_sigmas_from_integrate_lp.py -text
@@ -528,6 +530,7 @@ scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/misc/show_reference.py -text
+scratch/jmp/misc/simulate_intensity.py -text
 scratch/jmp/misc/strip_integrate_hkl.py -text
 scratch/jmp/misc/test_area.py -text
 scratch/jmp/misc/test_centroid.py -text
