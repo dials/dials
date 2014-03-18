@@ -287,6 +287,7 @@ command_line/background_lookup.py -text
 command_line/compare_mosflm_dials.py -text
 command_line/compare_mosflm_xds.py -text
 command_line/compare_orientation_matrices.py -text
+command_line/compare_reflections.py -text
 command_line/compare_xds_dials.py -text
 command_line/compare_xds_dials2.py -text
 command_line/create_profile_model.py -text

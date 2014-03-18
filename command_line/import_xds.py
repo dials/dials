@@ -77,6 +77,9 @@ class IntegrateHKLImporter(object):
     from math import pi
     from scitbx import matrix
 
+    # Get the unit cell to calculate the resolution
+    uc = self._experiment.crystal.get_unit_cell()
+
     # Read the SPOT.XDS file
     Command.start('Reading INTEGRATE.HKL')
     handle = integrate_hkl.reader()
@@ -87,7 +90,7 @@ class IntegrateHKLImporter(object):
     iobs   = flex.double(handle.iobs)
     sigma  = flex.double(handle.sigma)
     rlp = flex.double(handle.rlp)
-    peak = flex.double(handle.peak)
+    peak = flex.double(handle.peak) * 0.01
     Command.end('Read %d reflections from INTEGRATE.HKL file.' % len(hkl))
 
     # Derive the reindex matrix
@@ -107,11 +110,12 @@ class IntegrateHKLImporter(object):
     table['miller_index'] = hkl
     table['xyzcal.px'] = xyzcal
     table['xyzobs.px.value'] = xyzobs
-    table['intensity.cor.value'] = iobs
-    table['intensity.cor.variance'] = sigma**2
+    table['intensity.cor.value'] = iobs * peak
+    table['intensity.cor.variance'] = (sigma * peak)**2
     table['intensity.raw.value'] = iobs * peak / rlp
-    table['intensity.raw.variance'] = sigma**2 * peak / rlp
+    table['intensity.raw.variance'] = (sigma * peak / rlp)**2
     table['lp'] = rlp
+    table['d'] = flex.double(uc.d(h) for h in hkl)
     Command.end('Created table with {0} reflections'.format(len(table)))
 
     # Output the table to pickle file

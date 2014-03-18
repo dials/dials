@@ -40,16 +40,16 @@ def pull_reference(integrate_hkl, d_min = 0.0):
   print 'Reference: %d observations' % len(hkl)
   return hkl, i, sigi, xyz, lp
 
-def get_dials_matrix(crystal_json):
-  from dials.model.serialize import load
-  crystal = load.crystal(crystal_json)
-  return crystal.get_A()
+def get_dials_matrix(experiments_json):
+  from dials.model.experiment.experiment_list import ExperimentListFactory
+  experiments = ExperimentListFactory.from_json_file(experiments_json)
+  return experiments[0].crystal.get_A()
 
-def get_dials_coordinate_frame(sweep_json):
-  from dials.model.serialize import load
-  sweep = load.sweep(sweep_json)
-  return sweep.get_beam().get_direction(), \
-    sweep.get_goniometer().get_rotation_axis()
+def get_dials_coordinate_frame(experiments_json):
+  from dials.model.experiment.experiment_list import ExperimentListFactory
+  experiments = ExperimentListFactory.from_json_file(experiments_json)
+  return experiments[0].beam.get_direction(), \
+    experiments[0].goniometer.get_rotation_axis()
 
 def get_xds_coordinate_frame(integrate_hkl):
   from scitbx import matrix
@@ -110,11 +110,9 @@ def pull_calculated(integrate_pkl):
   strong_reflections = []
 
   for r in r_list:
-    if not r.is_valid():
+    if r['intensity.raw.value'] ** 2 < r['intensity.raw.variance']:
       continue
-    if r.intensity ** 2 < r.intensity_variance:
-      continue
-    if r.intensity <= 0.0:
+    if r['intensity.raw.value'] <= 0.0:
       continue
     strong_reflections.append(r)
 
@@ -127,12 +125,11 @@ def pull_calculated(integrate_pkl):
   lp = []
 
   for r in strong_reflections:
-    hkl.append(r.miller_index)
-    i.append(r.corrected_intensity)
-    sigi.append(math.sqrt(r.corrected_intensity_variance))
-    lp.append(r.corrected_intensity / r.intensity)
-    x, y = r.image_coord_px
-    z = r.frame_number
+    hkl.append(r['miller_index'])
+    i.append(r['intensity.cor.value'])
+    sigi.append(math.sqrt(r['intensity.cor.variance']))
+    lp.append(r['intensity.cor.value'] / r['intensity.raw.value'])
+    x, y, z = r['xyzcal.px']
     xyz.append((x, y, z))
 
   print 'Computed: %d observations' % len(hkl)
@@ -179,13 +176,12 @@ def meansd(values):
   var = sum([(v - mean) ** 2 for v in values]) / len(values)
   return mean, math.sqrt(var)
 
-def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
-                   d_min = 0.0):
+def compare_chunks(integrate_hkl, integrate_pkl, experiments_json, d_min = 0.0):
 
   from cctbx.array_family import flex
   from annlib_ext import AnnAdaptor as ann_adaptor
 
-  rdx = derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl)
+  rdx = derive_reindex_matrix(experiments_json, integrate_hkl)
 
   print 'Reindex matrix:\n%d %d %d\n%d %d %d\n%d %d %d' % (rdx.elems)
 
@@ -293,12 +289,12 @@ def compare_chunks(integrate_hkl, integrate_pkl, crystal_json, sweep_json,
 
   return
 
-def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
+def derive_reindex_matrix(experiments_json, integrate_hkl):
   '''Derive a reindexing matrix to go from the orientation matrix used
   for XDS integration to the one used for DIALS integration.'''
 
-  dA = get_dials_matrix(crystal_json)
-  dbeam, daxis = get_dials_coordinate_frame(sweep_json)
+  dA = get_dials_matrix(experiments_json)
+  dbeam, daxis = get_dials_coordinate_frame(experiments_json)
   xbeam, xaxis = get_xds_coordinate_frame(integrate_hkl)
 
   # want to align XDS -s0 vector...
@@ -314,13 +310,13 @@ def derive_reindex_matrix(crystal_json, sweep_json, integrate_hkl):
 
 if __name__ == '__main__':
   import sys
-  if len(sys.argv) < 5:
+  if len(sys.argv) < 4:
     raise RuntimeError, \
-      '%s INTEGRATE.HKL integrate.pickle crystal.json sweep.json [dmin]' % \
+      '%s INTEGRATE.HKL integrate.pickle experiments.json [dmin]' % \
       sys.argv[0]
 
-  if len(sys.argv) == 5:
-    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+  if len(sys.argv) == 4:
+    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3])
   else:
-    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4],
-                   d_min = float(sys.argv[5]))
+    compare_chunks(sys.argv[1], sys.argv[2], sys.argv[3],
+                   d_min = float(sys.argv[4]))
