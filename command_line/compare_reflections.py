@@ -20,10 +20,10 @@ class CompareReflections(object):
     self.refl2.reorder(index)
 
     # Get the intensities
-    I1 = self.refl1['intensity.cor.value']
-    I2 = self.refl2['intensity.cor.value']
-    S1 = flex.sqrt(self.refl1['intensity.cor.variance'])
-    S2 = flex.sqrt(self.refl2['intensity.cor.variance'])
+    I1 = self.refl1['intensity.raw.value']
+    I2 = self.refl2['intensity.raw.value']
+    S1 = flex.sqrt(self.refl1['intensity.raw.variance'])
+    S2 = flex.sqrt(self.refl2['intensity.raw.variance'])
     xyz1 = self.refl1['xyzcal.px']
     xyz2 = self.refl2['xyzcal.px']
 
