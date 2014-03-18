@@ -95,9 +95,7 @@ class Integrator(object):
         from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
         match = SpotMatcher(max_separation=1)
         sind, pind = match(reference, reflections)
-        flags = flex.int(len(reflections))
-        flags.set_selected(pind, (1 << 1))
-        reflections['flags'] = flags
+        reflections.set_flags(pind, reflections.flags.reference_spot)
 
       reflections.integrate(experiments[0])
       del reflections['shoebox']
