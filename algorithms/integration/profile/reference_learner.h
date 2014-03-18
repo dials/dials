@@ -145,7 +145,7 @@ namespace dials { namespace algorithms {
           // Calculate the weighting by distance, ensure we don't get silly weights
           // for really close reflections by setting minimum distance to 1.
           double distance = (coord - coord_b).length();
-          double weight = 1.0 / (distance < 1.0 ? 1.0 : distance);
+          double weight = (distance < 1.0 ? 1.0 : 1.0 / distance);
 
           // Add to the reference profile
           for (std::size_t i = 0; i < reference.size(); ++i) {
