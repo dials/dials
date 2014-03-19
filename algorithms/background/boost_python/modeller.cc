@@ -20,11 +20,13 @@ namespace dials { namespace algorithms { namespace background {
   void export_modeller()
   {
     // An abstract class for background model
-    class_<Model, boost::noncopyable>("Model", no_init)
+    class_<Model, boost::shared_ptr<Model>, boost::noncopyable>(
+        "Model", no_init)
       .def("value", &Model::value, (
         arg("z"),
         arg("y"),
-        arg("x")));
+        arg("x")))
+      .def("params", &Model::params);
 
     // An abtract class for background modeller
     class_<Modeller, boost::noncopyable>("Modeller", no_init)

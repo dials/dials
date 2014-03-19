@@ -33,6 +33,9 @@ namespace dials { namespace algorithms { namespace background {
 
     virtual
     double value(double z, double y, double x) const = 0;
+
+    virtual
+    af::shared<double> params() const = 0;
   };
 
   /**
@@ -63,6 +66,11 @@ namespace dials { namespace algorithms { namespace background {
       int index = (int)std::floor(z);
       DIALS_ASSERT(index >= 0 && index < a.size());
       return a[index];
+    }
+
+    virtual
+    af::shared<double> params() const {
+      return af::shared<double>(a.begin(), a.end());
     }
 
   private:
@@ -111,6 +119,12 @@ namespace dials { namespace algorithms { namespace background {
     virtual
     double value(double z, double y, double x) const {
       return a;
+    }
+
+    virtual
+    af::shared<double> params() const {
+      af::shared<double> result(1, a);
+      return result;
     }
 
   private:
@@ -163,6 +177,17 @@ namespace dials { namespace algorithms { namespace background {
       int index = (int)std::floor(z);
       DIALS_ASSERT(index >= 0 && index < c.size());
       return a[index] + b[index]*x + c[index]*y;
+    }
+
+    virtual
+    af::shared<double> params() const {
+      af::shared<double> result(a.size() * 3);
+      for (std::size_t i = 0; i < a.size(); ++i) {
+        result[3*i+0] = a[i];
+        result[3*i+1] = b[i];
+        result[3*i+2] = c[i];
+      }
+      return result;
     }
 
   private:
@@ -228,6 +253,16 @@ namespace dials { namespace algorithms { namespace background {
     virtual
     double value(double z, double y, double x) const {
       return a + b*x + c*y + d*z;
+    }
+
+    virtual
+    af::shared<double> params() const {
+      af::shared<double> result(4);
+      result[0] = a;
+      result[1] = b;
+      result[2] = c;
+      result[3] = d;
+      return result;
     }
 
   private:

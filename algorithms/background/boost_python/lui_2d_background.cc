@@ -2,7 +2,8 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/lui_2d_background.h>
 
-namespace dials { namespace algorithms { namespace boost_python {
+namespace dials { namespace algorithms { namespace background {
+  namespace boost_python {
 
   using namespace boost::python;
 
@@ -17,4 +18,4 @@ namespace dials { namespace algorithms { namespace boost_python {
         (arg("data2d"), arg("mask2d"), arg("abc_plane"), arg("background2d")));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}} // namespace = dials::algorithms::background::boost_python

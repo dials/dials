@@ -12,7 +12,8 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/poisson_discriminator.h>
 
-namespace dials { namespace algorithms { namespace boost_python {
+namespace dials { namespace algorithms { namespace background {
+  namespace boost_python {
 
   using namespace boost::python;
 
@@ -74,4 +75,4 @@ namespace dials { namespace algorithms { namespace boost_python {
           arg("shoebox")));
   }
 
-}}} // namespace = dials::algorithms::boost_python
+}}}} // namespace = dials::algorithms::background::boost_python
