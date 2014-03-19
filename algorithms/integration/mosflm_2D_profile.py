@@ -121,7 +121,7 @@ def fit_profile_2d(reflection_pointers, ref_table
 
   col_bbox = ref_table['bbox']
   #for ref in reflections:
-  for t_row in range(len(ref_table)):
+  for t_row in reflection_pointers:
     #in the future consider searcing for is_valid logical
     #if r.is_valid():
     use_thold = 'no'
@@ -239,8 +239,8 @@ def fit_profile_2d(reflection_pointers, ref_table
 
         if_you_want_to_see_how_the_profiles_look = '''
         from matplotlib import pyplot as plt
-        data2d = average.as_numpy_array()
-        plt.imshow(data2d, interpolation = "nearest", cmap = plt.gray())
+        np_2d_dat = average.as_numpy_array()
+        plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
         plt.show()
         #'''
       else:
@@ -291,7 +291,7 @@ def fit_profile_2d(reflection_pointers, ref_table
         #descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
 
         descr[0, 2] = 1.0 #/ (ref.intensity * counter)
-        fully_record = 'no'
+        fully_record = 'yes'
 
         if(fully_record == 'yes'):
 

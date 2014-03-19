@@ -22,7 +22,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
   nrow = n_div
   arr_rlist = []
   arr_proff = []
-  print "Performing profile fitting  ...."
+
   for col in range(ncol):
     tmp_empty_ref_data = []
     tmp_empty_prof = []
@@ -50,7 +50,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       print "___________________________end table row #", t_row
       #'''
       arr_rlist[row][col].append([t_row])
-  print "Building profiles  ...."
+  print "Performing profile building  ...."
 
   for col in range(ncol):
     for row in range(nrow):
@@ -58,7 +58,8 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col], ref_table_in)
       arr_proff[row][col] = [profile, tr_hold]
 
-  print "Building profiles          ....       Done"
+  print "Profile building           ....       Done"
+  print "Performing profile fitting  ...."
   for col in range(ncol):
     for row in range(nrow):
       ref_table_in = fit_profile_2d(arr_rlist[row][col], ref_table_in
@@ -67,5 +68,6 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       #                      arr_proff, row, col,  xmax, ymax)
   print "profile fitting            ....       Done"
 
-  new_ref_table = flex.reflection_table()
-  return new_ref_table
+  #new_ref_table = flex.reflection_table()
+  #return new_ref_table
+  return ref_table_in
