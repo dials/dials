@@ -20,6 +20,9 @@ namespace dials { namespace algorithms { namespace background {
   class OutlierRejector {
   public:
     virtual
+    ~OutlierRejector() {}
+
+    virtual
     void mark(
         const af::const_ref< double, af::c_grid<3> > &data,
         af::ref <int, af::c_grid<3> > mask) const = 0;

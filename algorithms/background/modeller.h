@@ -29,6 +29,9 @@ namespace dials { namespace algorithms { namespace background {
   class Model {
   public:
     virtual
+    ~Model() {}
+
+    virtual
     double value(double z, double y, double x) const = 0;
   };
 
@@ -37,6 +40,9 @@ namespace dials { namespace algorithms { namespace background {
    */
   class Modeller {
   public:
+    virtual
+    ~Modeller() {}
+
     virtual
     boost::shared_ptr<Model> create(
         const af::const_ref< double, af::c_grid<3> > &data,

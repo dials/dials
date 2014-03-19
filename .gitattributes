@@ -13,6 +13,7 @@ algorithms/background/boost_python/helpers.cc -text
 algorithms/background/boost_python/lui_2d_background.cc -text svneol=unset#text/plain
 algorithms/background/boost_python/modeller.cc -text
 algorithms/background/boost_python/normal_discriminator.cc -text
+algorithms/background/boost_python/outlier_rejector.cc -text
 algorithms/background/boost_python/poisson_discriminator.cc -text
 algorithms/background/boost_python/xds_subtractor.cc -text
 algorithms/background/creator.h -text
@@ -24,6 +25,7 @@ algorithms/background/inclined_background_subtractor.py -text svneol=unset#text/
 algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/modeller.h -text
 algorithms/background/normal_discriminator.h -text
+algorithms/background/normal_outlier_rejector.h -text
 algorithms/background/outlier_rejector.h -text
 algorithms/background/poisson_discriminator.h -text
 algorithms/background/xds_subtractor.h -text
