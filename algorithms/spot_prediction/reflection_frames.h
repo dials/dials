@@ -19,6 +19,7 @@
 
 namespace dials { namespace algorithms {
 
+  using scitbx::vec2;
   using scitbx::constants::two_pi;
   using dxtbx::model::Scan;
   using dials::model::Reflection;
@@ -38,14 +39,14 @@ namespace dials { namespace algorithms {
     double phi = reflection.get_rotation_angle();
 
     // Get the frames that a reflection with this angle will be observed at
-    af::shared<double> frames = scan.get_array_indices_with_angle(phi);
+    af::shared< vec2<double> > frames = scan.get_array_indices_with_angle(phi);
 
     // Loop through all the frames and duplicate the reflection for each
     af::shared <Reflection> reflections_new;
     for (std::size_t j = 0; j < frames.size(); ++j) {
       Reflection r(reflection);
-      r.set_rotation_angle(phi + j * two_pi);
-      r.set_frame_number(frames[j]);
+      r.set_rotation_angle(frames[j][0]);
+      r.set_frame_number(frames[j][1]);
       reflections_new.push_back(r);
     }
 

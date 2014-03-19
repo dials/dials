@@ -216,7 +216,7 @@ namespace dials { namespace algorithms {
           std::size_t panel = impact.first;
           vec2<double> mm = impact.second;
           vec2<double> px = detector_[panel].millimeter_to_pixel(mm);
-          af::shared<double> frames =
+          af::shared< vec2<double> > frames =
             scan_.get_array_indices_with_angle(rays[i].angle);
           for (std::size_t j = 0; j < frames.size(); ++j) {
             p.hkl.push_back(h);
@@ -224,8 +224,8 @@ namespace dials { namespace algorithms {
             p.s1.push_back(rays[i].s1);
             p.panel.push_back(panel);
             p.flags.push_back(af::Predicted);
-            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], rays[i].angle)); // FIXME
-            p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j]));
+            p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], frames[j][0]));
+            p.xyz_px.push_back(vec3<double>(px[0], px[1], frames[j][1]));
           }
         } catch(dxtbx::error) {
           // do nothing
