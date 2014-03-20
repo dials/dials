@@ -262,7 +262,461 @@ dials.process datablock.json
 \end{verbatim}
 }
 
-\section{Running the Individual Steps}
+\section{Running the Individual Steps: Macromolecule}
+
+\subsection{Import}
+
+The first stage of step-by-step DIALS processing is to import the data
+- all that happens here is that the image headers are read, and a file
+describing their contents (\verb|datablock.json|) is written. It's
+worth noting that if this file is changed subsequent processing (even
+with \verb|dials.process|) can use this.
+
+{\small
+\begin{verbatim}
+dials.import ~/data/i04-BAG-training/th_8_2_0*cbf
+\end{verbatim}
+}
+
+\noindent 
+The output just describes what the software understands of the images
+it was passed - not very interesting but useful to make sure it all
+makes sense.
+
+{\small
+\begin{verbatim}
+--------------------------------------------------------------------------------
+DataBlock 0
+  format: <class 'dxtbx.format.FormatCBFMiniPilatus.FormatCBFMiniPilatus'>
+  num images: 540
+  num sweeps: 1
+  num stills: 0
+--------------------------------------------------------------------------------
+Writing datablocks to datablock.json
+\end{verbatim}
+}
+
+\subsection{Find Spots}
+
+The first ``real'' task in any DIALS processing will be the spot
+finding - while there are plenty of options the defaults often seem to
+do sensible things.
+
+{\small
+\begin{verbatim}
+dials.find_spots datablock.json 
+\end{verbatim}
+}
+
+\noindent
+This will just report the nubmer of spots found - guess we could
+probably write some more interesting output.
+
+{\small
+\begin{verbatim}
+Configuring spot finder from input parameters
+--------------------------------------------------------------------------------
+Finding strong spots in imageset 0
+--------------------------------------------------------------------------------
+
+Finding spots in image 0 to 540...
+Extracted strong pixels from images......................................137.72s
+Merged 8 pixel lists with 922661 pixels....................................0.03s
+Extracted 219127 spots.....................................................1.00s
+Calculated 219127 spot centroids...........................................0.92s
+Calculated 219127 spot intensities.........................................0.07s
+Filtered 58009 spots by number of pixels...................................0.02s
+Filtered 57769 spots by peak-centroid distance.............................0.05s
+
+--------------------------------------------------------------------------------
+Saved 57769 reflections to strong.pickle...................................0.25s
+Total time:  142.911371946 
+\end{verbatim}
+}
+
+\subsection{Indexing}
+
+{\small
+\begin{verbatim}
+dials.index datablock.json strong.pickle
+\end{verbatim}
+}
+
+\noindent
+The output for this is rather verbose: FIXME perhaps I should
+abbreviate it some?
+
+{\small
+\begin{verbatim}
+reference {
+  detector = None
+  beam = None
+}
+discover_better_experimental_model = False
+min_cell = 20
+max_cell = Auto
+reciprocal_space_grid {
+  n_points = 256
+  d_min = 4
+}
+sigma_phi_deg = None
+b_iso = 200
+rmsd_cutoff = 15
+scan_range = None
+known_symmetry {
+  space_group = None
+  unit_cell = None
+  relative_length_tolerance = 0.1
+  absolute_angle_tolerance = 10
+}
+optimise_initial_basis_vectors = False
+debug = False
+debug_plots = False
+show_timing = False
+refinement {
+  parameterisation {
+    beam {
+      fix = all *in_spindle_plane out_spindle_plane
+      fix_list = None
+    }
+    crystal {
+      fix = all cell orientation
+      cell_fix_list = None
+      orientation_fix_list = None
+      scan_varying = False
+      num_intervals = *fixed_width absolute
+      interval_width_degrees = 36.0
+      absolute_num_intervals = 5
+    }
+    detector {
+      panels = *automatic single multiple hierarchical
+      hierarchy_level = 0
+      fix = all position orientation
+      fix_list = None
+    }
+  }
+  refinery {
+    engine = SimpleLBFGS LBFGScurvs GaussNewtonIterations *LevMarIterations
+    track_step = False
+    track_gradient = False
+    track_parameter_correlation = False
+    log = None
+    max_iterations = None
+  }
+  target {
+    rmsd_cutoff = *fraction_of_bin_size absolute
+    bin_size_fraction = 0.33333
+    absolute_cutoffs = None
+  }
+  reflections {
+    reflections_per_degree = 50
+    minimum_sample_size = 1000
+    maximum_number_of_reflections = None
+    use_all_reflections = False
+    random_seed = 42
+    minimum_number_of_reflections = 20
+    close_to_spindle_cutoff = 0.1
+    do_outlier_rejection = False
+    iqr_multiplier = 1.5
+  }
+}
+refinement_protocol {
+  weight_outlier_n_sigma = 5
+  n_macro_cycles = 3
+  d_min_step = 1.0
+  d_min_start = 4.0
+  d_min_final = None
+  verbosity = 1
+  outlier_rejection {
+    maximum_spot_error = None
+    hkl_tolerance = 0.3
+  }
+}
+method = *fft3d fft1d real_space_grid_search
+multiple_lattice_search {
+  cluster_analysis_search = False
+  recycle_unindexed_reflections = False
+  recycle_unindexed_reflections_cutoff = 0.1
+  max_lattices = None
+  cluster_analysis {
+    method = *dbscan hcluster
+    hcluster {
+      linkage {
+        method = *ward
+        metric = *euclidean
+      }
+      cutoff = 15
+      cutoff_criterion = *distance inconsistent
+    }
+    dbscan {
+      eps = 0.05
+      min_samples = 30
+    }
+    min_cluster_size = 20
+    intersection_union_ratio_cutoff = 0.4
+  }
+}
+Detector:
+Panel:
+  pixel_size:{0.172,0.172}
+  image_size: {2463,2527}
+  trusted_range: {-1,161977}
+  fast_axis: {1,0,0}
+  slow_axis: {0,-1,0}
+  origin: {-210.76,205.277,-265.27}
+
+Scan:
+    image range:   {1,540}
+    oscillation:   {82,0.15}
+
+Goniometer:
+    Rotation axis:  {1,0,0}
+    Fixed rotation: {1,0,0,0,1,0,0,0,1}
+
+Beam:
+    wavelength: 0.97625
+    sample to source direction : {0,0,1}
+    divergence: 0
+    sigma divergence: 0
+    polarization normal: {0,1,0}
+    polarization fraction: 0.999
+
+Found max_cell: 230.8 Angstrom
+FFT gridding: (256,256,256)
+Number of centroids used: 9104
+model 1 (9100 reflections):
+Crystal:
+    Unit cell: (57.933, 57.953, 150.052, 89.763, 89.675, 89.713)
+    Space group: P 1
+    U matrix:  {{ 0.3452, -0.2600, -0.9018},
+                { 0.8909,  0.3929,  0.2278},
+                { 0.2951, -0.8820,  0.3673}}
+    B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                {-0.0001,  0.0173,  0.0000},
+                {-0.0001, -0.0001,  0.0067}}
+    A = UB:    {{ 0.0061, -0.0044, -0.0060},
+                { 0.0153,  0.0068,  0.0015},
+                { 0.0051, -0.0152,  0.0024}}
+
+
+0 unindexed reflections
+
+################################################################################
+Starting refinement (macro-cycle 1)
+################################################################################
+
+
+Running refinement
+------------------
+0 1 2 3 4 5 6 7 8 9 10
+
+Refinement steps
+----------------
+Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
+0 4049 51016 0.27078 0.16307 0.0044847 
+1 4049 3016.4 0.045314 0.047339 0.0012501 
+2 4049 1792.4 0.04019 0.044352 0.00083054 
+3 4049 1063.7 0.03583 0.039659 0.00049001 
+4 4049 764.91 0.033407 0.035648 0.00030911 
+5 4049 659.78 0.032163 0.033601 0.0002411 
+6 4049 599.7 0.030626 0.032161 0.00022696 
+7 4049 567.81 0.029447 0.031492 0.00022524 
+8 4049 562.25 0.029137 0.031465 0.00022505 
+9 4049 562.06 0.029102 0.031486 0.00022503 
+10 4049 562.06 0.0291 0.031488 0.00022503 
+RMSD no longer decreasing
+Increasing resolution to 3.0 Angstrom
+model 1 (21107 reflections):
+Crystal:
+    Unit cell: (57.802, 57.770, 149.995, 90.012, 89.988, 89.991)
+    Space group: P 1
+    U matrix:  {{ 0.3455, -0.2589, -0.9020},
+                { 0.8914,  0.3909,  0.2292},
+                { 0.2933, -0.8833,  0.3659}}
+    B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                {-0.0000,  0.0173,  0.0000},
+                {-0.0000,  0.0000,  0.0067}}
+    A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                { 0.0154,  0.0068,  0.0015},
+                { 0.0051, -0.0153,  0.0024}}
+
+
+32 unindexed reflections
+
+################################################################################
+Starting refinement (macro-cycle 2)
+################################################################################
+
+
+Running refinement
+------------------
+0 1 2 3 4 5 6 7 8 9 10
+
+Refinement steps
+----------------
+Step Nref Objective RMSD_X RMSD_Y RMSD_Phi
+0 4049 807.18 0.039784 0.033706 0.00023487 
+1 4049 739.92 0.037853 0.032236 0.000235 
+2 4049 728.35 0.037744 0.031751 0.00023342 
+3 4049 716.58 0.037597 0.031279 0.00023229 
+4 4049 706.91 0.037376 0.030994 0.00023169 
+5 4049 693.89 0.036994 0.0307 0.00023113 
+6 4049 680.36 0.036553 0.030422 0.00023104 
+7 4049 673.72 0.036288 0.030335 0.00023115 
+8 4049 672.74 0.036213 0.03036 0.00023131 
+9 4049 672.71 0.036204 0.030368 0.00023135 
+10 4049 672.71 0.036204 0.030369 0.00023136 
+RMSD no longer decreasing
+Increasing resolution to 2.0 Angstrom
+model 1 (48411 reflections):
+Crystal:
+    Unit cell: (57.804, 57.769, 150.004, 90.019, 89.999, 89.991)
+    Space group: P 1
+    U matrix:  {{ 0.3456, -0.2588, -0.9020},
+                { 0.8914,  0.3909,  0.2293},
+                { 0.2933, -0.8833,  0.3658}}
+    B matrix:  {{ 0.0173,  0.0000,  0.0000},
+                {-0.0000,  0.0173,  0.0000},
+                {-0.0000,  0.0000,  0.0067}}
+    A = UB:    {{ 0.0060, -0.0045, -0.0060},
+                { 0.0154,  0.0068,  0.0015},
+                { 0.0051, -0.0153,  0.0024}}
+
+
+63 unindexed reflections
+
+################################################################################
+Starting refinement (macro-cycle 3)
+################################################################################
+
+
+Running refinement
+------------------
+0 1 2 3 4 5 6 7 8 9 10
+\end{verbatim}
+}
+
+\subsection{Refinement}
+
+Although the model is already refined in indexing we can also add a
+refinement step in here to allow e.g. scan varying refinement as here.
+
+{\small
+\begin{verbatim}
+dials.refine scan_varying=true experiments.json indexed.pickle
+\end{verbatim}
+}
+
+\noindent
+This one on the other hand would probably stand to be \emph{more} verbose!
+
+{\small
+\begin{verbatim}
+Configuring refiner
+Performing refinement
+Saving refined experiments to refined_experiments.json
+\end{verbatim}
+}
+
+\subsection{Integration}
+
+After the refinement is done the next steps are easier namely
+integration and exporting.
+
+
+{\small
+\begin{verbatim}
+dials.integrate refined_experiments.json indexed.pickle 
+\end{verbatim}
+}
+
+{\small
+\begin{verbatim}
+Processed command line options............................................28.73s
+Removed invalid coordinates, 4049 remaining................................0.09s
+Configurating integrator from input parameters
+Integrating reflections
+ Prediction type: Unknown prediction
+Predicted 373210 reflections...............................................2.18s
+Filtered 4049 reflections with zeta > 0.050000.............................0.00s
+Calculated E.S.D Beam Divergence...........................................0.17s
+Calculated E.S.D Reflecting Range..........................................0.15s
+Sigma B: 0.022590
+Sigma M: 0.080272
+Calculated 373210 bounding boxes...........................................0.20s
+Filtered 318756 reflections by detector mask...............................0.78s
+Filtered 318479 reflections by zeta >= 0.05................................0.02s
+Found 19 overlaps..........................................................0.09s
+Extracted 318479 profiles from frames 0 -> 540............................92.79s
+Extracted 318479 profiles from block 0.....................................6.73s
+Masked foreground pixels for 318479 reflections...........................10.08s
+Filtered 318479 reflections by detector mask...............................0.25s
+Filtered 318479 reflections by zeta >= 0.05................................0.03s
+Found nearest neighbours...................................................0.26s
+Filtered 3857 matches by distance..........................................0.00s
+Removed 0 duplicate match(es)..............................................0.00s
+Calculated 318454 background values........................................4.06s
+Calculated 318454 reflection centroids.....................................2.44s
+Integrated 318454 reflections..............................................0.61s
+Performed LP-correction on 318454 reflections.............................14.02s
+
+Saved 318454 reflections to integrated.pickle..............................0.52s
+\end{verbatim}
+}
+
+\subsection{Exporting as MTZ}
+
+Less to see here...
+
+{\small
+\begin{verbatim}
+dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
+\end{verbatim}
+}
+
+\noindent
+And this is the output, showing the reflection file statistics.
+
+{\small
+\begin{verbatim}
+Title: from dials.export_mtz
+Space group symbol from file: P1
+Space group number from file: 1
+Space group from matrices: P 1 (No. 1)
+Point group symbol from file: 1
+Number of batches: 540
+Number of crystals: 1
+Number of Miller indices: 318454
+Resolution range: 150.015 1.169
+History:
+Crystal 1:
+  Name: XTAL
+  Project: DIALS
+  Id: 1
+  Unit cell: (57.8091, 57.7715, 150.015, 90.0191, 89.9967, 89.99)
+  Number of datasets: 1
+  Dataset 1:
+    Name: FROMDIALS
+    Id: 1
+    Wavelength: 0.97625
+    Number of columns: 11
+    label        #valid  %valid     min     max type
+    H            318454 100.00%  -39.00   47.00 H: index h,k,l
+    K            318454 100.00%  -34.00   43.00 H: index h,k,l
+    L            318454 100.00% -114.00  114.00 H: index h,k,l
+    M_ISYM       318454 100.00%    1.00    1.00 Y: M/ISYM, packed partial/reject flag and symmetry number
+    BATCH        318454 100.00%    2.00  538.00 B: BATCH number
+    I            318454 100.00%  -14.55 3058.18 J: intensity
+    SIGI         318454 100.00%    0.00   55.58 Q: standard deviation
+    FRACTIONCALC 318454 100.00%    1.00    1.00 R: real
+    XDET         318454 100.00%    3.38 2458.38 R: real
+    YDET         318454 100.00%    2.97 2522.66 R: real
+    ROT          318454 100.00%   82.09  162.45 R: real
+\end{verbatim}
+}
+
+
+\section{Running the Individual Steps: Small Molecule}
 
 FIXME write this section too, and in each section detail the available
 parameters. Guess it would also be rather nice to write about the
