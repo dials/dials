@@ -272,7 +272,6 @@ array_family/boost_python/flex_centroid.cc -text
 array_family/boost_python/flex_ext.cc -text
 array_family/boost_python/flex_int6.cc -text
 array_family/boost_python/flex_intensity.cc -text
-array_family/boost_python/flex_mat3_double.cc -text
 array_family/boost_python/flex_observation.cc -text
 array_family/boost_python/flex_partial_shoebox.cc -text
 array_family/boost_python/flex_pixel_list.cc -text
