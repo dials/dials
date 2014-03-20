@@ -291,7 +291,7 @@ def fit_profile_2d(reflection_pointers, ref_table
         #descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
 
         descr[0, 2] = 1.0 #/ (ref.intensity * counter)
-        fully_record = 'yes'
+        fully_record = 'no'
 
         if(fully_record == 'yes'):
 
