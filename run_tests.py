@@ -44,6 +44,7 @@ tst_list = (
     "$D/test/algorithms/spot_prediction/tst_scan_varying_reflection_predictor.py",
     "$D/test/algorithms/spot_prediction/tst_scan_varying_ray_predictor.py",
     "$D/test/algorithms/background/tst_background_subtraction.py",
+    "$D/test/algorithms/background/tst_modeller.py",
     "$D/test/algorithms/integration/profile/tst_grid_sampler.py",
     "$D/test/algorithms/integration/profile/tst_xds_circle_sampler.py",
     "$D/test/algorithms/integration/profile/tst_reference_locator.py",

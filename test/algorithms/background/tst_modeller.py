@@ -1,9 +1,9 @@
 from __future__ import division
 
-class Test(object):
+class TestExact(object):
 
   def __init__(self):
-    pass
+    self.size = (9,10,11)
 
   def run(self):
     self.tst_constant2d_modeller()
@@ -16,7 +16,7 @@ class Test(object):
     modeller = Constant2dModeller()
     eps = 1e-7
     for i in range(10):
-      c, data, mask = self.generate_constant_background_2d((9,9,9), 0, 100)
+      c, data, mask = self.generate_constant_background_2d(self.size, 0, 100)
       model = modeller.create(data, mask)
       assert(len(model.params()) == 9)
       for j in range(9):
@@ -28,7 +28,7 @@ class Test(object):
     modeller = Constant3dModeller()
     eps = 1e-7
     for i in range(10):
-      c, data, mask = self.generate_constant_background_3d((9,9,9), 0, 100)
+      c, data, mask = self.generate_constant_background_3d(self.size, 0, 100)
       model = modeller.create(data, mask)
       assert(len(model.params()) == 1)
       for j in range(1):
@@ -40,7 +40,7 @@ class Test(object):
     modeller = Linear2dModeller()
     eps = 1e-7
     for i in range(10):
-      p, data, mask = self.generate_linear_background_2d((9,9,9), 0, 100)
+      p, data, mask = self.generate_linear_background_2d(self.size, 0, 100)
       model = modeller.create(data, mask)
       assert(len(model.params()) == 3 * 9)
       for j in range(9):
@@ -53,7 +53,7 @@ class Test(object):
     modeller = Linear3dModeller()
     eps = 1e-7
     for i in range(10):
-      p, data, mask = self.generate_linear_background_3d((9,9,9), 0, 100)
+      p, data, mask = self.generate_linear_background_3d(self.size, 0, 100)
       model = modeller.create(data, mask)
       assert(len(model.params()) == 4)
       for j in range(4):
@@ -173,6 +173,178 @@ class Test(object):
     assert(abs(data[0,0,8] - a001) < eps)
     return (a, b, c, d), data, mask
 
+
+class TestPoisson(object):
+
+  def __init__(self):
+    self.size = (9, 9, 9)
+
+  def run(self):
+    self.tst_constant2d_modeller()
+    self.tst_constant3d_modeller()
+    self.tst_linear2d_modeller()
+    self.tst_linear3d_modeller()
+
+  def tst_constant2d_modeller(self):
+    from dials.algorithms.background import Constant2dModeller
+    from dials.array_family import flex
+    from dials.algorithms.statistics import \
+      kolmogorov_smirnov_test_standard_normal
+    modeller = Constant2dModeller()
+    ma = 10
+    sboxes, masks = self.generate_background(self.size, 1000, ma, 0, 0, 0)
+    a = []
+    v = []
+    for i in range(1000):
+      model = modeller.create(sboxes[i], masks[i])
+      assert(len(model.params()) == 9)
+      assert(len(model.variances()) == 9)
+      a.extend(list(model.params()))
+      v.extend(list(model.variances()))
+
+    # Compute Z for each parameter
+    z = (flex.double(a) - ma) / flex.sqrt(flex.double(v))
+
+    # Check it looks standard normal
+    self.assert_std_norm(z)
+    print 'OK'
+
+  def tst_constant3d_modeller(self):
+    from dials.algorithms.background import Constant3dModeller
+    from dials.array_family import flex
+    modeller = Constant3dModeller()
+
+    ma = 10
+    sboxes, masks = self.generate_background(self.size, 1000, ma, 0, 0, 0)
+    a = []
+    v = []
+    for i in range(1000):
+      model = modeller.create(sboxes[i], masks[i])
+      assert(len(model.params()) == 1)
+      assert(len(model.variances()) == 1)
+      a.append(model.params()[0])
+      v.append(model.variances()[0])
+
+    # Compute Z for each parameter
+    z = (flex.double(a) - ma) / flex.sqrt(flex.double(v))
+
+    # Check it looks standard normal
+    self.assert_std_norm(z)
+    print 'OK'
+
+  def tst_linear2d_modeller(self):
+    from dials.algorithms.background import Linear2dModeller
+    from dials.array_family import flex
+    modeller = Linear2dModeller()
+
+    # Generate shoeboxes
+    ma = 10
+    mb = 1
+    mc = 2
+    sboxes, masks = self.generate_background(self.size, 1000, ma, mb, mc, 0)
+
+    pa = []
+    pv = []
+    for i in range(1000):
+      model = modeller.create(sboxes[i], masks[i])
+      assert(len(model.params()) == 9*3)
+      assert(len(model.variances()) == 9*3)
+      p = model.params()
+      v = model.variances()
+      for j in range(9):
+        pa.append(tuple(p[3*j:3*(j+1)]))
+        pv.append(tuple(v[3*j:3*(j+1)]))
+    a, b, c = zip(*pa)
+    va, vb, vc = zip(*pv)
+
+    # Compute Z for each parameter
+    za = (flex.double(a) - ma) / flex.sqrt(flex.double(va))
+    zb = (flex.double(b) - mb) / flex.sqrt(flex.double(vb))
+    zc = (flex.double(c) - mc) / flex.sqrt(flex.double(vc))
+
+    # Check it looks standard normal
+    self.assert_std_norm(za)
+    self.assert_std_norm(zb)
+    self.assert_std_norm(zc)
+    print 'OK'
+
+  def tst_linear3d_modeller(self):
+    from dials.algorithms.background import Linear3dModeller
+    from dials.array_family import flex
+    modeller = Linear3dModeller()
+
+    # Generate shoeboxes
+    ma = 10
+    mb = 1
+    mc = 2
+    md = 3
+    sboxes, masks = self.generate_background(self.size, 1000, ma, mb, mc, md)
+
+    # Compute model
+    a, b, c, d = [], [], [], []
+    va, vb, vc, vd = [], [], [], []
+    pa = []
+    pv = []
+    for i in range(1000):
+      model = modeller.create(sboxes[i], masks[i])
+      assert(len(model.params()) == 4)
+      assert(len(model.variances()) == 4)
+      p = model.params()
+      v = model.variances()
+      pa.append(p)
+      pv.append(v)
+    a, b, c, d = zip(*pa)
+    va, vb, vc, vd = zip(*pv)
+
+    # Compute Z for each parameter
+    za = (flex.double(a) - ma) / flex.sqrt(flex.double(va))
+    zb = (flex.double(b) - mb) / flex.sqrt(flex.double(vb))
+    zc = (flex.double(c) - mc) / flex.sqrt(flex.double(vc))
+    zd = (flex.double(d) - md) / flex.sqrt(flex.double(vd))
+
+    # Check it looks standard normal
+    self.assert_std_norm(za)
+    self.assert_std_norm(zb)
+    self.assert_std_norm(zc)
+    self.assert_std_norm(zd)
+    print 'OK'
+
+  def assert_std_norm(self, z):
+    from dials.array_family import flex
+    mv = flex.mean_and_variance(z)
+    try:
+      m = mv.mean()
+      s = mv.unweighted_sample_standard_deviation()
+      assert(abs(m) < 0.1)
+      assert(abs(s - 1.0) < 0.1)
+    except Exception:
+      print 'Mean %f, Sdev %f' % (m, s)
+      from matplotlib import pylab
+      pylab.hist(z, 100)
+      pylab.show()
+      raise
+
+  def generate_background(self, size, N, A, B, C, D):
+    from dials.algorithms.simulation.generate_test_reflections \
+      import random_background_plane2
+    from dials.array_family import flex
+    from dials.util.command_line import ProgressBar
+    sboxes = []
+    masks = []
+    progress = ProgressBar(title="Generating Background")
+    for i in range(N):
+      mask = flex.bool(flex.grid(size), True)
+      sbox = flex.double(flex.grid(size), 0)
+      random_background_plane2(sbox, A, B, C, D)
+      sboxes.append(sbox)
+      masks.append(mask)
+      progress.update(100.0 * i / N)
+    progress.finished("Generated Background")
+    return sboxes, masks
+
 if __name__ == '__main__':
-  test = Test()
+  test = TestExact()
+  test.run()
+
+  test = TestPoisson()
   test.run()

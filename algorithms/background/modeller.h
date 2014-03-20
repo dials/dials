@@ -36,6 +36,9 @@ namespace dials { namespace algorithms { namespace background {
 
     virtual
     af::shared<double> params() const = 0;
+
+    virtual
+    af::shared<double> variances() const = 0;
   };
 
   /**
@@ -58,8 +61,9 @@ namespace dials { namespace algorithms { namespace background {
   class Constant2dModel : public Model {
   public:
 
-    Constant2dModel(af::shared<double> a_)
-      : a(a_) {}
+    Constant2dModel(af::shared<double> a_, af::shared<double> va_)
+      : a(a_),
+        va(va_) {}
 
     virtual
     double value(double z, double y, double x) const {
@@ -73,8 +77,14 @@ namespace dials { namespace algorithms { namespace background {
       return af::shared<double>(a.begin(), a.end());
     }
 
+    virtual
+    af::shared<double> variances() const {
+      return af::shared<double>(va.begin(), va.end());
+    }
+
   private:
     af::shared<double> a;
+    af::shared<double> va;
   };
 
   /**
@@ -89,6 +99,7 @@ namespace dials { namespace algorithms { namespace background {
         const af::const_ref< bool, af::c_grid<3> > &mask) const {
       DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
       af::shared<double> mean(data.accessor()[0], 0.0);
+      af::shared<double> var(data.accessor()[0], 0.0);
       for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
         std::size_t count = 0;
         for (std::size_t j = 0; j < data.accessor()[1]; ++j) {
@@ -101,9 +112,10 @@ namespace dials { namespace algorithms { namespace background {
         }
         if (count > 0) {
           mean[k] /= count;
+          var[k] = mean[k] / count;
         }
       }
-      return boost::make_shared<Constant2dModel>(mean);
+      return boost::make_shared<Constant2dModel>(mean, var);
     }
   };
 
@@ -113,8 +125,9 @@ namespace dials { namespace algorithms { namespace background {
   class Constant3dModel : public Model {
   public:
 
-    Constant3dModel(double a_)
-      : a(a_) {}
+    Constant3dModel(double a_, double va_)
+      : a(a_),
+        va(va_) {}
 
     virtual
     double value(double z, double y, double x) const {
@@ -127,8 +140,13 @@ namespace dials { namespace algorithms { namespace background {
       return result;
     }
 
+    virtual
+    af::shared<double> variances() const {
+      return af::shared<double>(1, va);
+    }
+
   private:
-    double a;
+    double a, va;
   };
 
   /**
@@ -153,7 +171,7 @@ namespace dials { namespace algorithms { namespace background {
       if (count > 0) {
         mean /= count;
       }
-      return boost::make_shared<Constant3dModel>(mean);
+      return boost::make_shared<Constant3dModel>(mean, mean / count);
     }
   };
 
@@ -166,10 +184,17 @@ namespace dials { namespace algorithms { namespace background {
     Linear2dModel(
         af::shared<double> a_,
         af::shared<double> b_,
-        af::shared<double> c_)
-      : a(a_), b(b_), c(c_) {
+        af::shared<double> c_,
+        af::shared<double> va_,
+        af::shared<double> vb_,
+        af::shared<double> vc_)
+      : a(a_), b(b_), c(c_),
+        va(va_), vb(vb_), vc(vc_) {
       DIALS_ASSERT(a.size() == b.size());
       DIALS_ASSERT(a.size() == c.size());
+      DIALS_ASSERT(a.size() == va.size());
+      DIALS_ASSERT(va.size() == vb.size());
+      DIALS_ASSERT(va.size() == vc.size());
     }
 
     virtual
@@ -190,8 +215,20 @@ namespace dials { namespace algorithms { namespace background {
       return result;
     }
 
+    virtual
+    af::shared<double> variances() const {
+      af::shared<double> result(a.size() * 3);
+      for (std::size_t i = 0; i < a.size(); ++i) {
+        result[3*i+0] = va[i];
+        result[3*i+1] = vb[i];
+        result[3*i+2] = vc[i];
+      }
+      return result;
+    }
+
   private:
     af::shared<double> a, b, c;
+    af::shared<double> va, vb, vc;
   };
 
   /**
@@ -208,6 +245,9 @@ namespace dials { namespace algorithms { namespace background {
       af::shared<double> a(mask.accessor()[0], 0);
       af::shared<double> b(mask.accessor()[0], 0);
       af::shared<double> c(mask.accessor()[0], 0);
+      af::shared<double> va(mask.accessor()[0], 0);
+      af::shared<double> vb(mask.accessor()[0], 0);
+      af::shared<double> vc(mask.accessor()[0], 0);
       for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
         af::shared<double> A(3*3, 0);
         af::shared<double> B(3, 0);
@@ -236,8 +276,26 @@ namespace dials { namespace algorithms { namespace background {
         a[k] = B[0];
         b[k] = B[1];
         c[k] = B[2];
+        double S = 0.0;
+        int count = 0;
+        for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < mask.accessor()[0]; ++i) {
+            if (mask(k,j,i)) {
+              double x = (i + 0.5);
+              double y = (j + 0.5);
+              double p = data(k,j,i);
+              double s = (p - a[k] - b[k]*x - c[k]*y);
+              S += s*s;
+              count++;
+            }
+          }
+        }
+        DIALS_ASSERT(count > 3);
+        va[k] = S * A[0] / (count - 3);
+        vb[k] = S * A[4] / (count - 3);
+        vc[k] = S * A[8] / (count - 3);
       }
-      return boost::make_shared<Linear2dModel>(a, b, c);
+      return boost::make_shared<Linear2dModel>(a, b, c, va, vb, vc);
     }
   };
 
@@ -247,8 +305,10 @@ namespace dials { namespace algorithms { namespace background {
   class Linear3dModel : public Model {
   public:
 
-    Linear3dModel(double a_, double b_, double c_, double d_)
-      : a(a_), b(b_), c(c_), d(d_) {}
+    Linear3dModel(double a_, double b_, double c_, double d_,
+                  double va_, double vb_, double vc_, double vd_)
+      : a(a_), b(b_), c(c_), d(d_),
+        va(va_), vb(vb_), vc(vc_), vd(vd_) {}
 
     virtual
     double value(double z, double y, double x) const {
@@ -265,8 +325,19 @@ namespace dials { namespace algorithms { namespace background {
       return result;
     }
 
+    virtual
+    af::shared<double> variances() const {
+      af::shared<double> result(4);
+      result[0] = va;
+      result[1] = vb;
+      result[2] = vc;
+      result[3] = vd;
+      return result;
+    }
+
   private:
     double a, b, c, d;
+    double va, vb, vc, vd;
   };
 
   /**
@@ -315,8 +386,31 @@ namespace dials { namespace algorithms { namespace background {
       A[13] = A[7];
       A[14] = A[11];
       inversion_in_place(A.begin(), 4, B.begin(), 1);
+      double S = 0.0;
+      int count = 0;
+      for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
+        for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
+            if (mask(k,j,i)) {
+              double x = (i + 0.5);
+              double y = (j + 0.5);
+              double z = (k + 0.5);
+              double p = data(k,j,i);
+              double s = (p - B[0] - B[1]*x - B[2]*y - B[3]*z);
+              S += s*s;
+              count++;
+            }
+          }
+        }
+      }
+      DIALS_ASSERT(count > 4);
+      double va = S * A[0] / (count - 4);
+      double vb = S * A[5] / (count - 4);
+      double vc = S * A[10] / (count - 4);
+      double vd = S * A[15] / (count - 4);
       return boost::make_shared<Linear3dModel>(
-          B[0], B[1], B[2], B[3]);
+          B[0], B[1], B[2], B[3],
+          va, vb, vc, vd);
     }
 
   };

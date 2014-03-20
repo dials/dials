@@ -80,6 +80,33 @@ rotation {
 }
 """)
 
+
+def random_background_plane2(sbox, a, b, c, d):
+  '''Draw values from Poisson distribution for each position where the mean for
+  that distribition is equal to a + b * i + c * j + d * k where a, b, c, d are
+  floating point values and i, j, k are the shoebox indices in directions x, y
+  and z respectively.'''
+
+  from scitbx.array_family import flex
+  from scitbx.random import variate, poisson_distribution
+
+  dz, dy, dx = sbox.focus()
+
+  if b == c == d == 0.0:
+    g = variate(poisson_distribution(mean = a))
+    for k in range(dz):
+      for j in range(dy):
+        for i in range(dx):
+          sbox[k, j, i] += g.next()
+  else:
+    for k in range(dz):
+      for j in range(dy):
+        for i in range(dx):
+          pixel = a + b * (i+0.5) + c * (j+0.5) + d * (k+0.5)
+          g = variate(poisson_distribution(mean = pixel))
+          sbox[k, j, i] += g.next()
+  return
+
 def random_background_plane(sbox, a, b, c, d):
   '''Draw values from Poisson distribution for each position where the mean for
   that distribition is equal to a + b * i + c * j + d * k where a, b, c, d are
