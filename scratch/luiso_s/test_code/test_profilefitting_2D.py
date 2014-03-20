@@ -7,20 +7,30 @@ import numpy
 import math
 import random
 
-xmax = 2400
-ymax = 2600
+xmax = 240
+ymax = 250
 
 data2d = numpy.zeros((xmax, ymax), dtype = numpy.float64)
-nrow = 30
-ncol = 30
+
+n_x = 12
+n_y = 13
+
+nrow = int(float(ymax) / float(n_y))
+
+ncol = int(float(xmax) / float(n_x))
+
+print "ncol =", ncol
+print "nrow =", nrow
+
+if ncol > nrow:
+  ncol = nrow
+elif nrow > ncol:
+  nrow = ncol
+
+print "ncol =", ncol
+print "nrow =", nrow
 
 pi = 3.14159265358
-
-n_x = 80
-n_y = 86
-
-#n_x = 10
-#n_y = 16
 
 num_ref = n_y * n_x
 ref_table = flex.reflection_table()
@@ -38,30 +48,24 @@ for ypos in range(n_y):
   for xpos in range(n_x):
       row_str = ypos * nrow
       col_str = xpos * ncol
-      dx = col_str - 1200
-      dy = row_str - 1300
+      dx = col_str - xmax / 2
+      dy = row_str - ymax / 2
 
-      if dx < 0 and dy < 0:
-        ref_ang = 0.25
-      elif dx > 0 and dy < 0:
-        ref_ang = 0.75
-      elif dx < 0 and dy > 0:
-        ref_ang = 0.75
-      else:
-        ref_ang = 0.20
       ref_ang = float( math.atan2(dx, dy) / pi)
       i_loc = random.randint(0,999)
       thold = i_loc / 8
       ref2d = model_2d(nrow, ncol, 5, 1, ref_ang, i_loc, 0.5)
 
       data2d_tmp = ref2d.as_numpy_array()
-      data2d[col_str:col_str + ncol, row_str:row_str + nrow] += numpy.float64(data2d_tmp)
+      data2d[col_str:col_str + ncol, row_str:row_str + nrow] += \
+       numpy.float64(data2d_tmp)
       t_bbox[t_row] = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
       t_xyzobs[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
 
-
       t_xyzcal[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
-      np_shoebox = numpy.copy(data2d[col_str:col_str + ncol, row_str:row_str + nrow])
+      np_shoebox = numpy.copy( \
+       data2d[col_str:col_str + ncol, row_str:row_str + nrow])
+
       fl_shoebox = flex.double(np_shoebox)
       fl_shoebox.reshape(flex.grid(1, ncol, nrow))
       fl_shoebox_bkg=fl_shoebox[:,:,:]
@@ -87,7 +91,7 @@ ref2d = model_2d(xmax, ymax, 380, 740, 0.25, 955, 0.5)
 data2d_tmp = ref2d.as_numpy_array()
 data2d[:, :] += numpy.float64(data2d_tmp)
 
-tmp = '''
+#tmp = '''
 from matplotlib import pyplot as plt
 print "Plotting data2d"
 plt.imshow(data2d, interpolation = "nearest")
@@ -104,7 +108,7 @@ flex_2d_layering_n_integrating(ref_table)
 t_intensity = ref_table['intensity.raw.value']
 old_i_table = t_intensity[:]
 
-tmp='''
+#tmp='''
 print "adding noise ...."
 t_row = 0
 for count in range(num_ref):
