@@ -254,19 +254,28 @@ class ExperimentList(object):
             obj['imageset'] = (obj['imageset'], e.imageset.indices())
       result['experiment'].append(obj)
 
+    def get_template(imset):
+      if imset.reader().get_format_class() is None:
+        try:
+          return imset.get_template()
+        except Exception:
+          pass
+        try:
+          return imset.reader().get_path()
+        except Exception:
+          pass
+        return 'none'
+      elif issubclass(imset.reader().get_format_class(), FormatMultiImage):
+        return imset.reader().get_path()
+      else:
+        return imset.get_template()
+
     # Serialize all the imagesets
     result['imageset'] = []
     for imset in ilist:
       if isinstance(imset, ImageSweep):
-
         # FIXME_HACK
-        if imset.reader().get_format_class() is None:
-          template = 'none'
-        elif issubclass(imset.reader().get_format_class(), FormatMultiImage):
-          template = imset.reader().get_path()
-        else:
-          template = imset.get_template()
-
+        template = get_template(imset)
         result['imageset'].append(OrderedDict([
           ('__id__', 'ImageSweep'),
           ('template', template)]))
