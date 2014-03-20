@@ -254,6 +254,14 @@ which just shows the summary of what is in the output MTZ file. There are also i
 FIXME write about this, also copying in refinement results from
 elsewhere to describe your experiment before you get started.
 
+Easy:
+
+{\small
+\begin{verbatim}
+dials.process datablock.json
+\end{verbatim}
+}
+
 \section{Running the Individual Steps}
 
 FIXME write this section too, and in each section detail the available
@@ -264,11 +272,22 @@ how the command-line options work.
 
 \subsection{Import}
 
+The first stage of step-by-step DIALS processing is to import the data
+- all that happens here is that the image headers are read, and a file
+describing their contents (\verb|datablock.json|) is written. It's
+worth noting that if this file is changed subsequent processing (even
+with \verb|dials.process|) can use this.
+
 {\small
 \begin{verbatim}
 dials.import ~/data/sugar/15_n_120K_1_00*cbf 
 \end{verbatim}
 }
+
+\noindent 
+The output just describes what the software understands of the images
+it was passed - not very interesting but useful to make sure it all
+makes sense.
 
 {\small
 \begin{verbatim}
@@ -285,11 +304,19 @@ Writing datablocks to datablock.json
 
 \subsection{Find Spots}
 
+The first ``real'' task in any DIALS processing will be the spot
+finding - while there are plenty of options the defaults often seem to
+do sensible things.
+
 {\small
 \begin{verbatim}
 dials.find_spots datablock.json 
 \end{verbatim}
 }
+
+\noindent
+This will just report the nubmer of spots found - guess we could
+probably write some more interesting output.
 
 {\small
 \begin{verbatim}
@@ -315,6 +342,12 @@ Total time:  26.5041749477
 
 \subsection{Indexing}
 
+Here we will use a bunch more options to properly index the data, as
+the unit cell from sucrose is very small! Method of fft1d corresponds
+to the 1D FFT indexing rather than the 3D FFT default, the grid
+spacing clues just determine how the indexing is done. N.B. the
+defaults are configured for macromolecular crystallography.
+
 {\small
 \begin{verbatim}
 dials.index method=fft1d reciprocal_space_grid.d_min=1
@@ -323,6 +356,7 @@ max_cell=20
 \end{verbatim}
 }
 
+\noindent
 The output for this is rather verbose: FIXME perhaps I should
 abbreviate it some?
 
@@ -578,6 +612,7 @@ dials.refine experiments.json indexed.pickle
 \end{verbatim}
 }
 
+\noindent
 This one on the other hand would probably stand to be \emph{more} verbose!
 
 {\small
@@ -590,7 +625,8 @@ Saving refined experiments to refined_experiments.json
 
 \subsection{Integration}
 
-After refinement is complete integration may proceed
+After refinement is complete integration may proceed - though in this
+example it failed so this is not a great example!
 
 {\small
 \begin{verbatim}
@@ -600,7 +636,7 @@ dials.integrate refined_experiments.json
 
 {\small
 \begin{verbatim}
-
+FIXME ADD IN HERE RESULTS
 \end{verbatim}
 }
 
@@ -608,6 +644,7 @@ dials.integrate refined_experiments.json
 
 {\small
 \begin{verbatim}
+FIXME ADD IN HERE EXPORT STUFF
 \end{verbatim}
 }
 
