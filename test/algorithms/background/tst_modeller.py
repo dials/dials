@@ -343,6 +343,9 @@ class TestPoisson(object):
     return sboxes, masks
 
 if __name__ == '__main__':
+  from scitbx.array_family import flex
+  flex.set_random_seed(1)
+
   test = TestExact()
   test.run()
 
