@@ -254,7 +254,9 @@ class ProfileModel(object):
 
     # Filter based on zeta value
     Command.start('Filtering reflections with zeta < %f' % min_zeta)
-    mask = zeta < min_zeta
+
+    from scitbx.array_family import flex
+    mask = flex.abs(zeta) < min_zeta
     reflections.del_selected(mask)
     Command.end('Filtered %d reflections with zeta > %f' %
       (len(reflections), min_zeta))
