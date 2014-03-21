@@ -19,6 +19,9 @@ nrow = int(float(ymax) / float(n_y))
 
 ncol = int(float(xmax) / float(n_x))
 
+centr_col = float(ncol)/2.0
+centr_row = float(ncol)/2.0
+
 print "ncol =", ncol
 print "nrow =", nrow
 
@@ -60,9 +63,9 @@ for ypos in range(n_y):
       data2d[col_str:col_str + ncol, row_str:row_str + nrow] += \
        numpy.float64(data2d_tmp)
       t_bbox[t_row] = [col_str, col_str + ncol, row_str, row_str + nrow, 0, 1]
-      t_xyzobs[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
+      t_xyzobs[t_row] = [col_str + centr_col, row_str + centr_row, 0.5]
 
-      t_xyzcal[t_row] = [col_str + 14.5, row_str + 14.5, 0.5]
+      t_xyzcal[t_row] = [col_str + centr_col, row_str + centr_row, 0.5]
       np_shoebox = numpy.copy( \
        data2d[col_str:col_str + ncol, row_str:row_str + nrow])
 

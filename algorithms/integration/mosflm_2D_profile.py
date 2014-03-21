@@ -31,6 +31,8 @@ def make_2d_profile(reflection_pointers, ref_table_in):
         max_i = col_intensity[t_row]
   thold = 0.5 * max_i
 
+  #print "max_i =", max_i
+
   select_pointers = []
   for t_row in reflection_pointers:
     #if ref.is_valid():
@@ -86,9 +88,10 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     descr[0, 1] = cntr_pos[1] - bnd_box[2]
     descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
     peak2d = subtrac_bkg_2d(data2d, background2d)
+
     sumation = add_2d(descr, peak2d, sumation)
 
-  if_you_want_to_see_how_the_profiles_look = '''
+  #if_you_want_to_see_how_the_profiles_look = '''
   from matplotlib import pyplot as plt
   data2d_np = sumation.as_numpy_array()
   plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
@@ -151,16 +154,22 @@ def fit_profile_2d(reflection_pointers, ref_table
           tp_rg_pos = row, col
           bt_lf_pos = row + 1, col - 1
           bt_rg_pos = row + 1, col
-        else:
+        elif x > x_centr_of_cuad and y > y_centr_of_cuad:
           tp_lf_pos = row, col
           tp_rg_pos = row, col + 1
           bt_lf_pos = row + 1, col
           bt_rg_pos = row + 1, col + 1
-
-        tp_lf_average = arr_proff[tp_lf_pos[0]][tp_lf_pos[1]][0]
-        tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
-        bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
-        bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
+        else:
+          print "none cuadrant"
+          average = local_average
+        try:
+          tp_lf_average = arr_proff[tp_lf_pos[0]][tp_lf_pos[1]][0]
+          tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
+          bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
+          bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
+        except:
+          from dials.util.command_line import interactive_console; interactive_console()
+          break
 
         tp_lf_x = tp_lf_pos[1] * x_cuad_size + x_half_cuad_size
         tp_lf_y = tp_lf_pos[0] * y_cuad_size + y_half_cuad_size
