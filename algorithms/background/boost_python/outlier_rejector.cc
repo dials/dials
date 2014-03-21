@@ -13,6 +13,7 @@
 #include <dials/algorithms/background/outlier_rejector.h>
 #include <dials/algorithms/background/normal_outlier_rejector.h>
 #include <dials/algorithms/background/truncated_outlier_rejector.h>
+#include <dials/algorithms/background/nsigma_outlier_rejector.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
@@ -31,6 +32,12 @@ namespace dials { namespace algorithms { namespace background {
       .def(init<double, double>((
         arg("lower") = 0.01,
         arg("upper") = 0.01)));
+
+    class_<NSigmaOutlierRejector, bases<OutlierRejector> >(
+        "NSigmaOutlierRejector", no_init)
+      .def(init<double, double>((
+        arg("lower") = 3.0,
+        arg("upper") = 3.0)));
 
     class_<NormalOutlierRejector, bases<OutlierRejector> >(
         "NormalOutlierRejector", no_init)

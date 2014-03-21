@@ -26,6 +26,7 @@ algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/modeller.h -text
 algorithms/background/normal_discriminator.h -text
 algorithms/background/normal_outlier_rejector.h -text
+algorithms/background/nsigma_outlier_rejector.h -text
 algorithms/background/outlier_rejector.h -text
 algorithms/background/poisson_discriminator.h -text
 algorithms/background/truncated_outlier_rejector.h -text
