@@ -63,12 +63,8 @@ class indexer_fft3d(indexer_base):
       if self.params.debug:
         self.debug_show_candidate_basis_vectors()
       self.candidate_crystal_models = self.find_candidate_orientation_matrices(
-        self.candidate_basis_vectors)
+        self.candidate_basis_vectors, apply_symmetry=False)
       crystal_models = self.candidate_crystal_models[:1]
-    if self.target_symmetry_primitive is not None:
-      crystal_models = [
-        self.apply_symmetry(cm, self.target_symmetry_primitive)
-        for cm in crystal_models]
     experiments = ExperimentList()
     for cm in crystal_models:
       experiments.append(Experiment(beam=self.beam,
@@ -433,7 +429,8 @@ class indexer_fft3d(indexer_base):
 
       self.candidate_basis_vectors.extend(vectors)
       candidate_orientation_matrices \
-        = self.find_candidate_orientation_matrices(vectors, return_first=True)
+        = self.find_candidate_orientation_matrices(
+          vectors, return_first=True, apply_symmetry=False)
       if len(candidate_orientation_matrices) == 0:
         continue
       # only take the first one
@@ -445,13 +442,6 @@ class indexer_fft3d(indexer_base):
       cb_op = crystal_symmetry.change_of_basis_op_to_minimum_cell()
       crystal_model = crystal_model.change_basis(cb_op)
       self.candidate_crystal_models.append(crystal_model)
-
-    for i_lattice in range(len(self.candidate_crystal_models)):
-      if self.target_symmetry_primitive is not None:
-        symmetrized_model = self.apply_symmetry(
-          self.candidate_crystal_models[i_lattice], self.target_symmetry_primitive)
-        print symmetrized_model.get_unit_cell()
-        self.candidate_crystal_models[i_lattice] = symmetrized_model
 
     if self.params.debug:
       file_name = "vectors.pdb"
