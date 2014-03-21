@@ -12,6 +12,7 @@
 #include <boost/python/def.hpp>
 #include <dials/algorithms/background/outlier_rejector.h>
 #include <dials/algorithms/background/normal_outlier_rejector.h>
+#include <dials/algorithms/background/truncated_outlier_rejector.h>
 
 namespace dials { namespace algorithms { namespace background {
   namespace boost_python {
@@ -24,6 +25,12 @@ namespace dials { namespace algorithms { namespace background {
       .def("__call__", &OutlierRejector::mark, (
             arg("data"),
             arg("mask")));
+
+    class_<TruncatedOutlierRejector, bases<OutlierRejector> >(
+        "TruncatedOutlierRejector", no_init)
+      .def(init<double, double>((
+        arg("lower") = 0.01,
+        arg("upper") = 0.01)));
 
     class_<NormalOutlierRejector, bases<OutlierRejector> >(
         "NormalOutlierRejector", no_init)
