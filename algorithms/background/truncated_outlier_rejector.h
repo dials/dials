@@ -21,11 +21,6 @@
 
 namespace dials { namespace algorithms { namespace background {
 
-  using boost::math::erf_inv;
-  using scitbx::af::min;
-  using scitbx::af::max;
-  using scitbx::af::mean;
-  using scitbx::math::mean_and_variance;
   using dials::af::sort_index;
 
   /**
