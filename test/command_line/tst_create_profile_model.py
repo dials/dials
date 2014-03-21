@@ -36,7 +36,7 @@ class Test(object):
         if "sigma_m" in tokens[0]:
           sigma_m = float(tokens[1])
       eps = 1e-7
-      assert(abs(sigma_b - 0.02229742649) < eps)
+      assert(abs(sigma_b - 0.02262206634) < eps)
       assert(abs(sigma_m - 0.07971599709) < eps)
     print 'OK'
 
