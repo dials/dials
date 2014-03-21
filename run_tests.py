@@ -65,6 +65,7 @@ tst_list = (
     "$D/test/algorithms/refinement/tst_detector_parameters.py",
     "$D/test/algorithms/refinement/tst_hierarchical_detector_refinement.py",
     "$D/test/algorithms/refinement/tst_multi_experiment_refinement.py",
+    "$D/test/algorithms/refinement/tst_stills_refinement.py",
     "$D/test/algorithms/image/tst_centroid.py",
     "$D/test/algorithms/image/filter/tst_summed_area.py",
     "$D/test/algorithms/image/filter/tst_mean_and_variance.py",
