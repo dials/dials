@@ -123,19 +123,6 @@ s0_param.set_fixed([True, False])
 # Apply known parameter shifts #
 ################################
 
-# shift detector by 1.0 mm each translation and 2 mrad each rotation
-#det_p_vals = det_param.get_param_vals()
-#p_vals = [a + b for a, b in zip(det_p_vals,
-#                                [1.0, 1.0, 1.0, 2., 2., 2.])]
-#det_param.set_param_vals(p_vals)
-
-# shift beam by 2 mrad in free axis
-#s0_p_vals = s0_param.get_param_vals()
-#p_vals = list(s0_p_vals)
-
-#p_vals[0] += 2.
-#s0_param.set_param_vals(p_vals)
-
 # rotate crystal a bit (=5 mrad each rotation)
 xlo_p_vals = []
 p_vals = xlo_param.get_param_vals()
@@ -162,10 +149,10 @@ xluc_param.set_param_vals(X)
 # Generate some reflections #
 #############################
 
-print "Reflections will be generated with the following geometry:"
-print mybeam
-print mydetector
-print crystal
+#print "Reflections will be generated with the following geometry:"
+#print mybeam
+#print mydetector
+#print crystal
 
 # All indices in a 2.0 Angstrom sphere for crystal1
 resolution = 2.0
@@ -178,7 +165,7 @@ ref_predictor = ScansRayPredictor(scans_experiments, sweep_range)
 
 obs_refs = ref_predictor.predict(indices, experiment_id=0)
 
-print "Total number of reflections excited", len(obs_refs)
+#print "Total number of reflections excited", len(obs_refs)
 
 # Invent some variances for the centroid positions of the simulated data
 im_width = 0.1 * pi / 180.
@@ -203,7 +190,7 @@ for ref in obs_refs:
   # ensure the crystal number is set to zero (should be by default)
   ref.crystal = 0
 
-print "Total number of observations made", len(obs_refs)
+#print "Total number of observations made", len(obs_refs)
 
 ###############################
 # Undo known parameter shifts #
@@ -212,66 +199,38 @@ print "Total number of observations made", len(obs_refs)
 xlo_param.set_param_vals(xlo_p_vals[0])
 xluc_param.set_param_vals(xluc_p_vals[0])
 
-#print "Initial values of parameters are"
-#msg = "Parameters: " + "%.5f " * len(pred_param)
-#print msg % tuple(pred_param.get_param_vals())
-#print
-
-print "Refinement will start from the following geometry:"
-print mybeam
-print mydetector
-print crystal
+#print "Refinement will start from the following geometry:"
+#print mybeam
+#print mydetector
+#print crystal
 
 # make a refiner
-from dials.util.options import SystemConfig
-sysconfig = SystemConfig()
-params = sysconfig.config()
-params = params.fetch().extract()
+from dials.framework.registry import Registry
+sysconfig = Registry().config()
+params = sysconfig.params()
+
 # overrides to fix beam and detector
 params.refinement.parameterisation.beam.fix="all"
 params.refinement.parameterisation.detector.fix="all"
 
-# in case we want a plot
-#params.refinement.refinery.track_parameter_correlation=True
+# Change this to get a plot
+do_plot = False
+if do_plot: params.refinement.refinery.track_parameter_correlation=True
 
+verbosity = 0
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=1)
+  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=verbosity)
 
-#####################################
-# Select reflections for refinement #
-#####################################
-
-#refman = ReflectionManager(obs_refs, mybeam, mygonio, sweep_range)
-
-##############################
-# Set up the target function #
-##############################
-
-# The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
-# 1/3 the image width in radians. For the simulated data, these are just made up
-
-#mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-#    ref_predictor, refman, pred_param, im_width)
-
-################################
-# Set up the refinement engine #
-################################
-
-#refiner = setup_minimiser.Extract(master_phil,
-#                                  mytarget,
-#                                  pred_param,
-#                                  cmdline_args = args).refiner
-
-#print "Prior to refinement the experimental model is:"
-#print_model_geometry(mybeam, mydetector, mycrystal)
-
+# run refinement
 history = refiner.run()
-#plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
-#plt.show()
 
-print "Refinement has completed with the following geometry:"
-expts = refiner.get_experiments()
-for beam in expts.beams(): print beam
-for detector in expts.detectors(): print detector
-for crystal in  expts.crystals(): print crystal
+if do_plot:
+  plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
+  plt.show()
+
+#print "Refinement has completed with the following geometry:"
+#expts = refiner.get_experiments()
+#for beam in expts.beams(): print beam
+#for detector in expts.detectors(): print detector
+#for crystal in  expts.crystals(): print crystal
