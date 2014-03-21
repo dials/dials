@@ -49,13 +49,15 @@ namespace dials { namespace algorithms { namespace background {
         const af::const_ref< double, af::c_grid<3> > &shoebox,
         af::ref< int, af::c_grid<3> > mask) const {
 
+      const int mask_code = shoebox::Valid | shoebox::Background;
+
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
 
       // Copy valid pixels and indices into list
       af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if (mask[i] & shoebox::Valid && mask[i] & shoebox::Background) {
+        if ((mask[i] & mask_code) == mask_code) {
           indices.push_back(i);
         }
       }

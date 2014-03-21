@@ -47,21 +47,21 @@ namespace dials { namespace algorithms { namespace background {
         const af::const_ref< double, af::c_grid<3> > &shoebox,
         af::ref< int, af::c_grid<3> > mask) const {
 
+      const int mask_code = shoebox::Valid | shoebox::Background;
+
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
 
       // Copy valid pixels and indices into list
-      af::shared<double> weights(shoebox.size(), 0.0);
+      af::shared<double> data;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
-        if (mask[i] & shoebox::Valid && mask[i] & shoebox::Background) {
-          weights[i] = 1.0;
+        if ((mask[i] & mask_code) == mask_code) {
+          data.push_back(shoebox[i]);
         }
       }
 
       // Compute the mean and sigma
-      mean_and_variance<double> mv(
-          af::const_ref<double>(shoebox.begin(), shoebox.size()),
-          weights.const_ref());
+      mean_and_variance<double> mv(data.const_ref());
       double mean = mv.mean();
       double sigma = mv.unweighted_sample_standard_deviation();
       double p0 = mean - lower_ * sigma;
@@ -69,8 +69,10 @@ namespace dials { namespace algorithms { namespace background {
 
       // Set rejected pixels as 'not background'
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if (p0 <= shoebox[i] && shoebox[i] <= p1) {
-          mask[i] |= shoebox::BackgroundUsed;
+        if ((mask[i] & mask_code) == mask_code) {
+          if (p0 <= shoebox[i] && shoebox[i] <= p1) {
+            mask[i] |= shoebox::BackgroundUsed;
+          }
         }
       }
     }
