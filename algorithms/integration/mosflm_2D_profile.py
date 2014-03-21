@@ -159,9 +159,12 @@ def fit_profile_2d(reflection_pointers, ref_table
           tp_rg_pos = row, col + 1
           bt_lf_pos = row + 1, col
           bt_rg_pos = row + 1, col + 1
+        elif x == x_centr_of_cuad and y == y_centr_of_cuad:
+          print "centre of the cuadrant"
+          average = local_average
         else:
           print "none cuadrant"
-          average = local_average
+
         try:
           tp_lf_average = arr_proff[tp_lf_pos[0]][tp_lf_pos[1]][0]
           tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
