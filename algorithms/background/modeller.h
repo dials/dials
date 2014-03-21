@@ -63,7 +63,9 @@ namespace dials { namespace algorithms { namespace background {
 
     Constant2dModel(af::shared<double> a_, af::shared<double> va_)
       : a(a_),
-        va(va_) {}
+        va(va_) {
+      DIALS_ASSERT(a.size() == va.size());
+    }
 
     virtual
     double value(double z, double y, double x) const {
@@ -110,10 +112,9 @@ namespace dials { namespace algorithms { namespace background {
             }
           }
         }
-        if (count > 0) {
-          mean[k] /= count;
-          var[k] = mean[k] / count;
-        }
+        DIALS_ASSERT(count > 0);
+        mean[k] /= count;
+        var[k] = mean[k] / count;
       }
       return boost::make_shared<Constant2dModel>(mean, var);
     }
@@ -168,9 +169,8 @@ namespace dials { namespace algorithms { namespace background {
           count++;
         }
       }
-      if (count > 0) {
-        mean /= count;
-      }
+      DIALS_ASSERT(count > 0);
+      mean /= count;
       return boost::make_shared<Constant3dModel>(mean, mean / count);
     }
   };

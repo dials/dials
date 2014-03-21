@@ -238,7 +238,7 @@ class TestPoisson(object):
     modeller = Linear2dModeller()
 
     # Generate shoeboxes
-    ma = 10
+    ma = 100
     mb = 1
     mc = 2
     sboxes, masks = self.generate_background(self.size, 1000, ma, mb, mc, 0)
@@ -274,7 +274,7 @@ class TestPoisson(object):
     modeller = Linear3dModeller()
 
     # Generate shoeboxes
-    ma = 10
+    ma = 100
     mb = 1
     mc = 2
     md = 3
@@ -291,8 +291,8 @@ class TestPoisson(object):
       assert(len(model.variances()) == 4)
       p = model.params()
       v = model.variances()
-      pa.append(p)
-      pv.append(v)
+      pa.append(tuple(p))
+      pv.append(tuple(v))
     a, b, c, d = zip(*pa)
     va, vb, vc, vd = zip(*pv)
 
@@ -312,16 +312,16 @@ class TestPoisson(object):
   def assert_std_norm(self, z):
     from dials.array_family import flex
     mv = flex.mean_and_variance(z)
+    m = mv.mean()
+    s = mv.unweighted_sample_standard_deviation()
     try:
-      m = mv.mean()
-      s = mv.unweighted_sample_standard_deviation()
       assert(abs(m) < 0.1)
       assert(abs(s - 1.0) < 0.1)
     except Exception:
       print 'Mean %f, Sdev %f' % (m, s)
-      from matplotlib import pylab
-      pylab.hist(z, 100)
-      pylab.show()
+      #from matplotlib import pylab
+      #pylab.hist(list(z), 100)
+      #pylab.show()
       raise
 
   def generate_background(self, size, N, A, B, C, D):
@@ -343,8 +343,6 @@ class TestPoisson(object):
     return sboxes, masks
 
 if __name__ == '__main__':
-  from scitbx.array_family import flex
-  flex.set_random_seed(1)
 
   test = TestExact()
   test.run()
