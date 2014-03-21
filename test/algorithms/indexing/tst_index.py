@@ -433,6 +433,27 @@ def exercise_11():
                             relative_length_tolerance=0.05,
                             absolute_angle_tolerance=1)
 
+def exercise_12():
+  # test indexing from single image of i04_weak_data
+  data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
+  pickle_path = os.path.join(data_dir, "first_image.pickle")
+  sweep_path = os.path.join(data_dir, "datablock_orig.json")
+  extra_args = ["method=fft3d",
+                "space_group=P4",
+                "unit_cell=57.8,57.8,150,90,90,90",
+                "peak_search=clean",
+                "cluster_analysis_search=True",
+                "min_samples=15",
+                "maximum_spot_error=3",
+                "n_macro_cycles=4",
+                ]
+
+  expected_unit_cell = uctbx.unit_cell((57.8,57.8,150,90,90,90))
+  expected_rmsds = (0.06, 0.07, 0.002)
+  expected_hall_symbol = ' P 4'
+
+  result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
+                            expected_rmsds, expected_hall_symbol)
 
 def run(args):
   if not libtbx.env.has_module("dials_regression"):
@@ -441,7 +462,7 @@ def run(args):
 
   exercises = (exercise_1, exercise_2, exercise_3, exercise_4, exercise_5,
                exercise_6, exercise_7, exercise_8, exercise_9, exercise_10,
-               exercise_11)
+               exercise_11, exercise_12)
   if len(args):
     args = [int(arg) for arg in args]
     for arg in args: assert arg > 0
