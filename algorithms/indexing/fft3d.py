@@ -30,25 +30,28 @@ class indexer_fft3d(indexer_base):
     super(indexer_fft3d, self).__init__(reflections, sweep, params)
 
   def find_lattices(self):
-    if self.params.reciprocal_space_grid.d_min is libtbx.Auto:
+    if self.params.fft3d.reciprocal_space_grid.d_min is libtbx.Auto:
       # rough calculation of suitable d_min based on max cell
       # see also Campbell, J. (1998). J. Appl. Cryst., 31(3), 407-413.
-      self.params.reciprocal_space_grid.d_min = (
-        5 * self.params.max_cell / self.params.reciprocal_space_grid.n_points)
-      print "Setting d_min: %s" %self.params.reciprocal_space_grid.d_min
-    n_points = self.params.reciprocal_space_grid.n_points
+      self.params.fft3d.reciprocal_space_grid.d_min = (
+        5 * self.params.max_cell / self.params.fft3d.reciprocal_space_grid.n_points)
+      print "Setting d_min: %s" %self.params.fft3d.reciprocal_space_grid.d_min
+    n_points = self.params.fft3d.reciprocal_space_grid.n_points
     self.gridding = fftpack.adjust_gridding_triple(
       (n_points,n_points,n_points), max_prime=5)
     n_points = self.gridding[0]
     self.map_centroids_to_reciprocal_space_grid()
-    self.d_min = self.params.reciprocal_space_grid.d_min
+    self.d_min = self.params.fft3d.reciprocal_space_grid.d_min
 
     print "Number of centroids used: %i" %(
       (self.reciprocal_space_grid>0).count(True))
     self.fft()
     if self.params.debug:
       self.debug_write_ccp4_map(map_data=self.grid_real, file_name="patt.map")
-    self.find_peaks()
+    if self.params.fft3d.peak_search == 'flood_fill':
+      self.find_peaks()
+    elif self.params.fft3d.peak_search == 'clean':
+      self.find_peaks_clean()
     if self.params.multiple_lattice_search.cluster_analysis_search:
       self.find_basis_vector_combinations_cluster_analysis()
       if self.params.debug:
@@ -78,7 +81,8 @@ class indexer_fft3d(indexer_base):
     self._map_to_grid_timer.start()
     assert len(self.reciprocal_space_points) == len(self.reflections)
     wavelength = self.beam.get_wavelength()
-    d_min = self.params.reciprocal_space_grid.d_min
+    d_min = self.params.fft3d.reciprocal_space_grid.d_min
+    d_max = self.params.fft3d.reciprocal_space_grid.d_max
 
     n_points = self.gridding[0]
     rlgrid = 2 / (d_min * n_points)
@@ -551,3 +555,90 @@ class indexer_fft3d(indexer_base):
 
     pyplot.title('Estimated number of clusters: %d' % n_clusters)
     pyplot.show()
+
+  def find_peaks_clean(self):
+    from dials.algorithms.spot_prediction import RotationAngles
+    from dxtbx.model import is_angle_in_range
+
+    # Create the rotation angle object
+    ra = RotationAngles(self.beam.get_s0(), self.goniometer.get_rotation_axis())
+
+    d_min = self.params.fft3d.reciprocal_space_grid.d_min
+    rlgrid = 2 / (d_min * self.gridding[0])
+
+    frame_number = self.reflections['xyzobs.px.value'].parts()[2]
+    scan_range_min = max(
+      int(math.floor(flex.min(frame_number))),
+      self.sweep.get_array_range()[0])
+    scan_range_max = min(
+      int(math.ceil(flex.max(frame_number))),
+      self.sweep.get_array_range()[1])
+    scan_range = self.params.scan_range
+    if not len(scan_range):
+      scan_range = [[scan_range_min, scan_range_max]]
+
+    angle_ranges = [
+      [self.scan.get_angle_from_array_index(i, deg=False) for i in range_]
+      for range_ in scan_range]
+
+    from dials.algorithms.indexing import sampling_volume_map, clean_3d
+
+    grid = flex.double(flex.grid(self.gridding), 0)
+    sampling_volume_map(grid, flex.vec2_double(angle_ranges),
+                        self.beam.get_s0(), self.goniometer.get_rotation_axis(),
+                        rlgrid, d_min, self.params.b_iso)
+
+    fft = fftpack.complex_to_complex_3d(self.gridding)
+    grid_complex = flex.complex_double(
+      reals=grid,
+      imags=flex.double(grid.size(), 0))
+    grid_transformed = fft.forward(grid_complex)
+    grid_real = flex.pow2(flex.real(grid_transformed))
+
+    gamma = 1
+    peaks = flex.vec3_double()
+    #n_peaks = 200
+    n_peaks = 100 # XXX how many do we need?
+
+    dirty_beam = grid_real
+    dirty_map = self.grid_real.deep_copy()
+    peaks = clean_3d(dirty_beam, dirty_map, n_peaks, gamma=gamma)
+
+    # optimise the peak position using a grid search around the starting peak position
+    optimised_peaks = flex.vec3_double()
+    n_points = 4
+    grid_step = 0.25
+    for peak in peaks:
+      max_value = 1e-8
+      max_index = None
+      for i in range(-n_points, n_points):
+        i_coord = peak[0] + i * grid_step
+        for j in range(-n_points, n_points):
+          j_coord = peak[1] + j * grid_step
+          for k in range(-n_points, n_points):
+            k_coord = peak[2] + k * grid_step
+            v = self.fft_cell.orthogonalize(
+              (i_coord/self.gridding[0], j_coord/self.gridding[1], k_coord/self.gridding[2]))
+            two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(v)
+            f = flex.sum(flex.cos(two_pi_S_dot_v))
+            if f > max_value:
+              max_value = f
+              max_index = (i_coord, j_coord, k_coord)
+      optimised_peaks.append(max_index)
+    peaks = optimised_peaks
+
+    peaks_frac = flex.vec3_double()
+    for p in peaks:
+      peaks_frac.append((p[0]/self.gridding[0],
+                         p[1]/self.gridding[1],
+                         p[2]/self.gridding[2]))
+      #print p, peaks_frac[-1]
+
+    if self.params.debug:
+      self.debug_write_ccp4_map(grid, "sampling_volume.map")
+      self.debug_write_ccp4_map(grid_real, "sampling_volume_FFT.map")
+      self.debug_write_ccp4_map(dirty_map, "clean.map")
+
+    self.sites = peaks_frac
+
+    return

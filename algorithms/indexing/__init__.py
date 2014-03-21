@@ -1,6 +1,7 @@
 from __future__ import division
 
 from cctbx.array_family import flex
+from dials_algorithms_indexing_ext import *
 
 def index_reflections(
     reflections, reciprocal_space_points, crystal_models, d_min,

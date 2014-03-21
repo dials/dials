@@ -1,0 +1,11 @@
+
+Import('env')
+
+sources = [
+    'boost_python/fft3d.cc',
+    'boost_python/indexing_ext.cc']
+
+env.SharedLibrary(target='#/lib/dials_algorithms_indexing_ext',
+    source=sources)
+
+env.SConscript('profile/SConscript', exports={ 'env' : env })

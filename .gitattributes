@@ -76,9 +76,13 @@ algorithms/image/threshold/boost_python/threshold_ext.cc -text
 algorithms/image/threshold/boost_python/unimodal.cc -text
 algorithms/image/threshold/local.h -text
 algorithms/image/threshold/unimodal.h -text
+algorithms/indexing/SConscript -text
 algorithms/indexing/__init__.py -text
+algorithms/indexing/boost_python/fft3d.cc -text
+algorithms/indexing/boost_python/indexing_ext.cc -text
 algorithms/indexing/compare_orientation_matrices.py -text
 algorithms/indexing/fft1d.py -text
+algorithms/indexing/fft3d.h -text
 algorithms/indexing/fft3d.py -text
 algorithms/indexing/indexer.py -text
 algorithms/indexing/indexer2.py -text

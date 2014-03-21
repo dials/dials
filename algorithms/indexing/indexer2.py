@@ -41,13 +41,19 @@ min_cell = 20
 max_cell = Auto
   .type = float(value_min=0)
   .help = "Maximum length of candidate unit cell basis vectors (in Angstrom)."
-reciprocal_space_grid {
-  n_points = 256
-    .type = int(value_min=0)
-  d_min = 4
-    .type = float(value_min=0)
-    .help = "The high resolution limit in Angstrom for spots to include in "
-            "the initial indexing."
+fft3d {
+  peak_search = *flood_fill clean
+    .type = choice
+  reciprocal_space_grid {
+    n_points = 256
+      .type = int(value_min=0)
+    d_max = None
+      .type = float(value_min=0)
+    d_min = 4
+      .type = float(value_min=0)
+      .help = "The high resolution limit in Angstrom for spots to include in "
+              "the initial indexing."
+  }
 }
 sigma_phi_deg = None
   .type = float(value_min=0)
