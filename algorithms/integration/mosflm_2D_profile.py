@@ -91,7 +91,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
     sumation = add_2d(descr, peak2d, sumation)
 
-  #if_you_want_to_see_how_the_profiles_look = '''
+  if_you_want_to_see_how_the_profiles_look = '''
   from matplotlib import pyplot as plt
   data2d_np = sumation.as_numpy_array()
   plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
@@ -139,116 +139,119 @@ def fit_profile_2d(reflection_pointers, ref_table
         x_centr_of_cuad = col * x_cuad_size + x_half_cuad_size
         y_centr_of_cuad = row * y_cuad_size + y_half_cuad_size
 
+        use_avg = False
+
         if x < x_centr_of_cuad and y < y_centr_of_cuad:
           tp_lf_pos = row - 1, col - 1
           tp_rg_pos =row - 1, col
           bt_lf_pos = row, col - 1
           bt_rg_pos = row, col
+          use_avg = True
         elif x > x_centr_of_cuad and y < y_centr_of_cuad:
           tp_lf_pos = row - 1, col
           tp_rg_pos = row - 1, col + 1
           bt_lf_pos = row, col
           bt_rg_pos = row, col + 1
+          use_avg = True
         elif x < x_centr_of_cuad and y > y_centr_of_cuad:
           tp_lf_pos = row, col - 1
           tp_rg_pos = row, col
           bt_lf_pos = row + 1, col - 1
           bt_rg_pos = row + 1, col
+          use_avg = True
         elif x > x_centr_of_cuad and y > y_centr_of_cuad:
           tp_lf_pos = row, col
           tp_rg_pos = row, col + 1
           bt_lf_pos = row + 1, col
           bt_rg_pos = row + 1, col + 1
-        elif x == x_centr_of_cuad and y == y_centr_of_cuad:
-          print "centre of the cuadrant"
-          average = local_average
+          use_avg = True
+
+        if use_avg == True:
+          try:
+            tp_lf_average = arr_proff[tp_lf_pos[0]][tp_lf_pos[1]][0]
+            tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
+            bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
+            bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
+          except:
+            from dials.util.command_line import interactive_console; interactive_console()
+            break
+
+          tp_lf_x = tp_lf_pos[1] * x_cuad_size + x_half_cuad_size
+          tp_lf_y = tp_lf_pos[0] * y_cuad_size + y_half_cuad_size
+          dx = abs(tp_lf_x - x)
+          dy = abs(tp_lf_y - y)
+          tp_lf_dist = math.sqrt(dx * dx + dy * dy)
+
+          tp_rg_x = tp_rg_pos[1] * x_cuad_size + x_half_cuad_size
+          tp_rg_y = tp_rg_pos[0] * y_cuad_size + y_half_cuad_size
+          dx = abs(tp_rg_x - x)
+          dy = abs(tp_rg_y - y)
+          tp_rg_dist = math.sqrt(dx * dx + dy * dy)
+
+          bt_lf_x = bt_lf_pos[1] * x_cuad_size + x_half_cuad_size
+          bt_lf_y = bt_lf_pos[0] * y_cuad_size + y_half_cuad_size
+          dx = abs(bt_lf_x - x)
+          dy = abs(bt_lf_y - y)
+          bt_lf_dist = math.sqrt(dx * dx + dy * dy)
+
+          bt_rg_x = bt_rg_pos[1] * x_cuad_size + x_half_cuad_size
+          bt_rg_y = bt_rg_pos[0] * y_cuad_size + y_half_cuad_size
+          dx = abs(bt_rg_x - x)
+          dy = abs(bt_rg_y - y)
+          bt_rg_dist = math.sqrt(dx * dx + dy * dy)
+
+          max_dist = math.sqrt(
+          (x_cuad_size * x_cuad_size) + (y_cuad_size * y_cuad_size)
+          )
+          tp_lf_contr = (max_dist - tp_lf_dist) / max_dist
+          tp_rg_contr = (max_dist - tp_rg_dist) / max_dist
+          bt_lf_contr = (max_dist - bt_lf_dist) / max_dist
+          bt_rg_contr = (max_dist - bt_rg_dist) / max_dist
+
+          total_contr = tp_lf_contr + tp_rg_contr + bt_lf_contr + bt_rg_contr
+
+          re_scale = 1.0 / total_contr
+          tp_lf_contr = tp_lf_contr * re_scale
+          tp_rg_contr = tp_rg_contr * re_scale
+          bt_lf_contr = bt_lf_contr * re_scale
+          bt_rg_contr = bt_rg_contr * re_scale
+
+          big_nrow = tp_lf_average.all()[0]
+          if tp_rg_average.all()[0] > big_nrow:
+            big_nrow = tp_rg_average.all()[0]
+          if bt_lf_average.all()[0] > big_nrow:
+            big_nrow = bt_lf_average.all()[0]
+          if bt_rg_average.all()[0] > big_nrow:
+            big_nrow = bt_rg_average.all()[0]
+
+          big_ncol = tp_lf_average.all()[1]
+          if tp_rg_average.all()[1] > big_ncol:
+            big_ncol = tp_rg_average.all()[1]
+          if bt_lf_average.all()[1] > big_ncol:
+            big_ncol = bt_lf_average.all()[1]
+          if bt_rg_average.all()[1] > big_ncol:
+            big_ncol = bt_rg_average.all()[1]
+
+          average = flex.double(flex.grid(big_nrow, big_ncol), 0)
+
+          descr[0, 0] = float(tp_lf_average.all()[1])/2.0
+          descr[0, 1] = float(tp_lf_average.all()[0])/2.0
+          descr[0, 2] = float(tp_lf_contr)
+          average = add_2d(descr, tp_lf_average, average)
+          descr[0, 0] = float(tp_rg_average.all()[1])/2.0
+          descr[0, 1] = float(tp_rg_average.all()[0])/2.0
+          descr[0, 2] = float(tp_rg_contr)
+          average = add_2d(descr, tp_rg_average, average)
+          descr[0, 0] = float(bt_lf_average.all()[1])/2.0
+          descr[0, 1] = float(bt_lf_average.all()[0])/2.0
+          descr[0, 2] = float(bt_lf_contr)
+          average = add_2d(descr, bt_lf_average, average)
+          descr[0, 0] = float(bt_rg_average.all()[1])/2.0
+          descr[0, 1] = float(bt_rg_average.all()[0])/2.0
+          descr[0, 2] = float(bt_rg_contr)
+          average = add_2d(descr, bt_rg_average, average)
         else:
-          print "none cuadrant"
-
-        try:
-          tp_lf_average = arr_proff[tp_lf_pos[0]][tp_lf_pos[1]][0]
-          tp_rg_average = arr_proff[tp_rg_pos[0]][tp_rg_pos[1]][0]
-          bt_lf_average = arr_proff[bt_lf_pos[0]][bt_lf_pos[1]][0]
-          bt_rg_average = arr_proff[bt_rg_pos[0]][bt_rg_pos[1]][0]
-        except:
-          from dials.util.command_line import interactive_console; interactive_console()
-          break
-
-        tp_lf_x = tp_lf_pos[1] * x_cuad_size + x_half_cuad_size
-        tp_lf_y = tp_lf_pos[0] * y_cuad_size + y_half_cuad_size
-        dx = abs(tp_lf_x - x)
-        dy = abs(tp_lf_y - y)
-        tp_lf_dist = math.sqrt(dx * dx + dy * dy)
-
-        tp_rg_x = tp_rg_pos[1] * x_cuad_size + x_half_cuad_size
-        tp_rg_y = tp_rg_pos[0] * y_cuad_size + y_half_cuad_size
-        dx = abs(tp_rg_x - x)
-        dy = abs(tp_rg_y - y)
-        tp_rg_dist = math.sqrt(dx * dx + dy * dy)
-
-        bt_lf_x = bt_lf_pos[1] * x_cuad_size + x_half_cuad_size
-        bt_lf_y = bt_lf_pos[0] * y_cuad_size + y_half_cuad_size
-        dx = abs(bt_lf_x - x)
-        dy = abs(bt_lf_y - y)
-        bt_lf_dist = math.sqrt(dx * dx + dy * dy)
-
-        bt_rg_x = bt_rg_pos[1] * x_cuad_size + x_half_cuad_size
-        bt_rg_y = bt_rg_pos[0] * y_cuad_size + y_half_cuad_size
-        dx = abs(bt_rg_x - x)
-        dy = abs(bt_rg_y - y)
-        bt_rg_dist = math.sqrt(dx * dx + dy * dy)
-
-        max_dist = math.sqrt(
-        (x_cuad_size * x_cuad_size) + (y_cuad_size * y_cuad_size)
-        )
-        tp_lf_contr = (max_dist - tp_lf_dist) / max_dist
-        tp_rg_contr = (max_dist - tp_rg_dist) / max_dist
-        bt_lf_contr = (max_dist - bt_lf_dist) / max_dist
-        bt_rg_contr = (max_dist - bt_rg_dist) / max_dist
-
-        total_contr = tp_lf_contr + tp_rg_contr + bt_lf_contr + bt_rg_contr
-
-        re_scale = 1.0 / total_contr
-        tp_lf_contr = tp_lf_contr * re_scale
-        tp_rg_contr = tp_rg_contr * re_scale
-        bt_lf_contr = bt_lf_contr * re_scale
-        bt_rg_contr = bt_rg_contr * re_scale
-
-        big_nrow = tp_lf_average.all()[0]
-        if tp_rg_average.all()[0] > big_nrow:
-          big_nrow = tp_rg_average.all()[0]
-        if bt_lf_average.all()[0] > big_nrow:
-          big_nrow = bt_lf_average.all()[0]
-        if bt_rg_average.all()[0] > big_nrow:
-          big_nrow = bt_rg_average.all()[0]
-
-        big_ncol = tp_lf_average.all()[1]
-        if tp_rg_average.all()[1] > big_ncol:
-          big_ncol = tp_rg_average.all()[1]
-        if bt_lf_average.all()[1] > big_ncol:
-          big_ncol = bt_lf_average.all()[1]
-        if bt_rg_average.all()[1] > big_ncol:
-          big_ncol = bt_rg_average.all()[1]
-
-        average = flex.double(flex.grid(big_nrow, big_ncol), 0)
-
-        descr[0, 0] = float(tp_lf_average.all()[1])/2.0
-        descr[0, 1] = float(tp_lf_average.all()[0])/2.0
-        descr[0, 2] = float(tp_lf_contr)
-        average = add_2d(descr, tp_lf_average, average)
-        descr[0, 0] = float(tp_rg_average.all()[1])/2.0
-        descr[0, 1] = float(tp_rg_average.all()[0])/2.0
-        descr[0, 2] = float(tp_rg_contr)
-        average = add_2d(descr, tp_rg_average, average)
-        descr[0, 0] = float(bt_lf_average.all()[1])/2.0
-        descr[0, 1] = float(bt_lf_average.all()[0])/2.0
-        descr[0, 2] = float(bt_lf_contr)
-        average = add_2d(descr, bt_lf_average, average)
-        descr[0, 0] = float(bt_rg_average.all()[1])/2.0
-        descr[0, 1] = float(bt_rg_average.all()[0])/2.0
-        descr[0, 2] = float(bt_rg_contr)
-        average = add_2d(descr, bt_rg_average, average)
-
+          average = local_average
         if_you_want_to_see_how_the_profiles_look = '''
         from matplotlib import pyplot as plt
         np_2d_dat = average.as_numpy_array()
