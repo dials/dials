@@ -12,8 +12,8 @@ ymax = 250
 
 data2d = numpy.zeros((xmax, ymax), dtype = numpy.float64)
 
-n_x = 12
-n_y = 13
+n_x = 23
+n_y = 24
 
 nrow = int(float(ymax) / float(n_y))
 

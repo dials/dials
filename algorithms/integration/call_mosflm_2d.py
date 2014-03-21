@@ -52,10 +52,16 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
       col = int(float(x) / float(xmax) * n_div)
       row = int(float(y) / float(ymax) * n_div)
-      log_print = '''
+      log_print_n_debugg_way = '''
       print "x,y =", x, y
       print "col, row =", col, row
       print "___________________________end table row #", t_row
+
+      try:
+        arr_rlist[row][col].append([t_row])
+      except:
+        from dials.util.command_line import interactive_console; interactive_console()
+        break
       #'''
       arr_rlist[row][col].append([t_row])
   print "Performing profile building  ...."
