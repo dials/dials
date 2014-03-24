@@ -434,6 +434,11 @@ def exercise_11():
                             absolute_angle_tolerance=1)
 
 def exercise_12():
+  missing = check_external_dependencies(['scipy', 'sklearn', 'networkx'])
+  if len(missing):
+    print ("Skipping exercise_12: missing dependencies" +
+           " %s" * len(missing)) %(tuple(missing))
+    return
   # test indexing from single image of i04_weak_data
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "first_image.pickle")
