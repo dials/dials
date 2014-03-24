@@ -18,7 +18,6 @@
 
 #include <cstdlib>
 #include <scitbx/array_family/versa_matrix.h>
-#include <scitbx/array_family/accessors/c_grid_periodic.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/algorithms/spot_prediction/rotation_angles.h>
 #include <dxtbx/model/scan_helpers.h>
@@ -107,7 +106,7 @@ namespace dials { namespace algorithms {
     http://dx.doi.org/10.1051/0004-6361/200912148
   */
   af::shared<vec3<int> > clean_3d(
-    af::const_ref<double, af::c_grid_periodic<3> > const & dirty_beam,
+    af::const_ref<double, af::c_grid<3> > const & dirty_beam,
     af::ref<double, af::c_grid<3> > const & dirty_map,
     std::size_t n_peaks,
     double gamma=1)
@@ -117,27 +116,44 @@ namespace dials { namespace algorithms {
     index_t const gridding_n_real = index_t(dirty_map.accessor());
     DIALS_ASSERT(dirty_map.size() == dirty_beam.size());
     double max_db = af::max(dirty_beam);
+    af::c_grid<3> accessor(dirty_map.accessor()); // index_type conversion
     for (std::size_t i_peak=0; i_peak<n_peaks; i_peak++) {
-      vec3<int> max_index = vec3<int>(0,0,0);
-      double max_value = dirty_map(max_index);
+
+      // Find the maximum value in the map - this is the next "peak"
+      const int max_idx = af::max_index(dirty_map);
+      const index_t shift = accessor.index_nd(max_idx);
+      const double max_value = dirty_map[max_idx];
+      peaks.push_back(vec3<int>(shift));
+
+      // reposition the dirty beam on the current peak and subtract from
+      // the dirty map
+      const double scale = max_value/max_db * gamma;
+      const long n0 = long(gridding_n_real[0]);
+      const long n1 = long(gridding_n_real[0]);
+      const long n2 = long(gridding_n_real[0]);
+      const long n0_n1 = n0 * n1;
       for (int i=0; i<gridding_n_real[0]; i++){
+        long i_db = i - shift[0];
+        if (i_db < 0) { i_db += n0; }
+        else if (i_db >= n0) { i_db -= n0; }
+        //DIALS_ASSERT(i_db >= 0 && i_db < n0);
+        const long ipart_dm = i * n0_n1;
+        const long ipart_db = i_db * n0_n1;
         for (int j=0; j<gridding_n_real[1]; j++){
+          long j_db = j - shift[1];
+          if (j_db < 0) { j_db += n1; }
+          else if (j_db >= n1) { j_db -= n1; }
+          //DIALS_ASSERT(j_db >= 0 && j_db < n1);
+          const long ijpart_dm = ipart_dm + (long)j * (long)n1;
+          const long ijpart_db = ipart_db + (long)j_db * (long)n1;
           for (int k=0; k<gridding_n_real[2]; k++){
-            double v = dirty_map(i,j,k);
-            if (v > max_value) {
-              max_index = vec3<int>(i,j,k);
-              max_value = v;
-            }
-          }
-        }
-      }
-      vec3<int> shift = max_index;
-      peaks.push_back(shift);
-      double scale = max_value/max_db * gamma;
-      for (int i=0; i<gridding_n_real[0]; i++){
-        for (int j=0; j<gridding_n_real[1]; j++){
-          for (int k=0; k<gridding_n_real[2]; k++){
-            dirty_map(i,j,k) -= dirty_beam(i-shift[0], j-shift[1], k-shift[2]) * scale;
+            long k_db = k - shift[2];
+            if (k_db < 0) { k_db += n2; }
+            else if (k_db >= n2) { k_db -= n2; }
+            //DIALS_ASSERT(k_db >= 0 && k_db < n1);
+            const long idx_dm = ijpart_dm + long(k);
+            const long idx_db = ijpart_db + long(k_db);
+            dirty_map[idx_dm] -= dirty_beam[idx_db] * scale;
           }
         }
       }
