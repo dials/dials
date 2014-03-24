@@ -604,6 +604,8 @@ class indexer_fft3d(indexer_base):
     dirty_map = self.grid_real.deep_copy()
     peaks = clean_3d(dirty_beam, dirty_map, n_peaks, gamma=gamma)
 
+    reciprocal_space_points = self.reciprocal_space_points.select(
+      self.reflections_used_for_indexing)
     # optimise the peak position using a grid search around the starting peak position
     optimised_peaks = flex.vec3_double()
     n_points = 4
@@ -619,7 +621,7 @@ class indexer_fft3d(indexer_base):
             k_coord = peak[2] + k * grid_step
             v = self.fft_cell.orthogonalize(
               (i_coord/self.gridding[0], j_coord/self.gridding[1], k_coord/self.gridding[2]))
-            two_pi_S_dot_v = 2 * math.pi * self.reciprocal_space_points.dot(v)
+            two_pi_S_dot_v = 2 * math.pi * reciprocal_space_points.dot(v)
             f = flex.sum(flex.cos(two_pi_S_dot_v))
             if f > max_value:
               max_value = f
