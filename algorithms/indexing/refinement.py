@@ -11,6 +11,7 @@ from __future__ import division
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
 
+from libtbx.utils import plural_s
 from cctbx.array_family import flex
 import math
 
@@ -47,7 +48,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     # assumes pixel size is same for all panels and same in x and y
     inlier_sel = mm_residual_norms < (
       maximum_spot_error * detector[0].get_pixel_size()[0])
-    print "Rejecting %i outliers" %(inlier_sel.count(False))
+    print "Rejecting %i outlier%s" %plural_s(inlier_sel.count(False))
     if debug_plots:
       debug_plot_residuals(refiner, inlier_sel=inlier_sel)
 
