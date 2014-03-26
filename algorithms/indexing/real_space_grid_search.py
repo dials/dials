@@ -150,7 +150,7 @@ class indexer_real_space_grid_search(indexer_base):
         print list(n_indexed.select(perm))
       print candidate_orientation_matrices[perm[0]]
 
-      if n_indexed[perm[0]] < 50:
+      if n_indexed[perm[0]] < 20:
         break
 
       new_unique_vectors = []
