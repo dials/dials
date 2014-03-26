@@ -28,6 +28,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   // Use a load of stuff from other namespaces
   using std::floor;
   using std::ceil;
+  using scitbx::vec2;
   using scitbx::vec3;
   using scitbx::af::min;
   using scitbx::af::max;
@@ -157,10 +158,19 @@ namespace dials { namespace algorithms { namespace shoebox {
       double4 x(xy1[0], xy2[0], xy3[0], xy4[0]);
       double4 y(xy1[1], xy2[1], xy3[1], xy4[1]);
       double2 z(z1, z2);
-      return int6 (
-        (int)floor(min(x)), (int)ceil(max(x)),
-        (int)floor(min(y)), (int)ceil(max(y)),
-        (int)floor(min(z)), (int)ceil(max(z)));
+      int6 bbox((int)floor(min(x)), (int)ceil(max(x)),
+                (int)floor(min(y)), (int)ceil(max(y)),
+                (int)floor(min(z)), (int)ceil(max(z)));
+
+      vec2<std::size_t> image_size = detector_[panel].get_image_size();
+      std::size_t zrange = delta_divergence_.size();
+      bbox[0] = std::max(bbox[0], 0);
+      bbox[1] = std::min(bbox[1], (int)image_size[0]);
+      bbox[2] = std::max(bbox[2], 0);
+      bbox[3] = std::min(bbox[3], (int)image_size[1]);
+      bbox[4] = std::max(bbox[4], 0);
+      bbox[5] = std::min(bbox[5], (int)zrange);
+      return bbox;
     }
 
     /**

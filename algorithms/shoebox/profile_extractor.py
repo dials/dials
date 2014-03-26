@@ -223,7 +223,7 @@ class ReflectionBlockExtractor(object):
       Command.start('Filtering reflections by detector mask')
       array_range = experiment.scan.get_array_range()
       mask = filtering.by_detector_mask(
-        predicted['bbox.old'], experiment.imageset[0] >= 0, array_range)
+        predicted['bbox'], experiment.imageset[0] >= 0, array_range)
       predicted.del_selected(mask != True)
       Command.end('Filtered {0} reflections by detector mask'.format(
         len(predicted)))

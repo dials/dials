@@ -89,6 +89,7 @@ class Reader(object):
         self.mask, self.gain, self.dark)
     return reflections
 
+
 class Extractor(object):
   ''' Helper class to extract data. '''
 
@@ -106,7 +107,6 @@ class Extractor(object):
 
     # Save the experiment
     self.experiment = experiment
-
 
   def extract(self, blocks, mask=None, gain=None, dark=None):
     ''' Iterate through blocks and yield. '''
