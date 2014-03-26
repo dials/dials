@@ -71,8 +71,8 @@ class refined_settings_list(list):
 
 
 def refined_settings_factory_from_refined_triclinic(
-  params, experiment, reflections, nproc=1, i_setting=None,
-  refiner_verbosity=0):
+  params, experiment, reflections, i_setting=None,
+  lepage_max_delta=5.0, nproc=1, refiner_verbosity=0):
 
   crystal = experiment.crystal
 
@@ -82,7 +82,7 @@ def refined_settings_factory_from_refined_triclinic(
   from rstbx.dps_core.lepage import iotbx_converter
 
   Lfat = refined_settings_list()
-  for item in iotbx_converter(UC,5.0):
+  for item in iotbx_converter(UC, lepage_max_delta):
     Lfat.append(bravais_setting(item))
 
   supergroup = Lfat.supergroup()

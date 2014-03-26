@@ -6,6 +6,8 @@ from dials.util.command_line import Importer
 
 master_phil_scope = iotbx.phil.parse("""
 include scope dials.data.refinement.phil_scope
+lepage_max_delta = 5
+  .type = float
 verbosity = 0
   .type = int(value_min=0)
 nproc = Auto
@@ -36,7 +38,7 @@ def run(args):
        import refined_settings_factory_from_refined_triclinic
 
   Lfat = refined_settings_factory_from_refined_triclinic(
-    params, experiment, reflections,
+    params, experiment, reflections, lepage_max_delta=params.lepage_max_delta,
     nproc=params.nproc, refiner_verbosity=params.verbosity)
   Lfat.labelit_printout()
   from json import dumps
