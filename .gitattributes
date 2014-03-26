@@ -508,6 +508,7 @@ scratch/gw/x2tbx/x2tbx.cpp -text
 scratch/gw/x2tbx/x2tbx.h -text
 scratch/gw/x2tbx/x2tbx_ol.cpp -text
 scratch/gw/x2tbx/x2tbx_rl.cpp -text
+scratch/jmp/__init__.py -text
 scratch/jmp/analysis/average_intensity_per_image.py -text
 scratch/jmp/analysis/centroid_difference.py -text
 scratch/jmp/analysis/counts_per_image.py -text
@@ -528,6 +529,7 @@ scratch/jmp/find_strong_spots/divergence_and_mosaicity.py -text
 scratch/jmp/find_strong_spots/histogram_pixels.py -text
 scratch/jmp/find_strong_spots/select_spots.py -text
 scratch/jmp/find_strong_spots/thresholding.py -text
+scratch/jmp/misc/__init__.py -text
 scratch/jmp/misc/angle_test.py -text
 scratch/jmp/misc/area.py -text
 scratch/jmp/misc/check_panel.py -text
