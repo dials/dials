@@ -31,14 +31,17 @@ namespace dials { namespace model {
    * from the internal list of shoeboxes.
    */
   class BlockList {
-  private:
+  public:
+
+    typedef std::pair<std::size_t, BasicShoebox> record_type;
+    typedef std::pair<af::shared<std::size_t>, af::shared<BasicShoebox> > return_type;
 
     /**
      * Sort the shoeboxes by starting z
      */
     struct sort_by_start {
-      bool operator()(const BasicShoebox &a, const BasicShoebox &b) const {
-        return a.bbox[4] < b.bbox[4];
+      bool operator()(const record_type &a, const record_type &b) const {
+        return a.second.bbox[4] < b.second.bbox[4];
       }
     };
 
@@ -46,12 +49,10 @@ namespace dials { namespace model {
      * Sort the shoeboxes by ending z
      */
     struct sort_by_end {
-      bool operator()(const BasicShoebox &a, const BasicShoebox &b) const {
-        return a.bbox[5] < b.bbox[5];
+      bool operator()(const record_type &a, const record_type &b) const {
+        return a.second.bbox[5] < b.second.bbox[5];
       }
     };
-
-  public:
 
     /**
      * Initialise with a list of panels and bounding boxes
@@ -61,10 +62,13 @@ namespace dials { namespace model {
      */
     BlockList(
         const af::const_ref<std::size_t> &panel,
-        const af::const_ref<int6> &bbox, int z)
-      : z_(z) {
+        const af::const_ref<int6> &bbox,
+        int2 zrange)
+      : z_(zrange[0]) {
+      DIALS_ASSERT(zrange[1] > zrange[0]);
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        sbox_.push_back(BasicShoebox(i, panel[i], bbox[i]));
+        DIALS_ASSERT(bbox[i][4] >= zrange[0] && bbox[i][5] <= zrange[1]);
+        sbox_.push_back(record_type(i, BasicShoebox(panel[i], bbox[i])));
       }
       std::sort(sbox_.begin(), sbox_.end(), sort_by_start());
       active_ = 0;
@@ -76,11 +80,11 @@ namespace dials { namespace model {
      * @param image A list of images
      * @returns The shoeboxes that are done.
      */
-    af::shared<BasicShoebox> next(
+    return_type next(
         const af::const_ref< af::const_ref< int, af::c_grid<2> > > &image) {
       allocate();
       distribute(image);
-      af::shared<BasicShoebox> result = pop_block();
+      return_type result = pop_block();
       z_++;
       return result;
     }
@@ -103,7 +107,7 @@ namespace dials { namespace model {
 
     void allocate() {
       for (; active_ < sbox_.size(); ++active_) {
-        BasicShoebox &sbox = sbox_[active_];
+        BasicShoebox &sbox = sbox_[active_].second;
         if (sbox.bbox[4] > z_) {
           break;
         }
@@ -115,9 +119,9 @@ namespace dials { namespace model {
     void distribute(const af::const_ref<
         af::const_ref< int, af::c_grid<2> > > &image) {
       for (std::size_t i = 0; i < active_; ++i) {
-        std::size_t p = sbox_[i].panel;
-        DIALS_ASSERT(p < image.size());
-        distribute(sbox_[i], image[p]);
+        BasicShoebox sbox = sbox_[i].second;
+        DIALS_ASSERT(sbox.panel < image.size());
+        distribute(sbox, image[sbox.panel]);
       }
     }
 
@@ -152,16 +156,18 @@ namespace dials { namespace model {
       }
     }
 
-    af::shared<BasicShoebox> pop_block() {
-      af::shared<BasicShoebox> result;
+    return_type pop_block() {
+      return_type result;
       for (std::size_t i = 0; i < active_; ++i) {
-        BasicShoebox &sbox = sbox_[i];
+        std::size_t index = sbox_[i].first;
+        BasicShoebox &sbox = sbox_[i].second;
         if (sbox.bbox[5] > z_) {
           break;
         } else {
           DIALS_ASSERT(sbox.bbox[5] == z_);
         }
-        result.push_back(sbox);
+        result.first.push_back(index);
+        result.second.push_back(sbox);
         sbox_.pop_front();
         --active_;
       }
@@ -169,7 +175,7 @@ namespace dials { namespace model {
     }
 
     int z_;
-    std::deque<BasicShoebox> sbox_;
+    std::deque<record_type> sbox_;
     std::size_t active_;
   };
 

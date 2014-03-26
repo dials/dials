@@ -69,18 +69,6 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
-   * Get the indices
-   */
-  static
-  shared<std::size_t> indices(const const_ref<BasicShoebox> &a) {
-    shared<std::size_t> result(a.size(), af::init_functor_null<std::size_t>());
-    for (std::size_t i = 0; i < a.size(); ++i) {
-      result[i] = a[i].index;
-    }
-    return result;
-  }
-
-  /**
    * A class to convert the shoebox class to a string for pickling
    */
   struct basic_shoebox_to_string : pickle_double_buffered::to_string
@@ -96,7 +84,6 @@ namespace dials { namespace af { namespace boost_python {
     /** Convert a single shoebox instance to string */
     basic_shoebox_to_string& operator<<(const BasicShoebox &val) {
       *this << val.panel
-            << val.index
             << val.bbox[0]
             << val.bbox[1]
             << val.bbox[2]
@@ -139,7 +126,6 @@ namespace dials { namespace af { namespace boost_python {
     /** Get a single shoebox instance from a string */
     basic_shoebox_from_string& operator>>(BasicShoebox &val) {
       *this >> val.panel
-            >> val.index
             >> val.bbox[0]
             >> val.bbox[1]
             >> val.bbox[2]
@@ -181,7 +167,6 @@ namespace dials { namespace af { namespace boost_python {
       BasicShoebox, return_internal_reference<> >::plain(name)
         .def("is_consistent", &is_consistent)
         .def("panels", &panels)
-        .def("indices", &indices)
         .def("bounding_boxes", &bounding_boxes)
         .def_pickle(flex_pickle_double_buffered<BasicShoebox,
           basic_shoebox_to_string,

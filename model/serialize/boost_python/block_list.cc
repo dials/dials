@@ -16,7 +16,7 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  af::shared<BasicShoebox> block_list_next_single(
+  BlockList::return_type block_list_next_single(
       BlockList &self,
       const af::const_ref<int, af::c_grid<2> > &image) {
     af::shared< af::const_ref<int, af::c_grid<2> > > data(1);
@@ -24,7 +24,7 @@ namespace dials { namespace model { namespace boost_python {
     return self.next(data.const_ref());
   }
 
-  af::shared<BasicShoebox> block_list_next_many(
+  BlockList::return_type block_list_next_many(
       BlockList &self,
       boost::python::tuple image) {
     af::shared< af::const_ref<int, af::c_grid<2> > > data(len(image));
@@ -40,7 +40,7 @@ namespace dials { namespace model { namespace boost_python {
       .def(init<
           const af::const_ref<std::size_t>&,
           const af::const_ref<int6>&,
-          int>())
+          int2>())
       .def("next", &block_list_next_single)
       .def("next", &block_list_next_many)
       ;
