@@ -279,7 +279,7 @@ namespace dials { namespace algorithms { namespace background {
         double S = 0.0;
         int count = 0;
         for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
-          for (std::size_t i = 0; i < mask.accessor()[0]; ++i) {
+          for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
             if (mask(k,j,i)) {
               double x = (i + 0.5);
               double y = (j + 0.5);

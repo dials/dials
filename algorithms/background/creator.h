@@ -23,6 +23,8 @@
 namespace dials { namespace algorithms { namespace background {
 
   using dials::model::Shoebox;
+  using dials::model::Valid;
+  using dials::model::Background;
   using dials::model::BackgroundUsed;
 
   /**
@@ -96,6 +98,17 @@ namespace dials { namespace algorithms { namespace background {
       // Do outlier rejection on the pixels
       if (rejector_) {
         rejector_->mark(data, mask);
+      } else {
+        for (std::size_t k = 0; k < mask.accessor()[0]; ++k) {
+          for (std::size_t j = 0; j < mask.accessor()[1]; ++j) {
+            for (std::size_t i = 0; i < mask.accessor()[2]; ++i) {
+              const int maskcode = Valid | Background;
+              if ((mask(k,j,i) & maskcode) == maskcode) {
+                mask(k,j,i) |= BackgroundUsed;
+              }
+            }
+          }
+        }
       }
 
       // Create a background boolean mask

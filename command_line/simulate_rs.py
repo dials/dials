@@ -45,7 +45,7 @@ if __name__ == '__main__':
   parser.add_option(
     "-b", "--background",
     dest = "background",
-    type = "int", default = 0,
+    type = "string", default = "0",
     help = "The background (default 0)")
 
   # Write the datablock to JSON or Pickle
@@ -90,7 +90,7 @@ if __name__ == '__main__':
   print 'Simulating with the following parameters:'
   print ' # Reflections: %d' % options.num
   print ' Intensity: %d' % options.intensity
-  print ' Background: %d' % options.background
+  print ' Background: %s' % options.background
   print ' Sigma B: %f degrees' % options.sigma_b
   print ' Sigma M: %f degrees' % options.sigma_m
   print ' N Sigma: %f degrees' % options.n_sigma
@@ -107,12 +107,13 @@ if __name__ == '__main__':
   n_sigma = options.n_sigma
   N = options.num
   I = options.intensity
-  B = options.background
+  B = map(int, options.background.split(","))
+  B = B + [0] * (4 - len(B))
   simulate = Simulator(experiment, sigma_b, sigma_m, n_sigma)
   if options.random:
-    refl = simulate.with_random_intensity(N, I, B)
+    refl = simulate.with_random_intensity(N, I, B[0], B[1], B[2], B[3])
   else:
-    refl = simulate.with_given_intensity(N, I, B)
+    refl = simulate.with_given_intensity(N, I, B[0], B[1], B[2], B[3])
 
   # Save the reflections to file
   Command.start('Writing reflections to %s' % options.output)

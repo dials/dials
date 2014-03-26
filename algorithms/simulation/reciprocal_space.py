@@ -20,28 +20,43 @@ class Simulator(object):
     self.sigma_m = sigma_m
     self.n_sigma = n_sigma
 
-  def with_given_intensity(self, N, I, B):
+  def with_given_intensity(self, N, I, Ba, Bb, Bc, Bd):
     ''' Generate reflections with a given intensity and background. '''
     from dials.array_family import flex
     return self.with_individual_given_intensity(
       N,
       flex.int(N, I),
-      flex.int(N, B))
+      flex.int(N, Ba),
+      flex.int(N, Bb),
+      flex.int(N, Bc),
+      flex.int(N, Bd))
 
-  def with_random_intensity(self, N, Imax, Bmax):
+  def with_random_intensity(self, N, Imax, Bamax, Bbmax, Bcmax, Bdmax):
     ''' Generate reflections with a random intensity and background. '''
     from dials.array_family import flex
     if Imax == 0:
       I = flex.size_t(N).as_int()
     else:
       I = flex.random_size_t(N, Imax).as_int()
-    if Bmax == 0:
-      B = flex.size_t(N).as_int()
+    if Bamax == 0:
+      Ba = flex.size_t(N).as_int()
     else:
-      B = flex.random_size_t(N, Bmax).as_int()
-    return self.with_individual_given_intensity(N, I, B)
+      Ba = flex.random_size_t(N, Bamax).as_int()
+    if Bbmax == 0:
+      Bb = flex.size_t(N).as_int()
+    else:
+      Bb = flex.random_size_t(N, Bbmax).as_int()
+    if Bcmax == 0:
+      Bc = flex.size_t(N).as_int()
+    else:
+      Bc = flex.random_size_t(N, Bcmax).as_int()
+    if Bdmax == 0:
+      Bd = flex.size_t(N).as_int()
+    else:
+      Bd = flex.random_size_t(N, Bdmax).as_int()
+    return self.with_individual_given_intensity(N, I, Ba, Bb, Bc, Bd)
 
-  def with_individual_given_intensity(self, N, I, B):
+  def with_individual_given_intensity(self, N, I, Ba, Bb, Bc, Bd):
     ''' Generate reflections with given intensity and background. '''
     from dials.algorithms.shoebox import MaskForeground
     from dials.array_family import flex
@@ -50,11 +65,16 @@ class Simulator(object):
     from scitbx.random import variate, poisson_distribution
     from dials.algorithms.simulation import simulate_reciprocal_space_gaussian
     from dials.algorithms.simulation import integrate_reciprocal_space_gaussian
+    from dials.algorithms.simulation.generate_test_reflections import \
+      random_background_plane2
     import random
 
     # Check the lengths
     assert(N == len(I))
-    assert(N == len(B))
+    assert(N == len(Ba))
+    assert(N == len(Bb))
+    assert(N == len(Bc))
+    assert(N == len(Bd))
 
     # Generate some predictions
     refl = self.generate_predictions(N)
@@ -89,14 +109,10 @@ class Simulator(object):
     # Calculate the background
     progress = ProgressBar(title='Calculating background for %d reflections' % len(refl))
     for l in range(len(refl)):
-      if B[l] > 0:
-        background = flex.double(flex.grid(shoebox[l].size()), 0.0)
-        g = variate(poisson_distribution(mean = B[l]))
-        for k in range(background.all()[0]):
-          for j in range(background.all()[1]):
-            for i in range(background.all()[2]):
-              background[k, j, i] += g.next()
-        shoebox[l].data += background
+      background = flex.double(flex.grid(shoebox[l].size()), 0.0)
+      random_background_plane2(background, Ba[l], Bb[l], Bc[l], Bd[l])
+      shoebox[l].data += background
+      shoebox[l].background = background
       if l % m == 0:
         progress.update(100.0 * float(l) / len(refl))
       progress.update(100.0 * float(l) / len(refl))
@@ -130,7 +146,10 @@ class Simulator(object):
 
     # Save the expected intensity and background
     refl['intensity.sim'] = I
-    refl['background.sim'] = B
+    refl['background.sim.a'] = Ba
+    refl['background.sim.b'] = Bb
+    refl['background.sim.c'] = Bc
+    refl['background.sim.d'] = Bd
     refl['intensity.exp'] = I_exp
 
     # Return the reflections
@@ -143,6 +162,7 @@ class Simulator(object):
     from dials.util.command_line import Command
     from dials.algorithms.reflection_basis import CoordinateSystem
     from dials.algorithms import filtering
+    from dials.algorithms.shoebox import MaskCode
     import random
 
     # Generate a list of reflections
@@ -159,7 +179,7 @@ class Simulator(object):
     Command.end('Filtered %d reflections by zeta >= %f' % (len(refl), zeta))
 
     # Compute the bounding box
-    refl.compute_bbox(self.experiment, self.n_sigma, self.sigma_b, self.sigma_m)
+    refl.compute_bbox(self.experiment, 2.0 * self.n_sigma, self.sigma_b, self.sigma_m)
     index = []
     image_size = self.experiment.detector[0].get_image_size()
     array_range = self.experiment.scan.get_array_range()
@@ -180,7 +200,7 @@ class Simulator(object):
     # Create a load of shoeboxes
     Command.start('Creating shoeboxes for %d reflections' % len(refl))
     refl['shoebox'] = flex.shoebox(refl['panel'], refl['bbox'])
-    refl['shoebox'].allocate_with_value((1 << 0))
+    refl['shoebox'].allocate_with_value(MaskCode.Valid)
     Command.end('Created shoeboxes for %d reflections' % len(refl))
 
     # Get the function object to mask the foreground
