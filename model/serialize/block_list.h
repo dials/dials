@@ -67,6 +67,7 @@ namespace dials { namespace model {
       : z_(zrange[0]) {
       DIALS_ASSERT(zrange[1] > zrange[0]);
       for (std::size_t i = 0; i < bbox.size(); ++i) {
+        DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
         DIALS_ASSERT(bbox[i][4] >= zrange[0] && bbox[i][5] <= zrange[1]);
         sbox_.push_back(record_type(i, BasicShoebox(panel[i], bbox[i])));
       }
@@ -84,9 +85,8 @@ namespace dials { namespace model {
         const af::const_ref< af::const_ref< int, af::c_grid<2> > > &image) {
       allocate();
       distribute(image);
-      return_type result = pop_block();
       z_++;
-      return result;
+      return pop_block();
     }
 
     /**
@@ -138,6 +138,7 @@ namespace dials { namespace model {
       int k0 = bbox[4], k1 = bbox[5];
       int k = z_ - k0;
       DIALS_ASSERT(k0 <= z_ && z_ < k1);
+      DIALS_ASSERT(shoebox.is_consistent());
 
       // Readjust the area to loop over to ensure we're within image bounds
       int jj0 = j0 >= 0 ? j0 : 0;
@@ -158,9 +159,10 @@ namespace dials { namespace model {
 
     return_type pop_block() {
       return_type result;
-      for (std::size_t i = 0; i < active_; ++i) {
-        std::size_t index = sbox_[i].first;
-        BasicShoebox &sbox = sbox_[i].second;
+      std::size_t finished = 0;
+      for (; finished < active_; ++finished) {
+        std::size_t index = sbox_[finished].first;
+        BasicShoebox &sbox = sbox_[finished].second;
         if (sbox.bbox[5] > z_) {
           break;
         } else {
@@ -168,9 +170,9 @@ namespace dials { namespace model {
         }
         result.first.push_back(index);
         result.second.push_back(sbox);
-        sbox_.pop_front();
-        --active_;
       }
+      sbox_.erase(sbox_.begin(), sbox_.begin() + finished);
+      active_ -= finished;
       return result;
     }
 

@@ -34,7 +34,7 @@ namespace dials { namespace model { namespace boost_python {
     return self.next(data.const_ref());
   }
 
-  void export_basic_shoebox()
+  void export_block_list()
   {
     class_<BlockList>("BlockList", no_init)
       .def(init<
@@ -43,6 +43,8 @@ namespace dials { namespace model { namespace boost_python {
           int2>())
       .def("next", &block_list_next_single)
       .def("next", &block_list_next_many)
+      .def("empty", &BlockList::empty)
+      .def("z", &BlockList::z)
       ;
   }
 
