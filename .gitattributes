@@ -451,7 +451,11 @@ model/experiment/SConscript -text
 model/experiment/__init__.py -text
 model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/experiment_list.py -text
+model/serialize/SConscript -text
 model/serialize/__init__.py -text
+model/serialize/block_list.h -text
+model/serialize/boost_python/block_list.cc -text
+model/serialize/boost_python/serialize_ext.cc -text
 model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
