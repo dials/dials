@@ -401,8 +401,8 @@ doc/user/manual.tex -text
 /error.h -text
 extensions/__init__.py -text
 extensions/curved_background_ext.py -text
-extensions/fable_background_ext.py -text
 extensions/flat_background_ext.py -text
+extensions/general_background_ext.py -text
 extensions/inclined_background_ext.py -text
 extensions/kabsch_spotfinder_threshold_ext.py -text
 extensions/lui_spotfinder_threshold_ext.py -text
@@ -412,7 +412,6 @@ extensions/profile_fitting_rs_integration_ext.py -text
 extensions/simple_centroid_ext.py -text
 extensions/summation_2d_integration_ext.py -text
 extensions/summation_3d_integration_ext.py -text
-extensions/xds_background_ext.py -text
 framework/__init__.py -text
 framework/config.py -text
 framework/dftbx/SConscript -text
@@ -563,6 +562,8 @@ scratch/jmp/misc/test_table.py -text
 scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
 scratch/jmp/new_extract/new_extract.py -text
+scratch/jmp/old/fable_background_ext.py -text
+scratch/jmp/old/xds_background_ext.py -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain
