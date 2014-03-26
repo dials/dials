@@ -123,7 +123,7 @@ class Test(object):
     assert(mask.count(True) > 0)
     I_cal = self.reference['intensity.raw.value']
     I_var = self.reference['intensity.raw.variance']
-    B_sim = self.reference['background.sim'].as_double()
+    B_sim = self.reference['background.sim.a'].as_double()
     I_sim = self.reference['intensity.sim'].as_double()
     I_exp = self.reference['intensity.exp']
     P_cor = self.reference['profile.correlation']
@@ -237,7 +237,7 @@ class Test(object):
     #refl = self.reference
 
     # Get the calculated background and simulated background
-    B_sim = refl['background.sim'].as_double()
+    B_sim = refl['background.sim.a'].as_double()
     I_sim = refl['intensity.sim'].as_double()
     I_exp = refl['intensity.exp']
 

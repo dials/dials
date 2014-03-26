@@ -48,15 +48,13 @@ class Test:
 
     from dials.extensions.simple_centroid_ext import SimpleCentroidExt
     from dials.extensions.null_background_ext import NullBackgroundExt
-    from dials.extensions.fable_background_ext import FableBackgroundExt
-    from dials.extensions.xds_background_ext import XdsBackgroundExt
+    from dials.extensions.general_background_ext import GeneralBackgroundExt
     from dials.extensions.summation_3d_integration_ext import Summation3dIntegrationExt
     from dials.extensions.profile_fitting_rs_integration_ext import ProfileFittingRSIntegrationExt
 
     assert(SimpleCentroidExt in extensions)
     assert(NullBackgroundExt in extensions)
-    assert(FableBackgroundExt in extensions)
-    assert(XdsBackgroundExt in extensions)
+    assert(GeneralBackgroundExt in extensions)
     assert(Summation3dIntegrationExt in extensions)
     assert(ProfileFittingRSIntegrationExt in extensions)
 
@@ -85,13 +83,12 @@ class Test:
 
     from dials.extensions.simple_centroid_ext import SimpleCentroidExt
     from dials.extensions.null_background_ext import NullBackgroundExt
-    from dials.extensions.fable_background_ext import FableBackgroundExt
-    from dials.extensions.xds_background_ext import XdsBackgroundExt
+    from dials.extensions.general_background_ext import GeneralBackgroundExt
     from dials.extensions.summation_3d_integration_ext import Summation3dIntegrationExt
     from dials.extensions.profile_fitting_rs_integration_ext import ProfileFittingRSIntegrationExt
 
     assert(integration_ext == Summation3dIntegrationExt)
-    assert(background_ext == XdsBackgroundExt)
+    assert(background_ext == GeneralBackgroundExt)
     assert(centroid_ext == SimpleCentroidExt)
     print 'OK'
 

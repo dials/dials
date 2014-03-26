@@ -75,7 +75,7 @@ class Test(object):
     from dials.algorithms.simulation.reciprocal_space import Simulator
 
     # Get the calculated background and simulated background
-    B_sim = refl['background.sim'].as_double()
+    B_sim = refl['background.sim.a'].as_double()
     I_sim = refl['intensity.sim'].as_double()
     I_exp = refl['intensity.exp']
 

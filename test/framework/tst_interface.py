@@ -71,7 +71,7 @@ class Test(object):
     extensions = list(CentroidIface.extensions())
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
-    assert(len(extensions) == 6)
+    assert(len(extensions) == 5)
     extensions = list(IntensityIface.extensions())
     assert(len(extensions) == 4)
 
@@ -82,8 +82,7 @@ class Test(object):
     from dials.extensions import FlatBackgroundExt
     from dials.extensions import InclinedBackgroundExt
     from dials.extensions import CurvedBackgroundExt
-    from dials.extensions import FableBackgroundExt
-    from dials.extensions import XdsBackgroundExt
+    from dials.extensions import GeneralBackgroundExt
     from dials.extensions import Summation2dIntegrationExt
     from dials.extensions import Summation3dIntegrationExt
     from dials.extensions import ProfileFittingRSIntegrationExt
@@ -98,8 +97,7 @@ class Test(object):
     assert(FlatBackgroundExt in extensions)
     assert(CurvedBackgroundExt in extensions)
     assert(InclinedBackgroundExt in extensions)
-    assert(FableBackgroundExt in extensions)
-    assert(XdsBackgroundExt in extensions)
+    assert(GeneralBackgroundExt in extensions)
     extensions = list(IntensityIface.extensions())
     assert(Summation2dIntegrationExt in extensions)
     assert(Summation3dIntegrationExt in extensions)

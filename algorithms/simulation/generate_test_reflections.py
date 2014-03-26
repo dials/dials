@@ -300,34 +300,35 @@ def simple_gaussian_spots(params):
 #    parameters and generating an image of a spot...
 
 def background_xds(rlist):
-  from dials.extensions import XdsBackgroundExt
-  background = XdsBackgroundExt(None, None)
-  background.compute_background(rlist)
+  #FIXME
+  #from dials.extensions import XdsBackgroundExt
+  #background = XdsBackgroundExt(None, None)
+  #background.compute_background(rlist)
 
-  from math import erf, sqrt
-  from dials.algorithms.shoebox import MaskCode
-  from dials.array_family import flex
-  nsigma = 3
-  shoebox = rlist['shoebox']
-  for i in range(len(shoebox)):
-    data = shoebox[i].data
-    mask = shoebox[i].mask
-    bkgrd = shoebox[i].background
+  #from math import erf, sqrt
+  #from dials.algorithms.shoebox import MaskCode
+  #from dials.array_family import flex
+  #nsigma = 3
+  #shoebox = rlist['shoebox']
+  #for i in range(len(shoebox)):
+    #data = shoebox[i].data
+    #mask = shoebox[i].mask
+    #bkgrd = shoebox[i].background
 
-    fg = flex.bool([m & MaskCode.Foreground != 0 for m in mask])
-    bg = flex.bool([m & MaskCode.BackgroundUsed != 0 for m in mask])
-    n = fg.count(True)
-    m = bg.count(True)
-    Sp = flex.sum(data.select(fg))
-    Bp = flex.sum(data.select(bg)) / m
+    #fg = flex.bool([m & MaskCode.Foreground != 0 for m in mask])
+    #bg = flex.bool([m & MaskCode.BackgroundUsed != 0 for m in mask])
+    #n = fg.count(True)
+    #m = bg.count(True)
+    #Sp = flex.sum(data.select(fg))
+    #Bp = flex.sum(data.select(bg)) / m
 
-    F = 1.0 - erf(nsigma / sqrt(2.0))
-    c = 1.0 / (1 + F * n / m)
-    B = c * (Bp - (F / m) * Sp)
- #   print F, c, Bp, n, m, Sp, B
-    print Bp, Sp
-    for j in range(len(bkgrd)):
-      bkgrd[j] = B
+    #F = 1.0 - erf(nsigma / sqrt(2.0))
+    #c = 1.0 / (1 + F * n / m)
+    #B = c * (Bp - (F / m) * Sp)
+ ##   print F, c, Bp, n, m, Sp, B
+    #print Bp, Sp
+    #for j in range(len(bkgrd)):
+      #bkgrd[j] = B
 
   return
 

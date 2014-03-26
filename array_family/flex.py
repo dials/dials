@@ -109,6 +109,19 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       sigma_m = registry.params().integration.shoebox.sigma_m * pi / 180.0
 
     # Create the bbox calculator
+    Command.start('Calculating bounding boxes')
+    calculate = BBoxCalculator(
+      experiment.beam, experiment.detector,
+      experiment.goniometer, experiment.scan,
+      nsigma * sigma_d,
+      nsigma * sigma_m)
+
+    # Calculate the bounding boxes of all the reflections
+    self['bbox.old'] = calculate(
+      self['s1'],
+      self['xyzcal.mm'].parts()[2],
+      self['panel'])
+
     calculate = BBoxCalculator(
       experiment.beam, experiment.detector,
       experiment.goniometer, experiment.scan,
@@ -116,7 +129,6 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       nsigma * sigma_m)
 
     # Calculate the bounding boxes of all the reflections
-    Command.start('Calculating bounding boxes')
     self['bbox'] = calculate(
       self['s1'],
       self['xyzcal.mm'].parts()[2],
