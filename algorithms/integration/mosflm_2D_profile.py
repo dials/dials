@@ -121,9 +121,9 @@ def fit_profile_2d(reflection_pointers, ref_table
 
   #col_xyzobs = ref_table['xyzobs.px.value']
   col_xyzcal = ref_table['xyzcal.px']
-
   col_bbox = ref_table['bbox']
   #for ref in reflections:
+
   for t_row in reflection_pointers:
     #in the future consider searcing for is_valid logical
     #if r.is_valid():
