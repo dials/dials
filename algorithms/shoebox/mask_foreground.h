@@ -164,8 +164,8 @@ namespace dials { namespace algorithms { namespace shoebox {
               double dxy = std::min(std::min(dxy1, dxy2), std::min(dxy3, dxy4));
               for (std::size_t k = 0; k < zsize; ++k) {
                 if (z0 + k >= index0_ && z0 + k < index1_) {
-                  double gz1 = cs.from_rotation_angle(phi0_ + (z0 + k - index0_) * dphi_);
-                  double gz2 = cs.from_rotation_angle(phi0_ + (z0 + k + 1 - index0_) * dphi_);
+                  double gz1 = cs.from_rotation_angle_fast(phi0_ + (z0 + k - index0_) * dphi_);
+                  double gz2 = cs.from_rotation_angle_fast(phi0_ + (z0 + k + 1 - index0_) * dphi_);
                   double gz = std::abs(gz1) < std::abs(gz2) ? gz1 : gz2;
                   double gzc2 = gz*gz*delta_m_r2;
                   int mask_value = (dxy + gzc2 <= 1.0) ? Foreground : Background;

@@ -179,7 +179,7 @@ class Test(object):
     sigma_m = exlist[0].crystal.get_mosaicity(deg=False)
 
     predicted = flex.reflection_table.from_predictions(exlist[0])
-    predicted.compute_bbox(exlist[0], 5, sigma_b, sigma_m)
+    predicted.compute_bbox(exlist[0], 3, sigma_b, sigma_m)
 
 
     # Find overlapping reflections

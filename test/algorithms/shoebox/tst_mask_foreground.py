@@ -37,9 +37,9 @@ class Test(object):
       goniometer = self.goniometer,
       scan = self.scan,
       crystal = self.crystal)
-    self.delta_d = 5 * self.beam.get_sigma_divergence(deg=False)
-    self.delta_m = 5 * self.crystal.get_mosaicity(deg=False)
-    self.nsigma = 5
+    self.delta_d = 3 * self.beam.get_sigma_divergence(deg=False)
+    self.delta_m = 3 * self.crystal.get_mosaicity(deg=False)
+    self.nsigma = 3
     assert(len(self.detector) == 1)
 
     # Get the function object to mask the foreground
@@ -62,7 +62,7 @@ class Test(object):
     phi0, dphi = self.scan.get_oscillation(deg=False)
 
     # Generate some reflections
-    reflections = self.generate_reflections(100)
+    reflections = self.generate_reflections(10)
 
     # Mask the foreground in each
     self.mask_foreground(
@@ -133,6 +133,7 @@ class Test(object):
         numpy.set_printoptions(threshold=10000)
         diff = (mask == new_mask).as_numpy_array()
         print diff.astype(numpy.int)
+        #print mask.as_numpy_array()
         #print new_mask.as_numpy_array()
         #print (new_mask.as_numpy_array()[:,:,:] %2) * (new_mask.as_numpy_array() == 5)
         raise
