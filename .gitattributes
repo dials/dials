@@ -8,29 +8,21 @@ algorithms/background/__init__.py -text
 algorithms/background/background_subtraction_2d.py -text svneol=unset#text/plain
 algorithms/background/boost_python/background_ext.cc -text
 algorithms/background/boost_python/creator.cc -text
-algorithms/background/boost_python/fable_subtractor.cc -text
 algorithms/background/boost_python/helpers.cc -text
 algorithms/background/boost_python/lui_2d_background.cc -text svneol=unset#text/plain
 algorithms/background/boost_python/modeller.cc -text
-algorithms/background/boost_python/normal_discriminator.cc -text
 algorithms/background/boost_python/outlier_rejector.cc -text
-algorithms/background/boost_python/poisson_discriminator.cc -text
-algorithms/background/boost_python/xds_subtractor.cc -text
 algorithms/background/creator.h -text
 algorithms/background/curved_background_subtractor.py -text svneol=unset#text/plain
-algorithms/background/fable_subtractor.h -text
 algorithms/background/flat_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/helpers.h -text
 algorithms/background/inclined_background_subtractor.py -text svneol=unset#text/plain
 algorithms/background/lui_2d_background.h -text svneol=unset#text/plain
 algorithms/background/modeller.h -text
-algorithms/background/normal_discriminator.h -text
 algorithms/background/normal_outlier_rejector.h -text
 algorithms/background/nsigma_outlier_rejector.h -text
 algorithms/background/outlier_rejector.h -text
-algorithms/background/poisson_discriminator.h -text
 algorithms/background/truncated_outlier_rejector.h -text
-algorithms/background/xds_subtractor.h -text
 algorithms/background_lookup/__init__.py -text
 algorithms/background_lookup/background_and_gain.py -text
 algorithms/background_lookup/detector_noise.py -text
@@ -563,7 +555,15 @@ scratch/jmp/misc/test_to_dict.py -text
 scratch/jmp/misc/test_transform.py -text
 scratch/jmp/new_extract/new_extract.py -text
 scratch/jmp/old/fable_background_ext.py -text
+scratch/jmp/old/fable_subtractor.cc -text
+scratch/jmp/old/fable_subtractor.h -text
+scratch/jmp/old/normal_discriminator.cc -text
+scratch/jmp/old/normal_discriminator.h -text
+scratch/jmp/old/poisson_discriminator.cc -text
+scratch/jmp/old/poisson_discriminator.h -text
 scratch/jmp/old/xds_background_ext.py -text
+scratch/jmp/old/xds_subtractor.cc -text
+scratch/jmp/old/xds_subtractor.h -text
 scratch/luiso_s/SConscript -text
 scratch/luiso_s/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/boost_python/lui_example_helper.cc -text svneol=unset#text/plain

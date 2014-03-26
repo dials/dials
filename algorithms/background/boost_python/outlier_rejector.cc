@@ -20,8 +20,46 @@ namespace dials { namespace algorithms { namespace background {
 
   using namespace boost::python;
 
+  template <typename FloatType>
+  bool is_normally_distributed_wrapper(
+      const af::const_ref<FloatType> &data,
+      double n_sigma) {
+    if (n_sigma <= 0) {
+      return is_normally_distributed(data);
+    }
+    return is_normally_distributed(data, n_sigma);
+  }
+
+  template <typename FloatType>
+  void normal_discriminator_suite() {
+
+    def("maximum_n_sigma",
+      &maximum_n_sigma<FloatType>, (
+        arg("data")));
+
+    def("minimum_n_sigma",
+      &minimum_n_sigma<FloatType>, (
+        arg("data")));
+
+    def("absolute_maximum_n_sigma",
+      &maximum_n_sigma<FloatType>, (
+        arg("data")));
+
+    def("is_normally_distributed",
+      &is_normally_distributed_wrapper<FloatType>, (
+        arg("data"),
+        arg("n_sigma") = -1));
+  }
+
   void export_outlier_rejector()
   {
+    def("normal_expected_n_sigma",
+      &normal_expected_n_sigma, (
+        arg("n_obs")));
+
+    normal_discriminator_suite<float>();
+    normal_discriminator_suite<double>();
+
     class_<OutlierRejector, boost::noncopyable>("OutlierRejector", no_init)
       .def("__call__", &OutlierRejector::mark, (
             arg("data"),
