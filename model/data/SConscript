@@ -3,6 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/partial_shoebox.cc',
+    'boost_python/basic_shoebox.cc',
     'boost_python/shoebox.cc',
     'boost_python/transformed_shoebox.cc',
     'boost_python/observation.cc',

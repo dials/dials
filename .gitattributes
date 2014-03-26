@@ -425,7 +425,9 @@ model/__init__.py -text
 model/data/SConscript -text
 model/data/__init__.py -text
 model/data/adjacency_list.h -text
+model/data/basic_shoebox.h -text
 model/data/boost_python/adjacency_list.cc -text
+model/data/boost_python/basic_shoebox.cc -text
 model/data/boost_python/data_ext.cc -text
 model/data/boost_python/observation.cc -text
 model/data/boost_python/partial_shoebox.cc -text
