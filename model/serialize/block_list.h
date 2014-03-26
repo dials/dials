@@ -21,6 +21,52 @@
 namespace dials { namespace model {
 
   /**
+   * Class to help identifiy the blocks and shoeboxes in a given range.
+   */
+  class BlockListIndex {
+  public:
+
+    /**
+     * Setup a list of block ranges.
+     */
+    BlockListIndex(const af::const_ref<int2> &blocks)
+      : blocks_(blocks.begin(), blocks.end()) {}
+
+    /**
+     * Given the shoeboxes, select those to use
+     */
+    af::shared<std::size_t> indices_in_range(
+        int2 zrange, const af::const_ref<double> &z) const {
+      af::shared<std::size_t> result;
+      DIALS_ASSERT(zrange[0] < zrange[1]);
+      for (std::size_t i = 0; i < z.size(); ++i) {
+        if (z[i] >= zrange[0] && z[i] < zrange[1]) {
+          result.push_back(i);
+        }
+      }
+      return result;
+    }
+
+    /**
+     * Get the block indices in the given range.
+     */
+    af::shared<std::size_t> blocks_in_range(int2 z) const {
+      af::shared<std::size_t> result;
+      for (std::size_t i = 0; i < blocks_.size(); ++i) {
+        if ((z[0] >= blocks_[i][0] && z[0] < blocks_[i][1]) ||
+            (z[1] <= blocks_[i][1] && z[1] > blocks_[i][0])) {
+          result.push_back(i);
+        }
+      }
+      return result;
+    }
+
+  private:
+
+    af::shared<int2> blocks_;
+  };
+
+  /**
    * A class to help extract shoeboxes in an efficient manner.
    *
    * Start by sorting all the bounding boxes by lower frame number. Then as each
@@ -59,6 +105,15 @@ namespace dials { namespace model {
     struct sort_by_end {
       bool operator()(const record_type &a, const record_type &b) const {
         return a.second.bbox[5] < b.second.bbox[5];
+      }
+    };
+
+    /**
+     * Sort the index
+     */
+    struct sort_by_index {
+      bool operator()(const record_type &a, const record_type &b) const {
+        return a.first < b.first;
       }
     };
 

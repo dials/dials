@@ -18,6 +18,7 @@
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/partial_shoebox.h>
+#include <dials/model/data/basic_shoebox.h>
 #include <dials/model/data/pixel_list.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>
@@ -33,6 +34,7 @@ namespace dials { namespace af { namespace boost_python {
   using af::small;
   using scitbx::vec3;
   using dials::model::PartialShoebox;
+  using dials::model::BasicShoebox;
   using dials::model::Shoebox;
   using dials::model::Centroid;
   using dials::model::Intensity;
@@ -300,6 +302,32 @@ namespace dials { namespace af { namespace boost_python {
       }
     }
     return result;
+  }
+
+  /**
+   * Construct an array of shoebxoes from an array of basic shoeboxes
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_basic_shoeboxes(
+      const af::const_ref<BasicShoebox> &basic) {
+
+    // Convert all the basic shoeboxes to shoeboxes
+    af::shared< Shoebox<FloatType> > result(basic.size());
+    for (std::size_t l = 0; l < basic.size(); ++l) {
+      result[l] = Shoebox<FloatType>(basic[l].panel, basic[l].bbox);
+      result[l].allocate();
+      for (std::size_t k = 0; k < result[l].data.accessor()[0]; ++k) {
+        for (std::size_t j = 0; j < result[l].data.accessor()[1]; ++j) {
+          for (std::size_t i = 0; i < result[l].data.accessor()[2]; ++i) {
+            result[l].data(k,j,i) = basic[l].data(k,j,i);
+          }
+        }
+      }
+    }
+
+    // Return the array
+    return new typename af::flex< Shoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
   }
 
   /**
@@ -870,6 +898,10 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("gain"),
             boost::python::arg("dark"),
             boost::python::arg("mask"))))
+        .def("__init__", make_constructor(
+          from_basic_shoeboxes<FloatType>,
+          default_call_policies(), (
+            boost::python::arg("shoebox"))))
         .def("__init__", make_constructor(
           from_panel_and_bbox<FloatType>,
           default_call_policies(), (

@@ -461,6 +461,7 @@ model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/partial_shoebox.py -text
+model/serialize/reflection.py -text
 model/serialize/shoebox.py -text
 model/serialize/xds.py -text
 /run_tests.py -text
@@ -774,6 +775,7 @@ test/model/data/tst_shoebox.py -text
 test/model/experiment/tst_experiment_list.py -text
 test/model/serialize/tst_block_list.py -text
 test/model/serialize/tst_partial_shoebox.py -text
+test/model/serialize/tst_reflection.py -text
 test/model/serialize/tst_shoebox.py -text
 test/tst_plot_reflections.py -text
 test/util/tst_command_line.py -text

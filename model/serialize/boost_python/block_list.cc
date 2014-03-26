@@ -54,6 +54,11 @@ namespace dials { namespace model { namespace boost_python {
       .def("empty", &BlockList::empty)
       .def("z", &BlockList::z)
       ;
+
+    class_<BlockListIndex>("BlockListIndex", no_init)
+      .def(init<const af::const_ref<int2>&>())
+      .def("blocks_in_range", &BlockListIndex::blocks_in_range)
+      .def("indices_in_range", &BlockListIndex::indices_in_range);
   }
 
 }}} // namespace dials::model::boost_python

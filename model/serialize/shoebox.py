@@ -20,7 +20,7 @@ class Reader(object):
     import tarfile
     import cPickle as pickle
     self._tar = tarfile.open(filename)
-    self._index = self._load_index()
+    self._index = self._read_index()
 
   def __del__(self):
     ''' close the file. '''
@@ -46,7 +46,7 @@ class Reader(object):
 
   def read(self, index):
     ''' Read a block of shoeboxes '''
-    zr, ind, sbox = self._load_block(self._index[index][1])
+    zr, ind, sbox = self._read_file(self._index[index][1])
     assert(len(ind) == len(sbox))
     return zr, ind, sbox
 
@@ -54,21 +54,34 @@ class Reader(object):
     ''' Get the record for a block. '''
     return self._index[index]
 
+  def zrange(self):
+    ''' Get the zrange. '''
+    z0 = self._index[0][0][0]
+    z1 = self._index[-1][0][1]
+    return (z0, z1)
+
   def iter_records(self):
     ''' Iterate through block records. '''
     for i in range(len(self)):
       yield self.record(i)
 
-  def _load_index(self):
+  def _read_index(self):
     ''' Load index from filenames. '''
     import json
     index = []
     for name in self._tar.getnames():
-      index.append((tuple(json.loads(name)), name))
+      try:
+        index.append((tuple(json.loads(name)), name))
+      except Exception:
+        pass
     index = sorted(index, key=lambda x: x[0][0])
+    count = index[0][0][1]
+    for i in index[1:]:
+      count += 1
+      assert(count == i[0][1])
     return index
 
-  def _load_block(self, path):
+  def _read_file(self, path):
     ''' Load a list of partial shoeboxes '''
     import cPickle as pickle
     return pickle.load(self._tar.extractfile(path))
