@@ -44,7 +44,7 @@ namespace dials { namespace af { namespace boost_python {
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = BasicShoebox(panel[i], bbox[i]);
     }
-    return new typename af::flex<BasicShoebox>::type(
+    return new af::flex<BasicShoebox>::type(
       result, af::flex_grid<>(result.size()));
   }
 
