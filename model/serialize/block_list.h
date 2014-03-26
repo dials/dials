@@ -34,7 +34,15 @@ namespace dials { namespace model {
   public:
 
     typedef std::pair<std::size_t, BasicShoebox> record_type;
-    typedef std::pair<af::shared<std::size_t>, af::shared<BasicShoebox> > return_type;
+
+    /**
+     * The block return type
+     */
+    struct Block {
+      int2 zrange;
+      af::shared<std::size_t> index;
+      af::shared<BasicShoebox> shoebox;
+    };
 
     /**
      * Sort the shoeboxes by starting z
@@ -64,7 +72,8 @@ namespace dials { namespace model {
         const af::const_ref<std::size_t> &panel,
         const af::const_ref<int6> &bbox,
         int2 zrange)
-      : z_(zrange[0]) {
+      : z0_(zrange[0]),
+        z_(zrange[0]) {
       DIALS_ASSERT(zrange[1] > zrange[0]);
       for (std::size_t i = 0; i < bbox.size(); ++i) {
         DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
@@ -81,8 +90,8 @@ namespace dials { namespace model {
      * @param image A list of images
      * @returns The shoeboxes that are done.
      */
-    return_type next(
-        const af::const_ref< af::const_ref< int, af::c_grid<2> > > &image) {
+    Block next(const af::const_ref<
+        af::const_ref< int, af::c_grid<2> > > &image) {
       allocate();
       distribute(image);
       z_++;
@@ -157,8 +166,10 @@ namespace dials { namespace model {
       }
     }
 
-    return_type pop_block() {
-      return_type result;
+    Block pop_block() {
+      Block result;
+      result.zrange[0] = z0_;
+      result.zrange[1] = z_;
       std::size_t finished = 0;
       for (; finished < active_; ++finished) {
         std::size_t index = sbox_[finished].first;
@@ -168,15 +179,18 @@ namespace dials { namespace model {
         } else {
           DIALS_ASSERT(sbox.bbox[5] == z_);
         }
-        result.first.push_back(index);
-        result.second.push_back(sbox);
+        if (sbox.bbox[4] < result.zrange[0]) {
+          result.zrange[0] = sbox.bbox[4];
+        }
+        result.index.push_back(index);
+        result.shoebox.push_back(sbox);
       }
       sbox_.erase(sbox_.begin(), sbox_.begin() + finished);
       active_ -= finished;
       return result;
     }
 
-    int z_;
+    int z0_, z_;
     std::deque<record_type> sbox_;
     std::size_t active_;
   };

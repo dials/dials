@@ -42,11 +42,16 @@ class Test(object):
 
     blist = BlockList(panel, bbox, self.zrange)
     for z, image in enumerate(self.images, start=self.zrange[0]):
-      indices, shoeboxes = blist.next(image)
+      zrange, indices, shoeboxes = blist.next(image)
       exp = expected[z+1]
       assert(len(indices) == len(shoeboxes))
       assert(len(exp) == len(indices))
       assert(all(i1 == i2 for i1, i2 in zip(exp, sorted(indices))))
+      minz, maxz = self.zrange[0], z+1
+      for i in expected[z+1]:
+        if bbox[i][4] < minz:
+          minz = bbox[i][4]
+      assert(minz == zrange[0] and maxz == zrange[1])
 
       wh = self.width * self.height
       for sbox in shoeboxes:

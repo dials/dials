@@ -16,22 +16,30 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  BlockList::return_type block_list_next_single(
+  boost::python::tuple block_list_next_single(
       BlockList &self,
       const af::const_ref<int, af::c_grid<2> > &image) {
     af::shared< af::const_ref<int, af::c_grid<2> > > data(1);
     data[0] = image;
-    return self.next(data.const_ref());
+    BlockList::Block block = self.next(data.const_ref());
+    return boost::python::make_tuple(
+        block.zrange,
+        block.index,
+        block.shoebox);
   }
 
-  BlockList::return_type block_list_next_many(
+  boost::python::tuple block_list_next_many(
       BlockList &self,
       boost::python::tuple image) {
     af::shared< af::const_ref<int, af::c_grid<2> > > data(len(image));
     for (std::size_t i = 0; i < data.size(); ++i) {
       data[i] = extract<af::const_ref< int, af::c_grid<2> > >(image[i]);
     }
-    return self.next(data.const_ref());
+    BlockList::Block block = self.next(data.const_ref());
+    return boost::python::make_tuple(
+        block.zrange,
+        block.index,
+        block.shoebox);
   }
 
   void export_block_list()
