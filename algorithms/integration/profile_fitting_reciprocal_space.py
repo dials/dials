@@ -14,6 +14,8 @@ from __future__ import division
 class ProfileFittingReciprocalSpace(object):
   ''' Class to do reciprocal space profile fitting. '''
 
+  reference_counter = 0
+
   def __init__(self, **kwargs):
     ''' Initialise the algorithm. '''
     from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
@@ -35,9 +37,13 @@ class ProfileFittingReciprocalSpace(object):
     integrate the intensities via profile fitting.
 
     '''
+    from dials.model.serialize import dump
     assert("flags" in reflections)
     self._transform_profiles(experiment, reflections)
     self.learner = self._learn_references(experiment, reflections)
+    dump.reference(self.learner.locate(),
+                   "reference_%d.pickle" % ProfileFittingReciprocalSpace.reference_counter)
+    ProfileFittingReciprocalSpace.reference_counter += 1
     return self._integrate_intensities(self.learner, reflections)
 
   def _transform_profiles(self, experiment, reflections):
@@ -49,7 +55,7 @@ class ProfileFittingReciprocalSpace(object):
     # Initialise the reciprocal space transform
     Command.start('Initialising reciprocal space transform')
     spec = rbt.TransformSpec(experiment, self.sigma_b, self.sigma_m,
-                             self.bbox_nsigma, self.grid_size)
+                             5, self.grid_size)
     Command.end('Initialised reciprocal space transform')
 
     # Transform the reflections to reciprocal space
