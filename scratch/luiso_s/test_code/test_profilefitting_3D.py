@@ -69,36 +69,34 @@ for ypos in range(n_y):
       np_shoebox = numpy.copy( \
        data2d[col_str:col_str + ncol, row_str:row_str + nrow])
 
-      #tmp_2d_fl_shoebox = flex.double(np_shoebox)
+      tmp_2d_fl_shoebox = flex.double(np_shoebox)
       #tmp_2d_fl_shoebox.reshape(flex.grid(1, ncol, nrow))
 
-      fl_shoebox = flex.double(np_shoebox)
-      fl_shoebox.reshape(flex.grid(1, ncol, nrow))
+      #fl_shoebox = flex.double(np_shoebox)
+      #fl_shoebox.reshape(flex.grid(1, ncol, nrow))
 
-      to_use_soon = '''
       fl_shoebox = flex.double(flex.grid(5, ncol, nrow))
       for x_loc in range(ncol):
         for y_loc in range(nrow):
           for z_loc in range(5):
             fl_shoebox[z_loc, y_loc, x_loc] = tmp_2d_fl_shoebox[y_loc, x_loc]
-      '''
 
 
-      fl_shoebox_bkg=fl_shoebox[:,:,:]
+      fl_shoebox_bkg = fl_shoebox[:,:,:]
       t_shoebox[t_row].data = fl_shoebox
       t_shoebox[t_row].background = fl_shoebox_bkg
-      #lc_mask = flex.int(flex.grid(5, ncol, nrow), 3)
-      lc_mask = flex.int(flex.grid(1, ncol, nrow), 3)
+      lc_mask = flex.int(flex.grid(5, ncol, nrow), 3)
+      #lc_mask = flex.int(flex.grid(1, ncol, nrow), 3)
       for x_loc in range(ncol):
         for y_loc in range(nrow):
-          if ref2d[y_loc,x_loc] > thold:
-            lc_mask[0, y_loc, x_loc] = 5
+          '''if ref2d[y_loc,x_loc] > thold:
+            lc_mask[0, y_loc, x_loc] = 5'''
 
-          to_use_soon = '''
+          #to_use_soon = '''
           for z_loc in range(5):
             if ref2d[y_loc,x_loc] > thold:
               lc_mask[z_loc, y_loc, x_loc] = 5
-          '''
+          #'''
 
       t_shoebox[t_row].mask = lc_mask
       t_row += 1
