@@ -54,6 +54,8 @@ class Test(object):
     s0 = self.beam.get_s0()
     m2 = self.gonio.get_rotation_axis()
     s0_length = matrix.col(self.beam.get_s0()).length()
+    width, height = self.detector[0].get_image_size()
+    zrange = self.scan.get_array_range()
 
     for i in range(1000):
 
@@ -93,10 +95,11 @@ class Test(object):
         sdash2 = matrix.col(xyz2).normalize() * s0_length
         e11, e21, e3 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
         e12, e22, e3 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
-        assert(abs(e11) >= self.delta_divergence or
-               abs(e21) >= self.delta_divergence)
-        assert(abs(e12) >= self.delta_divergence or
-               abs(e22) >= self.delta_divergence)
+        if bbox[0] > 0 and bbox[1] < width:
+          assert(abs(e11) >= self.delta_divergence or
+                 abs(e21) >= self.delta_divergence)
+          assert(abs(e12) >= self.delta_divergence or
+                 abs(e22) >= self.delta_divergence)
 
       # Check horizontal edges
       for i in range(bbox[0], bbox[1] + 1):
@@ -106,14 +109,16 @@ class Test(object):
         sdash2 = matrix.col(xyz2).normalize() * s0_length
         e11, e21, e3 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
         e12, e22, e3 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
-        assert(abs(e11) >= self.delta_divergence or
-               abs(e21) >= self.delta_divergence)
-        assert(abs(e12) >= self.delta_divergence or
-               abs(e22) >= self.delta_divergence)
+        if bbox[2] > 0 and bbox[3] < height:
+          assert(abs(e11) >= self.delta_divergence or
+                 abs(e21) >= self.delta_divergence)
+          assert(abs(e12) >= self.delta_divergence or
+                 abs(e22) >= self.delta_divergence)
 
       # All e3 coords >= delta_mosaicity
-      assert(abs(e31) >= self.delta_mosaicity)
-      assert(abs(e32) >= self.delta_mosaicity)
+      if bbox[4] > zrange[0] and bbox[5] < zrange[1]:
+        assert(abs(e31) >= self.delta_mosaicity)
+        assert(abs(e32) >= self.delta_mosaicity)
 
     print 'OK'
 
@@ -127,6 +132,8 @@ class Test(object):
     m2 = self.gonio.get_rotation_axis()
     s0_length = matrix.col(self.beam.get_s0()).length()
 
+    width, height = self.detector[0].get_image_size()
+    zrange = self.scan.get_array_range()
     radius12 = self.delta_divergence
     radius3 = self.delta_mosaicity
 
@@ -164,8 +171,9 @@ class Test(object):
         sdash2 = matrix.col(xyz2).normalize() * s0_length
         e11, e21, e31 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
         e12, e22, e31 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
-        assert(sqrt(e11**2 + e21**2) >= radius12)
-        assert(sqrt(e12**2 + e22**2) >= radius12)
+        if bbox[0] > 0 and bbox[1] < width:
+          assert(sqrt(e11**2 + e21**2) >= radius12)
+          assert(sqrt(e12**2 + e22**2) >= radius12)
 
       # Check horizontal edges
       for i in range(bbox[0], bbox[1] + 1):
@@ -175,8 +183,9 @@ class Test(object):
         sdash2 = matrix.col(xyz2).normalize() * s0_length
         e11, e21, e32 = xcs.from_beam_vector_and_rotation_angle(sdash1, phi)
         e12, e22, e32 = xcs.from_beam_vector_and_rotation_angle(sdash2, phi)
-        assert(sqrt(e11**2 + e21**2) >= radius12)
-        assert(sqrt(e12**2 + e22**2) >= radius12)
+        if bbox[2] > 0 and bbox[3] < height:
+          assert(sqrt(e11**2 + e21**2) >= radius12)
+          assert(sqrt(e12**2 + e22**2) >= radius12)
 
     print 'OK'
 
