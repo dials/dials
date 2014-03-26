@@ -180,6 +180,10 @@ class TestMapFramesReverse(object):
       x1, x2 = bbox[0], bbox[1]
       y1, y2 = bbox[2], bbox[3]
       z1, z2 = bbox[4], bbox[5]
+      if x1 == 0 or y1 == 0 or z1 == 0:
+        continue
+      if x2 == 2000 or y2 == 2000 or z2 == 9:
+        continue
 
       # Create the XDS coordinate system
       xcs = CoordinateSystem(m2, s0, s1, phi)
@@ -193,8 +197,8 @@ class TestMapFramesReverse(object):
       assert(fmax <= 1.0 and fmax > 0.0)
       assert(fmin >= 0.0 and fmin <= 1.0)
 
-      # Ensure the fraction for each grid point adds up to 1.0 for
-      # all those grid points completely within the image
+      # Ensure the fraction for image adds up to 1.0 for
+      # all those images completely within the image
       for v3 in range(fraction.all()[0]):
         tot = flex.sum(fraction[v3:v3+1,:])
         assert(abs(tot - 1.0) < 1e-7)
