@@ -25,7 +25,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     def("add_2d", &add_2d, arg("descriptor"), arg("data2d"), arg("tmp_total"));
 
-    def("simple_2d_add", &simple_2d_add, arg("data2d"), arg("tmp_total"));
+    def("simple_2d_add", &simple_2d_add, arg("in_data2d_one"),
+        arg("in_data2d_two"));
+
+    def("mask_add_2d", &mask_add_2d, arg("mask2d_one"),arg("mask2d_one"));
+
 
     def("fitting_2d_multile_var_build_mat", &fitting_2d_multile_var_build_mat,
         (arg("descriptor"), arg("data2d"), arg("background2d"),

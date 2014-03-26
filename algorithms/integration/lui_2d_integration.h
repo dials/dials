@@ -261,6 +261,19 @@ namespace dials { namespace algorithms {
     return total;
   }
 
+  af::versa< int, af::c_grid<2> > mask_add_2d(
+    const af::const_ref< int, af::c_grid<2> > &mask2d_one,
+    const af::const_ref< int, af::c_grid<2> > &mask2d_two) {
+
+
+    int ncol=mask2d_one.accessor()[1];
+    int nrow=mask2d_one.accessor()[0];
+
+    af::versa< int, af::c_grid<2> > final_mask(af::c_grid<2>(nrow, ncol),0);
+    return final_mask;
+  }
+
+
 
   // 1D weighted least squares for partially recorded reflections
   double w_least_squares_1d(int & cnt, double i_mod[],
