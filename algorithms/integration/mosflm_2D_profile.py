@@ -10,8 +10,9 @@
 
 from __future__ import division
 from dials.model.data import Reflection, ReflectionList
-from dials.algorithms.integration import add_2d, subtrac_bkg_2d, \
-              fitting_2d_partials, fitting_2d_multile_var_build_mat, sigma_2d
+from dials.algorithms.integration import add_2d, simple_2d_add, subtrac_bkg_2d, \
+                                          fitting_2d_multile_var_build_mat, \
+                                          fitting_2d_partials,  sigma_2d
 
 from dials.array_family import flex
 
@@ -69,11 +70,32 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     shoebox = col_shoebox[t_row].data
     background = col_shoebox[t_row].background
 
-    data2d = shoebox[0:1, :, :]
-    background2d = background[0:1, :, :]
 
-    data2d.reshape(flex.grid(shoebox.all()[1:]))
-    background2d.reshape(flex.grid(background.all()[1:]))
+
+    if shoebox.all()[0] == 1:
+      #print "No need for adding 3d to convert"
+      data2d = shoebox[0:1, :, :]
+      background2d = background[0:1, :, :]
+      data2d.reshape(flex.grid(shoebox.all()[1:]))
+      background2d.reshape(flex.grid(background.all()[1:]))
+
+    else:
+      #print "shoebox.all()[0] =", shoebox.all()[0]
+      data2d_tot = flex.double(flex.grid(shoebox.all()[1:]),0.0)
+      background2d_tot = flex.double(flex.grid(background.all()[1:]),0.0)
+      for z_frm in range(shoebox.all()[0]):
+        dada2d_to_add = shoebox[z_frm:z_frm + 1, :, :]
+        dada2d_to_add.reshape(flex.grid(shoebox.all()[1:]))
+        data2d_tot = simple_2d_add(data2d_tot, dada2d_to_add)
+
+        background2d_to_add = background[z_frm:z_frm + 1, :, :]
+        background2d_to_add.reshape(flex.grid(background.all()[1:]))
+        background2d_tot = simple_2d_add(background2d_tot, background2d_to_add)
+
+      data2d = data2d_tot[:,:]
+      background2d = background2d_tot[:, :]
+
+
     # mask may be needed soon
     #mask =col_shoebox[t_row].mask
     #mask2d = mask[0:1, :, :]
