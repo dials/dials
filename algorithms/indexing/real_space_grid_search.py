@@ -156,15 +156,15 @@ class indexer_real_space_grid_search(indexer_base):
       new_unique_vectors = []
       cm = candidate_orientation_matrices[perm[0]]
       crystal_models.append(cm)
-      a, b, c = cm.get_real_space_vectors()
-      for v in unique_vectors:
-        if not (is_approximate_integer_multiple(v, a) or
-                is_approximate_integer_multiple(v, b) or
-                is_approximate_integer_multiple(v, c)):
-          new_unique_vectors.append(v)
-      assert len(new_unique_vectors) == len(unique_vectors) - 3
-      if len(new_unique_vectors) < 3: break
-      unique_vectors = new_unique_vectors
+      #a, b, c = cm.get_real_space_vectors()
+      #for v in unique_vectors:
+        #if not (is_approximate_integer_multiple(v, a) or
+                #is_approximate_integer_multiple(v, b) or
+                #is_approximate_integer_multiple(v, c)):
+          #new_unique_vectors.append(v)
+      #assert len(new_unique_vectors) == len(unique_vectors) - 3
+      #if len(new_unique_vectors) < 3: break
+      #unique_vectors = new_unique_vectors
       if len(crystal_models) == 1:
         break
 
