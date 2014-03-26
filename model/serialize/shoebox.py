@@ -12,72 +12,66 @@
 from __future__ import division
 
 
-#class Reader(object):
-  #''' A class to read shoeboxes. '''
+class Reader(object):
+  ''' A class to read shoeboxes. '''
 
-  #def __init__(self, filename):
-    #''' Load the file and read the index. '''
-    #import tarfile
-    #import cPickle as pickle
-    #self._tar = tarfile.open(filename)
-    #index = pickle.load(self._tar.extractfile('index.p'))
-    #self._predicted = index['predicted']
-    #self._paths = index['paths']
-    #self._zrange = index['zrange']
+  def __init__(self, filename):
+    ''' Load the file and read the index. '''
+    import tarfile
+    import cPickle as pickle
+    self._tar = tarfile.open(filename)
+    self._index = self._load_index()
 
-  #def __del__(self):
-    #''' close the file. '''
-    #self.close()
+  def __del__(self):
+    ''' close the file. '''
+    self.close()
 
-  #def __getitem__(self, index):
-    #''' Read a block of shoeboxes '''
-    #return self.read(index)
+  def __getitem__(self, index):
+    ''' Read a block of shoeboxes '''
+    return self.read(index)
 
-  #def __len__(self):
-    #''' Get the number of blocks. '''
-    #return len(self._paths)
+  def __len__(self):
+    ''' Get the number of blocks. '''
+    return len(self._index)
 
-  #def __iter__(self):
-    #''' Iterate through the blocks. '''
-    #for i in range(len(self)):
-      #yield self.read(i)
+  def __iter__(self):
+    ''' Iterate through the blocks. '''
+    for i in range(len(self)):
+      yield self.read(i)
 
-  #def close(self):
-    #''' Close the file. '''
-    #if hasattr(self, '_tar') and not self._tar.closed:
-      #self._tar.close()
+  def close(self):
+    ''' Close the file. '''
+    if hasattr(self, '_tar') and not self._tar.closed:
+      self._tar.close()
 
-  #def read(self, index):
-    #''' Read a block of shoeboxes '''
-    #return self._load_block(index)
+  def read(self, index):
+    ''' Read a block of shoeboxes '''
+    zr, ind, sbox = self._load_block(self._index[index][1])
+    assert(len(ind) == len(sbox))
+    return zr, ind, sbox
 
-  #def paths(self, index):
-    #''' Get the list of paths for a particular block. '''
-    #return iter(self._paths[index])
+  def record(self, index):
+    ''' Get the record for a block. '''
+    return self._index[index]
 
-  #def predictions(self):
-    #''' Get the predictions. '''
-    #return self._predicted
+  def iter_records(self):
+    ''' Iterate through block records. '''
+    for i in range(len(self)):
+      yield self.record(i)
 
-  #def zrange(self):
-    #''' Get the z range. '''
-    #return self._zrange
+  def _load_index(self):
+    ''' Load index from filenames. '''
+    import json
+    index = []
+    for name in self._tar.getnames():
+      index.append((tuple(json.loads(name)), name))
+    index = sorted(index, key=lambda x: x[0][0])
+    return index
 
-  #def _load_block(self, index):
-    #''' Load a block of shoeboxes. '''
-    #from dials.array_family import flex
-    #shoeboxes = flex.partial_shoebox()
-    #indices = flex.size_t()
-    #for p in self.paths(index):
-      #i, s = self._load_partial(p)
-      #indices.extend(i)
-      #shoeboxes.extend(s)
-    #return shoeboxes.merge_all(indices, self._zrange)
-
-  #def _load_partial(self, path):
-    #''' Load a list of partial shoeboxes '''
-    #import cPickle as pickle
-    #return pickle.load(self._tar.extractfile(path))
+  def _load_block(self, path):
+    ''' Load a list of partial shoeboxes '''
+    import cPickle as pickle
+    return pickle.load(self._tar.extractfile(path))
 
 
 class Writer(object):

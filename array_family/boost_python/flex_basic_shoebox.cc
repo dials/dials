@@ -33,6 +33,22 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::Shoebox;
 
   /**
+   * Construct from an array of panels and bounding boxes.
+   */
+  static
+  af::flex<BasicShoebox>::type* from_panel_and_bbox(
+      const af::const_ref<std::size_t> panel,
+      const af::const_ref<int6> bbox) {
+    DIALS_ASSERT(panel.size() == bbox.size());
+    af::shared<BasicShoebox> result(panel.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      result[i] = BasicShoebox(panel[i], bbox[i]);
+    }
+    return new typename af::flex<BasicShoebox>::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /**
    * Check if the arrays are consistent
    */
   static
@@ -165,6 +181,11 @@ namespace dials { namespace af { namespace boost_python {
   {
     return scitbx::af::boost_python::flex_wrapper <
       BasicShoebox, return_internal_reference<> >::plain(name)
+        .def("__init__", make_constructor(
+          from_panel_and_bbox,
+          default_call_policies(), (
+            boost::python::arg("panel"),
+            boost::python::arg("bbox"))))
         .def("is_consistent", &is_consistent)
         .def("panels", &panels)
         .def("bounding_boxes", &bounding_boxes)
