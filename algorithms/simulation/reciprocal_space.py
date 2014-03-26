@@ -179,7 +179,7 @@ class Simulator(object):
     Command.end('Filtered %d reflections by zeta >= %f' % (len(refl), zeta))
 
     # Compute the bounding box
-    refl.compute_bbox(self.experiment, 2.0 * self.n_sigma, self.sigma_b, self.sigma_m)
+    refl.compute_bbox(self.experiment, self.n_sigma, self.sigma_b, self.sigma_m)
     index = []
     image_size = self.experiment.detector[0].get_image_size()
     array_range = self.experiment.scan.get_array_range()
