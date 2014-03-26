@@ -229,6 +229,39 @@ namespace dials { namespace algorithms {
 
     return total;
   }
+
+
+
+
+
+  af::versa< double, af::c_grid<2> > simple_2d_add(
+    const af::const_ref< double, af::c_grid<2> > &in_data2d_one,
+    const af::const_ref< double, af::c_grid<2> > &in_data2d_two) {
+    int ncol_one=in_data2d_one.accessor()[1];
+    int nrow_one=in_data2d_one.accessor()[0];
+    int ncol_two=in_data2d_two.accessor()[1];
+    int nrow_two=in_data2d_two.accessor()[0];
+
+    if( ncol_two != ncol_one or nrow_two != nrow_one ){
+      std::cout << "\n WRONG SISE OF ARRAYS \n";
+      std::cout << "\n ncol_one=" << ncol_one << "\n";
+      std::cout << "\n ncol_two=" << ncol_two << "\n";
+      std::cout << "\n nrow_one=" << nrow_one << "\n";
+      std::cout << "\n nrow_two=" << nrow_two << "\n";
+    }
+
+    af::versa< double, af::c_grid<2> > total(af::c_grid<2>(nrow_two,ncol_two),0);
+
+    for (int row = 0; row < nrow_two; row++) {
+      for (int col = 0; col < ncol_two; col++) {
+        total(row,col) =in_data2d_one(row, col) + in_data2d_two(row, col);
+      }
+    }
+
+    return total;
+  }
+
+
   // 1D weighted least squares for partially recorded reflections
   double w_least_squares_1d(int & cnt, double i_mod[],
                             double i_exp[], double w[]){
