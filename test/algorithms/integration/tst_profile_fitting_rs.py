@@ -72,7 +72,7 @@ class Test(object):
 
   def run(self):
     from dials.array_family import flex
-    self.test_for_reference()
+    #self.test_for_reference()
     for filename in self.refl_filenames:
       refl = flex.reflection_table.from_pickle(filename)
       self.test_for_reflections(refl, filename)
@@ -215,12 +215,12 @@ class Test(object):
     #pylab.scatter(X_pos, P_cor)
     #pylab.scatter(Y_pos, P_cor)
     #pylab.scatter(Z_pos, P_cor)
-    pylab.hist(P_cor,100)
+    #pylab.hist(P_cor,100)
     #pylab.scatter(P_cor, (I_cal - I_exp) / I_exp)
     #pylab.hist(Z, 100)
     #pylab.hist(I_cal,100)
     #pylab.hist(I_cal - I_sim, 100)
-    pylab.show()
+    #pylab.show()
 
   def test_for_reflections(self, refl, filename):
     from dials.algorithms.integration import ProfileFittingReciprocalSpace
@@ -255,8 +255,8 @@ class Test(object):
       threshold=0.00,
       frame_interval=0,
       n_sigma=5,
-      sigma_b=0.024 * pi / 180.0,
-      sigma_m=0.044 * pi / 180.0
+      sigma_b=0.024,
+      sigma_m=0.044
     )
 
     old_size = len(refl)
@@ -273,7 +273,7 @@ class Test(object):
     #self.check_profiles(integration.learner)
     #self.check_reference(reference)
 
-    #reference = integration.learner
+    reference = integration.learner
 
     #np = reference.locate().size()
     #for i in range(np):
@@ -312,9 +312,9 @@ class Test(object):
     #assert(abs(Z_mean) <= 3 * Z_var)
 
 
-    from matplotlib import pylab
-    pylab.hist(Z, 20)
-    pylab.show()
+    #from matplotlib import pylab
+    #pylab.hist(Z, 20)
+    #pylab.show()
 
     #Z_I = sorted(Z)
     ##n = int(0.05 * len(Z_I))

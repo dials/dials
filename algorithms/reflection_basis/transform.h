@@ -401,6 +401,7 @@ namespace dials { namespace algorithms { namespace reflection_basis {
      * @returns The grid (c1, c2) index
      */
     vec2<double> gc(std::size_t j, std::size_t i) const {
+      DIALS_ASSERT(j < s1_map_.accessor()[0] && i < s1_map_.accessor()[1]);
       vec3<double> ds = s1_map_(j, i) - s1_;
       return vec2<double>(grid_cent_[2] + (e1_ * ds) / step_size_[2],
                           grid_cent_[1] + (e2_ * ds) / step_size_[1]);

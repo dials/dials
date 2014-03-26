@@ -24,8 +24,6 @@ class ProfileFittingReciprocalSpace(object):
     self.threshold = kwargs['threshold']
     self.frame_interval = kwargs['frame_interval']
     self.bbox_nsigma = kwargs['n_sigma']
-    print kwargs['sigma_b']
-    print kwargs['sigma_m']
     self.sigma_b = kwargs['sigma_b'] * pi / 180
     self.sigma_m = kwargs['sigma_m'] * pi / 180
 

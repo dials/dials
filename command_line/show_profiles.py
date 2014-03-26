@@ -1,7 +1,7 @@
 from __future__ import division
 
 def print_profile(r):
-  s = r.shoebox
+  s = r['shoebox'].data
   _i, _j, _k = s.all()
   for i in range(_i):
     for j in range(_j):
@@ -12,21 +12,23 @@ def print_profile(r):
     print ''
 
 def show_profiles(integrated_pickle, isig_limit = None):
-  from dials.model.data import ReflectionList # implicit import
-  import cPickle as pickle
+  from dials.array_family import flex
   import math
 
-  integrated_data = pickle.load(open(integrated_pickle, 'r'))
+  integrated_data = flex.reflection_table.from_pickle(integrated_pickle)
 
   for j, r in enumerate(integrated_data):
     if not isig_limit is None:
-      if r.intensity <= 0:
+      if r['intensity.raw.value'] <= 0:
         continue
-      if r.intensity / math.sqrt(r.intensity_variance) < isig_limit:
+      if r['intensity.raw.value'] / math.sqrt(r['intensity.raw.variance']) < isig_limit:
         continue
 
-      print_profile(r)
+    print_profile(r)
 
 if __name__ == '__main__':
   import sys
-  show_profiles(sys.argv[1], isig_limit = float(sys.argv[2]))
+  if len(sys.argv) == 2:
+    show_profiles(sys.argv[1], None)
+  else:
+    show_profiles(sys.argv[1], isig_limit = float(sys.argv[2]))
