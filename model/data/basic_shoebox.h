@@ -24,6 +24,7 @@ namespace dials { namespace model {
   class BasicShoebox {
   public:
 
+    std::size_t index;
     std::size_t panel;
     int6 bbox;
     af::versa< int, af::c_grid<3> > data;
@@ -32,7 +33,8 @@ namespace dials { namespace model {
      * Initialise the shoebox
      */
     BasicShoebox()
-      : panel(0),
+      : index(0),
+        panel(0),
         bbox(0, 0, 0, 0, 0, 0) {}
 
     /**
@@ -40,8 +42,9 @@ namespace dials { namespace model {
      * @param panel_ The panel number
      * @param bbox_ The bounding box to initialise with
      */
-    BasicShoebox(std::size_t panel_, const int6 &bbox_)
-      : panel(panel_),
+    BasicShoebox(std::size_t index_, std::size_t panel_, const int6 &bbox_)
+      : index(index_),
+        panel(panel_),
         bbox(bbox_) {}
 
     /**

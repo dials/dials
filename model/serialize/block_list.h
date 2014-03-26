@@ -64,7 +64,7 @@ namespace dials { namespace model {
         const af::const_ref<int6> &bbox, int z)
       : z_(z) {
       for (std::size_t i = 0; i < bbox.size(); ++i) {
-        sbox_.push_back(BasicShoebox(panel[i], bbox[i]));
+        sbox_.push_back(BasicShoebox(i, panel[i], bbox[i]));
       }
       std::sort(sbox_.begin(), sbox_.end(), sort_by_start());
       active_ = 0;

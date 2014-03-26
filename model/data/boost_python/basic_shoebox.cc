@@ -31,7 +31,7 @@ namespace dials { namespace model { namespace boost_python {
   {
     return class_<BasicShoebox>(name)
       .def(init<const BasicShoebox&>())
-      .def(init<std::size_t, const int6&>())
+      .def(init<std::size_t, std::size_t, const int6&>())
       .add_property("data",
         make_getter(&BasicShoebox::data,
           return_value_policy<return_by_value>()),
@@ -42,6 +42,7 @@ namespace dials { namespace model { namespace boost_python {
         make_setter(&BasicShoebox::bbox,
           return_value_policy<return_by_value>()))
       .def_readwrite("panel", &BasicShoebox::panel)
+      .def_readwrite("index", &BasicShoebox::index)
       .def("allocate", &BasicShoebox::allocate)
       .def("deallocate", &BasicShoebox::deallocate)
       .def("xoffset", &BasicShoebox::xoffset)

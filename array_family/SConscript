@@ -8,6 +8,7 @@ if env_etc.clang_version:
 sources = [
     'boost_python/flex_int6.cc',
     'boost_python/flex_partial_shoebox.cc',
+    'boost_python/flex_basic_shoebox.cc',
     'boost_python/flex_shoebox.cc',
     'boost_python/flex_centroid.cc',
     'boost_python/flex_intensity.cc',
