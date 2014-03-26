@@ -305,24 +305,127 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
-   * Construct an array of shoebxoes from an array of basic shoeboxes
+   * Convert a partial shoebox to a complete shoebox
    */
   template <typename FloatType>
-  typename af::flex< Shoebox<FloatType> >::type* from_basic_shoeboxes(
+  Shoebox<FloatType> from_basic_shoebox(
+      const BasicShoebox &basic,
+      const af::const_ref< FloatType, af::c_grid<2> > &gain,
+      const af::const_ref< FloatType, af::c_grid<2> > &dark,
+      const af::const_ref< bool, af::c_grid<2> > &mask) {
+    Shoebox<FloatType> result(basic.panel, basic.bbox);
+    result.allocate();
+    int x0 = result.bbox[0], y0 = result.bbox[2];
+    int i0 = std::max(result.bbox[0], 0) - result.bbox[0];
+    int j0 = std::max(result.bbox[2], 0) - result.bbox[2];
+    int i1 = std::min(result.bbox[1], (int)gain.accessor()[1]) - result.bbox[0];
+    int j1 = std::min(result.bbox[3], (int)gain.accessor()[0]) - result.bbox[2];
+    int zsize = result.zsize();
+    if (i0 < i1 && j0 < j1) {
+      for (std::size_t j = j0; j < j1; ++j) {
+        for (std::size_t i = i0; i < i1; ++i) {
+          double g = gain(j + y0, i + x0);
+          double d = dark(j + y0, i + x0);
+          int m    = mask(j + y0, i + x0) ? Valid : 0;
+          for (std::size_t k = 0; k < zsize; ++k) {
+            result.data(k, j, i) = g * (basic.data(k, j, i) - d);
+            result.mask(k, j, i) = m;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Construct an array of shoebxoes from an array of partial shoeboxes
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_basic_shoeboxes_none(
       const af::const_ref<BasicShoebox> &basic) {
 
     // Convert all the basic shoeboxes to shoeboxes
     af::shared< Shoebox<FloatType> > result(basic.size());
     for (std::size_t l = 0; l < basic.size(); ++l) {
       result[l] = Shoebox<FloatType>(basic[l].panel, basic[l].bbox);
-      result[l].allocate();
       for (std::size_t k = 0; k < result[l].data.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < result[l].data.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < result[l].data.accessor()[2]; ++i) {
             result[l].data(k,j,i) = basic[l].data(k,j,i);
+            result[l].mask(k,j,i) = Valid;
           }
         }
       }
+    }
+
+    // Return the array
+    return new typename af::flex< Shoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /**
+   * Construct an array of shoebxoes from an array of partial shoeboxes
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_basic_shoeboxes(
+      const af::const_ref<BasicShoebox> &basic,
+      const af::const_ref< FloatType, af::c_grid<2> > &gain,
+      const af::const_ref< FloatType, af::c_grid<2> > &dark,
+      const af::const_ref< bool, af::c_grid<2> > &mask,
+      std::size_t panel) {
+
+    // Check the input
+    DIALS_ASSERT(gain.accessor().all_eq(dark.accessor()));
+    DIALS_ASSERT(gain.accessor().all_eq(mask.accessor()));
+
+    // Convert all the basic shoeboxes to shoeboxes
+    af::shared< Shoebox<FloatType> > result(basic.size());
+    for (std::size_t i = 0; i < basic.size(); ++i) {
+      DIALS_ASSERT(basic[i].panel == panel);
+      result[i] = from_basic_shoebox(basic[i], gain, dark, mask);
+    }
+
+    // Return the array
+    return new typename af::flex< Shoebox<FloatType> >::type(
+      result, af::flex_grid<>(result.size()));
+  }
+
+  /**
+   * Construct from partial shoeboxes with multi panels
+   */
+  template <typename FloatType>
+  typename af::flex< Shoebox<FloatType> >::type* from_basic_shoeboxes_multi(
+      const af::const_ref<BasicShoebox> &basic,
+      const boost::python::tuple &mgain,
+      const boost::python::tuple &mdark,
+      const boost::python::tuple &mmask) {
+
+    typedef af::const_ref< FloatType, af::c_grid<2> > vdouble;
+    typedef af::const_ref< bool, af::c_grid<2> > vbool;
+
+    // Check the input tuples
+    std::size_t npanels = boost::python::len(mgain);
+    DIALS_ASSERT(npanels == boost::python::len(mdark));
+    DIALS_ASSERT(npanels == boost::python::len(mmask));
+
+    // Save all the maps
+    std::vector<vdouble> gain(npanels);
+    std::vector<vdouble> dark(npanels);
+    std::vector<vbool> mask(npanels);
+    for (std::size_t i = 0; i < npanels; ++i) {
+      gain[i] = boost::python::extract<vdouble>(mgain[i]);
+      dark[i] = boost::python::extract<vdouble>(mdark[i]);
+      mask[i] = boost::python::extract<vbool>(mmask[i]);
+      DIALS_ASSERT(gain[i].accessor().all_eq(dark[i].accessor()));
+      DIALS_ASSERT(gain[i].accessor().all_eq(mask[i].accessor()));
+    }
+
+    // Convert all the basic shoeboxes to shoeboxes
+    af::shared< Shoebox<FloatType> > result(basic.size());
+    for (std::size_t i = 0; i < basic.size(); ++i) {
+      std::size_t p = basic[i].panel;
+      DIALS_ASSERT(p < npanels);
+      result[i] = from_basic_shoebox(basic[i], gain[p], dark[p], mask[p]);
     }
 
     // Return the array
@@ -884,6 +987,25 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("labels"),
             boost::python::arg("panel") = 0)))
         .def("__init__", make_constructor(
+          from_basic_shoeboxes_none<FloatType>,
+          default_call_policies(), (
+            boost::python::arg("basic"))))
+        .def("__init__", make_constructor(
+          from_basic_shoeboxes<FloatType>,
+          default_call_policies(), (
+            boost::python::arg("basic"),
+            boost::python::arg("gain"),
+            boost::python::arg("dark"),
+            boost::python::arg("mask"),
+            boost::python::arg("panel") = 0)))
+        .def("__init__", make_constructor(
+          from_basic_shoeboxes_multi<FloatType>,
+          default_call_policies(), (
+            boost::python::arg("basic"),
+            boost::python::arg("gain"),
+            boost::python::arg("dark"),
+            boost::python::arg("mask"))))
+        .def("__init__", make_constructor(
           from_partial_shoeboxes<FloatType>,
           default_call_policies(), (
             boost::python::arg("partial"),
@@ -898,10 +1020,6 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("gain"),
             boost::python::arg("dark"),
             boost::python::arg("mask"))))
-        .def("__init__", make_constructor(
-          from_basic_shoeboxes<FloatType>,
-          default_call_policies(), (
-            boost::python::arg("shoebox"))))
         .def("__init__", make_constructor(
           from_panel_and_bbox<FloatType>,
           default_call_policies(), (

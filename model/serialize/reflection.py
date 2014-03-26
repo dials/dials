@@ -33,7 +33,7 @@ class Writer(object):
 class Reader(object):
   ''' Read reflections from the given file. '''
 
-  def __init__(self, filename, blocks=None):
+  def __init__(self, filename, blocks=None, mask=None, gain=None, dark=None):
     ''' Initialise the writer. '''
     from dials.model.serialize import BlockListIndex
     from dials.model.serialize import shoebox
@@ -43,6 +43,9 @@ class Reader(object):
     self.blocks = blocks
     batches = [zr for zr, name in self._reader.iter_records()]
     self.lookup = BlockListIndex(shared.tiny_int_2(batches))
+    self.mask = mask
+    self.gain = gain
+    self.dark = dark
 
   def __len__(self):
     ''' Get number of blocks. '''
@@ -79,9 +82,12 @@ class Reader(object):
     ''' Build a reflection table from the input. '''
     from dials.array_family import flex
     reflections = self.predictions.select(indices)
-    reflections['shoebox'] = flex.shoebox(shoeboxes)
+    if self.mask is None or self.gain is None or self.dark is None:
+      reflections['shoebox'] = flex.shoebox(shoeboxes)
+    else:
+      reflections['shoebox'] = flex.shoebox(shoeboxes,
+        self.mask, self.gain, self.dark)
     return reflections
-
 
 class Extractor(object):
   ''' Helper class to extract data. '''
@@ -98,12 +104,48 @@ class Extractor(object):
     writer = Writer(self.filename)
     writer.write(experiment, predictions)
 
-  def extract(self, blocks):
+    # Save the experiment
+    self.experiment = experiment
+
+
+  def extract(self, blocks, mask=None, gain=None, dark=None):
     ''' Iterate through blocks and yield. '''
 
     # Create the reader
-    reader = Reader(self.filename, blocks)
+    reader = Reader(self.filename, blocks, *self._lookup(mask, gain, dark))
 
     # Yield all the blocks
     for block in reader:
       yield block
+
+  def _lookup(self, gain, dark, mask):
+    ''' Helper function to get gain, dark and mask maps. '''
+    from dials.array_family import flex
+
+    # Ensure image is a tuple
+    image = self.experiment.imageset[0]
+    if not isinstance(image, tuple):
+      image = (image,)
+
+    # Get the mask in tuple of masks form
+    if mask:
+      if not isinstance(mask, tuple):
+        mask = (mask,)
+    else:
+      mask = tuple([im >= 0 for im in image])
+
+    # Get the gain in tuple of gains form
+    if gain:
+      if not isinstance(gain, tuple):
+        gain = (gain,)
+    else:
+      gain = tuple([flex.double(flex.grid(im.all()), 1) for im in image])
+
+    # Get the dark in tuple of darks form
+    if dark:
+      if not isinstance(dark, tuple):
+        dark = (dark,)
+    else:
+      dark = tuple([flex.double(flex.grid(im.all()), 0) for im in image])
+
+    return gain, dark, mask
