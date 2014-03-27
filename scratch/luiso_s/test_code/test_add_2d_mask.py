@@ -15,6 +15,11 @@ for row in range(int(2 * nrow / 5), int(4 * nrow / 5)):
   for col in range(int(2 * ncol / 5), int(4 * ncol / 5)):
     mask_02[row, col] = 5
 
+for diag in range(nrow):
+  mask_01[diag, diag] = 0
+  mask_02[diag, 13] = 0
+
+
 
 sumation = mask_add_2d( mask_01, mask_02)
 

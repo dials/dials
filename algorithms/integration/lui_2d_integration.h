@@ -30,6 +30,7 @@ namespace dials { namespace algorithms {
   using scitbx::af::flex_double;
   using scitbx::af::flex_grid;
   using dials::model::Foreground;
+  using dials::model::Valid;
   using dials::model::Background;
   using std::sqrt;
   // using dials::model::Valid;
@@ -282,7 +283,34 @@ namespace dials { namespace algorithms {
 
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
-        final_mask(row,col) = mask2d_one(row, col) + mask2d_two(row, col);
+
+        //  [ || ] = .or.  returning a boolean
+        //  [ && ] = .and. returning a boolean
+
+        //  [ | ] = .or.   as a mathematical operation  bit per bit
+        //  [ & ] = .and.  as a mathematical operation  bit per bit
+
+        // [ ! ] = .not. operator
+
+
+        if ( (mask2d_one(row,col) & Background)
+         ||  (mask2d_two(row,col) & Background) )  {
+          final_mask(row, col) = final_mask(row, col) | Background;
+        }
+
+        if ( (mask2d_one(row,col) & Foreground)
+         ||  (mask2d_two(row,col) & Foreground) )  {
+           //final_mask(row, col) = final_mask(row, col) | Foreground;
+          final_mask(row, col) = 5;
+        }
+
+        if ( ( !(mask2d_one(row,col) & Valid ) )
+         ||  ( !(mask2d_two(row,col) & Valid ) ) ) {
+          //final_mask(row, col) &= ~Valid;
+          final_mask(row, col) = 0;
+
+        }
+
       }
     }
 
