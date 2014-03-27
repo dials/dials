@@ -128,6 +128,7 @@ flex_2d_layering_n_integrating(ref_table)
 
 
 t_intensity = ref_table['intensity.raw.value']
+#t_intensity_var = ref_table['intensity.raw.variance']
 old_i_table = t_intensity[:]
 
 #tmp='''
@@ -154,10 +155,12 @@ from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 3)
 
 t_intensity = pf_ref_table['intensity.raw.value']
+t_intensity_var = ref_table['intensity.raw.variance']
 
 paint_compare = []
 for i in range(len(t_intensity)):
-  paint_compare.append([ old_i_table[i], t_intensity[i]])
+  #paint_compare.append([ old_i_table[i], t_intensity[i]])
+  paint_compare.append([ t_intensity_var[i], t_intensity[i]])
 paint_compare_sort = sorted(paint_compare)
 
 data1d = numpy.zeros(num_ref, dtype = numpy.float64)
