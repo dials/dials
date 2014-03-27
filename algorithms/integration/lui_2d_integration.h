@@ -265,11 +265,28 @@ namespace dials { namespace algorithms {
     const af::const_ref< int, af::c_grid<2> > &mask2d_one,
     const af::const_ref< int, af::c_grid<2> > &mask2d_two) {
 
-
     int ncol=mask2d_one.accessor()[1];
     int nrow=mask2d_one.accessor()[0];
+    int ncol_tst=mask2d_two.accessor()[1];
+    int nrow_tst=mask2d_two.accessor()[0];
+
+    if( ncol_tst != ncol or nrow_tst != nrow ){
+      std::cout << "\n WRONG SISE OF ARRAYS \n";
+      std::cout << "\n ncol=" << ncol << "\n";
+      std::cout << "\n ncol_tst=" << ncol_tst << "\n";
+      std::cout << "\n nrow=" << nrow << "\n";
+      std::cout << "\n nrow_tst=" << nrow_tst << "\n";
+    }
 
     af::versa< int, af::c_grid<2> > final_mask(af::c_grid<2>(nrow, ncol),0);
+
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
+        final_mask(row,col) = mask2d_one(row, col) + mask2d_two(row, col);
+      }
+    }
+
+
     return final_mask;
   }
 
