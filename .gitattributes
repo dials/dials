@@ -624,6 +624,7 @@ scratch/luiso_s/test_code/sort_exers.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/table_toy.py -text
 scratch/luiso_s/test_code/table_toy_01.py -text
 scratch/luiso_s/test_code/test_add_2d.py -text
+scratch/luiso_s/test_code/test_add_2d_mask.py -text
 scratch/luiso_s/test_code/test_flex_integr_2d_single_pixel.py -text
 scratch/luiso_s/test_code/test_mask.py -text
 scratch/luiso_s/test_code/test_profilefitting_2D.py -text
