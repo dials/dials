@@ -71,7 +71,7 @@ class Test(object):
     extensions = list(CentroidIface.extensions())
     assert(len(extensions) == 1)
     extensions = list(BackgroundIface.extensions())
-    assert(len(extensions) == 5)
+    assert(len(extensions) == 7)
     extensions = list(IntensityIface.extensions())
     assert(len(extensions) == 4)
 
