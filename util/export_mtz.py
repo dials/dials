@@ -16,6 +16,12 @@ def export_mtz(integrated_data, experiment_list, hklout):
   assert(len(experiment_list) == 1)
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
+  # strip out negative variance reflections: these should not really be there
+  selection = integrated_data['intensity.cor.variance'] < 0
+  if selection.count(True) > 0:
+    integrated_data.del_selected(selection)
+    print 'Removing %d reflections with negative variance' % selection.count(True)
+  
   # FIXME TODO for more than one experiment into an MTZ file:
   #
   # - add an epoch (or recover an epoch) from the scan and add this as an extra
