@@ -185,6 +185,18 @@ class IntensityAnalyser(object):
     if not ensure_required(rlist, self.required):
       return
 
+    selection = rlist['intensity.raw.variance'] < 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print 'Removing %d reflections with negative variance' % \
+        selection.count(True)
+
+    selection = rlist['intensity.raw.value'] < 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print 'Removing %d reflections with negative intensity' % \
+        selection.count(True)
+
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)

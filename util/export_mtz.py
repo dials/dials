@@ -21,7 +21,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
     print 'Removing %d reflections with negative variance' % selection.count(True)
-  
+
   # FIXME TODO for more than one experiment into an MTZ file:
   #
   # - add an epoch (or recover an epoch) from the scan and add this as an extra
