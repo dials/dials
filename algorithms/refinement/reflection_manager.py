@@ -18,6 +18,29 @@ from dials.array_family import flex
 # constants
 RAD_TO_DEG = 180. / pi
 
+# helper functions
+def calculate_entering_flags(reflections, experiments):
+  """calculate entering flags for all reflections, and set them as a column
+  of the reflection table."""
+
+  goniometers = [e.goniometer for e in experiments]
+  axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
+  s0vecs = [matrix.col(e.beam.get_s0()) for e in experiments]
+
+  # calculate unit vectors normal to the spindle-beam plane for each
+  # experiment, such that the vector placed at the centre of the Ewald sphere
+  # points to the hemisphere in which reflections cross from inside to outside
+  # of the sphere (reflections are exiting). NB this vector is in +ve Y
+  # direction when using imgCIF coordinate frame.
+  vecs = [s0vecs[i].cross(e).normalize() if e else None for i, e in enumerate(axes)]
+
+  # Set entering flags. These are always False for experiments that have no
+  # rotation axis.
+  enterings = [matrix.col(ref['s1']).dot(vecs[ref['id']]) < 0. \
+               if vecs[ref['id']] else False for ref in reflections]
+
+  return flex.bool(enterings)
+
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted
   reflections for refinement.
@@ -73,7 +96,8 @@ class ReflectionManager(object):
     self._check_too_few()
 
     # set entering flags for all reflections
-    self._calculate_entering_flags()
+    self._reflections['entering'] = calculate_entering_flags(self._reflections,
+      self._experiments)
 
     # set observed frame numbers for all reflections
     self._calculate_frame_numbers()
@@ -138,27 +162,6 @@ class ReflectionManager(object):
                'which is below the configured limit for this reflection ' + \
                'manager').format(nref, iexp)
         raise RuntimeError(msg)
-    return
-
-  def _calculate_entering_flags(self):
-    """calculate entering flags for all reflections, and set them as a column
-    of the reflection table."""
-
-    # calculate unit vectors normal to the spindle-beam plane for each
-    # experiment, such that the vector placed at the centre of the Ewald sphere
-    # points to the hemisphere in which reflections cross from inside to outside
-    # of the sphere (reflections are exiting). NB this vector is in +ve Y
-    # direction when using imgCIF coordinate frame.
-    vecs = [self._s0vecs[i].cross(e).normalize() \
-            if e else None for i, e in enumerate(self._axes)]
-
-    # Set entering flags. These are always False for experiments that have no
-    # rotation axis.
-    enterings = [matrix.col(ref['s1']).dot(vecs[ref['id']]) < 0. \
-                 if vecs[ref['id']] else False for ref in self._reflections]
-
-    self._reflections['entering'] = flex.bool(enterings)
-
     return
 
   def _calculate_frame_numbers(self):
