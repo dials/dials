@@ -477,6 +477,7 @@ scratch/dgw/detector_model_old/README -text
 scratch/dgw/detector_model_old/detector.py -text
 scratch/dgw/goniometer_model/__init__.py -text
 scratch/dgw/goniometer_model/gonio.py -text
+scratch/dgw/investigate_predictions.py -text
 scratch/dgw/prediction/README -text
 scratch/dgw/prediction/__init__.py -text
 scratch/dgw/prediction/obsolete_predictors.py -text
