@@ -108,6 +108,7 @@ algorithms/integration/profile/reference_locator.h -text
 algorithms/integration/profile/xds_circle_sampler.h -text
 algorithms/integration/profile_fitting_reciprocal_space.h -text
 algorithms/integration/profile_fitting_reciprocal_space.py -text
+algorithms/integration/projection_from_3d_to_2d.py -text
 algorithms/integration/reflection_extractor.py -text
 algorithms/integration/summation.h -text
 algorithms/integration/summation2d.py -text svneol=unset#text/plain
