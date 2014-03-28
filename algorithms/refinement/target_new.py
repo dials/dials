@@ -243,11 +243,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return(residuals, jacobian, weights)
 
-  # FIXME
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""
 
-    self._matches = self._reflection_manager.get_matches()
     self._nref = len(self._matches)
 
     # This is a hack for the case where nref=0. This should not be necessary
@@ -257,28 +255,42 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     if self._nref == 0:
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
-    # compute target function
-    L = 0.5 * sum([m.weight_x_obs * m.x_resid2 +
-                   m.weight_y_obs * m.y_resid2 +
-                   m.weight_phi_obs * m.phi_resid2
-                   for m in self._matches])
+    # extract columns from the table
+    x_resid = self._matches['x_resid']
+    y_resid = self._matches['y_resid']
+    phi_resid = self._matches['phi_resid']
+    x_resid2 = self._matches['x_resid2']
+    y_resid2 = self._matches['y_resid2']
+    phi_resid2 = self._matches['phi_resid2']
+    w_x, w_y, w_phi = self._matches['xyzobs.mm.weights'].parts()
+
+    # calculate target function
+    temp = w_x * x_resid2 + w_y * y_resid2 + w_phi * phi_resid2
+    L = 0.5 * flex.sum(temp)
 
     # prepare list of gradients
     dL_dp = [0.] * len(self._prediction_parameterisation)
 
-    # the gradients wrt each parameter are stored with the matches
-    for m in self._matches:
+    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients()
 
-      for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-        dL_dp[j] += (m.weight_x_obs * m.x_resid * grad_X +
-                     m.weight_y_obs * m.y_resid * grad_Y +
-                     m.weight_phi_obs * m.phi_resid * grad_Phi)
+    w_x_resid = w_x * x_resid
+    w_y_resid = w_y * y_resid
+    w_phi_resid = w_phi * phi_resid
+
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
+      temp = w_x_resid * dX + w_y_resid * dY + w_phi_resid * dPhi
+      dL_dp[i] = flex.sum(temp)
 
     return (L, dL_dp)
 
   def curvatures(self):
     """First order approximation to the diagonal of the Hessian based on the
     least squares form of the target"""
+
+    # relies on compute_functional_and_gradients being called first
+    dX_dp, dY_dp, dPhi_dp = self._gradients
+    w_x, w_y, w_phi = self._matches['xyzobs.mm.weights'].parts()
 
     # This is a hack for the case where nref=0. This should not be necessary
     # if bounds are provided for parameters to stop the algorithm exploring
@@ -290,12 +302,10 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     curv = [0.] * len(self._prediction_parameterisation)
 
     # for each reflection, get the approximate curvatures wrt each parameter
-    for m in self._matches:
-
-      for j, (grad_x, grad_y, grad_phi) in enumerate(m.gradients):
-        curv[j] += (m.weight_x_obs * grad_x**2 +
-                    m.weight_y_obs * grad_y**2 +
-                    m.weight_phi_obs * grad_phi**2)
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
+      temp = w_x * dX**2 + w_y * dY**2 + w_phi * dPhi**2
+      curv[i] = flex.sum(temp)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
     assert all([c > 0.0 for c in curv])
@@ -333,6 +343,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       return True
     return False
 
+#FIXME Needs vectorised version
 class LeastSquaresXYResidualWithRmsdCutoff(Target):
   """An implementation of the target class providing a least squares residual
   in terms of detector impact position X, Y only, terminating on achieved
