@@ -45,6 +45,7 @@ class Script(ScriptRunner):
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
     from dials.array_family import flex
+    from dials.framework.registry import Registry
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'], check_format=False)
@@ -65,6 +66,18 @@ class Script(ScriptRunner):
       importer.experiments[0],
       force_static=options.force_static)
     predicted['id'] = flex.size_t(len(predicted), 0)
+
+    # Compute the bounding box
+    registry = Registry()
+    n_sigma = registry.params().integration.shoebox.n_sigma
+    sigma_b = registry.params().integration.shoebox.sigma_b
+    sigma_m = registry.params().integration.shoebox.sigma_m
+    if sigma_b is not None and sigma_m is not None:
+      predicted.compute_bbox(
+        importer.experiments[-1],
+        nsigma=n_sigma,
+        sigma_d=sigma_b,
+        sigma_m=sigma_m)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
