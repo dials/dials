@@ -173,6 +173,15 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Get the weight at a point for a reference profile
+     * @param index The index of the profile
+     * @patam coord The coordinate of the point
+     */
+    double weight(std::size_t index, double3 xyz) const {
+      return sampler_.weight(index, xyz);
+    }
+
+    /**
      * @returns The correlations between the reference profiles
      */
     af::versa< double, af::c_grid<2> > correlations() const {

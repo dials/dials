@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <iostream>
 
 namespace dials { namespace algorithms { namespace boost_python {
 

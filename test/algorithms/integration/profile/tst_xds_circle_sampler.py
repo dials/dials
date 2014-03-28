@@ -11,6 +11,7 @@ class Test(object):
     self.tst_indexing()
     self.tst_nearest()
     self.tst_nearest_n()
+    self.tst_weights()
     self.tst_self_consistent()
     self.tst_z_index()
     self.tst_pickle()
@@ -184,6 +185,53 @@ class Test(object):
         else:
           assert(index1[2] == index0 + 1)
           assert(index1[3] == index0 - 1)
+
+    print 'OK'
+
+  def tst_weights(self):
+    from math import sqrt, atan2, pi, floor
+    from dials.algorithms.integration.profile import XdsCircleSampler
+    from math import exp, log
+    from scitbx import matrix
+
+    width = 1000
+    height = 1000
+    depth = 10
+    nz = 1
+    sampler = XdsCircleSampler((width, height, depth), nz)
+
+    # Check the weight at the coord in 1.0
+    eps = 1e-7
+    for i in range(len(sampler)):
+      coord = sampler[i]
+      weight = sampler.weight(i, coord)
+      assert(abs(weight - 1.0) < eps)
+
+    r0 = sampler.r0()
+    r1 = sampler.r1()
+    r2 = sampler.r2()
+    r = r2 / (2.0*r1)
+    expected = exp(-4.0*r*r*log(2.0))
+    for i in range(1, 9):
+      coord = sampler[i]
+      weight = sampler.weight(0, coord)
+      assert(abs(weight - expected) < eps)
+
+    r = r2 / (2.0*(r2 - r1))
+    expected = exp(-4.0*r*r*log(2.0))
+    for i in range(1, 9):
+      coord = sampler[0]
+      weight = sampler.weight(i, coord)
+      assert(abs(weight - expected) < eps)
+
+    for i in range(1, 9):
+      coord1 = matrix.col(sampler[0])
+      coord2 = matrix.col(sampler[i])
+      coord = coord1 + r1 * (coord2 - coord1) / r2
+      weight = sampler.weight(0, coord)
+      assert(abs(weight - 0.5) < eps)
+      weight = sampler.weight(i, coord)
+      assert(abs(weight - 0.5) < eps)
 
     print 'OK'
 

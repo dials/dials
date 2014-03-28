@@ -79,6 +79,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("nearest", &GridSampler::nearest)
       .def("nearest_n", &GridSampler::nearest_n)
       .def("size", &GridSampler::size)
+      .def("weight", &GridSampler::weight)
       .def("__getitem__", &GridSampler::operator[])
       .def("__len__", &GridSampler::size)
       .def("__iter__", range(&grid_sampler_begin, &grid_sampler_end))

@@ -148,6 +148,21 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Get the weight for the given profile at the given coordinate.
+     * @param index The profile index
+     * @param xyz The coordinate
+     * @returns The weight (between 1.0 and 0.0)
+     */
+    double weight(std::size_t index, double3 xyz) const {
+      double3 c = (*this)[index];
+      double dx = (c[0] - xyz[0]);
+      double dy = (c[1] - xyz[1]);
+      double d = std::sqrt(dx*dx + dy*dy);
+      d = (index % 9) == 0 ? d / (2.0*r1_) : d / (2.0*(r2_ - r1_));
+      return std::exp(-4.0*d*d*std::log(2.0));
+    }
+
+    /**
      * Get the x, y, z coordinate of the reference profile at the given index.
      * @param index The index of the reference profile.
      * @returns The x, y, z coordinate of the profile

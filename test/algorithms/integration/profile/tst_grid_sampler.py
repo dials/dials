@@ -10,6 +10,7 @@ class Test(object):
     self.tst_indexing()
     self.tst_nearest()
     self.tst_nearest_n()
+    self.tst_weights()
     self.tst_self_consistent()
     self.tst_pickle()
 
@@ -147,6 +148,79 @@ class Test(object):
         assert(index1[c] == index0 + nx * ny)
         c += 1
       assert(c == len(index1))
+
+    print 'OK'
+
+  def tst_weights(self):
+    from dials.algorithms.integration.profile import GridSampler
+    from scitbx import matrix
+    from math import log, exp
+    width = 1000
+    height = 1000
+    depth = 10
+    nx = 10
+    ny = 10
+    nz = 2
+    sampler = GridSampler((width, height, depth), (nx, ny, nz))
+
+    # Check the weight at the coord in 1.0
+    eps = 1e-7
+    for i in range(len(sampler)):
+      coord = sampler[i]
+      weight = sampler.weight(i, coord)
+      assert(abs(weight - 1.0) < eps)
+
+    # Ensure we get the expected weight at the next grid point at half way
+    # between grid points
+    expected = exp(-4.0 * log(2.0))
+    for k in range(nz):
+      for j in range(ny):
+        for i in range(nx):
+          l1 = (i + 0) + ((j + 0) + (k + 0) * ny) * nx
+          l2 = (i + 1) + ((j + 0) + (k + 0) * ny) * nx
+          l3 = (i - 1) + ((j + 0) + (k + 0) * ny) * nx
+          l4 = (i + 0) + ((j + 1) + (k + 0) * ny) * nx
+          l5 = (i + 0) + ((j - 1) + (k + 0) * ny) * nx
+          l6 = (i + 0) + ((j + 0) + (k + 1) * ny) * nx
+          l7 = (i + 0) + ((j + 0) + (k - 1) * ny) * nx
+          coord1 = matrix.col(sampler[l1])
+          if i < nx-1:
+            coord = matrix.col(sampler[l2])
+            weight = sampler.weight(l1, coord)
+            assert(abs(weight - expected) < eps)
+            weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+            assert(abs(weight - 0.5) < eps)
+          if i > 0:
+            coord = matrix.col(sampler[l3])
+            weight = sampler.weight(l1, coord)
+            assert(abs(weight - expected) < eps)
+            weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+            assert(abs(weight - 0.5) < eps)
+          if j < ny-1:
+            coord = matrix.col(sampler[l4])
+            weight = sampler.weight(l1, coord)
+            assert(abs(weight - expected) < eps)
+            weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+            assert(abs(weight - 0.5) < eps)
+          if j > 0:
+            coord = matrix.col(sampler[l5])
+            weight = sampler.weight(l1, coord)
+            assert(abs(weight - expected) < eps)
+            weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+            assert(abs(weight - 0.5) < eps)
+          if k < nz-1:
+            coord = matrix.col(sampler[l6])
+            weight = sampler.weight(l1, coord)
+            assert(abs(weight - expected) < eps)
+            weight = sampler.weight(l1, ( coord + coord1 )/2.0)
+            assert(abs(weight - 0.5) < eps)
+          if k > 0:
+            coord = matrix.col(sampler[l7])
+            weight = sampler.weight(l1, coord)
+            assert(abs(weight -
+) < eps)
+            weight = sampler.weight(l1, ( coord1 + coord )/2.0)
+            assert(abs(weight - 0.5) < eps)
 
     print 'OK'
 

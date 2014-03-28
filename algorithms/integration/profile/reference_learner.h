@@ -136,7 +136,7 @@ namespace dials { namespace algorithms {
         af::shared<std::size_t> indices = locator_.indices(coord);
         for (std::size_t ii = 0; ii < indices.size(); ++ii) {
           std::size_t index = indices[ii];
-          vec3<double> coord_b = locator_.coord(index);
+          //vec3<double> coord_b = locator_.coord(index);
           counts_[index]++;
 
           // Get the reference profile
@@ -144,8 +144,9 @@ namespace dials { namespace algorithms {
 
           // Calculate the weighting by distance, ensure we don't get silly weights
           // for really close reflections by setting minimum distance to 1.
-          double distance = (coord - coord_b).length();
-          double weight = (distance < 1.0 ? 1.0 : 1.0 / distance);
+          //double distance = (coord - coord_b).length();
+          double weight = locator_.weight(index, coord);
+          //double weight = (distance < 1.0 ? 1.0 : 1.0 / distance);
 
           // Add to the reference profile
           for (std::size_t i = 0; i < reference.size(); ++i) {
