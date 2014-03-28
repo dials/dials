@@ -20,11 +20,6 @@ from dials_refinement_helpers_ext import *
 """This version of PredictionParameterisation vectorises calculations over
 reflections, using flex arrays"""
 
-from collections import namedtuple
-# A helper bucket to store cached values
-ModelCache = namedtuple('ModelCache',
-  ['D_mats', 's0', 'U', 'B', 'UB', 'axis'])
-
 class PredictionParameterisation(object):
   """
   Abstract interface for a class that groups together model parameterisations
@@ -99,9 +94,6 @@ class PredictionParameterisation(object):
                                          'xl_uc_param', 'det_param'])
     self._exp_to_param = {i: ParamSet(e2bp[i], e2xop[i], e2xucp[i], e2dp[i]) \
                           for i, _ in enumerate(experiments)}
-
-    # Fill out remaining attributes by a call to prepare
-    self.prepare()
 
   def _len(self):
     length = 0
@@ -219,30 +211,6 @@ class PredictionParameterisation(object):
       for model in self._xl_unit_cell_parameterisations:
         tmp = [it.next() for i in range(model.num_free())]
         model.set_param_vals(tmp)
-
-  def prepare(self):
-    """Cache required quantities for each experiment that are not dependent on
-    hkl"""
-
-    # FIXME deprecated under new vectorised version
-    import warnings
-    warnings.warn("the prepare method is deprecated!", DeprecationWarning)
-    self._cache = []
-    for e in self._experiments:
-
-      D_mats=[matrix.sqr(p.get_D_matrix()) for p in e.detector]
-      s0 = matrix.col(e.beam.get_s0())
-      U = e.crystal.get_U()
-      B = e.crystal.get_B()
-      UB = U * B
-      if e.goniometer:
-        axis = matrix.col(e.goniometer.get_rotation_axis())
-      else:
-        axis = None
-
-      self._cache.append(ModelCache(D_mats, s0, U, B, UB, axis))
-
-    return
 
   def get_gradients(self, reflections):
     """
