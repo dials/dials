@@ -101,7 +101,9 @@ class ReflectionManager(object):
     # delete all reflections from the manager that do not have a prediction
     # or were flagged as outliers
     if self._verbosity > 1:
-      print "Removing reflections not matched to predictions"
+      msg = "Removing reflections not matched to predictions"
+      if rejection_occurred: msg += " or marked as outliers"
+      print msg
 
     self._reflections = self._reflections.select(self._reflections.get_flags(
                       self._reflections.flags.used_in_refinement))
@@ -131,7 +133,7 @@ class ReflectionManager(object):
       if nref < self._min_num_obs:
         msg = ('Remaining number of reflections = {0}, for experiment {1}, ' + \
                'which is below the configured limit for this reflection ' + \
-               'manager').format((nref, iexp))
+               'manager').format(nref, iexp)
         raise RuntimeError(msg)
     return
 
@@ -170,8 +172,7 @@ class ReflectionManager(object):
     if self._reflections.has_key('xyzobs.px.value'):
       from libtbx.test_utils import approx_equal
       for a, b in zip(frames, self._reflections['xyzobs.px.value']):
-        print a, b[2]
-        assert a == b[2]
+        assert approx_equal(a, b[2])
     else: # Frames are not set, so set them, with dummy observed pixel values
       xyzobs = [(0., 0., f) for f in frames]
       self._reflections['xyzobs.px.value'] = flex.vec3_double(xyzobs)
@@ -236,9 +237,9 @@ class ReflectionManager(object):
       # set sample size according to nref_per_degree (per experiment)
       if exp.scan and self._nref_per_degree:
         sweep_range_rad = exp.scan.get_oscillation_range(deg=False)
-        width = abs(self._sweep_range_rad[1] -
-                    self._sweep_range_rad[0]) * RAD_TO_DEG
-        sample_size = int(nref_per_degree * width)
+        width = abs(sweep_range_rad[1] -
+                    sweep_range_rad[0]) * RAD_TO_DEG
+        sample_size = int(self._nref_per_degree * width)
       else: sweep_range_rad = None
 
       # adjust sample size if below the chosen limit
