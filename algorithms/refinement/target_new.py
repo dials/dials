@@ -68,7 +68,6 @@ class Target(object):
     # update the reflection_predictor and the prediction parameterisation
     # with the scan-independent part of the current geometry
     self._reflection_predictor.update()
-    self._prediction_parameterisation.prepare()
 
     # reset the 'use' flag for all observations
     self._reflection_manager.reset_accepted_reflections()
@@ -210,6 +209,10 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       assert len(absolute_cutoffs) == 3
       self._binsize_cutoffs = absolute_cutoffs
 
+    # predict reflections and finalise reflection manager
+    self.predict()
+    self._reflection_manager.finalise()
+
     return
 
   def compute_residuals_and_gradients(self):
@@ -240,6 +243,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return(residuals, jacobian, weights)
 
+  # FIXME
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""
 
