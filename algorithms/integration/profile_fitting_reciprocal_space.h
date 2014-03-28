@@ -37,6 +37,7 @@ namespace dials { namespace algorithms {
 
     typedef Shoebox<>::float_type FloatType;
     typedef ReferenceLocator<FloatType, GridSampler> locator_type;
+    //typedef ReferenceLocator<FloatType, XdsCircleSampler> locator_type;
 
     /**
      * Initialise the class. Set the reference profile locator.

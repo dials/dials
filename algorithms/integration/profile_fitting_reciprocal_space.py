@@ -41,8 +41,8 @@ class ProfileFittingReciprocalSpace(object):
     assert("flags" in reflections)
     self._transform_profiles(experiment, reflections)
     self.learner = self._learn_references(experiment, reflections)
-    dump.reference(self.learner.locate(),
-                   "reference_%d.pickle" % ProfileFittingReciprocalSpace.reference_counter)
+    counter = ProfileFittingReciprocalSpace.reference_counter
+    dump.reference(self.learner.locate(), "reference_%d.pickle" % counter)
     ProfileFittingReciprocalSpace.reference_counter += 1
     return self._integrate_intensities(self.learner, reflections)
 
@@ -71,8 +71,8 @@ class ProfileFittingReciprocalSpace(object):
     ''' Learn the reference profiles. '''
     from dials.algorithms.integration.profile import GridSampler
     from dials.algorithms.integration.profile import GridReferenceLearner
-    #from dials.algorithms.integration.profile import XdsCircleSampler
-    #from dials.algorithms.integration.profile import XdsCircleReferenceLearner
+    from dials.algorithms.integration.profile import XdsCircleSampler
+    from dials.algorithms.integration.profile import XdsCircleReferenceLearner
     from dials.array_family import flex
 
     # Match the predictions with the strong spots
