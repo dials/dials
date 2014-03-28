@@ -124,23 +124,10 @@ class Target(object):
 
   def calculate_gradients(self):
     """delegate to the prediction_parameterisation object to calculate
-    gradients for all reflections.
+    gradients for all the matched reflections."""
 
-    This version just loops over the existing way of calculation gradients. A
-    new version will make changes to the prediction_parameterisation to make
-    the loop in C++"""
-
-    grads = []
-    for obs in self._reflection_manager.get_obs():
-      h = obs['miller_index']
-      s_calc = obs['s1']
-      phi_calc = obs['xyzcal.mm'][2]
-      panel_id = obs['panel']
-      frame_id = obs['xyzobs.px.value'][2]
-      experiment_id = obs['id']
-      grads.append(self._prediction_parameterisation.get_gradients(
-                                h, s_calc, phi_calc, panel_id, frame_id,
-                                experiment_id=experiment_id))
+    grads = self._prediction_parameterisation.get_gradients(
+      self._reflection_manager.get_matches())
 
     return grads
 

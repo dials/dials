@@ -316,6 +316,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     except AssertionError as e:
       print "(e X r).s0 too small:", e_r_s0
       print "for reflection", h
+      print "of experiment", experiment_id
       print "with scattering vector", s
       print "where r =", r
       print "e =",matrix.col(self._axis)

@@ -264,7 +264,7 @@ from copy import deepcopy
 old_reflections = deepcopy(reflections)
 
 # make a new ReflectionManager
-refman = ReflectionManager(reflections, experiments, verbosity=2)
+refman = ReflectionManager(reflections, experiments, verbosity=2, iqr_multiplier=None)
 
 # make a new reflection predictor
 from dials.algorithms.refinement.prediction import ExperimentsPredictor
@@ -277,19 +277,19 @@ ref_predictor = ExperimentsPredictor(experiments)
 
 #ref_predictor.predict(reflections)
 
-# Parameterisation of the prediction equation
-from dials.algorithms.refinement.parameterisation.prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters_new import \
     XYPhiPredictionParameterisation
 
-pred_param = XYPhiPredictionParameterisation(experiments,
+new_pred_param = XYPhiPredictionParameterisation(experiments,
   [det_param], [s0_param], [xl1o_param, xl2o_param], [xl1uc_param, xl2uc_param])
 
 print "NEW CLASSES"
 
 # make a new target object
 from dials.algorithms.refinement.target_new import LeastSquaresPositionalResidualWithRmsdCutoff
+
 new_target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments, ref_predictor, refman,
-               prediction_parameterisation=pred_param)
+               prediction_parameterisation=new_pred_param)
 
 #see if we can use the target to predict
 new_target.predict()
@@ -297,8 +297,16 @@ new_target.predict()
 # can we now finalise the reflection manager?
 refman.finalise()
 
+print "number of matches from new relfeciotn manager", len(refman.get_matches())
+
 # see if we can calculate gradients
 temp = new_target.calculate_gradients()
+
+# for testing purposes, let's assign some gradients into the matches
+new_matches = refman.get_matches()
+new_matches['dX_dp0'] = temp[0][0]
+new_matches['dY_dp0'] = temp[1][0]
+new_matches['dPhi_dp0'] = temp[2][0]
 
 print "OLD CLASSES"
 
@@ -309,13 +317,31 @@ from dials.algorithms.refinement.target import \
       LeastSquaresPositionalResidualWithRmsdCutoff as OldTarget
 from dials.algorithms.refinement.target import \
       ReflectionManager as OldReflectionManager
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
+    XYPhiPredictionParameterisation as OldXYPhiPredictionParameterisation
+old_pred_param = OldXYPhiPredictionParameterisation(experiments,
+  [det_param], [s0_param], [xl1o_param, xl2o_param], [xl1uc_param, xl2uc_param])
+print "BUILDING OLD STYLE REFLECTION MANAGER"
 old_refman = OldReflectionManager(old_reflections, experiments,
-                               nref_per_degree=20, verbosity=2)
+                               verbosity=2, iqr_multiplier=None)
 old_target = OldTarget(experiments,
-    old_ref_predictor, old_refman, pred_param)
+    old_ref_predictor, old_refman, old_pred_param)
+print "OLD STYLE PREDICTION AND GRAD CALC"
 old_target.predict()
 
-#from dials.util.command_line import interactive_console; interactive_console()
+
+old_matches = old_refman.get_matches()
+print "number of matches from old relfeciotn manager", len(old_matches)
+
+# Now we want to compare the gradients in new_matches with those in old_matches.
+# are they the same?
+new_matches.sort('x_resid')
+old_matches = sorted(old_matches, key=lambda e: e.x_resid)
+
+for i in range(10):
+  print new_matches[i]['miller_index'], new_matches[i]['dX_dp0'], new_matches[i]['dY_dp0'], new_matches[i]['dPhi_dp0'], old_matches[i].miller_index, old_matches[i].gradients[0]
+
+from dials.util.command_line import interactive_console; interactive_console()
 
 #for i in range(2):
 #  pp.pprint(refman.get_obs()[i])

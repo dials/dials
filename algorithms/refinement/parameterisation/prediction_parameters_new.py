@@ -271,11 +271,11 @@ class PredictionParameterisation(object):
 
     for iexp, exp in enumerate(self._experiments):
 
-      sel = self._reflections['id'] == iexp
+      sel = reflections['id'] == iexp
       isel = sel.iselection()
 
       # D matrix array
-      panels = self._reflections['panels'].select(isel)
+      panels = reflections['panel'].select(isel)
       for ipanel, D_mat in enumerate([p.get_D_matrix() for p in exp.detector]):
         subsel = isel.select(panels == ipanel)
         D.set_selected(subsel, D_mat)
@@ -345,7 +345,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # rotation matrix R.
 
     # pv is the 'projection vector' for the ray along s1.
-    pv = D * reflections['s1']
+    s1 = reflections['s1']
+    pv = D * s1
 
     UB = U * B
     # r is the reciprocal lattice vector, in the lab frame
@@ -387,7 +388,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       print "s0 =", s0[imin]
       print ("this reflection forms angle with the equatorial plane "
              "normal:")
-      vecn = matrix.col(s0[imin)].cross(matrix.col(axis[imin])).normalize()
+      vecn = matrix.col(s0[imin]).cross(matrix.col(axis[imin])).normalize()
       print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
       raise e
 
@@ -395,18 +396,19 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # each free parameter
     m = len(reflections)
     n = len(self) # number of free parameters
-    dpv_dp = [flex.vec3_double(m (0., 0., 0.)) for p in range(n)]
+    dpv_dp = [flex.vec3_double(m, (0., 0., 0.)) for p in range(n)]
     dphi_dp = [flex.double(m, 0.) for p in range(n)]
 
-    # set up return matrices
-    dX_dp = flex.double(flex.grid(m, n))
-    dY_dp = flex.double(flex.grid(m, n))
-    dphi_dp = flex.double(flex.grid(m, n))
+    # set up return matrices FIXME might be better as 2D flex.grid, as commented out below
+    # but for now use separate array for each free parameter
+    #dX_dp = flex.double(flex.grid(m, n))
+    #dY_dp = flex.double(flex.grid(m, n))
+    #dphi_dp = flex.double(flex.grid(m, n))
 
     # loop over experiments
     for iexp, exp in enumerate(self._experiments):
 
-      sel = self._reflections['id'] == iexp
+      sel = reflections['id'] == iexp
       isel = sel.iselection()
 
       # identify which parameterisations to use for this experiment
@@ -416,209 +418,286 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       xl_uc_param_id = param_set.xl_uc_param
       det_param_id = param_set.det_param
 
+      # reset a pointer to the parameter number
+      self._iparam = 0
+      #print "for experiment", iexp, "the reflection indices are"
+      #print list(isel)
+      #print "the detector parameterisation id is", det_param_id
     #### FIXME from this point on
 
     ### Work through the parameterisations, calculating their contributions
     ### to derivatives d[pv]/dp and d[phi]/dp
 
-    # Calculate derivatives of pv wrt each parameter of the detector
-    # parameterisations. All derivatives of phi are zero for detector
-    # parameters
-    if self._detector_parameterisations:
-      self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id, det_param_id)
+      # Calculate derivatives of pv wrt each parameter of the detector
+      # parameterisations. All derivatives of phi are zero for detector
+      # parameters
+      if self._detector_parameterisations:
+        #self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id, det_param_id)
+        self._detector_derivatives(reflections, isel, dpv_dp, D, pv, det_param_id, exp.detector)
 
-    # Calc derivatives of pv and phi wrt each parameter of each beam
-    # parameterisation that is present.
-    if self._beam_parameterisations:
-      self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0, beam_param_id)
+      # DEBUG
+      #from dials.util.command_line import interactive_console; interactive_console()
 
-    # Calc derivatives of pv and phi wrt each parameter of each crystal
-    # orientation parameterisation that is present.
-    if self._xl_orientation_parameterisations:
-      self._xl_orientation_derivatives(dpv_dp, dphi_dp, R, h, s, \
-                                       e_X_r, e_r_s0, xl_ori_param_id)
+      # Calc derivatives of pv and phi wrt each parameter of each beam
+      # parameterisation that is present.
+      if self._beam_parameterisations:
+        #self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0, beam_param_id)
+        self._beam_derivatives(reflections, isel, dpv_dp, dphi_dp, r, e_X_r, e_r_s0, D, beam_param_id)
 
-    # Now derivatives of pv and phi wrt each parameter of each crystal unit
-    # cell parameterisation that is present.
-    if self._xl_unit_cell_parameterisations:
-      self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, R, h, s, \
-                                       e_X_r, e_r_s0, xl_uc_param_id)
+      # Calc derivatives of pv and phi wrt each parameter of each crystal
+      # orientation parameterisation that is present.
+      if self._xl_orientation_parameterisations:
+        #self._xl_orientation_derivatives(dpv_dp, dphi_dp, R, h, s, \
+        #                                   e_X_r, e_r_s0, xl_ori_param_id)
+        self._xl_orientation_derivatives(reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
+                                         e_X_r, e_r_s0, B, D, xl_ori_param_id)
 
-    # calculate positional derivatives from d[pv]/dp
-    pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
-                for e in dpv_dp]
-    dX_dp, dY_dp = zip(*pos_grad)
+      # Now derivatives of pv and phi wrt each parameter of each crystal unit
+      # cell parameterisation that is present.
+      if self._xl_unit_cell_parameterisations:
+      #  self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, R, h, s, \
+      #                                   e_X_r, e_r_s0, xl_uc_param_id)
+        self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
+                                         e_X_r, e_r_s0, U, D, xl_uc_param_id)
 
-    return zip(dX_dp, dY_dp, dphi_dp)
+      # calculate positional derivatives from d[pv]/dp
+      dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, dpv_dp)
+      #pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
+      #            for e in dpv_dp]
+      #dX_dp, dY_dp = zip(*pos_grad)
 
-  def _detector_derivatives(self, dpv_dp, dphi_dp, pv, panel_id, det_param_id):
+    return (dX_dp, dY_dp, dphi_dp)
+
+  def _detector_derivatives(self, reflections, isel, dpv_dp, D, pv, det_param_id, detector):
     """helper function to extend the derivatives lists by
     derivatives of the detector parameterisations"""
 
-    for idet, det in enumerate(self._detector_parameterisations):
+    panels_this_exp = reflections['panel'].select(isel)
+
+    # loop over all the detector parameterisations, even though we are only
+    # setting values for one of them. We still need to move the _iparam pointer
+    # for the others.
+    for idp, dp in enumerate(self._detector_parameterisations):
 
       # Calculate gradients only for the correct detector parameterisation
-      if idet == det_param_id:
-        # select the panel_id of interest (which is ignored if
-        # the parameterisation is for a single panel)
-        dd_ddet_p = det.get_ds_dp(multi_state_elt=panel_id)
+      if idp == det_param_id:
 
-        # Copy to a flex array of 3*3 matrices
-        dd_ddet_p_temp = flex.mat3_double(len(dd_ddet_p))
-        for i, dd in enumerate(dd_ddet_p):
-          dd_ddet_p_temp[i] = dd.elems
-        dd_ddet_p = dd_ddet_p_temp
+        # loop through the panels in this detector
+        for panel_id, panel in enumerate([p for p in detector]):
 
-        # Calc derivative of pv wrt detector params. The inline Python version is:
-        # dpv_ddet_p = [- self._D * (dd_ddet_p[i]) * pv for i
-        #                 in range(len(dd_ddet_p))]
-        dpv_ddet_p = detector_pv_derivative(
-                        self._D, dd_ddet_p, pv)
+          # get the derivatives of detector d matrix for this panel
+          dd_ddet_p = dp.get_ds_dp(multi_state_elt=panel_id)
 
-      # For any other detector parameterisations, set derivatives to zero
+          # get the right subset of array indices to set for this panel
+          sub_isel = isel.select(panels_this_exp == panel_id)
+          sub_pv = pv.select(sub_isel)
+          sub_D = D.select(sub_isel)
+
+          # loop through the parameters
+          for ider, der in enumerate(dd_ddet_p):
+            iparam = self._iparam + ider
+            print "det", iparam
+            # calculate the derivative of pv for this parameter
+            dpv = (sub_D * (-1. * der).elems) * sub_pv
+
+            # set values in the correct gradient array
+            dpv_dp[iparam].set_selected(sub_isel, dpv)
+
+        # increment the parameter index pointer to the last detector parameter
+        self._iparam += dp.num_free() - 1
+
+      # For any other detector parameterisations, leave derivatives as zero
       else:
-        dpv_ddet_p = [matrix.col((0., 0., 0.))] * det.num_free()
 
-      # Derivatives of phi wrt detector params are always zero
-      dphi_ddet_p = [0.] * det.num_free()
+        # just increment the pointer
+        self._iparam += dp.num_free()
+        print "unsed det", self._iparam
 
-      dpv_dp.extend(dpv_ddet_p)
-      dphi_dp.extend(dphi_ddet_p)
+    #DEBUG
+    #hlist=list(reflections['miller_index'].select(isel))[0:10]
+    #pvlist=list(pv)[0:10]
+    #derlist=list(dpv_dp[0])[0:10]
+    #for a,b,c in zip(hlist, pvlist, derlist):
+    #  print a, b
+    #  print c
 
     return
 
-  def _beam_derivatives(self, dpv_dp, dphi_dp, r, e_X_r, e_r_s0, beam_param_id):
+  def _beam_derivatives(self, reflections, isel, dpv_dp, dphi_dp, r, e_X_r, e_r_s0, D, beam_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the beam parameterisations"""
 
-    for ibeam, beam in enumerate(self._beam_parameterisations):
+    # loop over all the beam parameterisations, even though we are only setting
+    # values for one of them. We still need to move the _iparam pointer for the
+    # others.
+    for ibp, bp in enumerate(self._beam_parameterisations):
 
       # Calculate gradients only for the correct beam parameterisation
-      if ibeam == beam_param_id:
-        ds0_dbeam_p = beam.get_ds_dp()
+      if ibp == beam_param_id:
 
-        # Calc derivative of phi wrt beam params. The inline Python version is:
-        # dphi_dbeam_p = [- r.dot(ds0_dbeam_p[i]) / e_r_s0
-        #                 for i in range(len(ds0_dbeam_p))]
-        dphi_dbeam_p = beam_phi_derivative(
-                            r, flex.vec3_double(ds0_dbeam_p), e_r_s0)
+        # get the derivatives of the beam vector wrt the parameters
+        ds0_dbeam_p = bp.get_ds_dp()
 
-        # Calc derivative of pv wrt beam params. The inline Python version is:
-        # dpv_dbeam_p = [self._D * (e_X_r * dphi_dbeam_p[i] + ds0_dbeam_p[i])
-        #                for i in range(len(ds0_dbeam_p))]
-        dpv_dbeam_p = beam_pv_derivative(
-                            self._D, e_X_r, dphi_dbeam_p,
-                            flex.vec3_double(ds0_dbeam_p))
+        # select indices for the experiment of interest
+        sub_r = r.select(isel)
+        sub_e_X_r = e_X_r.select(isel)
+        sub_e_r_s0 = e_r_s0.select(isel)
+        sub_D = D.select(isel)
 
-      # For any other beam parameterisations, set derivatives to zero
+        # loop through the parameters
+        for der in ds0_dbeam_p:
+
+          # calculate the derivative of phi for this parameter
+          dphi = (sub_r.dot(der.elems) / sub_e_r_s0) * -1.0
+
+          # calculate the derivative of pv for this parameter
+          dpv = sub_D * (sub_e_X_r * dphi + der)
+
+          # set values in the correct gradient arrays
+          dphi_dp[self._iparam].set_selected(isel, dphi)
+          dpv_dp[self._iparam].set_selected(isel, dpv)
+
+          # increment the parameter index pointer
+          self._iparam += 1
+          print "beam", self._iparam
+
+      # For any other beam parameterisations, leave derivatives as zero
       else:
-        dphi_dbeam_p = [0.] * beam.num_free()
-        dpv_dbeam_p = [matrix.col((0., 0., 0.))] * beam.num_free()
 
-      dpv_dp.extend(dpv_dbeam_p)
-      dphi_dp.extend(dphi_dbeam_p)
+        # just increment the pointer
+        self._iparam += bp.num_free()
 
     return
 
-  def _xl_orientation_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
-                                  e_X_r, e_r_s0, xl_ori_param_id):
+  def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
+                                         e_X_r, e_r_s0, B, D, xl_ori_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
-    for ixlo, xlo in enumerate(self._xl_orientation_parameterisations):
+    # loop over all the crystal orientation parameterisations, even though we
+    # are only setting values for one of them. We still need to move the _iparam
+    # pointer for the others.
+    for ixlop, xlop in enumerate(self._xl_orientation_parameterisations):
 
       # Calculate gradients only for the correct xl orientation parameterisation
-      if ixlo == xl_ori_param_id:
-        dU_dxlo_p = xlo.get_ds_dp()
+      if ixlop == xl_ori_param_id:
 
-        # Calc derivatives of r wrt crystal orientation params. The inline
-        # Python version is:
-        # dr_dxlo_p = [R * dU_dxlo_p[i] * self._B * h
-        #              for i in range(len(dU_dxlo_p))]
-        h2 = (int(h[0]), int(h[1]), int(h[2]))
-        dr_dxlo_p = crystal_orientation_r_derivative(
-                        R.elems, flex.mat3_double(dU_dxlo_p),
-                        self._B.elems, h2)
+        # get derivatives of the U matrix wrt the parameters
+        dU_dxlo_p = xlop.get_ds_dp()
 
-        # Calc derivatives of phi wrt crystal orientation params. The Python
-        # version is:
-        # dphi_dxlo_p = [- der.dot(s) / e_r_s0 for der in dr_dxlo_p]
-        dphi_dxlo_p = crystal_orientation_phi_derivative(
-                            flex.vec3_double(dr_dxlo_p),
-                            s, e_r_s0)
+        # select indices for the experiment of interest
+        sub_h = h.select(isel)
+        sub_s1 = s1.select(isel)
+        #sub_r = r.select(isel)
+        sub_e_X_r = e_X_r.select(isel)
+        sub_e_r_s0 = e_r_s0.select(isel)
+        sub_axis = axis.select(isel) # this is always the same vector for one
+        # experiment! Seems wasteful to use an array
+        sub_phi_calc = phi_calc.select(isel)
+        sub_B = B.select(isel) # also always the same matrix for one experiment
+        sub_D = D.select(isel)
 
-        # Calc derivatives of pv wrt crystal orientation params. The inline
-        # Python version is:
-        # dpv_dxlo_p = [self._D * (dr_dxlo_p[i] + e_X_r * dphi_dxlo_p[i])
-        #               for i in range(len(dphi_dxlo_p))]
-        dpv_dxlo_p = crystal_orientation_pv_derivative(
-                            self._D.elems, dr_dxlo_p,
-                            e_X_r.elems, dphi_dxlo_p)
+        # loop through the parameters
+        for der in dU_dxlo_p:
 
-      # For any other xl orientation parameterisations, set derivatives to zero
+          der_mat = flex.mat3_double(len(sub_B), der.elems)
+          # calculate the derivative of r for this parameter
+          # FIXME COULD DO THIS BETTER WITH __rmul__?!
+          tmp = der_mat * sub_B * sub_h
+          dr = tmp.rotate_around_origin(sub_axis, sub_phi_calc)
+
+          # calculate the derivative of phi for this parameter
+          dphi = -1.0 * dr.dot(sub_s1) / sub_e_r_s0
+
+          # calculate the derivative of pv for this parameter
+          dpv = sub_D * (dr + sub_e_X_r * dphi)
+
+          # set values in the correct gradient arrays
+          dphi_dp[self._iparam].set_selected(isel, dphi)
+          dpv_dp[self._iparam].set_selected(isel, dpv)
+
+          # increment the parameter index pointer
+          self._iparam += 1
+          print "xlo", self._iparam
+
+      # For any other xl orientation parameterisations, leave derivatives as zero
       else:
-        dphi_dxlo_p = [0.] * xlo.num_free()
-        dpv_dxlo_p = [matrix.col((0., 0., 0.))] * xlo.num_free()
 
-      dpv_dp.extend(dpv_dxlo_p)
-      dphi_dp.extend(dphi_dxlo_p)
+        # just increment the pointer
+        self._iparam += xlop.num_free()
+        print "unused xlop", self._iparam
 
     return
 
-  def _xl_unit_cell_derivatives(self, dpv_dp, dphi_dp, R, h, s, \
-                                  e_X_r, e_r_s0, xl_uc_param_id):
+  def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
+                                         e_X_r, e_r_s0, U, D, xl_uc_param_id):
 
-    for ixluc, xluc in enumerate(self._xl_unit_cell_parameterisations):
+    for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
 
       # Calculate gradients only for the correct xl unit cell parameterisation
-      if ixluc == xl_uc_param_id:
-        dB_dxluc_p = xluc.get_ds_dp()
+      if ixlucp == xl_uc_param_id:
 
-        # Calc derivatives of r wrt crystal unit cell params. The inline Python
-        # version is:
-        # dr_dxluc_p = [R * self._U * dB_dxluc_p[i] * h for i
-        #               in range(len(dB_dxluc_p))]
-        h2 = (int(h[0]), int(h[1]), int(h[2]))
-        dr_dxluc_p = crystal_cell_r_derivative(R.elems, self._U.elems,
-                        flex.mat3_double(dB_dxluc_p), h2)
+        # get derivatives of the B matrix wrt the parameters
+        dB_dxluc_p = xlucp.get_ds_dp()
 
-        # Calc derivatives of phi wrt crystal unit cell params. The inline
-        # Python version is:
-        # dphi_dxluc_p = [- der.dot(s) / e_r_s0 for der in dr_dxluc_p]
-        dphi_dxluc_p = crystal_cell_phi_derivative(dr_dxluc_p, s, e_r_s0)
+        # select indices for the experiment of interest
+        sub_h = h.select(isel)
+        sub_s1 = s1.select(isel)
+        #sub_r = r.select(isel)
+        sub_e_X_r = e_X_r.select(isel)
+        sub_e_r_s0 = e_r_s0.select(isel)
+        sub_axis = axis.select(isel) # this is always the same vector for one
+        # experiment! Seems wasteful to use an array
+        sub_phi_calc = phi_calc.select(isel)
+        sub_U = U.select(isel) # also always the same matrix for one experiment
+        sub_D = D.select(isel)
 
-        # Calc derivatives of pv wrt crystal unit cell params. The inline
-        # Python version is:
-        # dpv_dxluc_p = [self._D * (dr_dxluc_p[i] + e_X_r * dphi_dxluc_p[i])
-        #                for i in range(len(dr_dxluc_p))]
-        dpv_dxluc_p = crystal_cell_pv_derivative(self._D.elems, dr_dxluc_p,
-                            e_X_r.elems, dphi_dxluc_p)
+        # loop through the parameters
+        for der in dB_dxluc_p:
 
-      # For any other xl unit cell parameterisations, set derivatives to zero
+          der_mat = flex.mat3_double(len(sub_U), der.elems)
+          # calculate the derivative of r for this parameter
+          tmp = sub_U * der_mat * sub_h
+          dr = tmp.rotate_around_origin(sub_axis, sub_phi_calc)
+
+          # calculate the derivative of phi for this parameter
+          dphi = -1.0 * dr.dot(sub_s1) / sub_e_r_s0
+
+          # calculate the derivative of pv for this parameter
+          dpv = sub_D * (dr + sub_e_X_r * dphi)
+
+          # set values in the correct gradient arrays
+          dphi_dp[self._iparam].set_selected(isel, dphi)
+          dpv_dp[self._iparam].set_selected(isel, dpv)
+
+          # increment the parameter index pointer
+          self._iparam += 1
+          print "xluc", self._iparam
+
+      # For any other xl unit cell parameterisations, leave derivatives as zero
       else:
-        dphi_dxluc_p = [0.] * xluc.num_free()
-        dpv_dxluc_p = [matrix.col((0., 0., 0.))] * xluc.num_free()
 
-      dpv_dp.extend(dpv_dxluc_p)
-      dphi_dp.extend(dphi_dxluc_p)
+        # just increment the pointer
+        self._iparam += xlucp.num_free()
+        print "unused xluc", self._iparam
 
     return
 
-  def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, der):
+  def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, dpv_dp):
     """helper function to calculate positional derivatives from
     dpv_dp using the quotient rule"""
 
-    u = pv[0]
-    v = pv[1]
-    w = pv[2]
+    u, v, w = pv.parts()
     w2 = w**2
 
-    du_dp = der[0]
-    dv_dp = der[1]
-    dw_dp = der[2]
+    dX_dp = []
+    dY_dp = []
 
-    dX_dp = du_dp / w - u * dw_dp / w2
-    dY_dp = dv_dp / w - v * dw_dp / w2
+    for der in dpv_dp:
+      du_dp, dv_dp, dw_dp = der.parts()
+
+      dX_dp.append(du_dp / w - u * dw_dp / w2)
+      dY_dp.append(dv_dp / w - v * dw_dp / w2)
 
     return dX_dp, dY_dp
 
