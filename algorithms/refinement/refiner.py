@@ -693,7 +693,7 @@ class Refiner(object):
     get_param_reporter
     parameter_correlation_plot
     selection_used_for_refinement
-    predict_reflections
+    predict_for_reflection_table
 
   Notes:
     * The return value of run is a recorded history of the refinement
@@ -951,11 +951,22 @@ class Refiner(object):
 
     from scitbx.array_family import flex
     matches = self._refman.get_matches()
-    selection = flex.bool(self._refman.get_input_size())
-    for m in matches:
-      selection[m.iobs] = True
+    selection = flex.bool(self._refman.get_input_size(), False)
+
+    try: # new reflection table format for matches
+      isel = matches['iobs']
+      selection.set_selected(isel, True)
+    except TypeError: # old ObsPredMatch format for matches
+      for m in matches:
+        selection[m.iobs] = True
 
     return selection
+
+  def predict_for_reflection_table(self, reflections):
+    """perform prediction for all reflections in the supplied table"""
+
+    # delegate to the target object, which has access to the predictor
+    return self._target.predict_for_reflection_table(reflections)
 
   def predict_reflections(self):
     """Predict all reflection positions after refinement"""
