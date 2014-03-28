@@ -46,6 +46,9 @@ class ReflectionManager(object):
     self._axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
     self._s0vecs = [matrix.col(e.beam.get_s0()) for e in self._experiments]
 
+    # keep track of the original indices of the reflections
+    reflections['iobs'] = flex.size_t_range(len(reflections))
+
     # set up the reflection inclusion cutoffs
     self._close_to_spindle_cutoff = close_to_spindle_cutoff #too close to spindle
     self._iqr_multiplier = iqr_multiplier #outlier rejection
