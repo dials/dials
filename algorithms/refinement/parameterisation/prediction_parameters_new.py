@@ -293,15 +293,8 @@ class PredictionParameterisation(object):
       if exp.goniometer:
         axis.set_selected(isel, exp.goniometer.get_rotation_axis())
 
-    # Spindle rotation matrices for every reflection
-    #R = flex.mat3_double(len(reflections))
-    # use flex.vec3_double.rotate_around_origin each time I need the rotation
-    # matrix R.
+    return self._get_gradients_core(reflections, D, s0, U, B, axis)
 
-    # pv is the 'projection vector' for the reflection s.
-    #pv = D * s DOESN'T WORK!
-
-    raise NotImplementedError()
 #  def get_gradients(self, h, s, phi, panel_id, obs_image_number=None,
 #                    experiment_id=0):
 #    """
@@ -338,27 +331,32 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
   Untested for multiple sensor detectors.
   """
 
-  def _get_gradients_core(self, h, s, phi, panel_id, experiment_id):
+  def _get_gradients_core(self, reflections, D, s0, U, B, axis):
     """Calculate gradients of the prediction formula with respect to
     each of the parameters of the contained models, for reflection h
     that reflects at rotation angle phi with scattering vector s that
     intersects panel panel_id. That is, calculate dX/dp, dY/dp and
     dphi/dp"""
 
-    ### Calculate various quantities of interest for this reflection
+    # Spindle rotation matrices for every reflection
+    #R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
+    #R = flex.mat3_double(len(reflections))
+    # NB for now use flex.vec3_double.rotate_around_origin each time I need the
+    # rotation matrix R.
 
-    R = self._axis.axis_and_angle_as_r3_rotation_matrix(phi)
+    # pv is the 'projection vector' for the ray along s1.
+    pv = D * reflections['s1']
 
-    # pv is the 'projection vector' for the reflection s.
-    s = matrix.col(s)
-    pv = self._D * s
+    UB = U * B
     # r is the reciprocal lattice vector, in the lab frame
-    r = R * self._UB * h
+    h = reflections['miller_index'].as_vec3_double()
+    phi_calc = reflections['xyzcal.mm'].parts()[2]
+    r = (UB * h).rotate_around_origin(axis, phi_calc)
 
     # All of the derivatives of phi have a common denominator, given by
     # (e X r).s0, where e is the rotation axis. Calculate this once, here.
-    e_X_r = self._axis.cross(r)
-    e_r_s0 = (e_X_r).dot(self._s0)
+    e_X_r = axis.cross(r)
+    e_r_s0 = (e_X_r).dot(s0)
 
     # Note that e_r_s0 -> 0 when the rotation axis, beam vector and
     # relp are coplanar. This occurs when a reflection just touches
@@ -370,40 +368,58 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     #from dials.algorithms.reflection_basis import zeta_factor
     #from libtbx.test_utils import approx_equal
-    #z = zeta_factor(self._axis, self._s0, s)
-    #ss0 = (s.cross(self._s0)).length()
-    #assert approx_equal(e_r_s0, z * ss0)
+    #s = matrix.col(reflections['s1'][0])
+    #z = zeta_factor(axis[0], s0[0], s)
+    #ss0 = (s.cross(matrix.col(s0[0]))).length()
+    #assert approx_equal(e_r_s0[0], z * ss0)
 
     # catch small values of e_r_s0
+    e_r_s0_mag = flex.abs(e_r_s0)
     try:
-      assert abs(e_r_s0) > 1.e-6
+      assert flex.min(e_r_s0_mag) > 1.e-6
     except AssertionError as e:
+      imin = flex.min_index(e_r_s0_mag)
       print "(e X r).s0 too small:", e_r_s0
-      print "for reflection", h
-      print "with scattering vector", s
-      print "where r =", r
-      print "e =",matrix.col(self._axis)
-      print "s0 =",self._s0
-      print "U =",self._U
+      print "for reflection", reflections['miller_index'][imin]
+      print "with scattering vector", reflections['s1'][imin]
+      print "where r =", r[imin]
+      print "e =", axis[imin]
+      print "s0 =", s0[imin]
       print ("this reflection forms angle with the equatorial plane "
              "normal:")
-      vecn = self._s0.cross(self._axis).normalize()
-      print s.accute_angle(vecn)
+      vecn = matrix.col(s0[imin)].cross(matrix.col(axis[imin])).normalize()
+      print matrix.col(reflections['s1'][imin]).accute_angle(vecn)
       raise e
 
-    # identify which parameterisations to use
-    param_set = self._exp_to_param[experiment_id]
-    beam_param_id = param_set.beam_param
-    xl_ori_param_id = param_set.xl_ori_param
-    xl_uc_param_id = param_set.xl_uc_param
-    det_param_id = param_set.det_param
+    # Set up the lists of derivatives: a separate array over reflections for
+    # each free parameter
+    m = len(reflections)
+    n = len(self) # number of free parameters
+    dpv_dp = [flex.vec3_double(m (0., 0., 0.)) for p in range(n)]
+    dphi_dp = [flex.double(m, 0.) for p in range(n)]
+
+    # set up return matrices
+    dX_dp = flex.double(flex.grid(m, n))
+    dY_dp = flex.double(flex.grid(m, n))
+    dphi_dp = flex.double(flex.grid(m, n))
+
+    # loop over experiments
+    for iexp, exp in enumerate(self._experiments):
+
+      sel = self._reflections['id'] == iexp
+      isel = sel.iselection()
+
+      # identify which parameterisations to use for this experiment
+      param_set = self._exp_to_param[iexp]
+      beam_param_id = param_set.beam_param
+      xl_ori_param_id = param_set.xl_ori_param
+      xl_uc_param_id = param_set.xl_uc_param
+      det_param_id = param_set.det_param
+
+    #### FIXME from this point on
 
     ### Work through the parameterisations, calculating their contributions
     ### to derivatives d[pv]/dp and d[phi]/dp
-
-    # Set up the lists of derivatives
-    dpv_dp = []
-    dphi_dp = []
 
     # Calculate derivatives of pv wrt each parameter of the detector
     # parameterisations. All derivatives of phi are zero for detector
