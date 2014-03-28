@@ -127,8 +127,22 @@ class Target(object):
   def predict_for_reflection_table(self, reflections):
     """perform prediction for all reflections in the supplied table"""
 
+    # ensure the predictor is ready with the right models
     self._reflection_predictor.update()
+    # set the entering flags
+    from dials.algorithms.refinement.reflection_manager import calculate_entering_flags
+    reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
     self._reflection_predictor.predict(reflections)
+    x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
+    # do not wrap around multiples of 2*pi; keep the full rotation
+    # from zero to differentiate repeat observations.
+    resid = phi_calc - (flex.fmod(phi_obs, TWO_PI))
+    # ensure this is the smaller of two possibilities
+    resid = flex.fmod((resid + pi), TWO_PI) - pi
+    phi_calc = phi_obs + resid
+    # put back in the reflections
+    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
     return reflections
 
   def calculate_gradients(self):
