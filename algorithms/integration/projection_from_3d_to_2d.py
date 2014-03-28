@@ -52,5 +52,3 @@ def from_3D_to_2D_mask_projection(mask):
 
 
   return mask2d
-
-
