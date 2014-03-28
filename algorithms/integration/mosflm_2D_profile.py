@@ -308,8 +308,9 @@ def fit_profile_2d(reflection_pointers, ref_table
       #____________________________________________________________to be removed
       from dials.scratch.luiso_s import  write_2d, write_2d_mask
 
-      write_2d(data2d)
-      write_2d_mask(mask2d)
+      if sum(data2d) > 1000:
+        write_2d(data2d)
+        write_2d_mask(mask2d)
 
 
 
