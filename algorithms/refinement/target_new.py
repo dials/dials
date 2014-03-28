@@ -65,8 +65,8 @@ class Target(object):
   def predict(self):
     """perform reflection prediction and update the reflection manager"""
 
-    # update the reflection_predictor and the prediction parameterisation
-    # with the scan-independent part of the current geometry
+    # update the reflection_predictor with the scan-independent part of the
+    # current geometry
     self._reflection_predictor.update()
 
     # reset the 'use' flag for all observations
@@ -123,6 +123,13 @@ class Target(object):
     self._matches = self._reflection_manager.get_matches()
 
     return
+
+  def predict_for_reflection_table(self, reflections):
+    """perform prediction for all reflections in the supplied table"""
+
+    self._reflection_predictor.update()
+    self._reflection_predictor.predict(reflections)
+    return reflections
 
   def calculate_gradients(self):
     """delegate to the prediction_parameterisation object to calculate
