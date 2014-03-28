@@ -18,11 +18,11 @@ class MosflmProfileFitting:
     self.nblocks = nblocks
 
 
-  #def __call__(self, sweep, crystal, rlist, reference = None):
-  #def __call__(self, sweep, rlist, reference = None):
-  def __call__(self, rlist, reference = None):
+  #def __call__(self, sweep, crystal, ref_table, reference = None):
+  #def __call__(self, sweep, ref_table, reference = None):
+  def __call__(self, ref_table, reference = None):
     from dials.algorithms.integration import flex_2d_layering_n_integrating
     from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
-    flex_2d_layering_n_integrating(rlist)
+    flex_2d_layering_n_integrating(ref_table)
     xmax, ymax = self.experiment.detector[0].get_image_size()
-    rlist = mosflm_caller(rlist, xmax, ymax, self.nblocks)
+    ref_table = mosflm_caller(ref_table, xmax, ymax, self.nblocks)

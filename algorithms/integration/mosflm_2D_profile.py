@@ -127,7 +127,6 @@ def fit_profile_2d(reflection_pointers, ref_table
   #col_xyzobs = ref_table['xyzobs.px.value']
   col_xyzcal = ref_table['xyzcal.px']
   col_bbox = ref_table['bbox']
-  #for ref in reflections:
 
   for t_row in reflection_pointers:
     #in the future consider searcing for is_valid logical
@@ -268,66 +267,35 @@ def fit_profile_2d(reflection_pointers, ref_table
         average = local_average
 
       shoebox = col_shoebox[t_row].data
-      #shoebox = ref.shoebox
 
       background = col_shoebox[t_row].background
-      #background = ref.shoebox_background
-
       mask = col_shoebox[t_row].mask
-      #mask = ref.shoebox_mask
-
       tmp_i = col_intensity[t_row]
-      #tmp_i = ref.intensity
 
       col_intensity[t_row] = 0.0
-      #ref.intensity = 0.0
-
       col_variance[t_row] = 0.0
-      #ref.intensity_variance = 0.0
 
-
-      old_way = '''
-
-      for i in range(shoebox.all()[0]):
-        data2d = shoebox[i:i + 1, :, :]
-        mask2d = mask[i:i + 1, :, :]
-        background2d = background[i:i + 1, :, :]
-        try:
-          data2d.reshape(flex.grid(shoebox.all()[1:]))
-          mask2d.reshape(flex.grid(shoebox.all()[1:]))
-          background2d.reshape(flex.grid(shoebox.all()[1:]))
-
-        except:
-          print "error reshaping flex-array"
-          #print "ref.bounding_box", ref.bounding_box
-          break
-      '''
       data2d, background2d = from_3D_to_2D_projection(shoebox, background)
       mask2d = from_3D_to_2D_mask_projection(mask)
 
-      #____________________________________________________________to be removed
+      #_____________________________________________ block to be removed start
       from dials.scratch.luiso_s import  write_2d, write_2d_mask
-
       if sum(data2d) > 1000:
+        print "________________________________________________________________"
         write_2d(data2d)
+        write_2d(average)
         write_2d_mask(mask2d)
+        print "________________________________________________________________"
+      #_____________________________________________ block to be removed ends
 
-
-
-      #____________________________________________________________to be removed
       cntr_pos = col_xyzcal[t_row]
-
       bnd_box = col_bbox[t_row]
 
       descr[0, 0] = cntr_pos[0] - bnd_box[0]
-      #descr[0, 0] = ref.centroid_position[0] - ref.bounding_box[0]
-
       descr[0, 1] = cntr_pos[1] - bnd_box[2]
-      #descr[0, 1] = ref.centroid_position[1] - ref.bounding_box[2]
+      descr[0, 2] = 1.0
 
-      descr[0, 2] = 1.0 #/ (ref.intensity * counter)
       fully_record = 'no'
-
       if(fully_record == 'yes'):
 
         tmp_scale = tmp_i
@@ -346,9 +314,8 @@ def fit_profile_2d(reflection_pointers, ref_table
           k_abc_vec=(0,0,0,0)
 
         col_intensity[t_row] = k_abc_vec[0]
-        #ref.intensity += k_abc_vec[0]
+
         ### col_variance[t_row] = k_abc_vec[1] # used to be the way MOSFLM do
-        #ref.intensity_variance += k_abc_vec[1]
 
         var = sigma_2d(col_intensity[t_row], mask2d, background2d)
         col_variance[t_row] = var
@@ -356,14 +323,9 @@ def fit_profile_2d(reflection_pointers, ref_table
 
         I_R = fitting_2d_partials(descr, data2d, background2d, average, tmp_i)
         col_intensity[t_row] = I_R[0]
-        #ref.intensity += I_R[0]
-
-        ### col_variance[t_row] = I_R[1] # used to be the way MOSFLM do
-        #ref.intensity_variance += I_R[1]
 
         var = sigma_2d(col_intensity[t_row], mask2d, background2d)
         col_variance[t_row] = var
-        #ref.intensity_variance += var
 
   ref_table['intensity.raw.value'] = col_intensity
   ref_table['intensity.raw.variance'] = col_variance
