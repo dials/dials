@@ -18,6 +18,7 @@
 #include <dxtbx/model/detector.h>
 #include <dxtbx/model/goniometer.h>
 #include <dxtbx/model/scan.h>
+#include <dxtbx/model/scan_helpers.h>
 #include <dials/array_family/reflection_table.h>
 #include <dials/algorithms/spot_prediction/index_generator.h>
 #include <dials/algorithms/spot_prediction/reeke_index_generator.h>
@@ -34,6 +35,7 @@ namespace dials { namespace algorithms {
   using dxtbx::model::Detector;
   using dxtbx::model::Goniometer;
   using dxtbx::model::Scan;
+  using dxtbx::model::is_angle_in_range;
   using dials::model::Ray;
 
   /**
@@ -210,7 +212,11 @@ namespace dials { namespace algorithms {
         const mat3<double> ub,
         const miller_index &h) const {
       af::small<Ray, 2> rays = predict_rays_(h, ub);
+      vec2<double> phi_range = scan_.get_oscillation_range();
       for (std::size_t i = 0; i < rays.size(); ++i) {
+        if (!is_angle_in_range(phi_range, rays[i].angle)) {
+          continue;
+        }
         try {
           Detector::coord_type impact = detector_.get_ray_intersection(rays[i].s1);
           std::size_t panel = impact.first;
