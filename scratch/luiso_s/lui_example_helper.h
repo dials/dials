@@ -111,7 +111,7 @@ namespace dials { namespace scratch {
 
         //[ 6 ] = minimum width (no maximum given)
         //[ 2 ] = precision after the period
-        printf("%6.2f ", data2d(row,col));
+        printf("%6.1f ", data2d(row,col));
 
         num++;
 
@@ -123,6 +123,39 @@ namespace dials { namespace scratch {
     std::cout << " ] \n";
   return num;
   }
+
+
+  int write_2d_mask(flex_int & data2d) {
+    int ncol=data2d.accessor().all()[1];
+    int nrow=data2d.accessor().all()[0];
+    int num=0;
+
+    for (int row = 0; row<=nrow-1;row++) {
+      if (row==0){
+        std::cout << "\n  [ [ ";
+      } else {
+        std::cout << "\n    [ ";
+      }
+
+      for (int col = 0; col<=ncol-1;col++) {
+        //printf(" %3d ", int(data2d(row,col)));
+
+        //[ 6 ] = minimum width (no maximum given)
+        //[ 2 ] = precision after the period
+        //printf("%6.1f ", data2d(row,col));
+        printf("%6d ", data2d(row,col));
+
+        num++;
+
+        //std::cout << int(matx2d[row][col]) << " ,   ";
+      }
+      //fflush(stdout);
+      std::cout << "  ]";
+    }
+    std::cout << " ] \n";
+  return num;
+  }
+
 /*
   flex_double add_2d(flex_double descriptor, flex_double data2d,
                      flex_double total) {

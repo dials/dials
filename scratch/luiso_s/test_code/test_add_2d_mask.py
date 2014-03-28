@@ -19,10 +19,6 @@ for diag in range(nrow):
   mask_01[diag, diag] = 0
   mask_02[diag, 13] = 0
 
-
-
-sumation = mask_add_2d( mask_01, mask_02)
-
 from matplotlib import pyplot as plt
 
 plt.imshow(mask_01.as_numpy_array(), interpolation = "nearest")
@@ -30,5 +26,17 @@ plt.show()
 plt.imshow(mask_02.as_numpy_array(), interpolation = "nearest")
 plt.show()
 
-plt.imshow(sumation.as_numpy_array(), interpolation = "nearest")
+
+#sumation = mask_add_2d( mask_01, mask_02)
+mask_01 = mask_add_2d( mask_01, mask_02)
+
+plt.imshow(mask_01.as_numpy_array(), interpolation = "nearest")
 plt.show()
+plt.imshow(mask_02.as_numpy_array(), interpolation = "nearest")
+plt.show()
+
+from dials.scratch.luiso_s import write_2d_mask
+write_2d_mask(mask_01)
+
+#plt.imshow(sumation.as_numpy_array(), interpolation = "nearest")
+#plt.show()

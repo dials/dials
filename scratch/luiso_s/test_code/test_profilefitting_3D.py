@@ -128,7 +128,7 @@ flex_2d_layering_n_integrating(ref_table)
 
 
 t_intensity = ref_table['intensity.raw.value']
-#t_intensity_var = ref_table['intensity.raw.variance']
+t_intensity_var = ref_table['intensity.raw.variance']
 old_i_table = t_intensity[:]
 
 #tmp='''
@@ -142,7 +142,7 @@ for count in range(num_ref):
           t_shoebox[t_row].data[0, y_loc, x_loc] = -1
           t_shoebox[t_row].mask[0, y_loc, x_loc] = 0
         else:
-          t_shoebox[t_row].data[0, y_loc, x_loc] += random.randint(0,10)
+          t_shoebox[t_row].data[0, y_loc, x_loc] += random.randint(0,20)
 
     t_row += 1
 print "adding noise .... done"
@@ -155,7 +155,7 @@ from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 3)
 
 t_intensity = pf_ref_table['intensity.raw.value']
-t_intensity_var = ref_table['intensity.raw.variance']
+t_intensity_var = pf_ref_table['intensity.raw.variance']
 
 paint_compare = []
 for i in range(len(t_intensity)):
