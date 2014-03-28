@@ -120,16 +120,21 @@ class Target(object):
     mask = reflections.get_flags(reflections.flags.predicted)
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
+    # collect the matches
+    self._matches = self._reflection_manager.get_matches()
+
     return
 
   def calculate_gradients(self):
     """delegate to the prediction_parameterisation object to calculate
     gradients for all the matched reflections."""
 
-    grads = self._prediction_parameterisation.get_gradients(
-      self._reflection_manager.get_matches())
+    if not self._matches:
+      self._matches = self._reflection_manager.get_matches()
+    self._gradients = self._prediction_parameterisation.get_gradients(
+      self._matches)
 
-    return grads
+    return self._gradients
 
   def get_num_matches(self):
     """return the number of reflections currently used in the calculation"""
@@ -211,43 +216,29 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
 
-    self._matches = self._reflection_manager.get_matches()
+    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients()
 
     # return residuals and weights as 1d flex.double vectors
     nelem = len(self._matches) * 3
-    residuals = flex.double(nelem)
-    jacobian_t = flex.double(flex.grid(
-        len(self._prediction_parameterisation), nelem))
-    weights = flex.double(nelem)
+    nparam = len(self._prediction_parameterisation)
+    residuals = flex.double.concatenate(self._matches['x_resid'],
+                                        self._matches['y_resid'])
+    residuals.extend(self._matches['phi_resid'])
+    #jacobian_t = flex.double(flex.grid(
+    #    len(self._prediction_parameterisation), nelem))
+    weights, w_y, w_z = self._matches['xyzobs.mm.weights'].parts()
+    weights.extend(w_y)
+    weights.extend(w_z)
 
-    for i, m in enumerate(self._matches):
-      residuals[3*i] = m.x_resid
-      residuals[3*i + 1] = m.y_resid
-      residuals[3*i + 2] = m.phi_resid
+    jacobian = flex.double(flex.grid(nelem, nparam))
+    # loop over parameters
+    for i in range(nparam):
+      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
+      col = flex.double.concatenate(dX, dY)
+      col.extend(dPhi)
+      jacobian.matrix_paste_column_in_place(col, i)
 
-      # are these the right weights? Or inverse, or sqrt?
-      weights[3*i] = m.weight_x_obs
-      weights[3*i + 1] = m.weight_y_obs
-      weights[3*i + 2] = m.weight_phi_obs
-
-      # m.gradients is a nparam length list, each element of which is a
-      # triplet of values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
-      dX_dp, dY_dp, dPhi_dp = zip(*m.gradients)
-
-      # FIXME Here we paste columns into the Jacobian transpose then take
-      # its transpose when done. This seems inefficient: can we just start
-      # with the Jacobian and fill elements sequentially, using row-major
-      # order to ensure the values are filled in the right order?
-
-      # fill jacobian elements here.
-      jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
-      jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i+1)
-      jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
-
-    # We return the Jacobian, not its transpose.
-    jacobian_t.matrix_transpose_in_place()
-
-    return(residuals, jacobian_t, weights)
+    return(residuals, jacobian, weights)
 
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""
@@ -313,9 +304,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    resid_x = sum((m.x_resid2 for m in self._matches))
-    resid_y = sum((m.y_resid2 for m in self._matches))
-    resid_phi = sum((m.phi_resid2 for m in self._matches))
+    resid_x = flex.sum(self._matches['x_resid2'])
+    resid_y = flex.sum(self._matches['y_resid2'])
+    resid_phi = flex.sum(self._matches['phi_resid2'])
 
     # cache rmsd calculation for achieved test
     n = len(self._matches)

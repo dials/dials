@@ -435,9 +435,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         #self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id, det_param_id)
         self._detector_derivatives(reflections, isel, dpv_dp, D, pv, det_param_id, exp.detector)
 
-      # DEBUG
-      #from dials.util.command_line import interactive_console; interactive_console()
-
       # Calc derivatives of pv and phi wrt each parameter of each beam
       # parameterisation that is present.
       if self._beam_parameterisations:
@@ -494,32 +491,26 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
           sub_D = D.select(sub_isel)
 
           # loop through the parameters
-          for ider, der in enumerate(dd_ddet_p):
-            iparam = self._iparam + ider
-            print "det", iparam
+          iparam = self._iparam
+          for der in dd_ddet_p:
+
             # calculate the derivative of pv for this parameter
             dpv = (sub_D * (-1. * der).elems) * sub_pv
 
             # set values in the correct gradient array
             dpv_dp[iparam].set_selected(sub_isel, dpv)
 
+            # increment the local parameter index pointer
+            iparam += 1
+
         # increment the parameter index pointer to the last detector parameter
-        self._iparam += dp.num_free() - 1
+        self._iparam += dp.num_free()
 
       # For any other detector parameterisations, leave derivatives as zero
       else:
 
         # just increment the pointer
         self._iparam += dp.num_free()
-        print "unsed det", self._iparam
-
-    #DEBUG
-    #hlist=list(reflections['miller_index'].select(isel))[0:10]
-    #pvlist=list(pv)[0:10]
-    #derlist=list(dpv_dp[0])[0:10]
-    #for a,b,c in zip(hlist, pvlist, derlist):
-    #  print a, b
-    #  print c
 
     return
 
@@ -559,7 +550,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
           # increment the parameter index pointer
           self._iparam += 1
-          print "beam", self._iparam
 
       # For any other beam parameterisations, leave derivatives as zero
       else:
@@ -618,14 +608,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
           # increment the parameter index pointer
           self._iparam += 1
-          print "xlo", self._iparam
 
       # For any other xl orientation parameterisations, leave derivatives as zero
       else:
 
         # just increment the pointer
         self._iparam += xlop.num_free()
-        print "unused xlop", self._iparam
 
     return
 
@@ -672,14 +660,12 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
           # increment the parameter index pointer
           self._iparam += 1
-          print "xluc", self._iparam
 
       # For any other xl unit cell parameterisations, leave derivatives as zero
       else:
 
         # just increment the pointer
         self._iparam += xlucp.num_free()
-        print "unused xluc", self._iparam
 
     return
 

@@ -300,13 +300,15 @@ refman.finalise()
 print "number of matches from new relfeciotn manager", len(refman.get_matches())
 
 # see if we can calculate gradients
-temp = new_target.calculate_gradients()
+dX_dp, dY_dp, dPhi_dp = new_target.calculate_gradients()
 
-# for testing purposes, let's assign some gradients into the matches
+# assign a sort index to the reflection table
 new_matches = refman.get_matches()
-new_matches['dX_dp0'] = temp[0][0]
-new_matches['dY_dp0'] = temp[1][0]
-new_matches['dPhi_dp0'] = temp[2][0]
+from dials.array_family import flex
+new_matches['order'] = flex.size_t_range(len(new_matches))
+new_matches['dX_dp0'] = dX_dp[0]
+new_matches['dY_dp0'] = dY_dp[0]
+new_matches['dPhi_dp0'] = dPhi_dp[0]
 
 print "OLD CLASSES"
 
@@ -336,11 +338,30 @@ print "number of matches from old relfeciotn manager", len(old_matches)
 # Now we want to compare the gradients in new_matches with those in old_matches.
 # are they the same?
 new_matches.sort('x_resid')
+# sort each element of the gradients
+for i in range(len(dX_dp)):
+  dX_dp[i] = dX_dp[i].select(new_matches['order'])
+  dY_dp[i] = dY_dp[i].select(new_matches['order'])
+  dPhi_dp[i] = dPhi_dp[i].select(new_matches['order'])
 old_matches = sorted(old_matches, key=lambda e: e.x_resid)
 
 for i in range(10):
-  print new_matches[i]['miller_index'], new_matches[i]['dX_dp0'], new_matches[i]['dY_dp0'], new_matches[i]['dPhi_dp0'], old_matches[i].miller_index, old_matches[i].gradients[0]
+  print new_matches[i]['miller_index'], dX_dp[0][i], dY_dp[0][i], dPhi_dp[0][i], old_matches[i].miller_index, old_matches[i].gradients[0]
 
+#from dials.util.command_line import interactive_console; interactive_console()
+
+# test all gradients
+print "TESTING GRADIENTS"
+for i in range(len(new_matches)):
+#for i in range(1):
+  for j in range(len(dX_dp)):
+    #print "param", j
+    assert approx_equal(dX_dp[j][i], old_matches[i].gradients[j][0])
+    assert approx_equal(dY_dp[j][i], old_matches[i].gradients[j][1])
+    assert approx_equal(dPhi_dp[j][i], old_matches[i].gradients[j][2])
+
+
+print "OK"
 from dials.util.command_line import interactive_console; interactive_console()
 
 #for i in range(2):
