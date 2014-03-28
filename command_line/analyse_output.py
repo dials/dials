@@ -108,7 +108,10 @@ class ReferenceProfileAnalyser(object):
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Reference profiles binned in X/Y")
     cax = pylab.hexbin(x, y, gridsize=20)
-    pylab.colorbar(cax)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("# reflections")
     pylab.savefig(join(self.directory, "reference_xy.png"))
     pylab.clf()
 
@@ -118,8 +121,10 @@ class ReferenceProfileAnalyser(object):
     from os.path import join
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Reflection correlations vs Z")
+    pylab.title("Reference profiles binned in Z")
     cax = pylab.hist(z, bins=20)
+    pylab.xlabel("z")
+    pylab.ylabel("# reflections")
     pylab.savefig(join(self.directory, "reference_z.png"))
     pylab.clf()
 
@@ -130,6 +135,8 @@ class ReferenceProfileAnalyser(object):
     corr = rlist['profile.correlation']
     pylab.title("Reflection correlations histogram")
     pylab.hist(corr, bins=20)
+    pylab.xlabel("Correlation with reference profile")
+    pylab.ylabel("# reflections")
     pylab.savefig(join(self.directory, "%s_corr_hist" % filename))
     pylab.clf()
 
@@ -141,7 +148,10 @@ class ReferenceProfileAnalyser(object):
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Reflection correlations binned in X/Y")
     cax = pylab.hexbin(x, y, C=corr, gridsize=20, vmin=0.0, vmax=1.0)
-    pylab.colorbar(cax)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar.ax.set_ylabel("Correlation with reference profile")
     pylab.savefig(join(self.directory, "%s_corr_vs_xy.png" % filename))
     pylab.clf()
 
@@ -153,7 +163,10 @@ class ReferenceProfileAnalyser(object):
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Reflection correlations vs Z")
     cax = pylab.hexbin(z, corr, gridsize=20)
-    pylab.colorbar(cax)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("z")
+    pylab.ylabel("Correlation with reference profile")
+    cbar.ax.set_ylabel("# reflections")
     pylab.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
     pylab.clf()
 
@@ -170,7 +183,10 @@ class ReferenceProfileAnalyser(object):
     corr = corr.select(mask)
     pylab.title("Reflection correlations vs Log I/Sigma")
     cax = pylab.hexbin(flex.log(I_over_S), corr, gridsize=19)
-    pylab.colorbar(cax)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("Log I/Sigma")
+    pylab.ylabel("Correlation with reference profile")
+    cbar.ax.set_ylabel("# reflections")
     pylab.savefig(join(self.directory, "%s_corr_vs_ios.png" % filename))
     pylab.clf()
 
