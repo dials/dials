@@ -43,7 +43,7 @@ def from_3D_to_2D_mask_projection(mask):
     mask2d = mask[0:1, :, :]
     mask2d.reshape(flex.grid(mask.all()[1:]))
   else:
-    mask2d_tot = flex.int(flex.grid(mask.all()[1:]),0)
+    mask2d_tot = flex.int(flex.grid(mask.all()[1:]),1)
     for z_frm in range(mask.all()[0]):
       mask2d_to_add = mask[z_frm:z_frm + 1, :, :]
       mask2d_to_add.reshape(flex.grid(mask.all()[1:]))

@@ -292,25 +292,28 @@ namespace dials { namespace algorithms {
 
         // [ ! ] = .not. operator
 
-
         if ( (mask2d_one(row,col) & Background)
          ||  (mask2d_two(row,col) & Background) )  {
-          final_mask(row, col) = final_mask(row, col) | Background;
+          //final_mask(row, col) = final_mask(row, col) | Background;
+          final_mask(row, col) = Background | Valid;
         }
+      }
+    }
 
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
         if ( (mask2d_one(row,col) & Foreground)
          ||  (mask2d_two(row,col) & Foreground) )  {
-           //final_mask(row, col) = final_mask(row, col) | Foreground;
-          final_mask(row, col) = 5;
-        }
+          //final_mask(row, col) = final_mask(row, col) | Foreground;
+          final_mask(row, col) = Foreground | Valid;
 
         if ( ( !(mask2d_one(row,col) & Valid ) )
          ||  ( !(mask2d_two(row,col) & Valid ) ) ) {
           //final_mask(row, col) &= ~Valid;
           final_mask(row, col) = 0;
-
         }
 
+        }
       }
     }
 
@@ -439,8 +442,8 @@ namespace dials { namespace algorithms {
     int ncol = profile2d.accessor()[1];
     int nrow = profile2d.accessor()[0];
 
-    af::versa< double, af::c_grid<2> > data2dmov_01(af::c_grid<2>(nrow, ncol),0);
-    af::versa< double, af::c_grid<2> > backg2dmov_01(af::c_grid<2>(nrow, ncol),0);
+    af::versa< double, af::c_grid<2> >data2dmov_01(af::c_grid<2>(nrow, ncol),0);
+    af::versa< double, af::c_grid<2> >backg2dmov_01(af::c_grid<2>(nrow, ncol),0);
 
     af::versa< double, af::c_grid<2> > data2dmov(af::c_grid<2>(nrow, ncol),0);
     af::versa< double, af::c_grid<2> > backg2dmov(af::c_grid<2>(nrow, ncol),0);
