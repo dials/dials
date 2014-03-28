@@ -17,6 +17,16 @@ refinement
   .help = "Parameters to configure the refinement"
 {
 
+  verbosity = 1
+    .help = "verbosity level"
+    .type = int(value_min=0)
+
+  go_fast = False
+    .help = "set False to revert to old classes for scan-static refinement"
+            "that do a loop over all reflections in Python rather than the"
+            "vectorised version using flex array operations"
+    .type = bool
+
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"
   {
@@ -164,7 +174,7 @@ refinement
               "reflection list is done"
       .type = int
 
-    maximum_number_of_reflections = None
+    maximum_sample_size = None
       .help = "The maximum number of reflections to use in refinement."
               "Overrides reflections_per_degree if that produces a"
               "larger sample size."

@@ -210,6 +210,9 @@ class RefinerFactory(object):
     """low level build"""
 
     # check that the beam vectors are stored: if not, compute them
+    nrefs_wo_s1 = (reflections['s1'].norms() < 1.e-6).count(True)
+    if nrefs_wo_s1 > 0 and verbosity > 1:
+      print "Setting scattering vectors for", nrefs_wo_s1, "reflections"
     from scitbx import matrix
     for i in xrange(reflections.nrows()):
       ref = reflections[i]
@@ -247,8 +250,9 @@ class RefinerFactory(object):
     if verbosity > 1:
       print ("Number of observations that pass initial inclusion criteria = %d"
              % refman.get_accepted_refs_size())
-      print ("Working set size = %d observations"
-             % refman.get_sample_size())
+      sample_size = refman.get_sample_size()
+      if sample_size:
+        print ("Working set size = %d observations" % sample_size)
       print "Reflection manager built\n"
 
     if verbosity > 1: print "Building target function"
@@ -488,9 +492,17 @@ class RefinerFactory(object):
             experiments,
             det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
-        pred_param = par.XYPhiPredictionParameterisation(
-            experiments,
-            det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
+        # FIXME Tidy this up
+        if not params.refinement.go_fast:
+          pred_param = par.XYPhiPredictionParameterisation(
+              experiments,
+              det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
+        else:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters_new \
+            import XYPhiPredictionParameterisation
+          pred_param = XYPhiPredictionParameterisation(
+              experiments,
+              det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
     else:
       assert param_type is "stills"
       pred_param = par.XYPredictionParameterisation(
@@ -571,8 +583,11 @@ class RefinerFactory(object):
         print "Random seed set to %d\n" % options.random_seed
 
     if all(e.goniometer is not None for e in experiments):
-      from dials.algorithms.refinement.target import ReflectionManager as refman
-
+      #FIXME Tidy up
+      if not params.refinement.go_fast:
+        from dials.algorithms.refinement.target import ReflectionManager as refman
+      else:
+        from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
     elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.target_stills import \
           ReflectionManagerXY as refman
@@ -592,8 +607,8 @@ class RefinerFactory(object):
             experiments=experiments,
             nref_per_degree=nref_per_degree,
             min_num_obs=options.minimum_number_of_reflections,
-            max_num_obs=options.maximum_number_of_reflections,
-            minimum_sample_size = options.minimum_sample_size,
+            max_sample_size = options.maximum_sample_size,
+            min_sample_size = options.minimum_sample_size,
             close_to_spindle_cutoff=options.close_to_spindle_cutoff,
             iqr_multiplier=iqr_multiplier,
             verbosity=verbosity)
@@ -627,11 +642,19 @@ class RefinerFactory(object):
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if all(e.goniometer is not None for e in experiments):
-      from dials.algorithms.refinement.prediction import ScansRayPredictor
-      ref_predictor = ScansRayPredictor(experiments)
+      if not params.refinement.go_fast:
+        from dials.algorithms.refinement.prediction import ScansRayPredictor
+        ref_predictor = ScansRayPredictor(experiments)
 
-      from dials.algorithms.refinement.target \
-        import LeastSquaresPositionalResidualWithRmsdCutoff as targ
+        from dials.algorithms.refinement.target \
+          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
+
+      else:
+        from dials.algorithms.refinement.prediction import ExperimentsPredictor
+        ref_predictor = ExperimentsPredictor(experiments)
+
+        from dials.algorithms.refinement.target_new \
+          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
     elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.prediction import \
