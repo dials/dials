@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 #
-# import.py
+# analyse_output.py
 #
-#  Copyright (C) 2013 Diamond Light Source
+#  Copyright (C) 2014 Diamond Light Source
 #
 #  Author: James Parkhurst
 #
@@ -41,6 +41,213 @@ def ensure_required(rlist, required):
   return True
 
 
+class CentroidAnalyser(object):
+  ''' Analyse the reflection centroids. '''
+
+  def __init__(self, directory):
+    ''' Setup the directory. '''
+    from os.path import join
+
+    # Set the directory
+    self.directory = join(directory, "centroid")
+    ensure_directory(self.directory)
+
+    # Set the required fields
+    self.required = [
+      "intensity.raw.value",
+      "intensity.raw.variance",
+      "xyzcal.px",
+      "xyzobs.px.value"
+    ]
+
+  def __call__(self, rlist):
+    ''' Analyse the reflection centroids. '''
+
+    # Check we have the required fields
+    print "Analysing reference profiles"
+    if not ensure_required(rlist, self.required):
+      return
+
+    # Select only integrated reflections
+    Command.start(" Selecting only integated reflections")
+    mask = rlist.get_flags(rlist.flags.integrated)
+    rlist = rlist.select(mask)
+    Command.end(" Selected %d integrated reflections" % len(rlist))
+
+    # Look at differences in calculated/observed position
+    print " Analysing centroid differences with I/Sigma > 10"
+    self.centroid_diff_hist(rlist, 10)
+    print " Analysing centroid differences in x/y with I/Sigma > 10"
+    self.centroid_diff_xy(rlist, 10)
+    print " Analysing centroid differences in z with I/Sigma > 10"
+    self.centroid_diff_z(rlist, 10)
+
+  def centroid_diff_hist(self, rlist, threshold):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    I = rlist['intensity.raw.value']
+    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > threshold
+    rlist = rlist.select(mask)
+    assert(len(rlist) > 0)
+    xc, yc, zc = rlist['xyzcal.px'].parts()
+    xo, yo, zo = rlist['xyzobs.px.value'].parts()
+    xd = xo - xc
+    yd = yo - yc
+    zd = zo - zc
+    diff = flex.sqrt(xd*xd + yd*yd + zd*zd)
+    pylab.title("Difference between observed and calculated")
+    cax = pylab.hist(diff, bins=20)
+    pylab.xlabel("Difference in position")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "centroid_diff_hist.png"))
+    pylab.clf()
+
+  def centroid_diff_xy(self, rlist, threshold):
+    ''' Look at the centroid difference in x, y '''
+    from dials.array_family import flex
+    from os.path import join
+    I = rlist['intensity.raw.value']
+    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > threshold
+    rlist = rlist.select(mask)
+    assert(len(rlist) > 0)
+    xc, yc, zc = rlist['xyzcal.px'].parts()
+    xo, yo, zo = rlist['xyzobs.px.value'].parts()
+    xd = xo - xc
+    yd = yo - yc
+    pylab.title("Difference between observed and calculated in X")
+    cax = pylab.hexbin(xc, yc, C=xd, gridsize=100)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("Difference in x position")
+    pylab.savefig(join(self.directory, "centroid_diff_x.png"))
+    pylab.clf()
+    pylab.title("Difference between observed and calculated in Y")
+    cax = pylab.hexbin(xc, yc, C=yd, gridsize=100)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("Difference in y position")
+    pylab.savefig(join(self.directory, "centroid_diff_y.png"))
+    pylab.clf()
+
+  def centroid_diff_z(self, rlist, threshold):
+    ''' Look at the centroid difference in x, y '''
+    from dials.array_family import flex
+    from os.path import join
+    I = rlist['intensity.raw.value']
+    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > threshold
+    rlist = rlist.select(mask)
+    assert(len(rlist) > 0)
+    xc, yc, zc = rlist['xyzcal.px'].parts()
+    xo, yo, zo = rlist['xyzobs.px.value'].parts()
+    zd = zo - zc
+    pylab.title("Difference between observed and calculated in Z")
+    cax = pylab.hexbin(zc, zd, gridsize=100)
+    pylab.xlabel("z")
+    pylab.ylabel("Difference in z position")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("# Reflections")
+    pylab.savefig(join(self.directory, "centroid_diff_z.png"))
+    pylab.clf()
+
+
+class IntensityAnalyser(object):
+  ''' Analyse the intensities. '''
+
+  def __init__(self, directory):
+    ''' Set up the directory. '''
+    from os.path import join
+
+    # Set the directory
+    self.directory = join(directory, "intensity")
+    ensure_directory(self.directory)
+
+    # Set the required fields
+    self.required = [
+      "intensity.raw.value",
+      "intensity.raw.variance",
+      "xyzcal.px",
+    ]
+
+  def __call__(self, rlist):
+    ''' Analyse the reflection centroids. '''
+
+    # Check we have the required fields
+    print "Analysing reference profiles"
+    if not ensure_required(rlist, self.required):
+      return
+
+    # Select only integrated reflections
+    Command.start(" Selecting only integated reflections")
+    mask = rlist.get_flags(rlist.flags.integrated)
+    rlist = rlist.select(mask)
+    Command.end(" Selected %d integrated reflections" % len(rlist))
+
+    # Look at distribution of I/Sigma
+    print " Analysing distribution of I/Sigma"
+    self.i_over_s_hist(rlist)
+    print " Analysing distribution of I/Sigma vs xy"
+    self.i_over_s_vs_xy(rlist)
+    print " Analysing distribution of I/Sigma vs z"
+    self.i_over_s_vs_z(rlist)
+
+  def i_over_s_hist(self, rlist):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    I = rlist['intensity.raw.value']
+    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I_over_S = I / I_sig
+    pylab.title("Log I/Sigma histogram")
+    pylab.hist(flex.log(I_over_S), bins=20)
+    pylab.xlabel("Log I/Sigma")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "ioversigma_hist"))
+    pylab.clf()
+
+  def i_over_s_vs_xy(self, rlist):
+    ''' Plot I/Sigma vs X/Y '''
+    from dials.array_family import flex
+    from os.path import join
+    I = rlist['intensity.raw.value']
+    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I_over_S = I / I_sig
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Distribution of I/Sigma vs X/Y")
+    cax = pylab.hexbin(x, y, C=flex.log(I_over_S), gridsize=100)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("Log I/Sigma")
+    pylab.savefig(join(self.directory, "ioversigma_vs_xy.png"))
+    pylab.clf()
+
+  def i_over_s_vs_z(self, rlist):
+    ''' Plot I/Sigma vs Z. '''
+    from dials.array_family import flex
+    from os.path import join
+    I = rlist['intensity.raw.value']
+    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I_over_S = I / I_sig
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Distribution of I/Sigma vs X/Y")
+    cax = pylab.hexbin(z, flex.log(I_over_S), gridsize=100)
+    pylab.xlabel("z")
+    pylab.ylabel("Log I/Sigma")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "ioversigma_vs_z.png"))
+    pylab.clf()
+
+
 class ReferenceProfileAnalyser(object):
   ''' Analyse the reference profiles. '''
 
@@ -74,12 +281,13 @@ class ReferenceProfileAnalyser(object):
     rlist = rlist.select(mask)
     Command.end(" Selected %d integrated reflections" % len(rlist))
 
+    # Analyse distribution of reference spots
     print " Analysing reference profile distribution vs x/y"
     self.reference_xy(rlist)
-
     print " Analysing reference profile distribution vs z"
     self.reference_z(rlist)
 
+    # Look at correlations between profiles
     def correlations(filename, rlist):
       ''' Call for reference spots and all reflections. '''
 
@@ -107,7 +315,7 @@ class ReferenceProfileAnalyser(object):
     rlist = rlist.select(mask)
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Reference profiles binned in X/Y")
-    cax = pylab.hexbin(x, y, gridsize=20)
+    cax = pylab.hexbin(x, y, gridsize=100)
     pylab.xlabel("x")
     pylab.ylabel("y")
     cbar = pylab.colorbar(cax)
@@ -147,7 +355,7 @@ class ReferenceProfileAnalyser(object):
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Reflection correlations binned in X/Y")
-    cax = pylab.hexbin(x, y, C=corr, gridsize=20, vmin=0.0, vmax=1.0)
+    cax = pylab.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
     cbar = pylab.colorbar(cax)
     pylab.xlabel("x")
     pylab.ylabel("y")
@@ -162,7 +370,7 @@ class ReferenceProfileAnalyser(object):
     corr = rlist['profile.correlation']
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Reflection correlations vs Z")
-    cax = pylab.hexbin(z, corr, gridsize=20)
+    cax = pylab.hexbin(z, corr, gridsize=100)
     cbar = pylab.colorbar(cax)
     pylab.xlabel("z")
     pylab.ylabel("Correlation with reference profile")
@@ -182,7 +390,7 @@ class ReferenceProfileAnalyser(object):
     I_over_S = I_over_S.select(mask)
     corr = corr.select(mask)
     pylab.title("Reflection correlations vs Log I/Sigma")
-    cax = pylab.hexbin(flex.log(I_over_S), corr, gridsize=19)
+    cax = pylab.hexbin(flex.log(I_over_S), corr, gridsize=100)
     cbar = pylab.colorbar(cax)
     pylab.xlabel("Log I/Sigma")
     pylab.ylabel("Correlation with reference profile")
@@ -199,6 +407,8 @@ class Analyser(object):
     from os.path import join
     directory = join(directory, "analysis")
     self.analysers = [
+      CentroidAnalyser(directory),
+      IntensityAnalyser(directory),
       ReferenceProfileAnalyser(directory),
     ]
 
