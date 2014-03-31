@@ -22,7 +22,7 @@ class GeneralBackgroundExt(BackgroundIface):
     outlier
       .help = "Outlier rejection prior to background fit"
     {
-      algorithm = none *nsigma truncated normal
+      algorithm = null *nsigma truncated normal
         .help = "The outlier rejection algorithm."
         .type = choice
 
@@ -95,7 +95,7 @@ class GeneralBackgroundExt(BackgroundIface):
 
     def select_rejector():
       outlier = params.integration.background.general.outlier
-      if outlier.algorithm == 'none':
+      if outlier.algorithm == 'null':
         return None
       elif outlier.algorithm == 'truncated':
         return TruncatedOutlierRejector(
