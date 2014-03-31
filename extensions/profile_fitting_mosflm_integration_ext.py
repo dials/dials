@@ -18,7 +18,7 @@ class ProfileFittingMosflmIntegrationExt(IntensityIface):
   name = 'mosflm'
 
   phil = '''
-    nblocks = 4
+    nblocks = 5
       .help = "number of block per coordinate"
       .type = int
   '''

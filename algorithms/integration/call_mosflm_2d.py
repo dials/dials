@@ -19,7 +19,7 @@ from dials.array_family import flex
 #def mosflm_caller(rlist, xmax, ymax, n_div):
 def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
-  #imagin_stuff = '''
+  imagin_stuff = '''
   ###############################################################################
   t_intensity = ref_table_in['intensity.raw.value']
   old_i_table = t_intensity[:]
@@ -80,7 +80,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       #arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], ref_table_in
       #                      arr_proff, row, col,  xmax, ymax)
 
-  #imagin_stuff = '''
+  imagin_stuff = '''
   ###############################################################################
   t_intensity = ref_table_in['intensity.raw.value']
   num_ref = len(t_intensity)
