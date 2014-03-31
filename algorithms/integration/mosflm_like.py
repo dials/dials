@@ -33,7 +33,7 @@ class MosflmProfileFitting:
     index = sorted(range(len(ref_table)), key=lambda i: xyz[i][2])
     ref_table.reorder(flex.size_t(index))
 
-
+    new_block_way = '''
     nz_blocks = 5
     dp_lng =len(ref_table)
     zblock_size = dp_lng / nz_blocks
@@ -42,15 +42,15 @@ class MosflmProfileFitting:
       z_blocks_end = int((block_z_num + 1) * zblock_size)
       local_ref_table = ref_table[z_blocks_start:z_blocks_end]
 
-
       xmax, ymax = self.experiment.detector[0].get_image_size()
       local_ref_table = mosflm_caller(local_ref_table, xmax, ymax, self.nblocks)
 
       ref_table[z_blocks_start:z_blocks_end] = local_ref_table
+    #'''
 
-    print "profile fitting            ....       Done"
-    old_way = '''
-    flex_2d_layering_n_integrating(ref_table)
+    #old_way = '''
     xmax, ymax = self.experiment.detector[0].get_image_size()
     ref_table = mosflm_caller(ref_table, xmax, ymax, self.nblocks)
     #'''
+
+    print "profile fitting            ....       Done"
