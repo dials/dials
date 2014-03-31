@@ -50,10 +50,10 @@ class Script(ScriptRunner):
                ' at the end of refinement.')
 
     # Add a verbosity option
-    self.config().add_option(
-        "-v", "--verbosity",
-        action="count", default=0,
-        help="set verbosity level; -vv gives verbosity level 2.")
+    #self.config().add_option(
+    #    "-v", "--verbosity",
+    #    action="count", default=0,
+    #    help="set verbosity level; -vv gives verbosity level 2.")
 
   def write_residuals_table(self, refiner, filename):
 
@@ -99,7 +99,7 @@ class Script(ScriptRunner):
     # Get the refiner
     print 'Configuring refiner'
     refiner = RefinerFactory.from_parameters_data_experiments(params,
-        reflections, experiments, verbosity=options.verbosity)
+        reflections, experiments)
 
     # Refine the geometry
     print 'Performing refinement'

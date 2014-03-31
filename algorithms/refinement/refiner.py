@@ -26,12 +26,16 @@ class RefinerFactory(object):
                                        params,
                                        reflections,
                                        experiments,
-                                       verbosity=0):
+                                       verbosity=None):
 
     #TODO Checks on the input
     #E.g. does every experiment contain at least one overlapping model with at
     #least one other experiment? Are all the experiments either rotation series
     #or stills (the combination of both not yet supported)?
+
+    # if no verbosity override is given, take from the parameters
+    if not verbosity:
+      verbosity = params.refinement.verbosity
 
     # copy the experiments
     import copy
@@ -60,7 +64,7 @@ class RefinerFactory(object):
                                   crystal=None,
                                   crystals=None,
                                   crystal_ids=None,
-                                  verbosity=0):
+                                  verbosity=None):
     """Given a set of parameters, reflections and experimental models for a
     single Experiment, construct a refiner.
 
@@ -130,6 +134,10 @@ class RefinerFactory(object):
     * return that refiner
 
     """
+
+    # if no verbosity override is given, take from the parameters
+    if not verbosity:
+      verbosity = params.refinement.verbosity
 
     # checks on the input
     if sweep:
