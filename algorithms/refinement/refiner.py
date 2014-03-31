@@ -228,11 +228,10 @@ class RefinerFactory(object):
       row = { 's1' : s1 }
       reflections[i] = row
 
-    # defensively check that flags exist, and if not, create them
-    try:
-      temp = reflections.get_flags(reflections.flags.used_in_refinement)
-    except RuntimeError:
-      reflections['flags'] = flex.size_t(len(reflections), 0)
+    # unset the refinement flags (creates flags field if needed)
+    from dials.array_family.flex import reflection_table
+    reflections.unset_flags(flex.size_t_range(len(reflections)),
+        reflection_table.flags.used_in_refinement)
 
     # create parameterisations
     pred_param, param_reporter = \
