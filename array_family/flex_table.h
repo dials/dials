@@ -244,6 +244,7 @@ namespace dials { namespace af {
     template <typename T>
     af::shared<T> get(const key_type &key) const {
       const_iterator it = find(key);
+      DIALS_ASSERT(it != end());
       return boost::get< af::shared<T> >(it->second);
     }
 

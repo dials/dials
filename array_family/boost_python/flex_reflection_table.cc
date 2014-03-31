@@ -158,6 +158,7 @@ namespace dials { namespace af { namespace boost_python {
   af::shared<bool> get_flags(const T &self, std::size_t value) {
     af::shared<bool> result(self.nrows());
     af::shared<std::size_t> flags = self.template get<std::size_t>("flags");
+    DIALS_ASSERT(flags.size() == result.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = (flags[i] & value) == value;
     }
