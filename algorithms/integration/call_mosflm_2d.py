@@ -64,7 +64,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
         break
       #'''
       arr_rlist[row][col].append([t_row])
-  print "Performing profile building  ...."
+  #print "Performing profile building  ...."
 
   for col in range(ncol):
     for row in range(nrow):
@@ -72,15 +72,13 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       profile, tr_hold = make_2d_profile(arr_rlist[row][col], ref_table_in)
       arr_proff[row][col] = [profile, tr_hold]
 
-  print "Profile building           ....       Done"
-  print "Performing profile fitting  ...."
+  #print "Profile building           ....       Done"
   for col in range(ncol):
     for row in range(nrow):
       ref_table_in = fit_profile_2d(arr_rlist[row][col], ref_table_in
                                     , arr_proff, row, col,  xmax, ymax)
       #arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], ref_table_in
       #                      arr_proff, row, col,  xmax, ymax)
-  print "profile fitting            ....       Done"
 
   imagin_stuff = '''
   ###############################################################################
