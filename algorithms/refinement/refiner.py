@@ -228,6 +228,12 @@ class RefinerFactory(object):
       row = { 's1' : s1 }
       reflections[i] = row
 
+    # defensively check that flags exist, and if not, create them
+    try:
+      temp = reflections.get_flags(reflections.flags.used_in_refinement)
+    except RuntimeError:
+      reflections['flags'] = flex.size_t(len(reflections), 0)
+
     # create parameterisations
     pred_param, param_reporter = \
             cls.config_parameterisation(params, experiments)
