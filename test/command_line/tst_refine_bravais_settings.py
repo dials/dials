@@ -56,9 +56,9 @@ def exercise_refine_bravais_settings():
 
   assert approx_equal(
     bravais_summary['9']['unit_cell'],
-    [57.782019981559, 57.782019981559, 150.010703132744, 90.0, 90.0, 90.0])
+    [57.78, 57.78, 150.0, 90.0, 90.0, 90.0], eps=1e-1)
   assert bravais_summary['9']['bravais'] == 'tP'
-  assert approx_equal(bravais_summary['9']['rmsd'], 0.04654537292086446)
+  assert approx_equal(bravais_summary['9']['rmsd'], 0.047, eps=1e-2)
   os.chdir(cwd)
 
 def run():

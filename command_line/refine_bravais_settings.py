@@ -33,6 +33,8 @@ def run(args):
   working_phil = cmd_line.process_and_fetch(args=args)
   working_phil.show()
   params = working_phil.extract()
+  # XXX this should go once go_fast is the default/only option
+  params.refinement.go_fast = True
 
   from dials.algorithms.indexing.symmetry \
        import refined_settings_factory_from_refined_triclinic

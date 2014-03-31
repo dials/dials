@@ -225,6 +225,9 @@ class indexer_base(object):
 
     from dials.model.serialize.load import experiment_list as load_experiment_list
     from dxtbx.serialize.load import imageset as load_imageset
+    if params is None: params = master_params
+    # XXX this should go once go_fast is the default/only option
+    params.refinement.go_fast = True
     if params.reference.detector is not None:
       try:
         experiments = load_experiment_list(
@@ -258,7 +261,6 @@ class indexer_base(object):
     self.detector = sweep.get_detector()
     self.scan = sweep.get_scan()
     self.beam = sweep.get_beam()
-    if params is None: params = master_params
     self.params = params
 
     from libtbx.utils import time_log
@@ -826,13 +828,8 @@ class indexer_base(object):
     verbosity = self.params.refinement_protocol.verbosity
     self._refine_timer.stop()
     matches = refiner.get_matches()
-    selection_used_for_refinement = refiner.selection_used_for_refinement()
     xyzcal_mm = flex.vec3_double(len(used_reflections))
-    for match in matches:
-      #assert match.miller_index == used_reflections[match.iobs]['miller_index']
-      #assert (match.x_obs, match.y_obs, match.phi_obs) == used_reflections[match.iobs]['xyzobs.mm.value']
-      xyzcal_mm[match.iobs] = (match.x_calc, match.y_calc, match.phi_calc)
-      #print xyzcal_mm[match.iobs], used_reflections['xyzobs.mm.value'][match.iobs]
+    xyzcal_mm.set_selected(matches['iobs'], matches['xyzcal.mm'])
     used_reflections['xyzcal.mm'] = xyzcal_mm
     return refiner.get_experiments(), used_reflections
 

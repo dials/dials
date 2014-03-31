@@ -22,6 +22,9 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
   assert len(experiments.detectors()) == 1
   import copy
   reflections_for_refinement = copy.deepcopy(reflections)
+  # XXX the refinement should probably do this check itself
+  reflections_for_refinement['flags'] = flex.size_t(
+    len(reflections_for_refinement), 0)
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(
@@ -29,19 +32,15 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     verbosity=verbosity)
 
   if maximum_spot_error is not None:
-    residuals = flex.vec3_double()
     matches = refiner.get_matches()
-    frame_obs = flex.double()
-    panel_ids = flex.size_t()
-    crystal_ids = flex.int()
-    match_iobs = flex.size_t()
-    for match in matches:
-      residuals.append((match.x_resid, match.y_resid, match.phi_resid))
-      frame_obs.append(match.frame_obs)
-      panel_ids.append(match.panel)
-      crystal_ids.append(match.crystal_id)
-      match_iobs.append(match.iobs)
-    x_residuals, y_residuals, phi_residuals = residuals.parts()
+    x_residuals = matches['x_resid']
+    y_residuals = matches['y_resid']
+    phi_residuals = matches['phi_resid']
+    residuals = flex.vec3_double(x_residuals, y_residuals, phi_residuals)
+    frame_obs = matches['xyzobs.px.value'].parts()[2]
+    panel_ids = matches['panel']
+    crystal_ids = matches['id']
+    match_iobs = matches['iobs']
     mm_residual_norms = flex.sqrt(
       flex.pow2(x_residuals) + flex.pow2(y_residuals))
     # hard cutoff, but this is essentially what XDS does by default
@@ -61,7 +60,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
       verbosity=verbosity)
 
   matches = refiner.get_matches()
-  crystal_ids = flex.int([match.crystal_id for match in matches])
+  crystal_ids = matches['id']
   for i_cryst in range(flex.max(crystal_ids) + 1):
     if (crystal_ids == i_cryst).count(True) < params.refinement.reflections.minimum_number_of_reflections:
       raise RuntimeError("Insufficient matches for crystal %i" %(i_cryst+1))
@@ -73,19 +72,15 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
 
 def debug_plot_residuals(refiner, inlier_sel=None):
   from matplotlib import pyplot
-  residuals = flex.vec3_double()
   matches = refiner.get_matches()
-  frame_obs = flex.double()
-  panel_ids = flex.size_t()
-  crystal_ids = flex.int()
-  phi_obs = flex.double()
-  for match in matches:
-    residuals.append((match.x_resid, match.y_resid, match.phi_resid))
-    frame_obs.append(match.frame_obs)
-    panel_ids.append(match.panel)
-    crystal_ids.append(match.crystal_id)
-    phi_obs.append(match.phi_obs)
-  x_residuals, y_residuals, phi_residuals = residuals.parts()
+  x_residuals = matches['x_resid']
+  y_residuals = matches['y_resid']
+  phi_residuals = matches['phi_resid']
+  residuals = flex.vec3_double(x_residuals, y_residuals, phi_residuals)
+  frame_obs = matches['xyzobs.px.value'].parts()[2]
+  phi_obs = matches['xyzobs.mm.value'].parts()[2]
+  panel_ids = matches['panel']
+  crystal_ids = matches['id']
   if inlier_sel is None:
     inlier_sel = flex.bool(len(residuals), True)
   print inlier_sel.size(), panel_ids.size()
