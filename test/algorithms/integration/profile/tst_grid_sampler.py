@@ -217,8 +217,7 @@ class Test(object):
           if k > 0:
             coord = matrix.col(sampler[l7])
             weight = sampler.weight(l1, coord)
-            assert(abs(weight -
-) < eps)
+            assert(abs(weight - expected) < eps)
             weight = sampler.weight(l1, ( coord1 + coord )/2.0)
             assert(abs(weight - 0.5) < eps)
 
