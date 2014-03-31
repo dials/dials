@@ -64,7 +64,7 @@ class CentroidAnalyser(object):
     ''' Analyse the reflection centroids. '''
 
     # Check we have the required fields
-    print "Analysing reference profiles"
+    print "Analysing reflection centroids"
     if not ensure_required(rlist, self.required):
       return
 
@@ -181,7 +181,7 @@ class IntensityAnalyser(object):
     ''' Analyse the reflection centroids. '''
 
     # Check we have the required fields
-    print "Analysing reference profiles"
+    print "Analysing reflection intensities"
     if not ensure_required(rlist, self.required):
       return
 
@@ -210,6 +210,10 @@ class IntensityAnalyser(object):
     self.i_over_s_vs_xy(rlist)
     print " Analysing distribution of I/Sigma vs z"
     self.i_over_s_vs_z(rlist)
+    print " Analysing number of background pixels used"
+    self.num_background_hist(rlist)
+    print " Analysing number of foreground pixels used"
+    self.num_foreground_hist(rlist)
 
   def i_over_s_hist(self, rlist):
     ''' Analyse the correlations. '''
@@ -257,6 +261,30 @@ class IntensityAnalyser(object):
     cbar = pylab.colorbar(cax)
     cbar.ax.set_ylabel("# reflections")
     pylab.savefig(join(self.directory, "ioversigma_vs_z.png"))
+    pylab.clf()
+
+  def num_background_hist(self, rlist):
+    ''' Analyse the number of background pixels. '''
+    from dials.array_family import flex
+    from os.path import join
+    N = rlist['n_background']
+    pylab.title("Num Background Pixel Histogram")
+    pylab.hist(N, bins=20)
+    pylab.xlabel("Number of pixels")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "n_background_hist.png"))
+    pylab.clf()
+
+  def num_foreground_hist(self, rlist):
+    ''' Analyse the number of foreground pixels. '''
+    from dials.array_family import flex
+    from os.path import join
+    N = rlist['n_foreground']
+    pylab.title("Num Foreground Pixel Histogram")
+    pylab.hist(N, bins=20)
+    pylab.xlabel("Number of pixels")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "n_foreground_hist.png"))
     pylab.clf()
 
 

@@ -39,6 +39,7 @@ class Integrator(object):
     '''
     from dials.algorithms.shoebox import ReflectionBlockExtractor
     from dials.array_family import flex
+    from dials.algorithms.shoebox import MaskCode
 
     assert(len(experiments) == 1)
 
@@ -98,6 +99,16 @@ class Integrator(object):
         reflections.set_flags(pind, reflections.flags.reference_spot)
 
       reflections.integrate(experiments[0])
+
+      # Compute number of foreground and background pixels
+      bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
+      fg_code = MaskCode.Valid | MaskCode.Foreground
+      n_bg = reflections['shoebox'].count_mask_values(bg_code)
+      n_fg = reflections['shoebox'].count_mask_values(fg_code)
+      reflections['n_background'] = n_bg
+      reflections['n_foreground'] = n_fg
+
+      # Delete the profiles
       del reflections['shoebox']
       del reflections['rs_shoebox']
       result.extend(reflections)

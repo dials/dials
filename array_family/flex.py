@@ -149,5 +149,3 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self.compute_centroid(experiment)
     self.compute_intensity(experiment)
     self.correct_intensity(experiment)
-    if save_profiles == False:
-      del self['shoebox']

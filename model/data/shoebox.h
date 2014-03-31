@@ -240,7 +240,7 @@ namespace dials { namespace model {
     int count_mask_values(int code) const {
       int count = 0;
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        if (mask[i] & code) {
+        if ((mask[i] & code) == code) {
           count++;
         }
       }
