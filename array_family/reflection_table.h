@@ -15,6 +15,7 @@
 #include <dials/model/data/shoebox.h>
 #include <dials/model/data/transformed_shoebox.h>
 #include <scitbx/array_family/tiny_types.h>
+#include <scitbx/mat3.h>
 #include <scitbx/vec3.h>
 #include <scitbx/vec2.h>
 #include <cctbx/miller.h>
@@ -23,6 +24,7 @@ namespace dials { namespace af {
 
   using scitbx::vec2;
   using scitbx::vec3;
+  using scitbx::mat3;
   using scitbx::af::int6;
   using model::Shoebox;
   using model::TransformedShoebox;
@@ -35,6 +37,7 @@ namespace dials { namespace af {
     std::string,
     vec2<double>,
     vec3<double>,
+    mat3<double>,
     int6,
     cctbx::miller::index<>,
     Shoebox<>,
