@@ -219,8 +219,13 @@ namespace dials { namespace algorithms {
 
         } else {
           std::cout << "\n ERROR Not fitting in the area to be added \n";
+
+          std::cout << " ncol_in =" << ncol_in << "  nrow_in =" << nrow_in << "\n";
+
+
           std::cout <<"  tot_row =" <<tot_row << "  tot_col =" << tot_col <<
               "\n  nrow_tot =" << nrow_tot << "  ncol_tot =" << ncol_tot << "\n";
+
           std::cout << " centr_row =" << centr_row <<
             " centr_col =" <<  centr_col << "\n";
         }
