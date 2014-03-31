@@ -278,7 +278,7 @@ def fit_profile_2d(reflection_pointers, ref_table
       data2d, background2d = from_3D_to_2D_projection(shoebox, background)
       mask2d = from_3D_to_2D_mask_projection(mask)
 
-      #_____________________________________________ block to be removed start
+      print_and_compare = '''
       from dials.scratch.luiso_s import  write_2d, write_2d_mask
       if sum(data2d) > 1000:
         print "________________________________________________________________"
@@ -286,7 +286,10 @@ def fit_profile_2d(reflection_pointers, ref_table
         write_2d(average)
         write_2d_mask(mask2d)
         print "________________________________________________________________"
-      #_____________________________________________ block to be removed ends
+
+      #'''
+
+
 
       cntr_pos = col_xyzcal[t_row]
       bnd_box = col_bbox[t_row]

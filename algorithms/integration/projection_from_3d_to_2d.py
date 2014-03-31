@@ -1,5 +1,5 @@
 #
-# mosflm_like.py
+# projection_from_3d_to)2d.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
