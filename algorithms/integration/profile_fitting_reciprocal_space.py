@@ -111,10 +111,12 @@ class ProfileFittingReciprocalSpace(object):
     profiles = reflections['rs_shoebox']
     coords = reflections['xyzcal.px']
     intensity = integrate(profiles, coords)
-    mask = intensity.parts()[1] > 0
-    reflections['intensity.raw.value'] = intensity.parts()[0]
-    reflections['intensity.raw.variance'] = intensity.parts()[1]
-    reflections['profile.correlation'] = intensity.parts()[2]
+    I, I_var, P_cor = intensity.parts()
+    mask = I_var > 0
+    I_var.set_selected(mask != True, 0.0)
+    reflections['intensity.raw.value'] = I
+    reflections['intensity.raw.variance'] = I_var
+    reflections['profile.correlation'] = P_cor
     reflections.set_flags(mask, reflections.flags.integrated)
     Command.end('Integrated {0} reflections'.format(len(reflections)))
 
