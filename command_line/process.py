@@ -25,13 +25,6 @@ class Script(ScriptRunner):
     # Initialise the base class
     ScriptRunner.__init__(self, usage=usage)
 
-    # Add a verbosity option
-    self.config().add_option(
-      "-v",
-      dest="verbosity",
-      action="count", default=1,
-      help="set verbosity level; -vv gives verbosity level 2")
-
     # read image files from stdin
     self.config().add_option(
       "-i", "--stdin",
@@ -217,7 +210,7 @@ class Script(ScriptRunner):
     print '*' * 80
 
     refiner = RefinerFactory.from_parameters_data_experiments(
-      self.params, centroids, experiments, self.options.verbosity)
+      self.params, centroids, experiments)
 
     refiner.run()
     experiments = refiner.get_experiments()
