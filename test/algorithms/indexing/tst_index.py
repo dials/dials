@@ -128,8 +128,7 @@ def exercise_1():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["reflections_per_degree=5",
-                "n_macro_cycles=2",
+  extra_args = ["n_macro_cycles=2",
                 "discover_better_experimental_model=True",
                 "debug=True"]
   expected_unit_cell = uctbx.unit_cell(
@@ -151,7 +150,6 @@ def exercise_2():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["cluster_analysis_search=True",
-                "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "bin_size_fraction=0.25",
                 "d_min=4"]
@@ -174,7 +172,6 @@ def exercise_3():
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
   extra_args = ["cluster_analysis_search=True",
-                "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4"]
   expected_unit_cell = uctbx.unit_cell(
@@ -206,7 +203,6 @@ def exercise_4():
   pickle_path = os.path.join(data_dir, "P1_X6_1.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1.json")
   extra_args = ["cluster_analysis_search=True",
-                "reflections_per_degree=5",
                 "n_macro_cycles=2",
                 "d_min=4",
                 "scan_range=0,50",
@@ -214,7 +210,7 @@ def exercise_4():
                 "scan_range=850,900"]
   expected_unit_cell = uctbx.unit_cell(
     (54.3, 58.3, 66.5, 90, 90, 90))
-  expected_rmsds = (0.06, 0.06, 0.002)
+  expected_rmsds = (0.07, 0.07, 0.002)
   expected_hall_symbol = ' P 1'
 
   result = run_one_indexing(pickle_path, sweep_path, extra_args, expected_unit_cell,
@@ -231,7 +227,7 @@ def exercise_5():
   pickle_path = os.path.join(data_dir, "P1_X6_1_2.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2.json")
   extra_args = ["cluster_analysis_search=True",
-                "reflections_per_degree=5",
+                "reflections_per_degree=10",
                 "n_macro_cycles=2",
                 "d_min=4",
                 "max_cell=70",
@@ -261,7 +257,7 @@ def exercise_6():
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3.json")
   extra_args = ["cluster_analysis_search=True",
-                "reflections_per_degree=5",
+                "reflections_per_degree=10",
                 "n_macro_cycles=2",
                 "d_min=4",
                 "max_cell=70",
@@ -289,7 +285,7 @@ def exercise_7():
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
   extra_args = ["cluster_analysis_search=True",
-                "reflections_per_degree=5",
+                "reflections_per_degree=10",
                 "n_macro_cycles=2",
                 "d_min=4",
                 "max_cell=70",
@@ -312,6 +308,7 @@ def exercise_8():
   pickle_path = os.path.join(data_dir, "P1_X6_1_2_3_4.pickle")
   sweep_path = os.path.join(data_dir, "datablock_P1_X6_1_2_3_4.json")
   extra_args = ["method=real_space_grid_search",
+                "reflections_per_degree=10",
                 "use_all_reflections=True",
                 "n_macro_cycles=5",
                 "known_symmetry.unit_cell=54.3,58.3,66.5,90,90,90",
@@ -338,8 +335,7 @@ def exercise_9():
   data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
   pickle_path = os.path.join(data_dir, "full.pickle")
   sweep_path = os.path.join(data_dir, "datablock_orig.json")
-  extra_args = ["reflections_per_degree=5",
-                "n_macro_cycles=2",
+  extra_args = ["n_macro_cycles=2",
                 "method=fft1d"]
   expected_unit_cell = uctbx.unit_cell(
     (58, 58, 150, 90, 90, 90))
