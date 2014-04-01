@@ -28,6 +28,19 @@ class indexer_fft3d(indexer_base):
 
   def __init__(self, reflections, sweep, params):
     super(indexer_fft3d, self).__init__(reflections, sweep, params)
+    from libtbx.utils import time_log
+    self._map_to_grid_timer = time_log("map_to_grid")
+    self._fft_timer = time_log("fft")
+    self._find_peaks_timer = time_log("find_peaks")
+    self._cluster_analysis_timer = time_log("cluster_analysis")
+
+  def index(self):
+    super(indexer_fft3d, self).index()
+    if self.params.show_timing:
+      print self._map_to_grid_timer.report()
+      print self._fft_timer.report()
+      print self._find_peaks_timer.report()
+      print self._cluster_analysis_timer.report()
 
   def find_lattices(self):
     if self.params.fft3d.reciprocal_space_grid.d_min is libtbx.Auto:
@@ -97,22 +110,13 @@ class indexer_fft3d(indexer_base):
 
     grid = flex.double(flex.grid(self.gridding), 0)
 
-    reflections_used_for_indexing = flex.size_t()
+    selection = self.reflections['id'] == -1
 
-    for i_ref, point in enumerate(self.reciprocal_space_points):
-      if self.reflections[i_ref]['id'] != -1:
-        continue
-      point = matrix.col(point)
-      spot_resolution = 1/point.length()
-      if spot_resolution < d_min:
-        continue
-
-      grid_coordinates = [int(round(point[i]/rlgrid)+n_points/2) for i in range(3)]
-      if max(grid_coordinates) >= n_points: continue # this reflection is outside the grid
-      if min(grid_coordinates) < 0: continue # this reflection is outside the grid
-      T = math.exp(-self.params.b_iso * point.length()**2 / 4)
-      grid[grid_coordinates] = T
-      reflections_used_for_indexing.append(i_ref)
+    from dials.algorithms.indexing import map_centroids_to_reciprocal_space_grid
+    map_centroids_to_reciprocal_space_grid(
+      grid, self.reciprocal_space_points, selection,
+      d_min, b_iso=self.params.b_iso)
+    reflections_used_for_indexing = selection.iselection()
 
     self.reciprocal_space_grid = grid
     self.reflections_used_for_indexing = reflections_used_for_indexing
@@ -281,6 +285,7 @@ class indexer_fft3d(indexer_base):
     self.candidate_basis_vectors = vectors
 
   def find_basis_vector_combinations_cluster_analysis(self):
+    self._cluster_analysis_timer.start()
     # hijack the xray.structure class to facilitate calculation of distances
     xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
     for i, site in enumerate(self.sites):
@@ -463,6 +468,8 @@ class indexer_fft3d(indexer_base):
       for crystal_model in self.candidate_crystal_models:
         print crystal_model
 
+    self._cluster_analysis_timer.stop()
+
   def cluster_analysis_hcluster(self, vectors):
     from hcluster import linkage, fcluster
     import numpy
@@ -557,11 +564,8 @@ class indexer_fft3d(indexer_base):
     pyplot.show()
 
   def find_peaks_clean(self):
-    from dials.algorithms.spot_prediction import RotationAngles
-    from dxtbx.model import is_angle_in_range
-
-    # Create the rotation angle object
-    ra = RotationAngles(self.beam.get_s0(), self.goniometer.get_rotation_axis())
+    self._find_peaks_timer.start()
+    import time
 
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
     rlgrid = 2 / (d_min * self.gridding[0])
@@ -643,4 +647,5 @@ class indexer_fft3d(indexer_base):
 
     self.sites = peaks_frac
 
+    self._find_peaks_timer.stop()
     return

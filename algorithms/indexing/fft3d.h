@@ -12,9 +12,10 @@
 #define DIALS_ALGORITHMS_INTEGRATION_FFT3D_H
 #include <stdio.h>
 #include <iostream>
-#include <scitbx/vec2.h>
 #include <cmath>
+#include <scitbx/vec2.h>
 #include <scitbx/array_family/flex_types.h>
+#include <scitbx/math/utils.h>
 
 #include <cstdlib>
 #include <scitbx/array_family/versa_matrix.h>
@@ -85,7 +86,7 @@ namespace dials { namespace algorithms {
           if (are_angles_in_range(angle_ranges, phi)) {
             double T;
             if (b_iso != 0) {
-              T = std::exp(-200 * reciprocal_length_sq / 4);
+              T = std::exp(-b_iso * reciprocal_length_sq / 4);
             }
             else {
               T = 1;
@@ -159,6 +160,53 @@ namespace dials { namespace algorithms {
       }
     }
     return peaks;
+  }
+
+
+  void map_centroids_to_reciprocal_space_grid(
+    af::ref<double, af::c_grid<3> > const & grid,
+    af::const_ref<vec3<double> > const & reciprocal_space_vectors,
+    af::ref<bool> const & selection,
+    double d_min,
+    double b_iso=0)
+  {
+    typedef af::c_grid<3>::index_type index_t;
+    index_t const gridding_n_real = index_t(grid.accessor());
+    DIALS_ASSERT(d_min >=0);
+    DIALS_ASSERT(gridding_n_real[0] == gridding_n_real[1]);
+    DIALS_ASSERT(gridding_n_real[0] == gridding_n_real[2]);
+
+    const int n_points = gridding_n_real[0];
+    const double rlgrid = 2 / (d_min * n_points);
+    const double one_over_rlgrid = 1/rlgrid;
+    const int half_n_points = n_points/2;
+
+    for (int i=0; i<reciprocal_space_vectors.size(); i++) {
+      if (!selection[i]) { continue; }
+      const vec3<double> v = reciprocal_space_vectors[i];
+      const double v_length = v.length();
+      const double d_spacing = 1/v_length;
+      if (d_spacing < d_min) {
+        selection[i] = false;
+        continue;
+      }
+      vec3<int> coord;
+      for (int j=0; j<3; j++) {
+        coord[j] = scitbx::math::iround(v[j] * one_over_rlgrid) + half_n_points;
+      }
+      if ((coord.max() >= n_points) || coord.min() < 0) {
+        selection[i] = false;
+        continue;
+      }
+      double T;
+      if (b_iso != 0) {
+        T = std::exp(-b_iso * v_length * v_length / 4.0);
+      }
+      else {
+        T = 1;
+      }
+      grid(coord) = T;
+    }
   }
 
 

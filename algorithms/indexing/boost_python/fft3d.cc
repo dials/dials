@@ -25,6 +25,11 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("clean_3d", &clean_3d,
       (arg("dirty_beam"), arg("dirty_map"), arg("n_peaks"), arg("gamma")=1));
 
+    def("map_centroids_to_reciprocal_space_grid",
+      &map_centroids_to_reciprocal_space_grid,
+      (arg("grid"), arg("reciprocal_space_vectors"),
+       arg("selection"), arg("d_min"), arg("b_iso")=0));
+
   }
 
 }

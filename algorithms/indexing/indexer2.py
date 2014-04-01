@@ -266,15 +266,12 @@ class indexer_base(object):
     from libtbx.utils import time_log
     self._index_reflections_timer = time_log("index_reflections")
     self._refine_timer = time_log("refinement")
-    self._refine_core_timer = time_log("refinement_core")
     self._map_spots_pixel_to_mm_rad_timer = time_log("map_spots_pixel_to_mm_rad")
     self._map_spots_pixel_to_reciprocal_space_timer = time_log(
       "map_spots_pixel_to_reciprocal_space")
-    self._map_to_grid_timer = time_log("map_to_grid")
-    self._fft_timer = time_log("fft")
-    self._find_peaks_timer = time_log("find_peaks")
-    self._cluster_analysis_timer = time_log("cluster_analysis")
-    self._ray_intersection_timer = time_log("ray_intersection")
+    self._find_lattices_timer = time_log("find_lattices")
+    self._export_as_json_timer = time_log("export_as_json")
+    self._export_reflections_timer = time_log("export_reflections")
 
     self.target_symmetry_primitive = None
     self.target_symmetry_centred = None
@@ -395,7 +392,9 @@ class indexer_base(object):
 
       n_lattices_previous_cycle = len(experiments)
 
+      self._find_lattices_timer.start()
       experiments.extend(self.find_lattices())
+      self._find_lattices_timer.stop()
       if len(experiments) == 0:
         raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
@@ -534,14 +533,17 @@ class indexer_base(object):
     for expt in refined_experiments:
       expt.imageset = self.sweep
 
+    if len(experiments) > 1:
+      from dials.algorithms.indexing.compare_orientation_matrices \
+           import show_rotation_matrix_differences
+      show_rotation_matrix_differences(experiments.crystals())
+
     if len(refined_experiments):
       self.export_as_json(refined_experiments)
       self.export_reflections(refined_reflections, file_name='indexed.pickle')
+
     for i_lattice, crystal_model in enumerate(refined_experiments.crystals()):
       self.refined_crystal_models.append(crystal_model)
-      suffix = ""
-      if len(refined_experiments) > 1:
-        suffix = "_%i" %(i_lattice+1)
 
     if 1 and self.params.debug and self.goniometer is not None:
       for i_lattice, expt in enumerate(refined_experiments):
@@ -562,13 +564,11 @@ class indexer_base(object):
       print self._index_reflections_timer.legend
       print self._map_spots_pixel_to_mm_rad_timer.report()
       print self._map_spots_pixel_to_reciprocal_space_timer.report()
-      print self._fft_timer.report()
-      print self._find_peaks_timer.report()
-      print self._cluster_analysis_timer.report()
       print self._index_reflections_timer.report()
       print self._refine_timer.report()
-      print self._refine_core_timer.report()
-      print self._ray_intersection_timer.report()
+      print self._find_lattices_timer.report()
+      print self._export_as_json_timer.report()
+      print self._export_reflections_timer.report()
 
   def filter_reflections_by_scan_range(self):
     reflections_in_scan_range = flex.size_t()
@@ -906,16 +906,20 @@ class indexer_base(object):
       labels=flex.std_string(labels))
 
   def export_as_json(self, experiments, suffix=None, compact=False):
+    self._export_as_json_timer.start()
     if suffix is None: suffix = ""
     from dials.model.serialize import dump
     assert experiments.is_consistent()
     dump.experiment_list(experiments, 'experiments%s.json' %suffix)
+    self._export_as_json_timer.stop()
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
+    self._export_reflections_timer.start()
     with open(file_name, 'wb') as f:
       pickle.dump(reflections, f)
+    self._export_reflections_timer.stop()
 
-  def find_lattice(self):
+  def find_lattices(self):
     raise NotImplementedError()
 
   def find_candidate_basis_vectors_nks(self, vectors):
