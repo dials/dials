@@ -600,25 +600,19 @@ scratch/luiso_s/test_code/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/brach01_tst/branch02_tst/caller.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_matmul.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/example_mix_01.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/flex_integr_2d_single_pixel.py -text
 scratch/luiso_s/test_code/flex_ref_opr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/ind_2d_integrate_tst01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/integrate_2d.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/integrate_helper.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/interpolation_2D_test.py -text
-scratch/luiso_s/test_code/interpolation_2D_test_single_displ.py -text
 scratch/luiso_s/test_code/mask_test.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/matplotlib_cut.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matr_opr.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matr_system.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test01.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/matrix_test02_sub.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/matrix_test_f.f90 -text
 scratch/luiso_s/test_code/mosflm_test.py -text
 scratch/luiso_s/test_code/my_mosflm.py -text svneol=unset#text/plain
-scratch/luiso_s/test_code/numpy_centoid.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_2d.py -text svneol=unset#text/plain
 scratch/luiso_s/test_code/numpy_integr_2d_plot_hist.py -text
 scratch/luiso_s/test_code/numpy_integr_2d_single_pixel.py -text svneol=unset#text/plain
