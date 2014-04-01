@@ -598,28 +598,24 @@ class indexer_base(object):
     spots = copy.deepcopy(spots)
     spots['xyzobs.mm.value'] = flex.vec3_double(len(spots))
     spots['xyzobs.mm.variance'] = flex.vec3_double(len(spots))
-    for i_spot, spot in enumerate(spots):
-      # just a quick check for now that the reflections haven't come from
-      # somewhere else
-      #assert spot.image_coord_mm == (0,0)
-
-      # set reflection properties that might be needed by the dials refinement
-      # engine, and convert values from pixels and image number to mm/rads
-      #spot.frame_number = spot.centroid_position[2]
+    panel_numbers = flex.size_t(spots['panel'])
+    for i_panel in range(len(detector)):
+      sel = (panel_numbers == i_panel)
+      isel = sel.iselection()
+      spots_panel = spots.select(panel_numbers == i_panel)
       centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-        detector[spot['panel']], scan,
-        spot['xyzobs.px.value'],
-        spot['xyzobs.px.variance'],
-        (1,1,1))
-      spots['xyzobs.mm.value'][i_spot] = centroid_position
-      spots['xyzobs.mm.variance'][i_spot] = centroid_variance
-      #spot.rotation_angle = centroid_position[2]
+        detector[i_panel], scan,
+        spots_panel['xyzobs.px.value'],
+        spots_panel['xyzobs.px.variance'],
+        flex.vec3_double(len(spots_panel), (1,1,1)))
+      spots['xyzobs.mm.value'].set_selected(sel, centroid_position)
+      spots['xyzobs.mm.variance'].set_selected(sel, centroid_variance)
     return spots
 
   @staticmethod
   def map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
     if 's1' not in spots_mm: spots_mm['s1'] = flex.vec3_double(len(spots_mm))
-    panel_numbers = flex.size_t(spot['panel'] for spot in spots_mm)
+    panel_numbers = flex.size_t(spots_mm['panel'])
     reciprocal_space_points = flex.vec3_double()
     for i_panel in range(len(detector)):
       sel = (panel_numbers == i_panel)
@@ -628,9 +624,6 @@ class indexer_base(object):
       x, y, rot_angle = spots_panel['xyzobs.mm.value'].parts()
       s1 = detector[i_panel].get_lab_coord(flex.vec2_double(x,y))
       s1 = s1/s1.norms() * (1/beam.get_wavelength())
-      for i in range(len(s1)):
-        spots_mm['s1'][isel[i]] = s1[i] # needed by refinement
-      #spots_panel.set_beam_vector(s1) # needed by refinement
       S = s1 - beam.get_s0()
       # XXX what about if goniometer fixed rotation is not identity?
       if goniometer is not None:
