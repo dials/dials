@@ -267,7 +267,9 @@ class indexer_base(object):
     self._index_reflections_timer = time_log("index_reflections")
     self._refine_timer = time_log("refinement")
     self._refine_core_timer = time_log("refinement_core")
-    self._map_centroids_timer = time_log("map_centroids")
+    self._map_spots_pixel_to_mm_rad_timer = time_log("map_spots_pixel_to_mm_rad")
+    self._map_spots_pixel_to_reciprocal_space_timer = time_log(
+      "map_spots_pixel_to_reciprocal_space")
     self._map_to_grid_timer = time_log("map_to_grid")
     self._fft_timer = time_log("fft")
     self._find_peaks_timer = time_log("find_peaks")
@@ -309,11 +311,15 @@ class indexer_base(object):
 
   def index(self):
     import libtbx
+    self._map_spots_pixel_to_mm_rad_timer.start()
     self.reflections = self.map_spots_pixel_to_mm_rad(
       self.reflections, self.detector, self.scan)
+    self._map_spots_pixel_to_mm_rad_timer.stop()
     self.filter_reflections_by_scan_range()
+    self._map_spots_pixel_to_reciprocal_space_timer.start()
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
+    self._map_spots_pixel_to_reciprocal_space_timer.start()
 
     if self.params.max_cell is libtbx.Auto:
       # The nearest neighbour analysis gets fooled when the same part of
@@ -509,8 +515,10 @@ class indexer_base(object):
                 and self.params.refinement.parameterisation.detector.fix == 'all'):
           # Experimental geometry may have changed - re-map centroids to
           # reciprocal space
+          self._map_spots_pixel_to_reciprocal_space_timer.start()
           self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
             self.reflections, self.detector, self.beam, self.goniometer)
+          self._map_spots_pixel_to_reciprocal_space_timer.stop()
 
         if self.d_min == self.params.refinement_protocol.d_min_final:
           print "Target d_min_final reached: finished with refinement"
@@ -552,8 +560,8 @@ class indexer_base(object):
 
     if self.params.show_timing:
       print self._index_reflections_timer.legend
-      print self._map_centroids_timer.report()
-      print self._map_to_grid_timer.report()
+      print self._map_spots_pixel_to_mm_rad_timer.report()
+      print self._map_spots_pixel_to_reciprocal_space_timer.report()
       print self._fft_timer.report()
       print self._find_peaks_timer.report()
       print self._cluster_analysis_timer.report()
@@ -584,7 +592,6 @@ class indexer_base(object):
   def map_spots_pixel_to_mm_rad(spots, detector, scan):
     """Reflections that come from dials.spotfinder only have the centroid
     position and variance set, """
-
     from dials.algorithms.centroid import centroid_px_to_mm_panel
     ## ideally don't copy, but have separate spot attributes for mm and pixel
     import copy
