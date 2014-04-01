@@ -346,8 +346,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       assert flex.min(e_r_s0_mag) > 1.e-6
     except AssertionError as e:
       imin = flex.min_index(e_r_s0_mag)
-      print "(e X r).s0 too small:", e_r_s0
-      print "for reflection", reflections['miller_index'][imin]
+      print "(e X r).s0 too small:"
+      print "for", (e_r_s0_mag <= 1.e-6).count(True), "reflections"
+      print "out of", len(e_r_s0_mag), "total"
+      print "such as", reflections['miller_index'][imin]
       print "with scattering vector", reflections['s1'][imin]
       print "where r =", r[imin]
       print "e =", axis[imin]
