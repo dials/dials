@@ -22,9 +22,6 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
   assert len(experiments.detectors()) == 1
   import copy
   reflections_for_refinement = copy.deepcopy(reflections)
-  # XXX the refinement should probably do this check itself
-  reflections_for_refinement['flags'] = flex.size_t(
-    len(reflections_for_refinement), 0)
 
   from dials.algorithms.refinement import RefinerFactory
   refiner = RefinerFactory.from_parameters_data_experiments(
