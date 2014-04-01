@@ -149,8 +149,7 @@ class ExperimentsPredictor(object):
       refs = reflections.select(sel)
 
       # determine whether to try scan-varying prediction
-      if e.crystal.num_scan_points > 0:
-        # Assume per reflection UB has been set
+      if refs.has_key('ub_matrix'):
         UBs = refs['ub_matrix']
         # predict and assign in place
         self._predictors[iexp].for_reflection_table(refs, UBs)
