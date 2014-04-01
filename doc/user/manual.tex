@@ -1148,4 +1148,28 @@ Mid-Slope of Anom Normal Probability       0.972       -         -
 \end{verbatim}
 }
 
+\section{Error Messages and How to Resolve Them}
+
+\subsection{Error 1}
+
+{\small
+\begin{verbatim}
+Graemes-MacBook-Pro:demo graeme$ dials.integrate \
+../sum/refined_experiments.json \
+../sum/indexed.pickle ../sum/extracted.tar shoebox.n_blocks=36
+Processed command line options............................................35.40s
+--------------------------------------------------------------------------------
+The following command line arguments weren't handled
+  ../sum/refined_experiments.json
+Error: no experiment list specified
+\end{verbatim}
+}
+
+\noindent
+This cryptic error means that the image disk is not available (so plug
+that USB disk back in.) I would assume that somewhere in the
+constructor for the experiment list from a json file it checks to see
+if the path referred to is there and fails if not. N.B. here we have
+already extracted shoeboxes so images should not be needed anyway.
+
 \end{document}
