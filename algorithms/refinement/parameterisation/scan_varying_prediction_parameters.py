@@ -265,16 +265,3 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return dX_dp, dY_dp
 
-class VaryingCrystalPredictionParameterisation2(VaryingCrystalPredictionParameterisation):
-  """Development of a new version of the parent class that interacts with the
-  new target class and reflection manager to do calculations for all reflections
-  at once rather than individually"""
-
-  def compose(self, reflections):
-    """Composes scan-varying crystal parameterisations at the specified
-    image numbers, for the specified experiments. Adds columns of U, B and UB
-    per reflection to the table. Caches arrays of the derivatives of U and B
-    with respect to each parameter"""
-
-    #FIXME
-    raise NotImplementedError()

@@ -86,7 +86,7 @@ class Target(object):
       # scan static refinement, so probably all of the rejections have been done
       # already (so don't worry, be happy)
       self._prediction_parameterisation.compose(
-        self._reflection_manager.get_obs())
+          self._reflection_manager.get_obs())
     except AttributeError:
       pass
 

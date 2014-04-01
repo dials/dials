@@ -222,8 +222,6 @@ class PredictionParameterisation(object):
     prediction formula expressed in detector space, but components of
     d\vec{r}/dp for the prediction formula in reciprocal space
 
-    obs_image_number included to match the interface of a scan-
-    varying version of the class
     """
 
     ### Calculate various quantities of interest for the reflections
@@ -415,7 +413,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
         #self._xl_orientation_derivatives(dpv_dp, dphi_dp, R, h, s, \
         #                                   e_X_r, e_r_s0, xl_ori_param_id)
         self._xl_orientation_derivatives(reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
-                                         e_X_r, e_r_s0, B, D, xl_ori_param_id)
+                                         e_X_r, e_r_s0, B, D, xl_ori_param_id, iexp)
 
       # Now derivatives of pv and phi wrt each parameter of each crystal unit
       # cell parameterisation that is present.
@@ -423,7 +421,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       #  self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, R, h, s, \
       #                                   e_X_r, e_r_s0, xl_uc_param_id)
         self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
-                                         e_X_r, e_r_s0, U, D, xl_uc_param_id)
+                                         e_X_r, e_r_s0, U, D, xl_uc_param_id, iexp)
 
       # calculate positional derivatives from d[pv]/dp
       dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, dpv_dp)
@@ -528,9 +526,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     return
 
   def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
-                                         e_X_r, e_r_s0, B, D, xl_ori_param_id):
+                                         e_X_r, e_r_s0, B, D, xl_ori_param_id, iexp):
     """helper function to extend the derivatives lists by
-    derivatives of the crystal orientation parameterisations"""
+    derivatives of the crystal orientation parameterisations
+
+    iexp is needed by the scan-varying override of this function only"""
 
     # loop over all the crystal orientation parameterisations, even though we
     # are only setting values for one of them. We still need to move the _iparam
@@ -586,7 +586,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     return
 
   def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
-                                         e_X_r, e_r_s0, U, D, xl_uc_param_id):
+                                         e_X_r, e_r_s0, U, D, xl_uc_param_id, iexp):
+    """helper function to extend the derivatives lists by
+    derivatives of the crystal unit cell parameterisations
+
+    iexp is needed by the scan-varying override of this function only"""
 
     for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
 

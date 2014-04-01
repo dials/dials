@@ -501,9 +501,17 @@ class RefinerFactory(object):
     # Prediction equation parameterisation
     if param_type is "scans":
       if crystal_options.scan_varying:
-        pred_param = par.VaryingCrystalPredictionParameterisation(
-            experiments,
-            det_params, beam_params, xl_ori_params, xl_uc_params)
+        # FIXME Tidy this up
+        if not params.refinement.go_fast:
+          pred_param = par.VaryingCrystalPredictionParameterisation(
+              experiments,
+              det_params, beam_params, xl_ori_params, xl_uc_params)
+        else:
+          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
+            import VaryingCrystalPredictionParameterisation
+          pred_param = VaryingCrystalPredictionParameterisation(
+              experiments,
+              det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
         # FIXME Tidy this up
         if not params.refinement.go_fast:
