@@ -600,6 +600,7 @@ class RefinerFactory(object):
     if options.random_seed:
       import random
       random.seed(options.random_seed)
+      flex.set_random_seed(options.random_seed)
       if verbosity > 1:
         print "Random seed set to %d\n" % options.random_seed
 
