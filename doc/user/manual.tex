@@ -1174,6 +1174,8 @@ already extracted shoeboxes so images should not be needed anyway.
 
 \section{Recipes}
 
+\subsection{Processing}
+
 Playing some with DIALS integration arrived at this recipe, as of
 2014-04-01, which seems to do a good job of processing nice
 synchrotron / Pilatus 6M data without any artefacts.
@@ -1198,5 +1200,23 @@ dials.process intensity.algorithm=fitrs outlier.algorithm=null \
 shoebox.n_blocks=36 datablock.json
 \end{verbatim}
 }
+
+\subsection{Analysis}
+
+{\small
+\begin{verbatim}
+pointless hklin integrated.mtz hklout sorted.mtz
+aimless hklin sorted.mtz hklout scaled.mtz <<
+resolution 1.2
+eof
+ctruncate -hklin scaled.mtz -hklout truncated.mtz \
+-colin '/*/*/[IMEAN,SIGIMEAN]'
+\end{verbatim}
+}
+
+Piping the last of these into a log file allows the log information to
+be viewed with the CCP4i tool loggraph, e.g.:
+
+\includegraphics[scale = 0.5]{figures/E4.png}
 
 \end{document}
