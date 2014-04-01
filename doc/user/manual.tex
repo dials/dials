@@ -1172,4 +1172,31 @@ constructor for the experiment list from a json file it checks to see
 if the path referred to is there and fails if not. N.B. here we have
 already extracted shoeboxes so images should not be needed anyway.
 
+\section{Recipes}
+
+Playing some with DIALS integration arrived at this recipe, as of
+2014-04-01, which seems to do a good job of processing nice
+synchrotron / Pilatus 6M data without any artefacts.
+
+First set up the data block:
+
+{\small
+\begin{verbatim}
+find /Volumes/GraemeData/data/i04-inhouse/PNAS/P3_X5 -name \
+'PNAS_M3S5_1_*cbf' | dials.import -i
+\end{verbatim}
+}
+
+\noindent
+Then process this data - this is one recipe which uses the 3D
+reciprocal space profile fitting, with the general background
+determination with no rejection of pixel outliers in the background.
+
+{\small
+\begin{verbatim}
+dials.process intensity.algorithm=fitrs outlier.algorithm=null \
+shoebox.n_blocks=36 datablock.json
+\end{verbatim}
+}
+
 \end{document}
