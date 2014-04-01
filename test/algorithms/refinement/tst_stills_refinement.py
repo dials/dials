@@ -217,10 +217,9 @@ params.refinement.parameterisation.detector.fix="all"
 do_plot = False
 if do_plot: params.refinement.refinery.track_parameter_correlation=True
 
-verbosity = 0
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
-  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=verbosity)
+  obs_refs.to_table(centroid_is_mm=True), stills_experiments, verbosity=0)
 
 # run refinement
 history = refiner.run()
