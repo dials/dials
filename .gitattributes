@@ -76,6 +76,7 @@ algorithms/indexing/compare_orientation_matrices.py -text
 algorithms/indexing/fft1d.py -text
 algorithms/indexing/fft3d.h -text
 algorithms/indexing/fft3d.py -text
+algorithms/indexing/index.h -text
 algorithms/indexing/indexer.py -text
 algorithms/indexing/indexer2.py -text
 algorithms/indexing/real_space_grid_search.py -text
