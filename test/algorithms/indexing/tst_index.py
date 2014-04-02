@@ -81,7 +81,12 @@ class run_one_indexing(object):
       os.path.join(tmp_dir, "experiments.json"), check_format=False)
     assert len(experiments_list) == n_expected_lattices
     assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
+    from libtbx.utils import time_log
+    unpickling_timer = time_log("unpickling")
+    self.calc_rmsds_timer = time_log("calc_rmsds")
+    unpickling_timer.start()
     indexed_reflections = load.reflections(os.path.join(tmp_dir, "indexed.pickle"))
+    unpickling_timer.stop()
     for i in range(n_expected_lattices):
       suffix = ""
       if n_expected_lattices > 1:
@@ -101,29 +106,25 @@ class run_one_indexing(object):
       self.rmsds = self.get_rmsds_obs_pred(reflections, experiment)
       for actual, expected in zip(self.rmsds, expected_rmsds):
         assert actual <= expected
+    if 0:
+      print self.calc_rmsds_timer.legend
+      print unpickling_timer.report()
+      print self.calc_rmsds_timer.report()
 
   def get_rmsds_obs_pred(self, observations, experiment):
-    from dials.algorithms.spot_prediction import ray_intersection
+    self.calc_rmsds_timer.start()
     from dials.algorithms.indexing.indexer2 import master_params
     # XXX this should go once go_fast is the default/only option
     master_params.refinement.go_fast = True
-
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.experiment.experiment_list import ExperimentList
-
-    from dials.model.data import ReflectionList
-    ref_list = ReflectionList.from_table(observations)
-    ref_list = ray_intersection(experiment.detector, ref_list)
-    ref_table = ref_list.to_table()
     import copy
     reflections = copy.deepcopy(observations)
-    reflections['xyzcal.mm'] = ref_table['xyzcal.mm']
-    reflections['xyzcal.px'] = ref_table['xyzcal.px']
-
     # XXX hack to make it work for a single lattice
     reflections['id'] = flex.int(len(reflections), 0)
     refine = RefinerFactory.from_parameters_data_experiments(
       master_params, reflections, ExperimentList([experiment]), verbosity=0)
+    self.calc_rmsds_timer.stop()
     return refine.rmsds()
 
 def exercise_1():
