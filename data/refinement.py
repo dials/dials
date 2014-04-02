@@ -21,7 +21,7 @@ refinement
     .help = "verbosity level"
     .type = int(value_min=0)
 
-  go_fast = False
+  go_fast = True
     .help = "set False to revert to old classes for scan-static refinement"
             "that do a loop over all reflections in Python rather than the"
             "vectorised version using flex array operations"

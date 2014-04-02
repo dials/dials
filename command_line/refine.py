@@ -57,21 +57,23 @@ class Script(ScriptRunner):
 
   def write_residuals_table(self, refiner, filename):
 
-    matches = refiner.get_matches()
-
-    f = open(filename,"w")
-    header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
-        "Y_calc\tPhi_calc\n")
-    f.write(header)
-
-    for m in matches:
-      msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
-            "%5.3f\n")
-      msg = msg % (m.miller_index[0], m.miller_index[1], m.miller_index[2],
-                   m.frame_obs, m.x_obs, m.y_obs,
-                   m.phi_obs, m.x_calc, m.y_calc, m.phi_calc)
-      f.write(msg)
-    f.close()
+    # FIXME this is broken with go_fast refinement!
+    pass
+    #matches = refiner.get_matches()
+    #
+    #f = open(filename,"w")
+    #header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
+    #    "Y_calc\tPhi_calc\n")
+    #f.write(header)
+    #
+    #for m in matches:
+    #  msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
+    #        "%5.3f\n")
+    #  msg = msg % (m.miller_index[0], m.miller_index[1], m.miller_index[2],
+    #               m.frame_obs, m.x_obs, m.y_obs,
+    #               m.phi_obs, m.x_calc, m.y_calc, m.phi_calc)
+    #  f.write(msg)
+    #f.close()
 
   def main(self, params, options, args):
     '''Execute the script.'''
