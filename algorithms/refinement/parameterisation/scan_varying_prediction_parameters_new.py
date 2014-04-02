@@ -20,45 +20,15 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters_new impo
 
 from dials.array_family import flex
 
-# A helper bucket to store cached values
-#from collections import namedtuple
-#ModelCache = namedtuple('ModelCache', ['D_mats', 's0', 'axis'])
-
-# helper bucket to store crystal derivatives
-from collections import namedtuple
-UBderivatives = namedtuple('UBderivatives', ['dU_dp', 'dB_dp'])
-
 class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
   """Support crystal parameterisations that vary with time (via the proxy of
   "observed image number")"""
-
-#  _obs_image_number = None
-#
-#  def prepare(self, panel_id=0):
-#    """Cache required quantities that are not dependent on hkl"""
-#
-#    # Same as prepare for the parent class except we don't get
-#    # U and B from the model
-#    self._cache = []
-#    for e in self._experiments:
-#
-#      D_mats=[matrix.sqr(p.get_D_matrix()) for p in e.detector]
-#      s0 = matrix.col(e.beam.get_s0())
-#      if e.goniometer:
-#        axis = matrix.col(e.goniometer.get_rotation_axis())
-#      else:
-#        axis = None
-#
-#      self._cache.append(ModelCache(D_mats, s0, axis=axis))
-#
-#    return
 
   def compose(self, reflections):
     """Compose scan-varying crystal parameterisations at the specified image
     number, for the specified experiment, for all reflections. Put the U, B and
     UB matrices in the reflection table, and cache the derivatives."""
 
-    #self._obs_image_number = obs_image_number
     nref = len(reflections)
     # set columns if needed
     if not reflections.has_key('u_matrix'):
@@ -66,8 +36,11 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     if not reflections.has_key('b_matrix'):
       reflections['b_matrix'] = flex.mat3_double(nref)
 
-    # set up a dictionary to track experiment to crystal derivatives mappings
-    self._exp_to_xl_derivatives = {}
+    # set up arrays to store derivatives
+    num_free_U_params = sum([e.num_free() for e in self._xl_orientation_parameterisations])
+    num_free_B_params = sum([e.num_free() for e in self._xl_unit_cell_parameterisations])
+    self._dU_dp = [flex.mat3_double(nref) for i in range(num_free_U_params)]
+    self._dB_dp = [flex.mat3_double(nref) for i in range(num_free_B_params)]
 
     for iexp, exp in enumerate(self._experiments):
 
@@ -85,10 +58,6 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
       xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
 
-      # set arrays in which to store derivatives
-      dU_dp = [flex.mat3_double(len(isel)) for i in range(xl_op.num_free())]
-      dB_dp = [flex.mat3_double(len(isel)) for i in range(xl_ucp.num_free())]
-
       # get state and derivatives for each reflection
       for i, frame in zip(isel, obs_image_numbers):
 
@@ -103,13 +72,10 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
         # set derivatives of the states
         for j, dU in enumerate(xl_op.get_ds_dp()):
-          dU_dp[j][i] = dU
+          self._dU_dp[j][i] = dU
 
         for j, dB in enumerate(xl_ucp.get_ds_dp()):
-          dB_dp[j][i] = dB
-
-      # store derivatives in the cache
-      self._exp_to_xl_derivatives[iexp] = UBderivatives(dU_dp, dB_dp)
+          self._dB_dp[j][i] = dB
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
@@ -165,7 +131,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
   # overloaded for the scan-varying case
   def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
-                                         e_X_r, e_r_s0, B, D, xl_ori_param_id, iexp):
+                                         e_X_r, e_r_s0, B, D, xl_ori_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations."""
 
@@ -178,7 +144,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       if ixlop == xl_ori_param_id:
 
         # get derivatives of the U matrix wrt the parameters
-        dU_dxlo_p = self._exp_to_xl_derivatives[iexp].dU_dp
+        #dU_dxlo_p = self._exp_to_xl_derivatives[iexp].dU_dp
+        dU_dxlo_p = [e.select(isel) for e in self._dU_dp]
 
         # select indices for the experiment of interest
         sub_h = h.select(isel)
@@ -223,7 +190,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
   # overloaded for the scan-varying case
   def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
-                                         e_X_r, e_r_s0, U, D, xl_uc_param_id, iexp):
+                                         e_X_r, e_r_s0, U, D, xl_uc_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations."""
 
@@ -233,7 +200,8 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
       if ixlucp == xl_uc_param_id:
 
         # get derivatives of the B matrix wrt the parameters
-        dB_dxluc_p = self._exp_to_xl_derivatives[iexp].dB_dp
+        #dB_dxluc_p = self._exp_to_xl_derivatives[iexp].dB_dp
+        dB_dxluc_p = [e.select(isel) for e in self._dB_dp]
 
         # select indices for the experiment of interest
         sub_h = h.select(isel)
