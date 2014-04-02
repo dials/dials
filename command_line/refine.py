@@ -55,25 +55,28 @@ class Script(ScriptRunner):
     #    action="count", default=0,
     #    help="set verbosity level; -vv gives verbosity level 2.")
 
-  def write_residuals_table(self, refiner, filename):
+  def write_centroids_table(self, refiner, filename):
 
-    # FIXME this is broken with go_fast refinement!
-    pass
-    #matches = refiner.get_matches()
-    #
-    #f = open(filename,"w")
-    #header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
-    #    "Y_calc\tPhi_calc\n")
-    #f.write(header)
-    #
-    #for m in matches:
-    #  msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%9.6f\t"
-    #        "%5.3f\n")
-    #  msg = msg % (m.miller_index[0], m.miller_index[1], m.miller_index[2],
-    #               m.frame_obs, m.x_obs, m.y_obs,
-    #               m.phi_obs, m.x_calc, m.y_calc, m.phi_calc)
-    #  f.write(msg)
-    #f.close()
+    matches = refiner.get_matches()
+
+    f = open(filename,"w")
+    header = ("H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t"
+        "Y_calc\tPhi_calc\n")
+    f.write(header)
+
+    for m in matches:
+      msg = ("%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t"
+            "%9.6f\n")
+      (h, k, l) = m['miller_index']
+      frame = m['xyzobs.px.value'][2]
+      x_obs, y_obs, phi_obs = m['xyzobs.mm.value']
+      x_calc, y_calc, phi_calc = m['xyzcal.mm']
+      msg = msg % (h, k, l,
+                   frame, x_obs, y_obs, phi_obs,
+                   x_calc, y_calc, phi_calc)
+      f.write(msg)
+    f.close()
+    return
 
   def main(self, params, options, args):
     '''Execute the script.'''
@@ -112,7 +115,7 @@ class Script(ScriptRunner):
     if options.output_centroids_filename:
       print "Writing table of centroids to '{0}'".format(
         options.output_centroids_filename)
-      self.write_residuals_table(refiner, options.output_centroids_filename)
+      self.write_centroids_table(refiner, options.output_centroids_filename)
 
     # Write scan-varying parameters to file, if there were any
     if options.output_parameters_filename:
