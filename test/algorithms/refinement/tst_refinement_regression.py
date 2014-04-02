@@ -243,7 +243,7 @@ mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
 # Set up the LSTBX refinement engine #
 ######################################
 
-overrides="""minimiser.parameters.engine=GaussNewtonIterations
+overrides="""minimiser.parameters.engine=GaussNewton
 minimiser.parameters.verbosity=0
 minimiser.parameters.logfile=None"""
 refiner = setup_minimiser.Extract(master_phil,

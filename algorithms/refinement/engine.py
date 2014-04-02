@@ -8,8 +8,8 @@
 #
 
 """Contains classes for refinement engines. Refinery is the shared interface,
-GaussNewtonIterations, SimpleLBFGS and LBFGScurvs are the current concrete
-implementations"""
+LevenbergMarquardtIterations, GaussNewtonIterations, SimpleLBFGS and LBFGScurvs
+are the current concrete implementations"""
 
 from __future__ import division
 from scitbx import lbfgs

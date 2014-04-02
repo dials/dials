@@ -106,7 +106,7 @@ refinement
   refinery
     .help = "Parameters to configure the refinery"
   {
-    engine = SimpleLBFGS LBFGScurvs GaussNewtonIterations *LevMarIterations
+    engine = SimpleLBFGS LBFGScurvs GaussNewton *LevMar
       .help = "The minimisation engine to use"
       .type = choice
 

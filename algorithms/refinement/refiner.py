@@ -557,9 +557,9 @@ class RefinerFactory(object):
       from engine import SimpleLBFGS as refinery
     elif options.engine == "LBFGScurvs":
       from engine import LBFGScurvs as refinery
-    elif options.engine == "GaussNewtonIterations":
+    elif options.engine == "GaussNewton":
       from engine import GaussNewtonIterations as refinery
-    elif options.engine == "LevMarIterations":
+    elif options.engine == "LevMar":
       from engine import LevenbergMarquardtIterations as refinery
     else:
       raise RuntimeError("Refinement engine " + options.engine +

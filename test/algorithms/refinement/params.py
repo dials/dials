@@ -194,7 +194,7 @@ geometry_phil = """geometry.parameters
 minimiser_phil="""minimiser.parameters
     .help = "Set up an minimiser for refinement test case"
 {
-    engine = SimpleLBFGS LBFGScurvs *GaussNewtonIterations
+    engine = SimpleLBFGS LBFGScurvs *GaussNewton
         .type = choice
     logfile = tst_orientation_refinement.log
         .type = path

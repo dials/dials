@@ -48,7 +48,7 @@ class Extract(object):
   def build_minimiser(self):
 
     assert self._params.engine in ["SimpleLBFGS", "LBFGScurvs",
-        "GaussNewtonIterations"]
+        "GaussNewton"]
 
     if self._params.engine == "SimpleLBFGS":
       refiner = SimpleLBFGS(
@@ -66,7 +66,7 @@ class Extract(object):
           self._params.verbosity)
       return refiner
 
-    if self._params.engine == "GaussNewtonIterations":
+    if self._params.engine == "GaussNewton":
 
       refiner = GaussNewtonIterations(
           self._target,
