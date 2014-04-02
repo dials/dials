@@ -28,7 +28,8 @@ def discover_better_experimental_model(spot_positions, detector, beam,
   # Spot_positions: Centroid positions for spotfinder spots, in pixels
   # Return value: Corrected for parallax, converted to mm
 
-  spots_mm = Indexer._map_spots_pixel_to_mm_rad(
+  from dials.algorithms.indexing.indexer2 import indexer_base
+  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spot_positions, detector=detector, scan=scan)
 
   # derive a max_cell from mm spots
@@ -88,7 +89,8 @@ def candidate_basis_vectors_fft1d(spot_positions, detector, beam,
   # Spot_positions: Centroid positions for spotfinder spots, in pixels
   # Return value: Corrected for parallax, converted to mm
 
-  spots_mm = Indexer._map_spots_pixel_to_mm_rad(
+  from dials.algorithms.indexing.indexer2 import indexer_base
+  spots_mm = indexer_base.map_spots_pixel_to_mm_rad(
     spots=spot_positions, detector=detector, scan=scan)
 
   if len(detector) > 1:
@@ -361,53 +363,56 @@ class Indexer(object):
     self._indexer_max_primitive_cell = max_primitive_cell
     return
 
-  @staticmethod
-  def _map_spots_pixel_to_mm_rad(spots, detector, scan):
-    from dials.algorithms.centroid import centroid_px_to_mm_panel
+  #@staticmethod
+  #def _map_spots_pixel_to_mm_rad(spots, detector, scan):
+    #from dials.algorithms.centroid import centroid_px_to_mm_panel
 
-    if not spots.has_key('xyzobs.mm.value'):    spots['xyzobs.mm.value']    = flex.vec3_double(len(spots))
-    if not spots.has_key('xyzobs.mm.variance'): spots['xyzobs.mm.variance'] = flex.vec3_double(len(spots))
-    if not spots.has_key('frame_number'):       spots['frame_number']       = flex.double(len(spots))
-    if not spots.has_key('rotation_angle'):     spots['rotation_angle']     = flex.double(len(spots))
+    #if not spots.has_key('xyzobs.mm.value'):    spots['xyzobs.mm.value']    = flex.vec3_double(len(spots))
+    #if not spots.has_key('xyzobs.mm.variance'): spots['xyzobs.mm.variance'] = flex.vec3_double(len(spots))
+    #if not spots.has_key('frame_number'):       spots['frame_number']       = flex.double(len(spots))
+    #if not spots.has_key('rotation_angle'):     spots['rotation_angle']     = flex.double(len(spots))
 
-    for i_spot, spot in enumerate(spots):
-      # just a quick check for now that the reflections haven't come from
-      # somewhere else
-      #assert spot['xyzobs.mm.value'] == (0,0,0)
+    #for i_spot, spot in enumerate(spots):
+      ## just a quick check for now that the reflections haven't come from
+      ## somewhere else
+      ##assert spot['xyzobs.mm.value'] == (0,0,0)
 
-      # set reflection properties that might be needed by the dials refinement
-      # engine, and convert values from pixels and image number to mm/rads
-      spot['frame_number'] = spot['xyzobs.px.value'][2]
-      # XXX nasty hack - why are the centroid variances ever zero in the
-      # first place?
-      centroid_variance = list(spot['xyzobs.px.variance'])
-      for i in range(3):
-        if centroid_variance[i] == 0:
-          centroid_variance[i] = 0.25
-      spot['xyzobs.px.variance'] = centroid_variance
-      centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
-        detector[spot['panel']], scan,
-        spot['xyzobs.px.value'],
-        spot['xyzobs.px.variance'],
-        (1,1,1))
-      spot['xyzobs.mm.value'] = centroid_position
-      spot['xyzobs.mm.variance'] = centroid_variance
-      spot['rotation_angle'] = centroid_position[2]
-      spots[i_spot] = spot
-    return spots
+      ## set reflection properties that might be needed by the dials refinement
+      ## engine, and convert values from pixels and image number to mm/rads
+      #spot['frame_number'] = spot['xyzobs.px.value'][2]
+      ## XXX nasty hack - why are the centroid variances ever zero in the
+      ## first place?
+      #centroid_variance = list(spot['xyzobs.px.variance'])
+      #for i in range(3):
+        #if centroid_variance[i] == 0:
+          #centroid_variance[i] = 0.25
+      #spot['xyzobs.px.variance'] = centroid_variance
+      #centroid_position, centroid_variance, _ = centroid_px_to_mm_panel(
+        #detector[spot['panel']], scan,
+        #spot['xyzobs.px.value'],
+        #spot['xyzobs.px.variance'],
+        #(1,1,1))
+      #spot['xyzobs.mm.value'] = centroid_position
+      #spot['xyzobs.mm.variance'] = centroid_variance
+      #spot['rotation_angle'] = centroid_position[2]
+      #spots[i_spot] = spot
+    #return spots
 
-  @staticmethod
-  def _map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
-    assert(len(detector) == 1)
-    x, y, _ = spots_mm.centroid_position().parts()
-    s1 = detector[0].get_lab_coord(flex.vec2_double(x,y))
-    s1 = s1/s1.norms() * (1/beam.get_wavelength())
-    spots_mm.set_beam_vector(s1) # needed by refinement
-    S = s1 - beam.get_s0()
-    reciprocal_space_points = S.rotate_around_origin(
-      goniometer.get_rotation_axis(),
-      -spots_mm.rotation_angle())
-    return reciprocal_space_points
+  #@staticmethod
+  #def _map_centroids_to_reciprocal_space(spots_mm, detector, beam, goniometer):
+    #assert(len(detector) == 1)
+    #x, y, _ = spots_mm.centroid_position().parts()
+    #s1 = detector[0].get_lab_coord(flex.vec2_double(x,y))
+    #s1 = s1/s1.norms() * (1/beam.get_wavelength())
+    #spots_mm.set_beam_vector(s1) # needed by refinement
+    #S = s1 - beam.get_s0()
+    #if goniometer is not None:
+      #reciprocal_space_points = S.rotate_around_origin(
+        #goniometer.get_rotation_axis(),
+        #-spots_mm.rotation_angle())
+    #else:
+      #reciprocal_space_points = S
+    #return reciprocal_space_points
 
 
 # etc.
