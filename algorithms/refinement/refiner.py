@@ -507,11 +507,18 @@ class RefinerFactory(object):
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params)
         else:
-          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
-            import VaryingCrystalPredictionParameterisation
-          pred_param = VaryingCrystalPredictionParameterisation(
-              experiments,
-              det_params, beam_params, xl_ori_params, xl_uc_params)
+          if crystal_options.UB_model_per == "reflection":
+            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
+              import VaryingCrystalPredictionParameterisation as PredParam
+          elif crystal_options.UB_model_per == "image":
+            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
+              import VaryingCrystalPredictionParameterisationFast as PredParam
+          else:
+            raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
+                               " is not a recognised option")
+          pred_param = PredParam(
+                experiments,
+                det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
         # FIXME Tidy this up
         if not params.refinement.go_fast:

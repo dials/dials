@@ -78,6 +78,11 @@ refinement
         .help = "Number of intervals between checkpoints if scan_varying"
                 "refinement is requested"
         .type = int(value_min=1)
+
+      UB_model_per = *reflection image
+        .help = "Compose a new crystal model either every reflection (slow) or"
+                "every image (faster, less accurate)"
+        .type = choice
      }
 
     detector

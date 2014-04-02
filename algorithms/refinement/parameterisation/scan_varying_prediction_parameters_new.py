@@ -244,3 +244,70 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
         self._iparam += xlucp.num_free()
 
     return
+
+
+class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParameterisation):
+  """Overloads compose to calculate UB model per frame rather than per
+  reflection"""
+
+  def compose(self, reflections):
+    """Compose scan-varying crystal parameterisations at the specified image
+    number, for the specified experiment, for each image. Put the U, B and
+    UB matrices in the reflection table, and cache the derivatives."""
+
+    nref = len(reflections)
+    # set columns if needed
+    if not reflections.has_key('u_matrix'):
+      reflections['u_matrix'] = flex.mat3_double(nref)
+    if not reflections.has_key('b_matrix'):
+      reflections['b_matrix'] = flex.mat3_double(nref)
+
+    # set up arrays to store derivatives
+    num_free_U_params = sum([e.num_free() for e in self._xl_orientation_parameterisations])
+    num_free_B_params = sum([e.num_free() for e in self._xl_unit_cell_parameterisations])
+    self._dU_dp = [flex.mat3_double(nref) for i in range(num_free_U_params)]
+    self._dB_dp = [flex.mat3_double(nref) for i in range(num_free_B_params)]
+
+    for iexp, exp in enumerate(self._experiments):
+
+      # select the reflections of interest
+      sel = reflections['id'] == iexp
+      isel = sel.iselection()
+
+      # get their integer frame numbers
+      frames = reflections['xyzobs.px.value'].parts()[2]
+      obs_image_numbers = flex.floor((frames).select(isel)).iround()
+
+      # identify which crystal parameterisations to use for this experiment
+      param_set = self._exp_to_param[iexp]
+      xl_ori_param_id = param_set.xl_ori_param
+      xl_uc_param_id = param_set.xl_uc_param
+      xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
+      xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+
+      # get state and derivatives for each image
+      for frame in xrange(flex.min(obs_image_numbers),
+                          flex.max(obs_image_numbers) + 1):
+
+        # compose the models
+        xl_op.compose(frame)
+        xl_ucp.compose(frame)
+
+        # determine the subset of reflections this affects
+        subsel = isel.select(obs_image_numbers == frame)
+
+        # set states
+        reflections['u_matrix'].set_selected(subsel, xl_op.get_state().elems)
+        reflections['b_matrix'].set_selected(subsel, xl_ucp.get_state().elems)
+
+        # set derivatives of the states
+        for j, dU in enumerate(xl_op.get_ds_dp()):
+          self._dU_dp[j].set_selected(subsel, dU)
+
+        for j, dB in enumerate(xl_ucp.get_ds_dp()):
+          self._dB_dp[j].set_selected(subsel, dB)
+
+    # set the UB matrices for prediction
+    reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
+
+    return
