@@ -66,19 +66,43 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       arr_rlist[row][col].append([t_row])
   #print "Performing profile building  ...."
 
+  tbl_siz = ncol * nrow
+
+  example = '''
+  from dials.util.command_line import ProgressBar
+  p = ProgressBar(title = 'Generating reflections')
+
+  for j in range(params.nrefl):
+    p.update(j * 100.0 / params.nrefl)
+
+  p.finished('Generating %d reflections' % params.nrefl)
+  '''
+
+  from dials.util.command_line import ProgressBar
+  p_bar = ProgressBar(title = 'Performing profile building')
+  tbl_prgr = 0
   for col in range(ncol):
     for row in range(nrow):
-      #profile, tr_hold = make_2d_profile(arr_rlist[row][col])
+
+      p_bar.update(tbl_prgr * 100.0 / tbl_siz)
+      tbl_prgr += 1
+
       profile, tr_hold = make_2d_profile(arr_rlist[row][col], ref_table_in)
       arr_proff[row][col] = [profile, tr_hold]
+  p_bar.finished('Done %d profiles' % tbl_siz)
 
-  #print "Profile building           ....       Done"
+  p_bar = ProgressBar(title = 'Performing profile fitting')
+  tbl_prgr = 0
+
   for col in range(ncol):
     for row in range(nrow):
+
+      p_bar.update(tbl_prgr * 100.0 / tbl_siz)
+      tbl_prgr += 1
+
       ref_table_in = fit_profile_2d(arr_rlist[row][col], ref_table_in
                                     , arr_proff, row, col,  xmax, ymax)
-      #arr_rlist[row][col] = fit_profile_2d(arr_rlist[row][col], ref_table_in
-      #                      arr_proff, row, col,  xmax, ymax)
+  p_bar.finished('Done profiles fitting')
 
   imagin_stuff = '''
   ###############################################################################

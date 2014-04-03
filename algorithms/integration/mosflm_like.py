@@ -28,7 +28,6 @@ class MosflmProfileFitting:
 
     flex_2d_layering_n_integrating(ref_table)
 
-    print "Performing profile fitting  ...."
     xyz = ref_table['xyzcal.px']
     index = sorted(range(len(ref_table)), key=lambda i: xyz[i][2])
     ref_table.reorder(flex.size_t(index))
@@ -52,5 +51,3 @@ class MosflmProfileFitting:
     xmax, ymax = self.experiment.detector[0].get_image_size()
     ref_table = mosflm_caller(ref_table, xmax, ymax, self.nblocks)
     #'''
-
-    print "profile fitting            ....       Done"

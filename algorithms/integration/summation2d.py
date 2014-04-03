@@ -34,7 +34,10 @@ def flex_2d_layering_n_integrating(ref_table):
 
   #from scitbx.array_family import flex
   from dials.algorithms.integration import raw_2d_cut
-  print "Performing summation integration .... "
+
+  from dials.util.command_line import ProgressBar
+
+  p_bar = ProgressBar(title = 'Performing summation integration')
 
   from dials.array_family import flex
   # extracting needed info from table
@@ -53,11 +56,13 @@ def flex_2d_layering_n_integrating(ref_table):
 
   for row_num in range(n_rows):
 
+    p_bar.update(row_num * 100.0 / n_rows)
+
     local_shoebox = col_of_shoebox[row_num]
 
     i_r = 0
     i_v = 0
-    #if ref.is_valid():
+
     data = local_shoebox.data
     mask = local_shoebox.mask
     background = local_shoebox.background
@@ -84,6 +89,6 @@ def flex_2d_layering_n_integrating(ref_table):
   ref_table['intensity.raw.value'] = col_of_its
   ref_table['intensity.raw.variance'] = col_of_var
 
-  print "summation integration      ....       Done"
+  p_bar.finished('Summation integration done for %d reflections ' % n_rows)
 
   return ref_table
