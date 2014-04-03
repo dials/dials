@@ -330,6 +330,7 @@ command_line/process.py -text
 command_line/refine.py -text
 command_line/refine_bravais_settings.py -text
 command_line/reflection_stats.py -text
+command_line/reindex.py -text
 command_line/show_extensions.py -text
 command_line/show_models.py -text
 command_line/show_profiles.py -text
@@ -758,6 +759,7 @@ test/command_line/tst_parameters.py -text
 test/command_line/tst_predict.py -text
 test/command_line/tst_refine.py -text
 test/command_line/tst_refine_bravais_settings.py -text
+test/command_line/tst_reindex.py -text
 test/command_line/tst_spotfinder.py -text
 test/data/sim_mx/GXPARM.XDS -text
 test/data/sim_mx/INTEGRATE.HKL -text
