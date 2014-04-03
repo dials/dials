@@ -2,7 +2,7 @@
 #
 # plot_scan_varying_crystal.py
 #
-#  Copyright (C) 2014 Diamond Light Source
+#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
 #
 #  Author: David G. Waterman
 #
