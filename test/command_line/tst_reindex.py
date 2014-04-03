@@ -25,7 +25,8 @@ def run():
   commands = ["dials.reindex",
               pickle_path,
               experiments_path,
-              "change_of_basis_op=2a,b,c"]
+              "change_of_basis_op=2a,b,c",
+              "space_group=P1"]
   command = " ".join(commands)
   print command
   cwd = os.path.abspath(os.curdir)
@@ -48,6 +49,8 @@ def run():
   new_uc_params = new_experiments[0].crystal.get_unit_cell().parameters()
   assert approx_equal(2*old_uc_params[0], new_uc_params[0])
   assert approx_equal(old_uc_params[1:], new_uc_params[1:])
+  assert old_experiments[0].crystal.get_space_group().type().hall_symbol() == ' P 1'
+  assert new_experiments[0].crystal.get_space_group().type().hall_symbol() == ' P 1'
 
 
 

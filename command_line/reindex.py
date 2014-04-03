@@ -16,6 +16,7 @@ from libtbx.phil import command_line
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
+from cctbx.crystal.crystal_model import crystal_model
 from dials.model.serialize import dump
 from dials.util.command_line import Importer
 
@@ -23,6 +24,10 @@ master_phil_scope = iotbx.phil.parse("""
 change_of_basis_op = None
   .type = str
   .optional = False
+space_group = None
+  .type = space_group
+  .help = "The space group to be applied AFTER applying the change of basis "
+           "operator."
 """, process_includes=True)
 
 master_params = master_phil_scope.fetch().extract()
@@ -47,15 +52,19 @@ def run(args):
   assert params.change_of_basis_op is not None
 
   change_of_basis_op = sgtbx.change_of_basis_op(params.change_of_basis_op)
-  crystal_model = experiment.crystal
-  crystal_model_reindexed = crystal_model.change_basis(change_of_basis_op)
-  experiment.crystal = crystal_model_reindexed
+  cryst_orig = experiment.crystal
+  cryst_reindexed = cryst_orig.change_basis(change_of_basis_op)
+  if params.space_group is not None:
+    a, b, c = cryst_reindexed.get_real_space_vectors()
+    cryst_reindexed = crystal_model(
+      a, b, c, space_group=params.space_group.group())
+  experiment.crystal = cryst_reindexed
 
   print "Old crystal:"
-  print crystal_model
+  print cryst_orig
   print
   print "New crystal:"
-  print crystal_model_reindexed
+  print cryst_reindexed
   print
 
   miller_indices = reflections['miller_index']
