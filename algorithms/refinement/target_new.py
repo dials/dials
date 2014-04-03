@@ -100,9 +100,9 @@ class Target(object):
     x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
     # do not wrap around multiples of 2*pi; keep the full rotation
     # from zero to differentiate repeat observations.
-    resid = phi_calc - (flex.fmod(phi_obs, TWO_PI))
+    resid = phi_calc - (flex.fmod_positive(phi_obs, TWO_PI))
     # ensure this is the smaller of two possibilities
-    resid = flex.fmod((resid + pi), TWO_PI) - pi
+    resid = flex.fmod_positive((resid + pi), TWO_PI) - pi
     phi_calc = phi_obs + resid
     # put back in the reflections
     reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
