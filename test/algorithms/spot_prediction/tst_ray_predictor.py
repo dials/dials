@@ -13,11 +13,16 @@ class TestRayPredictor:
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
     from scitbx import matrix
+    import libtbx.load_env
+    try:
+      dials_path = libtbx.env.dist_path('dials')
+    except KeyError, e:
+      print 'FAIL: dials not configured'
+      exit(0)
 
     # The XDS files to read from
-    test_path = dirname(dirname(dirname(realpath(__file__))))
-    integrate_filename = join(test_path, 'data/sim_mx/INTEGRATE.HKL')
-    gxparm_filename = join(test_path, 'data/sim_mx/GXPARM.XDS')
+    integrate_filename = join(dials_path, 'test/data/sim_mx/INTEGRATE.HKL')
+    gxparm_filename = join(dials_path, 'test/data/sim_mx/GXPARM.XDS')
 
     # Read the XDS files
     self.integrate_handle = integrate_hkl.reader()
@@ -155,7 +160,10 @@ class TestRayPredictor:
     # Predict the spot locations
     self.reflections2 = []
     for h in self.generate_indices.to_array():
-      self.reflections2.extend(self.predict_rays(h, UB))
+      rays = self.predict_rays(h, UB)
+      for ray in rays:
+        if ray.angle >= dphi[0] and ray.angle <= dphi[1]:
+          self.reflections2.append(ray)
 
     eps = 1e-7
     assert(len(self.reflections) == len(self.reflections2))
