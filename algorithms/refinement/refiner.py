@@ -948,9 +948,13 @@ class Refiner(object):
     self._refinery.run()
 
     # write scan varying setting matrices back to crystal models
+    #FIXME tidy up
     from dials.algorithms.refinement.parameterisation import \
       VaryingCrystalPredictionParameterisation
-    if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation):
+    from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
+      import VaryingCrystalPredictionParameterisationFast
+    if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation) or \
+       isinstance(self._pred_param, VaryingCrystalPredictionParameterisationFast):
       for iexp, exp in enumerate(self._experiments):
         ar_range = exp.scan.get_array_range()
         A_list = [self._pred_param.get_UB(t, iexp) for t in range(ar_range[0],

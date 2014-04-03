@@ -82,6 +82,23 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
     return
 
+  def get_UB(self, obs_image_number, experiment_id):
+    """Extract the setting matrix from the contained scan
+    dependent crystal parameterisations at specified image number"""
+
+    # called by refiner.run for setting the crystal scan points
+    param_set = self._exp_to_param[experiment_id]
+    xl_ori_param_id = param_set.xl_ori_param
+    xl_uc_param_id = param_set.xl_uc_param
+    xl_op = self._xl_orientation_parameterisations[param_set.xl_ori_param]
+    xl_ucp = self._xl_unit_cell_parameterisations[param_set.xl_uc_param]
+
+    xl_op.compose(obs_image_number)
+    xl_ucp.compose(obs_image_number)
+
+    UB = xl_op.get_state() * xl_ucp.get_state()
+    return UB
+
   def get_gradients(self, reflections):
     """
     Calculate gradients of the prediction formula with respect to each
