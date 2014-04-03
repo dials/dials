@@ -274,7 +274,10 @@ class indexer_base(object):
     self._export_reflections_timer = time_log("export_reflections")
 
     self.target_symmetry_primitive = None
+    self.target_symmetry_minimum_cell = None
     self.target_symmetry_centred = None
+    self.cb_op_centred_to_primitive = None
+    self.cb_op_minimum_cell_to_primitive = None
     if (self.params.known_symmetry.space_group is not None or
         self.params.known_symmetry.unit_cell is not None):
       is_centred = False
@@ -301,10 +304,15 @@ class indexer_base(object):
         else:
           self.target_symmetry_centred = self.target_symmetry_primitive.change_basis(
             self.target_symmetry_primitive.change_of_basis_op_to_reference_setting())
+        self.cb_op_centred_to_primitive \
+          = self.target_symmetry_centred.change_of_basis_op_to_primitive_setting()
       if self.params.known_symmetry.unit_cell is not None:
         assert (self.target_symmetry_primitive.unit_cell().is_similar_to(
           self.params.known_symmetry.unit_cell) or self.target_symmetry_centred.unit_cell().is_similar_to(
           self.params.known_symmetry.unit_cell))
+        self.target_symmetry_minimum_cell = self.target_symmetry_primitive.minimum_cell()
+        self.cb_op_minimum_cell_to_primitive \
+          = self.target_symmetry_primitive.change_of_basis_op_to_minimum_cell().inverse()
 
   def index(self):
     import libtbx
@@ -689,20 +697,31 @@ class indexer_base(object):
             #assert a.cross(b).dot(c) > 0
           model = Crystal(a, b, c, space_group_symbol="P 1")
           uc = model.get_unit_cell()
+          model_orig = model
           cb_op_to_niggli = uc.change_of_basis_op_to_niggli_cell()
           model = model.change_basis(cb_op_to_niggli)
+          uc = model.get_unit_cell()
           if self.target_symmetry_primitive is not None:
             symmetrized_model = self.apply_symmetry(
               model, self.target_symmetry_primitive)
-            if symmetrized_model is None:
-              if self.target_symmetry_centred is not None:
-                symmetrized_model = self.apply_symmetry(
-                model, self.target_symmetry_centred,
-                return_primitive_setting=True)
+            cb_op_to_primitive = None
+            if symmetrized_model is None and self.target_symmetry_centred is not None:
+              symmetrized_model = self.apply_symmetry(
+              model, self.target_symmetry_centred,
+              return_primitive_setting=True)
+              cb_op_to_primitive = self.cb_op_centred_to_primitive
+            if symmetrized_model is None and self.target_symmetry_minimum_cell is not None:
+              symmetrized_model = self.apply_symmetry(
+              model, self.target_symmetry_minimum_cell,
+              return_primitive_setting=True)
+              cb_op_to_primitive = self.cb_op_minimum_cell_to_primitive
             if symmetrized_model is None:
               continue
             if apply_symmetry:
               model = symmetrized_model
+              uc = model.get_unit_cell()
+            elif cb_op_to_primitive is not None:
+              model = model.change_basis(cb_op_to_primitive)
               uc = model.get_unit_cell()
 
           params = uc.parameters()
