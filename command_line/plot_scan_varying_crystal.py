@@ -23,8 +23,6 @@ class ScriptRunner(object):
 
   def __call__(self):
     '''Run the script.'''
-    #from dials.model.data import ReflectionList # import dependency
-    #from dials.util.command_line import Command
 
     for icrystal, crystal in enumerate(self.crystals):
 
@@ -32,13 +30,46 @@ class ScriptRunner(object):
         print "Ignoring scan-static crystal"
         continue
 
-      print "Image\ta\tb\tc\talpha\tbeta\tgamma"
-      msg = "\t".join(["%.3f"] * 7)
-      for t in xrange(crystal.num_scan_points):
-        uc = crystal.get_unit_cell_at_scan_point(t)
-        print msg % ((t,) + uc.parameters())
+      scan_pts = range(crystal.num_scan_points)
+      cells = [crystal.get_unit_cell_at_scan_point(t) \
+               for t in scan_pts]
+      dat = [(t,) + e.parameters() + (e.volume(),) \
+             for (t, e) in zip(scan_pts, cells)]
+      self.plot(dat)
+
+      print "Image\ta\tb\tc\talpha\tbeta\tgamma\tVolume"
+      msg = "\t".join(["%.3f"] * 8)
+      for line in dat:
+        print msg % line
 
     print "TODO: misset angles around user-supplied axes"
+
+  def plot(self, dat):
+    try:
+      import matplotlib.pyplot as plt
+      import matplotlib.gridspec as gridspec
+    except ImportError as e:
+      print "matplotlib modules not available", e
+      return None
+
+    image, a, b, c, alpha, beta, gamma, volume = zip(*dat)
+
+    gs = gridspec.GridSpec(4, 2)
+    plt.subplot(gs[0, 0])
+    plt.plot(image, a)
+    plt.subplot(gs[0, 1])
+    plt.plot(image, alpha)
+    plt.subplot(gs[1, 0])
+    plt.plot(image, b)
+    plt.subplot(gs[1, 1])
+    plt.plot(image, beta)
+    plt.subplot(gs[2, 0])
+    plt.plot(image, c)
+    plt.subplot(gs[2, 1])
+    plt.plot(image, gamma)
+    plt.subplot2grid((4,2), (3, 0), colspan=2)
+    plt.plot(image, volume)
+    plt.show()
 
 if __name__ == '__main__':
   import sys
