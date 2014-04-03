@@ -309,6 +309,7 @@ command_line/export.py -text
 command_line/export_mosflm.py -text
 command_line/export_mtz.py -text
 command_line/export_spot_xds.py -text
+command_line/export_text.py -text
 command_line/export_xds.py -text
 command_line/extract.py -text
 command_line/find_spots.py -text
@@ -784,6 +785,7 @@ util/__init__.py -text
 util/command_line.py -text
 util/config.py -text
 util/export_mtz.py -text
+util/export_text.py -text
 util/image.py -text
 util/ioutil.py -text
 util/nexus.py -text

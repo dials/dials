@@ -36,30 +36,30 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
     # Convert Pixel coordinate into mm/rad
     x, y, z = position
     xy_mm = panel.pixel_to_millimeter((x, y))
-  
+
     if scan is None:
       z_rad = 0
     else:
       z_rad = scan.get_angle_from_array_index(z, deg=False)
-  
+
     # Set the position, variance and squared width in mm/rad
     # N.B assuming locally flat pixel to millimeter transform
     # for variance calculation.
     position_mm = xy_mm + (z_rad,)
     variance_mm = map(mul, variance, scale2)
     sd_error_mm = map(mul, sd_error, scale2)
-  
+
   else:
     from scitbx.array_family import flex
     # Convert Pixel coordinate into mm/rad
     x, y, z = position.parts()
     xy_mm = panel.pixel_to_millimeter(flex.vec2_double(x, y))
-  
+
     if scan is None:
       z_rad = flex.double(z.size(), 0)
     else:
       z_rad = scan.get_angle_from_array_index(z, deg=False)
-  
+
     # Set the position, variance and squared width in mm/rad
     # N.B assuming locally flat pixel to millimeter transform
     # for variance calculation.
@@ -72,4 +72,3 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
 
   # Return the stuff in mm/rad
   return position_mm, variance_mm, sd_error_mm
-    
