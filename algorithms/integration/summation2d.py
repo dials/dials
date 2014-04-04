@@ -31,12 +31,9 @@ def flex_2d_layering_n_integrating(ref_table):
   frame per frame, each reflection in the table
   '''
 
-
-  #from scitbx.array_family import flex
   from dials.algorithms.integration import raw_2d_cut
 
   from dials.util.command_line import ProgressBar
-
   p_bar = ProgressBar(title = 'Performing summation integration')
 
   from dials.array_family import flex

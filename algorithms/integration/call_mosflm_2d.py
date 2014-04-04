@@ -16,7 +16,6 @@ from dials.model.data import Reflection, ReflectionList
 
 from dials.array_family import flex
 
-#def mosflm_caller(rlist, xmax, ymax, n_div):
 def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
   imagin_stuff = '''
@@ -50,8 +49,8 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
       # consider replasing xyzcal with centroid pos
       x, y = col_xyzcal[t_row][0:2]# r.image_coord_px
 
-      col = int(float(x) / float(xmax) * n_div)
-      row = int(float(y) / float(ymax) * n_div)
+      col = int(float(x) / float(xmax) * ncol)
+      row = int(float(y) / float(ymax) * nrow)
       log_print_n_debugg_way = '''
       print "x,y =", x, y
       print "col, row =", col, row
@@ -64,19 +63,8 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
         break
       #'''
       arr_rlist[row][col].append([t_row])
-  #print "Performing profile building  ...."
 
   tbl_siz = ncol * nrow
-
-  example = '''
-  from dials.util.command_line import ProgressBar
-  p = ProgressBar(title = 'Generating reflections')
-
-  for j in range(params.nrefl):
-    p.update(j * 100.0 / params.nrefl)
-
-  p.finished('Generating %d reflections' % params.nrefl)
-  '''
 
   from dials.util.command_line import ProgressBar
   p_bar = ProgressBar(title = 'Performing profile building')

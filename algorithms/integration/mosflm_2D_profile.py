@@ -79,7 +79,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     data2d, background2d = from_3D_to_2D_projection(shoebox, background)
 
 
-
     # mask may be needed soon
     #mask =col_shoebox[t_row].mask
     #mask2d = mask[0:1, :, :]

@@ -390,9 +390,9 @@ namespace dials { namespace algorithms {
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;
           predicted_i = backg2dmov(row,col) + imodl_lst[counter] * sum_its;
-          if (predicted_i == 0){
+          if (predicted_i <= 0){
             predicted_i = 0.000001;
-            std::cout << "\n gone below zero\n";
+            //std::cout << "\n gone below zero\n";
           }
           w_lst[counter] = 1.0 /
                         (predicted_i);

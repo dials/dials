@@ -40,9 +40,11 @@ def from_3D_to_2D_projection(shoebox, background):
 def from_3D_to_2D_mask_projection(mask):
   from dials.algorithms.integration import mask_add_2d
   if mask.all()[0] == 1:
+    #print "No need for projection to convert"
     mask2d = mask[0:1, :, :]
     mask2d.reshape(flex.grid(mask.all()[1:]))
   else:
+    #print "mask.all()[0] =", mask.all()[0]
     mask2d_tot = flex.int(flex.grid(mask.all()[1:]),1)
     for z_frm in range(mask.all()[0]):
       mask2d_to_add = mask[z_frm:z_frm + 1, :, :]
