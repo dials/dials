@@ -21,10 +21,10 @@ def run(i, imp):
   ref_table['shoebox'] = shoebox
 
   intensity = flex.double(num_ref)
-  ref_table['intensity.raw.value'] = intensity
+  ref_table['intensity.sum.value'] = intensity
 
   intensity_var = flex.double(num_ref)
-  ref_table['intensity.raw.variance'] = intensity_var
+  ref_table['intensity.sum.variance'] = intensity_var
 
   iterate = ref_table['shoebox']
   i_to_compare = []
@@ -82,8 +82,8 @@ def run(i, imp):
   # comparing results
 
   result = "OK"
-  resl_its = ref_table['intensity.raw.value']
-  resl_var = ref_table['intensity.raw.variance']
+  resl_its = ref_table['intensity.sum.value']
+  resl_var = ref_table['intensity.sum.variance']
   for n_its in range(len(resl_its)):
     if(resl_its[n_its] <= i_to_compare[n_its] + i and \
        resl_its[n_its] >= i_to_compare[n_its] - i and \

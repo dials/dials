@@ -9,8 +9,8 @@ if __name__ == '__main__':
 
   # Get the column data
   z = table['xyzcal.px'].parts()[2]
-  I = table['intensity.raw.value']
-  sig_I = flex.sqrt(table['intensity.raw.variance'])
+  I = table['intensity.sum.value']
+  sig_I = flex.sqrt(table['intensity.sum.variance'])
   bg = table['background']
 
   # Calculate the average I, I / sig_I for each frame

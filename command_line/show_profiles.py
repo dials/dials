@@ -19,9 +19,9 @@ def show_profiles(integrated_pickle, isig_limit = None):
 
   for j, r in enumerate(integrated_data):
     if not isig_limit is None:
-      if r['intensity.raw.value'] <= 0:
+      if r['intensity.sum.value'] <= 0:
         continue
-      if r['intensity.raw.value'] / math.sqrt(r['intensity.raw.variance']) < isig_limit:
+      if r['intensity.sum.value'] / math.sqrt(r['intensity.sum.variance']) < isig_limit:
         continue
 
     print_profile(r)

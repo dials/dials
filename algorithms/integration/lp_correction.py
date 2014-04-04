@@ -3,20 +3,11 @@ def correct_intensity(experiment, reflections):
   from dials.util.command_line import Command
   from dials.array_family import flex
   Command.start('Performing LP-correction')
-  s1 = reflections['s1']
-  I = reflections['intensity.raw.value']
-  varI = reflections['intensity.raw.variance']
-  corrected_I = flex.double(len(I))
-  corrected_varI = flex.double(len(I))
-  for i in range(len(reflections)):
-    lp = LP_calculations(experiment, s1[i])
-    corrected_I[i] = I[i] * lp
-    corrected_varI[i] = varI[i] * lp
-  reflections['intensity.cor.value'] = corrected_I
-  reflections['intensity.cor.variance'] = corrected_varI
-  Command.end('Performed LP-correction on {0} reflections'.format(
-    len(reflections)))
-  return reflections
+  reflections['lp'] = flex.double(
+    [LP_calculations(experiment, s1)
+     for s1 in reflections['s1']])
+  Command.end('Performed LP-correction on {0} reflections'.format(len(lp)))
+  return lp
 
 def LP_calculations(experiment, s1):
   '''See Kabsch, J. Appl. Cryst 1988 21 916-924.'''
@@ -43,4 +34,3 @@ def LP_calculations(experiment, s1):
         p * (1 + (s.dot(s0) / (s.length() * s0.length())) ** 2.0)
 
   return L_f / P_f
-

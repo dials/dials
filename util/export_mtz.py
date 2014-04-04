@@ -17,7 +17,9 @@ def export_mtz(integrated_data, experiment_list, hklout):
   assert(min(integrated_data['id']) == max(integrated_data['id']) == 0)
 
   # strip out negative variance reflections: these should not really be there
-  selection = integrated_data['intensity.cor.variance'] < 0
+  # FIXME Doing select on summation results. Should do on profile result if
+  # present?
+  selection = integrated_data['intensity.sum.variance'] < 0
   if selection.count(True) > 0:
     integrated_data.del_selected(selection)
     print 'Removing %d reflections with negative variance' % selection.count(True)
@@ -206,15 +208,21 @@ def export_mtz(integrated_data, experiment_list, hklout):
   d.add_column('BATCH', type_table['BATCH']).set_values(
     batch.as_double().as_float())
 
-  d.add_column('I', type_table['I']).set_values(
-    integrated_data['intensity.cor.value'].as_float())
+  lp = integrated_data['lp']
+  if 'intensity.prf.value' in integrated_data:
+    I = integrated_data['intensity.prf.value'] * lp
+    V = integrated_data['intensity.prf.variance'] * lp
+  else:
+    I = integrated_data['intensity.sum.value'] * lp
+    V = integrated_data['intensity.sum.variance'] * lp
+
+  d.add_column('I', type_table['I']).set_values(I.as_float())
 
   # Trap negative variances
 
-  assert ((integrated_data['intensity.cor.variance'] < 0).count(True) == 0)
+  assert ((V < 0).count(True) == 0)
 
-  d.add_column('SIGI', type_table['SIGI']).set_values(
-    flex.sqrt(integrated_data['intensity.cor.variance']).as_float())
+  d.add_column('SIGI', type_table['SIGI']).set_values(flex.sqrt(V).as_float())
 
   d.add_column('FRACTIONCALC', type_table['FRACTIONCALC']).set_values(
     fractioncalc.as_float())

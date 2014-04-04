@@ -121,8 +121,8 @@ class Test(object):
     # Only select variances greater than zero
     mask = self.reference.get_flags(self.reference.flags.integrated)
     assert(mask.count(True) > 0)
-    I_cal = self.reference['intensity.raw.value']
-    I_var = self.reference['intensity.raw.variance']
+    I_cal = self.reference['intensity.prf.value']
+    I_var = self.reference['intensity.prf.variance']
     B_sim = self.reference['background.sim.a'].as_double()
     I_sim = self.reference['intensity.sim'].as_double()
     I_exp = self.reference['intensity.exp']
@@ -266,8 +266,8 @@ class Test(object):
     refl = refl[:len(self.reference)]
     assert(len(refl) == old_size)
     assert(len(reference) == len(self.reference))
-    I_cal = refl['intensity.raw.value']
-    I_var = refl['intensity.raw.variance']
+    I_cal = refl['intensity.prf.value']
+    I_var = refl['intensity.prf.variance']
 
     # Check the reference profiles and spots are ok
     #self.check_profiles(integration.learner)
@@ -379,8 +379,8 @@ class Test(object):
     # Get a load of stuff
     I_sim = reference['intensity.sim']
     I_exp = reference['intensity.exp']
-    I_cal = reference['intensity.raw.value']
-    I_var = reference['intensity.raw.variance']
+    I_cal = reference['intensity.prf.value']
+    I_var = reference['intensity.prf.variance']
 
     # Get the transformed shoeboxes
     profiles = reference['rs_shoebox']

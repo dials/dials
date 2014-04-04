@@ -40,6 +40,8 @@ namespace dials { namespace af { namespace boost_python {
   T* make_from_observation_and_shoebox(
       const af::const_ref<Observation> &o,
       const af::const_ref< Shoebox<double> > &s) {
+    // FIXME Should remove as we don't know whether intensity is summed or
+    // profile fitted. In any case observation model should be deprecated.
     DIALS_ASSERT(o.size() == s.size());
 
     // The reflection table
@@ -47,10 +49,8 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<std::size_t>    panel  = result["panel"];
     af::shared< vec3<double> > xyzval = result["xyzobs.px.value"];
     af::shared< vec3<double> > xyzvar = result["xyzobs.px.variance"];
-    af::shared<double>         iraw   = result["intensity.raw.value"];
-    af::shared<double>         irawv  = result["intensity.raw.variance"];
-    af::shared<double>         icor   = result["intensity.cor.value"];
-    af::shared<double>         icorv  = result["intensity.cor.variance"];
+    af::shared<double>         iraw   = result["intensity.sum.value"];
+    af::shared<double>         irawv  = result["intensity.sum.variance"];
     af::shared<int6>           bbox   = result["bbox"];
     af::shared< Shoebox<> >    sbox   = result["shoebox"];
 
@@ -66,8 +66,6 @@ namespace dials { namespace af { namespace boost_python {
       xyzvar[i] = o[i].centroid.px.std_err_sq;
       iraw[i]   = o[i].intensity.observed.value;
       irawv[i]  = o[i].intensity.observed.variance;
-      icor[i]   = o[i].intensity.corrected.value;
-      icorv[i]  = o[i].intensity.corrected.variance;
 
       // Copy shoebox info
       bbox[i] = s[i].bbox;
@@ -118,10 +116,11 @@ namespace dials { namespace af { namespace boost_python {
       "  xyzobs.px.variance:     centroid pixel variance\n"
       "  xyzobs.mm.value:        centroid millimetre position\n"
       "  xyzobs.mm.variance:     centroid millimetre variance\n"
-      "  intensity.raw.value:    raw intensity value\n"
-      "  intensity.raw.variance: raw intensity variance\n"
-      "  intensity.cor.value:    corrected intensity value\n"
-      "  intensity.cor.variance: corrected intensity variance\n"
+      "  intensity.sum.value:    raw intensity value\n"
+      "  intensity.sum.variance: raw intensity variance\n"
+      "  intensity.prf.value:    profile fitted intensity value\n"
+      "  intensity.prf.variance: profile fitted intensity variance\n"
+      "  lp:                     LP correction (multiplicative)\n"
       "  profile.correlation:    correlation in profile fitting\n"
       "\n"
       " Shoebox properties\n"

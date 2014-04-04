@@ -114,8 +114,8 @@ class ProfileFittingReciprocalSpace(object):
     I, I_var, P_cor = intensity.parts()
     mask = I_var > 0
     I_var.set_selected(mask != True, 0.0)
-    reflections['intensity.raw.value'] = I
-    reflections['intensity.raw.variance'] = I_var
+    reflections['intensity.prf.value'] = I
+    reflections['intensity.prf.variance'] = I_var
     reflections['profile.correlation'] = P_cor
     reflections.set_flags(mask, reflections.flags.integrated)
     Command.end('Integrated {0} reflections'.format(len(reflections)))

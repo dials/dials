@@ -54,8 +54,8 @@ class CentroidAnalyser(object):
 
     # Set the required fields
     self.required = [
-      "intensity.raw.value",
-      "intensity.raw.variance",
+      "intensity.sum.value",
+      "intensity.sum.variance",
       "xyzcal.px",
       "xyzobs.px.value"
     ]
@@ -86,8 +86,8 @@ class CentroidAnalyser(object):
     ''' Analyse the correlations. '''
     from dials.array_family import flex
     from os.path import join
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
     rlist = rlist.select(mask)
@@ -109,8 +109,8 @@ class CentroidAnalyser(object):
     ''' Look at the centroid difference in x, y '''
     from dials.array_family import flex
     from os.path import join
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
     rlist = rlist.select(mask)
@@ -140,8 +140,8 @@ class CentroidAnalyser(object):
     ''' Look at the centroid difference in x, y '''
     from dials.array_family import flex
     from os.path import join
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > threshold
     rlist = rlist.select(mask)
@@ -172,26 +172,28 @@ class IntensityAnalyser(object):
 
     # Set the required fields
     self.required = [
-      "intensity.raw.value",
-      "intensity.raw.variance",
+      "intensity.sum.value",
+      "intensity.sum.variance",
       "xyzcal.px",
     ]
 
   def __call__(self, rlist):
     ''' Analyse the reflection centroids. '''
 
+    # FIXME Do the same and a comparison for intensity.prf
+
     # Check we have the required fields
     print "Analysing reflection intensities"
     if not ensure_required(rlist, self.required):
       return
 
-    selection = rlist['intensity.raw.variance'] < 0
+    selection = rlist['intensity.sum.variance'] < 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
       print 'Removing %d reflections with negative variance' % \
         selection.count(True)
 
-    selection = rlist['intensity.raw.value'] < 0
+    selection = rlist['intensity.sum.value'] < 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
       print 'Removing %d reflections with negative intensity' % \
@@ -219,8 +221,8 @@ class IntensityAnalyser(object):
     ''' Analyse the correlations. '''
     from dials.array_family import flex
     from os.path import join
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     pylab.title("Log I/Sigma histogram")
     pylab.hist(flex.log(I_over_S), bins=20)
@@ -233,8 +235,8 @@ class IntensityAnalyser(object):
     ''' Plot I/Sigma vs X/Y '''
     from dials.array_family import flex
     from os.path import join
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Distribution of I/Sigma vs X/Y")
@@ -250,8 +252,8 @@ class IntensityAnalyser(object):
     ''' Plot I/Sigma vs Z. '''
     from dials.array_family import flex
     from os.path import join
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
     pylab.title("Distribution of I/Sigma vs X/Y")
@@ -301,8 +303,8 @@ class ReferenceProfileAnalyser(object):
 
     # Set the required fields
     self.required = [
-      "intensity.raw.value",
-      "intensity.raw.variance",
+      "intensity.prf.value",
+      "intensity.prf.variance",
       "xyzcal.px",
       "profile.correlation"
     ]
@@ -423,8 +425,8 @@ class ReferenceProfileAnalyser(object):
     from dials.array_family import flex
     from os.path import join
     corr = rlist['profile.correlation']
-    I = rlist['intensity.raw.value']
-    I_sig = flex.sqrt(rlist['intensity.raw.variance'])
+    I = rlist['intensity.prf.value']
+    I_sig = flex.sqrt(rlist['intensity.prf.variance'])
     I_over_S = I / I_sig
     mask = I_over_S > 0.1
     I_over_S = I_over_S.select(mask)

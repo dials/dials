@@ -65,7 +65,7 @@ class Test(object):
     assert('id' in table)
     assert('panel' in table)
     assert('xyzobs.px.value' in table)
-    assert('intensity.raw.value' in table)
+    assert('intensity.sum.value' in table)
     assert(len(table) == 742)
     print 'OK'
 
@@ -84,7 +84,7 @@ class Test(object):
     assert('id' in table)
     assert('panel' in table)
     assert('xyzobs.px.value' in table)
-    assert('intensity.raw.value' in table)
+    assert('intensity.sum.value' in table)
     assert(len(table) == 664)
     print 'OK'
 

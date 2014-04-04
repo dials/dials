@@ -78,7 +78,7 @@ def export_spot_xds(reflections, filename):
   from iotbx.xds import spot_xds
   if reflections is not None and len(reflections) > 0:
     centroids = reflections['xyzobs.px.value']
-    intensities = reflections['intensity.raw.value']
+    intensities = reflections['intensity.sum.value']
     miller_indices = None
     if 'miller_index' in reflections:
       miller_indices = reflections['miller_index']

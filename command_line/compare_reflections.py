@@ -20,10 +20,10 @@ class CompareReflections(object):
     self.refl2.reorder(index)
 
     # Get the intensities
-    I1 = self.refl1['intensity.raw.value']
-    I2 = self.refl2['intensity.raw.value']
-    S1 = flex.sqrt(self.refl1['intensity.raw.variance'])
-    S2 = flex.sqrt(self.refl2['intensity.raw.variance'])
+    I1 = self.refl1['intensity.sum.value']
+    I2 = self.refl2['intensity.sum.value']
+    S1 = flex.sqrt(self.refl1['intensity.sum.variance'])
+    S2 = flex.sqrt(self.refl2['intensity.sum.variance'])
     xyz1 = self.refl1['xyzcal.px']
     xyz2 = self.refl2['xyzcal.px']
 
@@ -100,9 +100,9 @@ if __name__ == '__main__':
   # Read the second batch of reflections
   Command.start('Reading reflections from %s' % args[1])
   refl2 = flex.reflection_table.from_pickle(args[1])
-  mask = refl2['intensity.raw.value'] <= 0.0
+  mask = refl2['intensity.sum.value'] <= 0.0
   refl2.del_selected(mask)
-  mask = refl2['intensity.raw.value']**2 < refl2['intensity.raw.variance']
+  mask = refl2['intensity.sum.value']**2 < refl2['intensity.sum.variance']
   refl2.del_selected(mask)
   Command.end('Read %d reflections from %s' % (len(refl2), args[1]))
 

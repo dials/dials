@@ -91,8 +91,8 @@ class Test(object):
     # Integrate
     integration = Summation3d()
     integration(None, refl)
-    I_cal = refl['intensity.raw.value']
-    I_var = refl['intensity.raw.variance']
+    I_cal = refl['intensity.sum.value']
+    I_var = refl['intensity.sum.variance']
 
     # Only select variances greater than zero
     mask = I_var > 0

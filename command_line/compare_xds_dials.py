@@ -110,9 +110,9 @@ def pull_calculated(integrate_pkl):
   strong_reflections = []
 
   for r in r_list:
-    if r['intensity.raw.value'] ** 2 < r['intensity.raw.variance']:
+    if r['intensity.sum.value'] ** 2 < r['intensity.sum.variance']:
       continue
-    if r['intensity.raw.value'] <= 0.0:
+    if r['intensity.sum.value'] <= 0.0:
       continue
     strong_reflections.append(r)
 
@@ -128,7 +128,7 @@ def pull_calculated(integrate_pkl):
     hkl.append(r['miller_index'])
     i.append(r['intensity.cor.value'])
     sigi.append(math.sqrt(r['intensity.cor.variance']))
-    lp.append(r['intensity.cor.value'] / r['intensity.raw.value'])
+    lp.append(r['intensity.cor.value'] / r['intensity.sum.value'])
     x, y, z = r['xyzcal.px']
     xyz.append((x, y, z))
 

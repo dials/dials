@@ -25,10 +25,10 @@ example_from_other_code = '''
 for row in table.rows():
   h = row['miller_index']
   i_c = row['intensity.cor.value']
-  i_r = row['intensity.raw.value']
+  i_r = row['intensity.sum.value']
 
   i_c_var = row['intensity.cor.variance']
-  i_r_var = row['intensity.raw.variance']
+  i_r_var = row['intensity.sum.variance']
   if( i_c > math.sqrt(i_c_var) and i_r > math.sqrt(i_r_var) ):
     ref_table.append(row)
 '''

@@ -100,8 +100,8 @@ for ypos in range(n_y):
 
 print "t_row =", t_row
 ref_table['shoebox'] = t_shoebox
-ref_table['intensity.raw.value'] = t_intensity
-ref_table['intensity.raw.variance'] = t_intensity_var
+ref_table['intensity.sum.value'] = t_intensity
+ref_table['intensity.sum.variance'] = t_intensity_var
 ref_table['bbox'] = t_bbox
 ref_table['xyzobs.px.value'] = t_xyzobs
 ref_table['xyzcal.px'] = t_xyzcal
@@ -132,7 +132,7 @@ flex_2d_layering_n_integrating(ref_table)
 
 print "_____________________________________________________ here"
 
-t_intensity = ref_table['intensity.raw.value']
+t_intensity = ref_table['intensity.sum.value']
 
 old_i_table = t_intensity[:]
 

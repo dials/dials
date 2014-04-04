@@ -45,14 +45,14 @@ def flex_2d_layering_n_integrating(ref_table):
 
 
   col_of_shoebox = ref_table['shoebox']
-  #col_of_its = ref_table['intensity.raw.value']
-  #col_of_var = ref_table['intensity.raw.variance']
+  #col_of_its = ref_table['intensity.sum.value']
+  #col_of_var = ref_table['intensity.sum.variance']
 
   col_of_its = flex.double(n_rows)
   col_of_var = flex.double(n_rows)
 
-  ref_table['intensity.raw.value'] = col_of_its
-  ref_table['intensity.raw.variance'] = col_of_var
+  ref_table['intensity.sum.value'] = col_of_its
+  ref_table['intensity.sum.variance'] = col_of_var
 
   for row_num in range(n_rows):
 
@@ -86,8 +86,8 @@ def flex_2d_layering_n_integrating(ref_table):
     col_of_its[row_num] = i_r
     col_of_var[row_num] = i_v
 
-  ref_table['intensity.raw.value'] = col_of_its
-  ref_table['intensity.raw.variance'] = col_of_var
+  ref_table['intensity.sum.value'] = col_of_its
+  ref_table['intensity.sum.variance'] = col_of_var
 
   p_bar.finished('Summation integration done for %d reflections ' % n_rows)
 

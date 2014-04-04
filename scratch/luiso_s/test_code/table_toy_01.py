@@ -6,10 +6,10 @@ shoebox = flex.shoebox(num_ref)
 ref_table['shoebox'] = shoebox
 
 intensity = flex.double(num_ref)
-ref_table['intensity.raw.value'] = intensity
+ref_table['intensity.sum.value'] = intensity
 
 intensity_var = flex.double(num_ref)
-ref_table['intensity.raw.variance'] = intensity_var
+ref_table['intensity.sum.variance'] = intensity_var
 
 iterate = ref_table['shoebox']
 n = 0
@@ -32,8 +32,8 @@ for arr in iterate:
   arr.background = bkg[:, :, :]
   arr.mask = msk[:, :, :]
 
-its = ref_table['intensity.raw.value']
-i_var = ref_table['intensity.raw.variance']
+its = ref_table['intensity.sum.value']
+i_var = ref_table['intensity.sum.variance']
 
 for i in range(num_ref):
   its[i] = (i + 1) * 11
@@ -54,11 +54,11 @@ for arr in iterate:
 
   print ">>"
 
-iterate = ref_table['intensity.raw.value']
+iterate = ref_table['intensity.sum.value']
 for n_its in iterate:
   print n_its
 print ">>>"
-iterate = ref_table['intensity.raw.variance']
+iterate = ref_table['intensity.sum.variance']
 for n_i_v in iterate:
   print n_i_v
 
@@ -91,11 +91,11 @@ for arr in iterate:
   print np_img
   print ">>"
 
-iterate = ref_table['intensity.raw.value']
+iterate = ref_table['intensity.sum.value']
 for n_its in iterate:
   print n_its
 print ">>>"
-iterate = ref_table['intensity.raw.variance']
+iterate = ref_table['intensity.sum.variance']
 for n_i_v in iterate:
   print n_i_v
 =======

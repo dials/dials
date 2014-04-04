@@ -78,10 +78,8 @@ class Test:
       ('xyzcal.mm', flex_rand_vec3_double(n)),
       ('xyzobs.px.value', flex_rand_vec3_double(n)),
       ('xyzobs.px.variance', flex_rand_vec3_double(n)),
-      ('intensity.raw.value', flex_rand_double(n)),
-      ('intensity.raw.variance', flex_rand_double(n)),
-      ('intensity.cor.value', flex_rand_double(n)),
-      ('intensity.cor.variance', flex_rand_double(n))
+      ('intensity.sum.value', flex_rand_double(n)),
+      ('intensity.sum.variance', flex_rand_double(n)),
     ])
 
   def check_values(self, t, l):
@@ -96,10 +94,8 @@ class Test:
       assert_almost(r1['s1'], r2.beam_vector)
       assert_almost(r1['xyzobs.px.value'], r2.centroid_position)
       assert_almost(r1['xyzobs.px.variance'], r2.centroid_variance)
-      assert_almost(r1['intensity.raw.value'], r2.intensity)
-      assert_almost(r1['intensity.raw.variance'], r2.intensity_variance)
-      assert_almost(r1['intensity.cor.value'], r2.corrected_intensity)
-      assert_almost(r1['intensity.cor.variance'], r2.corrected_intensity_variance)
+      assert_almost(r1['intensity.sum.value'], r2.intensity)
+      assert_almost(r1['intensity.sum.variance'], r2.intensity_variance)
 
   def tst_to_table(self):
 

@@ -21,7 +21,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
   imagin_stuff = '''
   ###############################################################################
-  t_intensity = ref_table_in['intensity.raw.value']
+  t_intensity = ref_table_in['intensity.sum.value']
   old_i_table = t_intensity[:]
   ###############################################################################
   #'''
@@ -106,7 +106,7 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
   imagin_stuff = '''
   ###############################################################################
-  t_intensity = ref_table_in['intensity.raw.value']
+  t_intensity = ref_table_in['intensity.prf.value']
   num_ref = len(t_intensity)
   paint_compare = []
   for i in range(num_ref):

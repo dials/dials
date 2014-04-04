@@ -168,8 +168,8 @@ class Test(object):
 
     # Only select variances greater than zero
     mask = self.reference.get_flags(self.reference.flags.integrated)
-    I_cal = self.reference['intensity.raw.value']
-    I_var = self.reference['intensity.raw.variance']
+    I_cal = self.reference['intensity.sum.value']
+    I_var = self.reference['intensity.sum.variance']
     B_sim = self.reference['background.sim'].as_double()
     I_sim = self.reference['intensity.sim'].as_double()
     I_exp = self.reference['intensity.exp']
@@ -378,7 +378,7 @@ class Test(object):
     #pylab.hist(I_cal - I_sim, 100)
     pylab.show()
 
-    #print "Calc I: ", self.reference[0]['intensity.raw.value']
+    #print "Calc I: ", self.reference[0]['intensity.sum.value']
 
     #c = profiles[0].data.as_1d()
     #xyz = self.reference[0]['xyzcal.px']
@@ -478,8 +478,8 @@ class Test(object):
     refl = refl[:len(self.reference)]
     assert(len(refl) == old_size)
     assert(len(reference) == len(self.reference))
-    I_cal = refl['intensity.raw.value']
-    I_var = refl['intensity.raw.variance']
+    I_cal = refl['intensity.sum.value']
+    I_var = refl['intensity.sum.variance']
 
     # Check the reference profiles and spots are ok
     self.check_profiles(integration.learner)
@@ -587,8 +587,8 @@ class Test(object):
     # Get a load of stuff
     I_sim = reference['intensity.sim']
     I_exp = reference['intensity.exp']
-    I_cal = reference['intensity.raw.value']
-    I_var = reference['intensity.raw.variance']
+    I_cal = reference['intensity.sum.value']
+    I_var = reference['intensity.sum.variance']
 
     # Get the transformed shoeboxes
     profiles = reference['rs_shoebox']

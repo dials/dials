@@ -23,7 +23,7 @@ def exercise_spotfinder():
     reflections = pickle.load(f)
     assert len(reflections) == 459
     refl = reflections[0]
-    assert approx_equal(refl['intensity.raw.value'], 142)
+    assert approx_equal(refl['intensity.sum.value'], 142)
     assert approx_equal(refl['bbox'], (1258, 1260, 537, 541, 0, 1))
     assert approx_equal(refl['xyzobs.px.value'],
                         (1258.7957746478874, 539.112676056338, 0.5))

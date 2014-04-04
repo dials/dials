@@ -21,7 +21,7 @@ class Test(object):
     table = flex.reflection_table()
     table['hkl'] = flex.miller_index(360)
     table['id'] = flex.size_t(360)
-    table['intensity.raw.value'] = flex.double(360)
+    table['intensity.sum.value'] = flex.double(360)
     table.as_pickle("temp.pickle")
 
   def run(self):

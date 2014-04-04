@@ -105,8 +105,8 @@ for ypos in range(n_y):
 
 print "t_row =", t_row
 ref_table['shoebox'] = t_shoebox
-ref_table['intensity.raw.value'] = t_intensity
-ref_table['intensity.raw.variance'] = t_intensity_var
+ref_table['intensity.sum.value'] = t_intensity
+ref_table['intensity.sum.variance'] = t_intensity_var
 ref_table['bbox'] = t_bbox
 #ref_table['xyzobs.px.value'] = t_xyzobs
 ref_table['xyzcal.px'] = t_xyzcal
@@ -129,7 +129,7 @@ from dials.algorithms.integration import flex_2d_layering_n_integrating
 flex_2d_layering_n_integrating(ref_table)
 
 
-t_intensity = ref_table['intensity.raw.value']
+t_intensity = ref_table['intensity.sum.value']
 old_i_table = t_intensity[:]
 
 #tmp='''
@@ -155,7 +155,7 @@ flex_2d_layering_n_integrating(ref_table)
 from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 pf_ref_table = mosflm_caller(ref_table, xmax, ymax, 3)
 
-t_intensity = pf_ref_table['intensity.raw.value']
+t_intensity = pf_ref_table['intensity.sum.value']
 
 paint_compare = []
 for i in range(len(t_intensity)):

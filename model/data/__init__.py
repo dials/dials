@@ -80,14 +80,10 @@ def reflection_list_to_table(self, centroid_is_mm=False):
       getattrlist(self, 'centroid_variance'))
 
   # Observed intensity properties
-  table['intensity.raw.value']    = flex.double(
+  table['intensity.sum.value']    = flex.double(
     getattrlist(self, 'intensity'))
-  table['intensity.raw.variance'] = flex.double(
+  table['intensity.sum.variance'] = flex.double(
     getattrlist(self, 'intensity_variance'))
-  table['intensity.cor.value']    = flex.double(
-    getattrlist(self, 'corrected_intensity'))
-  table['intensity.cor.variance'] = flex.double(
-    getattrlist(self, 'corrected_intensity_variance'))
 
   # Shoebox properties
   table['bbox'] = flex.int6(getattrlist(self, 'bounding_box'))
@@ -115,15 +111,10 @@ def reflection_list_from_table(table):
     setattrlist(rlist, 'centroid_position', table['xyzobs.px.value'])
   if 'xyzobs.px.variance' in table:
     setattrlist(rlist, 'centroid_variance', table['xyzobs.px.variance'])
-  if 'intensity.raw.value' in table:
-    setattrlist(rlist, 'intensity', table['intensity.raw.value'])
-  if 'intensity.raw.variance' in table:
-    setattrlist(rlist, 'intensity_variance', table['intensity.raw.variance'])
-  if 'intensity.cor.value' in table:
-    setattrlist(rlist, 'corrected_intensity', table['intensity.cor.value'])
-  if 'intensity.cor.variance' in table:
-    setattrlist(rlist, 'corrected_intensity_variance',
-                table['intensity.cor.variance'])
+  if 'intensity.sum.value' in table:
+    setattrlist(rlist, 'intensity', table['intensity.sum.value'])
+  if 'intensity.sum.variance' in table:
+    setattrlist(rlist, 'intensity_variance', table['intensity.sum.variance'])
   if 'bbox' in table:
     setattrlist(rlist, 'bounding_box', table['bbox'])
   if 'shoebox' in table:

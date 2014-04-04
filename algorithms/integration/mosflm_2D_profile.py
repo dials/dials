@@ -20,7 +20,7 @@ from dials.algorithms.integration.projection_from_3d_to_2d import \
 
 def make_2d_profile(reflection_pointers, ref_table_in):
 
-  col_intensity = ref_table_in['intensity.raw.value']
+  col_intensity = ref_table_in['intensity.sum.value']
   max_i_01 = 0.0
   for t_row in reflection_pointers:
     #if ref.is_valid():
@@ -126,8 +126,8 @@ def fit_profile_2d(reflection_pointers, ref_table
     y_half_cuad_size = (y_cuad_size) / 2.0
 
     col_xyzcal = ref_table['xyzcal.px']
-    col_intensity = ref_table['intensity.raw.value']
-    col_variance = ref_table['intensity.raw.variance']
+    col_intensity = ref_table['intensity.sum.value']
+    col_variance = ref_table['intensity.sum.variance']
     col_shoebox = ref_table['shoebox']
 
     #col_xyzobs = ref_table['xyzobs.px.value']
@@ -342,7 +342,7 @@ def fit_profile_2d(reflection_pointers, ref_table
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
           col_variance[t_row] = var
 
-    ref_table['intensity.raw.value'] = col_intensity
-    ref_table['intensity.raw.variance'] = col_variance
+    ref_table['intensity.prf.value'] = col_intensity
+    ref_table['intensity.prf.variance'] = col_variance
 
   return ref_table
