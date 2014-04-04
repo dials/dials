@@ -118,8 +118,9 @@ class run_one_indexing(object):
     master_params.refinement.go_fast = True
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.experiment.experiment_list import ExperimentList
-    import copy
-    reflections = copy.deepcopy(observations)
+    reflections = observations.select(observations.get_flags(
+      observations.flags.used_in_refinement))
+    assert len(reflections) > 0
     # XXX hack to make it work for a single lattice
     reflections['id'] = flex.int(len(reflections), 0)
     refine = RefinerFactory.from_parameters_data_experiments(

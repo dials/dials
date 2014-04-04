@@ -850,6 +850,8 @@ class indexer_base(object):
     xyzcal_mm = flex.vec3_double(len(used_reflections))
     xyzcal_mm.set_selected(matches['iobs'], matches['xyzcal.mm'])
     used_reflections['xyzcal.mm'] = xyzcal_mm
+    used_reflections.set_flags(
+      matches['iobs'], used_reflections.flags.used_in_refinement)
     return refiner.get_experiments(), used_reflections
 
   def predict_reflections(self, experiment):

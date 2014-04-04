@@ -47,14 +47,18 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     print "Rejecting %i outlier%s" %plural_s(inlier_sel.count(False))
     if debug_plots:
       debug_plot_residuals(refiner, inlier_sel=inlier_sel)
+    
+    # XXX Hack to do the outlier rejection without instatiating a new refiner
+    # XXX TODO move this outlier rejection into the refinement proper
+    refiner._refman._reflections = refiner._refman._reflections.select(inlier_sel)
 
-    # sort the inliers so they are in the same order
-    perm = flex.sort_permutation(match_iobs)
-    reflections_for_refinement = reflections_for_refinement.select(
-      refiner.selection_used_for_refinement()).select(inlier_sel.select(perm))
-    refiner = RefinerFactory.from_parameters_data_experiments(
-      params, reflections_for_refinement, experiments,
-      verbosity=verbosity)
+    ## sort the inliers so they are in the same order
+    #perm = flex.sort_permutation(match_iobs)
+    #reflections_for_refinement = reflections_for_refinement.select(
+      #refiner.selection_used_for_refinement()).select(inlier_sel.select(perm))
+    #refiner = RefinerFactory.from_parameters_data_experiments(
+      #params, reflections_for_refinement, experiments,
+      #verbosity=verbosity)
 
   matches = refiner.get_matches()
   crystal_ids = matches['id']
