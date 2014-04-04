@@ -3,10 +3,11 @@ def correct_intensity(experiment, reflections):
   from dials.util.command_line import Command
   from dials.array_family import flex
   Command.start('Performing LP-correction')
-  reflections['lp'] = flex.double(
+  lp = flex.double(
     [LP_calculations(experiment, s1)
      for s1 in reflections['s1']])
-  Command.end('Performed LP-correction on {0} reflections'.format(len(lp)))
+  reflections['lp'] = lp
+  Command.end('Performed LP-correction on {0} reflections'.format(lp))
   return lp
 
 def LP_calculations(experiment, s1):
