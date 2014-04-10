@@ -132,6 +132,9 @@ multiple_lattice_search {
     .type = float(value_min=0, value_max=1)
     .help = "Attempt another cycle of indexing on the unindexed reflections "
             "if more than the fraction of input reflections are unindexed."
+  minimum_angular_separation = 5
+    .type = float(value_min=0)
+    .help = "The minimum angular separation (in degrees) between two lattices."
   max_lattices = None
     .type = int
   cluster_analysis {
@@ -456,7 +459,8 @@ class indexer_base(object):
           for i_a, cryst_a in enumerate(experiments.crystals()[:-1]):
             R_ab, euler_angles, cb_op_ab = \
               difference_rotation_matrix_and_euler_angles(cryst_a, cryst_b)
-            if max([abs(ea) for ea in euler_angles]) < 5: # degrees
+            min_angle = self.params.multiple_lattice_search.minimum_angular_separation
+            if max([abs(ea) for ea in euler_angles]) < min_angle: # degrees
               print "Crystal models too similar, rejecting crystal %i:" %(
                 len(experiments))
               print "Rotation matrix to transform crystal %i to crystal %i" %(
