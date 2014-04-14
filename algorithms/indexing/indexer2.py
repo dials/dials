@@ -327,7 +327,7 @@ class indexer_base(object):
     self._map_spots_pixel_to_reciprocal_space_timer.start()
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
-    self._map_spots_pixel_to_reciprocal_space_timer.start()
+    self._map_spots_pixel_to_reciprocal_space_timer.stop()
 
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
