@@ -543,6 +543,7 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
   def run(self):
 
+
     # add an attribute to the journal
     self.history.mu = flex.double()
 
@@ -576,6 +577,11 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
 
       # solve the normal equations
       self.solve()
+
+      # keep the cholesky factor for ESD calculation if we end this step. Doing
+      # it here ensures the normal equations are solved (cholesky_factor_packed_u
+      # can only be called if that is the case)
+      self.cf = self.step_equations().cholesky_factor_packed_u().deep_copy()
 
       # standard journalling
       self.update_journal()
@@ -631,24 +637,21 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       print
       self.print_table()
 
-    #FIXME
-    # This stuff not yet available for the Lev Mar minimiser
-    # because I need to ensure that the normal equns are solved
-    # before calling cholesky_factor_packed_u
-
     # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
-    #cf = self.step_equations().cholesky_factor_packed_u()
-    #cf_inv = cf.matrix_packed_u_as_upper_triangle().\
-    #    matrix_inversion()
-    #nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
+    cf_inv = self.cf.matrix_packed_u_as_upper_triangle().\
+        matrix_inversion()
+    nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
 
     # keep the estimated parameter variance-covariance matrix
-    #self.parameter_var_cov = \
-    #    self.history.reduced_chi_squared[-1] * nm_inv
+    self.parameter_var_cov = \
+        self.history.reduced_chi_squared[-1] * nm_inv
 
-    # TODO
     # send parameter variances back to the parameter classes
     # themselves, for reporting purposes and for building restraints
     # based on existing parameterisations.
+    s2 = self.parameter_var_cov.matrix_diagonal()
+    assert s2.all_ge(0.0)
+    s = flex.sqrt(s2)
+    self._parameters.set_param_esds(s)
 
     return
