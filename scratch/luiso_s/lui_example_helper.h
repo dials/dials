@@ -111,7 +111,7 @@ namespace dials { namespace scratch {
 
         //[ 5 ] = minimum width (no maximum given)
         //[ 2 ] = precision after the period
-        printf("%5.2f ", data2d(row,col));
+        printf("%6.2f ", data2d(row,col));
 
         num++;
 
