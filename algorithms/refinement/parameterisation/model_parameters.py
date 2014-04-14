@@ -201,9 +201,26 @@ class ModelParameterisation(object):
     for p in self._param:
       if not p.get_fixed(): # only set the free parameters
         p.value = v.next()
+        p.esd = None
 
     # compose with the new parameter values
     self.compose()
+
+    return
+
+  def set_param_esds(self, esds):
+    """set the estimated standard deviations of the internal list of parameters
+    from a sequence of floats.
+
+    Only free parameters can be set, therefore the length of esds must equal
+    the value of num_free"""
+
+    assert(len(esds) == self.num_free())
+
+    v = iter(esds)
+    for p in self._param:
+      if not p.get_fixed(): # only set the free parameters
+        p.esd = v.next()
 
     return
 

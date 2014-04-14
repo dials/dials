@@ -212,6 +212,36 @@ class PredictionParameterisation(object):
         tmp = [it.next() for i in range(model.num_free())]
         model.set_param_vals(tmp)
 
+  def set_param_esds(self, esds):
+    """Set the estimated standard deviations of parameter values of the
+    contained models to the values in esds. This list must be of the same length
+    as the result of get_param_vals and must contain the parameter values in the
+    same order! This order is to be maintained by any sensible refinement
+    engine."""
+
+    assert len(esds) == len(self)
+    it = iter(esds)
+
+    if self._detector_parameterisations:
+      for model in self._detector_parameterisations:
+        tmp = [it.next() for i in range(model.num_free())]
+        model.set_param_esds(tmp)
+
+    if self._beam_parameterisations:
+      for model in self._beam_parameterisations:
+        tmp = [it.next() for i in range(model.num_free())]
+        model.set_param_esds(tmp)
+
+    if self._xl_orientation_parameterisations:
+      for model in self._xl_orientation_parameterisations:
+        tmp = [it.next() for i in range(model.num_free())]
+        model.set_param_esds(tmp)
+
+    if self._xl_unit_cell_parameterisations:
+      for model in self._xl_unit_cell_parameterisations:
+        tmp = [it.next() for i in range(model.num_free())]
+        model.set_param_esds(tmp)
+
   def get_gradients(self, reflections):
     """
     Calculate gradients of the prediction formula with respect to each

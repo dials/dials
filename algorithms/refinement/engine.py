@@ -13,7 +13,7 @@ are the current concrete implementations"""
 
 from __future__ import division
 from scitbx import lbfgs
-from cctbx.array_family import flex
+from scitbx.array_family import flex
 import libtbx
 import sys
 
@@ -518,10 +518,13 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
     self.parameter_var_cov = \
         self.history.reduced_chi_squared[-1] * nm_inv
 
-    # TODO
     # send parameter variances back to the parameter classes
     # themselves, for reporting purposes and for building restraints
     # based on existing parameterisations.
+    s2 = self.parameter_var_cov.matrix_diagonal()
+    assert s2.all_ge(0.0)
+    s = flex.sqrt(s2)
+    self._parameters.set_param_esds(s)
 
     return
 
