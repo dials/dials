@@ -43,15 +43,17 @@ def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
   axis e"""
 
   assert R.is_r3_rotation_matrix()
-  e1 = matrix.col(e1)
-  e2 = matrix.col(e2)
-  e3 = matrix.col(e3)
+  e1 = matrix.col(e1).normalize()
+  e2 = matrix.col(e2).normalize()
+  e3 = matrix.col(e3).normalize()
   # Fail if e2 & e3 are parallel
   e2xe3 = e2.cross(e3)
   if e2xe3.length_sq() < 1.0e-6: return None
+  # Make a unit test vector
+  u = e2xe3.normalize()
   e1e2 = e1.dot(e2)
   e1e3 = e1.dot(e3)
-  e2e3 = e1.dot(e3)
+  e2e3 = e2.dot(e3)
   e1e2e3 = e1.dot(e2.cross(e3))
   Re3 = R*e3
   e1Re3 = e1.dot(Re3)
@@ -110,10 +112,10 @@ def solve_r3_rotation_for_angles_given_axes(R, e1, e2, e3,
   # ** Step 3 ** Calculation of phi3
   R1inv = e1.axis_and_angle_as_r3_rotation_matrix(-1.*phi1, deg=False)
   R3 = R2inv * R1inv * R
-  R3e2xe3 = R3 * e2xe3;
-  # sin(phi3) = e2xe3.R3e2xe3 x e3
-  # cos(phi3) = e2xe3.R3e2xe3
-  phi3 = math.atan2(e2xe3.dot(R3e2xe3.cross(e3)), e2xe3.dot(R3e2xe3))
+  R3u = R3 * u;
+  # sin(phi3) = u.R3u x e3
+  # cos(phi3) = u.R3u
+  phi3 = math.atan2(u.dot(R3u.cross(e3)), u.dot(R3u))
   if deg:
     phi1, phi2, phi3 = tuple([x * 180/math.pi for x in (phi1, phi2, phi3)])
   return phi1, phi2, phi3
