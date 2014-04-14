@@ -501,36 +501,24 @@ class RefinerFactory(object):
     # Prediction equation parameterisation
     if param_type is "scans":
       if crystal_options.scan_varying:
-        # FIXME Tidy this up
-        if not params.refinement.go_fast:
-          pred_param = par.VaryingCrystalPredictionParameterisation(
+        if crystal_options.UB_model_per == "reflection":
+          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+            import VaryingCrystalPredictionParameterisation as PredParam
+        elif crystal_options.UB_model_per == "image":
+          from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
+            import VaryingCrystalPredictionParameterisationFast as PredParam
+        else:
+          raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
+                             " is not a recognised option")
+        pred_param = PredParam(
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params)
-        else:
-          if crystal_options.UB_model_per == "reflection":
-            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
-              import VaryingCrystalPredictionParameterisation as PredParam
-          elif crystal_options.UB_model_per == "image":
-            from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
-              import VaryingCrystalPredictionParameterisationFast as PredParam
-          else:
-            raise RuntimeError("UB_model_per=" + crystal_options.scan_varying +
-                               " is not a recognised option")
-          pred_param = PredParam(
-                experiments,
-                det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
-        # FIXME Tidy this up
-        if not params.refinement.go_fast:
-          pred_param = par.XYPhiPredictionParameterisation(
-              experiments,
-              det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
-        else:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters_new \
-            import XYPhiPredictionParameterisation
-          pred_param = XYPhiPredictionParameterisation(
-              experiments,
-              det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
+        from dials.algorithms.refinement.parameterisation.prediction_parameters \
+          import XYPhiPredictionParameterisation
+        pred_param = XYPhiPredictionParameterisation(
+            experiments,
+            det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
     else:
       assert param_type is "stills"
       pred_param = par.XYPredictionParameterisation(
@@ -612,11 +600,7 @@ class RefinerFactory(object):
         print "Random seed set to %d\n" % options.random_seed
 
     if all(e.goniometer is not None for e in experiments):
-      #FIXME Tidy up
-      if not params.refinement.go_fast:
-        from dials.algorithms.refinement.target import ReflectionManager as refman
-      else:
-        from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
+      from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
     elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.target_stills import \
           ReflectionManagerXY as refman
@@ -671,19 +655,11 @@ class RefinerFactory(object):
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if all(e.goniometer is not None for e in experiments):
-      if not params.refinement.go_fast:
-        from dials.algorithms.refinement.prediction import ScansRayPredictor
-        ref_predictor = ScansRayPredictor(experiments)
+      from dials.algorithms.refinement.prediction import ExperimentsPredictor
+      ref_predictor = ExperimentsPredictor(experiments)
 
-        from dials.algorithms.refinement.target \
-          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
-
-      else:
-        from dials.algorithms.refinement.prediction import ExperimentsPredictor
-        ref_predictor = ExperimentsPredictor(experiments)
-
-        from dials.algorithms.refinement.target_new \
-          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
+      from dials.algorithms.refinement.target \
+        import LeastSquaresPositionalResidualWithRmsdCutoff as targ
 
     elif all(e.goniometer is None for e in experiments):
       from dials.algorithms.refinement.prediction import \
@@ -951,7 +927,7 @@ class Refiner(object):
     #FIXME tidy up
     from dials.algorithms.refinement.parameterisation import \
       VaryingCrystalPredictionParameterisation
-    from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_new \
+    from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters \
       import VaryingCrystalPredictionParameterisationFast
     if isinstance(self._pred_param, VaryingCrystalPredictionParameterisation) or \
        isinstance(self._pred_param, VaryingCrystalPredictionParameterisationFast):

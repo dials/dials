@@ -229,8 +229,6 @@ class indexer_base(object):
     from dials.model.serialize.load import experiment_list as load_experiment_list
     from dxtbx.serialize.load import imageset as load_imageset
     if params is None: params = master_params
-    # XXX this should go once go_fast is the default/only option
-    params.refinement.go_fast = True
     if params.reference.detector is not None:
       try:
         experiments = load_experiment_list(

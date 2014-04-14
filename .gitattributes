@@ -160,12 +160,12 @@ algorithms/refinement/parameterisation/detector_parameters.py -text
 algorithms/refinement/parameterisation/model_parameters.py -text
 algorithms/refinement/parameterisation/parameter_report.py -text
 algorithms/refinement/parameterisation/prediction_parameters.py -text
-algorithms/refinement/parameterisation/prediction_parameters_new.py -text
+algorithms/refinement/parameterisation/prediction_parameters_old.py -text
 algorithms/refinement/parameterisation/prediction_parameters_stills.py -text
 algorithms/refinement/parameterisation/scan_varying_crystal_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_model_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_prediction_parameters.py -text
-algorithms/refinement/parameterisation/scan_varying_prediction_parameters_new.py -text
+algorithms/refinement/parameterisation/scan_varying_prediction_parameters_old.py -text
 algorithms/refinement/plot_derivatives.py -text
 algorithms/refinement/prediction/.Rhistory -text
 algorithms/refinement/prediction/README -text
@@ -180,7 +180,7 @@ algorithms/refinement/refinement_helpers.py -text
 algorithms/refinement/refiner.py -text
 algorithms/refinement/reflection_manager.py -text
 algorithms/refinement/target.py -text
-algorithms/refinement/target_new.py -text
+algorithms/refinement/target_old.py -text
 algorithms/refinement/target_stills.py -text
 algorithms/refinement/tst_orientation_refinement.log -text
 algorithms/reflection_basis/SConscript -text
@@ -483,7 +483,6 @@ scratch/dgw/detector_model_old/README -text
 scratch/dgw/detector_model_old/detector.py -text
 scratch/dgw/goniometer_model/__init__.py -text
 scratch/dgw/goniometer_model/gonio.py -text
-scratch/dgw/investigate_predictions.py -text
 scratch/dgw/prediction/README -text
 scratch/dgw/prediction/__init__.py -text
 scratch/dgw/prediction/obsolete_predictors.py -text

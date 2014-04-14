@@ -56,7 +56,7 @@ from rstbx.symmetry.constraints.parameter_reduction import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.algorithms.refinement.prediction import ScansRayPredictor
+from dials.algorithms.refinement.prediction import ScansRayPredictor, ExperimentsPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -65,8 +65,8 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation
 
 # Imports for the target function
-from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+from dials.algorithms.refinement.target import LeastSquaresPositionalResidualWithRmsdCutoff
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
 # Import helper functions
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
@@ -300,9 +300,11 @@ if __name__ == '__main__':
   ###############################
 
   mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments_single_panel, ref_predictor, refman, pred_param)
+      experiments_single_panel, ExperimentsPredictor(experiments_single_panel),
+      refman, pred_param)
   mytarget2 = LeastSquaresPositionalResidualWithRmsdCutoff(
-      experiments_multi_panel, ref_predictor, refman2, pred_param2)
+      experiments_multi_panel, ExperimentsPredictor(experiments_multi_panel),
+      refman2, pred_param2)
 
   #################################
   # Set up the refinement engines #

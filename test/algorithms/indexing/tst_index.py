@@ -114,8 +114,6 @@ class run_one_indexing(object):
   def get_rmsds_obs_pred(self, observations, experiment):
     self.calc_rmsds_timer.start()
     from dials.algorithms.indexing.indexer2 import master_params
-    # XXX this should go once go_fast is the default/only option
-    master_params.refinement.go_fast = True
     from dials.algorithms.refinement import RefinerFactory
     from dials.model.experiment.experiment_list import ExperimentList
     reflections = observations.select(observations.get_flags(

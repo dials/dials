@@ -27,7 +27,8 @@ from math import pi
 def generate_reflections(experiments):
 
   from dials.algorithms.spot_prediction import IndexGenerator
-  from dials.algorithms.refinement.prediction import ScansRayPredictor
+  from dials.algorithms.refinement.prediction import \
+    ScansRayPredictor, ExperimentsPredictor
   from dials.algorithms.spot_prediction import ray_intersection
   from cctbx.sgtbx import space_group, space_group_symbols
 
@@ -67,6 +68,9 @@ def generate_reflections(experiments):
     # set the frame number, calculated from rotation angle
     ref.frame_number = scan.get_image_index_from_angle(
         ref.rotation_angle, deg=False)
+
+  # redefine the reflection predictor to use the ExperimentsPredictor class
+  ref_predictor = ExperimentsPredictor(experiments)
 
   return obs_refs.to_table(centroid_is_mm=True), ref_predictor
 
@@ -169,7 +173,8 @@ def test1():
 
   # reflection manager and target function
   from dials.algorithms.refinement.target import \
-      LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+    LeastSquaresPositionalResidualWithRmsdCutoff
+  from dials.algorithms.refinement.reflection_manager import ReflectionManager
   refman = ReflectionManager(refs, experiments, nref_per_degree=20)
   # very tight rmsd target of 1/1000 of a pixel
   target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,

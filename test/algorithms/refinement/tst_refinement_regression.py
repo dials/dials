@@ -49,11 +49,11 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from dials.algorithms.refinement.parameterisation.prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters_old import \
     XYPhiPredictionParameterisation
 
 # Imports for the target function
-from dials.algorithms.refinement.target import \
+from dials.algorithms.refinement.target_old import \
     LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
 
 #############################

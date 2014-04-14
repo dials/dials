@@ -65,102 +65,96 @@ class Target(object):
   def predict(self):
     """perform reflection prediction and update the reflection manager"""
 
-    # update the reflection_predictor and the prediction parameterisation
-    # with the scan-independent part of the current geometry
+    # update the reflection_predictor with the scan-independent part of the
+    # current geometry
     self._reflection_predictor.update()
-    self._prediction_parameterisation.prepare()
 
     # reset the 'use' flag for all observations
     self._reflection_manager.reset_accepted_reflections()
 
-    # loop over all reflections in the manager
-    for obs in self._reflection_manager.get_obs():
+    # duck-typing for VaryingCrystalPredictionParameterisation. Only this
+    # class has a compose(reflections) method. Sets ub_matrix (and caches
+    # derivatives).
+    try:
+      # TODO set U, B and UB arrays in the reflection_table. Cache derivatives of these
+      # in the _prediction_parameterisation object (so we don't have to compose
+      # at each scan point again later for the derivatives). If this is the
+      # first prediction of reflections some reflections could then be rejected
+      # by the reflection manager, and
+      # then it would have been a waste of time calculating derivatives for
+      # them. However, it is expected that scan-varying refinement is done after
+      # scan static refinement, so probably all of the rejections have been done
+      # already (so don't worry, be happy)
+      self._prediction_parameterisation.compose(
+          self._reflection_manager.get_obs())
+    except AttributeError:
+      pass
 
-      # get data from the observation
-      h = obs.miller_index
-      frame_id = obs.frame_obs
-      panel_id = obs.panel
+    # do prediction (updates reflection table in situ). Scan-varying prediction
+    # is done automatically if the crystal has scan-points (assuming reflections
+    # have ub_matrix set)
+    reflections = self._reflection_manager.get_obs()
+    self._reflection_predictor.predict(reflections)
 
-      # FIXME current reflection container does not track experiment id. Here
-      # we use the crystal_id as its proxy. User code must ensure that the order
-      # of experiments matches the index given by the crystal_id. Unless
-      # 'crystal_id' is abused, this effectively means that only multiple
-      # crystal experiments are supported, not a multiplicity of other models.
-      experiment_id = obs.crystal_id
+    x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
+    # do not wrap around multiples of 2*pi; keep the full rotation
+    # from zero to differentiate repeat observations.
+    resid = phi_calc - (flex.fmod_positive(phi_obs, TWO_PI))
+    # ensure this is the smaller of two possibilities
+    resid = flex.fmod_positive((resid + pi), TWO_PI) - pi
+    phi_calc = phi_obs + resid
+    # put back in the reflections
+    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
 
-      # duck-typing for VaryingCrystalPredictionParameterisation. Only this
-      # class has a compose(frame_id) method
-      try:
+    # calculate residuals and assign columns
+    reflections['x_resid'] = x_calc - x_obs
+    reflections['x_resid2'] = reflections['x_resid']**2
+    reflections['y_resid'] = y_calc - y_obs
+    reflections['y_resid2'] = reflections['y_resid']**2
+    reflections['phi_resid'] = phi_calc - phi_obs
+    reflections['phi_resid2'] = reflections['phi_resid']**2
 
-        # compose the prediction parameterisation at the
-        # requested image number
-        self._prediction_parameterisation.compose(frame_id, experiment_id)
+    # set used_in_refinement flag to all those that had predictions
+    mask = reflections.get_flags(reflections.flags.predicted)
+    reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
-        # extract UB matrix
-        UB = self._prediction_parameterisation.get_UB(frame_id, experiment_id)
-
-        # predict for this hkl at setting UB
-        predictions = self._reflection_predictor.predict(
-                                h, experiment_id=experiment_id, UB=UB)
-
-      except AttributeError:
-
-        # predict for this hkl
-        predictions = self._reflection_predictor.predict(
-                                h, experiment_id=experiment_id)
-
-      # obtain the impact positions
-      impacts = ray_intersection(self._experiments[experiment_id].detector,
-                                 predictions,
-                                 panel=panel_id)
-
-      # find the prediction with the right 'entering' flag
-      try:
-        i = [x.entering == obs.entering \
-             for x in impacts].index(True)
-      except ValueError:
-        # we don't have a prediction for this obs
-        continue
-
-      ref = impacts[i]
-      x_calc, y_calc = ref.image_coord_mm
-
-      # do not wrap around multiples of 2*pi; keep the full rotation
-      # from zero to differentiate repeat observations.
-      resid = ref.rotation_angle - (obs.phi_obs % TWO_PI)
-
-      # ensure this is the smaller of two possibilities
-      resid = (resid + pi) % TWO_PI - pi
-
-      phi_calc = obs.phi_obs + resid
-      s_calc = matrix.col(ref.beam_vector)
-
-      # calculate gradients for this reflection
-      grads = self._prediction_parameterisation.get_gradients(
-                                  h, s_calc, phi_calc, panel_id, frame_id,
-                                  experiment_id=experiment_id)
-
-      # store all this information in the matched obs-pred pair
-      obs.update_prediction(x_calc, y_calc, phi_calc, s_calc, grads)
-
-    if self._reflection_manager.first_update:
-
-      # print summary before outlier rejection
-      self._reflection_manager.print_stats_on_matches()
-
-      # flag potential outliers
-      rejection_occurred = self._reflection_manager.reject_outliers()
-
-      # delete all obs-pred pairs from the manager that do not
-      # have a prediction or were flagged as outliers
-      self._reflection_manager.strip_unmatched_observations()
-
-      # print summary after outlier rejection
-      if rejection_occurred: self._reflection_manager.print_stats_on_matches()
-
-      self._reflection_manager.first_update = False
+    # collect the matches
+    self._matches = self._reflection_manager.get_matches()
 
     return
+
+  def predict_for_reflection_table(self, reflections):
+    """perform prediction for all reflections in the supplied table"""
+
+    # ensure the predictor is ready with the right models
+    self._reflection_predictor.update()
+    # set the entering flags
+    from dials.algorithms.refinement.reflection_manager import calculate_entering_flags
+    reflections['entering'] = calculate_entering_flags(reflections, self._experiments)
+    self._reflection_predictor.predict(reflections)
+    x_obs, y_obs, phi_obs = reflections['xyzobs.mm.value'].parts()
+    x_calc, y_calc, phi_calc = reflections['xyzcal.mm'].parts()
+    # do not wrap around multiples of 2*pi; keep the full rotation
+    # from zero to differentiate repeat observations.
+    resid = phi_calc - (flex.fmod(phi_obs, TWO_PI))
+    # ensure this is the smaller of two possibilities
+    resid = flex.fmod((resid + pi), TWO_PI) - pi
+    phi_calc = phi_obs + resid
+    # put back in the reflections
+    reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
+    return reflections
+
+  def calculate_gradients(self):
+    """delegate to the prediction_parameterisation object to calculate
+    gradients for all the matched reflections."""
+
+    if not self._matches:
+      self._matches = self._reflection_manager.get_matches()
+    self._gradients = self._prediction_parameterisation.get_gradients(
+      self._matches)
+
+    return self._gradients
 
   def get_num_matches(self):
     """return the number of reflections currently used in the calculation"""
@@ -236,54 +230,43 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       assert len(absolute_cutoffs) == 3
       self._binsize_cutoffs = absolute_cutoffs
 
+    # predict reflections and finalise reflection manager
+    self.predict()
+    self._reflection_manager.finalise()
+
     return
 
   def compute_residuals_and_gradients(self):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
 
-    self._matches = self._reflection_manager.get_matches()
+    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients()
 
     # return residuals and weights as 1d flex.double vectors
     nelem = len(self._matches) * 3
-    residuals = flex.double(nelem)
-    jacobian_t = flex.double(flex.grid(
-        len(self._prediction_parameterisation), nelem))
-    weights = flex.double(nelem)
+    nparam = len(self._prediction_parameterisation)
+    residuals = flex.double.concatenate(self._matches['x_resid'],
+                                        self._matches['y_resid'])
+    residuals.extend(self._matches['phi_resid'])
+    #jacobian_t = flex.double(flex.grid(
+    #    len(self._prediction_parameterisation), nelem))
+    weights, w_y, w_z = self._matches['xyzobs.mm.weights'].parts()
+    weights.extend(w_y)
+    weights.extend(w_z)
 
-    for i, m in enumerate(self._matches):
-      residuals[3*i] = m.x_resid
-      residuals[3*i + 1] = m.y_resid
-      residuals[3*i + 2] = m.phi_resid
+    jacobian = flex.double(flex.grid(nelem, nparam))
+    # loop over parameters
+    for i in range(nparam):
+      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
+      col = flex.double.concatenate(dX, dY)
+      col.extend(dPhi)
+      jacobian.matrix_paste_column_in_place(col, i)
 
-      # are these the right weights? Or inverse, or sqrt?
-      weights[3*i] = m.weight_x_obs
-      weights[3*i + 1] = m.weight_y_obs
-      weights[3*i + 2] = m.weight_phi_obs
-
-      # m.gradients is a nparam length list, each element of which is a
-      # triplet of values, (dX/dp_n, dY/dp_n, dPhi/dp_n)
-      dX_dp, dY_dp, dPhi_dp = zip(*m.gradients)
-
-      # FIXME Here we paste columns into the Jacobian transpose then take
-      # its transpose when done. This seems inefficient: can we just start
-      # with the Jacobian and fill elements sequentially, using row-major
-      # order to ensure the values are filled in the right order?
-
-      # fill jacobian elements here.
-      jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 3*i)
-      jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 3*i+1)
-      jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
-
-    # We return the Jacobian, not its transpose.
-    jacobian_t.matrix_transpose_in_place()
-
-    return(residuals, jacobian_t, weights)
+    return(residuals, jacobian, weights)
 
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""
 
-    self._matches = self._reflection_manager.get_matches()
     self._nref = len(self._matches)
 
     # This is a hack for the case where nref=0. This should not be necessary
@@ -293,28 +276,42 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     if self._nref == 0:
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
-    # compute target function
-    L = 0.5 * sum([m.weight_x_obs * m.x_resid2 +
-                   m.weight_y_obs * m.y_resid2 +
-                   m.weight_phi_obs * m.phi_resid2
-                   for m in self._matches])
+    # extract columns from the table
+    x_resid = self._matches['x_resid']
+    y_resid = self._matches['y_resid']
+    phi_resid = self._matches['phi_resid']
+    x_resid2 = self._matches['x_resid2']
+    y_resid2 = self._matches['y_resid2']
+    phi_resid2 = self._matches['phi_resid2']
+    w_x, w_y, w_phi = self._matches['xyzobs.mm.weights'].parts()
+
+    # calculate target function
+    temp = w_x * x_resid2 + w_y * y_resid2 + w_phi * phi_resid2
+    L = 0.5 * flex.sum(temp)
 
     # prepare list of gradients
     dL_dp = [0.] * len(self._prediction_parameterisation)
 
-    # the gradients wrt each parameter are stored with the matches
-    for m in self._matches:
+    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients()
 
-      for j, (grad_X, grad_Y, grad_Phi) in enumerate(m.gradients):
-        dL_dp[j] += (m.weight_x_obs * m.x_resid * grad_X +
-                     m.weight_y_obs * m.y_resid * grad_Y +
-                     m.weight_phi_obs * m.phi_resid * grad_Phi)
+    w_x_resid = w_x * x_resid
+    w_y_resid = w_y * y_resid
+    w_phi_resid = w_phi * phi_resid
+
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
+      temp = w_x_resid * dX + w_y_resid * dY + w_phi_resid * dPhi
+      dL_dp[i] = flex.sum(temp)
 
     return (L, dL_dp)
 
   def curvatures(self):
     """First order approximation to the diagonal of the Hessian based on the
     least squares form of the target"""
+
+    # relies on compute_functional_and_gradients being called first
+    dX_dp, dY_dp, dPhi_dp = self._gradients
+    w_x, w_y, w_phi = self._matches['xyzobs.mm.weights'].parts()
 
     # This is a hack for the case where nref=0. This should not be necessary
     # if bounds are provided for parameters to stop the algorithm exploring
@@ -326,12 +323,10 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     curv = [0.] * len(self._prediction_parameterisation)
 
     # for each reflection, get the approximate curvatures wrt each parameter
-    for m in self._matches:
-
-      for j, (grad_x, grad_y, grad_phi) in enumerate(m.gradients):
-        curv[j] += (m.weight_x_obs * grad_x**2 +
-                    m.weight_y_obs * grad_y**2 +
-                    m.weight_phi_obs * grad_phi**2)
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
+      temp = w_x * dX**2 + w_y * dY**2 + w_phi * dPhi**2
+      curv[i] = flex.sum(temp)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
     assert all([c > 0.0 for c in curv])
@@ -344,9 +339,9 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    resid_x = sum((m.x_resid2 for m in self._matches))
-    resid_y = sum((m.y_resid2 for m in self._matches))
-    resid_phi = sum((m.phi_resid2 for m in self._matches))
+    resid_x = flex.sum(self._matches['x_resid2'])
+    resid_y = flex.sum(self._matches['y_resid2'])
+    resid_phi = flex.sum(self._matches['phi_resid2'])
 
     # cache rmsd calculation for achieved test
     n = len(self._matches)
@@ -369,426 +364,158 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       return True
     return False
 
-class ObsPredMatch:
-  """
-  A bucket class containing data for a prediction that has been
-  matched to an observation.
+#FIXME Needs vectorised version
+class LeastSquaresXYResidualWithRmsdCutoff(Target):
+  """An implementation of the target class providing a least squares residual
+  in terms of detector impact position X, Y only, terminating on achieved
+  rmsd (or on intrisic convergence of the chosen minimiser)"""
 
-  This contains all the raw material needed to calculate the target function
-  value and gradients
-  """
+  rmsd_names = ["RMSD_X", "RMSD_Y"]
 
-  # initialise with an observation
-  def __init__(self, iobs, crystal, hkl, entering, frame, panel,
-                     x_obs, sigx_obs, weight_x_obs,
-                     y_obs, sigy_obs, weight_y_obs,
-                     phi_obs, sigphi_obs, weight_phi_obs):
+  def __init__(self, experiments, reflection_predictor, ref_man,
+               prediction_parameterisation,
+               frac_binsize_cutoff=0.33333,
+               absolute_cutoffs=None):
 
-    self.iobs = iobs
-    self.crystal_id = crystal
-    self.miller_index = hkl
-    self.entering = entering
-    self.frame_obs = frame
-    self.panel = panel
-    self.x_obs = x_obs
-    self.sigx_obs = sigx_obs
-    self.weight_x_obs = weight_x_obs
+    Target.__init__(self, experiments, reflection_predictor, ref_man,
+                    prediction_parameterisation)
 
-    self.y_obs = y_obs
-    self.sigy_obs = sigy_obs
-    self.weight_y_obs = weight_y_obs
-
-    self.phi_obs = phi_obs
-    self.sigphi_obs = sigphi_obs
-    self.weight_phi_obs = weight_phi_obs
-
-    self.x_calc = None
-    self.y_calc = None
-    self.phi_calc = None
-    self.s_calc = None
-
-    # gradients will be a list, of length equal to the number of free
-    # parameters, whose elements are the gradients in the space of
-    # the residuals, e.g. (dX/dp, dY/dp, dPhi/dp)
-    self.gradients = None
-
-    self.y_resid = None
-    self.y_resid2 = None
-    self.x_resid = None
-    self.x_resid2 = None
-    self.phi_resid = None
-    self.phi_resid2 = None
-
-    self.is_matched = False
-
-  # update with a prediction
-  def update_prediction(self, x_calc, y_calc, phi_calc, s_calc, gradients):
-
-    self.x_calc = x_calc
-    self.y_calc = y_calc
-    self.phi_calc = phi_calc
-    self.s_calc = s_calc
-
-    self.gradients = gradients
-
-    # calculate residuals
-    self.x_resid = x_calc - self.x_obs
-    self.x_resid2 = self.x_resid**2
-    self.y_resid = y_calc - self.y_obs
-    self.y_resid2 = self.y_resid**2
-    self.phi_resid = phi_calc - self.phi_obs
-    self.phi_resid2 = self.phi_resid**2
-
-    self.is_matched = True
-
-  def reset(self):
-
-    """Flag this observation to not be used"""
-    self.is_matched = False
-
-
-class ReflectionManager(object):
-  """A class to maintain information about observed and predicted
-  reflections for refinement."""
-
-  def __init__(self, reflections,
-                     experiments,
-                     nref_per_degree=None,
-                     min_num_obs=20,
-                     max_sample_size=None,
-                     min_sample_size=0,
-                     close_to_spindle_cutoff=0.1,
-                     iqr_multiplier=1.5,
-                     verbosity=0):
-
-    # track whether this is the first update of predictions or not
-    self.first_update = True
-
-    # set verbosity
-    self._verbosity = verbosity
-
-    ####FIXME currently extracting quantities from the FIRST Experiment only
-    if experiments[0].scan:
-      sweep_range_rad = experiments[0].scan.get_oscillation_range(deg=False)
-    else: sweep_range_rad = None
-    gonio = experiments[0].goniometer
-    beam = experiments[0].beam
-    ####
-
-    # keep references to the beam, goniometer and sweep range (for
-    # reflection exclusion and subsetting)
-    self._beam = beam
-    self._gonio = gonio
-    self._sweep_range_rad = sweep_range_rad
-
-    # find vector normal to the spindle-beam plane for the initial model
-    self._vecn = self._spindle_beam_plane_normal()
-
-    # set up the reflection inclusion cutoffs
-    self._close_to_spindle_cutoff = close_to_spindle_cutoff
-    self._iqr_multiplier = iqr_multiplier
-
-    # exclude reflections that fail inclusion criteria
-    self._input_size = len(reflections)
-    refs_to_keep = self._id_refs_to_keep(reflections)
-    self._accepted_refs_size = len(refs_to_keep)
-
-    # choose a random subset of data for refinement
-    self._sample_size = self._accepted_refs_size
-    refs_to_keep = self._create_working_set(refs_to_keep,
-                                            nref_per_degree,
-                                            min_sample_size,
-                                            max_sample_size)
-
-    # store observation information in a list of observation-prediction
-    # pairs (prediction information will go in here later)
-    self._obs_pred_pairs = []
-
-    for i in refs_to_keep:
-
-      ref = reflections[i]
-      exp_id = ref['id']
-      h = ref['miller_index']
-      s = matrix.col(ref['s1'])
-      entering = s.dot(self._vecn) < 0.
-      panel = ref['panel']
-      x = ref["xyzobs.mm.value"][0]
-      y = ref["xyzobs.mm.value"][1]
-      phi = ref["xyzobs.mm.value"][2]
-      if experiments[exp_id].scan:
-        frame = experiments[exp_id].scan.get_array_index_from_angle(phi, deg=False)
-      else:
-        frame = 0
-      sig_x, sig_y, sig_phi = [sqrt(e) for e in ref["xyzobs.mm.variance"]]
-      w_x = w_y = w_phi = 0
-      if ref["xyzobs.mm.variance"][0] != 0: w_x   = 1./ref["xyzobs.mm.variance"][0]
-      if ref["xyzobs.mm.variance"][1] != 0: w_y   = 1./ref["xyzobs.mm.variance"][1]
-      if ref["xyzobs.mm.variance"][2] != 0: w_phi = 1./ref["xyzobs.mm.variance"][2]
-
-      self._obs_pred_pairs.append(ObsPredMatch(i, exp_id, h,
-                                               entering, frame, panel,
-                                               x, sig_x, w_x,
-                                               y, sig_y, w_y,
-                                               phi, sig_phi, w_phi))
-
-    # fail if there are too few reflections in the manager
-    self._min_num_obs = min_num_obs
-    if len(self._obs_pred_pairs) < self._min_num_obs:
-      msg = ('Remaining number of reflections = {0}, which is below '+ \
-          'the configured limit for creating this reflection ' + \
-          'manager').format(len(self._obs_pred_pairs))
-      raise RuntimeError(msg)
-
-  def _spindle_beam_plane_normal(self):
-    """return a unit vector that when placed at the origin of reciprocal
-    space, points to the hemisphere of the Ewald sphere
-    in which reflections cross from inside to outside of the sphere"""
-
-    # NB vector in +ve Y direction when using imgCIF coordinate frame
-    return matrix.col(self._beam.get_s0()).cross(
-                    matrix.col(self._gonio.get_rotation_axis())).normalize()
-
-  def _id_refs_to_keep(self, obs_data):
-    """Create a selection of observations that pass certain conditions.
-
-    This includes outlier rejection plus rejection of reflections
-    too close to the spindle, and rejection of the (0,0,0) Miller index"""
-
-    # TODO Add outlier rejection. Should use robust statistics.
-    # See notes on M-estimators from Garib (when I have them)
-
-    axis = matrix.col(self._gonio.get_rotation_axis())
-    s0 = matrix.col(self._beam.get_s0())
-
-    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0) \
-           and self._inclusion_test(matrix.col(ref['s1']), axis, s0)]
-
-    return inc
-
-  def _inclusion_test(self, s, axis, s0):
-    """Test scattering vector s for inclusion"""
-
-    # reject reflections for which the parallelepiped formed between
-    # the gonio axis, s0 and s has a volume of less than the cutoff.
-    # Those reflections are by definition closer to the spindle-beam
-    # plane and for low values of the cutoff are troublesome to
-    # integrate anyway.
-
-    test = abs(axis.dot(matrix.col(s).cross(s0))) > \
-        self._close_to_spindle_cutoff
-
-    return test
-
-  def _create_working_set(self, indices, nref_per_degree,
-                          min_sample_size, max_sample_size):
-    """Make a subset of the indices of reflections to use in refinement"""
-
-    working_indices = indices
-    sample_size = len(working_indices)
-
-    # set sample size according to nref_per_degree
-    if nref_per_degree:
-      width = abs(self._sweep_range_rad[1] -
-                  self._sweep_range_rad[0]) * RAD_TO_DEG
-      sample_size = int(nref_per_degree * width)
-
-    # adjust if this is below the chosen limit
-    sample_size = max(sample_size, min_sample_size)
-
-    # set maximum sample size
-    if max_sample_size:
-      if sample_size > max_sample_size:
-        sample_size = max_sample_size
-
-    # sample the data and record the sample size
-    if sample_size < len(working_indices):
-      self._sample_size = sample_size
-      working_indices = random.sample(working_indices,
-                                      self._sample_size)
-    return(working_indices)
-
-  def get_input_size(self):
-    """Return the number of observations in the initial list supplied
-    as input"""
-
-    return self._input_size
-
-  def get_accepted_refs_size(self):
-    """Return the number of observations that pass inclusion criteria and
-    can potentially be used for refinement"""
-
-    return self._accepted_refs_size
-
-  def get_sample_size(self):
-    """Return the number of observations in the working set to be
-    used for refinement"""
-
-    return self._sample_size
-
-  def _sort_obs_by_residual(self, obs, angular=False):
-    """For diagnostic purposes, sort the obs-pred matches so that the
-    highest residuals are first. By default, sort by positional
-    residual, unless angular=True.
-
-    The earliest entries in the return list may be those that are
-    causing problems in refinement.
-
-    """
-
-    if angular:
-      k = lambda e: e.phi_resid
+    # Set up the RMSD achieved criterion. For simplicity, we take detector from
+    # the first Experiment only.
+    detector = experiments[0].detector
+    if not absolute_cutoffs:
+      pixel_sizes = [p.get_pixel_size() for p in detector]
+      min_px_size_x = min(e[0] for e in pixel_sizes)
+      min_px_size_y = min(e[1] for e in pixel_sizes)
+      self._binsize_cutoffs = [min_px_size_x * frac_binsize_cutoff,
+                               min_px_size_y * frac_binsize_cutoff]
     else:
-      k = lambda e: e.x_resid**2 + e.y_resid**2
-    sort_obs = sorted(obs, key=k, reverse=True)
-
-    return sort_obs
-
-  def get_matches(self):
-    """For every observation matched with a prediction return all data"""
-
-    return [obs for obs in self._obs_pred_pairs if obs.is_matched]
-
-  def print_stats_on_matches(self):
-    """Print some basic statistics on the matches"""
-
-    l = self.get_matches()
-    if self._verbosity > 1:
-
-      from scitbx.math import five_number_summary
-      x_resid = [e.x_resid for e in l]
-      y_resid = [e.y_resid for e in l]
-      phi_resid = [e.phi_resid for e in l]
-      w_x = [e.weight_x_obs for e in l]
-      w_y = [e.weight_y_obs for e in l]
-      w_phi = [e.weight_phi_obs for e in l]
-
-      print "\nSummary statistics for observations matched to predictions:"
-      print ("                      "
-             "Min         Q1        Med         Q3        Max")
-      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(x_resid))
-      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(y_resid))
-      print "(Phic-Phio)    {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(phi_resid))
-      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_x))
-      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_y))
-      print "Phi weights    {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_phi))
-      print
-
-      if len(l) >= 20 and self._verbosity > 2:
-
-        sl = self._sort_obs_by_residual(l)
-        print "Reflections with the worst 20 positional residuals:"
-        print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
-              "weight_phi_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-        for i in xrange(20):
-          e = sl[i]
-          msg = fmt % tuple(e.miller_index + (e.x_resid,
-                           e.y_resid,
-                           e.phi_resid,
-                           e.weight_x_obs,
-                           e.weight_y_obs,
-                           e.weight_phi_obs))
-          print msg
-        print
-        sl = self._sort_obs_by_residual(sl, angular=True)
-        print "\nReflections with the worst 20 angular residuals:"
-        print "H, K, L, x_resid, y_resid, phi_resid, weight_x_obs, weight_y_obs, " + \
-              "weight_phi_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %6.4f %5.3f %5.3f %6.4f"
-        for i in xrange(20):
-          e = sl[i]
-          msg = fmt % tuple(e.miller_index + (e.x_resid,
-                           e.y_resid,
-                           e.phi_resid,
-                           e.weight_x_obs,
-                           e.weight_y_obs,
-                           e.weight_phi_obs))
-          print msg
-        print
+      self._binsize_cutoffs = absolute_cutoffs[:2]
 
     return
 
-  def reject_outliers(self):
-    """Unset the use flag on matches with extreme (outlying) residuals.
+  def compute_residuals_and_gradients(self):
+    """return the vector of residuals plus their gradients
+    and weights for non-linear least squares methods"""
 
-    Outlier detection finds values more than _iqr_multiplier times the
-    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
+    self._matches = self._reflection_manager.get_matches()
 
-    Return boolean whether rejection was performed or not"""
+    # return residuals and weights as 1d flex.double vectors
+    nelem = len(self._matches) * 2
+    residuals = flex.double(nelem)
+    jacobian_t = flex.double(flex.grid(
+        len(self._prediction_parameterisation), nelem))
+    weights = flex.double(nelem)
 
-    # return early if outlier rejection is disabled
-    if self._iqr_multiplier is None: return False
+    for i, m in enumerate(self._matches):
+      residuals[2*i] = m.x_resid
+      residuals[2*i + 1] = m.y_resid
+      #residuals[3*i + 2] = m.Phiresid
 
-    from scitbx.math import five_number_summary
-    matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+      # are these the right weights? Or inverse, or sqrt?
+      weights[2*i] = m.weight_x_obs
+      weights[2*i + 1] = m.weight_y_obs
+      #weights[3*i + 2] = m.weightPhio
 
-    x_resid = [e.x_resid for e in matches]
-    y_resid = [e.y_resid for e in matches]
-    phi_resid = [e.phi_resid for e in matches]
+      # m.gradients is a nparam length list, each element of which is a
+      # doublet of values, (dX/dp_n, dY/dp_n)
+      dX_dp, dY_dp = zip(*m.gradients)
 
-    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
-    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-    min_phi, q1_phi, med_phi, q3_phi, max_phi = five_number_summary(phi_resid)
+      # FIXME Here we paste columns into the Jacobian transpose then take
+      # its transpose when done. This seems inefficient: can we just start
+      # with the Jacobian and fill elements sequentially, using row-major
+      # order to ensure the values are filled in the right order?
 
-    iqr_x = q3_x - q1_x
-    iqr_y = q3_y - q1_y
-    iqr_phi = q3_phi - q1_phi
+      # fill jacobian elements here.
+      jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 2*i)
+      jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 2*i+1)
+      #jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
 
-    cut_x = self._iqr_multiplier * iqr_x
-    cut_y = self._iqr_multiplier * iqr_y
-    cut_phi = self._iqr_multiplier * iqr_phi
+    # We return the Jacobian, not its transpose.
+    jacobian_t.matrix_transpose_in_place()
 
-    for m in matches:
-      if m.x_resid > q3_x + cut_x: m.is_matched = False
-      if m.x_resid < q1_x - cut_x: m.is_matched = False
-      if m.y_resid > q3_y + cut_y: m.is_matched = False
-      if m.y_resid < q1_y - cut_y: m.is_matched = False
-      if m.phi_resid > q3_phi + cut_phi: m.is_matched = False
-      if m.phi_resid < q1_phi - cut_phi: m.is_matched = False
+    return(residuals, jacobian_t, weights)
 
-    nreject = [m.is_matched for m in matches].count(False)
+  def compute_functional_and_gradients(self):
+    """calculate the value of the target function and its gradients"""
 
-    if nreject == 0: return False
+    self._matches = self._reflection_manager.get_matches()
+    self._nref = len(self._matches)
 
-    if self._verbosity > 1:
-      print "%d reflections have been rejected as outliers" % nreject
+    # This is a hack for the case where nref=0. This should not be necessary
+    # if bounds are provided for parameters to stop the algorithm exploring
+    # unreasonable regions of parameter space where no predictions exist.
+    # Unfortunately the L-BFGS line search does make such extreme trials.
+    if self._nref == 0:
+      return 1.e12, [1.] * len(self._prediction_parameterisation)
 
-    return True
+    # compute target function
+    L = 0.5 * sum([m.weight_x_obs * m.x_resid2 +
+                   m.weight_y_obs * m.y_resid2
+                   for m in self._matches])
 
-  def strip_unmatched_observations(self):
-    """Delete observations from the manager that are not matched to a
-    prediction. Typically used once, after the first update of
-    predictions."""
+    # prepare list of gradients
+    dL_dp = [0.] * len(self._prediction_parameterisation)
 
-    if self._verbosity > 1:
-      print "Removing reflections not matched to predictions"
+    # the gradients wrt each parameter are stored with the matches
+    for m in self._matches:
 
-    self._obs_pred_pairs = [e for e in self._obs_pred_pairs if e.is_matched]
+      for j, (grad_X, grad_Y) in enumerate(m.gradients):
+        dL_dp[j] += (m.weight_x_obs * m.x_resid * grad_X +
+                     m.weight_y_obs * m.y_resid * grad_Y)
 
-    if len(self._obs_pred_pairs) < self._min_num_obs:
-      msg = ('Remaining number of reflections = {0}, which is below '+ \
-          'the configured limit for this reflection manager').format(
-              len(self._obs_pred_pairs))
-      raise RuntimeError(msg)
+    return (L, dL_dp)
 
-    if self._verbosity > 1:
-      print len(self._obs_pred_pairs), "reflections remain in the manager"
+  def curvatures(self):
+    """First order approximation to the diagonal of the Hessian based on the
+    least squares form of the target"""
 
-    return
+    # This is a hack for the case where nref=0. This should not be necessary
+    # if bounds are provided for parameters to stop the algorithm exploring
+    # unreasonable regions of parameter space where there are no predictions
+    if self._nref == 0:
+      return [1.] * len(self._prediction_parameterisation)
 
-  def reset_accepted_reflections(self):
-    """Reset all observations to use=False in preparation for a new set of
-    predictions"""
+    # prepare lists of gradients and curvatures
+    curv = [0.] * len(self._prediction_parameterisation)
 
-    for obs in self._obs_pred_pairs: obs.reset()
+    # for each reflection, get the approximate curvatures wrt each parameter
+    for m in self._matches:
 
-  def get_obs(self):
-    """Get the list of managed observations"""
+      for j, (grad_X, grad_Y) in enumerate(m.gradients):
+        curv[j] += (m.weight_x_obs * grad_X**2 +
+                    m.weight_y_obs * grad_Y**2)
 
-    return self._obs_pred_pairs
+    # Curvatures of zero will cause a crash, because their inverse is taken.
+    assert all([c > 0.0 for c in curv])
+
+    return curv
+
+  def rmsds(self):
+    """calculate unweighted RMSDs"""
+
+    if not self._matches:
+      self._matches = self._reflection_manager.get_matches()
+
+    resid_x = sum((m.x_resid2 for m in self._matches))
+    resid_y = sum((m.y_resid2 for m in self._matches))
+
+    # cache rmsd calculation for achieved test
+    n = len(self._matches)
+    self._rmsds = (sqrt(resid_x / n),
+                   sqrt(resid_y / n))
+
+    return self._rmsds
+
+  def achieved(self):
+    """RMSD criterion for target achieved """
+    r = self._rmsds if self._rmsds else self.rmsds()
+
+    # reset cached rmsds to avoid getting out of step
+    self._rmsds = None
+
+    if (r[0] < self._binsize_cutoffs[0] and
+        r[1] < self._binsize_cutoffs[1]):
+      return True
+    return False
+

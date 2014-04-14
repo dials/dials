@@ -14,9 +14,9 @@ from cctbx.array_family import flex
 import random
 
 # dials imports
-from dials.algorithms.refinement.target import Target
-from dials.algorithms.refinement.target import ReflectionManager
-from dials.algorithms.refinement.target import ObsPredMatch # implicit import
+from dials.algorithms.refinement.target_old import Target
+from dials.algorithms.refinement.target_old import ReflectionManager
+from dials.algorithms.refinement.target_old import ObsPredMatch # implicit import
 
 # constants
 TWO_PI = 2.0 * pi

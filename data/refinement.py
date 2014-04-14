@@ -2,9 +2,9 @@
 #
 # refinement.py
 #
-#  Copyright (C) 2013 Diamond Light Source
+#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
 #
-#  Author: James Parkhurst
+#  Author: David Waterman.
 #
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package.
@@ -20,12 +20,6 @@ refinement
   verbosity = 1
     .help = "verbosity level"
     .type = int(value_min=0)
-
-  go_fast = True
-    .help = "set False to revert to old classes for scan-static refinement"
-            "that do a loop over all reflections in Python rather than the"
-            "vectorised version using flex array operations"
-    .type = bool
 
   parameterisation
     .help = "Parameters to control the parameterisation of experimental models"

@@ -33,7 +33,7 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations
 
-from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters import \
+from dials.algorithms.refinement.parameterisation.scan_varying_prediction_parameters_old import \
     VaryingCrystalPredictionParameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel

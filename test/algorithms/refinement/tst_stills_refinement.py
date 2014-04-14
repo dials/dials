@@ -50,14 +50,6 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 from dials.algorithms.spot_prediction import ray_intersection
 from cctbx.sgtbx import space_group, space_group_symbols
 
-# Parameterisation of the prediction equation
-from dials.algorithms.refinement.parameterisation.prediction_parameters import \
-    XYPhiPredictionParameterisation
-
-# Imports for the target function
-from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
-
 # Import helper functions
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
 
@@ -228,6 +220,7 @@ if do_plot:
   plt = refiner.parameter_correlation_plot(len(history.parameter_correlation)-1)
   plt.show()
 
+print "OK"
 #print "Refinement has completed with the following geometry:"
 #expts = refiner.get_experiments()
 #for beam in expts.beams(): print beam

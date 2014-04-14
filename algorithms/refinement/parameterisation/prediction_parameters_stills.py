@@ -15,8 +15,8 @@ from scitbx import matrix
 #### DIALS imports
 
 from dials_refinement_helpers_ext import *
-from dials.algorithms.refinement.parameterisation import \
-    PredictionParameterisation
+from dials.algorithms.refinement.parameterisation.prediction_parameters_old \
+  import PredictionParameterisation
 
 class XYPredictionParameterisation(PredictionParameterisation):
   """

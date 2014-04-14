@@ -55,10 +55,9 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 
 # Imports for the target function
 from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+    LeastSquaresPositionalResidualWithRmsdCutoff
 
-# Import helper functions
-from dials.algorithms.refinement.refinement_helpers import print_model_geometry
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
 #############################
 # Setup experimental models #
