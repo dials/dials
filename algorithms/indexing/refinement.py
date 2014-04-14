@@ -28,6 +28,8 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     params, reflections_for_refinement, experiments,
     verbosity=verbosity)
 
+  outliers = None
+
   if maximum_spot_error is not None:
     matches = refiner.get_matches()
     x_residuals = matches['x_resid']
@@ -47,13 +49,15 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     print "Rejecting %i outlier%s" %plural_s(inlier_sel.count(False))
     if debug_plots:
       debug_plot_residuals(refiner, inlier_sel=inlier_sel)
-    
+
     # XXX Hack to do the outlier rejection without instatiating a new refiner
     # XXX TODO move this outlier rejection into the refinement proper
     refiner._refman._reflections = refiner._refman._reflections.select(inlier_sel)
 
-    ## sort the inliers so they are in the same order
-    #perm = flex.sort_permutation(match_iobs)
+    # sort the inliers so they are in the same order
+    perm = flex.sort_permutation(match_iobs)
+    outliers = (~inlier_sel.select(perm)).iselection()
+
     #reflections_for_refinement = reflections_for_refinement.select(
       #refiner.selection_used_for_refinement()).select(inlier_sel.select(perm))
     #refiner = RefinerFactory.from_parameters_data_experiments(
@@ -68,7 +72,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
   refined = refiner.run()
   if debug_plots:
     debug_plot_residuals(refiner)
-  return refiner, refined
+  return refiner, refined, outliers
 
 
 def debug_plot_residuals(refiner, inlier_sel=None):

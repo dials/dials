@@ -138,7 +138,7 @@ def refine_subgroup(args):
   from dials.algorithms.indexing.refinement import refine
   from dials.model.experiment.experiment_list import ExperimentList
   experiments = ExperimentList([experiment])
-  refinery, refined = refine(
+  refinery, refined, outliers = refine(
     params, used_reflections, experiments, verbosity=refiner_verbosity)
 
   dall = refinery.rmsds()

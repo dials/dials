@@ -847,11 +847,14 @@ class indexer_base(object):
     from dials.algorithms.indexing.refinement import refine
     reflections_for_refinement = self.reflections.select(
       self.indexed_reflections)
-    refiner, refined = refine(
+    refiner, refined, outliers = refine(
       self.params, reflections_for_refinement, experiments,
       maximum_spot_error=maximum_spot_error,
       verbosity=self.params.refinement_protocol.verbosity,
       debug_plots=self.params.debug_plots)
+    if outliers is not None:
+      self.reflections['id'].set_selected(
+        self.indexed_reflections.iselection().select(outliers), -1)
     used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
     self._refine_timer.stop()
