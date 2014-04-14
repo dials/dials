@@ -165,27 +165,27 @@ class ExperimentList(object):
 
   def beams(self):
     ''' Get a list of the unique beams (includes None). '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     return OrderedDict([(e.beam, None) for e in self]).keys()
 
   def detectors(self):
     ''' Get a list of the unique detectors (includes None). '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     return OrderedDict([(e.detector, None) for e in self]).keys()
 
   def goniometers(self):
     ''' Get a list of the unique goniometers (includes None). '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     return OrderedDict([(e.goniometer, None) for e in self]).keys()
 
   def scans(self):
     ''' Get a list of the unique scans (includes None). '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     return OrderedDict([(e.scan, None) for e in self]).keys()
 
   def crystals(self):
     ''' Get a list of the unique crystals (includes None). '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     return OrderedDict([(e.crystal, None) for e in self]).keys()
 
   def imagesets(self):
@@ -193,7 +193,7 @@ class ExperimentList(object):
 
     This returns unique complete sets rather than partial.
     '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     temp = OrderedDict([(e.imageset.reader(), i)
       for i, e in enumerate(self) if e.imageset is not None])
     return OrderedDict([(self[i].imageset.complete_set(), None)
@@ -205,7 +205,7 @@ class ExperimentList(object):
 
   def to_dict(self):
     ''' Serialize the experiment list to dictionary. '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     from dxtbx.imageset import ImageSet, ImageSweep
     from cctbx.crystal.crystal_model.serialize import crystal_to_dict
     from dxtbx.format.FormatMultiImage import FormatMultiImage
@@ -577,7 +577,7 @@ class ExperimentListDumper(object):
     ''' Dump experiment list as json '''
     import json
     from os.path import splitext
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
 
     # Get the dictionary and get the JSON string
     dictionary = self._experiment_list.to_dict()

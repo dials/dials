@@ -92,7 +92,7 @@ class Writer(object):
 
   def __init__(self, filename):
     ''' Open the file for writing. '''
-    from collections import OrderedDict
+    from libtbx.containers import OrderedDict
     import tarfile
     self._tar = tarfile.open(filename, 'w')
 
