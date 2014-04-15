@@ -76,6 +76,7 @@ class IntegrateHKLImporter(object):
     import dxtbx
     from math import pi
     from scitbx import matrix
+    from cctbx import sgtbx
 
     # Get the unit cell to calculate the resolution
     uc = self._experiment.crystal.get_unit_cell()
@@ -99,7 +100,8 @@ class IntegrateHKLImporter(object):
 
     # Reindex the reflections
     Command.start('Reindexing reflections')
-    hkl = flex.miller_index([rdx * h for h in hkl])
+    cb_op = sgtbx.change_of_basis_op(sgtbx.rt_mx(sgtbx.rot_mx(rdx.elems)))
+    hkl = cb_op.apply(hkl)
     Command.end('Reindexed %d reflections' % len(hkl))
 
     # Create the reflection list
