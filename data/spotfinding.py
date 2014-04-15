@@ -70,6 +70,9 @@ def generate_phil_scope():
       untrusted_polygon = None
         .multiple = True
         .type = ints(value_min=0)
+        .help = "The pixel coordinates (fast, slow) that define the corners "
+                "of the untrusted polygon. Spots whose centroids fall within "
+                "the bounds of the untrusted polygon will be rejected."
 
       #untrusted_ellipse = None
       #  .multiple = True
