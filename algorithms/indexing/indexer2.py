@@ -114,6 +114,12 @@ refinement_protocol {
               "by more than the given multiple of the pixel size."
               "No outlier rejection is performed in the first macro cycle, and "
               "in the second macro cycle twice the given multiple is used."
+    maximum_phi_error = None
+      .type = float(value_min=0)
+      .help = "Reject reflections whose predicted and observed phi centroids "
+              "differ by more than the given value (degress)."
+              "No outlier rejection is performed in the first macro cycle, and "
+              "in the second macro cycle twice the given multiple is used."
     hkl_tolerance = 0.3
       .type = float(value_min=0, value_max=0.5)
   }
@@ -491,15 +497,21 @@ class indexer_base(object):
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
-        if i_cycle == 0:
+        maximum_phi_error \
+          = self.params.refinement_protocol.outlier_rejection.maximum_phi_error
+        if 1 and i_cycle == 0:
           maximum_spot_error = None
+          maximum_phi_error = None
         elif i_cycle == 1:
           if maximum_spot_error is not None:
             maximum_spot_error *= 2
+          if maximum_phi_error is not None:
+            maximum_phi_error *= 2
 
         try:
           refined_experiments, refined_reflections = self.refine(
-            experiments, maximum_spot_error=maximum_spot_error)
+            experiments, maximum_spot_error=maximum_spot_error,
+            maximum_phi_error=maximum_phi_error)
         except RuntimeError, e:
           s = str(e)
           if ("below the configured limit" in s or
@@ -840,7 +852,8 @@ class indexer_base(object):
                       verbosity=self.params.refinement_protocol.verbosity)
     self._index_reflections_timer.stop()
 
-  def refine(self, experiments, maximum_spot_error=None):
+  def refine(self, experiments, maximum_spot_error=None,
+             maximum_phi_error=None):
     self._refine_timer.start()
     from dials.algorithms.indexing.refinement import refine
     reflections_for_refinement = self.reflections.select(
@@ -848,6 +861,7 @@ class indexer_base(object):
     refiner, refined, outliers = refine(
       self.params, reflections_for_refinement, experiments,
       maximum_spot_error=maximum_spot_error,
+      maximum_phi_error=maximum_phi_error,
       verbosity=self.params.refinement_protocol.verbosity,
       debug_plots=self.params.debug_plots)
     if outliers is not None:

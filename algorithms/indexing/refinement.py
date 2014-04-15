@@ -17,6 +17,7 @@ import math
 
 
 def refine(params, reflections, experiments, maximum_spot_error=None,
+           maximum_phi_error=None,
            verbosity=0, debug_plots=False):
   detector = experiments.detectors()[0]
   assert len(experiments.detectors()) == 1
@@ -30,7 +31,7 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
 
   outliers = None
 
-  if maximum_spot_error is not None:
+  if maximum_spot_error is not None or maximum_phi_error is not None:
     matches = refiner.get_matches()
     x_residuals = matches['x_resid']
     y_residuals = matches['y_resid']
@@ -42,10 +43,15 @@ def refine(params, reflections, experiments, maximum_spot_error=None,
     match_iobs = matches['iobs']
     mm_residual_norms = flex.sqrt(
       flex.pow2(x_residuals) + flex.pow2(y_residuals))
-    # hard cutoff, but this is essentially what XDS does by default
-    # assumes pixel size is same for all panels and same in x and y
-    inlier_sel = mm_residual_norms < (
-      maximum_spot_error * detector[0].get_pixel_size()[0])
+    inlier_sel = flex.bool(len(matches), True)
+    if maximum_spot_error is not None:
+      # hard cutoff, but this is essentially what XDS does by default
+      # assumes pixel size is same for all panels and same in x and y
+      inlier_sel &= mm_residual_norms < (
+        maximum_spot_error * detector[0].get_pixel_size()[0])
+    if maximum_phi_error is not None:
+      inlier_sel &= flex.abs(phi_residuals) < (math.pi * maximum_phi_error/180)
+
     print "Rejecting %i outlier%s" %plural_s(inlier_sel.count(False))
     if debug_plots:
       debug_plot_residuals(refiner, inlier_sel=inlier_sel)
