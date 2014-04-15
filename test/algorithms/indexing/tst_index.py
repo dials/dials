@@ -363,6 +363,7 @@ def exercise_10():
                 "beam.fix=all",
                 "detector.fix=orientation",
                 "maximum_spot_error=3",
+                "maximum_phi_error=2",
                 "recycle_unindexed_reflections=True",
                 "max_lattices=3", #XXX eventually this should not be needed
                 ]
