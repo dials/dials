@@ -13,6 +13,7 @@
 from __future__ import division
 import cPickle as pickle
 import math
+import sys
 
 from libtbx.utils import Sorry
 import iotbx.phil
@@ -560,42 +561,47 @@ class indexer_base(object):
     for expt in refined_experiments:
       expt.imageset = self.sweep
 
-    if len(experiments) > 1:
+    self.refined_experiments = refined_experiments
+
+    if len(self.refined_experiments) > 1:
       from dials.algorithms.indexing.compare_orientation_matrices \
            import show_rotation_matrix_differences
-      show_rotation_matrix_differences(experiments.crystals())
+      show_rotation_matrix_differences(self.refined_experiments.crystals())
 
-    if len(refined_experiments):
-      self.export_as_json(refined_experiments)
-      self.export_reflections(refined_reflections, file_name='indexed.pickle')
-
-    for i_lattice, crystal_model in enumerate(refined_experiments.crystals()):
-      self.refined_crystal_models.append(crystal_model)
+    if len(self.refined_experiments):
+      self.export_as_json(self.refined_experiments)
+      self.export_reflections(
+        self.refined_reflections, file_name='indexed.pickle')
 
     if 1 and self.params.debug and self.goniometer is not None:
-      for i_lattice, expt in enumerate(refined_experiments):
+      for i_lattice, expt in enumerate(self.refined_experiments):
         suffix = ""
-        if len(refined_experiments) > 1:
+        if len(self.refined_experiments) > 1:
           suffix = "_%i" %(i_lattice+1)
         predictions = self.predict_reflections(expt)
         self.export_reflections(
           predictions, file_name='predictions%s.pickle' %suffix)
 
     print "Final refined crystal models:"
-    for i, crystal_model in enumerate(self.refined_crystal_models):
+    for i, crystal_model in enumerate(self.refined_experiments.crystals()):
       print "model %i (%i reflections):" %(
         i+1, (self.reflections['id'] == i).count(True))
       print crystal_model
 
     if self.params.show_timing:
-      print self._index_reflections_timer.legend
-      print self._map_spots_pixel_to_mm_rad_timer.report()
-      print self._map_spots_pixel_to_reciprocal_space_timer.report()
-      print self._index_reflections_timer.report()
-      print self._refine_timer.report()
-      print self._find_lattices_timer.report()
-      print self._export_as_json_timer.report()
-      print self._export_reflections_timer.report()
+      self.show_timing_info()
+
+  def show_timing_info(self, out=None):
+    if out is not None:
+      out = sys.stdout
+    print >> out, self._index_reflections_timer.legend
+    print >> out, self._map_spots_pixel_to_mm_rad_timer.report()
+    print >> out, self._map_spots_pixel_to_reciprocal_space_timer.report()
+    print >> out, self._index_reflections_timer.report()
+    print >> out, self._refine_timer.report()
+    print >> out, self._find_lattices_timer.report()
+    print >> out, self._export_as_json_timer.report()
+    print >> out, self._export_reflections_timer.report()
 
   def filter_reflections_by_scan_range(self):
     reflections_in_scan_range = flex.size_t()
