@@ -273,7 +273,7 @@ class ModelParameterisation(object):
 
     if only_free:
       grads = [ds_dp for ds_dp, p in zip(self._dstate_dp, self._param) \
-              if not p.get_fixed()]
+               if not p.get_fixed()]
     else:
       grads = [0. * ds_dp if p.get_fixed() else ds_dp \
                   for ds_dp, p in zip(self._dstate_dp, self._param)]
@@ -282,3 +282,34 @@ class ModelParameterisation(object):
       return [e[multi_state_elt] for e in grads]
     else:
       return grads
+
+  def calculate_state_uncertainties(self, var_cov):
+    """Given a variance-covariance array for the parameters of this model,
+    propagate those estimated errors into the uncertainties of the model state"""
+
+    grads = self.get_ds_dp()
+
+    if self._is_multi_state:
+      # FIXME need special code to handle the multi state case
+      return
+
+    else:
+      state = self.get_state()
+      state_esd = []
+
+      from scitbx import matrix
+      from math import sqrt
+      # loop over each element of the state vector or matrix
+      for i in range(len(state.elems)):
+        df_dp = matrix.col([grad[i] for grad in grads])
+        var_f = (df_dp.transpose() * var_cov * df_dp)[0]
+        assert var_f >= 0.
+        state_esd.append(sqrt(var_f))
+
+      # cast the variances as a new object of the same type as the state
+      state_esd = type(state)(state_var)
+
+    #FIXME don't have anywhere to put this information yet! Probably need to
+    #assign it to the model somehow
+    return
+

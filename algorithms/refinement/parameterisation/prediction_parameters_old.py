@@ -259,25 +259,29 @@ class PredictionParameterisation(object):
     if self._detector_parameterisations:
       for model in self._detector_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
+        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        model.calculate_state_uncertainties(sub)
         i += n
 
     if self._beam_parameterisations:
       for model in self._beam_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
+        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        model.calculate_state_uncertainties(sub)
         i += n
 
     if self._xl_orientation_parameterisations:
       for model in self._xl_orientation_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
+        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        model.calculate_state_uncertainties(sub)
         i += n
 
     if self._xl_unit_cell_parameterisations:
       for model in self._xl_unit_cell_parameterisations:
         n = model.num_free()
-        sub = var_cov.matrix_copy_block(i, i, n, n)
+        sub = var_cov.matrix_copy_block(i, i, n, n).as_scitbx_matrix()
+        model.calculate_state_uncertainties(sub)
         i += n
 
     return
