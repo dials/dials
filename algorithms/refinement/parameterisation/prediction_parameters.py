@@ -715,7 +715,11 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     dpv_dp using the quotient rule"""
 
     u, v, w = pv.parts()
-    w2 = w**2
+
+    # precalculate for efficiency
+    w_inv = 1/w
+    u_w_inv = u * w_inv
+    v_w_inv = v * w_inv
 
     dX_dp = []
     dY_dp = []
@@ -723,8 +727,8 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     for der in dpv_dp:
       du_dp, dv_dp, dw_dp = der.parts()
 
-      dX_dp.append(du_dp / w - u * dw_dp / w2)
-      dY_dp.append(dv_dp / w - v * dw_dp / w2)
+      dX_dp.append(w_inv * (du_dp - dw_dp * u_w_inv))
+      dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
 
     return dX_dp, dY_dp
 
