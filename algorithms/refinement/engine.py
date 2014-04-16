@@ -404,6 +404,36 @@ class AdaptLstbx(
       self.x, self.old_x = self.old_x, None
       return True
 
+  def finalise(self):
+    """perform various post-run tasks"""
+
+    # print output table
+    if self._verbosity > 0:
+      print
+      self.print_table()
+
+    # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
+    cf_inv = self.cf.matrix_packed_u_as_upper_triangle().\
+        matrix_inversion()
+    nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
+
+    # keep the estimated parameter variance-covariance matrix
+    self.parameter_var_cov = \
+        self.history.reduced_chi_squared[-1] * nm_inv
+    # send this back to the models to calculate their uncertainties
+    self._parameters.calculate_model_state_uncertainties(
+      self.parameter_var_cov)
+
+    # send parameter variances back to the parameter classes
+    # themselves, for reporting purposes and for building restraints
+    # based on existing parameterisations.
+    s2 = self.parameter_var_cov.matrix_diagonal()
+    assert s2.all_ge(0.0)
+    s = flex.sqrt(s2)
+    self._parameters.set_param_esds(s)
+
+    return
+
   def _print_normal_matrix(self):
     """Print the full normal matrix at the current step. For debugging only"""
     print "The normal matrix for the current step is:"
@@ -503,30 +533,11 @@ class GaussNewtonIterations(AdaptLstbx, normal_eqns_solving.iterations):
       self.step_forward()
       self.n_iterations += 1
 
-    # print output table
-    if self._verbosity > 0:
-      print
-      self.print_table()
-
-    # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
-    cf = self.step_equations().cholesky_factor_packed_u()
-    cf_inv = cf.matrix_packed_u_as_upper_triangle().\
-        matrix_inversion()
-    nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
-
-    # keep the estimated parameter variance-covariance matrix
-    self.parameter_var_cov = \
-        self.history.reduced_chi_squared[-1] * nm_inv
-
-    # send parameter variances back to the parameter classes
-    # themselves, for reporting purposes and for building restraints
-    # based on existing parameterisations.
-    s2 = self.parameter_var_cov.matrix_diagonal()
-    assert s2.all_ge(0.0)
-    s = flex.sqrt(s2)
-    self._parameters.set_param_esds(s)
+    self.cf = self.step_equations().cholesky_factor_packed_u()
+    self.finalise()
 
     return
+
 
 class LevenbergMarquardtIterations(GaussNewtonIterations):
   """Refinery implementation, employing lstbx Levenberg Marquadt
@@ -632,26 +643,6 @@ class LevenbergMarquardtIterations(GaussNewtonIterations):
       # prepare for next step
       self.build_up()
 
-    # print output table
-    if self._verbosity > 0:
-      print
-      self.print_table()
-
-    # invert normal matrix from N^-1 = (U^-1)(U^-1)^T
-    cf_inv = self.cf.matrix_packed_u_as_upper_triangle().\
-        matrix_inversion()
-    nm_inv = cf_inv.matrix_multiply_transpose(cf_inv)
-
-    # keep the estimated parameter variance-covariance matrix
-    self.parameter_var_cov = \
-        self.history.reduced_chi_squared[-1] * nm_inv
-
-    # send parameter variances back to the parameter classes
-    # themselves, for reporting purposes and for building restraints
-    # based on existing parameterisations.
-    s2 = self.parameter_var_cov.matrix_diagonal()
-    assert s2.all_ge(0.0)
-    s = flex.sqrt(s2)
-    self._parameters.set_param_esds(s)
+    self.finalise()
 
     return

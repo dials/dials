@@ -247,6 +247,41 @@ class PredictionParameterisation(object):
         tmp = [it.next() for i in range(model.num_free())]
         model.set_param_esds(tmp)
 
+  def calculate_model_state_uncertainties(self, var_cov):
+    """
+    Take the variance-covariance matrix of all free parameters calculated by
+    the minimisation engine. For each parameterisation in the global model,
+    extract the subset of this matrix for the associated block of parameters.
+    Pass this on to the relevant model parameterisation to calculate its own
+    uncertainty of state."""
+
+    i = 0
+    if self._detector_parameterisations:
+      for model in self._detector_parameterisations:
+        n = model.num_free()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
+        i += n
+
+    if self._beam_parameterisations:
+      for model in self._beam_parameterisations:
+        n = model.num_free()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
+        i += n
+
+    if self._xl_orientation_parameterisations:
+      for model in self._xl_orientation_parameterisations:
+        n = model.num_free()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
+        i += n
+
+    if self._xl_unit_cell_parameterisations:
+      for model in self._xl_unit_cell_parameterisations:
+        n = model.num_free()
+        sub = var_cov.matrix_copy_block(i, i, n, n)
+        i += n
+
+    return
+
   def prepare(self):
     """Cache required quantities for each experiment that are not dependent on
     hkl"""
