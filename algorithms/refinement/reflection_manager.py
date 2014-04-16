@@ -23,23 +23,27 @@ def calculate_entering_flags(reflections, experiments):
   """calculate entering flags for all reflections, and set them as a column
   of the reflection table."""
 
-  goniometers = [e.goniometer for e in experiments]
-  axes = [matrix.col(g.get_rotation_axis()) if g else None for g in goniometers]
-  s0vecs = [matrix.col(e.beam.get_s0()) for e in experiments]
-
-  # calculate unit vectors normal to the spindle-beam plane for each
-  # experiment, such that the vector placed at the centre of the Ewald sphere
-  # points to the hemisphere in which reflections cross from inside to outside
-  # of the sphere (reflections are exiting). NB this vector is in +ve Y
-  # direction when using imgCIF coordinate frame.
-  vecs = [s0vecs[i].cross(e).normalize() if e else None for i, e in enumerate(axes)]
-
-  # Set entering flags. These are always False for experiments that have no
+  # Init entering flags. These are always False for experiments that have no
   # rotation axis.
-  enterings = [matrix.col(ref['s1']).dot(vecs[ref['id']]) < 0. \
-               if vecs[ref['id']] else False for ref in reflections]
+  enterings = flex.bool(len(reflections), False)
 
-  return flex.bool(enterings)
+  for iexp, exp in enumerate(experiments):
+    gonio = exp.goniometer
+    if not gonio: continue
+    axis = matrix.col(gonio.get_rotation_axis())
+    s0 = matrix.col(exp.beam.get_s0())
+    # calculate a unit vector normal to the spindle-beam plane for this
+    # experiment, such that the vector placed at the centre of the Ewald sphere
+    # points to the hemisphere in which reflections cross from inside to outside
+    # of the sphere (reflections are exiting). NB this vector is in +ve Y
+    # direction when using imgCIF coordinate frame.
+    vec = s0.cross(axis)
+    sel = reflections['id'] == iexp
+    isel = sel.iselection()
+    to_update = reflections['s1'].select(sel).dot(vec) < 0.
+    enterings.set_selected(sel, to_update)
+
+  return enterings
 
 class ReflectionManager(object):
   """A class to maintain information about observed and predicted
