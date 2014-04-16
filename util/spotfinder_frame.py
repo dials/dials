@@ -101,6 +101,10 @@ class SpotFrame(XrayFrame) :
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
     import math
+    from dials.algorithms.shoebox import MaskCode
+    bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
+    fg_code = MaskCode.Valid | MaskCode.Foreground
+    strong_code = MaskCode.Valid | MaskCode.Strong
 
     def map_coords(x, y, p):
       if len(self.pyslip.tiles.raw_image.get_detector()) > 1:
@@ -136,7 +140,9 @@ class SpotFrame(XrayFrame) :
                 for iy in range(ny):
                   for iz in range(nz):
                     if iz + z0 != i_frame: continue
-                    if reflection['shoebox'].mask[iz, iy, ix] > 0:
+                    mask_value = reflection['shoebox'].mask[iz, iy, ix]
+                    if ((mask_value == strong_code) or
+                        (mask_value == fg_code)):
                       x_, y_ = map_coords(
                         ix + x0 + 0.5, iy + y0 + 0.5, reflection['panel'])
                       all_pix_data.append((x_, y_))
