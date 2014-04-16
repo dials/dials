@@ -97,14 +97,13 @@ class Script(ScriptRunner):
     # Intregate the sweep's reflections
     print 'Integrating reflections'
     reflections = integrate(importer.experiments,
-        reference=reference, extracted=extracted)
+        reference=reference, extracted=extracted,
+        save_profiles=options.save_profiles)
 
     # Save the reflections to file
     nvalid = len(reflections)
     Command.start('Saving {0} reflections to {1}'.format(
         nvalid, options.output_filename))
-    if options.save_profiles == False:
-      del reflections['shoebox']
     reflections.as_pickle(options.output_filename)
     Command.end('Saved {0} reflections to {1}'.format(
         nvalid, options.output_filename))

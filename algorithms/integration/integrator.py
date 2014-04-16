@@ -24,7 +24,8 @@ class Integrator(object):
     self.n_blocks = n_blocks
     self.filter_by_zeta = filter_by_zeta
 
-  def __call__(self, experiments, reference=None, extracted=None):
+  def __call__(self, experiments, reference=None, extracted=None,
+               save_profiles=False):
     ''' Call to integrate.
 
     Params:
@@ -108,9 +109,10 @@ class Integrator(object):
       reflections['n_background'] = n_bg
       reflections['n_foreground'] = n_fg
 
-      # Delete the profiles
-      del reflections['shoebox']
-      del reflections['rs_shoebox']
+      if not save_profiles:
+        # Delete the profiles
+        del reflections['shoebox']
+        del reflections['rs_shoebox']
       result.extend(reflections)
       print ''
 
