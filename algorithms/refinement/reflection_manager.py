@@ -39,7 +39,6 @@ def calculate_entering_flags(reflections, experiments):
     # direction when using imgCIF coordinate frame.
     vec = s0.cross(axis)
     sel = reflections['id'] == iexp
-    isel = sel.iselection()
     to_update = reflections['s1'].select(sel).dot(vec) < 0.
     enterings.set_selected(sel, to_update)
 
@@ -172,20 +171,27 @@ class ReflectionManager(object):
     """calculate observed frame numbers for all reflections, if not already
     set"""
 
-    scans = [e.scan for e in self._experiments]
-    frames = [scans[ref['id']].get_array_index_from_angle(
-                ref["xyzobs.mm.value"][2], deg=False) \
-              if scans[ref['id']] else 0.0 for ref in self._reflections]
-    #TEMP Test: if frames are already set, see that we have the same values
-    # FIXME Remove the test if is is seen to pass in practice, and just return
-    # early
+    frames = flex.double(len(self._reflections), 0.)
+    for iexp, exp in enumerate(self._experiments):
+      scan = exp.scan
+      if not scan: continue
+      sel = self._reflections['id'] == iexp
+      xyzobs = self._reflections["xyzobs.mm.value"].select(sel)
+      angles = xyzobs.parts()[2]
+      to_update = scan.get_array_index_from_angle(angles, deg=False)
+      frames.set_selected(sel, to_update)
+
+    # Sanity check: if frames are already set, do they match what was
+    # calculated?
     if self._reflections.has_key('xyzobs.px.value'):
       from libtbx.test_utils import approx_equal
-      for a, b in zip(frames, self._reflections['xyzobs.px.value']):
-        assert approx_equal(a, b[2])
+      approx_equal(frames, self._reflections['xyzobs.px.value'].parts()[2])
+
     else: # Frames are not set, so set them, with dummy observed pixel values
-      xyzobs = [(0., 0., f) for f in frames]
-      self._reflections['xyzobs.px.value'] = flex.vec3_double(xyzobs)
+      self._reflections['xyzobs.px.value'] = flex.vec3_double(
+              flex.double(len(self._reflections), 0.),
+              flex.double(len(self._reflections), 0.),
+              frames)
 
     return
 
