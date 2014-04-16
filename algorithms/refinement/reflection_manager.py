@@ -102,7 +102,7 @@ class ReflectionManager(object):
     self._reflections['entering'] = calculate_entering_flags(self._reflections,
       self._experiments)
 
-    # set observed frame numbers for all reflections
+    # set observed frame numbers for all reflections if not already present
     self._calculate_frame_numbers()
 
     # set weights for all reflections
@@ -171,6 +171,9 @@ class ReflectionManager(object):
     """calculate observed frame numbers for all reflections, if not already
     set"""
 
+    if self._reflections.has_key('xyzobs.px.value'): return
+
+    # Frames are not set, so set them, with dummy observed pixel values
     frames = flex.double(len(self._reflections), 0.)
     for iexp, exp in enumerate(self._experiments):
       scan = exp.scan
@@ -180,18 +183,10 @@ class ReflectionManager(object):
       angles = xyzobs.parts()[2]
       to_update = scan.get_array_index_from_angle(angles, deg=False)
       frames.set_selected(sel, to_update)
-
-    # Sanity check: if frames are already set, do they match what was
-    # calculated?
-    if self._reflections.has_key('xyzobs.px.value'):
-      from libtbx.test_utils import approx_equal
-      approx_equal(frames, self._reflections['xyzobs.px.value'].parts()[2])
-
-    else: # Frames are not set, so set them, with dummy observed pixel values
-      self._reflections['xyzobs.px.value'] = flex.vec3_double(
-              flex.double(len(self._reflections), 0.),
-              flex.double(len(self._reflections), 0.),
-              frames)
+    self._reflections['xyzobs.px.value'] = flex.vec3_double(
+            flex.double(len(self._reflections), 0.),
+            flex.double(len(self._reflections), 0.),
+            frames)
 
     return
 
