@@ -214,14 +214,25 @@ class ReflectionManager(object):
     This step includes rejection of reflections too close to the spindle, and
     rejection of the (0,0,0) Miller index. Outlier rejection is done later."""
 
-    #TODO Should be possible to 'vectorise' this using flex array operations
-    #FIXME Allow inclusion test to pass if there is no rotation axis for
-    # a particular experiment
+    # first exclude reflections with miller index set to 0,0,0
+    sel = obs_data['miller_index'] != (0,0,0)
+    inc = flex.size_t_range(len(obs_data)).select(sel)
+    obs_data = obs_data.select(sel)
 
-    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0) \
-           and self._inclusion_test(matrix.col(ref['s1']),
-                                    self._axes[ref['id']],
-                                    self._s0vecs[ref['id']])]
+    # Default to True to pass test if there is no rotation axis for a particular
+    # experiment
+    to_keep = flex.bool(len(inc), True)
+
+    for iexp, exp in enumerate(self._experiments):
+      axis = self._axes[iexp]
+      if not axis: continue
+      sel = obs_data['id'] == iexp
+      s0 = self._s0vecs[iexp]
+      s1 = obs_data['s1'].select(sel)
+      to_update = self._inclusion_test(s1, axis, s0)
+      to_keep.set_selected(sel, to_update)
+
+    inc = inc.select(to_keep)
 
     return inc
 
@@ -234,8 +245,8 @@ class ReflectionManager(object):
     # plane and for low values of the cutoff are troublesome to
     # integrate anyway.
 
-    test = abs(axis.dot(matrix.col(s1).cross(s0))) > \
-        self._close_to_spindle_cutoff
+    p_vol = flex.abs(s1.cross(flex.vec3_double(s1.size(), s0)).dot(axis))
+    test = p_vol > self._close_to_spindle_cutoff
 
     return test
 
@@ -458,19 +469,9 @@ class ReflectionManagerXY(ReflectionManager):
   reflections too close to the spindle, and reports only information
   about X, Y residuals"""
 
-  def _id_refs_to_keep(self, obs_data):
-    """For this version of the class, only reject the (0,0,0) reflections.
-    We don't want to exclude reflections close to the spindle, as the spindle
-    may not exist"""
-
-    #FIXME Should not need to overload, if original version is fixed to
-    # return true for inclusion whenever there is no rotation axis
-    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0)]
-
-    return inc
-
   # No need to overload the following. The nref_per_degree sampling won't be
   # done anyway if there is no scan
+
   # def _create_working_set(self):
 
   def print_stats_on_matches(self):
