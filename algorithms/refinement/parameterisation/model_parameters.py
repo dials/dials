@@ -294,6 +294,8 @@ class ModelParameterisation(object):
       return
 
     else:
+      # FIXME also need a special case for scan-varying model parameterisation,
+      # as get_state just returns the state at a single scan-point 't'
       state = self.get_state()
       state_esd = []
 
@@ -307,7 +309,7 @@ class ModelParameterisation(object):
         state_esd.append(sqrt(var_f))
 
       # cast the variances as a new object of the same type as the state
-      state_esd = type(state)(state_var)
+      state_esd = type(state)(state_esd)
 
     #FIXME don't have anywhere to put this information yet! Probably need to
     #assign it to the model somehow
