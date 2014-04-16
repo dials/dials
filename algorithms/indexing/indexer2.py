@@ -20,7 +20,7 @@ import iotbx.phil
 from scitbx import matrix
 
 from cctbx.array_family import flex
-from cctbx import crystal, sgtbx, xray
+from cctbx import crystal, sgtbx, uctbx, xray
 
 from cctbx.crystal.crystal_model import crystal_model as Crystal
 from dials.model.experiment.experiment_list import Experiment, ExperimentList
@@ -785,12 +785,15 @@ class indexer_base(object):
       for perm, sign in zip(
           ((0,1,2), (1,2,0), (2,0,1), (1,0,2), (0,2,1), (2,1,0)),
           (1, 1, 1, -1, -1, -1)):
-        crystal_model = Crystal(
-          basis_vectors[perm[0]],
-          basis_vectors[perm[1]],
-          [i * sign for i in basis_vectors[perm[2]]],
-          space_group=target_space_group)
-        unit_cell = crystal_model.get_unit_cell()
+        a = matrix.col(basis_vectors[perm[0]])
+        b = matrix.col(basis_vectors[perm[1]])
+        c = matrix.col([i * sign for i in basis_vectors[perm[2]]])
+        unit_cell = uctbx.unit_cell((a.length(),
+                                     b.length(),
+                                     c.length(),
+                                     b.angle(c, deg=True),
+                                     c.angle(a, deg=True),
+                                     a.angle(b, deg=True)))
         uc = target_unit_cell
         if uc is None:
           uc = unit_cell
@@ -806,13 +809,10 @@ class indexer_base(object):
           symm_target_sg.unit_cell(),
           relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
           absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance):
-          bmsd = unit_cell.bases_mean_square_difference(
-            symm_target_sg.unit_cell())
           bmsd = unit_cell.change_basis(
             symm_target_sg.change_of_basis_op_to_reference_setting())\
             .bases_mean_square_difference(
               symm_target_sg.as_reference_setting().unit_cell())
-
           eps = 1e-8
           if (bmsd+eps) < min_bmsd:
             min_bmsd = bmsd
@@ -820,20 +820,13 @@ class indexer_base(object):
             best_sign = sign
       if best_perm is None:
         return None
-    #print best_perm, best_sign
-    crystal_model = Crystal(
-      basis_vectors[best_perm[0]],
-      basis_vectors[best_perm[1]],
-      [i * best_sign for i in basis_vectors[best_perm[2]]],
-      space_group=target_space_group)
-    model = crystal_model
-    #cb_op_target_ref = symm_target_sg.space_group_info().type().cb_op()
-    #symm_target_sg_ref = symm_target_sg.change_basis(cb_op_target_ref)
+    direct_matrix = matrix.sqr(
+      basis_vectors[best_perm[0]] + basis_vectors[best_perm[1]] +
+      tuple([i * best_sign for i in basis_vectors[best_perm[2]]]))
     from rstbx.symmetry.constraints import parameter_reduction
     s = parameter_reduction.symmetrize_reduce_enlarge(target_space_group)
-    s.set_orientation(crystal_model.get_A())
+    s.set_orientation(direct_matrix.inverse())
     s.symmetrize()
-    #direct_matrix = s.orientation.change_basis(cb_op_target_ref).direct_matrix()
     if return_primitive_setting:
       sgi = sgtbx.space_group_info(group=target_space_group)
       cb_op_to_primitive = sgi.change_of_basis_op_to_primitive_setting()
