@@ -218,23 +218,22 @@ class RefinerFactory(object):
     """low level build"""
 
     # check that the beam vectors are stored: if not, compute them
-    nrefs_wo_s1 = (reflections['s1'].norms() < 1.e-6).count(True)
+    refs_wo_s1_sel = (reflections['s1'].norms() < 1.e-6)
+    nrefs_wo_s1 = refs_wo_s1_sel.count(True)
     if nrefs_wo_s1 > 0 and verbosity > 1:
       print "Setting scattering vectors for", nrefs_wo_s1, "reflections"
-    from scitbx import matrix
-    for i in xrange(reflections.nrows()):
-      ref = reflections[i]
-      if ref['s1'] != (0.0, 0.0, 0.0):
-        continue
-      beam = experiments[ref['id']].beam
-      detector = experiments[ref['id']].detector
-      panel = detector[ref['panel']]
-      impact = ref['xyzobs.mm.value'][0:2]
-      x, y = panel.millimeter_to_pixel(impact)
-      s1 = matrix.col(panel.get_pixel_lab_coord(
-          (x, y))).normalize() / beam.get_wavelength()
-      row = { 's1' : s1 }
-      reflections[i] = row
+    for i_expt, expt in enumerate(experiments):
+      detector = expt.detector
+      beam = expt.beam
+      expt_sel = reflections['id'] == i_expt
+      for i_panel, panel in enumerate(detector):
+        panel_sel = reflections['panel'] == i_panel
+        isel = (expt_sel & panel_sel & refs_wo_s1_sel).iselection()
+        spots = reflections.select(isel)
+        x, y, rot_angle = spots['xyzobs.mm.value'].parts()
+        s1 = panel.get_lab_coord(flex.vec2_double(x,y))
+        s1 = s1/s1.norms() * (1/beam.get_wavelength())
+        reflections['s1'].set_selected(isel, s1)
 
     # unset the refinement flags (creates flags field if needed)
     from dials.array_family.flex import reflection_table
