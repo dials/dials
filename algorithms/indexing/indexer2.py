@@ -11,7 +11,7 @@
 #  included in the root directory of this package.
 
 from __future__ import division
-import cPickle as pickle
+from libtbx import easy_pickle
 import math
 import sys
 
@@ -493,8 +493,7 @@ class indexer_base(object):
           sel.set_selected(isel, True)
           sel.set_selected(self.reflections['id'] > -1, False)
           unindexed = self.reflections.select(sel)
-          with open("unindexed.pickle", 'wb') as f:
-            pickle.dump(unindexed, f)
+          self.export_reflections(unindexed, "unindexed.pickle")
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
@@ -959,8 +958,7 @@ class indexer_base(object):
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
     self._export_reflections_timer.start()
-    with open(file_name, 'wb') as f:
-      pickle.dump(reflections, f)
+    easy_pickle.dump(file_name, reflections)
     self._export_reflections_timer.stop()
 
   def find_lattices(self):
