@@ -293,7 +293,8 @@ class Importer(object):
     self.extracted = None
 
     # Get the list of items to try
-    totry = ['extracted', 'images', 'datablocks', 'experiments', 'reflections']
+    totry = ['pickle', 'extracted', 'images', 'datablocks',
+             'experiments', 'reflections']
     if include is not None:
       for item in include:
         assert(item in totry)
@@ -308,6 +309,22 @@ class Importer(object):
       if verbose: print 'Try import as %s' % item
       unhandled = self.try_import(unhandled, item, verbose)
     self.unhandled_arguments = unhandled
+
+  def try_import_pickle(self, args, verbose, pickle_ext=('.pickle', '.pkl')):
+    import os
+    from libtbx import easy_pickle
+    unhandled = []
+    for i, arg in enumerate(args):
+      if isinstance(arg, basestring) and os.path.splitext(arg)[1] in pickle_ext:
+        try:
+          from dials.array_family import flex
+          obj = easy_pickle.load(arg)
+          unhandled.append(obj)
+        except Exception:
+          unhandled.append(arg)
+      else:
+        unhandled.append(arg)
+    return unhandled
 
   def try_import(self, args, item, verbose):
     ''' Try to import with the given item. '''
