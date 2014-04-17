@@ -20,6 +20,27 @@ class SpotFrame(XrayFrame) :
     self.predictions_layer = None
     self.miller_indices_layer = None
 
+    from libtbx.utils import time_log
+    self.show_all_pix_timer = time_log("show_all_pix")
+    self.show_shoebox_timer = time_log("show_shoebox")
+    self.show_max_pix_timer = time_log("show_max_pix")
+    self.show_ctr_mass_timer = time_log("show_ctr_mass")
+    self.draw_all_pix_timer = time_log("draw_all_pix")
+    self.draw_shoebox_timer = time_log("draw_shoebox")
+    self.draw_max_pix_timer = time_log("draw_max_pix")
+    self.draw_ctr_mass_timer = time_log("draw_ctr_mass_pix")
+
+  #def __del__(self):
+    #print self.show_all_pix_timer.legend
+    #print self.show_all_pix_timer.report()
+    #print self.show_shoebox_timer.report()
+    #print self.show_max_pix_timer.report()
+    #print self.show_ctr_mass_timer.report()
+    #print self.draw_all_pix_timer.report()
+    #print self.draw_shoebox_timer.report()
+    #print self.draw_max_pix_timer.report()
+    #print self.draw_ctr_mass_timer.report()
+
   def OnShowSettings (self, event) :
     if (self.settings_frame is None) :
       frame_rect = self.GetRect()
@@ -74,29 +95,37 @@ class SpotFrame(XrayFrame) :
           renderer = self.pyslip.LightweightDrawPointLayer,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
       if self.settings.show_all_pix:
+        self.draw_all_pix_timer.start()
         self.dials_spotfinder_layer = self.pyslip.AddPointLayer(
           all_pix_data, color="green", name="<all_pix_layer>",
           radius=2,
-          renderer = self.pyslip.LightweightDrawPointLayer,
+          renderer = self.pyslip.LightweightDrawPointLayer2,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
+        self.draw_all_pix_timer.stop()
       if self.settings.show_shoebox:
+        self.draw_shoebox_timer.start()
         self.shoebox_layer = self.pyslip.AddPolygonLayer(
           shoebox_data, map_rel=True, visible=True,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<shoebox_layer>')
+        self.draw_shoebox_timer.stop()
       if self.settings.show_ctr_mass:
+        self.draw_ctr_mass_timer.start()
         self.ctr_mass_layer = self.pyslip.AddPolygonLayer(
           ctr_mass_data, map_rel=True, visible=True,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5],
           selectable=False,
           name='<ctr_mass_layer>')
+        self.draw_ctr_mass_timer.stop()
       if self.settings.show_max_pix:
+        self.draw_max_pix_timer.start()
         self.max_pix_layer = self.pyslip.AddPointLayer(
           max_pix_data, color="pink", name="<max_pix_layer>",
           radius=2,
           renderer = self.pyslip.LightweightDrawPointLayer,
           show_levels=[-2, -1, 0, 1, 2, 3, 4, 5])
+        self.draw_max_pix_timer.stop()
 
   def get_spotfinder_data(self):
     from scitbx.array_family import flex
@@ -127,83 +156,100 @@ class SpotFrame(XrayFrame) :
     scan = self.pyslip.tiles.raw_image.get_scan()
     to_degrees = 180 / math.pi
     for ref_list in self.reflections:
-      for reflection in ref_list:
-        if reflection.has_key('bbox'):
+      if ref_list.has_key('bbox'):
+        bbox = ref_list['bbox']
+        x0, x1, y0, y1, z0, z1 = bbox.parts()
+        bbox_sel = (i_frame >= z0) & (i_frame < z1)
+        for reflection in ref_list.select(bbox_sel):
           x0, x1, y0, y1, z0, z1 = reflection['bbox']
-          if i_frame >= z0 and i_frame < z1:
-            nx = x1 - x0 # size of reflection box in x-direction
-            ny = y1 - y0 # size of reflection box in y-direction
-            nz = z1 - z0 # number of frames this spot appears on
-            if (self.settings.show_all_pix and reflection.has_key('shoebox')
-                and reflection['shoebox'].mask.size() > 0):
-              for ix in range(nx):
-                for iy in range(ny):
-                  for iz in range(nz):
-                    if iz + z0 != i_frame: continue
-                    mask_value = reflection['shoebox'].mask[iz, iy, ix]
-                    if ((mask_value == strong_code) or
-                        (mask_value == fg_code)):
-                      x_, y_ = map_coords(
-                        ix + x0 + 0.5, iy + y0 + 0.5, reflection['panel'])
-                      all_pix_data.append((x_, y_))
+          panel = reflection['panel']
+          nx = x1 - x0 # size of reflection box in x-direction
+          ny = y1 - y0 # size of reflection box in y-direction
+          #nz = z1 - z0 # number of frames this spot appears on
+          if (self.settings.show_all_pix and reflection.has_key('shoebox')
+              and reflection['shoebox'].mask.size() > 0):
+            self.show_all_pix_timer.start()
+            shoebox = reflection['shoebox']
+            iz = i_frame - z0
+            for ix in range(nx):
+              for iy in range(ny):
+                mask_value = shoebox.mask[iz, iy, ix]
+                if ((mask_value == strong_code) or
+                    (mask_value == fg_code)):
+                  x_, y_ = map_coords(
+                    ix + x0 + 0.5, iy + y0 + 0.5, panel)
+                  all_pix_data.append((x_, y_))
+            self.show_all_pix_timer.stop()
 
-            if self.settings.show_shoebox:
-              x0_, y0_ = map_coords(x0, y0, reflection['panel'])
-              x1_, y1_ = map_coords(x1, y1, reflection['panel'])
-              lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
-                       (((x0_, y1_), (x1_, y1_)), shoebox_dict),
-                       (((x1_, y1_), (x1_, y0_)), shoebox_dict),
-                       (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
-              shoebox_data.extend(lines)
+          if self.settings.show_shoebox:
+            self.show_shoebox_timer.start()
+            x0_, y0_ = map_coords(x0, y0, panel)
+            x1_, y1_ = map_coords(x1, y1, panel)
+            lines = [(((x0_, y0_), (x0_, y1_)), shoebox_dict),
+                     (((x0_, y1_), (x1_, y1_)), shoebox_dict),
+                     (((x1_, y1_), (x1_, y0_)), shoebox_dict),
+                     (((x1_, y0_), (x0_, y0_)), shoebox_dict)]
+            shoebox_data.extend(lines)
+            self.show_shoebox_timer.stop()
 
-            if (self.settings.show_max_pix and reflection.has_key('shoebox')
-                and reflection['shoebox'].data.size() > 0):
-              shoebox = reflection['shoebox'].data
-              offset = flex.max_index(shoebox)
-              offset, k = divmod(offset, shoebox.all()[2])
-              offset, j = divmod(offset, shoebox.all()[1])
-              offset, i = divmod(offset, shoebox.all()[0])
-              assert offset == 0
-              max_index = (i, j, k)
-              assert shoebox[max_index] == flex.max(shoebox)
-              if z0 + max_index[0] == i_frame:
-                x, y = map_coords(x0 + max_index[2] + 0.5,
-                                  y0 + max_index[1] + 0.5,
-                                  reflection['panel'])
-                max_pix_data.append((x, y))
+          if (self.settings.show_max_pix and reflection.has_key('shoebox')
+              and reflection['shoebox'].data.size() > 0):
+            self.show_max_pix_timer.start()
+            shoebox = reflection['shoebox'].data
+            offset = flex.max_index(shoebox)
+            offset, k = divmod(offset, shoebox.all()[2])
+            offset, j = divmod(offset, shoebox.all()[1])
+            offset, i = divmod(offset, shoebox.all()[0])
+            #assert offset == 0
+            max_index = (i, j, k)
+            #assert shoebox[max_index] == flex.max(shoebox)
+            if z0 + max_index[0] == i_frame:
+              x, y = map_coords(x0 + max_index[2] + 0.5,
+                                y0 + max_index[1] + 0.5,
+                                reflection['panel'])
+              max_pix_data.append((x, y))
+            self.show_max_pix_timer.stop()
 
-            if self.settings.show_ctr_mass:
-              centroid = reflection['xyzobs.px.value']
-              if math.floor(centroid[2]) == i_frame:
-                x,y = map_coords(
-                  centroid[0], centroid[1], reflection['panel'])
-                xm1,ym1 = map_coords(
-                  centroid[0]-1, centroid[1]-1, reflection['panel'])
-                xp1,yp1 = map_coords(
-                  centroid[0]+1, centroid[1]+1, reflection['panel'])
-                lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
-                         (((xm1, y), (xp1, y)), ctr_mass_dict)]
-                ctr_mass_data.extend(lines)
+          if self.settings.show_ctr_mass:
+            self.show_ctr_mass_timer.start()
+            centroid = reflection['xyzobs.px.value']
+            if math.floor(centroid[2]) == i_frame:
+              x,y = map_coords(
+                centroid[0], centroid[1], reflection['panel'])
+              xm1,ym1 = map_coords(
+                centroid[0]-1, centroid[1]-1, reflection['panel'])
+              xp1,yp1 = map_coords(
+                centroid[0]+1, centroid[1]+1, reflection['panel'])
+              lines = [(((x, ym1), (x, yp1)), ctr_mass_dict),
+                       (((xm1, y), (xp1, y)), ctr_mass_dict)]
+              ctr_mass_data.extend(lines)
+            self.show_ctr_mass_timer.stop()
+
+    if ((ref_list.has_key('xyzcal.px') or ref_list.has_key('xyzcal.mm')) and
+        (self.settings.show_predictions or (
+          self.settings.show_miller_indices and ref_list.has_key('miller_index')))):
+      if ref_list.has_key('xyzcal.px'):
+        frame_numbers = ref_list['xyzcal.px'].parts()[2]
+      else:
+        phi = ref_list['xyzcal.mm'].parts()
+        frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
+      frame_predictions_sel = (
+        (frame_numbers >= i_frame) & (frame_numbers < (i_frame+1)))
+      for reflection in ref_list.select(frame_predictions_sel):
         if (self.settings.show_predictions and
-            reflection.has_key('xyzcal.px') and
-            reflection['xyzcal.px'] != (0.0, 0.0, 0.0) and
-            reflection['xyzcal.px'][2] >= i_frame and
-            reflection['xyzcal.px'][2] < (i_frame + 1)):
+            reflection.has_key('xyzcal.px')):
           x, y = map_coords(reflection['xyzcal.px'][0]+ 0.5,
                             reflection['xyzcal.px'][1] + 0.5,
                             reflection['panel'])
           predictions_data.append((x, y))
         elif (self.settings.show_predictions and
-            reflection.has_key('xyzcal.mm') and
-            reflection['xyzcal.mm'] != (0.0, 0.0, 0.0) and
-            scan.get_array_index_from_angle(
-              reflection['xyzcal.mm'][2] * to_degrees) >= i_frame and
-            scan.get_array_index_from_angle(
-              reflection['xyzcal.mm'][2] * to_degrees) < (i_frame + 1)):
-          x, y = detector[reflection['panel']].millimeter_to_pixel(reflection['xyzcal.mm'][:2])
+              reflection.has_key('xyzcal.mm')):
+          x, y = detector[reflection['panel']].millimeter_to_pixel(
+            reflection['xyzcal.mm'][:2])
           x, y = map_coords(x+ 0.5, y + 0.5, reflection['panel'])
           predictions_data.append((x, y))
         if (self.settings.show_miller_indices and
+            'miller_index' in reflection and
             reflection['miller_index'] != (0,0,0)):
           miller_indices_data.append((x, y, str(reflection['miller_index']),
                                       {'placement':'ne'}))
@@ -335,6 +381,7 @@ class SpotSettingsPanel (SettingsPanel) :
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.all_pix)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.shoebox)
     self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.predictions)
+    self.Bind(wx.EVT_CHECKBOX, self.OnUpdateCM, self.miller_indices)
     #self.Bind(EVT_PHIL_CONTROL, self.OnUpdateCM, self.minspotarea_ctrl)
 
     txt3 = wx.StaticText(self, -1, "Thumbnail view:")
