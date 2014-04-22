@@ -56,6 +56,22 @@ namespace scitbx { namespace af { namespace boost_python {
 namespace dials { namespace af {
 namespace {
 
+  boost::python::tuple
+  parts(
+    scitbx::af::versa<scitbx::af::int6, scitbx::af::flex_grid<> > const& O)
+  {
+    scitbx::af::tiny<scitbx::af::versa<int, scitbx::af::flex_grid<> >, 6> result;
+    std::size_t n = O.size();
+    for(std::size_t i=0;i<6;i++) {
+      result[i].resize(O.accessor());
+      for(std::size_t j=0;j<n;j++) {
+        result[i][j] = O[j][i];
+      }
+    }
+    return boost::python::make_tuple(
+      result[0], result[1], result[2], result[3], result[4], result[5]);
+  }
+
   scitbx::af::flex<scitbx::af::int6>::type*
   join(
     scitbx::af::const_ref<int> const& a,
@@ -125,6 +141,7 @@ namespace boost_python {
         6*scitbx::af::boost_python::pickle_size_per_element<int>::value>())
       .def("__init__", make_constructor(join))
       .def("__init__", make_constructor(from_int))
+      .def("parts", parts)
       .def("as_int", as_int);
     ;
   }
