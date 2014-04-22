@@ -210,7 +210,8 @@ class SpotFrame(XrayFrame) :
               max_pix_data.append((x, y))
             self.show_max_pix_timer.stop()
 
-          if self.settings.show_ctr_mass:
+          if (self.settings.show_ctr_mass and
+              reflection.has_key('xyzobs.px.value')):
             self.show_ctr_mass_timer.start()
             centroid = reflection['xyzobs.px.value']
             if math.floor(centroid[2]) == i_frame:
