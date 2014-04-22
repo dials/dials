@@ -73,11 +73,13 @@ class Script(ScriptRunner):
     sigma_b = registry.params().integration.shoebox.sigma_b
     sigma_m = registry.params().integration.shoebox.sigma_m
     if sigma_b is not None and sigma_m is not None:
+      import math
+      d2r = math.pi / 180.0
       predicted.compute_bbox(
         importer.experiments[-1],
         nsigma=n_sigma,
-        sigma_d=sigma_b,
-        sigma_m=sigma_m)
+        sigma_d=sigma_b * d2r,
+        sigma_m=sigma_m * d2r)
 
     # Save the reflections to file
     Command.start('Saving {0} reflections to {1}'.format(
