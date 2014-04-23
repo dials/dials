@@ -313,6 +313,7 @@ command_line/export_spot_xds.py -text
 command_line/export_text.py -text
 command_line/export_xds.py -text
 command_line/extract.py -text
+command_line/find_overlaps.py -text
 command_line/find_spots.py -text
 command_line/generate_process_test_reflections.py -text
 command_line/generate_test_reflections.py -text
