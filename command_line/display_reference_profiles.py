@@ -10,11 +10,12 @@
 #  included in the root directory of this package.
 
 from __future__ import division
+import math
 
 def display_reference_profiles(reference_pickle_file, profile_number,
-                               printing=True):
+                               printing=True, plot_name=None):
   '''Display the reference profiles found in the reference_pickle_file generated
-  by dials integration using method=fitrs'''
+  by dials integration using intensity.algorithm=fitrs'''
 
   import cPickle as pickle
   from dials.array_family import flex
@@ -36,6 +37,43 @@ def display_reference_profiles(reference_pickle_file, profile_number,
           print '%4d' % int(as_integer[k, j, i]),
         print ''
       print ''
+
+  if plot_name is not None:
+    import matplotlib
+    from matplotlib import pyplot
+    from matplotlib.colors import LogNorm
+
+    # try and make a square-ish grid
+    ncols = size_z//int(round(math.sqrt(size_z)))
+    nrows = size_z//ncols
+    if (nrows*ncols) < size_z:
+      nrows += 1
+
+    fig, axes = pyplot.subplots(nrows=nrows, ncols=ncols,
+                                sharex=True, sharey=True)
+
+    profile = flex.sqrt(as_integer).as_numpy_array()
+    max_value = profile.max()
+    for k in range(size_z):
+      ax = axes.flat[k]
+      slice_z = profile[k,:,:]
+      im = ax.imshow(slice_z, interpolation='nearest',
+                     vmin=0.0, vmax=max_value,
+                     cmap='gray_r')
+      ax.set_aspect('equal')
+
+    # hide the unused positions in the subplot grid
+    for i, ax in enumerate(axes.flat):
+      if i >= size_z:
+        ax.axis('off')
+
+    # force the subplots to be square
+    pyplot.setp(axes.flat, aspect=1.0, adjustable='box-forced')
+    cax, kw = matplotlib.colorbar.make_axes([ax for ax in axes.flat])
+    fig.colorbar(im, cax=cax, **kw)
+    #pyplot.show()
+    pyplot.savefig(plot_name, dpi=300)
+
 
   # now calculate some properties of this profile e.g. the central position and
   # the deviation about this central position
@@ -68,8 +106,6 @@ def display_reference_profiles(reference_pickle_file, profile_number,
         sum_yyi += (j - yi) ** 2 * central_profile[k, j, i]
         sum_zzi += (k - zi) ** 2 * central_profile[k, j, i]
 
-  import math
-
   xxi = math.sqrt(sum_xxi / sum(central_profile) - 1)
   yyi = math.sqrt(sum_yyi / sum(central_profile) - 1)
   zzi = math.sqrt(sum_zzi / sum(central_profile) - 1)
@@ -84,4 +120,5 @@ if __name__ == '__main__':
   else:
     profile_number = 5
 
-  display_reference_profiles(sys.argv[1], profile_number)
+  display_reference_profiles(sys.argv[1], profile_number,
+                             plot_name="profile.png")
