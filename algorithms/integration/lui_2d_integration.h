@@ -385,7 +385,8 @@ namespace dials { namespace algorithms {
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
         if (data2dmov(row,col) != backg2dmov(row,col)
-          and profile2d(row,col) > 0 ) {
+          and profile2d(row,col) > 0 and data2dmov(row,col) > 0
+          and backg2dmov(row,col) > 0) {
 
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;

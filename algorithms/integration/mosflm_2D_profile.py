@@ -310,6 +310,7 @@ def fit_profile_2d(reflection_pointers, ref_table
         descr[0, 2] = 1.0
 
         fully_record = 'no'
+        #fully_record = 'yes'
         if(fully_record == 'yes'):
 
           tmp_scale = tmp_i
@@ -340,7 +341,8 @@ def fit_profile_2d(reflection_pointers, ref_table
 
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
           col_variance[t_row] = var
-
+        if col_intensity[t_row] < 0:
+          col_intensity[t_row] = -1.0
     ref_table['intensity.prf.value'] = col_intensity
     ref_table['intensity.prf.variance'] = col_variance
 
