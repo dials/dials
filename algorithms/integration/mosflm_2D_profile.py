@@ -274,7 +274,6 @@ def fit_profile_2d(reflection_pointers, ref_table
           plt.show()
           #'''
         else:
-          #print "in else"
           average = local_average
 
         shoebox = col_shoebox[t_row].data
@@ -289,21 +288,42 @@ def fit_profile_2d(reflection_pointers, ref_table
         data2d, background2d = from_3D_to_2D_projection(shoebox, background)
         mask2d = from_3D_to_2D_mask_projection(mask)
 
-        print_and_compare = '''
+        cntr_pos = col_xyzcal[t_row]
+        bnd_box = col_bbox[t_row]
+
+
+        #print_and_compare = '''
         from dials.scratch.luiso_s import  write_2d, write_2d_mask
         if sum(data2d) > 1000:
           print "________________________________________________________________"
           write_2d(data2d)
           write_2d(average)
           write_2d_mask(mask2d)
+
+
+          descr[0, 0] = cntr_pos[0] - bnd_box[0]
+          descr[0, 1] = cntr_pos[1] - bnd_box[2]
+
+          big_nrow = average.all()[0]
+          big_ncol = average.all()[1]
+
+          #descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
+          descr[0, 2] = 1.0
+
+          interpolation_mask2d = flex.int(flex.grid(big_nrow, big_ncol))
+          from dials.algorithms.integration import mask_2d_interpolate
+          interpolation_mask2d = mask_2d_interpolate(
+          descr, mask2d, interpolation_mask2d)
+
+          write_2d_mask(interpolation_mask2d)
+
           print "________________________________________________________________"
+
+
 
         #'''
 
 
-
-        cntr_pos = col_xyzcal[t_row]
-        bnd_box = col_bbox[t_row]
 
         descr[0, 0] = cntr_pos[0] - bnd_box[0]
         descr[0, 1] = cntr_pos[1] - bnd_box[2]
@@ -330,7 +350,7 @@ def fit_profile_2d(reflection_pointers, ref_table
 
           col_intensity[t_row] = k_abc_vec[0]
 
-          ### col_variance[t_row] = k_abc_vec[1] # used to be the way MOSFLM do
+          ## col_variance[t_row] = k_abc_vec[1] # used to be the way MOSFLM do
 
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
           col_variance[t_row] = var

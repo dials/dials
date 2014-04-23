@@ -125,6 +125,22 @@ namespace dials { namespace algorithms {
     return integr_data;
 
   }
+  af::versa< int, af::c_grid<2> > mask_2d_interpolate(
+    const af::const_ref< double, af::c_grid<2> > &descriptor,
+    const af::const_ref< int, af::c_grid<2> > &mask2d_in,
+    const af::const_ref< int, af::c_grid<2> > &mask2d_tmp_total) {
+
+    int ncol_tot=mask2d_tmp_total.accessor()[1];
+    int nrow_tot=mask2d_tmp_total.accessor()[0];
+    af::versa< int, af::c_grid<2> > mask2d_out
+                   (af::c_grid<2>(nrow_tot, ncol_tot), 0);
+    std::cout << "\n" << "desc(0) ="  << descriptor(0,0) << "\n"
+              << "\n" << "desc(1) ="  << descriptor(0,1) << "\n"
+              << "\n" << "desc(2) ="  << descriptor(0,2) << "\n";
+
+    return mask2d_out;
+  }
+
 
   // function used repeatedly for adding and interpolation
   // of 2D images with a reflection on it
