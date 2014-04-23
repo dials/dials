@@ -304,6 +304,7 @@ command_line/compare_xds_dials2.py -text
 command_line/create_profile_model.py -text
 command_line/detector_max_resolution.py -text
 command_line/discover_better_experimental_model.py -text
+command_line/display_reference_profiles.py -text
 command_line/display_spots.py -text
 command_line/export.py -text
 command_line/export_mosflm.py -text
