@@ -78,6 +78,9 @@ class Test2d:
     # Create a map of labels
     label_map = flex.int(flex.grid(10, self.size[0], self.size[1]))
     for c, l in zip(coords, labels):
+      assert(c[0] >= 0 and c[0] < 10)
+      assert(c[1] >= 0 and c[1] < self.size[0])
+      assert(c[2] >= 0 and c[2] < self.size[1])
       label_map[c] = l
 
     # Ensure all labels are correct
