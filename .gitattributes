@@ -342,6 +342,7 @@ command_line/show_spots.py -text
 command_line/simulate.py -text
 command_line/simulate_rs.py -text
 command_line/sort_reflections.py -text
+command_line/stereographic_projection.py -text
 /config.h -text
 data/__init__.py -text
 data/completion_template.txt -text
