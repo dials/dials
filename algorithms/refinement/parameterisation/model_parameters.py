@@ -287,7 +287,18 @@ class ModelParameterisation(object):
     """Given a variance-covariance array for the parameters of this model,
     propagate those estimated errors into the uncertainties of the model state"""
 
+    # the gradients are in an n-element list, each element of which is an
+    # object of length m with the same dimensions as the model state. The
+    # elements of this object contains the gradient of the state element in
+    # the equivalent position
     grads = self.get_ds_dp()
+
+    # the jacobian is the m*n matrix of partial derivatives of the m state
+    # elements wrt the n parameters
+    from libtbx.utils import flat_list
+    from scitbx import matrix
+    jacobian_t = matrix.rec(flat_list(grads), (len(grads), len(grads[0].elems)))
+    jacobian = jacobian_t.transpose()
 
     if self._is_multi_state:
       # FIXME need special code to handle the multi state case
@@ -296,22 +307,23 @@ class ModelParameterisation(object):
     else:
       # FIXME also need a special case for scan-varying model parameterisation,
       # as get_state just returns the state at a single scan-point 't'
-      state = self.get_state()
-      state_esd = []
 
-      from scitbx import matrix
-      from math import sqrt
-      # loop over each element of the state vector or matrix
-      for i in range(len(state.elems)):
-        df_dp = matrix.col([grad[i] for grad in grads])
-        var_f = (df_dp.transpose() * var_cov * df_dp)[0]
-        assert var_f >= 0.
-        state_esd.append(sqrt(var_f))
+      # propagation of errors takes the variance-covariance matrix of parameters,
+      # along with the jacobian mapping changes in parameter values to changes
+      # in the model state elements, to calculate an approximate variance-
+      # covariance matrix of the state elements
+      state_cov = jacobian * var_cov * jacobian_t
 
-      # cast the variances as a new object of the same type as the state
-      state_esd = type(state)(state_esd)
-
+    self._set_state_uncertainties(state_cov)
     #FIXME don't have anywhere to put this information yet! Probably need to
     #assign it to the model somehow
     return
 
+  def _set_state_uncertainties(self, var_cov):
+    """Send the calculated variance-covariance matrix for model state elements
+    back to the model for storage alongside the model state, and potentially
+    use in further propagation of error calculations."""
+
+    # To be implemented by the derived class, where it is clear what aspect
+    # of the model under parameterisation is considered its state.
+    pass
