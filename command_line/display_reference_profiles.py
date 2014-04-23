@@ -35,6 +35,47 @@ def display_reference_profiles(reference_pickle_file):
       print ''
     print ''
 
+  # now calculate some properties of this profile e.g. the central position and
+  # the deviation about this central position
+
+  sum_xi = 0
+  sum_yi = 0
+  sum_zi = 0
+
+  for k in range(size_z):
+    for j in range(size_y):
+      for i in range(size_x):
+        sum_xi += i * central_profile[k, j, i]
+        sum_yi += j * central_profile[k, j, i]
+        sum_zi += k * central_profile[k, j, i]
+
+  xi = sum_xi / sum(central_profile)
+  yi = sum_yi / sum(central_profile)
+  zi = sum_zi / sum(central_profile)
+
+  print 'Centroid (zyx): %.1f %.1f %.1f' % (zi, yi, xi)
+
+  sum_xxi = 0
+  sum_yyi = 0
+  sum_zzi = 0
+
+  for k in range(size_z):
+    for j in range(size_y):
+      for i in range(size_x):
+        sum_xxi += (i - xi) ** 2 * central_profile[k, j, i]
+        sum_yyi += (j - yi) ** 2 * central_profile[k, j, i]
+        sum_zzi += (k - zi) ** 2 * central_profile[k, j, i]
+
+  import math
+
+  xxi = math.sqrt(sum_xxi / sum(central_profile))
+  yyi = math.sqrt(sum_yyi / sum(central_profile))
+  zzi = math.sqrt(sum_zzi / sum(central_profile))
+
+  print 'Width    (zyx): %.1f %.1f %.1f' % (zzi, yyi, xxi)
+
+
+
 if __name__ == '__main__':
   import sys
   display_reference_profiles(sys.argv[1])
