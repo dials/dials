@@ -26,6 +26,10 @@ n_sigma = 3
   .type = float(value_min=0)
 nproc = 1
   .type = int(value_min=1)
+max_overlap_fraction = 0.0
+  .type = float(value_min=0.0)
+max_overlap_pixels = 0
+  .type = int(value_min=0)
 """)
 
 
@@ -65,11 +69,13 @@ def run(args):
       expt.beam.set_sigma_divergence(params.sigma_divergence, deg=True)
     if params.sigma_mosaicity is not None:
       expt.crystal.set_mosaicity(params.sigma_mosaicity, deg=True)
-    print expt.beam.get_sigma_divergence(deg=True)
-    print expt.crystal.get_mosaicity(deg=True)
+    #print expt.beam.get_sigma_divergence(deg=True)
+    #print expt.crystal.get_mosaicity(deg=True)
 
   overlaps = find_overlaps(
-    experiments, reflection_table, n_sigma=params.n_sigma, nproc=params.nproc)
+    experiments, reflection_table, n_sigma=params.n_sigma, nproc=params.nproc,
+    max_overlap_fraction=params.max_overlap_fraction,
+    max_overlap_pixels=params.max_overlap_pixels)
   overlaps.overlapping_reflections.as_pickle('overlaps.pickle')
   if 0:
     overlaps.plot_histograms()
@@ -77,7 +83,8 @@ def run(args):
 
 
 class find_overlaps(object):
-  def __init__(self, experiments, reflections, n_sigma=3, nproc=1):
+  def __init__(self, experiments, reflections, n_sigma=3, nproc=1,
+               max_overlap_fraction=0.0, max_overlap_pixels=0):
     from dials.algorithms import shoebox
     from dials.algorithms.shoebox import MaskCode
 
@@ -95,7 +102,7 @@ class find_overlaps(object):
     overlapping_bbox = set()
     self._n_overlapping_pixels = flex.size_t()
     self._fraction_overlapping_pixels = flex.double()
-    print len(list(overlaps.edges()))
+    #print len(list(overlaps.edges()))
 
     def func(args):
       overlapping = set()
@@ -119,8 +126,10 @@ class find_overlaps(object):
           #print "Overlapping pixels: %i/%i (%.1f%%)" %(
             #len(intersection), (len(coords1) + len(coords2)),
             #len(intersection)/(len(coords1) + len(coords2)) * 100)
-          overlapping.add(v1)
-          overlapping.add(v2)
+          if (n_overlapping_pixels[-1] > max_overlap_pixels or
+              fraction_overlapping_pixels[-1] > max_overlap_fraction):
+            overlapping.add(v1)
+            overlapping.add(v2)
         overlapping_bbox.add(v1)
         overlapping_bbox.add(v2)
       return (overlapping, overlapping_bbox,
@@ -160,13 +169,17 @@ class find_overlaps(object):
   def plot_histograms(self):
     from matplotlib import pyplot
     hist = flex.histogram(self._n_overlapping_pixels.as_double(), n_slots=50)
-    pyplot.bar(hist.slot_centers(), hist.slots(), width=hist.slot_width())
+    #pyplot.bar(hist.slot_centers(), hist.slots(), width=hist.slot_width())
+    pyplot.plot(hist.slot_centers(), hist.slots())
+    pyplot.yscale('log')
     pyplot.xlabel('Number of overlapping pixels')
     pyplot.ylabel('Frequency')
     pyplot.show()
 
     hist = flex.histogram(self._fraction_overlapping_pixels, n_slots=50)
-    pyplot.bar(hist.slot_centers(), hist.slots(), width=hist.slot_width())
+    #pyplot.bar(hist.slot_centers(), hist.slots(), width=hist.slot_width())
+    pyplot.plot(hist.slot_centers(), hist.slots())
+    pyplot.yscale('log')
     pyplot.xlabel('Fraction of overlapping pixels')
     pyplot.ylabel('Frequency')
     pyplot.show()
