@@ -24,6 +24,8 @@ sigma_mosaicity = None
   .type = float
 n_sigma = 3
   .type = float(value_min=0)
+nproc = 1
+  .type = int(value_min=1)
 """)
 
 
@@ -63,16 +65,19 @@ def run(args):
       expt.beam.set_sigma_divergence(params.sigma_divergence, deg=True)
     if params.sigma_mosaicity is not None:
       expt.crystal.set_mosaicity(params.sigma_mosaicity, deg=True)
+    print expt.beam.get_sigma_divergence(deg=True)
+    print expt.crystal.get_mosaicity(deg=True)
 
   overlaps = find_overlaps(
-    experiments, reflection_table, n_sigma=params.n_sigma)
+    experiments, reflection_table, n_sigma=params.n_sigma, nproc=params.nproc)
   overlaps.overlapping_reflections.as_pickle('overlaps.pickle')
   if 0:
     overlaps.plot_histograms()
+  return overlaps
 
 
 class find_overlaps(object):
-  def __init__(self, experiments, reflections, n_sigma=3):
+  def __init__(self, experiments, reflections, n_sigma=3, nproc=1):
     from dials.algorithms import shoebox
     from dials.algorithms.shoebox import MaskCode
 
@@ -90,26 +95,50 @@ class find_overlaps(object):
     overlapping_bbox = set()
     self._n_overlapping_pixels = flex.size_t()
     self._fraction_overlapping_pixels = flex.double()
-    for e in overlaps.edges():
-      v1, v2 = overlaps[e]
-      o1 = reflection_table[v1]
-      o2 = reflection_table[v2]
-      coords1 = o1['shoebox'].coords().select(
-        (o1['shoebox'].mask == fg_code).as_1d())
-      coords2 = o2['shoebox'].coords().select(
-        (o2['shoebox'].mask == fg_code).as_1d())
-      intersection = set(coords1).intersection(set(coords2))
-      if len(intersection):
-        self._n_overlapping_pixels.append(len(intersection))
-        self._fraction_overlapping_pixels.append(len(intersection)/(
-        len(coords1)+len(coords2)-len(intersection)))
-        #print "Overlapping pixels: %i/%i (%.1f%%)" %(
-          #len(intersection), (len(coords1) + len(coords2)),
-          #len(intersection)/(len(coords1) + len(coords2)) * 100)
-        overlapping.add(v1)
-        overlapping.add(v2)
-      overlapping_bbox.add(v1)
-      overlapping_bbox.add(v2)
+    print len(list(overlaps.edges()))
+
+    def func(args):
+      overlapping = set()
+      overlapping_bbox = set()
+      n_overlapping_pixels = flex.size_t()
+      fraction_overlapping_pixels = flex.double()
+      edges = args[0]
+      for e in edges:
+        v1, v2 = overlaps[e]
+        o1 = reflection_table[v1]
+        o2 = reflection_table[v2]
+        coords1 = o1['shoebox'].coords().select(
+          (o1['shoebox'].mask == fg_code).as_1d())
+        coords2 = o2['shoebox'].coords().select(
+          (o2['shoebox'].mask == fg_code).as_1d())
+        intersection = set(coords1).intersection(set(coords2))
+        if len(intersection):
+          n_overlapping_pixels.append(len(intersection))
+          fraction_overlapping_pixels.append(len(intersection)/(
+          len(coords1)+len(coords2)-len(intersection)))
+          #print "Overlapping pixels: %i/%i (%.1f%%)" %(
+            #len(intersection), (len(coords1) + len(coords2)),
+            #len(intersection)/(len(coords1) + len(coords2)) * 100)
+          overlapping.add(v1)
+          overlapping.add(v2)
+        overlapping_bbox.add(v1)
+        overlapping_bbox.add(v2)
+      return (overlapping, overlapping_bbox,
+              n_overlapping_pixels, fraction_overlapping_pixels)
+
+    edges = list(overlaps.edges())
+    args = []
+    n_per_proc = int(math.ceil(len(edges) / nproc))
+    for i in range(nproc):
+      args.append((edges[i*n_per_proc:min((i+1)*n_per_proc, len(edges))],
+                   ))
+    from libtbx import easy_mp
+    results = easy_mp.parallel_map(func, args, processes=nproc)
+    for r in results:
+      overlapping.update(r[0])
+      overlapping_bbox.update(r[1])
+      self._n_overlapping_pixels.extend(r[2])
+      self._fraction_overlapping_pixels.extend(r[3])
 
     print "Number of overlaps: %i/%i (%.1f%%)" %(
       len(overlapping), len(reflection_table),
