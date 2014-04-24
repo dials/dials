@@ -6,6 +6,7 @@ from libtbx import easy_run
 
 import iotbx.phil
 from libtbx.phil import command_line
+from libtbx import easy_mp
 
 master_phil_scope = iotbx.phil.parse("""
 template = None
@@ -15,7 +16,8 @@ find_spots_phil = None
   .type = path
 index_phil = None
   .type = path
-nproc = 1
+%s
+find_spots_nproc = 1
   .type = int(value_min=1)
 run_xds = False
   .type = bool
@@ -27,7 +29,7 @@ xds {
   command = *xds xds_par
     .type = choice
 }
-""")
+""" %easy_mp.parallel_phil_str)
 
 
 def run(args):
@@ -60,16 +62,15 @@ def run(args):
   # sort based on the first filename of each imageset
   args.sort(key=lambda x: x[0][0])
 
-  from libtbx import easy_mp
-
   nproc = params.nproc
   results = easy_mp.parallel_map(
     func=run_once,
     iterable=args,
     processes=nproc,
-    method="multiprocessing",
+    method=params.technology,
+    qsub_command=params.qsub_command,
     preserve_order=True,
-    asynchronous=True,
+    asynchronous=False,
     preserve_exception_message=True,
   )
 
@@ -95,7 +96,7 @@ def run_once(args):
   result.show_stderr(out=log)
   args = ["dials.find_spots",
                   "datablock.json",
-                  "--nproc=1"
+                  "--nproc=%i" %params.find_spots_nproc
                   ]
   if params.find_spots_phil is not None:
     args.append(params.find_spots_phil)
