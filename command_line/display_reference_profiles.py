@@ -40,6 +40,9 @@ def display_reference_profiles(reference_pickle_file, profile_number,
 
   if plot_name is not None:
     import matplotlib
+    # http://matplotlib.org/faq/howto_faq.html#generate-images-without-having-a-window-appear
+    matplotlib.use('Agg') # use a non-interactive backend
+
     from matplotlib import pyplot
     from matplotlib.colors import LogNorm
 
