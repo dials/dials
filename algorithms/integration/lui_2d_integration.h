@@ -130,10 +130,58 @@ namespace dials { namespace algorithms {
     const af::const_ref< int, af::c_grid<2> > &mask2d_in,
     const af::const_ref< int, af::c_grid<2> > &mask2d_tmp_total) {
 
-    int ncol_tot=mask2d_tmp_total.accessor()[1];
-    int nrow_tot=mask2d_tmp_total.accessor()[0];
+    int nrow_tot = mask2d_tmp_total.accessor()[0];
+    int ncol_tot = mask2d_tmp_total.accessor()[1];
+
+    int nrow_in = mask2d_in.accessor()[0];
+    int ncol_in = mask2d_in.accessor()[1];
+
+    double tot_row, tot_col;
+    //double x_pix_pos, y_pix_pos;
+    //int xpos_ex, ypos_ex;
+    int tot_row_centr = int(nrow_tot / 2);
+    int tot_col_centr = int(ncol_tot / 2);
+
+    double centr_col = descriptor(0,0);
+    double centr_row = descriptor(0,1);
     af::versa< int, af::c_grid<2> > mask2d_out
                    (af::c_grid<2>(nrow_tot, ncol_tot), 0);
+
+    for (int row = 0; row < nrow_in; row++) {
+      for (int col = 0; col < ncol_in; col++) {
+        tot_row = row + tot_row_centr - centr_row + 1;
+        tot_col = col + tot_col_centr - centr_col + 1;
+        mask2d_out(tot_row, tot_col) = mask2d_in(row, col);
+      }
+    }
+
+    for (int row = 0; row < nrow_in; row++) {
+      for (int col = 0; col < ncol_in; col++) {
+
+        if (mask2d_in(row, col) == -1){
+
+          tot_row = row + tot_row_centr - centr_row + 0.5;
+          tot_col = col + tot_col_centr - centr_col + 0.5;
+          mask2d_out(tot_row, tot_col) = -1;
+
+          tot_row = row + tot_row_centr - centr_row + 1.5;
+          tot_col = col + tot_col_centr - centr_col + 0.5;
+          mask2d_out(tot_row, tot_col) = -1;
+
+          tot_row = row + tot_row_centr - centr_row + 0.5;
+          tot_col = col + tot_col_centr - centr_col + 1.5;
+          mask2d_out(tot_row, tot_col) = -1;
+
+          tot_row = row + tot_row_centr - centr_row + 1.5;
+          tot_col = col + tot_col_centr - centr_col + 1.5;
+          mask2d_out(tot_row, tot_col) = -1;
+
+        }
+
+      }
+    }
+
+
     std::cout << "\n" << "desc(0) ="  << descriptor(0,0) << "\n"
               << "\n" << "desc(1) ="  << descriptor(0,1) << "\n"
               << "\n" << "desc(2) ="  << descriptor(0,2) << "\n";

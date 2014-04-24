@@ -293,6 +293,7 @@ def fit_profile_2d(reflection_pointers, ref_table
 
 
         #print_and_compare = '''
+
         from dials.scratch.luiso_s import  write_2d, write_2d_mask
         if sum(data2d) > 1000:
           print "________________________________________________________________"
@@ -301,16 +302,18 @@ def fit_profile_2d(reflection_pointers, ref_table
           write_2d_mask(mask2d)
 
 
-          descr[0, 0] = cntr_pos[0] - bnd_box[0]
-          descr[0, 1] = cntr_pos[1] - bnd_box[2]
-
           big_nrow = average.all()[0]
           big_ncol = average.all()[1]
 
-          #descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
+          descr[0, 0] = cntr_pos[0] - bnd_box[0]
+          descr[0, 1] = cntr_pos[1] - bnd_box[2]
+
           descr[0, 2] = 1.0
 
           interpolation_mask2d = flex.int(flex.grid(big_nrow, big_ncol))
+
+          mask2d[0, 0] = -1 # temporarily mutilating the mask just for testing
+
           from dials.algorithms.integration import mask_2d_interpolate
           interpolation_mask2d = mask_2d_interpolate(
           descr, mask2d, interpolation_mask2d)
@@ -320,9 +323,7 @@ def fit_profile_2d(reflection_pointers, ref_table
           print "________________________________________________________________"
 
 
-
         #'''
-
 
 
         descr[0, 0] = cntr_pos[0] - bnd_box[0]
