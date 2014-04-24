@@ -109,9 +109,21 @@ def display_reference_profiles(reference_pickle_file, profile_number,
         sum_yyi += (j - yi) ** 2 * central_profile[k, j, i]
         sum_zzi += (k - zi) ** 2 * central_profile[k, j, i]
 
-  xxi = math.sqrt(sum_xxi / sum(central_profile) - 1)
-  yyi = math.sqrt(sum_yyi / sum(central_profile) - 1)
-  zzi = math.sqrt(sum_zzi / sum(central_profile) - 1)
+  _xxi = sum_xxi / sum(central_profile)
+  _yyi = sum_yyi / sum(central_profile)
+  _zzi = sum_zzi / sum(central_profile)
+  if _xxi > 1:
+    xxi = math.sqrt(_xxi - 1)
+  else:
+    xxi = 0.0
+  if _yyi > 1:
+    yyi = math.sqrt(_yyi - 1)
+  else:
+    yyi = 0.0
+  if _zzi > 1:
+    zzi = math.sqrt(_zzi - 1)
+  else:
+    zzi = 0.0
 
   print 'Moment 2 (zyx): %.2f %.2f %.2f' % (zzi, yyi, xxi)
 
