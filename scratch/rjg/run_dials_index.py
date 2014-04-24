@@ -19,9 +19,13 @@ nproc = 1
   .type = int(value_min=1)
 run_xds = False
   .type = bool
+run_mosflm = False
+  .type = bool
 xds {
-  include_resolution_range = (20, 0)
+  include_resolution_range = (40, 0)
     .type = floats(size=2)
+  command = *xds xds_par
+    .type = choice
 }
 """)
 
@@ -65,9 +69,6 @@ def run(args):
     asynchronous=True,
     preserve_exception_message=True,
   )
-
-  #for arg in args:
-    #run_once(arg)
 
 def run_once(args):
   filenames, sweep_id, params = args
@@ -114,83 +115,123 @@ def run_once(args):
   result.show_stdout(out=log)
   result.show_stderr(out=log)
 
-  if not params.run_xds:
-    os.chdir(orig_dir)
-    return
+  if params.run_xds:
+    g = glob.glob('experiments.json')
+    if len(g) == 0:
+      return
 
-  g = glob.glob('experiments.json')
-  if len(g) == 0:
-    return
+    cmd = " ".join(["dials.export_xds", "experiments.json"])
+    print >> log, cmd
+    result = easy_run.fully_buffered(command=cmd)
+    result.show_stdout(out=log)
+    result.show_stderr(out=log)
 
-  cmd = " ".join(["dials.export_xds", "experiments.json"])
-  print >> log, cmd
-  result = easy_run.fully_buffered(command=cmd)
-  result.show_stdout(out=log)
-  result.show_stderr(out=log)
+    g = glob.glob('xds')
+    if len(g) == 0:
+      g = glob.glob('xds_[0-9]*')
 
-  g = glob.glob('xds')
-  if len(g) == 0:
-    g = glob.glob('xds_[0-9]*')
+    g = [os.path.abspath(p) for p in g]
 
-  g = [os.path.abspath(p) for p in g]
+    sweep_dir_full = os.path.abspath('.')
 
-  sweep_dir_full = os.path.abspath('.')
+    for xds_dir in g:
+      os.chdir(xds_dir)
 
-  for xds_dir in g:
-    os.chdir(xds_dir)
+      os.mkdir("run_1")
+      os.chdir("run_1")
 
-    os.mkdir("run_1")
-    os.chdir("run_1")
+      shutil.copyfile("../XDS.INP", "XDS.INP")
+      shutil.copyfile("../XPARM.XDS", "XPARM.XDS")
 
-    shutil.copyfile("../XDS.INP", "XDS.INP")
-    shutil.copyfile("../XPARM.XDS", "XPARM.XDS")
+      no_scale = True
 
-    no_scale = True
-
-    # only refine crystal parameters since we probably know the detector,
-    # beam and rotation axis parameters much more accurately from the
-    # reference dataset
-    with open("XDS.INP", "ab") as f:
-      print >> f, "REFINE(INTEGRATE)= ORIENTATION CELL"
-      print >> f, "REFINE(CORRECT)= ORIENTATION CELL"
-      print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %tuple(
-        params.xds.include_resolution_range)
-
-      #if no_scale:
-        #print >> f, "MINIMUM_I/SIGMA=50"
-        #print >> f, "CORRECTIONS="
-        #print >> f, "NBATCH=1"
-
-    result = easy_run.fully_buffered(command="xds")
-    with open("xds.log", "wb") as xds_log:
-      result.show_stdout(out=xds_log)
-      result.show_stderr(out=xds_log)
-
-    os.chdir("../")
-
-    if os.path.exists("run_1/GXPARM.XDS"):
-
-      os.mkdir("run_2")
-      shutil.copyfile("XDS.INP", "run_2/XDS.INP")
-      shutil.copyfile("run_1/GXPARM.XDS", "run_2/XPARM.XDS")
-      os.chdir("run_2")
-
-      # don't refine anything more the second time
+      # only refine crystal parameters since we probably know the detector,
+      # beam and rotation axis parameters much more accurately from the
+      # reference dataset
       with open("XDS.INP", "ab") as f:
-        print >> f, "REFINE(INTEGRATE)="
-        print >> f, "REFINE(CORRECT)="
+        print >> f, "REFINE(INTEGRATE)= ORIENTATION CELL"
+        print >> f, "REFINE(CORRECT)= ORIENTATION CELL"
         print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %tuple(
-        params.xds.include_resolution_range)
+          params.xds.include_resolution_range)
 
-        if no_scale:
-          print >> f, "MINIMUM_I/SIGMA=50"
-          print >> f, "CORRECTIONS="
-          print >> f, "NBATCH=1"
+        #if no_scale:
+          #print >> f, "MINIMUM_I/SIGMA=50"
+          #print >> f, "CORRECTIONS="
+          #print >> f, "NBATCH=1"
 
-      result = easy_run.fully_buffered(command="xds")
+      result = easy_run.fully_buffered(command=params.xds.command)
       with open("xds.log", "wb") as xds_log:
         result.show_stdout(out=xds_log)
         result.show_stderr(out=xds_log)
+
+      os.chdir("../")
+
+      if os.path.exists("run_1/GXPARM.XDS"):
+
+        os.mkdir("run_2")
+        shutil.copyfile("XDS.INP", "run_2/XDS.INP")
+        shutil.copyfile("run_1/GXPARM.XDS", "run_2/XPARM.XDS")
+        os.chdir("run_2")
+
+        # don't refine anything more the second time
+        with open("XDS.INP", "ab") as f:
+          print >> f, "REFINE(INTEGRATE)="
+          print >> f, "REFINE(CORRECT)="
+          print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %tuple(
+          params.xds.include_resolution_range)
+
+          if no_scale:
+            print >> f, "MINIMUM_I/SIGMA=50"
+            print >> f, "CORRECTIONS="
+            print >> f, "NBATCH=1"
+
+        result = easy_run.fully_buffered(command=params.xds.command)
+        with open("xds.log", "wb") as xds_log:
+          result.show_stdout(out=xds_log)
+          result.show_stderr(out=xds_log)
+
+  elif params.run_mosflm:
+    g = glob.glob('experiments.json')
+    if len(g) == 0:
+      return
+
+    cmd = " ".join(["dials.export_mosflm", "experiments.json"])
+    print >> log, cmd
+    result = easy_run.fully_buffered(command=cmd)
+    result.show_stdout(out=log)
+    result.show_stderr(out=log)
+
+    g = glob.glob('mosflm')
+    if len(g) == 0:
+      g = glob.glob('mosflm_[0-9]*')
+
+    g = [os.path.abspath(p) for p in g]
+
+    sweep_dir_full = os.path.abspath('.')
+
+    for mosflm_dir in g:
+      os.chdir(mosflm_dir)
+
+      with open("mosflm.in", "ab") as mosflm_in:
+        print >> mosflm_in, """\
+MOSAIC 0.2
+refinement residual 15.0
+refinement include partials
+
+postref fix all
+postref nosegment
+process 1 1
+go
+  """ %(i, i)
+
+      os.chdir("mosflm")
+      cmd = "ipmosflm < mosflm.in"
+      print >> log, cmd
+      result = easy_run.fully_buffered(cmd)
+      result.show_stdout(out=log)
+      result.show_stderr(out=log)
+
+      os.chdir("../")
 
   log.close()
 
