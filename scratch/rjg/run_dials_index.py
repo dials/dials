@@ -57,6 +57,9 @@ def run(args):
     print imageset.get_template()
     args.append((imageset.paths(), i+1, params))
 
+  # sort based on the first filename of each imageset
+  args.sort(key=lambda x: x[0][0])
+
   from libtbx import easy_mp
 
   nproc = params.nproc
