@@ -292,35 +292,36 @@ def fit_profile_2d(reflection_pointers, ref_table
         bnd_box = col_bbox[t_row]
 
 
-        #print_and_compare = '''
 
+
+
+        big_nrow = average.all()[0]
+        big_ncol = average.all()[1]
+
+        descr[0, 0] = cntr_pos[0] - bnd_box[0]
+        descr[0, 1] = cntr_pos[1] - bnd_box[2]
+
+        descr[0, 2] = 1.0
+
+        interpolation_mask2d = flex.int(flex.grid(big_nrow, big_ncol))
+
+        #mask2d[0, 0] = -1 # temporarily mutilating the mask just for testing
+
+        from dials.algorithms.integration import mask_2d_interpolate
+        interpolation_mask2d = mask_2d_interpolate(
+        descr, mask2d, interpolation_mask2d)
+
+        print_and_compare = '''
         from dials.scratch.luiso_s import  write_2d, write_2d_mask
-        if sum(data2d) > 1000:
+        #if sum(data2d) > 1000:
+        if t_row == 33473:
           print "________________________________________________________________"
           write_2d(data2d)
           write_2d(average)
           write_2d_mask(mask2d)
-
-
-          big_nrow = average.all()[0]
-          big_ncol = average.all()[1]
-
-          descr[0, 0] = cntr_pos[0] - bnd_box[0]
-          descr[0, 1] = cntr_pos[1] - bnd_box[2]
-
-          descr[0, 2] = 1.0
-
-          interpolation_mask2d = flex.int(flex.grid(big_nrow, big_ncol))
-
-          mask2d[0, 0] = -1 # temporarily mutilating the mask just for testing
-
-          from dials.algorithms.integration import mask_2d_interpolate
-          interpolation_mask2d = mask_2d_interpolate(
-          descr, mask2d, interpolation_mask2d)
-
           write_2d_mask(interpolation_mask2d)
-
           print "________________________________________________________________"
+
 
 
         #'''
@@ -357,7 +358,8 @@ def fit_profile_2d(reflection_pointers, ref_table
           col_variance[t_row] = var
         else:
 
-          I_R = fitting_2d_partials(descr, data2d, background2d, average, tmp_i)
+          I_R = fitting_2d_partials(descr, data2d, background2d,
+                                    average, interpolation_mask2d, tmp_i)
           col_intensity[t_row] = I_R[0]
 
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)

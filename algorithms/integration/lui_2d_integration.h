@@ -158,33 +158,33 @@ namespace dials { namespace algorithms {
     for (int row = 0; row < nrow_in; row++) {
       for (int col = 0; col < ncol_in; col++) {
 
-        if (mask2d_in(row, col) == -1){
+        if (mask2d_in(row, col) <= 0){
 
           tot_row = row + tot_row_centr - centr_row + 0.5;
           tot_col = col + tot_col_centr - centr_col + 0.5;
-          mask2d_out(tot_row, tot_col) = -1;
+          mask2d_out(tot_row, tot_col) = mask2d_in(row, col);
 
           tot_row = row + tot_row_centr - centr_row + 1.5;
           tot_col = col + tot_col_centr - centr_col + 0.5;
-          mask2d_out(tot_row, tot_col) = -1;
+          mask2d_out(tot_row, tot_col) = mask2d_in(row, col);
 
           tot_row = row + tot_row_centr - centr_row + 0.5;
           tot_col = col + tot_col_centr - centr_col + 1.5;
-          mask2d_out(tot_row, tot_col) = -1;
+          mask2d_out(tot_row, tot_col) = mask2d_in(row, col);
 
           tot_row = row + tot_row_centr - centr_row + 1.5;
           tot_col = col + tot_col_centr - centr_col + 1.5;
-          mask2d_out(tot_row, tot_col) = -1;
+          mask2d_out(tot_row, tot_col) = mask2d_in(row, col);
 
         }
-
       }
     }
 
-
+    /*
     std::cout << "\n" << "desc(0) ="  << descriptor(0,0) << "\n"
               << "\n" << "desc(1) ="  << descriptor(0,1) << "\n"
               << "\n" << "desc(2) ="  << descriptor(0,2) << "\n";
+    */
 
     return mask2d_out;
   }
@@ -413,6 +413,7 @@ namespace dials { namespace algorithms {
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< double, af::c_grid<2> > &backg2d,
     const af::const_ref< double, af::c_grid<2> > &profile2d,
+    const af::const_ref< int, af::c_grid<2> > &interpolation_mask2d,
     double sum_its) {
 
     int ncol = profile2d.accessor()[1];
@@ -448,6 +449,8 @@ namespace dials { namespace algorithms {
     counter = 0;
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
+        // this IF statement needs to be adjusted to use the interpolation_mask2d
+        // 2D array
         if (data2dmov(row,col) != backg2dmov(row,col)
           and profile2d(row,col) > 0 and data2dmov(row,col) > 0
           and backg2dmov(row,col) > 0) {
