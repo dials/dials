@@ -652,6 +652,7 @@ scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
 scratch/rjg/close_to_spindle_contour_plot.py -text
 scratch/rjg/combine_experiments.py -text
+scratch/rjg/extract_xds_multi.py -text
 scratch/rjg/generate_reciprocal_lattice.py -text
 scratch/rjg/plot_residuals.py -text
 scratch/rjg/plot_virtual_powder_pattern.py -text
