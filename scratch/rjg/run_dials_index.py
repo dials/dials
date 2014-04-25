@@ -26,7 +26,11 @@ run_mosflm = False
 xds {
   include_resolution_range = (40, 0)
     .type = floats(size=2)
-  command = *xds xds_par
+  refine_integrate = DISTANCE BEAM AXIS *ORIENTATION *CELL
+    .type = choice(multi=True)
+  refine_correct = DISTANCE BEAM AXIS *ORIENTATION *CELL
+    .type = choice(multi=True)
+  executable = *xds xds_par
     .type = choice
 }
 """ %easy_mp.parallel_phil_str)
@@ -153,8 +157,8 @@ def run_once(args):
       # beam and rotation axis parameters much more accurately from the
       # reference dataset
       with open("XDS.INP", "ab") as f:
-        print >> f, "REFINE(INTEGRATE)= ORIENTATION CELL"
-        print >> f, "REFINE(CORRECT)= ORIENTATION CELL"
+        print >> f, "REFINE(INTEGRATE)= %s" %" ".join(params.xds.refine_integrate)
+        print >> f, "REFINE(CORRECT)=  %s" %" ".join(params.xds.refine_correct)
         print >> f, "INCLUDE_RESOLUTION_RANGE= %.1f %.1f" %tuple(
           params.xds.include_resolution_range)
 
@@ -163,7 +167,7 @@ def run_once(args):
           #print >> f, "CORRECTIONS="
           #print >> f, "NBATCH=1"
 
-      result = easy_run.fully_buffered(command=params.xds.command)
+      result = easy_run.fully_buffered(command=params.xds.executable)
       with open("xds.log", "wb") as xds_log:
         result.show_stdout(out=xds_log)
         result.show_stderr(out=xds_log)
@@ -189,7 +193,7 @@ def run_once(args):
             print >> f, "CORRECTIONS="
             print >> f, "NBATCH=1"
 
-        result = easy_run.fully_buffered(command=params.xds.command)
+        result = easy_run.fully_buffered(command=params.xds.executable)
         with open("xds.log", "wb") as xds_log:
           result.show_stdout(out=xds_log)
           result.show_stderr(out=xds_log)
