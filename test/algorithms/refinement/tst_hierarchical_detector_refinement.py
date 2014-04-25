@@ -129,7 +129,10 @@ def test1():
 
   # move the detector quadrants apart by 2mm both horizontally and vertically
   from dials.algorithms.refinement.parameterisation import DetectorParameterisationHierarchical
-  det_param = DetectorParameterisationHierarchical(detector, beam, level=1)
+  from dials.algorithms.refinement.parameterisation.detector_parameters \
+   import DetectorParameterisationHierarchical2
+  #det_param = DetectorParameterisationHierarchical(detector, beam, level=1)
+  det_param = DetectorParameterisationHierarchical2(detector, level=1)
   det_p_vals = det_param.get_param_vals()
   p_vals = list(det_p_vals)
   p_vals[1] += 2
