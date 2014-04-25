@@ -80,10 +80,10 @@ def test1():
     relative_path="dials_regression",
     test=os.path.isdir)
 
-  # use the i04_weak_data for this test
-  data_dir = os.path.join(dials_regression, "refinement_test_data", "hierarchy_test")
+  # use a datablock that contains a CS-PAD detector description
+  data_dir = os.path.join(dials_regression, "refinement_test_data",
+                          "hierarchy_test")
   datablock_path = os.path.join(data_dir, "datablock.json")
-
   assert os.path.exists(datablock_path)
 
   # load models
@@ -94,7 +94,7 @@ def test1():
   detector = deepcopy(im_set.get_detector())
   beam = im_set.get_beam()
 
-  # we'll make a crystal, goniometer and scan for this test
+  # we'll invent a crystal, goniometer and scan for this test
   from cctbx.crystal.crystal_model import crystal_model
   crystal = crystal_model((40.,0.,0.) ,(0.,40.,0.), (0.,0.,40.),
                           space_group_symbol = "P1")
@@ -128,11 +128,9 @@ def test1():
   refs, ref_predictor = generate_reflections(experiments)
 
   # move the detector quadrants apart by 2mm both horizontally and vertically
-  from dials.algorithms.refinement.parameterisation import DetectorParameterisationHierarchical
-  from dials.algorithms.refinement.parameterisation.detector_parameters \
-   import DetectorParameterisationHierarchical2
-  #det_param = DetectorParameterisationHierarchical(detector, beam, level=1)
-  det_param = DetectorParameterisationHierarchical2(detector, level=1)
+  from dials.algorithms.refinement.parameterisation \
+    import DetectorParameterisationHierarchical
+  det_param = DetectorParameterisationHierarchical(detector, level=1)
   det_p_vals = det_param.get_param_vals()
   p_vals = list(det_p_vals)
   p_vals[1] += 2
@@ -146,9 +144,9 @@ def test1():
   det_param.set_param_vals(p_vals)
 
   # reparameterise the detector at the new perturbed geometry
-  det_param = DetectorParameterisationHierarchical(detector, beam, level=1)
+  det_param = DetectorParameterisationHierarchical(detector, level=1)
 
-  # Parameterise other models
+  # parameterise other models
   from dials.algorithms.refinement.parameterisation.beam_parameters import \
       BeamParameterisationOrientation
   from dials.algorithms.refinement.parameterisation.crystal_parameters import \
@@ -157,14 +155,14 @@ def test1():
   xlo_param = CrystalOrientationParameterisation(crystal)
   xluc_param = CrystalUnitCellParameterisation(crystal)
 
-  # Fix beam
+  # fix beam
   beam_param.set_fixed([True]*2)
 
-  # Fix crystal
+  # fix crystal
   xluc_param.set_fixed([True]*6)
   xlo_param.set_fixed([True]*3)
 
-  # Parameterisation of the prediction equation
+  # parameterisation of the prediction equation
   from dials.algorithms.refinement.parameterisation.prediction_parameters import \
       XYPhiPredictionParameterisation
   from dials.algorithms.refinement.parameterisation.parameter_report import \
@@ -179,12 +177,14 @@ def test1():
     LeastSquaresPositionalResidualWithRmsdCutoff
   from dials.algorithms.refinement.reflection_manager import ReflectionManager
   refman = ReflectionManager(refs, experiments, nref_per_degree=20)
-  # very tight rmsd target of 1/1000 of a pixel
+
+  # set a very tight rmsd target of 1/10000 of a pixel
   target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
-      ref_predictor, refman, pred_param,frac_binsize_cutoff=0.001)
+      ref_predictor, refman, pred_param,frac_binsize_cutoff=0.0001)
 
   # minimisation engine
-  from dials.algorithms.refinement.engine import LevenbergMarquardtIterations as Refinery
+  from dials.algorithms.refinement.engine \
+    import LevenbergMarquardtIterations as Refinery
   refinery = Refinery(target = target,
                       prediction_parameterisation = pred_param,
                       log = None,
@@ -219,20 +219,22 @@ def test1():
   #  f.write("{0} {1} {2}\n".format(*coord))
   #f.close()
 
-  # compare detector with original detector
-  #orig_det = im_set.get_detector()
-  #refined_det = refiner.get_experiments()[0].detector
-  #
+  #compare detector with original detector
+  orig_det = im_set.get_detector()
+  refined_det = refiner.get_experiments()[0].detector
+
   #from dials.util.command_line import interactive_console; interactive_console()
-  #from scitbx import matrix
-  #for op, rp in zip(orig_det, refined_det):
-  #  # difference between origin vectors
-  #  o1 = matrix.col(op.get_origin())
-  #  o2 = matrix.col(rp.get_origin())
-  #  test = (o1 - o2).length()
-  #  # scale by length of origin vector
-  #  test /= o1.length()
-  #  approx_equal(test, 0., eps=1e-5)
+  from scitbx import matrix
+  import math
+  for op, rp in zip(orig_det, refined_det):
+    # compare the origin vectors by...
+    o1 = matrix.col(op.get_origin())
+    o2 = matrix.col(rp.get_origin())
+    # ...their relative lengths
+    assert approx_equal(
+      math.fabs(o1.length() - o2.length()) / o1.length(), 0, eps=1e-5)
+    # ...the angle between them
+    assert approx_equal(o1.accute_angle(o2), 0, eps=1e-5)
 
   print "OK"
   return

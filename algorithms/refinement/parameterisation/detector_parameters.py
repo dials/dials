@@ -881,10 +881,13 @@ def get_panel_ids_at_root(panel_list, group):
   except AttributeError: # we got down to Panels
     return [panel_list.index(group)]
 
-class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
+class DetectorParameterisationHierarchicalOld(DetectorParameterisationMultiPanel):
   """Parameterisation for a multiple panel detector with a hierarchy, where
   panel groups selected at some level of the hierarchy are treated as single
-  rigid blocks with 6 DOF."""
+  rigid blocks with 6 DOF.
+
+  This is the initial version that sets new panel states directly. The new
+  (preferred) version sets at the group level instead."""
 
   def __init__(self, detector, beam, experiment_ids=[0], level=0):
     """The additional 'level' argument selects which level of the detector
@@ -1086,7 +1089,7 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
     return
 
-class DetectorParameterisationHierarchical2(DetectorParameterisationMultiPanel):
+class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
   """Parameterisation for a multiple panel detector with a hierarchy, where
   panel groups selected at some level of the hierarchy are treated as single
   rigid blocks with 6 DOF."""

@@ -432,7 +432,7 @@ class RefinerFactory(object):
         if len(detector) > 1:
           try:
             h = detector.hierarchy()
-            det_param = par.DetectorParameterisationHierarchical(detector, beam,
+            det_param = par.DetectorParameterisationHierarchical(detector,
                 experiment_ids=exp_ids, level=detector_options.hierarchy_level)
           except AttributeError:
             det_param = par.DetectorParameterisationMultiPanel(detector, beam,
