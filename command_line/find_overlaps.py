@@ -90,6 +90,9 @@ class find_overlaps(object):
 
     reflection_table = self._prepare_reflections(experiments, reflections)
     reflection_table = self._predict_for_reflection_table(experiments, reflection_table)
+    # XXX not sure why zero length s1 vectors come out of the prediction code
+    reflection_table = reflection_table.select(
+      reflection_table['s1'].norms() > 0)
 
     sel = flex.bool(len(reflection_table), False)
     frame_numbers = reflection_table['xyzcal.px'].parts()[2]
