@@ -368,10 +368,15 @@ def fit_profile_2d(reflection_pointers, ref_table
           if ( bnd_box == (1247, 1258, 786, 799, 28, 29) and
                cntr_pos == (1252.29833984375, 792.5302734375, 28.5) ):
             print "________________________________________________________________"
+            print "data2d"
             write_2d(data2d)
+            print "background2d"
             write_2d(background2d)
+            print "average"
             write_2d(average)
+            print "mask2d"
             write_2d_mask(mask2d)
+            print "interpolation_mask2d"
             write_2d_mask(interpolation_mask2d)
             print "________________________________________________________________"
 
