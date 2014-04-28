@@ -90,6 +90,16 @@ class find_overlaps(object):
 
     reflection_table = self._prepare_reflections(experiments, reflections)
     reflection_table = self._predict_for_reflection_table(experiments, reflection_table)
+
+    sel = flex.bool(len(reflection_table), False)
+    frame_numbers = reflection_table['xyzcal.px'].parts()[2]
+    for i_lattice, expt in enumerate(experiments):
+      sel.set_selected(
+        (reflection_table['id'] == i_lattice) &
+        (frame_numbers >= expt.scan.get_array_range()[0]) &
+        (frame_numbers < expt.scan.get_array_range()[1]), True)
+    reflection_table = reflection_table.select(sel)
+
     reflection_table = self._compute_shoebox_mask(
       experiments, reflection_table, n_sigma=n_sigma)
 
@@ -164,7 +174,7 @@ class find_overlaps(object):
 
     self.overlap_selection = overlapping_sel
     self.reflections = reflection_table
-    self.overlapping_reflections = reflections.select(overlapping_sel)
+    self.overlapping_reflections = self.reflections.select(overlapping_sel)
 
   def plot_histograms(self):
     from matplotlib import pyplot
