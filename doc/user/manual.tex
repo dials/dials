@@ -596,6 +596,56 @@ Running refinement
 \end{verbatim}
 }
 
+If you want to specify the Bravais lattice for processing
+(i.e. include the lattice constraints in the refinement) then you need
+to either specify this lattice at this stage as
+
+{\small
+\begin{verbatim}
+space_group=P4
+\end{verbatim}
+}
+
+\noindent
+as a command-line option to \verb|dials.index| or you can use
+\verb|dials.refine_bravais_settings|, which will take the results of
+the P1 autoindexing and run refinement with all of the possible
+Bravais lattices applied - after which you may select the preferred
+solution.
+
+{\small
+\begin{verbatim}
+dials.refine_bravais_settings experiments.json indexed.pickle 
+\end{verbatim}
+}
+
+\noindent
+gives lots of output followed by...
+
+{\small
+\begin{verbatim}
+--------------------------------------------------------------------------------------------------
+Solution Metric fit  rmsd #spots  crystal_system                                 unit_cell  volume
+--------------------------------------------------------------------------------------------------
+       9  0.0478 dg 0.057   2250   tetragonal tP  57.98  57.98 150.29  90.00  90.00  90.00  505151
+       8  0.0433 dg 0.057   2250 orthorhombic oC  81.99  81.99 150.29  90.00  90.00  90.00 1010308
+       7  0.0478 dg 0.054   2250 orthorhombic oP  57.98  57.95 150.28  90.00  90.00  90.00  504967
+       6  0.0387 dg 0.057   2250   monoclinic mC  81.96  81.96 150.22  90.00  90.02  90.00 1009092
+       5  0.0478 dg 0.053   2250   monoclinic mP  57.98  57.99 150.33  90.00  90.02  90.00  505402
+       4  0.0433 dg 0.054   2250   monoclinic mP  57.98 150.28  57.95  90.00  90.00  90.00  504965
+       3  0.0207 dg 0.053   2250   monoclinic mC  81.97  81.95 150.28  90.00  90.04  90.00 1009513
+       2  0.0274 dg 0.053   2250   monoclinic mP  57.95  57.95 150.20  90.00  90.04  90.00  504389
+       1  0.0000 dg 0.053   2250    triclinic aP  57.93  57.94 150.22  90.01  90.04  89.98  504225
+--------------------------------------------------------------------------------------------------
+usr+sys time: 0.98 seconds, ticks: 2235113, micro-seconds/tick: 0.438
+wall clock time: 4.03 seconds
+\end{verbatim}
+}
+
+\noindent
+In this example we would continue processing (i.e. proceed to the
+refinement step, perhaps) with \verb|bravais_setting_9.json|.
+
 \subsection{Refinement}
 
 Although the model is already refined in indexing we can also add a
