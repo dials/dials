@@ -311,20 +311,7 @@ def fit_profile_2d(reflection_pointers, ref_table
         interpolation_mask2d = mask_2d_interpolate(
         descr, mask2d, interpolation_mask2d)
 
-        print_and_compare = '''
-        from dials.scratch.luiso_s import  write_2d, write_2d_mask
-        #if sum(data2d) > 1000:
-        if t_row == 33473:
-          print "________________________________________________________________"
-          write_2d(data2d)
-          write_2d(average)
-          write_2d_mask(mask2d)
-          write_2d_mask(interpolation_mask2d)
-          print "________________________________________________________________"
 
-
-
-        #'''
 
 
         descr[0, 0] = cntr_pos[0] - bnd_box[0]
@@ -358,12 +345,38 @@ def fit_profile_2d(reflection_pointers, ref_table
           col_variance[t_row] = var
         else:
 
+          '''
+          descr[0, 0] = cntr_pos[0] - bnd_box[0]
+          descr[0, 1] = cntr_pos[1] - bnd_box[2]
+          descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
+          peak2d = subtrac_bkg_2d(data2d, background2d)
+          '''
+          intr_polt_2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
+          data2d = add_2d(descr, data2d, intr_polt_2d)
+          background2d = add_2d(descr, background2d, intr_polt_2d)
+
           I_R = fitting_2d_partials(descr, data2d, background2d,
                                     average, interpolation_mask2d, tmp_i)
           col_intensity[t_row] = I_R[0]
 
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
           col_variance[t_row] = var
+          #print_and_compare = '''
+          from dials.scratch.luiso_s import  write_2d, write_2d_mask
+          #if sum(data2d) > 1000:
+          #if t_row == 31104:
+          if ( bnd_box == (1247, 1258, 786, 799, 28, 29) and
+               cntr_pos == (1252.29833984375, 792.5302734375, 28.5) ):
+            print "________________________________________________________________"
+            write_2d(data2d)
+            write_2d(background2d)
+            write_2d(average)
+            write_2d_mask(mask2d)
+            write_2d_mask(interpolation_mask2d)
+            print "________________________________________________________________"
+
+          #'''
+
         if col_intensity[t_row] < 0:
           col_intensity[t_row] = -1.0
     ref_table['intensity.prf.value'] = col_intensity

@@ -410,8 +410,10 @@ namespace dials { namespace algorithms {
   // be refined the background plane
   vec2<double> fitting_2d_partials(
     const af::const_ref< double, af::c_grid<2> > &descriptor,
-    const af::const_ref< double, af::c_grid<2> > &data2d,
-    const af::const_ref< double, af::c_grid<2> > &backg2d,
+    //const af::const_ref< double, af::c_grid<2> > &data2d,
+    const af::const_ref< double, af::c_grid<2> > &data2dmov,
+    //const af::const_ref< double, af::c_grid<2> > &backg2d,
+    const af::const_ref< double, af::c_grid<2> > &backg2dmov,
     const af::const_ref< double, af::c_grid<2> > &profile2d,
     const af::const_ref< int, af::c_grid<2> > &interpolation_mask2d,
     double sum_its) {
@@ -420,14 +422,14 @@ namespace dials { namespace algorithms {
     int nrow = profile2d.accessor()[0];
     int counter = 0;
 
-    af::versa< double, af::c_grid<2> > data2dmov_01(af::c_grid<2>(nrow, ncol),0);
-    af::versa< double, af::c_grid<2> > backg2dmov_01(af::c_grid<2>(nrow, ncol),0);
+    //af::versa< double, af::c_grid<2> > data2dmov_01(af::c_grid<2>(nrow, ncol),0);
+    //af::versa< double, af::c_grid<2> > backg2dmov_01(af::c_grid<2>(nrow, ncol),0);
 
-    af::versa< double, af::c_grid<2> > data2dmov(af::c_grid<2>(nrow, ncol),0);
-    af::versa< double, af::c_grid<2> > backg2dmov(af::c_grid<2>(nrow, ncol),0);
+    //af::versa< double, af::c_grid<2> > data2dmov(af::c_grid<2>(nrow, ncol),0);
+    //af::versa< double, af::c_grid<2> > backg2dmov(af::c_grid<2>(nrow, ncol),0);
 
-    data2dmov = add_2d(descriptor, data2d, data2dmov_01.const_ref());
-    backg2dmov = add_2d(descriptor, backg2d, backg2dmov_01.const_ref());
+    //data2dmov = add_2d(descriptor, data2d, data2dmov_01.const_ref());
+    //backg2dmov = add_2d(descriptor, backg2d, backg2dmov_01.const_ref());
 
     // Counting how many pixels are useful so far
     for (int row = 0; row < nrow; row++) {
@@ -449,11 +451,18 @@ namespace dials { namespace algorithms {
     counter = 0;
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
-        // this IF statement needs to be adjusted to use the interpolation_mask2d
-        // 2D array
+
+        /*
         if (data2dmov(row,col) != backg2dmov(row,col)
           and profile2d(row,col) > 0 and data2dmov(row,col) > 0
           and backg2dmov(row,col) > 0) {
+        */
+
+
+        if (data2dmov(row,col) != backg2dmov(row,col)
+           //and ( interpolation_mask2d(row,col) & Foreground )
+           and profile2d(row,col) > 0 and data2dmov(row,col) > 0
+           and backg2dmov(row,col) > 0 ) {
 
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);// * conv_scale;
