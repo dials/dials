@@ -155,6 +155,7 @@ namespace dials { namespace algorithms {
       }
     }
 
+
     for (int row = 0; row < nrow_in; row++) {
       for (int col = 0; col < ncol_in; col++) {
 
@@ -409,7 +410,6 @@ namespace dials { namespace algorithms {
   // used in partially recorded reflections where should not
   // be refined the background plane
   vec2<double> fitting_2d_partials(
-    const af::const_ref< double, af::c_grid<2> > &descriptor,
     const af::const_ref< double, af::c_grid<2> > &data2dmov,
     const af::const_ref< double, af::c_grid<2> > &backg2dmov,
     const af::const_ref< double, af::c_grid<2> > &profile2d,

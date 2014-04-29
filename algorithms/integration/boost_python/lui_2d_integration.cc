@@ -39,7 +39,7 @@ namespace dials { namespace algorithms { namespace boost_python {
          arg("profile2d"), arg("tmp_scale") ,  arg("mat_a"), arg("vec_b")));
 
     def("fitting_2d_partials", &fitting_2d_partials,
-        (arg("descriptor"), arg("data2dmov"), arg("backg2dmov"), arg("profile2d"),
+        (arg("data2dmov"), arg("backg2dmov"), arg("profile2d"),
          arg("interpolation_mask2d"),      arg("sum_its") ));
 
     def("subtrac_bkg_2d", &subtrac_bkg_2d, (arg("data2d"), arg("background2d")));

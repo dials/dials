@@ -292,9 +292,6 @@ def fit_profile_2d(reflection_pointers, ref_table
         bnd_box = col_bbox[t_row]
 
 
-
-
-
         big_nrow = average.all()[0]
         big_ncol = average.all()[1]
 
@@ -352,10 +349,10 @@ def fit_profile_2d(reflection_pointers, ref_table
           peak2d = subtrac_bkg_2d(data2d, background2d)
           '''
           intr_polt_2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
-          data2d = add_2d(descr, data2d, intr_polt_2d)
-          background2d = add_2d(descr, background2d, intr_polt_2d)
+          data2dmov = add_2d(descr, data2d, intr_polt_2d)
+          background2dmov = add_2d(descr, background2d, intr_polt_2d)
 
-          I_R = fitting_2d_partials(descr, data2d, background2d,
+          I_R = fitting_2d_partials(data2dmov, background2dmov,
                                     average, interpolation_mask2d, tmp_i)
           col_intensity[t_row] = I_R[0]
 
@@ -363,21 +360,27 @@ def fit_profile_2d(reflection_pointers, ref_table
           col_variance[t_row] = var
           #print_and_compare = '''
           from dials.scratch.luiso_s import  write_2d, write_2d_mask
-          #if sum(data2d) > 1000:
-          #if t_row == 31104:
-          if ( bnd_box == (1247, 1258, 786, 799, 28, 29) and
-               cntr_pos == (1252.29833984375, 792.5302734375, 28.5) ):
+          if ( bnd_box == (1908, 1921, 586, 599, 2, 3) and
+               cntr_pos == (1914.095458984375, 592.4046020507812, 2.5) ):
             print "________________________________________________________________"
             print "data2d"
             write_2d(data2d)
             print "background2d"
             write_2d(background2d)
+
+            print "data2dmov"
+            write_2d(data2dmov)
+            print "background2dmov"
+            write_2d(background2dmov)
+
             print "average"
             write_2d(average)
             print "mask2d"
             write_2d_mask(mask2d)
             print "interpolation_mask2d"
             write_2d_mask(interpolation_mask2d)
+
+            print "pf_I =", col_intensity[t_row]
             print "________________________________________________________________"
 
           #'''
