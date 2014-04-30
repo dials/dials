@@ -49,21 +49,26 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(s0_.length() > 0.0);
     }
 
-    af::small<Ray,2> operator()(miller_index h, mat3<double> ub) const {
+    Ray operator()(miller_index h, mat3<double> ub) {
 
       // Calculate the reciprocal space vector
       vec3<double> r = ub * h;
       vec3<double> s1 = (s0_ + r).normalize() * s0_.length();
 
-      // Add both enter and exit reflections
-      af::small<Ray,2> result;
-      result.push_back(Ray(s1, 0.0, true));
-      result.push_back(Ray(s1, 0.0, false));
-      return result;
+      // Calculate delpsi value
+      delpsi_ = 0.0; // set dummy value for now
+
+      // Calculate the Ray (default zero angle and 'entering' as true)
+      return Ray(s1, 0.0, true);
+    }
+
+    double get_delpsi() const {
+      return delpsi_;
     }
 
   private:
     vec3<double> s0_;
+    double delpsi_;
   };
 
 }} // namespace dials::algorithms

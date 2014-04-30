@@ -62,6 +62,16 @@ namespace dials { namespace algorithms {
     }
   };
 
+  struct stills_prediction_data : prediction_data {
+
+    af::shared< double > delpsi;
+
+    stills_prediction_data(af::reflection_table &table)
+      : prediction_data(table) {
+      delpsi = table.get< double >("delpsicalc.rad");
+    }
+  };
+
   /**
    * A reflection predictor for scan static prediction.
    */
@@ -478,7 +488,7 @@ namespace dials { namespace algorithms {
 
 
   /**
-   * A class to do naive stills prediction.
+   * A class to do stills prediction.
    */
   class StillsReflectionPredictor {
 
@@ -496,7 +506,7 @@ namespace dials { namespace algorithms {
       : beam_(beam),
         detector_(detector),
         ub_(ub),
-        predict_rays_(beam.get_s0()) {}
+        predict_ray_(beam.get_s0()) {}
 
     /**
      * Predict all reflection.
@@ -513,9 +523,9 @@ namespace dials { namespace algorithms {
      * @returns The reflection list
      */
     af::reflection_table operator()(
-        const af::const_ref< miller_index > &h) const {
+        const af::const_ref< miller_index > &h) {
       af::reflection_table table;
-      prediction_data predictions(table);
+      stills_prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
         append_for_index(predictions, h[i]);
       }
@@ -530,7 +540,7 @@ namespace dials { namespace algorithms {
      */
     af::reflection_table operator()(
         const af::const_ref< miller_index > &h,
-        std::size_t panel) const {
+        std::size_t panel) {
       af::shared<std::size_t> panels(h.size(), panel);
       return (*this)(h, panels.const_ref());
     }
@@ -543,14 +553,60 @@ namespace dials { namespace algorithms {
      */
     af::reflection_table operator()(
         const af::const_ref< miller_index > &h,
-        const af::const_ref<std::size_t> &panel) const {
+        const af::const_ref<std::size_t> &panel) {
       DIALS_ASSERT(h.size() == panel.size());
       af::reflection_table table;
-      prediction_data predictions(table);
+      stills_prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
         append_for_index(predictions, h[i], (int)panel[i]);
       }
       return table;
+    }
+
+    /**
+     * Predict reflections for UB
+     * @param h The array of miller indices
+     * @param panel The array of panels
+     * @returns A reflection table.
+     */
+    af::reflection_table for_hkl(
+        const af::const_ref<miller_index> &h,
+        const af::const_ref<std::size_t> &panel) {
+      DIALS_ASSERT(h.size() == panel.size());
+      af::reflection_table table;
+      af::shared<double> column;
+      table["delpsicalc.rad"] = column;
+      stills_prediction_data predictions(table);
+      for (std::size_t i = 0; i < h.size(); ++i) {
+        append_for_index(predictions, h[i], panel[i]);
+      }
+      DIALS_ASSERT(table.nrows() == h.size());
+      return table;
+    }
+
+    /**
+     * Predict reflections and add to the entries in the table.
+     * @param table The reflection table
+     */
+    void for_reflection_table(
+        af::reflection_table table) {
+      af::reflection_table new_table = for_hkl(
+        table["miller_index"],
+        table["panel"]);
+      DIALS_ASSERT(new_table.nrows() == table.nrows());
+      table["miller_index"] = new_table["miller_index"];
+      table["panel"] = new_table["panel"];
+      table["s1"] = new_table["s1"];
+      table["xyzcal.px"] = new_table["xyzcal.px"];
+      table["xyzcal.mm"] = new_table["xyzcal.mm"];
+      table["delpsical.rad"] = new_table["delpsical.rad"];
+      af::shared<std::size_t> flags = table["flags"];
+      af::shared<std::size_t> new_flags = new_table["flags"];
+      for (std::size_t i = 0; i < flags.size(); ++i) {
+        flags[i] &= ~af::Predicted;
+        flags[i] |= new_flags[i];
+      }
+      DIALS_ASSERT(table.is_consistent());
     }
 
   private:
@@ -560,12 +616,16 @@ namespace dials { namespace algorithms {
      * @param p The reflection data
      * @param h The miller index
      */
-    void append_for_index(prediction_data &p,
-        const miller_index &h, int panel=-1) const {
-      af::small<Ray, 2> rays = predict_rays_(h, ub_);
-      for (std::size_t i = 0; i < rays.size(); ++i) {
-        append_for_ray(p, h, rays[i], panel);
-      }
+    void append_for_index(stills_prediction_data &p,
+        const miller_index &h, int panel=-1) {
+      //af::small<Ray, 2> rays = predict_rays_(h, ub_);
+      Ray ray;
+      ray = predict_ray_(h, ub_);
+      double delpsi = predict_ray_.get_delpsi();
+      append_for_ray(p, h, ray, panel, delpsi);
+      //for (std::size_t i = 0; i < rays.size(); ++i) {
+      //  append_for_ray(p, h, rays[i], panel);
+      //}
     }
 
     /**
@@ -573,9 +633,11 @@ namespace dials { namespace algorithms {
      * @param p The reflection data
      * @param h The miller index
      * @param ray The ray data
+     * @param panel The panel number
+     * @param delpsi The calculated minimum rotation to Ewald sphere (delPsi) value
      */
-    void append_for_ray(prediction_data &p,
-        const miller_index &h, const Ray &ray, int panel) const {
+    void append_for_ray(stills_prediction_data &p,
+        const miller_index &h, const Ray &ray, int panel, double delpsi) const {
       try {
 
         // Get the impact on the detector
@@ -591,6 +653,7 @@ namespace dials { namespace algorithms {
         p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
         p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
         p.panel.push_back(panel);
+        p.delpsi.push_back(delpsi);
 
       } catch(dxtbx::error) {
         // do nothing
@@ -614,7 +677,7 @@ namespace dials { namespace algorithms {
     Beam beam_;
     Detector detector_;
     mat3<double> ub_;
-    StillsRayPredictor predict_rays_;
+    StillsRayPredictor predict_ray_;
   };
 }} // namespace dials::algorithms
 

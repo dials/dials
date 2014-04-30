@@ -64,16 +64,16 @@ namespace dials { namespace algorithms { namespace boost_python {
       &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed)(
-        const af::const_ref< cctbx::miller::index<> >&) const =
+        const af::const_ref< cctbx::miller::index<> >&) =
       &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel)(
         const af::const_ref< cctbx::miller::index<> >&,
-        std::size_t) const = &Predictor::operator();
+        std::size_t) = &Predictor::operator();
 
     af::reflection_table (Predictor::*predict_observed_with_panel_list)(
         const af::const_ref< cctbx::miller::index<> >&,
-        const af::const_ref<std::size_t>&) const = &Predictor::operator();
+        const af::const_ref<std::size_t>&) = &Predictor::operator();
 
     class_<Predictor>("StillsReflectionPredictor", no_init)
       .def(init<
@@ -83,7 +83,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__call__", predict_all)
       .def("__call__", predict_observed)
       .def("__call__", predict_observed_with_panel)
-      .def("__call__", predict_observed_with_panel_list);
+      .def("__call__", predict_observed_with_panel_list)
+      .def("for_reflection_table",
+          &Predictor::for_reflection_table);
   }
 
   void export_reflection_predictor()
