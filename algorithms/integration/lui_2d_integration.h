@@ -32,7 +32,8 @@ namespace dials { namespace algorithms {
   using dials::model::Foreground;
   using dials::model::Valid;
   using dials::model::Background;
-  using std::sqrt;
+  //using std::sqrt;
+  using std::abs;
   // using dials::model::Valid;
 
   vec2<double> raw_2d_cut(
@@ -440,44 +441,58 @@ namespace dials { namespace algorithms {
     counter = 0;
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
+        predicted_i = backg2dmov(row,col) + profile2d(row,col) * sum_its;
 
         if (data2dmov(row,col) != backg2dmov(row,col)
+           //and abs(predicted_i - data2dmov(row,col)) < abs(predicted_i / 2.0)
+
+           and predicted_i > 0
+
            //and ( interpolation_mask2d(row,col) & Foreground )
-           and profile2d(row,col) > 0 and data2dmov(row,col) > 0
-           and backg2dmov(row,col) > 0 ) {
+           and ( profile2d(row,col) > 0 and data2dmov(row,col) ) > 0
+           and backg2dmov(row,col) > 0
+
+        ){
 
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
-          imodl_lst[counter] = profile2d(row,col);// * conv_scale;
-          predicted_i = backg2dmov(row,col) + imodl_lst[counter] * sum_its;
+          imodl_lst[counter] = profile2d(row,col);
+
+
           if (predicted_i <= 0){
             predicted_i = 0.000001;
             //std::cout << "\n gone below zero\n";
           }
-          w_lst[counter] = 1.0 /
-                        (predicted_i);
+
+
+          w_lst[counter] = 1.0 / predicted_i;
           counter++;
         }
       }
     }
 
-
     // finding the scale needed to fit profile list to experiment list
     double m, diff, df_sqr;
+    if (counter == 0){
+      //std::cout << "\ncounter == 0\n";
+      m = sum_its;
+      i_var = sum_its;
+    } else {
+      m = w_least_squares_1d(counter, imodl_lst, iexpr_lst, w_lst);
+         //measuring R
+      sum = 0;
+      for (int row = 0; row < nrow; row++) {
+        for (int col = 0; col < ncol; col++) {
 
-    m = w_least_squares_1d(counter, imodl_lst, iexpr_lst, w_lst);
+          diff = profile2d(row, col) * m - data2dmov(row, col);
+          df_sqr = diff * diff;
+          sum += df_sqr;
 
-    //measuring R
-    sum = 0;
-    for (int row = 0; row < nrow; row++) {
-      for (int col = 0; col < ncol; col++) {
-
-        diff = profile2d(row, col) * m - data2dmov(row, col);
-        df_sqr = diff * diff;
-        sum += df_sqr;
-
+        }
       }
+      i_var = sum;
     }
-    i_var = sum;
+
+
 
     //measuring the volume of the scaled profile
     sum = 0;

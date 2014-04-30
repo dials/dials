@@ -348,21 +348,24 @@ def fit_profile_2d(reflection_pointers, ref_table
           descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
           peak2d = subtrac_bkg_2d(data2d, background2d)
           '''
+
           intr_polt_2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
           data2dmov = add_2d(descr, data2d, intr_polt_2d)
           background2dmov = add_2d(descr, background2d, intr_polt_2d)
 
+          #print "tst"
           I_R = fitting_2d_partials(data2dmov, background2dmov,
                                     average, interpolation_mask2d, tmp_i)
-          col_intensity[t_row] = I_R[0]
 
+          col_intensity[t_row] = I_R[0]
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
+
           col_variance[t_row] = var
-          #print_and_compare = '''
+          print_and_compare = '''
           from dials.scratch.luiso_s import  write_2d, write_2d_mask
           if ( bnd_box == (1908, 1921, 586, 599, 2, 3) and
                cntr_pos == (1914.095458984375, 592.4046020507812, 2.5) ):
-            print "________________________________________________________________"
+            print "_____________________________________________________________"
             print "data2d"
             write_2d(data2d)
             print "background2d"
@@ -379,9 +382,9 @@ def fit_profile_2d(reflection_pointers, ref_table
             write_2d_mask(mask2d)
             print "interpolation_mask2d"
             write_2d_mask(interpolation_mask2d)
-
+            print "descr =", descr
             print "pf_I =", col_intensity[t_row]
-            print "________________________________________________________________"
+            print "_____________________________________________________________"
 
           #'''
 
