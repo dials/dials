@@ -13,6 +13,7 @@
 #ifndef DIALS_ALGORITHMS_SPOT_PREDICTION_STILLS_RAY_PREDICTOR_H
 #define DIALS_ALGORITHMS_SPOT_PREDICTION_STILLS_RAY_PREDICTOR_H
 
+#include <cmath>
 #include <cctbx/miller.h>
 #include <scitbx/array_family/small.h>
 #include <scitbx/vec3.h>
@@ -23,6 +24,7 @@
 
 namespace dials { namespace algorithms {
 
+  using std::sqrt;
   using scitbx::vec3;
   using scitbx::mat3;
   using dials::model::Ray;
@@ -47,18 +49,32 @@ namespace dials { namespace algorithms {
     StillsRayPredictor(vec3<double> s0)
       : s0_(s0) {
       DIALS_ASSERT(s0_.length() > 0.0);
+      unit_s0_ = s0_.normalize();
     }
 
     Ray operator()(miller_index h, mat3<double> ub) {
 
-      // Calculate the reciprocal space vector
-      vec3<double> r = ub * h;
-      vec3<double> s1 = (s0_ + r).normalize() * s0_.length();
+      // Calculate the reciprocal space vector and required unit vectors
+      vec3<double> q = ub * h;
+      vec3<double> e1 = q.cross(unit_s0_).normalize();
+      vec3<double> c0 = unit_s0_.cross(e1).normalize();
+
+      // Calculate the vector rotated to the Ewald sphere
+      double qq = q.length_sq();
+      double lambda = 1. / s0_.length();
+      double a = 0.5 * qq * lambda;
+      double tmp = qq - a*a;
+      DIALS_ASSERT(tmp > 0.0);
+      double b = std::sqrt(tmp);
+      vec3<double> r = -1.0 * a * unit_s0_ + b * c0;
 
       // Calculate delpsi value
-      delpsi_ = 0.0; // set dummy value for now
+      vec3<double> q0 = q.normalize();
+      vec3<double> q1 = q0.cross(e1).normalize();
+      delpsi_ = -1.0 * atan2(r*q1, r*q0);
 
       // Calculate the Ray (default zero angle and 'entering' as true)
+      vec3<double> s1 = (s0_ + r).normalize() * s0_.length();
       return Ray(s1, 0.0, true);
     }
 
@@ -68,6 +84,7 @@ namespace dials { namespace algorithms {
 
   private:
     vec3<double> s0_;
+    vec3<double> unit_s0_;
     double delpsi_;
   };
 
