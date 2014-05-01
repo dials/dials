@@ -68,7 +68,7 @@ namespace dials { namespace algorithms {
 
     stills_prediction_data(af::reflection_table &table)
       : prediction_data(table) {
-      delpsi = table.get< double >("delpsicalc.rad");
+      delpsi = table.get< double >("delpsical.rad");
     }
   };
 
@@ -575,7 +575,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(h.size() == panel.size());
       af::reflection_table table;
       af::shared<double> column;
-      table["delpsicalc.rad"] = column;
+      table["delpsical.rad"] = column;
       stills_prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
         append_for_index(predictions, h[i], panel[i]);
@@ -599,6 +599,12 @@ namespace dials { namespace algorithms {
       table["s1"] = new_table["s1"];
       table["xyzcal.px"] = new_table["xyzcal.px"];
       table["xyzcal.mm"] = new_table["xyzcal.mm"];
+
+      // Add "delpsical.rad" key to table if it is not there already
+      //if (table.count("delpsical.rad") != 1) {
+      //  af::shared<double> column(table.nrows());
+      //  table["delpsical.rad"] = column;
+      //}
       table["delpsical.rad"] = new_table["delpsical.rad"];
       af::shared<std::size_t> flags = table["flags"];
       af::shared<std::size_t> new_flags = new_table["flags"];
@@ -623,9 +629,6 @@ namespace dials { namespace algorithms {
       ray = predict_ray_(h, ub_);
       double delpsi = predict_ray_.get_delpsi();
       append_for_ray(p, h, ray, panel, delpsi);
-      //for (std::size_t i = 0; i < rays.size(); ++i) {
-      //  append_for_ray(p, h, rays[i], panel);
-      //}
     }
 
     /**

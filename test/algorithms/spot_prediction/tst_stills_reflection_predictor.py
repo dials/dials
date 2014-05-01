@@ -52,16 +52,16 @@ class Test(object):
 
     from dials.array_family import flex
     table = flex.reflection_table()
-    table['flags'] = flex.size_t([0])
-    table['id']    = flex.size_t([0])
-    table['panel'] = flex.size_t([0])
+    table['flags'] = flex.size_t([0, 0])
+    table['id']    = flex.size_t([0, 0])
+    table['panel'] = flex.size_t([0, 0])
 
     # Predicted properties
-    table['miller_index'] = flex.miller_index([(1,0,0)])
-    table['entering']     = flex.bool([True])
-    table['s1']           = flex.vec3_double(1)
-    table['xyzcal.mm']    = flex.vec3_double(1)
-    table['xyzcal.px']    = flex.vec3_double(1)
+    table['miller_index'] = flex.miller_index([(1,0,0), (0,1,0)])
+    table['entering']     = flex.bool([True, True])
+    table['s1']           = flex.vec3_double(2)
+    table['xyzcal.mm']    = flex.vec3_double(2)
+    table['xyzcal.px']    = flex.vec3_double(2)
 
     self.reflections = table
     print self.reflections[0]
@@ -74,7 +74,8 @@ class Test(object):
 
     predictor = StillsReflectionPredictor(self.experiments[0])
 
-    tmp = predictor.for_reflection_table(self.reflections)
+    predictor.for_reflection_table(self.reflections)
+    for r in self.reflections: print r
 
 
 if __name__ == '__main__':
