@@ -393,6 +393,7 @@ namespace dials { namespace algorithms {
     return final_mask;
   }
 
+  /*
   vec2<double> scale_2d(
     const af::const_ref< double, af::c_grid<2> > &data2d, double scl) {
       std::cout << "\n" << "Here in scale" << "\n" << "scl =" << scl << "\n";
@@ -401,16 +402,40 @@ namespace dials { namespace algorithms {
       passed[1] = 6.1;
       return passed;
   }
+  */
 
 
   vec2<double> test_outlier(
     const af::const_ref< double, af::c_grid<2> > &data2d,
     const af::const_ref< double, af::c_grid<2> > &prf_total) {
-      std::cout << "\n" << "Here" << "\n";
-      vec2<double> passed(0,1);
-      passed[0] = 0.0;
-      passed[1] = 1.1;
-      return passed;
+
+    int ncol = prf_total.accessor()[1];
+    int nrow = prf_total.accessor()[0];
+
+    if(ncol != data2d.accessor()[1] or nrow != data2d.accessor()[0]){
+      std::cout << "\n" << "Wrong Size  of Arrays" << "\n";
+    }
+
+
+    for (int row = 0; row < nrow; row++) {
+      for (int col = 0; col < ncol; col++) {
+        if( ( abs(data2d(row, col)
+              - prf_total(row, col) ) > (prf_total(row, col) * 0.5 ) )
+              and
+              prf_total(row, col) > 0
+              and
+              data2d(row, col) > 0 ){
+
+            std::cout << "\n" << "NOT Passed" << "\n";
+          }
+      }
+    }
+
+    std::cout << "\n" << "Here" << "\n";
+    vec2<double> passed(0,1);
+    passed[0] = 0.0;
+    passed[1] = 1.1;
+    return passed;
   }
 
   // 1D weighted least squares for partially recorded reflections

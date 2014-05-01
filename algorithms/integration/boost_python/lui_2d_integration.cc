@@ -32,7 +32,7 @@ namespace dials { namespace algorithms { namespace boost_python {
         arg("in_data2d_two"));
 
 
-    def("scale_2d", &scale_2d, arg("data2d"),arg("scl"));
+    //def("scale_2d", &scale_2d, arg("data2d"),arg("scl"));
 
 
     def("test_outlier", &test_outlier, arg("data2d"),arg("prf_total"));

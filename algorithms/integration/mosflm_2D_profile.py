@@ -12,8 +12,9 @@ from __future__ import division
 from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d,  sigma_2d, \
                                           fitting_2d_multile_var_build_mat, \
-                                          fitting_2d_partials, test_outlier, \
-                                          scale_2d
+                                          fitting_2d_partials, test_outlier\
+                                          #, scale_2d
+
 from dials.array_family import flex
 from dials.algorithms.integration.projection_from_3d_to_2d import \
      from_3D_to_2D_projection, from_3D_to_2D_mask_projection
@@ -126,7 +127,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
       descr[0, 0] = cntr_pos[0] - bnd_box[0]
       descr[0, 1] = cntr_pos[1] - bnd_box[2]
-      descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
+      descr[0, 2] = 1.0 / (col_intensity[t_row])
       peak2d = subtrac_bkg_2d(data2d, background2d)
       # ends duplicated code
 
@@ -134,8 +135,8 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
       mov_peak2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
       mov_peak2d = add_2d(descr, peak2d, mov_peak2d)
-      mov_n_scaled_peak2d = scale_2d(mov_peak2d, 55.0)
-      print "mov_n_scaled_peak2d =", mov_n_scaled_peak2d
+      #mov_n_scaled_peak2d = scale_2d(mov_peak2d, 1.0 / (col_intensity[t_row] * counter)
+      #print "mov_n_scaled_peak2d =", mov_n_scaled_peak2d
 
       print "_____________________________________________________________"
       print "_____________________________________________________________"
