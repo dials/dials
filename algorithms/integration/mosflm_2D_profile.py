@@ -12,8 +12,8 @@ from __future__ import division
 from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d,  sigma_2d, \
                                           fitting_2d_multile_var_build_mat, \
-                                          fitting_2d_partials, test_outlier
-
+                                          fitting_2d_partials, test_outlier, \
+                                          scale_2d
 from dials.array_family import flex
 from dials.algorithms.integration.projection_from_3d_to_2d import \
      from_3D_to_2D_projection, from_3D_to_2D_mask_projection
@@ -109,27 +109,56 @@ def make_2d_profile(reflection_pointers, ref_table_in):
   #print "tmp_counter =", tmp_counter
   #print "\n\n"
   if tmp_counter == 5:
-    from matplotlib import pyplot as plt
-    data2d_np = sumation.as_numpy_array()
-    plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
-    plt.show()
-
-
 
     #####################################################################
     #this piece of code must be moved fron here to production stable area
     #####################################################################
 
-    yea = test_outlier(peak2d, sumation)
+    for t_row in select_pointers:
 
+      shoebox = col_shoebox[t_row].data
+      background = col_shoebox[t_row].background
 
+      #this duplicated code should be moved to a function call
+      data2d, background2d = from_3D_to_2D_projection(shoebox, background)
+      cntr_pos = col_xyzcal[t_row]
+      bnd_box = col_bbox[t_row]
+
+      descr[0, 0] = cntr_pos[0] - bnd_box[0]
+      descr[0, 1] = cntr_pos[1] - bnd_box[2]
+      descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
+      peak2d = subtrac_bkg_2d(data2d, background2d)
+      # ends duplicated code
+
+      from dials.scratch.luiso_s import  write_2d
+
+      mov_peak2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
+      mov_peak2d = add_2d(descr, peak2d, mov_peak2d)
+      mov_n_scaled_peak2d = scale_2d(mov_peak2d, 55.0)
+      print "mov_n_scaled_peak2d =", mov_n_scaled_peak2d
+
+      print "_____________________________________________________________"
+      print "_____________________________________________________________"
+      print "mov_peak2d"
+      write_2d(mov_peak2d)
+      print "sumation"
+      write_2d(sumation)
+      print "_____________________________________________________________"
+      print "_____________________________________________________________"
+      yea = test_outlier(mov_peak2d, sumation)
+      print yea
 
     #####################################################################
+
+
+    from matplotlib import pyplot as plt
+    data2d_np = sumation.as_numpy_array()
+    plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
+    plt.show()
   #'''
 
+
   return sumation, thold
-
-
 
 
 def fit_profile_2d(reflection_pointers, ref_table

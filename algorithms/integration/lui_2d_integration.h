@@ -393,7 +393,14 @@ namespace dials { namespace algorithms {
     return final_mask;
   }
 
-
+  vec2<double> scale_2d(
+    const af::const_ref< double, af::c_grid<2> > &data2d, double scl) {
+      std::cout << "\n" << "Here in scale" << "\n" << "scl =" << scl << "\n";
+      vec2<double> passed(0,1);
+      passed[0] = 5.0;
+      passed[1] = 6.1;
+      return passed;
+  }
 
 
   vec2<double> test_outlier(
