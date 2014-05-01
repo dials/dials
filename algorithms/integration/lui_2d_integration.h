@@ -395,6 +395,17 @@ namespace dials { namespace algorithms {
 
 
 
+
+  vec2<double> test_outlier(
+    const af::const_ref< double, af::c_grid<2> > &data2d,
+    const af::const_ref< double, af::c_grid<2> > &prf_total) {
+      std::cout << "\n" << "Here" << "\n";
+      vec2<double> passed(0,1);
+      passed[0] = 0.0;
+      passed[1] = 1.1;
+      return passed;
+  }
+
   // 1D weighted least squares for partially recorded reflections
   double w_least_squares_1d(int & cnt, double i_mod[],
                             double i_exp[], double w[]){

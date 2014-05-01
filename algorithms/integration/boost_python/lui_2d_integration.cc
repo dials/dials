@@ -31,6 +31,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("simple_2d_add", &simple_2d_add, arg("in_data2d_one"),
         arg("in_data2d_two"));
 
+    def("test_outlier", &test_outlier, arg("data2d"),arg("prf_total"));
+
     def("mask_add_2d", &mask_add_2d, arg("mask2d_one"),arg("mask2d_one"));
 
 

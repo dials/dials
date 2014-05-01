@@ -12,11 +12,14 @@ from __future__ import division
 from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d,  sigma_2d, \
                                           fitting_2d_multile_var_build_mat, \
-                                          fitting_2d_partials
+                                          fitting_2d_partials, test_outlier
 
 from dials.array_family import flex
 from dials.algorithms.integration.projection_from_3d_to_2d import \
      from_3D_to_2D_projection, from_3D_to_2D_mask_projection
+
+#rememver to remove this tmp_counter variavle stuff after debugging
+tmp_counter = 0
 
 def make_2d_profile(reflection_pointers, ref_table_in):
 
@@ -97,10 +100,31 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     sumation = add_2d(descr, peak2d, sumation)
 
   if_you_want_to_see_how_the_profiles_look = '''
-  from matplotlib import pyplot as plt
-  data2d_np = sumation.as_numpy_array()
-  plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
-  plt.show()
+
+  #rememver to remove this tmp_counter variavle stuff after debugging
+  global tmp_counter
+  tmp_counter += 1
+
+  #print "\n\n"
+  #print "tmp_counter =", tmp_counter
+  #print "\n\n"
+  if tmp_counter == 5:
+    from matplotlib import pyplot as plt
+    data2d_np = sumation.as_numpy_array()
+    plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
+    plt.show()
+
+
+
+    #####################################################################
+    #this piece of code must be moved fron here to production stable area
+    #####################################################################
+
+    yea = test_outlier(peak2d, sumation)
+
+
+
+    #####################################################################
   #'''
 
   return sumation, thold
