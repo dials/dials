@@ -222,6 +222,7 @@ namespace dials { namespace algorithms {
 
     double centr_col = descriptor(0,0);
     double centr_row = descriptor(0,1);
+
     double scale = descriptor(0,2);
     double tot_row, tot_col;
     double x_contrib, y_contrib, x_pix_pos, y_pix_pos;
@@ -457,12 +458,10 @@ namespace dials { namespace algorithms {
           iexpr_lst[counter] = data2dmov(row,col) - backg2dmov(row,col);
           imodl_lst[counter] = profile2d(row,col);
 
-
           if (predicted_i <= 0){
             predicted_i = 0.000001;
             //std::cout << "\n gone below zero\n";
           }
-
 
           w_lst[counter] = 1.0 / predicted_i;
           counter++;

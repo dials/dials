@@ -361,10 +361,12 @@ def fit_profile_2d(reflection_pointers, ref_table
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
 
           col_variance[t_row] = var
-          print_and_compare = '''
+          #print_and_compare = '''
           from dials.scratch.luiso_s import  write_2d, write_2d_mask
-          if ( bnd_box == (1908, 1921, 586, 599, 2, 3) and
-               cntr_pos == (1914.095458984375, 592.4046020507812, 2.5) ):
+          #if ( bnd_box == (1908, 1921, 586, 599, 2, 3) and
+          #     cntr_pos == (1914.095458984375, 592.4046020507812, 2.5) ):
+          if ( bnd_box == (1247, 1258, 786, 799, 30, 31) and
+               cntr_pos == ( 1252.3179931640625, 792.4122314453125, 30.5 ) ):
             print "_____________________________________________________________"
             print "data2d"
             write_2d(data2d)
@@ -382,7 +384,8 @@ def fit_profile_2d(reflection_pointers, ref_table
             write_2d_mask(mask2d)
             print "interpolation_mask2d"
             write_2d_mask(interpolation_mask2d)
-            print "descr =", descr
+            print "descr[0,0] =", descr[0,0]
+            print "descr[0,1] =", descr[0,1]
             print "pf_I =", col_intensity[t_row]
             print "_____________________________________________________________"
 
