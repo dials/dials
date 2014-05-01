@@ -57,11 +57,14 @@ def run(args):
 
   for t in templates:
     filenames.extend(glob.glob(t))
-  from dxtbx.imageset import ImageSetFactory
+  from dxtbx.imageset import ImageSetFactory, ImageSweep
   imagesets = ImageSetFactory.new(filenames, check_headers=False)
-  for i, imageset in enumerate(imagesets):
-    print imageset.get_template()
-    args.append((imageset.paths(), i+1, params))
+  i = 0
+  for imageset in imagesets:
+    if isinstance(imageset, ImageSweep) and len(imageset) > 3:
+      i += 1
+      print imageset.get_template()
+      args.append((imageset.paths(), i, params))
 
   # sort based on the first filename of each imageset
   args.sort(key=lambda x: x[0][0])
@@ -93,9 +96,10 @@ def run_once(args):
   log = open('%s/sweep_%03i.log' %(sweep_dir, sweep_id), 'wb')
   print >> log, filenames
 
-  cmd = " ".join(["dials.import"] + sorted(filenames))
+  cmd = "dials.import -i"
   print >> log, cmd
-  result = easy_run.fully_buffered(command=cmd)
+  result = easy_run.fully_buffered(
+    command=cmd, stdin_lines=sorted(filenames))
   result.show_stdout(out=log)
   result.show_stderr(out=log)
   args = ["dials.find_spots",
