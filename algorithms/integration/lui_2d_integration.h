@@ -425,6 +425,9 @@ namespace dials { namespace algorithms {
               prf_total(row, col) > 0
               and
               data2d(row, col) > 0 ){
+            std::cout << "\n" <<
+            "prf_total(row, col) = " << prf_total(row, col) << "\n" <<
+            "data2d(row, col) = " << data2d(row, col) << "\n";
 
             std::cout << "\n" << "NOT Passed" << "\n";
           }

@@ -36,7 +36,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     #if ref.is_valid():
       if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.95:
         max_i = col_intensity[t_row]
-  thold = 0.5 * max_i
+  thold = 0.05 * max_i
 
   select_pointers = []
   for t_row in reflection_pointers:
@@ -151,11 +151,12 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
     #####################################################################
 
-
     from matplotlib import pyplot as plt
     data2d_np = sumation.as_numpy_array()
-    plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
+    #plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
+    plt.imshow(data2d_np, interpolation = "nearest")
     plt.show()
+
   #'''
 
 
