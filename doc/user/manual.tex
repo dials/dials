@@ -23,7 +23,7 @@ In the simplest case, \verb|dials.process /here/are/all/images*.cbf| will do  se
 \item{\verb|scan_varying=true| - allow the crystal orientation and unit cell constants to vary during the scan}
 \item{\verb|--nproc=1| - only use one processor (necessary currently for data in NeXus files}
 \item{\verb|intensity.algorithm=sum2d| - use 2D summation integtration rather than the default 3D summation, other algorithms are being added}
-\item{\verb|shoebox.n_blocks=N| - for some N, split the data set into N blocks for integration, so as not to overload the computer}
+\item{\verb|shoebox.n_blocks=N| - for some N, split the data set into N blocks for integration, so as not to overload the computer} [NKS FIXME:  what is a block?]
 \item{\verb|-i| - pass the images to process through the standard input e.g. from \verb|find . -name '*.cbf'| to avoid issues with limited command-line lengths}
 \end{itemize}
 
@@ -169,7 +169,7 @@ Crystal:
 
 \noindent
 After all of the refinement is complete the integration is performed -
-curretly the output of integration is rather terse and includes little
+currently the output of integration is rather terse and includes little
 in the way of diagnostics or information. In the future this will be improved:
 
 {\small
