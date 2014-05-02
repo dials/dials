@@ -110,7 +110,7 @@ class Script(ScriptRunner):
 
     # Do the processing
     observed = self.find_spots(datablock)
-    experiments, indexed = self.index(datablock, observed)
+    experiments, indexed = self.index(datablock, observed,importer.unhandled_arguments)
     experiments = self.refine(experiments, indexed)
     integrated = self.integrate(experiments, indexed)
     mtz = self.mtz(integrated, experiments)
@@ -148,7 +148,7 @@ class Script(ScriptRunner):
     print 'Time Taken = %f seconds' % (time() - st)
     return observed
 
-  def index(self, datablock, reflections):
+  def index(self, datablock, reflections, unhandled):
     from dials.algorithms.indexing.indexer2 import master_phil_scope
     from libtbx.phil import command_line, parse
     from time import time
@@ -168,7 +168,7 @@ class Script(ScriptRunner):
     # requested) for the refinement step
     extra_src = parse(
       "refinement.parameterisation.crystal.scan_varying=False")
-    working_phil = cmd_line.process_and_fetch(args=[],extra_sources=[extra_src])
+    working_phil = cmd_line.process_and_fetch(args=unhandled,extra_sources=[extra_src])
     working_phil.show()
 
     gonio = imageset.get_goniometer()
