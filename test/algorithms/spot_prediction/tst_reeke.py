@@ -201,6 +201,7 @@ if __name__ == '__main__':
 
   else:
 
+    # take an xparm.xds, phi_beg, phi_end and margin from the command arguments.
     from rstbx.cftbx.coordinate_frame_converter import \
         coordinate_frame_converter
     cfc = coordinate_frame_converter(sys.argv[1])
@@ -211,12 +212,14 @@ if __name__ == '__main__':
     u, b = cfc.get_u_b()
     ub = matrix.sqr(u * b)
     axis = matrix.col(cfc.get('rotation_axis'))
+    rub_beg = axis.axis_and_angle_as_r3_rotation_matrix(phi_beg) * ub
+    rub_end = axis.axis_and_angle_as_r3_rotation_matrix(phi_end) * ub
     wavelength = cfc.get('wavelength')
     sample_to_source_vec = matrix.col(cfc.get_c('sample_to_source').normalize())
     s0 = (- 1.0 / wavelength) * sample_to_source_vec
     dmin = 1.20117776325
 
-    r = reeke_model(ub, axis, s0, dmin, phi_beg, phi_end, margin)
+    r = reeke_model(rub_beg, rub_end, axis, s0, dmin, margin)
 
     indices = r.generate_indices()
 
