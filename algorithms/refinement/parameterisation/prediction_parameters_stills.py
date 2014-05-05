@@ -14,6 +14,7 @@ from scitbx import matrix
 
 #### DIALS imports
 
+from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.prediction_parameters \
   import PredictionParameterisation
 
@@ -78,7 +79,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # parameterisation that is present.
       if self._beam_parameterisations:
         self._beam_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                               r, D, beam_param_id)
+                               q, D, beam_param_id)
 
       # Calc derivatives of pv and phi wrt each parameter of each crystal
       # orientation parameterisation that is present.
@@ -149,7 +150,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     return
 
   def _beam_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                        r, D, beam_param_id):
+                        q, D, beam_param_id):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
@@ -165,7 +166,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         ds0_dbeam_p = bp.get_ds_dp()
 
         # select indices for the experiment of interest
-        sub_r = r.select(isel) #FIXME not yet used. Need for dDelPsi?
+        sub_q = q.select(isel) #FIXME not yet used. Need for dDelPsi?
         sub_D = D.select(isel)
 
         # loop through the parameters
@@ -219,14 +220,14 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
           der_mat = flex.mat3_double(len(sub_B), der.elems)
           # calculate the derivative of r for this parameter
-          dr = der_mat * sub_B * sub_h
+          dq = der_mat * sub_B * sub_h
 
           # calculate the derivative of DeltaPsi for this parameter
           # FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
           dDelPsi = 0.0
 
           # calculate the derivative of pv for this parameter
-          dpv = sub_D * dr
+          dpv = sub_D * dq
 
           # set values in the correct gradient arrays
           dDeltaPsi_dp[self._iparam].set_selected(isel, dDelPsi)
@@ -267,14 +268,14 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
           der_mat = flex.mat3_double(len(sub_U), der.elems)
           # calculate the derivative of r for this parameter
-          dr = sub_U * der_mat * sub_h
+          dq = sub_U * der_mat * sub_h
 
           # calculate the derivative of DeltaPsi for this parameter
           # FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
           dDelPsi = 0.0
 
           # calculate the derivative of pv for this parameter
-          dpv = sub_D * dr
+          dpv = sub_D * dq
 
           # set values in the correct gradient arrays
           dDeltaPsi_dp[self._iparam].set_selected(isel, dDelPsi)
