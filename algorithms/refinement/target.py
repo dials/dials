@@ -18,9 +18,6 @@ from cctbx.array_family import flex
 import random
 import abc
 
-# dials imports
-from dials.algorithms.spot_prediction import ray_intersection
-
 # constants
 TWO_PI = 2.0 * pi
 RAD_TO_DEG = 180. / pi
