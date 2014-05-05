@@ -197,8 +197,8 @@ class ReflectionManager(object):
     weights = (self._reflections['xyzobs.mm.variance']).deep_copy()
     parts = weights.parts()
     for w in parts:
-      sel = w >= 0.
-      w.set_selected(sel, 1./w)
+      sel = w > 0.
+      w.set_selected(sel, 1./w.select(sel))
     self._reflections['xyzobs.mm.weights'] = flex.vec3_double(*parts)
 
     return
