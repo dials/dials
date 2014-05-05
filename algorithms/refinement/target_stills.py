@@ -175,127 +175,127 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
       return True
     return False
 
-class ReflectionManagerXY(ReflectionManager):
-  """Overloads for a Reflection Manager that does not exclude
-  reflections too close to the spindle, and reports only information
-  about X, Y residuals"""
-
-  def _spindle_beam_plane_normal(self):
-    """There is no goniometer, so overload to return None"""
-
-    return None
-
-  def _id_refs_to_keep(self, obs_data):
-    """For this version of the class, only reject the (0,0,0) reflections.
-    We don't want to exclude reflections close to the spindle, as the spindle
-    may not exist"""
-
-    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0)]
-
-    return inc
-
-  def _create_working_set(self, indices, nref_per_degree,
-                                         min_sample_size,
-                                         max_sample_size):
-    """Make a subset of the indices of reflections to use in refinement.
-
-    This version ignores nref_per_degree"""
-
-    working_indices = indices
-    sample_size = len(working_indices)
-
-    # set maximum sample size
-    if max_sample_size:
-      if sample_size > max_sample_size:
-        sample_size = max_sample_size
-
-    # sample the data and record the sample size
-    if sample_size < len(working_indices):
-      self._sample_size = sample_size
-      working_indices = random.sample(working_indices,
-                                      self._sample_size)
-    return(working_indices)
-
-  def print_stats_on_matches(self):
-    """Print some basic statistics on the matches"""
-
-    l = self.get_matches()
-
-    if self._verbosity > 1:
-
-      from scitbx.math import five_number_summary
-      x_resid = [e.x_resid for e in l]
-      y_resid = [e.y_resid for e in l]
-      w_x = [e.weight_x_obs for e in l]
-      w_y = [e.weight_y_obs for e in l]
-
-      print "\nSummary statistics for observations matched to predictions:"
-      print ("                      "
-             "Min         Q1        Med         Q3        Max")
-      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(x_resid))
-      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(y_resid))
-      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_x))
-      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
-        format(*five_number_summary(w_y))
-      print
-
-      if len(l) >= 20 and self._verbosity > 2:
-
-        sl = self._sort_obs_by_residual(l)
-        print "Reflections with the worst 20 positional residuals:"
-        print "H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs"
-        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
-        for i in xrange(20):
-          e = sl[i]
-          msg = fmt % tuple(e.miller_index + (e.x_resid,
-                           e.y_resid,
-                           e.weight_x_obs,
-                           e.weight_y_obs))
-          print msg
-        print
-
-    return
-
-  def reject_outliers(self):
-    """Unset the use flag on matches with extreme (outlying) residuals.
-
-    Outlier detection finds values more than _iqr_multiplier times the
-    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
-
-    Return boolean whether rejection was performed or not"""
-
-    # return early if outlier rejection is disabled
-    if self._iqr_multiplier is None: return False
-
-    from scitbx.math import five_number_summary
-    matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
-
-    x_resid = [e.x_resid for e in matches]
-    y_resid = [e.y_resid for e in matches]
-
-    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
-    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
-
-    iqr_x = q3_x - q1_x
-    iqr_y = q3_y - q1_y
-
-    cut_x = self._iqr_multiplier * iqr_x
-    cut_y = self._iqr_multiplier * iqr_y
-
-    for m in matches:
-      if m.x_resid > q3_x + cut_x: m.is_matched = False
-      if m.x_resid < q1_x - cut_x: m.is_matched = False
-      if m.y_resid > q3_y + cut_y: m.is_matched = False
-      if m.y_resid < q1_y - cut_y: m.is_matched = False
-
-    nreject = [m.is_matched for m in matches].count(False)
-
-    if nreject == 0: return False
-
-    if self._verbosity > 1:
-      print "%d reflections have been rejected as outliers" % nreject
-
-    return True
+#class ReflectionManagerXY(ReflectionManager):
+#  """Overloads for a Reflection Manager that does not exclude
+#  reflections too close to the spindle, and reports only information
+#  about X, Y residuals"""
+#
+#  def _spindle_beam_plane_normal(self):
+#    """There is no goniometer, so overload to return None"""
+#
+#    return None
+#
+#  def _id_refs_to_keep(self, obs_data):
+#    """For this version of the class, only reject the (0,0,0) reflections.
+#    We don't want to exclude reflections close to the spindle, as the spindle
+#    may not exist"""
+#
+#    inc = [i for i, ref in enumerate(obs_data) if ref['miller_index'] != (0,0,0)]
+#
+#    return inc
+#
+#  def _create_working_set(self, indices, nref_per_degree,
+#                                         min_sample_size,
+#                                         max_sample_size):
+#    """Make a subset of the indices of reflections to use in refinement.
+#
+#    This version ignores nref_per_degree"""
+#
+#    working_indices = indices
+#    sample_size = len(working_indices)
+#
+#    # set maximum sample size
+#    if max_sample_size:
+#      if sample_size > max_sample_size:
+#        sample_size = max_sample_size
+#
+#    # sample the data and record the sample size
+#    if sample_size < len(working_indices):
+#      self._sample_size = sample_size
+#      working_indices = random.sample(working_indices,
+#                                      self._sample_size)
+#    return(working_indices)
+#
+#  def print_stats_on_matches(self):
+#    """Print some basic statistics on the matches"""
+#
+#    l = self.get_matches()
+#
+#    if self._verbosity > 1:
+#
+#      from scitbx.math import five_number_summary
+#      x_resid = [e.x_resid for e in l]
+#      y_resid = [e.y_resid for e in l]
+#      w_x = [e.weight_x_obs for e in l]
+#      w_y = [e.weight_y_obs for e in l]
+#
+#      print "\nSummary statistics for observations matched to predictions:"
+#      print ("                      "
+#             "Min         Q1        Med         Q3        Max")
+#      print "(Xc-Xo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+#        format(*five_number_summary(x_resid))
+#      print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+#        format(*five_number_summary(y_resid))
+#      print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+#        format(*five_number_summary(w_x))
+#      print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+#        format(*five_number_summary(w_y))
+#      print
+#
+#      if len(l) >= 20 and self._verbosity > 2:
+#
+#        sl = self._sort_obs_by_residual(l)
+#        print "Reflections with the worst 20 positional residuals:"
+#        print "H, K, L, x_resid, y_resid, weight_x_obs, weight_y_obs"
+#        fmt = "(%3d, %3d, %3d) %5.3f %5.3f %5.3f %5.3f"
+#        for i in xrange(20):
+#          e = sl[i]
+#          msg = fmt % tuple(e.miller_index + (e.x_resid,
+#                           e.y_resid,
+#                           e.weight_x_obs,
+#                           e.weight_y_obs))
+#          print msg
+#        print
+#
+#    return
+#
+#  def reject_outliers(self):
+#    """Unset the use flag on matches with extreme (outlying) residuals.
+#
+#    Outlier detection finds values more than _iqr_multiplier times the
+#    interquartile range from the quartiles. When x=1.5, this is Tukey's rule.
+#
+#    Return boolean whether rejection was performed or not"""
+#
+#    # return early if outlier rejection is disabled
+#    if self._iqr_multiplier is None: return False
+#
+#    from scitbx.math import five_number_summary
+#    matches = [obs for obs in self._obs_pred_pairs if obs.is_matched]
+#
+#    x_resid = [e.x_resid for e in matches]
+#    y_resid = [e.y_resid for e in matches]
+#
+#    min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
+#    min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
+#
+#    iqr_x = q3_x - q1_x
+#    iqr_y = q3_y - q1_y
+#
+#    cut_x = self._iqr_multiplier * iqr_x
+#    cut_y = self._iqr_multiplier * iqr_y
+#
+#    for m in matches:
+#      if m.x_resid > q3_x + cut_x: m.is_matched = False
+#      if m.x_resid < q1_x - cut_x: m.is_matched = False
+#      if m.y_resid > q3_y + cut_y: m.is_matched = False
+#      if m.y_resid < q1_y - cut_y: m.is_matched = False
+#
+#    nreject = [m.is_matched for m in matches].count(False)
+#
+#    if nreject == 0: return False
+#
+#    if self._verbosity > 1:
+#      print "%d reflections have been rejected as outliers" % nreject
+#
+#    return True
