@@ -471,7 +471,7 @@ class StillsReflectionManager(ReflectionManager):
     super(StillsReflectionManager, self)._calculate_weights()
 
     self._reflections['delpsical.weights'] = flex.double(
-        len(self._reflections['delpsical.rad']), 1.0)
+        len(self._reflections), 1.0)
 
     return
 
