@@ -464,10 +464,16 @@ class StillsReflectionManager(ReflectionManager):
   reflections too close to the spindle, and reports only information
   about X, Y, DelPsi residuals"""
 
-  # No need to overload the following. The nref_per_degree sampling won't be
-  # done anyway if there is no scan
+  def _calculate_weights(self):
+    """Include weights for DeltaPsi, which we currently force to unit weights"""
 
-  # def _create_working_set(self):
+    # call parent class method to set X and Y weights
+    super(StillsReflectionManager, self)._calculate_weights()
+
+    self._reflections['delpsical.weights'] = flex.double(
+        len(self._reflections['delpsical.rad']), 1.0)
+
+    return
 
   def print_stats_on_matches(self):
     """Print some basic statistics on the matches"""
