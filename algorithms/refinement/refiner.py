@@ -309,7 +309,7 @@ class RefinerFactory(object):
     import dials.algorithms.refinement.parameterisation as par
 
     # Currently a refinement job can only have one parameterisation of the
-    # prediction equation. This can either be of the XY (stills) type, the
+    # prediction equation. This can either be of the XYDelPsi (stills) type, the
     # XYPhi (scans) type or the scan-varying XYPhi type with a varying crystal
     # model
 
@@ -520,7 +520,9 @@ class RefinerFactory(object):
             det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
     else:
       assert param_type is "stills"
-      pred_param = par.XYPredictionParameterisation(
+      from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+          import StillsPredictionParameterisation
+      pred_param = StillsPredictionParameterisation(
           experiments,
           det_params, beam_params, xl_ori_params, xl_uc_params)
 
@@ -601,8 +603,8 @@ class RefinerFactory(object):
     if all(e.goniometer is not None for e in experiments):
       from dials.algorithms.refinement.reflection_manager import ReflectionManager as refman
     elif all(e.goniometer is None for e in experiments):
-      from dials.algorithms.refinement.target_stills import \
-          ReflectionManagerXY as refman
+      from dials.algorithms.refinement.reflection_manager import \
+          StillsReflectionManager as refman
 
     else:
       raise NotImplementedError("ExperimentList contains a mixture of "
@@ -648,26 +650,21 @@ class RefinerFactory(object):
       raise RuntimeError("Target function rmsd_cutoff option" +
           options.rmsd_cutoff + " not recognised")
 
-    # all goniometers
+    # all experiments have the same (or no) goniometer
     goniometer = experiments[0].goniometer
     for e in experiments: assert e.goniometer is goniometer
 
+    # build managed reflection predictors
+    from dials.algorithms.refinement.prediction import ExperimentsPredictor
+    ref_predictor = ExperimentsPredictor(experiments)
+
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if all(e.goniometer is not None for e in experiments):
-      from dials.algorithms.refinement.prediction import ExperimentsPredictor
-      ref_predictor = ExperimentsPredictor(experiments)
-
       from dials.algorithms.refinement.target \
         import LeastSquaresPositionalResidualWithRmsdCutoff as targ
-
     elif all(e.goniometer is None for e in experiments):
-      from dials.algorithms.refinement.prediction import \
-          StillsRayPredictor
-      ref_predictor = StillsRayPredictor(experiments)
-
       from dials.algorithms.refinement.target_stills \
-        import LeastSquaresXYResidualWithRmsdCutoff as targ
-
+        import LeastSquaresStillsResidualWithRmsdCutoff as targ
     else:
       raise NotImplementedError("ExperimentList contains a mixture of "
         "experiments with goniometers and those without. This is not currently "
