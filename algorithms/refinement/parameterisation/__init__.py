@@ -7,7 +7,6 @@ from detector_parameters import DetectorParameterisationMultiPanel # import depe
 from detector_parameters import DetectorParameterisationHierarchical # import dependency
 from prediction_parameters import PredictionParameterisation # import dependency
 from prediction_parameters import XYPhiPredictionParameterisation # import dependency
-from prediction_parameters_stills import XYPredictionParameterisation # import dependency
 from scan_varying_crystal_parameters import ScanVaryingCrystalOrientationParameterisation # import dependency
 from scan_varying_crystal_parameters import ScanVaryingCrystalUnitCellParameterisation # import dependency
 from scan_varying_prediction_parameters import VaryingCrystalPredictionParameterisation  # import dependency
