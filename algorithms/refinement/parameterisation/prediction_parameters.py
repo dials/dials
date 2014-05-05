@@ -15,7 +15,7 @@ from scitbx import matrix
 #### DIALS imports
 
 from dials.array_family import flex
-from dials_refinement_helpers_ext import *
+#from dials_refinement_helpers_ext import *
 
 """This version of PredictionParameterisation vectorises calculations over
 reflections, using flex arrays"""
