@@ -95,15 +95,15 @@ class Test(object):
 
   def run(self):
 
-    # create the predictor and predict for reflection table
-    from dials.algorithms.spot_prediction import StillsReflectionPredictor
-    predictor = StillsReflectionPredictor(self.experiment)
-    predictor.for_reflection_table(self.reflections)
-
     # cache objects from the model
     UB = self.crystal.get_U() * self.crystal.get_B()
     s0 = matrix.col(self.beam.get_s0())
     es_radius = s0.length()
+
+    # create the predictor and predict for reflection table
+    from dials.algorithms.spot_prediction import StillsReflectionPredictor
+    predictor = StillsReflectionPredictor(self.experiment)
+    predictor.for_reflection_table(self.reflections, UB)
 
     # for every reflection, reconstruct relp rotated to the Ewald sphere (vector
     # r) and unrotated relp (vector q), calculate the angle between them and
