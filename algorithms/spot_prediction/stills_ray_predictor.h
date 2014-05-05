@@ -73,9 +73,9 @@ namespace dials { namespace algorithms {
       vec3<double> q1 = q0.cross(e1).normalize();
       delpsi_ = -1.0 * atan2(r*q1, r*q0);
 
-      // Calculate the Ray (default zero angle and 'entering' as true)
+      // Calculate the Ray (default zero angle and 'entering' as false)
       vec3<double> s1 = (s0_ + r).normalize() * s0_.length();
-      return Ray(s1, 0.0, true);
+      return Ray(s1, 0.0, false);
     }
 
     double get_delpsi() const {
