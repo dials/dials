@@ -459,10 +459,10 @@ class ReflectionManager(object):
     return self._reflections
 
 
-class ReflectionManagerXY(ReflectionManager):
+class StillsReflectionManager(ReflectionManager):
   """Overloads for a Reflection Manager that does not exclude
   reflections too close to the spindle, and reports only information
-  about X, Y residuals"""
+  about X, Y, DelPsi residuals"""
 
   # No need to overload the following. The nref_per_degree sampling won't be
   # done anyway if there is no scan
@@ -479,7 +479,9 @@ class ReflectionManagerXY(ReflectionManager):
       from scitbx.math import five_number_summary
       x_resid = l['x_resid']
       y_resid = l['y_resid']
+      delpsi = l['delpsical.rad']
       w_x, w_y, _ = l['xyzobs.mm.weights'].parts()
+      w_delpsi = l['delpsical.weights']
 
       print "\nSummary statistics for observations matched to predictions:"
       print ("                      "
@@ -488,10 +490,14 @@ class ReflectionManagerXY(ReflectionManager):
         format(*five_number_summary(x_resid))
       print "(Yc-Yo)        {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
         format(*five_number_summary(y_resid))
+      print "DeltaPsi       {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(delpsi))
       print "X weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
         format(*five_number_summary(w_x))
       print "Y weights      {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
         format(*five_number_summary(w_y))
+      print "DeltaPsi wts   {0:10.5g} {1:10.5g} {2:10.5g} {3:10.5g} {4:10.5g}".\
+        format(*five_number_summary(w_delpsi))
       print
 
       if len(l) >= 20 and self._verbosity > 2:
@@ -529,27 +535,30 @@ class ReflectionManagerXY(ReflectionManager):
 
     x_resid = matches['x_resid']
     y_resid = matches['y_resid']
+    delpsi = matches['delpsical.rad']
 
     min_x, q1_x, med_x, q3_x, max_x = five_number_summary(x_resid)
     min_y, q1_y, med_y, q3_y, max_y = five_number_summary(y_resid)
+    min_p, q1_p, med_p, q3_p, max_p = five_number_summary(delpsi)
 
     iqr_x = q3_x - q1_x
     iqr_y = q3_y - q1_y
+    iqr_p = q3_p - q1_p
 
     cut_x = self._iqr_multiplier * iqr_x
     cut_y = self._iqr_multiplier * iqr_y
+    cut_p = self._iqr_multiplier * iqr_p
 
     # accumulate a selection of outliers
-    sel = matches.select(matches['x_resid'] > q3_x + cut_x)
-    sel.set_selected(matches.select(matches['x_resid'] < q1_x - cut_x))
-    sel.set_selected(matches.select(matches['y_resid'] > q3_y + cut_y))
-    sel.set_selected(matches.select(matches['y_resid'] < q1_y - cut_y))
+    sel = matches['x_resid'] > q3_x + cut_x
+    sel.set_selected((matches['x_resid'] < q1_x - cut_x), True)
+    sel.set_selected((matches['y_resid'] > q3_y + cut_y), True)
+    sel.set_selected((matches['y_resid'] < q1_y - cut_y), True)
+    sel.set_selected((matches['delpsical.rad'] > q3_p + cut_p), True)
+    sel.set_selected((matches['delpsical.rad'] < q1_p - cut_p), True)
 
     # get positions of outliers from the original matches
     ioutliers = imatches.select(sel)
-    #mask = flex.bool(len(self._reflections))
-    #mask.fill(False) # probably don't need this
-    #mask.set_selected(ioutliers, True)
 
     # set those reflections to not be used
     self._reflections.unset_flags(ioutliers,
@@ -562,3 +571,4 @@ class ReflectionManagerXY(ReflectionManager):
       print "%d reflections have been rejected as outliers" % nreject
 
     return True
+
