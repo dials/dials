@@ -1,5 +1,5 @@
 #
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
+#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
 #
 #  Author: David Waterman.
 #
@@ -14,17 +14,18 @@ from cctbx.array_family import flex
 import random
 
 # dials imports
-from dials.algorithms.refinement.target_old import Target
-from dials.algorithms.refinement.target_old import ReflectionManager
-from dials.algorithms.refinement.target_old import ObsPredMatch # implicit import
+from dials.algorithms.refinement.target import Target
+#from dials.algorithms.refinement.target_old import ReflectionManager
+#from dials.algorithms.refinement.target_old import ObsPredMatch # implicit import
 
 # constants
 TWO_PI = 2.0 * pi
 
-class LeastSquaresXYResidualWithRmsdCutoff(Target):
+class LeastSquaresStillsResidualWithRmsdCutoff(Target):
   """An implementation of the target class providing a least squares residual
-  in terms of detector impact position X, Y only, terminating on achieved
-  rmsd (or on intrisic convergence of the chosen minimiser)"""
+  in terms of detector impact position X, Y and minimum rotation to the Ewald
+  sphere, DeltaPsi. Terminates refinement on achieved rmsd (or on intrisic
+  convergence of the chosen minimiser)"""
 
   rmsd_names = ["RMSD_X", "RMSD_Y"]
 
@@ -36,8 +37,9 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     Target.__init__(self, experiments, reflection_predictor, ref_man,
                     prediction_parameterisation)
 
-    # Set up the RMSD achieved criterion. For simplicity, we take detector from
-    # the first Experiment only.
+    # Set up the RMSD achieved criterion. For simplicity, we take models from
+    # the first Experiment only. If this is not appropriate for refinement over
+    # all experiments then absolute cutoffs should be used instead.
     detector = experiments[0].detector
     if not absolute_cutoffs:
       pixel_sizes = [p.get_pixel_size() for p in detector]
@@ -48,54 +50,86 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     else:
       self._binsize_cutoffs = absolute_cutoffs[:2]
 
+    # predict reflections and finalise reflection manager
+    self.predict()
+    self._reflection_manager.finalise()
+
     return
 
-  def compute_residuals_and_gradients(self):
-    """return the vector of residuals plus their gradients
-    and weights for non-linear least squares methods"""
 
+  def predict(self):
+    """perform reflection prediction and update the reflection manager"""
+
+    # update the reflection_predictor with the scan-independent part of the
+    # current geometry
+    self._reflection_predictor.update()
+
+    # reset the 'use' flag for all observations
+    self._reflection_manager.reset_accepted_reflections()
+
+    # do prediction (updates reflection table in situ).
+    reflections = self._reflection_manager.get_obs()
+    self._reflection_predictor.predict(reflections)
+
+    x_obs, y_obs, _ = reflections['xyzobs.mm.value'].parts()
+    delpsi = reflections['delpsical.rad']
+    x_calc, y_calc, _ = reflections['xyzcal.mm'].parts()
+
+    # calculate residuals and assign columns
+    reflections['x_resid'] = x_calc - x_obs
+    reflections['x_resid2'] = reflections['x_resid']**2
+    reflections['y_resid'] = y_calc - y_obs
+    reflections['y_resid2'] = reflections['y_resid']**2
+    reflections['delpsical2'] = reflections['delpsical.rad']**2
+
+    # set used_in_refinement flag to all those that had predictions
+    mask = reflections.get_flags(reflections.flags.predicted)
+    reflections.set_flags(mask, reflections.flags.used_in_refinement)
+
+    # collect the matches
     self._matches = self._reflection_manager.get_matches()
 
+    return
+
+  def predict_for_reflection_table(self, reflections):
+    """perform prediction for all reflections in the supplied table"""
+
+    self._reflection_predictor.update()
+    self._reflection_predictor.predict(reflections)
+    return reflections
+
+  def compute_residuals_and_gradients(self):
+    """return the vector of residuals plus their gradients and weights for
+    non-linear least squares methods"""
+
+    dX_dp, dY_dp, dDPsi_dp = self.calculate_gradients()
+
     # return residuals and weights as 1d flex.double vectors
-    nelem = len(self._matches) * 2
-    residuals = flex.double(nelem)
-    jacobian_t = flex.double(flex.grid(
-        len(self._prediction_parameterisation), nelem))
-    weights = flex.double(nelem)
+    nelem = len(self._matches) * 3
+    nparam = len(self._prediction_parameterisation)
+    residuals = flex.double.concatenate(self._matches['x_resid'],
+                                        self._matches['y_resid'])
+    residuals.extend(self._matches['delpsical.rad'])
+    #jacobian_t = flex.double(flex.grid(
+    #    len(self._prediction_parameterisation), nelem))
+    weights, w_y, _ = self._matches['xyzobs.mm.weights'].parts()
+    w_delpsi = self._matches['delpsical.weights']
+    weights.extend(w_y)
+    weights.extend(w_delpsi)
 
-    for i, m in enumerate(self._matches):
-      residuals[2*i] = m.x_resid
-      residuals[2*i + 1] = m.y_resid
-      #residuals[3*i + 2] = m.Phiresid
+    jacobian = flex.double(flex.grid(nelem, nparam))
+    # loop over parameters
+    for i in range(nparam):
+      dX, dY, dDPsi = dX_dp[i], dY_dp[i], dDPsi_dp[i]
+      col = flex.double.concatenate(dX, dY)
+      col.extend(dDPsi)
+      jacobian.matrix_paste_column_in_place(col, i)
 
-      # are these the right weights? Or inverse, or sqrt?
-      weights[2*i] = m.weight_x_obs
-      weights[2*i + 1] = m.weight_y_obs
-      #weights[3*i + 2] = m.weightPhio
-
-      # m.gradients is a nparam length list, each element of which is a
-      # doublet of values, (dX/dp_n, dY/dp_n)
-      dX_dp, dY_dp = zip(*m.gradients)
-
-      # FIXME Here we paste columns into the Jacobian transpose then take
-      # its transpose when done. This seems inefficient: can we just start
-      # with the Jacobian and fill elements sequentially, using row-major
-      # order to ensure the values are filled in the right order?
-
-      # fill jacobian elements here.
-      jacobian_t.matrix_paste_column_in_place(flex.double(dX_dp), 2*i)
-      jacobian_t.matrix_paste_column_in_place(flex.double(dY_dp), 2*i+1)
-      #jacobian_t.matrix_paste_column_in_place(flex.double(dPhi_dp), 3*i+2)
-
-    # We return the Jacobian, not its transpose.
-    jacobian_t.matrix_transpose_in_place()
-
-    return(residuals, jacobian_t, weights)
+    return(residuals, jacobian, weights)
 
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""
 
-    self._matches = self._reflection_manager.get_matches()
     self._nref = len(self._matches)
 
     # This is a hack for the case where nref=0. This should not be necessary
@@ -105,26 +139,44 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     if self._nref == 0:
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
-    # compute target function
-    L = 0.5 * sum([m.weight_x_obs * m.x_resid2 +
-                   m.weight_y_obs * m.y_resid2
-                   for m in self._matches])
+    # extract columns from the table
+    x_resid = self._matches['x_resid']
+    y_resid = self._matches['y_resid']
+    delpsi = self._matches['delpsical.rad']
+    x_resid2 = self._matches['x_resid2']
+    y_resid2 = self._matches['y_resid2']
+    delpsical2 = self._matches['delpsical2']
+    w_x, w_y, _ = self._matches['xyzobs.mm.weights'].parts()
+    w_delpsi = self._matches['delpsical.weights']
+
+    # calculate target function
+    temp = w_x * x_resid2 + w_y * y_resid2 + w_delpsi * delpsical2
+    L = 0.5 * flex.sum(temp)
 
     # prepare list of gradients
     dL_dp = [0.] * len(self._prediction_parameterisation)
 
-    # the gradients wrt each parameter are stored with the matches
-    for m in self._matches:
+    dX_dp, dY_dp, dDPsi_dp = self.calculate_gradients()
 
-      for j, (grad_X, grad_Y) in enumerate(m.gradients):
-        dL_dp[j] += (m.weight_x_obs * m.x_resid * grad_X +
-                     m.weight_y_obs * m.y_resid * grad_Y)
+    w_x_x_resid = w_x * x_resid
+    w_y_y_resid = w_y * y_resid
+    w_delpsi_delpsi = w_delpsi * delpsi
+
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dDPsi = dX_dp[i], dY_dp[i], dDPsi_dp[i]
+      temp = w_x_x_resid * dX + w_y_y_resid * dY + w_delpsi_delpsi * dDPsi
+      dL_dp[i] = flex.sum(temp)
 
     return (L, dL_dp)
 
   def curvatures(self):
     """First order approximation to the diagonal of the Hessian based on the
     least squares form of the target"""
+
+    # relies on compute_functional_and_gradients being called first
+    dX_dp, dY_dp, dDPsi_dp = self._gradients
+    w_x, w_y, _ = self._matches['xyzobs.mm.weights'].parts()
+    w_delpsi = self._matches['delpsical.weights']
 
     # This is a hack for the case where nref=0. This should not be necessary
     # if bounds are provided for parameters to stop the algorithm exploring
@@ -136,11 +188,10 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     curv = [0.] * len(self._prediction_parameterisation)
 
     # for each reflection, get the approximate curvatures wrt each parameter
-    for m in self._matches:
-
-      for j, (grad_X, grad_Y) in enumerate(m.gradients):
-        curv[j] += (m.weight_x_obs * grad_X**2 +
-                    m.weight_y_obs * grad_Y**2)
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dDPsi = dX_dp[i], dY_dp[i], dDPsi_dp[i]
+      temp = w_x * dX**2 + w_y * dY**2 + w_delpsi * dDPsi**2
+      curv[i] = flex.sum(temp)
 
     # Curvatures of zero will cause a crash, because their inverse is taken.
     assert all([c > 0.0 for c in curv])
@@ -153,8 +204,8 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
     if not self._matches:
       self._matches = self._reflection_manager.get_matches()
 
-    resid_x = sum((m.x_resid2 for m in self._matches))
-    resid_y = sum((m.y_resid2 for m in self._matches))
+    resid_x = flex.sum(self._matches['x_resid2'])
+    resid_y = flex.sum(self._matches['y_resid2'])
 
     # cache rmsd calculation for achieved test
     n = len(self._matches)
@@ -174,6 +225,7 @@ class LeastSquaresXYResidualWithRmsdCutoff(Target):
         r[1] < self._binsize_cutoffs[1]):
       return True
     return False
+
 
 #class ReflectionManagerXY(ReflectionManager):
 #  """Overloads for a Reflection Manager that does not exclude
