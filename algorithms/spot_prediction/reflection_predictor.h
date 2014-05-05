@@ -527,7 +527,7 @@ namespace dials { namespace algorithms {
       af::reflection_table table;
       stills_prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, h[i]);
+        append_for_index(predictions, ub_, h[i]);
       }
       return table;
     }
@@ -558,7 +558,7 @@ namespace dials { namespace algorithms {
       af::reflection_table table;
       stills_prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, h[i], (int)panel[i]);
+        append_for_index(predictions, ub_, h[i], (int)panel[i]);
       }
       return table;
     }
@@ -569,30 +569,47 @@ namespace dials { namespace algorithms {
      * @param panel The array of panels
      * @returns A reflection table.
      */
-    af::reflection_table for_hkl(
+    af::reflection_table for_hkl_with_individual_ub(
         const af::const_ref<miller_index> &h,
-        const af::const_ref<std::size_t> &panel) {
-      DIALS_ASSERT(h.size() == panel.size());
+        const af::const_ref<std::size_t> &panel,
+        const af::const_ref< mat3<double> >&ub) {
+      DIALS_ASSERT(ub.size() == h.size());
+      DIALS_ASSERT(ub.size() == panel.size());
       af::reflection_table table;
       af::shared<double> column;
       table["delpsical.rad"] = column;
       stills_prediction_data predictions(table);
       for (std::size_t i = 0; i < h.size(); ++i) {
-        append_for_index(predictions, h[i], panel[i]);
+        append_for_index(predictions, ub[i], h[i], panel[i]);
       }
       DIALS_ASSERT(table.nrows() == h.size());
       return table;
     }
 
     /**
+     * Predict reflections to the entries in the table.
+     * @param table The reflection table
+     * @param ub The ub matrix
+     */
+    void for_reflection_table(
+        af::reflection_table table,
+        const mat3<double> &ub) {
+      af::shared< mat3<double> > uba(table.nrows(), ub);
+      for_reflection_table_with_individual_ub(table, uba.const_ref());
+    }
+
+    /**
      * Predict reflections and add to the entries in the table.
      * @param table The reflection table
      */
-    void for_reflection_table(
-        af::reflection_table table) {
-      af::reflection_table new_table = for_hkl(
+    void for_reflection_table_with_individual_ub(
+        af::reflection_table table,
+        const af::const_ref< mat3<double> > &ub) {
+      DIALS_ASSERT(ub.size() == table.nrows());
+      af::reflection_table new_table = for_hkl_with_individual_ub(
         table["miller_index"],
-        table["panel"]);
+        table["panel"],
+        ub);
       DIALS_ASSERT(new_table.nrows() == table.nrows());
       table["miller_index"] = new_table["miller_index"];
       table["panel"] = new_table["panel"];
@@ -623,10 +640,11 @@ namespace dials { namespace algorithms {
      * @param h The miller index
      */
     void append_for_index(stills_prediction_data &p,
+        const mat3<double> ub,
         const miller_index &h, int panel=-1) {
       //af::small<Ray, 2> rays = predict_rays_(h, ub_);
       Ray ray;
-      ray = predict_ray_(h, ub_);
+      ray = predict_ray_(h, ub);
       double delpsi = predict_ray_.get_delpsi();
       append_for_ray(p, h, ray, panel, delpsi);
     }
