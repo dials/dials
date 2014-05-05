@@ -296,7 +296,6 @@ class PredictionParameterisation(object):
     ### Calculate various quantities of interest for the reflections
 
     # Set up arrays of values for each reflection
-    # FIXME - completely replaces the prepare method...
     n = len(reflections)
     D = flex.mat3_double(n)
     s0 = flex.vec3_double(n)
@@ -330,40 +329,13 @@ class PredictionParameterisation(object):
 
     return self._get_gradients_core(reflections, D, s0, U, B, axis)
 
-#  def get_gradients(self, h, s, phi, panel_id, obs_image_number=None,
-#                    experiment_id=0):
-#    """
-#    Calculate gradients of the prediction formula with respect to each
-#    of the parameters of the contained models, for the reflection with
-#    scattering vector s that intersects panel with panel_id.
-#
-#    To be implemented by a derived class, which determines the space of the
-#    prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
-#    prediction formula expressed in detector space, but components of
-#    d\vec{r}/dp for the prediction formula in reciprocal space
-#
-#    obs_image_number included to match the interface of a scan-
-#    varying version of the class
-#    """
-#
-#    # extract the right models
-#    self._D = self._cache[experiment_id].D_mats[panel_id]
-#    self._s0 = self._cache[experiment_id].s0
-#    self._U = self._cache[experiment_id].U
-#    self._B = self._cache[experiment_id].B
-#    self._UB = self._cache[experiment_id].UB
-#    self._axis = self._cache[experiment_id].axis
-#
-#    return self._get_gradients_core(h, s, phi, panel_id, experiment_id)
-
 
 class XYPhiPredictionParameterisation(PredictionParameterisation):
   """
-  Concrete class that inherits functionality of the
-  PredictionParameterisation parent class and provides a detector space
-  implementation of the get_gradients function.
+  Concrete class that inherits functionality of the PredictionParameterisation
+  parent class and provides a detector space implementation of the get_gradients
+  function for rotation scans.
 
-  Untested for multiple sensor detectors.
   """
 
   def _get_gradients_core(self, reflections, D, s0, U, B, axis):
@@ -457,10 +429,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
       # reset a pointer to the parameter number
       self._iparam = 0
-      #print "for experiment", iexp, "the reflection indices are"
-      #print list(isel)
-      #print "the detector parameterisation id is", det_param_id
-    #### FIXME from this point on
 
     ### Work through the parameterisations, calculating their contributions
     ### to derivatives d[pv]/dp and d[phi]/dp
@@ -469,36 +437,27 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       # parameterisations. All derivatives of phi are zero for detector
       # parameters
       if self._detector_parameterisations:
-        #self._detector_derivatives(dpv_dp, dphi_dp, pv, panel_id, det_param_id)
         self._detector_derivatives(reflections, isel, dpv_dp, D, pv, det_param_id, exp.detector)
 
       # Calc derivatives of pv and phi wrt each parameter of each beam
       # parameterisation that is present.
       if self._beam_parameterisations:
-        #self._beam_derivatives(dpv_dp, dphi_dp, r, e_X_r, e_r_s0, beam_param_id)
         self._beam_derivatives(reflections, isel, dpv_dp, dphi_dp, r, e_X_r, e_r_s0, D, beam_param_id)
 
       # Calc derivatives of pv and phi wrt each parameter of each crystal
       # orientation parameterisation that is present.
       if self._xl_orientation_parameterisations:
-        #self._xl_orientation_derivatives(dpv_dp, dphi_dp, R, h, s, \
-        #                                   e_X_r, e_r_s0, xl_ori_param_id)
         self._xl_orientation_derivatives(reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
                                          e_X_r, e_r_s0, B, D, xl_ori_param_id)
 
       # Now derivatives of pv and phi wrt each parameter of each crystal unit
       # cell parameterisation that is present.
       if self._xl_unit_cell_parameterisations:
-      #  self._xl_unit_cell_derivatives(dpv_dp, dphi_dp, R, h, s, \
-      #                                   e_X_r, e_r_s0, xl_uc_param_id)
         self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \
                                          e_X_r, e_r_s0, U, D, xl_uc_param_id)
 
       # calculate positional derivatives from d[pv]/dp
       dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, dpv_dp)
-      #pos_grad = [self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, e)
-      #            for e in dpv_dp]
-      #dX_dp, dY_dp = zip(*pos_grad)
 
     return (dX_dp, dY_dp, dphi_dp)
 
