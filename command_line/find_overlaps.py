@@ -279,7 +279,8 @@ class find_overlaps(object):
       ref_table.compute_bbox(
         expt, n_sigma,
         sigma_d=expt.beam.get_sigma_divergence(deg=False),
-        sigma_m=expt.crystal.get_mosaicity(deg=False))
+        sigma_m=expt.crystal.get_mosaicity(deg=False),
+        sigma_d_multiplier=1.0) # don't include background region in bbox
 
       # Allocate the shoeboxes
       from dials.algorithms.shoebox import MaskCode
