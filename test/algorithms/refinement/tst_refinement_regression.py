@@ -49,12 +49,13 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 
 # Parameterisation of the prediction equation
-from dials.algorithms.refinement.parameterisation.prediction_parameters_old import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation
 
 # Imports for the target function
-from dials.algorithms.refinement.target_old import \
-    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+from dials.algorithms.refinement.target import \
+    LeastSquaresPositionalResidualWithRmsdCutoff
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
 #############################
 # Setup experimental models #
@@ -185,7 +186,6 @@ assert approx_equal(im_width, 0.1 * pi / 180.)
 
 # Build a reflection predictor
 ref_predictor = ScansRayPredictor(experiments, sweep_range)
-
 obs_refs = ref_predictor.predict(indices)
 
 # Invent some variances for the centroid positions of the simulated data
@@ -234,6 +234,10 @@ refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True), experiments,
 # Set up the target function #
 ##############################
 
+# redefine the reflection predictor for refinement
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
+ref_predictor = ExperimentsPredictor(experiments)
+
 # The current 'achieved' criterion compares RMSD against 1/3 the pixel size and
 # 1/3 the image width in radians. For the simulated data, these are just made up
 mytarget = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
@@ -255,9 +259,9 @@ refiner.run()
 
 assert mytarget.achieved()
 assert refiner.get_num_steps() == 1
-assert approx_equal(mytarget.rmsds(), (0.005082333635071939,
-                                       0.004212919308923247,
-                                       8.976084121839415e-05))
+assert approx_equal(mytarget.rmsds(), (0.00508252354876,
+                                       0.00420954552156,
+                                       8.97303428289e-05))
 print "OK"
 
 ###############################
@@ -285,7 +289,7 @@ refiner.run()
 
 assert mytarget.achieved()
 assert refiner.get_num_steps() == 9
-assert approx_equal(mytarget.rmsds(), (0.0564093680961448,
-                                       0.03432636086464995,
-                                       0.0003569908632122291))
+assert approx_equal(mytarget.rmsds(), (0.0558857700305,
+                                       0.0333446685335,
+                                       0.000347402754278))
 print "OK"
