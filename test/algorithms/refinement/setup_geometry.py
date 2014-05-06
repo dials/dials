@@ -76,6 +76,9 @@ class Extract(object):
     if not self._params.random_seed:
       self._params.random_seed = random.randint(0, sys.maxint)
     random.seed(self._params.random_seed)
+    # set the flex random seed too
+    from dials.array_family import flex
+    flex.set_random_seed(self._params.random_seed)
     if self._verbose:
       msg = "Random seed set to %d while building models"
       print msg % self._params.random_seed
