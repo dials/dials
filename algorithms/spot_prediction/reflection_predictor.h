@@ -674,6 +674,7 @@ namespace dials { namespace algorithms {
         p.xyz_mm.push_back(vec3<double>(mm[0], mm[1], 0.0));
         p.xyz_px.push_back(vec3<double>(px[0], px[1], 0.0));
         p.panel.push_back(panel);
+        p.flags.push_back(af::Predicted);
         p.delpsi.push_back(delpsi);
 
       } catch(dxtbx::error) {
