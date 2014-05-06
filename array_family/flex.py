@@ -95,7 +95,8 @@ class reflection_table_aux(boost.python.injector, reflection_table):
     self['zeta'] = zeta_factor(m2, s0, self['s1'])
     return self['zeta']
 
-  def compute_bbox(self, experiment, nsigma, sigma_d=None, sigma_m=None):
+  def compute_bbox(self, experiment, nsigma, sigma_d=None, sigma_m=None,
+                   sigma_d_multiplier=2.0):
     ''' Compute the bounding boxes. '''
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.util.command_line import Command
@@ -109,11 +110,13 @@ class reflection_table_aux(boost.python.injector, reflection_table):
       sigma_m = registry.params().integration.shoebox.sigma_m * pi / 180.0
 
     # Create the bbox calculator
+    # sigma_d_multiplier so as to include a region of background pixels
+    # in the shoebox
     Command.start('Calculating bounding boxes')
     calculate = BBoxCalculator(
       experiment.beam, experiment.detector,
       experiment.goniometer, experiment.scan,
-      2.0 * nsigma * sigma_d,
+      sigma_d_multiplier * nsigma * sigma_d,
       nsigma * sigma_m)
 
     # Calculate the bounding boxes of all the reflections
