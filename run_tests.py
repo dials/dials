@@ -102,8 +102,7 @@ tst_list = (
     ["$D/test/algorithms/indexing/tst_index.py", "8"],
     ["$D/test/algorithms/indexing/tst_index.py", "9"],
     ["$D/test/algorithms/indexing/tst_index.py", "10"],
-    # XXX temporarily disable until the stills refinement is fixed
-    #["$D/test/algorithms/indexing/tst_index.py", "11"],
+    ["$D/test/algorithms/indexing/tst_index.py", "11"],
     ["$D/test/algorithms/indexing/tst_index.py", "12"],
     "$D/test/command_line/tst_refine_bravais_settings.py",
     "$D/test/command_line/tst_discover_better_experimental_model.py",

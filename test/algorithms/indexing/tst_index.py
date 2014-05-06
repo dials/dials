@@ -423,7 +423,7 @@ def exercise_11():
                 ]
 
   expected_unit_cell = uctbx.unit_cell((78, 78, 39, 90, 90, 90))
-  expected_rmsds = (0.35, 0.36) # XXX these rmsds really aren't great
+  expected_rmsds = (0.35, 0.41) # XXX these rmsds really aren't great
   expected_hall_symbol = ' P 4nw 2abw'
   n_expected_lattices = 1
 
