@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) (2013) STFC Rutherford Appleton Laboratory, UK.
+#  Copyright (C) (2014) STFC Rutherford Appleton Laboratory, UK.
 #
 #  Author: David Waterman.
 #
@@ -33,7 +33,7 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations
 
-from dials.algorithms.refinement.parameterisation.prediction_parameters_old import \
+from dials.algorithms.refinement.parameterisation.prediction_parameters import \
     XYPhiPredictionParameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
@@ -43,71 +43,7 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
     CrystalOrientationParameterisation, \
     CrystalUnitCellParameterisation
 
-#### Local functions
-
-# Functions required for finite difference calculations
-
-def get_state(det, hkl, angle, reflection_predictor):
-  """reflection prediction for the current state of the models"""
-
-  # update reflection_predictor with latest geometry
-  reflection_predictor.update()
-
-  # predict for this hkl
-  refs = reflection_predictor.predict(hkl)
-
-  # select which is nearest the observed angle
-  deltas = [abs(ref.rotation_angle - angle) for ref in refs]
-  new_ref = refs[deltas.index(min(deltas))]
-
-  # predict impact position
-  impact = det[0].get_ray_intersection(new_ref.beam_vector)
-
-  return matrix.col((impact) + (new_ref.rotation_angle,))
-
-def get_fd_gradients(pred_param, hkl, phi, reflection_predictor,
-                     deltas):
-  """Calculate centered finite difference gradients for each of the
-  parameters of the prediction parameterisation object, for reflection
-  hkl at angle phi.
-
-  "deltas" must be a sequence of the same length as the parameter list,
-  and contains the step size for the difference calculations for each
-  parameter."""
-
-  # This is a bit nasty as we access 'private' attributes of pred_param
-  gon = pred_param._experiments[0].goniometer
-  src = pred_param._experiments[0].beam
-  det = pred_param._experiments[0].detector
-  xl = pred_param._experiments[0].crystal
-  rp = reflection_predictor
-
-  p_vals = pred_param.get_param_vals()
-  assert len(deltas) == len(p_vals)
-  fd_grad = []
-
-  for i in range(len(deltas)):
-
-    val = p_vals[i]
-
-    p_vals[i] -= deltas[i] / 2.
-    pred_param.set_param_vals(p_vals)
-    rev_state = get_state(det, hkl, phi, rp)
-
-    p_vals[i] += deltas[i]
-    pred_param.set_param_vals(p_vals)
-    fwd_state = get_state(det, hkl, phi, rp)
-
-    fd_grad.append((fwd_state - rev_state) / deltas[i])
-    p_vals[i] = val
-
-  # return to the initial state
-  pred_param.set_param_vals(p_vals)
-
-  return fd_grad
-
 from time import time
-
 start_time = time()
 
 #### Create models
@@ -128,6 +64,16 @@ mygonio = models.goniometer
 mycrystal = models.crystal
 mybeam = models.beam
 
+# Build a mock scan for a 72 degree sweep
+sweep_range = (0., pi/5.)
+from dxtbx.model.scan import scan_factory
+sf = scan_factory()
+myscan = sf.make_scan(image_range = (1,720),
+                      exposure_times = 0.1,
+                      oscillation = (0, 0.1),
+                      epochs = range(720),
+                      deg = True)
+
 #### Create parameterisations of these models
 
 det_param = DetectorParameterisationSinglePanel(mydetector)
@@ -138,9 +84,8 @@ xluc_param = CrystalUnitCellParameterisation(mycrystal)
 # Create an ExperimentList
 experiments = ExperimentList()
 experiments.append(Experiment(
-      beam=mybeam, detector=mydetector, goniometer=mygonio,
+      beam=mybeam, detector=mydetector, goniometer=mygonio, scan=myscan,
       crystal=mycrystal, imageset=None))
-sweep_range = (0., pi/5.)
 
 #### Unit tests
 
@@ -166,80 +111,70 @@ index_generator = IndexGenerator(mycrystal.get_unit_cell(),
 indices = index_generator.to_array()
 ref_list = ref_predictor.predict(indices)
 
-# Pull out lists of required reflection data
-temp = [(ref.miller_index, ref.rotation_angle,
-         matrix.col(ref.beam_vector)) for ref in ref_list]
-hkls, angles, s_vecs = zip(*temp)
+# make a reflection_table
+reflections = ref_list.to_table(centroid_is_mm=True)
 
-# Project positions on camera. Currently assuming all reflections
-# intersect panel 0
-panel_id = 0
-impacts = [mydetector[panel_id].get_ray_intersection(
-                        ref.beam_vector) for ref in ref_list]
-d1s, d2s = zip(*impacts)
+# use a ReflectionManager to exclude reflections too close to the spindle
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
+refman = ReflectionManager(reflections, experiments, iqr_multiplier=None)
 
-# Test get_state for the first reflection
-tmp = get_state(mydetector, hkls[0], angles[0], ref_predictor)
-for (a, b) in zip(tmp, (d1s[0], d2s[0], angles[0])):
-  assert a == b
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
+ref_predictor = ExperimentsPredictor(experiments)
 
-# Compare analytical and finite difference gradients for up to 50
-# randomly selected reflections.
-selection = random.sample(xrange(len(hkls)), min(len(hkls), 50))
-uc = mycrystal.get_unit_cell()
-exclusion_limit = max(uc.reciprocal_parameters()[0:3])
+# make a target to ensure reflections are predicted and refman is finalised
+from dials.algorithms.refinement.target import \
+  LeastSquaresPositionalResidualWithRmsdCutoff
+target = LeastSquaresPositionalResidualWithRmsdCutoff(experiments,
+    ref_predictor, refman, pred_param)
 
-# prepare the prediction parameterisation by caching quantities not
-# dependent on hkl
-pred_param.prepare()
+# keep only those reflections that pass inclusion criteria and have predictions
+reflections = refman.get_matches()
 
-verbose = False
-for iref in selection:
-  hkl, s, angle = hkls[iref], s_vecs[iref], angles[iref]
+# get analytical gradients
+an_grads = pred_param.get_gradients(reflections)
 
-  # get analytical gradients
-  an_grads = pred_param.get_gradients(hkl, s, angle, panel_id)
+# get finite difference gradients
+p_vals = pred_param.get_param_vals()
+deltas = [1.e-7] * len(p_vals)
 
-# NB, reflections that just touch the Ewald sphere have large
-# derivatives of phi wrt some parameters (asymptotically approching
-# infinity). Such reflections are likely to fail the comparison against
-# FD gradients. Andrew Leslie points out that these reflections are not
-# even integrated, because of susceptibility to errors in the Lorentz
-# correction. To avoid failures of this test, we exclude reflections
-# that are closer than the largest reciprocal lattice vector length from
-# the plane of the rotation axis and beam direction.
-  s0 = matrix.col(mybeam.get_s0())
-  r = s - s0
-  e_s0_plane_norm = matrix.col(
-                  mygonio.get_rotation_axis()).cross(s0).normalize()
-  r_dist_from_plane = abs(r.dot(e_s0_plane_norm))
-  if r_dist_from_plane <= exclusion_limit:
-    continue
+for i in range(len(deltas)):
 
-  fd_grads = get_fd_gradients(pred_param, hkl, angle, ref_predictor,
-                              [1.e-7] * len(pred_param))
+  val = p_vals[i]
 
-  if verbose:
-    print hkl
-    for g in an_grads: print g
-    for g in fd_grads: print g
-  for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
-    for a, b in zip(an_grad, fd_grad):
-      try:
-        if abs(b) > 10.:
-          assert approx_equal((a - b) / b, 0., eps = 5.e-6)
-        else:
-          assert approx_equal(a - b, 0., eps = 5.e-6)
-      except AssertionError:
-        print "Failure for parameter number %d" %i
-        print "Analytical derivatives: %.6f, %.6f, %.6f" % tuple(an_grad)
-        print "Finite derivatives: %.6f, %.6f, %.6f" % tuple(fd_grad)
-        finish_time = time()
-        print "Time Taken: ",finish_time - start_time
-        raise
+  p_vals[i] -= deltas[i] / 2.
+  pred_param.set_param_vals(p_vals)
+
+  ref_predictor.update()
+  ref_predictor.predict(reflections)
+
+  rev_state = reflections['xyzcal.mm'].deep_copy()
+  #x_calc, y_calc, phi_calc = rev_state.parts()
+
+  p_vals[i] += deltas[i]
+  pred_param.set_param_vals(p_vals)
+
+  ref_predictor.update()
+  ref_predictor.predict(reflections)
+
+  fwd_state = reflections['xyzcal.mm'].deep_copy()
+  p_vals[i] = val
+
+  fd = (fwd_state - rev_state)
+  x_grads, y_grads, phi_grads = fd.parts()
+  x_grads /= deltas[i]
+  y_grads /= deltas[i]
+  phi_grads /= deltas[i]
+
+  # compare with analytical calculation
+  assert approx_equal(x_grads, an_grads[0][i], eps=5.e-6)
+  assert approx_equal(y_grads, an_grads[1][i], eps=5.e-6)
+  assert approx_equal(phi_grads, an_grads[2][i], eps=5.e-6)
+
+# return to the initial state
+pred_param.set_param_vals(p_vals)
 
 finish_time = time()
-#print "Time Taken: ",finish_time - start_time
+print "Time Taken: ",finish_time - start_time
 
 # if we got this far,
 print "OK"
