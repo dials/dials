@@ -16,8 +16,8 @@ import random
 
 # flex is required before the boost python import to avoid an import error.
 # Ignore complaints by libtbx.find_clutter
-from cctbx.array_family import flex
-from dials_refinement_helpers_ext import *
+#from cctbx.array_family import flex
+#from dials_refinement_helpers_ext import *
 
 
 def dR_from_axis_and_angle(axis, angle, deg=False):
