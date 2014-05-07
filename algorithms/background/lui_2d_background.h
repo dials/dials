@@ -13,12 +13,12 @@ namespace dials { namespace algorithms {
         std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
         af::versa< double, af::c_grid<2> > background2d(data2d.accessor(),0);
-        double cont=0.0, tot_bkgr = 0.0;
+        double cont = 0.0, tot_bkgr = 0.0;
         double avg_bkgr = 0;
-        for (int row = 0; row<nrow;row++) {
-          for (int col = 0; col<ncol;col++) {
-            if ( mask2d(row,col) & Background ){
-              tot_bkgr += data2d(row,col);
+        for (int row = 0; row < nrow; row++) {
+          for (int col = 0; col < ncol; col++) {
+            if ( mask2d(row, col) & Background ){
+              tot_bkgr += data2d(row, col);
               cont++;
             }
             if ( tot_bkgr > 0 and cont > 0) {
@@ -26,12 +26,12 @@ namespace dials { namespace algorithms {
             }
           }
         }
-        for (int row = 0; row<nrow;row++) {
-          for (int col = 0; col<ncol;col++) {
-            if ( mask2d(row,col) & Foreground ){
-              background2d(row,col) = avg_bkgr;
+        for (int row = 0; row < nrow; row++) {
+          for (int col = 0; col < ncol; col++) {
+            if ( mask2d(row, col) & Foreground ){
+              background2d(row, col) = avg_bkgr;
             } else {
-              background2d(row,col) = data2d(row,col);
+              background2d(row, col) = data2d(row, col);
             }
           }
         }
