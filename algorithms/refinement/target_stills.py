@@ -15,8 +15,6 @@ import random
 
 # dials imports
 from dials.algorithms.refinement.target import Target
-#from dials.algorithms.refinement.target_old import ReflectionManager
-#from dials.algorithms.refinement.target_old import ObsPredMatch # implicit import
 
 # constants
 TWO_PI = 2.0 * pi
