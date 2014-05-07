@@ -118,6 +118,7 @@ reflections = ref_list.to_table(centroid_is_mm=True)
 from dials.algorithms.refinement.reflection_manager import ReflectionManager
 refman = ReflectionManager(reflections, experiments, iqr_multiplier=None)
 
+# Redefine the reflection predictor to use the type expected by the Target class
 from dials.algorithms.refinement.prediction import ExperimentsPredictor
 ref_predictor = ExperimentsPredictor(experiments)
 
@@ -148,7 +149,6 @@ for i in range(len(deltas)):
   ref_predictor.predict(reflections)
 
   rev_state = reflections['xyzcal.mm'].deep_copy()
-  #x_calc, y_calc, phi_calc = rev_state.parts()
 
   p_vals[i] += deltas[i]
   pred_param.set_param_vals(p_vals)
