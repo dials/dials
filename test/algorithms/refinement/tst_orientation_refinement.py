@@ -62,7 +62,8 @@ from dials.algorithms.refinement.parameterisation.prediction_parameters import \
 
 # Imports for the target function
 from dials.algorithms.refinement.target import \
-    LeastSquaresPositionalResidualWithRmsdCutoff, ReflectionManager
+    LeastSquaresPositionalResidualWithRmsdCutoff
+from dials.algorithms.refinement.reflection_manager import ReflectionManager
 
 # Import helper functions
 from dials.algorithms.refinement.refinement_helpers import print_model_geometry
@@ -226,6 +227,10 @@ print
 #####################################
 
 refman = ReflectionManager(obs_refs.to_table(centroid_is_mm=True), experiments)
+
+# redefine the reflection predictor for refinement
+from dials.algorithms.refinement.prediction import ExperimentsPredictor
+ref_predictor = ExperimentsPredictor(experiments)
 
 ##############################
 # Set up the target function #
