@@ -482,6 +482,7 @@ scratch/dgw/crystal_model/crystal.py -text
 scratch/dgw/crystal_model/tst_crystal.py -text
 scratch/dgw/detector_model_old/README -text
 scratch/dgw/detector_model_old/detector.py -text
+scratch/dgw/enter_interactive_session.py -text
 scratch/dgw/goniometer_model/__init__.py -text
 scratch/dgw/goniometer_model/gonio.py -text
 scratch/dgw/prediction/README -text
