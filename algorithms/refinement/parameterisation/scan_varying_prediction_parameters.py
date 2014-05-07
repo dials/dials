@@ -39,9 +39,11 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # set up arrays to store derivatives
     num_free_U_params = sum([e.num_free() for e in self._xl_orientation_parameterisations])
     num_free_B_params = sum([e.num_free() for e in self._xl_unit_cell_parameterisations])
-    self._dU_dp = [flex.mat3_double(nref) for i in range(num_free_U_params)]
-    self._dB_dp = [flex.mat3_double(nref) for i in range(num_free_B_params)]
+    null = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
+    self._dU_dp = [flex.mat3_double(nref, null) for i in range(num_free_U_params)]
+    self._dB_dp = [flex.mat3_double(nref, null) for i in range(num_free_B_params)]
 
+    ori_offset = uc_offset = 0
     for iexp, exp in enumerate(self._experiments):
 
       # select the reflections of interest
@@ -72,10 +74,14 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
 
         # set derivatives of the states
         for j, dU in enumerate(xl_op.get_ds_dp()):
-          self._dU_dp[j][i] = dU
-
+          j2 = j + ori_offset
+          self._dU_dp[j2][i] = dU
         for j, dB in enumerate(xl_ucp.get_ds_dp()):
-          self._dB_dp[j][i] = dB
+          j2 = j + uc_offset
+          self._dB_dp[j2][i] = dB
+
+      ori_offset += xl_op.num_free()
+      uc_offset += xl_ucp.num_free()
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']
@@ -155,14 +161,15 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # loop over all the crystal orientation parameterisations, even though we
     # are only setting values for one of them. We still need to move the _iparam
     # pointer for the others.
+    local_iparam = 0
     for ixlop, xlop in enumerate(self._xl_orientation_parameterisations):
 
       # Calculate gradients only for the correct xl orientation parameterisation
       if ixlop == xl_ori_param_id:
 
         # get derivatives of the U matrix wrt the parameters
-        #dU_dxlo_p = self._exp_to_xl_derivatives[iexp].dU_dp
-        dU_dxlo_p = [e.select(isel) for e in self._dU_dp]
+        dU_dxlo_p = [self._dU_dp[i].select(isel) for i in range(local_iparam,
+          local_iparam + xlop.num_free())]
 
         # select indices for the experiment of interest
         sub_h = h.select(isel)
@@ -194,14 +201,15 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
           dphi_dp[self._iparam].set_selected(isel, dphi)
           dpv_dp[self._iparam].set_selected(isel, dpv)
 
-          # increment the parameter index pointer
+          # increment the parameter index pointers
           self._iparam += 1
+          local_iparam += 1
 
-      # For any other xl orientation parameterisations, leave derivatives as zero
+      # For any other xl orientation parameterisations, leave derivatives as zero,
+      # just increment the pointers
       else:
-
-        # just increment the pointer
         self._iparam += xlop.num_free()
+        local_iparam += xlop.num_free()
 
     return
 
@@ -211,14 +219,15 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations."""
 
+    local_iparam = 0
     for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
 
       # Calculate gradients only for the correct xl unit cell parameterisation
       if ixlucp == xl_uc_param_id:
 
         # get derivatives of the B matrix wrt the parameters
-        #dB_dxluc_p = self._exp_to_xl_derivatives[iexp].dB_dp
-        dB_dxluc_p = [e.select(isel) for e in self._dB_dp]
+        dB_dxluc_p = [self._dB_dp[i].select(isel) for i in range(
+          local_iparam, local_iparam + xlucp.num_free())]
 
         # select indices for the experiment of interest
         sub_h = h.select(isel)
@@ -248,17 +257,21 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
           dpv = sub_D * (dr + sub_e_X_r * dphi)
 
           # set values in the correct gradient arrays
-          dphi_dp[self._iparam].set_selected(isel, dphi)
+          try:
+            dphi_dp[self._iparam].set_selected(isel, dphi)
+          except IndexError:
+            from dials.util.command_line import interactive_console; interactive_console()
           dpv_dp[self._iparam].set_selected(isel, dpv)
 
-          # increment the parameter index pointer
+          # increment the parameter index pointers
           self._iparam += 1
+          local_iparam += 1
 
-      # For any other xl unit cell parameterisations, leave derivatives as zero
+      # For any other xl unit cell parameterisations, leave derivatives as zero,
+      # just increment the pointers
       else:
-
-        # just increment the pointer
         self._iparam += xlucp.num_free()
+        local_iparam += xlucp.num_free()
 
     return
 
@@ -282,8 +295,11 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
     # set up arrays to store derivatives
     num_free_U_params = sum([e.num_free() for e in self._xl_orientation_parameterisations])
     num_free_B_params = sum([e.num_free() for e in self._xl_unit_cell_parameterisations])
-    self._dU_dp = [flex.mat3_double(nref) for i in range(num_free_U_params)]
-    self._dB_dp = [flex.mat3_double(nref) for i in range(num_free_B_params)]
+    null = (0., 0., 0., 0., 0., 0., 0., 0., 0.)
+    self._dU_dp = [flex.mat3_double(nref, null) for i in range(num_free_U_params)]
+    self._dB_dp = [flex.mat3_double(nref, null) for i in range(num_free_B_params)]
+
+    ori_offset = uc_offset = 0
 
     for iexp, exp in enumerate(self._experiments):
 
@@ -319,10 +335,14 @@ class VaryingCrystalPredictionParameterisationFast(VaryingCrystalPredictionParam
 
         # set derivatives of the states
         for j, dU in enumerate(xl_op.get_ds_dp()):
-          self._dU_dp[j].set_selected(subsel, dU)
-
+          j2 = j + ori_offset
+          self._dU_dp[j2].set_selected(subsel, dU)
         for j, dB in enumerate(xl_ucp.get_ds_dp()):
-          self._dB_dp[j].set_selected(subsel, dB)
+          j2 = j + uc_offset
+          self._dB_dp[j2].set_selected(subsel, dB)
+
+      ori_offset += xl_op.num_free()
+      uc_offset += xl_ucp.num_free()
 
     # set the UB matrices for prediction
     reflections['ub_matrix'] = reflections['u_matrix'] * reflections['b_matrix']

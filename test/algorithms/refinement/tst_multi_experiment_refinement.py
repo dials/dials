@@ -272,6 +272,9 @@ params = sysconfig.params()
 # in case we want a plot
 params.refinement.refinery.track_parameter_correlation=True
 
+# DEBUG scan varying by uncommenting the following line
+#params.refinement.parameterisation.crystal.scan_varying=True
+
 from dials.algorithms.refinement.refiner import RefinerFactory
 refiner = RefinerFactory.from_parameters_data_experiments(params,
   obs_refs.to_table(centroid_is_mm=True), experiments, verbosity=0)
