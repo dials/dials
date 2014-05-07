@@ -24,12 +24,14 @@ sigma_mosaicity = None
   .type = float
 n_sigma = 3
   .type = float(value_min=0)
-nproc = 1
-  .type = int(value_min=1)
+d_min = None
+  .type = float(value_min=0.0)
 max_overlap_fraction = 0.0
   .type = float(value_min=0.0)
 max_overlap_pixels = 0
   .type = int(value_min=0)
+nproc = 1
+  .type = int(value_min=1)
 """)
 
 
@@ -74,22 +76,30 @@ def run(args):
 
   overlaps = find_overlaps(
     experiments, reflection_table, n_sigma=params.n_sigma, nproc=params.nproc,
+    d_min=params.d_min,
     max_overlap_fraction=params.max_overlap_fraction,
     max_overlap_pixels=params.max_overlap_pixels)
   overlaps.overlapping_reflections.as_pickle('overlaps.pickle')
   if 0:
     overlaps.plot_histograms()
+
   return overlaps
 
 
 class find_overlaps(object):
-  def __init__(self, experiments, reflections, n_sigma=3, nproc=1,
+  def __init__(self, experiments, reflections, n_sigma=3, nproc=1, d_min=None,
                max_overlap_fraction=0.0, max_overlap_pixels=0):
     from dials.algorithms import shoebox
     from dials.algorithms.shoebox import MaskCode
 
     reflection_table = self._prepare_reflections(experiments, reflections)
-    reflection_table = self._predict_for_reflection_table(experiments, reflection_table)
+    if d_min is not None:
+      S = reflection_table['s1'] - experiments[0].beam.get_s0()
+      d_spacings = 1/S.norms()
+      print (d_spacings > d_min).count(True), (d_spacings > d_min).count(False)
+      reflection_table = reflection_table.select(d_spacings > d_min)
+    reflection_table = self._predict_for_reflection_table(
+      experiments, reflection_table)
     # XXX not sure why zero length s1 vectors come out of the prediction code
     reflection_table = reflection_table.select(
       reflection_table['s1'].norms() > 0)
