@@ -715,6 +715,7 @@ test/algorithms/refinement/tst_ref_passage_categorisation.py -text
 test/algorithms/refinement/tst_refinement_regression.py -text
 test/algorithms/refinement/tst_scan_varying_model_parameters.py -text
 test/algorithms/refinement/tst_scan_varying_prediction_parameters.py -text
+test/algorithms/refinement/tst_stills_prediction_parameters.py -text
 test/algorithms/refinement/tst_stills_refinement.py -text
 test/algorithms/reflection_basis/expected.p -text
 test/algorithms/reflection_basis/tst_beam_vector_map.py -text
