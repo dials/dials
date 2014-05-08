@@ -42,6 +42,27 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     UB = U * B
     q = (UB * h)
 
+    # r is the reciprocal lattice vector rotated to the Ewald sphere
+    r = s1 - s0
+
+    # we also need the unit directions q0 and s0u
+    q0 = q.each_normalize()
+    s0u = s0.each_normalize()
+
+    # e1 is the unit vector about which DeltaPsi rotation is defined
+    e1 = q0.cross(s0u).each_normalize()
+
+    # q1 completes an orthonormal set with q0 and e1
+    q1 = q0.cross(e1).each_normalize()
+
+    # c0 completes an orthonormal set with s0u and e1
+    c0 = s0u.cross(e1).each_normalize()
+
+    # calculate 'a' and 'b', the components of r in the directions -s0u and
+    # c0 respectively
+    a = -1.0 * r.dot(s0u)
+    b = r.dot(c0)
+
     # Set up the lists of derivatives: a separate array over reflections for
     # each free parameter
     m = len(reflections)
@@ -79,7 +100,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # parameterisation that is present.
       if self._beam_parameterisations:
         self._beam_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                               q, D, beam_param_id)
+                               s0u, q0, e1, a, b, q1, r, D, beam_param_id)
 
       # Calc derivatives of pv and phi wrt each parameter of each crystal
       # orientation parameterisation that is present.
@@ -150,7 +171,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     return
 
   def _beam_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                        q, D, beam_param_id):
+                        s0u, q0, e1, a, b, q1, r, D, beam_param_id):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
@@ -166,15 +187,31 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         ds0_dbeam_p = bp.get_ds_dp()
 
         # select indices for the experiment of interest
-        sub_q = q.select(isel) #FIXME not yet used. Need for dDelPsi?
+        sub_s0u = s0u.select(isel)
+        sub_q0 = q0.select(isel)
+        sub_e1 = e1.select(isel)
+        sub_a = a.select(isel)
+        sub_b = b.select(isel)
+        sub_q1 = q1.select(isel)
+        sub_r = r.select(isel)
         sub_D = D.select(isel)
 
         # loop through the parameters
         for der in ds0_dbeam_p:
 
           # calculate the derivative of DeltaPsi for this parameter
-          # FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
-          dDelPsi = 0.0
+          de1 = sub_q0.cross(der)
+          ds0 = flex.mat3_double(len(sub_e1), der.elems)
+          dc0 = ds0.cross(sub_e1) + sub_s0u.cross(de1)
+          dr = sub_b * dc0 - sub_a * ds0
+          dq1 = sub_q0.cross(de1)
+
+          y = sub_r.dot(sub_q1)
+          x = sub_r.dot(sub_q0)
+          dy = dr.dot(sub_q1) + sub_r.dot(dq1)
+          dx = dr.dot(sub_q0)
+
+          dDelPsi = (y * dx - x * dy) / (x**2 + y**2)
 
           # calculate the derivative of pv for this parameter
           dpv = sub_D * der
