@@ -217,9 +217,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         # loop through the parameters
         for der in ds0_dbeam_p:
 
+          # repeat the derivative in an array
+          ds0 = flex.vec3_double(len(s0u), der.elems)
+
           # calculate the derivatives of upsilon and chi for this parameter
-          de1 = q0.cross(der)
-          ds0 = flex.mat3_double(len(e1), der.elems)
+          de1 = q0.cross(ds0)
           dc0 = ds0.cross(e1) + s0u.cross(de1)
           dr = b * dc0 - a * ds0
           dq1 = q0.cross(de1)
