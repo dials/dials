@@ -99,10 +99,6 @@ pred_param = XYPhiPredictionParameterisation(experiments,
 # Create a ScansRayPredictor
 ref_predictor = ScansRayPredictor(experiments, sweep_range)
 
-# Rebuild a full global parameterisation
-pred_param = XYPhiPredictionParameterisation(experiments, [det_param],
-                                        [s0_param], [xlo_param], [xluc_param])
-
 # Generate reflections
 resolution = 2.0
 index_generator = IndexGenerator(mycrystal.get_unit_cell(),
