@@ -34,41 +34,54 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     are stills"""
 
     # pv is the 'projection vector' for the ray along s1.
-    s1 = reflections['s1']
-    pv = D * s1
+    self._D = D
+    self._s1 = reflections['s1']
+    self._pv = D * self._s1
 
     # q is the reciprocal lattice vector, in the lab frame
-    h = reflections['miller_index'].as_vec3_double()
-    UB = U * B
-    q = (UB * h)
+    self._UB = U * B
+    self._U = U
+    self._B = B
+    self._h = reflections['miller_index'].as_vec3_double()
+    self._q = (self._UB * self._h)
 
     # r is the reciprocal lattice vector rotated to the Ewald sphere
-    r = s1 - s0
+    self._s0 = s0
+    self._r = self._s1 - self._s0
 
     # we also need the unit directions q0 and s0u
-    q0 = q.each_normalize()
-    s0u = s0.each_normalize()
+    self._q0 = self._q.each_normalize()
+    self._s0u = self._s0.each_normalize()
 
     # e1 is the unit vector about which DeltaPsi rotation is defined
-    e1 = q0.cross(s0u).each_normalize()
+    self._e1 = self._q0.cross(self._s0u).each_normalize()
 
     # q1 completes an orthonormal set with q0 and e1
-    q1 = q0.cross(e1).each_normalize()
+    self._q1 = self._q0.cross(self._e1).each_normalize()
 
     # c0 completes an orthonormal set with s0u and e1
-    c0 = s0u.cross(e1).each_normalize()
+    self._c0 = self._s0u.cross(self._e1).each_normalize()
 
     # calculate 'a' and 'b', the components of r in the directions -s0u and
     # c0 respectively
-    a = -1.0 * r.dot(s0u)
-    b = r.dot(c0)
+    self._a = -1.0 * self._r.dot(self._s0u)
+    self._b = self._r.dot(self._c0)
+
+    # we want the wavelength
+    self._wavelength = 1. / self._s0.norms()
+
+    # calculate chi and upsilon. In the paper these are called 'x' and 'y', but
+    # we rename here to avoid confusion with detector coordinates X and Y.
+    self._upsilon = self._r.dot(self._q1)
+    self._chi = self._r.dot(self._q0)
 
     # Set up the lists of derivatives: a separate array over reflections for
     # each free parameter
     m = len(reflections)
     n = len(self) # number of free parameters
     dpv_dp = [flex.vec3_double(m, (0., 0., 0.)) for p in range(n)]
-    dDeltaPsi_dp = [flex.double(m, 0.) for p in range(n)]
+    dchi_dp = [flex.double(m, 0.) for p in range(n)]
+    dupsilon_dp = [flex.double(m, 0.) for p in range(n)]
 
     # loop over experiments
     for iexp, exp in enumerate(self._experiments):
@@ -93,35 +106,38 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # parameterisations. All derivatives of DeltaPsi are zero for detector
       # parameters
       if self._detector_parameterisations:
-        self._detector_derivatives(reflections, isel, dpv_dp,
-                                   D, pv, det_param_id, exp.detector)
+        self._detector_derivatives(reflections, isel, dpv_dp, det_param_id, exp.detector)
 
       # Calc derivatives of pv and DeltaPsi wrt each parameter of each beam
       # parameterisation that is present.
       if self._beam_parameterisations:
-        self._beam_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                               s0u, q0, e1, a, b, q1, r, D, beam_param_id)
+        self._beam_derivatives(reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
+                               beam_param_id)
 
       # Calc derivatives of pv and phi wrt each parameter of each crystal
       # orientation parameterisation that is present.
       if self._xl_orientation_parameterisations:
-        self._xl_orientation_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                         h, B, D, xl_ori_param_id)
+        self._xl_orientation_derivatives(reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
+                                         xl_ori_param_id)
 
       # Now derivatives of pv and phi wrt each parameter of each crystal unit
       # cell parameterisation that is present.
       if self._xl_unit_cell_parameterisations:
-        self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                       h, U, D, xl_uc_param_id)
+        self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
+                                       xl_uc_param_id)
 
       # calculate positional derivatives from d[pv]/dp
-      dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(pv, dpv_dp)
+      dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(self._pv, dpv_dp)
+
+      # calculate angular derivatives from d[chi]/dp and d[upsilon]/dp
+      dDeltaPsi_dp = self._calc_dDeltaPsi_dp(self._chi, self._upsilon,
+                                             dchi_dp, dupsilon_dp)
 
     return (dX_dp, dY_dp, dDeltaPsi_dp)
 
 
   def _detector_derivatives(self, reflections, isel, dpv_dp,
-                            D, pv, det_param_id, detector):
+                            det_param_id, detector):
     """helper function to extend the derivatives lists by derivatives of the
     detector parameterisations"""
 
@@ -143,15 +159,15 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
           # get the right subset of array indices to set for this panel
           sub_isel = isel.select(panels_this_exp == panel_id)
-          sub_pv = pv.select(sub_isel)
-          sub_D = D.select(sub_isel)
+          pv = self._pv.select(sub_isel)
+          D = self._D.select(sub_isel)
 
           # loop through the parameters
           iparam = self._iparam
           for der in dd_ddet_p:
 
             # calculate the derivative of pv for this parameter
-            dpv = (sub_D * (-1. * der).elems) * sub_pv
+            dpv = (D * (-1. * der).elems) * pv
 
             # set values in the correct gradient array
             dpv_dp[iparam].set_selected(sub_isel, dpv)
@@ -170,8 +186,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _beam_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                        s0u, q0, e1, a, b, q1, r, D, beam_param_id):
+  def _beam_derivatives(self, reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
+                        beam_param_id):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
@@ -187,37 +203,36 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         ds0_dbeam_p = bp.get_ds_dp()
 
         # select indices for the experiment of interest
-        sub_s0u = s0u.select(isel)
-        sub_q0 = q0.select(isel)
-        sub_e1 = e1.select(isel)
-        sub_a = a.select(isel)
-        sub_b = b.select(isel)
-        sub_q1 = q1.select(isel)
-        sub_r = r.select(isel)
-        sub_D = D.select(isel)
+        s0u = self._s0u.select(isel)
+        q0 = self._q0.select(isel)
+        e1 = self._e1.select(isel)
+        a = self._a.select(isel)
+        b = self._b.select(isel)
+        q1 = self._q1.select(isel)
+        r = self._r.select(isel)
+        chi = self._chi.select(isel)
+        upsilon = self._upsilon.select(isel)
+        D = self._D.select(isel)
 
         # loop through the parameters
         for der in ds0_dbeam_p:
 
-          # calculate the derivative of DeltaPsi for this parameter
-          de1 = sub_q0.cross(der)
-          ds0 = flex.mat3_double(len(sub_e1), der.elems)
-          dc0 = ds0.cross(sub_e1) + sub_s0u.cross(de1)
-          dr = sub_b * dc0 - sub_a * ds0
-          dq1 = sub_q0.cross(de1)
+          # calculate the derivatives of upsilon and chi for this parameter
+          de1 = q0.cross(der)
+          ds0 = flex.mat3_double(len(e1), der.elems)
+          dc0 = ds0.cross(e1) + s0u.cross(de1)
+          dr = b * dc0 - a * ds0
+          dq1 = q0.cross(de1)
 
-          y = sub_r.dot(sub_q1)
-          x = sub_r.dot(sub_q0)
-          dy = dr.dot(sub_q1) + sub_r.dot(dq1)
-          dx = dr.dot(sub_q0)
-
-          dDelPsi = (y * dx - x * dy) / (x**2 + y**2)
+          dupsilon = dr.dot(q1) + r.dot(dq1)
+          dchi = dr.dot(q0)
 
           # calculate the derivative of pv for this parameter
-          dpv = sub_D * der
+          dpv = D * der
 
           # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDelPsi)
+          dchi_dp[self._iparam].set_selected(isel, dchi)
+          dupsilon_dp[self._iparam].set_selected(isel, dupsilon)
           dpv_dp[self._iparam].set_selected(isel, dpv)
 
           # increment the parameter index pointer
@@ -231,8 +246,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                  h, B, D, xl_ori_param_id):
+  def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
+              xl_ori_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -248,26 +263,49 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         dU_dxlo_p = xlop.get_ds_dp()
 
         # select indices for the experiment of interest
-        sub_h = h.select(isel)
-        sub_B = B.select(isel)
-        sub_D = D.select(isel)
+        h = self._h.select(isel)
+        B = self._B.select(isel)
+        q = self._q.select(isel)
+        q0 = self._q0.select(isel)
+        s0u = self._s0u.select(isel)
+        wl = self._wavelength.select(isel)
+        b = self._b.select(isel)
+        c0 = self._c0.select(isel)
+        e1 = self._e1.select(isel)
+        q1 = self._q1.select(isel)
+        r = self._r.select(isel)
+        D = self._D.select(isel)
 
         # loop through the parameters
         for der in dU_dxlo_p:
 
-          der_mat = flex.mat3_double(len(sub_B), der.elems)
-          # calculate the derivative of r for this parameter
-          dq = der_mat * sub_B * sub_h
+          der_mat = flex.mat3_double(len(B), der.elems)
+          # calculate the derivative of q for this parameter
+          dq = der_mat * B * h
 
-          # calculate the derivative of DeltaPsi for this parameter
-          # FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
-          dDelPsi = 0.0
+          # calculate the derivatives of upsilon and chi for this parameter
+          q_dot_dq = q.dot(dq)
+          dqq = 2.0 * q_dot_dq
+          q_scalar = q.norms()
+          qq = q_scalar * q_scalar
+          dq_scalar = dqq / q_scalar
+          dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
+          de1 = dq0.cross(s0u)
+          dc0 = s0u.cross(de1)
+          da = wl * q_dot_dq
+          db = (2.0 - qq * wl * wl) * q_dot_dq / (2.0 * b)
+          dr = db * c0 + b * dc0 - da * s0u
+          dq1 = dq0.cross(e1) + q0.cross(de1)
+
+          dupsilon = dr.dot(q1) + r.dot(dq1)
+          dchi = dr.dot(q0) + r.dot(dq0)
 
           # calculate the derivative of pv for this parameter
-          dpv = sub_D * dq
+          dpv = D * dq
 
           # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDelPsi)
+          dchi_dp[self._iparam].set_selected(isel, dchi)
+          dupsilon_dp[self._iparam].set_selected(isel, dupsilon)
           dpv_dp[self._iparam].set_selected(isel, dpv)
 
           # increment the parameter index pointer
@@ -281,8 +319,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                h, U, D, xl_uc_param_id):
+  def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
+                                xl_uc_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
@@ -296,26 +334,27 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         dB_dxluc_p = xlucp.get_ds_dp()
 
         # select indices for the experiment of interest
-        sub_h = h.select(isel)
-        sub_U = U.select(isel)
-        sub_D = D.select(isel)
+        h = self._h.select(isel)
+        U = self._U.select(isel)
+        D = self._D.select(isel)
 
         # loop through the parameters
         for der in dB_dxluc_p:
 
-          der_mat = flex.mat3_double(len(sub_U), der.elems)
-          # calculate the derivative of r for this parameter
-          dq = sub_U * der_mat * sub_h
+          der_mat = flex.mat3_double(len(U), der.elems)
+          # calculate the derivative of q for this parameter
+          dq = U * der_mat * h
 
           # calculate the derivative of DeltaPsi for this parameter
-          # FIXME FIXME FIXME FIXME FIXME FIXME FIXME FIXME
-          dDelPsi = 0.0
+          dupsilon = 0.0
+          dchi = 0.0
 
           # calculate the derivative of pv for this parameter
-          dpv = sub_D * dq
+          dpv = D * dq
 
           # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDelPsi)
+          dchi_dp[self._iparam].set_selected(isel, dchi)
+          dupsilon_dp[self._iparam].set_selected(isel, dupsilon)
           dpv_dp[self._iparam].set_selected(isel, dpv)
 
           # increment the parameter index pointer
@@ -329,7 +368,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, pv, dpv_dp):
+  @staticmethod
+  def _calc_dX_dp_and_dY_dp_from_dpv_dp(pv, dpv_dp):
     """helper function to calculate positional derivatives from
     dpv_dp using the quotient rule"""
 
@@ -350,4 +390,22 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
 
     return dX_dp, dY_dp
+
+  @staticmethod
+  def _calc_dDeltaPsi_dp(chi, upsilon, dchi_dp, dupsilon_dp):
+    """helper function to calculate DeltaPsi derivatives from
+    d[chi]/dp and d[upsilon]/dp"""
+
+    # Using DeltaPsi = -arctan(upsilon/chi)
+
+    # precalculate shared coefficient
+    c = 1.0/(chi * chi + upsilon * upsilon)
+
+    dDeltaPsi_dp = []
+
+    for dchi, dupsilon in zip(dchi_dp, dupsilon_dp):
+
+      dDeltaPsi_dp.append(c * (upsilon * dchi - chi * dupsilon))
+
+    return dDeltaPsi_dp
 
