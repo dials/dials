@@ -202,8 +202,8 @@ sysconfig = Registry().config()
 params = sysconfig.params()
 
 # overrides to fix beam and detector
-params.refinement.parameterisation.beam.fix="all"
-params.refinement.parameterisation.detector.fix="all"
+#params.refinement.parameterisation.beam.fix="all"
+#params.refinement.parameterisation.detector.fix="all"
 
 # Change this to get a plot
 do_plot = False
