@@ -336,6 +336,15 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         # select indices for the experiment of interest
         h = self._h.select(isel)
         U = self._U.select(isel)
+        q = self._q.select(isel)
+        q0 = self._q0.select(isel)
+        s0u = self._s0u.select(isel)
+        wl = self._wavelength.select(isel)
+        b = self._b.select(isel)
+        c0 = self._c0.select(isel)
+        e1 = self._e1.select(isel)
+        q1 = self._q1.select(isel)
+        r = self._r.select(isel)
         D = self._D.select(isel)
 
         # loop through the parameters
@@ -345,9 +354,22 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           # calculate the derivative of q for this parameter
           dq = U * der_mat * h
 
-          # calculate the derivative of DeltaPsi for this parameter
-          dupsilon = 0.0
-          dchi = 0.0
+          # calculate the derivatives of upsilon and chi for this parameter
+          q_dot_dq = q.dot(dq)
+          dqq = 2.0 * q_dot_dq
+          q_scalar = q.norms()
+          qq = q_scalar * q_scalar
+          dq_scalar = dqq / q_scalar
+          dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
+          de1 = dq0.cross(s0u)
+          dc0 = s0u.cross(de1)
+          da = wl * q_dot_dq
+          db = (2.0 - qq * wl * wl) * q_dot_dq / (2.0 * b)
+          dr = db * c0 + b * dc0 - da * s0u
+          dq1 = dq0.cross(e1) + q0.cross(de1)
+
+          dupsilon = dr.dot(q1) + r.dot(dq1)
+          dchi = dr.dot(q0) + r.dot(dq0)
 
           # calculate the derivative of pv for this parameter
           dpv = D * dq
