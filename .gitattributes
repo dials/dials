@@ -161,6 +161,7 @@ algorithms/refinement/parameterisation/model_parameters.py -text
 algorithms/refinement/parameterisation/parameter_report.py -text
 algorithms/refinement/parameterisation/prediction_parameters.py -text
 algorithms/refinement/parameterisation/prediction_parameters_stills.py -text
+algorithms/refinement/parameterisation/prediction_parameters_stills2.py -text
 algorithms/refinement/parameterisation/scan_varying_crystal_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_model_parameters.py -text
 algorithms/refinement/parameterisation/scan_varying_prediction_parameters.py -text
