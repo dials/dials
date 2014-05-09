@@ -33,8 +33,13 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations
 
-from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+########## Change commented lines here to swap between the two versions ########
+#from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+#  import StillsPredictionParameterisation
+from dials.algorithms.refinement.parameterisation.prediction_parameters_stills2 \
   import StillsPredictionParameterisation
+################################################################################
+
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
@@ -177,23 +182,27 @@ for i in range(len(deltas)):
   y_grads /= deltas[i]
   delpsi_grads /= deltas[i]
 
-  print "parameter", i
+  print "\n\nparameter", i
   # compare with analytical calculation
+  print "x"
   for j, (a, b) in enumerate(zip(x_grads, an_grads[0][i])):
-    try: assert approx_equal(a, b, eps=5.e-6)
+    try: assert approx_equal(a, b, eps=1.e-5)
     except AssertionError:
-      print j
-      raise
+      print "failed on", j
+      break
+  print "y"
   for j, (a, b) in enumerate(zip(y_grads, an_grads[1][i])):
-    try: assert approx_equal(a, b, eps=5.e-6)
+    try: assert approx_equal(a, b, eps=1.e-5)
     except AssertionError:
-      print j
-      raise
+      print "failed on", j
+      break
+  print "delpsi"
   for j, (a, b) in enumerate(zip(delpsi_grads, an_grads[2][i])):
-    try: assert approx_equal(a, b, eps=5.e-6)
+    try:
+      assert approx_equal(a, b, eps=1.e-7)
     except AssertionError:
-      print j
-      raise
+      print "failed on", j
+      break
   #assert approx_equal(x_grads, an_grads[0][i], eps=5.e-6)
   #assert approx_equal(y_grads, an_grads[1][i], eps=5.e-6)
   #assert approx_equal(delpsi_grads, an_grads[2][i], eps=5.e-6)
