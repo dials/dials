@@ -106,7 +106,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # parameterisations. All derivatives of DeltaPsi are zero for detector
       # parameters
       if self._detector_parameterisations:
-        self._detector_derivatives(reflections, isel, dpv_dp, det_param_id, exp.detector)
+        self._detector_derivatives(reflections, isel, dpv_dp,
+                                   det_param_id, exp.detector)
 
       # Calc derivatives of pv and DeltaPsi wrt each parameter of each beam
       # parameterisation that is present.
@@ -117,14 +118,14 @@ class StillsPredictionParameterisation(PredictionParameterisation):
       # Calc derivatives of pv and phi wrt each parameter of each crystal
       # orientation parameterisation that is present.
       if self._xl_orientation_parameterisations:
-        self._xl_orientation_derivatives(reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
-                                         xl_ori_param_id)
+        self._xl_orientation_derivatives(reflections, isel, dpv_dp,
+                                         dchi_dp, dupsilon_dp, xl_ori_param_id)
 
       # Now derivatives of pv and phi wrt each parameter of each crystal unit
       # cell parameterisation that is present.
       if self._xl_unit_cell_parameterisations:
-        self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
-                                       xl_uc_param_id)
+        self._xl_unit_cell_derivatives(reflections, isel, dpv_dp,
+                                       dchi_dp, dupsilon_dp, xl_uc_param_id)
 
       # calculate positional derivatives from d[pv]/dp
       dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(self._pv, dpv_dp)
@@ -186,8 +187,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _beam_derivatives(self, reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
-                        beam_param_id):
+  def _beam_derivatives(self, reflections, isel, dpv_dp,
+                        dchi_dp, dupsilon_dp, beam_param_id):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
@@ -204,6 +205,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
         # select indices for the experiment of interest
         s0u = self._s0u.select(isel)
+        wl = self._wavelength.select(isel)
         q0 = self._q0.select(isel)
         e1 = self._e1.select(isel)
         a = self._a.select(isel)
@@ -220,17 +222,20 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           # repeat the derivative in an array
           ds0 = flex.vec3_double(len(s0u), der.elems)
 
+          # we need the derivative of the unit beam direction too
+          ds0u = ds0 * wl
+
           # calculate the derivatives of upsilon and chi for this parameter
-          de1 = q0.cross(ds0)
-          dc0 = ds0.cross(e1) + s0u.cross(de1)
-          dr = b * dc0 - a * ds0
+          de1 = q0.cross(ds0u)
+          dc0 = ds0u.cross(e1) + s0u.cross(de1)
+          dr = b * dc0 - a * ds0u
           dq1 = q0.cross(de1)
 
           dupsilon = dr.dot(q1) + r.dot(dq1)
           dchi = dr.dot(q0)
 
           # calculate the derivative of pv for this parameter
-          dpv = D * der
+          dpv = D * (ds0 + dr)
 
           # set values in the correct gradient arrays
           dchi_dp[self._iparam].set_selected(isel, dchi)
@@ -248,8 +253,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
-              xl_ori_param_id):
+  def _xl_orientation_derivatives(self, reflections, isel, dpv_dp,
+                                  dchi_dp, dupsilon_dp, xl_ori_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
@@ -321,8 +326,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
     return
 
-  def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dchi_dp, dupsilon_dp,
-                                xl_uc_param_id):
+  def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp,
+                                dchi_dp, dupsilon_dp, xl_uc_param_id):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
