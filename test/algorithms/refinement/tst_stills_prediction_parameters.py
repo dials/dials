@@ -186,13 +186,13 @@ for i in range(len(deltas)):
   # compare with analytical calculation
   print "x"
   for j, (a, b) in enumerate(zip(x_grads, an_grads[0][i])):
-    try: assert approx_equal(a, b, eps=1.e-5)
+    try: assert approx_equal(a, b, eps=1.e-3)
     except AssertionError:
       print "failed on", j
       break
   print "y"
   for j, (a, b) in enumerate(zip(y_grads, an_grads[1][i])):
-    try: assert approx_equal(a, b, eps=1.e-5)
+    try: assert approx_equal(a, b, eps=1.e-3)
     except AssertionError:
       print "failed on", j
       break

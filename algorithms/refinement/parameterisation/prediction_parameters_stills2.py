@@ -202,32 +202,31 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         # select indices for the experiment of interest
         s0u = self._s0u.select(isel)
         wl = self._wavelength.select(isel)
-        q0 = self._q0.select(isel)
+        #q0 = self._q0.select(isel)
         e1 = self._e1.select(isel)
-        a = self._a.select(isel)
-        b = self._b.select(isel)
-        q1 = self._q1.select(isel)
+        #a = self._a.select(isel)
+        #b = self._b.select(isel)
+        #q1 = self._q1.select(isel)
         r = self._r.select(isel)
-        chi = self._chi.select(isel)
-        upsilon = self._upsilon.select(isel)
+        #chi = self._chi.select(isel)
+        #upsilon = self._upsilon.select(isel)
         D = self._D.select(isel)
-        s1 = self._s1.select(isel)
+        #s1 = self._s1.select(isel)
         s0 = self._s0.select(isel)
+
+        q0 = self._q0.select(isel)
+
+        q = self._q.select(isel)
+        DeltaPsi = self._DeltaPsi.select(isel)
 
         # loop through the parameters
         for der in ds0_dbeam_p:
 
           # repeat the derivative in an array
           ds0 = flex.vec3_double(len(s0u), der.elems)
-          #
-          ## we need the derivative of the unit beam direction too
+
+          # we need the derivative of the unit beam direction too
           ds0u = ds0 * wl
-          #
-          ## calculate the derivatives of upsilon and chi for this parameter
-          de1 = q0.cross(ds0u)
-          dc0 = ds0u.cross(e1) + s0u.cross(de1)
-          dr = b * dc0 - a * ds0u
-          #dq1 = q0.cross(de1)
 
           # calculate the derivative of DeltaPsi for this parameter
           #################################################
@@ -239,8 +238,18 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           ########################################################
           # NB This does not pass the test vs finite differences #
           ########################################################
-          dpv = D * (ds0 + e1.cross(r) * dDeltaPsi)
-          #dpv = D * (ds0 + e1.cross(r) * dDeltaPsi + a * wl * ds0)
+          # calculate the partial derivative of r wrt change in rotation
+          # axis e1 by finite differences
+          de1 = q0.cross(ds0u)
+          dp = 1.e-8 # finite step size for the parameter
+          del_e1 = de1 * dp
+          e1f = e1 + del_e1 * 0.5
+          rfwd = q.rotate_around_origin(e1f , DeltaPsi)
+          e1r = e1 - del_e1 * 0.5
+          rrev = q.rotate_around_origin(e1r , DeltaPsi)
+          drde_dedp = (rfwd - rrev) * (1 / dp)
+
+          dpv = D * (ds0 + e1.cross(r) * dDeltaPsi + drde_dedp)
 
           # set values in the correct gradient arrays
           dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
@@ -283,13 +292,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         b = self._b.select(isel)
         c0 = self._c0.select(isel)
         e1 = self._e1.select(isel)
-        q1 = self._q1.select(isel)
+        #q1 = self._q1.select(isel)
         r = self._r.select(isel)
         s0 = self._s0.select(isel)
         s1 = self._s1.select(isel)
-        D = self._D.select(isel)
 
         DeltaPsi = self._DeltaPsi.select(isel)
+        D = self._D.select(isel)
 
         # loop through the parameters
         for der in dU_dxlo_p:
@@ -302,16 +311,16 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           # calculate the derivative of r for this parameter
           dr = dq.rotate_around_origin(e1, DeltaPsi)
 
-          #dq = der_mat * B * h
+          dq = der_mat * B * h
           #
           ## calculate the derivatives of upsilon and chi for this parameter
-          #q_dot_dq = q.dot(dq)
+          q_dot_dq = q.dot(dq)
           ##dqq = 2.0 * q_dot_dq
-          #q_scalar = q.norms()
-          #qq = q_scalar * q_scalar
+          q_scalar = q.norms()
+          qq = q_scalar * q_scalar
           ##dq_scalar = dqq / q_scalar
-          #dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-          #de1 = dq0.cross(s0u)
+          dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
+          de1 = dq0.cross(s0u)
           #dc0 = s0u.cross(de1)
           #da = wl * q_dot_dq
           #db = (2.0 - qq * wl * wl) * q_dot_dq / (2.0 * b)
@@ -328,7 +337,16 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           ########################################################
           # NB This does not pass the test vs finite differences #
           ########################################################
-          dpv = D * (dr + e1.cross(r) * dDeltaPsi)
+          # calculate the partial derivative of r wrt change in rotation
+          # axis e1 by finite differences
+          dp = 1.e-8
+          del_e1 = de1 * dp
+          e1f = e1 + del_e1 * 0.5
+          rfwd = q.rotate_around_origin(e1f , DeltaPsi)
+          e1r = e1 - del_e1 * 0.5
+          rrev = q.rotate_around_origin(e1r , DeltaPsi)
+          drde_dedp = (rfwd - rrev) * (1 / dp)
+          dpv = D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp)
 
           # set values in the correct gradient arrays
           dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
@@ -369,7 +387,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         b = self._b.select(isel)
         c0 = self._c0.select(isel)
         e1 = self._e1.select(isel)
-        q1 = self._q1.select(isel)
+        #q1 = self._q1.select(isel)
         r = self._r.select(isel)
         s1 = self._s1.select(isel)
         s0 = self._s0.select(isel)
@@ -387,13 +405,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           dr = dq.rotate_around_origin(e1, DeltaPsi)
 
           # calculate the derivatives of upsilon and chi for this parameter
-          #q_dot_dq = q.dot(dq)
+          q_dot_dq = q.dot(dq)
           #dqq = 2.0 * q_dot_dq
-          #q_scalar = q.norms()
-          #qq = q_scalar * q_scalar
+          q_scalar = q.norms()
+          qq = q_scalar * q_scalar
           #dq_scalar = dqq / q_scalar
-          #dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-          #de1 = dq0.cross(s0u)
+          dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
+          de1 = dq0.cross(s0u)
           #dc0 = s0u.cross(de1)
           #da = wl * q_dot_dq
           #db = (2.0 - qq * wl * wl) * q_dot_dq / (2.0 * b)
@@ -411,7 +429,16 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           ########################################################
           # NB This does not pass the test vs finite differences #
           ########################################################
-          dpv = D * (dr + e1.cross(r) * dDeltaPsi)
+          # calculate the partial derivative of r wrt change in rotation
+          # axis e1 by finite differences
+          dp = 1.e-8
+          del_e1 = de1 * dp
+          e1f = e1 + del_e1 * 0.5
+          rfwd = q.rotate_around_origin(e1f , DeltaPsi)
+          e1r = e1 - del_e1 * 0.5
+          rrev = q.rotate_around_origin(e1r , DeltaPsi)
+          drde_dedp = (rfwd - rrev) * (1 / dp)
+          dpv = D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp)
 
           # set values in the correct gradient arrays
           dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
