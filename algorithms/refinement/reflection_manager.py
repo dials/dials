@@ -465,13 +465,13 @@ class StillsReflectionManager(ReflectionManager):
   about X, Y, DelPsi residuals"""
 
   def _calculate_weights(self):
-    """Include weights for DeltaPsi, which we currently force to unity"""
+    """Include weights for DeltaPsi, which we currently force to 10000"""
 
     # call parent class method to set X and Y weights
     super(StillsReflectionManager, self)._calculate_weights()
 
     self._reflections['delpsical.weights'] = flex.double(
-        len(self._reflections), 1.0)
+        len(self._reflections), 10000)
 
     return
 
