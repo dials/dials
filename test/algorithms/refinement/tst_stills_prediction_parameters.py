@@ -33,12 +33,8 @@ from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations
 
-########## Change commented lines here to swap between the two versions ########
-#from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-#  import StillsPredictionParameterisation
-from dials.algorithms.refinement.parameterisation.prediction_parameters_stills2 \
+from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
   import StillsPredictionParameterisation
-################################################################################
 
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationSinglePanel
