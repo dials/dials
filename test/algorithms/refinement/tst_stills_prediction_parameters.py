@@ -178,27 +178,26 @@ for i in range(len(deltas)):
   y_grads /= deltas[i]
   delpsi_grads /= deltas[i]
 
-  print "\n\nparameter", i
-  # compare with analytical calculation
-  print "x"
-  for j, (a, b) in enumerate(zip(x_grads, an_grads[0][i])):
-    try: assert approx_equal(a, b, eps=5.e-4)
-    except AssertionError:
-      print "failed on", j
-      break
-  print "y"
-  for j, (a, b) in enumerate(zip(y_grads, an_grads[1][i])):
-    try: assert approx_equal(a, b, eps=5.e-4)
-    except AssertionError:
-      print "failed on", j
-      break
-  print "delpsi"
-  for j, (a, b) in enumerate(zip(delpsi_grads, an_grads[2][i])):
-    try:
-      assert approx_equal(a, b, eps=1.e-7)
-    except AssertionError:
-      print "failed on", j
-      break
+  # compare FD with analytical calculations
+  from scitbx.math import five_number_summary
+  print "\n\nParameter", i
+  grads = (x_grads, y_grads, delpsi_grads)
+
+  for name, idx in zip(["X", "Y", "DeltaPsi"], (0, 1, 2)):
+    print name
+    rel_error = []
+    abs_error = []
+    for j, (a, b) in enumerate(zip(grads[idx], an_grads[idx][i])):
+      abs_error.append(a - b)
+      if abs(a + b) < 1.e-8:
+        continue
+      else:
+        rel_error.append(2.*(a - b)/(a + b))
+        #rel_error.append((a - b)/max(abs(a), abs(b)))
+    if rel_error:
+      print "summary of relative errors: %9.6f %9.6f %9.6f %9.6f %9.6f" % five_number_summary(rel_error)
+    print "summary of absolute errors: %9.6f %9.6f %9.6f %9.6f %9.6f" % five_number_summary(abs_error)
+
   #assert approx_equal(x_grads, an_grads[0][i], eps=5.e-6)
   #assert approx_equal(y_grads, an_grads[1][i], eps=5.e-6)
   #assert approx_equal(delpsi_grads, an_grads[2][i], eps=5.e-6)
