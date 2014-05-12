@@ -32,6 +32,8 @@ max_overlap_pixels = 0
   .type = int(value_min=0)
 nproc = 1
   .type = int(value_min=1)
+save_overlaps = True
+  .type = bool
 """)
 
 
@@ -79,7 +81,8 @@ def run(args):
     d_min=params.d_min,
     max_overlap_fraction=params.max_overlap_fraction,
     max_overlap_pixels=params.max_overlap_pixels)
-  overlaps.overlapping_reflections.as_pickle('overlaps.pickle')
+  if params.save_overlaps:
+    overlaps.overlapping_reflections.as_pickle('overlaps.pickle')
   if 0:
     overlaps.plot_histograms()
 
@@ -197,7 +200,7 @@ class find_overlaps(object):
     pyplot.yscale('log')
     pyplot.xlabel('Number of overlapping pixels')
     pyplot.ylabel('Frequency')
-    pyplot.show()
+    #pyplot.show()
 
     hist = flex.histogram(self._fraction_overlapping_pixels, n_slots=50)
     #pyplot.bar(hist.slot_centers(), hist.slots(), width=hist.slot_width())
@@ -205,7 +208,7 @@ class find_overlaps(object):
     pyplot.yscale('log')
     pyplot.xlabel('Fraction of overlapping pixels')
     pyplot.ylabel('Frequency')
-    pyplot.show()
+    #pyplot.show()
 
   def _prepare_reflections(self, experiments, reflections):
     reflection_table = flex.reflection_table()
