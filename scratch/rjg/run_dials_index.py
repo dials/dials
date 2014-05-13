@@ -184,7 +184,7 @@ def run_once(args):
         # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Optimisation
         # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Difficult_datasets
         xds_inp_extra = []
-        with open("run_1/INTEGRATE.LP") as f:
+        with open("run_1/INTEGRATE.LP", "rb") as f:
           for line in f.readlines():
             if (("BEAM_DIVERGENCE=" in line and
                  "BEAM_DIVERGENCE_E.S.D.=" in line)
