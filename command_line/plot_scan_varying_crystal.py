@@ -55,53 +55,56 @@ class ScriptRunner(object):
     from math import floor, ceil
     image, a, b, c, alpha, beta, gamma, volume = zip(*dat)
 
+    fig = plt.figure(figsize=(13, 10))
     gs = gridspec.GridSpec(4, 2, wspace=0.4, hspace=0.6)
     plt.subplot(gs[0, 0])
     plt.plot(image, a)
     plt.xlabel('Image')
-    plt.ylabel('$\AA$')
+    plt.ylabel(r'length $\left(\AA\right)$')
     plt.title('a')
 
     plt.subplot(gs[0, 1])
     plt.plot(image, alpha)
     plt.axis(ymin=floor(min(alpha)), ymax=ceil(max(alpha)))
     plt.xlabel('Image')
-    plt.ylabel(r'$\AA$')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
     plt.title(r'$\alpha$')
 
     plt.subplot(gs[1, 0])
     plt.plot(image, b)
     plt.xlabel('Image')
-    plt.ylabel(r'$\AA$')
+    plt.ylabel(r'length $\left(\AA\right)$')
     plt.title('b')
 
     plt.subplot(gs[1, 1])
     plt.plot(image, beta)
     plt.axis(ymin=floor(min(beta)), ymax=ceil(max(beta)))
     plt.xlabel('Image')
-    plt.ylabel(r'$\AA$')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
     plt.title(r'$\beta$')
 
     plt.subplot(gs[2, 0])
     plt.plot(image, c)
     plt.xlabel('Image')
-    plt.ylabel(r'$\AA$')
+    plt.ylabel(r'length $\left(\AA\right)$')
     plt.title('c')
 
     plt.subplot(gs[2, 1])
     plt.plot(image, gamma)
     plt.axis(ymin=floor(min(gamma)), ymax=ceil(max(gamma)))
     plt.xlabel('Image')
-    plt.ylabel(r'$\AA$')
+    plt.ylabel(r'angle $\left(^\circ\right)$')
     plt.title(r'$\gamma$')
 
     plt.subplot2grid((4,2), (3, 0), colspan=2)
     plt.plot(image, volume)
     plt.xlabel('Image')
-    plt.ylabel(r'$\AA^3$')
+    plt.ylabel(r'volume $\left(\AA^3\right)$')
     plt.title('Cell volume')
 
-    plt.show()
+    #plt.show()
+    gs.tight_layout(fig)
+    plt.savefig("sv_crystal.pdf")
 
 if __name__ == '__main__':
   import sys
