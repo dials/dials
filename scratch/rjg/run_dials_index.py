@@ -103,9 +103,9 @@ def run_once(args):
   result.show_stdout(out=log)
   result.show_stderr(out=log)
   args = ["dials.find_spots",
-                  "datablock.json",
-                  "--nproc=%i" %params.find_spots_nproc
-                  ]
+          "datablock.json",
+          "--nproc=%i" %params.find_spots_nproc
+          ]
   if params.find_spots_phil is not None:
     args.append(params.find_spots_phil)
   cmd = " ".join(args)
@@ -180,6 +180,19 @@ def run_once(args):
 
       if os.path.exists("run_1/GXPARM.XDS"):
 
+        # recycle sigma_m and sigma_b as suggested by:
+        # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Optimisation
+        # http://strucbio.biologie.uni-konstanz.de/xdswiki/index.php/Difficult_datasets
+        xds_inp_extra = []
+        with open("run_1/INTEGRATE.LP") as f:
+          for line in f.readlines():
+            if (("BEAM_DIVERGENCE=" in line and
+                 "BEAM_DIVERGENCE_E.S.D.=" in line)
+                or
+                ("REFLECTING_RANGE=" in line and
+                 "REFLECTING_RANGE_E.S.D.=" in line)):
+              xds_inp_extra.append(line)
+
         os.mkdir("run_2")
         shutil.copyfile("XDS.INP", "run_2/XDS.INP")
         shutil.copyfile("run_1/GXPARM.XDS", "run_2/XPARM.XDS")
@@ -196,6 +209,8 @@ def run_once(args):
             print >> f, "MINIMUM_I/SIGMA=50"
             print >> f, "CORRECTIONS="
             print >> f, "NBATCH=1"
+          for extra in xds_inp_extra:
+            print >> f, extra
 
         result = easy_run.fully_buffered(command=params.xds.executable)
         with open("xds.log", "wb") as xds_log:
