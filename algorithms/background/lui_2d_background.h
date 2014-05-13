@@ -17,6 +17,8 @@ namespace dials { namespace algorithms {
         double avg_bkgr = 0;
         for (int row = 0; row < nrow; row++) {
           for (int col = 0; col < ncol; col++) {
+            // remember to make sure that a pixel masked as Background
+            // cannot be a Foreground pixle (ask James)
             if ( mask2d(row, col) & Background ){
               tot_bkgr += data2d(row, col);
               cont++;

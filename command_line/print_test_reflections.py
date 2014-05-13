@@ -1,8 +1,9 @@
 from __future__ import division
 
-def print_refl(refl):
-  sbox = refl.shoebox
-  mask = refl.shoebox_mask
+def print_refl(row):
+
+  sbox = row['shoebox'].data
+  mask = row['shoebox'].mask
   ndim = sbox.nd()
   dims = sbox.focus()
 
@@ -10,11 +11,13 @@ def print_refl(refl):
 
   print '-' * 80
 
-  print 'HKL:      %d %d %d' % refl.miller_index
-  print 'S vector: %.3f %.3f %.3f' % refl.beam_vector
-  print 'Bounding: %d %d %d %d %d %d' % refl.bounding_box
-  print 'Frame:    %.3f' % refl.frame_number
-  print 'Position: %.3f %.3f' % refl.image_coord_px
+  print 'HKL:      %d %d %d' % row['miller_index']
+  print 'S vector: %.3f %.3f %.3f' % row['s1']
+  print 'Bounding: %d %d %d %d %d %d' % row['bbox']
+
+  ''' FIX ME '''
+  #print 'Frame:    %.3f' % refl.frame_number
+  #print 'Position: %.3f %.3f' % refl.image_coord_px
 
   print '-' * 80
 
@@ -32,16 +35,23 @@ def print_refl(refl):
           print '%4d ' % int(sbox[k, j, i]),
       print
     print '-' * 80
+  #'''
 
   return
+
 
 if __name__ == '__main__':
   import cPickle as pickle
   import sys
   from dials.model.data import ReflectionList # implicit import
+  table = pickle.load(open(sys.argv[1]))
 
-  for j, refl in enumerate(pickle.load(open(sys.argv[1]))):
+
+
+  for i in range(len(table)):
+    row = table[i]
     print '*' * 80
-    print 'Reflection %d' % j
+    print 'Reflection %d' % i
+    print_refl(row)
     print '*' * 80
-    print_refl(refl)
+
