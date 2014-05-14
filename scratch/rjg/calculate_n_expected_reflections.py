@@ -14,6 +14,8 @@ random_seed = 42
   .type = int
 plot = False
   .type = bool
+nproc = 1
+  .type = int(value_min=1)
 """)
 
 
@@ -28,9 +30,11 @@ def run(args):
   from libtbx.phil import command_line
 
   from dials.util.command_line import Importer
-  from scitbx.array_family import flex
-  importer = Importer(args)
-  sweeps = importer.imagesets
+  from dials.array_family import flex
+  print args
+  importer = Importer(args, check_format=False)
+  assert len(importer.datablocks) == 1
+  sweeps = importer.datablocks[0].extract_imagesets()
   assert len(sweeps) == 1
   sweep = sweeps[0]
 
@@ -47,7 +51,6 @@ def run(args):
   import random
   from cctbx.crystal.crystal_model import crystal_model
   from cctbx import crystal, miller
-  from scitbx.array_family import flex
   from scitbx import matrix
 
   flex.set_random_seed(params.random_seed)
@@ -61,28 +64,40 @@ def run(args):
 
   n_predicted = flex.double()
 
-  for i in range(params.n_samples):
-    U = random_rotation()
+  def predict_once(args):
+    from dials.model.experiment.experiment_list import Experiment
+    U = args[0]
     A = U * B
     direct_matrix = A.inverse()
-
     cryst_model = crystal_model(direct_matrix[0:3],
                                 direct_matrix[3:6],
                                 direct_matrix[6:9],
                                 space_group=space_group)
-
-    from dials.algorithms.integration import ReflectionPredictor
-    predictor = ReflectionPredictor()
-    reflections = predictor(sweep, cryst_model)
-    predicted_reflections = reflections
-    miller_indices = predicted_reflections.miller_index()
+    experiment = Experiment(imageset=sweep,
+                            beam=sweep.get_beam(),
+                            detector=sweep.get_detector(),
+                            goniometer=sweep.get_goniometer(),
+                            scan=sweep.get_scan(),
+                            crystal=cryst_model)
+    predicted_reflections = flex.reflection_table.from_predictions(
+      experiment)
+    miller_indices = predicted_reflections['miller_index']
     miller_set = miller.set(
       crystal_symmetry, miller_indices, anomalous_flag=True)
     if params.d_min is not None:
       resolution_sel = miller_set.d_spacings().data() > params.d_min
       predicted_reflections = predicted_reflections.select(resolution_sel)
-    n_predicted.append(predicted_reflections.size())
-    print n_predicted[-1]
+    return len(predicted_reflections)
+
+  from libtbx import easy_mp
+  args = [(random_rotation(),) for i in range(params.n_samples)]
+  results = easy_mp.parallel_map(
+    func=predict_once,
+    iterable=args,
+    processes=params.nproc,
+    preserve_order=True,
+    preserve_exception_message=True)
+  n_predicted = flex.double(results)
 
   print "Basic statistics:"
   from scitbx.math import basic_statistics
@@ -98,8 +113,18 @@ def run(args):
 
   if params.plot:
     from matplotlib import pyplot
-    pyplot.bar(hist.slot_centers(), hist.slots(), width=hist.slot_width())
-    pyplot.show()
+    from matplotlib.backends.backend_pdf import PdfPages
+
+    red, blue = '#B2182B', '#2166AC'
+    fig = pyplot.figure()
+    ax = fig.add_subplot(1,1,1)
+    ax.bar(hist.slot_centers(), hist.slots(), width=0.75*hist.slot_width(),
+           color=blue, edgecolor=blue)
+    ax.set_xlabel('Spot count')
+    ax.set_ylabel('Frequency')
+    pdf = PdfPages("predicted_count_histogram.pdf")
+    pdf.savefig(fig)
+    pdf.close()
 
 
 if __name__ == '__main__':
