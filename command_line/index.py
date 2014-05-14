@@ -52,6 +52,13 @@ def run(args):
          import indexer_real_space_grid_search as indexer
   idxr = indexer(reflections, imageset, params=params)
   idxr.index()
+  refined_experiments = idxr.refined_experiments
+  refined_reflections = idxr.refined_reflections
+  if len(refined_experiments):
+    idxr.export_as_json(refined_experiments, suffix=params.output.suffix)
+    idxr.export_reflections(
+      refined_reflections, file_name='indexed%s.pickle' %params.output.suffix)
+
   return
 
 

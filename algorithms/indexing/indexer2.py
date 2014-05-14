@@ -171,6 +171,10 @@ multiple_lattice_search {
       .type = float(value_min=0.0, value_max=1.0)
   }
 }
+output {
+  suffix = ""
+    .type = str
+}
 
 """, process_includes=True)
 
@@ -477,7 +481,8 @@ class indexer_base(object):
           sel.set_selected(isel, True)
           sel.set_selected(self.reflections['id'] > -1, False)
           unindexed = self.reflections.select(sel)
-          self.export_reflections(unindexed, "unindexed.pickle")
+          self.export_reflections(
+            unindexed, "unindexed%s.pickle" %self.params.output.suffix)
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
@@ -548,20 +553,6 @@ class indexer_base(object):
       from dials.algorithms.indexing.compare_orientation_matrices \
            import show_rotation_matrix_differences
       show_rotation_matrix_differences(self.refined_experiments.crystals())
-
-    if len(self.refined_experiments):
-      self.export_as_json(self.refined_experiments)
-      self.export_reflections(
-        self.refined_reflections, file_name='indexed.pickle')
-
-    if 1 and self.params.debug and self.goniometer is not None:
-      for i_lattice, expt in enumerate(self.refined_experiments):
-        suffix = ""
-        if len(self.refined_experiments) > 1:
-          suffix = "_%i" %(i_lattice+1)
-        predictions = self.predict_reflections(expt)
-        self.export_reflections(
-          predictions, file_name='predictions%s.pickle' %suffix)
 
     print "Final refined crystal models:"
     for i, crystal_model in enumerate(self.refined_experiments.crystals()):
@@ -838,21 +829,6 @@ class indexer_base(object):
     used_reflections.set_flags(
       matches['iobs'], used_reflections.flags.used_in_refinement)
     return refiner.get_experiments(), used_reflections
-
-  def predict_reflections(self, experiment):
-    from dials.algorithms.spot_prediction import ScanStaticReflectionPredictor
-    predictor = ScanStaticReflectionPredictor(experiment)
-
-    #sigma_divergence = self.beam.get_sigma_divergence()
-    #mosaicity = crystal_model.get_mosaicity()
-
-    #if sigma_divergence == 0.0:
-      #self.beam.set_sigma_divergence(0.02) # degrees
-    #if mosaicity == 0.0:
-      #crystal_model.set_mosaicity(0.139) # degrees
-
-    predicted_reflections = predictor.for_ub(experiment.crystal.get_A())
-    return predicted_reflections
 
   def debug_show_candidate_basis_vectors(self):
 
