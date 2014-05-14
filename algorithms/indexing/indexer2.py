@@ -172,7 +172,9 @@ multiple_lattice_search {
   }
 }
 output {
-  suffix = ""
+  experiments_filename = experiments.json
+    .type = str
+  reflections_filename = indexed.pickle
     .type = str
 }
 
@@ -482,7 +484,7 @@ class indexer_base(object):
           sel.set_selected(self.reflections['id'] > -1, False)
           unindexed = self.reflections.select(sel)
           self.export_reflections(
-            unindexed, "unindexed%s.pickle" %self.params.output.suffix)
+            unindexed, "unindexed.pickle")
 
         maximum_spot_error \
           = self.params.refinement_protocol.outlier_rejection.maximum_spot_error
@@ -887,11 +889,11 @@ class indexer_base(object):
       map_data=map_data,
       labels=flex.std_string(labels))
 
-  def export_as_json(self, experiments, suffix=None, compact=False):
-    if suffix is None: suffix = ""
+  def export_as_json(self, experiments, file_name="experiments.json",
+                     compact=False):
     from dials.model.serialize import dump
     assert experiments.is_consistent()
-    dump.experiment_list(experiments, 'experiments%s.json' %suffix)
+    dump.experiment_list(experiments, file_name)
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
     easy_pickle.dump(file_name, reflections)

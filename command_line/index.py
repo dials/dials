@@ -55,9 +55,10 @@ def run(args):
   refined_experiments = idxr.refined_experiments
   refined_reflections = idxr.refined_reflections
   if len(refined_experiments):
-    idxr.export_as_json(refined_experiments, suffix=params.output.suffix)
+    idxr.export_as_json(refined_experiments,
+                        file_name=params.output.experiments_filename)
     idxr.export_reflections(
-      refined_reflections, file_name='indexed%s.pickle' %params.output.suffix)
+      refined_reflections, file_name=params.output.reflections_filename)
 
   return
 
