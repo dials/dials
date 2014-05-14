@@ -476,6 +476,7 @@ model/serialize/shoebox.py -text
 model/serialize/xds.py -text
 /run_tests.py -text
 scratch/__init__.py -text
+scratch/asb/index_thermolysin_cbfs.py -text
 scratch/dgw/__init__.py -text
 scratch/dgw/crystal_model/__init__.py -text
 scratch/dgw/crystal_model/crystal.py -text
