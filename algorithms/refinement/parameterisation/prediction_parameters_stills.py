@@ -746,20 +746,18 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
           de1 = dq0.cross(s0u)
           dc0 = s0u.cross(de1)
-          dr = b * dc0
 
+          dr = b * dc0
           dq1 = dq0.cross(e1) + q0.cross(de1)
           dy  = dr.dot(q1) + r.dot(dq1)
           dx  = dr.dot(q0) + r.dot(dq0)
           dDeltaPsi_nks = ((yy * dx) - (xx * dy)) / ((xx*xx)+(yy*yy))
-          #manuscript formula gives slightly better agreement with finite difference control
-          # and better target function in the fourth significant figure.-NKS
 
           # calculate the derivative of DeltaPsi for this parameter
           #################################################
           # NB This passes the test vs finite differences #
           #################################################
-          dDeltaPsi = -1.0 * (dr.dot(s1)) / (e1.cross(r).dot(s0))
+          dDeltaPsi = -1.0 * (dr00.dot(s1)) / (e1.cross(r).dot(s0))
 
           # calculate the derivative of pv for this parameter
           ########################################################
@@ -777,7 +775,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
           dpv = D * (dr00 + e1.cross(r) * dDeltaPsi + drde_dedp)
 
           # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi_nks)
+          dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
           dpv_dp[self._iparam].set_selected(isel, dpv)
 
           # increment the parameter index pointer
