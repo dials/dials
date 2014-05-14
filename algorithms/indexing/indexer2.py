@@ -172,10 +172,10 @@ multiple_lattice_search {
   }
 }
 output {
-  experiments_filename = experiments.json
-    .type = str
-  reflections_filename = indexed.pickle
-    .type = str
+  experiments = experiments.json
+    .type = path
+  reflections = indexed.pickle
+    .type = path
 }
 
 """, process_includes=True)

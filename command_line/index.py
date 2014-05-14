@@ -56,9 +56,9 @@ def run(args):
   refined_reflections = idxr.refined_reflections
   if len(refined_experiments):
     idxr.export_as_json(refined_experiments,
-                        file_name=params.output.experiments_filename)
+                        file_name=params.output.experiments)
     idxr.export_reflections(
-      refined_reflections, file_name=params.output.reflections_filename)
+      refined_reflections, file_name=params.output.reflections)
 
   return
 
