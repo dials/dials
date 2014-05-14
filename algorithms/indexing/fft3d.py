@@ -28,19 +28,6 @@ class indexer_fft3d(indexer_base):
 
   def __init__(self, reflections, sweep, params):
     super(indexer_fft3d, self).__init__(reflections, sweep, params)
-    from libtbx.utils import time_log
-    self._map_to_grid_timer = time_log("map_to_grid")
-    self._fft_timer = time_log("fft")
-    self._find_peaks_timer = time_log("find_peaks")
-    self._cluster_analysis_timer = time_log("cluster_analysis")
-
-  def index(self):
-    super(indexer_fft3d, self).index()
-    if self.params.show_timing:
-      print self._map_to_grid_timer.report()
-      print self._fft_timer.report()
-      print self._find_peaks_timer.report()
-      print self._cluster_analysis_timer.report()
 
   def find_lattices(self):
     if self.params.fft3d.reciprocal_space_grid.d_min is libtbx.Auto:
@@ -91,7 +78,6 @@ class indexer_fft3d(indexer_base):
     return experiments
 
   def map_centroids_to_reciprocal_space_grid(self):
-    self._map_to_grid_timer.start()
     assert len(self.reciprocal_space_points) == len(self.reflections)
     wavelength = self.beam.get_wavelength()
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
@@ -120,10 +106,8 @@ class indexer_fft3d(indexer_base):
 
     self.reciprocal_space_grid = grid
     self.reflections_used_for_indexing = reflections_used_for_indexing
-    self._map_to_grid_timer.stop()
 
   def fft(self):
-    self._fft_timer.start()
     #gb_to_bytes = 1073741824
     #bytes_to_gb = 1/gb_to_bytes
     #(128**3)*8*2*bytes_to_gb
@@ -142,10 +126,8 @@ class indexer_fft3d(indexer_base):
     self.grid_real = flex.pow2(flex.real(grid_transformed))
     #self.grid_real = flex.pow2(flex.imag(self.grid_transformed))
     del grid_transformed
-    self._fft_timer.stop()
 
   def find_peaks(self):
-    self._find_peaks_timer.start()
     grid_real_binary = self.grid_real.deep_copy()
     rmsd = math.sqrt(
       flex.mean(flex.pow2(grid_real_binary.as_1d()-flex.mean(grid_real_binary.as_1d()))))
@@ -189,8 +171,6 @@ class indexer_fft3d(indexer_base):
 
     else:
       self.sites = flood_fill.centres_of_mass_frac().select(isel)
-
-    self._find_peaks_timer.stop()
 
   def find_candidate_basis_vectors(self):
     # hijack the xray.structure class to facilitate calculation of distances
@@ -285,7 +265,6 @@ class indexer_fft3d(indexer_base):
     self.candidate_basis_vectors = vectors
 
   def find_basis_vector_combinations_cluster_analysis(self):
-    self._cluster_analysis_timer.start()
     # hijack the xray.structure class to facilitate calculation of distances
     xs = xray.structure(crystal_symmetry=self.crystal_symmetry)
     for i, site in enumerate(self.sites):
@@ -468,8 +447,6 @@ class indexer_fft3d(indexer_base):
       for crystal_model in self.candidate_crystal_models:
         print crystal_model
 
-    self._cluster_analysis_timer.stop()
-
   def cluster_analysis_hcluster(self, vectors):
     from hcluster import linkage, fcluster
     import numpy
@@ -564,7 +541,6 @@ class indexer_fft3d(indexer_base):
     pyplot.show()
 
   def find_peaks_clean(self):
-    self._find_peaks_timer.start()
     import time
 
     d_min = self.params.fft3d.reciprocal_space_grid.d_min
@@ -647,5 +623,4 @@ class indexer_fft3d(indexer_base):
 
     self.sites = peaks_frac
 
-    self._find_peaks_timer.stop()
     return

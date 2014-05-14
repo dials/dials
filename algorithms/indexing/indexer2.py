@@ -271,16 +271,6 @@ class indexer_base(object):
     self.beam = sweep.get_beam()
     self.params = params
 
-    from libtbx.utils import time_log
-    self._index_reflections_timer = time_log("index_reflections")
-    self._refine_timer = time_log("refinement")
-    self._map_spots_pixel_to_mm_rad_timer = time_log("map_spots_pixel_to_mm_rad")
-    self._map_spots_pixel_to_reciprocal_space_timer = time_log(
-      "map_spots_pixel_to_reciprocal_space")
-    self._find_lattices_timer = time_log("find_lattices")
-    self._export_as_json_timer = time_log("export_as_json")
-    self._export_reflections_timer = time_log("export_reflections")
-
     self.target_symmetry_primitive = None
     self.target_symmetry_minimum_cell = None
     self.target_symmetry_centred = None
@@ -324,15 +314,11 @@ class indexer_base(object):
 
   def index(self):
     import libtbx
-    self._map_spots_pixel_to_mm_rad_timer.start()
     self.reflections = self.map_spots_pixel_to_mm_rad(
       self.reflections, self.detector, self.scan)
-    self._map_spots_pixel_to_mm_rad_timer.stop()
     self.filter_reflections_by_scan_range()
-    self._map_spots_pixel_to_reciprocal_space_timer.start()
     self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
       self.reflections, self.detector, self.beam, self.goniometer)
-    self._map_spots_pixel_to_reciprocal_space_timer.stop()
 
     if self.params.max_cell is libtbx.Auto:
       if self.params.known_symmetry.unit_cell is not None:
@@ -413,9 +399,7 @@ class indexer_base(object):
 
       n_lattices_previous_cycle = len(experiments)
 
-      self._find_lattices_timer.start()
       experiments.extend(self.find_lattices())
-      self._find_lattices_timer.stop()
       if len(experiments) == 0:
         raise Sorry("No suitable lattice could be found.")
       elif len(experiments) == n_lattices_previous_cycle:
@@ -541,10 +525,8 @@ class indexer_base(object):
                 and self.params.refinement.parameterisation.detector.fix == 'all'):
           # Experimental geometry may have changed - re-map centroids to
           # reciprocal space
-          self._map_spots_pixel_to_reciprocal_space_timer.start()
           self.reciprocal_space_points = self.map_centroids_to_reciprocal_space(
             self.reflections, self.detector, self.beam, self.goniometer)
-          self._map_spots_pixel_to_reciprocal_space_timer.stop()
 
         if self.d_min == self.params.refinement_protocol.d_min_final:
           print "Target d_min_final reached: finished with refinement"
@@ -586,21 +568,6 @@ class indexer_base(object):
       print "model %i (%i reflections):" %(
         i+1, (self.reflections['id'] == i).count(True))
       print crystal_model
-
-    if self.params.show_timing:
-      self.show_timing_info()
-
-  def show_timing_info(self, out=None):
-    if out is not None:
-      out = sys.stdout
-    print >> out, self._index_reflections_timer.legend
-    print >> out, self._map_spots_pixel_to_mm_rad_timer.report()
-    print >> out, self._map_spots_pixel_to_reciprocal_space_timer.report()
-    print >> out, self._index_reflections_timer.report()
-    print >> out, self._refine_timer.report()
-    print >> out, self._find_lattices_timer.report()
-    print >> out, self._export_as_json_timer.report()
-    print >> out, self._export_reflections_timer.report()
 
   def filter_reflections_by_scan_range(self):
     reflections_in_scan_range = flex.size_t()
@@ -843,16 +810,13 @@ class indexer_base(object):
     return model
 
   def index_reflections(self, crystal_models, tolerance=0.3):
-    self._index_reflections_timer.start()
     from dials.algorithms.indexing import index_reflections
     index_reflections(self.reflections, self.reciprocal_space_points,
                       crystal_models, self.d_min, tolerance=tolerance,
                       verbosity=self.params.refinement_protocol.verbosity)
-    self._index_reflections_timer.stop()
 
   def refine(self, experiments, maximum_spot_error=None,
              maximum_phi_error=None):
-    self._refine_timer.start()
     from dials.algorithms.indexing.refinement import refine
     reflections_for_refinement = self.reflections.select(
       self.indexed_reflections)
@@ -867,7 +831,6 @@ class indexer_base(object):
         self.indexed_reflections.iselection().select(outliers), -1)
     used_reflections = refiner.get_reflections()
     verbosity = self.params.refinement_protocol.verbosity
-    self._refine_timer.stop()
     matches = refiner.get_matches()
     xyzcal_mm = flex.vec3_double(len(used_reflections))
     xyzcal_mm.set_selected(matches['iobs'], matches['xyzcal.mm'])
@@ -949,17 +912,13 @@ class indexer_base(object):
       labels=flex.std_string(labels))
 
   def export_as_json(self, experiments, suffix=None, compact=False):
-    self._export_as_json_timer.start()
     if suffix is None: suffix = ""
     from dials.model.serialize import dump
     assert experiments.is_consistent()
     dump.experiment_list(experiments, 'experiments%s.json' %suffix)
-    self._export_as_json_timer.stop()
 
   def export_reflections(self, reflections, file_name="reflections.pickle"):
-    self._export_reflections_timer.start()
     easy_pickle.dump(file_name, reflections)
-    self._export_reflections_timer.stop()
 
   def find_lattices(self):
     raise NotImplementedError()
