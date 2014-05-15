@@ -250,6 +250,38 @@ refiner = setup_minimiser.Extract(master_phil,
 print "Prior to refinement the experimental model is:"
 print_model_geometry(mybeam, mydetector, mycrystal)
 
+# get a CS-PAD detector for testing
+import os
+import libtbx.load_env
+dials_regression = libtbx.env.find_in_repositories(
+    relative_path="dials_regression",
+    test=os.path.isdir)
+data_dir = os.path.join(dials_regression, "refinement_test_data",
+                        "hierarchy_test")
+datablock_path = os.path.join(data_dir, "datablock.json")
+assert os.path.exists(datablock_path)
+
+# load models
+from dxtbx.datablock import DataBlockFactory
+datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
+im_set = datablock[0].extract_imagesets()[0]
+from copy import deepcopy
+cspad = deepcopy(im_set.get_detector())
+
+# get also a hierarchical type P6M detector
+data_dir = os.path.join(dials_regression, "refinement_test_data",
+                        "metrology", "i03-2.5A-thaumatin-20140514")
+datablock_path = os.path.join(data_dir, "multi_panel_datablock.json")
+datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
+im_set = datablock[0].extract_imagesets()[0]
+from copy import deepcopy
+p6m = deepcopy(im_set.get_detector())
+
+# hierarchical parameterisation
+from dials.algorithms.refinement.parameterisation.detector_parameters import \
+    DetectorParameterisationHierarchical, get_panel_groups_at_depth, \
+    get_panel_ids_at_root
+
 # enter interactive console
 from dials.util.command_line import interactive_console; interactive_console()
 #refiner.run()
