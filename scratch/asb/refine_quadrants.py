@@ -26,4 +26,4 @@ cmd_line = command_line.argument_interpreter(master_params=master_phil)
 working_phil = cmd_line.process_and_fetch(args=[phil])
 working_params = working_phil.extract()
 for input in working_params.input:
-  print input.experiments, input.experiments
+  print input.experiments, input.reflections
