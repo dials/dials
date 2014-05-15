@@ -11,7 +11,7 @@ for path in sys.argv[1:]:
 
   easy_run.call("dials.import %s --output %s"%(path,datablock))
   easy_run.call("dials.find_spots %s threshold.xds.sigma_strong=15 min_spot_size=2 -o %s"%(datablock, spots))
-  easy_run.call("dials.index %s %s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122"%(spots, datablock))
+  easy_run.call("dials.index %s %s method=fft1d beam.fix=all detector.fix=all known_symmetry.unit_cell=93,93,130,90,90,120 known_symmetry.space_group=P6122 n_macro_cycles=5 d_min_final=0.5"%(spots, datablock))
 
   if os.path.exists("indexed.pickle"):
     assert os.path.exists("experiments.json")
