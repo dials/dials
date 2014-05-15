@@ -49,6 +49,12 @@ class Script(ScriptRunner):
         help = 'Set the filename for the table of scan varying parameter values'
                ' at the end of refinement.')
 
+    self.config().add_option(
+        '--output-reflections-filename',
+        dest = 'output_reflections_filename',
+        type = 'string',
+        help = 'Set the filename for output of refined reflections.')
+
     # Add a verbosity option
     #self.config().add_option(
     #    "-v", "--verbosity",
@@ -140,6 +146,13 @@ class Script(ScriptRunner):
     print 'Saving refined experiments to {0}'.format(output_experiments_filename)
     dump = ExperimentListDumper(experiments)
     dump.as_json(output_experiments_filename)
+
+    # Write out refined reflections, if requested
+    if options.output_reflections_filename:
+      matches = refiner.get_matches()
+      print 'Saving refined reflections to {0}'.format(
+        options.output_reflections_filename)
+      matches.as_pickle(options.output_reflections_filename)
 
     return
 
