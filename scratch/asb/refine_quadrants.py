@@ -66,14 +66,13 @@ experiments=ExperimentList()
 experiments.append(experiment_from_crystal(exp.crystal))
 
 from scitbx.array_family import flex
-
 for i, line in e:
   print i
 
   refs, exp = load_input(line.experiments, line.reflections)
-  refs['id'] = flex.size_t(len(refs),i)
+  refs['id'] = flex.int(len(refs),i)
   reflections.extend(refs)
   experiments.append(experiment_from_crystal(exp.crystal))
 
-from dials.util.command_line import interactive_console; interactive_console()
+
 
