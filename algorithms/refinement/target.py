@@ -60,6 +60,7 @@ class Target(object):
     # Keep maximum number of reflections used to for Jacobian calculation, if
     # a cutoff is required
     self._jacobian_max_nref = jacobian_max_nref
+    self._finished_residuals_and_gradients = False
 
     return
 
@@ -121,7 +122,7 @@ class Target(object):
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
     # collect the matches
-    self._matches = self._reflection_manager.get_matches()
+    self.update_matches(force=True)
 
     return
 
@@ -146,24 +147,43 @@ class Target(object):
     reflections['xyzcal.mm'] = flex.vec3_double(x_calc, y_calc, phi_calc)
     return reflections
 
-  def calculate_gradients(self):
+  def calculate_gradients(self, reflections=None):
     """delegate to the prediction_parameterisation object to calculate
-    gradients for all the matched reflections."""
+    gradients for all the matched reflections, or just for those specified"""
 
-    if not self._matches:
-      self._matches = self._reflection_manager.get_matches()
-    self._gradients = self._prediction_parameterisation.get_gradients(
-      self._matches)
+    self.update_matches()
+
+    if reflections:
+      self._gradients = self._prediction_parameterisation.get_gradients(
+        reflections)
+    else:
+      self._gradients = self._prediction_parameterisation.get_gradients(
+        self._matches)
 
     return self._gradients
 
   def get_num_matches(self):
     """return the number of reflections currently used in the calculation"""
 
-    if not self._matches:
+    self.update_matches()
+    return len(self._matches)
+
+  def update_matches(self, force=False):
+    """ensure the observations matched to predictions are up to date"""
+
+    if not self._matches or force:
       self._matches = self._reflection_manager.get_matches()
 
-    return len(self._matches)
+    return
+
+  @property
+  def finished_residuals_and_gradients(self):
+    """used when looping through subsets of the full jacobian to determine when
+    to break the loop. Reset flag whenever called"""
+
+    val = self._finished_residuals_and_gradients
+    self._finished_residuals_and_gradients = False
+    return val
 
   @abc.abstractmethod
   def compute_functional_and_gradients(self):
@@ -238,21 +258,34 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return
 
-  def compute_residuals_and_gradients(self):
+  def compute_residuals_and_gradients(self, block_num=0):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
 
-    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients()
+    self.update_matches()
+    if self._jacobian_max_nref:
+      start = block_num * self._jacobian_max_nref
+      end = (block_num + 1) * self._jacobian_max_nref
+      matches = self._matches[start:end]
+      self._finished_residuals_and_gradients = True if \
+        end >= len(self._matches) else False
+    else:
+      #start = 0
+      #end = len(self._matches)
+      matches = self._matches
+      self._finished_residuals_and_gradients = True
+
+    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients(matches)
 
     # return residuals and weights as 1d flex.double vectors
-    nelem = len(self._matches) * 3
+    nelem = len(matches) * 3
     nparam = len(self._prediction_parameterisation)
-    residuals = flex.double.concatenate(self._matches['x_resid'],
-                                        self._matches['y_resid'])
-    residuals.extend(self._matches['phi_resid'])
+    residuals = flex.double.concatenate(matches['x_resid'],
+                                        matches['y_resid'])
+    residuals.extend(matches['phi_resid'])
     #jacobian_t = flex.double(flex.grid(
     #    len(self._prediction_parameterisation), nelem))
-    weights, w_y, w_z = self._matches['xyzobs.mm.weights'].parts()
+    weights, w_y, w_z = matches['xyzobs.mm.weights'].parts()
     weights.extend(w_y)
     weights.extend(w_z)
 
@@ -338,9 +371,7 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   def rmsds(self):
     """calculate unweighted RMSDs"""
 
-    if not self._matches:
-      self._matches = self._reflection_manager.get_matches()
-
+    self.update_matches()
     resid_x = flex.sum(self._matches['x_resid2'])
     resid_y = flex.sum(self._matches['y_resid2'])
     resid_phi = flex.sum(self._matches['phi_resid2'])

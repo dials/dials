@@ -86,7 +86,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     reflections.set_flags(mask, reflections.flags.used_in_refinement)
 
     # collect the matches
-    self._matches = self._reflection_manager.get_matches()
+    self.update_matches(force=True)
 
     return
 
@@ -97,22 +97,35 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     self._reflection_predictor.predict(reflections)
     return reflections
 
-  def compute_residuals_and_gradients(self):
+  def compute_residuals_and_gradients(self, block_num=0):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
 
-    dX_dp, dY_dp, dDPsi_dp = self.calculate_gradients()
+    self.update_matches()
+    if self._jacobian_max_nref:
+      start = block_num * self._jacobian_max_nref
+      end = (block_num + 1) * self._jacobian_max_nref
+      matches = self._matches[start:end]
+      self._finished_residuals_and_gradients = True if \
+        end >= len(self._matches) else False
+    else:
+      #start = 0
+      #end = len(self._matches)
+      matches = self._matches
+      self._finished_residuals_and_gradients = True
+
+    dX_dp, dY_dp, dDPsi_dp = self.calculate_gradients(matches)
 
     # return residuals and weights as 1d flex.double vectors
-    nelem = len(self._matches) * 3
+    nelem = len(matches) * 3
     nparam = len(self._prediction_parameterisation)
-    residuals = flex.double.concatenate(self._matches['x_resid'],
-                                        self._matches['y_resid'])
-    residuals.extend(self._matches['delpsical.rad'])
+    residuals = flex.double.concatenate(matches['x_resid'],
+                                        matches['y_resid'])
+    residuals.extend(matches['delpsical.rad'])
     #jacobian_t = flex.double(flex.grid(
     #    len(self._prediction_parameterisation), nelem))
-    weights, w_y, _ = self._matches['xyzobs.mm.weights'].parts()
-    w_delpsi = self._matches['delpsical.weights']
+    weights, w_y, _ = matches['xyzobs.mm.weights'].parts()
+    w_delpsi = matches['delpsical.weights']
     weights.extend(w_y)
     weights.extend(w_delpsi)
 
@@ -200,9 +213,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
   def rmsds(self):
     """calculate unweighted RMSDs"""
 
-    if not self._matches:
-      self._matches = self._reflection_manager.get_matches()
-
+    self.update_matches()
     resid_x = flex.sum(self._matches['x_resid2'])
     resid_y = flex.sum(self._matches['y_resid2'])
 
