@@ -671,8 +671,8 @@ class RefinerFactory(object):
         "supported.")
 
     target = targ(experiments, ref_predictor, refman, pred_param,
-                    options.bin_size_fraction,
-                    absolute_cutoffs)
+                    options.bin_size_fraction, absolute_cutoffs,
+                    options.jacobian_max_nref)
 
     return target
 

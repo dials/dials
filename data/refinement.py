@@ -157,6 +157,12 @@ refinement
       .help = "Absolute Values for the RMSD target achieved cutoffs in X, Y and"
               "Phi. The units are (mm, mm, rad)."
       .type = floats(size=3, value_min=0.)
+
+    jacobian_max_nref = None
+      .help = "Maximum number of reflections to use for jacobian calculation."
+              "If there are more reflections than this in the manager then"
+              "the minimiser must do the full calculation in blocks."
+      .type = int(value_min=1)
   }
 
   reflections

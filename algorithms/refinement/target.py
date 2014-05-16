@@ -46,7 +46,7 @@ class Target(object):
   rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_Phi"]
 
   def __init__(self, experiments, reflection_predictor, ref_manager,
-               prediction_parameterisation):
+               prediction_parameterisation, jacobian_max_nref=None):
 
     self._reflection_predictor = reflection_predictor
     self._experiments = experiments
@@ -56,6 +56,10 @@ class Target(object):
     # Quantities to cache each step
     self._rmsds = None
     self._matches = None
+
+    # Keep maximum number of reflections used to for Jacobian calculation, if
+    # a cutoff is required
+    self._jacobian_max_nref = jacobian_max_nref
 
     return
 
@@ -201,10 +205,11 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
   def __init__(self, experiments, reflection_predictor, ref_man,
                prediction_parameterisation,
                frac_binsize_cutoff=0.33333,
-               absolute_cutoffs=None):
+               absolute_cutoffs=None,
+               jacobian_max_nref=None):
 
     Target.__init__(self, experiments, reflection_predictor, ref_man,
-                    prediction_parameterisation)
+                    prediction_parameterisation, jacobian_max_nref)
 
     # Set up the RMSD achieved criterion. For simplicity, we take models from
     # the first Experiment only. If this is not appropriate for refinement over
