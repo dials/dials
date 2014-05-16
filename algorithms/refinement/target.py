@@ -270,8 +270,6 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       self._finished_residuals_and_gradients = True if \
         end >= len(self._matches) else False
     else:
-      #start = 0
-      #end = len(self._matches)
       matches = self._matches
       self._finished_residuals_and_gradients = True
 
