@@ -270,17 +270,21 @@ cspad = deepcopy(im_set.get_detector())
 
 # get also a hierarchical type P6M detector
 data_dir = os.path.join(dials_regression, "refinement_test_data",
-                        "metrology", "i03-2.5A-thaumatin-20140514")
-datablock_path = os.path.join(data_dir, "multi_panel_datablock.json")
+                        "metrology", "i03-2.5A-thaumatin-20140514-split")
+datablock_path = os.path.join(data_dir, "datablock.json")
 datablock = DataBlockFactory.from_serialized_format(datablock_path, check_format=False)
 im_set = datablock[0].extract_imagesets()[0]
 from copy import deepcopy
 p6m = deepcopy(im_set.get_detector())
+print p6m[0]
 
 # hierarchical parameterisation
 from dials.algorithms.refinement.parameterisation.detector_parameters import \
     DetectorParameterisationHierarchical, get_panel_groups_at_depth, \
     get_panel_ids_at_root
+
+# parameterise
+cspad_param = DetectorParameterisationHierarchical(cspad,level=0)
 
 # enter interactive console
 from dials.util.command_line import interactive_console; interactive_console()
