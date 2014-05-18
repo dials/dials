@@ -46,6 +46,8 @@ class ExperimentFromCrystal(object):
                       crystal=crystal)
 
 assert len(working_params.input) > 1
+print len(working_params.input), "datasets specified as input"
+
 e = enumerate(working_params.input)
 i, line = e.next()
 reflections, exp = load_input(line.experiments, line.reflections)
@@ -74,7 +76,8 @@ refinement{
     beam.fix=all
     detector.hierarchy_level=1
   }
-  target.jacobian_max_nref=100000
+  target.jacobian_max_nref=10000
+  reflections.do_outlier_rejection=True
 }""")
 from dials.data.refinement import phil_scope as master_phil
 working_phil = master_phil.fetch(
@@ -87,5 +90,17 @@ refiner = RefinerFactory.from_parameters_data_experiments(
     verbosity=2)
 refiner.run()
 
+# save the refined experiments
+from dials.model.experiment.experiment_list import ExperimentListDumper
+experiments = refiner.get_experiments()
+dump = ExperimentListDumper(experiments)
+experiments_filename = "refined_experiments.json"
+dump.as_json(experiments_filename)
+print "refined geometry written to {0}".format(experiments_filename)
 
+# save reflections used in refinement
+matches = refiner.get_matches()
+reflections_filename = "refined_reflections.json"
+matches.as_pickle(reflections_filename)
+print "reflections used in refinement written to {0}".format(reflections_filename)
 
