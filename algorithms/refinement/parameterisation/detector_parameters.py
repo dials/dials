@@ -1170,6 +1170,8 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
       # terms of d1, d2 and dn.
 
       offsets, dir1s, dir2s = [], [], []
+      #FIXME these dot products more efficiently done using a change of basis
+      # matrix instead
       for p in [detector[i] for i in pnl_ids]:
         offset = matrix.col(p.get_origin()) - dorg
         offsets.append(matrix.col((offset.dot(d1),
@@ -1195,7 +1197,11 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
 
       # Set up the initial state for this group. This is the basis d1, d2, dn,
       # plus the offset locating the origin of the initial group frame
-      gp_offset = go - dorg
+      gp_offset = go - dorg # lab frame basis
+      #FIXME another set of dot products better done by a matrix multiplication
+      gp_offset = matrix.col((gp_offset.dot(d1),
+                              gp_offset.dot(d2),
+                              gp_offset.dot(dn))) # d1,d2,dn basis
       istate.append({'d1':d1, 'd2':d2, 'dn':dn, 'gp_offset':gp_offset})
 
       # set up the parameters.
@@ -1237,9 +1243,6 @@ class DetectorParameterisationHierarchical(DetectorParameterisationMultiPanel):
     return
 
   def compose(self):
-
-    #from dials_refinement_helpers_ext import multi_panel_compose
-    #from scitbx.array_family import flex
 
     # reset the list that holds derivatives
     for i in range(len(self._dstate_dp)):
