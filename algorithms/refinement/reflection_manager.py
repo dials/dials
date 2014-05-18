@@ -535,9 +535,9 @@ class StillsReflectionManager(ReflectionManager):
     if self._iqr_multiplier is None: return False
 
     from scitbx.math import five_number_summary
-    matches = self._reflections.select(self._reflections.get_flags(
-      self._reflections.flags.used_in_refinement))
-    imatches = matches.iselection()
+    sel = self._reflections.get_flags(self._reflections.flags.used_in_refinement)
+    matches = self._reflections.select(sel)
+    imatches = sel.iselection()
 
     x_resid = matches['x_resid']
     y_resid = matches['y_resid']
