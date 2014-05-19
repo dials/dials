@@ -13,7 +13,7 @@ namespace dials { namespace model {
   public:
 
     ShoeboxReaderInternal(const std::string &filename) {
-      
+
     }
 
     af::shared< Shoebox<double> > read(std::size_t z0, std::size_t z1) const {
@@ -38,14 +38,14 @@ namespace dials { namespace model {
      */
     ShoeboxReader(const std::string &filename,
                   const af::const_ref<std::size_t> &blocks)
-        : filename_(filename), 
+        : filename_(filename),
           blocks_(blocks.begin(), blocks.end()) {
 
       // Check we have atleast 1 block and that block array is valid
       DIALS_ASSERT(blocks.size() >= 2);
       for (std::size_t i = 1; i < blocks.size(); ++i) {
         DIALS_ASSERT(blocks[i] > blocks[i-1]);
-      }      
+      }
     }
 
     /**
@@ -100,7 +100,7 @@ namespace dials { namespace model {
 
     //ShoeboxFile(const std::string filename)
         //: filename_(filename) {
-      
+
     //}
 
 
@@ -109,7 +109,7 @@ namespace dials { namespace model {
     //}
 
     //int* block(std::size_t n) {
-      
+
     //}
 
   //private:
@@ -133,14 +133,14 @@ namespace dials { namespace model {
     //}
 
     //void add_image(std::size_t z, std::size_t panel, const af::const_ref &image) {
-      
+
       //// Ensure we can't go backward and panels are valid
       //DIALS_ASSERT(z >= current_frame_);
       //DIALS_ASSERT(panel < num_panels_);
       //current_frame_ = z;
 
-      //// Get the current 
-      
+      //// Get the current
+
     //}
 
   //private:
@@ -148,7 +148,7 @@ namespace dials { namespace model {
     //void defragment() {
 
     //}
-  
+
     //std::size_t current_frame_;
     //std::size_t num_panels_;
   //};

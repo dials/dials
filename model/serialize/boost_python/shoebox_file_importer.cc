@@ -22,7 +22,7 @@ namespace dials { namespace model { namespace serialize {
       boost::python::tuple gmt,
       boost::python::tuple dmt,
       boost::python::tuple mmt) {
- 
+
     // The input
     ShoeboxFileImporter::gain_map_array_type gm;
     ShoeboxFileImporter::dark_map_array_type dm;
@@ -41,12 +41,86 @@ namespace dials { namespace model { namespace serialize {
     }
 
     // Return the new importer
-    return new ShoeboxFileImporter(filename, 
+    return new ShoeboxFileImporter(filename,
       gm.const_ref(), dm.const_ref(), mm.const_ref());
   }
 
+  /**
+   * A proxy iterator to iterate over the shoeboxes
+   */
+  class ShoeboxIterator {
+  public:
+
+    typedef std::forward_iterator_tag iterator_category;
+    typedef std::size_t base_iterator;
+    typedef ptrdiff_t difference_type;
+    typedef Shoebox<> value_type;
+    typedef const value_type *pointer;
+    typedef value_type reference;
+
+    ShoeboxIterator(ShoeboxFileImporter &importer, base_iterator it)
+      : importer_(importer),
+        it_(it) {}
+
+    reference operator*() {
+      return importer_[it_];
+    }
+
+    ShoeboxIterator& operator++() {
+      ++it_;
+      return *this;
+    }
+
+    ShoeboxIterator operator++(int) {
+      ShoeboxIterator result(*this);
+      ++(*this);
+      return result;
+    }
+
+    bool operator==(const ShoeboxIterator& rhs) const {
+      return it_ == rhs.it_;
+    }
+
+    bool operator!=(const ShoeboxIterator& rhs) const {
+      return !(*this == rhs);
+    }
+
+  private:
+    ShoeboxFileImporter &importer_;
+    base_iterator it_;
+  };
+
+  /**
+   * Struct to help in creation of table proxy iterators
+   */
+  struct make_shoebox_iterator {
+    static
+    ShoeboxIterator begin(ShoeboxFileImporter &self) {
+      return ShoeboxIterator(self, 0);
+    }
+
+    static
+    ShoeboxIterator end(ShoeboxFileImporter &self) {
+      return ShoeboxIterator(self, self.size());
+    }
+
+    static
+    object range() {
+      return boost::python::range(
+        &make_shoebox_iterator::begin,
+        &make_shoebox_iterator::end);
+    }
+  };
+
   void export_shoebox_file_importer()
   {
+    // Typedefs of select function
+    typedef af::shared< Shoebox<> > (ShoeboxFileImporter::*select_range)(
+        std::size_t, std::size_t);
+    typedef af::shared< Shoebox<> > (ShoeboxFileImporter::*select_many)(
+        const af::const_ref<std::size_t>&);
+
+    // Export the importer class
     class_<ShoeboxFileImporter, boost::noncopyable>(
         "ShoeboxFileImporter", no_init)
       .def("init", make_constructor(
@@ -56,9 +130,14 @@ namespace dials { namespace model { namespace serialize {
           arg("gain"),
           arg("dark"),
           arg("mask"))))
+      .def("__len__", &ShoeboxFileImporter::size)
+      .def("bboxes", &ShoeboxFileImporter::bboxes)
+      .def("panels", &ShoeboxFileImporter::panels)
+      .def("__getitem__", &ShoeboxFileImporter::operator[])
+      .def("select", (select_range)&ShoeboxFileImporter::select)
+      .def("select", (select_many)&ShoeboxFileImporter::select)
+      .def("__iter__", make_shoebox_iterator::range());
       ;
   }
 
 }}}} // namespace dials::model::serialize::boost_python
-
-

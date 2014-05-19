@@ -64,7 +64,7 @@ namespace dials { namespace model { namespace serialize {
    *     SBOX[N-1][1]
    *     ...
    *     SBOX[N-1][MNm1-1]
-   * DATA_END 
+   * DATA_END
    *
    * Shoeboxes are written to the file in the order of their indices, as such it
    * is up to the calling code to ensure suffient locality between shoeboxes
@@ -101,13 +101,13 @@ namespace dials { namespace model { namespace serialize {
      * @param filename The file to write to
      * @param bbox The list of bounding boxes.
      */
-    ShoeboxFileWriter(const std::string &filename, 
+    ShoeboxFileWriter(const std::string &filename,
                       const af::const_ref<std::size_t> &panel,
                       const af::const_ref<int6> &bbox)
         : panel_(panel.begin(), panel.end()),
           bbox_(bbox.begin(), bbox.end()),
           offset_(bbox_.size() + 1),
-          file_(filename.c_str(), 
+          file_(filename.c_str(),
                 std::ios_base::binary | std::ios_base::trunc) {
       DIALS_ASSERT(panel.size() == bbox.size());
       write_internal(MAGIC);
@@ -130,9 +130,9 @@ namespace dials { namespace model { namespace serialize {
      * @param data The shoebox data
      */
     void write(
-        std::size_t index, 
+        std::size_t index,
         const af::const_ref< int, af::c_grid<3> > &data) {
-      
+
       // Ensure the index is in range
       DIALS_ASSERT(index < bbox_.size());
 
@@ -159,10 +159,10 @@ namespace dials { namespace model { namespace serialize {
      * Write the header information
      */
     void write_header() {
-      
+
       // Begin the header
       write_internal(HEADER_BEG);
-    
+
       // Write the panels and bboxes
       write_internal((uint32_t)bbox_.size());
       for (std::size_t i = 0; i < panel_.size(); ++i) {
@@ -177,11 +177,11 @@ namespace dials { namespace model { namespace serialize {
       // Calculate the offsets
       offset_[0] = 0;
       for (std::size_t i = 0; i < bbox_.size(); ++i) {
-        uint64_t box_size = 
+        uint64_t box_size =
           (bbox_[i][1] - bbox_[i][0]) *
           (bbox_[i][3] - bbox_[i][2]) *
           (bbox_[i][5] - bbox_[i][4]);
-        offset_[i+1] = offset_[i] + box_size * sizeof(int) + sizeof(SHOEBOX_BEG); 
+        offset_[i+1] = offset_[i] + box_size * sizeof(int) + sizeof(SHOEBOX_BEG);
       }
 
       // End the header
@@ -192,7 +192,7 @@ namespace dials { namespace model { namespace serialize {
      * Write the shoebox data
      */
     void write_data() {
-      
+
       // Allocate space for the data
       write_internal(DATA_BEG);
       data_offset_ = file_.tellp();
@@ -239,14 +239,14 @@ namespace dials { namespace model { namespace serialize {
    */
   class ShoeboxFileReader : public ShoeboxFileBase {
   public:
-    
+
     /**
      * Read in the shoebox header info.
      * @param filename The file to read
      */
-    ShoeboxFileReader(const std::string filename) 
+    ShoeboxFileReader(const std::string filename)
         : file_(filename.c_str()) {
-    
+
       // Read and check magic and version numbers
       DIALS_ASSERT(read_internal<uint32_t>() == MAGIC);
       DIALS_ASSERT(read_internal<uint32_t>() == VERSION);
@@ -314,7 +314,7 @@ namespace dials { namespace model { namespace serialize {
      * Read the header information.
      */
     void check_header() {
-    
+
       // Check the header begin flag
       DIALS_ASSERT(read_internal<uint32_t>() == HEADER_BEG);
 
@@ -322,14 +322,14 @@ namespace dials { namespace model { namespace serialize {
       uint32_t bbox_size = read_internal<uint32_t>();
       panel_.resize(bbox_size);
       bbox_.resize(bbox_size);
-      offset_.resize(bbox_size + 1); 
+      offset_.resize(bbox_size + 1);
       for (std::size_t i = 0; i < bbox_size; ++i) {
         panel_[i] = read_internal<uint32_t>();
       }
       for (std::size_t i = 0; i < bbox_size; ++i) {
         int6 b;
         for (std::size_t j = 0; j < 6; ++j) {
-          b[j] = read_internal<int32_t>(); 
+          b[j] = read_internal<int32_t>();
         }
         DIALS_ASSERT(b[1] > b[0]);
         DIALS_ASSERT(b[3] > b[2]);
@@ -340,11 +340,11 @@ namespace dials { namespace model { namespace serialize {
       // Calculate the offsets
       offset_[0] = 0;
       for (std::size_t i = 0; i < bbox_.size(); ++i) {
-        uint64_t box_size = 
+        uint64_t box_size =
           (bbox_[i][1] - bbox_[i][0]) *
           (bbox_[i][3] - bbox_[i][2]) *
           (bbox_[i][5] - bbox_[i][4]);
-        offset_[i+1] = offset_[i] + box_size * sizeof(int) + sizeof(SHOEBOX_BEG); 
+        offset_[i+1] = offset_[i] + box_size * sizeof(int) + sizeof(SHOEBOX_BEG);
       }
 
       // Check the header end flag
@@ -368,7 +368,7 @@ namespace dials { namespace model { namespace serialize {
 
       //file_.seekg(offset_.back(), std::ios_base::cur);
       DIALS_ASSERT(read_internal<uint32_t>() == DATA_END);
-     
+
       // Try to read a byte and check eof
       read_internal_nocheck<char>();
       DIALS_ASSERT(file_.eof());

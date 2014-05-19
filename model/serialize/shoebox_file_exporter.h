@@ -43,7 +43,7 @@ namespace dials { namespace model { namespace serialize {
      * @param num_panel The number of panels
      */
     ShoeboxFileExporter(
-            const std::string filename, 
+            const std::string filename,
             const af::const_ref<std::size_t> &panel,
             const af::const_ref<int6> &bbox,
             std::size_t num_frame,
@@ -57,8 +57,8 @@ namespace dials { namespace model { namespace serialize {
           num_panel_(num_panel),
           cur_panel_(0),
           per_frame_indices_(num_frame * num_panel) {
-      
-      // Ensure number of frames in valid      
+
+      // Ensure number of frames in valid
       DIALS_ASSERT(num_frame_ > 0);
       DIALS_ASSERT(num_panel_ > 0);
 
@@ -94,16 +94,16 @@ namespace dials { namespace model { namespace serialize {
      * ...
      *
      * The calling code should check that the returned frame/panel pair to
-     * ensure that the image data has been added as expected. 
+     * ensure that the image data has been added as expected.
      *
      * @param image The image data
-     * @returns The frame/panel numbers. 
+     * @returns The frame/panel numbers.
      */
     std::pair<std::size_t, std::size_t>
     next(const af::const_ref< int, af::c_grid<2> > &image) {
 
       // Check we're within frame and panel range
-      DIALS_ASSERT(cur_frame_ < num_frame_); 
+      DIALS_ASSERT(cur_frame_ < num_frame_);
       DIALS_ASSERT(cur_panel_ < num_panel_);
 
       // Get the list of indices of shoeboxes recorded on a frame
@@ -130,14 +130,14 @@ namespace dials { namespace model { namespace serialize {
 
         // Add the data to the shoebox
         add(shoebox, bbox, cur_frame_, image);
-        
+
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
           writer_.write(index, shoebox.const_ref());
           shoebox.resize(af::c_grid<3>(0, 0, 0));
         }
       }
-    
+
       // Construct the result
       std::pair<std::size_t, std::size_t> result;
       result.first = cur_frame_;
@@ -200,7 +200,7 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(z >= bbox[4] && z < bbox[5]);
 
       // The offsets into the image
-      std::size_t k = z - bbox[4]; 
+      std::size_t k = z - bbox[4];
       std::size_t is = bbox[1] - bbox[0];
       std::size_t js = bbox[3] - bbox[2];
       std::size_t ks = bbox[5] - bbox[4];
