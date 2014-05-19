@@ -1,5 +1,5 @@
 /*
- * serialize_ext.cc
+ * shoebox.cc
  *
  *  Copyright (C) 2013 Diamond Light Source
  *
@@ -10,18 +10,15 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <dials/model/serialize/shoebox.h>
 
 namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
 
-  void export_block_list();
-  void export_serialize_shoebox();
-
-  BOOST_PYTHON_MODULE(dials_model_serialize_ext)
+  void export_serialize_shoebox()
   {
-    export_block_list();
-    export_serialize_shoebox();
   }
 
-}}} // namespace = dials::model::boost_python
+}}} // namespace dials::model::boost_python
+

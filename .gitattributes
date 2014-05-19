@@ -467,11 +467,13 @@ model/serialize/__init__.py -text
 model/serialize/block_list.h -text
 model/serialize/boost_python/block_list.cc -text
 model/serialize/boost_python/serialize_ext.cc -text
+model/serialize/boost_python/shoebox.cc -text
 model/serialize/dump.py -text
 model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/partial_shoebox.py -text
 model/serialize/reflection.py -text
+model/serialize/shoebox.h -text
 model/serialize/shoebox.py -text
 model/serialize/xds.py -text
 /run_tests.py -text

@@ -3,6 +3,7 @@ Import('env')
 
 sources = [
     'boost_python/block_list.cc',
+    'boost_python/shoebox.cc',
     'boost_python/serialize_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_model_serialize_ext', source=sources)
