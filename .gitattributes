@@ -794,6 +794,7 @@ test/model/serialize/tst_block_list.py -text
 test/model/serialize/tst_partial_shoebox.py -text
 test/model/serialize/tst_reflection.py -text
 test/model/serialize/tst_shoebox.py -text
+test/model/serialize/tst_shoebox_file.py -text
 test/tst_plot_reflections.py -text
 test/util/tst_command_line.py -text
 util/__init__.py -text

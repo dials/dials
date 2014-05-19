@@ -17,14 +17,10 @@ namespace dials { namespace model { namespace serialize {
     typedef af::versa< double, af::c_grid<2> > gain_map_type;
     typedef af::versa< double, af::c_grid<2> > dark_map_type;
     typedef af::versa< bool, af::c_grid<2> > mask_map_type;
-
-    typedef af::shared<gain_map_type> gain_map_array_type;
-    typedef af::shared<dark_map_type> dark_map_array_type;
-    typedef af::shared<mask_map_type> mask_map_array_type;
-
-    typedef af::const_ref<gain_map_type> gain_map_ref_array_type;
-    typedef af::const_ref<dark_map_type> dark_map_ref_array_type;
-    typedef af::const_ref<mask_map_type> mask_map_ref_array_type;
+    
+    typedef af::const_ref< double, af::c_grid<2> > gain_map_ref_type;
+    typedef af::const_ref< double, af::c_grid<2> > dark_map_ref_type;
+    typedef af::const_ref< bool, af::c_grid<2> > mask_map_ref_type;
 
     typedef af::versa< int, af::c_grid<3> > raw_shoebox_type;
 
@@ -36,9 +32,9 @@ namespace dials { namespace model { namespace serialize {
      * @param mask The mask
      */
     ShoeboxFileImporter(const std::string &filename,
-                        const gain_map_ref_array_type &gain,
-                        const dark_map_ref_array_type &dark,
-                        const mask_map_ref_array_type &mask)
+                        const af::const_ref<gain_map_ref_type> &gain,
+                        const af::const_ref<dark_map_ref_type> &dark,
+                        const af::const_ref<mask_map_ref_type> &mask)
         : reader_(filename),
           bbox_(reader_.bbox()),
           panel_(reader_.panels()) {
@@ -186,9 +182,9 @@ namespace dials { namespace model { namespace serialize {
     ShoeboxFileReader reader_;
     af::shared<int6> bbox_;
     af::shared<std::size_t> panel_;
-    gain_map_array_type gain_maps_;
-    dark_map_array_type dark_maps_;
-    mask_map_array_type mask_maps_;
+    af::shared<gain_map_type> gain_maps_;
+    af::shared<dark_map_type> dark_maps_;
+    af::shared<mask_map_type> mask_maps_;
   };
 
 }}} // namespace dials::model::serialize

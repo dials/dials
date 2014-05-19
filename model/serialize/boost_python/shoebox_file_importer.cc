@@ -24,9 +24,9 @@ namespace dials { namespace model { namespace serialize {
       boost::python::tuple mmt) {
 
     // The input
-    ShoeboxFileImporter::gain_map_array_type gm;
-    ShoeboxFileImporter::dark_map_array_type dm;
-    ShoeboxFileImporter::mask_map_array_type mm;
+    af::shared<ShoeboxFileImporter::gain_map_ref_type> gm;
+    af::shared<ShoeboxFileImporter::dark_map_ref_type> dm;
+    af::shared<ShoeboxFileImporter::mask_map_ref_type> mm;
 
     // Ensure all the same length
     std::size_t num = len(gmt);
@@ -35,9 +35,9 @@ namespace dials { namespace model { namespace serialize {
 
     // Extract the stuff
     for (std::size_t i = 0; i < num; ++i) {
-      gm.push_back(extract<ShoeboxFileImporter::gain_map_type>(gmt[i]));
-      dm.push_back(extract<ShoeboxFileImporter::dark_map_type>(dmt[i]));
-      mm.push_back(extract<ShoeboxFileImporter::mask_map_type>(mmt[i]));
+      gm.push_back(extract<ShoeboxFileImporter::gain_map_ref_type>(gmt[i]));
+      dm.push_back(extract<ShoeboxFileImporter::dark_map_ref_type>(dmt[i]));
+      mm.push_back(extract<ShoeboxFileImporter::mask_map_ref_type>(mmt[i]));
     }
 
     // Return the new importer
@@ -123,7 +123,7 @@ namespace dials { namespace model { namespace serialize {
     // Export the importer class
     class_<ShoeboxFileImporter, boost::noncopyable>(
         "ShoeboxFileImporter", no_init)
-      .def("init", make_constructor(
+      .def("__init__", make_constructor(
         &make_shoebox_file_importer,
         default_call_policies(), (
           arg("filename"),
