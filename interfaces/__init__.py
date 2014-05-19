@@ -23,7 +23,7 @@ class SpotFinderThresholdIface(interface.Interface):
     pass
 
   @interface.abstractmethod
-  def compute_threshold(self, image):
+  def compute_threshold(self, image, mask):
     pass
 
 
