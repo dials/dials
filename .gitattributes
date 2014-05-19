@@ -468,6 +468,7 @@ model/serialize/block_list.h -text
 model/serialize/boost_python/block_list.cc -text
 model/serialize/boost_python/serialize_ext.cc -text
 model/serialize/boost_python/shoebox.cc -text
+model/serialize/boost_python/shoebox_block_importer.cc -text
 model/serialize/boost_python/shoebox_file_exporter.cc -text
 model/serialize/boost_python/shoebox_file_importer.cc -text
 model/serialize/dump.py -text
@@ -477,6 +478,7 @@ model/serialize/partial_shoebox.py -text
 model/serialize/reflection.py -text
 model/serialize/shoebox.h -text
 model/serialize/shoebox.py -text
+model/serialize/shoebox_block_importer.h -text
 model/serialize/shoebox_file.h -text
 model/serialize/shoebox_file_exporter.h -text
 model/serialize/shoebox_file_importer.h -text

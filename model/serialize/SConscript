@@ -6,6 +6,7 @@ sources = [
     'boost_python/shoebox.cc',
     'boost_python/shoebox_file_exporter.cc',
     'boost_python/shoebox_file_importer.cc',
+    'boost_python/shoebox_block_importer.cc',
     'boost_python/serialize_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_model_serialize_ext', source=sources)
