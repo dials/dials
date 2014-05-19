@@ -11,7 +11,7 @@ class Test(object):
 
     self.filename = "shoebox.dat"
     self.nframes = 5
-    self.npanels = 1
+    self.npanels = 2
     self.width = 1000
     self.height = 1000
     self.nrefl = 1000
