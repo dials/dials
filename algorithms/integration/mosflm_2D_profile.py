@@ -19,8 +19,6 @@ from dials.array_family import flex
 from dials.algorithms.integration.projection_from_3d_to_2d import \
      from_3D_to_2D_projection, from_3D_to_2D_mask_projection
 
-#rememver to remove this tmp_counter variavle stuff after debugging
-tmp_counter = 0
 
 def make_2d_profile(reflection_pointers, ref_table_in):
 
@@ -99,65 +97,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     peak2d = subtrac_bkg_2d(data2d, background2d)
 
     sumation = add_2d(descr, peak2d, sumation)
-
-  if_you_want_to_see_how_the_profiles_look = '''
-
-  #rememver to remove this tmp_counter variavle stuff after debugging
-  global tmp_counter
-  tmp_counter += 1
-
-  #print "\n\n"
-  #print "tmp_counter =", tmp_counter
-  #print "\n\n"
-  if tmp_counter == 5:
-
-    #####################################################################
-    #this piece of code must be moved fron here to production stable area
-    #####################################################################
-
-    for t_row in select_pointers:
-
-      shoebox = col_shoebox[t_row].data
-      background = col_shoebox[t_row].background
-
-      #this duplicated code should be moved to a function call
-      data2d, background2d = from_3D_to_2D_projection(shoebox, background)
-      cntr_pos = col_xyzcal[t_row]
-      bnd_box = col_bbox[t_row]
-
-      descr[0, 0] = cntr_pos[0] - bnd_box[0]
-      descr[0, 1] = cntr_pos[1] - bnd_box[2]
-      descr[0, 2] = 1.0 / (col_intensity[t_row])
-      peak2d = subtrac_bkg_2d(data2d, background2d)
-      # ends duplicated code
-
-      from dials.scratch.luiso_s import  write_2d
-
-      mov_peak2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
-      mov_peak2d = add_2d(descr, peak2d, mov_peak2d)
-      #mov_n_scaled_peak2d = scale_2d(mov_peak2d, 1.0 / (col_intensity[t_row] * counter)
-      #print "mov_n_scaled_peak2d =", mov_n_scaled_peak2d
-
-      print "_____________________________________________________________"
-      print "_____________________________________________________________"
-      print "mov_peak2d"
-      write_2d(mov_peak2d)
-      print "sumation"
-      write_2d(sumation)
-      print "_____________________________________________________________"
-      print "_____________________________________________________________"
-      yea = test_outlier(mov_peak2d, sumation)
-      print yea
-
-    #####################################################################
-
-    from matplotlib import pyplot as plt
-    data2d_np = sumation.as_numpy_array()
-    #plt.imshow(data2d_np, interpolation = "nearest", cmap = plt.gray())
-    plt.imshow(data2d_np, interpolation = "nearest")
-    plt.show()
-
-  #'''
 
 
   return sumation, thold
@@ -363,9 +302,6 @@ def fit_profile_2d(reflection_pointers, ref_table
         interpolation_mask2d = mask_2d_interpolate(
         descr, mask2d, interpolation_mask2d)
 
-
-
-
         descr[0, 0] = cntr_pos[0] - bnd_box[0]
         descr[0, 1] = cntr_pos[1] - bnd_box[2]
         descr[0, 2] = 1.0
@@ -397,13 +333,6 @@ def fit_profile_2d(reflection_pointers, ref_table
           col_variance[t_row] = var
         else:
 
-          '''
-          descr[0, 0] = cntr_pos[0] - bnd_box[0]
-          descr[0, 1] = cntr_pos[1] - bnd_box[2]
-          descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
-          peak2d = subtrac_bkg_2d(data2d, background2d)
-          '''
-
           intr_polt_2d = flex.double(flex.grid(big_nrow, big_ncol), 0)
           data2dmov = add_2d(descr, data2d, intr_polt_2d)
           background2dmov = add_2d(descr, background2d, intr_polt_2d)
@@ -416,35 +345,6 @@ def fit_profile_2d(reflection_pointers, ref_table
           var = sigma_2d(col_intensity[t_row], mask2d, background2d)
 
           col_variance[t_row] = var
-          #print_and_compare = '''
-          from dials.scratch.luiso_s import  write_2d, write_2d_mask
-          #if ( bnd_box == (1908, 1921, 586, 599, 2, 3) and
-          #     cntr_pos == (1914.095458984375, 592.4046020507812, 2.5) ):
-          if ( bnd_box == (1247, 1258, 786, 799, 30, 31) and
-               cntr_pos == ( 1252.3179931640625, 792.4122314453125, 30.5 ) ):
-            print "_____________________________________________________________"
-            print "data2d"
-            write_2d(data2d)
-            print "background2d"
-            write_2d(background2d)
-
-            print "data2dmov"
-            write_2d(data2dmov)
-            print "background2dmov"
-            write_2d(background2dmov)
-
-            print "average"
-            write_2d(average)
-            print "mask2d"
-            write_2d_mask(mask2d)
-            print "interpolation_mask2d"
-            write_2d_mask(interpolation_mask2d)
-            print "descr[0,0] =", descr[0,0]
-            print "descr[0,1] =", descr[0,1]
-            print "pf_I =", col_intensity[t_row]
-            print "_____________________________________________________________"
-
-          #'''
 
         if col_intensity[t_row] < 0:
           col_intensity[t_row] = -1.0

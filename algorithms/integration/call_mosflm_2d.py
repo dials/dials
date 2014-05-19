@@ -18,13 +18,6 @@ from dials.array_family import flex
 
 def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
-  imagin_stuff = '''
-  ###############################################################################
-  t_intensity = ref_table_in['intensity.sum.value']
-  old_i_table = t_intensity[:]
-  ###############################################################################
-  #'''
-
   ncol = n_div
   nrow = n_div
   arr_rlist = []
@@ -92,27 +85,6 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
                                     , arr_proff, row, col,  xmax, ymax)
   p_bar.finished('Done profiles fitting')
 
-  imagin_stuff = '''
-  ###############################################################################
-  t_intensity = ref_table_in['intensity.prf.value']
-  num_ref = len(t_intensity)
-  paint_compare = []
-  for i in range(num_ref):
-    paint_compare.append([ old_i_table[i], t_intensity[i]])
-  paint_compare_sort = sorted(paint_compare)
-  import numpy
-  data1d = numpy.zeros(num_ref, dtype = numpy.float64)
-  new_data1d = numpy.zeros(num_ref, dtype = numpy.float64)
-  for i in range(num_ref):
-    data1d[i] = paint_compare_sort[i][0]
-    new_data1d[i] = paint_compare_sort[i][1]
-
-  from matplotlib import pylab
-  pylab.plot(data1d)
-  pylab.plot(new_data1d)
-  pylab.show()
-  ###############################################################################
-  #'''
 
   #new_ref_table = flex.reflection_table()
   #return new_ref_table
