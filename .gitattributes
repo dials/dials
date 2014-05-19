@@ -475,6 +475,8 @@ model/serialize/partial_shoebox.py -text
 model/serialize/reflection.py -text
 model/serialize/shoebox.h -text
 model/serialize/shoebox.py -text
+model/serialize/shoebox_file.h -text
+model/serialize/shoebox_file_exporter.h -text
 model/serialize/xds.py -text
 /run_tests.py -text
 scratch/__init__.py -text
