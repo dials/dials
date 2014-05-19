@@ -9,6 +9,22 @@
 
 namespace dials { namespace model {
 
+  class ShoeboxReaderInternal {
+  public:
+
+    ShoeboxReaderInternal(const std::string &filename) {
+      
+    }
+
+    af::shared< Shoebox<double> > read(std::size_t z0, std::size_t z1) const {
+
+    }
+
+  private:
+
+  };
+
+
   /**
    * Interface for reading shoeboxes from the intermediate file.
    */
@@ -29,7 +45,7 @@ namespace dials { namespace model {
       DIALS_ASSERT(blocks.size() >= 2);
       for (std::size_t i = 1; i < blocks.size(); ++i) {
         DIALS_ASSERT(blocks[i] > blocks[i-1]);
-      }
+      }      
     }
 
     /**
@@ -68,7 +84,7 @@ namespace dials { namespace model {
      * @param index The block index
      * @returns The list of shoeboxes in the block
      */
-    af::shared< Shoebox<double> > read(std::size_t index) const {
+    af::shared< Shoebox<double> > operator[](std::size_t index) const {
       DIALS_ASSERT(index < size());
       return af::shared< Shoebox<double> >();
     }

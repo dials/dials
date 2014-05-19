@@ -19,8 +19,8 @@
 
 namespace dials { namespace model { namespace serialize {
 
-  using scitbx::af::int2;
-  using scitbx::af::int6;
+  using af::int2;
+  using af::int6;
 
   /**
    * A class to export shoeboxes to an intermediate file after extracting the
@@ -31,8 +31,8 @@ namespace dials { namespace model { namespace serialize {
 
     typedef std::vector<std::size_t> index_array_type;
     typedef std::vector<index_array_type> pf_index_array_type;
-    typedef scitbx::af::versa< int, scitbx::af::c_grid<3> > shoebox_type;
-    typedef scitbx::af::shared<shoebox_type> shoebox_array_type;
+    typedef af::versa< int, af::c_grid<3> > shoebox_type;
+    typedef af::shared<shoebox_type> shoebox_array_type;
 
     /**
      * Initialise the exporter
@@ -44,8 +44,8 @@ namespace dials { namespace model { namespace serialize {
      */
     ShoeboxFileExporter(
             const std::string filename, 
-            const scitbx::af::const_ref<std::size_t> &panel,
-            const scitbx::af::const_ref<int6> &bbox,
+            const af::const_ref<std::size_t> &panel,
+            const af::const_ref<int6> &bbox,
             std::size_t num_frame,
             std::size_t num_panel)
         : writer_(filename, panel, bbox),
@@ -54,8 +54,8 @@ namespace dials { namespace model { namespace serialize {
           shoeboxes_(bbox.size()),
           num_frame_(num_frame),
           cur_frame_(0),
-          cur_panel_(0),
           num_panel_(num_panel),
+          cur_panel_(0),
           per_frame_indices_(num_frame * num_panel) {
       
       // Ensure number of frames in valid      
@@ -100,7 +100,7 @@ namespace dials { namespace model { namespace serialize {
      * @returns The frame/panel numbers. 
      */
     std::pair<std::size_t, std::size_t>
-    next(const scitbx::af::const_ref< int, scitbx::af::c_grid<2> > &image) {
+    next(const af::const_ref< int, af::c_grid<2> > &image) {
 
       // Check we're within frame and panel range
       DIALS_ASSERT(cur_frame_ < num_frame_); 
@@ -125,7 +125,7 @@ namespace dials { namespace model { namespace serialize {
           std::size_t zs = bbox[5] - bbox[4];
           std::size_t ys = bbox[3] - bbox[2];
           std::size_t xs = bbox[1] - bbox[0];
-          shoebox.resize(scitbx::af::c_grid<3>(zs, ys, xs));
+          shoebox.resize(af::c_grid<3>(zs, ys, xs));
         }
 
         // Add the data to the shoebox
@@ -134,7 +134,7 @@ namespace dials { namespace model { namespace serialize {
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
           writer_.write(index, shoebox.const_ref());
-          shoebox.resize(scitbx::af::c_grid<3>(0, 0, 0));
+          shoebox.resize(af::c_grid<3>(0, 0, 0));
         }
       }
     
@@ -190,7 +190,7 @@ namespace dials { namespace model { namespace serialize {
     void add(shoebox_type &shoebox,
              const int6 &bbox,
              std::size_t z,
-             const scitbx::af::const_ref< int, scitbx::af::c_grid<2> > &image) {
+             const af::const_ref< int, af::c_grid<2> > &image) {
 
       // Check z is ok
       DIALS_ASSERT(bbox[0] >= 0);
@@ -221,14 +221,14 @@ namespace dials { namespace model { namespace serialize {
     }
 
     ShoeboxFileWriter writer_;
-    scitbx::af::shared<int6> bbox_;
-    scitbx::af::shared<std::size_t> panel_;
+    af::shared<int6> bbox_;
+    af::shared<std::size_t> panel_;
+    shoebox_array_type shoeboxes_;
     std::size_t num_frame_;
     std::size_t cur_frame_;
     std::size_t num_panel_;
     std::size_t cur_panel_;
     pf_index_array_type per_frame_indices_;
-    shoebox_array_type shoeboxes_;
   };
 
 }}} // namespace dials::model::serialize

@@ -226,8 +226,8 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(file_.good());
     }
 
-    af::shared<int6> bbox_;
     af::shared<std::size_t> panel_;
+    af::shared<int6> bbox_;
     af::shared<uint64_t> offset_;
     std::ofstream file_;
     uint64_t data_offset_;
