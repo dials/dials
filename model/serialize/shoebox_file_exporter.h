@@ -15,7 +15,7 @@
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
-#include "shoebox_file.h"
+#include <dials/model/serialize/shoebox_file.h>
 
 namespace dials { namespace model { namespace serialize {
 
