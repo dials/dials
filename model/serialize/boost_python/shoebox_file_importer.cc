@@ -123,6 +123,8 @@ namespace dials { namespace model { namespace serialize {
     // Export the importer class
     class_<ShoeboxFileImporter, boost::noncopyable>(
         "ShoeboxFileImporter", no_init)
+      .def(init<const std::string&>((
+          arg("filename"))))
       .def("__init__", make_constructor(
         &make_shoebox_file_importer,
         default_call_policies(), (

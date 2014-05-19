@@ -27,6 +27,16 @@ namespace dials { namespace model { namespace serialize {
     /**
      * Initialise the importer
      * @param filename The path to the shoebox file
+     */
+    ShoeboxFileImporter(const std::string &filename)
+        : reader_(filename),
+          bbox_(reader_.bbox()),
+          panel_(reader_.panels()),
+          lookup_(false) {}
+
+    /**
+     * Initialise the importer
+     * @param filename The path to the shoebox file
      * @param gain The gain map
      * @param dark The dark map
      * @param mask The mask
@@ -37,7 +47,8 @@ namespace dials { namespace model { namespace serialize {
                         const af::const_ref<mask_map_ref_type> &mask)
         : reader_(filename),
           bbox_(reader_.bbox()),
-          panel_(reader_.panels()) {
+          panel_(reader_.panels()),
+          lookup_(true) {
 
       // Ensure the number of maps match the number of panels
       DIALS_ASSERT(gain.size() > af::max(panel_.const_ref()));
@@ -102,6 +113,43 @@ namespace dials { namespace model { namespace serialize {
      * @returns The shoebox
      */
     Shoebox<> operator[](std::size_t index) {
+      return lookup_ ? read_with_lookup(index) : read_without_lookup(index);
+    }
+
+    /**
+     * Get a range of shoeboxes.
+     * @param i0 The start of the range.
+     * @param i1 The end of the range
+     * @returns The list of shoeboxes
+     */
+    af::shared< Shoebox<> > select(std::size_t i0, std::size_t i1) {
+      af::shared< Shoebox<> > result;
+      for (std::size_t i = i0; i < i1; ++i) {
+        result.push_back((*this)[i]);
+      }
+      return result;
+    }
+
+    /**
+     * Get a selection of shoeboxes
+     * @param index The shoebox indices
+     * @returns The list of shoeboxes
+     */
+    af::shared< Shoebox<> > select(const af::const_ref<std::size_t> &index) {
+      af::shared< Shoebox<> > result;
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        result.push_back((*this)[index[i]]);
+      }
+      return result;
+    }
+
+  private:
+
+    /**
+     * When lookup tables are set, read in values with gain/dark/mask.
+     */
+    Shoebox<> read_with_lookup(std::size_t index) {
+
       af::versa< int, af::c_grid<3> > data = reader_.read(index);
 
       // Ensure index is valid
@@ -151,33 +199,44 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
-     * Get a range of shoeboxes.
-     * @param i0 The start of the range.
-     * @param i1 The end of the range
-     * @returns The list of shoeboxes
+     * When no lookup is set, read in raw values.
      */
-    af::shared< Shoebox<> > select(std::size_t i0, std::size_t i1) {
-      af::shared< Shoebox<> > result;
-      for (std::size_t i = i0; i < i1; ++i) {
-        result.push_back((*this)[i]);
-      }
-      return result;
-    }
+    Shoebox<> read_without_lookup(std::size_t index) {
 
-    /**
-     * Get a selection of shoeboxes
-     * @param index The shoebox indices
-     * @returns The list of shoeboxes
-     */
-    af::shared< Shoebox<> > select(const af::const_ref<std::size_t> &index) {
-      af::shared< Shoebox<> > result;
-      for (std::size_t i = 0; i < index.size(); ++i) {
-        result.push_back((*this)[index[i]]);
-      }
-      return result;
-    }
+      af::versa< int, af::c_grid<3> > data = reader_.read(index);
 
-  private:
+      // Ensure index is valid
+      DIALS_ASSERT(index < size());
+
+      // Get the panel and bounidng box
+      std::size_t panel = panel_[index];
+      int6 bbox = bbox_[index];
+
+      // Initialise the shoebox
+      Shoebox<> sbox(panel, bbox);
+
+      // Allocate the memory
+      sbox.allocate();
+
+      // Assign the values of the mask and pixels
+      raw_shoebox_type raw = reader_.read(index);
+
+      // Assign all the pixel values
+      std::size_t zsize = bbox[5] - bbox[4];
+      std::size_t ysize = bbox[3] - bbox[2];
+      std::size_t xsize = bbox[1] - bbox[0];
+      for (std::size_t k = 0; k < zsize; ++k) {
+        for (std::size_t j = 0; j < ysize; ++j) {
+          for (std::size_t i = 0; i < xsize; ++i) {
+            sbox.data(k,j,i) = raw(k,j,i);
+            sbox.mask(k,j,i) = Valid;
+          }
+        }
+      }
+
+      // return the shoebox
+      return sbox;
+    }
 
     ShoeboxFileReader reader_;
     af::shared<int6> bbox_;
@@ -185,6 +244,7 @@ namespace dials { namespace model { namespace serialize {
     af::shared<gain_map_type> gain_maps_;
     af::shared<dark_map_type> dark_maps_;
     af::shared<mask_map_type> mask_maps_;
+    bool lookup_;
   };
 
 }}} // namespace dials::model::serialize
