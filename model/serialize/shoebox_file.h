@@ -259,6 +259,13 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
+     * @returns The number of shoeboxes
+     */
+    std::size_t size() const {
+      return bbox_.size();
+    }
+
+    /**
      * @returns The bounding boxes
      */
     af::shared<int6> bbox() const {
