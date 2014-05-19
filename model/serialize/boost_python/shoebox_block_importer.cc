@@ -10,6 +10,7 @@
  */
 #include <boost/python.hpp>
 #include <boost/python/def.hpp>
+#include <boost_adaptbx/std_pair_conversion.h>
 #include <dials/model/serialize/shoebox_block_importer.h>
 
 namespace dials { namespace model { namespace serialize {
@@ -140,7 +141,10 @@ namespace dials { namespace model { namespace serialize {
       .def("__getitem__", &ShoeboxBlockImporter::operator[])
       .def("__iter__", make_shoebox_block_iterator::range());
       ;
+
+    // Export a conversion for the pair
+    boost_adaptbx::std_pair_conversions::to_tuple<
+      af::shared<std::size_t>, af::shared< Shoebox<> > >();
   }
 
 }}}} // namespace dials::model::serialize::boost_python
-

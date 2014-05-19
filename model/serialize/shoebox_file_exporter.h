@@ -101,7 +101,7 @@ namespace dials { namespace model { namespace serialize {
      */
     std::pair<std::size_t, std::size_t>
     next(const af::const_ref< int, af::c_grid<2> > &image) {
-      
+
       // Check we're within frame and panel range
       DIALS_ASSERT(cur_frame_ < num_frame_);
       DIALS_ASSERT(cur_panel_ < num_panel_);
@@ -130,7 +130,7 @@ namespace dials { namespace model { namespace serialize {
 
         // Add the data to the shoebox
         add(shoebox, bbox, cur_frame_, image);
-        
+
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
           writer_.write(index, shoebox.const_ref());

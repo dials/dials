@@ -2,6 +2,7 @@
 from __future__ import division
 from dials.model.serialize import ShoeboxFileExporter
 from dials.model.serialize import ShoeboxFileImporter
+from dials.model.serialize import ShoeboxBlockImporter
 
 class Test(object):
 
@@ -18,6 +19,7 @@ class Test(object):
     self.panels = flex.size_t(self.nrefl)
     self.bboxes = flex.int6(self.nrefl)
     self.size = flex.size_t(self.nrefl)
+    self.z = flex.double(self.nrefl)
 
     self.images = []
     a = 0
@@ -40,6 +42,7 @@ class Test(object):
       z1 = randint(z0+1, self.nframes)
       self.bboxes[i] = (x0, x1, y0, y1, z0, z1)
       self.size[i] = (x1 - x0) * (y1 - y0) * (z1 - z0)
+      self.z[i] = (float(z1) + float(z0)) / 2.0
       data = flex.int(flex.grid(z1-z0, y1-y0, x1-x0))
       for z in range(z0, z1):
         for y in range(y0, y1):
@@ -47,20 +50,29 @@ class Test(object):
             data[z-z0,y-y0,x-x0] = self.images[self.panels[i] + z * self.npanels][y,x]
       self.expected.append(data)
 
+    # Sort by z
+    mapping = flex.size_t(sorted(range(self.nrefl), key=lambda x: self.z[x]))
+    self.panels = self.panels.select(mapping)
+    self.bboxes = self.bboxes.select(mapping)
+    self.size = self.size.select(mapping)
+    self.z = self.z.select(mapping)
+    self.expected = flex.select(self.expected, permutation=mapping)
+
   def run(self):
-    
+
     self.export_data()
     self.import_data()
+    self.import_blocks()
 
   def export_data(self):
     from os.path import isfile
 
     # Create the exporter
     exporter = ShoeboxFileExporter(
-      self.filename, 
-      self.panels, 
-      self.bboxes, 
-      self.nframes, 
+      self.filename,
+      self.panels,
+      self.bboxes,
+      self.nframes,
       self.npanels)
 
     # Add all the images
@@ -80,22 +92,22 @@ class Test(object):
     print 'OK'
 
   def import_data(self):
-    
+
     from dials.array_family import flex
 
     # Test the magic numbers
     self.test_contents()
 
     # Create the lookup
-    gain = tuple([flex.double(flex.grid(self.height, self.width), 1.0) 
+    gain = tuple([flex.double(flex.grid(self.height, self.width), 1.0)
                   for i in range(self.npanels)])
 
-    dark = tuple([flex.double(flex.grid(self.height, self.width), 0.0) 
+    dark = tuple([flex.double(flex.grid(self.height, self.width), 0.0)
                   for i in range(self.npanels)])
-    
-    mask = tuple([flex.bool(flex.grid(self.height, self.width), True) 
+
+    mask = tuple([flex.bool(flex.grid(self.height, self.width), True)
                   for i in range(self.npanels)])
-    
+
     # Create the importer
     importer = ShoeboxFileImporter(self.filename, gain, dark, mask)
 
@@ -103,7 +115,7 @@ class Test(object):
     self.test_read_data(importer)
 
   def test_contents(self):
-   
+
     import struct
 
     # Open the file
@@ -120,7 +132,7 @@ class Test(object):
     assert(begin == 2)
     nrefl = struct.unpack('@I', infile.read(4))[0]
     assert(nrefl == self.nrefl)
-   
+
     # Check the panels
     for i in range(nrefl):
       p = struct.unpack('@I', infile.read(4))[0]
@@ -139,7 +151,7 @@ class Test(object):
     # Test the start of the data
     begin = struct.unpack('@I', infile.read(4))[0]
     assert(begin == 4)
-    
+
     # Check all the shoeboxes are laid out properly
     for i in range(nrefl):
       shoebox = struct.unpack('@I', infile.read(4))[0]
@@ -154,8 +166,8 @@ class Test(object):
     print 'OK'
 
   def test_read_data(self, importer):
-      
-    from dials.array_family import flex    
+
+    from dials.array_family import flex
 
     # Check size of importer
     assert(len(importer) == self.nrefl)
@@ -203,6 +215,28 @@ class Test(object):
   def check_many(self, sbox, indices):
     for i in range(len(sbox)):
       self.check(sbox[i], indices[i])
+
+  def import_blocks(self):
+    from dials.array_family import flex
+
+    blocks = flex.size_t([0, 2, 5])
+
+    # Create the importer
+    importer = ShoeboxBlockImporter(self.filename, blocks, self.z)
+
+    # Read all the shoeboxes in blocks
+    sum_ind = 0
+    for i, (indices, sbox) in enumerate(importer):
+      assert(len(indices) == len(sbox))
+      sum_ind += len(indices)
+      for index in indices:
+        assert(self.z[index] >= blocks[i] and self.z[index] < blocks[i+1])
+      self.check_many(sbox, indices)
+    assert(sum_ind == self.nrefl)
+
+    # Test passed
+    print 'OK'
+
 
 
 if __name__ == '__main__':

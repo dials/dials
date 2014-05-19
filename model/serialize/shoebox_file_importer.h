@@ -26,7 +26,7 @@ namespace dials { namespace model { namespace serialize {
     typedef af::versa< double, af::c_grid<2> > gain_map_type;
     typedef af::versa< double, af::c_grid<2> > dark_map_type;
     typedef af::versa< bool, af::c_grid<2> > mask_map_type;
-    
+
     typedef af::const_ref< double, af::c_grid<2> > gain_map_ref_type;
     typedef af::const_ref< double, af::c_grid<2> > dark_map_ref_type;
     typedef af::const_ref< bool, af::c_grid<2> > mask_map_ref_type;

@@ -21,7 +21,7 @@ namespace dials { namespace model { namespace serialize {
    */
   class ShoeboxBlockImporter {
   public:
-    
+
     typedef ShoeboxFileImporter::gain_map_ref_type gain_map_ref_type;
     typedef ShoeboxFileImporter::dark_map_ref_type dark_map_ref_type;
     typedef ShoeboxFileImporter::mask_map_ref_type mask_map_ref_type;
@@ -66,7 +66,7 @@ namespace dials { namespace model { namespace serialize {
      * @param index The index of the shoebox
      * @returns The indices and shoebox list
      */
-    std::pair< af::shared<std::size_t>, af::shared< Shoebox<> > > 
+    std::pair< af::shared<std::size_t>, af::shared< Shoebox<> > >
     operator[](std::size_t index) {
       DIALS_ASSERT(index < size());
       af::shared<std::size_t> ind = indices_[index];
@@ -77,7 +77,7 @@ namespace dials { namespace model { namespace serialize {
 
   private:
 
-    void init_indices(const af::const_ref<std::size_t> &blocks, 
+    void init_indices(const af::const_ref<std::size_t> &blocks,
                       const af::const_ref<double> &z) {
 
       // Ensure blocks are in order
