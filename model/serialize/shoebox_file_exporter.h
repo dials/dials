@@ -51,7 +51,7 @@ namespace dials { namespace model { namespace serialize {
         : writer_(filename, panel, bbox),
           bbox_(bbox.begin(), bbox.end()),
           panel_(panel.begin(), panel.end()),
-          shoeboxes_(bbox.size()),
+          shoeboxes_(init_shoeboxes(bbox.size())),
           num_frame_(num_frame),
           cur_frame_(0),
           num_panel_(num_panel),
@@ -101,7 +101,7 @@ namespace dials { namespace model { namespace serialize {
      */
     std::pair<std::size_t, std::size_t>
     next(const af::const_ref< int, af::c_grid<2> > &image) {
-
+      
       // Check we're within frame and panel range
       DIALS_ASSERT(cur_frame_ < num_frame_);
       DIALS_ASSERT(cur_panel_ < num_panel_);
@@ -130,7 +130,7 @@ namespace dials { namespace model { namespace serialize {
 
         // Add the data to the shoebox
         add(shoebox, bbox, cur_frame_, image);
-
+        
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
           writer_.write(index, shoebox.const_ref());
@@ -155,6 +155,19 @@ namespace dials { namespace model { namespace serialize {
     }
 
   private:
+
+    /**
+     * Need to init each element separately otherwise each flex array points to
+     * the same object
+     */
+    af::shared<shoebox_type> init_shoeboxes(std::size_t n) {
+      af::shared<shoebox_type> result;
+      result.reserve(n);
+      for (std::size_t i = 0; i < n; ++i) {
+        result.push_back(shoebox_type());
+      }
+      return result;
+    }
 
     /**
      * Initialise the lookup table of shoeboxes appearing on which frame/panel.
