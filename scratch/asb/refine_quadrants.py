@@ -1,6 +1,6 @@
 #!/usr/bin/env dials.python
 from __future__ import division
-import sys, os
+import sys
 from libtbx.phil import command_line, parse
 
 if len(sys.argv) != 2: exit("please pass the path to a phil file")
@@ -78,6 +78,7 @@ refinement{
   }
   target.jacobian_max_nref=10000
   reflections.do_outlier_rejection=True
+  reflections.minimum_number_of_reflections=1
 }""")
 from dials.data.refinement import phil_scope as master_phil
 working_phil = master_phil.fetch(
