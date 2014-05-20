@@ -115,6 +115,9 @@ def run(args):
     from matplotlib import pyplot
     from matplotlib.backends.backend_pdf import PdfPages
 
+    pyplot.rc('font', family='serif')
+    pyplot.rc('font', serif='Times New Roman')
+
     red, blue = '#B2182B', '#2166AC'
     fig = pyplot.figure()
     ax = fig.add_subplot(1,1,1)

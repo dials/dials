@@ -269,6 +269,9 @@ def run(args):
   from matplotlib import pyplot
   from matplotlib.backends.backend_pdf import PdfPages
 
+  pyplot.rc('font', family='serif')
+  pyplot.rc('font', serif='Times New Roman')
+
   red, blue = '#B2182B', '#2166AC'
   hist = flex.histogram(n_strong_spots_dmin_4.as_double(), n_slots=20)
   hist.show()
