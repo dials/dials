@@ -31,8 +31,7 @@ class MosflmProfileFitting:
 
 
 
-
-    #imagin_stuff = '''
+    imagin_stuff = '''
     ###############################################################################
     t_intensity = ref_table['intensity.sum.value']
     old_i_table = t_intensity[:]
@@ -40,13 +39,22 @@ class MosflmProfileFitting:
     #'''
 
 
+    #new_multiple_block_way = '''
+
+    data_range_tst = self.experiment.scan.get_oscillation_range()
+    #print "self.experiment.scan.get_oscillation_range =", data_range_tst[0]
+    #print "self.experiment.scan.get_oscillation_range =", data_range_tst[1]
+
+    nz_blocks = int(abs(data_range_tst[1] - data_range_tst[0]) / 5)
+    if(nz_blocks < 1):
+      nz_blocks = 1
+    print "N(z)blocks = ", nz_blocks
 
 
-    #new_block_way = '''
-    nz_blocks = 12
     dp_lng =len(ref_table)
     zblock_size = dp_lng / nz_blocks
     for block_z_num in range(nz_blocks):
+      print "Block of images num ", block_z_num
       z_blocks_start = int(block_z_num * zblock_size)
       z_blocks_end = int((block_z_num + 1) * zblock_size)
       local_ref_table = ref_table[z_blocks_start:z_blocks_end]
@@ -58,15 +66,43 @@ class MosflmProfileFitting:
 
     #'''
 
-    old_way = '''
+
+    data_viewing = '''
+    print "self.experiment.goniometer =",  dir(self.experiment.goniometer)
+    print "self.experiment.scan =",  dir(self.experiment.scan)
+    print "self.experiment.imageset =",  dir(self.experiment.imageset)
+
+    [experiment.goniometer] = [ 'from_dict', 'get_fixed_rotation',
+     'get_rotation_axis', 'set_fixed_rotation', 'set_rotation_axis', 'to_dict']
+
+    [experiment.scan] = [ 'from_dict', 'get_angle_from_array_index'
+    , 'get_angle_from_image_index', 'get_array_index_from_angle'
+    , 'get_array_indices_with_angle', 'get_array_range', 'get_epochs'
+    , 'get_exposure_times', 'get_image_epoch', 'get_image_index_from_angle'
+    , 'get_image_indices_with_angle', 'get_image_oscillation', 'get_image_range'
+    , 'get_num_images', 'get_oscillation', 'get_oscillation_range', 'is_angle_valid'
+    , 'is_array_index_valid', 'is_image_index_valid', 'set_epochs'
+    , 'set_exposure_times', 'set_image_range', 'set_oscillation', 'to_dict']
+
+    (experiment.imageset] = [ '_beam', '_detector', '_get_data_range', '_goniometer'
+    , '_image_index', '_indices', '_models', '_reader', '_scan', '_to_array_all'
+    , '_to_array_w_range', '_truncate_range', 'complete_set', 'get_array_range'
+    , 'get_beam', 'get_detector', 'get_detectorbase', 'get_goniometer'
+    , 'get_image_models', 'get_image_size', 'get_path', 'get_scan', 'get_template'
+    , 'indices', 'is_valid', 'paths', 'reader', 'set_beam', 'set_detector'
+    , 'set_goniometer', 'set_scan', 'to_array']
+    '''
+
+
+
+
+    old_single_block_way = '''
     xmax, ymax = self.experiment.detector[0].get_image_size()
     ref_table = mosflm_caller(ref_table, xmax, ymax, self.nblocks)
     #'''
 
 
-
-
-    #imagin_stuff = '''
+    imagin_stuff = '''
     ###############################################################################
     t_intensity = ref_table['intensity.prf.value']
     num_ref = len(t_intensity)
