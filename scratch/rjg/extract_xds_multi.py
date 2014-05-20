@@ -98,37 +98,39 @@ def run(args):
     reject_hkl = {}
     for wedge_n, wedge_ids in wedge_number_to_wedge_id.iteritems():
       print "Wedge", wedge_n
-      for wedge_id in wedge_ids:
-        args = ["dials.import_xds",
-                os.path.split(file_name_dict[wedge_id])[0],
-                "--output='experiments_%i.json'" %wedge_id]
-        cmd = " ".join(args)
-        print cmd
-        result = easy_run.fully_buffered(cmd).raise_if_errors()
+      if len(wedge_ids) > 1:
+        for wedge_id in wedge_ids:
+          args = ["dials.import_xds",
+                  os.path.split(file_name_dict[wedge_id])[0],
+                  "--output='experiments_%i.json'" %wedge_id]
+          cmd = " ".join(args)
+          print cmd
+          result = easy_run.fully_buffered(cmd).raise_if_errors()
 
-        args = ["dials.import_xds",
-                file_name_dict[wedge_id],
-                "experiments_%i.json" %wedge_id,
-                "--input=reflections",
-                "--output='integrate_hkl_%i.pickle'" %wedge_id]
-        cmd = " ".join(args)
-        print cmd
-        result = easy_run.fully_buffered(cmd).raise_if_errors()
+          args = ["dials.import_xds",
+                  file_name_dict[wedge_id],
+                  "experiments_%i.json" %wedge_id,
+                  "--input=reflections",
+                  "--output='integrate_hkl_%i.pickle'" %wedge_id]
+          cmd = " ".join(args)
+          print cmd
+          result = easy_run.fully_buffered(cmd).raise_if_errors()
 
-      from dials.command_line import find_overlaps
-      args = ['experiments_%i.json' %wedge_id for wedge_id in wedge_ids]
-      args.extend(['integrate_hkl_%i.pickle' %wedge_id for wedge_id in wedge_ids])
-      args.append("nproc=%s" %params.nproc)
-      args.append("max_overlap_fraction=%f" %params.overlaps.max_overlap_fraction)
-      args.append("max_overlap_pixels=%f" %params.overlaps.max_overlap_pixels)
-      overlaps = find_overlaps.run(args)
-      miller_indices = overlaps.overlapping_reflections['miller_index']
-      overlapping = [
-        miller_indices.select(
-          overlaps.overlapping_reflections['id'] == i_lattice)
-        for i_lattice in range(len(wedge_ids))]
-      for wedge_id, overlaps in zip(wedge_ids, overlapping):
-        reject_hkl[wedge_id] = overlaps
+        from dials.command_line import find_overlaps
+        args = ['experiments_%i.json' %wedge_id for wedge_id in wedge_ids]
+        args.extend(['integrate_hkl_%i.pickle' %wedge_id for wedge_id in wedge_ids])
+        args.append("nproc=%s" %params.nproc)
+        args.append("max_overlap_fraction=%f" %params.overlaps.max_overlap_fraction)
+        args.append("max_overlap_pixels=%f" %params.overlaps.max_overlap_pixels)
+        args.append("save_overlaps=False")
+        overlaps = find_overlaps.run(args)
+        miller_indices = overlaps.overlapping_reflections['miller_index']
+        overlapping = [
+          miller_indices.select(
+            overlaps.overlapping_reflections['id'] == i_lattice)
+          for i_lattice in range(len(wedge_ids))]
+        for wedge_id, overlaps in zip(wedge_ids, overlapping):
+          reject_hkl[wedge_id] = overlaps
 
   for wedge_n, wedge_ids in wedge_number_to_wedge_id.iteritems():
     for wedge in wedge_ids:
@@ -148,8 +150,8 @@ EOF
         from iotbx import mtz
         m = mtz.object(file_name="integrate_hkl_%03.f.mtz" %wedge)
         orig_indices = m.extract_original_index_miller_indices()
-        overlaps = reject_hkl[wedge]
-        if len(overlaps) > 0:
+        overlaps = reject_hkl.get(wedge)
+        if overlaps is not None and len(overlaps) > 0:
           matches = miller.match_multi_indices(overlaps, orig_indices)
           before = m.n_reflections()
           print "before: %i reflections" %m.n_reflections()
@@ -159,17 +161,21 @@ EOF
           print "after: %i reflections" %m.n_reflections()
           m.add_history("Removed %i overlapping reflections" %len(overlaps))
           m.write("integrate_hkl_%03.f.mtz" %wedge)
-          #if ((before-after)/before) > 0.5:
-            #print "rejecting integrate_hkl_%03.f.mtz" %wedge
-            #os.rename("integrate_hkl_%03.f.mtz" %wedge,
-                      #"rejected_integrate_hkl_%03.f.mtz" %wedge)
-
-  # FIXME Brehm-diederichs goes here
 
   g = glob.glob("integrate_hkl_*.mtz")
 
+  if params.resolve_indexing_ambiguity:
+    from cctbx.command_line import brehm_diederichs
+    args = g
+    args.append("asymmetric=1")
+    args.append("save_plot=True")
+    args.append("show_plot=False")
+    brehm_diederichs.run(args)
+  g = glob.glob("integrate_hkl_*_reindexed.mtz")
+
   for file_name in g:
-    wedge_number = int(os.path.splitext(os.path.basename(file_name))[0][-3:])
+    wedge_number = int(os.path.splitext(
+      os.path.basename(file_name))[0].replace('_reindexed', '')[-3:])
     #print wedge_number, wedge_number
     result = any_reflection_file(file_name)
     mtz_object = result.file_content()
@@ -204,16 +210,6 @@ OUTPUT UNMERGED TOGETHER
 %s
 EOF
 """ %("\n".join(params.aimless.command))
-
-  #RESOLUTION LOW 50.0
-  #RESOLUTION HIGH 1.1
-  #OUTPUT UNMERGED TOGETHER
-  ##REFINE SELECT 0.2 0.8
-  ##SDCORRECTION 1 0 0 NOREFINE
-  ##SDCORRECTION REFINE SAME
-  ##SCALES CONSTANT BFACTOR ON BROTATION 1
-  ##SCALES ROTATION 2 BFACTOR ON BROTATION 1
-  ##SCALES ROTATION 2 BFACTOR ON BROTATION 2
 
   log = open('aimless.log', 'wb')
   print >> log, cmd
