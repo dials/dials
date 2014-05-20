@@ -447,28 +447,28 @@ class ExperimentListDict(object):
       elif imageset['__id__'] == 'ImageSweep':
         imageset = self._make_sweep(imageset, scan)
 
-    # Fill in any models if they aren't already there
-    if beam is None:
-      beam = imageset.get_beam()
-    if detector is None:
-      detector = imageset.get_detector()
-    if goniometer is None:
-      goniometer = imageset.get_goniometer()
-    if scan is None:
-      scan = imageset.get_scan()
+      # Fill in any models if they aren't already there
+      if beam is None:
+        beam = imageset.get_beam()
+      if detector is None:
+        detector = imageset.get_detector()
+      if goniometer is None:
+        goniometer = imageset.get_goniometer()
+      if scan is None:
+        scan = imageset.get_scan()
 
-    # Update the imageset models
-    if isinstance(imageset, ImageSweep):
-      imageset.set_beam(beam)
-      imageset.set_detector(detector)
-      imageset.set_goniometer(goniometer)
-      imageset.set_scan(scan)
-    else:
-      for i in range(len(imageset)):
-        imageset.set_beam(beam, i)
-        imageset.set_detector(detector, i)
-        imageset.set_goniometer(goniometer, i)
-        imageset.set_scan(scan, i)
+      # Update the imageset models
+      if isinstance(imageset, ImageSweep):
+        imageset.set_beam(beam)
+        imageset.set_detector(detector)
+        imageset.set_goniometer(goniometer)
+        imageset.set_scan(scan)
+      else:
+        for i in range(len(imageset)):
+          imageset.set_beam(beam, i)
+          imageset.set_detector(detector, i)
+          imageset.set_goniometer(goniometer, i)
+          imageset.set_scan(scan, i)
 
     # Return the experiment instance
     return Experiment(
