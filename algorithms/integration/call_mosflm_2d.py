@@ -60,17 +60,18 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
   tbl_siz = ncol * nrow
 
   from dials.util.command_line import ProgressBar
-  p_bar = ProgressBar(title = 'Performing profile building')
+  #p_bar = ProgressBar(title = 'Performing profile building')
   tbl_prgr = 0
   for col in range(ncol):
     for row in range(nrow):
 
-      p_bar.update(tbl_prgr * 100.0 / tbl_siz)
+      #p_bar.update(tbl_prgr * 100.0 / tbl_siz)
       tbl_prgr += 1
 
       profile, tr_hold = make_2d_profile(arr_rlist[row][col], ref_table_in)
       arr_proff[row][col] = [profile, tr_hold]
-  p_bar.finished('Done %d profiles' % tbl_siz)
+      print "2D block ", row, col
+  #p_bar.finished('Done %d profiles' % tbl_siz)
 
   p_bar = ProgressBar(title = 'Performing profile fitting')
   tbl_prgr = 0

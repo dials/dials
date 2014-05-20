@@ -32,7 +32,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
   max_i = 0.0
   for t_row in reflection_pointers:
     #if ref.is_valid():
-      if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.95:
+      if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.05:
         max_i = col_intensity[t_row]
   thold = 0.05 * max_i
 
@@ -98,6 +98,13 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
     sumation = add_2d(descr, peak2d, sumation)
 
+
+  if_you_want_to_see_how_the_profiles_look = '''
+  from matplotlib import pyplot as plt
+  np_2d_dat = sumation.as_numpy_array()
+  plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
+  plt.show()
+  #'''
 
   return sumation, thold
 
@@ -261,12 +268,7 @@ def fit_profile_2d(reflection_pointers, ref_table
             average = add_2d(descr, bt_rg_average, average)
           else:
             average = local_average
-          if_you_want_to_see_how_the_profiles_look = '''
-          from matplotlib import pyplot as plt
-          np_2d_dat = average.as_numpy_array()
-          plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
-          plt.show()
-          #'''
+
         else:
           average = local_average
 

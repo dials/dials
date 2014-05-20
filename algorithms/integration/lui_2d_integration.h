@@ -670,11 +670,13 @@ namespace dials { namespace algorithms {
     // it subtract the background from the shoebox
     int ncol = data2d.accessor().all()[1];
     int nrow = data2d.accessor().all()[0];
+    double local_bkg;
     flex_double data2dreturn(data2d.accessor(), 0);
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
-        if (data2d(row,col) > backg2d(row,col) ) {
-          data2dreturn(row,col) = data2d(row,col) - backg2d(row,col);
+        local_bkg = backg2d(row,col);
+        if (data2d(row,col) > local_bkg ) {
+          data2dreturn(row,col) = data2d(row,col) - local_bkg;
         } else {
           data2dreturn(row,col) = 0.0;
         }
