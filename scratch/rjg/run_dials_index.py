@@ -130,6 +130,7 @@ def run_once(args):
   if params.run_xds:
     g = glob.glob('experiments.json')
     if len(g) == 0:
+      os.chdir(orig_dir)
       return
 
     cmd = " ".join(["dials.export_xds", "experiments.json"])
@@ -220,6 +221,7 @@ def run_once(args):
   elif params.run_mosflm:
     g = glob.glob('experiments.json')
     if len(g) == 0:
+      os.chdir(orig_dir)
       return
 
     cmd = " ".join(["dials.export_mosflm", "experiments.json"])
