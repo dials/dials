@@ -24,6 +24,13 @@ class ReflectionPredictor(object):
     from dxtbx.imageset import ImageSweep
     from dials.array_family import flex
 
+    class Predictor(object):
+      def __init__(self, name, func):
+        self.name = name
+        self.func = func
+      def __call__(self):
+        return self.func()
+
     # Get the force static flag
     force_static = kwargs.get("force_static", False)
 
@@ -35,12 +42,18 @@ class ReflectionPredictor(object):
         predictor = ScanVaryingReflectionPredictor(experiment, **kwargs)
         A = [experiment.crystal.get_A_at_scan_point(i) for i in
                range(experiment.crystal.num_scan_points)]
-        predict = lambda: predictor.for_ub(flex.mat3_double(A))
+        predict = Predictor(
+          "scan varying prediction",
+          lambda: predictor.for_ub(flex.mat3_double(A)))
       else:
         predictor = ScanStaticReflectionPredictor(experiment, **kwargs)
-        predict = lambda: predictor.for_ub(experiment.crystal.get_A())
+        predict = Predictor(
+          "scan static prediction",
+          lambda: predictor.for_ub(experiment.crystal.get_A()))
     else:
-      predict = StillsReflectionPredictor(experiment, **kwargs)
+      predict = Predictor(
+        "stills prediction",
+        StillsReflectionPredictor(experiment, **kwargs))
 
     # Create and add the predictor class
     self._predict = predict
@@ -54,7 +67,7 @@ class ReflectionPredictor(object):
     '''
     from dials.array_family import flex
     from dials.util.command_line import Command
-    print ' Prediction type: %s' % self._predictor_type(self._predict)
+    print ' Prediction type: %s' % self._predict.name
     Command.start('Predicting reflections')
     table = self._predict()
     Command.end('Predicted %d reflections' % len(table))
@@ -64,15 +77,3 @@ class ReflectionPredictor(object):
     ''' Get the predictor for the given experiment index. '''
     return self._predict[index]
 
-  def _predictor_type(self, obj):
-    ''' Return the predition type. '''
-    from dials.algorithms.spot_prediction import _ScanStaticReflectionPredictor
-    from dials.algorithms.spot_prediction import _ScanVaryingReflectionPredictor
-    from dials.algorithms.spot_prediction import _StillsReflectionPredictor
-    if isinstance(obj, _ScanStaticReflectionPredictor):
-      return "static scan prediction"
-    elif isinstance(obj, _ScanVaryingReflectionPredictor):
-      return "scan varying prediction"
-    elif isinstance(obj, _StillsReflectionPredictor):
-      return "stills prediction"
-    return "Unknown prediction"
