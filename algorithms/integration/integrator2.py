@@ -102,12 +102,12 @@ class Integrator(object):
     Command.start('Filtering reflections by detector mask')
     array_range = experiments[0].scan.get_array_range()
     mask = filtering.by_detector_mask(
-      reflections['bbox'], 
-      experiments[0].imageset[0] >= 0, 
+      reflections['bbox'],
+      experiments[0].imageset[0] >= 0,
       array_range)
     reflections.del_selected(mask != True)
     Command.end('Filtered %d reflections by detector mask' % len(reflections))
-    
+
     # Filter the reflections by zeta
     min_zeta = params.integration.filter.by_zeta
     if min_zeta > 0:
