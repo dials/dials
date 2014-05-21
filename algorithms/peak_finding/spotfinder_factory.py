@@ -284,7 +284,7 @@ class SpotFinderFactory(object):
     registry.params().spotfinder = params.spotfinder
 
     # Configure the algorithm and wrap it up
-    find_spots = SpotFinderFactory.configure_algorithm()
+    find_spots = SpotFinderFactory.configure_algorithm(params)
     filter_spots = SpotFinderFactory.configure_filter(params)
     return SpotFinder(
       find_spots=find_spots,
@@ -292,7 +292,7 @@ class SpotFinderFactory(object):
       scan_range=params.spotfinder.scan_range)
 
   @staticmethod
-  def configure_algorithm():
+  def configure_algorithm(params):
     ''' Given a set of parameters, construct the spot finder
 
     Params:
@@ -309,7 +309,8 @@ class SpotFinderFactory(object):
     threshold = SpotFinderFactory.configure_threshold()
 
     # Setup the spot finder
-    return ExtractSpots(threshold_image=threshold)
+    return ExtractSpots(threshold_image=threshold,
+                        mask=params.spotfinder.lookup.mask)
 
   @staticmethod
   def configure_threshold():
@@ -373,13 +374,11 @@ class SpotFinderFactory(object):
         The image or None
 
     '''
-    from dials.util import image
+    import cPickle as pickle
 
     # If no filename is set then return None
     if not filename:
       return None
 
     # Read the image and return the image data
-    handle = image.reader()
-    handle.read_file(filename)
-    return handle.get_data()
+    return pickle.load(open(filename))

@@ -15,11 +15,15 @@ from dials.algorithms.peak_finding.threshold import XDSThresholdStrategy
 class Extract(object):
   ''' Class to extract a batch of images '''
 
-  def __init__(self, imageset, threshold_image):
+  def __init__(self, imageset, threshold_image, mask):
       ''' Initialise with imageset and threshold function, both need to be
       picklable for this to be called using multiprocessing. '''
       self.threshold_image = threshold_image
       self.imageset = imageset
+      self.mask = mask
+      if self.mask is not None:
+        detector = self.imageset.get_detector()
+        assert(len(self.mask) == len(detector))
 
   def __call__(self, index):
       ''' Extract pixels from a block of images. '''
@@ -49,10 +53,18 @@ class Extract(object):
         if not isinstance(image, tuple):
           image = (image,)
 
+        # Set the mask
+        if self.mask is None:
+          mask = []
+          for tr, im in zip(trange, image):
+            mask.append(im > int(tr[0]))
+        else:
+          assert(len(self.mask) == len(image))
+          mask = self.mask
+
         # Add the images to the pixel lists
-        for pl, tr, im in zip(plists, trange, image):
-          mask = im > int(tr[0])
-          pl.add_image(im, self.threshold_image.compute_threshold(im, mask))
+        for pl, im, mk in zip(plists, image, mask):
+          pl.add_image(im, self.threshold_image.compute_threshold(im, mk))
 
       # Return the pixel lists
       return plists
@@ -82,7 +94,7 @@ class ProgressUpdater(object):
 class ExtractSpots(object):
   ''' Class to find spots in an image and extract them into shoeboxes. '''
 
-  def __init__(self, threshold_image):
+  def __init__(self, threshold_image, mask=None):
     ''' Initialise the class with the strategy
 
     Params:
@@ -91,6 +103,7 @@ class ExtractSpots(object):
     '''
     # Set the required strategies
     self.threshold_image = threshold_image
+    self.mask = mask
 
   def __call__(self, imageset):
     ''' Find the spots in the imageset
@@ -117,7 +130,7 @@ class ExtractSpots(object):
     # Extract the pixels in blocks of images in parallel
     progress = ProgressUpdater(nproc)
     pl = easy_mp.parallel_map(
-      func=Extract(imageset, self.threshold_image),
+      func=Extract(imageset, self.threshold_image, self.mask),
       iterable=self._calculate_blocks(imageset, nproc),
       processes=nproc,
       method=mp.method,

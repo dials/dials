@@ -46,7 +46,7 @@ class MaskGenerator(object):
       # Create the basic mask from the trusted range
       low, high = panel.get_trusted_range()
       imd = im.as_double()
-      mask = (imd >= low) & (imd <= high)
+      mask = (imd > low) & (imd < high)
 
       # Add a border around the image
       if self.params.border > 0:
