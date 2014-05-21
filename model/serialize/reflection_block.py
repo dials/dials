@@ -4,11 +4,11 @@ from __future__ import division
 class ReflectionBlockExtractor(object):
   ''' A class to extract blocks of reflections. '''
 
-  def __init__(self, filename, experiment, reflections, nblocks, 
+  def __init__(self, filename, experiment, reflections, nblocks,
                gain=None, dark=None, mask=None):
-    
+
     from dials.model.serialize import extract_shoeboxes_to_file
-  
+
     # Filter the reflections
     self.reflections = self._filter_reflections(experiment, reflections)
 
@@ -21,7 +21,7 @@ class ReflectionBlockExtractor(object):
     # Construct the importer
     z = self.reflections['xyzcal.px'].parts()[2]
     if gain and dark and mask:
-      self._importer = ShoeboxBlockImporter(filename, self.blocks, 
+      self._importer = ShoeboxBlockImporter(filename, self.blocks,
                                             z, gain, dark, mask)
     else:
       self._importer = ShoeboxBlockImporter(filename, self.blocks, z)
