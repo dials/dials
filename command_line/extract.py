@@ -83,6 +83,7 @@ class Script(ScriptRunner):
     # Calculate the bounding boxes
     predicted.compute_bbox(importer.experiments[0], n_sigma)
 
+    # TODO Need to save out reflections
     z = predicted['xyzcal.px'].parts()[2]
     index = sorted(range(len(z)), key=lambda x: z[x])
     predicted.reorder(flex.size_t(index))
