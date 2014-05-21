@@ -36,7 +36,7 @@ class Script(ScriptRunner):
     self.config().add_option(
         '-o', '--output-filename',
         dest = 'output_filename',
-        type = 'string', default = 'extracted.tar',
+        type = 'string', default = 'shoebox.dat',
         help = 'Set the filename for the extracted spots.')
 
     # Output filename option
@@ -51,10 +51,9 @@ class Script(ScriptRunner):
     from dials.model.serialize import load, dump
     from dials.util.command_line import Command
     from dials.util.command_line import Importer
-    from dials.algorithms.shoebox import ProfileBlockExtractor
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.array_family import flex
-    from dials.model.data import ReflectionList
+    from dials.model.serialize import extract_shoeboxes_to_file
 
     # Check the unhandled arguments
     importer = Importer(args, include=['experiments'])
@@ -84,10 +83,15 @@ class Script(ScriptRunner):
     # Calculate the bounding boxes
     predicted.compute_bbox(importer.experiments[0], n_sigma)
 
-    # Create the profile block extractor
-    extract = ProfileBlockExtractor(
-      importer.experiments[0].imageset, predicted,
-      options.num_blocks, options.output_filename)
+    z = predicted['xyzcal.px'].parts()[2]
+    index = sorted(range(len(z)), key=lambda x: z[x])
+    predicted.reorder(flex.size_t(index))
+
+    # Extract the shoeboxes to file
+    extract_shoeboxes_to_file(
+      options.output_filename,
+      importer.experiments[0],
+      predicted)
 
 
 if __name__ == '__main__':

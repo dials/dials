@@ -32,6 +32,7 @@ namespace dials { namespace model { namespace serialize {
     typedef std::vector<std::size_t> index_array_type;
     typedef std::vector<index_array_type> pf_index_array_type;
     typedef af::versa< int, af::c_grid<3> > shoebox_type;
+    typedef af::ref< int, af::c_grid<3> > shoebox_ref_type;
     typedef af::shared<shoebox_type> shoebox_array_type;
 
     /**
@@ -129,7 +130,7 @@ namespace dials { namespace model { namespace serialize {
         }
 
         // Add the data to the shoebox
-        add(shoebox, bbox, cur_frame_, image);
+        add(shoebox.ref(), bbox, cur_frame_, image);
 
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
@@ -200,7 +201,7 @@ namespace dials { namespace model { namespace serialize {
      * @param z The frame number
      * @param image The image data
      */
-    void add(shoebox_type &shoebox,
+    void add(shoebox_ref_type shoebox,
              const int6 &bbox,
              std::size_t z,
              const af::const_ref< int, af::c_grid<2> > &image) {
