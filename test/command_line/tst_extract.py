@@ -29,7 +29,7 @@ class Test(object):
       'shoebox.sigma_m=0.157',
     ]).raise_if_errors()
 
-    assert(exists("extracted.tar"))
+    assert(exists("shoebox.dat"))
 
     print 'OK'
 
