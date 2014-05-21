@@ -476,6 +476,7 @@ model/serialize/imageset.py -text
 model/serialize/load.py -text
 model/serialize/partial_shoebox.py -text
 model/serialize/reflection.py -text
+model/serialize/reflection_block.py -text
 model/serialize/shoebox.h -text
 model/serialize/shoebox.py -text
 model/serialize/shoebox_block_importer.h -text
