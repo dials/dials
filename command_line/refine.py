@@ -50,6 +50,12 @@ class Script(ScriptRunner):
                ' at the end of refinement.')
 
     self.config().add_option(
+        '--output-correlation-plot-filename',
+        dest = 'output_corrplot_filename',
+        type = 'string',
+        help = 'Set the filename for output of a plot of parameter correlations.')
+
+    self.config().add_option(
         '--output-reflections-filename',
         dest = 'output_reflections_filename',
         type = 'string',
@@ -153,6 +159,15 @@ class Script(ScriptRunner):
       print 'Saving refined reflections to {0}'.format(
         options.output_reflections_filename)
       matches.as_pickle(options.output_reflections_filename)
+
+    if options.output_corrplot_filename:
+      if refined.parameter_correlation:
+        plt = refiner.parameter_correlation_plot(len(refined.parameter_correlation)-1)
+        plt.tight_layout()
+        plt.savefig(options.output_corrplot_filename)
+      else:
+        print "Sorry, no parameter correlations were tracked. Please set " \
+              "track_parameter_correlation=True"
 
     return
 
