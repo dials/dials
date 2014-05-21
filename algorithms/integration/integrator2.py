@@ -28,7 +28,7 @@ class Integrator(object):
       predictions = self.predict_reflections(params, experiments)
 
       # Filter the reflections
-      self.filter_reflections(predictions)
+      predictions = self.filter_reflections(params, experiments, predictions)
 
       # Initialise the extractor
       self.extractor = []
@@ -72,9 +72,10 @@ class Integrator(object):
   def predict_reflections(self, params, experiments):
     ''' Predict all the reflections. '''
     from dials.array_family import flex
+    from math import pi
     n_sigma = params.integration.shoebox.n_sigma
-    sigma_b = params.integration.shoebox.sigma_b
-    sigma_m = params.integration.shoebox.sigma_m
+    sigma_b = params.integration.shoebox.sigma_b * pi / 180.0
+    sigma_m = params.integration.shoebox.sigma_m * pi / 180.0
     result = flex.reflection_table()
     for i, experiment in enumerate(experiments):
       predicted = flex.reflection_table.from_predictions(experiment)
@@ -82,3 +83,28 @@ class Integrator(object):
       predicted.compute_bbox(experiment, n_sigma, sigma_b, sigma_m)
       result.extend(predicted)
     return result
+
+  def filter_reflections(self, params, experiments, reflections):
+    from dials.util.command_line import Command
+    from dials.algorithms import filtering
+    from dials.array_family import flex
+
+    # Set all reflections which overlap bad pixels to zero
+    Command.start('Filtering reflections by detector mask')
+    array_range = experiments[0].scan.get_array_range()
+    mask = filtering.by_detector_mask(
+      reflections['bbox'], 
+      experiments[0].imageset[0] >= 0, 
+      array_range)
+    reflections.del_selected(mask != True)
+    Command.end('Filtered %d reflections by detector mask' % len(reflections))
+    
+    # Filter the reflections by zeta
+    min_zeta = params.integration.filter.by_zeta
+    if min_zeta > 0:
+      Command.start('Filtering reflections by zeta >= %f' % min_zeta)
+      zeta = reflections.compute_zeta(experiments[0])
+      reflections.del_selected(flex.abs(zeta) < min_zeta)
+      n = len(reflections)
+      Command.end('Filtered %d reflections by zeta >= %f' % (n, min_zeta))
+      return reflections
