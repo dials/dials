@@ -21,16 +21,23 @@ class MosflmProfileFitting:
 
 
     from dials.array_family import flex
+    '''
+    from dials.algorithms.background.flat_background_subtractor \
+     import layering_and_background_avg
+    layering_and_background_avg(ref_table)
+    '''
 
     '''
     from dials.algorithms.background.inclined_background_subtractor \
      import layering_and_background_plane
     layering_and_background_plane(ref_table)
 
+    '''
+
     from dials.algorithms.background.curved_background_subtractor \
      import layering_and_background_modl
     layering_and_background_modl(ref_table)
-    '''
+
     from dials.algorithms.integration import flex_2d_layering_n_integrating
     from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 

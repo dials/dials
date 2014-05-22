@@ -27,10 +27,19 @@ def layering_and_background_plane(reflections):
    import get_plane_background_syml_sys_2d, variance_n_background_from_plane
   from scitbx.array_family import flex
 
+  from dials.util.command_line import ProgressBar
+  bar_siz = len(reflections['shoebox'])
+  p_bar = ProgressBar(title = 'Performing Inclined background plane calculation')
+  tbl_prgr = 0
+
   plane_constants = []
   shoeboxes = reflections['shoebox']
   for shoebox in shoeboxes:
+
     #if ref.is_valid():
+      p_bar.update(tbl_prgr * 100.0 / bar_siz)
+      tbl_prgr += 1
+
       data = shoebox.data
       mask = shoebox.mask
       background = shoebox.background
@@ -75,5 +84,7 @@ def layering_and_background_plane(reflections):
                                           background2d.all()[1]))
         background[i:i + 1, :, :] = background2d.as_double()
       #ref.intensity_variance = tot_sigma
+
+  p_bar.finished('Done %d inclined background planes' % bar_siz)
 
   return reflections
