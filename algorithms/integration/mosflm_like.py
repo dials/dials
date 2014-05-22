@@ -22,10 +22,15 @@ class MosflmProfileFitting:
 
     from dials.array_family import flex
 
+    '''
     from dials.algorithms.background.inclined_background_subtractor \
-      import layering_and_background_plane
+     import layering_and_background_plane
     layering_and_background_plane(ref_table)
 
+    from dials.algorithms.background.curved_background_subtractor \
+     import layering_and_background_modl
+    layering_and_background_modl(ref_table)
+    '''
     from dials.algorithms.integration import flex_2d_layering_n_integrating
     from dials.algorithms.integration.call_mosflm_2d  import mosflm_caller
 
@@ -37,7 +42,7 @@ class MosflmProfileFitting:
 
 
 
-    #imagin_stuff = '''
+    imagin_stuff = '''
     ###############################################################################
     t_intensity = ref_table['intensity.sum.value']
     old_i_table = t_intensity[:]
@@ -108,7 +113,7 @@ class MosflmProfileFitting:
     #'''
 
 
-    #imagin_stuff = '''
+    imagin_stuff = '''
     ###############################################################################
     t_intensity = ref_table['intensity.prf.value']
     num_ref = len(t_intensity)

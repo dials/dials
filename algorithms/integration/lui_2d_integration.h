@@ -665,7 +665,11 @@ namespace dials { namespace algorithms {
     int ok = 0;
   return ok;
   }
-  flex_double subtrac_bkg_2d(flex_double data2d, flex_double backg2d) {
+  //const af::const_ref< int, af::c_grid<2> > &mask2d,
+  flex_double subtrac_bkg_2d(
+                             flex_double data2d,
+                             flex_double backg2d,
+                             flex_int mask2d) {
     // given a 2D shoebox and a 2D background,
     // it subtract the background from the shoebox
     int ncol = data2d.accessor().all()[1];
@@ -675,7 +679,7 @@ namespace dials { namespace algorithms {
     for (int row = 0; row < nrow; row++) {
       for (int col = 0; col < ncol; col++) {
         local_bkg = backg2d(row,col);
-        if (data2d(row,col) > local_bkg ) {
+        if ( data2d(row,col) > local_bkg and mask2d(row,col) & Foreground ) {
           data2dreturn(row,col) = data2d(row,col) - local_bkg;
         } else {
           data2dreturn(row,col) = 0.0;

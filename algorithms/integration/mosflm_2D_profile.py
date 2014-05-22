@@ -13,7 +13,6 @@ from dials.model.data import Reflection, ReflectionList
 from dials.algorithms.integration import add_2d, subtrac_bkg_2d,  sigma_2d, \
                                           fitting_2d_multile_var_build_mat, \
                                           fitting_2d_partials, test_outlier\
-                                          #, scale_2d
 
 from dials.array_family import flex
 from dials.algorithms.integration.projection_from_3d_to_2d import \
@@ -77,12 +76,14 @@ def make_2d_profile(reflection_pointers, ref_table_in):
 
     shoebox = col_shoebox[t_row].data
     background = col_shoebox[t_row].background
+    mask =col_shoebox[t_row].mask
 
     data2d, background2d = from_3D_to_2D_projection(shoebox, background)
+    mask2d = from_3D_to_2D_mask_projection(mask)
+
 
 
     # mask may be needed soon
-    #mask =col_shoebox[t_row].mask
     #mask2d = mask[0:1, :, :]
     #mask2d.reshape(flex.grid(mask.all()[1:]))
 
@@ -94,17 +95,24 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     descr[0, 0] = cntr_pos[0] - bnd_box[0]
     descr[0, 1] = cntr_pos[1] - bnd_box[2]
     descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
-    peak2d = subtrac_bkg_2d(data2d, background2d)
+    peak2d = subtrac_bkg_2d(data2d, background2d, mask2d)
+
+    '''
+    print "data2d"
+    show_2d_box(data2d)
+    print "mask2d"
+    show_2d_box(mask2d)
+    print "background2d"
+    show_2d_box(background2d)
+    print "peak2d"
+    show_2d_box(peak2d)
+    print "######################################"
+    '''
 
     sumation = add_2d(descr, peak2d, sumation)
 
-
-  if_you_want_to_see_how_the_profiles_look = '''
-  from matplotlib import pyplot as plt
-  np_2d_dat = sumation.as_numpy_array()
-  plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
-  plt.show()
-  #'''
+  #print "_________________ profile _____________________"
+  #show_2d_box(sumation)
 
   return sumation, thold
 
@@ -354,3 +362,9 @@ def fit_profile_2d(reflection_pointers, ref_table
     ref_table['intensity.prf.variance'] = col_variance
 
   return ref_table
+
+def show_2d_box(Data_2D_in):
+  from matplotlib import pyplot as plt
+  np_2d_dat = Data_2D_in.as_numpy_array()
+  plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
+  plt.show()
