@@ -4,6 +4,7 @@ from scitbx.array_family import flex
 
 x = hello_tst()
 print x
+
 import numpy
 
 data2d = numpy.zeros((5, 5), dtype = numpy.int32)
