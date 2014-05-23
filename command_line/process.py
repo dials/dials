@@ -193,8 +193,8 @@ class Script(ScriptRunner):
 
     from dials.array_family import flex
     from dials.model.experiment.experiment_list import ExperimentListFactory
-    indexed = flex.reflection_table.from_pickle("indexed.pickle")
-    experiments = ExperimentListFactory.from_json_file("experiments.json")
+    indexed = idxr.refined_reflections
+    experiments = idxr.refined_experiments
 
     print ''
     print 'Time Taken = %f seconds' % (time() - st)
