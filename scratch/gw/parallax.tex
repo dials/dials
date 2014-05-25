@@ -1,0 +1,49 @@
+\documentclass{article}
+\begin{document}
+\noindent
+Definitions:
+\begin{itemize}
+\item{$t_0$ sensor thickness}
+\item{$\theta$ angle between incoming ray and detector normal}
+\item{$\mu$ attenuation coefficient, i.e. probability of $e^{-\mu x}$ of photon reaching depth $x$ in material}
+\item{$t$ apparent thickness equal to $\frac{t_0}{\cos \theta}$}
+\end{itemize}
+
+\noindent
+The DQU may be calculated as
+
+\begin{equation}
+\int_0^t e^{-\mu x} dx = \left[ - \frac{1}{\mu} e^{-\mu x} \right]_0^t = 
+\frac{1}{\mu} \left( 1 - e^{-\mu t} \right)
+\end{equation}
+
+So for determination of the ``average'' shift in the central impact i.e. the shift for the centre of the energy deposition range simply need to solve 
+
+\begin{equation}
+\frac{1}{2} = \frac{\int_0^s e^{-\mu x} dx}{\int_0^t e^{-\mu x} dx}
+\end{equation}
+
+\noindent
+for $s$, from which we may derive the offset $o = s \sin \theta$. N.B. in all of these calculations no units have been presented or are required, all that is necessary is that the units are \emph{consistent}.
+
+Solving this equation gives (after a little math, on page 73 of my notebook)
+
+\begin{equation}
+s = - \frac{1}{\mu} \ln \left( \frac{1}{2} \left( 1 + e^{-\mu t} \right) \right)
+\end{equation}
+
+\noindent
+which expanded in full (i.e. with the $\theta$ terms) gives
+
+\begin{equation}
+o = - \frac{\sin \theta}{\mu} \ln \left( \frac{1}{2} \left( 1 + e^{-\mu t_0 / \cos \theta} \right) \right)
+\end{equation}
+
+\noindent
+where $o$ is the shift in the direction of the vector component of the incoming ray normal to the detector normal.
+
+
+\end{document}
+
+
+

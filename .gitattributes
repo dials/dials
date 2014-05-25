@@ -525,6 +525,7 @@ scratch/dgw/tst_vectorised_refinement.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/biostruct-25.py -text
 scratch/gw/parallax.py -text
+scratch/gw/parallax.tex -text
 scratch/gw/plotintensity.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
