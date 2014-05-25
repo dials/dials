@@ -55,6 +55,26 @@ def work():
       math.log(0.5 + 0.5 * math.exp(- mu_cm_170 * t0 / math.cos(theta)))
     print j, o_127 / pixel, o_170 / pixel
 
+def work_compare_2005_paper():
+  '''Run with 12 KeV photons, 300 micron sensor, 217 micron pixel size to compare
+  with 2005 Hulsen, Bronnimann & Eikenberry paper.'''
+
+  import math
+
+  # all calculations performed in cm
+
+  d2r = math.pi / 180.0
+  mu_cm = derive_absorption_coefficient_Si(12.0)
+
+  t0 = 0.03
+  pixel = 0.0217
+
+  for j in range(0, 61):
+    theta = d2r * j
+    o = - (1.0 / mu_cm) * math.sin(theta) * \
+      math.log(0.5 + 0.5 * math.exp(- mu_cm * t0 / math.cos(theta)))
+    print j, o / pixel
+  
 def read_xds_calibration_file(calibration_file):
   '''Read XDS calibration file, return as flex array.'''
 
