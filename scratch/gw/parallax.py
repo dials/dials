@@ -106,6 +106,7 @@ def validate_against_xds(xds_directory):
   normal = fast.cross(slow)
 
   energy_kev = 12.3985 / wavelength
+  print energy_kev
   mu = derive_absorption_coefficient_Si(energy_kev)
 
   detector_size = cfc.get('detector_size_fast_slow')
@@ -115,23 +116,30 @@ def validate_against_xds(xds_directory):
   beam_centre = beam_centre_fast_slow[0] * pixel_size[0] * fast + \
     beam_centre_fast_slow[1] * pixel_size[1] * slow + origin
 
-  t0 = 0.032
-  pixel = 0.0172
-
   min_offset_x = 0
   max_offset_x = 0
   min_offset_y = 0
   max_offset_y = 0
 
-  for k in range(0, detector_size[1], 10):
-    for j in range(0, detector_size[0], 10):
+  for k in range(0, detector_size[1], 20):
+    for j in range(0, detector_size[0], 20):
       p = j * pixel_size[0] * fast + k * pixel_size[1] * slow + origin
       theta = p.angle(normal)
+
+      # beware this piece of code is in cm not mm - blame particle physicists and
+      # cgs units
+      
+      t0 = 0.032
+      pixel = 0.0172
+
       offset = - (1.0 / mu) * math.sin(theta) * \
         math.log(0.5 + 0.5 * math.exp(- mu * t0 / math.cos(theta))) / pixel
-      offset_vector = (p - beam_centre).normalize()
-      offset_x = fast.dot(offset_vector * offset)
-      offset_y = slow.dot(offset_vector * offset)
+
+      # end weirdness
+        
+      offset_vector = (p - beam_centre).normalize() * offset
+      offset_x = fast.dot(offset_vector)
+      offset_y = slow.dot(offset_vector)
       if offset_x < min_offset_x:
         min_offset_x = offset_x
       if offset_x > max_offset_x:
