@@ -106,7 +106,6 @@ def validate_against_xds(xds_directory):
   normal = fast.cross(slow)
 
   energy_kev = 12.3985 / wavelength
-  print energy_kev
   mu = derive_absorption_coefficient_Si(energy_kev)
 
   detector_size = cfc.get('detector_size_fast_slow')
