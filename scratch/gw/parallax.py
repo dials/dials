@@ -35,7 +35,7 @@ def derive_absorption_coefficient_Si(energy_kev):
 def compute_offset(t0, theta, mu):
   import math
   t = t0 / math.cos(theta)
-  offset = math.sin(theta) * ((1 + mu) - (1 + mu * t) * math.exp(- mu * t)) / \
+  offset = math.sin(theta) * (1 - (1 + mu * t) * math.exp(- mu * t)) / \
     (mu * (1 - math.exp(- mu * t)))
   return offset
 
@@ -94,8 +94,7 @@ def work_compare_2005_paper():
 
   for j in range(0, 61):
     theta = d2r * j
-    o = - (1.0 / mu_cm) * math.sin(theta) * \
-      math.log(0.5 + 0.5 * math.exp(- mu_cm * t0 / math.cos(theta)))
+    o = compute_offset(t0, theta, mu_cm)
     print j, o / pixel
 
 def read_xds_calibration_file(calibration_file):
@@ -174,7 +173,7 @@ def validate_against_xds(xds_directory):
       t0 = 0.032
       pixel = 0.0172
 
-      offset = compute_offset(t0, theta, mu)
+      offset = compute_offset(t0, theta, mu) / pixel
 
       # end weirdness
 
@@ -195,5 +194,8 @@ def validate_against_xds(xds_directory):
 
 if __name__ == '__main__':
   import sys
-  validate_against_xds(sys.argv[1])
+  #validate_against_xds(sys.argv[1])
   #work_dqe()
+  #work_compare_2005_paper()
+  work()
+  
