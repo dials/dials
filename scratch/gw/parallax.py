@@ -34,10 +34,20 @@ def derive_absorption_coefficient_Si(energy_kev):
 
 def compute_offset(t0, theta, mu):
   import math
-  t = t0 / math.cos(theta)  
+  t = t0 / math.cos(theta)
   offset = math.sin(theta) * ((1 + mu) - (1 + mu * t) * math.exp(- mu * t)) / \
     (mu * (1 - math.exp(- mu * t)))
   return offset
+
+def dqe(t0, theta, mu):
+  '''Compute DQE for the given thickness of sensor, for the given angle and linear
+  absorption coefficient.'''
+
+  import math
+
+  t = t0 / math.cos(theta)
+
+  return 1.0 - math.exp(-mu * t)
 
 def work():
   '''320 micron sensor, 12.7 KeV photons, theta intersection angle 0 to 45 degrees
@@ -60,6 +70,14 @@ def work():
     o_170 = compute_offset(t0, theta, mu_cm_170)
     print j, o_127 / pixel, o_170 / pixel
 
+def work_dqe():
+  import math
+  t0 = 0.032
+  for j in range(30, 201, 1):
+    energy_kev = 0.1 * j
+    mu = derive_absorption_coefficient_Si(energy_kev)
+    print energy_kev, dqe(t0, 0.0, mu), dqe(t0, math.pi / 4, mu)
+
 def work_compare_2005_paper():
   '''Run with 12 KeV photons, 300 micron sensor, 217 micron pixel size to compare
   with 2005 Hulsen, Bronnimann & Eikenberry paper.'''
@@ -79,7 +97,7 @@ def work_compare_2005_paper():
     o = - (1.0 / mu_cm) * math.sin(theta) * \
       math.log(0.5 + 0.5 * math.exp(- mu_cm * t0 / math.cos(theta)))
     print j, o / pixel
-  
+
 def read_xds_calibration_file(calibration_file):
   '''Read XDS calibration file, return as flex array.'''
 
@@ -152,14 +170,14 @@ def validate_against_xds(xds_directory):
 
       # beware this piece of code is in cm not mm - blame particle physicists and
       # cgs units
-      
+
       t0 = 0.032
       pixel = 0.0172
 
       offset = compute_offset(t0, theta, mu)
-        
+
       # end weirdness
-        
+
       offset_vector = (p - beam_centre).normalize() * offset
       offset_x = fast.dot(offset_vector)
       offset_y = slow.dot(offset_vector)
@@ -178,3 +196,4 @@ def validate_against_xds(xds_directory):
 if __name__ == '__main__':
   import sys
   validate_against_xds(sys.argv[1])
+  #work_dqe()
