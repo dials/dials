@@ -32,6 +32,13 @@ def derive_absorption_coefficient_Si(energy_kev):
 
   raise RuntimeError, 'cannot reach this point'
 
+def compute_offset(t0, theta, mu):
+  import math
+  t = t0 / math.cos(theta)  
+  offset = math.sin(theta) * ((1 + mu) - (1 + mu * t) * math.exp(- mu * t)) / \
+    (mu * (1 - math.exp(- mu * t)))
+  return offset
+
 def work():
   '''320 micron sensor, 12.7 KeV photons, theta intersection angle 0 to 45 degrees
   by way of a code test, return values in pixels i.e. multiples of 172 microns.'''
@@ -49,10 +56,8 @@ def work():
 
   for j in range(-45, 46):
     theta = d2r * j
-    o_127 = - (1.0 / mu_cm_127) * math.sin(theta) * \
-      math.log(0.5 + 0.5 * math.exp(- mu_cm_127 * t0 / math.cos(theta)))
-    o_170 = - (1.0 / mu_cm_170) * math.sin(theta) * \
-      math.log(0.5 + 0.5 * math.exp(- mu_cm_170 * t0 / math.cos(theta)))
+    o_127 = compute_offset(t0, theta, mu_cm_127)
+    o_170 = compute_offset(t0, theta, mu_cm_170)
     print j, o_127 / pixel, o_170 / pixel
 
 def work_compare_2005_paper():
@@ -151,9 +156,8 @@ def validate_against_xds(xds_directory):
       t0 = 0.032
       pixel = 0.0172
 
-      offset = - (1.0 / mu) * math.sin(theta) * \
-        math.log(0.5 + 0.5 * math.exp(- mu * t0 / math.cos(theta))) / pixel
-
+      offset = compute_offset(t0, theta, mu)
+        
       # end weirdness
         
       offset_vector = (p - beam_centre).normalize() * offset

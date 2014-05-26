@@ -49,6 +49,35 @@ o = - \frac{\sin \theta}{\mu} \ln \left( \frac{1}{2} \left( 1 + e^{-\mu t_0 / \c
 \noindent
 where $o$ is the shift in the direction of the vector component of the incoming ray normal to the detector normal.
 
+Aha on reflection this protocol is probably not correct - solving for
+$s$ does not really determine where the energy is distributed as the
+profile for this is asymmetric. In fact probably better to look at
+
+\begin{equation}
+o = \frac{\int_0^t \sin \theta x e^{-\mu x} dx}{\int_0^t e^{-\mu x} dx}
+\end{equation}
+
+\noindent
+which would better express the ``average'' position on the detector
+that the energy was deposited at, w.r.t. the incoming ray
+position. Working this through gives
+
+\begin{equation}
+\frac{\left[ - \frac{1}{\mu^2} \sin \theta \left( \mu x + 1
+    \right)e^{-\mu x} \right]_0^t}
+{\left[ - \frac{1}{\mu} e^{-\mu x} \right]_0^t}
+\end{equation}
+
+\noindent
+which I evaluate to
+
+\begin{equation}
+\frac{\sin \theta \left( \left( 1 + \mu \right) - \left( 1 + \mu t
+    \right) e^{-\mu t}\right)} {\mu \left( 1 - e^{-\mu t} \right)}
+\end{equation}
+
+Which when input gave more realistic extremes of offset in the range
+-0.8 to 0.8 pixels or so... 
 
 \end{document}
 
