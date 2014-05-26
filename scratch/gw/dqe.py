@@ -6,5 +6,13 @@ def work_dqe():
     mu = derive_absorption_coefficient_Si(energy_kev)
     print energy_kev, dqe(0.032, 0.0, mu), dqe(0.05, 0.0, mu), dqe(0.1, 0.0, mu)
 
+def recover_xds_silicon(wavelength):
+  from parallax import derive_absorption_coefficient_Si
+  import math
+  energy_kev = 12.3985 / wavelength
+  mu = derive_absorption_coefficient_Si(energy_kev)
+  return 1/(1 - mu * math.exp(- mu * 0.1))
+    
 if __name__ == '__main__':
-  work_dqe()
+  import sys
+  print recover_xds_silicon(float(sys.argv[1]))
