@@ -63,7 +63,7 @@ that the energy was deposited at, w.r.t. the incoming ray
 position. Working this through gives
 
 \begin{equation}
-\frac{\left[ - \frac{1}{\mu^2} \sin \theta \left( \mu x + 1
+o = \frac{\left[ - \frac{1}{\mu^2} \sin \theta \left( \mu x + 1
     \right)e^{-\mu x} \right]_0^t}
 {\left[ - \frac{1}{\mu} e^{-\mu x} \right]_0^t}
 \end{equation}
@@ -72,11 +72,13 @@ position. Working this through gives
 which I evaluate to
 
 \begin{equation}
-\frac{\sin \theta \left( \left( 1 + \mu \right) - \left( 1 + \mu t
+o = \frac{\sin \theta \left( \left( 1 + \mu \right) - \left( 1 + \mu t
     \right) e^{-\mu t}\right)} {\mu \left( 1 - e^{-\mu t} \right)}
 \end{equation}
 
-Which when input gave more realistic extremes of offset in the range
+\noindent
+where of course $t = \frac{t_0}{\cos \theta}$. When input this gave
+more realistic extremes of offset in the range 
 -0.8 to 0.8 pixels or so... 
 
 \end{document}
