@@ -80,7 +80,9 @@ def work_dqe():
 
 def work_compare_2005_paper():
   '''Run with 12 KeV photons, 300 micron sensor, 217 micron pixel size to compare
-  with 2005 Hulsen, Bronnimann & Eikenberry paper.'''
+  with 2005 Hulsen, Bronnimann & Eikenberry paper. OK with the current state of 
+  the parallax corrections this now gives what look to be the same answers as 
+  in this paper - pretty accurate but does not agree with XDS...'''
 
   import math
 
@@ -194,7 +196,7 @@ def validate_against_xds(xds_directory):
 
 if __name__ == '__main__':
   import sys
-  validate_against_xds(sys.argv[1])
+  #validate_against_xds(sys.argv[1])
   #work_dqe()
-  #work_compare_2005_paper()
+  work_compare_2005_paper()
   #work()
