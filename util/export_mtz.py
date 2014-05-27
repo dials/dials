@@ -150,6 +150,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
 
   # gather the required information for the reflection file
 
+  nref = len(integrated_data['miller_index'])
   x_px, y_px, z_px = zip(*integrated_data['xyzcal.px'])
 
   xdet = flex.double(x_px)
@@ -162,23 +163,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # compute BATCH values
   batch = flex.floor(zdet).iround() + 1
 
-  # compute M/ISYM
-  # mi = integrated_data['miller_index']
-  # h, k, l = zip(*integrated_data['miller_index'])
-  # isym = flex.int(len(integrated_data['miller_index']))
-  # misym = flex.int(len(isym))
-  # map_to_asu_isym(experiment.crystal.get_space_group().type(), True,
-  #                 integrated_data['miller_index'], isym)
-
-  # for j, i in enumerate(isym):
-  #   if i < 0:
-  #     mis = (-i + 1) * 2
-  #   else:
-  #     mis = (i + 1) * 2 - 1
-  #   misym[j] = mis
-
   # we're working with full reflections so...
-  fractioncalc = flex.double(len(rot), 1.0)
+  fractioncalc = flex.double(nref, 1.0)
 
   # now go for it and make an MTZ file...
 
@@ -192,33 +178,23 @@ def export_mtz(integrated_data, experiment_list, hklout):
                 'M_ISYM': 'Y', 'SIGI': 'Q', 'FLAG': 'I', 'XDET': 'R', 'LP': 'R',
                 'YDET': 'R', 'SIGIPR': 'Q', 'FRACTIONCALC': 'R', 'ROT': 'R'}
 
-  # OK these are probably the original indices not the reduced indices that the
-  # MTZ file should have - now use Richard's new method to add the H, K, L 
-  # columns and M_ISYM N.B. now no longer mapping Miller indices to ASU above
-  # so these HKL are currently nonsense values...
-  # h, k, l = zip(*integrated_data['miller_index'])
-  # h, k, l = flex.int(h), flex.int(k), flex.int(l)
+  # derive index columns from original indices with 
+  #
+  # from m.replace_original_index_miller_indices
+  #
+  # so all that is needed now is to make space for the reflections - fill with
+  # zeros...
 
-  nref = len(integrated_data['miller_index'])
   m.adjust_column_array_sizes(nref)
   m.set_n_reflections(nref)
 
-  # assign H, K, L space
-  # d.add_column('H', type_table['H']).set_values(h.as_double().as_float())
-  # d.add_column('K', type_table['K']).set_values(k.as_double().as_float())
-  # d.add_column('L', type_table['L']).set_values(l.as_double().as_float())
-  for column in 'H', 'K', 'L':
+  # assign H, K, L, M_ISYM space
+  for column in 'H', 'K', 'L', 'M_ISYM':
     d.add_column(column, type_table[column]).set_values(
       flex.double(nref, 0.0).as_float())
-  
-  # make M_ISYM space
-  d.add_column('M_ISYM', type_table['M_ISYM']).set_values(
-    flex.double(nref, 0.0).as_float())
-  
+    
   m.replace_original_index_miller_indices(integrated_data['miller_index'])
 
-  #d.add_column('M_ISYM', type_table['M_ISYM']).set_values(
-  #  misym.as_double().as_float())
   d.add_column('BATCH', type_table['BATCH']).set_values(
     batch.as_double().as_float())
 
