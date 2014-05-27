@@ -178,7 +178,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
                 'M_ISYM': 'Y', 'SIGI': 'Q', 'FLAG': 'I', 'XDET': 'R', 'LP': 'R',
                 'YDET': 'R', 'SIGIPR': 'Q', 'FRACTIONCALC': 'R', 'ROT': 'R'}
 
-  # derive index columns from original indices with 
+  # derive index columns from original indices with
   #
   # from m.replace_original_index_miller_indices
   #
@@ -192,7 +192,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   for column in 'H', 'K', 'L', 'M_ISYM':
     d.add_column(column, type_table[column]).set_values(
       flex.double(nref, 0.0).as_float())
-    
+
   m.replace_original_index_miller_indices(integrated_data['miller_index'])
 
   d.add_column('BATCH', type_table['BATCH']).set_values(
