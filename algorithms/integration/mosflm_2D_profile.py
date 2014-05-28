@@ -81,13 +81,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     data2d, background2d = from_3D_to_2D_projection(shoebox, background)
     mask2d = from_3D_to_2D_mask_projection(mask)
 
-
-
-    # mask may be needed soon
-    #mask2d = mask[0:1, :, :]
-    #mask2d.reshape(flex.grid(mask.all()[1:]))
-
-    #cntr_pos = col_xyzobs[t_row]
     cntr_pos = col_xyzcal[t_row]
 
     bnd_box = col_bbox[t_row]
@@ -96,18 +89,6 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     descr[0, 1] = cntr_pos[1] - bnd_box[2]
     descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
     peak2d = subtrac_bkg_2d(data2d, background2d, mask2d)
-
-    '''
-    print "data2d"
-    show_2d_box(data2d)
-    print "mask2d"
-    show_2d_box(mask2d)
-    print "background2d"
-    show_2d_box(background2d)
-    print "peak2d"
-    show_2d_box(peak2d)
-    print "######################################"
-    '''
 
     sumation = add_2d(descr, peak2d, sumation)
 
@@ -138,7 +119,6 @@ def fit_profile_2d(reflection_pointers, ref_table
     col_variance = ref_table['intensity.sum.variance']
     col_shoebox = ref_table['shoebox']
 
-    #col_xyzobs = ref_table['xyzobs.px.value']
     col_xyzcal = ref_table['xyzcal.px']
     col_bbox = ref_table['bbox']
 
@@ -306,8 +286,6 @@ def fit_profile_2d(reflection_pointers, ref_table
 
         interpolation_mask2d = flex.int(flex.grid(big_nrow, big_ncol))
 
-        #mask2d[0, 0] = -1 # temporarily mutilating the mask just for testing
-
         from dials.algorithms.integration import mask_2d_interpolate
         interpolation_mask2d = mask_2d_interpolate(
         descr, mask2d, interpolation_mask2d)
@@ -347,7 +325,6 @@ def fit_profile_2d(reflection_pointers, ref_table
           data2dmov = add_2d(descr, data2d, intr_polt_2d)
           background2dmov = add_2d(descr, background2d, intr_polt_2d)
 
-          #print "tst"
           I_R = fitting_2d_partials(data2dmov, background2dmov,
                                     average, interpolation_mask2d, tmp_i)
 

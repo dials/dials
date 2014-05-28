@@ -34,7 +34,6 @@ def mosflm_caller(ref_table_in, xmax, ymax, n_div):
 
   col_xyzcal = ref_table_in['xyzcal.px']
 
-  #for r in rlist:
   for t_row in range(len(ref_table_in)):
     #in the future consider searcing for is_valid logical
     #if r.is_valid():
