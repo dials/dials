@@ -151,7 +151,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
   # gather the required information for the reflection file
 
   nref = len(integrated_data['miller_index'])
-  x_px, y_px, z_px = zip(*integrated_data['xyzcal.px'])
+  x_px, y_px, z_px = integrated_data['xyzcal.px'].parts()
 
   xdet = flex.double(x_px)
   ydet = flex.double(y_px)
