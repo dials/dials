@@ -47,5 +47,5 @@ def layering_and_background_avg(reflections):
         background2d = flat_background_flex_2d(data2d, mask2d)
         background2d.reshape(flex.grid(1, background2d.all()[0], background2d.all()[1]))
         background[i:i + 1, :, :] = background2d.as_double()
-  p_bar.finished('Done %d flat background background planes' % bar_siz)
+  p_bar.finished('Done %d flat background planes' % bar_siz)
   return reflections

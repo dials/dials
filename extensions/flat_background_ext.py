@@ -29,6 +29,8 @@ class FlatBackgroundExt(BackgroundIface):
     from dials.util.command_line import Command
 
     # Do the background subtraction
-    Command.start('Calculating reflection background')
+    #next line temporarily commented for consistency (need to consult James)
+    #Command.start('Calculating reflection background')
     self._subtractor(reflections)
-    Command.end('Calculated {0} background values'.format(len(reflections)))
+    #next line temporarily commented for consistency (need to consult James)
+    #Command.end('Calculated {0} background values'.format(len(reflections)))
