@@ -90,6 +90,10 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     descr[0, 2] = 1.0 / (col_intensity[t_row] * counter)
     peak2d = subtrac_bkg_2d(data2d, background2d, mask2d)
 
+
+    show_2d_box(mask2d)
+    show_2d_box(background2d)
+
     sumation = add_2d(descr, peak2d, sumation)
 
   #print "_________________ profile _____________________"

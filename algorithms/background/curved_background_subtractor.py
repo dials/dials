@@ -29,11 +29,9 @@ def layering_and_background_modl(reflections):
   p_bar = ProgressBar(title = 'Performing Curved background calculation')
   tbl_prgr = 0
 
-
   shoeboxes = reflections['shoebox']
   for shoebox in shoeboxes:
     #if ref.is_valid():
-
 
       p_bar.update(tbl_prgr * 100.0 / bar_siz)
       tbl_prgr += 1
