@@ -54,13 +54,19 @@ namespace dials { namespace algorithms {
         count = 0;
       }
 
-      void get_sum(int row, int col,
+      void get_sum(int row_in, int col_in,
         const af::const_ref< double, af::c_grid<2> > &data2d,
         const af::const_ref< int, af::c_grid<2> > &mask2d){
-          if ( mask2d(row, col) & Background ){
-
-            total += data2d(row, col);
-            count++;
+          for (int row = row_in - 3; row < row_in + 3; row++){
+            for(int col = col_in - 3; col < col_in + 3; col++){
+              if(row>=0 and row < max_row and
+                 col>=0 and col < max_col ){
+                if ( mask2d(row, col) & Background ){
+                  total += data2d(row, col);
+                  count++;
+                }
+              }
+            }
           }
       }
 
@@ -95,33 +101,27 @@ namespace dials { namespace algorithms {
               local_avg lcl_av(nrow, ncol);
 
 
-
               loc_row = nrow - 1;
               loc_col = col;
-
               lcl_av.get_sum(loc_row, loc_col, data2d, mask2d);
 
 
               loc_row = 0;
               loc_col = col;
-
               lcl_av.get_sum(loc_row, loc_col, data2d, mask2d);
 
 
               loc_row = row;
               loc_col = ncol - 1;
-
               lcl_av.get_sum(loc_row, loc_col, data2d, mask2d);
 
 
               loc_row = row;
               loc_col = 0;
-
               lcl_av.get_sum(loc_row, loc_col, data2d, mask2d);
 
 
               loc_bkgr = lcl_av.get_avg();
-
               background2d(row,col) = loc_bkgr;
 
             } else {
