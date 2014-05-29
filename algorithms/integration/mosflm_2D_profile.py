@@ -91,12 +91,11 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     peak2d = subtrac_bkg_2d(data2d, background2d, mask2d)
 
 
-    show_2d_box(mask2d)
-    show_2d_box(background2d)
+    #show_2d_box(mask2d)
+    #show_2d_box(background2d)
 
     sumation = add_2d(descr, peak2d, sumation)
 
-  #print "_________________ profile _____________________"
   #show_2d_box(sumation)
 
   return sumation, thold
