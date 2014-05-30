@@ -45,10 +45,6 @@ for x_loc in range(950):
     data2d[y_loc, x_loc] += roll_the_dice * noise_scale * data2d[y_loc, x_loc]
 print "adding noise .... done"
 
-from matplotlib import pyplot as plt
-print "Plotting data2d"
-plt.imshow(data2d.as_numpy_array(), interpolation = "nearest")
-plt.show()
 
 #'''
 #    code that will become production code:
@@ -62,13 +58,27 @@ data2dsmoth = smooth_2d(data2d, n_times)
 mask2d = find_mask_2d(data2d, data2dsmoth, n_times)
 
 # end code that will become production code
-ploting_smooth = '''
+
+from matplotlib import pyplot as plt
+
+x_from = 50
+x_to = 350
+y_from = 50
+y_to = 250
+
+data2d = data2d.as_numpy_array()
+data2d = data2d[x_from:x_to,y_from:y_to]
+plt.imshow(data2d, interpolation = "nearest")
+plt.show()
+
 print "Plotting data2dsmoth"
 np_data2dsmoth = data2dsmoth.as_numpy_array()
+np_data2dsmoth = np_data2dsmoth[x_from:x_to,y_from:y_to]
 plt.imshow(np_data2dsmoth, interpolation = "nearest")#, cmap = pylab.gray())
 plt.show()
-'''
+
 print "Plotting data2d mask"
 np_data2dmask = mask2d.as_numpy_array()
+np_data2dmask = np_data2dmask[x_from:x_to,y_from:y_to]
 plt.imshow(np_data2dmask, interpolation = "nearest", cmap = pylab.gray())#, cmap = pylab.gray())
 plt.show()
