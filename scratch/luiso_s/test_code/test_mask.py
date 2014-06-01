@@ -61,10 +61,10 @@ mask2d = find_mask_2d(data2d, data2dsmoth, n_times)
 
 from matplotlib import pyplot as plt
 
-x_from = 50
+x_from = 250
 x_to = 350
-y_from = 50
-y_to = 250
+y_from = 250
+y_to = 450
 
 data2d = data2d.as_numpy_array()
 data2d = data2d[x_from:x_to,y_from:y_to]
