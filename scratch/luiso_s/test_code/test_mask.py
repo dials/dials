@@ -61,24 +61,24 @@ mask2d = find_mask_2d(data2d, data2dsmoth, n_times)
 
 from matplotlib import pyplot as plt
 
-x_from = 250
-x_to = 350
-y_from = 250
-y_to = 450
+col_from = 360
+col_to = 560
+row_from = 200
+row_to = 300
 
 data2d = data2d.as_numpy_array()
-data2d = data2d[x_from:x_to,y_from:y_to]
+data2d = data2d[row_from:row_to,col_from:col_to]
 plt.imshow(data2d, interpolation = "nearest")
 plt.show()
 
 print "Plotting data2dsmoth"
 np_data2dsmoth = data2dsmoth.as_numpy_array()
-np_data2dsmoth = np_data2dsmoth[x_from:x_to,y_from:y_to]
+np_data2dsmoth = np_data2dsmoth[row_from:row_to,col_from:col_to]
 plt.imshow(np_data2dsmoth, interpolation = "nearest")#, cmap = pylab.gray())
 plt.show()
 
 print "Plotting data2d mask"
 np_data2dmask = mask2d.as_numpy_array()
-np_data2dmask = np_data2dmask[x_from:x_to,y_from:y_to]
+np_data2dmask = np_data2dmask[row_from:row_to,col_from:col_to]
 plt.imshow(np_data2dmask, interpolation = "nearest", cmap = pylab.gray())#, cmap = pylab.gray())
 plt.show()
