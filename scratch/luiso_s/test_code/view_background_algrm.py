@@ -6,11 +6,11 @@ from matplotlib import pylab
 
 import numpy
 
-nrow = 32
-ncol = 32
+nrow = 35
+ncol = 35
 
 ref_ang = 5
-local_i = 50
+local_i = 170
 
 data2d = model_2d(nrow, ncol, 6, 3, ref_ang, local_i, 0.5)
 
@@ -23,7 +23,7 @@ for x_loc in range(ncol):
     else:
       mask2d[y_loc, x_loc] = 3
 
-ext_siz = 3
+ext_siz = 1
 tmp_mask = mask2d[:,:]
 mask2d = mask2d.as_numpy_array()
 for x_loc in range(ncol):
@@ -38,10 +38,13 @@ import random
 for x_loc in range(ncol):
   for y_loc in range(nrow):
     roll_the_dice = random.randint(1,50)
-    data2d[y_loc, x_loc] += (y_loc + x_loc) * 0.3
-    noise_scale = .1
-    inclined_pl_scale = 300000
-    data2d[y_loc, x_loc] += inclined_pl_scale * (ncol)
+
+    noise_scale = .3
+
+    dx = ((x_loc + y_loc) - ((ncol + nrow)/2)) * 0.3
+    parabl = dx * dx
+    i_func = parabl * 0.03
+    data2d[y_loc, x_loc] += parabl
     data2d[y_loc, x_loc] += roll_the_dice * noise_scale
 
 print "adding noise .... done"
@@ -53,6 +56,7 @@ from matplotlib import pyplot as plt
 data2d = data2d.as_numpy_array()
 plt.imshow(data2d, interpolation = "nearest")
 plt.show()
+
 np_data2dmask = mask2d.as_numpy_array()
 plt.imshow(np_data2dmask, interpolation = "nearest")
 plt.show()
