@@ -41,7 +41,7 @@ for x_loc in range(ncol):
     data2d[y_loc, x_loc] += (y_loc + x_loc) * 0.3
     noise_scale = .1
     inclined_pl_scale = 300000
-    data2d[y_loc, x_loc] += inclined_pl_scale * (nrow + ncol)
+    data2d[y_loc, x_loc] += inclined_pl_scale * (ncol)
     data2d[y_loc, x_loc] += roll_the_dice * noise_scale
 
 print "adding noise .... done"
