@@ -56,6 +56,11 @@ def export_mtz(integrated_data, experiment_list, hklout):
   fast *= pixel_size[0]
   slow *= pixel_size[1]
 
+  cb_op_to_ref = experiment.crystal.get_space_group().info()\
+    .change_of_basis_op_to_reference_setting()
+
+  experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
+
   U = experiment.crystal.get_U()
   unit_cell = experiment.crystal.get_unit_cell()
   from iotbx import mtz
@@ -193,7 +198,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
     d.add_column(column, type_table[column]).set_values(
       flex.double(nref, 0.0).as_float())
 
-  m.replace_original_index_miller_indices(integrated_data['miller_index'])
+  m.replace_original_index_miller_indices(cb_op_to_ref.apply(
+    integrated_data['miller_index']))
 
   d.add_column('BATCH', type_table['BATCH']).set_values(
     batch.as_double().as_float())
