@@ -19,6 +19,8 @@ overlaps {
     .type = float(value_min=0.0)
   max_overlap_pixels = 0
     .type = int(value_min=0)
+  n_sigma = 3
+    .type = float(value_min=0.0)
 }
 space_group = None
   .type = space_group
@@ -96,7 +98,11 @@ def run(args):
     # figure out the overlapping reflections and save the miller indices
     # for later on
     reject_hkl = {}
-    for wedge_n, wedge_ids in wedge_number_to_wedge_id.iteritems():
+
+    def run_find_overlaps(args):
+      wedge_n, wedge_ids = args
+      result_dict = {}
+
       print "Wedge", wedge_n
       if len(wedge_ids) > 1:
         for wedge_id in wedge_ids:
@@ -106,6 +112,8 @@ def run(args):
           cmd = " ".join(args)
           print cmd
           result = easy_run.fully_buffered(cmd).raise_if_errors()
+          result.show_stdout()
+          result.show_stderr()
 
           args = ["dials.import_xds",
                   file_name_dict[wedge_id],
@@ -115,13 +123,17 @@ def run(args):
           cmd = " ".join(args)
           print cmd
           result = easy_run.fully_buffered(cmd).raise_if_errors()
+          result.show_stdout()
+          result.show_stderr()
 
         from dials.command_line import find_overlaps
         args = ['experiments_%i.json' %wedge_id for wedge_id in wedge_ids]
         args.extend(['integrate_hkl_%i.pickle' %wedge_id for wedge_id in wedge_ids])
-        args.append("nproc=%s" %params.nproc)
+        #args.append("nproc=%s" %params.nproc)
+
         args.append("max_overlap_fraction=%f" %params.overlaps.max_overlap_fraction)
         args.append("max_overlap_pixels=%f" %params.overlaps.max_overlap_pixels)
+        args.append("n_sigma=%f" %params.overlaps.n_sigma)
         args.append("save_overlaps=False")
         overlaps = find_overlaps.run(args)
         miller_indices = overlaps.overlapping_reflections['miller_index']
@@ -130,7 +142,20 @@ def run(args):
             overlaps.overlapping_reflections['id'] == i_lattice)
           for i_lattice in range(len(wedge_ids))]
         for wedge_id, overlaps in zip(wedge_ids, overlapping):
-          reject_hkl[wedge_id] = overlaps
+          result_dict[wedge_id] = overlaps
+      return result_dict
+
+    from libtbx import easy_mp
+    results = easy_mp.parallel_map(
+      func=run_find_overlaps,
+      iterable=wedge_number_to_wedge_id.items(),
+      processes=params.nproc,
+      preserve_order=True,
+      asynchronous=False,
+      preserve_exception_message=True,
+    )
+    for result in results:
+      reject_hkl.update(result)
 
   for wedge_n, wedge_ids in wedge_number_to_wedge_id.iteritems():
     for wedge in wedge_ids:
@@ -171,7 +196,7 @@ EOF
     args.append("save_plot=True")
     args.append("show_plot=False")
     brehm_diederichs.run(args)
-  g = glob.glob("integrate_hkl_*_reindexed.mtz")
+    g = glob.glob("integrate_hkl_*_reindexed.mtz")
 
   for file_name in g:
     wedge_number = int(os.path.splitext(
