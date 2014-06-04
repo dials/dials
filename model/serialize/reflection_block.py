@@ -11,6 +11,7 @@
 
 from __future__ import division
 
+
 class ReflectionBlockExtractor(object):
   ''' A class to extract blocks of reflections. '''
 
@@ -21,6 +22,7 @@ class ReflectionBlockExtractor(object):
     from dials.model.serialize import extract_shoeboxes_to_file
     from dials.model.serialize import ShoeboxBlockImporter
     from dials.array_family import flex
+    import cPickle as pickle
 
     # Calculate the blocks
     self._blocks = self._compute_blocks(len(imageset), nblocks)

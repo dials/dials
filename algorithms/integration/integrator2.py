@@ -70,7 +70,7 @@ class Integrator(object):
 
     # Load the extractor based on the input
     if shoeboxes is not None:
-      extractor = self._load_extractor(options.shoeboxes)
+      extractor = self._load_extractor(shoeboxes, params, exlist)
     else:
       if reference:
         self._compute_profile_model(params, exlist, reference)
@@ -103,11 +103,15 @@ class Integrator(object):
                 mask.count(True))
     return predicted
 
-  def _load_extractor(self, filename):
+  def _load_extractor(self, filename, params, exlist):
     ''' Load the shoebox extractor. '''
+    from dials.model.serialize.reflection_block import ReflectionBlockExtractor
+    assert(len(exlist) == 1)
+    imageset = exlist[0].imageset
     return ReflectionBlockExtractor(
       filename,
-      params.integration.shoebox.n_blocks)
+      params.integration.shoebox.n_blocks,
+      imageset)
 
   def _create_extractor(self, params, exlist, predicted):
     ''' Create the extractor. '''
