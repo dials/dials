@@ -38,10 +38,17 @@ class Integrator(object):
   def integrate(self):
     ''' Integrate all the reflections. '''
     from dials.array_family import flex
+    from dials.algorithms.shoebox import MaskCode
     result = flex.reflection_table()
     for indices, reflections in self.extractor:
       self._mask_profiles(reflections, None)
       reflections.integrate(self.experiments[0])
+      bg_code = MaskCode.Valid | MaskCode.BackgroundUsed
+      fg_code = MaskCode.Valid | MaskCode.Foreground
+      n_bg = reflections['shoebox'].count_mask_values(bg_code)
+      n_fg = reflections['shoebox'].count_mask_values(fg_code)
+      reflections['n_background'] = n_bg
+      reflections['n_foreground'] = n_fg
       del reflections['shoebox']
       del reflections['rs_shoebox']
       result.extend(reflections)
