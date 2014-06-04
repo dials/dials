@@ -67,6 +67,10 @@ namespace dials { namespace model { namespace serialize {
    *     ...
    *     SBOX[N-1][MNm1-1]
    * DATA_END
+   * BLOB_BEGIN
+   *  BLOB_SIZE
+   *  ...
+   * BLOB_END
    *
    * Shoeboxes are written to the file in the order of their indices, as such it
    * is up to the calling code to ensure suffient locality between shoeboxes
@@ -86,6 +90,8 @@ namespace dials { namespace model { namespace serialize {
     const static uint32_t DATA_BEG = 4;
     const static uint32_t DATA_END = 5;
     const static uint32_t SHOEBOX_BEG = 6;
+    const static uint32_t BLOB_BEG = 7;
+    const static uint32_t BLOB_END = 8;
   };
 
 
@@ -109,19 +115,24 @@ namespace dials { namespace model { namespace serialize {
     ShoeboxFileWriter(const std::string &filename,
                       const af::const_ref<std::size_t> &panel,
                       const af::const_ref<int6> &bbox,
-                      std::size_t buffer_max)
+                      const af::const_ref<double> &z,
+                      std::size_t buffer_max,
+                      const std::string &blob)
         : panel_(panel.begin(), panel.end()),
           bbox_(bbox.begin(), bbox.end()),
+          z_(z.begin(), z.end()),
           offset_(bbox_.size() + 1),
           buffer_size_(0),
           buffer_max_(buffer_max) {
       DIALS_ASSERT(panel.size() == bbox.size());
+      DIALS_ASSERT(panel.size() == z.size());
       file_.rdbuf()->pubsetbuf(0,0);
       file_.open(filename.c_str(), std::ios_base::binary | std::ios_base::trunc);
       write_internal(MAGIC);
       write_internal(VERSION);
       write_header();
       write_data();
+      write_blob(blob);
     }
 
     /**
@@ -198,6 +209,9 @@ namespace dials { namespace model { namespace serialize {
       for (std::size_t i = 0; i < panel_.size(); ++i) {
         write_internal((uint32_t)panel_[i]);
       }
+      for (std::size_t i = 0; i < z_.size(); ++i) {
+        write_internal((double)z_[i]);
+      }
       for (std::size_t i = 0; i < bbox_.size(); ++i) {
         for (std::size_t j = 0; j < 6; ++j) {
           write_internal((int32_t)bbox_[i][j]);
@@ -228,6 +242,16 @@ namespace dials { namespace model { namespace serialize {
       data_offset_ = file_.tellp();
       seek_internal(offset_.back(), std::ios_base::cur);
       write_internal(DATA_END);
+    }
+
+    /**
+     * Write additional blob of data
+     */
+    void write_blob(const std::string &blob) {
+      write_internal(BLOB_BEG);
+      write_internal((uint32_t)blob.size());
+      write_internal((const char *)blob.c_str(), blob.size());
+      write_internal(BLOB_END);
     }
 
     /**
@@ -278,6 +302,7 @@ namespace dials { namespace model { namespace serialize {
 
     af::shared<std::size_t> panel_;
     af::shared<int6> bbox_;
+    af::shared<double> z_;
     af::shared<uint64_t> offset_;
     std::ofstream file_;
     uint64_t data_offset_;
@@ -309,6 +334,9 @@ namespace dials { namespace model { namespace serialize {
 
       // Read and check the data
       check_data();
+
+      // Check blob
+      check_blob();
     }
 
     /**
@@ -330,6 +358,13 @@ namespace dials { namespace model { namespace serialize {
      */
     af::shared<std::size_t> panels() const {
       return af::shared<std::size_t>(panel_.begin(), panel_.end());
+    }
+
+    /**
+     * @returns The z centroid
+     */
+    af::shared<double> z() const {
+      return af::shared<double>(z_.begin(), z_.end());
     }
 
     /**
@@ -355,10 +390,22 @@ namespace dials { namespace model { namespace serialize {
 
       // Read the data
       DIALS_ASSERT(read_internal<uint32_t>() == SHOEBOX_BEG);
-      read_internal(&data[0], data.size());
+      read_internal((char *)&data[0], data.size());
 
       // Return the array
       return data;
+    }
+
+    /**
+     * Read the blob of data
+     */
+    std::string read_blob() {
+      std::string result;
+      seek_internal(blob_offset_, std::ios_base::beg);
+      uint32_t blob_size = read_internal<uint32_t>();
+      result.resize(blob_size);
+      read_internal(&result[0], result.size());
+      return result;
     }
 
   private:
@@ -375,9 +422,13 @@ namespace dials { namespace model { namespace serialize {
       uint32_t bbox_size = read_internal<uint32_t>();
       panel_.resize(bbox_size);
       bbox_.resize(bbox_size);
+      z_.resize(bbox_size);
       offset_.resize(bbox_size + 1);
       for (std::size_t i = 0; i < bbox_size; ++i) {
         panel_[i] = read_internal<uint32_t>();
+      }
+      for (std::size_t i = 0; i < bbox_size; ++i) {
+        z_[i] = read_internal<double>();
       }
       for (std::size_t i = 0; i < bbox_size; ++i) {
         int6 b;
@@ -420,6 +471,19 @@ namespace dials { namespace model { namespace serialize {
       //}
       seek_internal(offset_.back(), std::ios_base::cur);
       DIALS_ASSERT(read_internal<uint32_t>() == DATA_END);
+    }
+
+    /**
+     * Read the blob
+     */
+    void check_blob() {
+
+      // Check the blob
+      DIALS_ASSERT(read_internal<uint32_t>() == BLOB_BEG);
+      blob_offset_ = file_.tellg();
+      uint32_t blob_size = read_internal<uint32_t>();
+      seek_internal(blob_size * sizeof(char), std::ios_base::cur);
+      DIALS_ASSERT(read_internal<uint32_t>() == BLOB_END);
 
       // Try to read a byte and check eof
       read_internal_nocheck<char>();
@@ -471,8 +535,10 @@ namespace dials { namespace model { namespace serialize {
     std::ifstream file_;
     af::shared<int6> bbox_;
     af::shared<std::size_t> panel_;
+    af::shared<double> z_;
     af::shared<uint64_t> offset_;
     uint64_t data_offset_;
+    uint64_t blob_offset_;
   };
 
 }}} // namespace dials::model::serialize

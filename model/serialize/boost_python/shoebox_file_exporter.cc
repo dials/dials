@@ -24,13 +24,16 @@ namespace dials { namespace model { namespace serialize {
       .def(init<const std::string &,
                 const af::const_ref<std::size_t>&,
                 const af::const_ref<int6>,
+                const af::const_ref<double>,
                 std::size_t,
-                std::size_t>((
+                std::size_t,
+                const std::string&>((
         arg("filename"),
         arg("panel"),
         arg("bbox"),
         arg("num_frame"),
-        arg("num_panel"))))
+        arg("num_panel"),
+        arg("blob") = "")))
       .def("flush", &ShoeboxFileExporter::flush)
       .def("finished", &ShoeboxFileExporter::finished)
       .def("next", &ShoeboxFileExporter::next);

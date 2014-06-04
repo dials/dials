@@ -68,27 +68,27 @@ class Integrator(object):
                predicted=None, shoeboxes=None):
     '''Initialise the script.'''
 
-    # Load the extractor
+    # Load the extractor based on the input
     if shoeboxes is not None:
-      extractor = self.load_extractor(options.shoeboxes)
+      extractor = self._load_extractor(options.shoeboxes)
     else:
       if reference:
-        self.compute_profile_model(params, exlist, reference)
+        self._compute_profile_model(params, exlist, reference)
       if predicted is None:
-        predicted = self.predict_reflections(params, exlist)
-        predicted = self.filter_reflections(params, exlist, predicted)
+        predicted = self._predict_reflections(params, exlist)
+        predicted = self._filter_reflections(params, exlist, predicted)
       if reference:
-        predicted = self.match_with_reference(predicted, reference)
-      extractor = self.create_extractor(params, exlist, predicted)
+        predicted = self._match_with_reference(predicted, reference)
+      extractor = self._create_extractor(params, exlist, predicted)
 
     # Initialise the integrator
-    self.integrator = ReflectionBlockIntegrator(params, exlist, extractor)
+    self._integrator = ReflectionBlockIntegrator(params, exlist, extractor)
 
   def integrate(self):
     ''' Integrate the reflections. '''
-    return self.integrator.integrate()
+    return self._integrator.integrate()
 
-  def match_with_reference(self, predicted, reference):
+  def _match_with_reference(self, predicted, reference):
     ''' Match predictions with reference spots. '''
     from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
     from dials.util.command_line import Command
@@ -103,22 +103,24 @@ class Integrator(object):
                 mask.count(True))
     return predicted
 
-  def load_extractor(self, filename):
+  def _load_extractor(self, filename):
     ''' Load the shoebox extractor. '''
-    return None
+    return ReflectionBlockExtractor(
+      filename,
+      params.integration.shoebox.n_blocks)
 
-  def create_extractor(self, params, exlist, predicted):
+  def _create_extractor(self, params, exlist, predicted):
     ''' Create the extractor. '''
     from dials.model.serialize.reflection_block import ReflectionBlockExtractor
     assert(len(exlist) == 1)
     imageset = exlist[0].imageset
     return ReflectionBlockExtractor(
       "shoebox.dat",
+      params.integration.shoebox.n_blocks,
       imageset,
-      predicted,
-      params.integration.shoebox.n_blocks)
+      predicted)
 
-  def compute_profile_model(self, params, experiments, reference):
+  def _compute_profile_model(self, params, experiments, reference):
     ''' Compute the profile model. '''
     from dials.algorithms.profile_model.profile_model import ProfileModel
     from math import pi
@@ -131,7 +133,7 @@ class Integrator(object):
       print 'Sigma B: %f' % params.integration.shoebox.sigma_b
       print 'Sigma M: %f' % params.integration.shoebox.sigma_m
 
-  def predict_reflections(self, params, experiments):
+  def _predict_reflections(self, params, experiments):
     ''' Predict all the reflections. '''
     from dials.array_family import flex
     from math import pi
@@ -146,7 +148,7 @@ class Integrator(object):
       result.extend(predicted)
     return result
 
-  def filter_reflections(self, params, experiments, reflections):
+  def _filter_reflections(self, params, experiments, reflections):
     ''' Filter the reflections to integrate. '''
     from dials.util.command_line import Command
     from dials.algorithms import filtering

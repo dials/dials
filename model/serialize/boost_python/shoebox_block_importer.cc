@@ -21,7 +21,6 @@ namespace dials { namespace model { namespace serialize {
   ShoeboxBlockImporter* make_shoebox_block_importer(
       const std::string &filename,
       const af::const_ref<std::size_t> &blocks,
-      const af::const_ref<double> &z,
       boost::python::tuple gmt,
       boost::python::tuple dmt,
       boost::python::tuple mmt) {
@@ -44,7 +43,7 @@ namespace dials { namespace model { namespace serialize {
     }
 
     // Return the new importer
-    return new ShoeboxBlockImporter(filename, blocks, z,
+    return new ShoeboxBlockImporter(filename, blocks,
       gm.const_ref(), dm.const_ref(), mm.const_ref());
   }
 
@@ -123,20 +122,18 @@ namespace dials { namespace model { namespace serialize {
     class_<ShoeboxBlockImporter, boost::noncopyable>(
         "ShoeboxBlockImporter", no_init)
       .def(init<const std::string&,
-                const af::const_ref<std::size_t>&,
-                const af::const_ref<double>&>((
+                const af::const_ref<std::size_t>&>((
           arg("filename"),
-          arg("blocks"),
-          arg("z"))))
+          arg("blocks"))))
       .def("__init__", make_constructor(
         &make_shoebox_block_importer,
         default_call_policies(), (
           arg("filename"),
           arg("blocks"),
-          arg("z"),
           arg("gain"),
           arg("dark"),
           arg("mask"))))
+      .def("blob", &ShoeboxBlockImporter::blob)
       .def("__len__", &ShoeboxBlockImporter::size)
       .def("__getitem__", &ShoeboxBlockImporter::operator[])
       .def("__iter__", make_shoebox_block_iterator::range());

@@ -31,10 +31,9 @@ namespace dials { namespace model { namespace serialize {
      * @param filename The path to the shoebox file
      */
     ShoeboxBlockImporter(const std::string &filename,
-                         const af::const_ref<std::size_t> &blocks,
-                         const af::const_ref<double> &z)
+                         const af::const_ref<std::size_t> &blocks)
         : importer_(filename) {
-      init_indices(blocks, z);
+      init_indices(blocks);
     }
 
     /**
@@ -46,12 +45,11 @@ namespace dials { namespace model { namespace serialize {
      */
     ShoeboxBlockImporter(const std::string &filename,
                          const af::const_ref<std::size_t> &blocks,
-                         const af::const_ref<double> &z,
                          const af::const_ref<gain_map_ref_type> &gain,
                          const af::const_ref<dark_map_ref_type> &dark,
                          const af::const_ref<mask_map_ref_type> &mask)
         : importer_(filename, gain, dark, mask) {
-      init_indices(blocks, z);
+      init_indices(blocks);
     }
 
     /**
@@ -75,10 +73,16 @@ namespace dials { namespace model { namespace serialize {
           importer_.select(ind.const_ref()));
     }
 
+    /**
+     * Read a blob of data
+     */
+    std::string blob() {
+      return importer_.blob();
+    }
+
   private:
 
-    void init_indices(const af::const_ref<std::size_t> &blocks,
-                      const af::const_ref<double> &z) {
+    void init_indices(const af::const_ref<std::size_t> &blocks) {
 
       // Ensure blocks are in order
       DIALS_ASSERT(blocks.size() >= 2);
@@ -87,6 +91,7 @@ namespace dials { namespace model { namespace serialize {
       }
 
       // Ensure centroids are in order
+      af::shared<double> z = importer_.z();
       for (std::size_t i = 1; i < z.size(); ++i) {
         DIALS_ASSERT(z[i] >= z[i-1]);
       }

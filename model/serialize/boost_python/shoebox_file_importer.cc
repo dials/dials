@@ -132,6 +132,7 @@ namespace dials { namespace model { namespace serialize {
           arg("gain"),
           arg("dark"),
           arg("mask"))))
+      .def("blob", &ShoeboxFileImporter::blob)
       .def("__len__", &ShoeboxFileImporter::size)
       .def("bboxes", &ShoeboxFileImporter::bboxes)
       .def("panels", &ShoeboxFileImporter::panels)

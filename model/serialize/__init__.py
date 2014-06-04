@@ -37,6 +37,7 @@ class ShoeboxExporterAux(boost.python.injector, ShoeboxFileExporter):
 
 def extract_shoeboxes_to_file(filename, imageset, reflections):
   ''' Extract the shoeboxes to file. '''
+  import cPickle as pickle
 
   # Get some stuff from the experiment
   detector = imageset.get_detector()
@@ -49,8 +50,10 @@ def extract_shoeboxes_to_file(filename, imageset, reflections):
     filename,
     reflections['panel'],
     reflections['bbox'],
+    reflections['xyzcal.px'].parts()[2],
     num_frames,
-    num_panels)
+    num_panels,
+    pickle.dumps(reflections, protocol=pickle.HIGHEST_PROTOCOL))
 
   # Write all the shoeboxes to disk
   exporter.export(imageset)

@@ -117,6 +117,13 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
+     * @returns The z centroids
+     */
+    af::shared<double> z() const {
+      return reader_.z();
+    }
+
+    /**
      * Read a shoebox
      * @param index The index of the shoebox
      * @returns The shoebox
@@ -150,6 +157,13 @@ namespace dials { namespace model { namespace serialize {
         result.push_back((*this)[index[i]]);
       }
       return result;
+    }
+
+    /**
+     * Read the blob of data
+     */
+    std::string blob() {
+      return reader_.read_blob();
     }
 
   private:

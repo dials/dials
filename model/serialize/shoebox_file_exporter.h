@@ -50,9 +50,11 @@ namespace dials { namespace model { namespace serialize {
             const std::string filename,
             const af::const_ref<std::size_t> &panel,
             const af::const_ref<int6> &bbox,
+            const af::const_ref<double> &z,
             std::size_t num_frame,
-            std::size_t num_panel)
-        : writer_(filename, panel, bbox, BUFFER_MAX_SIZE),
+            std::size_t num_panel,
+            const std::string &blob)
+        : writer_(filename, panel, bbox, z, BUFFER_MAX_SIZE, blob),
           bbox_(bbox.begin(), bbox.end()),
           panel_(panel.begin(), panel.end()),
           shoeboxes_(init_shoeboxes(bbox.size())),
