@@ -27,9 +27,9 @@ def generate_phil_scope():
     shoebox
       .help = "Parameters used in the integration shoebox"
     {
-      n_blocks = 1
-        .help = "The number of blocks to integrate in."
-        .type = int
+      block_size = 10
+        .help = "The block size in rotation angle (degrees)."
+        .type = float
 
       n_sigma = 3
         .help = "The number of standard deviations of the beam divergence and the"

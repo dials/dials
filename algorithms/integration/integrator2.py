@@ -110,7 +110,7 @@ class Integrator(object):
     imageset = exlist[0].imageset
     return ReflectionBlockExtractor(
       filename,
-      params.integration.shoebox.n_blocks,
+      params.integration.shoebox.block_size,
       imageset)
 
   def _create_extractor(self, params, exlist, predicted):
@@ -120,7 +120,7 @@ class Integrator(object):
     imageset = exlist[0].imageset
     return ReflectionBlockExtractor(
       "shoebox.dat",
-      params.integration.shoebox.n_blocks,
+      params.integration.shoebox.block_size,
       imageset,
       predicted)
 

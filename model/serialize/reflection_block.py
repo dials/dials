@@ -15,7 +15,7 @@ from __future__ import division
 class ReflectionBlockExtractor(object):
   ''' A class to extract blocks of reflections. '''
 
-  def __init__(self, filename, nblocks,
+  def __init__(self, filename, block_size,
                imageset, reflections=None,
                gain=None, dark=None, mask=None):
     ''' Initialise the extractor. '''
@@ -23,14 +23,20 @@ class ReflectionBlockExtractor(object):
     from dials.model.serialize import ShoeboxBlockImporter
     from dials.array_family import flex
     import cPickle as pickle
-
-    # Calculate the blocks
-    self._blocks = self._compute_blocks(len(imageset), nblocks)
+    from math import log10, floor
 
     # Reorder the reflections and extract shoeboxes
     if reflections:
       self.reflections = self._reorder_reflections(reflections)
       extract_shoeboxes_to_file(filename, imageset, reflections)
+
+    # Calculate the blocks in images
+    self._blocks = self._compute_blocks(imageset.get_scan(), block_size)
+    print "Extracting reflections from the following blocks of images:"
+    npad = int(floor(log10(max(self._blocks)))) + 1
+    format_string = ' %%%dd -> %%%dd' % (npad, npad)
+    for i in range(len(self._blocks)-1):
+      print format_string % (self._blocks[i], self._blocks[i+1])
 
     # Construct the importer
     if gain and dark and mask:
@@ -86,12 +92,17 @@ class ReflectionBlockExtractor(object):
     # Return the reflections
     return reflections
 
-  def _compute_blocks(self, nframes, nblocks):
+  def _compute_blocks(self, scan, block_size):
     ''' Compute the number of blocks. '''
     from math import ceil
-    blocks = [0]
+    phi0, dphi = scan.get_oscillation(deg=True)
+    nframes = scan.get_num_images()
+    assert(block_size >= dphi)
+    block_length = float(block_size) / dphi
+    nblocks = int(ceil(nframes / block_length))
     assert(nblocks <= nframes)
     block_length = int(ceil(nframes / nblocks))
+    blocks = [0]
     for i in range(nblocks):
       frame = (i + 1) * block_length
       if frame > nframes:
