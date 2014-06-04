@@ -29,6 +29,9 @@ namespace dials { namespace model { namespace serialize {
   class ShoeboxFileExporter {
   public:
 
+    // Buffer size of 500MB
+    static const std::size_t BUFFER_MAX_SIZE = 500000000;
+
     typedef std::vector<std::size_t> index_array_type;
     typedef std::vector<index_array_type> pf_index_array_type;
     typedef af::versa< int, af::c_grid<3> > shoebox_type;
@@ -49,7 +52,7 @@ namespace dials { namespace model { namespace serialize {
             const af::const_ref<int6> &bbox,
             std::size_t num_frame,
             std::size_t num_panel)
-        : writer_(filename, panel, bbox),
+        : writer_(filename, panel, bbox, BUFFER_MAX_SIZE),
           bbox_(bbox.begin(), bbox.end()),
           panel_(panel.begin(), panel.end()),
           shoeboxes_(init_shoeboxes(bbox.size())),
@@ -135,7 +138,7 @@ namespace dials { namespace model { namespace serialize {
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
           writer_.write(index, shoebox.const_ref());
-          shoebox.resize(af::c_grid<3>(0, 0, 0));
+          shoebox_type().swap(shoebox);
         }
       }
 

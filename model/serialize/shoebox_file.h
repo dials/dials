@@ -11,6 +11,8 @@
 #ifndef DIALS_MODEL_SERIALIZE_SHOEBOX_FILE_H
 #define DIALS_MODEL_SERIALIZE_SHOEBOX_FILE_H
 
+#include <vector>
+#include <map>
 #include <fstream>
 #include <iostream>
 #include <boost/cstdint.hpp>
@@ -93,6 +95,8 @@ namespace dials { namespace model { namespace serialize {
   class ShoeboxFileWriter : public ShoeboxFileBase {
   public:
 
+    typedef std::map< std::size_t, std::vector<int> > buffer_type;
+
     /**
      * Setup the shoebox file. This function will initialize the file to the
      * correct size and will write the header information. Shoeboxes will be
@@ -100,15 +104,19 @@ namespace dials { namespace model { namespace serialize {
      * specified.
      * @param filename The file to write to
      * @param bbox The list of bounding boxes.
+     * @param buffer_max The size of the buffer in bytes
      */
     ShoeboxFileWriter(const std::string &filename,
                       const af::const_ref<std::size_t> &panel,
-                      const af::const_ref<int6> &bbox)
+                      const af::const_ref<int6> &bbox,
+                      std::size_t buffer_max)
         : panel_(panel.begin(), panel.end()),
           bbox_(bbox.begin(), bbox.end()),
           offset_(bbox_.size() + 1),
           file_(filename.c_str(),
-                std::ios_base::binary | std::ios_base::trunc) {
+                std::ios_base::binary | std::ios_base::trunc),
+          buffer_size_(0),
+          buffer_max_(buffer_max) {
       DIALS_ASSERT(panel.size() == bbox.size());
       write_internal(MAGIC);
       write_internal(VERSION);
@@ -117,9 +125,17 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
+     * Flush the buffer
+     */
+    ~ShoeboxFileWriter() {
+      flush_buffer();
+    }
+
+    /**
      * Flush the data to disk.
      */
     void flush() {
+      flush_buffer();
       file_.flush();
       DIALS_ASSERT(file_.good());
     }
@@ -144,17 +160,28 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(data.accessor()[1] == ys);
       DIALS_ASSERT(data.accessor()[2] == xs);
 
-      // Move to the desired position in the file
-      uint64_t offset = data_offset_ + offset_[index];
-      seek_internal(offset, std::ios_base::beg);
-
-      // Write the data and the shoebox flag
-      write_internal(SHOEBOX_BEG);
-      write_internal(&data[0], data.size());
+      // Write the shoebox to file
+      buffer_[index] = buffer_type::mapped_type(data.begin(), data.end());
+      buffer_size_ += data.size() * sizeof(int);
+      if (buffer_size_ > buffer_max_) {
+        flush();
+      }
     }
 
   private:
 
+    void flush_buffer() {
+      for (buffer_type::iterator it = buffer_.begin(); 
+          it != buffer_.end(); ++it) {
+        std::size_t index = it->first;
+        buffer_type::mapped_type &data = it->second;
+        write_shoebox(index, &data[0], data.size());
+        buffer_type::mapped_type().swap(data);//.clear();
+      }
+      buffer_type().swap(buffer_);
+      buffer_size_ = 0;
+    }
+  
     /**
      * Write the header information
      */
@@ -201,6 +228,20 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
+     * Write the shoebox
+     */
+    void write_shoebox(std::size_t index, const int *data, std::size_t size) {
+      
+      // Move to the desired position in the file
+      uint64_t offset = data_offset_ + offset_[index];
+      seek_internal(offset, std::ios_base::beg);
+
+      // Write the data and the shoebox flag
+      write_internal(SHOEBOX_BEG);
+      write_internal(data, size);
+    }
+
+    /**
      * Write the value and check the file flags
      */
     template <typename T>
@@ -231,6 +272,9 @@ namespace dials { namespace model { namespace serialize {
     af::shared<uint64_t> offset_;
     std::ofstream file_;
     uint64_t data_offset_;
+    buffer_type buffer_;
+    std::size_t buffer_size_;
+    std::size_t buffer_max_;
   };
 
 
