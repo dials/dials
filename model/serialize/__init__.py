@@ -34,12 +34,11 @@ class ShoeboxExporterAux(boost.python.injector, ShoeboxFileExporter):
     progress.finished("Extracted profiles from %d frames" % len(imageset))
 
 
-def extract_shoeboxes_to_file(filename, experiment, reflections):
+def extract_shoeboxes_to_file(filename, imageset, reflections):
   ''' Extract the shoeboxes to file. '''
 
   # Get some stuff from the experiment
-  imageset = experiment.imageset
-  detector = experiment.detector
+  detector = imageset.get_detector()
 
   num_frames = len(imageset)
   num_panels = len(detector)

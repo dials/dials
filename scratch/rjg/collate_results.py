@@ -45,7 +45,7 @@ def run_once(directory):
   else:
     experiments = None
     n_indexed_lattices = 0
-    
+
   g = glob.glob(os.path.join(directory, "xds*", "run_2", "INTEGRATE.HKL"))
   n_integrated_lattices = len(g)
 
@@ -117,7 +117,7 @@ def run_once(directory):
       else:
         reciprocal_lattice_points = indexer2.indexer_base.map_centroids_to_reciprocal_space(
           spots_mm, detector, beam, goniometer)
-        d_spacings = 1/reciprocal_lattice_points.norms()    
+        d_spacings = 1/reciprocal_lattice_points.norms()
         perm = flex.sort_permutation(d_spacings, reverse=True)
         d_min_indexed.append(d_spacings[perm[-1]])
       try:
@@ -137,7 +137,7 @@ def run_once(directory):
     n_integrated_lattices=n_integrated_lattices,
     d_strong_spots_50th_percentile=d_strong_spots_50th_percentile,
     d_strong_spots_95th_percentile=d_strong_spots_95th_percentile,
-    d_strong_spots_99th_percentile=d_strong_spots_99th_percentile,  
+    d_strong_spots_99th_percentile=d_strong_spots_99th_percentile,
     cell_params=cell_params,
     n_indexed=n_indexed,
     d_min_indexed=d_min_indexed,
@@ -221,7 +221,7 @@ def run(args):
   from libtbx import table_utils
   table_data = [('sweep_dir', 'template', '#strong_spots', '#unindexed_spots', '#lattices',
                  'd_spacing_50th_percentile', 'd_spacing_95th_percentile',
-                 'd_spacing_99th_percentile',)] 
+                 'd_spacing_99th_percentile',)]
   for i in range(len(sweep_directories)):
     table_data.append((sweep_directories[i],
                        templates[i],

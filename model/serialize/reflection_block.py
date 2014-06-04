@@ -4,27 +4,30 @@ from __future__ import division
 class ReflectionBlockExtractor(object):
   ''' A class to extract blocks of reflections. '''
 
-  def __init__(self, filename, experiment, reflections, nblocks,
+  def __init__(self, filename, imageset, reflections, nblocks,
                gain=None, dark=None, mask=None):
-
+    ''' Initialise the extractor. '''
     from dials.model.serialize import extract_shoeboxes_to_file
+    from dials.model.serialize import ShoeboxBlockImporter
+    from dials.array_family import flex
 
     # Filter the reflections
-    self.reflections = self._filter_reflections(experiment, reflections)
+    self.reflections = self._filter_reflections(reflections)
 
     # Extract the shoeboxes to file
-    extract_shoeboxes_to_file(filename, experiment, reflections)
+    extract_shoeboxes_to_file(filename, imageset, reflections)
 
     # Calculate the blocks
-    self._blocks = self._compute_blocks(len(experiment.imageset), nblocks)
+    self._blocks = self._compute_blocks(len(imageset), nblocks)
 
     # Construct the importer
     z = self.reflections['xyzcal.px'].parts()[2]
     if gain and dark and mask:
-      self._importer = ShoeboxBlockImporter(filename, self.blocks,
-                                            z, gain, dark, mask)
+      self._importer = ShoeboxBlockImporter(
+        filename, flex.size_t(self._blocks), z, gain, dark, mask)
     else:
-      self._importer = ShoeboxBlockImporter(filename, self.blocks, z)
+      self._importer = ShoeboxBlockImporter(
+        filename, flex.size_t(self._blocks), z)
 
   def block(self, index):
     ''' Get the block. '''
@@ -56,7 +59,7 @@ class ReflectionBlockExtractor(object):
     for i in range(len(self)):
       yield self[i]
 
-  def _filter_reflections(self, experiment, reflections):
+  def _filter_reflections(self, reflections):
     ''' Filter the reflections and sort them by z. '''
     from dials.array_family import flex
 
