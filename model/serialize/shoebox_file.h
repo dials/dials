@@ -162,7 +162,6 @@ namespace dials { namespace model { namespace serialize {
 
       // Write the shoebox to file
       buffer_[index] = data;
-      //buffer_[index] = buffer_type::mapped_type(data.begin(), data.end());
       buffer_size_ += data.size() * sizeof(int);
       if (buffer_size_ > buffer_max_) {
         flush();
@@ -171,6 +170,9 @@ namespace dials { namespace model { namespace serialize {
 
   private:
 
+    /**
+     * Flush the buffer.
+     */
     void flush_buffer() {
       for (buffer_type::iterator it = buffer_.begin(); 
           it != buffer_.end(); ++it) {
