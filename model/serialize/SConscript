@@ -2,8 +2,6 @@
 Import('env')
 
 sources = [
-    'boost_python/block_list.cc',
-    'boost_python/shoebox.cc',
     'boost_python/shoebox_file_exporter.cc',
     'boost_python/shoebox_file_importer.cc',
     'boost_python/shoebox_block_importer.cc',
