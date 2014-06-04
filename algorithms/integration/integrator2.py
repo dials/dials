@@ -29,10 +29,13 @@ class Integrator(object):
 
     # Create the shoebox masker
     n_sigma = params.integration.shoebox.n_sigma
-    sigma_b = params.integration.shoebox.sigma_b * pi / 180.0
-    sigma_m = params.integration.shoebox.sigma_m * pi / 180.0
-    delta_b = n_sigma * sigma_b
-    delta_m = n_sigma * sigma_m
+    sigma_b = params.integration.shoebox.sigma_b
+    sigma_m = params.integration.shoebox.sigma_m
+    assert(n_sigma > 0)
+    assert(sigma_b > 0)
+    assert(sigma_m > 0)
+    delta_b = n_sigma * sigma_b * pi / 180.0
+    delta_m = n_sigma * sigma_m * pi / 180.0
     self._mask_profiles = shoebox.Masker(experiments[0], delta_b, delta_m)
 
   def integrate(self):
