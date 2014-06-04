@@ -246,13 +246,14 @@ class Script(ScriptRunner):
 
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'
-    integrate = Integrator(self.params.integration.shoebox.n_sigma,
-                           self.params.integration.shoebox.n_blocks,
-                           self.params.integration.filter.by_zeta)
+    integrator = Integrator(
+      self.params,
+      experiments,
+      reference=indexed)
 
     # Integrate the sweep's reflections
     print 'Integrating reflections'
-    reflections = integrate(experiments, reference=indexed, extracted=None)
+    reflections = integrator.integrate()
 
     reflections.as_pickle("integrated.pickle")
 
