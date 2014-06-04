@@ -95,6 +95,8 @@ class Script(ScriptRunner):
       else:
         predicted = self.predict_reflections(params, exlist)
         predicted = self.filter_reflections(params, exlist, predicted)
+      if reference:
+        predicted = self.match_with_reference(predicted, reference)
       extractor = self.create_extractor(exlist, predicted)
     return extractor
 
@@ -123,16 +125,32 @@ class Script(ScriptRunner):
     if filename:
       Command.start('Loading reference spots from %s' % filename)
       reference = flex.reflection_table.from_pickle(filename)
+      assert("miller_index" in reference)
       Command.end('Loaded reference spots from %s' % filename)
       Command.start('Removing reference spots with invalid coordinates')
-      xyz = reference['xyzcal.mm']
-      mask = flex.bool([x == (0, 0, 0) for x in xyz])
+      mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
       reference.del_selected(mask)
+      mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
       Command.end('Removed reference spots with invalid coordinates, \
                   %d remaining' % len(reference))
     else:
       reference = None
     return reference
+
+  def match_with_reference(self, predicted, reference):
+    ''' Match predictions with reference spots. '''
+    from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
+    from dials.util.command_line import Command
+    Command.start("Matching reference spots with predicted reflections")
+    match = SpotMatcher(max_separation=1)
+    rind, pind = match(reference, predicted)
+    h1 = predicted.select(pind)['miller_index']
+    h2 = reference.select(rind)['miller_index']
+    mask = rind == pind
+    predicted.set_flags(pind.select(mask), reflections.flags.reference_spot)
+    Command.end("Matched %d reference spots with predicted reflections" %
+                mask.count(True))
+    return predicted
 
   def load_extractor(self, filename):
     ''' Load the shoebox extractor. '''
