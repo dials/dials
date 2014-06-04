@@ -91,7 +91,6 @@ algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/call_mosflm_2d.py -text
 algorithms/integration/flatten_shoebox.py -text
 algorithms/integration/integrator.py -text
-algorithms/integration/integrator2.py -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain
 algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
 algorithms/integration/mosflm_2D_profile.py -text
@@ -323,7 +322,6 @@ command_line/import_xds_gain.py -text
 command_line/index.py -text
 command_line/inspect_output.py -text
 command_line/integrate.py -text
-command_line/integrate2.py -text
 command_line/merge_reflection_lists.py -text
 command_line/parameters.py -text
 command_line/plot_reflections.py -text

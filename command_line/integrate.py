@@ -12,104 +12,129 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 
-
 class Script(ScriptRunner):
-  '''A class for running the script.'''
+  ''' The integration program. '''
 
   def __init__(self):
     '''Initialise the script.'''
 
     # The script usage
-    usage  = "usage: %prog [options] [param.phil] " \
-             "sweep.json crystal.json [reference.pickle]"
+    usage  = "usage: %prog [options] experiment.json"
 
     # Initialise the base class
     ScriptRunner.__init__(self, usage=usage)
 
     # Output filename option
     self.config().add_option(
-        '-o', '--output-filename',
-        dest = 'output_filename',
-        type = 'string', default = 'integrated.pickle',
-        help = 'Set the filename for integrated reflections.')
+      '-o', '--output',
+      dest = 'output',
+      type = 'string', default = 'integrated.pickle',
+      help = 'Set the filename for integrated reflections.')
 
-    # Option to save profiles with reflection data
+    # The predicted reflections to integrate
     self.config().add_option(
-        '-p', '--save-profiles',
-        dest = 'save_profiles',
-        action = 'store_true', default = False,
-        help = 'Output profiles with reflection data.')
+      '-p', '--predicted',
+      dest = 'predicted',
+      type = 'string', default = None,
+      help = 'Specify predicted reflections.')
+
+    # The intermediate shoebox data
+    self.config().add_option(
+      '-r', '--reference',
+      dest = 'reference',
+      type = 'string', default = None,
+      help = 'Specify reference reflections.')
+
+    # The intermediate shoebox data
+    self.config().add_option(
+      '-s', '--shoeboxes',
+      dest = 'shoeboxes',
+      type = 'string', default = None,
+      help = 'Specify shoeboxes to integrate.')
 
   def main(self, params, options, args):
-    '''Execute the script.'''
-    from dials.algorithms.integration import Integrator
-    from dials.algorithms import shoebox
-    from dials.model.serialize import load, dump
-    from dials.util.command_line import Command
-    from dials.util.command_line import Importer
+    ''' Perform the integration. '''
+    from dials.algorithms.integration.integrator2 import Integrator
     from time import time
 
     # Check the number of arguments is correct
     start_time = time()
 
-    # Process the command line options
-    Command.start('Processing command line options')
-    importer = Importer(args)
-    Command.end('Processed command line options')
+    # Check the number of command line arguments
+    if len(args) != 1:
+      self.config().print_help()
 
-    # Check the unhandled arguments
-    if len(importer.unhandled_arguments) > 0:
-      print '-' * 80
-      print 'The following command line arguments weren\'t handled'
-      for arg in importer.unhandled_arguments:
-        print '  ' + arg
+    # Load the experiment list
+    exlist = self.load_experiments(args[0])
 
-    # Check the number of experiments
-    if importer.experiments is None or len(importer.experiments) == 0:
-      print 'Error: no experiment list specified'
-      return
-    elif len(importer.experiments) != 1:
-      print 'Error: only 1 experiment can be processed at a time'
-      return
-
-    if importer.reflections is not None:
-      assert(len(importer.reflections) == 1)
-      reference = importer.reflections[0]
-
-      from dials.array_family import flex
-      Command.start('Removing invalid coordinates')
-      xyz = reference['xyzcal.mm']
-      mask = flex.bool([x == (0, 0, 0) for x in xyz])
-      reference.del_selected(mask)
-      Command.end('Removed invalid coordinates, %d remaining' % len(reference))
-    else:
+    # Load the data
+    if options.shoeboxes:
+      shoeboxes = options.shoeboxes
       reference = None
+      predicted = None
+    else:
+      shoeboxes = None
+      reference = self.load_reference(options.reference)
+      predicted = self.load_predicted(options.predicted)
 
-    # Get the reference and extracted stuff
-    extracted = importer.extracted
+    # Initialise the integrator
+    integrator = Integrator(params, exlist, reference, predicted, shoeboxes)
 
-    # Get the integrator from the input parameters
-    print 'Configurating integrator from input parameters'
-    integrate = Integrator(params.integration.shoebox.n_sigma,
-                           params.integration.shoebox.n_blocks,
-                           params.integration.filter.by_zeta)
+    # Integrate the reflections
+    reflections = integrator.integrate()
 
-    # Intregate the sweep's reflections
-    print 'Integrating reflections'
-    reflections = integrate(importer.experiments,
-        reference=reference, extracted=extracted,
-        save_profiles=options.save_profiles)
-
-    # Save the reflections to file
-    nvalid = len(reflections)
-    Command.start('Saving {0} reflections to {1}'.format(
-        nvalid, options.output_filename))
-    reflections.as_pickle(options.output_filename)
-    Command.end('Saved {0} reflections to {1}'.format(
-        nvalid, options.output_filename))
+    # Save the reflections
+    self.save_reflections(reflections, options.output)
 
     # Print the total time taken
     print "\nTotal time taken: ", time() - start_time
+
+  def load_predicted(self, filename):
+    ''' Load the predicted reflections. '''
+    from dials.array_family import flex
+    if filename is not None:
+      return flex.reflection_table.from_pickle(filename)
+    return None
+
+  def load_experiments(self, filename):
+    ''' Load the experiment list. '''
+    from dials.model.experiment.experiment_list import ExperimentListFactory
+    from dials.util.command_line import Command
+    Command.start('Loading experiments from %s' % filename)
+    exlist = ExperimentListFactory.from_json_file(filename)
+    Command.end('Loaded experiments from %s' % filename)
+    if len(exlist) == 0:
+      raise RuntimeError('experiment list is empty')
+    elif len(exlist.imagesets()) > 1 or len(exlist.detectors()) > 1:
+      raise RuntimeError('experiment list contains > 1 imageset or detector')
+    return exlist
+
+  def load_reference(self, filename):
+    ''' Load the reference spots. '''
+    from dials.util.command_line import Command
+    from dials.array_family import flex
+    if filename:
+      Command.start('Loading reference spots from %s' % filename)
+      reference = flex.reflection_table.from_pickle(filename)
+      assert("miller_index" in reference)
+      Command.end('Loaded reference spots from %s' % filename)
+      Command.start('Removing reference spots with invalid coordinates')
+      mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
+      reference.del_selected(mask)
+      mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
+      Command.end('Removed reference spots with invalid coordinates, \
+                  %d remaining' % len(reference))
+    else:
+      reference = None
+    return reference
+
+  def save_reflections(self, reflections, filename):
+    ''' Save the reflections to file. '''
+    from dials.util.command_line import Command
+    Command.start('Saving %d reflections to %s' % (len(reflections), filename))
+    reflections.as_pickle(filename)
+    Command.end('Saved %d reflections to %s' % (len(reflections), filename))
+
 
 if __name__ == '__main__':
   script = Script()
