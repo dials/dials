@@ -31,6 +31,7 @@ namespace dials { namespace model { namespace serialize {
         arg("filename"),
         arg("panel"),
         arg("bbox"),
+        arg("z"),
         arg("num_frame"),
         arg("num_panel"),
         arg("blob") = "")))

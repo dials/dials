@@ -91,7 +91,7 @@ class Script(ScriptRunner):
     # Extract the shoeboxes to file
     extract_shoeboxes_to_file(
       options.output_filename,
-      importer.experiments[0],
+      importer.experiments[0].imageset,
       predicted)
 
 

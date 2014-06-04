@@ -72,6 +72,7 @@ class Test(object):
       self.filename,
       self.panels,
       self.bboxes,
+      self.z,
       self.nframes,
       self.npanels)
 
@@ -138,6 +139,11 @@ class Test(object):
       p = struct.unpack('@I', infile.read(4))[0]
       assert(p == self.panels[i])
 
+    # Check the centroids
+    for i in range(nrefl):
+      z = struct.unpack('@d', infile.read(8))[0]
+      assert(abs(z - self.z[i]) < 1e-7)
+
     # Check the bboxes
     for i in range(nrefl):
       for j in range(6):
@@ -161,6 +167,14 @@ class Test(object):
     # Check end of data
     end = struct.unpack('@I', infile.read(4))[0]
     assert(end == 5)
+
+    # Test the beginnings of the blob
+    begin = struct.unpack('@I', infile.read(4))[0]
+    n = struct.unpack('@I', infile.read(4))[0]
+    end = struct.unpack('@I', infile.read(4))[0]
+    assert(begin == 7)
+    assert(n == 0)
+    assert(end == 8)
 
     # Test passed
     print 'OK'
@@ -222,7 +236,7 @@ class Test(object):
     blocks = flex.size_t([0, 2, 5])
 
     # Create the importer
-    importer = ShoeboxBlockImporter(self.filename, blocks, self.z)
+    importer = ShoeboxBlockImporter(self.filename, blocks)
 
     # Read all the shoeboxes in blocks
     sum_ind = 0

@@ -270,7 +270,6 @@ class Importer(object):
      - reflections : a list of reflections
      - datablocks : a list of datablocks
      - experiments: a list of experiments
-     - extracted : a file with extracted shoeboxes
 
     Params:
       args The arguments to parse
@@ -290,10 +289,9 @@ class Importer(object):
     self.datablocks = None
     self.experiments = None
     self.reflections = None
-    self.extracted = None
 
     # Get the list of items to try
-    totry = ['pickle', 'extracted', 'images', 'datablocks',
+    totry = ['pickle', 'images', 'datablocks',
              'experiments', 'reflections']
     if include is not None:
       for item in include:
@@ -407,22 +405,6 @@ class Importer(object):
           self.reflections = [obj]
         else:
           self.reflections.append(obj)
-      except Exception:
-        unhandled.append(argument)
-    return unhandled
-
-  def try_import_extracted(self, args, verbose):
-    ''' Try to import extracted. '''
-    from dials.model.serialize import partial_shoebox
-    unhandled = []
-    for argument in args:
-      try:
-        extracted = partial_shoebox.Reader(argument)
-        if self.extracted:
-          if verbose: print 'Loaded %s as extracted (overwriting)' % argument
-        else:
-          if verbose: print 'Loaded %s as extracted' % argument
-        self.extracted = extracted
       except Exception:
         unhandled.append(argument)
     return unhandled

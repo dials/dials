@@ -250,7 +250,7 @@ namespace dials { namespace model { namespace serialize {
     void write_blob(const std::string &blob) {
       write_internal(BLOB_BEG);
       write_internal((uint32_t)blob.size());
-      write_internal((const char *)blob.c_str(), blob.size());
+      write_internal(blob.c_str(), blob.size());
       write_internal(BLOB_END);
     }
 
@@ -390,7 +390,7 @@ namespace dials { namespace model { namespace serialize {
 
       // Read the data
       DIALS_ASSERT(read_internal<uint32_t>() == SHOEBOX_BEG);
-      read_internal((char *)&data[0], data.size());
+      read_internal(&data[0], data.size());
 
       // Return the array
       return data;
@@ -482,7 +482,8 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(read_internal<uint32_t>() == BLOB_BEG);
       blob_offset_ = file_.tellg();
       uint32_t blob_size = read_internal<uint32_t>();
-      seek_internal(blob_size * sizeof(char), std::ios_base::cur);
+      seek_internal(blob_size * sizeof(std::string::value_type),
+          std::ios_base::cur);
       DIALS_ASSERT(read_internal<uint32_t>() == BLOB_END);
 
       // Try to read a byte and check eof

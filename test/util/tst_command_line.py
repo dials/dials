@@ -44,7 +44,6 @@ class TestImporter:
         os.path.join(self.path, 'datablock.json'),
         'test_reflections1.p',
         'test_reflections2.p',
-        os.path.join(self.path, 'extracted.tar'),
         os.path.join(self.path, 'another_non_existent.file'),
         os.path.join(self.path, 'experiments.json'),
     ]
@@ -59,11 +58,7 @@ class TestImporter:
     assert(importer.reflections[1].nrows() == 10)
     assert(len(importer.experiments) == 2)
     assert(len(importer.datablocks) == 3)
-    if os.path.exists(os.path.join(self.path, 'extracted.tar')):
-      assert(importer.extracted != None)
-      assert(len(importer.unhandled_arguments) == 2)
-    else:
-      assert(len(importer.unhandled_arguments) == 3)
+    assert(len(importer.unhandled_arguments) == 2)
 
     print 'OK'
 
