@@ -141,7 +141,7 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
-     * Write a shoebox to the file. 
+     * Write a shoebox to the file.
      * @param index The index of the shoebox
      * @param data The shoebox data
      */
@@ -174,7 +174,7 @@ namespace dials { namespace model { namespace serialize {
      * Flush the buffer.
      */
     void flush_buffer() {
-      for (buffer_type::iterator it = buffer_.begin(); 
+      for (buffer_type::iterator it = buffer_.begin();
           it != buffer_.end(); ++it) {
         std::size_t index = it->first;
         buffer_type::mapped_type &data = it->second;
@@ -184,7 +184,7 @@ namespace dials { namespace model { namespace serialize {
       buffer_type().swap(buffer_);
       buffer_size_ = 0;
     }
-  
+
     /**
      * Write the header information
      */
@@ -234,7 +234,7 @@ namespace dials { namespace model { namespace serialize {
      * Write the shoebox
      */
     void write_shoebox(std::size_t index, const int *data, std::size_t size) {
-     
+
       // Double check the size
       std::size_t zs = bbox_[index][5] - bbox_[index][4];
       std::size_t ys = bbox_[index][3] - bbox_[index][2];
