@@ -31,6 +31,7 @@ class ShoeboxExporterAux(boost.python.injector, ShoeboxFileExporter):
 
     # Finish the progress bar and return the profiles
     assert(self.finished())
+    self.flush()
     progress.finished("Extracted profiles from %d frames" % len(imageset))
 
 

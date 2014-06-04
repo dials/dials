@@ -129,7 +129,7 @@ namespace dials { namespace model { namespace serialize {
           std::size_t zs = bbox[5] - bbox[4];
           std::size_t ys = bbox[3] - bbox[2];
           std::size_t xs = bbox[1] - bbox[0];
-          shoebox.resize(af::c_grid<3>(zs, ys, xs));
+          shoebox = shoebox_type(af::c_grid<3>(zs, ys, xs));
         }
 
         // Add the data to the shoebox
@@ -137,8 +137,8 @@ namespace dials { namespace model { namespace serialize {
 
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
-          writer_.write(index, shoebox.const_ref());
-          shoebox_type().swap(shoebox);
+          writer_.write(index, shoebox);
+          shoebox = shoebox_type();
         }
       }
 

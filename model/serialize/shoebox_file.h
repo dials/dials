@@ -95,7 +95,7 @@ namespace dials { namespace model { namespace serialize {
   class ShoeboxFileWriter : public ShoeboxFileBase {
   public:
 
-    typedef std::map< std::size_t, std::vector<int> > buffer_type;
+    typedef std::map< std::size_t, af::versa< int, af::c_grid<3> > > buffer_type;
 
     /**
      * Setup the shoebox file. This function will initialize the file to the
@@ -113,11 +113,11 @@ namespace dials { namespace model { namespace serialize {
         : panel_(panel.begin(), panel.end()),
           bbox_(bbox.begin(), bbox.end()),
           offset_(bbox_.size() + 1),
-          file_(filename.c_str(),
-                std::ios_base::binary | std::ios_base::trunc),
           buffer_size_(0),
           buffer_max_(buffer_max) {
       DIALS_ASSERT(panel.size() == bbox.size());
+      file_.rdbuf()->pubsetbuf(0,0);
+      file_.open(filename.c_str(), std::ios_base::binary | std::ios_base::trunc);
       write_internal(MAGIC);
       write_internal(VERSION);
       write_header();
@@ -141,13 +141,13 @@ namespace dials { namespace model { namespace serialize {
     }
 
     /**
-     * Write a shoebox to the file.
+     * Write a shoebox to the file. 
      * @param index The index of the shoebox
      * @param data The shoebox data
      */
     void write(
         std::size_t index,
-        const af::const_ref< int, af::c_grid<3> > &data) {
+        const af::versa< int, af::c_grid<3> > &data) {
 
       // Ensure the index is in range
       DIALS_ASSERT(index < bbox_.size());
@@ -161,7 +161,8 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(data.accessor()[2] == xs);
 
       // Write the shoebox to file
-      buffer_[index] = buffer_type::mapped_type(data.begin(), data.end());
+      buffer_[index] = data;
+      //buffer_[index] = buffer_type::mapped_type(data.begin(), data.end());
       buffer_size_ += data.size() * sizeof(int);
       if (buffer_size_ > buffer_max_) {
         flush();
@@ -176,7 +177,7 @@ namespace dials { namespace model { namespace serialize {
         std::size_t index = it->first;
         buffer_type::mapped_type &data = it->second;
         write_shoebox(index, &data[0], data.size());
-        buffer_type::mapped_type().swap(data);//.clear();
+        buffer_type::mapped_type().swap(data);
       }
       buffer_type().swap(buffer_);
       buffer_size_ = 0;
@@ -231,7 +232,13 @@ namespace dials { namespace model { namespace serialize {
      * Write the shoebox
      */
     void write_shoebox(std::size_t index, const int *data, std::size_t size) {
-      
+     
+      // Double check the size
+      std::size_t zs = bbox_[index][5] - bbox_[index][4];
+      std::size_t ys = bbox_[index][3] - bbox_[index][2];
+      std::size_t xs = bbox_[index][1] - bbox_[index][0];
+      DIALS_ASSERT(zs*ys*xs == size);
+
       // Move to the desired position in the file
       uint64_t offset = data_offset_ + offset_[index];
       seek_internal(offset, std::ios_base::beg);
@@ -405,12 +412,11 @@ namespace dials { namespace model { namespace serialize {
       data_offset_ = file_.tellg();
 
       // Check all the shoebox data flags
-      for (std::size_t i = 0; i < bbox_.size(); ++i) {
-        DIALS_ASSERT(read_internal<uint32_t>() == SHOEBOX_BEG);
-        seek_internal(data_offset_ + offset_[i+1], std::ios_base::beg);
-      }
-
-      //file_.seekg(offset_.back(), std::ios_base::cur);
+      //for (std::size_t i = 0; i < bbox_.size(); ++i) {
+        //DIALS_ASSERT(read_internal<uint32_t>() == SHOEBOX_BEG);
+        //seek_internal(data_offset_ + offset_[i+1], std::ios_base::beg);
+      //}
+      seek_internal(offset_.back(), std::ios_base::cur);
       DIALS_ASSERT(read_internal<uint32_t>() == DATA_END);
 
       // Try to read a byte and check eof
