@@ -176,11 +176,54 @@ class Target(object):
     self._finished_residuals_and_gradients = False
     return val
 
-  @abc.abstractmethod
   def compute_functional_and_gradients(self):
-    """calculate the target function value and its gradients"""
+    """calculate the value of the target function and its gradients. Set
+    approximate curvatures as a side-effect"""
 
-    pass
+    self._nref = len(self._matches)
+
+    # This is a hack for the case where nref=0. This should not be necessary
+    # if bounds are provided for parameters to stop the algorithm exploring
+    # unreasonable regions of parameter space where no predictions exist.
+    # Unfortunately the L-BFGS line search does make such extreme trials.
+    if self._nref == 0:
+      self._curv = [1.] * len(self._prediction_parameterisation)
+      return 1.e12, [1.] * len(self._prediction_parameterisation)
+
+    residuals, weights = self._extract_residuals_and_weights(self._matches)
+    residuals2 = self._extract_squared_residuals(self._matches)
+
+    # calculate target function
+    L = 0.5 * flex.sum(weights * residuals2)
+
+    # prepare list of gradients and curvatures
+    dL_dp = [0.] * len(self._prediction_parameterisation)
+    self._curv = [0.] * len(self._prediction_parameterisation)
+
+    dX_dp, dY_dp, dZ_dp = self.calculate_gradients()
+
+    w_resid = weights * residuals
+
+    for i in range(len(self._prediction_parameterisation)):
+      dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
+      grads = flex.double.concatenate(dX, dY)
+      grads.extend(dZ)
+      dL_dp[i] = flex.sum(w_resid * grads)
+      self._curv[i] = flex.sum(weights * grads * grads)
+
+    return (L, dL_dp)
+
+  def curvatures(self):
+    """First order approximation to the diagonal of the Hessian based on the
+    least squares form of the target"""
+
+    # relies on compute_functional_and_gradients being called first to set
+    # self._curv
+
+    # Curvatures of zero will cause a crash, because their inverse is taken.
+    assert all([c > 0.0 for c in self._curv])
+
+    return self._curv
 
   def compute_residuals_and_gradients(self, block_num=0):
     """return the vector of residuals plus their gradients and weights for
@@ -197,11 +240,11 @@ class Target(object):
       matches = self._matches
       self._finished_residuals_and_gradients = True
 
-    # Here we hard code three types of residual, which might correspond to
+    # Here we hardcode three types of residual, which might correspond to
     # X, Y, Phi (scans case) or X, Y, DeltaPsi (stills case).
     dX_dp, dY_dp, dZ_dp = self.calculate_gradients(matches)
 
-    residuals, weights = self.extract_residuals_and_weights(matches)
+    residuals, weights = self._extract_residuals_and_weights(matches)
 
     nelem = len(matches) * 3
     nparam = len(self._prediction_parameterisation)
@@ -216,17 +259,18 @@ class Target(object):
     return(residuals, jacobian, weights)
 
   @abc.abstractmethod
-  def extract_residuals_and_weights(self, matches):
+  def _extract_residuals_and_weights(matches):
     """extract vector of residuals and corresponding weights. The space the
     residuals are measured in (e.g. X, Y and Phi) and the order they are
-    returned is determined by a concrete implementation"""
+    returned is determined by a concrete implementation of a staticmethod"""
 
     pass
 
   @abc.abstractmethod
-  def curvatures(self):
-    """First order approximation to the diagonal of the Hessian based on the
-    least squares form of the target"""
+  def _extract_squared_residuals(matches):
+    """extract vector of squared residuals. The space the residuals are measured
+    in (e.g. X, Y and Phi) and the order they are returned is determined by a
+    concrete implementation of a staticmethod"""
 
     pass
 
@@ -283,7 +327,8 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return
 
-  def extract_residuals_and_weights(self, matches):
+  @staticmethod
+  def _extract_residuals_and_weights(matches):
 
     # return residuals and weights as 1d flex.double vectors
     residuals = flex.double.concatenate(matches['x_resid'],
@@ -296,74 +341,14 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return residuals, weights
 
-  def compute_functional_and_gradients(self):
-    """calculate the value of the target function and its gradients"""
+  @staticmethod
+  def _extract_squared_residuals(matches):
 
-    self._nref = len(self._matches)
+    residuals2 = flex.double.concatenate(matches['x_resid2'],
+                                         matches['y_resid2'])
+    residuals2.extend(matches['phi_resid2'])
 
-    # This is a hack for the case where nref=0. This should not be necessary
-    # if bounds are provided for parameters to stop the algorithm exploring
-    # unreasonable regions of parameter space where no predictions exist.
-    # Unfortunately the L-BFGS line search does make such extreme trials.
-    if self._nref == 0:
-      return 1.e12, [1.] * len(self._prediction_parameterisation)
-
-    # extract columns from the table
-    x_resid = self._matches['x_resid']
-    y_resid = self._matches['y_resid']
-    phi_resid = self._matches['phi_resid']
-    x_resid2 = self._matches['x_resid2']
-    y_resid2 = self._matches['y_resid2']
-    phi_resid2 = self._matches['phi_resid2']
-    w_x, w_y, w_phi = self._matches['xyzobs.mm.weights'].parts()
-
-    # calculate target function
-    temp = w_x * x_resid2 + w_y * y_resid2 + w_phi * phi_resid2
-    L = 0.5 * flex.sum(temp)
-
-    # prepare list of gradients
-    dL_dp = [0.] * len(self._prediction_parameterisation)
-
-    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients()
-
-    w_x_resid = w_x * x_resid
-    w_y_resid = w_y * y_resid
-    w_phi_resid = w_phi * phi_resid
-
-    for i in range(len(self._prediction_parameterisation)):
-      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
-      temp = w_x_resid * dX + w_y_resid * dY + w_phi_resid * dPhi
-      dL_dp[i] = flex.sum(temp)
-
-    return (L, dL_dp)
-
-  def curvatures(self):
-    """First order approximation to the diagonal of the Hessian based on the
-    least squares form of the target"""
-
-    # relies on compute_functional_and_gradients being called first
-    dX_dp, dY_dp, dPhi_dp = self._gradients
-    w_x, w_y, w_phi = self._matches['xyzobs.mm.weights'].parts()
-
-    # This is a hack for the case where nref=0. This should not be necessary
-    # if bounds are provided for parameters to stop the algorithm exploring
-    # unreasonable regions of parameter space where there are no predictions
-    if self._nref == 0:
-      return [1.] * len(self._prediction_parameterisation)
-
-    # prepare lists of gradients and curvatures
-    curv = [0.] * len(self._prediction_parameterisation)
-
-    # for each reflection, get the approximate curvatures wrt each parameter
-    for i in range(len(self._prediction_parameterisation)):
-      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
-      temp = w_x * dX**2 + w_y * dY**2 + w_phi * dPhi**2
-      curv[i] = flex.sum(temp)
-
-    # Curvatures of zero will cause a crash, because their inverse is taken.
-    assert all([c > 0.0 for c in curv])
-
-    return curv
+    return residuals2
 
   def rmsds(self):
     """calculate unweighted RMSDs"""

@@ -97,7 +97,8 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     self._reflection_predictor.predict(reflections)
     return reflections
 
-  def extract_residuals_and_weights(self, matches):
+  @staticmethod
+  def _extract_residuals_and_weights(matches):
 
     # return residuals and weights as 1d flex.double vectors
     residuals = flex.double.concatenate(matches['x_resid'],
@@ -111,76 +112,14 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
 
     return residuals, weights
 
-  def compute_functional_and_gradients(self):
-    """calculate the value of the target function and its gradients"""
+  @staticmethod
+  def _extract_squared_residuals(matches):
 
-    self._nref = len(self._matches)
+    residuals2 = flex.double.concatenate(matches['x_resid2'],
+                                         matches['y_resid2'])
+    residuals2.extend(matches['delpsical2'])
 
-    # This is a hack for the case where nref=0. This should not be necessary
-    # if bounds are provided for parameters to stop the algorithm exploring
-    # unreasonable regions of parameter space where no predictions exist.
-    # Unfortunately the L-BFGS line search does make such extreme trials.
-    if self._nref == 0:
-      return 1.e12, [1.] * len(self._prediction_parameterisation)
-
-    # extract columns from the table
-    x_resid = self._matches['x_resid']
-    y_resid = self._matches['y_resid']
-    delpsi = self._matches['delpsical.rad']
-    x_resid2 = self._matches['x_resid2']
-    y_resid2 = self._matches['y_resid2']
-    delpsical2 = self._matches['delpsical2']
-    w_x, w_y, _ = self._matches['xyzobs.mm.weights'].parts()
-    w_delpsi = self._matches['delpsical.weights']
-
-    # calculate target function
-    temp = w_x * x_resid2 + w_y * y_resid2 + w_delpsi * delpsical2
-    L = 0.5 * flex.sum(temp)
-
-    # prepare list of gradients
-    dL_dp = [0.] * len(self._prediction_parameterisation)
-
-    dX_dp, dY_dp, dDPsi_dp = self.calculate_gradients()
-
-    w_x_x_resid = w_x * x_resid
-    w_y_y_resid = w_y * y_resid
-    w_delpsi_delpsi = w_delpsi * delpsi
-
-    for i in range(len(self._prediction_parameterisation)):
-      dX, dY, dDPsi = dX_dp[i], dY_dp[i], dDPsi_dp[i]
-      temp = w_x_x_resid * dX + w_y_y_resid * dY + w_delpsi_delpsi * dDPsi
-      dL_dp[i] = flex.sum(temp)
-
-    return (L, dL_dp)
-
-  def curvatures(self):
-    """First order approximation to the diagonal of the Hessian based on the
-    least squares form of the target"""
-
-    # relies on compute_functional_and_gradients being called first
-    dX_dp, dY_dp, dDPsi_dp = self._gradients
-    w_x, w_y, _ = self._matches['xyzobs.mm.weights'].parts()
-    w_delpsi = self._matches['delpsical.weights']
-
-    # This is a hack for the case where nref=0. This should not be necessary
-    # if bounds are provided for parameters to stop the algorithm exploring
-    # unreasonable regions of parameter space where there are no predictions
-    if self._nref == 0:
-      return [1.] * len(self._prediction_parameterisation)
-
-    # prepare lists of gradients and curvatures
-    curv = [0.] * len(self._prediction_parameterisation)
-
-    # for each reflection, get the approximate curvatures wrt each parameter
-    for i in range(len(self._prediction_parameterisation)):
-      dX, dY, dDPsi = dX_dp[i], dY_dp[i], dDPsi_dp[i]
-      temp = w_x * dX**2 + w_y * dY**2 + w_delpsi * dDPsi**2
-      curv[i] = flex.sum(temp)
-
-    # Curvatures of zero will cause a crash, because their inverse is taken.
-    assert all([c > 0.0 for c in curv])
-
-    return curv
+    return residuals2
 
   def rmsds(self):
     """calculate unweighted RMSDs"""
