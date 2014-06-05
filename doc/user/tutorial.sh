@@ -28,22 +28,13 @@ dials.index space_group=P4 datablock.json strong.pickle
 
 dials.refine experiments.json indexed.pickle scan_varying=true
 
-# now run the integration - at the moment need to specify the number of blocks
-# to process the data in. if this is not set you may find that the computer
-# struggles... 540 images makes good sense as 6 blocks of 9 images / 13.5 degrees.
-# complex choices of algorithms are shown here in terms of the peak measurement
-# and background determination methods.
+# now run the integration - complex choices of algorithms are shown here in 
+# terms of the peak measurement (actually no) and background determination 
+# methods. pass reference reflections from indexing in to determine the 
+# profile parameters...
 
-# OLD command line
-
-dials.integrate n_blocks=6 outlier.algorithm=null \
-  intensity.algorithm=fitrs refined_experiments.json indexed.pickle
-
-# NEW command-line
-
-dials.integrate block_size=13.5 outlier.algorithm=null \
-  intensity.algorithm=fitrs refined_experiments.json -r indexed.pickle
-
+dials.integrate outlier.algorithm=null refined_experiments.json \
+  -r indexed.pickle
 
 # finally export the integrated measurements in an MTZ file - this should be
 # properly formatted for immediate use in pointless / aimless
@@ -51,7 +42,8 @@ dials.integrate block_size=13.5 outlier.algorithm=null \
 dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
 
 # and as if to make a point, here is all we need to do is to sort the data with
-# pointless and then scale the data (ignoring anomalous differences) to 1.3A
+# pointless and then scale the data (ignoring anomalous differences) to 1.3A,
+# and run ctruncate for the intensity analysis...
 
 pointless hklin integrated.mtz hklout sorted.mtz
 
@@ -59,3 +51,6 @@ aimless hklin sorted.mtz hklout scaled.mtz << eof
 resolution 1.3
 anomalous off
 eof
+
+ctruncate -hklin scaled.mtz -hklout truncated.mtz \
+-colin '/*/*/[IMEAN,SIGIMEAN]'
