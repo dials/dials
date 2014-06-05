@@ -31,9 +31,9 @@ def make_2d_profile(reflection_pointers, ref_table_in):
   max_i = 0.0
   for t_row in reflection_pointers:
     #if ref.is_valid():
-      if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.05:
+      if col_intensity[t_row] > max_i and col_intensity[t_row] < max_i_01 * 0.9:
         max_i = col_intensity[t_row]
-  thold = 0.05 * max_i
+  thold = 0.1 * max_i
 
   select_pointers = []
   for t_row in reflection_pointers:
@@ -304,8 +304,8 @@ def fit_profile_2d(reflection_pointers, ref_table
           tmp_scale = tmp_i
           a_mat_flx = flex.double(flex.grid(4, 4))
           b_vec_flx = flex.double(flex.grid(4, 1))
-          ok_lg = fitting_2d_multile_var_build_mat(descr, data2d, background2d, \
-                                        average, tmp_scale, a_mat_flx, b_vec_flx)
+          ok_lg = fitting_2d_multile_var_build_mat(descr, data2d, background2d,
+                                      average, tmp_scale, a_mat_flx, b_vec_flx)
 
           a_mat = a_mat_flx.as_scitbx_matrix()
           b_mat = b_vec_flx.as_scitbx_matrix()
@@ -346,5 +346,6 @@ def fit_profile_2d(reflection_pointers, ref_table
 def show_2d_box(Data_2D_in):
   from matplotlib import pyplot as plt
   np_2d_dat = Data_2D_in.as_numpy_array()
-  plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
+  #plt.imshow(np_2d_dat, interpolation = "nearest", cmap = plt.gray())
+  plt.imshow(np_2d_dat, interpolation = "nearest")
   plt.show()

@@ -7,7 +7,7 @@
 namespace dials { namespace algorithms {
 
   af::versa< double, af::c_grid<2> > smooth_2d(
-      const af::const_ref< double, af::c_grid<2> > &data2d, int tot_times) {
+      const af::const_ref< int, af::c_grid<2> > &data2d, int tot_times) {
 
     std::size_t ncol=data2d.accessor()[1];
         std::size_t nrow=data2d.accessor()[0];
