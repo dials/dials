@@ -63,6 +63,7 @@ def export_mtz(integrated_data, experiment_list, hklout):
 
   U = experiment.crystal.get_U()
   unit_cell = experiment.crystal.get_unit_cell()
+
   from iotbx import mtz
 
   from scitbx.array_family import flex

@@ -196,7 +196,7 @@ def validate_against_xds(xds_directory):
 
 if __name__ == '__main__':
   import sys
-  #validate_against_xds(sys.argv[1])
+  validate_against_xds(sys.argv[1])
   #work_dqe()
-  work_compare_2005_paper()
+  #work_compare_2005_paper()
   #work()
