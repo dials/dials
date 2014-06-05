@@ -54,7 +54,7 @@ class Script(ScriptRunner):
 
   def main(self, params, options, args):
     ''' Perform the integration. '''
-    from dials.algorithms.integration.integrator2 import Integrator
+    from dials.algorithms.integration.integrator import Integrator
     from time import time
 
     # Check the number of arguments is correct
