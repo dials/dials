@@ -78,15 +78,6 @@ class Target(object):
     # class has a compose(reflections) method. Sets ub_matrix (and caches
     # derivatives).
     try:
-      # TODO set U, B and UB arrays in the reflection_table. Cache derivatives of these
-      # in the _prediction_parameterisation object (so we don't have to compose
-      # at each scan point again later for the derivatives). If this is the
-      # first prediction of reflections some reflections could then be rejected
-      # by the reflection manager, and
-      # then it would have been a waste of time calculating derivatives for
-      # them. However, it is expected that scan-varying refinement is done after
-      # scan static refinement, so probably all of the rejections have been done
-      # already (so don't worry, be happy)
       self._prediction_parameterisation.compose(
           self._reflection_manager.get_obs())
     except AttributeError:
