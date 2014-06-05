@@ -98,7 +98,8 @@ class Integrator(object):
     h1 = predicted.select(pind)['miller_index']
     h2 = reference.select(rind)['miller_index']
     mask = rind == pind
-    predicted.set_flags(pind.select(mask), reflections.flags.reference_spot)
+    # predicted.set_flags(pind.select(mask), reflections.flags.reference_spot)
+    predicted.set_flags(pind.select(mask), reference.flags.reference_spot)
     Command.end("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
     return predicted
