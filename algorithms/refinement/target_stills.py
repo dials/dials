@@ -97,45 +97,19 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     self._reflection_predictor.predict(reflections)
     return reflections
 
-  def compute_residuals_and_gradients(self, block_num=0):
-    """return the vector of residuals plus their gradients and weights for
-    non-linear least squares methods"""
-
-    self.update_matches()
-    if self._jacobian_max_nref:
-      start = block_num * self._jacobian_max_nref
-      end = (block_num + 1) * self._jacobian_max_nref
-      matches = self._matches[start:end]
-      self._finished_residuals_and_gradients = True if \
-        end >= len(self._matches) else False
-    else:
-      matches = self._matches
-      self._finished_residuals_and_gradients = True
-
-    dX_dp, dY_dp, dDPsi_dp = self.calculate_gradients(matches)
+  def extract_residuals_and_weights(self, matches):
 
     # return residuals and weights as 1d flex.double vectors
-    nelem = len(matches) * 3
-    nparam = len(self._prediction_parameterisation)
     residuals = flex.double.concatenate(matches['x_resid'],
                                         matches['y_resid'])
     residuals.extend(matches['delpsical.rad'])
-    #jacobian_t = flex.double(flex.grid(
-    #    len(self._prediction_parameterisation), nelem))
+
     weights, w_y, _ = matches['xyzobs.mm.weights'].parts()
     w_delpsi = matches['delpsical.weights']
     weights.extend(w_y)
     weights.extend(w_delpsi)
 
-    jacobian = flex.double(flex.grid(nelem, nparam))
-    # loop over parameters
-    for i in range(nparam):
-      dX, dY, dDPsi = dX_dp[i], dY_dp[i], dDPsi_dp[i]
-      col = flex.double.concatenate(dX, dY)
-      col.extend(dDPsi)
-      jacobian.matrix_paste_column_in_place(col, i)
-
-    return(residuals, jacobian, weights)
+    return residuals, weights
 
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""

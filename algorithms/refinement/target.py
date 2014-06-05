@@ -182,10 +182,44 @@ class Target(object):
 
     pass
 
-  @abc.abstractmethod
-  def compute_residuals_and_gradients(self):
+  def compute_residuals_and_gradients(self, block_num=0):
     """return the vector of residuals plus their gradients and weights for
     non-linear least squares methods"""
+
+    self.update_matches()
+    if self._jacobian_max_nref:
+      start = block_num * self._jacobian_max_nref
+      end = (block_num + 1) * self._jacobian_max_nref
+      matches = self._matches[start:end]
+      self._finished_residuals_and_gradients = True if \
+        end >= len(self._matches) else False
+    else:
+      matches = self._matches
+      self._finished_residuals_and_gradients = True
+
+    # Here we hard code three types of residual, which might correspond to
+    # X, Y, Phi (scans case) or X, Y, DeltaPsi (stills case).
+    dX_dp, dY_dp, dZ_dp = self.calculate_gradients(matches)
+
+    residuals, weights = self.extract_residuals_and_weights(matches)
+
+    nelem = len(matches) * 3
+    nparam = len(self._prediction_parameterisation)
+    jacobian = flex.double(flex.grid(nelem, nparam))
+    # loop over parameters
+    for i in range(nparam):
+      dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
+      col = flex.double.concatenate(dX, dY)
+      col.extend(dZ)
+      jacobian.matrix_paste_column_in_place(col, i)
+
+    return(residuals, jacobian, weights)
+
+  @abc.abstractmethod
+  def extract_residuals_and_weights(self, matches):
+    """extract vector of residuals and corresponding weights. The space the
+    residuals are measured in (e.g. X, Y and Phi) and the order they are
+    returned is determined by a concrete implementation"""
 
     pass
 
@@ -249,44 +283,18 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
 
     return
 
-  def compute_residuals_and_gradients(self, block_num=0):
-    """return the vector of residuals plus their gradients and weights for
-    non-linear least squares methods"""
-
-    self.update_matches()
-    if self._jacobian_max_nref:
-      start = block_num * self._jacobian_max_nref
-      end = (block_num + 1) * self._jacobian_max_nref
-      matches = self._matches[start:end]
-      self._finished_residuals_and_gradients = True if \
-        end >= len(self._matches) else False
-    else:
-      matches = self._matches
-      self._finished_residuals_and_gradients = True
-
-    dX_dp, dY_dp, dPhi_dp = self.calculate_gradients(matches)
+  def extract_residuals_and_weights(self, matches):
 
     # return residuals and weights as 1d flex.double vectors
-    nelem = len(matches) * 3
-    nparam = len(self._prediction_parameterisation)
     residuals = flex.double.concatenate(matches['x_resid'],
                                         matches['y_resid'])
     residuals.extend(matches['phi_resid'])
-    #jacobian_t = flex.double(flex.grid(
-    #    len(self._prediction_parameterisation), nelem))
+
     weights, w_y, w_z = matches['xyzobs.mm.weights'].parts()
     weights.extend(w_y)
     weights.extend(w_z)
 
-    jacobian = flex.double(flex.grid(nelem, nparam))
-    # loop over parameters
-    for i in range(nparam):
-      dX, dY, dPhi = dX_dp[i], dY_dp[i], dPhi_dp[i]
-      col = flex.double.concatenate(dX, dY)
-      col.extend(dPhi)
-      jacobian.matrix_paste_column_in_place(col, i)
-
-    return(residuals, jacobian, weights)
+    return residuals, weights
 
   def compute_functional_and_gradients(self):
     """calculate the value of the target function and its gradients"""
