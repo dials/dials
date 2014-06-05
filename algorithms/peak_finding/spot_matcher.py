@@ -40,21 +40,21 @@ class SpotMatcher(object):
     from dials.array_family import flex
 
     # Find the nearest neighbours and distances
-    Command.start('Finding nearest neighbours')
+    # Command.start('Finding nearest neighbours')
     nn, dist = self._find_nearest_neighbours(observed, predicted)
-    Command.end('Found nearest neighbours')
+    # Command.end('Found nearest neighbours')
 
     # Filter the matches by distance
-    Command.start('Filtering matches by distance')
+    # Command.start('Filtering matches by distance')
     index = self._filter_by_distance(nn, dist)
-    Command.end('Filtered {0} matches by distance'.format(len(index)))
+    # Command.end('Filtered {0} matches by distance'.format(len(index)))
 
     # Filter out duplicates to just leave the closest pairs
-    Command.start('Removing duplicate matches')
+    # Command.start('Removing duplicate matches')
     len_index = len(index)
     index = self._filter_duplicates(index, nn, dist)
     len_diff = len_index - len(index)
-    Command.end('Removed {0} duplicate match(es)'.format(len_diff))
+    # Command.end('Removed {0} duplicate match(es)'.format(len_diff))
 
     # Copy all of the reflection data for the matched reflections
     return flex.size_t(index), flex.size_t([nn[i] for i in index])

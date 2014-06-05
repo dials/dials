@@ -28,9 +28,9 @@ dials.index space_group=P4 datablock.json strong.pickle
 
 dials.refine experiments.json indexed.pickle scan_varying=true
 
-# now run the integration - complex choices of algorithms are shown here in 
-# terms of the peak measurement (actually no) and background determination 
-# methods. pass reference reflections from indexing in to determine the 
+# now run the integration - complex choices of algorithms are shown here in
+# terms of the peak measurement (actually no) and background determination
+# methods. pass reference reflections from indexing in to determine the
 # profile parameters...
 
 dials.integrate outlier.algorithm=null refined_experiments.json \

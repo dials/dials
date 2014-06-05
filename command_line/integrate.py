@@ -63,18 +63,20 @@ class Script(ScriptRunner):
     # Check the number of command line arguments
     if len(args) != 1:
       self.config().print_help()
+      return
 
     # Load the experiment list
     exlist = self.load_experiments(args[0])
 
     # Load the data
+
+    shoeboxes = reference = predicted = None
+
     if options.shoeboxes:
       shoeboxes = options.shoeboxes
-      reference = None
-      predicted = None
-    else:
-      shoeboxes = None
+    if options.reference:
       reference = self.load_reference(options.reference)
+    if options.predicted:
       predicted = self.load_predicted(options.predicted)
 
     # Initialise the integrator
@@ -113,19 +115,21 @@ class Script(ScriptRunner):
     ''' Load the reference spots. '''
     from dials.util.command_line import Command
     from dials.array_family import flex
-    if filename:
-      Command.start('Loading reference spots from %s' % filename)
-      reference = flex.reflection_table.from_pickle(filename)
-      assert("miller_index" in reference)
-      Command.end('Loaded reference spots from %s' % filename)
-      Command.start('Removing reference spots with invalid coordinates')
-      mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
-      reference.del_selected(mask)
-      mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
-      Command.end('Removed reference spots with invalid coordinates, \
-                  %d remaining' % len(reference))
-    else:
-      reference = None
+
+    if not filename:
+      return None
+
+    Command.start('Loading reference spots from %s' % filename)
+    reference = flex.reflection_table.from_pickle(filename)
+    assert("miller_index" in reference)
+    Command.end('Loaded reference spots from %s' % filename)
+    Command.start('Removing reference spots with invalid coordinates')
+    mask = flex.bool([x == (0, 0, 0) for x in reference['xyzcal.mm']])
+    reference.del_selected(mask)
+    mask = flex.bool([h == (0, 0, 0) for h in reference['miller_index']])
+    reference.del_selected(mask)
+    Command.end('Removed reference spots with invalid coordinates, %d remaining' %
+                len(reference))
     return reference
 
   def save_reflections(self, reflections, filename):

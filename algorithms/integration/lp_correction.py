@@ -7,7 +7,7 @@ def correct_intensity(experiment, reflections):
     [LP_calculations(experiment, s1)
      for s1 in reflections['s1']])
   reflections['lp'] = lp
-  Command.end('Performed LP-correction on {0} reflections'.format(lp))
+  Command.end('Performed LP-correction on {0} reflections'.format(len(lp)))
   return lp
 
 def LP_calculations(experiment, s1):

@@ -68,12 +68,14 @@ class Integrator(object):
                predicted=None, shoeboxes=None):
     '''Initialise the script.'''
 
+    # Load the reference spots and compute the profile parameters
+    if reference:
+      self._compute_profile_model(params, exlist, reference)
+
     # Load the extractor based on the input
     if shoeboxes is not None:
       extractor = self._load_extractor(shoeboxes, params, exlist)
     else:
-      if reference:
-        self._compute_profile_model(params, exlist, reference)
       if predicted is None:
         predicted = self._predict_reflections(params, exlist)
         predicted = self._filter_reflections(params, exlist, predicted)
@@ -90,6 +92,7 @@ class Integrator(object):
 
   def _match_with_reference(self, predicted, reference):
     ''' Match predictions with reference spots. '''
+
     from dials.algorithms.peak_finding.spot_matcher import SpotMatcher
     from dials.util.command_line import Command
     Command.start("Matching reference spots with predicted reflections")
@@ -97,9 +100,8 @@ class Integrator(object):
     rind, pind = match(reference, predicted)
     h1 = predicted.select(pind)['miller_index']
     h2 = reference.select(rind)['miller_index']
-    mask = rind == pind
-    # predicted.set_flags(pind.select(mask), reflections.flags.reference_spot)
-    predicted.set_flags(pind.select(mask), reference.flags.reference_spot)
+    mask = (h1 == h2)
+    predicted.set_flags(pind.select(mask), predicted.flags.reference_spot)
     Command.end("Matched %d reference spots with predicted reflections" %
                 mask.count(True))
     return predicted
