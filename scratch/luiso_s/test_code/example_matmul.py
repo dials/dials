@@ -4,6 +4,7 @@ from scitbx.array_family import flex
 a = flex.double(flex.grid(3, 3))
 b = flex.double(flex.grid(3, 3))
 import random
+
 contr = 0
 for xpos in range(3):
   for ypos in range(3):
