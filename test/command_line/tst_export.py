@@ -27,7 +27,7 @@ class Test(object):
     easy_run.fully_buffered([
       'dials.integrate',
       join(self.path, 'experiments.json'),
-      'integration.algorithm=sum3d',
+      'intensity.algorithm=sum3d',
       'shoebox.sigma_b=0.058',
       'shoebox.sigma_m=0.157'
     ]).raise_if_errors()

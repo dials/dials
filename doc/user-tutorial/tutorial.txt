@@ -21,14 +21,14 @@ of data analysis rather than giving one big tool (though one big tool is
 available) - DIALS is first and foremost a toolkit for doing the data analysis
 to be used within other systems.
 
-The workflow (if you do things step by step, which is recommended) is as 
+The workflow (if you do things step by step, which is recommended) is as
 follows:
 
  - import the data - this reads the image headers & makes sense of the data,
-   forming sweeps etc. 
+   forming sweeps etc.
  - find spots - as it says on the tin, can adjust spot size
  - index - index these strong spots, can use a variety of methods
- - refine - refine the experimental geometry (included in indexing for 
+ - refine - refine the experimental geometry (included in indexing for
    scan-static refinement)
  - integrate - actually integrate the data
  - export - create MTZ files
@@ -39,11 +39,11 @@ used can be seen in tutorial.sh.
 Import
 ------
 
-There are two ways of importing images - 
+There are two ways of importing images -
 
   dials.import /path/to/the/data/*.img
 
-or 
+or
 
   find /path/to/the/data -name *.img | dials.import -i
 
@@ -54,8 +54,8 @@ set.
 Find Spots
 ----------
 
-Most useful parameter here is the minimum spots size. By default it is 6, but 
-this can be overridden with mini_spot_size=N where N is e.g. 3. This takes 
+Most useful parameter here is the minimum spots size. By default it is 6, but
+this can be overridden with mini_spot_size=N where N is e.g. 3. This takes
 datablock.json and creates strong.pickle:
 
   dials.find_spots min_spot_size=3 datablock.json
@@ -66,7 +66,7 @@ Index
 -----
 
 The indexing for DIALS offers a substantial number of options - these are
-detailed in the Phil file for dials.index, which is shown when you run the 
+detailed in the Phil file for dials.index, which is shown when you run the
 program. The most useful options are:
 
   unit_cell=a,b,c,al,be,ga
@@ -77,8 +77,8 @@ The indexing works as
 
   dials.index strong.pickle datablock.json [options]
 
-and creates an "experiment" file experiment.json which details the crystal 
-lattices found and indexed.pickle, which is a copy of strong.pickle with 
+and creates an "experiment" file experiment.json which details the crystal
+lattices found and indexed.pickle, which is a copy of strong.pickle with
 Miller indices and reflection predictions added.
 
 If you are unsure of the symmetry and would like to know how different lattices
@@ -88,7 +88,7 @@ run dials.refine_bravais_settings.
 Refinement
 ----------
 
-The indexing includes refinement - if you do not wish to use a time varying 
+The indexing includes refinement - if you do not wish to use a time varying
 crystal model you can go straight to integration. If you do want to use a time
 varying model, you will need to rerun the refinement with this new model as
 
@@ -99,7 +99,7 @@ which will generate refined_experiments.json - this you pass on to integration.
 Integration
 -----------
 
-As may be expected the integration in DIALS offers the greatest range of 
+As may be expected the integration in DIALS offers the greatest range of
 user options, to control how the background is determined (including outlier
 pixels in the background determination) the reflection profile parameters
 (used to define the reflection mask, and by default discovered automatically)
@@ -110,7 +110,7 @@ and the actual algorithm to be used for peak integration e.g. sum3d or fft3d.
 
 This reads the indexed reflections to determine strong reflections for profile
 fitting and integrates the data in refined_experiments.json, using the default
-background determination with no outlier rejection and XDS-style 3D profile 
+background determination with no outlier rejection and XDS-style 3D profile
 fitting. These commands are most likely to change and can be viewed by running
 
   dials.parameters
@@ -125,6 +125,6 @@ run pointless and aimless to resort and scale the data viz:
 
   dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
   pointless hklin integrated.mtz hklout sorted.mtz
-  aimless hklin sorted.mtz hklout scaled.mtz 
+  aimless hklin sorted.mtz hklout scaled.mtz
 
 For details on pointless and aimless please refer to the CCP4 documentation.
