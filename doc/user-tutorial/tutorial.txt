@@ -99,3 +99,32 @@ which will generate refined_experiments.json - this you pass on to integration.
 Integration
 -----------
 
+As may be expected the integration in DIALS offers the greatest range of 
+user options, to control how the background is determined (including outlier
+pixels in the background determination) the reflection profile parameters
+(used to define the reflection mask, and by default discovered automatically)
+and the actual algorithm to be used for peak integration e.g. sum3d or fft3d.
+
+  dials.integrate outlier.algorithm=null intensity.algorithm=fitrs \
+    refined_experiments.json -r indexed.pickle
+
+This reads the indexed reflections to determine strong reflections for profile
+fitting and integrates the data in refined_experiments.json, using the default
+background determination with no outlier rejection and XDS-style 3D profile 
+fitting. These commands are most likely to change and can be viewed by running
+
+  dials.parameters
+
+which shows all of the available options.
+
+Export
+------
+
+If you have got this far everything else is easy: export the data as MTZ then
+run pointless and aimless to resort and scale the data viz:
+
+  dials.export_mtz integrated.pickle refined_experiments.json integrated.mtz
+  pointless hklin integrated.mtz hklout sorted.mtz
+  aimless hklin sorted.mtz hklout scaled.mtz 
+
+For details on pointless and aimless please refer to the CCP4 documentation.
