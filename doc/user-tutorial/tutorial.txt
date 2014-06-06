@@ -1,0 +1,40 @@
+DIALS Short Tutorial
+====================
+
+The aim of this tutorial is to provide a quick start guide to running DIALS for
+integrating good quality synchrotron X-ray diffraction data. Many caveats apply
+to this:
+
+ - your mileage may vary etc. as the program is in development
+ - we don't promise that the data are as good as from e.g. XDS
+ - DIALS only does data processing you will need to use e.g. Aimless for
+   the subsequent scaling
+
+That said this tutorial illustrates that the program can work and give sensible
+results.
+
+Introduction
+------------
+
+The philosophy behind DIALS is to be explicit in performing the various steps
+of data analysis rather than giving one big tool (though one big tool is
+available) - DIALS is first and foremost a toolkit for doing the data analysis
+to be used within other systems.
+
+The workflow (if you do things step by step, which is recommended) is as 
+follows:
+
+ - import the data - this reads the image headers & makes sense of the data,
+   forming sweeps etc. 
+ - find spots - as it says on the tin, can adjust spot size
+ - index - index these strong spots, can use a variety of methods
+ - refine - refine the experimental geometry (included in indexing for 
+   scan-static refinement)
+ - integrate - actually integrate the data
+ - export - create MTZ files
+
+Some detail of the options for each of these will follow below. Hoe they are
+used can be seen in tutorial.sh.
+
+
+ 
