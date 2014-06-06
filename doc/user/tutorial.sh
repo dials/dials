@@ -4,8 +4,23 @@
 
 # first import the data - this reads the image headers and creates a file which
 # describes the sweeps found therein. here there should only be one sweep found
+# data should be passed on the command-line e.g. ./tutorial.sh /path/to/data
+# or linked to the directory where the script is run as "data"
 
-dials.import ~/data/th_8_2_0*.cbf
+if [[ -z $1 ]]; then
+  data_directory=./data
+else
+  data_directory=$1
+fi
+
+if [[ ! -f ${data_directory}/th_8_2_0001.cbf ]]; then
+  echo "Data not found in directory: ${data_directory} -"
+  echo "please download from doi:10.5281/zenodo.10271 and pass on command-line"
+  echo "or create softlink from data directory to ./data"
+  exit
+fi
+
+dials.import ${data_directory}/th_8_2_0*.cbf
 
 # find spots on the images - this will take a while! also accept small spots
 # in this case as the data are good (N.B. to explore DIALS options you can
