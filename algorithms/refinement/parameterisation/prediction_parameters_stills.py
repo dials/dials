@@ -974,6 +974,10 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       sel = reflections['id'] == iexp
       isel = sel.iselection()
 
+      # select items of interest for this experiment
+      #exp_refs = reflections.select(isel)
+      panels_this_exp = reflections['panel'].select(isel)
+
       # identify which parameterisations to use for this experiment
       param_set = self._exp_to_param[iexp]
       beam_param_id = param_set.beam_param
@@ -984,14 +988,41 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       # reset a pointer to the parameter number
       self._iparam = 0
 
-    ### Work through the parameterisations, calculating their contributions
-    ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
+      ### Work through the parameterisations, calculating their contributions
+      ### to derivatives d[pv]/dp and d[DeltaPsi]/dp
 
-      # Calculate derivatives of pv wrt each parameter of the detector
-      # parameterisations. All derivatives of DeltaPsi are zero for detector
-      # parameters
-      if self._detector_parameterisations:
-        self._detector_derivatives(reflections, isel, dpv_dp, det_param_id, exp.detector)
+      # loop over all the detector parameterisations, even though we are only
+      # setting values for one of them. We still need to move the _iparam pointer
+      # for the others.
+      for idp, dp in enumerate(self._detector_parameterisations):
+
+        # Calculate gradients only for the correct detector parameterisation for
+        # this experiment
+        if idp == det_param_id:
+
+          # loop through the panels in this detector
+          for panel_id, panel in enumerate([p for p in exp.detector]):
+
+            # get the right subset of array indices to set for this panel
+            sub_isel = isel.select(panels_this_exp == panel_id)
+            sub_pv = self._pv.select(sub_isel)
+            sub_D = self._D.select(sub_isel)
+            dpv_ddetp = self._detector_derivatives(dp, sub_pv, sub_D, exp.detector, panel_id)
+            # convert to dX/dp, dY/dp and set in the vectors
+            #FIXME TODO
+            iparam = self._iparam
+            for dpv in dpv_ddetp:
+              dpv_dp[iparam].set_selected(sub_isel, dpv)
+              # increment the local parameter index pointer
+              iparam += 1
+
+          # increment the parameter index pointer to the last detector parameter
+          self._iparam += dp.num_free()
+
+        # For any other detector parameterisations, leave derivatives as zero
+        else:
+          # just increment the pointer
+          self._iparam += dp.num_free()
 
       # Calc derivatives of pv and DeltaPsi wrt each parameter of each beam
       # parameterisation that is present.
@@ -1017,55 +1048,17 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
     return (dX_dp, dY_dp, dDeltaPsi_dp)
 
 
-  def _detector_derivatives(self, reflections, isel, dpv_dp,
-                            det_param_id, detector):
-    """helper function to extend the derivatives lists by derivatives of the
-    detector parameterisations"""
+  def _detector_derivatives(self, dp, pv, D, detector, panel_id):
+    """helper function to convert derivatives of the detector state to
+    derivatives of the vector pv"""
 
-    panels_this_exp = reflections['panel'].select(isel)
+    # get the derivatives of detector d matrix for this panel
+    dd_ddet_p = dp.get_ds_dp(multi_state_elt=panel_id)
 
-    # loop over all the detector parameterisations, even though we are only
-    # setting values for one of them. We still need to move the _iparam pointer
-    # for the others.
-    for idp, dp in enumerate(self._detector_parameterisations):
+    # calculate the derivative of pv for this parameter
+    dpv_ddet_p = [(D * (-1. * der).elems) * pv for der in dd_ddet_p]
 
-      # Calculate gradients only for the correct detector parameterisation
-      if idp == det_param_id:
-
-        # loop through the panels in this detector
-        for panel_id, panel in enumerate([p for p in detector]):
-
-          # get the derivatives of detector d matrix for this panel
-          dd_ddet_p = dp.get_ds_dp(multi_state_elt=panel_id)
-
-          # get the right subset of array indices to set for this panel
-          sub_isel = isel.select(panels_this_exp == panel_id)
-          pv = self._pv.select(sub_isel)
-          D = self._D.select(sub_isel)
-
-          # loop through the parameters
-          iparam = self._iparam
-          for der in dd_ddet_p:
-
-            # calculate the derivative of pv for this parameter
-            dpv = (D * (-1. * der).elems) * pv
-
-            # set values in the correct gradient array
-            dpv_dp[iparam].set_selected(sub_isel, dpv)
-
-            # increment the local parameter index pointer
-            iparam += 1
-
-        # increment the parameter index pointer to the last detector parameter
-        self._iparam += dp.num_free()
-
-      # For any other detector parameterisations, leave derivatives as zero
-      else:
-
-        # just increment the pointer
-        self._iparam += dp.num_free()
-
-    return
+    return dpv_ddet_p
 
   def _beam_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
                         beam_param_id):
