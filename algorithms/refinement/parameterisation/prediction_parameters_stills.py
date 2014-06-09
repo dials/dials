@@ -977,6 +977,15 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       # select items of interest for this experiment
       #exp_refs = reflections.select(isel)
       panels_this_exp = reflections['panel'].select(isel)
+      s0 = self._s0.select(isel)
+      s0u = self._s0u.select(isel)
+      wl = self._wavelength.select(isel)
+      e1 = self._e1.select(isel)
+      r = self._r.select(isel)
+      D = self._D.select(isel)
+      q0 = self._q0.select(isel)
+      q = self._q.select(isel)
+      DeltaPsi = self._DeltaPsi.select(isel)
 
       # identify which parameterisations to use for this experiment
       param_set = self._exp_to_param[iexp]
@@ -1024,11 +1033,27 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
           # just increment the pointer
           self._iparam += dp.num_free()
 
-      # Calc derivatives of pv and DeltaPsi wrt each parameter of each beam
-      # parameterisation that is present.
-      if self._beam_parameterisations:
-        self._beam_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                               beam_param_id)
+      # loop over all the beam parameterisations, even though we are only setting
+      # values for one of them. We still need to move the _iparam pointer for the
+      # others.
+      for ibp, bp in enumerate(self._beam_parameterisations):
+
+        # Calculate gradients only for the correct beam parameterisation
+        if ibp == beam_param_id:
+
+          dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(
+            bp, s0, s0u, wl, r, e1, q, q0, DeltaPsi, D)
+
+          for dpv, dDeltaPsi in zip(dpv_dbeam_p, ddelpsi_dbeam_p):
+            dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
+            dpv_dp[self._iparam].set_selected(isel, dpv)
+            # increment the parameter index pointer
+            self._iparam += 1
+
+        # For any other beam parameterisations, leave derivatives as zero
+        else:
+          # just increment the pointer
+          self._iparam += bp.num_free()
 
       # Calc derivatives of pv and phi wrt each parameter of each crystal
       # orientation parameterisation that is present.
@@ -1060,88 +1085,44 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
 
     return dpv_ddet_p
 
-  def _beam_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                        beam_param_id):
+  def _beam_derivatives(self, bp, s0, s0u, wl, r, e1, q, q0, DeltaPsi, D):
     """helper function to extend the derivatives lists by derivatives of the
     beam parameterisations"""
 
-    # loop over all the beam parameterisations, even though we are only setting
-    # values for one of them. We still need to move the _iparam pointer for the
-    # others.
-    for ibp, bp in enumerate(self._beam_parameterisations):
+    # get the derivatives of the beam vector wrt the parameters
+    ds0_dbeam_p = bp.get_ds_dp()
 
-      # Calculate gradients only for the correct beam parameterisation
-      if ibp == beam_param_id:
+    dDeltaPsi_dp = []
+    dpv_dp = []
 
-        # get the derivatives of the beam vector wrt the parameters
-        ds0_dbeam_p = bp.get_ds_dp()
+    # loop through the parameters
+    for der in ds0_dbeam_p:
 
-        # select indices for the experiment of interest
-        s0u = self._s0u.select(isel)
-        wl = self._wavelength.select(isel)
-        #q0 = self._q0.select(isel)
-        e1 = self._e1.select(isel)
-        #a = self._a.select(isel)
-        #b = self._b.select(isel)
-        #q1 = self._q1.select(isel)
-        r = self._r.select(isel)
-        #chi = self._chi.select(isel)
-        #upsilon = self._upsilon.select(isel)
-        D = self._D.select(isel)
-        #s1 = self._s1.select(isel)
-        s0 = self._s0.select(isel)
+      # repeat the derivative in an array
+      ds0 = flex.vec3_double(len(s0u), der.elems)
 
-        q0 = self._q0.select(isel)
+      # we need the derivative of the unit beam direction too
+      ds0u = ds0 * wl
 
-        q = self._q.select(isel)
-        DeltaPsi = self._DeltaPsi.select(isel)
+      # calculate the derivative of DeltaPsi for this parameter
+      dDeltaPsi = -1.0 * (r.dot(ds0)) / (e1.cross(r).dot(s0))
+      dDeltaPsi_dp.append(dDeltaPsi)
 
-        # loop through the parameters
-        for der in ds0_dbeam_p:
+      # calculate the partial derivative of r wrt change in rotation
+      # axis e1 by finite differences
+      de1 = q0.cross(ds0u)
+      dp = 1.e-8 # finite step size for the parameter
+      del_e1 = de1 * dp
+      e1f = e1 + del_e1 * 0.5
+      rfwd = q.rotate_around_origin(e1f , DeltaPsi)
+      e1r = e1 - del_e1 * 0.5
+      rrev = q.rotate_around_origin(e1r , DeltaPsi)
+      drde_dedp = (rfwd - rrev) * (1 / dp)
 
-          # repeat the derivative in an array
-          ds0 = flex.vec3_double(len(s0u), der.elems)
+      # calculate the derivative of pv for this parameter
+      dpv_dp.append(D * (ds0 + e1.cross(r) * dDeltaPsi + drde_dedp))
 
-          # we need the derivative of the unit beam direction too
-          ds0u = ds0 * wl
-
-          # calculate the derivative of DeltaPsi for this parameter
-          #################################################
-          # NB This passes the test vs finite differences #
-          #################################################
-          dDeltaPsi = -1.0 * (r.dot(ds0)) / (e1.cross(r).dot(s0))
-
-          # calculate the derivative of pv for this parameter
-          ########################################################
-          # NB This does not pass the test vs finite differences #
-          ########################################################
-          # calculate the partial derivative of r wrt change in rotation
-          # axis e1 by finite differences
-          de1 = q0.cross(ds0u)
-          dp = 1.e-8 # finite step size for the parameter
-          del_e1 = de1 * dp
-          e1f = e1 + del_e1 * 0.5
-          rfwd = q.rotate_around_origin(e1f , DeltaPsi)
-          e1r = e1 - del_e1 * 0.5
-          rrev = q.rotate_around_origin(e1r , DeltaPsi)
-          drde_dedp = (rfwd - rrev) * (1 / dp)
-
-          dpv = D * (ds0 + e1.cross(r) * dDeltaPsi + drde_dedp)
-
-          # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
-          dpv_dp[self._iparam].set_selected(isel, dpv)
-
-          # increment the parameter index pointer
-          self._iparam += 1
-
-      # For any other beam parameterisations, leave derivatives as zero
-      else:
-
-        # just increment the pointer
-        self._iparam += bp.num_free()
-
-    return
+    return dpv_dp, dDeltaPsi_dp
 
   def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
               xl_ori_param_id):
