@@ -930,6 +930,8 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
     self._B = B
     self._h = reflections['miller_index'].as_vec3_double()
     self._q = (self._UB * self._h)
+    self._q_scalar = self._q.norms()
+    self._qq = self._q_scalar * self._q_scalar
 
     # r is the reciprocal lattice vector rotated to the Ewald sphere
     self._s0 = s0
@@ -985,7 +987,19 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       D = self._D.select(isel)
       q0 = self._q0.select(isel)
       q = self._q.select(isel)
+      q_scalar = self._q_scalar.select(isel)
+      qq = self._qq.select(isel)
       DeltaPsi = self._DeltaPsi.select(isel)
+
+      h = self._h.select(isel)
+      B = self._B.select(isel)
+      U = self._U.select(isel)
+
+      e1 = self._e1.select(isel)
+      q1 = self._q1.select(isel)
+
+      s1 = self._s1.select(isel)
+
 
       # identify which parameterisations to use for this experiment
       param_set = self._exp_to_param[iexp]
@@ -1016,7 +1030,8 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
             sub_isel = isel.select(panels_this_exp == panel_id)
             sub_pv = self._pv.select(sub_isel)
             sub_D = self._D.select(sub_isel)
-            dpv_ddetp = self._detector_derivatives(dp, sub_pv, sub_D, exp.detector, panel_id)
+            dpv_ddetp = self._detector_derivatives(dp, sub_pv, sub_D,
+              exp.detector, panel_id)
             # convert to dX/dp, dY/dp and set in the vectors
             #FIXME TODO
             iparam = self._iparam
@@ -1055,17 +1070,49 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
           # just increment the pointer
           self._iparam += bp.num_free()
 
-      # Calc derivatives of pv and phi wrt each parameter of each crystal
-      # orientation parameterisation that is present.
-      if self._xl_orientation_parameterisations:
-        self._xl_orientation_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                         xl_ori_param_id)
+      # loop over all the crystal orientation parameterisations, even though we
+      # are only setting values for one of them. We still need to move the
+      # _iparam pointer for the others.
+      for ixlop, xlop in enumerate(self._xl_orientation_parameterisations):
 
-      # Now derivatives of pv and phi wrt each parameter of each crystal unit
-      # cell parameterisation that is present.
-      if self._xl_unit_cell_parameterisations:
-        self._xl_unit_cell_derivatives(reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                       xl_uc_param_id)
+        # Calculate gradients only for the correct xl orientation parameterisation
+        if ixlop == xl_ori_param_id:
+
+          dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
+            xlop, B, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D)
+
+          for dpv, dDeltaPsi in zip(dpv_dxlo_p, ddelpsi_dxlo_p):
+            dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
+            dpv_dp[self._iparam].set_selected(isel, dpv)
+            # increment the parameter index pointer
+            self._iparam += 1
+
+        # For any other xl orientation parameterisations, leave derivatives as zero
+        else:
+          # just increment the pointer
+          self._iparam += xlop.num_free()
+
+      # loop over all the crystal unit cell parameterisations, even though we
+      # are only setting values for one of them. We still need to move the
+      # _iparam pointer for the others.
+      for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
+
+        # Calculate gradients only for the correct xl unit cell parameterisation
+        if ixlucp == xl_uc_param_id:
+
+          dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
+            xlucp, U, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D)
+
+          for dpv, dDeltaPsi in zip(dpv_dxluc_p, ddelpsi_dxluc_p):
+            dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
+            dpv_dp[self._iparam].set_selected(isel, dpv)
+            # increment the parameter index pointer
+            self._iparam += 1
+
+        # For any other xl unit cell parameterisations, leave derivatives as zero
+        else:
+          # just increment the pointer
+          self._iparam += xlucp.num_free()
 
       # calculate positional derivatives from d[pv]/dp
       dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(self._pv, dpv_dp)
@@ -1114,9 +1161,9 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       dp = 1.e-8 # finite step size for the parameter
       del_e1 = de1 * dp
       e1f = e1 + del_e1 * 0.5
-      rfwd = q.rotate_around_origin(e1f , DeltaPsi)
+      rfwd = q.rotate_around_origin(e1f, DeltaPsi)
       e1r = e1 - del_e1 * 0.5
-      rrev = q.rotate_around_origin(e1r , DeltaPsi)
+      rrev = q.rotate_around_origin(e1r, DeltaPsi)
       drde_dedp = (rfwd - rrev) * (1 / dp)
 
       # calculate the derivative of pv for this parameter
@@ -1124,196 +1171,95 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
 
     return dpv_dp, dDeltaPsi_dp
 
-  def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-              xl_ori_param_id):
+  def _xl_orientation_derivatives(self, xlop, B, h, e1, DeltaPsi, s1, q,
+                                  q_scalar, qq, q0, r, s0, s0u, D):
     """helper function to extend the derivatives lists by
     derivatives of the crystal orientation parameterisations"""
 
-    # loop over all the crystal orientation parameterisations, even though we
-    # are only setting values for one of them. We still need to move the _iparam
-    # pointer for the others.
-    for ixlop, xlop in enumerate(self._xl_orientation_parameterisations):
+    # get derivatives of the U matrix wrt the parameters
+    dU_dxlo_p = xlop.get_ds_dp()
 
-      # Calculate gradients only for the correct xl orientation parameterisation
-      if ixlop == xl_ori_param_id:
+    dDeltaPsi_dp = []
+    dpv_dp = []
 
-        # get derivatives of the U matrix wrt the parameters
-        dU_dxlo_p = xlop.get_ds_dp()
+    # loop through the parameters
+    for der in dU_dxlo_p:
 
-        # select indices for the experiment of interest
-        h = self._h.select(isel)
-        B = self._B.select(isel)
-        q = self._q.select(isel)
-        q0 = self._q0.select(isel)
-        s0u = self._s0u.select(isel)
-        wl = self._wavelength.select(isel)
-        b = self._b.select(isel)
-        c0 = self._c0.select(isel)
-        e1 = self._e1.select(isel)
-        #q1 = self._q1.select(isel)
-        r = self._r.select(isel)
-        s0 = self._s0.select(isel)
-        s1 = self._s1.select(isel)
+      der_mat = flex.mat3_double(len(B), der.elems)
 
-        DeltaPsi = self._DeltaPsi.select(isel)
-        D = self._D.select(isel)
-        q1 = q0.cross(e1)
-        yy = r.dot(q1)
-        xx = r.dot(q0)
+      # calculate the derivative of q for this parameter
+      dq = der_mat * B * h
 
-        # loop through the parameters
-        for der in dU_dxlo_p:
+      # calculate the derivative of r for this parameter
+      dr = dq.rotate_around_origin(e1, DeltaPsi)
 
-          der_mat = flex.mat3_double(len(B), der.elems)
+      # calculate the derivative of DeltaPsi for this parameter
+      dDeltaPsi = -1.0 * (dr.dot(s1)) / (e1.cross(r).dot(s0))
+      dDeltaPsi_dp.append(dDeltaPsi)
 
-          # calculate the derivative of q for this parameter
-          dq = der_mat * B * h
+      # derivative of the axis e1
+      q_dot_dq = q.dot(dq)
+      dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
+      de1 = dq0.cross(s0u)
 
-          # calculate the derivative of r for this parameter
-          dr00 = dq.rotate_around_origin(e1, DeltaPsi)
+      # calculate the partial derivative of r wrt change in rotation
+      # axis e1 by finite differences
+      dp = 1.e-8
+      del_e1 = de1 * dp
+      e1f = e1 + del_e1 * 0.5
+      rfwd = q.rotate_around_origin(e1f, DeltaPsi)
+      e1r = e1 - del_e1 * 0.5
+      rrev = q.rotate_around_origin(e1r, DeltaPsi)
+      drde_dedp = (rfwd - rrev) * (1 / dp)
 
-          dq = der_mat * B * h
-          #
-          ## calculate the derivatives of upsilon and chi for this parameter
-          q_dot_dq = q.dot(dq)
-          ##dqq = 2.0 * q_dot_dq
-          q_scalar = q.norms()
-          qq = q_scalar * q_scalar
-          ##dq_scalar = dqq / q_scalar
-          dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-          de1 = dq0.cross(s0u)
-          dc0 = s0u.cross(de1)
+      # calculate the derivative of pv for this parameter
+      dpv_dp.append(D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp))
 
-          dr = b * dc0
-          dq1 = dq0.cross(e1) + q0.cross(de1)
-          dy  = dr.dot(q1) + r.dot(dq1)
-          dx  = dr.dot(q0) + r.dot(dq0)
-          dDeltaPsi_nks = ((yy * dx) - (xx * dy)) / ((xx*xx)+(yy*yy))
+    return dpv_dp, dDeltaPsi_dp
 
-          # calculate the derivative of DeltaPsi for this parameter
-          #################################################
-          # NB This passes the test vs finite differences #
-          #################################################
-          dDeltaPsi = -1.0 * (dr00.dot(s1)) / (e1.cross(r).dot(s0))
-
-          # calculate the derivative of pv for this parameter
-          ########################################################
-          # NB This does not pass the test vs finite differences #
-          ########################################################
-          # calculate the partial derivative of r wrt change in rotation
-          # axis e1 by finite differences
-          dp = 1.e-8
-          del_e1 = de1 * dp
-          e1f = e1 + del_e1 * 0.5
-          rfwd = q.rotate_around_origin(e1f , DeltaPsi)
-          e1r = e1 - del_e1 * 0.5
-          rrev = q.rotate_around_origin(e1r , DeltaPsi)
-          drde_dedp = (rfwd - rrev) * (1 / dp)
-          dpv = D * (dr00 + e1.cross(r) * dDeltaPsi + drde_dedp)
-
-          # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
-          dpv_dp[self._iparam].set_selected(isel, dpv)
-
-          # increment the parameter index pointer
-          self._iparam += 1
-
-      # For any other xl orientation parameterisations, leave derivatives as zero
-      else:
-
-        # just increment the pointer
-        self._iparam += xlop.num_free()
-
-    return
-
-  def _xl_unit_cell_derivatives(self, reflections, isel, dpv_dp, dDeltaPsi_dp,
-                                xl_uc_param_id):
+  def _xl_unit_cell_derivatives(self, xlucp, U, h, e1, DeltaPsi, s1, q,
+                                  q_scalar, qq, q0, r, s0, s0u, D):
     """helper function to extend the derivatives lists by
     derivatives of the crystal unit cell parameterisations"""
 
+    # get derivatives of the B matrix wrt the parameters
+    dB_dxluc_p = xlucp.get_ds_dp()
 
-    for ixlucp, xlucp in enumerate(self._xl_unit_cell_parameterisations):
+    dDeltaPsi_dp = []
+    dpv_dp = []
 
-      # Calculate gradients only for the correct xl unit cell parameterisation
-      if ixlucp == xl_uc_param_id:
+    # loop through the parameters
+    for der in dB_dxluc_p:
 
-        # get derivatives of the B matrix wrt the parameters
-        dB_dxluc_p = xlucp.get_ds_dp()
+      der_mat = flex.mat3_double(len(U), der.elems)
 
-        # select indices for the experiment of interest
-        h = self._h.select(isel)
-        U = self._U.select(isel)
-        q = self._q.select(isel)
-        q0 = self._q0.select(isel)
-        s0u = self._s0u.select(isel)
-        wl = self._wavelength.select(isel)
-        b = self._b.select(isel)
-        c0 = self._c0.select(isel)
-        e1 = self._e1.select(isel)
-        #q1 = self._q1.select(isel)
-        r = self._r.select(isel)
-        s1 = self._s1.select(isel)
-        s0 = self._s0.select(isel)
+      # calculate the derivative of q for this parameter
+      dq = U * der_mat * h
 
-        DeltaPsi = self._DeltaPsi.select(isel)
-        D = self._D.select(isel)
+      # calculate the derivative of r for this parameter
+      dr = dq.rotate_around_origin(e1, DeltaPsi)
 
-        # loop through the parameters
-        for der in dB_dxluc_p:
+      # calculate the derivative of DeltaPsi for this parameter
+      dDeltaPsi = -1.0 * (dr.dot(s1)) / (e1.cross(r).dot(s0))
+      dDeltaPsi_dp.append(dDeltaPsi)
 
-          der_mat = flex.mat3_double(len(U), der.elems)
-          # calculate the derivative of q for this parameter
-          dq = U * der_mat * h
-          # calculate the derivative of r for this parameter
-          dr = dq.rotate_around_origin(e1, DeltaPsi)
+      # derivative of the axis e1
+      q_dot_dq = q.dot(dq)
+      dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
+      de1 = dq0.cross(s0u)
 
-          # calculate the derivatives of upsilon and chi for this parameter
-          q_dot_dq = q.dot(dq)
-          #dqq = 2.0 * q_dot_dq
-          q_scalar = q.norms()
-          qq = q_scalar * q_scalar
-          #dq_scalar = dqq / q_scalar
-          dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-          de1 = dq0.cross(s0u)
-          #dc0 = s0u.cross(de1)
-          da = wl * q_dot_dq
-          #db = (2.0 - qq * wl * wl) * q_dot_dq / (2.0 * b)
-          #dr = db * c0 + b * dc0 - da * s0u
-          #dq1 = dq0.cross(e1) + q0.cross(de1)
+      # calculate the partial derivative of r wrt change in rotation
+      # axis e1 by finite differences
+      dp = 1.e-8
+      del_e1 = de1 * dp
+      e1f = e1 + del_e1 * 0.5
+      rfwd = q.rotate_around_origin(e1f , DeltaPsi)
+      e1r = e1 - del_e1 * 0.5
+      rrev = q.rotate_around_origin(e1r , DeltaPsi)
+      drde_dedp = (rfwd - rrev) * (1 / dp)
 
-          #dupsilon = dr.dot(q1) + r.dot(dq1)
-          #dchi = dr.dot(q0) + r.dot(dq0)
-          #################################################
-          # NB This passes the test vs finite differences #
-          #################################################
-          dDeltaPsi = -1.0 * (dr.dot(s1)) / (e1.cross(r).dot(s0))
+      # calculate the derivative of pv for this parameter
+      dpv = D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp)
+      dpv_dp.append(dpv)
 
-          # calculate the derivative of pv for this parameter
-          ########################################################
-          # NB This does not pass the test vs finite differences #
-          ########################################################
-          # calculate the partial derivative of r wrt change in rotation
-          # axis e1 by finite differences
-          dp = 1.e-8
-          del_e1 = de1 * dp
-          e1f = e1 + del_e1 * 0.5
-          rfwd = q.rotate_around_origin(e1f , DeltaPsi)
-          e1r = e1 - del_e1 * 0.5
-          rrev = q.rotate_around_origin(e1r , DeltaPsi)
-          drde_dedp = (rfwd - rrev) * (1 / dp)
-          dpv = D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp)
-
-          # set values in the correct gradient arrays
-          dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
-          dpv_dp[self._iparam].set_selected(isel, dpv)
-
-          # increment the parameter index pointer
-          self._iparam += 1
-
-      # For any other xl unit cell parameterisations, leave derivatives as zero
-      else:
-
-        # just increment the pointer
-        self._iparam += xlucp.num_free()
-
-    return
+    return dpv_dp, dDeltaPsi_dp
