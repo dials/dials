@@ -977,8 +977,7 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       isel = sel.iselection()
 
       # select items of interest for this experiment
-      #exp_refs = reflections.select(isel)
-      panels_this_exp = reflections['panel'].select(isel)
+      panel = reflections['panel'].select(isel)
       s0 = self._s0.select(isel)
       s0u = self._s0u.select(isel)
       wl = self._wavelength.select(isel)
@@ -1024,14 +1023,13 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
         if idp == det_param_id:
 
           # loop through the panels in this detector
-          for panel_id, panel in enumerate([p for p in exp.detector]):
+          for panel_id, _ in enumerate(exp.detector):
 
             # get the right subset of array indices to set for this panel
-            sub_isel = isel.select(panels_this_exp == panel_id)
+            sub_isel = isel.select(panel == panel_id)
             sub_pv = self._pv.select(sub_isel)
             sub_D = self._D.select(sub_isel)
-            dpv_ddetp = self._detector_derivatives(dp, sub_pv, sub_D,
-              exp.detector, panel_id)
+            dpv_ddetp = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
             # convert to dX/dp, dY/dp and set in the vectors
             #FIXME TODO
             iparam = self._iparam
@@ -1120,7 +1118,7 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
     return (dX_dp, dY_dp, dDeltaPsi_dp)
 
 
-  def _detector_derivatives(self, dp, pv, D, detector, panel_id):
+  def _detector_derivatives(self, dp, pv, D, panel_id):
     """helper function to convert derivatives of the detector state to
     derivatives of the vector pv"""
 
