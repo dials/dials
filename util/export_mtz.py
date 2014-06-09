@@ -56,8 +56,8 @@ def export_mtz(integrated_data, experiment_list, hklout):
   fast *= pixel_size[0]
   slow *= pixel_size[1]
 
-  cb_op_to_ref = experiment.crystal.get_space_group().info()\
-    .change_of_basis_op_to_reference_setting()
+  cb_op_to_ref = experiment.crystal.get_space_group().info(
+    ).change_of_basis_op_to_reference_setting()
 
   experiment.crystal = experiment.crystal.change_basis(cb_op_to_ref)
 
