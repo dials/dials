@@ -100,6 +100,12 @@ refinement
         .type = ints(value_min=0)
         .help = "Fix specified parameters by a list of indices"
     }
+
+    sparse = False
+      .help = "Calculate gradients using sparse data structures. Temporary user choice"
+              "during development - should be automatic when the trade-offs are well"
+              "understood"
+      .type = bool
   }
 
   refinery
@@ -159,10 +165,11 @@ refinement
       .type = floats(size=3, value_min=0.)
 
     jacobian_max_nref = None
-      .help = "Maximum number of reflections to use for jacobian calculation."
+      .help = "Maximum number of reflections to use for Jacobian calculation."
               "If there are more reflections than this in the manager then"
               "the minimiser must do the full calculation in blocks."
       .type = int(value_min=1)
+
   }
 
   reflections

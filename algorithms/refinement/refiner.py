@@ -304,6 +304,7 @@ class RefinerFactory(object):
     beam_options = params.refinement.parameterisation.beam
     crystal_options = params.refinement.parameterisation.crystal
     detector_options = params.refinement.parameterisation.detector
+    sparse = params.refinement.parameterisation.sparse
 
     # Shorten paths
     import dials.algorithms.refinement.parameterisation as par
@@ -520,8 +521,14 @@ class RefinerFactory(object):
             det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
     else:
       assert param_type is "stills"
-      from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
-          import StillsPredictionParameterisation
+      # FIXME temporary user choice for sparse matrix version
+      # currently only using the sparse version for stills.
+      if sparse:
+        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+            import StillsPredictionParameterisationSparse as StillsPredictionParameterisation
+      else:
+        from dials.algorithms.refinement.parameterisation.prediction_parameters_stills \
+            import StillsPredictionParameterisation
       pred_param = StillsPredictionParameterisation(
           experiments,
           det_params, beam_params, xl_ori_params, xl_uc_params)
