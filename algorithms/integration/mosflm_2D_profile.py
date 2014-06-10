@@ -78,6 +78,7 @@ def make_2d_profile(reflection_pointers, ref_table_in):
     background = col_shoebox[t_row].background
     mask =col_shoebox[t_row].mask
 
+    #data2d, background2d = from_3D_to_2D_projection(shoebox, background, col_intensity[t_row], t_row)
     data2d, background2d = from_3D_to_2D_projection(shoebox, background)
     mask2d = from_3D_to_2D_mask_projection(mask)
 
@@ -272,6 +273,7 @@ def fit_profile_2d(reflection_pointers, ref_table
         col_intensity[t_row] = 0.0
         col_variance[t_row] = 0.0
 
+        #data2d, background2d = from_3D_to_2D_projection(shoebox, background, col_intensity[t_row], t_row)
         data2d, background2d = from_3D_to_2D_projection(shoebox, background)
         mask2d = from_3D_to_2D_mask_projection(mask)
 
