@@ -101,7 +101,8 @@ namespace dials { namespace model { namespace serialize {
   class ShoeboxFileWriter : public ShoeboxFileBase {
   public:
 
-    typedef std::map< std::size_t, af::versa< int, af::c_grid<3> > > buffer_type;
+    typedef std::pair<int*, std::size_t> buffer_element;
+    typedef std::map<std::size_t, buffer_element> buffer_type;
 
     /**
      * Setup the shoebox file. This function will initialize the file to the
@@ -122,11 +123,11 @@ namespace dials { namespace model { namespace serialize {
           bbox_(bbox.begin(), bbox.end()),
           z_(z.begin(), z.end()),
           offset_(bbox_.size() + 1),
-          buffer_size_(0),
-          buffer_max_(buffer_max) {
+          buffer_data_(buffer_max),
+          buffer_size_(0) {
       DIALS_ASSERT(panel.size() == bbox.size());
       DIALS_ASSERT(panel.size() == z.size());
-      file_.rdbuf()->pubsetbuf(0,0);
+      //file_.rdbuf()->pubsetbuf(0,0);
       file_.open(filename.c_str(), std::ios_base::binary | std::ios_base::trunc);
       write_internal(MAGIC);
       write_internal(VERSION);
@@ -158,7 +159,7 @@ namespace dials { namespace model { namespace serialize {
      */
     void write(
         std::size_t index,
-        const af::versa< int, af::c_grid<3> > &data) {
+        const af::const_ref< int, af::c_grid<3> > &data) {
 
       // Ensure the index is in range
       DIALS_ASSERT(index < bbox_.size());
@@ -172,11 +173,12 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(data.accessor()[2] == xs);
 
       // Write the shoebox to file
-      buffer_[index] = data;
-      buffer_size_ += data.size() * sizeof(int);
-      if (buffer_size_ > buffer_max_) {
+      if (buffer_size_ + data.size() > buffer_data_.size()) {
         flush();
       }
+      std::copy(data.begin(), data.end(), &buffer_data_[buffer_size_]);
+      buffer_[index] = buffer_element(&buffer_data_[buffer_size_], data.size());
+      buffer_size_ += data.size();
     }
 
   private:
@@ -188,9 +190,8 @@ namespace dials { namespace model { namespace serialize {
       for (buffer_type::iterator it = buffer_.begin();
           it != buffer_.end(); ++it) {
         std::size_t index = it->first;
-        buffer_type::mapped_type &data = it->second;
-        write_shoebox(index, &data[0], data.size());
-        buffer_type::mapped_type().swap(data);
+        buffer_type::mapped_type data = it->second;
+        write_shoebox(index, data.first, data.second);
       }
       buffer_type().swap(buffer_);
       buffer_size_ = 0;
@@ -307,8 +308,8 @@ namespace dials { namespace model { namespace serialize {
     std::ofstream file_;
     uint64_t data_offset_;
     buffer_type buffer_;
+    std::vector<int> buffer_data_;
     std::size_t buffer_size_;
-    std::size_t buffer_max_;
   };
 
 

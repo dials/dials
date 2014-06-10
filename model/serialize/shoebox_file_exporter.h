@@ -12,6 +12,7 @@
 #define DIALS_MODEL_SERIALIZE_SHOEBOX_FILE_EXPORTER_H
 
 #include <vector>
+#include <stack>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -23,20 +24,137 @@ namespace dials { namespace model { namespace serialize {
   using af::int6;
 
   /**
+   * A class to buffer the shoebox data. This class finds the maximum amount of
+   * memory needed at any one time, it then allocated the memory to write the
+   * shoeboxes. Looping though the frames, as shoeboxes comes into scope an
+   * offset into the buffer is given to the shoebox and relinqushed when the
+   * shoebox goes out of scope.
+   */
+  class ShoeboxFileExporterBuffer {
+  public:
+
+    typedef std::vector<std::size_t> index_array_type;
+    typedef std::vector<index_array_type> pf_index_array_type;
+
+    struct sort_by_lower_z {
+      af::const_ref<int6> bbox;
+      sort_by_lower_z(const af::const_ref<int6> &bbox_)
+        : bbox(bbox_) {}
+      template <typename T>
+      bool operator()(T a, T b) {
+        return bbox[a][4] < bbox[b][4];
+      }
+    };
+
+    struct sort_by_upper_z {
+      af::const_ref<int6> bbox;
+      sort_by_upper_z(const af::const_ref<int6> &bbox_)
+        : bbox(bbox_) {}
+      template <typename T>
+      bool operator()(T a, T b) {
+        return bbox[a][5] < bbox[b][5];
+      }
+    };
+
+    /**
+     * Initialize the buffer
+     * @param bbox The bounding boxes
+     * @param nframes The number of frames in the imageset
+     */
+    ShoeboxFileExporterBuffer(const af::const_ref<int6> &bbox, std::size_t nframes)
+        : max_size_(0),
+          max_num_(0),
+          offset_(bbox.size()) {
+      // Compute maximum size of shoebox
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        const int6 &b = bbox[i];
+        std::size_t size = (b[5] - b[4])*(b[3] - b[2])*(b[1] - b[0]);
+        if (size > max_size_) {
+          max_size_ = size;
+        }
+      }
+
+      // Index of shoebox sorted by min and max z
+      std::vector<std::size_t> minz(bbox.size());
+      std::vector<std::size_t> maxz(bbox.size());
+      for (std::size_t i = 0; i < bbox.size(); ++i) {
+        minz[i] = i;
+        maxz[i] = i;
+      }
+      std::sort(minz.begin(), minz.end(), sort_by_lower_z(bbox));
+      std::sort(maxz.begin(), maxz.end(), sort_by_upper_z(bbox));
+
+      // Find a position available in the buffer and assign to shoebox. If no
+      // position is available add another. When positions become available add
+      // them back to the stack of available positions
+      std::stack<std::size_t> available;
+      std::size_t minz_index = 0;
+      std::size_t maxz_index = 0;
+      int current_frame = bbox[minz[minz_index]][4];
+      while(current_frame <= nframes) {
+        while (minz_index < minz.size()
+            && bbox[minz[minz_index]][4] == current_frame) {
+          std::size_t pos = 0;
+          if (available.empty()) {
+            pos = max_num_++;
+          } else {
+            pos = available.top();
+            available.pop();
+          }
+          offset_[minz[minz_index]] = pos;
+          minz_index++;
+        }
+        while (maxz_index < maxz.size()
+            && bbox[maxz[maxz_index]][5] == current_frame) {
+          available.push(offset_[maxz[maxz_index]]);
+          maxz_index++;
+        }
+        current_frame++;
+      }
+
+      // Allocate the buffer
+      buffer_.resize(max_num_ * max_size_);
+    }
+
+    /**
+     * Get the buffer for the shoebox
+     */
+    const int* operator[](std::size_t index) const {
+      DIALS_ASSERT(index < offset_.size());
+      return &buffer_[offset_[index]];
+    }
+
+    /**
+     * Get the buffer for the shoebox
+     */
+    int* operator[](std::size_t index) {
+      DIALS_ASSERT(index < offset_.size());
+      return &buffer_[offset_[index]];
+    }
+
+  private:
+
+    std::size_t max_size_;
+    std::size_t max_num_;
+    std::vector<int> buffer_;
+    std::vector<std::size_t> offset_;
+  };
+
+
+  /**
    * A class to export shoeboxes to an intermediate file after extracting the
    * raw data from the image pixels.
    */
   class ShoeboxFileExporter {
   public:
 
-    // Buffer size of 500MB
-    static const std::size_t BUFFER_MAX_SIZE = 500000000;
+    // Buffer size of 100MB
+    static const std::size_t BUFFER_MAX_SIZE = 100000000 / sizeof(int);
 
     typedef std::vector<std::size_t> index_array_type;
     typedef std::vector<index_array_type> pf_index_array_type;
-    typedef af::versa< int, af::c_grid<3> > shoebox_type;
+    typedef int* shoebox_type;
     typedef af::ref< int, af::c_grid<3> > shoebox_ref_type;
-    typedef af::shared<shoebox_type> shoebox_array_type;
 
     /**
      * Initialise the exporter
@@ -57,7 +175,7 @@ namespace dials { namespace model { namespace serialize {
         : writer_(filename, panel, bbox, z, BUFFER_MAX_SIZE, blob),
           bbox_(bbox.begin(), bbox.end()),
           panel_(panel.begin(), panel.end()),
-          shoeboxes_(init_shoeboxes(bbox.size())),
+          shoeboxes_(bbox, num_frame),
           num_frame_(num_frame),
           cur_frame_(0),
           num_panel_(num_panel),
@@ -123,24 +241,19 @@ namespace dials { namespace model { namespace serialize {
 
         // Get some bits and pieces
         std::size_t index = indices[i];
-        shoebox_type &shoebox = shoeboxes_[index];
+        shoebox_type shoebox = shoeboxes_[index];
         int6 &bbox = bbox_[index];
-
-        // Allocate shoebox if necessary
-        if (bbox[4] == cur_frame_) {
-          std::size_t zs = bbox[5] - bbox[4];
-          std::size_t ys = bbox[3] - bbox[2];
-          std::size_t xs = bbox[1] - bbox[0];
-          shoebox = shoebox_type(af::c_grid<3>(zs, ys, xs));
-        }
+        std::size_t zs = bbox[5] - bbox[4];
+        std::size_t ys = bbox[3] - bbox[2];
+        std::size_t xs = bbox[1] - bbox[0];
 
         // Add the data to the shoebox
-        add(shoebox.ref(), bbox, cur_frame_, image);
+        shoebox_ref_type shoebox_ref(shoebox, af::c_grid<3>(zs, ys, xs));
+        add(shoebox_ref, bbox, cur_frame_, image);
 
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
-          writer_.write(index, shoebox);
-          shoebox = shoebox_type();
+          writer_.write(index, shoebox_ref);
         }
       }
 
@@ -161,19 +274,6 @@ namespace dials { namespace model { namespace serialize {
     }
 
   private:
-
-    /**
-     * Need to init each element separately otherwise each flex array points to
-     * the same object
-     */
-    af::shared<shoebox_type> init_shoeboxes(std::size_t n) {
-      af::shared<shoebox_type> result;
-      result.reserve(n);
-      for (std::size_t i = 0; i < n; ++i) {
-        result.push_back(shoebox_type());
-      }
-      return result;
-    }
 
     /**
      * Initialise the lookup table of shoeboxes appearing on which frame/panel.
@@ -242,7 +342,7 @@ namespace dials { namespace model { namespace serialize {
     ShoeboxFileWriter writer_;
     af::shared<int6> bbox_;
     af::shared<std::size_t> panel_;
-    shoebox_array_type shoeboxes_;
+    ShoeboxFileExporterBuffer shoeboxes_;
     std::size_t num_frame_;
     std::size_t cur_frame_;
     std::size_t num_panel_;
