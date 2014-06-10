@@ -92,6 +92,11 @@ namespace dials { namespace model { namespace serialize {
       std::size_t maxz_index = 0;
       int current_frame = bbox[minz[minz_index]][4];
       while(current_frame <= nframes) {
+        while (maxz_index < maxz.size()
+            && bbox[maxz[maxz_index]][5] == current_frame) {
+          available.push(offset_[maxz[maxz_index]]);
+          maxz_index++;
+        }
         while (minz_index < minz.size()
             && bbox[minz[minz_index]][4] == current_frame) {
           std::size_t pos = 0;
@@ -104,16 +109,12 @@ namespace dials { namespace model { namespace serialize {
           offset_[minz[minz_index]] = pos;
           minz_index++;
         }
-        while (maxz_index < maxz.size()
-            && bbox[maxz[maxz_index]][5] == current_frame) {
-          available.push(offset_[maxz[maxz_index]]);
-          maxz_index++;
-        }
         current_frame++;
       }
 
       // Allocate the buffer
-      buffer_.resize(max_num_ * max_size_);
+      buffer_.resize(max_num_ * max_size_, 0);
+      check_.resize(max_num_, -1);
     }
 
     /**
@@ -121,7 +122,10 @@ namespace dials { namespace model { namespace serialize {
      */
     const int* operator[](std::size_t index) const {
       DIALS_ASSERT(index < offset_.size());
-      return &buffer_[offset_[index]];
+      std::size_t oindex = offset_[index];
+      DIALS_ASSERT(oindex < max_num_);
+      DIALS_ASSERT(check_[oindex] == index);
+      return &buffer_[oindex * max_size_];
     }
 
     /**
@@ -129,7 +133,32 @@ namespace dials { namespace model { namespace serialize {
      */
     int* operator[](std::size_t index) {
       DIALS_ASSERT(index < offset_.size());
-      return &buffer_[offset_[index]];
+      std::size_t oindex = offset_[index];
+      DIALS_ASSERT(oindex < max_num_);
+      DIALS_ASSERT(check_[oindex] == index);
+      return &buffer_[oindex * max_size_];
+    }
+
+    /**
+     * Hold this chunk
+     */
+    void hold(std::size_t index) {
+      DIALS_ASSERT(index < offset_.size());
+      std::size_t oindex = offset_[index];
+      DIALS_ASSERT(oindex < max_num_);
+      DIALS_ASSERT(check_[oindex] == -1);
+      check_[oindex] = index;
+    }
+
+    /**
+     * Release this chunk
+     */
+    void release(std::size_t index) {
+      DIALS_ASSERT(index < offset_.size());
+      std::size_t oindex = offset_[index];
+      DIALS_ASSERT(oindex < max_num_);
+      DIALS_ASSERT(check_[oindex] == index);
+      check_[oindex] = -1;
     }
 
   private:
@@ -138,6 +167,7 @@ namespace dials { namespace model { namespace serialize {
     std::size_t max_num_;
     std::vector<int> buffer_;
     std::vector<std::size_t> offset_;
+    std::vector<int> check_;
   };
 
 
@@ -241,11 +271,14 @@ namespace dials { namespace model { namespace serialize {
 
         // Get some bits and pieces
         std::size_t index = indices[i];
-        shoebox_type shoebox = shoeboxes_[index];
         int6 &bbox = bbox_[index];
         std::size_t zs = bbox[5] - bbox[4];
         std::size_t ys = bbox[3] - bbox[2];
         std::size_t xs = bbox[1] - bbox[0];
+        if (bbox[4] == cur_frame_) {
+          shoeboxes_.hold(index);
+        }
+        shoebox_type shoebox = shoeboxes_[index];
 
         // Add the data to the shoebox
         shoebox_ref_type shoebox_ref(shoebox, af::c_grid<3>(zs, ys, xs));
@@ -254,6 +287,7 @@ namespace dials { namespace model { namespace serialize {
         // Write and release shoebox
         if (bbox[5] == cur_frame_+1) {
           writer_.write(index, shoebox_ref);
+          shoeboxes_.release(index);
         }
       }
 

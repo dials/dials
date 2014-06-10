@@ -8,8 +8,9 @@ class Test(object):
 
   def __init__(self):
     from dials.array_family import flex
-    from random import randint
+    from random import randint, seed
 
+    seed(0)
     self.filename = "shoebox.dat"
     self.nframes = 5
     self.npanels = 2
@@ -88,6 +89,7 @@ class Test(object):
     # Check the file exists
     assert(isfile(self.filename))
     assert(exporter.finished())
+    exporter.flush()
 
     # Writing test passed
     print 'OK'
@@ -209,8 +211,8 @@ class Test(object):
     # Test passed
     print 'OK'
 
-  def check(self, sbox, i):
-    sbox2 = self.expected[i]
+  def check(self, sbox, index):
+    sbox2 = self.expected[index]
     assert(len(sbox.data) == len(sbox2))
     assert(len(sbox.data.all()) == len(sbox2.all()))
     for i in range(len(sbox.data.all())):

@@ -123,7 +123,7 @@ namespace dials { namespace model { namespace serialize {
           bbox_(bbox.begin(), bbox.end()),
           z_(z.begin(), z.end()),
           offset_(bbox_.size() + 1),
-          buffer_data_(buffer_max),
+          buffer_data_(buffer_max, 0),
           buffer_size_(0) {
       DIALS_ASSERT(panel.size() == bbox.size());
       DIALS_ASSERT(panel.size() == z.size());
@@ -173,6 +173,7 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(data.accessor()[2] == xs);
 
       // Write the shoebox to file
+      DIALS_ASSERT(data.size() <= buffer_data_.size());
       if (buffer_size_ + data.size() > buffer_data_.size()) {
         flush();
       }

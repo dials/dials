@@ -171,7 +171,7 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(i1 <= size());
       af::shared< Shoebox<> > result(i1 - i0);
       for (std::size_t i = 0; i < result.size(); ++i) {
-        result[i] = Shoebox<>(panel_[i0 + i], bbox_[i0 + 1]);
+        result[i] = Shoebox<>(panel_[i0 + i], bbox_[i0 + i]);
         result[i].allocate();
       }
       for (std::size_t i = 0; i < result.size(); ++i) {
@@ -247,7 +247,8 @@ namespace dials { namespace model { namespace serialize {
       DIALS_ASSERT(sbox.xsize() == xsize);
       DIALS_ASSERT(zsize * ysize * xsize <= buffer_.size());
       af::ref< int, af::c_grid<3> > raw(
-          &buffer_[0], af::c_grid<3>(zsize, ysize, xsize));
+          &buffer_[0],
+          af::c_grid<3>(zsize, ysize, xsize));
       reader_.read(index, raw);
       for (std::size_t k = 0; k < zsize; ++k) {
         for (std::size_t j = 0; j < ysize; ++j) {
