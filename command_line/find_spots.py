@@ -47,6 +47,7 @@ class Script(ScriptRunner):
       print 'The following command line arguments weren\'t handled'
       for arg in importer.unhandled_arguments:
         print '  ' + arg
+      exit(1)
 
     # Ensure we have a data block
     if not importer.datablocks:
