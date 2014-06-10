@@ -61,6 +61,7 @@ class Config(object):
       include scope dials.data.spotfinding.phil_scope
       include scope dials.data.integration.phil_scope
       include scope dials.data.refinement.phil_scope
+      include scope dials.data.indexing.phil_scope
     ''', process_includes=True)
 
     self._phil = self._system_phil

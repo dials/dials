@@ -163,13 +163,13 @@ class Script(ScriptRunner):
       raise RuntimeError("Only one imageset can be processed at a time")
     imageset = imagesets[0]
 
-    cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
-    # switch off scan-varying refinement for indexing, leaving it set (if
-    # requested) for the refinement step
-    extra_src = parse(
-      "refinement.parameterisation.crystal.scan_varying=False")
-    working_phil = cmd_line.process_and_fetch(args=unhandled,extra_sources=[extra_src])
-    working_phil.show()
+    #cmd_line = command_line.argument_interpreter(master_params=master_phil_scope)
+    ## switch off scan-varying refinement for indexing, leaving it set (if
+    ## requested) for the refinement step
+    #extra_src = parse(
+      #"refinement.parameterisation.crystal.scan_varying=False")
+    #working_phil = cmd_line.process_and_fetch(args=unhandled,extra_sources=[extra_src])
+    #working_phil.show()
 
     gonio = imageset.get_goniometer()
     detector = imageset.get_detector()
@@ -180,7 +180,8 @@ class Script(ScriptRunner):
     print gonio
     print beam
 
-    params = working_phil.extract()
+    #params = working_phil.extract()
+    params = self.params.indexing
     if params.method == "fft3d":
       from dials.algorithms.indexing.fft3d import indexer_fft3d as indexer
     elif params.method == "fft1d":

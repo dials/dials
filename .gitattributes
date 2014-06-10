@@ -340,6 +340,7 @@ command_line/stereographic_projection.py -text
 /config.h -text
 data/__init__.py -text
 data/completion_template.txt -text
+data/indexing.py -text
 data/integration.py -text
 data/logging.py -text
 data/lookup.py -text
