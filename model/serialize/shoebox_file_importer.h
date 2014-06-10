@@ -41,7 +41,19 @@ namespace dials { namespace model { namespace serialize {
         : reader_(filename),
           bbox_(reader_.bbox()),
           panel_(reader_.panels()),
-          lookup_(false) {}
+          lookup_(false) {
+      // Allocate buffer to maximum shoebox size
+      std::size_t max_size = 0;
+      for (std::size_t i = 0; i < bbox_.size(); ++i) {
+        std::size_t size = (bbox_[i][5] - bbox_[i][4]) *
+                           (bbox_[i][3] - bbox_[i][2]) *
+                           (bbox_[i][1] - bbox_[i][0]);
+        if (size > max_size) {
+          max_size = size;
+        }
+      }
+      buffer_.resize(max_size);
+    }
 
     /**
      * Initialise the importer
@@ -93,6 +105,18 @@ namespace dials { namespace model { namespace serialize {
         DIALS_ASSERT(b[0] >= 0 && b[2] >= 0 && b[4] >= 0);
         DIALS_ASSERT(b[1] <= acc[1] && b[3] <= acc[0]);
       }
+
+      // Allocate buffer to maximum shoebox size
+      std::size_t max_size = 0;
+      for (std::size_t i = 0; i < bbox_.size(); ++i) {
+        std::size_t size = (bbox_[i][5] - bbox_[i][4]) *
+                           (bbox_[i][3] - bbox_[i][2]) *
+                           (bbox_[i][1] - bbox_[i][0]);
+        if (size > max_size) {
+          max_size = size;
+        }
+      }
+      buffer_.resize(max_size);
     }
 
     /**
@@ -129,7 +153,11 @@ namespace dials { namespace model { namespace serialize {
      * @returns The shoebox
      */
     Shoebox<> operator[](std::size_t index) {
-      return lookup_ ? read_with_lookup(index) : read_without_lookup(index);
+      DIALS_ASSERT(index < size());
+      Shoebox<> sbox(panel_[index], bbox_[index]);
+      sbox.allocate();
+      read(index, sbox);
+      return sbox;
     }
 
     /**
@@ -139,9 +167,15 @@ namespace dials { namespace model { namespace serialize {
      * @returns The list of shoeboxes
      */
     af::shared< Shoebox<> > select(std::size_t i0, std::size_t i1) {
-      af::shared< Shoebox<> > result;
-      for (std::size_t i = i0; i < i1; ++i) {
-        result.push_back((*this)[i]);
+      DIALS_ASSERT(i0 < i1);
+      DIALS_ASSERT(i1 <= size());
+      af::shared< Shoebox<> > result(i1 - i0);
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        result[i] = Shoebox<>(panel_[i0 + i], bbox_[i0 + 1]);
+        result[i].allocate();
+      }
+      for (std::size_t i = 0; i < result.size(); ++i) {
+        read(i0 + i, result[i]);
       }
       return result;
     }
@@ -152,9 +186,15 @@ namespace dials { namespace model { namespace serialize {
      * @returns The list of shoeboxes
      */
     af::shared< Shoebox<> > select(const af::const_ref<std::size_t> &index) {
-      af::shared< Shoebox<> > result;
+      af::shared< Shoebox<> > result(index.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
-        result.push_back((*this)[index[i]]);
+        std::size_t j = index[i];
+        DIALS_ASSERT(j < size());
+        result[i] = Shoebox<>(panel_[j], bbox_[j]);
+        result[i].allocate();
+      }
+      for (std::size_t i = 0; i < index.size(); ++i) {
+        read(index[i], result[i]);
       }
       return result;
     }
@@ -169,32 +209,32 @@ namespace dials { namespace model { namespace serialize {
   private:
 
     /**
+     * Read the shoebox
+     */
+    void read(std::size_t index, Shoebox<> &sbox) {
+      if (lookup_) {
+        read_with_lookup(index, sbox);
+      } else {
+        read_without_lookup(index, sbox);
+      }
+    }
+
+    /**
      * When lookup tables are set, read in values with gain/dark/mask.
      */
-    Shoebox<> read_with_lookup(std::size_t index) {
-
-      af::versa< int, af::c_grid<3> > data = reader_.read(index);
+    void read_with_lookup(std::size_t index, Shoebox<> &sbox) {
 
       // Ensure index is valid
       DIALS_ASSERT(index < size());
 
       // Get the panel and bounidng box
-      std::size_t panel = panel_[index];
       int6 bbox = bbox_[index];
-
-      // Initialise the shoebox
-      Shoebox<> sbox(panel, bbox);
-
-      // Allocate the memory
-      sbox.allocate();
+      std::size_t panel = panel_[index];
 
       // Grab the lookup tables
       gain_map_type gain = gain_maps_[panel];
       dark_map_type dark = dark_maps_[panel];
       mask_map_type mask = mask_maps_[panel];
-
-      // Assign the values of the mask and pixels
-      raw_shoebox_type raw = reader_.read(index);
 
       // Assign all the pixel values
       std::size_t j0 = bbox[2];
@@ -202,6 +242,13 @@ namespace dials { namespace model { namespace serialize {
       std::size_t zsize = bbox[5] - bbox[4];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t xsize = bbox[1] - bbox[0];
+      DIALS_ASSERT(sbox.zsize() == zsize);
+      DIALS_ASSERT(sbox.ysize() == ysize);
+      DIALS_ASSERT(sbox.xsize() == xsize);
+      DIALS_ASSERT(zsize * ysize * xsize <= buffer_.size());
+      af::ref< int, af::c_grid<3> > raw(
+          &buffer_[0], af::c_grid<3>(zsize, ysize, xsize));
+      reader_.read(index, raw);
       for (std::size_t k = 0; k < zsize; ++k) {
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
@@ -216,38 +263,30 @@ namespace dials { namespace model { namespace serialize {
           }
         }
       }
-
-      // return the shoebox
-      return sbox;
     }
 
     /**
      * When no lookup is set, read in raw values.
      */
-    Shoebox<> read_without_lookup(std::size_t index) {
-
-      af::versa< int, af::c_grid<3> > data = reader_.read(index);
+    void read_without_lookup(std::size_t index, Shoebox<> &sbox) {
 
       // Ensure index is valid
       DIALS_ASSERT(index < size());
 
       // Get the panel and bounidng box
-      std::size_t panel = panel_[index];
       int6 bbox = bbox_[index];
-
-      // Initialise the shoebox
-      Shoebox<> sbox(panel, bbox);
-
-      // Allocate the memory
-      sbox.allocate();
-
-      // Assign the values of the mask and pixels
-      raw_shoebox_type raw = reader_.read(index);
 
       // Assign all the pixel values
       std::size_t zsize = bbox[5] - bbox[4];
       std::size_t ysize = bbox[3] - bbox[2];
       std::size_t xsize = bbox[1] - bbox[0];
+      DIALS_ASSERT(sbox.zsize() == zsize);
+      DIALS_ASSERT(sbox.ysize() == ysize);
+      DIALS_ASSERT(sbox.xsize() == xsize);
+      DIALS_ASSERT(zsize * ysize * xsize <= buffer_.size());
+      af::ref< int, af::c_grid<3> > raw(
+          &buffer_[0], af::c_grid<3>(zsize, ysize, xsize));
+      reader_.read(index, raw);
       for (std::size_t k = 0; k < zsize; ++k) {
         for (std::size_t j = 0; j < ysize; ++j) {
           for (std::size_t i = 0; i < xsize; ++i) {
@@ -256,9 +295,6 @@ namespace dials { namespace model { namespace serialize {
           }
         }
       }
-
-      // return the shoebox
-      return sbox;
     }
 
     ShoeboxFileReader reader_;
@@ -268,6 +304,7 @@ namespace dials { namespace model { namespace serialize {
     af::shared<dark_map_type> dark_maps_;
     af::shared<mask_map_type> mask_maps_;
     bool lookup_;
+    af::shared<int> buffer_;
   };
 
 }}} // namespace dials::model::serialize

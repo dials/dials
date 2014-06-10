@@ -372,7 +372,7 @@ namespace dials { namespace model { namespace serialize {
      * @param index The index of the shoebox to read
      * @returns The shoebox data.
      */
-    af::versa< int, af::c_grid<3> > read(std::size_t index) {
+    void read(std::size_t index, af::ref< int, af::c_grid<3> > data) {
 
       // Check the index is valid.
       DIALS_ASSERT(index < bbox_.size());
@@ -381,8 +381,9 @@ namespace dials { namespace model { namespace serialize {
       std::size_t zs = bbox_[index][5] - bbox_[index][4];
       std::size_t ys = bbox_[index][3] - bbox_[index][2];
       std::size_t xs = bbox_[index][1] - bbox_[index][0];
-      af::versa< int, af::c_grid<3> > data(
-          af::c_grid<3>(zs, ys, xs));
+      DIALS_ASSERT(data.accessor()[0] == zs);
+      DIALS_ASSERT(data.accessor()[1] == ys);
+      DIALS_ASSERT(data.accessor()[2] == xs);
 
       // Move to the desired position
       uint64_t offset = data_offset_ + offset_[index];
@@ -391,9 +392,6 @@ namespace dials { namespace model { namespace serialize {
       // Read the data
       DIALS_ASSERT(read_internal<uint32_t>() == SHOEBOX_BEG);
       read_internal(&data[0], data.size());
-
-      // Return the array
-      return data;
     }
 
     /**
