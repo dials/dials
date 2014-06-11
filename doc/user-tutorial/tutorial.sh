@@ -41,7 +41,8 @@ dials.index space_group=P4 datablock.json strong.pickle use_all_reflections=true
 # a scan varying model so re-run the refinement (you should find that the R.M.S.
 # deviations are a little lower following the scan varying refinement)
 
-dials.refine experiments.json indexed.pickle scan_varying=true \
+dials.refine experiments.json indexed.pickle \
+  refinement.parameterisation.crystal.scan_varying=true \
   use_all_reflections=true
 
 # now run the integration - complex choices of algorithms are shown here in
