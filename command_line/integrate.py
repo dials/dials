@@ -54,7 +54,6 @@ class Script(ScriptRunner):
 
   def main(self, params, options, args):
     ''' Perform the integration. '''
-    from dials.algorithms.integration.integrator import Integrator
     from time import time
 
     # Check the number of arguments is correct
@@ -80,7 +79,12 @@ class Script(ScriptRunner):
       predicted = self.load_predicted(options.predicted)
 
     # Initialise the integrator
-    integrator = Integrator(params, exlist, reference, predicted, shoeboxes)
+    if None in exlist.goniometers():
+      from dials.algorithms.integration import IntegratorStills
+      integrator = IntegratorStills(params, exlist, reference, predicted, shoeboxes)
+    else:
+      from dials.algorithms.integration import Integrator
+      integrator = Integrator(params, exlist, reference, predicted, shoeboxes)
 
     # Integrate the reflections
     reflections = integrator.integrate()

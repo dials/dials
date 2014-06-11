@@ -5,6 +5,7 @@ from dials.algorithms.shoebox import *
 from dials_algorithms_integration_ext import *
 from reflection_extractor import *
 from integrator import *
+from integrator_stills import *
 from summation3d import *
 from summation2d import *
 from call_mosflm_2d import *

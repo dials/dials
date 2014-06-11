@@ -51,9 +51,10 @@ class ReflectionPredictor(object):
           "scan static prediction",
           lambda: predictor.for_ub(experiment.crystal.get_A()))
     else:
+      predictor = StillsReflectionPredictor(experiment, **kwargs)
       predict = Predictor(
         "stills prediction",
-        StillsReflectionPredictor(experiment, **kwargs))
+        lambda: predictor.for_ub(experiment.crystal.get_A()))
 
     # Create and add the predictor class
     self._predict = predict

@@ -227,7 +227,6 @@ class Script(ScriptRunner):
     return experiments
 
   def integrate(self, experiments, indexed):
-    from dials.algorithms.integration import Integrator
     from time import time
     from dials.util.command_line import Command
 
@@ -247,10 +246,18 @@ class Script(ScriptRunner):
 
     # Get the integrator from the input parameters
     print 'Configurating integrator from input parameters'
-    integrator = Integrator(
-      self.params,
-      experiments,
-      reference=indexed)
+    if None in experiments.goniometers():
+      from dials.algorithms.integration import IntegratorStills
+      integrator = IntegratorStills(
+        self.params,
+        experiments,
+        reference=indexed)
+    else:
+      from dials.algorithms.integration import Integrator
+      integrator = Integrator(
+        self.params,
+        experiments,
+        reference=indexed)
 
     # Integrate the sweep's reflections
     print 'Integrating reflections'

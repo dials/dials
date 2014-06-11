@@ -49,11 +49,19 @@ def ScanVaryingReflectionPredictor(experiment, dmin=None, margin=1, **kwargs):
 # Override constructor with factory
 _StillsReflectionPredictor = StillsReflectionPredictor
 
-def StillsReflectionPredictor(experiment, **kwargs):
+def StillsReflectionPredictor(experiment, dmin=None, **kwargs):
   ''' A constructor for the reflection predictor. '''
+
+  # Get dmin if it is not set
+  if dmin is None:
+    dmin = experiment.detector.get_max_resolution(experiment.beam.get_s0())
 
   # Create the reflection predictor
   return _StillsReflectionPredictor(
     experiment.beam,
     experiment.detector,
-    experiment.crystal.get_A())
+    experiment.crystal.get_A(),
+    experiment.crystal.get_unit_cell(),
+    experiment.crystal.get_space_group().type(),
+    dmin)
+

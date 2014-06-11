@@ -31,7 +31,10 @@ class ReflectionBlockExtractor(object):
       extract_shoeboxes_to_file(filename, imageset, reflections)
 
     # Calculate the blocks in images
-    self._blocks = self._compute_blocks(imageset.get_scan(), block_size)
+    if imageset.get_scan() is None:
+      self._blocks = [0,len(imageset)]
+    else:
+      self._blocks = self._compute_blocks(imageset.get_scan(), block_size)
     print "Extracting reflections from the following blocks of images:"
     npad = int(floor(log10(max(self._blocks)))) + 1
     format_string = ' %%%dd -> %%%dd' % (npad, npad)
