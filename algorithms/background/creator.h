@@ -61,13 +61,15 @@ namespace dials { namespace algorithms { namespace background {
      * @return Success True/False per shoebox
      */
     af::shared<bool> operator()(
-        const af::const_ref< Shoebox<> > &shoeboxes) const {
+        const af::const_ref< Shoebox<> > &shoeboxes,
+        af::ref<double> mse) const {
       af::shared<bool> result(shoeboxes.size(), true);
       for (std::size_t i = 0; i < shoeboxes.size(); ++i) {
         try {
-          this->operator()(shoeboxes[i]);
+          mse[i] = this->operator()(shoeboxes[i]);
         } catch (dials::error) {
           result[i] = false;
+          mse[i] = 0.0;
         }
       }
       return result;
@@ -77,8 +79,8 @@ namespace dials { namespace algorithms { namespace background {
      * Create the background for the shoebox
      * @param shoebox The shoebox
      */
-    void operator()(Shoebox<> shoebox) const {
-      this->operator()(
+    double operator()(Shoebox<> shoebox) const {
+      return this->operator()(
           shoebox.data.const_ref(),
           shoebox.mask.ref(),
           shoebox.background.ref());
@@ -90,7 +92,7 @@ namespace dials { namespace algorithms { namespace background {
      * @param mask The shoebox mask values
      * @param background The shoebox background
      */
-    void operator()(
+    double operator()(
         const af::const_ref< double, af::c_grid<3> > &data,
         af::ref< int, af::c_grid<3> > mask,
         af::ref< double, af::c_grid<3> > background) const {
@@ -122,13 +124,23 @@ namespace dials { namespace algorithms { namespace background {
         modeller_->create(data, bgmask.const_ref());
 
       // Populate the background shoebox
+      double mse = 0.0;
+      std::size_t count = 0;
       for (std::size_t k = 0; k < background.accessor()[0]; ++k) {
         for (std::size_t j = 0; j < background.accessor()[1]; ++j) {
           for (std::size_t i = 0; i < background.accessor()[2]; ++i) {
             background(k,j,i) = model->value(k + 0.5, j + 0.5, i + 0.5);
+            if (bgmask(k, j, i)) {
+              double tmp = (background(k,j,i) - data(k,j,i));
+              mse += tmp * tmp;
+              count += 1;
+            }
           }
         }
       }
+      DIALS_ASSERT(count > 0);
+      mse /= count;
+      return mse;
     }
 
   private:

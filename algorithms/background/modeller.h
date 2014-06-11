@@ -112,9 +112,9 @@ namespace dials { namespace algorithms { namespace background {
             }
           }
         }
-        DIALS_ASSERT(count > 0);
+        DIALS_ASSERT(count > 1);
         mean[k] /= count;
-        var[k] = mean[k] / count;
+        var[k] = mean[k] / (count - 1);
       }
       return boost::make_shared<Constant2dModel>(mean, var);
     }
@@ -169,9 +169,9 @@ namespace dials { namespace algorithms { namespace background {
           count++;
         }
       }
-      DIALS_ASSERT(count > 0);
+      DIALS_ASSERT(count > 1);
       mean /= count;
-      return boost::make_shared<Constant3dModel>(mean, mean / count);
+      return boost::make_shared<Constant3dModel>(mean, mean / (count - 1));
     }
   };
 

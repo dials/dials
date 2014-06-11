@@ -28,13 +28,15 @@ class Summation3d(object):
         The list of integrated reflections
 
     '''
-    from dials.algorithms.integration import integrate_by_summation
     from dials.util.command_line import Command
+    from dials.array_family import flex
 
     # Integrate and return the reflections
     Command.start('Integrating reflections')
     intensity = reflections['shoebox'].summed_intensity_foreground()
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
+    indices = flex.size_t(range(len(reflections)))
+    reflections.set_flags(indices, reflections.flags.integrated)
     Command.end('Integrated {0} reflections'.format(len(reflections)))
     return reflections

@@ -20,11 +20,12 @@ namespace dials { namespace algorithms { namespace background {
   void export_creator()
   {
     typedef af::shared<bool>(Creator::*call_for_shoeboxes)(
-        const af::const_ref< Shoebox<> >&)const;
+        const af::const_ref< Shoebox<> >&,
+        af::ref<double>)const;
 
-    typedef void(Creator::*call_for_shoebox)(Shoebox<>)const;
+    typedef double(Creator::*call_for_shoebox)(Shoebox<>)const;
 
-    typedef void(Creator::*call_for_data)(
+    typedef double(Creator::*call_for_data)(
         const af::const_ref< double, af::c_grid<3> >&,
         af::ref< int, af::c_grid<3> >,
         af::ref< double, af::c_grid<3> >)const;

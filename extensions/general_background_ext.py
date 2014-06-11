@@ -117,9 +117,14 @@ class GeneralBackgroundExt(BackgroundIface):
   def compute_background(self, reflections):
     ''' Compute the backgrond. '''
     from dials.util.command_line import Command
+    from dials.array_family import flex
 
     # Do the background subtraction
     Command.start('Calculating reflection background')
-    success = self._creator(reflections['shoebox'])
+    reflections['background.mse'] = flex.double(len(reflections))
+    success = self._creator(
+      reflections['shoebox'],
+      reflections['background.mse'])
+    reflections['background.mean'] = reflections['shoebox'].mean_background()
     reflections.del_selected(success != True)
     Command.end('Calculated {0} background values'.format(len(reflections)))

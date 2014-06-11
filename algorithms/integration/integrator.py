@@ -56,6 +56,7 @@ class ReflectionBlockIntegrator(object):
       del reflections['shoebox']
       del reflections['rs_shoebox']
       result.extend(reflections)
+      print ''
     assert(len(result) > 0)
     result.sort('miller_index')
     return result
