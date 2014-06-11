@@ -167,8 +167,8 @@ def simple_gaussian_spots(params):
   for j in range(params.nrefl):
     p.update(j * 100.0 / params.nrefl)
     hkl[j] = (random.randint(0, 20),
-           random.randint(0, 20),
-           random.randint(0, 20))
+              random.randint(0, 20),
+              random.randint(0, 20))
     phi = 2 * math.pi * random.random()
     s1[j] = (0, 0, 0)
     xyzpx[j] = (0, 0, 0)

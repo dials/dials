@@ -11,7 +11,8 @@ if __name__ == '__main__':
   from dials.model.experiment.experiment_list import ExperimentListFactory
 
   integrated_data = pickle.load(open(sys.argv[1], 'rb'))
-  experiment_list = ExperimentListFactory.from_json_file(sys.argv[2])
+  experiment_list = ExperimentListFactory.from_json_file(sys.argv[2],
+                                                         check_format=False)
 
   m = export_mtz(integrated_data, experiment_list, sys.argv[3])
   m.show_summary()
