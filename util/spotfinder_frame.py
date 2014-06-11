@@ -232,7 +232,7 @@ class SpotFrame(XrayFrame) :
       if ref_list.has_key('xyzcal.px'):
         frame_numbers = ref_list['xyzcal.px'].parts()[2]
       else:
-        phi = ref_list['xyzcal.mm'].parts()
+        phi = ref_list['xyzcal.mm'].parts()[2]
         frame_numbers = scan.get_array_index_from_angle(phi * to_degrees)
       frame_predictions_sel = (
         (frame_numbers >= i_frame) & (frame_numbers < (i_frame+1)))
