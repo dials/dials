@@ -17,11 +17,11 @@ from __future__ import division
 class ScriptRunner(object):
   '''Class to run script.'''
 
-  def __init__(self, sweep_filenames, reflections):
+  def __init__(self, imagesets, reflections):
     '''Setup the script.'''
 
     # Filename data
-    self.sweep_filenames = sweep_filenames
+    self.imagesets = imagesets
     self.reflections = reflections
 
   def __call__(self):
@@ -34,7 +34,7 @@ class ScriptRunner(object):
   def view(self):
     from dials.util.spotfinder_wrap import spot_wrapper
     spot_wrapper(working_phil=None).display(
-        sweep_filenames=self.sweep_filenames, reflections=self.reflections)
+        imagesets=self.imagesets, reflections=self.reflections)
 
 if __name__ == '__main__':
   import sys
@@ -45,18 +45,15 @@ if __name__ == '__main__':
     imagesets = importer.datablocks[0].extract_imagesets()
   elif importer.datablocks is not None and len(importer.datablocks) > 1:
     raise RuntimeError("Only one DataBlock can be processed at a time")
-  elif len(importer.experiments.imagesets()) == 1:
-    imagesets = importer.experiments.imagesets()
+  elif len(importer.experiments.imagesets()) > 0:
+    imagesets = importer.experiments.imagesets()[:1]
   else:
     raise RuntimeError("No imageset could be constructed")
-  paths = []
-  for imageset in imagesets:
-    paths.extend(imageset.paths())
   assert len(importer.unhandled_arguments) == 0
 
   runner = ScriptRunner(
       reflections=importer.reflections,
-      sweep_filenames=paths)
+      imagesets=imagesets)
 
   # Run the script
   runner()

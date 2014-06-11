@@ -6,13 +6,13 @@ from rstbx.viewer.frame import SettingsFrame, SettingsPanel
 
 class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
-    self.sweep_filenames = kwds["sweep_filenames"]
+    self.imagesets = kwds["imagesets"]
     self.reflections = kwds["reflections"]
     from dials.model.data import ReflectionList
-    del kwds["sweep_filenames"]; del kwds["reflections"] #otherwise wx complains
+    del kwds["imagesets"]; del kwds["reflections"] #otherwise wx complains
     super(SpotFrame, self).__init__(*args, **kwds)
     self.viewer.reflections = self.reflections
-    self.viewer.frames = self.sweep_filenames
+    self.viewer.frames = self.imagesets
     self.dials_spotfinder_layer = None
     self.shoebox_layer = None
     self.ctr_mass_layer = None
@@ -146,6 +146,9 @@ class SpotFrame(XrayFrame) :
     ctr_mass_dict = {'width': 2, 'color': '#FF0000', 'closed': False}
     i_frame = self.image_chooser.GetClientData(
       self.image_chooser.GetSelection()).index
+    imageset = self.image_chooser.GetClientData(
+      self.image_chooser.GetSelection()).image_set
+    i_frame += imageset.get_array_range()[0]
     shoebox_data = []
     all_pix_data = []
     ctr_mass_data = []
@@ -171,6 +174,7 @@ class SpotFrame(XrayFrame) :
             self.show_all_pix_timer.start()
             shoebox = reflection['shoebox']
             iz = i_frame - z0
+            print i_frame, z0, iz
             for ix in range(nx):
               for iy in range(ny):
                 mask_value = shoebox.mask[iz, iy, ix]
