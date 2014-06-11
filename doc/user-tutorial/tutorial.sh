@@ -34,7 +34,8 @@ dials.find_spots min_spot_size=3 datablock.json
 # and refinement. can also specify unit cell here and also apply different
 # indexing algorithms
 
-dials.index space_group=P4 datablock.json strong.pickle use_all_reflections=true
+dials.index space_group=P4 datablock.json strong.pickle \
+  refinement.reflections.use_all_reflections=true
 
 # run the refinement of the data - the indexing includes refinement so the result
 # will be refined already with a static model - however here we would like to use
@@ -43,7 +44,7 @@ dials.index space_group=P4 datablock.json strong.pickle use_all_reflections=true
 
 dials.refine experiments.json indexed.pickle \
   refinement.parameterisation.crystal.scan_varying=true \
-  use_all_reflections=true
+  refinement.reflections.use_all_reflections=true
 
 # now run the integration - complex choices of algorithms are shown here in
 # terms of the peak measurement (fitrs) and background determination
