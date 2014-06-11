@@ -14,7 +14,7 @@ def run(args):
     for goniometer in experiments.goniometers():
       print goniometer
     for crystal in experiments.crystals():
-      print crystal
+      crystal.show(show_scan_varying=True)
   if importer.datablocks is not None:
     for datablock in importer.datablocks:
       imagesets = datablock.extract_imagesets()
