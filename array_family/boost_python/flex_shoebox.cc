@@ -38,6 +38,7 @@ namespace dials { namespace af { namespace boost_python {
   using dials::model::PixelList;
   using dials::model::Valid;
   using dials::model::Foreground;
+  using dials::model::BackgroundUsed;
   using dials::algorithms::LabelImageStack;
   using dials::algorithms::LabelPixels;
 
@@ -602,7 +603,7 @@ namespace dials { namespace af { namespace boost_python {
     return result;
   }
 
-    /**
+  /**
    * Get a list of intensities
    */
   template <typename FloatType>
@@ -612,6 +613,30 @@ namespace dials { namespace af { namespace boost_python {
     #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = a[i].summed_intensity_strong();
+    }
+    return result;
+  }
+
+  /**
+   * Get the mean background.
+   */
+  template <typename FloatType>
+  af::shared<double> mean_background(
+      const const_ref< Shoebox<FloatType> > &a) {
+    af::shared<double> result(a.size());
+    for (std::size_t i = 0; i < result.size(); ++i) {
+      af::versa<FloatType, af::c_grid<3> > data = a[i].data;
+      af::versa<int, af::c_grid<3> > mask = a[i].mask;
+      double mean = 0.0;
+      std::size_t count = 0;
+      for (std::size_t j = 0; j < data.size(); ++j) {
+        if (mask[j] & BackgroundUsed) {
+          mean += data[j];
+          count += 1;
+        }
+      }
+      mean /= count;
+      result[i] = mean;
     }
     return result;
   }
@@ -807,6 +832,8 @@ namespace dials { namespace af { namespace boost_python {
           &summed_intensity_foreground<FloatType>)
         .def("summed_intensity_strong",
           &summed_intensity_strong<FloatType>)
+        .def("mean_background",
+          &mean_background<FloatType>)
         .def_pickle(flex_pickle_double_buffered<shoebox_type,
           shoebox_to_string<FloatType>,
           shoebox_from_string<FloatType> >());
