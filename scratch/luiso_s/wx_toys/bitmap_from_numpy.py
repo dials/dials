@@ -3,14 +3,6 @@ import wx
 import numpy
 
 
-def GetBitmap(width=32, height=32, colour = (0,0,0) ):
-  array = numpy.zeros( (height, width, 3),'uint8')
-  array[:,:,] = colour
-  image = wx.EmptyImage(width,height)
-  image.SetData( array.tostring())
-  wxBitmap = image.ConvertToBitmap()       # OR:  wx.BitmapFromImage(image)
-  return wxBitmap
-
 def GetBitmap_from_np_array(data2d):
   width = numpy.size( data2d[0:1, :] )
   height = numpy.size( data2d[:, 0:1] )
@@ -59,8 +51,6 @@ class MyFrame(wx.Frame):
                                   pos, size, style, name)
     # Attributes
     self.panel = wx.Panel(self)
-
-    #bitmap = GetBitmap(width=320, height=50, colour = (100,0,0) )
 
     data2d = build_np_img(width=200, height=300)
     bitmap = GetBitmap_from_np_array(data2d)
