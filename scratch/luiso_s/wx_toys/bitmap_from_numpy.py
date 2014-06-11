@@ -22,7 +22,7 @@ def GetBitmap_from_np_array(data2d):
   data2d_scale = numpy.multiply(data2d, div_scale * 255)
   print "div_scale =", div_scale
   print "data2d_scale.max = ", data2d_scale.max()
-  int_data2d_scale[:,:] = data2d_scale.astype(numpy.uint8)
+  int_data2d_scale = data2d_scale.astype(numpy.uint8)
   #a.astype(numpy.int64)
   img_array[:,:,0] = int_data2d_scale[:,:]
   img_array[:,:,1] = int_data2d_scale[:,:]
