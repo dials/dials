@@ -682,7 +682,7 @@ class ReferenceProfileAnalyser(object):
     pylab.hist(corr, bins=20)
     pylab.xlabel("Correlation with reference profile")
     pylab.ylabel("# reflections")
-    pylab.savefig(join(self.directory, "%s_corr_hist" % filename))
+    pylab.savefig(join(self.directory, "ideal_%s_corr_hist" % filename))
     pylab.clf()
 
   def ideal_reflection_corr_vs_xy(self, rlist, filename):
@@ -697,7 +697,7 @@ class ReferenceProfileAnalyser(object):
     pylab.xlabel("x")
     pylab.ylabel("y")
     cbar.ax.set_ylabel("Correlation with reference profile")
-    pylab.savefig(join(self.directory, "%s_corr_vs_xy.png" % filename))
+    pylab.savefig(join(self.directory, "ideal_%s_corr_vs_xy.png" % filename))
     pylab.clf()
 
   def ideal_reflection_corr_vs_z(self, rlist, filename):
@@ -712,7 +712,7 @@ class ReferenceProfileAnalyser(object):
     pylab.xlabel("z")
     pylab.ylabel("Correlation with reference profile")
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
+    pylab.savefig(join(self.directory, "ideal_%s_corr_vs_z.png" % filename))
     pylab.clf()
 
   def ideal_reflection_corr_vs_ios(self, rlist, filename):
@@ -736,7 +736,7 @@ class ReferenceProfileAnalyser(object):
     pylab.xlabel("Log I/Sigma")
     pylab.ylabel("Correlation with reference profile")
     cbar.ax.set_ylabel("# reflections")
-    pylab.savefig(join(self.directory, "%s_corr_vs_ios.png" % filename))
+    pylab.savefig(join(self.directory, "ideal_%s_corr_vs_ios.png" % filename))
     pylab.clf()
 
 
