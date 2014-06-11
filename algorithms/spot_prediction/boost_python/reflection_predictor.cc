@@ -79,8 +79,12 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def(init<
           const Beam&,
           const Detector&,
-          mat3<double> >())
+          mat3<double>,
+          const cctbx::uctbx::unit_cell&,
+          const cctbx::sgtbx::space_group_type&,
+          double>())
       .def("__call__", predict_all)
+      .def("for_ub", &Predictor::for_ub)
       .def("__call__", predict_observed)
       .def("__call__", predict_observed_with_panel)
       .def("__call__", predict_observed_with_panel_list)

@@ -502,10 +502,16 @@ namespace dials { namespace algorithms {
     StillsReflectionPredictor(
         const Beam &beam,
         const Detector &detector,
-        mat3<double> ub)
+        mat3<double> ub,
+        const cctbx::uctbx::unit_cell &unit_cell,
+        const cctbx::sgtbx::space_group_type &space_group_type,
+        double dmin)
       : beam_(beam),
         detector_(detector),
         ub_(ub),
+        unit_cell_(unit_cell),
+        space_group_type_(space_group_type),
+        dmin_(dmin),
         predict_ray_(beam.get_s0()) {}
 
     /**
@@ -515,6 +521,37 @@ namespace dials { namespace algorithms {
     af::reflection_table operator()() const {
       DIALS_ERROR("Not implemented");
       return af::reflection_table();
+    }
+
+    /**
+     * Predict reflections for UB. Also filters based on ewald sphere proximity.
+     * @param ub The UB matrix
+     * @returns A reflection table.
+     */
+    af::reflection_table for_ub(const mat3<double> &ub) {
+
+      // Create the reflection table and the local container
+      af::reflection_table table;
+      stills_prediction_data predictions(table);
+
+      // Create the index generate and loop through the indices. For each index,
+      // predict the rays and append to the reflection table
+      IndexGenerator indices(unit_cell_, space_group_type_, dmin_);
+      for (;;) {
+        miller_index h = indices.next();
+        if (h.is_zero()) {
+          break;
+        }
+
+        Ray ray;
+        ray = predict_ray_(h, ub);
+        double delpsi = std::abs(predict_ray_.get_delpsi());
+        if(delpsi < 0.001)
+          append_for_index(predictions, ub, h);
+      }
+
+      // Return the reflection table
+      return table;
     }
 
     /**
@@ -699,6 +736,9 @@ namespace dials { namespace algorithms {
     Beam beam_;
     Detector detector_;
     mat3<double> ub_;
+    cctbx::uctbx::unit_cell unit_cell_;
+    cctbx::sgtbx::space_group_type space_group_type_;
+    double dmin_;
     StillsRayPredictor predict_ray_;
   };
 }} // namespace dials::algorithms
