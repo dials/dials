@@ -142,7 +142,7 @@ class ScriptRunner(object):
     # If the save_config flag is set, then save the configuration
     try:
       if options.output_config_file:
-        registry().config().write(options.output_config_file)
+        Registry().config().write(options.output_config_file)
     except AttributeError:
       pass
 
