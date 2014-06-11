@@ -68,6 +68,13 @@ class CentroidAnalyser(object):
     if not ensure_required(rlist, self.required):
       return
 
+    # Remove I_sigma <= 0
+    selection = rlist['intensity.sum.variance'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print ' Removing %d reflections with variance <= 0' % \
+        selection.count(True)
+
     # Select only integrated reflections
     Command.start(" Selecting only integated reflections")
     mask = rlist.get_flags(rlist.flags.integrated)
@@ -159,6 +166,209 @@ class CentroidAnalyser(object):
     pylab.clf()
 
 
+class BackgroundAnalyser(object):
+  ''' Analyse the background. '''
+
+  def __init__(self, directory):
+    ''' Setup the directory. '''
+    from os.path import join
+
+    # Set the directory
+    self.directory = join(directory, "background")
+    ensure_directory(self.directory)
+
+    # Set the required fields
+    self.required = [
+      "background.mse",
+      "background.mean",
+      "intensity.sum.value",
+      "intensity.sum.variance",
+      "xyzcal.px",
+    ]
+
+  def __call__(self, rlist):
+    ''' Analyse the relfection background. '''
+
+    # Check we have the required fields
+    print "Analysing reflection backgrounds"
+    if not ensure_required(rlist, self.required):
+      return
+
+    selection = rlist['intensity.sum.variance'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print ' Removing %d reflections with variance <= 0' % \
+        selection.count(True)
+
+    selection = rlist['background.mse'] < 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print ' Removing %d reflections with negative background model RMSD' % \
+        selection.count(True)
+
+    selection = rlist['background.mean'] <= 0
+    if selection.count(True) > 0:
+      rlist.del_selected(selection)
+      print ' Removing %d reflections with mean background <= 0' % \
+        selection.count(True)
+
+    # Select only integrated reflections
+    Command.start(" Selecting only integated reflections")
+    mask = rlist.get_flags(rlist.flags.integrated)
+    rlist = rlist.select(mask)
+    Command.end(" Selected %d integrated reflections" % len(rlist))
+
+    # Look at distribution of I/Sigma
+    print " Analysing distribution of background mean"
+    self.mean_hist(rlist)
+    print " Analysing distribution of background mean vs XY"
+    self.mean_vs_xy(rlist)
+    print " Analysing distribution of background mean vs z"
+    self.mean_vs_z(rlist)
+    print " Analysing distribution of background mean vs I/Sigma"
+    self.mean_vs_ios(rlist)
+    print " Analysing distribution of background CVRMSD"
+    self.rmsd_hist(rlist)
+    print " Analysing distribution of background CVRMSD vs XY"
+    self.rmsd_vs_xy(rlist)
+    print " Analysing distribution of background CVRMSD vs z"
+    self.rmsd_vs_z(rlist)
+    print " Analysing distribution of background CVRMSD vs I/Sigma"
+    self.rmsd_vs_ios(rlist)
+
+  def mean_hist(self, rlist):
+    ''' Analyse the background RMSD. '''
+    from dials.array_family import flex
+    from os.path import join
+    MEAN = rlist['background.mean']
+    pylab.title("Background Model mean histogram")
+    pylab.hist(MEAN, bins=20)
+    pylab.xlabel("mean")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "background_model_mean_hist"))
+    pylab.clf()
+
+  def mean_vs_xy(self, rlist):
+    ''' Plot I/Sigma vs X/Y '''
+    from dials.array_family import flex
+    from os.path import join
+    MEAN = rlist['background.mean']
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Distribution of Background Model mean vs X/Y")
+    cax = pylab.hexbin(x, y, C=MEAN, gridsize=100)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("Background Model mean")
+    pylab.savefig(join(self.directory, "background_model_mean_vs_xy.png"))
+    pylab.clf()
+
+  def mean_vs_z(self, rlist):
+    ''' Plot I/Sigma vs Z. '''
+    from dials.array_family import flex
+    from os.path import join
+    MEAN = rlist['background.mean']
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Distribution of Background Model mean vs Z")
+    cax = pylab.hexbin(z, MEAN, gridsize=100)
+    pylab.xlabel("z")
+    pylab.ylabel("Background Model mean")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "background_model_mean_vs_z.png"))
+    pylab.clf()
+
+  def mean_vs_ios(self, rlist):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    MEAN = rlist['background.mean']
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > 0.1
+    I_over_S = I_over_S.select(mask)
+    MEAN = MEAN.select(mask)
+    pylab.title("Background Model mean vs Log I/Sigma")
+    cax = pylab.hexbin(flex.log(I_over_S), MEAN, gridsize=100)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("Log I/Sigma")
+    pylab.ylabel("Background Model mean")
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "background_model_mean_vs_ios.png"))
+    pylab.clf()
+
+  def rmsd_hist(self, rlist):
+    ''' Analyse the background RMSD. '''
+    from dials.array_family import flex
+    from os.path import join
+    RMSD = flex.sqrt(rlist['background.mse'])
+    MEAN = rlist['background.mean']
+    RMSD = RMSD / MEAN
+    pylab.title("Background Model mean histogram")
+    pylab.hist(RMSD, bins=20)
+    pylab.xlabel("mean")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "background_model_cvrmsd_hist"))
+    pylab.clf()
+
+  def rmsd_vs_xy(self, rlist):
+    ''' Plot I/Sigma vs X/Y '''
+    from dials.array_family import flex
+    from os.path import join
+    RMSD = flex.sqrt(rlist['background.mse'])
+    MEAN = rlist['background.mean']
+    RMSD = RMSD / MEAN
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Distribution of Background Model CVRMSD vs X/Y")
+    cax = pylab.hexbin(x, y, C=RMSD, gridsize=100)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("Background Model CVRMSD")
+    pylab.savefig(join(self.directory, "background_model_cvrmsd_vs_xy.png"))
+    pylab.clf()
+
+  def rmsd_vs_z(self, rlist):
+    ''' Plot I/Sigma vs Z. '''
+    from dials.array_family import flex
+    from os.path import join
+    RMSD = flex.sqrt(rlist['background.mse'])
+    MEAN = rlist['background.mean']
+    RMSD = RMSD / MEAN
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Distribution of Background Model CVRMSD vs Z")
+    cax = pylab.hexbin(z, RMSD, gridsize=100)
+    pylab.xlabel("z")
+    pylab.ylabel("Background Model CVRMSD")
+    cbar = pylab.colorbar(cax)
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "background_model_cvrmsd_vs_z.png"))
+    pylab.clf()
+
+  def rmsd_vs_ios(self, rlist):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    RMSD = flex.sqrt(rlist['background.mse'])
+    MEAN = rlist['background.mean']
+    RMSD = RMSD / MEAN
+    I = rlist['intensity.sum.value']
+    I_sig = flex.sqrt(rlist['intensity.sum.variance'])
+    I_over_S = I / I_sig
+    mask = I_over_S > 0.1
+    I_over_S = I_over_S.select(mask)
+    RMSD = RMSD.select(mask)
+    pylab.title("Background Model CVRMSD vs Log I/Sigma")
+    cax = pylab.hexbin(flex.log(I_over_S), RMSD, gridsize=100)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("Log I/Sigma")
+    pylab.ylabel("Background Model CVRMSD")
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "background_model_cvrmsd_vs_ios.png"))
+    pylab.clf()
+
+
 class IntensityAnalyser(object):
   ''' Analyse the intensities. '''
 
@@ -187,16 +397,16 @@ class IntensityAnalyser(object):
     if not ensure_required(rlist, self.required):
       return
 
-    selection = rlist['intensity.sum.variance'] < 0
+    selection = rlist['intensity.sum.variance'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print 'Removing %d reflections with negative variance' % \
+      print ' Removing %d reflections with variance <= 0' % \
         selection.count(True)
 
-    selection = rlist['intensity.sum.value'] < 0
+    selection = rlist['intensity.sum.value'] <= 0
     if selection.count(True) > 0:
       rlist.del_selected(selection)
-      print 'Removing %d reflections with negative intensity' % \
+      print ' Removing %d reflections with intensity <= 0' % \
         selection.count(True)
 
     # Select only integrated reflections
@@ -256,7 +466,7 @@ class IntensityAnalyser(object):
     I_sig = flex.sqrt(rlist['intensity.sum.variance'])
     I_over_S = I / I_sig
     x, y, z = rlist['xyzcal.px'].parts()
-    pylab.title("Distribution of I/Sigma vs X/Y")
+    pylab.title("Distribution of I/Sigma vs Z")
     cax = pylab.hexbin(z, flex.log(I_over_S), gridsize=100)
     pylab.xlabel("z")
     pylab.ylabel("Log I/Sigma")
@@ -450,14 +660,16 @@ class Analyser(object):
     directory = join(directory, "analysis")
     self.analysers = [
       CentroidAnalyser(directory),
+      BackgroundAnalyser(directory),
       IntensityAnalyser(directory),
       ReferenceProfileAnalyser(directory),
     ]
 
   def __call__(self, rlist):
     ''' Do all the analysis. '''
+    from copy import deepcopy
     for analyse in self.analysers:
-      analyse(rlist)
+      analyse(deepcopy(rlist))
 
 
 if __name__ == '__main__':
