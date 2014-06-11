@@ -16,20 +16,29 @@ def GetBitmap_from_np_array(data2d):
   width = numpy.size( data2d[:, 0:1] )
 
   img_array = numpy.zeros( (width, height, 3),'uint8')
+  print data2d.max()
 
-  img_array[:,:,0] = data2d[:,:]
-  img_array[:,:,1] = 100
-  img_array[:,:,2] = 100
+  div_scale = 1.0 / data2d.max()
+  data2d_scale = numpy.multiply(data2d, div_scale * 255)
+  print "div_scale =", div_scale
+  print "data2d_scale.max = ", data2d_scale.max()
+  data2d_scale[:,:] = data2d_scale.astype(numpy.uint8)
+  #a.astype(numpy.int64)
+  img_array[:,:,0] = data2d_scale[:,:]
+  img_array[:,:,1] = data2d_scale[:,:]
+  img_array[:,:,2] = data2d_scale[:,:]
 
+  print img_array.max()
   image = wx.EmptyImage(width,height)
   image.SetData( img_array.tostring())
   wxBitmap = image.ConvertToBitmap()       # OR:  wx.BitmapFromImage(image)
   return wxBitmap
 def build_np_img(width=64, height=64):
-  data2d = numpy.zeros( (width, height),'uint8')
+  data2d = numpy.zeros( (width, height),'double')
   for col in range(0, width):
     for row in range(0, height):
-      data2d[col,row] = col + row
+      data2d[col,row] = col * 2 + row * 2
+  print data2d.max()
   return data2d
 
 class MyApp(wx.App):
