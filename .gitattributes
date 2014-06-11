@@ -655,6 +655,8 @@ scratch/luiso_s/to_dials_reg/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/to_dials_reg/func_fnd_pk.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/__init__.py -text svneol=unset#text/plain
 scratch/luiso_s/tree_folder_call_test/function01.py -text svneol=unset#text/plain
+scratch/luiso_s/wx_toys/bitmap_01.py -text
+scratch/luiso_s/wx_toys/bitmap_from_numpy.py -text
 scratch/luiso_s/wx_toys/wx_h_world.py -text
 scratch/rjg/__init__.py -text
 scratch/rjg/calculate_n_expected_reflections.py -text
