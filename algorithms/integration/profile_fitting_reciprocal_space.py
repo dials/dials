@@ -74,6 +74,12 @@ class ProfileFittingReciprocalSpace(object):
     reflections['rs_shoebox'] = rs_shoebox
     Command.end('Transformed {0} reflections'.format(len(reflections)))
 
+    # Compute correlations between profile and idea
+    Command.start('Compute correlation between profile and ideal')
+    corr = rs_shoebox.correlation_with_ideal(5)
+    reflections['correlation.ideal.profile'] = corr
+    Command.end('Computed correlations between profile and ideal')
+
   def _learn_references(self, experiment, reflections):
     ''' Learn the reference profiles. '''
     from dials.algorithms.integration.profile import GridSampler

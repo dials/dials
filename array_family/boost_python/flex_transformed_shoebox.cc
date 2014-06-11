@@ -17,6 +17,7 @@
 #include <scitbx/array_family/boost_python/ref_pickle_double_buffered.h>
 #include <scitbx/array_family/boost_python/flex_pickle_double_buffered.h>
 #include <dials/algorithms/reflection_basis/transform.h>
+#include <dials/algorithms/reflection_basis/ideal_profile.h>
 #include <dials/model/data/transformed_shoebox.h>
 
 namespace dials { namespace af { namespace boost_python {
@@ -25,6 +26,7 @@ namespace dials { namespace af { namespace boost_python {
   using namespace scitbx::af::boost_python;
   using algorithms::reflection_basis::transform::Forward;
   using algorithms::reflection_basis::transform::TransformSpec;
+  using algorithms::reflection_basis::ideal_profile;
   using model::Shoebox;
   using model::TransformedShoebox;
   using scitbx::vec3;
@@ -47,6 +49,68 @@ namespace dials { namespace af { namespace boost_python {
       result[i].background = transform.background();
     }
     return new af::flex<TransformedShoebox>::type(result, result.size());
+  }
+
+  /**
+   * Compute the correlation between profiles
+   */
+  template <typename FloatType>
+  FloatType
+  compute_correlation(const af::const_ref<FloatType, af::c_grid<3> > &p,
+                      const af::const_ref<FloatType, af::c_grid<3> > &c,
+                      const af::const_ref<FloatType, af::c_grid<3> > &b) {
+    double xb = 0.0, yb = 0.0;
+    std::size_t count = 0;
+    for (std::size_t i = 0; i < p.size(); ++i) {
+      xb += p[i];
+      yb += c[i] - b[i];
+      count++;
+    }
+    DIALS_ASSERT(count > 0);
+    xb /= count;
+    yb /= count;
+    double sdxdy = 0.0, sdx2 = 0.0, sdy2 = 0.0;
+    for (std::size_t i = 0; i < p.size(); ++i) {
+      double dx = p[i] - xb;
+      double dy = c[i] - b[i] - yb;
+      sdxdy += dx*dy;
+      sdx2 += dx*dx;
+      sdy2 += dy*dy;
+    }
+    if (sdx2 == 0.0 || sdy2 == 0.0) {
+      return 0.0;
+    }
+    return sdxdy / (std::sqrt(sdx2) * std::sqrt(sdy2));
+  }
+
+  /**
+   * Compute the correlation of the profiles with the idea profile
+   */
+  static
+  af::shared<double> correlation_with_ideal(
+      const af::const_ref<TransformedShoebox> &self,
+      double n_sigma) {
+    af::shared<double> result(self.size());
+
+    // Get the size of the profile
+    DIALS_ASSERT(self.size() > 0);
+    std::size_t size = self[0].data.accessor()[0] / 2;
+
+    // Create the ideal profile
+    af::versa< double, af::c_grid<3> > ideal = ideal_profile<double>(size, n_sigma);
+
+    // Compute the correlations
+    for (std::size_t i = 0; i < self.size(); ++i) {
+      DIALS_ASSERT(ideal.accessor().all_eq(self[i].data.accessor()));
+      DIALS_ASSERT(ideal.accessor().all_eq(self[i].background.accessor()));
+      result[i] = compute_correlation(
+          ideal.const_ref(),
+          self[i].data.const_ref(),
+          self[i].background.const_ref());
+    }
+
+    // Return the array
+    return result;
   }
 
   /**
@@ -138,6 +202,8 @@ namespace dials { namespace af { namespace boost_python {
             boost::python::arg("s1"),
             boost::python::arg("phi"),
             boost::python::arg("shoebox"))))
+        .def("correlation_with_ideal",
+            &correlation_with_ideal)
         .def_pickle(flex_pickle_double_buffered<
           TransformedShoebox,
           transformed_shoebox_to_string,
@@ -150,4 +216,3 @@ namespace dials { namespace af { namespace boost_python {
   }
 
 }}} // namespace dials::af::boost_python
-

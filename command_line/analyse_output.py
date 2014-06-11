@@ -516,7 +516,8 @@ class ReferenceProfileAnalyser(object):
       "intensity.prf.value",
       "intensity.prf.variance",
       "xyzcal.px",
-      "profile.correlation"
+      "profile.correlation",
+      "correlation.ideal.profile"
     ]
 
   def __call__(self, rlist):
@@ -540,6 +541,22 @@ class ReferenceProfileAnalyser(object):
     self.reference_z(rlist)
 
     # Look at correlations between profiles
+    def ideal_correlations(filename, rlist):
+      ''' Call for reference spots and all reflections. '''
+
+      print " Analysing reflection profile correlations"
+      self.ideal_reflection_corr_hist(rlist, filename)
+
+      print " Analysing reflection profile correlations vs x/y"
+      self.ideal_reflection_corr_vs_xy(rlist, filename)
+
+      print " Analysing reflection profile correlations vs z"
+      self.ideal_reflection_corr_vs_z(rlist, filename)
+
+      print " Analysing reflection profile correlations vs I/Sigma"
+      self.ideal_reflection_corr_vs_ios(rlist, filename)
+
+    # Look at correlations between profiles
     def correlations(filename, rlist):
       ''' Call for reference spots and all reflections. '''
 
@@ -558,6 +575,8 @@ class ReferenceProfileAnalyser(object):
     mask = rlist.get_flags(rlist.flags.reference_spot)
     correlations("reference",  rlist.select(mask))
     correlations("reflection", rlist)
+    ideal_correlations("reference", rlist.select(mask))
+    ideal_correlations("reflection", rlist)
 
   def reference_xy(self, rlist):
     ''' Analyse the distribution of reference profiles. '''
@@ -637,6 +656,76 @@ class ReferenceProfileAnalyser(object):
     corr = rlist['profile.correlation']
     I = rlist['intensity.prf.value']
     I_sig = flex.sqrt(rlist['intensity.prf.variance'])
+    mask = I_sig > 0
+    I = I.select(mask)
+    I_sig = I_sig.select(mask)
+    corr = corr.select(mask)
+    I_over_S = I / I_sig
+    mask = I_over_S > 0.1
+    I_over_S = I_over_S.select(mask)
+    corr = corr.select(mask)
+    pylab.title("Reflection correlations vs Log I/Sigma")
+    cax = pylab.hexbin(flex.log(I_over_S), corr, gridsize=100)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("Log I/Sigma")
+    pylab.ylabel("Correlation with reference profile")
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "%s_corr_vs_ios.png" % filename))
+    pylab.clf()
+
+  def ideal_reflection_corr_hist(self, rlist, filename):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    corr = rlist['correlation.ideal.profile']
+    pylab.title("Reflection correlations histogram")
+    pylab.hist(corr, bins=20)
+    pylab.xlabel("Correlation with reference profile")
+    pylab.ylabel("# reflections")
+    pylab.savefig(join(self.directory, "%s_corr_hist" % filename))
+    pylab.clf()
+
+  def ideal_reflection_corr_vs_xy(self, rlist, filename):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    corr = rlist['correlation.ideal.profile']
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Reflection correlations binned in X/Y")
+    cax = pylab.hexbin(x, y, C=corr, gridsize=100, vmin=0.0, vmax=1.0)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("x")
+    pylab.ylabel("y")
+    cbar.ax.set_ylabel("Correlation with reference profile")
+    pylab.savefig(join(self.directory, "%s_corr_vs_xy.png" % filename))
+    pylab.clf()
+
+  def ideal_reflection_corr_vs_z(self, rlist, filename):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    corr = rlist['correlation.ideal.profile']
+    x, y, z = rlist['xyzcal.px'].parts()
+    pylab.title("Reflection correlations vs Z")
+    cax = pylab.hexbin(z, corr, gridsize=100)
+    cbar = pylab.colorbar(cax)
+    pylab.xlabel("z")
+    pylab.ylabel("Correlation with reference profile")
+    cbar.ax.set_ylabel("# reflections")
+    pylab.savefig(join(self.directory, "%s_corr_vs_z.png" % filename))
+    pylab.clf()
+
+  def ideal_reflection_corr_vs_ios(self, rlist, filename):
+    ''' Analyse the correlations. '''
+    from dials.array_family import flex
+    from os.path import join
+    corr = rlist['correlation.ideal.profile']
+    I = rlist['intensity.prf.value']
+    I_sig = flex.sqrt(rlist['intensity.prf.variance'])
+    mask = I_sig > 0
+    I = I.select(mask)
+    I_sig = I_sig.select(mask)
+    corr = corr.select(mask)
     I_over_S = I / I_sig
     mask = I_over_S > 0.1
     I_over_S = I_over_S.select(mask)
