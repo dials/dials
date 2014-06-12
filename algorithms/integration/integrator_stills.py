@@ -1,5 +1,5 @@
 #
-# integrator2.py
+# integrator_stills.py
 #
 #  Copyright (C) 2013 Diamond Light Source
 #
@@ -16,7 +16,6 @@ class ReflectionBlockIntegratorStills(object):
 
   def __init__(self, params, experiments, extractor=None):
     ''' Initialise the integrator. '''
-    from math import pi
     from dials.algorithms import shoebox
 
     # Ensure we have 1 experiment at the moment
@@ -31,7 +30,7 @@ class ReflectionBlockIntegratorStills(object):
     # Create the shoebox masker
     n_sigma = params.integration.shoebox.n_sigma
     assert(n_sigma > 0)
-    self._mask_profiles = shoebox.Masker(experiments[0])
+    self._mask_profiles = shoebox.MaskerEmpirical(experiments[0])
 
   def integrate(self):
     ''' Integrate all the reflections. '''
@@ -158,7 +157,6 @@ class IntegratorStills(object):
   def _predict_reflections(self, params, experiments):
     ''' Predict all the reflections. '''
     from dials.array_family import flex
-    from math import pi
     n_sigma = params.integration.shoebox.n_sigma
     result = flex.reflection_table()
     for i, experiment in enumerate(experiments):

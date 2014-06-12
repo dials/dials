@@ -37,7 +37,7 @@ class ReflectionBlockIntegrator(object):
     assert(sigma_m > 0)
     delta_b = n_sigma * sigma_b * pi / 180.0
     delta_m = n_sigma * sigma_m * pi / 180.0
-    self._mask_profiles = shoebox.Masker(experiments[0], delta_b, delta_m)
+    self._mask_profiles = shoebox.Masker3DProfile(experiments[0], delta_b, delta_m)
 
   def integrate(self):
     ''' Integrate all the reflections. '''
