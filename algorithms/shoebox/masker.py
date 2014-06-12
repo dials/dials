@@ -104,7 +104,7 @@ class Masker3DProfile(MaskerBase):
 class MaskerEmpirical(MaskerBase):
   '''A class to perform empirical masking'''
 
-  def __init__(self, experiment):
+  def __init__(self, experiment, reference):
     ''' Initialise the masking algorithms
 
     Params:
@@ -112,6 +112,11 @@ class MaskerEmpirical(MaskerBase):
 
     '''
     super(MaskerEmpirical, self).__init__(experiment)
+
+    from dials.algorithms.shoebox import MaskEmpirical
+
+    # Construct the foreground pixel mask
+    self.mask_empirical = MaskEmpirical(reference)
 
   def __call__(self, reflections, adjacency_list=None):
     ''' Mask the given reflections.
@@ -125,6 +130,15 @@ class MaskerEmpirical(MaskerBase):
 
     '''
     reflections = super(MaskerEmpirical, self).__call__(reflections, adjacency_list)
+
+    from dials.util.command_line import Command
+
+    if self.mask_empirical:
+      # Mask the foreground region
+      Command.start('Masking foreground pixels')
+      self.mask_empirical(reflections)
+      Command.end('Masked foreground pixels for {0} reflections'.format(
+        len(reflections)))
 
     # Return the reflections
     return reflections

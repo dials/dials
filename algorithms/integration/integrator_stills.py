@@ -14,7 +14,7 @@ from __future__ import division
 class ReflectionBlockIntegratorStills(object):
   ''' A class to perform the integration. '''
 
-  def __init__(self, params, experiments, extractor=None):
+  def __init__(self, params, experiments, reference, extractor=None):
     ''' Initialise the integrator. '''
     from dials.algorithms import shoebox
 
@@ -30,7 +30,7 @@ class ReflectionBlockIntegratorStills(object):
     # Create the shoebox masker
     n_sigma = params.integration.shoebox.n_sigma
     assert(n_sigma > 0)
-    self._mask_profiles = shoebox.MaskerEmpirical(experiments[0])
+    self._mask_profiles = shoebox.MaskerEmpirical(experiments[0], reference=reference)
 
   def integrate(self):
     ''' Integrate all the reflections. '''
@@ -111,7 +111,7 @@ class IntegratorStills(object):
       extractor = self._create_extractor(params, exlist, predicted)
 
     # Initialise the integrator
-    self._integrator = ReflectionBlockIntegratorStills(params, exlist, extractor)
+    self._integrator = ReflectionBlockIntegratorStills(params, exlist, reference, extractor)
 
   def integrate(self):
     ''' Integrate the reflections. '''

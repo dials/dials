@@ -20,6 +20,7 @@ namespace dials { namespace algorithms { namespace shoebox {
   void export_bbox_calculator();
   void export_find_overlapping();
   void export_mask_foreground();
+  void export_mask_empirical();
   void export_mask_overlapping();
   void export_mask_builder();
   void export_helpers();
@@ -30,6 +31,7 @@ namespace dials { namespace algorithms { namespace shoebox {
     export_bbox_calculator();
     export_find_overlapping();
     export_mask_foreground();
+    export_mask_empirical();
     export_mask_overlapping();
     export_mask_builder();
     export_helpers();
