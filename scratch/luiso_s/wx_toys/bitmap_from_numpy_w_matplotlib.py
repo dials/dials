@@ -1,9 +1,46 @@
 import os
 import wx
 import numpy
-
+import matplotlib.pyplot as plt
+import io
+import Image
 
 def GetBitmap_from_np_array(data2d):
+
+
+
+  plt.imshow(data2d, interpolation = "nearest")
+
+  #plt.plot(data2d)
+
+  #plt.title("test")
+  #buf = io.BytesIO()
+  #plt.savefig(buf, format = 'png')
+
+  plt.savefig("/dev/shm/img_tmp.png", format = 'png')
+
+  plt.show()
+
+  #buf.seek(0)
+
+
+  #buf = io.BytesIO()
+
+  #wxBitmap = wx.Bitmap("/dev/shm/img_tmp.png", type=wx.BITMAP_TYPE_PNG)
+  wxBitmap = wx.Bitmap("/dev/shm/img_tmp.png")
+
+  #buf.seek(0)
+  '''
+  im = Image.open(buf)
+  ##im.show()
+
+  #wxBitmap = WxBitmapFromPilImage(im)
+  wxBitmap = wx.BitmapFromPilImage(im)
+  #wxBitmap = BitmapFromImage(im)
+  '''
+
+  #buf.close()
+  '''
   width = numpy.size( data2d[0:1, :] )
   height = numpy.size( data2d[:, 0:1] )
 
@@ -24,6 +61,26 @@ def GetBitmap_from_np_array(data2d):
   image = wx.EmptyImage(width,height)
   image.SetData( img_array.tostring())
   wxBitmap = image.ConvertToBitmap()       # OR:  wx.BitmapFromImage(image)
+  '''
+
+
+
+
+  '''
+  import matplotlib.pyplot as plt
+  import io
+  import Image
+
+  plt.figure()
+  plt.plot([1, 2])
+  plt.title("test")
+  buf = io.BytesIO()
+  plt.savefig(buf, format = 'png')
+  buf.seek(0)
+  im = Image.open(buf)
+  im.show()
+  buf.close()
+  '''
   return wxBitmap
 def build_np_img(width=64, height=64):
   data2d = numpy.zeros( (width, height),'float')
@@ -52,7 +109,7 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=200, height=300)
+    data2d = build_np_img(width=300, height=200)
     bitmap = GetBitmap_from_np_array(data2d)
 
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
