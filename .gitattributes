@@ -515,6 +515,7 @@ scratch/gw/plotintensity.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text
 scratch/gw/twospacify.py -text
+scratch/gw/wx_image.py -text
 scratch/gw/x2tbx/SConscript -text
 scratch/gw/x2tbx/__init__.py -text
 scratch/gw/x2tbx/command_line/resolutionizer.py -text
