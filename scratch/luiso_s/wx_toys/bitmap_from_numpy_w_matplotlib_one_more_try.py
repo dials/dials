@@ -1,43 +1,22 @@
-import os
 import wx
 import numpy
 import matplotlib.pyplot as plt
-import io
-import Image
-import PIL
-from cStringIO import StringIO
 
-def GetBitmap_from_np_array(data2d):
-
-  plt.imshow(data2d, interpolation = "nearest")
-
-  plt.title("test")
-  buf = io.BytesIO()
-  plt.savefig(buf, format = 'png')
-
+def GetBitmap_from_np_array(np_img_2d):
   fig = plt.figure( )
-  plot = fig.add_subplot ( 111 )
-  plot.plot(data2d)
-
+  plt.imshow(np_img_2d, interpolation = "nearest")
   fig.canvas.draw ( )
-
   w,h = fig.canvas.get_width_height()
-
-  buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )
-
-  buf.shape = ( w, h, 3)
-
-  buf = numpy.roll ( buf, 3, axis = 2 )
+  np_buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )
+  np_buf.shape = ( w, h, 3)
+  np_buf = numpy.roll ( np_buf, 3, axis = 2 )
   image = wx.EmptyImage(w,h)
-
-  image.SetData( buf.tostring())
-
+  image.SetData( np_buf.tostring())
   wxBitmap = image.ConvertToBitmap()
-
   return wxBitmap
 
 def build_np_img(width=64, height=64):
-  data2d = numpy.zeros( (width, height),'float')
+  data2d = numpy.zeros( (width, height), 'float')
   print "width, height =", width, height
   for x in range(0, width):
     for y in range(0, height):
@@ -63,7 +42,7 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=300, height=200)
+    data2d = build_np_img(width=60, height=20)
     bitmap = GetBitmap_from_np_array(data2d)
 
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
