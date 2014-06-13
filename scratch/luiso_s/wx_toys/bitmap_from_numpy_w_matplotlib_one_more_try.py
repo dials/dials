@@ -11,6 +11,10 @@ def GetBitmap_from_np_array(data2d):
 
   plt.imshow(data2d, interpolation = "nearest")
 
+  plt.title("test")
+  buf = io.BytesIO()
+  plt.savefig(buf, format = 'png')
+
   fig = plt.figure( )
   plot = fig.add_subplot ( 111 )
   plot.plot(data2d)

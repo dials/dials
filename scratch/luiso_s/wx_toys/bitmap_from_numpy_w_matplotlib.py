@@ -11,24 +11,9 @@ def GetBitmap_from_np_array(data2d):
 
   plt.imshow(data2d, interpolation = "nearest")
 
-  fig = plt.figure( )
-  plot = fig.add_subplot ( 111 )
-  plot.plot(data2d)
+  plt.savefig("/dev/shm/img_tmp.png", format = 'png')
 
-  fig.canvas.draw ( )
-
-  w,h = fig.canvas.get_width_height()
-
-  buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )
-
-  buf.shape = ( w, h, 3)
-
-  buf = numpy.roll ( buf, 3, axis = 2 )
-  image = wx.EmptyImage(w,h)
-
-  image.SetData( buf.tostring())
-
-  wxBitmap = image.ConvertToBitmap()
+  wxBitmap = wx.Bitmap("/dev/shm/img_tmp.png")
 
   return wxBitmap
 
@@ -59,7 +44,7 @@ class MyFrame(wx.Frame):
     # Attributes
     self.panel = wx.Panel(self)
 
-    data2d = build_np_img(width=300, height=200)
+    data2d = build_np_img(width=200, height=300)
     bitmap = GetBitmap_from_np_array(data2d)
 
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
