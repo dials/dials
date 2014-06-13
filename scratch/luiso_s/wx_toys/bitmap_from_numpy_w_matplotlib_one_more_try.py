@@ -10,11 +10,12 @@ def GetBitmap_from_np_array(np_img_2d):
   width, height = fig.canvas.get_width_height()
   np_buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )
   np_buf.shape = (width, height, 3)
-  np_buf = numpy.roll(np_buf,3 , axis = 2)
+  np_buf = numpy.roll(np_buf, 3, axis = 2)
   image = wx.EmptyImage(width, height)
-  image.SetData( np_buf)
-  #image.SetData( np_buf.tostring())
+  image.SetData( np_buf )
+  #image.SetData( np_buf.tostring()) # looks like there is no need to convert
   wxBitmap = image.ConvertToBitmap()
+
   return wxBitmap
 
 def build_np_img(width = 64, height = 64):
