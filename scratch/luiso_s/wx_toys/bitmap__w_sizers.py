@@ -23,10 +23,10 @@ class MyFrame(wx.Frame):
     topSizer        = wx.BoxSizer(wx.VERTICAL)
     btnSizer        = wx.BoxSizer(wx.HORIZONTAL)
     
-    prev_Btn = wx.Button(self.panel, wx.ID_ANY, 'OK')
-    next_Btn = wx.Button(self.panel, wx.ID_ANY, 'Cancel')
-    self.Bind(wx.EVT_BUTTON, self.onOK, prev_Btn)
-    self.Bind(wx.EVT_BUTTON, self.onCancel, next_Btn)
+    prev_Btn = wx.Button(self.panel, wx.ID_ANY, 'Prev Refl')
+    next_Btn = wx.Button(self.panel, wx.ID_ANY, 'Next Refl')
+    self.Bind(wx.EVT_BUTTON, self.on_prev, prev_Btn)
+    self.Bind(wx.EVT_BUTTON, self.on_next, next_Btn)
     topSizer.Add(self.bitmap, 0, wx.ALL, 5)
     btnSizer.Add(prev_Btn, 0, wx.ALL, 5)
     btnSizer.Add(next_Btn, 0, wx.ALL, 5)
@@ -34,12 +34,14 @@ class MyFrame(wx.Frame):
     self.panel.SetSizer(topSizer)
     topSizer.Fit(self)
 
-  def onOK(self, event):
+  def on_prev(self, event):
     # Do something
-    print 'onOK handler'
-
-  def onCancel(self, event):
-    print "cancel clicked"
+    print 'on_prev handler'
+    img_path = os.path.abspath("../../../../../../Pictures/moon.png")
+    new_bitmap = wx.Bitmap(img_path, type=wx.BITMAP_TYPE_PNG)
+    self.bitmap = wx.StaticBitmap(self.panel, bitmap=new_bitmap)
+  def on_next(self, event):
+    print "on_next handler"
     #self.closeProgram()
 
 
