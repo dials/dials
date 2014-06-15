@@ -27,7 +27,7 @@ class MyFrame(wx.Frame):
     cancelBtn = wx.Button(self.panel, wx.ID_ANY, 'Cancel')
     self.Bind(wx.EVT_BUTTON, self.onOK, okBtn)
     self.Bind(wx.EVT_BUTTON, self.onCancel, cancelBtn)
-
+    topSizer.Add(self.bitmap, 0, wx.ALL, 5)
     btnSizer.Add(okBtn, 0, wx.ALL, 5)
     btnSizer.Add(cancelBtn, 0, wx.ALL, 5)
     topSizer.Add(btnSizer, 0, wx.ALL|wx.CENTER, 5)
