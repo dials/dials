@@ -21,44 +21,39 @@ class TestFrame(wx.Frame):
         btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
         btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
 
-        
-        
         btn_nxt_slice = wx.Button(self, -1, "Next slice ")
         btn_prv_slice = wx.Button(self, -1, "Previous slice")
         btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
         btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
-        
-        
-        
+
         # starting with an EmptyBitmap
         self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                      self.MaxImageSize, self.MaxImageSize))
 
         self.DisplayNext_refl()
 
-        # Using a Sizer to handle the layout: is not recommended to use absolute # positioning
+        # Using a Sizer to handle the layout
 
-        box = wx.BoxSizer(wx.VERTICAL)
-        box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,10)
+        v_box = wx.BoxSizer(wx.VERTICAL)
+        h_box = wx.BoxSizer(wx.HORIZONTAL)
+        u_box = wx.BoxSizer(wx.HORIZONTAL)
 
-        # adding stretchable space before and after centers the image.
-        box.Add((1,1),1)
-        box.Add(self.Image
+        u_box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,5)
+        u_box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,5)
+
+        v_box.Add(u_box)
+
+        h_box.Add(self.Image
                 , 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE
-                , 10)
+                , 7)
+        r_box = wx.BoxSizer(wx.VERTICAL)
+        r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
 
-        box.Add((1,1),1)
-        box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,10)
+        r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+        h_box.Add(r_box)
+        v_box.Add(h_box)
 
-
-        box.Add((1,1),1)
-        box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,10)
-
-        box.Add((1,1),1)
-        box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,10)
-
-
-        self.SetSizerAndFit(box)
+        self.SetSizerAndFit(v_box)
 
         wx.EVT_CLOSE(self, self.OnCloseWindow)
 
@@ -110,13 +105,11 @@ def GetBitmap_from_np_array(np_img_2d):
 
 def build_np_img(width = 64, height = 64):
   data2d = numpy.zeros( (width, height), 'float')
-  print "width, height =", width, height
   for x in range(0, width):
     for y in range(0, height):
-      #data2d[x,y] = numpy.sqrt(x*x + y*y)
       data2d[x,y] = x + y
   data2d[width/4:width*3/4,height/4:height*3/4] = 0
-  print "data2d.max =", data2d.max()
+
   return data2d
 
 class App(wx.App):
