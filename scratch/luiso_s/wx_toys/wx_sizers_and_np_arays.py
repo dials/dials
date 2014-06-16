@@ -16,22 +16,21 @@ class TestFrame(wx.Frame):
 
         self.MaxImageSize = 300
 
-        b = wx.Button(self, -1, "Next Reflection ")
+        btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
         b_a = wx.Button(self, -1, "Previous Reflection")
-        b.Bind(wx.EVT_BUTTON, self.DisplayNext)
+        btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext)
         b_a.Bind(wx.EVT_BUTTON, self.DisplayPrev)
 
         # starting with an EmptyBitmap
         self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                     self.MaxImageSize, self.MaxImageSize
-                                     ))
+                                     self.MaxImageSize, self.MaxImageSize))
 
         self.DisplayNext()
 
         # Using a Sizer to handle the layout: is not recommended to use absolute # positioning
 
         box = wx.BoxSizer(wx.VERTICAL)
-        box.Add(b, 0, wx.CENTER | wx.ALL,10)
+        box.Add(btn_nxt_refl, 0, wx.CENTER | wx.ALL,10)
 
         # adding stretchable space before and after centers the image.
         box.Add((1,1),1)
