@@ -967,7 +967,8 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
     # each free parameter
     m = len(reflections)
     n = len(self) # number of free parameters
-    dpv_dp = [flex.vec3_double(m, (0., 0., 0.)) for p in range(n)]
+    dX_dp = [flex.double(m, 0.) for p in range(n)]
+    dY_dp = [flex.double(m, 0.) for p in range(n)]
     dDeltaPsi_dp = [flex.double(m, 0.) for p in range(n)]
 
     # loop over experiments
@@ -999,6 +1000,13 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
 
       s1 = self._s1.select(isel)
 
+      pv = self._pv.select(isel)
+      u, v, w = pv.parts()
+
+      # precalculate for efficiency
+      w_inv = 1/w
+      u_w_inv = u * w_inv
+      v_w_inv = v * w_inv
 
       # identify which parameterisations to use for this experiment
       param_set = self._exp_to_param[iexp]
@@ -1029,12 +1037,19 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
             sub_isel = isel.select(panel == panel_id)
             sub_pv = self._pv.select(sub_isel)
             sub_D = self._D.select(sub_isel)
-            dpv_ddetp = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
-            # convert to dX/dp, dY/dp and set in the vectors
-            #FIXME TODO
+            dpv_ddet_p = self._detector_derivatives(dp, sub_pv, sub_D, panel_id)
+
+            # convert to dX/dp, dY/dp and assign the elements of the vectors
+            # corresponding to this experiment and panel
+            sub_w_inv = w_inv.select(sub_isel)
+            sub_u_w_inv = u_w_inv.select(sub_isel)
+            sub_v_w_inv = v_w_inv.select(sub_isel)
+            dX_ddet_p, dY_ddet_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+              sub_w_inv, sub_u_w_inv, sub_v_w_inv, dpv_ddet_p)
             iparam = self._iparam
-            for dpv in dpv_ddetp:
-              dpv_dp[iparam].set_selected(sub_isel, dpv)
+            for dX, dY in zip(dX_ddet_p, dY_ddet_p):
+              dX_dp[iparam].set_selected(sub_isel, dX)
+              dY_dp[iparam].set_selected(sub_isel, dX)
               # increment the local parameter index pointer
               iparam += 1
 
@@ -1057,9 +1072,14 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
           dpv_dbeam_p, ddelpsi_dbeam_p = self._beam_derivatives(
             bp, s0, s0u, wl, r, e1, q, q0, DeltaPsi, D)
 
-          for dpv, dDeltaPsi in zip(dpv_dbeam_p, ddelpsi_dbeam_p):
+          # convert to dX/dp, dY/dp and assign the elements of the vectors
+          # corresponding to this experiment
+          dX_dbeam_p, dY_dbeam_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+            w_inv, u_w_inv, v_w_inv, dpv_dbeam_p)
+          for dX, dY, dDeltaPsi in zip(dX_dbeam_p, dY_dbeam_p, ddelpsi_dbeam_p):
             dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
-            dpv_dp[self._iparam].set_selected(isel, dpv)
+            dX_dp[iparam].set_selected(isel, dX)
+            dY_dp[iparam].set_selected(isel, dY)
             # increment the parameter index pointer
             self._iparam += 1
 
@@ -1079,9 +1099,14 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
           dpv_dxlo_p, ddelpsi_dxlo_p = self._xl_orientation_derivatives(
             xlop, B, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D)
 
-          for dpv, dDeltaPsi in zip(dpv_dxlo_p, ddelpsi_dxlo_p):
+          # convert to dX/dp, dY/dp and assign the elements of the vectors
+          # corresponding to this experiment
+          dX_dxlo_p, dY_dxlo_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+            w_inv, u_w_inv, v_w_inv, dpv_dxlo_p)
+          for dX, dY, dDeltaPsi in zip(dX_dxlo_p, dY_dxlo_p, ddelpsi_dxlo_p):
             dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
-            dpv_dp[self._iparam].set_selected(isel, dpv)
+            dX_dp[iparam].set_selected(isel, dX)
+            dY_dp[iparam].set_selected(isel, dY)
             # increment the parameter index pointer
             self._iparam += 1
 
@@ -1101,9 +1126,14 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
           dpv_dxluc_p, ddelpsi_dxluc_p =  self._xl_unit_cell_derivatives(
             xlucp, U, h, e1, DeltaPsi, s1, q, q_scalar, qq, q0, r, s0, s0u, D)
 
-          for dpv, dDeltaPsi in zip(dpv_dxluc_p, ddelpsi_dxluc_p):
+          # convert to dX/dp, dY/dp and assign the elements of the vectors
+          # corresponding to this experiment
+          dX_dxluc_p, dY_dxluc_p = self._calc_dX_dp_and_dY_dp_from_dpv_dp(
+            w_inv, u_w_inv, v_w_inv, dpv_dxluc_p)
+          for dX, dY, dDeltaPsi in zip(dX_dxluc_p, dY_dxluc_p, ddelpsi_dxluc_p):
             dDeltaPsi_dp[self._iparam].set_selected(isel, dDeltaPsi)
-            dpv_dp[self._iparam].set_selected(isel, dpv)
+            dX_dp[iparam].set_selected(isel, dX)
+            dY_dp[iparam].set_selected(isel, dY)
             # increment the parameter index pointer
             self._iparam += 1
 
@@ -1111,9 +1141,6 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
         else:
           # just increment the pointer
           self._iparam += xlucp.num_free()
-
-      # calculate positional derivatives from d[pv]/dp
-      dX_dp, dY_dp = self._calc_dX_dp_and_dY_dp_from_dpv_dp(self._pv, dpv_dp)
 
     return (dX_dp, dY_dp, dDeltaPsi_dp)
 
@@ -1261,3 +1288,19 @@ class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
       dpv_dp.append(dpv)
 
     return dpv_dp, dDeltaPsi_dp
+
+  @staticmethod
+  def _calc_dX_dp_and_dY_dp_from_dpv_dp(self, w_inv, u_w_inv, v_w_inv, dpv_dp):
+    """helper function to calculate positional derivatives from
+    dpv_dp using the quotient rule"""
+
+    dX_dp = []
+    dY_dp = []
+
+    for der in dpv_dp:
+      du_dp, dv_dp, dw_dp = der.parts()
+
+      dX_dp.append(w_inv * (du_dp - dw_dp * u_w_inv))
+      dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
+
+    return dX_dp, dY_dp
