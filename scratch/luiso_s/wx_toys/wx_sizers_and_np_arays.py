@@ -68,9 +68,7 @@ class TestFrame(wx.Frame):
         Img = GetBitmap_from_np_array(np_img)
 
         self.Image.SetBitmap(Img)
-        self.Fit()
-        self.Layout()
-        self.Refresh()
+        self.My_Update()
 
     def DisplayPrev_refl(self, event = None):
 
@@ -78,6 +76,9 @@ class TestFrame(wx.Frame):
         Img = GetBitmap_from_np_array(np_img)
 
         self.Image.SetBitmap(Img)
+        self.My_Update()
+        
+    def My_Update(self):
         self.Fit()
         self.Layout()
         self.Refresh()
