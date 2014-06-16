@@ -17,15 +17,24 @@ class TestFrame(wx.Frame):
         self.MaxImageSize = 300
 
         btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
-        b_a = wx.Button(self, -1, "Previous Reflection")
-        btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext)
-        b_a.Bind(wx.EVT_BUTTON, self.DisplayPrev)
+        btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
+        btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
+        btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
 
+        
+        
+        btn_nxt_slice = wx.Button(self, -1, "Next slice ")
+        btn_prv_slice = wx.Button(self, -1, "Previous slice")
+        btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
+        btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
+        
+        
+        
         # starting with an EmptyBitmap
         self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                      self.MaxImageSize, self.MaxImageSize))
 
-        self.DisplayNext()
+        self.DisplayNext_refl()
 
         # Using a Sizer to handle the layout: is not recommended to use absolute # positioning
 
@@ -39,16 +48,23 @@ class TestFrame(wx.Frame):
                 , 10)
 
         box.Add((1,1),1)
-        box.Add(b_a, 0, wx.CENTER | wx.ALL,10)
+        box.Add(btn_prv_refl, 0, wx.CENTER | wx.ALL,10)
+
+
+        box.Add((1,1),1)
+        box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,10)
+
+        box.Add((1,1),1)
+        box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,10)
+
 
         self.SetSizerAndFit(box)
 
         wx.EVT_CLOSE(self, self.OnCloseWindow)
 
-    def DisplayNext(self, event = None):
-        print "test 01"
-        np_img = build_np_img(width = 64, height = 164)
+    def DisplayNext_refl(self, event = None):
 
+        np_img = build_np_img(width = 20, height = 30)
         Img = GetBitmap_from_np_array(np_img)
 
         self.Image.SetBitmap(Img)
@@ -56,16 +72,21 @@ class TestFrame(wx.Frame):
         self.Layout()
         self.Refresh()
 
-    def DisplayPrev(self, event = None):
-        print "test 01"
-        np_img = build_np_img(width = 164, height = 64)
+    def DisplayPrev_refl(self, event = None):
 
+        np_img = build_np_img(width = 20, height = 10)
         Img = GetBitmap_from_np_array(np_img)
 
         self.Image.SetBitmap(Img)
         self.Fit()
         self.Layout()
         self.Refresh()
+
+    def DisplayNext_slice(self, event = None):
+        print "test 02"
+
+    def DisplayPrev_slice(self, event = None):
+        print "test 03"
 
     def OnCloseWindow(self, event):
         self.Destroy()
