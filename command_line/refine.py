@@ -27,7 +27,7 @@ class Script(ScriptRunner):
              "experiments.json reflections.pickle"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    ScriptRunner.__init__(self, usage=usage, home_scope="refinement")
 
     # Output experiments filename option
     self.config().add_option(
