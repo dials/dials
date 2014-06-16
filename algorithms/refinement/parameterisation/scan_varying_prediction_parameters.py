@@ -105,52 +105,16 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     UB = xl_op.get_state() * xl_ucp.get_state()
     return UB
 
-  def get_gradients(self, reflections):
-    """
-    Calculate gradients of the prediction formula with respect to each
-    of the parameters of the contained models, for all of the reflections.
+  # overloaded for the scan-varying case
+  def _get_U_B_for_experiment(self, crystal, reflections, isel):
+    """helper function to return either a single U, B pair (for scan-static) or
+    U, B arrays (scan-varying; overloaded in derived class) for a particular
+    experiment."""
 
-    To be implemented by a derived class, which determines the space of the
-    prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
-    prediction formula expressed in detector space, but components of
-    d\vec{r}/dp for the prediction formula in reciprocal space
-
-    """
-
-    ### Calculate various quantities of interest for the reflections
-
-    # Set up arrays of values for each reflection
-    n = len(reflections)
-    D = flex.mat3_double(n)
-    s0 = flex.vec3_double(n)
-    #U = flex.mat3_double(n)
-    #B = flex.mat3_double(n)
-    axis = flex.vec3_double(n)
-
-    for iexp, exp in enumerate(self._experiments):
-
-      sel = reflections['id'] == iexp
-      isel = sel.iselection()
-
-      # D matrix array
-      panels = reflections['panel'].select(isel)
-      for ipanel, D_mat in enumerate([p.get_D_matrix() for p in exp.detector]):
-        subsel = isel.select(panels == ipanel)
-        D.set_selected(subsel, D_mat)
-
-      # s0 array
-      s0.set_selected(isel, exp.beam.get_s0())
-
-      # axis array
-      if exp.goniometer:
-        axis.set_selected(isel, exp.goniometer.get_rotation_axis())
-
-    # for the scan varying parameterisation, U and B are set in the reflections
-    # table by the compose method
-    U = reflections['u_matrix']
-    B = reflections['b_matrix']
-
-    return self._get_gradients_core(reflections, D, s0, U, B, axis)
+    # crystal ignored here (it is needed for the scan-static version only)
+    U = reflections['u_matrix'].select(isel)
+    B = reflections['b_matrix'].select(isel)
+    return U, B
 
   # overloaded for the scan-varying case
   def _xl_orientation_derivatives(self, reflections, isel, dpv_dp, dphi_dp, axis, phi_calc, h, s1, \

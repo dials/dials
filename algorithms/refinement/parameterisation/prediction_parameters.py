@@ -288,8 +288,8 @@ class PredictionParameterisation(object):
 
     To be implemented by a derived class, which determines the space of the
     prediction formula (e.g. we calculate dX/dp, dY/dp, dphi/dp for the
-    prediction formula expressed in detector space, but components of
-    d\vec{r}/dp for the prediction formula in reciprocal space
+    prediction formula for a rotation scan expressed in detector space, but
+    components of d\vec{r}/dp for the prediction formula in reciprocal space
 
     """
 
@@ -317,11 +317,10 @@ class PredictionParameterisation(object):
       # s0 array
       s0.set_selected(isel, exp.beam.get_s0())
 
-      # U array (scan varying version overrides this)
-      U.set_selected(isel, exp.crystal.get_U())
-
-      # B array (scan varying version overrides this)
-      B.set_selected(isel, exp.crystal.get_B())
+      # U and B arrays
+      exp_U, exp_B = self._get_U_B_for_experiment(exp.crystal, reflections, isel)
+      U.set_selected(isel, exp_U)
+      B.set_selected(isel, exp_B)
 
       # axis array
       if exp.goniometer:
@@ -329,6 +328,13 @@ class PredictionParameterisation(object):
 
     return self._get_gradients_core(reflections, D, s0, U, B, axis)
 
+  def _get_U_B_for_experiment(self, crystal, reflections, isel):
+    """helper function to return either a single U, B pair (for scan-static) or
+    U, B arrays (scan-varying) for a particular experiment."""
+
+    # isel and reflections ignored here (they are needed for the scan-varying
+    # overload)
+    return crystal.get_U(), crystal.get_B()
 
 class XYPhiPredictionParameterisation(PredictionParameterisation):
   """
