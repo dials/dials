@@ -29,6 +29,18 @@ def build_np_img(width = 64, height = 64):
   print "data2d.max =", data2d.max()
   return data2d
 
+
+old_style = '''
+class MyApp(wx.App):
+     def OnInit(self):
+'''
+
+or_new_style = '''
+class MyApp(wx.Frame):
+     def __init__(self):
+         wx.Frame.__init__(self, None, wx.ID_ANY, "Hello")
+'''
+
 class MyApp(wx.App):
   def OnInit(self):
     self.frame = MyFrame(None, title="Bitmaps")

@@ -14,35 +14,63 @@ class MyFrame(wx.Frame):
     super(MyFrame, self).__init__(parent, id, title,
                                   pos, size, style, name)
     # Attributes
+
+    img_path = os.path.abspath("../../../../../../Pictures/dials_logo01.png")
+    #img_path = os.path.abspath("../../../../../../Pictures/duccati.png")
+
     self.panel = wx.Panel(self, wx.ID_ANY)
-    #img_path = os.path.abspath("../../../../../../53977.png")
-    img_path = os.path.abspath("../../../../../../Pictures/duccati.png")
+
     bitmap = wx.Bitmap(img_path, type=wx.BITMAP_TYPE_PNG)
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=bitmap)
 
+    self.build_content()
+    self.resize()
+
+  def build_content(self):
     topSizer        = wx.BoxSizer(wx.VERTICAL)
     btnSizer        = wx.BoxSizer(wx.HORIZONTAL)
-    
+
     prev_Btn = wx.Button(self.panel, wx.ID_ANY, 'Prev Refl')
     next_Btn = wx.Button(self.panel, wx.ID_ANY, 'Next Refl')
     self.Bind(wx.EVT_BUTTON, self.on_prev, prev_Btn)
     self.Bind(wx.EVT_BUTTON, self.on_next, next_Btn)
-    topSizer.Add(self.bitmap, 0, wx.ALL, 5)
-    btnSizer.Add(prev_Btn, 0, wx.ALL, 5)
-    btnSizer.Add(next_Btn, 0, wx.ALL, 5)
-    topSizer.Add(btnSizer, 0, wx.ALL|wx.CENTER, 5)
-    self.panel.SetSizer(topSizer)
-    topSizer.Fit(self)
+    topSizer.Add(self.bitmap, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 3)
+    #box.Add(self.Image, 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 10)
+    btnSizer.Add(prev_Btn, 0, wx.ALL, 3)
+    btnSizer.Add(next_Btn, 0, wx.ALL, 3)
+    topSizer.Add(btnSizer, 0, wx.ALL|wx.CENTER, 3)
+    self.my_main_sizer = topSizer
+
+  def resize(self):
+
+    self.panel.SetSizer(self.my_main_sizer)
+
+
+    #self.panel.SetAutoLayout(True)
+    self.panel.Refresh()
+    self.panel.Update()
+    self.panel.Layout()
+    self.Update()
+    self.Layout()
+
+    self.my_main_sizer.Fit(self)
+
+
+
 
   def on_prev(self, event):
-    # Do something
     print 'on_prev handler'
-    img_path = os.path.abspath("../../../../../../Pictures/moon.png")
+    img_path = os.path.abspath("../../../../../../Pictures/dials_logo02.png")
     new_bitmap = wx.Bitmap(img_path, type=wx.BITMAP_TYPE_PNG)
     self.bitmap = wx.StaticBitmap(self.panel, bitmap=new_bitmap)
+    self.resize()
+
   def on_next(self, event):
     print "on_next handler"
-    #self.closeProgram()
+    img_path = os.path.abspath("../../../../../../Pictures/dials_logo03.png")
+    new_bitmap = wx.Bitmap(img_path, type=wx.BITMAP_TYPE_PNG)
+    self.bitmap = wx.StaticBitmap(self.panel, bitmap=new_bitmap)
+    self.resize()
 
 
 
