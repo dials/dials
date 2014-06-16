@@ -697,3 +697,6 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
 
     return dX_dp, dY_dp
 
+class XYPhiPredictionParameterisationDebug(PredictionParameterisation):
+
+  pass
