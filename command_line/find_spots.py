@@ -23,7 +23,7 @@ class Script(ScriptRunner):
             "{datablock.json | image1.file [image2.file ...]}"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    ScriptRunner.__init__(self, usage=usage, home_scope="spotfinder")
 
     # Output filename option
     self.config().add_option(

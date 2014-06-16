@@ -31,7 +31,7 @@ def exercise_spotfinder():
   print 'OK'
 
   # now with a resolution filter
-  args = ["dials.find_spots", "spotfinder.filter.d_min=2", "spotfinder.filter.d_max=15",
+  args = ["dials.find_spots", "d_min=2", "d_max=15",
           template, "-o spotfinder.pickle", "--nproc=1", "save_shoeboxes=False"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")
@@ -43,8 +43,8 @@ def exercise_spotfinder():
   print 'OK'
 
   # now with more generous parameters
-  args = ["dials.find_spots", "spotfinder.filter.min_spot_size=3",
-          "spotfinder.filter.max_separation=3",
+  args = ["dials.find_spots", "min_spot_size=3",
+          "max_separation=3",
           template, "-o spotfinder.pickle", "--nproc=1"]
   result = easy_run.fully_buffered(command=" ".join(args)).raise_if_errors()
   assert os.path.exists("spotfinder.pickle")

@@ -22,7 +22,7 @@ class Script(ScriptRunner):
     usage  = "usage: %prog [options] experiment.json"
 
     # Initialise the base class
-    ScriptRunner.__init__(self, usage=usage)
+    ScriptRunner.__init__(self, usage=usage, home_scope="integration")
 
     # Output filename option
     self.config().add_option(

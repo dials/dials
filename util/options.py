@@ -53,7 +53,7 @@ class OptionParser(optparse.OptionParser):
       self._scope = kwargs['home_scope']
       del(kwargs['home_scope'])
     except KeyError:
-      self._scope = ''
+      self._scope = None
 
     # Initialise the option parser
     optparse.OptionParser.__init__(self, **kwargs)
@@ -67,7 +67,7 @@ class OptionParser(optparse.OptionParser):
     # options (e.g. -o, --option) and positional arguments, in
     # which phil options will be included.
     options, args = optparse.OptionParser.parse_args(self)
-    args = registry.config().try_parse(args)
+    args = registry.config().try_parse(args, scope=self._scope)
     return registry.params(), options, args
 
   def phil(self):

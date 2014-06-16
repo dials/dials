@@ -94,10 +94,10 @@ class Config(object):
     from iotbx.phil import parse
     self._phil = self.fetch(source=parse(text))
 
-  def try_parse(self, args):
+  def try_parse(self, args, scope=None):
     ''' Try to parse arguments and return unhandled. '''
     config = CommandLineConfig(
-      self._system_phil.command_line_argument_interpreter())
+      self._system_phil.command_line_argument_interpreter(home_scope=scope))
     args, phil = config.parse(args)
     self.fetch(sources=phil)
     return args
