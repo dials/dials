@@ -514,13 +514,8 @@ class RefinerFactory(object):
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
-        # FIXME temporary user choice for refactored version
-        if sparse:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters \
-            import XYPhiPredictionParameterisationDebug as PredParam
-        else:
-          from dials.algorithms.refinement.parameterisation.prediction_parameters \
-            import XYPhiPredictionParameterisation as PredParam
+        from dials.algorithms.refinement.parameterisation.prediction_parameters \
+          import XYPhiPredictionParameterisation as PredParam
         pred_param = PredParam(
             experiments,
             det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
