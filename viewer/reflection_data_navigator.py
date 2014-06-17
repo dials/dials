@@ -12,43 +12,25 @@ from dials.array_family import flex
 
 class table_s_navigator(object):
 
-  def __init__(self, table):
-
-    self.table = table
-    self.num_ref = len(table)
+  def __init__(self, table_in):
+    self.table = table_in
+    self.num_ref = len(self.table)
     if self.num_ref >= 1:
-      row = table[52]
+      self.row_pos = 0
+      self.row = self.table[self.row_pos]
     else:
       print "ERROR 0 reflections"
 
-    self.data_flex = row['shoebox'].data
-    self.background_flex = row['shoebox'].background
-    self.mask_flex = row['shoebox'].mask
+  def __call__(self):
+    self.data_flex = self.row['shoebox'].data
+    self.background_flex = self.row['shoebox'].background
+    self.mask_flex = self.row['shoebox'].mask
     self.depth = self.data_flex.all()[0]
     print "depth of refl =", self.depth
     if self.depth >= 1:
       self.z = 0
     else:
       print "ERROR 0 depth"
-
-  def next_slice(self):
-    if self.z < self.depth:
-      self.z += 1
-      self.__call__()
-    else:
-      print "maximum depth reached"
-  def Previous_slice(self):
-    if self.z > 0:
-      self.z -= 1
-      self.__call__()
-    else:
-      print "depth 0 reached"
-  def next_Reflection(self):
-    pass
-  def Previous_Reflection(self):
-    pass
-
-  def __call__(self):
 
     mask2d = self.mask_flex[self.z:self.z + 1, :, :]
     mask2d.reshape(flex.grid(self.mask_flex.all()[1:]))
@@ -66,6 +48,32 @@ class table_s_navigator(object):
     self.img_data = data2d_np
     self.img_mask = mask2d_np
     return self.img_background, self.img_data, self.img_mask
+
+
+  def next_slice(self):
+    if self.z < self.depth:
+      self.z += 1
+      self.__call__()
+    else:
+      print "maximum depth reached"
+  def Previous_slice(self):
+    if self.z > 0:
+      self.z -= 1
+      self.__call__()
+    else:
+      print "depth 0 reached"
+  def next_Reflection(self):
+    if self.row_pos < self.num_ref:
+      self.row_pos += 1
+      self.__call__()
+    else:
+      print "last reflection reached"
+  def Previous_Reflection(self):
+    if self.row_pos > 0:
+      self.row_pos -= 1
+      self.__call__()
+    else:
+      print "first reflection reached"
 
   def background(self):
     print "from background(self)"
