@@ -13,7 +13,12 @@ from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
 from dials.array_family import flex
 
 class MyFrame(wx.Frame):
+  original_example = '''
   def __init__(self, *args, **kwargs):
+    wx.Frame.__init__(self, *args, **kwargs)
+  '''
+
+  def __init__(self):
     wx.Frame.__init__(self, *args, **kwargs)
 
     self.MaxImageSize = 300

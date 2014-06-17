@@ -12,7 +12,12 @@ import wx, os
 from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
 from dials.array_family import flex
 
+glov_table = 1
+
+
+
 class MyFrame(wx.Frame):
+
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
@@ -58,7 +63,16 @@ class MyFrame(wx.Frame):
     self.SetSizerAndFit(v_box)
     wx.EVT_CLOSE(self, self.OnCloseWindow)
 
-    #self.tmp_img = 0
+    #self.init_data()
+
+  def init_data(self):
+    #global glov_table
+    local_table = glov_table
+    print "YES"
+
+    self.local_table_obj = table_data(local_table)
+    bkg, dat, msk = self.local_table_obj()
+    self.tmp_img = dat
 
   def DisplayNext_refl(self, event = None):
     np_img = build_np_img(width = 20, height = 30)
@@ -86,15 +100,6 @@ class MyFrame(wx.Frame):
 
   def OnCloseWindow(self, event):
     self.Destroy()
-
-class App(wx.App):
-  def OnInit(self):
-    frame = MyFrame(None, -1, "DIALS Reflections Viewer"
-    , wx.DefaultPosition,(550,200))
-    self.SetTopWindow(frame)
-    frame.Show(True)
-    return True
-
 class table_data(object):
 
   def __init__(self, table):
@@ -160,17 +165,29 @@ class table_data(object):
     print "from mask(self)"
     return self.img_mask
 
-#def paint_refl(row, num):
+
 def paint_refl(table):
   app = App(redirect=False)
-
-  tbl = table_data(table)
-  bkg, dat, msk = tbl()
-  MyFrame.tmp_img = msk
-  #MyFrame.tmp_img = tbl.data()
+  #MyFrame.tmp_table = table
+  print "here"
+  global glov_table
+  glov_table = table
   app.MainLoop()
 
   return
+
+
+class App(wx.App):
+  def OnInit(self):
+    frame = MyFrame(None, -1, "DIALS Reflections Viewer"
+    , wx.DefaultPosition,(550,200))
+    self.SetTopWindow(frame)
+
+
+    frame.Show(True)
+    return True
+
+
 '''
 if __name__ == "__main__":
 
