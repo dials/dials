@@ -89,10 +89,10 @@ class MyFrame(wx.Frame):
 
 class App(wx.App):
   def OnInit(self):
-    frame = MyFrame(None, -1, "DIALS Reflections Viewer"
+    self.frame = MyFrame(None, -1, "DIALS Reflections Viewer"
     , wx.DefaultPosition,(550,200))
-    self.SetTopWindow(frame)
-    frame.Show(True)
+    self.SetTopWindow(self.frame)
+    self.frame.Show(True)
     return True
 
   def table_in(self, loc_tabl):
