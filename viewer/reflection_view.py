@@ -59,6 +59,11 @@ class MyFrame(wx.Frame):
     wx.EVT_CLOSE(self, self.OnCloseWindow)
 
     #self.tmp_img = 0
+  def tabl_to_frame(self, loc_tabl):
+    #self.tabl = loc_tabl
+    self.tabl = table_s_navigator(loc_tabl)
+    bkg, dat, msk = self.tabl()
+    self.tmp_img = msk
 
   def DisplayNext_refl(self, event = None):
     np_img = build_np_img(width = 20, height = 30)
@@ -71,6 +76,7 @@ class MyFrame(wx.Frame):
   def DisplayNext_slice(self, event = None):
     #np_img = build_np_img(width = 25, height = 15)
     #self.My_Update(np_img)
+    self.tabl.next_slice()
     self.My_Update(self.tmp_img)
 
   def DisplayPrev_slice(self, event = None):
@@ -96,7 +102,7 @@ class App(wx.App):
     return True
 
   def table_in(self, loc_tabl):
-    self.table = loc_tabl
+    self.frame.tabl_to_frame(loc_tabl)
 
 if __name__ == "__main__":
 
@@ -109,12 +115,6 @@ if __name__ == "__main__":
 
   app = App(redirect=False)
   app.table_in(table)
-
-  tmp_out = '''
-  tbl = table_s_navigator(table)
-  bkg, dat, msk = tbl()
-  MyFrame.tmp_img = msk
-  '''
 
   app.MainLoop()
 #'''
