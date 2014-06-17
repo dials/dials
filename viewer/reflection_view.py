@@ -8,8 +8,9 @@
 #  This code is distributed under the BSD license, a copy of which is
 #  included in the root directory of this package."
 
-import wx, os, numpy
-import matplotlib.pyplot as plt
+import wx, os
+from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
+
 class TestFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
@@ -83,31 +84,6 @@ class TestFrame(wx.Frame):
 
     def OnCloseWindow(self, event):
         self.Destroy()
-
-def GetBitmap_from_np_array(np_img_2d):
-  fig = plt.figure()
-  # remember to make sure this is our convention in (x, y) vs (row, col)
-  plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest")
-  fig.canvas.draw()
-  width, height = fig.canvas.get_width_height()
-  np_buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )
-  np_buf.shape = (width, height, 3)
-  np_buf = numpy.roll(np_buf, 3, axis = 2)
-  image = wx.EmptyImage(width, height)
-  image.SetData( np_buf )
-  #image.SetData( np_buf.tostring()) # looks like there is no need to convert
-  wxBitmap = image.ConvertToBitmap()
-
-  return wxBitmap
-
-def build_np_img(width = 64, height = 64):
-  data2d = numpy.zeros( (width, height), 'float')
-  for x in range(0, width):
-    for y in range(0, height):
-      data2d[x,y] = x + y
-  data2d[width/4:width*3/4,height/4:height*3/4] = 0
-
-  return data2d
 
 class App(wx.App):
     def OnInit(self):
