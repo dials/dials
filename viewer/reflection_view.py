@@ -95,14 +95,14 @@ class App(wx.App):
     frame.Show(True)
     return True
 
-class table_data(object):
+class table_s_navigator(object):
 
   def __init__(self, table):
 
     self.table = table
     self.num_ref = len(table)
     if self.num_ref >= 1:
-      row = table[0]
+      row = table[52]
     else:
       print "ERROR 0 reflections"
 
@@ -160,20 +160,33 @@ class table_data(object):
     print "from mask(self)"
     return self.img_mask
 
-#def paint_refl(row, num):
+old_mod = '''
 def paint_refl(table):
   app = App(redirect=False)
 
-  tbl = table_data(table)
+  tbl = table_s_navigator(table)
   bkg, dat, msk = tbl()
   MyFrame.tmp_img = msk
   #MyFrame.tmp_img = tbl.data()
   app.MainLoop()
 
   return
-'''
+#'''
 if __name__ == "__main__":
 
+  import cPickle as pickle
+  import sys
+  from dials.model.data import ReflectionList # implicit import
+  table = pickle.load(open(sys.argv[1]))
+
+  print "num of ref =", len(table)
+
+  #paint_refl(table)
   app = App(redirect=False)
+  
+  tbl = table_s_navigator(table)
+  bkg, dat, msk = tbl()
+  MyFrame.tmp_img = dat  
+
   app.MainLoop()
-'''
+#'''

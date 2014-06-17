@@ -8,6 +8,7 @@ if __name__ == '__main__':
   from dials.model.data import ReflectionList # implicit import
   table = pickle.load(open(sys.argv[1]))
 
+  print "num of ref =", len(table)
   tmp_not_needed = '''
   for i in range(len(table)):
     row = table[i]
