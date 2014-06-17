@@ -814,3 +814,4 @@ util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
 viewer/__init__.py -text
 viewer/reflection_view.py -text
+viewer/viewer_utilities.py -text
