@@ -16,7 +16,7 @@ class TestFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, *args, **kwargs)
 
-        # there needs to be an "Images" directory with one or more jpegs 
+        # there needs to be an "Images" directory with one or more jpegs
         # in it in the current working directory for this to work
         self.jpgs = GetJpgList("/home/lui/Pictures/") # get all the jpegs
                                                       # in the Images directory

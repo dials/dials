@@ -812,3 +812,4 @@ util/pycbf_extra.py -text
 util/script.py -text
 util/spotfinder_frame.py -text
 util/spotfinder_wrap.py -text
+viewer/reflection_view.py -text
