@@ -38,7 +38,11 @@ class table_s_navigator(object):
     else:
       print "maximum depth reached"
   def Previous_slice(self):
-    pass
+    if self.z > 0:
+      self.z -= 1
+      self.__call__()
+    else:
+      print "depth 0 reached"
   def next_Reflection(self):
     pass
   def Previous_Reflection(self):

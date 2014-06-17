@@ -12,7 +12,6 @@ import wx, os
 from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
 from dials.viewer.reflection_data_navigator import table_s_navigator
 
-
 class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
@@ -96,6 +95,8 @@ class App(wx.App):
     frame.Show(True)
     return True
 
+  def table_in(self, loc_tabl):
+    self.table = loc_tabl
 
 if __name__ == "__main__":
 
@@ -107,10 +108,13 @@ if __name__ == "__main__":
   print "num of ref =", len(table)
 
   app = App(redirect=False)
-  
+  app.table_in(table)
+
+  tmp_out = '''
   tbl = table_s_navigator(table)
   bkg, dat, msk = tbl()
-  MyFrame.tmp_img = msk  
+  MyFrame.tmp_img = msk
+  '''
 
   app.MainLoop()
 #'''
