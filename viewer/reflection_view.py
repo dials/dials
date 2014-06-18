@@ -61,41 +61,31 @@ class MyFrame(wx.Frame):
 
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
-    bkg, dat, msk = self.tabl()
-    #self.tmp_img = dat
     self.DisplayPrev_refl()
+
   def DisplayNext_refl(self, event = None):
-    #np_img = build_np_img(width = 20, height = 30)
-    #self.My_Update(np_img)
     self.tabl.next_Reflection()
-    bkg, dat, msk = self.tabl()
-    self.My_Update(dat)
+    self.My_Update()
 
   def DisplayPrev_refl(self, event = None):
-    #np_img = build_np_img(width = 20, height = 10)
-    #self.My_Update(np_img)
     self.tabl.Previous_Reflection()
-    bkg, dat, msk = self.tabl()
-    self.My_Update(dat)
+    self.My_Update()
 
   def DisplayNext_slice(self, event = None):
-    #np_img = build_np_img(width = 25, height = 15)
-    #self.My_Update(np_img)
     self.tabl.next_slice()
-    bkg, dat, msk = self.tabl()
-    self.My_Update(dat)
+    self.My_Update()
 
   def DisplayPrev_slice(self, event = None):
-    #np_img = build_np_img(width = 10, height = 15)
-    #self.My_Update(np_img)
     self.tabl.Previous_slice()
-    bkg, dat, msk = self.tabl()
-    self.My_Update(dat)
+    self.My_Update()
+
   def ChangeDisplay(self, event = None):
     print "change display"
+    self.My_Update()
+
+  def My_Update(self):
     bkg, dat, msk = self.tabl()
-    self.My_Update(dat)
-  def My_Update(self, np_img):
+    np_img = msk
     My_Img = GetBitmap_from_np_array(np_img)
     self.Image.SetBitmap(My_Img)
     self.Fit()
