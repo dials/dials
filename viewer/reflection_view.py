@@ -32,8 +32,6 @@ class MyFrame(wx.Frame):
     self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSize, self.MaxImageSize))
 
-    self.DisplayNext_refl()
-
     # Using a Sizers to handle the layout
 
     v_box = wx.BoxSizer(wx.VERTICAL)
@@ -58,30 +56,38 @@ class MyFrame(wx.Frame):
     self.SetSizerAndFit(v_box)
     wx.EVT_CLOSE(self, self.OnCloseWindow)
 
-    #self.tmp_img = 0
   def tabl_to_frame(self, loc_tabl):
-    #self.tabl = loc_tabl
     self.tabl = table_s_navigator(loc_tabl)
     bkg, dat, msk = self.tabl()
-    self.tmp_img = msk
+    self.tmp_img = dat
 
   def DisplayNext_refl(self, event = None):
-    np_img = build_np_img(width = 20, height = 30)
-    self.My_Update(np_img)
+    #np_img = build_np_img(width = 20, height = 30)
+    #self.My_Update(np_img)
+    self.tabl.next_Reflection()
+    bkg, dat, msk = self.tabl()
+    self.My_Update(dat)
 
   def DisplayPrev_refl(self, event = None):
-    np_img = build_np_img(width = 20, height = 10)
-    self.My_Update(np_img)
+    #np_img = build_np_img(width = 20, height = 10)
+    #self.My_Update(np_img)
+    self.tabl.Previous_Reflection()
+    bkg, dat, msk = self.tabl()
+    self.My_Update(dat)
 
   def DisplayNext_slice(self, event = None):
     #np_img = build_np_img(width = 25, height = 15)
     #self.My_Update(np_img)
     self.tabl.next_slice()
-    self.My_Update(self.tmp_img)
+    bkg, dat, msk = self.tabl()
+    self.My_Update(dat)
 
   def DisplayPrev_slice(self, event = None):
-    np_img = build_np_img(width = 10, height = 15)
-    self.My_Update(np_img)
+    #np_img = build_np_img(width = 10, height = 15)
+    #self.My_Update(np_img)
+    self.tabl.Previous_slice()
+    bkg, dat, msk = self.tabl()
+    self.My_Update(dat)
 
   def My_Update(self, np_img):
     My_Img = GetBitmap_from_np_array(np_img)

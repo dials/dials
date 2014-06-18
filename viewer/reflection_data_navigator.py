@@ -17,11 +17,11 @@ class table_s_navigator(object):
     self.num_ref = len(self.table)
     if self.num_ref >= 1:
       self.row_pos = 0
-      self.row = self.table[self.row_pos]
     else:
       print "ERROR 0 reflections"
 
   def __call__(self):
+    self.row = self.table[self.row_pos]
     self.data_flex = self.row['shoebox'].data
     self.background_flex = self.row['shoebox'].background
     self.mask_flex = self.row['shoebox'].mask
@@ -53,25 +53,23 @@ class table_s_navigator(object):
   def next_slice(self):
     if self.z < self.depth:
       self.z += 1
-      self.__call__()
     else:
       print "maximum depth reached"
   def Previous_slice(self):
     if self.z > 0:
       self.z -= 1
-      self.__call__()
     else:
       print "depth 0 reached"
   def next_Reflection(self):
     if self.row_pos < self.num_ref:
       self.row_pos += 1
-      self.__call__()
+      self.z = 0
     else:
       print "last reflection reached"
   def Previous_Reflection(self):
     if self.row_pos > 0:
       self.row_pos -= 1
-      self.__call__()
+      self.z = 0
     else:
       print "first reflection reached"
 
