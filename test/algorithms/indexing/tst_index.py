@@ -115,7 +115,7 @@ class run_one_indexing(object):
     self.calc_rmsds_timer.start()
     from dials.algorithms.indexing.indexer2 import master_params
     from dials.algorithms.refinement import RefinerFactory
-    from dials.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment.experiment_list import ExperimentList
     reflections = observations.select(observations.get_flags(
       observations.flags.used_in_refinement))
     assert len(reflections) > 0

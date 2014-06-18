@@ -13,7 +13,7 @@ if __name__ == '__main__':
 
   from optparse import OptionParser
   from dials.algorithms.simulation.reciprocal_space import Simulator
-  from dials.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
   from dials.util.command_line import Command
   from math import pi
 

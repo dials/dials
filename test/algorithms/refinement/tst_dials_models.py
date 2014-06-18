@@ -11,13 +11,13 @@ from scitbx import matrix
 from libtbx.test_utils import approx_equal
 
 # import DIALS models
-from dials.model.experiment import Beam
-from dials.model.experiment import Panel
-#from dials.model.experiment import Detector
-#from dials.model.experiment import Goniometer
+from dxtbx.model.experiment import Beam
+from dxtbx.model.experiment import Panel
+#from dxtbx.model.experiment import Detector
+#from dxtbx.model.experiment import Goniometer
 
 # but mostly use the factories instead for ease of use
-from dials.model.experiment import beam_factory, detector_factory, \
+from dxtbx.model.experiment import beam_factory, detector_factory, \
     goniometer_factory, scan_factory
 
 # import my models

@@ -157,8 +157,8 @@ class Test(object):
     from math import sqrt
     from dials.array_family import flex
     from dials.model.data import ReflectionList
-    from dials.model.experiment.experiment_list import ExperimentList
-    from dials.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment.experiment_list import ExperimentList
+    from dxtbx.model.experiment.experiment_list import Experiment
 
     # Get models from the sweep
     self.beam = self.sweep.get_beam()

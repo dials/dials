@@ -22,7 +22,7 @@ from libtbx.test_utils import approx_equal
 
 # Building experimental models
 from setup_geometry import Extract
-from dials.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator

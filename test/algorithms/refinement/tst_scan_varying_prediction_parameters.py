@@ -28,7 +28,7 @@ from dxtbx.model.scan import scan_factory
 ##### Imports for reflection prediction
 
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor
 
 #### Import model parameterisations

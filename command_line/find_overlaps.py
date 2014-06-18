@@ -14,7 +14,7 @@ import math
 import iotbx.phil
 from libtbx.phil import command_line
 from dials.array_family import flex
-from dials.model.experiment.experiment_list import ExperimentList
+from dxtbx.model.experiment.experiment_list import ExperimentList
 
 
 master_phil_scope = iotbx.phil.parse("""

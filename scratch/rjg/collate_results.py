@@ -149,7 +149,7 @@ def get_rmsds_obs_pred(observations, experiment):
   from dials.algorithms.spot_prediction import ray_intersection
   from dials.algorithms.indexing.indexer2 import master_params
   from dials.algorithms.refinement import RefinerFactory
-  from dials.model.experiment.experiment_list import ExperimentList
+  from dxtbx.model.experiment.experiment_list import ExperimentList
   master_params.refinement.reflections.close_to_spindle_cutoff = 0.001
   from dials.model.data import ReflectionList
   ref_list = ReflectionList.from_table(observations)

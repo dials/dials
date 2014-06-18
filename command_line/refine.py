@@ -13,7 +13,7 @@
 from __future__ import division
 from dials.util.script import ScriptRunner
 from dials.util.command_line import Importer
-from dials.model.experiment.experiment_list import \
+from dxtbx.model.experiment.experiment_list import \
   ExperimentList, ExperimentListDumper
 
 class Script(ScriptRunner):

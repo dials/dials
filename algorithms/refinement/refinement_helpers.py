@@ -131,7 +131,7 @@ def refine(beam, goniometer, crystal, detector, scan,
   """Simple refinement interface for the centroid refinement sprint"""
 
   # Reflection prediction
-  from dials.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ScansRayPredictor
 
   # Model parameterisations
@@ -286,7 +286,7 @@ def scan_varying_refine(
   """experimental refinement function for scan-varying refinement"""
 
   # Reflection prediction
-  from dials.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
   from dials.algorithms.refinement.prediction import ScansRayPredictor
   from dials.algorithms.refinement.prediction import \
       ScanVaryingReflectionListGenerator

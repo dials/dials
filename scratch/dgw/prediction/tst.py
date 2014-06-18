@@ -95,7 +95,7 @@ from libtbx.test_utils import approx_equal
 
 ### import models
 from dxtbx.model.crystal import crystal_model
-from dials.model.experiment import beam_factory, goniometer_factory
+from dxtbx.model.experiment import beam_factory, goniometer_factory
 
 ### local functions
 def random_direction_close_to(vector):
@@ -251,7 +251,7 @@ print "OK"
 
 # make an identical sensor and a Panel for testing.
 from rstbx.bpcx import sensor
-from dials.model.experiment import Panel
+from dxtbx.model.experiment import Panel
 npx_fast = 1475
 npx_slow = 1679
 pix_size_f = pix_size_s = 0.172

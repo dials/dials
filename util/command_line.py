@@ -368,7 +368,7 @@ class Importer(object):
 
   def try_import_experiments(self, args, verbose):
     ''' Try to import experiments. '''
-    from dials.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     from os.path import abspath
     unhandled = []
     for argument in args:

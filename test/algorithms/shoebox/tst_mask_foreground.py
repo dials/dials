@@ -9,7 +9,7 @@ class Test(object):
     from dials.model.serialize import load
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.algorithms.shoebox import MaskForeground
-    from dials.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment.experiment_list import Experiment
 
     try:
       dials_regression = libtbx.env.dist_path('dials_regression')

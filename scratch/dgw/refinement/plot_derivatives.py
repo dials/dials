@@ -15,9 +15,9 @@ import random
 from scitbx import matrix
 
 # Experimental models
-from dials.model.experiment import beam_factory
-from dials.model.experiment import goniometer_factory
-from dials.model.experiment import detector_factory
+from dxtbx.model.experiment import beam_factory
+from dxtbx.model.experiment import goniometer_factory
+from dxtbx.model.experiment import detector_factory
 from dxtbx.model.crystal import crystal_model
 
 # Model parameterisations
@@ -30,7 +30,7 @@ from dials.algorithms.refinement.parameterisation.crystal_parameters import \
 
 # Reflection prediction
 from dials.algorithms.spot_prediction import IndexGenerator
-from dials.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 from dials.algorithms.refinement.prediction import ScansRayPredictor
 from cctbx.sgtbx import space_group, space_group_symbols
 

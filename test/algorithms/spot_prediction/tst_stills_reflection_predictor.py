@@ -16,9 +16,9 @@ class Test(object):
   def __init__(self):
 
     # Set up experimental models with regular geometry
-    from dials.model.experiment import beam_factory
-    from dials.model.experiment import goniometer_factory
-    from dials.model.experiment import detector_factory
+    from dxtbx.model.experiment import beam_factory
+    from dxtbx.model.experiment import goniometer_factory
+    from dxtbx.model.experiment import detector_factory
 
     from dxtbx.model.crystal import crystal_model
 
@@ -51,7 +51,7 @@ class Test(object):
     self.crystal = crystal_model(a, b, c, space_group_symbol = "P 1")
 
     # Collect these models in an Experiment (ignoring the goniometer)
-    from dials.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment.experiment_list import Experiment
     self.experiment = Experiment(beam=self.beam, detector=self.detector,
       goniometer=None, scan=None, crystal=self.crystal, imageset=None)
 

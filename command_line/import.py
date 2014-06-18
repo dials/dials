@@ -10,8 +10,8 @@
 #  included in the root directory of this package.
 from __future__ import division
 from dxtbx.datablock import DataBlockFactory, DataBlockDumper
-from dials.model.experiment.experiment_list import ExperimentListFactory
-from dials.model.experiment.experiment_list import ExperimentListDumper
+from dxtbx.model.experiment.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 
 
 class ImageFileImporter(object):

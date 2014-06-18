@@ -84,7 +84,7 @@ def open_shoebox_writer(filename):
 
 
 if __name__ == '__main__':
-  from dials.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
   from dials.array_family import flex
 
   experiments = ExperimentListFactory.from_json_file(

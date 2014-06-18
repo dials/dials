@@ -6,7 +6,7 @@ def run(args):
   experiment_filenames = args[:len(args)//2]
   reflection_filenames = args[len(args)//2:]
 
-  from dials.model.experiment.experiment_list import ExperimentList
+  from dxtbx.model.experiment.experiment_list import ExperimentList
   from dials.array_family import flex
 
   experiment_list = ExperimentList()

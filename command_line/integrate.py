@@ -104,7 +104,7 @@ class Script(ScriptRunner):
 
   def load_experiments(self, filename):
     ''' Load the experiment list. '''
-    from dials.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     from dials.util.command_line import Command
     Command.start('Loading experiments from %s' % filename)
     exlist = ExperimentListFactory.from_json_file(filename)

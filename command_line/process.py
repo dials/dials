@@ -193,7 +193,7 @@ class Script(ScriptRunner):
     idxr.index()
 
     from dials.array_family import flex
-    from dials.model.experiment.experiment_list import ExperimentListFactory
+    from dxtbx.model.experiment.experiment_list import ExperimentListFactory
     indexed = idxr.refined_reflections
     experiments = idxr.refined_experiments
 
@@ -217,7 +217,7 @@ class Script(ScriptRunner):
     experiments = refiner.get_experiments()
 
     # Dump experiments to disk
-    from dials.model.experiment.experiment_list import ExperimentListDumper
+    from dxtbx.model.experiment.experiment_list import ExperimentListDumper
     dump = ExperimentListDumper(experiments)
     dump.as_json("refined_experiments.json")
 

@@ -16,9 +16,9 @@ import random
 from scitbx import matrix
 from libtbx.test_utils import approx_equal
 
-from dials.model.experiment import Panel, Detector
-from dials.model.experiment import detector_factory
-from dials.model.experiment import beam_factory
+from dxtbx.model.experiment import Panel, Detector
+from dxtbx.model.experiment import detector_factory
+from dxtbx.model.experiment import beam_factory
 
 from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift

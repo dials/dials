@@ -3,7 +3,7 @@ import scitbx.matrix
 from scitbx import fftpack
 from cctbx.array_family import flex
 from cctbx import crystal, sgtbx, uctbx, xray
-from dials.model.experiment.crystal_model import Crystal
+from dxtbx.model.experiment.crystal_model import Crystal
 from dxtbx.serialize.load import imageset_from_string
 from libtbx.math_utils import iceil
 import iotbx.phil

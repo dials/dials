@@ -8,7 +8,7 @@ if __name__ == '__main__':
 
   import cPickle as pickle
   from dials.array_family import flex
-  from dials.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 
   integrated_data = pickle.load(open(sys.argv[1], 'rb'))
   experiment_list = ExperimentListFactory.from_json_file(sys.argv[2],

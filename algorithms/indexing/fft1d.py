@@ -13,7 +13,7 @@
 from __future__ import division
 
 from dials.algorithms.indexing.indexer2 import indexer_base
-from dials.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 class indexer_fft1d(indexer_base):
 

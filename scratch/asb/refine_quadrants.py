@@ -30,7 +30,7 @@ def load_input(exp_path, ref_path):
   exp = load.experiment_list(exp_path , check_format=False)[0]
   return refs, exp
 
-from dials.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 class ExperimentFromCrystal(object):
 
   def __init__(self, reference_beam, reference_detector):
@@ -54,7 +54,7 @@ reflections, exp = load_input(line.experiments, line.reflections)
 assert reflections['id'].all_eq(0)
 experiment_from_crystal=ExperimentFromCrystal(exp.beam, exp.detector)
 
-from dials.model.experiment.experiment_list import ExperimentList
+from dxtbx.model.experiment.experiment_list import ExperimentList
 experiments=ExperimentList()
 experiments.append(experiment_from_crystal(exp.crystal))
 
@@ -92,7 +92,7 @@ refiner = RefinerFactory.from_parameters_data_experiments(
 refiner.run()
 
 # save the refined experiments
-from dials.model.experiment.experiment_list import ExperimentListDumper
+from dxtbx.model.experiment.experiment_list import ExperimentListDumper
 experiments = refiner.get_experiments()
 dump = ExperimentListDumper(experiments)
 experiments_filename = "refined_experiments.json"

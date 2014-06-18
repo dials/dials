@@ -6,7 +6,7 @@ from math import pi
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
 
-from dials.model.experiment import beam_factory
+from dxtbx.model.experiment import beam_factory
 from dials.algorithms.refinement.parameterisation.beam_parameters import \
     BeamParameterisationOrientation
 from dials.algorithms.refinement.refinement_helpers \

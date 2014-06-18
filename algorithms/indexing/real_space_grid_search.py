@@ -20,7 +20,7 @@ from dials.algorithms.indexing.indexer2 import \
      indexer_base, optimise_basis_vectors
 from dials.algorithms.indexing.indexer2 import \
      is_approximate_integer_multiple
-from dials.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 
 

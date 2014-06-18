@@ -23,7 +23,7 @@ from cctbx.array_family import flex
 from cctbx import crystal, sgtbx, uctbx, xray
 
 from dxtbx.model.crystal import crystal_model as Crystal
-from dials.model.experiment.experiment_list import Experiment, ExperimentList
+from dxtbx.model.experiment.experiment_list import Experiment, ExperimentList
 
 master_phil_scope = iotbx.phil.parse("""
 reference {

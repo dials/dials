@@ -27,7 +27,7 @@ import libtbx.load_env # required for libtbx.env.find_in_repositories
 from libtbx import easy_run
 from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
-from dials.model.experiment.experiment_list import ExperimentListFactory
+from dxtbx.model.experiment.experiment_list import ExperimentListFactory
 
 def test1():
 

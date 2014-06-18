@@ -26,7 +26,7 @@ from setup_geometry import Extract
 
 # We will set up a mock scan and a mock experiment list
 from dxtbx.model.scan import scan_factory
-from dials.model.experiment.experiment_list import ExperimentList, Experiment
+from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \

@@ -99,7 +99,7 @@ def test1():
   crystal = crystal_model((40.,0.,0.) ,(0.,40.,0.), (0.,0.,40.),
                           space_group_symbol = "P1")
 
-  from dials.model.experiment import goniometer_factory
+  from dxtbx.model.experiment import goniometer_factory
   goniometer = goniometer_factory.known_axis((1., 0., 0.))
 
   # Build a mock scan for a 180 degree sweep
@@ -116,7 +116,7 @@ def test1():
   assert sweep_range == (0., pi)
   assert approx_equal(im_width, 0.1 * pi / 180.)
 
-  from dials.model.experiment.experiment_list import ExperimentList, Experiment
+  from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
 
   # Build an experiment list
   experiments = ExperimentList()

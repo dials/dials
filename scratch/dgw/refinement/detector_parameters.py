@@ -12,8 +12,8 @@
 from __future__ import division
 from model_parameters import Parameter, ModelParameterisation
 from scitbx import matrix
-from dials.model.experiment import Panel, Detector
-from dials.model.experiment import detector_factory
+from dxtbx.model.experiment import Panel, Detector
+from dxtbx.model.experiment import detector_factory
 from math import sin, cos, pi, sqrt
 from dials.scratch.dgw.refinement \
     import dR_from_axis_and_angle, get_fd_gradients, random_param_shift

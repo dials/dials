@@ -60,6 +60,6 @@ def reference(infile):
 
 def experiment_list(infile, check_format=True):
   ''' Load an experiment list from a serialzied format. '''
-  from dials.model.experiment.experiment_list import ExperimentListFactory
+  from dxtbx.model.experiment.experiment_list import ExperimentListFactory
   return ExperimentListFactory.from_serialized_format(
     infile, check_format=check_format)

@@ -65,7 +65,7 @@ def run(args):
   n_predicted = flex.double()
 
   def predict_once(args):
-    from dials.model.experiment.experiment_list import Experiment
+    from dxtbx.model.experiment.experiment_list import Experiment
     U = args[0]
     A = U * B
     direct_matrix = A.inverse()

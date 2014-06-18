@@ -136,7 +136,7 @@ def refine_subgroup(args):
   experiment.crystal = copy.deepcopy(subgroup.unrefined_crystal)
 
   from dials.algorithms.indexing.refinement import refine
-  from dials.model.experiment.experiment_list import ExperimentList
+  from dxtbx.model.experiment.experiment_list import ExperimentList
   experiments = ExperimentList([experiment])
   refinery, refined, outliers = refine(
     params, used_reflections, experiments, verbosity=refiner_verbosity)
