@@ -16,7 +16,7 @@ class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
-    self.MaxImageSize = 300
+    self.MaxImageSize = 600
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
@@ -26,15 +26,15 @@ class MyFrame(wx.Frame):
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
 
-    btn_chg_displ = wx.Button(self, -1, "change display")
-
     btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
-    btn_chg_displ.Bind(wx.EVT_BUTTON, self.ChangeDisplay)
-    # starting with an EmptyBitmap
+
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSize, self.MaxImageSize))
-
+    self.Image_02 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+                                 self.MaxImageSize, self.MaxImageSize))
+    self.Image_03 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+                                 self.MaxImageSize, self.MaxImageSize))
     # Using a Sizers to handle the layout
 
     v_box = wx.BoxSizer(wx.VERTICAL)
@@ -46,13 +46,18 @@ class MyFrame(wx.Frame):
 
     v_box.Add(u_box)
 
-    h_box.Add(self.Image_01
-            , 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE
-            , 7)
+    h_box.Add(self.Image_01, 0
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+
+    h_box.Add(self.Image_02, 0
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+
+    h_box.Add(self.Image_03, 0
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+
     r_box = wx.BoxSizer(wx.VERTICAL)
     r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
-    r_box.Add(btn_chg_displ, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(r_box)
     v_box.Add(h_box)
 
@@ -61,8 +66,6 @@ class MyFrame(wx.Frame):
 
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
-    options_to_show = ''' bkg, dat, msk '''
-    self.to_show = "dat"
     self.DisplayPrev_refl()
 
   def DisplayNext_refl(self, event = None):
@@ -81,28 +84,16 @@ class MyFrame(wx.Frame):
     self.tabl.Previous_slice()
     self.My_Update()
 
-  def ChangeDisplay(self, event = None):
-    print "change display"
-    options_to_show = ''' bkg, dat, msk '''
-    if self.to_show == "dat":
-      self.to_show = "bkg"
-    elif self.to_show == "bkg":
-      self.to_show = "msk"
-    else:
-      self.to_show = "dat"
-    self.My_Update()
-
   def My_Update(self):
     bkg, dat, msk = self.tabl()
-    if self.to_show == "dat":
-      np_img = dat
-    elif self.to_show == "bkg":
-      np_img = bkg
-    else:
-      np_img = msk
 
-    My_Img = GetBitmap_from_np_array(np_img)
+    My_Img = GetBitmap_from_np_array(dat)
     self.Image_01.SetBitmap(My_Img)
+    My_Img = GetBitmap_from_np_array(bkg)
+    self.Image_02.SetBitmap(My_Img)
+    My_Img = GetBitmap_from_np_array(msk)
+    self.Image_03.SetBitmap(My_Img)
+
     self.Fit()
     self.Layout()
     self.Refresh()

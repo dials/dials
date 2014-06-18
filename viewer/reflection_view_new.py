@@ -16,7 +16,7 @@ class MyFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
-    self.MaxImageSize = 500
+    self.MaxImageSize = 600
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
