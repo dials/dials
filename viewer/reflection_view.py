@@ -32,7 +32,7 @@ class MyFrame(wx.Frame):
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
     btn_chg_displ.Bind(wx.EVT_BUTTON, self.ChangeDisplay)
     # starting with an EmptyBitmap
-    self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+    self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSize, self.MaxImageSize))
 
     # Using a Sizers to handle the layout
@@ -46,7 +46,7 @@ class MyFrame(wx.Frame):
 
     v_box.Add(u_box)
 
-    h_box.Add(self.Image
+    h_box.Add(self.Image_01
             , 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE
             , 7)
     r_box = wx.BoxSizer(wx.VERTICAL)
@@ -102,7 +102,7 @@ class MyFrame(wx.Frame):
       np_img = msk
 
     My_Img = GetBitmap_from_np_array(np_img)
-    self.Image.SetBitmap(My_Img)
+    self.Image_01.SetBitmap(My_Img)
     self.Fit()
     self.Layout()
     self.Refresh()
