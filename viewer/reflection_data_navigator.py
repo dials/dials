@@ -51,7 +51,7 @@ class table_s_navigator(object):
 
 
   def next_slice(self):
-    if self.z < self.depth:
+    if self.z < self.depth - 1:
       self.z += 1
     else:
       print "maximum depth reached"

@@ -25,9 +25,12 @@ class MyFrame(wx.Frame):
 
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
+
+    btn_chg_displ = wx.Button(self, -1, "change display")
+
     btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
-
+    btn_chg_displ.Bind(wx.EVT_BUTTON, self.ChangeDisplay)
     # starting with an EmptyBitmap
     self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSize, self.MaxImageSize))
@@ -48,8 +51,8 @@ class MyFrame(wx.Frame):
             , 7)
     r_box = wx.BoxSizer(wx.VERTICAL)
     r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
-
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+    r_box.Add(btn_chg_displ, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(r_box)
     v_box.Add(h_box)
 
@@ -59,8 +62,8 @@ class MyFrame(wx.Frame):
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
     bkg, dat, msk = self.tabl()
-    self.tmp_img = dat
-
+    #self.tmp_img = dat
+    self.DisplayPrev_refl()
   def DisplayNext_refl(self, event = None):
     #np_img = build_np_img(width = 20, height = 30)
     #self.My_Update(np_img)
@@ -88,7 +91,10 @@ class MyFrame(wx.Frame):
     self.tabl.Previous_slice()
     bkg, dat, msk = self.tabl()
     self.My_Update(dat)
-
+  def ChangeDisplay(self, event = None):
+    print "change display"
+    bkg, dat, msk = self.tabl()
+    self.My_Update(dat)
   def My_Update(self, np_img):
     My_Img = GetBitmap_from_np_array(np_img)
     self.Image.SetBitmap(My_Img)
