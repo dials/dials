@@ -453,9 +453,7 @@ model/data/ray.h -text
 model/data/reflection.h -text
 model/data/shoebox.h -text
 model/data/transformed_shoebox.h -text
-model/experiment/SConscript -text
 model/experiment/__init__.py -text
-model/experiment/boost_python/experiment_ext.cc -text
 model/experiment/experiment_list.py -text
 model/serialize/SConscript -text
 model/serialize/__init__.py -text

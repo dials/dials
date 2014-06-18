@@ -3,4 +3,3 @@ Import('env')
 
 env.SConscript('data/SConscript', exports={ 'env' : env })
 env.SConscript('serialize/SConscript', exports={ 'env' : env })
-env.SConscript('experiment/SConscript', exports={ 'env' : env })

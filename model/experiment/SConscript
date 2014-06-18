@@ -1,8 +1,0 @@
-
-Import('env')
-
-sources = [
-    'boost_python/experiment_ext.cc']
-
-env.SharedLibrary(target='#/lib/dials_model_experiment_ext', source=sources)
-
