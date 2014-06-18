@@ -514,8 +514,12 @@ class RefinerFactory(object):
               experiments,
               det_params, beam_params, xl_ori_params, xl_uc_params)
       else:
-        from dials.algorithms.refinement.parameterisation.prediction_parameters \
-          import XYPhiPredictionParameterisation as PredParam
+        if sparse:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters \
+            import XYPhiPredictionParameterisationSparse as PredParam
+        else:
+          from dials.algorithms.refinement.parameterisation.prediction_parameters \
+            import XYPhiPredictionParameterisation as PredParam
         pred_param = PredParam(
             experiments,
             det_params, beam_params_scans, xl_ori_params_scans, xl_uc_params_scans)
@@ -646,8 +650,9 @@ class RefinerFactory(object):
         The target factory instance
     """
 
-    # Shorten parameter path
+    # Shorten parameter paths
     options = params.refinement.target
+    sparse = params.refinement.parameterisation.sparse
 
     if options.rmsd_cutoff == "fraction_of_bin_size":
       absolute_cutoffs = None
@@ -667,11 +672,19 @@ class RefinerFactory(object):
 
     # Determine whether the target is in X, Y, Phi space or just X, Y.
     if all(e.goniometer is not None for e in experiments):
-      from dials.algorithms.refinement.target \
-        import LeastSquaresPositionalResidualWithRmsdCutoff as targ
+      if sparse:
+        from dials.algorithms.refinement.target \
+          import LeastSquaresPositionalResidualWithRmsdCutoffSparse as targ
+      else:
+        from dials.algorithms.refinement.target \
+          import LeastSquaresPositionalResidualWithRmsdCutoff as targ
     elif all(e.goniometer is None for e in experiments):
-      from dials.algorithms.refinement.target_stills \
-        import LeastSquaresStillsResidualWithRmsdCutoff as targ
+      if sparse:
+        from dials.algorithms.refinement.target_stills \
+          import LeastSquaresStillsResidualWithRmsdCutoffSparse as targ
+      else:
+        from dials.algorithms.refinement.target_stills \
+          import LeastSquaresStillsResidualWithRmsdCutoff as targ
     else:
       raise NotImplementedError("ExperimentList contains a mixture of "
         "experiments with goniometers and those without. This is not currently "

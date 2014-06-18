@@ -240,7 +240,7 @@ class Target(object):
       matches = self._matches
       self._finished_residuals_and_gradients = True
 
-    # Here we hardcode three types of residual, which might correspond to
+    # Here we hardcode *three* types of residual, which might correspond to
     # X, Y, Phi (scans case) or X, Y, DeltaPsi (stills case).
     dX_dp, dY_dp, dZ_dp = self.calculate_gradients(matches)
 
@@ -248,6 +248,15 @@ class Target(object):
 
     nelem = len(matches) * 3
     nparam = len(self._prediction_parameterisation)
+    jacobian = self._build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam)
+
+    return(residuals, jacobian, weights)
+
+  @staticmethod
+  def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
+    """construct Jacobian from lists of gradient vectors. This method may be
+    overridden for the case where these vectors use sparse storage"""
+
     jacobian = flex.double(flex.grid(nelem, nparam))
     # loop over parameters
     for i in range(nparam):
@@ -256,7 +265,8 @@ class Target(object):
       col.extend(dZ)
       jacobian.matrix_paste_column_in_place(col, i)
 
-    return(residuals, jacobian, weights)
+    return jacobian
+
 
   @abc.abstractmethod
   def _extract_residuals_and_weights(matches):
@@ -378,3 +388,40 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
         r[2] < self._binsize_cutoffs[2]):
       return True
     return False
+
+class SparseJacobianMatrixMixin:
+  """Mixin class to build a sparse Jacobian from gradients of the prediction
+  formula stored as sparse vectors"""
+
+  @staticmethod
+  def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
+    """construct Jacobian from lists of gradient vectors. This method may be
+    overridden for the case where these vectors use sparse storage"""
+
+    from scitbx import sparse
+    nref = int(nelem / 3)
+    X_mat = sparse.matrix(nref, nparam)
+    Y_mat = sparse.matrix(nref, nparam)
+    Z_mat = sparse.matrix(nref, nparam)
+    jacobian = sparse.matrix(nelem, nparam)
+
+    # loop over parameters, building full width blocks of the full Jacobian
+    for i in range(nparam):
+      X_mat[:,i] = dX_dp[i]
+      Y_mat[:,i] = dY_dp[i]
+      Z_mat[:,i] = dZ_dp[i]
+
+    # set the blocks in the Jacobian
+    jacobian.assign_block(X_mat, 0, 0)
+    jacobian.assign_block(Y_mat, nref, 0)
+    jacobian.assign_block(Z_mat, 2*nref, 0)
+
+    return jacobian
+
+class LeastSquaresPositionalResidualWithRmsdCutoffSparse(
+  SparseJacobianMatrixMixin, LeastSquaresPositionalResidualWithRmsdCutoff):
+  """A version of the LeastSquaresPositionalResidualWithRmsdCutoff Target that
+  uses a sparse matrix data structure for memory efficiency when there are a
+  large number of Experiments"""
+
+  pass

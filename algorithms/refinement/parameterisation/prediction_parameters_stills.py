@@ -16,7 +16,7 @@ from scitbx import matrix
 
 from dials.array_family import flex
 from dials.algorithms.refinement.parameterisation.prediction_parameters \
-  import PredictionParameterisation
+  import PredictionParameterisation, SparseGradientVectorMixin
 
 #class StillsPredictionParameterisation(PredictionParameterisation):
 #  """
@@ -844,7 +844,8 @@ class StillsPredictionParameterisation(PredictionParameterisation):
     return dX_dp, dY_dp
 
 
-class StillsPredictionParameterisationSparse(StillsPredictionParameterisation):
+class StillsPredictionParameterisationSparse(SparseGradientVectorMixin,
+  StillsPredictionParameterisation):
   """A version of StillsPredictionParameterisation that uses a sparse matrix
   data structure for memory efficiency when there are a large number of
   Experiments"""

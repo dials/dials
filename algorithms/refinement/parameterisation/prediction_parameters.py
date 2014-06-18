@@ -328,7 +328,8 @@ class PredictionParameterisation(object):
 
     return self._get_gradients_core(reflections, D, s0, U, B, axis)
 
-  def _prepare_gradient_vectors(self, m, n):
+  @staticmethod
+  def _prepare_gradient_vectors(m, n):
     """set up lists of vectors to store calculated gradients in. This method
     may be overriden by a derived class to e.g. use sparse vectors"""
 
@@ -346,6 +347,23 @@ class PredictionParameterisation(object):
     # overload)
     return crystal.get_U(), crystal.get_B()
 
+
+class SparseGradientVectorMixin(object):
+  """Mixin class to use sparse vectors for storage of gradients of the
+  prediction formula"""
+
+  @staticmethod
+  def _prepare_gradient_vectors(m, n):
+
+    from scitbx import sparse
+    """set up lists of vectors to store calculated gradients in. This method
+    may be overriden by a derived class to e.g. use sparse vectors"""
+
+    dX_dp = [sparse.matrix_column(m) for p in range(n)]
+    dY_dp = [sparse.matrix_column(m) for p in range(n)]
+    dZ_dp = [sparse.matrix_column(m) for p in range(n)]
+
+    return dX_dp, dY_dp, dZ_dp
 
 class XYPhiPredictionParameterisation(PredictionParameterisation):
 
@@ -705,3 +723,10 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
       dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
 
     return dX_dp, dY_dp
+
+class XYPhiPredictionParameterisationSparse(SparseGradientVectorMixin,
+  XYPhiPredictionParameterisation):
+  """A version of XYPhiPredictionParameterisation that uses a sparse matrix
+  data structure for memory efficiency when there are a large number of
+  Experiments"""
+  pass
