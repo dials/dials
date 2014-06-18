@@ -57,8 +57,8 @@ namespace dials { namespace algorithms {
       void get_sum(int row_in, int col_in,
         const af::const_ref< double, af::c_grid<2> > &data2d,
         const af::const_ref< int, af::c_grid<2> > &mask2d){
-          for (int row = row_in - 3; row < row_in + 3; row++){
-            for(int col = col_in - 3; col < col_in + 3; col++){
+          for (int row = row_in - 5; row < row_in + 5; row++){
+            for(int col = col_in - 5; col < col_in + 5; col++){
               if(row>=0 and row < max_row and
                  col>=0 and col < max_col ){
                 if ( mask2d(row, col) & Background ){
