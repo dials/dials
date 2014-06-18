@@ -12,7 +12,7 @@ import wx, os
 from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
 from dials.viewer.reflection_data_navigator import table_s_navigator
 
-class MyFrame(wx.Frame):
+class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
@@ -103,7 +103,7 @@ class MyFrame(wx.Frame):
 
 class App(wx.App):
   def OnInit(self):
-    self.frame = MyFrame(None, -1, "DIALS Reflections Viewer"
+    self.frame = ReflectionFrame(None, -1, "DIALS Reflections Viewer"
     , wx.DefaultPosition,(550,200))
     self.SetTopWindow(self.frame)
     self.frame.Show(True)
