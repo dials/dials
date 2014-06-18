@@ -61,6 +61,8 @@ class MyFrame(wx.Frame):
 
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
+    options_to_show = ''' bkg, dat, msk '''
+    self.to_show = "dat"
     self.DisplayPrev_refl()
 
   def DisplayNext_refl(self, event = None):
@@ -81,11 +83,24 @@ class MyFrame(wx.Frame):
 
   def ChangeDisplay(self, event = None):
     print "change display"
+    options_to_show = ''' bkg, dat, msk '''
+    if self.to_show == "dat":
+      self.to_show = "bkg"
+    elif self.to_show == "bkg":
+      self.to_show = "msk"
+    else:
+      self.to_show = "dat"
     self.My_Update()
 
   def My_Update(self):
     bkg, dat, msk = self.tabl()
-    np_img = msk
+    if self.to_show == "dat":
+      np_img = dat
+    elif self.to_show == "bkg":
+      np_img = bkg
+    else:
+      np_img = msk
+
     My_Img = GetBitmap_from_np_array(np_img)
     self.Image.SetBitmap(My_Img)
     self.Fit()
