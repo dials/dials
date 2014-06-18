@@ -19,7 +19,7 @@ class table_s_navigator(object):
       self.row_pos = 0
     else:
       print "ERROR 0 reflections"
-
+    self.z = 0
   def __call__(self):
     self.row = self.table[self.row_pos]
     self.data_flex = self.row['shoebox'].data
@@ -27,9 +27,7 @@ class table_s_navigator(object):
     self.mask_flex = self.row['shoebox'].mask
     self.depth = self.data_flex.all()[0]
     print "depth of refl =", self.depth
-    if self.depth >= 1:
-      self.z = 0
-    else:
+    if self.depth <= 0:
       print "ERROR 0 depth"
 
     mask2d = self.mask_flex[self.z:self.z + 1, :, :]

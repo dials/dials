@@ -10,18 +10,13 @@
 
 import wx, os
 from dials.viewer.viewer_utilities import GetBitmap_from_np_array, build_np_img
-from dials.array_family import flex
-
-glov_table = 1
-
-
+from dials.viewer.reflection_data_navigator import table_s_navigator
 
 class MyFrame(wx.Frame):
-
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
-    self.MaxImageSize = 300
+    self.MaxImageSize = 500
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
@@ -30,15 +25,16 @@ class MyFrame(wx.Frame):
 
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
+
     btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
 
-    # starting with an EmptyBitmap
-    self.Image = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+    self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSize, self.MaxImageSize))
-
-    self.DisplayNext_refl()
-
+    self.Image_02 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+                                 self.MaxImageSize, self.MaxImageSize))
+    self.Image_03 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
+                                 self.MaxImageSize, self.MaxImageSize))
     # Using a Sizers to handle the layout
 
     v_box = wx.BoxSizer(wx.VERTICAL)
@@ -50,12 +46,17 @@ class MyFrame(wx.Frame):
 
     v_box.Add(u_box)
 
-    h_box.Add(self.Image
-            , 0, wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE
-            , 7)
+    h_box.Add(self.Image_01, 0
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+
+    h_box.Add(self.Image_02, 0
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+
+    h_box.Add(self.Image_03, 0
+            , wx.ALIGN_CENTER_HORIZONTAL | wx.ALL | wx.ADJUST_MINSIZE, 7)
+
     r_box = wx.BoxSizer(wx.VERTICAL)
     r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
-
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(r_box)
     v_box.Add(h_box)
@@ -63,134 +64,65 @@ class MyFrame(wx.Frame):
     self.SetSizerAndFit(v_box)
     wx.EVT_CLOSE(self, self.OnCloseWindow)
 
-    #self.init_data()
-
-  def init_data(self):
-    #global glov_table
-    local_table = glov_table
-    print "YES"
-
-    self.local_table_obj = table_data(local_table)
-    bkg, dat, msk = self.local_table_obj()
-    self.tmp_img = dat
+  def tabl_to_frame(self, loc_tabl):
+    self.tabl = table_s_navigator(loc_tabl)
+    self.DisplayPrev_refl()
 
   def DisplayNext_refl(self, event = None):
-    np_img = build_np_img(width = 20, height = 30)
-    self.My_Update(np_img)
+    self.tabl.next_Reflection()
+    self.My_Update()
 
   def DisplayPrev_refl(self, event = None):
-    np_img = build_np_img(width = 20, height = 10)
-    self.My_Update(np_img)
+    self.tabl.Previous_Reflection()
+    self.My_Update()
 
   def DisplayNext_slice(self, event = None):
-    #np_img = build_np_img(width = 25, height = 15)
-    #self.My_Update(np_img)
-    self.My_Update(self.tmp_img)
+    self.tabl.next_slice()
+    self.My_Update()
 
   def DisplayPrev_slice(self, event = None):
-    np_img = build_np_img(width = 10, height = 15)
-    self.My_Update(np_img)
+    self.tabl.Previous_slice()
+    self.My_Update()
 
-  def My_Update(self, np_img):
-    My_Img = GetBitmap_from_np_array(np_img)
-    self.Image.SetBitmap(My_Img)
+  def My_Update(self):
+    bkg, dat, msk = self.tabl()
+
+    My_Img = GetBitmap_from_np_array(dat)
+    self.Image_01.SetBitmap(My_Img)
+    My_Img = GetBitmap_from_np_array(bkg)
+    self.Image_02.SetBitmap(My_Img)
+    My_Img = GetBitmap_from_np_array(msk)
+    self.Image_03.SetBitmap(My_Img)
+
     self.Fit()
     self.Layout()
     self.Refresh()
 
   def OnCloseWindow(self, event):
     self.Destroy()
-class table_data(object):
-
-  def __init__(self, table):
-
-    self.table = table
-    self.num_ref = len(table)
-    if self.num_ref >= 1:
-      row = table[0]
-    else:
-      print "ERROR 0 reflections"
-
-    self.data_flex = row['shoebox'].data
-    self.background_flex = row['shoebox'].background
-    self.mask_flex = row['shoebox'].mask
-    self.depth = self.data_flex.all()[0]
-    print "depth of refl =", self.depth
-    if self.depth >= 1:
-      self.z = 0
-    else:
-      print "ERROR 0 depth"
-
-  def next_slice(self):
-    if self.z < self.depth:
-      self.z += 1
-      self.__call__()
-    else:
-      print "maximum depth reached"
-  def Previous_slice(self):
-    pass
-  def next_Reflection(self):
-    pass
-  def Previous_Reflection(self):
-    pass
-
-  def __call__(self):
-
-    mask2d = self.mask_flex[self.z:self.z + 1, :, :]
-    mask2d.reshape(flex.grid(self.mask_flex.all()[1:]))
-    mask2d_np = mask2d.as_numpy_array()
-
-    data2d = self.data_flex[self.z:self.z + 1, :, :]
-    data2d.reshape(flex.grid(self.data_flex.all()[1:]))
-    data2d_np= data2d.as_numpy_array()
-
-    background2d = self.background_flex[self.z:self.z + 1, :, :]
-    background2d.reshape(flex.grid(self.background_flex.all()[1:]))
-    background2d_np = background2d.as_numpy_array()
-
-    self.img_background = background2d_np
-    self.img_data = data2d_np
-    self.img_mask = mask2d_np
-    return self.img_background, self.img_data, self.img_mask
-
-  def background(self):
-    print "from background(self)"
-    return self.img_background
-
-  def data(self):
-    print "from data(self)"
-    return self.img_data
-
-  def mask(self):
-    print "from mask(self)"
-    return self.img_mask
-
-
-def paint_refl(table):
-  app = App(redirect=False)
-  #MyFrame.tmp_table = table
-  print "here"
-  global glov_table
-  glov_table = table
-  app.MainLoop()
-
-  return
-
 
 class App(wx.App):
   def OnInit(self):
-    frame = MyFrame(None, -1, "DIALS Reflections Viewer"
+    self.frame = MyFrame(None, -1, "DIALS Reflections Viewer"
     , wx.DefaultPosition,(550,200))
-    self.SetTopWindow(frame)
-
-
-    frame.Show(True)
+    self.SetTopWindow(self.frame)
+    self.frame.Show(True)
     return True
 
+  def table_in(self, loc_tabl):
+    self.frame.tabl_to_frame(loc_tabl)
 
-'''
 if __name__ == "__main__":
 
+  import cPickle as pickle
+  import sys
+  from dials.model.data import ReflectionList # implicit import
+  table = pickle.load(open(sys.argv[1]))
+
+  print "num of ref =", len(table)
+
   app = App(redirect=False)
+  app.table_in(table)
+
   app.MainLoop()
-'''
+#'''
