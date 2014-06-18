@@ -20,7 +20,7 @@ class Test(object):
     from dials.model.experiment import goniometer_factory
     from dials.model.experiment import detector_factory
 
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
 
     # Beam along the Z axis
     self.beam = beam_factory.make_beam(unit_s0 = matrix.col((0, 0, 1)),

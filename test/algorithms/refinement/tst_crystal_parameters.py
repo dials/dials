@@ -11,7 +11,7 @@
 
 from __future__ import division
 
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 from scitbx import matrix
 from dials.algorithms.refinement.refinement_helpers \
     import get_fd_gradients, random_param_shift

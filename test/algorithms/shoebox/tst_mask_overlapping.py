@@ -22,7 +22,7 @@ class Test(object):
   def run(self):
     from dials.model.serialize import load
     from dials.algorithms import shoebox
-    from cctbx.crystal.crystal_model.serialize import load_crystal
+    from dxtbx.serialize.load import crystal as load_crystal
     from dials.array_family import flex
 
     # Load the sweep and crystal

@@ -49,7 +49,7 @@ def run(args):
   space_group = params.space_group.group()
 
   import random
-  from cctbx.crystal.crystal_model import crystal_model
+  from dxtbx.model.crystal import crystal_model
   from cctbx import crystal, miller
   from scitbx import matrix
 

@@ -15,7 +15,7 @@ import random
 # CCTBX imports
 from libtbx.test_utils import approx_equal
 from scitbx import matrix
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 
 # DIALS imports
 from dials.algorithms.refinement.refinement_helpers \

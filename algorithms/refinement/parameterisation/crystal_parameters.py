@@ -11,7 +11,7 @@
 
 from __future__ import division
 from model_parameters import Parameter, ModelParameterisation
-from cctbx.crystal.crystal_model import crystal_model # implicit import
+from dxtbx.model.crystal import crystal_model # implicit import
 from scitbx import matrix
 from dials.algorithms.refinement.refinement_helpers \
     import dR_from_axis_and_angle

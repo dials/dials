@@ -15,7 +15,7 @@ def run(args):
   import math
   import os
   from scitbx import matrix
-  from cctbx.crystal.crystal_model import crystal_model
+  from dxtbx.model.crystal import crystal_model
   from dials.util.command_line import Importer
 
   importer = Importer(args)

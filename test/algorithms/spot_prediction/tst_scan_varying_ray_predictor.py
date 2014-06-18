@@ -77,7 +77,7 @@ class Test:
     from dials.algorithms.refinement.prediction.predictors import \
       ScanVaryingReflectionPredictor
     from dxtbx.model import Beam, Goniometer, Scan
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
     beam = Beam(self.s0)
     gonio = Goniometer(self.axis)
     scan = Scan(self.image_range, self.dphi)

@@ -18,7 +18,7 @@ from scitbx import matrix
 from dials.model.experiment import beam_factory
 from dials.model.experiment import goniometer_factory
 from dials.model.experiment import detector_factory
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 
 # Model parameterisations
 from dials.algorithms.refinement.parameterisation.detector_parameters import \

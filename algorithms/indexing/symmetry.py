@@ -12,7 +12,7 @@ def dials_crystal_from_orientation(crystal_orientation,space_group):
   BB = col((dm[3],dm[4],dm[5]))
   CC = col((dm[6],dm[7],dm[8]))
 
-  from cctbx.crystal.crystal_model import crystal_model
+  from dxtbx.model.crystal import crystal_model
 
   cryst = crystal_model(real_space_a=AA, real_space_b=BB, real_space_c=CC,
                         space_group=space_group)

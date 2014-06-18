@@ -18,7 +18,7 @@ class TestExperiment(object):
 
   def tst_contains(self):
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
 
     # Create a load of models
     b1 = Beam()
@@ -59,7 +59,7 @@ class TestExperiment(object):
   def tst_equality(self):
 
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
 
     # Create a load of models
     b1 = Beam()
@@ -492,7 +492,7 @@ class TestExperimentListFactory(object):
   def tst_from_imageset(self):
     from dxtbx.imageset import ImageSet, NullReader
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
 
     imageset = ImageSet(NullReader(["filename.cbf"]))
     imageset.set_beam(Beam(), 0)
@@ -516,7 +516,7 @@ class TestExperimentListFactory(object):
   def tst_from_sweep(self):
     from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
 
     imageset = ImageSweep(NullReader(SweepFileList("filename%01d.cbf", (0, 2))))
     imageset.set_beam(Beam())
@@ -543,7 +543,7 @@ class TestExperimentListFactory(object):
     from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
     from dxtbx.model import Beam, Detector, Goniometer, Scan
     from dxtbx.datablock import DataBlockFactory
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
 
     imageset = ImageSweep(NullReader(SweepFileList("filename%01d.cbf", (0, 2))))
     imageset.set_beam(Beam())
@@ -632,7 +632,7 @@ class TestExperimentListDumper(object):
   def tst_dump_empty_sweep(self):
     from dxtbx.imageset import ImageSweep, NullReader, SweepFileList
     from dxtbx.model import Beam, Detector, Goniometer, Scan
-    from cctbx.crystal.crystal_model import crystal_model
+    from dxtbx.model.crystal import crystal_model
     from uuid import uuid4
 
     imageset = ImageSweep(NullReader(SweepFileList("filename%01d.cbf", (0, 3))))

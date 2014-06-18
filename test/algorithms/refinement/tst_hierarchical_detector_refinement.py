@@ -95,7 +95,7 @@ def test1():
   beam = im_set.get_beam()
 
   # we'll invent a crystal, goniometer and scan for this test
-  from cctbx.crystal.crystal_model import crystal_model
+  from dxtbx.model.crystal import crystal_model
   crystal = crystal_model((40.,0.,0.) ,(0.,40.,0.), (0.,0.,40.),
                           space_group_symbol = "P1")
 

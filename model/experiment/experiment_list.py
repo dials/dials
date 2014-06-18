@@ -207,7 +207,7 @@ class ExperimentList(object):
     ''' Serialize the experiment list to dictionary. '''
     from libtbx.containers import OrderedDict
     from dxtbx.imageset import ImageSet, ImageSweep
-    from cctbx.crystal.crystal_model.serialize import crystal_to_dict
+    from dxtbx.serialize.crystal import to_dict as crystal_to_dict
     from dxtbx.format.FormatMultiImage import FormatMultiImage
 
     # Check the experiment list is consistent
@@ -547,8 +547,8 @@ class ExperimentListDict(object):
   @staticmethod
   def _crystal_from_dict(obj):
     ''' Get the crystal from a dictionary. '''
-    from cctbx.crystal.crystal_model.serialize import crystal_from_dict
-    return crystal_from_dict(obj)
+    from dxtbx.serialize.crystal import from_dict
+    return from_dict(obj)
 
   @staticmethod
   def _from_file(filename):

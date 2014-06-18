@@ -3,7 +3,7 @@ from libtbx.test_utils import approx_equal
 
 def exercise():
   from dials.algorithms.indexing import compare_orientation_matrices
-  from cctbx.crystal.crystal_model import crystal_model
+  from dxtbx.model.crystal import crystal_model
   from cctbx import sgtbx
   from scitbx import matrix
   from scitbx.math import euler_angles as euler

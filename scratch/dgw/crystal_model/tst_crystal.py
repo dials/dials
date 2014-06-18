@@ -1,6 +1,6 @@
 from __future__ import division
 from scitbx import matrix
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 
 if __name__ == '__main__':
 

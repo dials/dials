@@ -94,7 +94,7 @@ from cctbx.sgtbx import space_group, space_group_symbols
 from libtbx.test_utils import approx_equal
 
 ### import models
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 from dials.model.experiment import beam_factory, goniometer_factory
 
 ### local functions

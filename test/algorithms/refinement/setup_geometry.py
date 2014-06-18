@@ -24,7 +24,7 @@ from dials.model.experiment import goniometer_factory
 from dials.model.experiment import detector_factory
 
 # crystal model
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 
 # Local functions
 def random_vector_close_to(vector, sd = 0.5):

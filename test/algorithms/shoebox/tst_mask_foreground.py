@@ -5,7 +5,7 @@ class Test(object):
   def __init__(self):
     import os
     import libtbx.load_env
-    from cctbx.crystal.crystal_model.serialize import load_crystal
+    from dxtbx.serialize.load import crystal as load_crystal
     from dials.model.serialize import load
     from dials.algorithms.shoebox import BBoxCalculator
     from dials.algorithms.shoebox import MaskForeground

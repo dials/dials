@@ -16,7 +16,7 @@ from libtbx.phil import command_line
 from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
-from cctbx.crystal.crystal_model import crystal_model
+from dxtbx.model.crystal import crystal_model
 from dials.model.serialize import dump
 from dials.util.command_line import Importer
 
