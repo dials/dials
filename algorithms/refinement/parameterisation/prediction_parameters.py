@@ -328,6 +328,16 @@ class PredictionParameterisation(object):
 
     return self._get_gradients_core(reflections, D, s0, U, B, axis)
 
+  def _prepare_gradient_vectors(self, m, n):
+    """set up lists of vectors to store calculated gradients in. This method
+    may be overriden by a derived class to e.g. use sparse vectors"""
+
+    dX_dp = [flex.double(m, 0.) for p in range(n)]
+    dY_dp = [flex.double(m, 0.) for p in range(n)]
+    dZ_dp = [flex.double(m, 0.) for p in range(n)]
+
+    return dX_dp, dY_dp, dZ_dp
+
   def _get_U_B_for_experiment(self, crystal, reflections, isel):
     """helper function to return either a single U, B pair (for scan-static) or
     U, B arrays (scan-varying) for a particular experiment."""
@@ -419,9 +429,7 @@ class XYPhiPredictionParameterisation(PredictionParameterisation):
     # each free parameter
     m = len(reflections)
     n = len(self) # number of free parameters
-    dX_dp = [flex.double(m, 0.) for p in range(n)]
-    dY_dp = [flex.double(m, 0.) for p in range(n)]
-    dphi_dp = [flex.double(m, 0.) for p in range(n)]
+    dX_dp, dY_dp, dphi_dp = self._prepare_gradient_vectors(m, n)
 
     # set up return matrices FIXME might be better as 2D flex.grid, as commented out below
     # but for now use separate array for each free parameter

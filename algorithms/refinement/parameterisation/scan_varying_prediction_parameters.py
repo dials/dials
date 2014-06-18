@@ -196,9 +196,7 @@ class VaryingCrystalPredictionParameterisation(XYPhiPredictionParameterisation):
     # each free parameter
     m = len(reflections)
     n = len(self) # number of free parameters
-    dX_dp = [flex.double(m, 0.) for p in range(n)]
-    dY_dp = [flex.double(m, 0.) for p in range(n)]
-    dphi_dp = [flex.double(m, 0.) for p in range(n)]
+    dX_dp, dY_dp, dphi_dp = self._prepare_gradient_vectors(m, n)
 
     # loop over experiments
     for iexp, exp in enumerate(self._experiments):
