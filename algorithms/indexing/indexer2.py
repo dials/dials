@@ -239,17 +239,16 @@ class indexer_base(object):
     self.reflections = reflections
     self.sweep = sweep
 
-    from dials.model.serialize.load import experiment_list as load_experiment_list
-    from dxtbx.serialize.load import imageset as load_imageset
+    from dxtbx.serialize import load
     if params is None: params = master_params
     if params.reference.detector is not None:
       try:
-        experiments = load_experiment_list(
+        experiments = load.experiment_list(
           params.reference.detector, check_format=False)
         assert len(experiments.detectors()) == 1
         reference_detector = experiments.detectors()[0]
       except Exception, e:
-        imageset = load_imageset(params.reference.detector)
+        imageset = load.imageset(params.reference.detector)
         reference_detector = imageset.get_detector()
       print "Replacing detector:"
       print self.sweep.get_detector()
@@ -258,12 +257,12 @@ class indexer_base(object):
       self.sweep.set_detector(reference_detector)
     if params.reference.beam is not None:
       try:
-        experiments = load_experiment_list(
+        experiments = load.experiment_list(
           params.reference.detector, check_format=False)
         assert len(experiments.beams()) == 1
         reference_beam = experiments.beams()[0]
       except Exception, e:
-        imageset = load_imageset(params.reference.beam)
+        imageset = load.imageset(params.reference.beam)
         reference_beam = imageset.get_beam()
       print "Replacing beam:"
       print self.sweep.get_beam()
@@ -891,7 +890,7 @@ class indexer_base(object):
 
   def export_as_json(self, experiments, file_name="experiments.json",
                      compact=False):
-    from dials.model.serialize import dump
+    from dxtbx.serialize import dump
     assert experiments.is_consistent()
     dump.experiment_list(experiments, file_name)
 

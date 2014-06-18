@@ -5,7 +5,7 @@ from libtbx import easy_run
 from libtbx import easy_pickle
 from libtbx.test_utils import approx_equal
 from libtbx.test_utils import open_tmp_directory
-from dials.model.serialize import load
+from dxtbx.serialize import load
 
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:

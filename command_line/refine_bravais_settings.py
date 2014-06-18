@@ -43,7 +43,7 @@ def run(args):
   Lfat.labelit_printout()
   from json import dumps
   open('bravais_summary.json', 'wb').write(dumps(Lfat.as_dict()))
-  from dials.model.serialize import dump
+  from dxtbx.serialize import dump
   import copy
   for subgroup in Lfat:
     expts = copy.deepcopy(experiments)

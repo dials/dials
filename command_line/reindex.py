@@ -17,7 +17,7 @@ from libtbx import easy_pickle
 import iotbx.phil
 from cctbx import sgtbx
 from dxtbx.model.crystal import crystal_model
-from dials.model.serialize import dump
+from dxtbx.serialize import dump
 from dials.util.command_line import Importer
 
 master_phil_scope = iotbx.phil.parse("""

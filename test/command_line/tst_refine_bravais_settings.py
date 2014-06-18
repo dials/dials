@@ -37,7 +37,7 @@ def exercise_refine_bravais_settings():
   result = easy_run.fully_buffered(command=command).raise_if_errors()
   for i in range(1, 10):
     assert os.path.exists("bravais_setting_%i.json" %i)
-  from dials.model.serialize import load
+  from dxtbx.serialize import load
   experiments_list = load.experiment_list(
     "bravais_setting_9.json", check_format=False)
   assert len(experiments_list) == 1

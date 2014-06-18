@@ -14,6 +14,7 @@ from scitbx import matrix
 from cctbx.array_family import flex # import dependency
 from cctbx import uctbx
 from dials.model.serialize import load
+from dxtbx.serialize import load as dxtbx_load
 
 have_dials_regression = libtbx.env.has_module("dials_regression")
 if have_dials_regression:
@@ -77,7 +78,7 @@ class run_one_indexing(object):
     result = easy_run.fully_buffered(command=command).raise_if_errors()
     os.chdir(cwd)
     assert os.path.exists(os.path.join(tmp_dir, "experiments.json"))
-    experiments_list = load.experiment_list(
+    experiments_list = dxtbx_load.experiment_list(
       os.path.join(tmp_dir, "experiments.json"), check_format=False)
     assert len(experiments_list) == n_expected_lattices
     assert os.path.exists(os.path.join(tmp_dir, "indexed.pickle"))
