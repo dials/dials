@@ -72,7 +72,7 @@ class TestFrame(wx.Frame):
 
         self.Image.SetBitmap(Img)
         self.My_Update()
-        
+
     def My_Update(self):
         self.Fit()
         self.Layout()

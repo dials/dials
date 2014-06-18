@@ -61,7 +61,7 @@ class table_s_navigator(object):
     else:
       print "depth 0 reached"
   def next_Reflection(self):
-    if self.row_pos < self.num_ref:
+    if self.row_pos < self.num_ref - 1:
       self.row_pos += 1
       self.z = 0
     else:

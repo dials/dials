@@ -42,12 +42,12 @@ plt.show()
 
 
 n_times = 1
-data2dsmoth_tmp = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
+data2dsmoth_tmp = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
 data2dsmoth = numpy.float64(data2dsmoth_tmp)
 
 
 n_times = 5
-data2dsmoth_2t_tmp = smooth_2d(flex.double(data2d), n_times).as_numpy_array()
+data2dsmoth_2t_tmp = smooth_2d(flex.int(data2d), n_times).as_numpy_array()
 data2dsmoth_2t = numpy.float64(data2dsmoth_2t_tmp)
 
 
