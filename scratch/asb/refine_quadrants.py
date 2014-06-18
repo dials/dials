@@ -24,10 +24,11 @@ working_params = working_phil.extract()
 for input in working_params.input:
   print input.experiments, input.reflections
 
-from dials.model.serialize import load
+from dials.model.serialize import load as load_dials
+from dxtbx.serialize import load as load_dxtbx
 def load_input(exp_path, ref_path):
-  refs = load.reflections(ref_path)
-  exp = load.experiment_list(exp_path , check_format=False)[0]
+  refs = load_dials.reflections(ref_path)
+  exp = load_dxtbx.experiment_list(exp_path , check_format=False)[0]
   return refs, exp
 
 from dxtbx.model.experiment.experiment_list import ExperimentList, Experiment
