@@ -14,7 +14,19 @@ from dials.algorithms.indexing.indexer2 import master_phil_scope
 
 
 def run(args):
+  if len(args) == 0:
+    from libtbx.utils import Usage
+    import libtbx.load_env
+    from cStringIO import StringIO
+    usage_message = """\
+%s datablock.json strong.pickle [options]
 
+Parameters:
+""" %libtbx.env.dispatcher_name
+    s = StringIO()
+    master_phil_scope.show(out=s)
+    usage_message += s.getvalue()
+    raise Usage(usage_message)
   importer = Importer(args, check_format=False)
   if len(importer.datablocks) == 0:
     print "No DataBlock could be constructed"
