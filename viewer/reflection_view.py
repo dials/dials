@@ -62,6 +62,7 @@ class ReflectionFrame(wx.Frame):
     r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.Add(btn_tst, 0, wx.CENTER | wx.ALL,5)
+
     h_box.Add(r_box)
     v_box.Add(h_box)
 
