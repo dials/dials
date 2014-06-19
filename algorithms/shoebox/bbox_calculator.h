@@ -122,9 +122,17 @@ namespace dials { namespace algorithms { namespace shoebox {
 
       // Get the divergence and mosaicity for this point
       int z0 = (int)floor(scan_.get_array_index_from_angle(phi));
-      DIALS_ASSERT(z0 >= 0 && z0 < delta_divergence_.size());
-      double delta_d = delta_divergence_[z0];
-      double delta_m = delta_mosaicity_[z0];
+      double delta_d = 0, delta_m = 0;
+      if (z0 < 0) {
+        delta_d = delta_divergence_.front();
+        delta_m = delta_mosaicity_.front();
+      } else if (z0 >= delta_divergence_.size()) {
+        delta_d = delta_divergence_.back();
+        delta_m = delta_mosaicity_.back();
+      } else {
+        delta_d = delta_divergence_[z0];
+        delta_m = delta_mosaicity_[z0];
+      }
 
       // Calculate the beam vectors at the following xds coordinates:
       //   (-delta_d, -delta_d, 0)
