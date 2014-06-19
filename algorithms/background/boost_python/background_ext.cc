@@ -20,6 +20,7 @@ namespace dials { namespace algorithms { namespace background {
   void export_lui_2d_background();
   void export_modeller();
   void export_creator();
+  void export_plane();
   void export_outlier_rejector();
 
   BOOST_PYTHON_MODULE(dials_algorithms_background_ext)
@@ -28,6 +29,7 @@ namespace dials { namespace algorithms { namespace background {
     export_lui_2d_background();
     export_modeller();
     export_creator();
+    export_plane();
     export_outlier_rejector();
   }
 
