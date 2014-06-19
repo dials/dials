@@ -36,11 +36,13 @@ class table_s_navigator(object):
 
     data2d = self.data_flex[self.z:self.z + 1, :, :]
     data2d.reshape(flex.grid(self.data_flex.all()[1:]))
-    data2d_np= data2d.as_numpy_array()
+    data2d_np = data2d.as_numpy_array()
 
     background2d = self.background_flex[self.z:self.z + 1, :, :]
     background2d.reshape(flex.grid(self.background_flex.all()[1:]))
     background2d_np = background2d.as_numpy_array()
+
+    self.I_Max = flex.max(self.data_flex)
 
     self.img_background = background2d_np
     self.img_data = data2d_np
@@ -70,6 +72,8 @@ class table_s_navigator(object):
       self.z = 0
     else:
       print "first reflection reached"
+  def Get_Max(self):
+    return self.I_Max
 
   def background(self):
     print "from background(self)"

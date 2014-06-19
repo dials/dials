@@ -88,11 +88,13 @@ class ReflectionFrame(wx.Frame):
   def My_Update(self):
     bkg, dat, msk = self.tabl()
 
-    My_Img = GetBitmap_from_np_array(dat)
+    I_max = self.tabl.Get_Max()
+
+    My_Img = GetBitmap_from_np_array(dat, I_max)
     self.Image_01.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(bkg)
+    My_Img = GetBitmap_from_np_array(bkg, I_max)
     self.Image_02.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(msk)
+    My_Img = GetBitmap_from_np_array(msk, I_max)
     self.Image_03.SetBitmap(My_Img)
 
     self.Fit()
