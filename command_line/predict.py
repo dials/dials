@@ -47,6 +47,13 @@ class Script(ScriptRunner):
         help = 'Calculate predictions within a buffer zone of n images either '
                'side of the scan.')
 
+    self.config().add_option(
+        '--dmin',
+        dest = 'dmin',
+        type = 'int', default = None,
+        help = 'Minimum d-spacing of predicted reflections.')
+
+
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.model.serialize import load, dump
@@ -83,7 +90,8 @@ class Script(ScriptRunner):
     # Populate the reflection table with predictions
     predicted = flex.reflection_table.from_predictions(
       importer.experiments[0],
-      force_static=options.force_static)
+      force_static=options.force_static,
+      dmin=options.dmin)
     predicted['id'] = flex.size_t(len(predicted), 0)
 
     # Compute the bounding box
