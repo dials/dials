@@ -169,7 +169,7 @@ namespace dials { namespace algorithms { namespace background {
       DIALS_ASSERT(index.size() > 0);
       std::sort(index.begin(), index.end(), compare_pixel_value(data.as_1d()));
       std::size_t nactive = (std::size_t)std::floor(fraction * index.size() + 0.5);
-      DIALS_ASSERT(nactive > 0);
+      DIALS_ASSERT(nactive > 0 && nactive <= index.size());
       for (std::size_t i = 0; i < nactive; ++i) {
         mask[index[i]] |= BackgroundUsed;
       }
@@ -188,8 +188,8 @@ namespace dials { namespace algorithms { namespace background {
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
           if (mask(j,i) & BackgroundUsed) {
-            double x = (i - hx);
-            double y = (j - hy);
+            double x = ((int)i - hx);
+            double y = ((int)j - hy);
             double p = data(j,i);
             A[0] += 1;
             A[1] += x;
@@ -206,10 +206,12 @@ namespace dials { namespace algorithms { namespace background {
       A[3] = A[1];
       A[6] = A[2];
       A[7] = A[5];
+      std::cout << A[0] << std::endl;
       inversion_in_place(&A[0], 3, &B[0], 1);
       c_ = B[0];
       a_ = B[1];
       b_ = B[2];
+      std::cout << a_ << ", " << b_ << ", " << c_ << std::endl;
     }
 
     /**
@@ -249,8 +251,8 @@ namespace dials { namespace algorithms { namespace background {
       for (std::size_t j = 0; j < mask.accessor()[0]; ++j) {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
           if ((mask(j,i) & code) == code) {
-            double x = (i - hx);
-            double y = (j - hy);
+            double x = ((int)i - hx);
+            double y = ((int)j - hy);
             double p1 = data(j,i);
             double p2 = a_ * x + b_ * y + c_;
             double d = std::abs((p1 - p2)*(p1 - p2));
@@ -280,8 +282,8 @@ namespace dials { namespace algorithms { namespace background {
         for (std::size_t i = 0; i < mask.accessor()[1]; ++i) {
           int mask_value = mask(j,i);
           if (mask_value & BackgroundUsed) {
-            double x = (i - hx);
-            double y = (j - hy);
+            double x = ((int)i - hx);
+            double y = ((int)j - hy);
             double p1 = data(j,i);
             double p2 = a_ * x + b_ * y + c_;
             double d = (p1 - p2)*(p1 - p2);
