@@ -26,9 +26,11 @@ class ReflectionFrame(wx.Frame):
 
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
+    btn_tst = wx.Button(self, -1, "tst btn")
 
     btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
+    btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
@@ -59,6 +61,7 @@ class ReflectionFrame(wx.Frame):
     r_box = wx.BoxSizer(wx.VERTICAL)
     r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+    r_box.Add(btn_tst, 0, wx.CENTER | wx.ALL,5)
     h_box.Add(r_box)
     v_box.Add(h_box)
 
@@ -84,7 +87,8 @@ class ReflectionFrame(wx.Frame):
   def DisplayPrev_slice(self, event = None):
     self.tabl.Previous_slice()
     self.My_Update()
-
+  def B_tst(self, event = None):
+    print "Here tst"
   def My_Update(self):
     bkg, dat, msk = self.tabl()
 
