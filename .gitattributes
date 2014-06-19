@@ -85,12 +85,14 @@ algorithms/indexing/symmetry.py -text
 algorithms/integration/SConscript -text
 algorithms/integration/__init__.py -text
 algorithms/integration/boost_python/integration_ext.cc -text
+algorithms/integration/boost_python/integrator_2d.cc -text
 algorithms/integration/boost_python/lui_2d_integration.cc -text svneol=unset#text/plain
 algorithms/integration/boost_python/profile_fitting_reciprocal_space.cc -text
 algorithms/integration/boost_python/summation.cc -text
 algorithms/integration/call_mosflm_2d.py -text
 algorithms/integration/flatten_shoebox.py -text
 algorithms/integration/integrator.py -text
+algorithms/integration/integrator_2d.h -text
 algorithms/integration/lp_correction.py -text svneol=unset#text/plain
 algorithms/integration/lui_2d_integration.h -text svneol=unset#text/plain
 algorithms/integration/mosflm_2D_profile.py -text
