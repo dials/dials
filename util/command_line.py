@@ -110,7 +110,9 @@ class ProgressBar:
 
     # Add a percentage counter
     right_str = ''
-    left_str = '\r'
+    left_str = ''
+    if sys.stdout.isatty():
+      left_str = '\r'
     left_str += ' ' * self._indent
 
     # Add a title if given
@@ -186,7 +188,11 @@ class ProgressBar:
       string = string + '.' * (dot_length)
 
     # Write the string to stdout
-    stdout.write('\r' + string + '\n')
+    if stdout.isatty():
+      string = '\r' + string + '\n'
+    else:
+      string = string + '\n'
+    stdout.write(string)
     stdout.flush()
 
 class Command(object):
@@ -251,7 +257,11 @@ class Command(object):
       string = string + '.' * (dot_length)
 
     # Write the string to stdout
-    stdout.write('\r' + string + '\n')
+    if stdout.isatty():
+      string = '\r' + string + '\n'
+    else:
+      string = string + '\n'
+    stdout.write(string)
     stdout.flush()
 
 
