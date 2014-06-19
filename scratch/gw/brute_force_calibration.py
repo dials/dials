@@ -77,12 +77,12 @@ DETECTOR=PILATUS MINIMUM_VALID_PIXEL_VALUE=0 OVERLOAD=244849
 DIRECTION_OF_DETECTOR_X-AXIS=1 0 0
 DIRECTION_OF_DETECTOR_Y-AXIS=0 1 0
 TRUSTED_REGION=0.0 1.41
-NX=2463 NY=2527 QX=0.1720 QY=0.1720
+NX=8000 NY=8000 QX=0.05 QY=0.05
 DETECTOR_DISTANCE=%(distance).2f
 X-RAY_WAVELENGTH=%(wavelength).6f
 INCIDENT_BEAM_DIRECTION= 0 0 1
 SENSOR_THICKNESS= %(thickness).3f
-ORGX=1231.5 ORGY=1263.5'''
+ORGX=4000 ORGY=4000'''
 
 def run_xds_xycorr(distance, wavelength, thickness):
   '''Run XDS XYCORR step for given distance, wavelength & thickness, read
@@ -104,13 +104,13 @@ def analyse_corrections(distance, wavelength, thickness):
   x_corr = read_xds_calibration_file('X-CORRECTIONS.cbf').as_double() * 0.1
   y_corr = read_xds_calibration_file('Y-CORRECTIONS.cbf').as_double() * 0.1
   o_squared = x_corr * x_corr + y_corr * y_corr
-  size_x = 616
-  size_y = 632
+  size_x = 2000
+  size_y = 2000
 
-  # pixel size in this image is equivalent to 4 x 0.172 mm
+  dir_x = 4000
+  dir_y = 4000
 
-  dir_x = 1231.5
-  dir_y = 1263.5
+  pixel = 0.05
 
   from scitbx import matrix
   import math
@@ -125,22 +125,33 @@ def analyse_corrections(distance, wavelength, thickness):
     nx = nint(x / 4)
     ny = nint(y / 4)
     o = math.sqrt(o_squared[ny, nx])
-    p = matrix.col((dir_x - x, dir_y - y, distance))
+    p = matrix.col((pixel * (dir_x - x), pixel * (dir_y - y), distance))
     theta = p.angle(n)
+    print p.elems, theta * 180 / 3.141592654
     theta_o[theta] = o
 
   return theta_o
 
 def main(distance):
   thickness = 0.32
+
+  from parallax import derive_absorption_coefficient_Si, compute_offset
+
+  t0 = 0.032
+  pixel = 0.005
+
   for energy_ev in range(3000, 20001, 1000):
+
+    mu_cm = derive_absorption_coefficient_Si(energy_ev * 0.001)
+
     wavelength = 12.3985  / (energy_ev * 0.001)
     theta_o = run_xds_xycorr(distance, wavelength, thickness)
+
     fout = open('p%d.dat' % energy_ev, 'w')
     for theta in sorted(theta_o):
-      fout.write('%.3f %.3f\n' % (theta, theta_o[theta]))
+      model = compute_offset(t0, theta, mu_cm) / pixel
+      fout.write('%.3f %.3f %.3f\n' % (theta, theta_o[theta], model))
     fout.close()
-    print wavelength
 
 if __name__ == '__main__':
   main(200)
