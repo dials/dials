@@ -32,11 +32,6 @@ class HalError(RuntimeError):
 
 def halraiser(e):
   ''' Function to re-raise an exception with a Hal message. '''
-  import logging
-
-  # Get the log and write the error to the log file
-  log = logging.getLogger(__name__)
-  log.error(e)
 
   # Get the username
   try:
