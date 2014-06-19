@@ -39,6 +39,14 @@ class Script(ScriptRunner):
         action = "store_true", default = False,
         help = 'For a scan varying model force static prediction.')
 
+    # buffer size option
+    self.config().add_option(
+        '-b', '--buffer-size',
+        dest = 'buffer_size',
+        type = 'int', default = 0,
+        help = 'Calculate predictions within a buffer zone of n images either '
+               'side of the scan.')
+
   def main(self, params, options, args):
     '''Execute the script.'''
     from dials.model.serialize import load, dump
@@ -60,6 +68,17 @@ class Script(ScriptRunner):
       print 'Error: no experiment list specified'
       return
     assert(len(importer.experiments) == 1)
+
+    if options.buffer_size > 0:
+      # Hack to make the predicter predict reflections outside of the range
+      # of the scan
+      scan = importer.experiments[0].scan
+      image_range = scan.get_image_range()
+      oscillation = scan.get_oscillation()
+      scan.set_image_range((image_range[0]-options.buffer_size,
+                            image_range[1]+options.buffer_size))
+      scan.set_oscillation((oscillation[0]-options.buffer_size*oscillation[1],
+                            oscillation[1]))
 
     # Populate the reflection table with predictions
     predicted = flex.reflection_table.from_predictions(
