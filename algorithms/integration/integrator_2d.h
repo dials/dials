@@ -6,6 +6,7 @@
 #include <stack>
 #include <vector>
 #include <scitbx/array_family/tiny_types.h>
+#include <scitbx/vec3.h>
 #include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -13,6 +14,8 @@
 namespace dials { namespace algorithms {
 
   using scitbx::af::int4;
+  using scitbx::af::int6;
+  using scitbx::vec3;
 
   class ProfileAllocator {
   public:
@@ -27,10 +30,14 @@ namespace dials { namespace algorithms {
       }
     };
     
+    ProfileAllocator()
+        : max_size_(0),
+          max_num_(0) {}
+
     ProfileAllocator(
           const af::const_ref<int> &frame,
           const af::const_ref<int4> &bbox,
-          double radius)
+          std::size_t radius)
         : max_size_(0),
           max_num_(0),
           offset_(frame.size()) {
@@ -113,16 +120,73 @@ namespace dials { namespace algorithms {
   class Integrator2DSpec {
   public:
     
+    // Data needed for integration
+    af::shared< std::size_t > panel;
+    af::shared< vec3<double> > xyz;
+    af::shared< int6 > bbox;
+
+    // Integration parameters
+    std::size_t radius_z;
+    std::size_t radius_xy;
+
+    Integrator2DSpec()
+      : radius_z(0),
+        radius_xy(0) {}
+
+    bool is_valid() const {
+      return 
+        panel.size() > 0 &&
+        panel.size() == xyz.size() &&
+        panel.size() == bbox.size() &&
+        radius_xy > 0;
+    }
   };
   
   class Integrator2D {
   public:
 
-    Integrator2D(const Integrator2DSpec &spec) {
+    Integrator2D(const Integrator2DSpec &spec)
+      : spec_(spec) {
+
+      // Ensure the spec is valid
+      DIALS_ASSERT(spec_.is_valid());
+
+      // Compute the number of partial reflections
+      std::size_t size = 0;
+      for (std::size_t i = 0; i < spec_.bbox.size(); ++i) {
+        int z0 = spec_.bbox[i][4];
+        int z1 = spec_.bbox[i][5];
+        for (std::size_t z = z0; z < z1; ++z, ++size); 
+      }
+
+      // Set the reflection indices, frames and 2d bboxes
+      indices_.resize(size);
+      af::shared<int> frames(size);
+      af::shared<int4> bbox2d(size);
+      for (std::size_t i = 0, j = 0; i < spec_.bbox.size(); ++i) {
+        int z0 = spec_.bbox[i][4];
+        int z1 = spec_.bbox[i][5];
+        int4 b(spec_.bbox[i][0], spec_.bbox[i][1],
+               spec_.bbox[i][2], spec_.bbox[i][3]);
+        for (std::size_t z = z0; z < z1; ++z, ++j) {
+          indices_[j] = i;
+          frames[j] = z;
+          bbox2d[j] = b;
+        }
+      }
+
+      // Initialise the profile allocator
+      profiles_ = ProfileAllocator(
+          frames.const_ref(), 
+          bbox2d.const_ref(), 
+          spec_.radius_z);
     }
 
+  private:
 
-
+    Integrator2DSpec spec_;
+    af::shared<std::size_t> indices_;
+    ProfileAllocator profiles_;
   };
 }}
 
