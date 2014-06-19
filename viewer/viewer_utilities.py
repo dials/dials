@@ -13,7 +13,10 @@ import matplotlib.pyplot as plt
 def GetBitmap_from_np_array(np_img_2d, Intst_max, img_scale):
   fig = plt.figure()
   # remember to make sure this is our convention in (x, y) vs (row, col)
-  plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = Intst_max)
+  if Intst_max > 0:
+    plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = Intst_max)
+  else:
+    plt.imshow(numpy.transpose(np_img_2d), interpolation = "nearest", vmin = 0, vmax = 10)
   fig.canvas.draw()
   width, height = fig.canvas.get_width_height()
   np_buf = numpy.fromstring ( fig.canvas.tostring_rgb(), dtype=numpy.uint8 )

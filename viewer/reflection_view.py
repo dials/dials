@@ -38,6 +38,7 @@ class ReflectionFrame(wx.Frame):
                                  self.MaxImageSizeX, self.MaxImageSizeY))
     self.Image_03 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
+    self.Bind(wx.EVT_SIZE, self.OnSize)
     # Using a Sizers to handle the layout
 
     v_box = wx.BoxSizer(wx.VERTICAL)
@@ -94,21 +95,31 @@ class ReflectionFrame(wx.Frame):
     self.My_Update()
   def B_tst(self, event = None):
     print "Here tst"
-
     self.frame_scale = self.frame_scale * 1.2
     self.My_Update()
+    print "self.GetSize() =", self.GetSize()
+
+  def OnSize(self, event = None):
+    siz_data = self.GetSize()
+    print "New size of window =", siz_data
+    #self.frame_scale = float(siz_data[0] * siz_data[1]) * 0.5 / 320100.0
+    #self.My_Update()
+
   def My_Update(self):
+    #self.Unbind(wx.EVT_SIZE)
     bkg, dat, msk = self.tabl()
 
     I_max = self.tabl.Get_Max()
 
-    My_Img = GetBitmap_from_np_array(np_img_2d = dat, Intst_max = I_max, img_scale = self.frame_scale)
+    My_Img = GetBitmap_from_np_array(np_img_2d = dat, Intst_max = I_max
+                                     , img_scale = self.frame_scale)
     self.Image_01.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = bkg, Intst_max = I_max, img_scale = self.frame_scale)
+    My_Img = GetBitmap_from_np_array(np_img_2d = bkg, Intst_max = I_max
+                                     , img_scale = self.frame_scale)
     self.Image_02.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = msk, Intst_max = I_max, img_scale = self.frame_scale)
+    My_Img = GetBitmap_from_np_array(np_img_2d = msk, Intst_max = -1
+                                     , img_scale = self.frame_scale)
     self.Image_03.SetBitmap(My_Img)
-
     self.Fit()
     self.Layout()
     self.Refresh()
