@@ -145,13 +145,13 @@ class Target(object):
     self.update_matches()
 
     if reflections:
-      self._gradients = self._prediction_parameterisation.get_gradients(
+      gradients = self._prediction_parameterisation.get_gradients(
         reflections)
     else:
-      self._gradients = self._prediction_parameterisation.get_gradients(
+      gradients = self._prediction_parameterisation.get_gradients(
         self._matches)
 
-    return self._gradients
+    return gradients
 
   def get_num_matches(self):
     """return the number of reflections currently used in the calculation"""
@@ -191,23 +191,21 @@ class Target(object):
       return 1.e12, [1.] * len(self._prediction_parameterisation)
 
     residuals, weights = self._extract_residuals_and_weights(self._matches)
+    w_resid = weights * residuals
     residuals2 = self._extract_squared_residuals(self._matches)
 
     # calculate target function
     L = 0.5 * flex.sum(weights * residuals2)
 
+    dX_dp, dY_dp, dZ_dp = self.calculate_gradients()
+
     # prepare list of gradients and curvatures
     dL_dp = [0.] * len(self._prediction_parameterisation)
     self._curv = [0.] * len(self._prediction_parameterisation)
 
-    dX_dp, dY_dp, dZ_dp = self.calculate_gradients()
-
-    w_resid = weights * residuals
-
     for i in range(len(self._prediction_parameterisation)):
       dX, dY, dZ = dX_dp[i], dY_dp[i], dZ_dp[i]
-      grads = flex.double.concatenate(dX, dY)
-      grads.extend(dZ)
+      grads = self._concatenate_gradients(dX, dY, dZ)
       dL_dp[i] = flex.sum(w_resid * grads)
       self._curv[i] = flex.sum(weights * grads * grads)
 
@@ -267,6 +265,14 @@ class Target(object):
 
     return jacobian
 
+  @staticmethod
+  def _concatenate_gradients(dX, dY, dZ):
+    """concatenate three gradient vectors and return a flex.double. This method
+    may be overriden for the case where these vectors use sparse storage"""
+
+    grads = flex.double.concatenate(dX, dY)
+    grads.extend(dZ)
+    return grads
 
   @abc.abstractmethod
   def _extract_residuals_and_weights(matches):
@@ -389,14 +395,14 @@ class LeastSquaresPositionalResidualWithRmsdCutoff(Target):
       return True
     return False
 
-class SparseJacobianMatrixMixin:
+class SparseGradientsMixin:
   """Mixin class to build a sparse Jacobian from gradients of the prediction
-  formula stored as sparse vectors"""
+  formula stored as sparse vectors, and allow concatenation of gradient vectors
+  that employed sparse storage."""
 
   @staticmethod
   def _build_jacobian(dX_dp, dY_dp, dZ_dp, nelem, nparam):
-    """construct Jacobian from lists of gradient vectors. This method may be
-    overridden for the case where these vectors use sparse storage"""
+    """construct Jacobian from lists of sparse gradient vectors."""
 
     from scitbx import sparse
     nref = int(nelem / 3)
@@ -418,8 +424,19 @@ class SparseJacobianMatrixMixin:
 
     return jacobian
 
+  @staticmethod
+  def _concatenate_gradients(dX, dY, dZ):
+    """concatenate three sparse gradient vectors and return a flex.double."""
+
+    dX = dX.as_dense_vector()
+    dY = dY.as_dense_vector()
+    dZ = dZ.as_dense_vector()
+    grads = flex.double.concatenate(dX, dY)
+    grads.extend(dZ)
+    return grads
+
 class LeastSquaresPositionalResidualWithRmsdCutoffSparse(
-  SparseJacobianMatrixMixin, LeastSquaresPositionalResidualWithRmsdCutoff):
+  SparseGradientsMixin, LeastSquaresPositionalResidualWithRmsdCutoff):
   """A version of the LeastSquaresPositionalResidualWithRmsdCutoff Target that
   uses a sparse matrix data structure for memory efficiency when there are a
   large number of Experiments"""

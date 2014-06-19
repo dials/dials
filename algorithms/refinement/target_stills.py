@@ -14,7 +14,7 @@ from cctbx.array_family import flex
 import random
 
 # dials imports
-from dials.algorithms.refinement.target import Target, SparseJacobianMatrixMixin
+from dials.algorithms.refinement.target import Target, SparseGradientsMixin
 
 # constants
 TWO_PI = 2.0 * pi
@@ -148,7 +148,7 @@ class LeastSquaresStillsResidualWithRmsdCutoff(Target):
     return False
 
 class LeastSquaresStillsResidualWithRmsdCutoffSparse(
-    SparseJacobianMatrixMixin, LeastSquaresStillsResidualWithRmsdCutoff):
+    SparseGradientsMixin, LeastSquaresStillsResidualWithRmsdCutoff):
   """A version of the LeastSquaresStillsResidualWithRmsdCutoff Target that
   uses a sparse matrix data structure for memory efficiency when there are a
   large number of Experiments"""
