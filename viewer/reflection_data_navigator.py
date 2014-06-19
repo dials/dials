@@ -26,7 +26,7 @@ class table_s_navigator(object):
     self.background_flex = self.row['shoebox'].background
     self.mask_flex = self.row['shoebox'].mask
     self.depth = self.data_flex.all()[0]
-    print "depth of refl =", self.depth
+    #print "depth of refl =", self.depth
     if self.depth <= 0:
       print "ERROR 0 depth"
 

@@ -61,10 +61,14 @@ class ReflectionFrame(wx.Frame):
     r_box = wx.BoxSizer(wx.VERTICAL)
     r_box.Add(btn_nxt_slice, 0, wx.CENTER | wx.ALL,5)
     r_box.Add(btn_prv_slice, 0, wx.CENTER | wx.ALL,5)
+    r_box.AddSpacer(50)
+
     r_box.Add(btn_tst, 0, wx.CENTER | wx.ALL,5)
 
     h_box.Add(r_box)
     v_box.Add(h_box)
+
+    self.frame_scale = 0.5
 
     self.SetSizerAndFit(v_box)
     wx.EVT_CLOSE(self, self.OnCloseWindow)
@@ -90,16 +94,19 @@ class ReflectionFrame(wx.Frame):
     self.My_Update()
   def B_tst(self, event = None):
     print "Here tst"
+
+    self.frame_scale = self.frame_scale * 1.2
+    self.My_Update()
   def My_Update(self):
     bkg, dat, msk = self.tabl()
 
     I_max = self.tabl.Get_Max()
 
-    My_Img = GetBitmap_from_np_array(dat, I_max)
+    My_Img = GetBitmap_from_np_array(np_img_2d = dat, Intst_max = I_max, img_scale = self.frame_scale)
     self.Image_01.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(bkg, I_max)
+    My_Img = GetBitmap_from_np_array(np_img_2d = bkg, Intst_max = I_max, img_scale = self.frame_scale)
     self.Image_02.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(msk, I_max)
+    My_Img = GetBitmap_from_np_array(np_img_2d = msk, Intst_max = I_max, img_scale = self.frame_scale)
     self.Image_03.SetBitmap(My_Img)
 
     self.Fit()
