@@ -23,9 +23,7 @@ class RandomPanel(wx.Panel):
     self._canvas.Bind(wx.EVT_RIGHT_DOWN, self.down)
     return
 
-  def draw(self):
-    size = 200
-
+  def draw(self, size = 200):
     im = numpy.empty([size, size])
 
     import random
@@ -37,11 +35,6 @@ class RandomPanel(wx.Panel):
     plot.set_clim(0.0, 1.0)
     self._canvas.draw()
 
-    return
-
-  def set_scale(self, scale):
-    self._scale = scale
-    self.draw()
     return
 
   def up(self, event):

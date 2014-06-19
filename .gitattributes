@@ -508,6 +508,7 @@ scratch/dgw/source_model/source.py -text
 scratch/dgw/source_model/tst_source.py -text
 scratch/dgw/turtle_spotter.py -text
 scratch/gw/biostruct-25.py -text
+scratch/gw/brute_force_calibration.py -text
 scratch/gw/dqe.py -text
 scratch/gw/multitile_pilatus_6m_i04/DLS6MSN100.cbft -text
 scratch/gw/multitile_pilatus_6m_i04/minicbf_to_full_with_template.py -text
