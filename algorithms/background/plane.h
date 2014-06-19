@@ -206,12 +206,10 @@ namespace dials { namespace algorithms { namespace background {
       A[3] = A[1];
       A[6] = A[2];
       A[7] = A[5];
-      std::cout << A[0] << std::endl;
       inversion_in_place(&A[0], 3, &B[0], 1);
       c_ = B[0];
       a_ = B[1];
       b_ = B[2];
-      std::cout << a_ << ", " << b_ << ", " << c_ << std::endl;
     }
 
     /**
