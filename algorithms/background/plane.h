@@ -253,7 +253,7 @@ namespace dials { namespace algorithms { namespace background {
             double y = ((int)j - hy);
             double p1 = data(j,i);
             double p2 = a_ * x + b_ * y + c_;
-            double d = std::abs((p1 - p2)*(p1 - p2));
+            double d = std::abs(p1 - p2);
             if (d > max_background) {
               mask(j,i) &= ~BackgroundUsed;
               noutlier_++;
@@ -284,7 +284,7 @@ namespace dials { namespace algorithms { namespace background {
             double y = ((int)j - hy);
             double p1 = data(j,i);
             double p2 = a_ * x + b_ * y + c_;
-            double d = (p1 - p2)*(p1 - p2);
+            double d = p1 - p2;
             double sd = d * d;
             rmsd_ += sd;
             maxdiff_ = std::max(std::abs(d), maxdiff_);
