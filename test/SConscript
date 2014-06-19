@@ -15,3 +15,6 @@ env.Program(
 env.Program(
     target="algorithms/spatial_indexing/tst_collision_detection", 
     source="algorithms/spatial_indexing/tst_collision_detection.cc")
+env.Program(
+    target="algorithms/integration/profile/tst_profile_allocator",
+    source="algorithms/integration/profile/tst_profile_allocator.cc")
