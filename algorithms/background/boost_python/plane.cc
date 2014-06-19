@@ -32,7 +32,11 @@ namespace dials { namespace algorithms { namespace background {
       .def("a", &PlaneModel::a)
       .def("b", &PlaneModel::b)
       .def("c", &PlaneModel::c)
-      .def("rmsd", &PlaneModel::rmsd);
+      .def("rmsd", &PlaneModel::rmsd)
+      .def("maxdiff", &PlaneModel::maxdiff)
+      .def("noutlier", &PlaneModel::noutlier)
+      .def("nbackground", &PlaneModel::nbackground)
+      ;
   }
 
 }}}} // namespace = dials::algorithms::background::boost_python

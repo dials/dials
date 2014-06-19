@@ -17,10 +17,10 @@ using namespace boost::python;
 namespace dials { namespace algorithms { namespace boost_python {
 
   void export_integrator_2d() {
-    
+
     class_<Integrator2DSpec>("Integrator2DSpec")
       ;
-    
+
     class_<Integrator2D>("Integrator2D", no_init)
       .def(init<const Integrator2DSpec&>())
       ;

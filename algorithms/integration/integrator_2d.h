@@ -29,7 +29,7 @@ namespace dials { namespace algorithms {
         return frame[a] < frame[b];
       }
     };
-    
+
     ProfileAllocator()
         : max_size_(0),
           max_num_(0) {}
@@ -51,15 +51,15 @@ namespace dials { namespace algorithms {
         if (size > max_size_) {
           max_size_ = size;
         }
-      } 
-      
+      }
+
       // Index of shoebox sorted by min and max z
       std::vector<std::size_t> index(frame.size());
       for (std::size_t i = 0; i < index.size(); ++i) {
         index[i] = i;
       }
       std::sort(index.begin(), index.end(), sort_by_z(frame));
-    
+
       // Find a position available in the buffer and assign to shoebox. If no
       // position is available add another. When positions become available add
       // them back to the stack of available positions
@@ -119,7 +119,7 @@ namespace dials { namespace algorithms {
 
   class Integrator2DSpec {
   public:
-    
+
     // Data needed for integration
     af::shared< std::size_t > panel;
     af::shared< vec3<double> > xyz;
@@ -134,14 +134,14 @@ namespace dials { namespace algorithms {
         radius_xy(0) {}
 
     bool is_valid() const {
-      return 
+      return
         panel.size() > 0 &&
         panel.size() == xyz.size() &&
         panel.size() == bbox.size() &&
         radius_xy > 0;
     }
   };
-  
+
   class Integrator2D {
   public:
 
@@ -156,7 +156,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < spec_.bbox.size(); ++i) {
         int z0 = spec_.bbox[i][4];
         int z1 = spec_.bbox[i][5];
-        for (std::size_t z = z0; z < z1; ++z, ++size); 
+        for (std::size_t z = z0; z < z1; ++z, ++size);
       }
 
       // Set the reflection indices, frames and 2d bboxes
@@ -177,8 +177,8 @@ namespace dials { namespace algorithms {
 
       // Initialise the profile allocator
       profiles_ = ProfileAllocator(
-          frames.const_ref(), 
-          bbox2d.const_ref(), 
+          frames.const_ref(),
+          bbox2d.const_ref(),
           spec_.radius_z);
     }
 
