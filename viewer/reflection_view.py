@@ -16,7 +16,8 @@ class ReflectionFrame(wx.Frame):
   def __init__(self, *args, **kwargs):
     wx.Frame.__init__(self, *args, **kwargs)
 
-    self.MaxImageSize = 600
+    self.MaxImageSizeX = 320
+    self.MaxImageSizeY = 240
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
@@ -30,11 +31,11 @@ class ReflectionFrame(wx.Frame):
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
 
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                 self.MaxImageSize, self.MaxImageSize))
+                                 self.MaxImageSizeX, self.MaxImageSizeY))
     self.Image_02 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                 self.MaxImageSize, self.MaxImageSize))
+                                 self.MaxImageSizeX, self.MaxImageSizeY))
     self.Image_03 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
-                                 self.MaxImageSize, self.MaxImageSize))
+                                 self.MaxImageSizeX, self.MaxImageSizeY))
     # Using a Sizers to handle the layout
 
     v_box = wx.BoxSizer(wx.VERTICAL)

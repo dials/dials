@@ -20,7 +20,10 @@ def GetBitmap_from_np_array(np_img_2d):
   np_buf = numpy.roll(np_buf, 3, axis = 2)
   image = wx.EmptyImage(width, height)
 
+  NewW = width / 2
+  NewH = height / 2
   image.SetData( np_buf )
+  image = image.Scale(NewW,NewH)
   #image.SetData( np_buf.tostring()) # looks like there is no need to convert
   wxBitmap = image.ConvertToBitmap()
 
