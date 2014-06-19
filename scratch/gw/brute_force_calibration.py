@@ -127,7 +127,6 @@ def analyse_corrections(distance, wavelength, thickness):
     o = math.sqrt(o_squared[ny, nx])
     p = matrix.col((pixel * (dir_x - x), pixel * (dir_y - y), distance))
     theta = p.angle(n)
-    print p.elems, theta * 180 / 3.141592654
     theta_o[theta] = o
 
   return theta_o
