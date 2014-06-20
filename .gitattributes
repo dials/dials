@@ -517,6 +517,7 @@ scratch/gw/multitile_pilatus_6m_i04/generate_tile_description.py -text
 scratch/gw/multitile_pilatus_6m_i04/minicbf_to_full_with_template.py -text
 scratch/gw/parallax.py -text
 scratch/gw/parallax.tex -text
+scratch/gw/parallax_module_correction.py -text
 scratch/gw/plotintensity.py -text
 scratch/gw/refine.py -text
 scratch/gw/sympy_spells.py -text

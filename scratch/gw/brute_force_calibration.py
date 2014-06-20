@@ -136,10 +136,10 @@ def main(distance):
 
   from parallax import derive_absorption_coefficient_Si, compute_offset
 
-  t0 = 0.032
-  pixel = 0.005
+  t0_cm = 0.032
+  pixel_cm = 0.005
 
-  for energy_ev in range(3000, 20001, 1000):
+  for energy_ev in range(7000, 13001, 2000):
 
     mu_cm = derive_absorption_coefficient_Si(energy_ev * 0.001)
 
@@ -148,7 +148,7 @@ def main(distance):
 
     fout = open('p%d.dat' % energy_ev, 'w')
     for theta in sorted(theta_o):
-      model = compute_offset(t0, theta, mu_cm) / pixel
+      model = compute_offset(t0_cm, theta, mu_cm) / pixel_cm
       fout.write('%.3f %.3f %.3f\n' % (theta, theta_o[theta], model))
     fout.close()
 
