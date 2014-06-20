@@ -57,7 +57,7 @@ _diffrn_radiation.polarizn_source_norm
 _diffrn_radiation.div_x_source         
 _diffrn_radiation.div_y_source         
 _diffrn_radiation.div_x_y_source       
- %(beamline)s WAVELENGTH1 'Si 111' 0.8 0.0 0.08 0.01 0.00
+ %(beamline)s WAVELENGTH1 'Si 111' 0.999 0.0 0.08 0.01 0.00
 
 # category DIFFRN_DETECTOR
 loop_                     
