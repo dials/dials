@@ -39,7 +39,7 @@ def string_keep(str, keep):
   return result
 
 def make_image_from_image(in_image, out_image,
-                          template_name='DLS6MSN100.cbft'):
+                          template_name='DLS6MSN100_multitile.cbft'):
   header, image = get_header_and_image(in_image)
   header = parse_cbf_header_tokens(header)
 
@@ -67,6 +67,8 @@ def make_image_from_image(in_image, out_image,
              '\r\ndata_block\r\n' + template.split('--- End of preamble')[1]
 
   beam = map(float, string_keep(header['Beam_xy'], '0123456789. ').split())
+
+  template = '\r\n'.join([record.strip() for record in template.split('\n')])
 
   open(out_image, 'wb').write(template % {
       'distance':1000 * float(header['Detector_distance'].split()[0]),

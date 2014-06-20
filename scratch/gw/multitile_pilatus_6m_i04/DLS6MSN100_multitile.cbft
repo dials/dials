@@ -145,7 +145,187 @@ _diffrn_scan_frame_axis.displacement
  FRAME1 GONIOMETER_OMEGA _omega_ 0.0
  FRAME1 DETECTOR_Z 0.0 %(distance).2f
  FRAME1 DETECTOR_Y 0.0 0.0           
- FRAME1 DETECTOR_X 0.0 0.0           
+ FRAME1 DETECTOR_X 0.0 0.0
+ FRAME1 MOD_R00_C00_X  0.00    -0.082138                                         
+ FRAME1 MOD_R00_C00_Y  0.00    -0.085105                                         
+ FRAME1 MOD_R00_C00_R  0.097231 0.00                                             
+ FRAME1 MOD_R00_C01_X  0.00     0.022459                                         
+ FRAME1 MOD_R00_C01_Y  0.00    -0.036632                                         
+ FRAME1 MOD_R00_C01_R  0.050134 0.00                                             
+ FRAME1 MOD_R00_C02_X  0.00     0.007747                                         
+ FRAME1 MOD_R00_C02_Y  0.00     0.014680                                         
+ FRAME1 MOD_R00_C02_R  0.105310 0.00                                             
+ FRAME1 MOD_R00_C03_X  0.00    -0.075658                                         
+ FRAME1 MOD_R00_C03_Y  0.00     0.061050                                         
+ FRAME1 MOD_R00_C03_R  0.070932 0.00                                             
+ FRAME1 MOD_R00_C04_X  0.00    -0.065717                                         
+ FRAME1 MOD_R00_C04_Y  0.00     0.098245                                         
+ FRAME1 MOD_R00_C04_R -0.001490 0.00                                             
+ FRAME1 MOD_R01_C00_X  0.00     0.015034                                         
+ FRAME1 MOD_R01_C00_Y  0.00    -0.072534                                         
+ FRAME1 MOD_R01_C00_R  0.045607 0.00                                             
+ FRAME1 MOD_R01_C01_X  0.00     0.042931                                         
+ FRAME1 MOD_R01_C01_Y  0.00     0.010649                                         
+ FRAME1 MOD_R01_C01_R  0.074255 0.00                                             
+ FRAME1 MOD_R01_C02_X  0.00     0.031694                                         
+ FRAME1 MOD_R01_C02_Y  0.00     0.041107                                         
+ FRAME1 MOD_R01_C02_R  0.000458 0.00                                             
+ FRAME1 MOD_R01_C03_X  0.00     0.027235                                         
+ FRAME1 MOD_R01_C03_Y  0.00     0.025231                                         
+ FRAME1 MOD_R01_C03_R  0.015814 0.00                                             
+ FRAME1 MOD_R01_C04_X  0.00     0.004339                                         
+ FRAME1 MOD_R01_C04_Y  0.00     0.070029                                         
+ FRAME1 MOD_R01_C04_R  0.053572 0.00                                             
+ FRAME1 MOD_R02_C00_X  0.00    -0.030941                                         
+ FRAME1 MOD_R02_C00_Y  0.00    -0.053872                                         
+ FRAME1 MOD_R02_C00_R  0.078839 0.00                                             
+ FRAME1 MOD_R02_C01_X  0.00    -0.001888                                         
+ FRAME1 MOD_R02_C01_Y  0.00    -0.038704                                         
+ FRAME1 MOD_R02_C01_R  0.052082 0.00                                             
+ FRAME1 MOD_R02_C02_X  0.00    -0.023944                                         
+ FRAME1 MOD_R02_C02_Y  0.00     0.005437                                         
+ FRAME1 MOD_R02_C02_R  0.056608 0.00                                             
+ FRAME1 MOD_R02_C03_X  0.00     0.048650                                         
+ FRAME1 MOD_R02_C03_Y  0.00    -0.008228                                         
+ FRAME1 MOD_R02_C03_R  0.097861 0.00                                             
+ FRAME1 MOD_R02_C04_X  0.00    -0.076062                                         
+ FRAME1 MOD_R02_C04_Y  0.00     0.073472                                         
+ FRAME1 MOD_R02_C04_R  0.038274 0.00                                             
+ FRAME1 MOD_R03_C00_X  0.00    -0.031825                                         
+ FRAME1 MOD_R03_C00_Y  0.00    -0.062125                                         
+ FRAME1 MOD_R03_C00_R  0.050363 0.00                                             
+ FRAME1 MOD_R03_C01_X  0.00     0.037599                                         
+ FRAME1 MOD_R03_C01_Y  0.00     0.009918                                         
+ FRAME1 MOD_R03_C01_R  0.044232 0.00                                             
+ FRAME1 MOD_R03_C02_X  0.00     0.015925                                         
+ FRAME1 MOD_R03_C02_Y  0.00     0.003845                                         
+ FRAME1 MOD_R03_C02_R  0.039935 0.00                                             
+ FRAME1 MOD_R03_C03_X  0.00     0.061683                                         
+ FRAME1 MOD_R03_C03_Y  0.00     0.010787                                         
+ FRAME1 MOD_R03_C03_R  0.034263 0.00                                             
+ FRAME1 MOD_R03_C04_X  0.00    -0.050157                                         
+ FRAME1 MOD_R03_C04_Y  0.00     0.025905                                         
+ FRAME1 MOD_R03_C04_R  0.051280 0.00                                             
+ FRAME1 MOD_R04_C00_X  0.00     0.025003                                         
+ FRAME1 MOD_R04_C00_Y  0.00     0.006108                                         
+ FRAME1 MOD_R04_C00_R  0.005099 0.00                                             
+ FRAME1 MOD_R04_C01_X  0.00     0.104798                                         
+ FRAME1 MOD_R04_C01_Y  0.00    -0.046710                                         
+ FRAME1 MOD_R04_C01_R  0.107200 0.00                                             
+ FRAME1 MOD_R04_C02_X  0.00     0.068158                                         
+ FRAME1 MOD_R04_C02_Y  0.00     0.001335                                         
+ FRAME1 MOD_R04_C02_R  0.064343 0.00                                             
+ FRAME1 MOD_R04_C03_X  0.00     0.071595                                         
+ FRAME1 MOD_R04_C03_Y  0.00    -0.021332                                         
+ FRAME1 MOD_R04_C03_R  0.059301 0.00                                             
+ FRAME1 MOD_R04_C04_X  0.00     0.012301                                         
+ FRAME1 MOD_R04_C04_Y  0.00     0.015999                                         
+ FRAME1 MOD_R04_C04_R  0.034091 0.00                                             
+ FRAME1 MOD_R05_C00_X  0.00     0.042508                                         
+ FRAME1 MOD_R05_C00_Y  0.00    -0.041090                                         
+ FRAME1 MOD_R05_C00_R  0.042743 0.00                                             
+ FRAME1 MOD_R05_C01_X  0.00     0.008009                                         
+ FRAME1 MOD_R05_C01_Y  0.00    -0.030913                                         
+ FRAME1 MOD_R05_C01_R  0.014209 0.00                                             
+ FRAME1 MOD_R05_C02_X  0.00     0.042779                                         
+ FRAME1 MOD_R05_C02_Y  0.00    -0.019541                                         
+ FRAME1 MOD_R05_C02_R  0.040737 0.00                                             
+ FRAME1 MOD_R05_C03_X  0.00    -0.007676                                         
+ FRAME1 MOD_R05_C03_Y  0.00     0.003069                                         
+ FRAME1 MOD_R05_C03_R  0.038789 0.00                                             
+ FRAME1 MOD_R05_C04_X  0.00    -0.067340                                         
+ FRAME1 MOD_R05_C04_Y  0.00    -0.002224                                         
+ FRAME1 MOD_R05_C04_R  0.043086 0.00                                             
+ FRAME1 MOD_R06_C00_X  0.00     0.088863                                         
+ FRAME1 MOD_R06_C00_Y  0.00    -0.028610                                         
+ FRAME1 MOD_R06_C00_R  0.012089 0.00                                             
+ FRAME1 MOD_R06_C01_X  0.00     0.061654                                         
+ FRAME1 MOD_R06_C01_Y  0.00    -0.046943                                         
+ FRAME1 MOD_R06_C01_R  0.062682 0.00                                             
+ FRAME1 MOD_R06_C02_X  0.00     0.011906                                         
+ FRAME1 MOD_R06_C02_Y  0.00    -0.033482                                         
+ FRAME1 MOD_R06_C02_R  0.033518 0.00                                             
+ FRAME1 MOD_R06_C03_X  0.00     0.016488                                         
+ FRAME1 MOD_R06_C03_Y  0.00    -0.010068                                         
+ FRAME1 MOD_R06_C03_R  0.048243 0.00                                             
+ FRAME1 MOD_R06_C04_X  0.00    -0.028793                                         
+ FRAME1 MOD_R06_C04_Y  0.00    -0.069729                                         
+ FRAME1 MOD_R06_C04_R  0.030252 0.00                                             
+ FRAME1 MOD_R07_C00_X  0.00    -0.065593                                         
+ FRAME1 MOD_R07_C00_Y  0.00    -0.054838                                         
+ FRAME1 MOD_R07_C00_R  0.073854 0.00                                             
+ FRAME1 MOD_R07_C01_X  0.00    -0.060781                                         
+ FRAME1 MOD_R07_C01_Y  0.00    -0.053539                                         
+ FRAME1 MOD_R07_C01_R -0.003438 0.00                                             
+ FRAME1 MOD_R07_C02_X  0.00     0.059969                                         
+ FRAME1 MOD_R07_C02_Y  0.00    -0.035298                                         
+ FRAME1 MOD_R07_C02_R -0.006245 0.00                                             
+ FRAME1 MOD_R07_C03_X  0.00     0.004221                                         
+ FRAME1 MOD_R07_C03_Y  0.00    -0.050338                                         
+ FRAME1 MOD_R07_C03_R  0.040508 0.00                                             
+ FRAME1 MOD_R07_C04_X  0.00     0.056537                                         
+ FRAME1 MOD_R07_C04_Y  0.00    -0.081659                                         
+ FRAME1 MOD_R07_C04_R  0.007391 0.00                                             
+ FRAME1 MOD_R08_C00_X  0.00     0.025952                                         
+ FRAME1 MOD_R08_C00_Y  0.00    -0.006795                                         
+ FRAME1 MOD_R08_C00_R  0.039018 0.00                                             
+ FRAME1 MOD_R08_C01_X  0.00     0.042138                                         
+ FRAME1 MOD_R08_C01_Y  0.00    -0.041261                                         
+ FRAME1 MOD_R08_C01_R  0.044232 0.00                                             
+ FRAME1 MOD_R08_C02_X  0.00    -0.017701                                         
+ FRAME1 MOD_R08_C02_Y  0.00    -0.059079                                         
+ FRAME1 MOD_R08_C02_R  0.018564 0.00                                             
+ FRAME1 MOD_R08_C03_X  0.00     0.028609                                         
+ FRAME1 MOD_R08_C03_Y  0.00    -0.079022                                         
+ FRAME1 MOD_R08_C03_R  0.038102 0.00                                             
+ FRAME1 MOD_R08_C04_X  0.00     0.066499                                         
+ FRAME1 MOD_R08_C04_Y  0.00    -0.073427                                         
+ FRAME1 MOD_R08_C04_R  0.060963 0.00                                             
+ FRAME1 MOD_R09_C00_X  0.00     0.006523                                         
+ FRAME1 MOD_R09_C00_Y  0.00    -0.032302                                         
+ FRAME1 MOD_R09_C00_R  0.081303 0.00                                             
+ FRAME1 MOD_R09_C01_X  0.00     0.054075                                         
+ FRAME1 MOD_R09_C01_Y  0.00     0.048629                                         
+ FRAME1 MOD_R09_C01_R -0.021028 0.00                                             
+ FRAME1 MOD_R09_C02_X  0.00     0.041077                                         
+ FRAME1 MOD_R09_C02_Y  0.00    -0.103400                                         
+ FRAME1 MOD_R09_C02_R  0.018736 0.00                                             
+ FRAME1 MOD_R09_C03_X  0.00     0.140185                                         
+ FRAME1 MOD_R09_C03_Y  0.00    -0.080428                                         
+ FRAME1 MOD_R09_C03_R  0.077120 0.00                                             
+ FRAME1 MOD_R09_C04_X  0.00    -0.008397                                         
+ FRAME1 MOD_R09_C04_Y  0.00    -0.101355                                         
+ FRAME1 MOD_R09_C04_R  0.005099 0.00                                             
+ FRAME1 MOD_R10_C00_X  0.00    -0.115330                                         
+ FRAME1 MOD_R10_C00_Y  0.00     0.004869                                         
+ FRAME1 MOD_R10_C00_R  0.019824 0.00                                             
+ FRAME1 MOD_R10_C01_X  0.00    -0.052308                                         
+ FRAME1 MOD_R10_C01_Y  0.00    -0.067350                                         
+ FRAME1 MOD_R10_C01_R  0.035065 0.00                                             
+ FRAME1 MOD_R10_C02_X  0.00     0.043393                                         
+ FRAME1 MOD_R10_C02_Y  0.00    -0.079655                                         
+ FRAME1 MOD_R10_C02_R -0.008766 0.00                                             
+ FRAME1 MOD_R10_C03_X  0.00    -0.009434                                         
+ FRAME1 MOD_R10_C03_Y  0.00    -0.061592                                         
+ FRAME1 MOD_R10_C03_R  0.029049 0.00                                             
+ FRAME1 MOD_R10_C04_X  0.00    -0.061105                                         
+ FRAME1 MOD_R10_C04_Y  0.00    -0.049088                                         
+ FRAME1 MOD_R10_C04_R -0.016501 0.00                                             
+ FRAME1 MOD_R11_C00_X  0.00    -0.069651
+ FRAME1 MOD_R11_C00_Y  0.00     0.003204
+ FRAME1 MOD_R11_C00_R -0.004870 0.00
+ FRAME1 MOD_R11_C01_X  0.00    -0.003547
+ FRAME1 MOD_R11_C01_Y  0.00    -0.065377
+ FRAME1 MOD_R11_C01_R  0.004068 0.00
+ FRAME1 MOD_R11_C02_X  0.00     0.111537
+ FRAME1 MOD_R11_C02_Y  0.00    -0.040412
+ FRAME1 MOD_R11_C02_R  0.083308 0.00
+ FRAME1 MOD_R11_C03_X  0.00    -0.047674
+ FRAME1 MOD_R11_C03_Y  0.00    -0.102167
+ FRAME1 MOD_R11_C03_R  0.038274 0.00
+ FRAME1 MOD_R11_C04_X  0.00    -0.122456
+ FRAME1 MOD_R11_C04_Y  0.00    -0.137814
+ FRAME1 MOD_R11_C04_R  0.050592 0.00
 
 loop_
 _axis.id
@@ -159,10 +339,188 @@ _axis.offset[1] _axis.offset[2] _axis.offset[3]
  GRAVITY          general gravity . 0 -1 0 . . .   
  DETECTOR_Z       translation detector . 0 0 -1 0 0 0
  DETECTOR_Y       translation detector DETECTOR_Z 0 1 0 0 0 0
- DETECTOR_X       translation detector DETECTOR_Y 1 0 0 0 0 0
- ELEMENT_X        translation detector DETECTOR_X 1 0 0 -%(beam_x).2f %(beam_y).2f 0                                                                            
- ELEMENT_Y        translation detector ELEMENT_X 0 1 0 0 0 0                    
-
+ DETECTOR_X       translation detector DETECTOR_Y 1 0 0 -%(beam_x).2f %(beam_y).2f 0
+ MOD_R00_C00_X translation detector DETECTOR_X    1 0 0     0.00    -0.00   0.00 
+ MOD_R00_C00_Y translation detector MOD_R00_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R00_C00_R rotation    detector MOD_R00_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R00_C01_X translation detector DETECTOR_X    1 0 0    84.97    -0.00   0.00 
+ MOD_R00_C01_Y translation detector MOD_R00_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R00_C01_R rotation    detector MOD_R00_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R00_C02_X translation detector DETECTOR_X    1 0 0   169.94    -0.00   0.00 
+ MOD_R00_C02_Y translation detector MOD_R00_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R00_C02_R rotation    detector MOD_R00_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R00_C03_X translation detector DETECTOR_X    1 0 0   254.90    -0.00   0.00 
+ MOD_R00_C03_Y translation detector MOD_R00_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R00_C03_R rotation    detector MOD_R00_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R00_C04_X translation detector DETECTOR_X    1 0 0   339.87    -0.00   0.00 
+ MOD_R00_C04_Y translation detector MOD_R00_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R00_C04_R rotation    detector MOD_R00_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R01_C00_X translation detector DETECTOR_X    1 0 0     0.00   -36.46   0.00 
+ MOD_R01_C00_Y translation detector MOD_R01_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R01_C00_R rotation    detector MOD_R01_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R01_C01_X translation detector DETECTOR_X    1 0 0    84.97   -36.46   0.00 
+ MOD_R01_C01_Y translation detector MOD_R01_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R01_C01_R rotation    detector MOD_R01_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R01_C02_X translation detector DETECTOR_X    1 0 0   169.94   -36.46   0.00 
+ MOD_R01_C02_Y translation detector MOD_R01_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R01_C02_R rotation    detector MOD_R01_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R01_C03_X translation detector DETECTOR_X    1 0 0   254.90   -36.46   0.00 
+ MOD_R01_C03_Y translation detector MOD_R01_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R01_C03_R rotation    detector MOD_R01_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R01_C04_X translation detector DETECTOR_X    1 0 0   339.87   -36.46   0.00 
+ MOD_R01_C04_Y translation detector MOD_R01_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R01_C04_R rotation    detector MOD_R01_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R02_C00_X translation detector DETECTOR_X    1 0 0     0.00   -72.93   0.00 
+ MOD_R02_C00_Y translation detector MOD_R02_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R02_C00_R rotation    detector MOD_R02_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R02_C01_X translation detector DETECTOR_X    1 0 0    84.97   -72.93   0.00 
+ MOD_R02_C01_Y translation detector MOD_R02_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R02_C01_R rotation    detector MOD_R02_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R02_C02_X translation detector DETECTOR_X    1 0 0   169.94   -72.93   0.00 
+ MOD_R02_C02_Y translation detector MOD_R02_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R02_C02_R rotation    detector MOD_R02_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R02_C03_X translation detector DETECTOR_X    1 0 0   254.90   -72.93   0.00 
+ MOD_R02_C03_Y translation detector MOD_R02_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R02_C03_R rotation    detector MOD_R02_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R02_C04_X translation detector DETECTOR_X    1 0 0   339.87   -72.93   0.00 
+ MOD_R02_C04_Y translation detector MOD_R02_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R02_C04_R rotation    detector MOD_R02_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R03_C00_X translation detector DETECTOR_X    1 0 0     0.00  -109.39   0.00 
+ MOD_R03_C00_Y translation detector MOD_R03_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R03_C00_R rotation    detector MOD_R03_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R03_C01_X translation detector DETECTOR_X    1 0 0    84.97  -109.39   0.00 
+ MOD_R03_C01_Y translation detector MOD_R03_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R03_C01_R rotation    detector MOD_R03_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R03_C02_X translation detector DETECTOR_X    1 0 0   169.94  -109.39   0.00 
+ MOD_R03_C02_Y translation detector MOD_R03_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R03_C02_R rotation    detector MOD_R03_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R03_C03_X translation detector DETECTOR_X    1 0 0   254.90  -109.39   0.00 
+ MOD_R03_C03_Y translation detector MOD_R03_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R03_C03_R rotation    detector MOD_R03_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R03_C04_X translation detector DETECTOR_X    1 0 0   339.87  -109.39   0.00 
+ MOD_R03_C04_Y translation detector MOD_R03_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R03_C04_R rotation    detector MOD_R03_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R04_C00_X translation detector DETECTOR_X    1 0 0     0.00  -145.86   0.00 
+ MOD_R04_C00_Y translation detector MOD_R04_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R04_C00_R rotation    detector MOD_R04_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R04_C01_X translation detector DETECTOR_X    1 0 0    84.97  -145.86   0.00 
+ MOD_R04_C01_Y translation detector MOD_R04_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R04_C01_R rotation    detector MOD_R04_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R04_C02_X translation detector DETECTOR_X    1 0 0   169.94  -145.86   0.00 
+ MOD_R04_C02_Y translation detector MOD_R04_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R04_C02_R rotation    detector MOD_R04_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R04_C03_X translation detector DETECTOR_X    1 0 0   254.90  -145.86   0.00 
+ MOD_R04_C03_Y translation detector MOD_R04_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R04_C03_R rotation    detector MOD_R04_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R04_C04_X translation detector DETECTOR_X    1 0 0   339.87  -145.86   0.00 
+ MOD_R04_C04_Y translation detector MOD_R04_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R04_C04_R rotation    detector MOD_R04_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R05_C00_X translation detector DETECTOR_X    1 0 0     0.00  -182.32   0.00 
+ MOD_R05_C00_Y translation detector MOD_R05_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R05_C00_R rotation    detector MOD_R05_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R05_C01_X translation detector DETECTOR_X    1 0 0    84.97  -182.32   0.00 
+ MOD_R05_C01_Y translation detector MOD_R05_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R05_C01_R rotation    detector MOD_R05_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R05_C02_X translation detector DETECTOR_X    1 0 0   169.94  -182.32   0.00 
+ MOD_R05_C02_Y translation detector MOD_R05_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R05_C02_R rotation    detector MOD_R05_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R05_C03_X translation detector DETECTOR_X    1 0 0   254.90  -182.32   0.00 
+ MOD_R05_C03_Y translation detector MOD_R05_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R05_C03_R rotation    detector MOD_R05_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R05_C04_X translation detector DETECTOR_X    1 0 0   339.87  -182.32   0.00 
+ MOD_R05_C04_Y translation detector MOD_R05_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R05_C04_R rotation    detector MOD_R05_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R06_C00_X translation detector DETECTOR_X    1 0 0     0.00  -218.78   0.00 
+ MOD_R06_C00_Y translation detector MOD_R06_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R06_C00_R rotation    detector MOD_R06_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R06_C01_X translation detector DETECTOR_X    1 0 0    84.97  -218.78   0.00 
+ MOD_R06_C01_Y translation detector MOD_R06_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R06_C01_R rotation    detector MOD_R06_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R06_C02_X translation detector DETECTOR_X    1 0 0   169.94  -218.78   0.00 
+ MOD_R06_C02_Y translation detector MOD_R06_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R06_C02_R rotation    detector MOD_R06_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R06_C03_X translation detector DETECTOR_X    1 0 0   254.90  -218.78   0.00 
+ MOD_R06_C03_Y translation detector MOD_R06_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R06_C03_R rotation    detector MOD_R06_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R06_C04_X translation detector DETECTOR_X    1 0 0   339.87  -218.78   0.00 
+ MOD_R06_C04_Y translation detector MOD_R06_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R06_C04_R rotation    detector MOD_R06_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R07_C00_X translation detector DETECTOR_X    1 0 0     0.00  -255.25   0.00 
+ MOD_R07_C00_Y translation detector MOD_R07_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R07_C00_R rotation    detector MOD_R07_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R07_C01_X translation detector DETECTOR_X    1 0 0    84.97  -255.25   0.00 
+ MOD_R07_C01_Y translation detector MOD_R07_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R07_C01_R rotation    detector MOD_R07_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R07_C02_X translation detector DETECTOR_X    1 0 0   169.94  -255.25   0.00 
+ MOD_R07_C02_Y translation detector MOD_R07_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R07_C02_R rotation    detector MOD_R07_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R07_C03_X translation detector DETECTOR_X    1 0 0   254.90  -255.25   0.00 
+ MOD_R07_C03_Y translation detector MOD_R07_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R07_C03_R rotation    detector MOD_R07_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R07_C04_X translation detector DETECTOR_X    1 0 0   339.87  -255.25   0.00 
+ MOD_R07_C04_Y translation detector MOD_R07_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R07_C04_R rotation    detector MOD_R07_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R08_C00_X translation detector DETECTOR_X    1 0 0     0.00  -291.71   0.00 
+ MOD_R08_C00_Y translation detector MOD_R08_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R08_C00_R rotation    detector MOD_R08_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R08_C01_X translation detector DETECTOR_X    1 0 0    84.97  -291.71   0.00 
+ MOD_R08_C01_Y translation detector MOD_R08_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R08_C01_R rotation    detector MOD_R08_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R08_C02_X translation detector DETECTOR_X    1 0 0   169.94  -291.71   0.00 
+ MOD_R08_C02_Y translation detector MOD_R08_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R08_C02_R rotation    detector MOD_R08_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R08_C03_X translation detector DETECTOR_X    1 0 0   254.90  -291.71   0.00 
+ MOD_R08_C03_Y translation detector MOD_R08_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R08_C03_R rotation    detector MOD_R08_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R08_C04_X translation detector DETECTOR_X    1 0 0   339.87  -291.71   0.00 
+ MOD_R08_C04_Y translation detector MOD_R08_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R08_C04_R rotation    detector MOD_R08_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R09_C00_X translation detector DETECTOR_X    1 0 0     0.00  -328.18   0.00 
+ MOD_R09_C00_Y translation detector MOD_R09_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R09_C00_R rotation    detector MOD_R09_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R09_C01_X translation detector DETECTOR_X    1 0 0    84.97  -328.18   0.00 
+ MOD_R09_C01_Y translation detector MOD_R09_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R09_C01_R rotation    detector MOD_R09_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R09_C02_X translation detector DETECTOR_X    1 0 0   169.94  -328.18   0.00 
+ MOD_R09_C02_Y translation detector MOD_R09_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R09_C02_R rotation    detector MOD_R09_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R09_C03_X translation detector DETECTOR_X    1 0 0   254.90  -328.18   0.00 
+ MOD_R09_C03_Y translation detector MOD_R09_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R09_C03_R rotation    detector MOD_R09_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R09_C04_X translation detector DETECTOR_X    1 0 0   339.87  -328.18   0.00 
+ MOD_R09_C04_Y translation detector MOD_R09_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R09_C04_R rotation    detector MOD_R09_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R10_C00_X translation detector DETECTOR_X    1 0 0     0.00  -364.64   0.00 
+ MOD_R10_C00_Y translation detector MOD_R10_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R10_C00_R rotation    detector MOD_R10_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R10_C01_X translation detector DETECTOR_X    1 0 0    84.97  -364.64   0.00 
+ MOD_R10_C01_Y translation detector MOD_R10_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R10_C01_R rotation    detector MOD_R10_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R10_C02_X translation detector DETECTOR_X    1 0 0   169.94  -364.64   0.00 
+ MOD_R10_C02_Y translation detector MOD_R10_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R10_C02_R rotation    detector MOD_R10_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R10_C03_X translation detector DETECTOR_X    1 0 0   254.90  -364.64   0.00 
+ MOD_R10_C03_Y translation detector MOD_R10_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R10_C03_R rotation    detector MOD_R10_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R10_C04_X translation detector DETECTOR_X    1 0 0   339.87  -364.64   0.00 
+ MOD_R10_C04_Y translation detector MOD_R10_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R10_C04_R rotation    detector MOD_R10_C04_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R11_C00_X translation detector DETECTOR_X    1 0 0     0.00  -401.10   0.00 
+ MOD_R11_C00_Y translation detector MOD_R11_C00_X 0 1 0     0.00     0.00   0.00 
+ MOD_R11_C00_R rotation    detector MOD_R11_C00_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R11_C01_X translation detector DETECTOR_X    1 0 0    84.97  -401.10   0.00 
+ MOD_R11_C01_Y translation detector MOD_R11_C01_X 0 1 0     0.00     0.00   0.00 
+ MOD_R11_C01_R rotation    detector MOD_R11_C01_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R11_C02_X translation detector DETECTOR_X    1 0 0   169.94  -401.10   0.00 
+ MOD_R11_C02_Y translation detector MOD_R11_C02_X 0 1 0     0.00     0.00   0.00 
+ MOD_R11_C02_R rotation    detector MOD_R11_C02_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R11_C03_X translation detector DETECTOR_X    1 0 0   254.90  -401.10   0.00 
+ MOD_R11_C03_Y translation detector MOD_R11_C03_X 0 1 0     0.00     0.00   0.00 
+ MOD_R11_C03_R rotation    detector MOD_R11_C03_Y 0 0 1     0.00     0.00   0.00 
+ MOD_R11_C04_X translation detector DETECTOR_X    1 0 0   339.87  -401.10   0.00 
+ MOD_R11_C04_Y translation detector MOD_R11_C04_X 0 1 0     0.00     0.00   0.00 
+ MOD_R11_C04_R rotation    detector MOD_R11_C04_Y 0 0 1     0.00     0.00   0.00 
+ 
 loop_
 _array_structure_list.array_id
 _array_structure_list.index   
