@@ -72,6 +72,76 @@ def run_job(executable, arguments = [], stdin = [], working_directory = None):
 
   return output
 
+def fit_plane(xyz_values):
+  '''Derive equation of plane
+
+  z = ax + by + c
+
+  from list of values x, y, z; returns a, b, c.'''
+
+  from scitbx import matrix
+
+  x0 = sum([d[0] for d in xyz_values]) / len(xyz_values)
+  y0 = sum([d[1] for d in xyz_values]) / len(xyz_values)
+  z0 = sum([d[2] for d in xyz_values]) / len(xyz_values)
+
+  xx = sum([(d[0] - x0) ** 2 for d in xyz_values])
+  xy = sum([(d[0] - x0) * (d[1] - y0) for d in xyz_values])
+  yy = sum([(d[1] - y0) ** 2 for d in xyz_values])
+  xz = sum([(d[0] - x0) * (d[2] - z0) for d in xyz_values])
+  yz = sum([(d[1] - y0) * (d[2] - z0) for d in xyz_values])
+
+  A = matrix.sqr((xx, xy, 0.0, xy, yy, 0.0, 0.0, 0.0, len(xyz_values)))
+  b = matrix.col((xz, yz, 0.0))
+  x = A.inverse() * b
+  c = z0 - x[0] * x0 - x[1] * y0
+  return x[0], x[1], c
+
+def smooth_invert_calibration_table(table, direction):
+  '''Make smoothed version of the incoming table using plane linear interpolation
+  and return the smoothed table and it's inverse. Scale for smoothing is relatively
+  arbitrary.'''
+
+  assert(direction in ['fast', 'slow'])
+
+  smooth_scale = 3
+
+  import copy
+
+  # first duplicate the table
+
+  smooth_table = copy.deepcopy(table)
+  smooth_table_inverse = copy.deepcopy(table)
+
+  # now smooth it out nicely
+
+  size = table.focus()
+
+  for j in range(size[0]):
+    print j
+    for i in range(size[1]):
+      xyz = []
+      for _j in range(j - smooth_scale, j + smooth_scale + 1):
+        if _j < 0:
+          continue
+        if _j >= size[0]:
+          continue
+        for _i in range(i - smooth_scale, i + smooth_scale + 1):
+          if _i < 0:
+            continue
+          if _i >= size[1]:
+            continue
+          xyz.append((_i, _j, table[_j, _i]))
+      a, b, c = fit_plane(xyz)
+      o = a * i + b * j + c
+      smooth_table[j, i] = o
+      if direction == 'fast':
+        smooth_table_inverse[j, i] = - (a * (i + o) + b * j + c)
+      else:
+        smooth_table_inverse[j, i] = - (a * i + b * (j + o) + c)
+
+  return smooth_table, smooth_table_inverse
+
 xds_template = '''JOB=XYCORR
 DETECTOR=PILATUS MINIMUM_VALID_PIXEL_VALUE=0 OVERLOAD=%(overload)d
 DIRECTION_OF_DETECTOR_X-AXIS=%(fast_x).3f %(fast_y).3f %(fast_z).3f
@@ -140,12 +210,39 @@ def image_to_XDS_XYCORR(image_filename, sensor_thickness_mm):
   # now read the correction tables in and scale back to pixels
 
   x_corrections_parallax = read_xds_calibration_file(
-    'X-CORRECTIONS.cbf').as_double() * 40.0
+    'X-CORRECTIONS.cbf').as_double() / 40.0
   y_corrections_parallax = read_xds_calibration_file(
-    'Y-CORRECTIONS.cbf').as_double() * 40.0
+    'Y-CORRECTIONS.cbf').as_double() / 40.0
+
+  # smooth and invert them...
+
+  import matplotlib
+  matplotlib.use('Agg')
+  from matplotlib import pyplot
+  pyplot.imshow(x_corrections_parallax.as_numpy_array())
+  pyplot.savefig('x-corrections.png')
+  pyplot.imshow(y_corrections_parallax.as_numpy_array())
+  pyplot.savefig('y-corrections.png')
+
+  print 'original maps made'
+
+  x_map, x_inv = smooth_invert_calibration_table(x_corrections_parallax, 'fast')
+  pyplot.imshow(x_map.as_numpy_array())
+  pyplot.savefig('x-corrections-smooth.png')
+  pyplot.imshow(x_inv.as_numpy_array())
+  pyplot.savefig('x-corrections-invert.png')
+  y_map, y_inv = smooth_invert_calibration_table(y_corrections_parallax, 'slow')
+  pyplot.imshow(y_map.as_numpy_array())
+  pyplot.savefig('y-corrections-smooth.png')
+  pyplot.imshow(y_inv.as_numpy_array())
+  pyplot.savefig('y-corrections-invert.png')
+
+
 
   # now read in the DECTRIS correction tables for this detector (assuming that it
   # is serial No. 100 P6M at Diamond...)
+
+
 
 
 if __name__ == '__main__':
