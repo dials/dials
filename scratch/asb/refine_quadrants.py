@@ -76,8 +76,9 @@ refinement{
   parameterisation {
     beam.fix=all
     detector.hierarchy_level=1
+    sparse=True
   }
-  target.jacobian_max_nref=10000
+  target.jacobian_max_nref=100000
   reflections.do_outlier_rejection=True
   reflections.minimum_number_of_reflections=1
 }""")
