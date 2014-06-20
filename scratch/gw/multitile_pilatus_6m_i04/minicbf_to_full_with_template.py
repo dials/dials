@@ -9,6 +9,9 @@ def get_header_and_image(in_image):
   data = open(in_image, 'rb').read()
   data_offset = data.find(start_tag)
   cbf_header = data[:data_offset]
+
+  data_offset = data.find('_array_data.data')
+
   image_data = data[data_offset:]
 
   return cbf_header, image_data
@@ -35,7 +38,8 @@ def string_keep(str, keep):
       result += s
   return result
 
-def make_header_from_image(in_image, template_name='DLS6MSN100.cbft'):
+def make_image_from_image(in_image, out_image,
+                          template_name='DLS6MSN100.cbft'):
   header, image = get_header_and_image(in_image)
   header = parse_cbf_header_tokens(header)
 
@@ -59,10 +63,13 @@ def make_header_from_image(in_image, template_name='DLS6MSN100.cbft'):
   for token in sorted(template_map):
     template = template.replace(token, template_map[token])
 
+  template = '###CBF: VERSION 1.5, CBFlib v0.7.8 - PILATUS detectors\r\n' + \
+             '\r\ndata_block\r\n' + template.split('--- End of preamble')[1]
+
   beam = map(float, string_keep(header['Beam_xy'], '0123456789. ').split())
 
-  return template % {
-      'distance':1000 * float(header['Detector_distance'][0]),
+  open(out_image, 'wb').write(template % {
+      'distance':1000 * float(header['Detector_distance'].split()[0]),
       'beamline':'I04',
       'xtal_id':'xtal',
       'detector_id':'P6M_I04',
@@ -71,8 +78,10 @@ def make_header_from_image(in_image, template_name='DLS6MSN100.cbft'):
       'beam_y':beam[1] * 0.172,
       'pixel_x':0.172,
       'pixel_y':0.172
-      }
+      } + image)
+
+  return
 
 if __name__ == '__main__':
   import sys
-  print make_header_from_image(sys.argv[1])
+  make_image_from_image(sys.argv[1], sys.argv[2])
