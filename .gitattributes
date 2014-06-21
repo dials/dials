@@ -825,6 +825,5 @@ viewer/__init__.py -text
 viewer/pickle_to_viewer.py -text
 viewer/reflection_data_navigator.py -text
 viewer/reflection_view.py -text
-viewer/reflection_view_new.py -text
 viewer/reflection_view_old.py -text
 viewer/viewer_utilities.py -text

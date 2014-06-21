@@ -35,6 +35,9 @@ class ReflectionFrame(wx.Frame):
     btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
     btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
     btn_tst1.Bind(wx.EVT_BUTTON, self.B_tst1)
+    
+    self.Bind(wx.EVT_SIZE, self.OnSize)
+    
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
     self.Image_02 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
@@ -105,6 +108,13 @@ class ReflectionFrame(wx.Frame):
     self.frame_scale = self.frame_scale * 0.9
     self.My_Update()
     print "self.GetSize() =", self.GetSize()
+  def OnSize(self, event = None):
+
+    siz_data = self.GetSize()
+    print "New size of window =", siz_data
+    self.frame_scale = float(siz_data[0] * siz_data[1]) * 0.5 / 320100.0
+    self.My_Update()
+    print "resizing"
 
   def My_Update(self):
 
@@ -120,8 +130,9 @@ class ReflectionFrame(wx.Frame):
     My_Img = GetBitmap_from_np_array(np_img_2d = msk, Intst_max = -1
                                      , img_scale = self.frame_scale)
     self.Image_03.SetBitmap(My_Img)
-
-    self.Fit()
+    # if we add self.Fit() we fall into an infinite loop
+    # so for now the next line stays commented
+    #self.Fit()
     self.Layout()
     self.Refresh()
 
