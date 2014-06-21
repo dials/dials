@@ -23,21 +23,11 @@ class ReflectionFrame(wx.Frame):
 
     btn_nxt_refl = wx.Button(self, -1, "Next Reflection ")
     btn_prv_refl = wx.Button(self, -1, "Previous Reflection")
-    btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
-    btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
-
     btn_nxt_slice = wx.Button(self, -1, "Next slice ")
     btn_prv_slice = wx.Button(self, -1, "Previous slice")
     btn_tst = wx.Button(self, -1, "tst btn")
     btn_tst1 = wx.Button(self, -1, "tst btn1")
 
-    btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
-    btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
-    btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
-    btn_tst1.Bind(wx.EVT_BUTTON, self.B_tst1)
-    
-    self.Bind(wx.EVT_SIZE, self.OnSize)
-    
     self.Image_01 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
                                  self.MaxImageSizeX, self.MaxImageSizeY))
     self.Image_02 = wx.StaticBitmap(self, bitmap=wx.EmptyBitmap(
@@ -76,11 +66,22 @@ class ReflectionFrame(wx.Frame):
 
     self.frame_scale = 0.5
 
+    self.sizing_counter = 0
     self.SetSizerAndFit(v_box)
+
+    btn_nxt_refl.Bind(wx.EVT_BUTTON, self.DisplayNext_refl)
+    btn_prv_refl.Bind(wx.EVT_BUTTON, self.DisplayPrev_refl)
+    btn_nxt_slice.Bind(wx.EVT_BUTTON, self.DisplayNext_slice)
+    btn_prv_slice.Bind(wx.EVT_BUTTON, self.DisplayPrev_slice)
+    btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
+    btn_tst1.Bind(wx.EVT_BUTTON, self.B_tst1)
+    self.Bind(wx.EVT_SIZE, self.OnSize)
+    
     wx.EVT_CLOSE(self, self.On_Close_Window)
 
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
+
     self.DisplayPrev_refl()
 
   def DisplayNext_refl(self, event = None):
@@ -99,22 +100,23 @@ class ReflectionFrame(wx.Frame):
     self.tabl.Previous_slice()
     self.My_Update()
   def B_tst(self, event = None):
-    print "Here tst"
     self.frame_scale = self.frame_scale * 1.1
     self.My_Update()
     print "self.GetSize() =", self.GetSize()
   def B_tst1(self, event = None):
-    print "Here tst1"
     self.frame_scale = self.frame_scale * 0.9
     self.My_Update()
     print "self.GetSize() =", self.GetSize()
   def OnSize(self, event = None):
-
-    siz_data = self.GetSize()
-    print "New size of window =", siz_data
-    self.frame_scale = float(siz_data[0] * siz_data[1]) * 0.5 / 320100.0
-    self.My_Update()
-    print "resizing"
+    if( self.sizing_counter > 5 ):
+      siz_data = self.GetSize()
+      print "New size of window =", siz_data
+      optm_aspec_ratio = 1100.0 / 291.0
+      self.frame_scale = float(siz_data[0] * siz_data[1]) * 0.5 / 320100.0
+      self.My_Update()
+      print "resizing"
+    else:
+      self.sizing_counter += 1
 
   def My_Update(self):
 
@@ -133,6 +135,7 @@ class ReflectionFrame(wx.Frame):
     # if we add self.Fit() we fall into an infinite loop
     # so for now the next line stays commented
     #self.Fit()
+
     self.Layout()
     self.Refresh()
 
