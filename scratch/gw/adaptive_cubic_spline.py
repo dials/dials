@@ -11,8 +11,6 @@ class bicubic_bilinear_spline(object):
     from scitbx.array_family import flex
     self._44 = flex.grid(4, 4)
     self._aij_pij = self._make_aij_pij_coefficients_table()
-    self._aij_cache = self._make_aij_cache()
-    #self._aij_cache = None
     return
 
   def _make_aij_pij_coefficients_table(self):
@@ -64,16 +62,6 @@ class bicubic_bilinear_spline(object):
 
     return aij
 
-  def _make_aij_cache(self):
-    from scitbx.array_family import flex
-    aij_cache = flex.double(flex.grid(self._ny, self._nx, 16))
-    for i in range(1, self._ny - 1):
-      for j in range(1, self._nx - 1):
-        aij = self._aij(self._point_array[i-1:i+3,j-1:j+3])
-        for k in range(16):
-          aij_cache[i, j, k] = aij[k]
-    return aij_cache
-        
   def _evaluate_bilinear(self, x, y):
     x0 = int(x)
     y0 = int(y)
@@ -101,10 +89,7 @@ class bicubic_bilinear_spline(object):
       for j in range(4):
         X[i,j] = (_x ** j) * (_y ** j)
 
-    if self._aij_cache:
-      aij = self._aij_cache[y0:y0+1, x0:x0+1, :].as_1d()
-    else:
-      aij = self._aij(self._point_array[y0-1:y0+3,x0-1:x0+3])
+    aij = self._aij(self._point_array[y0-1:y0+3,x0-1:x0+3])
 
     return aij.dot(X.as_1d())
 
@@ -124,9 +109,9 @@ class bicubic_bilinear_spline(object):
 def tst_bicubic_binear_spline(n_points=100):
   from scitbx.array_family import flex
   import math
-  
+
   scale = 1.0 / n_points
-  
+
   cos_x_sin_y = flex.double(flex.grid(n_points + 1, n_points + 1))
   for i in range(n_points + 1):
     for j in range(n_points + 1):
@@ -137,14 +122,14 @@ def tst_bicubic_binear_spline(n_points=100):
 
   import random
 
-  n = 100000
+  n = 1000
   s = 0.0
   for j in range(n):
     x = n_points * random.random()
     y = n_points * random.random()
     cxsy = math.sin(math.pi * y * scale) * math.cos(math.pi * x * scale)
     s += (bbs(x, y) - cxsy) ** 2
-    
+
   return math.sqrt(s / n)
 
 if __name__ == '__main__':
