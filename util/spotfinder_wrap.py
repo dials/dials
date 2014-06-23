@@ -3,7 +3,7 @@ class spot_wrapper:
   def __init__(self,working_phil):
     self.working_phil = working_phil
 
-  def display(self, imagesets, reflections):
+  def display(self, imagesets, reflections, crystals=None):
     import wx
     from dials.util.spotfinder_frame import SpotFrame
 
@@ -11,7 +11,8 @@ class spot_wrapper:
     frame = SpotFrame(None, -1, "X-ray image display", size=(800,720),
       pos=(100,100),
       imagesets=imagesets,
-      reflections=reflections)
+      reflections=reflections,
+      crystals=crystals)
     frame.SetSize((1024,780))
 
     from rstbx.slip_viewer.frame import chooser_wrapper

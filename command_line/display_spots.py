@@ -17,12 +17,13 @@ from __future__ import division
 class ScriptRunner(object):
   '''Class to run script.'''
 
-  def __init__(self, imagesets, reflections):
+  def __init__(self, imagesets, reflections, crystals=None):
     '''Setup the script.'''
 
     # Filename data
     self.imagesets = imagesets
     self.reflections = reflections
+    self.crystals = crystals
 
   def __call__(self):
     '''Run the script.'''
@@ -34,26 +35,30 @@ class ScriptRunner(object):
   def view(self):
     from dials.util.spotfinder_wrap import spot_wrapper
     spot_wrapper(working_phil=None).display(
-        imagesets=self.imagesets, reflections=self.reflections)
+      imagesets=self.imagesets, reflections=self.reflections,
+      crystals=self.crystals)
 
 if __name__ == '__main__':
   import sys
   from dials.util.command_line import Importer
   args = sys.argv[1:]
   importer = Importer(args, check_format=True)
+  crystals = None
   if importer.datablocks is not None and len(importer.datablocks) == 1:
     imagesets = importer.datablocks[0].extract_imagesets()
   elif importer.datablocks is not None and len(importer.datablocks) > 1:
     raise RuntimeError("Only one DataBlock can be processed at a time")
   elif len(importer.experiments.imagesets()) > 0:
     imagesets = importer.experiments.imagesets()[:1]
+    crystals = importer.experiments.crystals()
   else:
     raise RuntimeError("No imageset could be constructed")
   assert len(importer.unhandled_arguments) == 0
 
   runner = ScriptRunner(
       reflections=importer.reflections,
-      imagesets=imagesets)
+      imagesets=imagesets,
+      crystals=crystals)
 
   # Run the script
   runner()

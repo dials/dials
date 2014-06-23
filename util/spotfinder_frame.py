@@ -8,8 +8,10 @@ class SpotFrame(XrayFrame) :
   def __init__ (self, *args, **kwds) :
     self.imagesets = kwds["imagesets"]
     self.reflections = kwds["reflections"]
+    self.crystals = kwds["crystals"]
     from dials.model.data import ReflectionList
     del kwds["imagesets"]; del kwds["reflections"] #otherwise wx complains
+    del kwds["crystals"] #otherwise wx complains
     super(SpotFrame, self).__init__(*args, **kwds)
     self.viewer.reflections = self.reflections
     self.viewer.frames = self.imagesets
@@ -258,6 +260,48 @@ class SpotFrame(XrayFrame) :
             reflection['miller_index'] != (0,0,0)):
           miller_indices_data.append((x, y, str(reflection['miller_index']),
                                       {'placement':'ne'}))
+
+    if self.crystals is not None:
+      from scitbx import matrix
+      crystal = self.crystals[0]
+      A = crystal.get_A()
+      A_inv = A.inverse()
+      a = matrix.col(A_inv[:3])
+      b = matrix.col(A_inv[3:6])
+      c = matrix.col(A_inv[6:])
+      scan = imageset.get_scan()
+      phi = scan.get_angle_from_array_index(
+        i_frame-imageset.get_array_range()[0], deg=True)
+      axis = matrix.col(imageset.get_goniometer().get_rotation_axis())
+      a_phi = a.rotate_around_origin(axis, phi, deg=True)
+      b_phi = b.rotate_around_origin(axis, phi, deg=True)
+      c_phi = c.rotate_around_origin(axis, phi, deg=True)
+      n = matrix.col(detector[0].get_normal())
+      projections = []
+      for v in (a_phi, b_phi, c_phi):
+        # http://www.euclideanspace.com/maths/geometry/elements/plane/lineOnPlane/
+        v_proj = n.cross(v.cross(n))
+        projections.append(v_proj)
+        #print v_proj.length()
+
+      max_length = max(v.length() for v in (a, b, c))
+      from matplotlib import pyplot
+      pyplot.clf()
+      ax = pyplot.axes()
+      for i, v in enumerate(projections):
+        #ax.plot([0,v.elems[0]], [0,v.elems[1]], 'k-', lw=2)
+        ax.arrow(0,0,v.elems[0], v.elems[1],
+                 head_width=0.03*max_length, head_length=0.05*max_length,
+                 fc='k', ec='k')
+        ax.text(v.elems[0]+(0.05*max_length), v.elems[1]+(0.05*max_length),
+                'abc'[i] + ': %.1f' %((a,b,c)[i].length()),
+                horizontalalignment='left',
+                verticalalignment='bottom',
+                transform=ax.transData)
+      pyplot.xlim(-max_length, max_length)
+      pyplot.ylim(-max_length, max_length)
+      pyplot.draw()
+      pyplot.show(block=False)
 
     from libtbx import group_args
     return group_args(all_pix_data=all_pix_data,
