@@ -28,6 +28,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   void export_ray_intersection();
   void export_reflection_frames();
   void export_reflection_predictor();
+  void export_pixel_labeller();
 
   BOOST_PYTHON_MODULE(dials_algorithms_spot_prediction_ext)
   {
@@ -43,6 +44,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     export_ray_intersection();
     export_reflection_frames();
     export_reflection_predictor();
+    export_pixel_labeller();
   }
 
 }}} // namespace = dials::algorithms::boost_python

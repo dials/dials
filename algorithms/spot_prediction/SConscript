@@ -12,6 +12,7 @@ sources = [
     'boost_python/ray_intersection.cc',
     'boost_python/reflection_frames.cc',
     'boost_python/reflection_predictor.cc',
+    'boost_python/pixel_labeller.cc',
     'boost_python/spot_prediction_ext.cc']
 
 env.SharedLibrary(target='#/lib/dials_algorithms_spot_prediction_ext', source=sources)

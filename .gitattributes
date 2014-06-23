@@ -238,6 +238,7 @@ algorithms/spatial_indexing/quadtree.h -text
 algorithms/spot_prediction/SConscript -text
 algorithms/spot_prediction/__init__.py -text
 algorithms/spot_prediction/boost_python/index_generator.cc -text
+algorithms/spot_prediction/boost_python/pixel_labeller.cc -text
 algorithms/spot_prediction/boost_python/ray_intersection.cc -text
 algorithms/spot_prediction/boost_python/ray_predictor.cc -text
 algorithms/spot_prediction/boost_python/reeke_index_generator.cc -text
@@ -249,6 +250,7 @@ algorithms/spot_prediction/boost_python/scan_varying_ray_predictor.cc -text
 algorithms/spot_prediction/boost_python/spot_prediction_ext.cc -text
 algorithms/spot_prediction/boost_python/stills_ray_predictor.cc -text
 algorithms/spot_prediction/index_generator.h -text
+algorithms/spot_prediction/pixel_labeller.h -text
 algorithms/spot_prediction/ray_intersection.h -text
 algorithms/spot_prediction/ray_predictor.h -text
 algorithms/spot_prediction/reeke.py -text
@@ -570,6 +572,7 @@ scratch/jmp/misc/ks_test.py -text
 scratch/jmp/misc/line_clip.py -text
 scratch/jmp/misc/normality_check.py -text
 scratch/jmp/misc/parallax_test.py -text
+scratch/jmp/misc/pixel_label.py -text
 scratch/jmp/misc/select_peak_pixels.py -text
 scratch/jmp/misc/show_reference.py -text
 scratch/jmp/misc/simulate_intensity.py -text
