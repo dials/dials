@@ -95,28 +95,39 @@ class ReflectionFrame(wx.Frame):
   def DisplayPrev_slice(self, event = None):
     self.tabl.Previous_slice()
     self.My_Update()
-
   def B_tst(self, event = None):
     self.frame_scale = self.frame_scale * 1.1
-    self.My_Update(request_new_img = False)
+    self.My_Update()
     print "self.GetSize() =", self.GetSize()
   def B_tst1(self, event = None):
     self.frame_scale = self.frame_scale * 0.9
-    self.My_Update(request_new_img = False)
+    self.My_Update()
     print "self.GetSize() =", self.GetSize()
+
   def OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
       siz_data = self.GetSize()
       print "New size of window =", siz_data
-      optm_aspec_ratio = 1100.0 / 291.0
-      self.frame_scale = float(siz_data[0] * siz_data[1]) * 0.5 / 320100.0
-      self.My_Update(request_new_img = False)
+      optm_aspec_ratio = 3.81
+      print "siz_data = ", siz_data[0], siz_data[1]
+      print "aspect ratio = ", float(siz_data[0])/ float(siz_data[1])
+      aspec_ratio = float(siz_data[0])/ float(siz_data[1])
+
+      if(aspec_ratio > optm_aspec_ratio):
+        print "use float(siz_data[1] (Height) to calculate new size"
+        self.frame_scale = float(siz_data[1]) * 0.5 / 291.0
+        #(1100, 291)
+      else:
+        print "use float(siz_data[0] (with) to calculate new size"
+        self.frame_scale = float(siz_data[0]) * 0.5 / 1100.0
+        #(1100, 291)
+      self.My_Update(request_new_size = False)
       print "resizing"
     else:
       self.sizing_counter += 1
 
-  def My_Update(self, request_new_img = True):
-    if( request_new_img == True ):
+  def My_Update(self, request_new_size = True):
+    if( request_new_size == True ):
       self.bkg, self.dat, self.msk = self.tabl()
       self.I_max = self.tabl.Get_Max()
 
@@ -129,9 +140,9 @@ class ReflectionFrame(wx.Frame):
     My_Img = GetBitmap_from_np_array(np_img_2d = self.msk, Intst_max = -1
                                      , img_scale = self.frame_scale)
     self.Image_03.SetBitmap(My_Img)
-    # if we add self.Fit() we fall into an infinite loop
-    # so for now the next line stays commented
-    if( request_new_img == True ):
+
+    if( request_new_size == True ):
+      print "re - fitting"
       self.Fit()
 
     self.Layout()
