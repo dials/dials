@@ -40,7 +40,7 @@ if __name__ == '__main__':
   import sys
   from dials.util.command_line import Importer
   args = sys.argv[1:]
-  importer = Importer(args, check_format=False)
+  importer = Importer(args, check_format=True)
   if importer.datablocks is not None and len(importer.datablocks) == 1:
     imagesets = importer.datablocks[0].extract_imagesets()
   elif importer.datablocks is not None and len(importer.datablocks) > 1:
