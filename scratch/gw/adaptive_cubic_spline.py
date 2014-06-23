@@ -94,8 +94,8 @@ class bicubic_bilinear_spline(object):
     return aij.dot(X.as_1d())
 
   def evaluate(self, x, y):
-    assert(x > 0 and x < self._nx)
-    assert(y > 0 and y < self._ny)
+    #assert(x > 0 and x < self._nx)
+    #assert(y > 0 and y < self._ny)
 
     if x > 1 and x < (self._nx - 1) and \
       y > 1 and y < (self._ny - 1):
@@ -132,6 +132,25 @@ def tst_bicubic_binear_spline(n_points=100):
 
   return math.sqrt(s / n)
 
+def tst_bicubic_binear_spline2():
+  from scitbx.array_family import flex
+  import math
+
+  data = flex.double(flex.grid(6, 6))
+
+  for i in range(6):
+    for j in range(6):
+      data[i, j] = math.sqrt(i * j)
+
+  bbs = bicubic_bilinear_spline(data)
+  for i in range(1, 5):
+    for j in range(1, 5):
+      print math.fabs(data[i, j] - bbs(j, i))
+      assert(math.fabs(data[i, j] - bbs(j, i)) < 1.0e-6)
+
+  return 'OK'
+
+
+
 if __name__ == '__main__':
-  for n in 10, 20, 40, 100, 200, 400:
-    print n, tst_bicubic_binear_spline(n)
+  print tst_bicubic_binear_spline2()
