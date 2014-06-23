@@ -76,36 +76,33 @@ class ReflectionFrame(wx.Frame):
     btn_tst.Bind(wx.EVT_BUTTON, self.B_tst)
     btn_tst1.Bind(wx.EVT_BUTTON, self.B_tst1)
     self.Bind(wx.EVT_SIZE, self.OnSize)
-    
+
     wx.EVT_CLOSE(self, self.On_Close_Window)
 
   def tabl_to_frame(self, loc_tabl):
     self.tabl = table_s_navigator(loc_tabl)
-
     self.DisplayPrev_refl()
 
   def DisplayNext_refl(self, event = None):
     self.tabl.next_Reflection()
     self.My_Update()
-
   def DisplayPrev_refl(self, event = None):
     self.tabl.Previous_Reflection()
     self.My_Update()
-
   def DisplayNext_slice(self, event = None):
     self.tabl.next_slice()
     self.My_Update()
-
   def DisplayPrev_slice(self, event = None):
     self.tabl.Previous_slice()
     self.My_Update()
+
   def B_tst(self, event = None):
     self.frame_scale = self.frame_scale * 1.1
-    self.My_Update()
+    self.My_Update(request_new_img = False)
     print "self.GetSize() =", self.GetSize()
   def B_tst1(self, event = None):
     self.frame_scale = self.frame_scale * 0.9
-    self.My_Update()
+    self.My_Update(request_new_img = False)
     print "self.GetSize() =", self.GetSize()
   def OnSize(self, event = None):
     if( self.sizing_counter > 5 ):
@@ -113,23 +110,23 @@ class ReflectionFrame(wx.Frame):
       print "New size of window =", siz_data
       optm_aspec_ratio = 1100.0 / 291.0
       self.frame_scale = float(siz_data[0] * siz_data[1]) * 0.5 / 320100.0
-      self.My_Update()
+      self.My_Update(request_new_img = False)
       print "resizing"
     else:
       self.sizing_counter += 1
 
-  def My_Update(self):
+  def My_Update(self, request_new_img = True):
+    if( request_new_img == True ):
+      self.bkg, self.dat, self.msk = self.tabl()
+      self.I_max = self.tabl.Get_Max()
 
-    bkg, dat, msk = self.tabl()
-    I_max = self.tabl.Get_Max()
-
-    My_Img = GetBitmap_from_np_array(np_img_2d = dat, Intst_max = I_max
-                                     , img_scale = self.frame_scale)
+    My_Img = GetBitmap_from_np_array(np_img_2d = self.dat, Intst_max = self.I_max
+                                     ,img_scale = self.frame_scale)
     self.Image_01.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = bkg, Intst_max = I_max
-                                     , img_scale = self.frame_scale)
+    My_Img = GetBitmap_from_np_array(np_img_2d = self.bkg, Intst_max = self.I_max
+                                     ,img_scale = self.frame_scale)
     self.Image_02.SetBitmap(My_Img)
-    My_Img = GetBitmap_from_np_array(np_img_2d = msk, Intst_max = -1
+    My_Img = GetBitmap_from_np_array(np_img_2d = self.msk, Intst_max = -1
                                      , img_scale = self.frame_scale)
     self.Image_03.SetBitmap(My_Img)
     # if we add self.Fit() we fall into an infinite loop
