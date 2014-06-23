@@ -551,68 +551,12 @@ namespace dials { namespace af { namespace boost_python {
    * Get a list of intensities
    */
   template <typename FloatType>
-  af::shared<Intensity> summed_intensity_all(
+  af::shared<Intensity> summed_intensity(
       const const_ref< Shoebox<FloatType> > &a) {
     af::shared<Intensity> result(a.size(), Intensity());
     #pragma omp parallel for
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = a[i].summed_intensity_all();
-    }
-    return result;
-  }
-
-  /**
-   * Get a list of intensities
-   */
-  template <typename FloatType>
-  af::shared<Intensity> summed_intensity_masked(
-      const const_ref< Shoebox<FloatType> > &a, int code) {
-    af::shared<Intensity> result(a.size(), Intensity());
-    #pragma omp parallel for
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = a[i].summed_intensity_masked(code);
-    }
-    return result;
-  }
-
-  /**
-   * Get a list of intensities
-   */
-  template <typename FloatType>
-  af::shared<Intensity> summed_intensity_valid(
-      const const_ref< Shoebox<FloatType> > &a) {
-    af::shared<Intensity> result(a.size(), Intensity());
-    #pragma omp parallel for
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = a[i].summed_intensity_valid();
-    }
-    return result;
-  }
-
-  /**
-   * Get a list of intensities
-   */
-  template <typename FloatType>
-  af::shared<Intensity> summed_intensity_foreground(
-      const const_ref< Shoebox<FloatType> > &a) {
-    af::shared<Intensity> result(a.size(), Intensity());
-    #pragma omp parallel for
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = a[i].summed_intensity_foreground();
-    }
-    return result;
-  }
-
-  /**
-   * Get a list of intensities
-   */
-  template <typename FloatType>
-  af::shared<Intensity> summed_intensity_strong(
-      const const_ref< Shoebox<FloatType> > &a) {
-    af::shared<Intensity> result(a.size(), Intensity());
-    #pragma omp parallel for
-    for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i] = a[i].summed_intensity_strong();
+      result[i] = a[i].summed_intensity();
     }
     return result;
   }
@@ -822,16 +766,8 @@ namespace dials { namespace af { namespace boost_python {
           &centroid_foreground_minus_background<FloatType>)
         .def("centroid_strong_minus_background",
           &centroid_strong_minus_background<FloatType>)
-        .def("summed_intensity_all",
-          &summed_intensity_all<FloatType>)
-        .def("summed_intensity_masked",
-          &summed_intensity_masked<FloatType>)
-        .def("summed_intensity_valid",
-          &summed_intensity_valid<FloatType>)
-        .def("summed_intensity_foreground",
-          &summed_intensity_foreground<FloatType>)
-        .def("summed_intensity_strong",
-          &summed_intensity_strong<FloatType>)
+        .def("summed_intensity",
+          &summed_intensity<FloatType>)
         .def("mean_background",
           &mean_background<FloatType>)
         .def_pickle(flex_pickle_double_buffered<shoebox_type,

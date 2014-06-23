@@ -15,8 +15,7 @@ class Test(object):
     self.tst_count_mask_values()
     self.tst_centroid_all()
     self.tst_centroid_masked()
-    self.tst_summed_intensity_all()
-    self.tst_summed_intensity_masked()
+    self.tst_summed_intensity()
 
   def tst_allocate(self):
     from random import randint
@@ -223,18 +222,10 @@ class Test(object):
 
     print 'OK'
 
-  def tst_summed_intensity_all(self):
+  def tst_summed_intensity(self):
 
     for shoebox, (XC, I) in self.random_shoeboxes(10):
-      intensity = shoebox.summed_intensity_all()
-      assert(shoebox.is_consistent())
-      assert(abs(intensity.observed.value - I) < 1e-7)
-
-    print 'OK'
-
-  def tst_summed_intensity_masked(self):
-    for shoebox, (XC, I) in self.random_shoeboxes(10, mask=True):
-      intensity = shoebox.summed_intensity_masked((1 << 0))
+      intensity = shoebox.summed_intensity()
       assert(shoebox.is_consistent())
       assert(abs(intensity.observed.value - I) < 1e-7)
 

@@ -230,16 +230,8 @@ namespace dials { namespace model { namespace boost_python {
         &shoebox_type::centroid_foreground_minus_background)
       .def("centroid_strong_minus_background",
         &shoebox_type::centroid_strong_minus_background)
-      .def("summed_intensity_all",
-        &shoebox_type::summed_intensity_all)
-      .def("summed_intensity_masked",
-        &shoebox_type::summed_intensity_masked)
-      .def("summed_intensity_valid",
-        &shoebox_type::summed_intensity_valid)
-      .def("summed_intensity_foreground",
-        &shoebox_type::summed_intensity_foreground)
-      .def("summed_intensity_strong",
-        &shoebox_type::summed_intensity_strong)
+      .def("summed_intensity",
+        &shoebox_type::summed_intensity)
       .def("coords", &coords<shoebox_type>)
       .def("coords", &coords_with_mask<shoebox_type>)
       .def("values", &values<shoebox_type>)

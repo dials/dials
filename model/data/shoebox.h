@@ -18,6 +18,7 @@
 #include <dials/algorithms/image/centroid/centroid_image.h>
 #include <dials/algorithms/image/centroid/centroid_masked_image.h>
 #include <dials/algorithms/integration/summation.h>
+#include <dials/model/data/mask_code.h>
 #include <dials/error.h>
 
 namespace dials { namespace model {
@@ -54,22 +55,6 @@ namespace dials { namespace model {
     return result;
   }
 
-  /**
-   * An enumeration of shoebox mask codes. If a pixel is labelled as:
-   *  a) Valid. This means that the pixel belongs to this reflection and
-   *     is not a bad pixel etc.
-   *  b) Background. This means that the pixel is to be used for background
-   *     determination.
-   *  c) Foreground. This means that the pixel is to be used for integration.
-   *  d) Strong. This means that the pixel is defined as strong
-   */
-  enum MaskCode {
-    Valid = (1 << 0),         ///< Pixel is valid for this shoebox
-    Background = (1 << 1),    ///< Pixel is in the background
-    Foreground = (1 << 2),    ///< Pixel is in the foreground
-    Strong = (1 << 3),        ///< Pixel is a strong pixel
-    BackgroundUsed = (1 << 4) ///< Pixel was used in background calculation
-  };
 
   /**
    * A class to hold shoebox information
@@ -380,79 +365,20 @@ namespace dials { namespace model {
      * Get the summed intensity of all pixels
      * @returns The intensity
      */
-    Intensity summed_intensity_all() const {
+    Intensity summed_intensity() const {
 
-      // Get the number of background pixels used
-      std::size_t n_background = 0;
-      for (std::size_t i = 0; i < mask.size(); ++i) {
-        if (mask[i] & BackgroundUsed) {
-          n_background++;
-        }
-      }
 
       // Do the intengration
       Summation<FloatType> summation(
         data.const_ref(),
         background.const_ref(),
-        n_background);
+        mask.const_ref());
 
       // Return the intensity struct
       Intensity result;
       result.observed.value = summation.intensity();
       result.observed.variance = summation.variance();
       return result;
-    }
-
-    /**
-     * Get the summed intensity of all pixels in the mask
-     * @returns The intensity
-     */
-    Intensity summed_intensity_masked(int code) const {
-
-      // Create a boolean mask
-      af::versa< bool, af::c_grid<3> > temp_arr(mask.accessor());
-      af::ref< bool, af::c_grid<3> > temp = temp_arr.ref();
-      std::size_t n_background = 0;
-      for (std::size_t i = 0; i < temp.size(); ++i) {
-        temp[i] = mask[i] & code;
-        if (mask[i] & BackgroundUsed) {
-          n_background++;
-        }
-      }
-
-      // Do the intengration
-      Summation<FloatType> summation(data.const_ref(),
-        background.const_ref(), temp, n_background);
-
-      // Return the intensity struct
-      Intensity result;
-      result.observed.value = summation.intensity();
-      result.observed.variance = summation.variance();
-      return result;
-    }
-
-    /**
-     * Get the summed intensity of all valid pixels
-     * @returns The intensity
-     */
-    Intensity summed_intensity_valid() const {
-      return summed_intensity_masked(Valid);
-    }
-
-    /**
-     * Get the summed intensity of all foreground pixels
-     * @returns The intensity
-     */
-    Intensity summed_intensity_foreground() const {
-      return summed_intensity_masked(Foreground);
-    }
-
-    /**
-     * Get the summed intensity of all strong pixels
-     * @returns The intensity
-     */
-    Intensity summed_intensity_strong() const {
-      return summed_intensity_masked(Strong);
     }
 
     /**

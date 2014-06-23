@@ -249,7 +249,7 @@ class SpotFinder(object):
 
     # Calculate the spot intensities
     Command.start('Calculating {0} spot intensities'.format(len(shoeboxes)))
-    intensity = shoeboxes.summed_intensity_valid()
+    intensity = shoeboxes.summed_intensity()
     Command.end('Calculated {0} spot intensities'.format(len(shoeboxes)))
 
     # Create the observations

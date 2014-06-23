@@ -33,7 +33,7 @@ class Summation3d(object):
 
     # Integrate and return the reflections
     Command.start('Integrating reflections')
-    intensity = reflections['shoebox'].summed_intensity_foreground()
+    intensity = reflections['shoebox'].summed_intensity()
     reflections['intensity.sum.value'] = intensity.observed_value()
     reflections['intensity.sum.variance'] = intensity.observed_variance()
     indices = flex.size_t(range(len(reflections)))
