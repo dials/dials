@@ -26,7 +26,7 @@ class Test(object):
   def run(self):
     from dials.array_family import flex
     import cPickle as pickle
-    from math import floor, ceil
+    from math import floor, ceil, sqrt
     from dials.algorithms.shoebox import MaskCode
 
     # Read the data
@@ -40,6 +40,9 @@ class Test(object):
     # reflection whose pixel values in the mosflm file do not match those
     # extracted from the images.
     count = 0
+    VAR1 = []
+    VAR2 = []
+    DIFF = []
     for i in range(len(rtable)):
       from dials.algorithms.background import PlaneModel
       xdet, ydet = rtable[i]["xy"]
@@ -109,13 +112,14 @@ class Test(object):
       I1 = I
       Ivar1 = Ivar
       if mask.count(0) == 0 and mask.count(2) == 0 and I1 > 0:
+        VAR1.append(sqrt(Ivar1))
+        VAR2.append(sqrt(Ivar2))
+        DIFF.append(sqrt(Ivar1) - sqrt(Ivar2))
         try:
           assert(abs(I1 - I2) < 1.0)
-          assert(abs(Ivar1 - Ivar2) < 1.0)
+          assert(abs(sqrt(Ivar1) - sqrt(Ivar2)) < 1.0)
         except Exception:
           count += 1
-          print Ivar1, Ivar2
-          continue
           #import numpy
           #numpy.set_printoptions(precision=4, linewidth=200)
           #print "# %d" % i
@@ -140,9 +144,9 @@ class Test(object):
           #print mask.as_numpy_array().transpose()[::-1,::-1]
           #print ((data.as_double() - background) * temp).as_numpy_array().transpose()[::-1,::-1]
           #raise
+          continue
 
     # Only 1 should fail
-    print count
     assert(count == 1)
     print 'OK'
 
