@@ -131,7 +131,8 @@ class ReflectionFrame(wx.Frame):
     self.Image_03.SetBitmap(My_Img)
     # if we add self.Fit() we fall into an infinite loop
     # so for now the next line stays commented
-    #self.Fit()
+    if( request_new_img == True ):
+      self.Fit()
 
     self.Layout()
     self.Refresh()
