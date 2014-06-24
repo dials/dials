@@ -1,6 +1,7 @@
 from __future__ import division
 
 import iotbx.phil
+from libtbx.utils import Sorry
 
 master_phil_scope = iotbx.phil.parse("""
 scan_range = None
